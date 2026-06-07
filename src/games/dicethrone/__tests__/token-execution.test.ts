@@ -32,6 +32,8 @@ import { validateCommand } from '../domain/commandValidation';
 import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
 import { reduce } from '../domain/reducer';
+import { executeTokenCommand } from '../domain/executeTokens';
+import { applyEvents } from '../domain/utils';
 import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
 import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
 import { SAMURAI_TOKENS } from '../heroes/samurai/tokens';
@@ -213,6 +215,89 @@ describe('武士反击 (Samurai Retribution) custom action', () => {
         expect(damageEvents).toHaveLength(1);
         expect((damageEvents[0] as any).payload.targetId).toBe('0');
         expect((damageEvents[0] as any).payload.amount).toBe(3);
+    });
+
+    it('响应窗关闭后才应发出反伤 DAMAGE_DEALT', () => {
+        const baseState = {
+            players: {
+                '0': {
+                    characterId: 'paladin',
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    tokens: {},
+                    statusEffects: {},
+                    damageShields: [],
+                },
+                '1': {
+                    characterId: 'samurai',
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    tokens: { [TOKEN_IDS.SAMURAI_RETRIBUTION]: 1 },
+                    statusEffects: {},
+                    damageShields: [],
+                },
+            },
+            tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                damage: 5,
+                isDefendable: true,
+                sourceAbilityId: 'revolver',
+            },
+            pendingDamage: {
+                id: 'samurai-window',
+                sourcePlayerId: '0',
+                targetPlayerId: '1',
+                originalDamage: 5,
+                currentDamage: 5,
+                sourceAbilityId: 'revolver',
+                responseType: 'beforeDamageReceived',
+                responderId: '1',
+            },
+            dice: [],
+            rollDiceCount: 5,
+        } as any;
+
+        const useEvents = executeTokenCommand(
+            baseState,
+            {
+                type: 'USE_TOKEN',
+                playerId: '1',
+                payload: { tokenId: TOKEN_IDS.SAMURAI_RETRIBUTION, amount: 1 },
+            } as any,
+            {
+                d: () => 1,
+                random: () => 0.5,
+                range: (min: number) => min,
+                shuffle: <T,>(arr: T[]) => [...arr],
+            } as any,
+            100,
+        );
+
+        expect(useEvents.map((event) => event.type)).toEqual(['TOKEN_USED', 'BONUS_DIE_ROLLED']);
+        const afterUse = applyEvents(baseState, useEvents, reduce);
+        expect(afterUse.pendingDamage?.deferredDamageEvents).toHaveLength(1);
+        expect(afterUse.pendingDamage?.deferredDamageEvents?.[0]?.targetId).toBe('0');
+
+        const closeEvents = executeTokenCommand(
+            afterUse,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: {},
+            } as any,
+            fixedRandom,
+            101,
+        );
+
+        expect(closeEvents.map((event) => event.type)).toEqual([
+            'TOKEN_RESPONSE_CLOSED',
+            'DAMAGE_DEALT',
+            'DAMAGE_DEALT',
+        ]);
+        expect((closeEvents[1] as any).payload.targetId).toBe('1');
+        expect((closeEvents[1] as any).payload.amount).toBe(5);
+        expect((closeEvents[2] as any).payload.targetId).toBe('0');
+        expect((closeEvents[2] as any).payload.amount).toBe(1);
     });
 });
 
@@ -1235,6 +1320,21 @@ describe('Token 响应窗口判定', () => {
         state.core.pendingAttack = undefined;
 
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
+        expect(responseType).toBeNull();
+    });
+
+    it('防御方有 samurai_retribution Token 且仍在战斗上下文中，但 direct damage 不应打开 defenderMitigation', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: true,
+            sourceAbilityId: 'test-attack',
+        } as any;
+
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4, false, 'direct');
         expect(responseType).toBeNull();
     });
 });

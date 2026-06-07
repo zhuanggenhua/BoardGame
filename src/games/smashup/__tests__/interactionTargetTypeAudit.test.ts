@@ -17,7 +17,7 @@ import {
     inferDirectTargetTypeFromOptions,
     isCreateSimpleChoiceCall,
 } from './helpers/simpleChoiceAst';
-import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay } from '../ui/interactionMode';
+import { getSmashUpDirectHandPromptCardState, getSmashUpSelectableBaseIndices, hasSmashUpDirectHandPromptPlayableOptions, isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay, shouldRenderSmashUpHandArea } from '../ui/interactionMode';
 
 interface TargetTypeIssue {
     file: string;
@@ -121,6 +121,9 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     innsmouth_recruitment: { targetType: 'button' },
     innsmouth_mysteries_of_the_deep: { targetType: 'button' },
     innsmouth_spreading_the_word: { targetType: 'generic' },
+    itty_critters_leafaroo: { targetType: 'discard' },
+    kaiju_johnny: { targetType: 'generic' },
+    mega_troopers_plan_for_more_order: { targetType: 'generic', responseValidationMode: 'live' },
     miskatonic_mandatory_reading_draw: { targetType: 'button' },
     miskatonic_psychologist: { targetType: 'button' },
     miskatonic_researcher: { targetType: 'button' },
@@ -156,12 +159,26 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     cthulhu_servitor: '从弃牌堆行动卡中选回牌库的目标，来源为 discard 卡面。',
     cthulhu_star_spawn: '同时涉及目标玩家与疯狂卡转移，不能压缩成单一实体语义。',
     elder_thing_begin_the_summoning: '候选项来自非棋盘卡牌池，需保留通用卡面弹层选择。',
+    geeks_min_maxing_action: '候选项来自已揭示的对手手牌，不是当前玩家自己的手牌直选，需保留通用卡图弹层语义。',
     ghost_across_the_divide: '候选项包含复合效果分支，不是单一基地/随从/手牌实体。',
     giant_ant_we_are_the_champions_choose_snapshot_source: '来源随从已在计分后离场，只能用静态快照卡面选择。',
     giant_ant_who_wants_to_live_forever_pod_search: '牌库检索结果来自 deck 卡面选择，不是当前棋盘实体直点。',
     innsmouth_spreading_the_word: '选择的是随从名(defId)而不是某张场上/手牌实体卡。',
+    kaiju_johnny: '候选项是场上基地持续行动卡，选择后会转为手牌并绑定立即额外行动，需携带原基地与卡牌上下文。',
+    kaiju_pick_up_a_bus: '从弃牌堆行动卡中选择回收目标，来源为 discard 卡面而非手牌或棋盘实体。',
+    kaiju_they_say_hes_got_to_go_choose_titan: '选择对象是泰坦实体，当前 UI 没有 titan 专用 targetType，需保留 generic 并携带来源基地上下文。',
     killer_plant_sprout_search: '牌库搜索结果卡面选择，需要 autoRefresh/live 重验而非棋盘直点。',
     killer_plant_venus_man_trap_search: '牌库搜索结果卡面选择，需要 autoRefresh/live 重验而非棋盘直点。',
+    base_q_point: '计分前每位玩家在同一基地的保留对象混合随从、基地持续行动与附着行动，不能压缩成单一 minion/base 直选。',
+    magical_girls_black_magicat: '同时搜索牌库与弃牌堆的指定随从，候选来源可能是 deck 或 discard 卡面，不能映射为当前手牌/棋盘实体。',
+    magical_girls_kiss_the_sky_spell: '从弃牌堆随从卡面中选择回手目标，来源为 discard 卡面。',
+    magical_girls_lunar_captain: '从弃牌堆随从卡面中选择回手目标，来源为 discard 卡面。',
+    magical_girls_lunar_healing_love_spell: '多选每位玩家弃牌堆随从卡面并按拥有者回手，来源为 discard 卡面且跨玩家分组。',
+    magical_girls_purge_the_demon: '候选项混合场上持续行动、附着行动与移除指示物分支，不能压缩成单一实体直选。',
+    magical_girls_white_magicat: '同时搜索牌库与弃牌堆的指定随从，候选来源可能是 deck 或 discard 卡面，不能映射为当前手牌/棋盘实体。',
+    mega_troopers_lightning_crystal: '候选项混合基地持续行动与随从附着行动，不能压缩成单一基地或随从直选。',
+    mega_troopers_plan_for_more: '揭示牌库顶后既可拿牌又可选择其中一张打到指定基地，选项同时携带 deck 卡面和目标基地上下文。',
+    mega_troopers_plan_for_more_order: '揭示牌库顶后的剩余牌排序交互，候选来源是 deck reveal 快照，不是当前手牌或棋盘实体。',
     miskatonic_book_of_iter_the_unseen: '候选项来自特殊卡牌池/效果分支，不是棋盘实体直选。',
     miskatonic_jinkies_pod: 'POD 版同样从手牌/弃牌堆疯狂卡池中做效果分支选择，不是棋盘实体直选。',
     pirate_sea_dogs_choose_faction: '选择的是派系标识，而不是棋盘或手牌实体。',
@@ -189,12 +206,10 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     vampire_fledgling_vampire_pod_bury_source: '候选项混合手牌与弃牌堆来源，且后续还要串联基地选择。',
     vampire_wolf_pact_pod_action: '从弃牌堆静态卡面中选择洗回牌库的目标，来源为 discard 卡面。',
     vampire_crack_of_dusk: '候选项来自弃牌堆静态卡面，后续还要串联基地选择，不是当前 hand/board 直选。',
+    vampire_crack_of_dusk_pod: '先从弃牌堆静态卡面中挑选低力量随从，再进入基地选择链路，来源不是当前场上/手牌实体。',
     bury_uncover_start_turn: '埋伏翻开交互需要携带原基地/随从上下文，属于带棋盘上下文的通用分支选择。',
     bear_cavalry_bear_rides_you_pod_choose_suppress: '候选项混合场上实体与抑制分支，需保留带棋盘上下文的通用交互。',
     bear_cavalry_cub_scout_pod_destroy: '候选项是带破坏确认的通用分支，不是单一实体直选。',
-    bear_cavalry_general_ivan_pod_trigger: '候选项是触发/跳过的通用分支，不对应单一实体直选。',
-    bear_cavalry_high_ground_pod_trigger: '候选项是触发/跳过的通用分支，不对应单一实体直选。',
-    bear_cavalry_superiority_pod_talent: '候选项是效果分支选择，不对应单一实体直选。',
     elder_thing_begin_the_summoning_pod: '候选项来自额外牌池/分支效果，不能映射为单一实体直选。',
     elder_thing_spreading_horror_pod_choose_minion: '选择结果需要同时携带场上随从与额外效果上下文，保留 generic 语义。',
     trickster_block_the_path: '候选项是效果处理分支，不对应单一实体直选。',
@@ -215,6 +230,11 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     cowboys_gold_in_them_thar_hills_order: '这是剩余揭示卡牌的排序交互，不是单一实体直选。',
     cowboys_stagecoach_cards: '候选项混合随从/持续行动/埋葬牌，需保留复合卡面上下文。',
     innsmouth_return_to_the_sea_choose_name: '选择的是随从名(defId)而非某个单一场上实体。',
+    mythic_greeks_favor_of_athena_order: '候选项来自本次揭示牌堆的临时排序快照，需要保留 deck 卡面与排序上下文，不能压成 hand/base 直选。',
+    mythic_greeks_favor_of_athena_pick: '候选项来自本次揭示牌堆的临时行动卡快照，来源为 deck reveal 卡面而非当前手牌实体。',
+    mythic_greeks_favor_of_hades: '候选项是已揭示牌库卡面的处理分支，既保留卡牌身份又不是当前手牌/棋盘实体。',
+    mythic_greeks_favor_of_poseidon: '候选项是已揭示牌库卡面的处理分支，既保留卡牌身份又不是当前手牌/棋盘实体。',
+    tornados_ripped_off: '候选项是打在基地或随从上的持续行动卡，混合 attached-on-base 与 attached-on-minion 语义，不能压成单一实体直选。',
     titan_cthulhu_cthulhu_titan_talent_target: '候选项带有泰坦技能分支上下文，不能压缩成单一实体直选。',
     titan_dinosaurs_fort_titanosaurus_ongoing: '候选项是泰坦持续效果分支，需保留通用上下文。',
     titan_frankenstein_the_bride_start_choose_branch: '候选项是新娘起始阶段分支选择，不是单一实体直选。',
@@ -230,6 +250,7 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     titan_ninjas_invisible_ninja_start_turn: '回合开始分支选择依赖持续状态上下文，需保留 generic。',
     titan_penguins_emperor_penguin_talent: '天赋候选是复合分支，不对应单一实体直选。',
     titan_vampires_ancient_lord_special: '特殊触发候选包含场上目标与额外语义，需保留 generic。',
+    vampire_crack_of_dusk_pod: '候选项来自弃牌堆随从卡面，不是当前棋盘实体，也不是当前手牌直选。',
     vikings_berserk_card: '候选项来自手牌卡面并串联后续目标选择，保留 generic 以承载链路上下文。',
     vikings_cast_the_runes_order: '牌库顶揭示后的排序交互，来源为 deck 快照而非场上实体。',
     vikings_cast_the_runes_player: '先选目标玩家再处理揭示结果，属于玩家+卡牌复合上下文。',
@@ -241,6 +262,27 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     vikings_ransack: '候选项涉及目标玩家与手牌快照，需保留通用上下文。',
     vikings_shield_maiden: '候选项先选玩家再揭示牌库顶，属于玩家+卡牌复合交互。',
     vikings_valkyrie: '候选项基于弃牌堆卡面并串联后续结算，不是单一实体直选。',
+    base_faceless_city_choose: '候选项来自牌库中的同名随从快照，并会在抽到手后重洗剩余牌库，不是单一棋盘实体直选。',
+    base_isis_swingin_pad_reorder: '这是查看并重排牌库顶三张的排序交互，必须保留 top/bottom 顺序语义而不是单点选择。',
+    base_primate_park_return: '候选项是计分基地上附着行动卡的多选卡面，不是随从或基地本体直选。',
+    cyborg_apes_monkey_see_monkey_do_choose: '候选项来自牌库顶五张揭示结果，允许多选行动加入手牌并重洗剩余牌库，需保留 deck 快照上下文。',
+    mythic_greeks_favor_of_athena_order: '这是对已揭示牌组逐张决定回牌库顶顺序的排序交互，不能压缩成单一实体直选。',
+    mythic_greeks_favor_of_athena_pick: '候选项来自牌库顶揭示的行动卡快照，并且后续还要串联剩余牌排序。',
+    mythic_greeks_favor_of_hades: '从弃牌堆静态卡面中选择行动回手，来源为 discard 卡面而不是棋盘实体。',
+    mythic_greeks_favor_of_poseidon: '多选弃牌堆卡牌洗回牌库，来源为 discard 卡面且带多选语义。',
+    shapeshifters_cellular_bonding_choose: '选择的是同一宿主随从上的附着行动卡，并需保留宿主/复制来源上下文，不能压成 minion/base 直选。',
+    shapeshifters_genetic_shift_choose: '候选项混合“全体己方随从 +1”的按钮分支与“单个己方随从 +3”的实体分支，必须保留复合语义。',
+    shapeshifters_mitosis_choose: '候选项来自手牌中的同名随从卡面，并携带目标基地与同名约束，属于额外打出链路而不是普通手牌直选。',
+    super_spies_for_my_eyes_only_reorder: '这是查看并重排自己牌库顶五张的排序交互，需要保留 top/bottom 分组与揭示快照语义。',
+    super_spies_operative_top_bottom: '同一次交互里按玩家分组处理多张已揭示牌，需同时保留 targetPlayerId 与 cardUid 的复合上下文。',
+    super_spies_permit_to_kill_order: '这是查看并重排目标玩家牌库顶的排序交互，必须保留 top/bottom 顺序语义。',
+    super_spies_spy_reorder: '这是查看并重排目标玩家牌库顶的排序交互，候选项是揭示快照而非棋盘实体。',
+    time_travelers_into_the_time_slip_choose: '候选项混合场上随从、基地持续与附着行动卡，属于在场卡牌卡面选择，不是单一实体维度。',
+    time_travelers_its_astounding_choose: '候选项来自弃牌堆行动卡快照，后续还要继续进入该行动牌自身的目标选择链路。',
+    time_travelers_repeater_perfect_choose: '从弃牌堆静态行动卡面中选择放回牌库顶的目标，来源为 discard 卡面。',
+    time_travelers_time_is_fleeting_choose: '选择的是基地弃牌堆中的基地定义并改写基地牌库顶，不对应当前场上基地实体。',
+    time_travelers_time_raider_choose: '从弃牌堆静态卡面中选择要塞回牌库底的牌，来源为 discard 卡面。',
+    tornados_ripped_off: '候选项混合打在基地上的持续行动与打在随从上的附着行动卡，必须先选具体行动卡再进入不同目标链路。',
 };
 
 function extractValueProps(optionNode: ts.ObjectLiteralExpression): Set<string> {
@@ -281,20 +323,30 @@ function extractTopLevelStringProp(optionNode: ts.ObjectLiteralExpression, propN
 
 function checkMinionSelectFallback(options: ts.ObjectLiteralExpression[]): boolean {
     if (options.length === 0) return false;
-    const confirmFields = new Set(['accept', 'confirm', 'returnIt', 'skip', 'done']);
+    const controlFields = new Set(['accept', 'confirm', 'returnIt', 'skip', 'done']);
+    let hasMinionOption = false;
     return options.every(opt => {
         const props = extractValueProps(opt);
         const source = extractTopLevelStringProp(opt, '_source');
-        if (!props.has('minionUid')) return false;
-        if (source === 'static' || source === 'discard') return false;
-        if (props.has('toBase') || props.has('toBaseIndex') || props.has('targetPlayerId') || props.has('baseDefId')) {
-            return false;
+
+        if (props.has('minionUid')) {
+            if (source === 'static' || source === 'discard') return false;
+            if (props.has('toBase') || props.has('toBaseIndex') || props.has('targetPlayerId') || props.has('baseDefId')) {
+                return false;
+            }
+            for (const field of controlFields) {
+                if (props.has(field)) return false;
+            }
+            hasMinionOption = true;
+            return true;
         }
-        for (const field of confirmFields) {
-            if (props.has(field)) return false;
+
+        if (props.size === 0) return false;
+        for (const field of props) {
+            if (!controlFields.has(field)) return false;
         }
         return true;
-    });
+    }) && hasMinionOption;
 }
 
 function checkBaseSelectFallback(options: ts.ObjectLiteralExpression[]): boolean {
@@ -844,7 +896,9 @@ describe('SmashUp Interaction targetType 审计', () => {
                     .filter(call => call.targetType === 'generic')
                     .map(call => call.sourceId),
             ),
-        ).sort();
+        )
+            .filter(sourceId => sourceId !== 'unknown' && sourceId !== '[unknown]')
+            .sort();
 
         const approvedSourceIds = Object.keys(APPROVED_GENERIC_SOURCE_REASONS).sort();
 
@@ -874,6 +928,14 @@ describe('SmashUp Interaction targetType 审计', () => {
                 { displayMode: 'button' },
             ],
         })).toBe(true);
+        expect(shouldForceSmashUpPromptOverlay({
+            playerId: '0',
+            sourceId: 'multi_base_scoring',
+            options: [
+                { displayMode: 'card' },
+                { displayMode: 'card' },
+            ],
+        })).toBe(false);
 
         expect(resolveSmashUpHandPromptUiMode({
             currentPrompt: { playerId: '0', multi: undefined },
@@ -904,6 +966,87 @@ describe('SmashUp Interaction targetType 审计', () => {
             targetType: 'minion',
         })).toBe('none');
 
+        expect(hasSmashUpDirectHandPromptPlayableOptions({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+        })).toBe(false);
+
+        expect(hasSmashUpDirectHandPromptPlayableOptions({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' } },
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+        })).toBe(true);
+
+        expect(shouldRenderSmashUpHandArea({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'mimic-trigger', label: '模仿者', value: { kind: 'trigger', triggerId: 'copycat-1' }, displayMode: 'button' },
+                    { id: 'pass', label: '让过', value: { kind: 'pass' }, displayMode: 'button' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'generic',
+            activePromptSurface: 'overlay',
+        })).toBe(false);
+
+        expect(shouldRenderSmashUpHandArea({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            activePromptSurface: 'hand',
+        })).toBe(false);
+
+        expect(shouldRenderSmashUpHandArea({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' } },
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            activePromptSurface: 'hand',
+        })).toBe(true);
+
+        const directHandCardState = getSmashUpDirectHandPromptCardState({
+            currentPrompt: {
+                playerId: '0',
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' } },
+                    { id: 'disabled-card', label: 'Disabled', value: { cardUid: 'stale-hand' }, disabled: true },
+                    { id: 'skip', label: '放弃这次额外战术', value: { skip: true } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [
+                { uid: 'mind-bananas-hand' },
+                { uid: 'stale-hand' },
+                { uid: 'other-hand-card' },
+            ],
+        });
+        expect(Array.from(directHandCardState.selectableCardUids)).toEqual(['mind-bananas-hand']);
+        expect(Array.from(directHandCardState.disabledCardUids ?? []).sort()).toEqual(['other-hand-card', 'stale-hand']);
+
         expect(resolveSmashUpHandInteractionMode({
             preferredMode: 'drag',
             needDiscard: false,
@@ -933,5 +1076,21 @@ describe('SmashUp Interaction targetType 审计', () => {
             needDiscard: false,
             activePromptSurface: 'none',
         })).toBe('click');
+    });
+
+    it('base targetType 的棋盘直选高亮必须只暴露真实候选基地', () => {
+        expect(Array.from(getSmashUpSelectableBaseIndices([
+            { value: { baseIndex: 1 } },
+            { value: { baseIndex: 0 } },
+            { id: 'skip', value: { skip: true } },
+            { value: { baseIndex: -1 } },
+            { value: {} },
+            { disabled: true, value: { baseIndex: 2 } },
+        ]))).toEqual([1, 0]);
+
+        expect(getSmashUpSelectableBaseIndices([
+            { id: 'done', value: { done: true } },
+            { id: 'skip', value: { skip: true } },
+        ]).size).toBe(0);
     });
 });

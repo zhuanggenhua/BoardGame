@@ -2,6 +2,7 @@ import { execSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS, toPortArray } from '../scripts/infra/e2e-port-config.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from '../scripts/infra/e2e-mode-config.js';
 import { withWindowsHide } from '../scripts/infra/windows-hide.js';
 import {
     cleanupAllWorkerPortFiles,
@@ -35,7 +36,8 @@ const TMP_DIR = path.join(process.cwd(), '.tmp');
 // 冷启动场景（Vite 依赖重优化 + API 首次初始化）可能超过 4 分钟，默认给到 7 分钟避免误判超时
 const SERVICE_READY_TIMEOUT_MS = Number.parseInt(process.env.PW_SERVICE_READY_TIMEOUT_MS || '420000', 10);
 const PORT_CLEANUP_TIMEOUT_MS = Number.parseInt(process.env.PW_PORT_CLEANUP_TIMEOUT_MS || '20000', 10);
-const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+assertSafeE2EServerMode(process.env);
+const useDevServers = resolveUseDevServers(process.env);
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
 const shouldStartServers = forceStartServers || !useDevServers;
 const shouldReuseExistingServers = process.env.PW_REUSE_EXISTING_SERVERS === 'true';
@@ -169,6 +171,44 @@ async function waitForManagedRuntimeReady(managedRuntimeId: string, scope: strin
     return lastRuntime;
 }
 
+async function waitForManagedRuntimeUrls(
+    runtime: {
+        ports?: {
+            frontend?: number;
+            gameServer?: number;
+            apiServer?: number;
+        };
+    } | null,
+    timeoutMs = 15000,
+): Promise<boolean> {
+    const frontendPort = Number(runtime?.ports?.frontend);
+    const gameServerPort = Number(runtime?.ports?.gameServer);
+    const apiServerPort = Number(runtime?.ports?.apiServer);
+
+    if (!Number.isFinite(frontendPort) || !Number.isFinite(gameServerPort) || !Number.isFinite(apiServerPort)) {
+        return false;
+    }
+
+    const urls = [
+        `http://127.0.0.1:${frontendPort}/__ready`,
+        `http://127.0.0.1:${frontendPort}/@vite/client`,
+        `http://127.0.0.1:${frontendPort}/src/main.tsx`,
+        `http://127.0.0.1:${gameServerPort}/games`,
+        `http://127.0.0.1:${apiServerPort}/health`,
+    ];
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const ready = await Promise.all(urls.map(isUrlReady));
+        if (ready.every(Boolean)) {
+            return true;
+        }
+        await sleep(1000);
+    }
+
+    return false;
+}
+
 async function cleanupSingleWorkerPorts(): Promise<void> {
     const conflicts = findRuntimesByPorts(singleWorkerPorts);
     if (conflicts.length > 0) {
@@ -298,11 +338,31 @@ export default async function globalSetup() {
     }
 
     if (workers <= 1 && shouldSkipBootstrap && managedRuntimeId) {
-        const runtime = await waitForManagedRuntimeReady(
+        let runtime = await waitForManagedRuntimeReady(
             managedRuntimeId,
             getRuntimeScope(),
             Number.parseInt(process.env.PW_MANAGED_RUNTIME_ATTACH_TIMEOUT_MS || '30000', 10),
         );
+        if (!runtime?.health?.ready) {
+            const directReady = await waitForManagedRuntimeUrls(runtime, Number.parseInt(process.env.PW_MANAGED_RUNTIME_ATTACH_TIMEOUT_MS || '30000', 10));
+            if (directReady && runtime) {
+                runtime = {
+                    ...runtime,
+                    health: {
+                        ...(runtime.health ?? {}),
+                        ready: true,
+                        checks: {
+                            ...(runtime.health?.checks ?? {}),
+                            frontendReady: true,
+                            viteClient: true,
+                            mainEntry: true,
+                            gameServer: true,
+                            apiServer: true,
+                        },
+                    },
+                };
+            }
+        }
         if (!runtime?.health?.ready) {
             throw new Error(
                 [

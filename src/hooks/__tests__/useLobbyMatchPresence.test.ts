@@ -245,6 +245,47 @@ describe('matchSocket shared connection', () => {
         matchSocket.disconnect();
     });
 
+    it('joins and releases the emote channel on the shared match socket', async () => {
+        const fakeSocket = {
+            connected: true,
+            active: true,
+            on: vi.fn().mockReturnThis(),
+            off: vi.fn().mockReturnThis(),
+            emit: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+        };
+
+        acquireConnectionMock.mockReturnValue(fakeSocket);
+        getSharedSocketMock.mockReturnValue(fakeSocket);
+
+        const { matchSocket, MATCH_EMOTE_EVENTS } = await import('../../services/matchSocket');
+
+        matchSocket.joinEmotes('m-emote', '0');
+        expect(fakeSocket.emit).toHaveBeenCalledWith(MATCH_EMOTE_EVENTS.JOIN, {
+            matchId: 'm-emote',
+            playerId: '0',
+        });
+
+        const sendResult = matchSocket.sendEmote('dicethrone.moon-elf.speechless-facepalm');
+        expect(sendResult).toEqual({ ok: true });
+        expect(fakeSocket.emit).toHaveBeenCalledWith(
+            MATCH_EMOTE_EVENTS.SEND,
+            {
+                emoteId: 'dicethrone.moon-elf.speechless-facepalm',
+                matchId: 'm-emote',
+                playerId: '0',
+            },
+            expect.any(Function),
+        );
+
+        matchSocket.leaveEmotes();
+        expect(fakeSocket.emit).toHaveBeenCalledWith(MATCH_EMOTE_EVENTS.LEAVE);
+        expect(releaseConnectionMock).toHaveBeenCalledWith('match');
+
+        matchSocket.disconnect();
+    });
+
     it('unbinds handlers after idle release and does not duplicate shared socket events on rejoin', async () => {
         const handlers = new Map<string, Set<(...args: unknown[]) => void>>();
         const fakeSocket = {
@@ -299,6 +340,33 @@ describe('matchSocket shared connection', () => {
         expect(stateSpy).toHaveBeenLastCalledWith(nextState);
 
         unsubscribe();
+        matchSocket.disconnect();
+    });
+
+    it('includes auto-accepted AI seats when joining rematch channel', async () => {
+        const fakeSocket = {
+            connected: true,
+            active: true,
+            on: vi.fn().mockReturnThis(),
+            off: vi.fn().mockReturnThis(),
+            emit: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+        };
+
+        acquireConnectionMock.mockReturnValue(fakeSocket);
+        getSharedSocketMock.mockReturnValue(fakeSocket);
+
+        const { matchSocket, REMATCH_EVENTS } = await import('../../services/matchSocket');
+
+        matchSocket.joinMatch('m-ai', '0', { autoAcceptedPlayerIds: ['1', '1', ' 2 '] });
+
+        expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
+            matchId: 'm-ai',
+            playerId: '0',
+            autoAcceptedPlayerIds: ['1', '2'],
+        });
+
         matchSocket.disconnect();
     });
 });

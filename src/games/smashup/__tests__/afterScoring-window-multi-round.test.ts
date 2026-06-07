@@ -79,11 +79,7 @@ describe('afterScoring 响应窗口 - 多轮响应', () => {
                 { uid: 'c20', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '1' },
                 { uid: 'c21', defId: 'pirate_shanghai', type: 'action', owner: '1' },
             ];
-            
-            console.log('[TEST SETUP] P0 hand:', core.players['0'].hand.map(c => c.defId));
-            console.log('[TEST SETUP] P1 hand:', core.players['1'].hand.map(c => c.defId));
-            console.log('[TEST SETUP] Base 1 minions:', core.bases[1].minions.map(m => m.defId));
-            
+
             return { sys, core };
         }
         
@@ -127,14 +123,10 @@ describe('afterScoring 响应窗口 - 多轮响应', () => {
         });
         
         // 验证：检查响应窗口状态
-        const finalStep = result.steps[result.steps.length - 1];
-        
         // 断言：响应窗口应该已关闭
         // 注意：GameTestRunner 的最后一步可能没有 after 状态（如果命令没有返回新状态）
         // 我们检查倒数第二步的状态
-        const lastStateStep = result.steps.reverse().find(s => s.after);
+        const lastStateStep = [...result.steps].reverse().find(s => s.after);
         expect(lastStateStep?.after?.sys?.responseWindow?.current).toBeUndefined();
-        
-        console.log('测试完成：afterScoring 窗口支持多轮响应');
     });
 });

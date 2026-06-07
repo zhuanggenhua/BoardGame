@@ -16,7 +16,7 @@ import {
     findMinionOnBases,
     grantExtraAction,
     getMinionPower,
-    peekDeckTop,
+    inspectDeck,
     revealDeckTop,
     revealHand,
 } from '../domain/abilityHelpers';
@@ -36,6 +36,7 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { actionLikeNeedsPlayBase } from '../domain/utils';
 import { execute } from '../domain/reducer';
 import { reduce } from '../domain/reduce';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
     createEffectProgram,
     createPromptProgram,
@@ -43,10 +44,16 @@ import {
 } from '../domain/abilityRuntime';
 
 type PlayerChoice = { targetPlayerId: PlayerId };
-type HandChoice = { cardUid: string; defId: string };
+type HandChoice = { cardUid: string; defId: string; ownerId: PlayerId };
 type MinionChoice = { minionUid: string; baseIndex: number };
 type CastRunesChoice = { topCardUid: string; cardUid?: string; defId?: string };
-type RaidingPartyChoice = { cardUid: string; ownerId: PlayerId; defId: string; type: 'action' | 'minion' } | { skip: true };
+type RaidingPartyChoice = {
+    cardUid: string;
+    sourcePlayerId: PlayerId;
+    ownerId: PlayerId;
+    defId: string;
+    type: 'action' | 'minion';
+} | { skip: true };
 type VikingPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
@@ -58,11 +65,11 @@ type VikingBuffPromptContext = VikingPromptContext & {
 };
 type VikingCastRunesOrderPromptContext = VikingPromptContext & {
     targetPlayerId: PlayerId;
-    revealedCards: Array<{ uid: string; defId: string }>;
+    revealedCards: Array<{ uid: string; defId: string; owner: PlayerId }>;
 };
 type VikingRaidingPartyChoicePromptContext = VikingPromptContext & {
     targetPlayerId: PlayerId;
-    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion' }>;
+    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion'; owner: PlayerId }>;
 };
 type VikingRaidingPartyTargetPromptContext = VikingPromptContext & {
     selected: Exclude<RaidingPartyChoice, { skip: true }>;
@@ -72,6 +79,7 @@ type VikingBaseLonghouseMinionPromptContext = VikingPromptContext & {
     baseIndex: number;
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
 };
 type VikingBerserkMinionPromptContext = VikingPromptContext & HandChoice;
 
@@ -100,7 +108,7 @@ function getCurrentDeckTopSnapshotCards<T extends { uid: string; defId: string }
 function buildCastTheRunesOrderOptions(
     state: SmashUpCore,
     targetPlayerId: PlayerId,
-    revealedCards: Array<{ uid: string; defId: string }>,
+    revealedCards: Array<{ uid: string; defId: string; owner: PlayerId }>,
 ) {
     return getCurrentDeckTopSnapshotCards(state, targetPlayerId, revealedCards).map((card, index) => ({
         id: `card-${index}`,
@@ -114,14 +122,20 @@ function buildCastTheRunesOrderOptions(
 function buildRaidingPartyChoiceOptions(
     state: SmashUpCore,
     targetPlayerId: PlayerId,
-    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion' }>,
+    revealedCards: Array<{ uid: string; defId: string; type: 'action' | 'minion'; owner: PlayerId }>,
 ) {
     const eligible = getCurrentDeckTopSnapshotCards(state, targetPlayerId, revealedCards)
         .filter((card) => isRaidingPartyPlayable(card as CardInstance))
         .map((card, index) => ({
             id: `play-${index}`,
             label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid, ownerId: targetPlayerId, defId: card.defId, type: card.type },
+            value: {
+                cardUid: card.uid,
+                sourcePlayerId: targetPlayerId,
+                ownerId: card.owner,
+                defId: card.defId,
+                type: card.type,
+            },
             _source: 'static' as const,
             displayMode: 'card' as const,
         }));
@@ -176,9 +190,11 @@ export function registerVikingsAbilities(): void {
 
     registerTrigger('vikings_viking_funeral', 'onMinionDestroyed', vikingsVikingFuneralTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('vikings_viking_funeral', 'onMinionDiscardedFromBase', vikingsVikingFuneralTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
 
     registerBaseAbility('base_drakkar', 'onMinionPlayed', vikingsBaseDrakkarOnMinionPlayed, {
@@ -345,12 +361,12 @@ function vikingsCombatTrainingOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 function vikingsVikingFuneralTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    if (!ctx.triggerMinionUid || !ctx.triggerMinionDefId || ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) {
+    if (!ctx.triggerMinionUid || !ctx.triggerMinionDefId || !ctx.triggerMinion || !ctx.sourceCardUid || !ctx.sourceControllerId) {
         return [];
     }
-    const base = ctx.state.bases[ctx.baseIndex];
-    const minion = base?.minions.find(entry => entry.uid === ctx.triggerMinionUid);
-    const funeral = minion?.attachedActions.find(action => action.uid === ctx.sourceCardUid && action.defId === 'vikings_viking_funeral');
+    const funeral = ctx.triggerMinion.attachedActions.find(
+        action => action.uid === ctx.sourceCardUid && action.defId === 'vikings_viking_funeral',
+    );
     if (!funeral) return [];
 
     const events: SmashUpEvent[] = [{
@@ -359,13 +375,13 @@ function vikingsVikingFuneralTrigger(ctx: TriggerContext): SmashUpEvent[] {
         timestamp: ctx.now,
     } as VpAwardedEvent];
 
-    if (minion.owner === ctx.sourceControllerId) {
+    if (ctx.triggerMinion.controller === ctx.sourceControllerId) {
         events.push({
             type: SU_EVENTS.CARD_REMOVED_FROM_GAME,
             payload: {
-                playerId: ctx.sourceControllerId,
-                cardUid: minion.uid,
-                defId: minion.defId,
+                playerId: ctx.triggerMinion.owner,
+                cardUid: ctx.triggerMinion.uid,
+                defId: ctx.triggerMinion.defId,
                 reason: 'vikings_viking_funeral',
             },
             timestamp: ctx.now,
@@ -408,13 +424,35 @@ function resolveRevealAndStealTopCard(params: {
     random: RandomFn;
     timestamp: number;
 }): AbilityResult {
-    const peek = peekDeckTop(params.state.core, params.random, params.targetPlayerId, 'all', params.reason, params.timestamp);
-    if (!peek) return { events: [] };
-    const def = getCardDef(peek.card.defId) as { power?: number } | undefined;
-    const eligible = peek.card.type === 'action' || (peek.card.type === 'minion' && (def?.power ?? 99) <= 3);
-    const events: SmashUpEvent[] = [...peek.events];
+    const deckInfo = prepareTopDeckForVikingPeek(params.state.core, params.targetPlayerId, params.random, params.timestamp);
+    if (!deckInfo.card) return { events: deckInfo.events };
+    const def = getCardDef(deckInfo.card.defId) as { power?: number } | undefined;
+    const eligible = deckInfo.card.type === 'action' || (deckInfo.card.type === 'minion' && (def?.power ?? 99) <= 3);
+    const events: SmashUpEvent[] = [
+        ...deckInfo.events,
+        inspectDeck(params.targetPlayerId, params.targetPlayerId, 1, params.reason, params.timestamp),
+        revealDeckTop(
+            params.targetPlayerId,
+            'all',
+            [{ uid: deckInfo.card.uid, defId: deckInfo.card.defId }],
+            1,
+            params.reason,
+            params.timestamp,
+            params.targetPlayerId,
+        ),
+    ];
     if (eligible) {
-        events.push(transferCard(peek.card.uid, peek.card.defId, params.targetPlayerId, params.actingPlayerId, params.reason, params.timestamp));
+        events.push(
+            transferCard(
+                deckInfo.card.uid,
+                deckInfo.card.defId,
+                params.targetPlayerId,
+                params.actingPlayerId,
+                params.reason,
+                params.timestamp,
+                deckInfo.card.owner,
+            ),
+        );
     }
     return { events };
 }
@@ -431,10 +469,10 @@ const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext,
     onResolve: ({ context, playerId, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as HandChoice | undefined;
-        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
         return {
             events: [
-                toDeckTop(playerId, selected.cardUid, selected.defId, 'vikings_huscarl', timestamp),
+                toDeckTop(playerId, selected.cardUid, selected.defId, 'vikings_huscarl', timestamp, selected.ownerId),
                 addTempPower(context.minionUid, context.baseIndex, 2, 'vikings_huscarl', timestamp),
             ],
         };
@@ -491,11 +529,11 @@ const vikingsRaiderPromptProgram = createPromptProgram<VikingBuffPromptContext, 
     },
     onResolve: ({ context, playerId, value, timestamp }) => {
         const selections = (Array.isArray(value) ? value : [value]) as HandChoice[];
-        const valid = selections.filter(selection => selection?.cardUid && selection?.defId).slice(0, 3);
+        const valid = selections.filter(selection => selection?.cardUid && selection?.defId && selection?.ownerId).slice(0, 3);
         if (valid.length === 0) return { events: [] };
         const events: SmashUpEvent[] = [];
         for (const selection of [...valid].reverse()) {
-            events.push(toDeckTop(playerId, selection.cardUid, selection.defId, 'vikings_raider', timestamp));
+            events.push(toDeckTop(playerId, selection.cardUid, selection.defId, 'vikings_raider', timestamp, selection.ownerId));
         }
         events.push(addTempPower(context.minionUid, context.baseIndex, valid.length, 'vikings_raider', timestamp));
         return { events };
@@ -512,7 +550,7 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
                 .map((card, index) => ({
                     id: `discard-${targetPlayerId}-${index}`,
                     label: `${getCardDef(card.defId)?.name ?? card.defId} (${targetPlayerId})`,
-                    value: { cardUid: card.uid, ownerId: targetPlayerId, defId: card.defId },
+                    value: { cardUid: card.uid, sourcePlayerId: targetPlayerId, ownerId: card.owner, defId: card.defId },
                     _source: 'discard' as const,
                     displayMode: 'card' as const,
                 }));
@@ -527,10 +565,10 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
     },
     onResolve: ({ context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { cardUid?: string; ownerId?: PlayerId; defId?: string } | undefined;
-        if (!selected?.cardUid || !selected.ownerId || !selected.defId) return { events: [] };
+        const selected = value as { cardUid?: string; sourcePlayerId?: PlayerId; ownerId?: PlayerId; defId?: string } | undefined;
+        if (!selected?.cardUid || !selected.sourcePlayerId || !selected.ownerId || !selected.defId) return { events: [] };
         return {
-            events: [transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_valkyrie', timestamp)],
+            events: [transferCard(selected.cardUid, selected.defId, selected.sourcePlayerId, context.playerId, 'vikings_valkyrie', timestamp, selected.ownerId)],
         };
     },
 });
@@ -555,7 +593,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
         if (!selected?.cardUid || !selected.defId) return { events: [] };
         if (selected.kind === 'buried' && selected.trueOwnerId) {
             return {
-                events: [transferCard(selected.cardUid, selected.defId, selected.trueOwnerId, context.playerId, 'vikings_ransack', timestamp)],
+                events: [transferCard(selected.cardUid, selected.defId, selected.trueOwnerId, context.playerId, 'vikings_ransack', timestamp, selected.trueOwnerId)],
             };
         }
         if (selected.ownerId) {
@@ -566,7 +604,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
                         payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'vikings_ransack' },
                         timestamp,
                     } as OngoingDetachedEvent,
-                    transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_ransack', timestamp),
+                    transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_ransack', timestamp, selected.ownerId),
                 ],
             };
         }
@@ -593,7 +631,7 @@ const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, Sma
         if (!target || target.hand.length === 0) return { events: [] };
         const card = random.shuffle([...target.hand])[0];
         return card
-            ? { events: [transferCard(card.uid, card.defId, selected.targetPlayerId, context.playerId, 'vikings_pillage', timestamp)] }
+            ? { events: [transferCard(card.uid, card.defId, selected.targetPlayerId, context.playerId, 'vikings_pillage', timestamp, card.owner)] }
             : { events: [] };
     },
 });
@@ -621,15 +659,35 @@ const vikingsCastTheRunesOrderPromptProgram = createPromptProgram<VikingCastRune
         if (!topCard) return { events: [] };
         const rest = currentRevealed.filter(card => card.uid !== selected.topCardUid);
         const trackedUidSet = new Set(currentRevealed.map(card => card.uid));
-        const liveRemainingDeckUids = (state.core.players[context.targetPlayerId]?.deck ?? [])
-            .filter(card => !trackedUidSet.has(card.uid))
-            .map(card => card.uid);
+        const liveRemainingDeck = (state.core.players[context.targetPlayerId]?.deck ?? [])
+            .filter(card => !trackedUidSet.has(card.uid));
+        const orderedCards = [topCard, ...rest];
+        const sourceOwnedOrdered = orderedCards.filter(card => card.owner === context.targetPlayerId || !state.core.players[card.owner]);
+        const borrowedByOwner = new Map<PlayerId, typeof orderedCards>();
+        for (const card of orderedCards) {
+            if (card.owner === context.targetPlayerId || !state.core.players[card.owner]) continue;
+            borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+        }
         return {
-            events: [{
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId: context.targetPlayerId, deckUids: [topCard.uid, ...rest.map(card => card.uid), ...liveRemainingDeckUids] },
-                timestamp,
-            } as DeckReorderedEvent],
+            events: [
+                ...Array.from(borrowedByOwner.entries()).map(([ownerId, cards]) => ({
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: ownerId,
+                        deckUids: [...cards.map(card => card.uid), ...(state.core.players[ownerId]?.deck ?? []).map(card => card.uid)],
+                        sourcePlayerId: context.targetPlayerId,
+                    },
+                    timestamp,
+                }) as DeckReorderedEvent),
+                {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId: context.targetPlayerId,
+                        deckUids: [...sourceOwnedOrdered.map(card => card.uid), ...liveRemainingDeck.map(card => card.uid)],
+                    },
+                    timestamp,
+                } as DeckReorderedEvent,
+            ],
         };
     },
 });
@@ -664,7 +722,7 @@ const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptC
         );
         const deckInfo = prepareTopDeckCards(state.core, selected.targetPlayerId, 2, random, timestamp);
         const events: SmashUpEvent[] = [handReveal, ...deckInfo.events, grantExtraAction(context.playerId, 'vikings_cast_the_runes', timestamp)];
-        const revealedCards = deckInfo.cards.map(card => ({ uid: card.uid, defId: card.defId }));
+        const revealedCards = deckInfo.cards.map(card => ({ uid: card.uid, defId: card.defId, owner: card.owner }));
         if (revealedCards.length > 0) {
             events.push(revealDeckTop(selected.targetPlayerId, 'all', revealedCards, revealedCards.length, 'vikings_cast_the_runes', timestamp));
         }
@@ -824,7 +882,12 @@ const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptC
         if (!selected?.targetPlayerId) return { events: [] };
         const deckInfo = prepareTopDeckCards(state.core, selected.targetPlayerId, 3, random, timestamp);
         if (deckInfo.cards.length === 0) return { events: [] };
-        const revealedCards = deckInfo.cards.map(card => ({ uid: card.uid, defId: card.defId, type: card.type as 'action' | 'minion' }));
+        const revealedCards = deckInfo.cards.map(card => ({
+            uid: card.uid,
+            defId: card.defId,
+            type: card.type as 'action' | 'minion',
+            owner: card.owner,
+        }));
         const events: SmashUpEvent[] = [
             ...deckInfo.events,
             revealDeckTop(selected.targetPlayerId, 'all', revealedCards.map(card => ({ uid: card.uid, defId: card.defId })), revealedCards.length, 'vikings_raiding_party', timestamp),
@@ -862,7 +925,7 @@ const vikingsBerserkMinionPromptProgram = createPromptProgram<VikingBerserkMinio
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
             events: [
-                toDeckTop(playerId, context.cardUid, context.defId, 'vikings_berserk', timestamp),
+                toDeckTop(playerId, context.cardUid, context.defId, 'vikings_berserk', timestamp, context.ownerId),
                 addTempPower(selected.minionUid, selected.baseIndex, 4, 'vikings_berserk', timestamp),
             ],
         };
@@ -880,13 +943,14 @@ const vikingsBerserkCardPromptProgram = createPromptProgram<VikingPromptContext,
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as HandChoice | undefined;
-        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
         if (getOwnMinions(state.core, context.playerId).length === 0) return { events: [] };
         return {
             events: [],
             context: createVikingPromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selected.ownerId,
             }),
             nextProgram: vikingsBerserkMinionPromptProgram,
         };
@@ -953,7 +1017,7 @@ const vikingsBaseLonghouseMinionPromptProgram = createPromptProgram<VikingBaseLo
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
             events: [
-                toDeckTop(playerId, context.cardUid, context.defId, 'base_longhouse', timestamp),
+                toDeckTop(playerId, context.cardUid, context.defId, 'base_longhouse', timestamp, context.ownerId),
                 addTempPower(selected.minionUid, selected.baseIndex, 2, 'base_longhouse', timestamp),
             ],
         };
@@ -972,7 +1036,7 @@ const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptCo
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as HandChoice | undefined;
-        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
         const base = state.core.bases[context.baseIndex];
         const minions = base?.minions.filter(minion => minion.controller === context.playerId) ?? [];
         if (minions.length === 0) return { events: [] };
@@ -982,6 +1046,7 @@ const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptCo
                 baseIndex: context.baseIndex,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selected.ownerId,
             }),
             nextProgram: vikingsBaseLonghouseMinionPromptProgram,
         };
@@ -1006,7 +1071,7 @@ function buildHandCardOptions(cards: CardInstance[]) {
     return cards.map((card, index) => ({
         id: `hand-${index}`,
         label: getCardDef(card.defId)?.name ?? card.defId,
-        value: { cardUid: card.uid, defId: card.defId },
+        value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
         _source: 'hand' as const,
         displayMode: 'card' as const,
     }));
@@ -1091,18 +1156,48 @@ function getTopDeckCardWithReshuffle(
     random: RandomFn,
     now: number,
 ): { events: SmashUpEvent[]; card?: CardInstance } {
+    return prepareTopDeckForVikingPeek(state, playerId, random, now);
+}
+
+function prepareTopDeckForVikingPeek(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    random: RandomFn,
+    now: number,
+): { events: SmashUpEvent[]; card?: CardInstance; deckSnapshot: CardInstance[] } {
     const player = state.players[playerId];
-    if (!player) return { events: [] };
-    if (player.deck.length > 0) return { events: [], card: player.deck[0] };
-    if (player.discard.length === 0) return { events: [] };
+    if (!player) return { events: [], deckSnapshot: [] };
+    if (player.deck.length > 0) return { events: [], card: player.deck[0], deckSnapshot: [...player.deck] };
+    if (player.discard.length === 0) return { events: [], deckSnapshot: [] };
+
     const shuffled = random.shuffle([...player.discard]);
-    return {
-        events: [{
+    const sourceDeckCards = shuffled.filter(card => card.owner === playerId || !state.players[card.owner]);
+    const borrowedByOwner = new Map<PlayerId, CardInstance[]>();
+    for (const card of shuffled) {
+        if (card.owner === playerId || !state.players[card.owner]) continue;
+        borrowedByOwner.set(card.owner, [...(borrowedByOwner.get(card.owner) ?? []), card]);
+    }
+    const events: SmashUpEvent[] = Array.from(borrowedByOwner.entries()).map(([ownerId, cards]) => ({
+        type: SU_EVENTS.DECK_REORDERED,
+        payload: {
+            playerId: ownerId,
+            deckUids: [...(state.players[ownerId]?.deck ?? []).map(card => card.uid), ...cards.map(card => card.uid)],
+            sourcePlayerId: playerId,
+        },
+        timestamp: now,
+    }) as DeckReorderedEvent);
+    if (sourceDeckCards.length > 0) {
+        events.push({
             type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId, deckUids: shuffled.map(card => card.uid) },
+            payload: { playerId, deckUids: sourceDeckCards.map(card => card.uid) },
             timestamp: now,
-        } as DeckReorderedEvent],
-        card: shuffled[0],
+        } as DeckReorderedEvent);
+    }
+
+    return {
+        events,
+        card: sourceDeckCards[0],
+        deckSnapshot: sourceDeckCards,
     };
 }
 
@@ -1118,12 +1213,9 @@ function prepareTopDeckCards(
     let deck = [...player.deck];
     const events: SmashUpEvent[] = [];
     if (deck.length === 0 && player.discard.length > 0) {
-        deck = random.shuffle([...player.discard]);
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId, deckUids: deck.map(card => card.uid) },
-            timestamp: now,
-        } as DeckReorderedEvent);
+        const prepared = prepareTopDeckForVikingPeek(state, playerId, random, now);
+        deck = prepared.deckSnapshot;
+        events.push(...prepared.events);
     }
     const cards = deck.slice(0, count);
     return {
@@ -1160,7 +1252,15 @@ function playRaidingPartyCard(
     timestamp: number,
     prefixEvents: SmashUpEvent[],
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const transferEvent = transferCard(selected.cardUid, selected.defId, selected.ownerId, playerId, 'vikings_raiding_party', timestamp);
+    const transferEvent = transferCard(
+        selected.cardUid,
+        selected.defId,
+        selected.sourcePlayerId,
+        playerId,
+        'vikings_raiding_party',
+        timestamp,
+        selected.ownerId,
+    );
     const simulatedCore = reduce(state.core, transferEvent);
     const simulatedState: MatchState<SmashUpCore> = {
         ...state,
@@ -1218,12 +1318,19 @@ function transferCard(
     toPlayerId: PlayerId,
     reason: string,
     timestamp: number,
+    ownerId?: PlayerId,
 ): CardTransferredEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: { cardUid, defId, fromPlayerId, toPlayerId, reason },
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: cardUid,
+            defId,
+            ownerId: ownerId ?? fromPlayerId,
+        }),
+        fromPlayerId,
+        toPlayerId,
+        reason,
         timestamp,
-    };
+    });
 }
 
 function toDeckTop(
@@ -1232,10 +1339,17 @@ function toDeckTop(
     defId: string,
     reason: string,
     timestamp: number,
+    ownerId = playerId,
 ): CardToDeckTopEvent {
     return {
         type: SU_EVENTS.CARD_TO_DECK_TOP,
-        payload: { cardUid, defId, ownerId: playerId, reason },
+        payload: {
+            cardUid,
+            defId,
+            ownerId,
+            ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            reason,
+        },
         timestamp,
     };
 }

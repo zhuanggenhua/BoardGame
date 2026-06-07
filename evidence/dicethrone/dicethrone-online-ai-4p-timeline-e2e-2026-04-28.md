@@ -1,4 +1,6 @@
-# DiceThrone 在线 AI 四人流程时间线 E2E（2026-04-28）
+# DiceThrone 在线 AI 四人流程时间线历史 E2E（2026-04-28）
+
+> 2026-06-06 当前有效口径：本文只保留四人在线 AI 时间线这条历史 E2E 证据，不代表 DiceThrone 全体四人局、在线 AI、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时“四人局不会在首次主流程 / targetingRoll 前直接卡死”这一条主链被专项验证和补强过，不能外推成 DiceThrone 当前总体收口。
 
 ## 目标
 - 将原本双人在线 AI 流程时间线用例改为四人（1 人类 + 3 AI）房间。
@@ -72,3 +74,8 @@
   - `secondaryPatchApplyFailedCount = 0`
 - 当前这条 E2E 的收口点仍是“第二次可见 `roll-dice` 已提交或已进入 `defensiveRoll`”。本次最新通过里最终快照停在 `targetingRoll`，说明它已经证明“四人局不会在 targetingRoll 前直接卡死”，但**还没有把同一次 E2E 的门禁推进到 targetingRoll 的 confirm/advance 全部完成**。
 - 因此，目前最稳妥的结论是：**原先高概率卡死的四人 targetingRoll 主问题已经复现并修掉，且回归压力下未再出现 transport patch 失败；如果要把收口再抬高一档，下一步应把 E2E 门禁继续推进到 `defensiveRoll` 或 targetingRoll 的 `confirm-roll / advance-phase` 也完成。**
+
+## 当前阅读说明
+
+- 本文只覆盖四人在线 AI 时间线这一条历史主链，不覆盖更广范围 DiceThrone 在线 AI / targetingRoll / watchdog 总体完成态。
+- 文中已经明确保留了“门禁未抬到 confirm/advance 全完成”的历史残余，因此更不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

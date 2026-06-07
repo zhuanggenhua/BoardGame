@@ -168,6 +168,69 @@ describe('Feedback Module (e2e)', () => {
         expect(res.body.userId).toBeUndefined();
     });
 
+    it('运行时守卫自动反馈允许保留受控 source 与 autoReportKind', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '[auto][smashup-runtime-guard] 发现空数组合同破坏',
+                source: 'client-runtime-guard',
+                autoReportKind: 'smashup-runtime-state-normalized',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'smashup',
+                clientContext: {
+                    gameId: 'smashup',
+                    matchId: 'match-1',
+                    playerId: '0',
+                },
+                errorContext: {
+                    name: 'SmashUpRuntimeStateNormalized',
+                    source: 'smashup.runtime_state_guard',
+                },
+            })
+            .expect(201);
+
+        expect(res.body.reporterType).toBe('system');
+        expect(res.body.source).toBe('client-runtime-guard');
+        expect(res.body.autoReportKind).toBe('smashup-runtime-state-normalized');
+        expect(res.body.clientContext?.matchId).toBe('match-1');
+    });
+
+    it('全局客户端错误自动反馈来源也允许透传', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '[auto][window.error] 页面运行时异常',
+                source: 'client-window-error',
+                autoReportKind: 'window-error',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'client',
+                errorContext: {
+                    name: 'TypeError',
+                    message: 'window boom',
+                    source: 'window.error',
+                },
+            })
+            .expect(201);
+
+        expect(res.body.reporterType).toBe('system');
+        expect(res.body.source).toBe('client-window-error');
+        expect(res.body.autoReportKind).toBe('window-error');
+    });
+
+    it('普通用户自定义未知 source 会被收敛回反馈弹窗来源', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .send({
+                content: '伪造来源测试',
+                source: 'evil-bot',
+            })
+            .expect(201);
+
+        expect(res.body.source).toBe('feedback-modal');
+    });
+
     it('未登录可以匿名读取反馈列表（只读）', async () => {
         await request(app.getHttpServer())
             .post('/feedback')
@@ -186,6 +249,133 @@ describe('Feedback Module (e2e)', () => {
         expect(listRes.body.items).toHaveLength(1);
         expect(listRes.body.items[0].content).toBe('匿名可读列表样本');
         expect(listRes.body.items[0].canManage).toBe(false);
+    });
+
+    it('登录用户提交反馈会记录奖励积分并同步到用户资料', async () => {
+        const { token, userId } = await registerUser({
+            username: 'reward-player',
+            email: 'reward-player@example.com',
+            code: '345678',
+        });
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                content: '登录反馈奖励测试',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        expect(createRes.body.rewardPoints).toBe(1);
+
+        const storedUser = await userModel.findById(userId).lean();
+        expect(storedUser?.feedbackPoints).toBe(1);
+
+        const meRes = await request(app.getHttpServer())
+            .get('/auth/me')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+
+        expect(meRes.body.user.feedbackPoints).toBe(1);
+    });
+
+    it('mineOnly=true 只返回当前登录用户自己的反馈', async () => {
+        const { userToken: firstUserToken } = await seedUsers();
+        const { token: secondUserToken } = await registerUser({
+            username: 'other-feedback-owner',
+            email: 'other-feedback-owner@example.com',
+            code: '778899',
+        });
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .send({
+                content: '我的反馈 A',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${secondUserToken}`)
+            .send({
+                content: '别人的反馈 B',
+                type: 'suggestion',
+                severity: 'low',
+                gameName: 'tictactoe',
+            })
+            .expect(201);
+
+        const ownListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?mineOnly=true&limit=20')
+            .set('Authorization', `Bearer ${firstUserToken}`)
+            .expect(200);
+
+        expect(ownListRes.body.items).toHaveLength(1);
+        expect(ownListRes.body.items[0].content).toBe('我的反馈 A');
+    });
+
+    it('普通用户反馈关闭时不填写关闭理由会返回 400', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要关闭理由的普通反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const closeRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'closed' })
+            .expect(400);
+
+        expect(String(closeRes.body.error ?? closeRes.body.message ?? '')).toContain('关闭理由不能为空');
+    });
+
+    it('系统反馈关闭时允许不填写关闭理由', async () => {
+        const { adminToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                content: '[system][online-ai-watchdog] 自动反馈关闭无需理由',
+                source: 'online-ai-watchdog',
+                type: 'bug',
+                severity: 'high',
+                gameName: 'dicethrone',
+                clientContext: {
+                    gameId: 'dicethrone',
+                    route: 'server-watchdog',
+                    mode: 'online',
+                },
+                errorContext: {
+                    source: 'online-ai-watchdog',
+                    name: 'auto-close-no-reason',
+                    message: 'auto-close-no-reason',
+                },
+            })
+            .expect(201);
+
+        const closeRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ status: 'closed' })
+            .expect(200);
+
+        expect(closeRes.body.status).toBe('closed');
     });
 
     it('internal feedback 需要 token 且可创建系统反馈', async () => {
@@ -1730,6 +1920,52 @@ describe('Feedback Module (e2e)', () => {
         const legacyItem = listRes.body.items.find((item: { content: string }) => item.content.includes('legacy'));
         expect(legacyItem?.reporterType).toBe('system');
         expect(legacyItem?.source).toBe('online-ai-watchdog');
+    });
+
+    it('admin 列表筛选 user 时应排除历史错标的公开自动反馈，并可按 system/source 查到', async () => {
+        const { adminToken, userToken } = await seedUsers();
+
+        await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '正常用户反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+                source: 'feedback-modal',
+            })
+            .expect(201);
+
+        await feedbackModel.collection.insertOne({
+            content: '[auto][window.error] 历史错标样本',
+            type: 'bug',
+            severity: 'high',
+            reporterType: 'user',
+            source: 'client-window-error',
+            autoReportKind: 'window-error',
+            gameName: 'client',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const userListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?reporterType=user&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(userListRes.body.items).toHaveLength(1);
+        expect(userListRes.body.items[0].content).toBe('正常用户反馈');
+
+        const systemListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?reporterType=system&source=client-window-error&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(systemListRes.body.items).toHaveLength(1);
+        expect(systemListRes.body.items[0].content).toBe('[auto][window.error] 历史错标样本');
+        expect(systemListRes.body.items[0].reporterType).toBe('system');
+        expect(systemListRes.body.items[0].source).toBe('client-window-error');
     });
 
     it('admin 列表支持按时间正序排序', async () => {

@@ -8,8 +8,13 @@
 import type { i18n as I18nInstance } from 'i18next';
 
 export const UI_HINT_ONLY_ERRORS = new Set(['请先完成当前选择']);
+const RAW_ERROR_CODES = new Set(['pipeline_error', 'command_failed']);
 
 export function resolveCommandError(i18n: I18nInstance, error: string, gameId?: string): string {
+    if (RAW_ERROR_CODES.has(error)) {
+        return error;
+    }
+
     const key = `error.${error}`;
 
     // 1. 优先查游戏专属 namespace

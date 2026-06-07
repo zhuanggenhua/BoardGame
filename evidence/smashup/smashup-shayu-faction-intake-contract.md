@@ -25,9 +25,16 @@
 
 | 来源 | 适用字段 | 当前证据 |
 | --- | --- | --- |
-| 本地 shayu 图片 | 中文图面、atlas 几何、slot 顺序、base 数值 | `temp/smashup-shayu-intake/cards-grid-8x5.jpg`、`temp/smashup-shayu-intake/base-grid-3x4.jpg` |
-| 项目 Wiki 爬虫 | 英文 canonical 名称、英文卡牌效果文本、count/power 对照 | `wiki-cards-with-descriptions.json`、`WIKI-CARDS-DETAILED-REPORT.md` |
+| 本地 shayu 图片 | atlas 几何、slot 顺序、中文图面、卡牌/基地名称、卡牌/基地正文、base 数值 | `temp/smashup-shayu-intake/cards-grid-8x5.jpg`、`temp/smashup-shayu-intake/base-grid-3x4.jpg`、`temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` |
+| 项目 Wiki 爬虫 | 英文 canonical 名称对照、图片看不清字段的辅助对照、count/power 对照 | `wiki-cards-with-descriptions.json`、`WIKI-CARDS-DETAILED-REPORT.md` |
 | 既有 Smash Up 数据结构 | defId 命名、previewRef/atlas 注册模式 | `src/games/smashup/data/**`、`src/games/smashup/domain/atlasCatalog.ts` |
+
+## 旧口径失效说明（2026-06-04 回写）
+
+- 这份 contract 旧版把“项目 Wiki 爬虫”写成了“英文卡牌效果文本”来源。
+- `赫拉的恩惠（mythic_greeks_favor_of_hera）` 后续排障证明这条口径错误：卡面正文是“在至多 2 名仆兵上放置 1 个战力 +1 指示物”，没有“你的”限制。
+- 旧口径导致当时把 Wiki/既有实现误当成英文正文主来源，进而把错误作用对象一路带进 `en`/`zh-CN` locale、静态理解与后续审计。
+- 自 2026-06-04 起，本批次 contract 统一改为：只要卡面可读，卡牌/基地正文一律以单卡/单基地主裁图为主真相源；Wiki 仅作对照。
 
 ## 派系列表
 

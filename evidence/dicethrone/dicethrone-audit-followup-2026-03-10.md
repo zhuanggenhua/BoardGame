@@ -1,4 +1,6 @@
-# DiceThrone 审计补查记录（2026-03-10）
+# DiceThrone 历史补查记录（2026-03-10）
+
+> 2026-06-06 当前有效口径：本文是 2026-03-10 那一轮 DiceThrone POD 混入改动补查的历史记录，不代表当前 DiceThrone 整体、任一单英雄，或四位新英雄整批已经审计完成。它现在只能证明当时又发现并修补了若干 shared seam / metadata / 特写链路问题，并记录了继续补查的范围；不能外推成当前总补审已经收口。
 
 ## 背景
 
@@ -404,3 +406,8 @@ npx vitest run src/games/dicethrone/__tests__/viewMode.test.ts src/games/dicethr
 
 - 继续补审旧文档里仍挂着的 `pyromancer` / `shadow_thief abilities` / 其余 DiceThrone UI 待审项
 - 继续按“明细文件逐个关闭”推进，不能再按总表 `100%` 判断完成
+
+## 当前阅读说明
+
+- 本文是历史补查轨迹文档，不是 DiceThrone 当前总审计出口。
+- 文中列出的“已验证/未发现新回滚”都只对 2026-03-10 当轮补查范围成立，不能替代当前新英雄默认全面审计留档所需的对象级矩阵与批次级 `L4` 判等。

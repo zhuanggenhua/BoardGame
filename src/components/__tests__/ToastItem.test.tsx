@@ -43,6 +43,30 @@ const ToastHarness = ({
     );
 };
 
+const RewardToastHarness = () => {
+    const toast = useToast();
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => toast.success({
+                    kind: 'reward-points',
+                    text: '反馈成功',
+                    points: 1,
+                })}
+            >
+                show reward toast
+            </button>
+            <div>
+                {toast.toasts.map((item) => (
+                    <ToastItem key={item.id} toast={item} />
+                ))}
+            </div>
+        </>
+    );
+};
+
 describe('ToastItem actions', () => {
     it('executes the action and dismisses the toast by default', () => {
         const actionSpy = vi.fn();
@@ -74,5 +98,18 @@ describe('ToastItem actions', () => {
 
         expect(actionSpy).toHaveBeenCalledTimes(1);
         expect(screen.getByText('Toast title')).toBeInTheDocument();
+    });
+
+    it('renders reward points content with the shared badge', () => {
+        render(
+            <ToastProvider>
+                <RewardToastHarness />
+            </ToastProvider>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'show reward toast' }));
+
+        expect(screen.getByText('反馈成功')).toBeInTheDocument();
+        expect(screen.getByTestId('reward-points-badge')).toHaveTextContent('+1');
     });
 });

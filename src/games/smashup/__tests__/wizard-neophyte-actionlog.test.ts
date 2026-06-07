@@ -5,11 +5,32 @@
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
-import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
+import {
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeBase,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+
+function expectCommandSucceeded<T extends { success: boolean; error?: string }>(
+    result: T,
+    message: string,
+): asserts result is T & { success: true } {
+    expect(result.success, result.error ? `${message}: ${result.error}` : message).toBe(true);
+    if (!result.success) {
+        throw new Error(result.error ? `${message}: ${result.error}` : message);
+    }
+}
+
+function getActionLogKinds(state: { sys?: { actionLog?: { entries?: Array<{ kind: string }> } } }) {
+    return state.sys?.actionLog?.entries?.map(entry => entry.kind) ?? [];
+}
 
 describe('学徒 ActionLog 完整链路', () => {
     beforeAll(() => {
@@ -38,48 +59,36 @@ describe('学徒 ActionLog 完整链路', () => {
             payload: { cardUid: 'm1', baseIndex: 0 },
             timestamp: 1000,
         });
-        expect(r1.success).toBe(true);
-        if (!r1.success) return;
+        expectCommandSucceeded(r1, '打出学徒失败');
 
-        // 检查 ActionLog：应该有 MINION_PLAYED
         const log1 = r1.finalState.sys.actionLog?.entries ?? [];
-        expect(log1.length).toBeGreaterThan(0);
-        const minionPlayedEntry = log1.find(e => e.kind === 'su:minion_played');
-        expect(minionPlayedEntry).toBeDefined();
-        console.log('Step 1 - 打出学徒:', log1.map(e => e.kind));
+        expect(getActionLogKinds(r1.finalState)).toEqual([
+            'su:minion_played',
+            'su:reveal_deck_top',
+        ]);
 
-        // 检查是否有 REVEAL_DECK_TOP
         const revealEntry = log1.find(e => e.kind === 'su:reveal_deck_top');
-        expect(revealEntry).toBeDefined();
-        console.log('Step 1 - 展示牌库顶:', revealEntry);
-
-        // 2. 选择"放入手牌"
-        const interaction = r1.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('wizard_neophyte');
-
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'to_hand' },
-            timestamp: 2000,
+        expect(revealEntry).toMatchObject({
+            actorId: '0',
+            kind: 'su:reveal_deck_top',
         });
-        expect(r2.success).toBe(true);
-        if (!r2.success) {
-            console.error('Command failed:', r2.error);
-            return;
-        }
 
-        // 检查 ActionLog：应该有 CARDS_DRAWN
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'to_hand', '0');
+        expectCommandSucceeded(r2, '选择放入手牌失败');
+
         const log2 = r2.finalState.sys.actionLog?.entries ?? [];
-        console.log('Step 2 - 选择放入手牌后的日志:', log2.map(e => e.kind));
-        
+        expect(getActionLogKinds(r2.finalState)).toEqual([
+            'su:minion_played',
+            'su:reveal_deck_top',
+            'su:cards_drawn',
+            'su:limit_modified',
+        ]);
         const drawEntry = log2.find(e => e.kind === 'su:cards_drawn');
         expect(drawEntry).toBeDefined();
         expect(drawEntry?.segments).toBeDefined();
-        
-        // 验证日志条目数量增加
-        expect(log2.length).toBeGreaterThan(log1.length);
+        expect(r2.finalState.core.players['0'].hand.map(card => card.defId)).toEqual(['wizard_summon']);
+        expect(r2.finalState.core.players['0'].deck.map(card => card.defId)).toEqual(['wizard_chronomage']);
     });
 
     it('选择"作为额外行动打出"应记录：打出学徒 + 展示牌库顶 + 抽牌 + 打出行动 + 额度补偿', () => {
@@ -105,45 +114,27 @@ describe('学徒 ActionLog 完整链路', () => {
             payload: { cardUid: 'm1', baseIndex: 0 },
             timestamp: 1000,
         });
-        expect(r1.success).toBe(true);
-        if (!r1.success) return;
+        expectCommandSucceeded(r1, '打出学徒失败');
 
-        const log1 = r1.finalState.sys.actionLog?.entries ?? [];
-        console.log('Step 1 - 打出学徒:', log1.map(e => e.kind));
+        expect(getActionLogKinds(r1.finalState)).toEqual([
+            'su:minion_played',
+            'su:reveal_deck_top',
+        ]);
 
-        // 2. 选择"作为额外行动打出"
-        const interaction = r1.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0');
+        expectCommandSucceeded(r2, '选择作为额外行动打出失败');
 
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'play_extra' },
-            timestamp: 2000,
-        });
-        expect(r2.success).toBe(true);
-        if (!r2.success) return;
-
-        // 检查 ActionLog：应该有完整链路
-        const log2 = r2.finalState.sys.actionLog?.entries ?? [];
-        console.log('Step 2 - 选择作为额外行动打出后的日志:', log2.map(e => e.kind));
-        
-        // 应该包含：
-        // 1. MINION_PLAYED (学徒)
-        // 2. REVEAL_DECK_TOP (展示牌库顶)
-        // 3. CARDS_DRAWN (抽到手牌)
-        // 4. ACTION_PLAYED (打出行动卡)
-        // 5. LIMIT_MODIFIED (补偿额度)
-        
-        const kinds = log2.map(e => e.kind);
-        expect(kinds).toContain('su:minion_played');
-        expect(kinds).toContain('su:reveal_deck_top');
-        expect(kinds).toContain('su:cards_drawn');
-        expect(kinds).toContain('su:action_played');
-        expect(kinds).toContain('su:limit_modified');
-        
-        // 验证日志条目数量
-        expect(log2.length).toBeGreaterThanOrEqual(5);
+        expect(getActionLogKinds(r2.finalState)).toEqual([
+            'su:minion_played',
+            'su:reveal_deck_top',
+            'su:cards_drawn',
+            'su:action_played',
+            'su:limit_modified',
+            'su:limit_modified',
+        ]);
+        expect(r2.finalState.core.players['0'].hand).toEqual([]);
+        expect(r2.finalState.core.players['0'].deck.map(card => card.defId)).toEqual(['wizard_chronomage']);
     });
 
     it('打出行动卡后应触发其 onPlay 能力并记录', () => {
@@ -170,25 +161,27 @@ describe('学徒 ActionLog 完整链路', () => {
             payload: { cardUid: 'm1', baseIndex: 0 },
             timestamp: 1000,
         });
-        expect(r1.success).toBe(true);
-        if (!r1.success) return;
+        expectCommandSucceeded(r1, '打出学徒失败');
 
-        // 2. 选择"作为额外行动打出"（秘术学习：抽2张）
-        const interaction = r1.finalState.sys.interaction?.current;
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'play_extra' },
-            timestamp: 2000,
-        });
-        expect(r2.success).toBe(true);
-        if (!r2.success) return;
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0');
+        expectCommandSucceeded(r2, '选择作为额外行动打出失败');
 
         const log2 = r2.finalState.sys.actionLog?.entries ?? [];
-        console.log('打出秘术学习后的日志:', log2.map(e => e.kind));
-        
-        // 应该包含秘术学习的 onPlay 效果（抽2张牌）
+        expect(getActionLogKinds(r2.finalState)).toEqual([
+            'su:minion_played',
+            'su:reveal_deck_top',
+            'su:cards_drawn',
+            'su:action_played',
+            'su:cards_drawn',
+            'su:limit_modified',
+        ]);
         const drawEntries = log2.filter(e => e.kind === 'su:cards_drawn');
-        expect(drawEntries.length).toBeGreaterThanOrEqual(2); // 至少2次抽牌（学徒抽1张 + 秘术学习抽2张）
+        expect(drawEntries).toHaveLength(2);
+        expect(r2.finalState.core.players['0'].hand.map(card => card.defId)).toEqual([
+            'wizard_chronomage',
+            'wizard_enchantress',
+        ]);
+        expect(r2.finalState.core.players['0'].deck).toEqual([]);
     });
 });

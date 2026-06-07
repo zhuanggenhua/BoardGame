@@ -25,8 +25,18 @@ import { createSmashUpEventSystem } from '../domain/systems';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { initAllAbilities } from '../abilities';
+import {
+    expectNoPrompt,
+    getPromptMulti,
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    makeMinion,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -88,8 +98,8 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 20,
                         vp: [4, 2, 1],
                         minions: [
-                            { uid: 'base0-m1', defId: 'alien_invader', type: 'minion', owner: '0', controller: '0', power: 3 },
-                            { uid: 'base0-m2', defId: 'ninja_shinobi', type: 'minion', owner: '1', controller: '1', power: 3 },
+                            makeMinion('base0-m1', 'alien_invader', '0', 3),
+                            makeMinion('base0-m2', 'ninja_shinobi', '1', 3),
                         ],
                         ongoingActions: [],
                     },
@@ -98,8 +108,8 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 18,
                         vp: [4, 2, 1],
                         minions: [
-                            { uid: 'base1-m1', defId: 'pirate_buccaneer', type: 'minion', owner: '0', controller: '0', power: 2 },
-                            { uid: 'base1-m2', defId: 'robot_microbot', type: 'minion', owner: '1', controller: '1', power: 1 },
+                            makeMinion('base1-m1', 'pirate_buccaneer', '0', 2),
+                            makeMinion('base1-m2', 'robot_microbot', '1', 1),
                         ],
                         ongoingActions: [],
                     },
@@ -108,7 +118,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 16,
                         vp: [3, 2, 1],
                         minions: [
-                            { uid: 'base2-m1', defId: 'alien_scout', type: 'minion', owner: '0', controller: '0', power: 2 },
+                            makeMinion('base2-m1', 'alien_scout', '0', 2),
                         ],
                         ongoingActions: [],
                     },
@@ -130,16 +140,14 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         });
 
         expect(r1.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeDefined();
-        expect(r1.finalState.sys.interaction.current?.data.sourceId).toBe('alien_crop_circles');
+        const prompt = getSimpleChoicePrompt(r1.finalState, 'alien_crop_circles');
         
         // 验证交互选项：应该有 3 个基地可选（所有基地都有随从）
-        const options = r1.finalState.sys.interaction.current?.data.options ?? [];
+        const options = getPromptOptions(prompt);
         expect(options).toHaveLength(3);
 
         // Step 2: 选择基地 1（The Jungle Oasis）
-        const base1Option = options.find(opt => opt.value?.baseIndex === 1);
-        expect(base1Option).toBeDefined();
+        const base1Option = getPromptOption(prompt, opt => opt.value?.baseIndex === 1, 'base 1 option');
         
         // 创建新的 runner 使用 r1 的最终状态
         const runner2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -156,11 +164,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         
         const r2 = runner2.run({
             name: 'respond to alien_crop_circles',
-            commands: [{
-                type: INTERACTION_COMMANDS.RESPOND,
-                playerId: '0',
-                payload: { optionId: 'base-1' },
-            }],
+            commands: [respondCommand(base1Option.id, '0')],
         });
 
         expect(r2.steps[0]?.success).toBe(true);
@@ -232,10 +236,10 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 20,
                         vp: [4, 2, 1],
                         minions: [
-                            { uid: 'm1', defId: 'alien_invader', type: 'minion', owner: '0', controller: '0', power: 3 },
-                            { uid: 'm2', defId: 'alien_scout', type: 'minion', owner: '0', controller: '0', power: 2 },
-                            { uid: 'm3', defId: 'ninja_shinobi', type: 'minion', owner: '1', controller: '1', power: 3 },
-                            { uid: 'm4', defId: 'robot_microbot', type: 'minion', owner: '1', controller: '1', power: 1 },
+                            makeMinion('m1', 'alien_invader', '0', 3),
+                            makeMinion('m2', 'alien_scout', '0', 2),
+                            makeMinion('m3', 'ninja_shinobi', '1', 3),
+                            makeMinion('m4', 'robot_microbot', '1', 1),
                         ],
                         ongoingActions: [],
                     },
@@ -259,17 +263,15 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         expect(r1.success).toBe(true);
         
         // 验证交互类型：单选基地（不是多选随从）
-        const interaction = r1.finalState.sys.interaction.current;
-        expect(interaction?.data.sourceId).toBe('alien_crop_circles');
-        expect(interaction?.data.targetType).toBe('base');
+        const interaction = getSimpleChoicePrompt(r1.finalState, 'alien_crop_circles');
+        expect(getPromptSourceId(interaction)).toBe('alien_crop_circles');
+        expect(getPromptTargetType(interaction)).toBe('base');
         
         // 验证没有 multi 配置（单选模式）
-        expect((interaction?.data as any).multi).toBeUndefined();
+        expect(getPromptMulti(interaction)).toBeUndefined();
 
         // Step 2: 选择基地后，自动返回所有随从（强制效果）
-        const options2 = r1.finalState.sys.interaction.current?.data.options ?? [];
-        const base0Option = options2.find(opt => opt.value?.baseIndex === 0);
-        expect(base0Option).toBeDefined();
+        const base0Option = getPromptOption(interaction, opt => opt.value?.baseIndex === 0, 'base 0 option');
         
         // 创建新的 runner 使用 r1 的最终状态
         const runner2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
@@ -286,11 +288,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         
         const r2 = runner2.run({
             name: 'respond to alien_crop_circles',
-            commands: [{
-                type: INTERACTION_COMMANDS.RESPOND,
-                playerId: '0',
-                payload: { optionId: 'base-0' },
-            }],
+            commands: [respondCommand(base0Option.id, '0')],
         });
 
         expect(r2.steps[0]?.success).toBe(true);
@@ -304,8 +302,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         expect(r2.finalState.core.bases[0].minions).toHaveLength(0);
         
         // 验证没有后续交互（不需要玩家选择哪些随从返回）
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
-        expect(r2.finalState.sys.interaction.queue).toHaveLength(0);
+        expectNoPrompt(r2.finalState);
     });
 
     it('D37：多基地场景下选项自动刷新（框架层自动处理）', () => {
@@ -348,7 +345,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 20,
                         vp: [4, 2, 1],
                         minions: [
-                            { uid: 'base0-m1', defId: 'alien_invader', type: 'minion', owner: '0', controller: '0', power: 3 },
+                            makeMinion('base0-m1', 'alien_invader', '0', 3),
                         ],
                         ongoingActions: [],
                     },
@@ -357,7 +354,7 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
                         breakpoint: 18,
                         vp: [4, 2, 1],
                         minions: [
-                            { uid: 'base1-m1', defId: 'pirate_buccaneer', type: 'minion', owner: '0', controller: '0', power: 2 },
+                            makeMinion('base1-m1', 'pirate_buccaneer', '0', 2),
                         ],
                         ongoingActions: [],
                     },
@@ -388,7 +385,8 @@ describe('D1 审计：alien_crop_circles 范围限定', () => {
         expect(r1.success).toBe(true);
         
         // D37 核心验证：选项只包含有随从的基地（空基地被过滤）
-        const options = r1.finalState.sys.interaction.current?.data.options ?? [];
+        const prompt = getSimpleChoicePrompt(r1.finalState, 'alien_crop_circles');
+        const options = getPromptOptions(prompt);
         expect(options).toHaveLength(2); // 只有基地 0 和基地 1
         
         const baseIndices = options.map(opt => (opt.value as any).baseIndex);

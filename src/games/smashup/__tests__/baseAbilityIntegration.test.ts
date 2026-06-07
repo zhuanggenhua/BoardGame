@@ -15,18 +15,24 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from '../domain/types';
+import type { SmashUpCore, SmashUpEvent } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     triggerBaseAbility,
     triggerExtendedBaseAbility,
 } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { getEffectivePower } from '../domain/ongoingModifiers';
-import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
+import {
+    getPromptOption,
+    respondToPromptOption,
+    getSimpleChoicePrompt,
+    triggerBaseAbilityWithMS,
+    getInteractionsFromResult,
+    makeMatchState,
+} from './helpers';
 import { reduce } from '../domain/reduce';
 import type { RandomFn } from '../../../engine/types';
 
@@ -41,27 +47,6 @@ const dummyRandom: RandomFn = {
 beforeAll(() => {
     initAllAbilities();
 });
-
-function createRunner() {
-    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
-        domain: SmashUpDomain,
-        systems: [
-            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-            ...createBaseSystems<SmashUpCore>(),
-        ],
-        playerIds: PLAYER_IDS,
-        silent: true,
-    });
-}
-
-/** 蛇形选秀 + 推进到 playCards */
-const DRAFT_COMMANDS: SmashUpCommand[] = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
-    { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-] as any[];
 
 // ============================================================================
 // base_central_brain: 中央大脑 - 持续被动 +1 力量（power modifier）
@@ -357,6 +342,38 @@ describe('base_castle_blood: 打出随从放指示物', () => {
             playerId: '0',
             minionUid: 'm_me',
             now: 1000,
+        };
+
+        const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
+        expect(events.length).toBe(0);
+    });
+
+    it('borrowed Infiltrate 由控制者控制时，应阻止 Castle Blood 给控制者打出的随从放指示物', () => {
+        const ctx: BaseAbilityContext = {
+            state: {
+                bases: [{
+                    defId: 'base_castle_blood',
+                    minions: [
+                        { uid: 'm_me', defId: 'd1', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm_op', defId: 'd2', controller: '1', owner: '1', basePower: 5, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [{ uid: 'inf-1', defId: 'ninja_infiltrate', ownerId: '1', metadata: { sourceControllerId: '0' } } as any],
+                }],
+                players: {
+                    '0': { id: '0', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                    '1': { id: '1', vp: 0, hand: [], discard: [], deck: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+                },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 100,
+            } as unknown as SmashUpCore,
+            baseIndex: 0,
+            baseDefId: 'base_castle_blood',
+            playerId: '0',
+            minionUid: 'm_me',
+            now: 1001,
         };
 
         const { events } = triggerBaseAbility('base_castle_blood', 'onMinionPlayed', ctx);
@@ -974,26 +991,26 @@ describe('POD 基地专项行为', () => {
             now: 3004,
         });
         const interaction = getInteractionsFromResult(result)[0];
-        const selected = interaction.data.options.find((o: any) => o.value?.minionUid === 'm1');
-        const step1 = getInteractionHandler('base_mushroom_kingdom_pod')!(
+        const selected = getPromptOption(interaction, (o: any) => o.value?.minionUid === 'm1', 'mushroom kingdom minion option');
+        const step1 = respondToPromptOption(
             result.matchState!,
+            (o: any) => o.value?.minionUid === selected.value.minionUid,
+            'mushroom kingdom minion option',
             '0',
-            selected.value,
-            interaction.data,
             dummyRandom,
-            3005,
         );
-        const chooseBaseInteraction = (step1.state.sys as any).interaction?.queue?.[0];
-        expect(chooseBaseInteraction?.data?.sourceId).toBe('base_mushroom_kingdom_pod_choose_base');
+        expect(step1.success, step1.error).toBe(true);
+        const chooseBaseInteraction = getSimpleChoicePrompt(step1.finalState, 'base_mushroom_kingdom_pod_choose_base');
+        const destinationOption = getPromptOption(chooseBaseInteraction, (o: any) => o.value?.baseIndex === 1, 'mushroom kingdom destination base option');
 
-        const step2 = getInteractionHandler('base_mushroom_kingdom_pod_choose_base')!(
-            step1.state,
+        const step2 = respondToPromptOption(
+            step1.finalState,
+            (o: any) => o.value?.baseIndex === destinationOption.value.baseIndex,
+            'mushroom kingdom destination base option',
             '0',
-            { baseIndex: 1 },
-            chooseBaseInteraction.data,
             dummyRandom,
-            3006,
         );
+        expect(step2.success, step2.error).toBe(true);
         const moveEvent = (step2.events ?? []).find((e: any) => e.type === SU_EVENTS.MINION_MOVED) as any;
         expect(moveEvent.payload.fromBaseIndex).toBe(0);
         expect(moveEvent.payload.toBaseIndex).toBe(1);

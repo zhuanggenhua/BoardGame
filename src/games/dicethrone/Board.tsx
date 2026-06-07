@@ -6,7 +6,7 @@ import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore } from './domain';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
-import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
+import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getPendingBonusSettlementDice, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
@@ -21,7 +21,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { loadStatusAtlases, type StatusAtlases } from './ui/statusEffects';
-import { ABILITY_SLOT_MAP, getAbilitySlotId } from './ui/abilitySlotMapping';
+import { ABILITY_SLOT_MAP, getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from './ui/abilitySlotMapping';
 import type { AbilityOverlaysHandle } from './ui/AbilityOverlays';
 import { AbilityChoiceModal, type AbilityChoiceOption } from './ui/AbilityChoiceModal';
 import { ConfirmSkipModal } from './ui/ConfirmSkipModal';
@@ -48,7 +48,7 @@ import { useCurrentChoice, useCurrentDefenderChoice, useDiceThroneState } from '
 import { INTERACTION_COMMANDS, asCompareRollChoice } from '../../engine/systems/InteractionSystem';
 import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands, type DiceModifyStep, type DiceSelectStep } from './domain/systems';
 // 引擎层 Hooks
-import { useSpectatorMoves, useEventStreamCursor } from '../../engine';
+import { useSpectatorMoves } from '../../engine';
 // 游戏特定 Hooks
 import { useInteractionState } from './hooks/useInteractionState';
 import { useAnimationEffects } from './hooks/useAnimationEffects';
@@ -56,18 +56,24 @@ import { useCardSpotlight } from './hooks/useCardSpotlight';
 import {
     resolveInteractivePendingBonusDiceSettlement,
     shouldSuppressPendingDisplayOnlyBonusOverlay,
+    shouldSuppressForegroundBonusDieOverlay,
 } from './ui/bonusDiceOverlayVisibility';
 import { useActiveModifiers } from './hooks/useActiveModifiers';
 import { useUIState } from './hooks/useUIState';
 import { useDiceThroneAudio } from './hooks/useDiceThroneAudio';
 import { playDeniedSound } from '../../lib/audio/useGameAudio';
-import { computeViewModeState, getResponseViewSuggestionKey, shouldSuggestOpponentViewOnResponseChange } from './ui/viewMode';
+import {
+    computeViewModeState,
+    getResponseViewSuggestionKey,
+    resolveResponseAutoViewTransition,
+} from './ui/viewMode';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { resolveMoves, type DiceThroneMoveMap } from './ui/resolveMoves';
 import { LayoutSaveButton } from './ui/LayoutSaveButton';
 import { useAutoSkipSelection } from './hooks/useAutoSkipSelection';
 import { useAttackShowcase } from './hooks/useAttackShowcase';
 import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
+import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationConsumer';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
 import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
@@ -405,29 +411,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         })
     ), [G.pendingBonusDiceSettlement, rawG.sys.interaction, rawG.sys.responseWindow, rootPid]);
 
-    // 监听 DIE_REROLLED 事件触发骰子重投动画
-    const { consumeNew: consumeDieRerolled } = useEventStreamCursor({ 
-        entries: rawG.sys.eventStream?.entries ?? [] 
+    useDieRerollAnimationConsumer({
+        eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
+        setRerollingDiceIds,
     });
-    
-    React.useEffect(() => {
-        const { entries: newEntries } = consumeDieRerolled();
-        if (newEntries.length === 0) return;
-
-        // 收集所有重投的骰子 ID
-        const rerolledDiceIds: number[] = [];
-        for (const entry of newEntries) {
-            const event = entry.event as { type: string; payload?: { dieId?: number } };
-            if (event.type === 'DIE_REROLLED' && typeof event.payload?.dieId === 'number') {
-                rerolledDiceIds.push(event.payload.dieId);
-            }
-        }
-
-        if (rerolledDiceIds.length > 0) {
-            setRerollingDiceIds(rerolledDiceIds);
-            setTimeout(() => setRerollingDiceIds([]), 600);
-        }
-    }, [rawG.sys.eventStream?.entries, consumeDieRerolled, setRerollingDiceIds]);
 
     // 追踪已激活的攻击修正卡
     const { activeModifiers } = useActiveModifiers({
@@ -637,22 +624,25 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingDamage,
         isTeamDirectActor: isDirectDiceActor,
     });
-    const prevResponseSuggestionKeyRef = React.useRef<string | null>(null);
+    const responseAutoViewSessionRef = React.useRef<{
+        suggestionKey: string;
+        restoreMode: 'self' | 'opponent';
+    } | null>(null);
 
     React.useEffect(() => {
-        const previousSuggestionKey = prevResponseSuggestionKeyRef.current;
-        prevResponseSuggestionKeyRef.current = responseViewSuggestionKey;
-
-        if (!shouldSuggestOpponentViewOnResponseChange({
-            previousSuggestionKey,
+        const transition = resolveResponseAutoViewTransition({
             currentSuggestionKey: responseViewSuggestionKey,
             autoResponseEnabled,
-        })) {
-            return;
-        }
+            manualViewMode,
+            session: responseAutoViewSessionRef.current,
+        });
 
-        setViewMode('opponent');
-    }, [responseViewSuggestionKey, autoResponseEnabled, setViewMode]);
+        responseAutoViewSessionRef.current = transition.nextSession;
+
+        if (transition.nextViewMode && transition.nextViewMode !== manualViewMode) {
+            setViewMode(transition.nextViewMode);
+        }
+    }, [responseViewSuggestionKey, autoResponseEnabled, manualViewMode, setViewMode]);
 
     const isFourPlayerView = otherPids.length > 1;
     const handleOpponentHeaderSelect = React.useCallback((targetPid: string) => {
@@ -800,7 +790,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             setLastUndoCardId(pendingInteraction.sourceCardId);
         }
         // 使用 InteractionSystem 的 CANCEL 命令取消当前交互
-        dispatch(INTERACTION_COMMANDS.CANCEL, {});
+        dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: pendingInteraction?.id });
     }, [dispatch, pendingInteraction, setLastUndoCardId]);
     const handlePendingBonusSettlementClose = React.useCallback((settlement?: PendingBonusDiceSettlement) => {
         boardBonusDieLogger.info('overlay-close-request', {
@@ -811,7 +801,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             currentPlayerId: rootPid,
             rerollCount: settlement?.rerollCount,
             maxRerollCount: settlement?.maxRerollCount,
-            diceValues: settlement?.dice?.map(die => die.value),
+            diceValues: settlement ? getPendingBonusSettlementDice(settlement).map(die => die.value) : undefined,
         });
         handleBonusDieClose();
 
@@ -1053,11 +1043,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
         pendingInteraction.type === 'selectPlayer' ||
-        pendingInteraction.type === 'selectTargetStatus'
+        pendingInteraction.type === 'selectTargetStatus' ||
+        pendingInteraction.type === 'selectHandCard'
     );
 
     const handleSelectStatus = interactionHandlers.selectStatus;
     const handleSelectPlayer = interactionHandlers.selectPlayer;
+    const handleSelectHandCard = interactionHandlers.selectHandCard;
 
     const statusInteraction = React.useMemo(() => {
         if (!pendingInteraction || !isStatusInteraction) return pendingInteraction;
@@ -1081,6 +1073,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     ? localInteraction.selectedPlayers
                     : (interaction.selected ?? []);
             }
+            if (interaction.type === 'selectHandCard') {
+                return localInteraction.selectedCardIds.length > 0
+                    ? localInteraction.selectedCardIds
+                    : (interaction.selected ?? []);
+            }
             if (interaction.type === 'selectTargetStatus' && interaction.transferConfig?.statusId) {
                 return localInteraction.selectedPlayers.length > 0
                     ? localInteraction.selectedPlayers
@@ -1102,6 +1099,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingInteraction,
         isStatusInteraction,
         localInteraction.selectedPlayers,
+        localInteraction.selectedCardIds,
         localInteraction.selectedStatus,
     ]);
 
@@ -1122,6 +1120,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             if (localInteraction.selectedPlayers.length > 0) {
                 engineMoves.resolveInteraction(localInteraction.selectedPlayers);
             }
+        } else if (activeInteraction.type === 'selectHandCard') {
+            if (localInteraction.selectedCardIds.length > 0) {
+                engineMoves.resolveInteraction([], localInteraction.selectedCardIds);
+            }
         } else if (activeInteraction.type === 'selectTargetStatus') {
             // 转移状态
             const transferConfig = activeInteraction.transferConfig;
@@ -1140,6 +1142,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     }, [
         engineMoves,
         localInteraction.selectedPlayers,
+        localInteraction.selectedCardIds,
         localInteraction.selectedStatus,
         pendingInteraction,
         statusInteraction,
@@ -1198,6 +1201,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 teamIdByPlayerId={G.teamIdByPlayerId}
                 onSelectStatus={handleSelectStatus}
                 onSelectPlayer={handleSelectPlayer}
+                onSelectHandCard={handleSelectHandCard}
                 onConfirm={handleStatusInteractionConfirm}
                 onCancel={handleCancelInteraction}
                 statusIconAtlas={statusIconAtlas}
@@ -1212,6 +1216,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         handleCancelInteraction,
         handleStatusInteractionConfirm,
         handleSelectPlayer,
+        handleSelectHandCard,
         handleSelectStatus,
         locale,
         playerNames,
@@ -1249,10 +1254,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     : null}
                 canResolve={canResolveChoice}
                 onResolve={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: sysInteraction?.id });
                 }}
                 onResolveWithValue={(optionId, mergedValue) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, mergedValue });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, mergedValue, interactionId: sysInteraction?.id });
                 }}
                 locale={locale}
                 statusIconAtlas={statusIconAtlas}
@@ -1308,12 +1313,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             <CompareRollOverlay
                 compareRoll={compareRollInteraction}
                 isVisible={true}
+                canResolve={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
                 locale={locale}
                 onResolveOption={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: sysInteraction?.id });
                 }}
                 onConfirm={() => {
-                    dispatch(INTERACTION_COMMANDS.CONFIRM, {});
+                    dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
                 }}
                 usePortal={false}
             />
@@ -1340,7 +1346,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 isVisible={true}
                 onClose={() => handlePendingBonusSettlementClose(interactiveBonusDiceSettlement)}
                 locale={locale}
-                bonusDice={interactiveBonusDiceSettlement?.dice}
+                bonusDice={interactiveBonusDiceSettlement ? getPendingBonusSettlementDice(interactiveBonusDiceSettlement) : undefined}
                 canReroll={Boolean(
                     interactiveBonusDiceSettlement &&
                     (player.tokens?.[interactiveBonusDiceSettlement.rerollCostTokenId] ?? 0) >= (interactiveBonusDiceSettlement.rerollCostAmount ?? 1) &&
@@ -1377,8 +1383,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 rerollCostAmount={interactiveBonusDiceSettlement?.rerollCostAmount}
                 rerollCostTokenId={interactiveBonusDiceSettlement?.rerollCostTokenId}
                 displayOnly={interactiveBonusDiceSettlement?.displayOnly}
+                presentationKey={interactiveBonusDiceSettlement
+                    ? `${interactiveBonusDiceSettlement.id}:reroll-${interactiveBonusDiceSettlement.rerollCount}`
+                    : undefined}
                 lastRerolledDieIndex={interactiveBonusDiceSettlement?.lastRerolledDieIndex}
-                rerollAnimationKey={interactiveBonusDiceSettlement?.rerollAnimationKey}
+                rerollPresentationKey={
+                    interactiveBonusDiceSettlement && interactiveBonusDiceSettlement.rerollCount > 0
+                        ? `${interactiveBonusDiceSettlement.id}:reroll-${interactiveBonusDiceSettlement.rerollCount}`
+                        : undefined
+                }
                 summaryEffectKey={interactiveBonusDiceSettlement?.summaryEffectKey}
                 summaryEffectParams={interactiveBonusDiceSettlement?.summaryEffectParams}
                 characterId={interactiveBonusDiceSettlement ? G.selectedCharacters[interactiveBonusDiceSettlement.attackerId] : undefined}
@@ -1406,7 +1419,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
 
     useSyncedModalStackEntry({
-        enabled: Boolean(isStatusInteraction && statusInteraction),
+        enabled: Boolean(isStatusInteraction && statusInteraction && (
+            statusInteraction?.type !== 'selectHandCard' || isInteractionOwner
+        )),
         entryId: 'dicethrone_status_interaction',
         entry: statusInteractionModalEntry,
     });
@@ -1442,15 +1457,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         // 否则防御技能（如 stand-tall / elusive-step / holy-defense / fearless-riposte）
         // 产生伤害时会找不到自己的技能槽位，退回到 opponentHeader。
         let baseAbilityId = abilityId;
+        let ownerCharacterId: string | undefined;
         for (const pid of Object.keys(G.players)) {
             const match = findPlayerAbility(G, pid, abilityId);
             if (match) {
                 baseAbilityId = match.ability.id;
+                ownerCharacterId = G.selectedCharacters?.[pid];
                 break;
             }
         }
 
-        const slotId = getAbilitySlotId(baseAbilityId);
+        const slotId = getAbilitySlotIdForCharacter(ownerCharacterId, baseAbilityId);
         if (!slotId) return getElementCenter(opponentHeaderRef.current);
         const element = document.querySelector(`[data-ability-slot="${slotId}"]`) as HTMLElement | null;
         // 技能槽在 DOM 中存在 → 从技能槽飞出（自己的技能）
@@ -1554,7 +1571,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return;
         }
         // 防御阶段结束后（进入 main2/discard 等阶段），如果是自己的回合，切换回自己视角
-        // 修复：防御阶段结束后没有自动切换回自己视角的问题
         if (isActivePlayer && (currentPhase === 'main2' || currentPhase === 'discard')) {
             setViewMode('self');
         }
@@ -1736,7 +1752,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     bus={fxBus}
                     getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
                     onEffectImpact={(id) => {
-                        // 飞行动画到达目标：释放对应 HP 冻结 + 触发受击反馈
+                        // 飞行动画到达目标：释放对应 HP 冻结 + 触发受击反馈。
+                        // DiceThrone 伤害现已允许在 impact 时推进下一段，避免 3 秒飘字把后续伤害/HP 更新卡死。
                         const info = fxImpactMapRef.current.get(id);
                         if (info) {
                             // CP 步骤 bufferKey 为空，无需释放缓冲
@@ -1754,9 +1771,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             }
                             fxImpactMapRef.current.delete(id);
                         }
+                        advanceQueue(id);
                     }}
                     onEffectComplete={(id) => {
-                        // 动画完成：推进队列中的下一步（伤害→治疗序列化）
+                        // 动画完成：兜底推进队列中的下一步（正常情况下会在 impact 时已推进）
                         advanceQueue(id);
                     }}
                 />
@@ -1764,6 +1782,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     <LeftSidebar
                         currentPhase={currentPhase}
                         viewPlayer={player} // Always show own stats
+                        playerId={rootPid}
                         locale={locale}
                         statusIconAtlas={statusIconAtlas}
                         selfBuffRef={selfBuffRef}
@@ -1800,7 +1819,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 // 对于变体 ID（如 incinerate），先通过 findPlayerAbility 获取基础技能 ID
                                 const match = findPlayerAbility(G, rollerId, abilityId);
                                 const baseAbilityId = match?.ability.id ?? abilityId;
-                                const slotId = getAbilitySlotId(baseAbilityId);
+                                const rollerCharacterId = G.selectedCharacters?.[rollerId];
+                                const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId);
                                 if (slotId) {
                                     const mapping = ABILITY_SLOT_MAP[slotId];
                                     if (mapping) {
@@ -1812,7 +1832,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                             if (!match) {
                                                 return false;
                                             }
-                                            const included = mapping.ids.includes(match.ability.id);
+                                            const included = slotContainsAbilityIdForCharacter(rollerCharacterId, slotId, match.ability.id);
                                             return included;
                                         });
                                         if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
@@ -1879,8 +1899,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         activatingAbilityId={activatingAbilityId}
                         abilityLevels={viewPlayer.abilityLevels}
                         characterId={viewPlayer.characterId}
+                        playerBoardFace={viewPlayer.playerBoardFace}
                         locale={locale}
                         onMagnifyImage={(image) => setMagnifiedImage(image)}
+                        onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
                     />
@@ -2005,6 +2027,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 }}
                                 onMagnifyCard={(card) => setMagnifiedCard(card)}
                                 respondableCardIds={respondableCardIds}
+                                characterId={handOwner.characterId}
                             />
                         </>
                     );
@@ -2040,7 +2063,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     // 额外骰子
                     bonusDie={bonusDie}
                     onBonusDieClose={() => handlePendingBonusSettlementClose(displayOnlyBonusDiceSettlement)}
-                    suppressBonusDieOverlay={choice.hasChoice || Boolean(interactiveBonusDiceSettlement)}
+                    suppressBonusDieOverlay={shouldSuppressForegroundBonusDieOverlay({
+                        hasChoice: choice.hasChoice,
+                        interactiveSettlement: interactiveBonusDiceSettlement,
+                        bonusDie,
+                    })}
 
                     // 奖励骰展示态只留在 overlay，阻塞式重投交互改走 modal stack
                     pendingBonusDiceSettlement={displayOnlyBonusDiceSettlement}

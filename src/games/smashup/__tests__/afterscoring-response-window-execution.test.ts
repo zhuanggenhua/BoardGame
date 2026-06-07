@@ -12,8 +12,13 @@ import { SmashUpDomain, smashUpSystemsForTest } from '../game';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent, MinionOnBase } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { startSmashUpReactionSession } from '../domain/reactionSession';
+import {
+    advanceSmashUpReactionSession,
+    resolveSmashUpReactionChoice,
+    startSmashUpReactionSession,
+} from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { getPromptOptions, getSimpleChoicePrompt } from './helpers';
 
 function attachFrameBackedAfterScoringSession(
     state: { core: SmashUpCore; sys: ReturnType<typeof createInitialSystemState> },
@@ -43,6 +48,13 @@ function attachFrameBackedAfterScoringSession(
 }
 
 describe('afterScoring 响应窗口中打出卡牌的执行', () => {
+    const fixedRandom = {
+        random: () => 0.5,
+        d: () => 1,
+        range: (min: number) => min,
+        shuffle: <T>(items: T[]) => [...items],
+    };
+
     it('afterScoring 响应窗口中的重返深海不能指向其他达标基地', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,
@@ -109,7 +121,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         });
 
         expect(wrongBaseResult.success).toBe(false);
-        expect(wrongBaseResult.error).toBe('afterScoring 只能选择当前正在结算的基地');
+        expect(wrongBaseResult.error).toBe('只能选择达到临界点的基地');
 
         const correctBaseResult = runner.dispatch('su:play_action', {
             playerId: '0',
@@ -192,10 +204,8 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         expect(armedEvent).toBeUndefined();
 
         // 验证：应该立即创建交互，而不是静默无效果
-        const interactionState = (result.finalState?.sys as any)?.interaction;
-        const interaction = interactionState?.current ?? interactionState?.queue?.[0];
-        expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
-        expect(interaction?.data?.options?.some((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals')).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState!, 'innsmouth_return_to_the_sea');
+        expect(getPromptOptions(prompt).some((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals')).toBe(true);
     });
 
     it('在 afterScoring 响应窗口中打出"我们乃最强"应该立即执行能力', () => {
@@ -284,8 +294,108 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
 
         // 验证：应该生成交互（选择转移指示物）
         const state = runner.getState();
-        const hasInteraction = state.sys.interaction?.queue?.length > 0 || !!state.sys.interaction?.current;
-        expect(hasInteraction).toBe(true);
+        expect(getSimpleChoicePrompt(state)).toBeDefined();
+    });
+
+    it('smashup_reaction_choose 落地 play_action 后，必须保留"我们乃最强"的后续来源选择交互', () => {
+        const playerIds = ['0', '1'] as const;
+        const core = SmashUpDomain.setup([...playerIds], fixedRandom);
+        const sys = createInitialSystemState([...playerIds], smashUpSystemsForTest, undefined);
+
+        core.factionSelection = undefined;
+        sys.phase = 'scoreBases';
+        core.turnOrder = [...playerIds];
+        core.currentPlayerIndex = 0;
+        core.players['0'].hand = [
+            { uid: 'card-1', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+        ];
+        core.players['1'].hand = [];
+        core.bases[0] = {
+            defId: 'base_the_homeworld',
+            minions: [
+                {
+                    uid: 'm1',
+                    defId: 'giant_ant_worker',
+                    owner: '0',
+                    controller: '0',
+                    basePower: 25,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    powerCounters: 2,
+                    attachedActions: [],
+                    talentUsed: false,
+                },
+                {
+                    uid: 'm2',
+                    defId: 'ninja_shinobi',
+                    owner: '1',
+                    controller: '1',
+                    basePower: 5,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    powerCounters: 0,
+                    attachedActions: [],
+                    talentUsed: false,
+                },
+            ] as MinionOnBase[],
+            ongoingActions: [],
+        };
+        core.bases[1] = {
+            defId: 'base_central_brain',
+            minions: [
+                {
+                    uid: 'm3',
+                    defId: 'giant_ant_soldier',
+                    owner: '0',
+                    controller: '0',
+                    basePower: 3,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    powerCounters: 0,
+                    attachedActions: [],
+                    talentUsed: false,
+                },
+            ] as MinionOnBase[],
+            ongoingActions: [],
+        };
+        core.baseDeck = [];
+        core.baseDiscard = [];
+        core.triggerQueue = [];
+
+        const baseRef = createScoringBaseRef(core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造我们乃最强 reaction test 的 scoring base ref');
+        }
+
+        let state = setScoringSession({ core, sys } as any, {
+            ...createScoringSession(core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+        state = startSmashUpReactionSession(state, {
+            frameId: 'score-after:champions:reaction',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const advanced = advanceSmashUpReactionSession(state, fixedRandom, 75);
+        expect(advanced?.state.sys.interaction?.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const resolved = resolveSmashUpReactionChoice(advanced!.state, fixedRandom, 80, {
+            kind: 'play_action',
+            playerId: '0',
+            cardUid: 'card-1',
+            targetBaseIndex: 0,
+        });
+
+        const prompt = getSimpleChoicePrompt(resolved.state);
+        expect(prompt?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        expect(resolved.state.core.players['0'].hand.some(card => card.uid === 'card-1')).toBe(false);
+        expect(resolved.state.core.players['0'].discard.some(card => card.uid === 'card-1')).toBe(true);
     });
 
     it('只有 frame-backed reaction frame 时打出"我们乃最强"也应立即执行能力', () => {
@@ -365,7 +475,6 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         expect(armedEvent).toBeUndefined();
 
         const state = runner.getState();
-        const hasInteraction = state.sys.interaction?.queue?.length > 0 || !!state.sys.interaction?.current;
-        expect(hasInteraction).toBe(true);
+        expect(getSimpleChoicePrompt(state)).toBeDefined();
     });
 });

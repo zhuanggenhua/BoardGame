@@ -1,124 +1,79 @@
 /**
- * 测试：验证 alien_scout 的 afterScoring trigger 是否正常工作
- * 
- * 问题：用户报告移除 abilityTags: ['special'] 后，侦察兵的计分后效果不触发了
- * 
- * 预期：移除 abilityTags 不应该影响 afterScoring trigger
+ * 验证 alien_scout 的 afterScoring trigger 不依赖 special abilityTag。
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import type { SmashUpCore } from '../domain/types';
+import { fireTriggers } from '../domain/ongoingEffects';
+import {
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeMatchState,
+    makeMinion,
+    makeState,
+    respondToPromptOption,
+} from './helpers';
 
 beforeAll(() => {
     resetAbilityInit();
     initAllAbilities();
 });
 
-describe.skip('alien_scout afterScoring trigger', () => {
-    it('侦察兵在基地计分后应该创建交互让玩家选择是否回手', () => {
-        const runner = new GameTestRunner('smashup', {
-            players: ['p1', 'p2'],
-            setupFn: (core) => {
-                // 设置：基地达标，p1 有一个侦察兵在基地上
-                const base = core.bases[0];
-                base.breakpoint = 10;
-                
-                // p1 打出侦察兵（力量 3）
-                const scout = {
-                    uid: 'scout1',
-                    defId: 'alien_scout',
-                    owner: 'p1',
-                    controller: 'p1',
-                };
-                base.minions.push(scout);
-                
-                // p2 打出随从凑够爆破点
-                base.minions.push({
-                    uid: 'm2',
-                    defId: 'alien_invader',
-                    owner: 'p2',
-                    controller: 'p2',
-                });
-                
-                return core;
-            },
-        });
+const dummyRandom = {
+    random: () => 0.5,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(arr: T[]) => [...arr],
+};
 
-        // 执行：触发基地计分
-        const result = runner.runCommand({
-            type: 'SCORE_BASES',
-            playerId: 'p1',
-            payload: {},
-        });
-
-        expect(result.ok).toBe(true);
-        
-        // 验证：应该创建了 alien_scout_return 交互
-        const interaction = result.state.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.sourceId).toBe('alien_scout_return');
-        
-        // 验证：交互选项应该包含"返回手牌"和"留在基地"
-        const options = (interaction?.data as any).options;
-        expect(options).toBeDefined();
-        expect(options.length).toBe(2);
-        expect(options.some((opt: any) => opt.id === 'yes')).toBe(true);
-        expect(options.some((opt: any) => opt.id === 'no')).toBe(true);
+function triggerScoutAfterScoring() {
+    const core = makeState({
+        bases: [
+            makeBase('base_great_library', [
+                makeMinion('scout1', 'alien_scout', '1', 3),
+                makeMinion('m1', 'wizard_neophyte', '0', 2),
+            ]),
+        ],
     });
 
-    it('侦察兵选择返回手牌后应该回到手牌', () => {
-        const runner = new GameTestRunner('smashup', {
-            players: ['p1', 'p2'],
-            setupFn: (core) => {
-                const base = core.bases[0];
-                base.breakpoint = 10;
-                
-                const scout = {
-                    uid: 'scout1',
-                    defId: 'alien_scout',
-                    owner: 'p1',
-                    controller: 'p1',
-                };
-                base.minions.push(scout);
-                
-                base.minions.push({
-                    uid: 'm2',
-                    defId: 'alien_invader',
-                    owner: 'p2',
-                    controller: 'p2',
-                });
-                
-                return core;
-            },
-        });
+    const result = fireTriggers(core, 'afterScoring', {
+        state: core,
+        matchState: makeMatchState(core),
+        playerId: '0',
+        baseIndex: 0,
+        rankings: [{ playerId: '0', power: 10, vp: 3 }],
+        random: dummyRandom,
+        now: 100,
+    });
 
-        // 触发计分
-        runner.runCommand({
-            type: 'SCORE_BASES',
-            playerId: 'p1',
-            payload: {},
-        });
+    return { core, result };
+}
 
-        // 选择返回手牌
-        const result = runner.runCommand({
-            type: 'RESOLVE_INTERACTION',
-            playerId: 'p1',
-            payload: {
-                interactionId: runner.getState().sys.interaction?.current?.id ?? '',
-                value: { returnIt: true, minionUid: 'scout1', minionDefId: 'alien_scout', owner: 'p1', baseIndex: 0 },
-            },
-        });
+describe('alien_scout afterScoring trigger', () => {
+    it('计分后创建是否回手的 prompt', () => {
+        const { result } = triggerScoutAfterScoring();
 
-        expect(result.ok).toBe(true);
-        
-        // 验证：侦察兵应该回到 p1 手牌
-        const p1Hand = result.state.core.players.p1.hand;
-        expect(p1Hand.some(c => c.uid === 'scout1' && c.defId === 'alien_scout')).toBe(true);
-        
-        // 验证：侦察兵不应该在基地上
-        const base = result.state.core.bases[0];
-        expect(base.minions.some(m => m.uid === 'scout1')).toBe(false);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'alien_scout_return');
+        const optionIds = getPromptOptions(prompt).map(option => option.id);
+
+        expect(optionIds).toEqual(expect.arrayContaining(['yes', 'no']));
+    });
+
+    it('选择回手后侦察兵从基地进入控制者手牌', () => {
+        const { result } = triggerScoutAfterScoring();
+        getSimpleChoicePrompt(result.matchState!, 'alien_scout_return');
+
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.returnIt === true,
+            'alien scout return option',
+            '1',
+            dummyRandom,
+        );
+        const next = resolved.finalState.core;
+
+        expect(next.players['1'].hand.some(card => card.uid === 'scout1' && card.defId === 'alien_scout')).toBe(true);
+        expect(next.bases[0].minions.some(minion => minion.uid === 'scout1')).toBe(false);
     });
 });

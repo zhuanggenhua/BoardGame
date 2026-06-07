@@ -27,8 +27,40 @@
 ### 单测
 
 - 命令：`npm test -- src/games/smashup/__tests__/commandsValidation.test.ts`
-- 结果：`30 passed`
+- 结果：`32 passed`
 - 结论：`commands` 层现在使用真实验证器判断 `special` / `talent` 可用性，旧的错误测试占位已清掉。
+
+### 2026-05-15 追加：泰坦 `setaside special` 窗口回归
+
+- 用户问题：确认泰坦 special 是否真有回归，不能把 FAB 面板最高层级当成问题处理。
+- 回归判定：
+  - `last known good`：`63a9f026449d960b72acd5d9e2f1203a75997b10`。
+  - `first known bad`：`fde11638744718b742aafaabc21bcea377031ef5`，提交信息为 `重构 SmashUp 特殊激活模型并补齐相关回归`。
+- 关键提交 hunk：
+  - `fde11638` 新增 `src/games/smashup/domain/activationMetadata.ts`，其中 `hasCardActivatableAbility` 在查询带 `window` 时，若能力自身没有 `window`，会继续匹配。
+  - 同一提交给大量泰坦新增 `{ kind: 'special', zone: 'setaside' }`，但没有写 `window`。
+  - `validateTitanAbility` 会把泰坦 special 的当前窗口传给 `hasCardActivatableAbility`；因此这些无窗口的 setaside special 会误匹配 `beforeScoring` / `afterScoring`。
+- 真实影响边界：
+  - 不是 FAB 问题。
+  - 不是所有泰坦都会真实暴露。没有 special executor 的泰坦后续仍会被 `resolveSpecial` 拦住。
+  - 真问题是有 special executor 的代表泰坦会因为缺 `window` 而在计分响应窗口被错误放行，例如 `ghosts_creampuff_man`、`fairies_spirit_of_the_forest`、`wizards_arcane_protector`、`vampires_ancient_lord`、`giant_ants_death_on_six_legs`、`time_travelers_time_box`、`tricksters_big_funny_giant`、`explorers_very_large_boulder`。
+- 修复策略：
+  - 不改 FAB。
+  - 不重写 validator。
+  - 只还原错误 hunk 的合同：所有泰坦 `special:setaside` 显式补 `window: 'playCards'`；`penguins_emperor_penguin` 原本没有 setaside special，保持不变。
+
+#### 追加验证
+
+- 命令：`npm run test -- src/games/smashup/__tests__/commandsValidation.test.ts src/games/smashup/__tests__/scoreBases-auto-continue.test.ts`
+- 结果：`2 files passed`，`68 passed`。
+- 命令：`npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "触发式 special 不应在泰坦栏或基地上被错误高亮为可手动激活"`
+- 结果：`1 passed`，隔离端口 `6273/20100/21100`。
+- 追加窗口矩阵：
+  - `ghosts_creampuff_man`、`fairies_spirit_of_the_forest`、`tricksters_big_funny_giant`、`explorers_very_large_boulder`：`playCards=VALID`，`beforeScoring/afterScoring=该泰坦的特殊能力不能手动激活`。
+  - `wizards_arcane_protector`、`vampires_ancient_lord`、`giant_ants_death_on_six_legs`、`time_travelers_time_box`：`playCards` 进入各自真实规则前置条件校验，`beforeScoring/afterScoring=该泰坦的特殊能力不能手动激活`。
+- 静态检查：
+  - `rg -n "kind: 'special', zone: 'setaside'(?!, window: 'playCards')" src/games/smashup/data/titans.ts e2e/src/games/smashup/data/titans.ts --pcre2` 无命中。
+  - `src/` 与 `e2e/src/` 三个镜像文件无内容差异：`data/titans.ts`、`commandsValidation.test.ts`、`scoreBases-auto-continue.test.ts`。
 
 ### E2E
 

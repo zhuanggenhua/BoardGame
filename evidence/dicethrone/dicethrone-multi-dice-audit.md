@@ -1,8 +1,10 @@
-# Dice Throne 多骰技能全面审计
+# Dice Throne 多骰技能专项审计
+
+> 2026-06-06 当前有效口径：本文只保留“多骰技能是否为每颗骰子正确发射 `BONUS_DIE_ROLLED` 事件、UI 能否显示全部奖励骰”的专项历史证据，不代表 DiceThrone 整体、单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时这条 shared seam 被专项排查并修补过；若要判断 Treant / Ninja / Gunslinger / Samurai 的现行状态，必须回到 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 与对应单英雄主审计文档。
 
 ## 审计范围
 
-对 Dice Throne 中所有投掷多个骰子的技能进行全面审计，确保每个骰子都正确发射 `BONUS_DIE_ROLLED` 事件，UI 能显示所有骰子。
+对 DiceThrone 当时已接入的多骰技能做专项排查，确认每个骰子都正确发射 `BONUS_DIE_ROLLED` 事件，UI 能显示所有骰子。
 
 ## 审计方法
 
@@ -184,13 +186,19 @@ npx eslint src/games/dicethrone/domain/customActions/moon_elf.ts
 
 ### 审计结论
 
-✅ **审计完成**：Dice Throne 中所有投掷多个骰子的技能已全面审计完毕。
+✅ **本专项当轮已完成**：本文覆盖的多骰事件分发问题在当轮已完成专项审计与修补。
 
-✅ **问题已修复**：月精灵的 4 个技能已修复，现在正确显示所有骰子。
+✅ **本专项问题已修复**：月精灵的 4 个技能已修复，现在正确显示所有骰子。
 
-✅ **其他英雄正确**：狂战士的 4 个多骰技能实现正确，其他英雄无多骰技能。
+✅ **当轮样本范围内其余对象未命中同类问题**：狂战士的 4 个多骰技能实现正确，其他当时已检查对象未发现同类问题。
 
 ✅ **代码质量**：修复后的代码遵循最佳实践，与狂战士的正确实现保持一致。
+
+## 当前阅读说明
+
+- 本文只能证明“多骰事件分发 / 特写展示”这条共享机制曾被专项审过并修过。
+- 本文不能外推为 Treant / Ninja / Gunslinger / Samurai 任一英雄已全面审计完成。
+- 新英雄默认全面审计留档的现行口径，应以项目 workflow 与 2026-05/06 的批次级总审计文档为准，而不是本文这类专项证据。
 
 ### 参考实现
 

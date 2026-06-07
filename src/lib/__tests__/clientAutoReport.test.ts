@@ -1,0 +1,337 @@
+// @vitest-environment jsdom
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../config/server', () => ({
+    FEEDBACK_API_URL: '/feedback',
+    IS_DEV_API_DISABLED: false,
+}));
+
+describe('clientAutoReport', () => {
+    beforeEach(() => {
+        vi.resetModules();
+        vi.clearAllMocks();
+        window.localStorage.clear();
+        window.history.replaceState({}, '', '/play/smashup/match/match-1?seat=0');
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ ok: true }),
+        }));
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
+        delete (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
+        delete (window as Window & { __BG_LAST_ERROR_CONTEXT__?: unknown }).__BG_LAST_ERROR_CONTEXT__;
+    });
+
+    it('会自动上报并写入最近错误上下文', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        const { getLastErrorContext } = await import('../feedback/errorContext');
+
+        await reportClientAutoFeedbackOnce('smashup-runtime-state-normalized:bases[0].ongoingActions:null', {
+            content: '[auto][smashup-runtime-guard] test anomaly',
+            autoReportKind: 'smashup-runtime-state-normalized',
+            source: 'client-runtime-guard',
+            gameId: 'smashup',
+            gameName: 'smashup',
+            playerId: '0',
+            errorName: 'SmashUpRuntimeStateNormalized',
+            errorMessage: '大杀四方运行时状态存在空数组合同破坏',
+            errorSource: 'smashup.runtime_state_guard',
+            stack: '{"phase":"scoreBases"}',
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect(getLastErrorContext()).toMatchObject({
+            name: 'SmashUpRuntimeStateNormalized',
+            message: '大杀四方运行时状态存在空数组合同破坏',
+            source: 'smashup.runtime_state_guard',
+        });
+
+        const requestInit = (globalThis.fetch as any).mock.calls[0]?.[1];
+        const body = JSON.parse(String(requestInit?.body ?? '{}'));
+        expect(body).toMatchObject({
+            source: 'client-runtime-guard',
+            autoReportKind: 'smashup-runtime-state-normalized',
+            gameName: 'smashup',
+            clientContext: {
+                gameId: 'smashup',
+                matchId: 'match-1',
+                playerId: '0',
+            },
+            errorContext: {
+                name: 'SmashUpRuntimeStateNormalized',
+                source: 'smashup.runtime_state_guard',
+            },
+        });
+    });
+
+    it('通用来源会透传到自动反馈请求里', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('react-boundary-signature', {
+            content: '[auto][react.error_boundary] render failed',
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Cannot read properties of undefined',
+            errorSource: 'react.error_boundary',
+        });
+
+        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        expect(body.source).toBe('react-error-boundary');
+        expect(body.contactInfo).toBe('auto:react-error-boundary');
+        expect(body.clientContext?.gameId).toBe('smashup');
+    });
+
+    it('同一签名在去重窗口内只会上报一次', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        const payload = {
+            content: '[auto][smashup-runtime-guard] test anomaly',
+            autoReportKind: 'smashup-runtime-state-normalized',
+            gameId: 'smashup',
+            gameName: 'smashup',
+            playerId: '0',
+            errorName: 'SmashUpRuntimeStateNormalized',
+            errorMessage: '大杀四方运行时状态存在空数组合同破坏',
+            errorSource: 'smashup.runtime_state_guard',
+        };
+
+        await reportClientAutoFeedbackOnce('dedupe-signature', payload);
+        await reportClientAutoFeedbackOnce('dedupe-signature', payload);
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('测试模式下不会真的发请求，但仍会记录最近错误上下文', async () => {
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        const { getLastErrorContext } = await import('../feedback/errorContext');
+
+        await reportClientAutoFeedbackOnce('test-mode-signature', {
+            content: '[auto][smashup-runtime-guard] test anomaly',
+            autoReportKind: 'smashup-runtime-state-normalized',
+            gameId: 'smashup',
+            gameName: 'smashup',
+            errorName: 'SmashUpRuntimeStateNormalized',
+            errorMessage: '仅记录上下文',
+            errorSource: 'smashup.runtime_state_guard',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(getLastErrorContext()).toMatchObject({
+            name: 'SmashUpRuntimeStateNormalized',
+            message: '仅记录上下文',
+        });
+    });
+
+    it('stale chunk 类错误会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('stale-chunk-signature', {
+            content: '[auto][window.error] chunk failed',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'ChunkLoadError',
+            errorMessage: 'Loading chunk 42 failed',
+            errorSource: 'window.error',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('动态导入模块加载失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('dynamic-import-module-error', {
+            content: '[auto][unhandledrejection] error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('模块脚本 MIME type 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('invalid-module-mime-type', {
+            content: "[auto][react.error_boundary] 'text/html' is not a valid JavaScript MIME type.",
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "'text/html' is not a valid JavaScript MIME type.",
+            errorSource: 'react.error_boundary',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('音频设备启动失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-device-invalid-state', {
+            content: '[auto][unhandledrejection] Failed to start the audio device',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'InvalidStateError',
+            errorMessage: 'Failed to start the audio device',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('旧 Android 壳缺少 App 插件时会过滤噪音，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('android-app-plugin-missing', {
+            content: '[auto][unhandledrejection] "App" plugin is not implemented on android',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '"App" plugin is not implemented on android',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('旧 Android 壳缺少 CapacitorUpdater 插件时会过滤噪音，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('android-capacitor-updater-plugin-missing', {
+            content: '[auto][unhandledrejection] "CapacitorUpdater" plugin is not implemented on android',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '"CapacitorUpdater" plugin is not implemented on android',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('通用 AbortError 噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('generic-abort-error', {
+            content: '[auto][unhandledrejection] The operation was aborted.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'AbortError',
+            errorMessage: 'The operation was aborted.',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Script error. 浏览器通用噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('generic-script-error', {
+            content: '[auto][window.error] Script error.',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Script error.',
+            errorSource: 'window.error',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('匿名页面级注入脚本的全局未定义噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        window.history.replaceState({}, '', '/?homeStyle=classic');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('anonymous-global-reference-noise', {
+            content: '[auto][window.error] LIDNotifyId is not defined',
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'ReferenceError',
+            errorMessage: 'LIDNotifyId is not defined',
+            errorSource: 'https://easyboardgame.top/?homeStyle=classic:1:1',
+            stack: 'ReferenceError: LIDNotifyId is not defined\n    at <anonymous>:1:1',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('匿名页面级注入脚本的属性读取噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        window.history.replaceState({}, '', '/?homeStyle=classic');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('anonymous-property-read-noise', {
+            content: "[auto][window.error] Cannot read properties of undefined (reading 'logout')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of undefined (reading 'logout')",
+            errorSource: 'https://easyboardgame.top/?homeStyle=classic:1:26',
+            stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at <anonymous>:1:26",
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('站内真实堆栈的 window error 不会被匿名注入噪音规则误过滤', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('real-app-window-error', {
+            content: "[auto][window.error] Cannot read properties of undefined (reading 'logout')",
+            autoReportKind: 'window-error',
+            source: 'client-window-error',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of undefined (reading 'logout')",
+            errorSource: 'https://easyboardgame.top/src/components/social/UserMenu.tsx:320:15',
+            stack: "TypeError: Cannot read properties of undefined (reading 'logout')\n    at handleLogout (https://easyboardgame.top/src/components/social/UserMenu.tsx:320:15)",
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+});

@@ -6,7 +6,9 @@
 import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
+import { STATUS_IDS } from './ids';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
+import { isTreantTreeSpiritToken } from './passiveAbility';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -165,11 +167,29 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     state,
     event
 ) => {
-    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields } = event.payload;
+    const { targetId, amount, actualDamage, sourceAbilityId, bypassShields, damageScope } = event.payload;
     const target = state.players[targetId];
 
     if (!target) {
         return state;
+    }
+
+    const currentAttackAttackerId = state.pendingAttack?.attackerId;
+    const sourcePlayerId = event.payload.sourcePlayerId ?? currentAttackAttackerId;
+    const sourcePlayer = sourcePlayerId ? state.players[sourcePlayerId] : undefined;
+    const parleyStacks = sourcePlayer?.statusEffects?.[STATUS_IDS.PARLEY] ?? 0;
+    const isCurrentAttackDamage = damageScope === 'attack'
+        && Boolean(currentAttackAttackerId)
+        && sourcePlayerId === currentAttackAttackerId
+        && targetId === state.pendingAttack?.defenderId;
+
+    if (isCurrentAttackDamage && parleyStacks > 0) {
+        return {
+            ...state,
+            lastEffectSourceByPlayerId: sourceAbilityId
+                ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
+                : state.lastEffectSourceByPlayerId,
+        };
     }
 
     // 使用 amount（原始伤害）而不是 actualDamage 来计算护盾消耗
@@ -360,6 +380,10 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             attackModifierBonusDamage: queuedAttackModifierBonusDamage,
         },
         lastResolvedAttackDamage: undefined,
+        offensiveRollAttackMadeThisTurn: {
+            ...(state.offensiveRollAttackMadeThisTurn ?? {}),
+            [attackerId]: true,
+        },
     };
 };
 
@@ -503,6 +527,7 @@ export const handleExtraAttackTriggered: EventHandler<Extract<DiceThroneEvent, {
         extraAttackInProgress: {
             attackerId,
             originalActivePlayerId: state.activePlayerId,
+            phaseEntered: false,
         },
     };
 };
@@ -598,7 +623,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
     state,
     event
 ) => {
-    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll } = event.payload;
+    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll, deferredDamageEvents } = event.payload;
 
     // 消耗 Token
     let players = state.players;
@@ -610,6 +635,16 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
             [playerId]: { ...player, tokens: { ...player.tokens, [tokenId]: Math.max(0, currentAmount - amount) } },
         };
     }
+
+    const treantSpiritSpentThisTurn = isTreantTreeSpiritToken(tokenId)
+        ? {
+            ...(state.treantSpiritSpentThisTurn ?? {}),
+            [playerId]: {
+                ...(state.treantSpiritSpentThisTurn?.[playerId] ?? {}),
+                [tokenId]: true,
+            },
+        }
+        : state.treantSpiritSpentThisTurn;
 
     // 更新 pendingDamage / pendingAttack
     // beforeDamageDealt 的 token 加伤既要进入当前响应窗的 pendingDamage，
@@ -638,6 +673,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 currentDamage: state.pendingDamage.currentDamage + damageModifier,
                 modifiers,
                 tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
             };
             if (
                 state.pendingDamage.responseType === 'beforeDamageDealt'
@@ -662,20 +698,38 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 currentDamage: Math.max(0, state.pendingDamage.currentDamage + damageModifier),
                 modifiers,
                 tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
             };
         } else if (effectType === 'evasionAttempt') {
             if (evasionRoll?.success) {
-                pendingDamage = { ...state.pendingDamage, currentDamage: 0, isFullyEvaded: true, lastEvasionRoll: evasionRoll, tokenUsageTotals };
+                pendingDamage = {
+                    ...state.pendingDamage,
+                    currentDamage: 0,
+                    isFullyEvaded: true,
+                    lastEvasionRoll: evasionRoll,
+                    tokenUsageTotals,
+                    deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+                };
             } else if (evasionRoll) {
                 // 闪避失败：显式设置 isFullyEvaded: false
-                pendingDamage = { ...state.pendingDamage, isFullyEvaded: false, lastEvasionRoll: evasionRoll, tokenUsageTotals };
+                pendingDamage = {
+                    ...state.pendingDamage,
+                    isFullyEvaded: false,
+                    lastEvasionRoll: evasionRoll,
+                    tokenUsageTotals,
+                    deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+                };
             }
         } else {
-            pendingDamage = { ...state.pendingDamage, tokenUsageTotals };
+            pendingDamage = {
+                ...state.pendingDamage,
+                tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+            };
         }
     }
 
-    return { ...state, players, pendingDamage, pendingAttack };
+    return { ...state, players, pendingDamage, pendingAttack, treantSpiritSpentThisTurn };
 };
 
 /**

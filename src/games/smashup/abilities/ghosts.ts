@@ -6,11 +6,10 @@
 
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback, buildStandardDrawEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
+import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
-import { drawCards } from '../domain/utils';
 import { registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
 import { registerDiscardPlayProvider } from '../domain/discardPlayability';
@@ -122,6 +121,18 @@ type GhostSpiritDiscardContext = GhostPromptContext & {
     requiredCount: number;
 };
 
+function findCardOwnerAcrossPlayerZones(state: SmashUpCore, cardUid: string, defId: string, fallbackPlayerId: string): string {
+    for (const player of Object.values(state.players)) {
+        const inHand = player.hand.find(card => card.uid === cardUid && card.defId === defId);
+        if (inHand) return inHand.owner;
+        const inDiscard = player.discard.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDiscard) return inDiscard.owner;
+        const inDeck = player.deck.find(card => card.uid === cardUid && card.defId === defId);
+        if (inDeck) return inDeck.owner;
+    }
+    return fallbackPlayerId;
+}
+
 type GhostSpiritConfirmContext = GhostPromptContext & {
     minionUid: string;
     baseIndex: number;
@@ -135,6 +146,7 @@ type GhostTheDeadRiseContext = GhostPromptContext & {
 type GhostDeadRiseCandidate = {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
     power: number;
     label: string;
 };
@@ -147,6 +159,7 @@ type GhostTheDeadRisePlayContext = GhostPromptContext & {
 type GhostTheDeadRiseBaseContext = GhostPromptContext & {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
     power: number;
 };
 
@@ -166,7 +179,7 @@ type GhostBaseChoiceValue = { baseIndex: number; baseDefId?: string };
 type GhostSpiritChoiceValue = { minionUid?: string; baseIndex?: number; defId?: string; __cancel__?: true };
 type GhostConfirmChoiceValue = { confirm?: boolean };
 type GhostAcrossChoiceValue = { defId?: string; __cancel__?: true };
-type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; power?: number; baseIndex?: number; skip?: true };
+type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; ownerId?: PlayerId; power?: number; baseIndex?: number; skip?: true };
 
 function attachOptionsGenerator<T>(
     interaction: InteractionDescriptor<T>,
@@ -306,6 +319,7 @@ function buildGhostDeadRiseCandidatesFromCards(
             return {
                 cardUid: card.uid,
                 defId: card.defId,
+                ownerId: card.owner,
                 power,
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
             };
@@ -319,7 +333,7 @@ function buildGhostDeadRisePlayOptions(
         ...eligible.map((card, index) => ({
             id: `card-${index}`,
             label: card.label,
-            value: { cardUid: card.cardUid, defId: card.defId, power: card.power },
+            value: { cardUid: card.cardUid, defId: card.defId, ownerId: card.ownerId, power: card.power },
             displayMode: 'card' as const,
         })),
         {
@@ -451,14 +465,7 @@ function ghostSeance(ctx: AbilityContext): AbilityResult {
     if (handAfterPlay > 2) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     const drawCount = Math.max(0, 5 - handAfterPlay);
     if (drawCount === 0) return { events: [] };
-    const { drawnUids } = drawCards(player, drawCount, ctx.random);
-    if (drawnUids.length === 0) return { events: [] };
-    const evt: CardsDrawnEvent = {
-        type: SU_EVENTS.CARDS_DRAWN,
-        payload: { playerId: ctx.playerId, count: drawnUids.length, cardUids: drawnUids },
-        timestamp: ctx.now,
-    };
-    return { events: [evt] };
+    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, drawCount, ctx.random, ctx.now) };
 }
 
 /** 阴暗交易 onPlay：手牌≤2时获得?VP */
@@ -540,8 +547,8 @@ const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmCo
         context.playerId,
         '是否消灭该随从？（力量 0，无需弃牌）',
         [
-            { id: 'yes', label: '消灭', value: { confirm: true } },
-            { id: 'no', label: '跳过', value: { confirm: false } },
+            { id: 'yes', label: '消灭', value: { confirm: true }, displayMode: 'button' as const },
+            { id: 'no', label: '跳过', value: { confirm: false }, displayMode: 'button' as const },
         ],
         {
             sourceId: 'ghost_spirit_confirm',
@@ -711,6 +718,7 @@ const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBa
                     playerId,
                     cardUid: context.cardUid,
                     defId: context.defId,
+                    ownerId: context.ownerId,
                     baseIndex: choice.baseIndex,
                     baseDefId: state.core.bases[choice.baseIndex]?.defId,
                     power: context.power,
@@ -782,6 +790,7 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
                         playerId,
                         cardUid: selected.cardUid,
                         defId: selected.defId,
+                        ownerId: selected.ownerId,
                         baseIndex,
                         baseDefId: state.core.bases[baseIndex]?.defId,
                         power: selected.power,
@@ -806,10 +815,11 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
                 matchState: state,
                 playerId,
                 now: timestamp,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                power: selected.power,
-            },
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    power: selected.power,
+                },
             nextProgram: ghostTheDeadRiseBasePromptProgram,
         };
     },
@@ -934,6 +944,7 @@ const ghostAcrossTheDivideProgram = createBranchProgram<GhostAcrossTheDivideCont
 function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const handAfterPlay = ctx.handSizeAfterPlay ?? player.hand.filter(c => c.uid !== ctx.cardUid).length;
+    const ownerId = findCardOwnerAcrossPlayerZones(ctx.state, ctx.cardUid, ctx.defId, ctx.playerId);
     // 行动卡打出后仍有手牌则自毁
     if (handAfterPlay > 0) {
         const detachEvt: OngoingDetachedEvent = {
@@ -941,7 +952,7 @@ function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
             payload: {
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
-                ownerId: ctx.playerId,
+                ownerId,
                 reason: 'ghost_make_contact_pod_has_hand',
             },
             timestamp: ctx.now,

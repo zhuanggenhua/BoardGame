@@ -41,10 +41,12 @@ export interface FeedbackItem {
     type: 'bug' | 'suggestion' | 'other';
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    closedReason?: string | null;
     gameName?: string;
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    rewardPoints?: number;
     clientContext?: FeedbackClientContext;
     errorContext?: FeedbackErrorContext;
     createdAt: string;
@@ -150,6 +152,52 @@ function formatInlineValue(value: unknown, depth = 0): string {
     return `${entries.join(', ')}${suffix}`;
 }
 
+function toStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+        .filter((entry): entry is string => typeof entry === 'string')
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+}
+
+function extractFactionStateSummary(stateSnapshot: unknown): string | null {
+    const snapshot = toRecord(stateSnapshot);
+    if (!snapshot) return null;
+
+    const core = toRecord(snapshot.core) ?? snapshot;
+    const selectedFactions = toRecord(core.selectedFactions) ?? toRecord(snapshot.selectedFactions);
+    const factionSelection = toRecord(core.factionSelection) ?? toRecord(snapshot.factionSelection);
+    const takenFactions = toStringList(factionSelection?.takenFactions);
+    const playerSelections = toRecord(factionSelection?.playerSelections);
+
+    const selectedParts = selectedFactions
+        ? Object.entries(selectedFactions)
+            .map(([playerId, factionId]) => {
+                if (typeof factionId !== 'string' || !factionId.trim()) return '';
+                return `${playerId}=${factionId.trim()}`;
+            })
+            .filter(Boolean)
+        : [];
+
+    const draftParts = playerSelections
+        ? Object.entries(playerSelections)
+            .map(([playerId, picks]) => {
+                const normalizedPicks = toStringList(picks);
+                if (normalizedPicks.length === 0) return '';
+                return `${playerId}=${normalizedPicks.join('/')}`;
+            })
+            .filter(Boolean)
+        : [];
+
+    const parts = [
+        selectedParts.length > 0 ? `已选玩家 ${selectedParts.join(', ')}` : '',
+        draftParts.length > 0 ? `选秀记录 ${draftParts.join(', ')}` : '',
+        takenFactions.length > 0 ? `已占用 ${takenFactions.join(', ')}` : '',
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join('; ') : null;
+}
+
 function summarizeOperationLogs(actionLog?: string): string | null {
     const logs = parseOperationLogs(actionLog);
     if (logs.length === 0) return null;
@@ -184,12 +232,14 @@ function summarizeStateSnapshot(stateSnapshot: unknown): string | null {
     const currentPlayer = snapshot.currentPlayer ?? core?.currentPlayer;
     const phase = snapshot.phase ?? core?.phase;
     const players = toRecord(snapshot.players) ?? toRecord(core?.players);
+    const factionSummary = extractFactionStateSummary(stateSnapshot);
     const parts = [
         gameId ? `game=${gameId}` : '',
         turn != null ? `turn=${String(turn)}` : '',
         currentPlayer != null ? `player=${String(currentPlayer)}` : '',
         phase != null ? `phase=${String(phase)}` : '',
         players ? `players=${Object.keys(players).length}` : '',
+        factionSummary ? `factions=${factionSummary}` : '',
     ].filter(Boolean);
 
     if (field) {
@@ -283,6 +333,7 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
     const screenshots = extractEmbeddedImages(item.content);
     const operationSummary = summarizeOperationLogs(item.actionLog);
     const stateSummary = summarizeStateSnapshot(parsedSnapshot);
+    const factionSummary = extractFactionStateSummary(parsedSnapshot);
     const actionLogMetrics = measureTextBlock(item.actionLog);
     const stateSnapshotMetrics = measureTextBlock(item.stateSnapshot);
     const prettyActionLog = prettyPrintJson(item.actionLog);
@@ -301,9 +352,11 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
         `- 类型: ${t(`feedback.type.${item.type}`)}`,
         `- 严重度: ${t(`feedback.severity.${item.severity}`)}`,
         `- 状态: ${t(`feedback.status.${item.status}`)}`,
+        item.closedReason ? `- 关闭理由: ${item.closedReason}` : '',
         gameLabel ? `- 游戏: ${gameLabel}` : '',
         `- 提交人: ${reporter}`,
         item.contactInfo ? `- 联系方式: ${item.contactInfo}` : '',
+        typeof item.rewardPoints === 'number' && item.rewardPoints > 0 ? `- 奖励积分: +${item.rewardPoints}` : '',
         '',
         '## 2. 用户反馈原文',
         contentText,
@@ -317,6 +370,7 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
         `- 操作日志: ${actionLogMetrics ? `${actionLogMetrics.lines} 行 / ${actionLogMetrics.chars} 字符` : '未附带'}`,
         `- 状态快照: ${stateSnapshotMetrics ? `${stateSnapshotMetrics.lines} 行 / ${stateSnapshotMetrics.chars} 字符` : '未附带'}`,
         stateSummary ? `- 状态摘要: ${stateSummary}` : '',
+        factionSummary ? `- 派系摘要: ${factionSummary}` : '',
         errorStack ? `- 错误堆栈: ${measureTextBlock(errorStack)?.lines ?? 0} 行` : '- 错误堆栈: 未附带',
         '',
         '## 4. 客户端上下文',

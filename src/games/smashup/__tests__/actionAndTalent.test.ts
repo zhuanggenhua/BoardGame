@@ -18,6 +18,10 @@ import { initAllAbilities } from '../abilities';
 import { getCardDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { reduce } from '../domain/reduce';
+import { createCardObjectRef } from '../domain/objectProvenance';
+import { makeCard, makeMatchState, makePlayer, makeState } from './helpers';
+import { defaultTestRandom, runCommand } from './testRunner';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -51,6 +55,99 @@ const DRAFT_COMMANDS: SmashUpCommand[] = [
 // ============================================================================
 
 describe('Property 8: 标准行动卡生命周期', () => {
+    it('直接打出被他人拥有的标准行动时，应从当前玩家手牌移除并进入其拥有者弃牌堆', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('summon', 'wizard_summon', 'action', '1')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [],
+        });
+
+        const result = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'summon' },
+        }, defaultTestRandom);
+
+        expect(result.success).toBe(true);
+        const actionPlayed = result.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
+        expect(actionPlayed?.payload?.ownerId).toBe('1');
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['0'].hand.some(card => card.uid === 'summon')).toBe(false);
+        expect(finalCore.players['0'].discard.some(card => card.uid === 'summon')).toBe(false);
+        expect(finalCore.players['1'].discard).toContainEqual(
+            expect.objectContaining({ uid: 'summon', defId: 'wizard_summon', owner: '1' }),
+        );
+    });
+
+    it('CARD_TRANSFERRED 在来源区已不可见时仍应仅凭 objectRef 重建 provenance，后续 borrowed 随从被消灭时进入真实拥有者弃牌堆', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const transferredCore = reduce(core, {
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: {
+                cardUid: 'borrowed-minion',
+                defId: 'pirate_first_mate',
+                fromPlayerId: '2',
+                toPlayerId: '0',
+                objectRef: createCardObjectRef({
+                    uid: 'borrowed-minion',
+                    defId: 'pirate_first_mate',
+                    ownerId: '1',
+                    type: 'minion',
+                }),
+                reason: 'test_transfer_owner_provenance',
+            },
+            timestamp: 1000,
+        } as any);
+
+        expect(transferredCore.players['0'].hand).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-minion', owner: '1' }),
+        );
+
+        const played = runCommand(makeMatchState(transferredCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'borrowed-minion', baseIndex: 0 },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'borrowed-minion')).toEqual(
+            expect.objectContaining({ owner: '1', controller: '0' }),
+        );
+
+        const afterDestroy = reduce(played.finalState.core, {
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: {
+                minionUid: 'borrowed-minion',
+                minionDefId: 'pirate_first_mate',
+                fromBaseIndex: 0,
+                ownerId: '1',
+                controllerId: '0',
+                destroyerId: '0',
+                reason: 'test_transfer_owner_provenance',
+            },
+            timestamp: 1001,
+        } as any);
+
+        expect(afterDestroy.players['0'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+        expect(afterDestroy.players['2'].discard.some(card => card.uid === 'borrowed-minion')).toBe(false);
+        expect(afterDestroy.players['1'].discard).toContainEqual(
+            expect.objectContaining({ uid: 'borrowed-minion', owner: '1' }),
+        );
+    });
+
     it('打出标准行动卡后从手牌移入弃牌堆', () => {
         const runner = createRunner();
         const result = runner.run({ name: '选秀', commands: DRAFT_COMMANDS });

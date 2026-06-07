@@ -139,12 +139,7 @@ describe('beforeScoring 响应窗口 - 卡住问题', () => {
                 { uid: 'c60', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '1' },
                 { uid: 'c54', defId: 'giant_ant_we_will_rock_you', type: 'action', owner: '1' },
             ];
-            
-            console.log('[TEST SETUP] P0 hand:', core.players['0'].hand.map(c => c.defId));
-            console.log('[TEST SETUP] P1 hand:', core.players['1'].hand.map(c => c.defId));
-            console.log('[TEST SETUP] Base 1 minions:', core.bases[1].minions.map(m => m.defId));
-            console.log('[TEST SETUP] Base 2 minions:', core.bases[2].minions.map(m => m.defId));
-            
+
             return { sys, core };
         }
         
@@ -168,51 +163,36 @@ describe('beforeScoring 响应窗口 - 卡住问题', () => {
         });
         
         // 验证：检查响应窗口状态
-        const finalStep = result.steps[result.steps.length - 1];
-        console.log('[TEST] Final phase:', finalStep.after?.sys?.phase);
-        console.log('[TEST] Response window:', finalStep.after?.sys?.responseWindow?.current);
-        console.log('[TEST] Interaction:', finalStep.after?.sys?.interaction?.current);
-        
-        // 检查是否有 beforeScoring 响应窗口
-        const hasResponseWindow = !!finalStep.after?.sys?.responseWindow?.current;
-        console.log('[TEST] Has response window:', hasResponseWindow);
-        
-        if (hasResponseWindow) {
-            const window = finalStep.after!.sys.responseWindow!.current!;
-            console.log('[TEST] Window type:', window.windowType);
-            console.log('[TEST] Responder queue:', window.responderQueue);
-            console.log('[TEST] Current responder index:', window.currentResponderIndex);
-            console.log('[TEST] Passed players:', window.passedPlayers);
-            
-            // 检查当前响应者
-            const currentResponderId = window.responderQueue[window.currentResponderIndex];
-            console.log('[TEST] Current responder:', currentResponderId);
-            
-            // 检查 P0 手牌中是否有 beforeScoring 卡牌
-            const p0Hand = finalStep.after!.core.players['0'].hand;
-            console.log('[TEST] P0 hand:', p0Hand.map((c: any) => c.defId));
-            
-            // 检查是否有 special 卡牌
-            const hasSpecialCard = p0Hand.some((c: any) => {
-                if (c.type !== 'action') return false;
-                const def = require('../data/cards').getCardDef(c.defId);
-                return def?.subtype === 'special' || def?.responseWindowTiming === 'beforeScoring';
-            });
-            console.log('[TEST] P0 has special card:', hasSpecialCard);
-            
-            // 检查是否有 beforeScoringPlayable 随从
-            const hasBeforeScoringMinion = p0Hand.some((c: any) => {
-                if (c.type !== 'minion') return false;
-                const def = require('../data/cards').getMinionDef(c.defId);
-                return def?.beforeScoringPlayable === true;
-            });
-            console.log('[TEST] P0 has beforeScoringPlayable minion:', hasBeforeScoringMinion);
-            
-            // 断言：P0 不应该有可响应内容
-            expect(hasSpecialCard).toBe(false);
-            expect(hasBeforeScoringMinion).toBe(false);
-        }
-        
-        console.log('测试完成：检查日志输出');
+        const afterState = result.finalState;
+        expect(afterState.sys.phase).toBe('scoreBases');
+
+        const window = afterState.sys.responseWindow?.current;
+        if (!window) return;
+
+        expect(window.windowType).toBe('meFirst');
+
+        const currentResponderId = window.responderQueue[window.currentResponderIndex];
+        expect(currentResponderId).toBe('0');
+
+        // 检查 P0 手牌中是否有 beforeScoring 卡牌
+        const p0Hand = afterState.core.players['0'].hand;
+
+        // 检查是否有 special 卡牌
+        const hasSpecialCard = p0Hand.some((c: any) => {
+            if (c.type !== 'action') return false;
+            const def = require('../data/cards').getCardDef(c.defId);
+            return def?.subtype === 'special' || def?.responseWindowTiming === 'beforeScoring';
+        });
+
+        // 检查是否有 beforeScoringPlayable 随从
+        const hasBeforeScoringMinion = p0Hand.some((c: any) => {
+            if (c.type !== 'minion') return false;
+            const def = require('../data/cards').getMinionDef(c.defId);
+            return def?.beforeScoringPlayable === true;
+        });
+
+        // 断言：P0 不应该有可响应内容，但窗口仍正确停在 P0 响应位
+        expect(hasSpecialCard).toBe(false);
+        expect(hasBeforeScoringMinion).toBe(false);
     });
 });

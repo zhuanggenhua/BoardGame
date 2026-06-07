@@ -9,6 +9,7 @@ const {
     COMMON_CRITICAL_PATHS,
     HAND_ATLAS_CHARACTER_IDS,
     IMPLEMENTED_CHARACTERS,
+    getCharAssetsByTag,
     getAllCharAssets,
     getHandAtlasAssets,
 } = _testExports;
@@ -34,8 +35,12 @@ describe('diceThroneCriticalImageResolver', () => {
             expect(result.critical).toContain(path);
         }
         for (const charId of IMPLEMENTED_CHARACTERS) {
-            expect(result.critical).toContain(`dicethrone/images/${charId}/player-board`);
-            expect(result.warm).toContain(`dicethrone/images/${charId}/dice`);
+            for (const asset of getCharAssetsByTag(charId, 'selection')) {
+                expect(result.critical).toContain(asset);
+            }
+            for (const asset of getCharAssetsByTag(charId, 'gameplay')) {
+                expect(result.warm).toContain(asset);
+            }
         }
     });
 
@@ -78,6 +83,16 @@ describe('diceThroneCriticalImageResolver', () => {
 
         expect(setupResult.warm).not.toContain('dicethrone/images/monk/hand-cards-atlas');
         expect(playingResult.critical).not.toContain('dicethrone/images/monk/hand-cards-atlas');
+    });
+
+    it('咒缚海盗 gameplay 预加载同时包含咒缚面与人类面玩家板，选角预览仍只展示默认玩家板', () => {
+        const gameplayAssets = getCharAssetsByTag('cursed_pirate', 'gameplay');
+        const selectionAssets = getCharAssetsByTag('cursed_pirate', 'selection');
+
+        expect(gameplayAssets).toContain('dicethrone/images/cursed/human-player-board');
+        expect(gameplayAssets).toContain('dicethrone/images/cursed/player-board');
+        expect(selectionAssets).toContain('dicethrone/images/cursed/player-board');
+        expect(selectionAssets).not.toContain('dicethrone/images/cursed/human-player-board');
     });
 
     it('playing 阶段有 playerID 时：自己进 critical，对手进 warm', () => {

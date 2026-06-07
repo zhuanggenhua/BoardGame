@@ -1,5 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { PendingBonusDiceSettlement } from '../domain/types';
+import { getPendingBonusSettlementDice } from '../domain/rules';
 import type { CardSpotlightItem } from './CardSpotlightOverlay';
 
 const CARD_SPOTLIGHT_MATCH_THRESHOLD_MS = 1500;
@@ -63,6 +64,15 @@ export interface InteractivePendingBonusOverlayArgs {
     responseWindowState?: BonusDiceResponseWindowStateSnapshot;
 }
 
+export interface ForegroundBonusDieVisibilityArgs {
+    hasChoice: boolean;
+    interactiveSettlement?: PendingBonusDiceSettlement;
+    bonusDie?: {
+        show?: boolean;
+        effectKey?: string;
+    };
+}
+
 export function shouldSuppressPendingDisplayOnlyBonusOverlay({
     settlement,
     cardSpotlightQueue,
@@ -79,7 +89,7 @@ export function shouldSuppressPendingDisplayOnlyBonusOverlay({
     if (normalizePlayerId(currentSpotlight.playerId) !== attackerId) return false;
 
     const spotlightDiceCount = currentSpotlight.bonusDice?.length ?? 0;
-    const settlementDiceCount = settlement.dice.length;
+    const settlementDiceCount = getPendingBonusSettlementDice(settlement).length;
     if (spotlightDiceCount < settlementDiceCount || settlementDiceCount <= 0) return false;
 
     const settlementTimestamp = parseDisplayOnlySettlementTimestamp(settlement.id);
@@ -124,4 +134,16 @@ export function resolveInteractivePendingBonusDiceSettlement({
     }
 
     return settlement;
+}
+
+export function shouldSuppressForegroundBonusDieOverlay({
+    hasChoice,
+    interactiveSettlement,
+    bonusDie,
+}: ForegroundBonusDieVisibilityArgs): boolean {
+    if (interactiveSettlement) {
+        return true;
+    }
+
+    return false;
 }

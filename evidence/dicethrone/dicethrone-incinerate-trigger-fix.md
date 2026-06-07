@@ -1,5 +1,7 @@
 # DiceThrone 火法"焚灭"(Incinerate)变体触发条件修复
 
+> 2026-06-06 当前有效口径：本文只覆盖“`Incinerate` 变体触发条件配置错误”这一条历史专项修复，不是当前火法所有变体、所有触发条件口径或 DiceThrone 当前整体审计都已收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条变体条件修复记录。
+
 ## 问题描述
 
 用户反馈无法选择火法的"焚灭"(Incinerate)变体技能。
@@ -100,3 +102,7 @@
 ## 相关文档
 - `src/games/dicethrone/heroes/pyromancer/diceConfig.ts` - 火法骰子面配置
 - `src/games/dicethrone/domain/ids.ts` - 骰子面 ID 常量定义
+
+---
+
+**当前阅读说明**：本文只能证明 `Incinerate` 触发条件这条专项问题曾被修复，不能外推为当前所有火法变体条件、所有技能文本口径或 DiceThrone 当前整体审计都已收口。

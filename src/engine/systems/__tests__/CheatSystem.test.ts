@@ -11,6 +11,7 @@ type TestPlayer = { statusEffects: Record<string, number> };
 
 type TestCore = {
     players: Record<string, TestPlayer>;
+    madnessDeck?: string[];
 };
 
 const mockRandom: RandomFn = {
@@ -122,5 +123,51 @@ describe('CheatSystem', () => {
         });
 
         expect(result).toBeUndefined();
+    });
+
+    it('MERGE_STATE: 深合并玩家字段时不应污染未点名的 madnessDeck 字符串数组', () => {
+        const system = createCheatSystem<TestCore>({
+            getResource: () => 0,
+            setResource: (core) => core,
+        });
+        const state = createTestState({
+            players: {
+                '0': { statusEffects: {} },
+                '1': { statusEffects: {} },
+            },
+            madnessDeck: ['special_madness', 'special_madness', 'special_madness'],
+        });
+        const command: Command = {
+            type: CHEAT_COMMANDS.MERGE_STATE,
+            playerId: '0',
+            payload: {
+                fields: {
+                    players: {
+                        '0': {
+                            statusEffects: {
+                                focused: 1,
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.state?.core.players['0'].statusEffects.focused).toBe(1);
+        expect(result?.state?.core.players['1'].statusEffects).toEqual({});
+        expect(result?.state?.core.madnessDeck).toEqual([
+            'special_madness',
+            'special_madness',
+            'special_madness',
+        ]);
     });
 });

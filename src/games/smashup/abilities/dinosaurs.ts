@@ -103,6 +103,25 @@ type DinoRampageMinionContext = DinoPromptContext & {
     candidates: DinoRampageMinionCandidate[];
 };
 
+function filterProtectedDestroyTargets(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    sourceDefId: string,
+    targets: DinoMinionTarget[],
+): DinoMinionTarget[] {
+    if (targets.length === 0) return targets;
+    const allowedKeys = new Set(
+        buildMinionTargetOptions(targets, {
+            state: matchState.core,
+            sourcePlayerId: playerId,
+            sourceDefId,
+            sourceKind: 'nonAction',
+            effectType: 'destroy',
+        }).map((option) => `${option.value.minionUid}:${option.value.baseIndex}`),
+    );
+    return targets.filter((target) => allowedKeys.has(`${target.uid}:${target.baseIndex}`));
+}
+
 /** 注册恐龙派系所有能力 */
 export function registerDinosaurAbilities(): void {
     registerAbilityProgram('dino_laser_triceratops', 'onPlay', {
@@ -174,7 +193,7 @@ function createDinoLaserTriceratopsContext(ctx: AbilityContext): DinoLaserTricer
     if (!base) {
         return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
     }
-    const targets = base.minions
+    const targets = filterProtectedDestroyTargets(ctx.matchState, ctx.playerId, 'dino_laser_triceratops', base.minions
         .filter((minion) => minion.uid !== ctx.cardUid && getMinionPower(ctx.state, minion, ctx.baseIndex) <= 2)
         .map((minion) => {
             const def = getCardDef(minion.defId) as MinionCardDef | undefined;
@@ -186,7 +205,7 @@ function createDinoLaserTriceratopsContext(ctx: AbilityContext): DinoLaserTricer
                 baseIndex: ctx.baseIndex,
                 label: `${name} (力量 ${power})`,
             };
-        });
+        }));
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -200,7 +219,7 @@ function createDinoLaserTriceratopsPodContext(ctx: AbilityContext): DinoLaserTri
     if (!base) {
         return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
     }
-    const targets = base.minions
+    const targets = filterProtectedDestroyTargets(ctx.matchState, ctx.playerId, 'dino_laser_triceratops_pod', base.minions
         .filter((minion) => {
             if (minion.uid === ctx.cardUid) return false;
             const def = getCardDef(minion.defId) as MinionCardDef | undefined;
@@ -216,7 +235,7 @@ function createDinoLaserTriceratopsPodContext(ctx: AbilityContext): DinoLaserTri
                 baseIndex: ctx.baseIndex,
                 label: `${name} (印制力量 ${printedPower})`,
             };
-        });
+        }));
     return {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -780,7 +799,7 @@ const dinoSurvivalOfTheFittestProgram = createEffectProgram<AbilityContext, Smas
         if (!hasHigher) continue;
         const lowest = base.minions.filter((minion) => getMinionPower(ctx.state, minion, baseIndex) === minPower);
         if (lowest.length === 1) {
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
+            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, ctx.playerId, 'dino_survival_of_the_fittest', ctx.now));
         }
     }
 
@@ -922,7 +941,7 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         const payload = (event as MinionDestroyedEvent).payload;
         targetUid = payload.minionUid;
         fromBaseIndex = payload.fromBaseIndex;
-        sourcePlayerId = payload.ownerId;
+        sourcePlayerId = payload.destroyerId;
     } else if (event.type === SU_EVENTS.MINION_RETURNED) {
         const payload = (event as MinionReturnedEvent).payload;
         targetUid = payload.minionUid;
@@ -932,7 +951,7 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
         const payload = (event as CardToDeckBottomEvent).payload;
         // CARD_TO_DECK_BOTTOM 的 cardUid 可能是随从
         targetUid = payload.cardUid;
-        sourcePlayerId = payload.ownerId;
+        sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId;
         // 需要在所有基地中查找该随从
         for (let i = 0; i < state.bases.length; i++) {
             if (state.bases[i].minions.some(m => m.uid === targetUid)) {
@@ -955,13 +974,11 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
     if (!target) {
         return undefined;
     }
-    const toothCard = target.attachedActions.find(a => a.defId === 'dino_tooth_and_claw');
+    const toothCard = target.attachedActions.find(a =>
+        a.defId === 'dino_tooth_and_claw'
+        && (sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== sourcePlayerId))
+    );
     if (!toothCard) {
-        return undefined;
-    }
-    // 只拦截其他玩家发起的影响
-    // 如果 sourcePlayerId 未定义，假设是对手操作（保护系统已过滤无效目标）
-    if (sourcePlayerId !== undefined && sourcePlayerId === target.controller) {
         return undefined;
     }
     // 自毁全副武装，阻止影响
@@ -980,14 +997,18 @@ function dinoToothAndClawInterceptor(state: SmashUpCore, event: SmashUpEvent): S
 
 /** 全副武装(原版) 保护检查：附着了此卡的随从不受其他玩家影响（affect 类型，触发拦截自毁） */
 function dinoToothAndClawChecker(ctx: ProtectionCheckContext): boolean {
-    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw');
+    return ctx.targetMinion.attachedActions.some(a =>
+        a.defId === 'dino_tooth_and_claw'
+        && (ctx.sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== ctx.sourcePlayerId))
+    );
 }
 
 /** 全副武装(POD版) 保护检查：This minion is not affected by other players' cards. (只有结界免影响，不发生自毁) */
 function dinoToothAndClawPodChecker(ctx: ProtectionCheckContext): boolean {
-    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.targetMinion.attachedActions.some(a => a.defId === 'dino_tooth_and_claw_pod');
+    return ctx.targetMinion.attachedActions.some(a =>
+        a.defId === 'dino_tooth_and_claw_pod'
+        && (ctx.sourcePlayerId === undefined || (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) !== ctx.sourcePlayerId))
+    );
 }
 
 /** 野生保护区保护检查：该基地上你的随从不受其他玩家战术影响 */
@@ -997,6 +1018,7 @@ function dinoWildlifePreserveChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.ongoingActions.some(
-        a => matchesDefId(a.defId, 'dino_wildlife_preserve') && a.ownerId === ctx.targetMinion.controller
+        a => matchesDefId(a.defId, 'dino_wildlife_preserve')
+            && (((a.metadata?.sourceControllerId as string | undefined) ?? a.ownerId) === ctx.targetMinion.controller)
     );
 }

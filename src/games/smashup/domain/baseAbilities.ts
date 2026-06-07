@@ -40,12 +40,16 @@ import {
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerExpansionBaseAbilities, registerExpansionBaseInteractionHandlers } from './baseAbilities_expansion';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
-import { registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
+import { collectExtendedBaseAbilityTriggers, registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import {
     appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
-    isScoringSessionAwaitingDeferredResolution } from './scoringSession';
+    isScoringSessionAwaitingDeferredResolution,
+    serializePostScoringEvents,
+    updateDeferredPostScoringEvents,
+} from './scoringSession';
+import { getCurrentPlayerId } from './types';
 
 // ============================================================================
 // 类型定义
@@ -98,6 +102,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** queued trigger 所属 frame 身份；用于排序/诊断/后续上下文对齐 */
+    frameId?: string;
+    /** queued trigger 源事件身份；用于运行时上下文恢复 */
+    sourceEventId?: string;
     now: number;
 }
 
@@ -114,8 +122,14 @@ export type BaseAbilityExecutor = (ctx: BaseAbilityContext) => BaseAbilityResult
 export type BaseAbilityRegistrationOptions = {
     /** Whether this trigger is mandatory for reaction ordering rules */
     mandatory?: boolean;
+    /** Override the player who decides optional queued base abilities. Defaults to the caller-provided owner. */
+    ownerPlayerId?: (ctx: BaseAbilityContext) => PlayerId | undefined;
     /** 当前状态下是否应进入 reaction queue；返回 false 时不暴露空触发。 */
     canTrigger?: (ctx: BaseAbilityContext) => boolean;
+    /** 显式 reaction resource footprint；用于不依赖 runtime probe 的已知合同。 */
+    effectContract?: import('./types').SmashUpReactionResourceFootprint;
+    /** 显式 program-style footprint；用于无法通过 runtime artifacts 还原的只读依赖。 */
+    deriveFootprint?: (ctx: BaseAbilityContext) => import('./types').SmashUpReactionResourceFootprint | undefined;
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -127,6 +141,12 @@ export type ActiveBaseAbilityRegistrationOptions = {
 
 type PirateCoveSysState = MatchState<SmashUpCore>['sys'] & { _pirateCoveTriggered?: Set<number> };
 type HandCardChoiceValue = { cardUid: string; defId: string };
+type WizardAcademyContinuationContext = {
+    baseIndex: number;
+    topCards: string[];
+    replacementBaseDefId?: string;
+    step?: 'chooseReplacement' | 'orderRemaining';
+};
 
 function getContinuationContext<T>(
     interactionData: Record<string, unknown> | undefined,
@@ -155,6 +175,101 @@ function buildWizardAcademyOptions(
     });
 }
 
+function buildWizardAcademyPrompt(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    now: number,
+    title: string,
+    trackedTopCards: string[],
+    continuationContext: WizardAcademyContinuationContext,
+) {
+    const interaction = createSimpleChoice(
+        `base_wizard_academy_${continuationContext.step ?? 'chooseReplacement'}_${now}`,
+        playerId,
+        title,
+        buildWizardAcademyOptions(state, trackedTopCards),
+        { sourceId: 'base_wizard_academy', targetType: 'generic', responseValidationMode: 'live' },
+    );
+    (interaction.data as { optionsGenerator?: unknown }).optionsGenerator = (
+        nextState: { core: SmashUpCore },
+        interactionData: { continuationContext?: WizardAcademyContinuationContext } | undefined,
+    ) => buildWizardAcademyOptions(
+        nextState.core,
+        interactionData?.continuationContext?.topCards ?? trackedTopCards,
+    );
+    return {
+        ...interaction,
+        data: { ...interaction.data, continuationContext },
+    };
+}
+
+function rewriteWizardAcademyDeferredReplacement(
+    state: MatchState<SmashUpCore>,
+    baseIndex: number,
+    replacementBaseDefId: string,
+    timestamp: number,
+): MatchState<SmashUpCore> {
+    if (!isScoringSessionAwaitingDeferredResolution(state)) {
+        return state;
+    }
+
+    return updateDeferredPostScoringEvents(state, (deferredEvents) => {
+        if (deferredEvents.length === 0) {
+            return deferredEvents;
+        }
+
+        let hasReplacementEvent = false;
+        const withoutRevealTriggers = deferredEvents.filter((event) => {
+            if (event.type !== SU_EVENTS.TRIGGER_QUEUED) return true;
+            const triggers = (event.payload as { triggers?: Array<{ timing?: string; baseIndex?: number }> } | undefined)?.triggers;
+            return !Array.isArray(triggers) || !triggers.some((trigger) =>
+                trigger.timing === 'onBaseRevealed' && trigger.baseIndex === baseIndex,
+            );
+        });
+
+        const updatedEvents = withoutRevealTriggers.map((event) => {
+            if (event.type !== SU_EVENTS.BASE_REPLACED) {
+                return event;
+            }
+            hasReplacementEvent = true;
+            return {
+                ...event,
+                payload: {
+                    ...(event.payload as { baseIndex: number; oldBaseDefId: string; newBaseDefId: string }),
+                    newBaseDefId: replacementBaseDefId,
+                },
+            };
+        });
+
+        if (!hasReplacementEvent) {
+            return deferredEvents;
+        }
+
+        const replacementCore: SmashUpCore = {
+            ...state.core,
+            bases: state.core.bases.map((base, index) =>
+                index === baseIndex ? { ...base, defId: replacementBaseDefId } : base,
+            ),
+        };
+        const revealTrigger = collectExtendedBaseAbilityTriggers({
+            core: replacementCore,
+            timing: 'onBaseRevealed',
+            ownerPlayerId: getCurrentPlayerId(state.core),
+            baseIndex,
+            now: timestamp,
+        });
+
+        if (!revealTrigger) {
+            return updatedEvents;
+        }
+
+        return [
+            ...updatedEvents,
+            ...serializePostScoringEvents([revealTrigger as unknown as SmashUpEvent]),
+        ];
+    });
+}
+
 function getTurnMinionsPlayedAtBase(state: SmashUpCore, baseIndex: number): number {
     return Object.values(state.players).reduce(
         (total, player) => total + (player.minionsPlayedPerBase?.[baseIndex] ?? 0),
@@ -172,7 +287,8 @@ function isFirstMinionPlayedAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
 
 type BaseAbilityEntry = {
     executor: BaseAbilityExecutor;
-    options: Required<Omit<BaseAbilityRegistrationOptions, 'canTrigger'>> & Pick<BaseAbilityRegistrationOptions, 'canTrigger'>;
+    options: Required<Pick<BaseAbilityRegistrationOptions, 'mandatory'>>
+        & Pick<BaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint'>;
 };
 type ActiveBaseAbilityEntry = {
     executor: BaseAbilityExecutor;
@@ -206,9 +322,12 @@ export function registerBaseAbility(
     }
     timingMap.set(timing, {
         executor,
-        options: {
-            mandatory: options.mandatory ?? true,
-            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}) } });
+            options: {
+                mandatory: options.mandatory ?? true,
+                ...(options.ownerPlayerId ? { ownerPlayerId: options.ownerPlayerId } : {}),
+                ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
+                ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
+                ...(options.effectContract ? { effectContract: options.effectContract } : {}) } });
     // Make this base ability runnable by the global reaction queue.
     registerBaseAbilityAsQueuedTrigger(baseDefId, timing);
 }
@@ -344,9 +463,21 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 type ExtendedBaseAbilityRegistrationOptions = {
     mandatory?: boolean;
+    /** Override the player who decides optional queued extended base abilities. Defaults to the caller-provided owner. */
+    ownerPlayerId?: (ctx: BaseAbilityContext) => PlayerId | undefined;
+    /** 当前状态下是否应进入 reaction queue；返回 false 时不暴露空触发。 */
+    canTrigger?: (ctx: BaseAbilityContext) => boolean;
+    /** 显式 reaction resource footprint；用于不依赖 runtime probe 的已知合同。 */
+    effectContract?: import('./types').SmashUpReactionResourceFootprint;
+    /** 显式 program-style footprint；用于无法通过 runtime artifacts 还原的只读依赖。 */
+    deriveFootprint?: (ctx: BaseAbilityContext) => import('./types').SmashUpReactionResourceFootprint | undefined;
 };
 
-type ExtendedBaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<ExtendedBaseAbilityRegistrationOptions> };
+type ExtendedBaseAbilityEntry = {
+    executor: BaseAbilityExecutor;
+    options: Required<Pick<ExtendedBaseAbilityRegistrationOptions, 'mandatory'>>
+        & Pick<ExtendedBaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint'>;
+};
 
 const extendedRegistry = new Map<string, Map<string, ExtendedBaseAbilityEntry>>();
 
@@ -364,7 +495,12 @@ export function registerExtended(
     timingMap.set(timing, {
         executor,
         options: {
-            mandatory: options.mandatory ?? true } });
+            mandatory: options.mandatory ?? true,
+            ...(options.ownerPlayerId ? { ownerPlayerId: options.ownerPlayerId } : {}),
+            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
+            ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
+            ...(options.effectContract ? { effectContract: options.effectContract } : {}),
+        } });
 }
 
 /** 触发扩展时机（如 onMinionDestroyed） */
@@ -380,7 +516,10 @@ export function triggerExtendedBaseAbility(
     return entry.executor(ctx);
 }
 
-export function getExtendedBaseAbilityOptions(baseDefId: string, timing: string): Required<ExtendedBaseAbilityRegistrationOptions> | undefined {
+export function getExtendedBaseAbilityOptions(
+    baseDefId: string,
+    timing: string,
+): ExtendedBaseAbilityEntry['options'] | undefined {
     return extendedRegistry.get(baseDefId)?.get(timing)?.options;
 }
 
@@ -478,7 +617,7 @@ export function registerBaseAbilities(): void {
         if (!base || !ctx.minionUid) return { events: [] };
         // Infiltrate：只影响你自己是否能用本基地能力
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === ctx.playerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.playerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         // 计算当前玩家和最强对手的力量
@@ -629,6 +768,18 @@ export function registerBaseAbilities(): void {
     }, {
     });
 
+    // base_dragons_lair: 龙穴
+    // "在这个基地计分后，冠军抽 3 张牌"
+    registerBaseAbility('base_dragons_lair', 'afterScoring', (ctx) => {
+        if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
+        const winnerId = ctx.rankings[0].playerId;
+        if (!ctx.state.players[winnerId]) return { events: [] };
+        return {
+            events: buildStandardDrawEvents(ctx.state, winnerId, 3, ctx.random, ctx.now),
+        };
+    }, {
+    });
+
     // base_temple_of_goju: 刚柔流寺庙
     // "在这个基地计分后，将每位玩家在这里力量最高的一张随从放入他们拥有者的牌库底"
     registerBaseAbility('base_temple_of_goju', 'afterScoring', (ctx) => {
@@ -662,6 +813,7 @@ export function registerBaseAbilities(): void {
                         cardUid: strongest[0].uid,
                         defId: strongest[0].defId,
                         ownerId: strongest[0].owner,
+                        sourcePlayerId: strongest[0].controller,
                         reason: '刚柔流寺庙：最高力量随从放入牌库底' },
                     timestamp: ctx.now } as CardToDeckBottomEvent);
             } else {
@@ -774,7 +926,12 @@ export function registerBaseAbilities(): void {
             pid,
             '鬼屋：选择要弃掉的卡牌',
             initialOptions,
-            { sourceId: 'base_haunted_house_al9000', targetType: 'hand' },
+            {
+                sourceId: 'base_haunted_house_al9000',
+                targetType: 'hand',
+                // 手牌在共享态与座位态之间可能发生刷新漂移，响应时必须按最新手牌重算。
+                responseValidationMode: 'live',
+            },
         );
         
         // 手牌弃牌类交互：使用 optionsGenerator 动态生成选项
@@ -876,7 +1033,7 @@ export function registerBaseAbilities(): void {
         const playedMinion = base.minions.find(m => m.uid === ctx.minionUid);
         const controllerId = playedMinion?.controller ?? ctx.playerId;
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === controllerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === controllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         return {
@@ -892,7 +1049,7 @@ export function registerBaseAbilities(): void {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const ignoredByWinner = base.ongoingActions?.some(o =>
-            o.ownerId === winnerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === winnerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignoredByWinner) return { events: [] };
         const events: SmashUpEvent[] = [];
@@ -917,7 +1074,7 @@ export function registerBaseAbilities(): void {
         const minion = base.minions.find(m => m.uid === ctx.minionUid);
         if (!minion) return { events: [] };
         const ignored = base.ongoingActions?.some(o =>
-            o.ownerId === minion.controller && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === minion.controller && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         return {
@@ -946,7 +1103,7 @@ export function registerBaseAbilities(): void {
     registerBaseAbility('base_the_hill', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         const ignored = base?.ongoingActions?.some(o =>
-            o.ownerId === ctx.playerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.playerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return { events: [] };
         // 收集该玩家在其他基地的随从
@@ -1003,6 +1160,7 @@ export function registerBaseAbilities(): void {
                     cardUid: m.uid,
                     defId: m.defId,
                     ownerId: m.owner,
+                    sourcePlayerId: m.controller,
                     reason: '仪式场所：随从洗回牌库' },
                 timestamp: ctx.now } as CardToDeckBottomEvent);
         }
@@ -1018,11 +1176,12 @@ export function registerBaseAbilities(): void {
         const base = ctx.state.bases[ctx.baseIndex];
         const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
         const ownerId = playedMinion?.owner ?? ctx.playerId;
+        const controllerId = playedMinion?.controller ?? ctx.playerId;
         // Infiltrate：只让“你自己”忽略基地能力（不影响其他玩家）
-        const ignoredByOwner = base?.ongoingActions?.some(o =>
-            o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+        const ignoredByController = base?.ongoingActions?.some(o =>
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === controllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
-        if (ignoredByOwner) return { events: [] };
+        if (ignoredByController) return { events: [] };
         const evt = drawMadnessCards(ownerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
     }, {
@@ -1185,7 +1344,9 @@ export function registerBaseAbilities(): void {
 
         return { events: [], matchState: nextMatchState };
     }, {
-        mandatory: false });
+        // 整条计分后链必须执行；每位冠军自己的“可不消灭”由 skip 选项承接，
+        // 不能先把整条 tied-champion 链暴露成当前响应者可整体跳过的 optional trigger。
+        mandatory: true });
 
     // base_ninja_dojo_pod: POD 勘误为无基地能力。
     registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }), {
@@ -1364,7 +1525,6 @@ export function registerBaseAbilities(): void {
 
     // base_wizard_academy: 巫师学院
     // "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回"
-    // 简化实现：让冠军选择排列顺序，第一张将成为下次替换的基地
     registerBaseAbility('base_wizard_academy', 'afterScoring', (ctx) => {
         if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
         const winnerId = ctx.rankings[0].playerId;
@@ -1373,23 +1533,24 @@ export function registerBaseAbilities(): void {
         const topCount = Math.min(3, baseDeck.length);
         const topCards = baseDeck.slice(0, topCount);
         if (!ctx.matchState) return { events: [] };
-        const wizardAcademyTopCards = topCards.slice();
-        const interaction = createSimpleChoice(
-            `base_wizard_academy_${ctx.now}`,
-            winnerId,
-            '巫师学院：选择排列基地牌库顶的顺序',
-            buildWizardAcademyOptions(ctx.state, wizardAcademyTopCards),
-            { sourceId: 'base_wizard_academy', targetType: 'generic', responseValidationMode: 'live' },
-        );
-        (interaction.data as { optionsGenerator?: unknown }).optionsGenerator = (
-            nextState: { core: SmashUpCore },
-            interactionData: { continuationContext?: { topCards?: string[] } } | undefined,
-        ) => buildWizardAcademyOptions(nextState.core, interactionData?.continuationContext?.topCards ?? wizardAcademyTopCards);
         return {
             events: [],
-            matchState: queueInteraction(ctx.matchState, {
-                ...interaction,
-                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards: wizardAcademyTopCards } } }) };
+            matchState: queueInteraction(
+                ctx.matchState,
+                buildWizardAcademyPrompt(
+                    ctx.state,
+                    winnerId,
+                    ctx.now,
+                    '巫师学院：选择一个基地来替换这里',
+                    topCards,
+                    {
+                        baseIndex: ctx.baseIndex,
+                        topCards,
+                        step: 'chooseReplacement',
+                    },
+                ),
+            ),
+        };
     }, {
     });
 
@@ -1509,7 +1670,15 @@ export function registerBaseAbilities(): void {
 export function registerBaseInteractionHandlers(): void {
     // 鬼屋：选择弃哪张卡
     registerInteractionHandler('base_haunted_house_al9000', (state, playerId, value, _iData, _random, timestamp) => {
-        const { cardUid } = value as { cardUid: string };
+        const { cardUid, skip, __cancel__, __emergency_skip__ } = value as {
+            cardUid?: string;
+            skip?: boolean;
+            __cancel__?: boolean;
+            __emergency_skip__?: boolean;
+        };
+        if (skip || __cancel__ || __emergency_skip__ || !cardUid) {
+            return { state, events: [] };
+        }
         return { state, events: [{
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: { playerId, cardUids: [cardUid] },
@@ -1566,7 +1735,8 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: ctx.baseIndex,
                 toPlayerId: playerId,
                 reason: '母舰：冠军收回随从',
-                now: timestamp });
+                now: timestamp,
+                sourcePlayerId: playerId });
             if (returnEvents.length > 0) {
                 events.push(...returnEvents);
             } else {
@@ -1587,6 +1757,7 @@ export function registerBaseInteractionHandlers(): void {
                             minionDefId,
                             fromBaseIndex: ctx.baseIndex,
                             toPlayerId: playerId,
+                            sourcePlayerId: playerId,
                             reason: '母舰：冠军收回随从' },
                         timestamp } as MinionReturnedEvent);
                 }
@@ -1732,23 +1903,63 @@ export function registerBaseInteractionHandlers(): void {
             events: moveEvents };
     });
 
-    // 巫师学院：重排基地牌库顶
-    registerInteractionHandler('base_wizard_academy', (state, _playerId, value, iData, _random, timestamp) => {
+    // 巫师学院：先选替换基地，再决定剩余基地回牌库顶的顺序
+    registerInteractionHandler('base_wizard_academy', (state, playerId, value, iData, _random, timestamp) => {
         const selected = value as { defId: string; index: number };
-        const ctx = getContinuationContext<{ topCards: string[] }>(iData);
+        const ctx = getContinuationContext<WizardAcademyContinuationContext>(iData);
         if (!ctx?.topCards || ctx.topCards.length === 0) return { state, events: [] };
         const currentTopCards = getCurrentBaseDeckTopSnapshotDefIds(state.core, ctx.topCards);
         if (currentTopCards.length === 0) return { state, events: [] };
         const chosenDefId = currentTopCards.find((defId) => defId === selected.defId);
         if (!chosenDefId) return { state, events: [] };
-        const remaining = currentTopCards.filter(id => id !== chosenDefId);
-        const newOrder = [chosenDefId, ...remaining];
-        return { state, events: [{
-            type: SU_EVENTS.BASE_DECK_REORDERED,
-            payload: {
-                topDefIds: newOrder,
-                reason: '巫师学院：冠军重排基地牌库顶' },
-            timestamp } as BaseDeckReorderedEvent] };
+
+        if (ctx.step === 'orderRemaining') {
+            if (!ctx.replacementBaseDefId) return { state, events: [] };
+            const remaining = currentTopCards.filter((defId) => defId !== chosenDefId);
+            const newOrder = [ctx.replacementBaseDefId, chosenDefId, ...remaining];
+            return { state, events: [{
+                type: SU_EVENTS.BASE_DECK_REORDERED,
+                payload: {
+                    topDefIds: newOrder,
+                    reason: '巫师学院：冠军决定剩余基地顺序' },
+                timestamp } as BaseDeckReorderedEvent] };
+        }
+
+        const remaining = currentTopCards.filter((defId) => defId !== chosenDefId);
+        const updatedState = rewriteWizardAcademyDeferredReplacement(
+            state,
+            ctx.baseIndex,
+            chosenDefId,
+            timestamp,
+        );
+
+        if (remaining.length <= 1) {
+            return { state: updatedState, events: [{
+                type: SU_EVENTS.BASE_DECK_REORDERED,
+                payload: {
+                    topDefIds: [chosenDefId, ...remaining],
+                    reason: '巫师学院：冠军选择替换基地并整理剩余基地' },
+                timestamp } as BaseDeckReorderedEvent] };
+        }
+
+        const followup = buildWizardAcademyPrompt(
+            updatedState.core,
+            playerId,
+            timestamp,
+            '巫师学院：选择剩余基地放回牌库顶的顺序（先选的在最上面）',
+            remaining,
+            {
+                baseIndex: ctx.baseIndex,
+                topCards: remaining,
+                replacementBaseDefId: chosenDefId,
+                step: 'orderRemaining',
+            },
+        );
+
+        return {
+            state: queueInteraction(updatedState, followup),
+            events: [],
+        };
     });
 
     // 蘑菇王国：移动对手随从到蘑菇王国
@@ -1917,6 +2128,7 @@ export function registerBaseInteractionHandlers(): void {
                 cardUid: target.uid,
                 defId: target.defId,
                 ownerId: target.owner,
+                sourcePlayerId: target.controller,
                 reason: '刚柔流寺庙：最高力量随从放入牌库底' },
             timestamp } as CardToDeckBottomEvent];
 

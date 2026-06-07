@@ -1,4 +1,6 @@
-# DiceThrone watchdog 剩余 open 批次收口（2026-05-07）
+# DiceThrone watchdog 剩余 open 批次历史收口（2026-05-07）
+
+> 2026-06-06 当前有效口径：本文是 2026-05-07 那一轮 watchdog 剩余 open/in_progress 反馈批量处置的历史收口记录，不代表当前 DiceThrone 全体 watchdog、在线 AI、任一单英雄，或四位新英雄整批已经审计完成。它现在只能说明当时一批生产反馈被按簇判断为 `resolved/closed`，不能外推成 DiceThrone 当前总体收口。
 
 ## 范围
 
@@ -68,3 +70,8 @@
 - 验证命令已通过：
   - `src/engine/transport/__tests__/server.test.ts`
   - 覆盖 `legal-only / displayOnly / human response window / hidden interaction / emergency skip` 相关回归
+
+## 当前阅读说明
+
+- 本文是历史 watchdog 批量 closeout 记录，不是 DiceThrone 当前总审计出口。
+- 文中的 `resolved/closed` 只代表 2026-05-07 当时批量处置判断，不能替代当前新英雄默认全面审计留档所需的对象级矩阵、批次级 `L4` 判等与现行 evidence 入口。

@@ -9,6 +9,8 @@ import type {
     MatchStorage,
     MatchAuthMetadataProvider,
     MatchMetadata,
+    ClaimSeatMetadataInput,
+    ClaimSeatMetadataResult,
     StoredMatchState,
     CreateMatchData,
     FetchOpts,
@@ -77,6 +79,24 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => (
     Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 );
 
+const stripUndefinedForStorage = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => stripUndefinedForStorage(item))
+            .filter((item) => typeof item !== 'undefined');
+    }
+
+    if (!isPlainRecord(value)) {
+        return value;
+    }
+
+    const entries = Object.entries(value)
+        .map(([key, entryValue]) => [key, stripUndefinedForStorage(entryValue)] as const)
+        .filter(([, entryValue]) => typeof entryValue !== 'undefined');
+
+    return Object.fromEntries(entries);
+};
+
 const resolveCorruptMatchReason = (metadata: unknown): string | null => {
     if (!isPlainRecord(metadata)) {
         return 'metadata_not_object';
@@ -131,6 +151,16 @@ const extractPlayersForOccupancy = (metadata: unknown): Record<string, PlayerSea
     return metadata.players as Record<string, PlayerSeat>;
 };
 
+const resolveMetadataUpdatedAtDate = (metadata: MatchMetadata): Date => {
+    const updatedAtMs = typeof metadata.updatedAt === 'number' && Number.isFinite(metadata.updatedAt)
+        ? metadata.updatedAt
+        : Date.now();
+    if (metadata.updatedAt !== updatedAtMs) {
+        metadata.updatedAt = updatedAtMs;
+    }
+    return new Date(updatedAtMs);
+};
+
 /**
  * MongoDB 存储实现
  */
@@ -172,11 +202,12 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         // 存储层应保持纯粹，只负责数据持久化
         
         const expiresAt = calculateExpiresAt(ttlSeconds);
+        const initialStateToSave = this.sanitizeStateForStorage(data.initialState);
 
         await Match.create({
             matchID,
             gameName: data.metadata.gameName,
-            state: data.initialState,
+            state: initialStateToSave,
             metadata: data.metadata,
             ttlSeconds,
             expiresAt,
@@ -212,20 +243,18 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             logger.warn('[MongoStorage] sanitize: state 不是对象');
             return state;
         }
+        const cleanedState = stripUndefinedForStorage(state) as StoredMatchState;
         // 状态结构是 { G: { sys, core }, _stateID, ... }
         // 游戏状态在 G 里面，G 的结构是 { sys, core }
-        const G = (state as { G?: Record<string, unknown> }).G;
-        if (!G) {
-            logger.warn('[MongoStorage] sanitize: G 不存在');
-            return state;
+        const G = (cleanedState as { G?: Record<string, unknown> }).G;
+        if (!isPlainRecord(G)) {
+            return cleanedState;
         }
-        
-        const sys = G.sys as Record<string, unknown> | undefined;
-        if (!sys) {
-            logger.warn('[MongoStorage] sanitize: sys 不存在');
-            return state;
+
+        const sys = G.sys;
+        if (!isPlainRecord(sys)) {
+            return cleanedState;
         }
-        
 
         // 裁剪 undo 快照（只保留最近 1 条）
         const sanitizedSys = { ...sys };
@@ -241,7 +270,7 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         // LogSystem 已移除，log.entries 始终为空，无需裁剪
 
         const sanitizedState: StoredMatchState = {
-            ...state,
+            ...cleanedState,
             G: {
                 ...G,
                 sys: sanitizedSys,
@@ -289,12 +318,74 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             }
         }
 
-        const update: Record<string, unknown> = { metadata };
+        const update: Record<string, unknown> = {
+            metadata,
+            updatedAt: resolveMetadataUpdatedAtDate(metadata),
+        };
         if (refreshedExpiresAt) {
             update.expiresAt = refreshedExpiresAt;
         }
 
         await Match.updateOne({ matchID }, update);
+    }
+
+    async claimSeatMetadata(
+        matchID: string,
+        input: ClaimSeatMetadataInput,
+    ): Promise<ClaimSeatMetadataResult> {
+        const Match = getMatchModel();
+        if (!/^[A-Za-z0-9_-]+$/.test(input.playerID)) {
+            throw new Error(`Unsafe playerID for metadata path: ${input.playerID}`);
+        }
+
+        const playerPath = `metadata.players.${input.playerID}`;
+        const credentialsPath = `${playerPath}.credentials`;
+        const namePath = `${playerPath}.name`;
+        const updatedAt = input.updatedAt ?? Date.now();
+
+        await Match.updateOne({
+            matchID,
+            [playerPath]: { $exists: true },
+            $or: [
+                { [credentialsPath]: { $exists: false } },
+                { [credentialsPath]: null },
+                { [credentialsPath]: '' },
+            ],
+        }, {
+            $set: {
+                [credentialsPath]: input.playerCredentials,
+                'metadata.updatedAt': updatedAt,
+            },
+        });
+
+        if (input.playerName) {
+            await Match.updateOne({
+                matchID,
+                [playerPath]: { $exists: true },
+                $or: [
+                    { [namePath]: { $exists: false } },
+                    { [namePath]: null },
+                    { [namePath]: '' },
+                ],
+            }, {
+                $set: {
+                    [namePath]: input.playerName,
+                    'metadata.updatedAt': updatedAt,
+                },
+            });
+        }
+
+        const doc = await Match.findOne({ matchID }).select({ _id: 0, metadata: 1 }).lean<{ metadata?: MatchMetadata } | null>();
+        const metadata = doc?.metadata;
+        const player = metadata?.players?.[input.playerID];
+        const playerCredentials = typeof player?.credentials === 'string' && player.credentials.trim()
+            ? player.credentials
+            : undefined;
+        return {
+            metadata,
+            playerExists: Boolean(player),
+            playerCredentials,
+        };
     }
 
     async fetch(
@@ -478,7 +569,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                         changed = true;
                     }
                     if (changed) {
-                        await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                        metadata.updatedAt = now;
+                        await Match.updateOne({
+                            matchID: doc.matchID,
+                        }, {
+                            metadata,
+                            updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                        });
                     }
                     const reason = isStaleConnected ? 'stale_after_restart' : 'ghost_connection';
                     logger.warn(`[Cleanup] 强制标记断线 matchID=${doc.matchID} reason=${reason} connected=${connectedCount} occupied=${occupiedCount} idleMs=${idleMs}`);
@@ -486,7 +583,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
                 }
                 if (metadata?.disconnectedSince) {
                     delete metadata.disconnectedSince;
-                    await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                    metadata.updatedAt = now;
+                    await Match.updateOne({
+                        matchID: doc.matchID,
+                    }, {
+                        metadata,
+                        updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                    });
                 }
                 continue;
             }
@@ -496,7 +599,13 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             if (!disconnectedSince) {
                 logger.info(`[Cleanup] 标记断线时间 matchID=${doc.matchID} reason=disconnected_since_missing connected=${connectedCount} occupied=${occupiedCount}`);
                 metadata.disconnectedSince = now;
-                await Match.updateOne({ matchID: doc.matchID }, { metadata });
+                metadata.updatedAt = now;
+                await Match.updateOne({
+                    matchID: doc.matchID,
+                }, {
+                    metadata,
+                    updatedAt: resolveMetadataUpdatedAtDate(metadata),
+                });
                 continue;
             }
 

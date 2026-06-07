@@ -39,7 +39,7 @@ export async function setupSmashUpMatchSkipSetup(
 } | null> {
     // 1. 创建 Host 上下文
     const hostContext = await browser.newContext({ baseURL });
-    await initContext(hostContext, { storageKey: '__su_storage_reset' });
+    await initContext(hostContext, { storageKey: '__su_storage_reset', skipImageGate: true });
     const hostPage = await hostContext.newPage();
 
     await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
@@ -90,7 +90,7 @@ export async function setupSmashUpMatchSkipSetup(
 
     // 6. 创建 Guest 上下文
     const guestContext = await browser.newContext({ baseURL });
-    await initContext(guestContext, { storageKey: '__su_storage_reset_g' });
+    await initContext(guestContext, { storageKey: '__su_storage_reset_g', skipImageGate: true });
     const guestPage = await guestContext.newPage();
 
     await guestPage.goto('/', { waitUntil: 'domcontentloaded' });
@@ -107,8 +107,9 @@ export async function setupSmashUpMatchSkipSetup(
     await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
 
     // 8. 等待派系选择界面加载（但不选择派系）
-    await hostPage.waitForSelector('h1:has-text("Draft Your Factions"), h1:has-text("选择派系")', { timeout: 30000 });
-    await guestPage.waitForSelector('h1:has-text("Draft Your Factions"), h1:has-text("选择派系")', { timeout: 30000 });
+    const factionDraftHeading = 'h1:has-text("Draft Your Factions"), h1:has-text("选择你的派系"), h1:has-text("选择派系")';
+    await hostPage.waitForSelector(factionDraftHeading, { timeout: 30000 });
+    await guestPage.waitForSelector(factionDraftHeading, { timeout: 30000 });
 
     console.log('[SmashUp] ✅ 双方已进入派系选择界面，等待服务端状态注入');
     return { hostPage, guestPage, hostContext, guestContext, matchId };

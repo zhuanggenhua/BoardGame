@@ -1544,6 +1544,7 @@ export function buildSplendorAiLegalActions(
   const core = (state as SplendorState).core;
   const player = core.players[playerId];
   if (!player) return [];
+  if (!core.hostStarted || core.gameResult) return [];
 
   const actions: AiLegalAction[] = [];
 
@@ -2610,8 +2611,48 @@ const baselineLocalPolicy: LocalAiPolicy = {
 export const splendorAiRuntime: GameAiRuntime = {
   gameId: "splendor",
   buildLegalActions: buildSplendorAiLegalActions,
+  defaultMinimumActionDelayMs: 1000,
   buildFeatureSnapshot(args) {
     return buildSplendorFeatureSnapshot(args) as Record<string, unknown> | null;
+  },
+  resolveOnlineDecisionVisibility(args) {
+    const sharedInteraction = args.sharedState.sys?.interaction as {
+      current?: unknown;
+      isBlocked?: unknown;
+    } | undefined;
+    if (sharedInteraction?.current || sharedInteraction?.isBlocked === true) {
+      return undefined;
+    }
+
+    const sharedResponseWindow = args.sharedState.sys?.responseWindow as {
+      current?: unknown;
+    } | undefined;
+    if (sharedResponseWindow?.current) {
+      return undefined;
+    }
+
+    const core = args.sharedState.core as {
+      hostStarted?: unknown;
+      currentPlayer?: unknown;
+      pendingResolution?: { type?: unknown } | undefined;
+    } | undefined;
+    if (core?.hostStarted !== true || core.currentPlayer !== args.playerId) {
+      return undefined;
+    }
+
+    const pendingResolutionType =
+      typeof core.pendingResolution?.type === "string"
+        ? core.pendingResolution.type
+        : null;
+    if (
+      pendingResolutionType !== null &&
+      pendingResolutionType !== "discardToLimit" &&
+      pendingResolutionType !== "chooseNoble"
+    ) {
+      return undefined;
+    }
+
+    return "shared";
   },
   localPolicies: {
     baseline: baselineLocalPolicy,

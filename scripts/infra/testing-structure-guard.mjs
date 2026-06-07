@@ -1,0 +1,496 @@
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const repoRoot = process.cwd();
+const args = process.argv.slice(2);
+const files = [];
+let baseRef = process.env.QUALITY_GATE_BASE || 'HEAD';
+let scanAll = false;
+let includeUntracked = true;
+
+for (let i = 0; i < args.length; i += 1) {
+  const arg = args[i];
+  if (arg === '--base') {
+    baseRef = args[i + 1] || baseRef;
+    i += 1;
+    continue;
+  }
+  if (arg === '--files-from') {
+    const listPath = args[i + 1];
+    if (listPath) {
+      const content = fs.readFileSync(listPath, 'utf8');
+      files.push(
+        ...content
+          .split(/\r?\n/)
+          .map((value) => value.trim())
+          .filter(Boolean),
+      );
+      i += 1;
+    }
+    continue;
+  }
+  if (arg === '--all') {
+    scanAll = true;
+    continue;
+  }
+  if (arg === '--include-untracked') {
+    includeUntracked = true;
+    continue;
+  }
+  files.push(arg);
+}
+
+function runGit(gitArgs, options = {}) {
+  try {
+    return execFileSync('git', gitArgs, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', options.silent ? 'ignore' : 'pipe'],
+    }).trim();
+  } catch (error) {
+    if (options.allowFail) return '';
+    throw error;
+  }
+}
+
+function normalizeFile(file) {
+  return file.replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function collectDefaultFiles() {
+  if (scanAll) {
+    return runGit(['ls-files'], { allowFail: true, silent: true }).split(/\r?\n/);
+  }
+
+  return [
+    ...runGit(['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`], { allowFail: true, silent: true }).split(/\r?\n/),
+    ...runGit(['diff', '--cached', '--name-only', '--diff-filter=ACMR'], { allowFail: true, silent: true }).split(/\r?\n/),
+    ...runGit(['diff', '--name-only', '--diff-filter=ACMR'], { allowFail: true, silent: true }).split(/\r?\n/),
+    ...(includeUntracked
+      ? runGit(['ls-files', '--others', '--exclude-standard'], { allowFail: true, silent: true }).split(/\r?\n/)
+      : []),
+  ];
+}
+
+function existsAtRef(ref, file) {
+  const normalized = normalizeFile(file);
+  try {
+    execFileSync('git', ['cat-file', '-e', `${ref}:${normalized}`], {
+      cwd: repoRoot,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getNumstat(file) {
+  const output = runGit(['diff', '--numstat', baseRef, '--', file], { allowFail: true, silent: true });
+  const line = output.split(/\r?\n/).find(Boolean);
+  if (!line) return { added: 0, deleted: 0 };
+  const [addedRaw, deletedRaw] = line.split(/\s+/);
+  return {
+    added: Number.parseInt(addedRaw, 10) || 0,
+    deleted: Number.parseInt(deletedRaw, 10) || 0,
+  };
+}
+
+function isTestFile(file) {
+  return /\.(test|spec)\.[tj]sx?$/.test(file) || /\.e2e\.[tj]s$/.test(file);
+}
+
+function isGameVitestTest(file) {
+  return /^src\/games\/[^/]+\/__tests__\/.+\.(test|spec)\.[tj]sx?$/.test(file);
+}
+
+function isSmashUpRootTest(file) {
+  return /^src\/games\/smashup\/__tests__\/[^/]+\.(test|spec)\.[tj]sx?$/.test(file);
+}
+
+function isE2eSpec(file) {
+  return /^e2e\/.+\.e2e\.[tj]s$/.test(file);
+}
+
+function isTrackedE2eSrcMirror(file) {
+  return /^e2e\/src\//.test(file);
+}
+
+function isForbiddenTempArtifact(file) {
+  return (
+    /^temp\//.test(file) ||
+    /^\.tmp\//.test(file) ||
+    /^test-results\//.test(file) ||
+    /^temp-[^/]+$/.test(file) ||
+    /^test-out\.txt$/.test(file) ||
+    /^scripts\/temp_.*\.py$/.test(file) ||
+    /^e2e\/temp-[^/]+\.e2e\.[tj]s$/.test(file) ||
+    /\.(?:backup|bak|orig|rej)$/.test(file)
+  );
+}
+
+const E2E_GAME_DIRS = new Set(['cardia', 'dicethrone', 'smashup', 'summonerwars', 'tictactoe']);
+
+function getRootE2eGameId(file) {
+  const match = file.match(/^e2e\/([^/]+)\.e2e\.[tj]s$/);
+  if (!match) return null;
+
+  const stem = match[1];
+  if (E2E_GAME_DIRS.has(stem)) return stem;
+
+  const prefix = stem.split('-')[0];
+  return E2E_GAME_DIRS.has(prefix) ? prefix : null;
+}
+
+function getLegacyRootE2eGameId(file) {
+  const match = file.match(/^e2e\/([^/]+)\/legacy-root\/([^/]+\.e2e\.[tj]s)$/);
+  if (!match) return null;
+  return E2E_GAME_DIRS.has(match[1]) ? match[1] : null;
+}
+
+function getLegacyRootSourcePath(file) {
+  const match = file.match(/^e2e\/([^/]+)\/legacy-root\/([^/]+\.e2e\.[tj]s)$/);
+  if (!match) return null;
+  return `e2e/${match[2]}`;
+}
+
+function isGenericSinkName(file) {
+  const baseName = path.basename(file).toLowerCase();
+  if (/^new.+\.(test|spec)\.[tj]sx?$/.test(baseName)) return true;
+  return /(^|[-_.])(misc|regression|regressions|feedback|fix|fixes)([-_.]|$)/.test(baseName);
+}
+
+function isInteractionContractTest(file) {
+  const normalized = normalizeFile(file).toLowerCase();
+  const baseName = path.basename(normalized);
+  return (
+    normalized.includes('/interaction') ||
+    normalized.includes('/reactionqueue') ||
+    baseName.includes('interaction') ||
+    baseName.includes('reactionqueue') ||
+    baseName.includes('promptsystem') ||
+    baseName.includes('promptresponsechain') ||
+    baseName.includes('abilityinteractionregistry') ||
+    baseName.includes('response-window') ||
+    baseName.includes('afterscoring-window') ||
+    baseName.includes('system-contract')
+  );
+}
+
+const smashUpRootBaseAbilityWhitelist = new Set([
+  'src/games/smashup/__tests__/baseAbilities.test.ts',
+  'src/games/smashup/__tests__/baseAbilityIntegration.test.ts',
+  'src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts',
+  'src/games/smashup/__tests__/baseAbilityNeutralProtection.test.ts',
+  'src/games/smashup/__tests__/baseAbilitySuppressionState.test.ts',
+  'src/games/smashup/__tests__/baseProtection.test.ts',
+  'src/games/smashup/__tests__/baseRestrictions.test.ts',
+  'src/games/smashup/__tests__/base-rlyeh-destroy-trigger-idempotency.test.ts',
+]);
+
+function isSmashUpRootBaseAbilityAggregator(file) {
+  if (!isSmashUpRootTest(file)) {
+    return false;
+  }
+
+  const normalized = normalizeFile(file);
+  const baseName = path.basename(normalized);
+  return /^base.*(?:ability|abilities|prompt).*\.(test|spec)\.[tj]sx?$/i.test(baseName);
+}
+
+function checkSmashUpRootBaseAbilityStructure(file, existedAtBase) {
+  if (!isSmashUpRootBaseAbilityAggregator(file)) {
+    return;
+  }
+
+  const normalized = normalizeFile(file);
+  if (smashUpRootBaseAbilityWhitelist.has(normalized)) {
+    return;
+  }
+
+  if (existedAtBase) {
+    warnings.push(`${file}: Smash Up 根级 baseAbility/basePrompt 聚合壳是历史债务；本次允许保留，但不要继续扩写，优先迁到 src/games/smashup/__tests__/bases/。`);
+    return;
+  }
+
+  violations.push(`${file}: 禁止新增 Smash Up 根级 baseAbility/basePrompt 聚合壳；请迁入 src/games/smashup/__tests__/bases/ 下的专项目文件，或落到允许的系统/集成白名单文件。`);
+}
+
+function allowsDirectResolveAbility(file) {
+  const normalized = normalizeFile(file);
+  return (
+    normalized === 'src/games/smashup/__tests__/abilityRegistry.test.ts' ||
+    normalized === 'src/games/smashup/__tests__/properties/coreProperties.test.ts'
+  );
+}
+
+const forbiddenPromptCouplingPatterns = [
+  {
+    pattern: /\bgetInteractionsFromMS\s*\(/,
+    message: '业务测试不要直接枚举 sys.interaction；请通过 getSimpleChoicePrompt/getReactionPrompt/expectNoPrompt 等 facade 表达行为。',
+  },
+  {
+    pattern: /\.data\.options\b/,
+    message: '业务测试不要直读 prompt.data.options；请通过 getPromptOption/getPromptOptions 选择候选。',
+  },
+  {
+    pattern: /\.data\??\.sourceId\b/,
+    message: '业务测试不要直读 prompt.data.sourceId；请通过 getSimpleChoicePrompt(expectedSourceId) 或 getPromptSourceId。',
+  },
+  {
+    pattern: /\bSYS_INTERACTION_RESPOND\b/,
+    message: '业务测试不要手写 SYS_INTERACTION_RESPOND；请通过 respondToPrompt/respondToPromptOptions。',
+  },
+  {
+    pattern: /\bSYS_INTERACTION_CANCEL\b/,
+    message: '业务测试不要手写 SYS_INTERACTION_CANCEL；请通过 cancelPrompt。',
+  },
+  {
+    pattern: /\bsys\.interaction\.current\b/,
+    message: '业务测试不要直读 sys.interaction.current；请通过 prompt facade。',
+  },
+];
+
+const forbiddenDirectHandlerPatterns = [
+  {
+    pattern: /import\s*\{[^}]*\bgetInteractionHandler\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityInteractionHandlers['"]/,
+    message: '业务测试不要直接导入 getInteractionHandler；请通过 helpers.ts 提供的 facade 或真实命令/交互链表达行为。',
+  },
+  {
+    pattern: /import\s*\{[^}]*\bgetAbilityRuntimePromptHandler\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityRuntime['"]/,
+    message: '业务测试不要直接导入 getAbilityRuntimePromptHandler；请通过 helpers.ts 提供的 facade 或真实 runtime prompt 响应链表达行为。',
+  },
+  {
+    pattern: /\bgetInteractionHandler\s*\(/,
+    message: '业务测试不要新增 getInteractionHandler(...) 直调；请优先通过真实 trigger/prompt/command 链或 facade 表达行为。只有注册表/系统合同或已登记的低层合同文件允许保留。',
+  },
+  {
+    pattern: /\bgetAbilityRuntimePromptHandler\s*\(/,
+    message: '业务测试不要新增 getAbilityRuntimePromptHandler(...) 直调；请优先通过真实 runtime prompt 响应链表达行为。只有 prompt 系统合同或已登记的低层合同文件允许保留。',
+  },
+  {
+    pattern: /\bresolvePromptViaRegisteredHandler\s*\(/,
+    message: '业务测试不要新增 resolvePromptViaRegisteredHandler(...)；这仍然是 registered handler 直调。优先使用 respondToPrompt/respondToPromptOption(s) 表达真实点击路径。',
+  },
+];
+
+const forbiddenDirectAbilityRegistryPatterns = [
+  {
+    pattern: /import\s*\{[^}]*\bresolveAbility\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityRegistry['"]/,
+    message: '业务/能力测试不要直接导入 resolveAbility；公开行为请走真实命令入口，low-level ability 合同请走 helpers.ts 中的 invokeRegisteredAbilityContract(...)。只有注册表/属性合同文件允许保留。',
+  },
+  {
+    pattern: /\bresolveAbility\s*\(/,
+    message: '业务/能力测试不要新增裸 resolveAbility(...)；公开行为请走真实命令入口，low-level ability 合同请走 helpers.ts 中的 invokeRegisteredAbilityContract(...)。只有注册表/属性合同文件允许保留。',
+  },
+];
+
+const forbiddenDebugConsolePatterns = [
+  {
+    pattern: /\bconsole\.(?:log|warn|error|debug)\s*\(/,
+    message: '测试不要新增 console 调试输出；请把关键信息提升为结构化断言、失败消息或证据文档。',
+  },
+];
+
+const forbiddenSkippedTestPattern = /\b(?:it|test|describe)\.skip\s*\(/;
+
+function addedLinesSinceBase(file, existedAtBase) {
+  if (!existedAtBase && fs.existsSync(path.join(repoRoot, file))) {
+    return fs.readFileSync(path.join(repoRoot, file), 'utf8').split(/\r?\n/);
+  }
+
+  const output = runGit(['diff', '--unified=0', baseRef, '--', file], { allowFail: true, silent: true });
+  return output
+    .split(/\r?\n/)
+    .filter(line => line.startsWith('+') && !line.startsWith('+++'))
+    .map(line => line.slice(1));
+}
+
+function checkSkippedTestUsage(file, existedAtBase) {
+  if (!isGameVitestTest(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    if (forbiddenSkippedTestPattern.test(line)) {
+      violations.push(`${file}: 新增或迁出的游戏行为测试不得使用 it.skip/test.skip/describe.skip（added line ${index + 1}）。请修成可运行行为测试；若只是历史债务，不要迁成新聚焦用例。`);
+    }
+  }
+}
+
+function checkPromptFacadeCoupling(file, existedAtBase) {
+  if (!isGameVitestTest(file) || isInteractionContractTest(file)) {
+    return;
+  }
+
+  if (existedAtBase && isGenericSinkName(file)) {
+    const { added, deleted } = getNumstat(file);
+    if (added <= deleted) {
+      warnings.push(`${file}: 旧泛名测试文件仍含 prompt 内部耦合债务；本次净删减，暂不阻断，后续迁出时必须改走 facade。`);
+      return;
+    }
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenPromptCouplingPatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续耦合 InteractionSystem 内部结构（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDirectHandlerCoupling(file, existedAtBase) {
+  if (!isGameVitestTest(file) || isInteractionContractTest(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDirectHandlerPatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续耦合已注册 handler（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDirectAbilityRegistryCoupling(file, existedAtBase) {
+  if (!isGameVitestTest(file) || allowsDirectResolveAbility(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDirectAbilityRegistryPatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续直接访问 ability registry（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDebugConsoleUsage(file, existedAtBase) {
+  if (!isGameVitestTest(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDebugConsolePatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续依赖调试控制台输出（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkE2eStructure(file, existedAtBase) {
+  if (isTrackedE2eSrcMirror(file)) {
+    violations.push(`${file}: 禁止通过 e2e/src 镜像路径入库；E2E 需要引用源码时必须直接指向仓库根 src/。`);
+    return;
+  }
+
+  if (!isE2eSpec(file)) {
+    return;
+  }
+
+  const legacyRootGameId = getLegacyRootE2eGameId(file);
+  if (legacyRootGameId) {
+    const legacySourcePath = getLegacyRootSourcePath(file);
+    if (!existedAtBase && !existsAtRef(baseRef, legacySourcePath)) {
+      violations.push(`${file}: legacy-root 只允许承接历史根级 E2E 迁移；新增用例必须放到 e2e/${legacyRootGameId}/ 的聚焦文件中。`);
+      return;
+    }
+    warnings.push(`${file}: legacy-root 是历史根级 E2E 迁移目录；允许保留覆盖，但新增场景应迁出为聚焦文件。`);
+    return;
+  }
+
+  const rootGameId = getRootE2eGameId(file);
+  if (!rootGameId) {
+    return;
+  }
+
+  const canonicalPrefix = `e2e/${rootGameId}/`;
+  if (!existedAtBase) {
+    violations.push(`${file}: 禁止新增根级游戏 E2E；请放到 ${canonicalPrefix} 下，避免继续制造根目录/子目录双入口。`);
+    return;
+  }
+
+  warnings.push(`${file}: 根级游戏 E2E 是历史入口债务；本次允许既有文件继续收敛，但不要新增场景。迁移目标为 ${canonicalPrefix}。`);
+}
+
+function checkTempArtifact(file, existedAtBase) {
+  if (!isForbiddenTempArtifact(file)) {
+    return;
+  }
+
+  const absolutePath = path.join(repoRoot, file);
+  const existsInWorkingTree = fs.existsSync(absolutePath);
+  if (!existsInWorkingTree && existedAtBase) {
+    return;
+  }
+
+  violations.push(`${file}: 禁止把临时/备份/测试输出文件纳入仓库；请放入 temp/、test-results/ 等已忽略目录，或按 docs/temp-files-management.md 归档为正式证据/文档。`);
+}
+
+const targetFiles = unique((files.length > 0 ? files : collectDefaultFiles()).map(normalizeFile))
+  .filter(file => isTestFile(file) || isTrackedE2eSrcMirror(file) || isForbiddenTempArtifact(file));
+
+const violations = [];
+const warnings = [];
+
+for (const file of targetFiles) {
+  const existedAtBase = existsAtRef(baseRef, file);
+  const isNew = !existedAtBase;
+
+  checkTempArtifact(file, existedAtBase);
+  checkE2eStructure(file, existedAtBase);
+  checkSmashUpRootBaseAbilityStructure(file, existedAtBase);
+  checkSkippedTestUsage(file, existedAtBase);
+  checkPromptFacadeCoupling(file, existedAtBase);
+  checkDirectHandlerCoupling(file, existedAtBase);
+  checkDirectAbilityRegistryCoupling(file, existedAtBase);
+  checkDebugConsoleUsage(file, existedAtBase);
+
+  if (!isGameVitestTest(file) || !isGenericSinkName(file)) {
+    continue;
+  }
+
+  if (isNew) {
+    violations.push(`${file}: 禁止新增 new*/misc/regression/feedback/fixes 等泛名测试文件；请按行为簇命名。`);
+    continue;
+  }
+
+  const { added, deleted } = getNumstat(file);
+  if (added > deleted) {
+    violations.push(`${file}: 旧泛名测试文件出现净新增内容（+${added}/-${deleted}）；应迁到聚焦测试文件。`);
+  } else {
+    warnings.push(`${file}: 旧泛名测试文件仍是债务；本次没有净新增内容，可继续收敛。`);
+  }
+}
+
+if (warnings.length > 0) {
+  console.warn('[test-structure-guard] 警告:');
+  for (const warning of warnings) console.warn(`- ${warning}`);
+}
+
+if (violations.length > 0) {
+  console.error('[test-structure-guard] 测试结构门禁失败:');
+  for (const violation of violations) console.error(`- ${violation}`);
+  if (process.env.ALLOW_TEST_STRUCTURE_DEBT === '1') {
+    console.warn('[test-structure-guard] ALLOW_TEST_STRUCTURE_DEBT=1 已设置，本次仅警告不失败。');
+  } else {
+    process.exit(1);
+  }
+}
+
+console.log(`[test-structure-guard] checked files: ${targetFiles.length}`);
+console.log('[test-structure-guard] OK');

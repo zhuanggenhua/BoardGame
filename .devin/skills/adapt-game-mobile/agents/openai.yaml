@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adapt Game Mobile"
+  short_description: "审计并接入单个游戏到 PC 主导、移动端横屏优先的通用适配框架。"
+  default_prompt: "Use $adapt-game-mobile to audit a game and connect it to the shared landscape mobile shell."

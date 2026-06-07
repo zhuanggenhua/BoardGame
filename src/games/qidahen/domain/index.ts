@@ -8646,6 +8646,7 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
                     nextState = {
                         ...nextState,
                         turnPhase: 'season-resolution',
+                        selectedRegionId: 'song-jin',
                         fortificationMaintenanceSelection: buildFortificationMaintenanceSelection(nextState),
                         lastSeasonSummary: buildSeasonSummary('新年结算', event.timestamp, [
                             '轮盘停在新年，等待大明选择防线维护方式。',

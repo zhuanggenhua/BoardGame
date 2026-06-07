@@ -1944,7 +1944,6 @@ const buildRegionFillBarrierMask = (boundaryMask: Uint8Array): Uint8Array => {
 };
 
 const AUTO_MAP_PRINTED_UI_EXCLUSION_MASK = buildRectMask(AUTO_MAP_PRINTED_UI_EXCLUSION_RECTS);
-const EMPTY_MAP_ARTIFACT_EXCLUSION_MASK = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
 const AUTO_MAP_REGION_FILLABLE_MASK = (() => {
     const mask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
     for (let index = 0; index < mask.length; index += 1) {
@@ -4221,6 +4220,50 @@ const findBestInteriorSeedPointInMask = (
     return best?.point ?? null;
 };
 
+const computeResolvedRegionCenters = ({
+    assignments,
+    width,
+    regionCount,
+}: {
+    assignments: Int16Array;
+    width: number;
+    regionCount: number;
+}) => (
+    computeRegionCenters({
+        assignments,
+        width,
+        regionCount,
+    }).map((center) => {
+        const centerIndex = (center.y * MASK_WIDTH) + center.x;
+        if (assignments[centerIndex] === center.regionIndex) {
+            return center;
+        }
+        const regionMask = buildRegionMaskFromAssignments(assignments, center.regionIndex);
+        if (!regionMask) {
+            return center;
+        }
+        const regionBoundaryMask = buildMaskBoundaryRing({
+            mask: regionMask,
+            width: MASK_WIDTH,
+            height: MASK_HEIGHT,
+            expandIterations: 0,
+        });
+        const interiorPoint = findBestInteriorSeedPointInMask(
+            { x: center.x, y: center.y },
+            regionBoundaryMask,
+            regionMask,
+        );
+        if (!interiorPoint) {
+            return center;
+        }
+        return {
+            ...center,
+            x: interiorPoint.x,
+            y: interiorPoint.y,
+        };
+    })
+);
+
 const findNearestBarrierPoint = (
     point: MaskPoint,
     barrierMask: Uint8Array,
@@ -4927,7 +4970,7 @@ const buildAutoPassagesFromAssignments = ({
         }
     }
 
-    const generatedCenters = computeRegionCenters({
+    const generatedCenters = computeResolvedRegionCenters({
         assignments,
         width: MASK_WIDTH,
         regionCount: regions.length,
@@ -5615,11 +5658,11 @@ const QidahenRegionMaskTool: React.FC = () => {
     );
     const currentMapArtifactExclusionMask = React.useMemo(() => {
         void sourcePixelsVersion;
-        if (simplifiedBoundaryWorkflow) {
-            return EMPTY_MAP_ARTIFACT_EXCLUSION_MASK;
-        }
         const sourcePixels = sourcePixelsRef.current;
         if (!sourcePixels) {
+            return AUTO_MAP_PRINTED_UI_EXCLUSION_MASK;
+        }
+        if (simplifiedBoundaryWorkflow) {
             return AUTO_MAP_PRINTED_UI_EXCLUSION_MASK;
         }
         return unionBinaryMasks(
@@ -8165,8 +8208,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                 );
                 const nextBarrierAddMask = await readBinaryMaskFromImageSource(payload.barrierHints?.addPngDataUrl ?? null);
                 const nextBarrierRemoveMask = await readBinaryMaskFromImageSource(payload.barrierHints?.removePngDataUrl ?? null);
+                let removedExcludedAssignedPixels = 0;
+                for (let index = 0; index < nextAssignments.length; index += 1) {
+                    if (currentMapArtifactExclusionMask[index] === 0 || nextAssignments[index] === EMPTY_REGION) {
+                        continue;
+                    }
+                    nextAssignments[index] = EMPTY_REGION;
+                    removedExcludedAssignedPixels += 1;
+                }
 
-                const loadedCenters = computeRegionCenters({
+                const loadedCenters = computeResolvedRegionCenters({
                     assignments: nextAssignments,
                     width: MASK_WIDTH,
                     regionCount: loadedRegions.length,
@@ -8330,16 +8381,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const correctedSeedNote = mismatchedSeedCount > 0
                     ? ` 已保留 ${mismatchedSeedCount} 个与 static shape 不一致的现有 seed；静态 shape 仅作 bootstrap 参考。`
                     : '';
+                const excludedMaskCleanupNote = removedExcludedAssignedPixels > 0
+                    ? ` 已自动清掉轮盘/UI 禁区里的 ${removedExcludedAssignedPixels.toLocaleString()} px 旧区域像素。`
+                    : '';
                 const derivedBoundaryNote = autoDerivedBoundaryFromSavedRegions
                     ? ' 已从已保存区域边缘反推红线显示；如需改边界，可直接画边界/擦边界后保存。'
                     : '';
                 setStatusMessage(
                     workspaceHasPersistedArtifacts
                         ? shouldResumeRegionPathEditing
-                            ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域/通路结果；刷新后直接继续改移动代价。${derivedBoundaryNote}${correctedSeedNote}`
+                            ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域/通路结果；刷新后直接继续改移动代价。${excludedMaskCleanupNote}${derivedBoundaryNote}${correctedSeedNote}`
                             : shouldResumeRegionPainting
-                                ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域结果；刷新后继续在上次区域稿上微调。${derivedBoundaryNote}${correctedSeedNote}`
-                                : `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域数据；刷新后继续在上次结果上修边。${derivedBoundaryNote}${correctedSeedNote}`
+                                ? `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域结果；刷新后继续在上次区域稿上微调。${excludedMaskCleanupNote}${derivedBoundaryNote}${correctedSeedNote}`
+                                : `已自动读取 ${typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR} 中的区域数据；刷新后继续在上次结果上修边。${excludedMaskCleanupNote}${derivedBoundaryNote}${correctedSeedNote}`
                         : `当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。${correctedSeedNote}`,
                 );
                 // 参考层只影响叠图显示，不该阻塞整个工作区回读。
@@ -8505,7 +8559,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     }, [showBarrier, showBoundarySourceReference, showRealMapBoundarySupportOverlay]);
 
     const syncGraphNodes = React.useCallback((sourceRegions: readonly PainterRegion[] = regions) => {
-        const centers = computeRegionCenters({
+        const centers = computeResolvedRegionCenters({
             assignments: assignmentsRef.current,
             width: MASK_WIDTH,
             regionCount: sourceRegions.length,

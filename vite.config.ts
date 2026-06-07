@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
+import type { ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'path'
@@ -42,6 +43,30 @@ const QIDAHEN_REGION_MASK_INTERNAL_FILES = {
   authoritativeMask: 'region-authoritative-guides.png',
   authoritativeMeta: 'region-authoritative-guides.json',
 } as const
+const IOS_EMBEDDED_PRUNE_PATHS = [
+  'assets/i18n',
+  'assets/common/audio',
+  'assets/common/images/mascot',
+  'assets/common/images/home-v2/book-close',
+  'assets/common/images/home-v2/catalog-thumbnails',
+  'assets/common/images/home-v2/generated-reference-homepage',
+  'assets/common/images/home-v2/overview-spread',
+  'assets/common/images/home-v2/reference-homepage',
+  'assets/common/images/home-v2/reference-thumbnails',
+]
+const API_DISABLED_PREFIXES = [
+  '/auth',
+  '/feedback',
+  '/sponsors',
+  '/notifications',
+  '/game-changelogs',
+  '/ugc',
+  '/assets/ugc',
+  '/assets/avatars',
+  '/layout',
+  '/devtools/ai-repo-workbench',
+]
+const isTruthyFlag = (value: string | undefined) => /^(1|true|yes|on)$/i.test(value?.trim() || '')
 
 const readCliFlag = (flagName: string): string | undefined => {
   const prefix = `--${flagName}=`
@@ -68,7 +93,7 @@ const isNonReleaseAndroidAppId = (appId: string) => (
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
 )
 
-const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
+const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2DraftEnabled: boolean) => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -81,6 +106,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
+    // Android shell root already treats Home V2 as the default homepage.
+    // Keep the packaged build metadata aligned with the web/router contract.
+    const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled
 
     this.emitFile({
       type: 'asset',
@@ -94,6 +122,41 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
           appName,
           shellType: appId && !isNonReleaseAndroidAppId(appId) ? 'release' : 'non-release',
           forceBuiltinBundle,
+          homeV2DraftEnabled: homeV2EnabledForAndroidBuild,
+        },
+        null,
+        2,
+      ),
+    })
+  },
+})
+
+const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>) => ({
+  name: 'ios-build-meta',
+  apply: 'build' as const,
+  generateBundle() {
+    if (mode !== 'ios') return
+
+    const appId = env.VITE_CAPACITOR_APP_ID?.trim()
+      || env.CAPACITOR_APP_ID?.trim()
+      || process.env.VITE_CAPACITOR_APP_ID?.trim()
+      || process.env.CAPACITOR_APP_ID?.trim()
+      || ''
+    const appName = env.CAPACITOR_APP_NAME?.trim()
+      || process.env.CAPACITOR_APP_NAME?.trim()
+      || ''
+
+    this.emitFile({
+      type: 'asset',
+      fileName: 'ios-build-meta.json',
+      source: JSON.stringify(
+        {
+          mode,
+          backendUrl,
+          builtAt: new Date().toISOString(),
+          appId,
+          appName,
+          shellType: appId === 'top.easyboardgame.app' ? 'release' : 'non-release',
         },
         null,
         2,
@@ -407,11 +470,72 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
   },
 })
 
+const createIosEmbeddedDistPrunePlugin = (mode: string) => ({
+  name: 'ios-embedded-dist-prune',
+  apply: 'build' as const,
+  closeBundle() {
+    if (mode !== 'ios') return
+
+    const distDir = path.resolve(configDir, 'dist')
+    const localesDir = path.join(distDir, 'locales')
+    if (fs.existsSync(localesDir)) {
+      for (const entry of fs.readdirSync(localesDir, { withFileTypes: true })) {
+        if (entry.name === 'zh-CN') continue
+        fs.rmSync(path.join(localesDir, entry.name), { recursive: true, force: true })
+      }
+    }
+
+    for (const relativePath of IOS_EMBEDDED_PRUNE_PATHS) {
+      const targetPath = path.join(distDir, relativePath)
+      if (!fs.existsSync(targetPath)) continue
+      fs.rmSync(targetPath, { recursive: true, force: true })
+    }
+  },
+})
+
+const createDevApiDisabledPlugin = (enabled: boolean) => ({
+  name: 'dev-api-disabled-guard',
+  enforce: 'pre' as const,
+  configureServer(server: ViteDevServer) {
+    if (!enabled) return
+
+    server.middlewares.use((req, res, next) => {
+      const rawUrl = req.url || '/'
+      const pathname = rawUrl.split('?')[0] || '/'
+      const accept = Array.isArray(req.headers.accept)
+        ? req.headers.accept.join(',')
+        : (req.headers.accept || '')
+      const isAdminSpaNavigation = req.method === 'GET'
+        && (pathname === '/admin' || pathname.startsWith('/admin/'))
+        && accept.includes('text/html')
+      const isApiOnlyPath = pathname === '/admin'
+        || pathname.startsWith('/admin/')
+        || API_DISABLED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+
+      if (!isApiOnlyPath || isAdminSpaNavigation) {
+        next()
+        return
+      }
+
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(JSON.stringify({
+        error: 'dev_api_disabled',
+        message: 'API server is disabled in dev:lite mode.',
+        path: pathname,
+      }))
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const forceInlineVite = env.BG_VITE_FORCE_INLINE === '1'
-    || process.env.BG_VITE_FORCE_INLINE === '1'
+  // `BG_VITE_FORCE_INLINE` 只控制包装器是否在当前进程内启动 Vite，
+  // 不应再顺带切到“禁 react/esbuild + TS fallback”的配置分支；
+  // 否则会让 howler 之类 CJS 依赖直接裸露到浏览器端。
+  const forceInlineVite = env.BG_VITE_FORCE_CONFIG_INLINE === '1'
+    || process.env.BG_VITE_FORCE_CONFIG_INLINE === '1'
   const disableViteWatch = process.env.PW_SERVER_WATCH === 'false'
     || process.env.VITE_DISABLE_WATCH === 'true'
     || env.VITE_DISABLE_WATCH === 'true'
@@ -422,6 +546,9 @@ export default defineConfig(({ mode }) => {
         || env.BG_DEV_HOT_RELOAD?.trim()
         || '',
     )
+  const disableViteHmr = disableViteWatch
+    || process.env.BG_DEV_DISABLE_HMR === '1'
+    || env.BG_DEV_DISABLE_HMR === '1'
   const cliPort = Number(readCliFlag('port'))
   const cliHost = readCliFlag('host')
   const devPort = Number.isFinite(cliPort) && cliPort > 0
@@ -432,6 +559,7 @@ export default defineConfig(({ mode }) => {
   const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
   const apiServerPort = Number(env.API_SERVER_PORT) || 18001
   const suppressE2EProxyNoise = env.E2E_PROXY_QUIET === 'true'
+  const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = env.VITE_BACKEND_URL || ''
 
   const isIgnorableProxyError = (err: Error & NodeJS.ErrnoException) => {
@@ -472,6 +600,7 @@ export default defineConfig(({ mode }) => {
           }
         },
       },
+      createDevApiDisabledPlugin(devApiDisabled),
       ...(forceInlineVite ? [] : [react()]),
       createInlineTypeScriptFallbackPlugin(forceInlineVite),
       localeHashPlugin(),
@@ -479,8 +608,10 @@ export default defineConfig(({ mode }) => {
       publicFileHashPlugin(),
       readyCheckPlugin(),
       createQidahenRegionMaskDevtoolsPlugin(),
-      createAndroidBuildMetaPlugin(mode, backendUrl),
+      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
+      createIosBuildMetaPlugin(mode, backendUrl, env),
       createAndroidDistPrunePlugin(mode),
+      createIosEmbeddedDistPrunePlugin(mode),
     ],
     esbuild: forceInlineVite ? false : undefined,
     build: {
@@ -513,17 +644,31 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       dedupe: ['react', 'react-dom'],
-      alias: {
-        '@': path.resolve(configDir, './src'),
-        '@locales': path.resolve(configDir, './public/locales'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(configDir, './src') },
+        { find: '@locales', replacement: path.resolve(configDir, './public/locales') },
+        { find: 'void-elements', replacement: path.resolve(configDir, './src/vendor/void-elements.ts') },
+      ],
     },
     optimizeDeps: {
       ...(forceInlineVite
         ? {
-            // In constrained environments, disable dep optimization to avoid esbuild spawn EPERM.
+            // In constrained environments, keep discovery off but still prebundle a tiny set of
+            // critical CJS-heavy deps; otherwise inline mode falls back to raw node_modules files.
             noDiscovery: true,
-            include: [],
+            include: [
+              'react',
+              'react/jsx-runtime',
+              'react/jsx-dev-runtime',
+              'react-dom',
+              'react-dom/client',
+              'react-i18next',
+              'framer-motion',
+              'cookie',
+              'set-cookie-parser',
+              'debug',
+              'socket.io-msgpack-parser',
+            ],
             entries: undefined,
           }
         : {
@@ -534,7 +679,7 @@ export default defineConfig(({ mode }) => {
       host: serverHost,
       port: devPort,
       strictPort: true,
-      hmr: disableViteWatch
+      hmr: disableViteHmr
         ? false
         : {
             protocol: 'ws',

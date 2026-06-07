@@ -4,9 +4,11 @@
 
 import { expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from '@playwright/test';
 import {
+    attachPageDiagnostics,
     getGameServerBaseURL,
     ensureGameServerAvailable,
     initContext,
+    waitForFrontendAssets,
 } from './common';
 
 const GAME_NAME = 'dicethrone';
@@ -20,6 +22,12 @@ type CreateDTRoomOptions = {
     numPlayers?: number;
     setupData?: Record<string, unknown>;
     gameServerBaseURL?: string;
+};
+
+type SetupDTOnlineMatchOptions = {
+    blockLobbySocket?: boolean;
+    skipImageGate?: boolean;
+    characterSelectionTimeout?: number;
 };
 
 export const createDTRoomViaAPI = async (
@@ -124,18 +132,412 @@ export const seedDTMatchCredentials = async (
     );
 };
 
+const DT_PRELOAD_RUNNER_SOURCE = String.raw`
+(async function runDiceThronePreload(args) {
+    const preloadStepTimeoutMs = args.preloadStepTimeoutMs;
+    const traceWindow = window;
+    if (!Array.isArray(traceWindow.__DT_E2E_PRELOAD_TRACE__)) {
+        traceWindow.__DT_E2E_PRELOAD_TRACE__ = [];
+    }
+
+    const pushPreloadTrace = function (stage, payload) {
+        traceWindow.__DT_E2E_PRELOAD_TRACE__.push({
+            stage,
+            timestamp: Date.now(),
+            ...(payload ? { payload } : {}),
+        });
+    };
+
+    const withStepTimeout = async function (label, run) {
+        pushPreloadTrace(label + ':start', { timeoutMs: preloadStepTimeoutMs });
+        const startedAt = Date.now();
+        let stepTimeoutId;
+        try {
+            const result = await Promise.race([
+                run(),
+                new Promise((_, reject) => {
+                    stepTimeoutId = setTimeout(() => {
+                        reject(new Error('DiceThrone 预热步骤超时: ' + label + '（' + preloadStepTimeoutMs + 'ms）'));
+                    }, preloadStepTimeoutMs);
+                }),
+            ]);
+            pushPreloadTrace(label + ':success', {
+                durationMs: Date.now() - startedAt,
+            });
+            return result;
+        } catch (error) {
+            pushPreloadTrace(label + ':failed', {
+                durationMs: Date.now() - startedAt,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
+        } finally {
+            if (stepTimeoutId !== undefined) {
+                clearTimeout(stepTimeoutId);
+            }
+        }
+    };
+
+    const warmModuleSource = async function (label, path, attempts) {
+        let lastError = null;
+        for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            try {
+                await withStepTimeout(label + ':attempt-' + attempt, async () => {
+                    const response = await fetch(path, { credentials: 'same-origin' });
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    await response.text();
+                });
+                pushPreloadTrace(label + ':warmed', { attempt, path });
+                return;
+            } catch (error) {
+                lastError = error instanceof Error ? error.message : String(error);
+                pushPreloadTrace(label + ':retry', { attempt, path, error: lastError });
+                if (attempt < attempts) {
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                }
+            }
+        }
+        throw new Error(label + ' 预热失败: ' + (lastError ?? 'unknown error'));
+    };
+
+    pushPreloadTrace('preload-start', { stepTimeoutMs: preloadStepTimeoutMs });
+
+    await warmModuleSource(
+        'warm-prefetch-play-route-source',
+        '/src/lib/prefetchPlayRoute.ts',
+        2,
+    );
+    await warmModuleSource(
+        'warm-game-registry-source',
+        '/src/games/registry.ts',
+        2,
+    );
+    const playRouteModule = await withStepTimeout(
+        'import-prefetch-play-route',
+        () => import('/src/lib/prefetchPlayRoute.ts'),
+    );
+    const registryModule = await withStepTimeout(
+        'import-game-registry',
+        () => import('/src/games/registry.ts'),
+    );
+    await withStepTimeout(
+        'prefetch-online-match-route',
+        () => playRouteModule.prefetchOnlineMatchRoute(),
+    );
+    await warmModuleSource(
+        'warm-match-room-source',
+        '/src/pages/MatchRoomWithAudio.tsx',
+        2,
+    );
+    await withStepTimeout(
+        'prefetch-dicethrone-runtime',
+        () => registryModule.prefetchGameImplementation('dicethrone', { includeTutorial: false }),
+    );
+    await warmModuleSource(
+        'warm-dicethrone-board-source',
+        '/src/games/dicethrone/Board.tsx',
+        2,
+    );
+    await withStepTimeout(
+        'ensure-dicethrone-critical-image-resolver',
+        () => registryModule.ensureGameCriticalImageResolverLoaded('dicethrone'),
+    );
+
+    pushPreloadTrace('preload-success');
+})
+`;
+
+const preloadDTMatchRouteModule = async (page: Page, timeoutMs = 30000) => {
+    const stepTimeoutMs = Math.max(8000, Math.min(20000, Math.floor(timeoutMs / 2)));
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    try {
+        await Promise.race([
+            page.evaluate(
+                ({ preloadStepTimeoutMs, runnerSource }) =>
+                    (0, eval)(runnerSource)({ preloadStepTimeoutMs }),
+                { preloadStepTimeoutMs: stepTimeoutMs, runnerSource: DT_PRELOAD_RUNNER_SOURCE },
+            ),
+            new Promise<never>((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    reject(new Error(`预热 DiceThrone 在线对局路由模块超时（${timeoutMs}ms）`));
+                }, timeoutMs);
+            }),
+        ]);
+    } catch (error) {
+        let preloadTrace: unknown = null;
+        try {
+            preloadTrace = await page.evaluate(() => {
+                const traceWindow = window as Window & {
+                    __DT_E2E_PRELOAD_TRACE__?: Array<Record<string, unknown>>;
+                };
+                return traceWindow.__DT_E2E_PRELOAD_TRACE__ ?? null;
+            });
+        } catch {
+            preloadTrace = null;
+        }
+        console.warn(
+            '[DiceThrone E2E] 在线对局路由模块预热失败，继续正式进房',
+            error,
+            preloadTrace
+                ? `\n预热分步轨迹:\n${JSON.stringify(preloadTrace, null, 2)}`
+                : '',
+        );
+    } finally {
+        if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+        }
+    }
+};
+
+const waitForFrontendAssetsBestEffort = async (page: Page, timeoutMs = 30000) => {
+    try {
+        await waitForFrontendAssets(page, timeoutMs);
+    } catch (error) {
+        console.warn('[DiceThrone E2E] 前端资源 readiness 探针失败，继续正式进房', error);
+    }
+};
+
+const isRetryableDTNavigationError = (error: unknown): boolean => {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    return error.message.includes('ERR_ABORTED')
+        || error.message.includes('ERR_NETWORK_CHANGED')
+        || error.message.includes('frame was detached')
+        || error.message.includes('page.goto: Timeout');
+};
+
+const gotoDTMatchRoom = async (
+    page: Page,
+    matchId: string,
+    playerId: string,
+) => {
+    const targetUrl = `/play/${GAME_NAME}/match/${matchId}?playerID=${playerId}`;
+    const maxAttempts = 3;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            // 这里先拿到目标房间页面的首个 commit，避免把导航卡死在模块冷加载上；
+            // 后续由角色选择页等待逻辑继续兜底页面真正就绪。
+            await page.goto(targetUrl, { waitUntil: 'commit', timeout: 30000 });
+            await page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => undefined);
+            return;
+        } catch (error) {
+            if (!isRetryableDTNavigationError(error) || attempt === maxAttempts) {
+                throw error;
+            }
+            await page.waitForTimeout(800);
+        }
+    }
+};
+
 // ============================================================================
 // 游戏交互
 // ============================================================================
 
 export const waitForCharacterSelection = async (page: Page, timeout = 60000) => {
     // NOTE: 角色选择页标题在部分环境下可能出现偶发定位失败（疑似与文本/渲染时序有关）。
-    // 这里改用更稳定的结构锚点：角色卡片的 data-character-id。
-    await expect(page.locator('[data-character-id]').first()).toBeVisible({ timeout });
+    // 这里改用更稳定的结构锚点：新组件使用 data-character-id，旧兼容组件仍使用 data-char-id。
+    const deadline = Date.now() + timeout;
+    let lastError: unknown;
+    let lastBodyText = '';
+    let reloadCount = 0;
+    const maxReloads = 2;
+    let loadingStateStartedAt = 0;
+    const loadingReloadThresholdMs = 15000;
+
+    while (Date.now() < deadline) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+
+        const reconnectButton = page.getByRole('button', { name: /重连进入|Reconnect/i }).first();
+        if (await reconnectButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await reconnectButton.click();
+            await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+            await page.waitForTimeout(1000);
+            continue;
+        }
+
+        const rescueRetryButton = page.getByRole('button', { name: /刷新|Reload|重试|Retry/i }).first();
+        if (await rescueRetryButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await rescueRetryButton.click();
+            await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+            await page.waitForTimeout(1000);
+            continue;
+        }
+
+        const waitSlice = reloadCount < maxReloads ? 8000 : 15000;
+        try {
+            await expect(page.locator('[data-character-id], [data-char-id]').first())
+                .toBeVisible({ timeout: Math.min(remaining, waitSlice) });
+            return;
+        } catch (error) {
+            lastError = error;
+        }
+
+        const bodyText = await page.locator('body').innerText({ timeout: 1000 }).catch(() => '');
+        lastBodyText = bodyText;
+        const isExpectedLoadingState = /正在准备对局|加载游戏模块|正在加载对局资源|加载素材|Loading game module|Loading match resources|Loading game resources/i.test(bodyText);
+        if (isExpectedLoadingState) {
+            lastError = undefined;
+            if (loadingStateStartedAt === 0) {
+                loadingStateStartedAt = Date.now();
+            }
+            const loadingElapsed = Date.now() - loadingStateStartedAt;
+            if (reloadCount < maxReloads && loadingElapsed >= loadingReloadThresholdMs) {
+                reloadCount += 1;
+                loadingStateStartedAt = 0;
+                await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => undefined);
+                await page.waitForTimeout(1000);
+                continue;
+            }
+            await page.waitForTimeout(1000);
+            continue;
+        }
+
+        loadingStateStartedAt = 0;
+
+        if (reloadCount < maxReloads) {
+            reloadCount += 1;
+            await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => undefined);
+            await page.waitForTimeout(1000);
+            continue;
+        }
+
+        await page.waitForTimeout(1000);
+    }
+
+    if (lastBodyText) {
+        throw new Error(`等待 DiceThrone 角色选择页超时，最后页面文本: ${lastBodyText.slice(0, 500)}`);
+    }
+    if (lastError) throw lastError;
+    throw new Error('等待 DiceThrone 角色选择页超时，页面无可读文本');
+};
+
+const CHARACTER_SELECTION_HOME_FALLBACK_PATTERN =
+    /桌游教程、联机与原型制作平台|全部游戏|王权骰铸|大杀四方/i;
+
+export const waitForCharacterSelectionInRoom = async (
+    page: Page,
+    options: {
+        matchId: string;
+        playerId: string;
+        timeout?: number;
+        maxRoomRescues?: number;
+    },
+) => {
+    const diagnostics = attachPageDiagnostics(page);
+    const timeout = options.timeout ?? 60000;
+    const deadline = Date.now() + timeout;
+    const maxRoomRescues = options.maxRoomRescues ?? 2;
+    let rescueCount = 0;
+    let lastObservedBodyText = '';
+    let lastObservedUrl = '';
+    let lastError: unknown;
+
+    while (Date.now() < deadline) {
+        const remaining = deadline - Date.now();
+        const slice = Math.min(remaining, 45000);
+        if (slice <= 0) break;
+
+        try {
+            await waitForCharacterSelection(page, slice);
+            return;
+        } catch (error) {
+            lastError = error;
+            const bodyText = await page.locator('body').innerText({ timeout: 1000 }).catch(() => '');
+            const url = page.url();
+            lastObservedBodyText = bodyText;
+            lastObservedUrl = url;
+            const fellBackToHome = CHARACTER_SELECTION_HOME_FALLBACK_PATTERN.test(bodyText)
+                || !url.includes(`/play/${GAME_NAME}/match/`);
+            if (!fellBackToHome || rescueCount >= maxRoomRescues) {
+                break;
+            }
+
+            rescueCount += 1;
+            await gotoDTMatchRoom(page, options.matchId, options.playerId).catch(() => undefined);
+            await page.waitForTimeout(1000);
+        }
+    }
+
+    const rootReason = lastError instanceof Error
+        ? lastError.message
+        : lastError
+            ? String(lastError)
+            : '无底层错误消息';
+    const recentDiagnostics = diagnostics.errors.slice(-8);
+    const recentMatchLoadTrace = await page.evaluate(() => {
+        const holder = window as Window & {
+            __BG_MATCH_LOAD_TRACE__?: {
+                entries?: Array<{
+                    stage?: string;
+                    timestamp?: number;
+                    payload?: Record<string, unknown>;
+                }>;
+            };
+        };
+        const entries = holder.__BG_MATCH_LOAD_TRACE__?.entries;
+        if (!Array.isArray(entries)) {
+            return [];
+        }
+        return entries.slice(-8).map((entry) => ({
+            stage: entry?.stage ?? null,
+            timestamp: typeof entry?.timestamp === 'number' ? entry.timestamp : null,
+            payload: entry?.payload ?? null,
+        }));
+    }).catch(() => []);
+    const localStorageSnapshot = await page.evaluate((matchId) => {
+        const entries: Record<string, string | null> = {};
+        for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (!key) continue;
+            entries[key] = localStorage.getItem(key);
+        }
+        return {
+            matchCredentials: localStorage.getItem(`match_creds_${matchId}`),
+            entries,
+        };
+    }, options.matchId).catch(() => null);
+    const liveMatchRoomDebug = await page.evaluate(() => {
+        const holder = window as Window & {
+            __BG_MATCHROOM_DEBUG__?: {
+                getLiveSnapshot?: () => unknown;
+            };
+        };
+        return holder.__BG_MATCHROOM_DEBUG__?.getLiveSnapshot?.() ?? null;
+    }).catch(() => null);
+    const matchLoadTraceText = recentMatchLoadTrace.length > 0
+        ? JSON.stringify(recentMatchLoadTrace, null, 2)
+        : '无';
+    const localStorageText = localStorageSnapshot
+        ? JSON.stringify(localStorageSnapshot, null, 2)
+        : '无';
+    const liveMatchRoomDebugText = liveMatchRoomDebug
+        ? JSON.stringify(liveMatchRoomDebug, null, 2)
+        : '无';
+
+    throw new Error([
+        `等待 DiceThrone 角色选择页超时，玩家 ${options.playerId} 未恢复到房间`,
+        `matchId: ${options.matchId}`,
+        `已执行房间救援次数: ${rescueCount}`,
+        `最后 URL: ${lastObservedUrl || page.url()}`,
+        `最后页面文本: ${(lastObservedBodyText || '').slice(0, 500)}`,
+        `底层错误: ${rootReason}`,
+        recentDiagnostics.length > 0
+            ? `最近页面错误:\n${recentDiagnostics.join('\n')}`
+            : '最近页面错误: 无',
+        `最近 MatchLoadTrace:\n${matchLoadTraceText}`,
+        `当前 localStorage:\n${localStorageText}`,
+        `当前 MatchRoomLiveDebug:\n${liveMatchRoomDebugText}`,
+    ].join('\n'));
 };
 
 export const selectCharacter = async (page: Page, characterId: string) => {
-    let characterCard = page.locator(`[data-character-id="${characterId}"]`);
+    let characterCard = page.locator(`[data-character-id="${characterId}"], [data-char-id="${characterId}"]`).first();
     if ((await characterCard.count()) === 0) {
         // 兼容：部分角色卡在某些构建/渲染路径下可能没有挂 `data-character-id`（例如列表虚拟化/禁用态包装）。
         // 这里提供最小 fallback：按可见名称文字点击，以避免 E2E 因 DOM 标识缺失而假失败。
@@ -144,12 +546,17 @@ export const selectCharacter = async (page: Page, characterId: string) => {
                 ? /武士|Samurai/i
                 : characterId === 'gunslinger'
                     ? /枪手|Gunslinger/i
-                    : null;
+                    : characterId === 'zhanshujia'
+                        ? /战术家|Tactician/i
+                        : characterId === 'cursed_pirate'
+                            ? /咒缚海盗|Cursed Pirate/i
+                            : null;
         if (fallbackName) {
             characterCard = page.getByText(fallbackName).first();
         }
     }
 
+    await characterCard.scrollIntoViewIfNeeded({ timeout: 12000 }).catch(() => undefined);
     await expect(characterCard).toBeVisible({ timeout: 12000 });
     await characterCard.click();
     
@@ -159,23 +566,46 @@ export const selectCharacter = async (page: Page, characterId: string) => {
 };
 
 export const readyAndStartGame = async (hostPage: Page, guestPage: Page) => {
+    const clickRoleButtonWithRetry = async (
+        page: Page,
+        name: RegExp,
+        options: { visibleTimeoutMs: number; enabledTimeoutMs?: number; attempts?: number },
+    ) => {
+        const attempts = options.attempts ?? 3;
+        for (let attempt = 1; attempt <= attempts; attempt += 1) {
+            const button = page.getByRole('button', { name }).first();
+            await expect(button).toBeVisible({ timeout: options.visibleTimeoutMs });
+            if (options.enabledTimeoutMs) {
+                await expect(button).toBeEnabled({ timeout: options.enabledTimeoutMs });
+            }
+
+            try {
+                await button.click();
+                return;
+            } catch (error) {
+                if (attempt === attempts) throw error;
+                await page.waitForTimeout(300);
+            }
+        }
+    };
+
     // Guest 点击准备按钮
-    const guestReadyButton = guestPage.getByRole('button', { name: /Ready|准备/i });
-    await expect(guestReadyButton).toBeVisible({ timeout: 5000 });
-    await guestReadyButton.click();
+    await clickRoleButtonWithRetry(guestPage, /Ready|准备/i, {
+        visibleTimeoutMs: 8000,
+        enabledTimeoutMs: 5000,
+        attempts: 4,
+    });
     
     // 等待 Guest 页面状态更新（显示 "Ready, Waiting..." 或类似文本）
     await guestPage.waitForTimeout(500);
     
     // 等待 Host 页面接收到 Guest 的 Ready 状态并显示开始按钮
     // Host 点击开始游戏按钮 - 使用更宽松的选择器
-    const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
-    
-    // 等待按钮出现并启用（给足够时间让 WebSocket 同步状态）
-    await expect(hostStartButton).toBeVisible({ timeout: 10000 });
-    await expect(hostStartButton).toBeEnabled({ timeout: 5000 });
-    
-    await hostStartButton.click();
+    await clickRoleButtonWithRetry(hostPage, /Start Game|开始游戏|Press.*Start|按.*开始/i, {
+        visibleTimeoutMs: 15000,
+        enabledTimeoutMs: 8000,
+        attempts: 4,
+    });
     await hostPage.waitForTimeout(500);
 };
 
@@ -191,7 +621,7 @@ export const readyMultiplePlayersAndStartGame = async (
     }
 
     const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
-    await expect(hostStartButton).toBeVisible({ timeout: 10000 });
+    await expect(hostStartButton).toBeVisible({ timeout: 15000 });
     await expect(hostStartButton).toBeEnabled({ timeout: 5000 });
     await hostStartButton.click();
     await hostPage.waitForTimeout(500);
@@ -233,12 +663,20 @@ export interface DTMultiMatchSetup {
 export const setupDTOnlineMatch = async (
     browser: Browser,
     baseURL: string | undefined,
+    options?: SetupDTOnlineMatchOptions,
 ): Promise<DTMatchSetup | null> => {
+    const contextInitOptions = typeof options === 'object' && options !== null
+        ? { blockLobbySocket: options.blockLobbySocket, skipImageGate: options.skipImageGate }
+        : {};
     const hostContext = await browser.newContext({ baseURL });
-    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    // 这里只需要尽快拿到同源页面上下文做预热/请求，不必卡到首屏模块全部执行完。
+    await hostPage.goto('/', { waitUntil: 'commit', timeout: 15000 }).catch(() => {});
+    await hostPage.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+    await waitForFrontendAssetsBestEffort(hostPage, 30000);
+    await preloadDTMatchRouteModule(hostPage);
 
     if (!(await ensureGameServerAvailable(hostPage))) return null;
 
@@ -246,29 +684,35 @@ export const setupDTOnlineMatch = async (
     const matchId = await createDTRoomViaAPI(hostPage, hostGuestId);
     if (!matchId) return null;
 
-    const hostCredentials = await joinDTMatchViaAPI(hostPage, matchId, '0', `Host-${Date.now()}`, hostGuestId);
+    const hostCredentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
+        guestId: hostGuestId,
+        playerName: `Host-${Date.now()}`,
+    });
     if (!hostCredentials) return null;
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
-    await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-    await waitForCharacterSelection(hostPage);
+    await gotoDTMatchRoom(hostPage, matchId, '0');
+    await waitForCharacterSelectionInRoom(hostPage, {
+        matchId,
+        playerId: '0',
+        timeout: options?.characterSelectionTimeout,
+    });
 
     const guestContext = await browser.newContext({ baseURL });
-    await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const guestPage = await guestContext.newPage();
 
-    // 先导航到首页，确保 guestPage 有正确的 cookie
-    await guestPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await guestPage.waitForTimeout(500);
-
     const guestGuestId = `e2e_guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    // 使用 guestPage 的 request 而不是 hostPage，确保 cookie 正确
     const guestCredentials = await joinDTMatchViaAPI(guestPage, matchId, '1', `Guest-${Date.now()}`, guestGuestId);
     if (!guestCredentials) return null;
 
     await seedDTMatchCredentials(guestContext, matchId, '1', guestCredentials);
-    await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
-    await waitForCharacterSelection(guestPage);
+    await gotoDTMatchRoom(guestPage, matchId, '1');
+    await waitForCharacterSelectionInRoom(guestPage, {
+        matchId,
+        playerId: '1',
+        timeout: options?.characterSelectionTimeout,
+    });
 
     return { hostContext, guestContext, hostPage, guestPage, matchId };
 };
@@ -282,6 +726,10 @@ export const setupDTOnlineMatchWithPlayers = async (
         joinPlayerIds?: string[];
         setupData?: Record<string, unknown>;
         contextOptions?: BrowserContextOptions;
+        characterSelectionTimeout?: number;
+        skipCharacterSelectionWait?: boolean;
+        blockLobbySocket?: boolean;
+        skipImageGate?: boolean;
     },
 ): Promise<DTMultiMatchSetup | null> => {
     const numPlayers = options.numPlayers;
@@ -289,15 +737,23 @@ export const setupDTOnlineMatchWithPlayers = async (
     const joinPlayerIds = options.joinPlayerIds?.length
         ? options.joinPlayerIds
         : Array.from({ length: numPlayers - 1 }, (_, index) => String(index + 1));
+    const shouldBatchWaitForCharacterSelection = !options.skipCharacterSelectionWait && joinPlayerIds.length > 1;
+    const contextInitOptions = {
+        blockLobbySocket: options.blockLobbySocket,
+        skipImageGate: options.skipImageGate,
+    };
 
     const hostContext = await browser.newContext({
         ...options.contextOptions,
         baseURL,
     });
-    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await hostPage.goto('/', { waitUntil: 'commit', timeout: 15000 }).catch(() => {});
+    await hostPage.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
+    await waitForFrontendAssetsBestEffort(hostPage, 30000);
+    await preloadDTMatchRouteModule(hostPage);
     if (!(await ensureGameServerAvailable(hostPage, gameServerBaseURL))) {
         await hostContext.close();
         return null;
@@ -326,8 +782,14 @@ export const setupDTOnlineMatchWithPlayers = async (
     }
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
-    await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-    await waitForCharacterSelection(hostPage);
+    await gotoDTMatchRoom(hostPage, matchId, '0');
+    if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
+        await waitForCharacterSelectionInRoom(hostPage, {
+            matchId,
+            playerId: '0',
+            timeout: options.characterSelectionTimeout,
+        });
+    }
 
     const playersById = new Map<string, DTPlayerSetup>([
         ['0', { id: '0', page: hostPage, context: hostContext }],
@@ -339,11 +801,8 @@ export const setupDTOnlineMatchWithPlayers = async (
             ...options.contextOptions,
             baseURL,
         });
-        await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+        await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
         const guestPage = await guestContext.newPage();
-
-        await guestPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
-        await guestPage.waitForTimeout(300);
 
         const guestGuestId = `dt_e2e_guest_${playerId}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         const guestCredentials = await joinDTMatchViaAPI(
@@ -359,8 +818,14 @@ export const setupDTOnlineMatchWithPlayers = async (
         }
 
         await seedDTMatchCredentials(guestContext, matchId, playerId, guestCredentials);
-        await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${playerId}`, { waitUntil: 'domcontentloaded' });
-        await waitForCharacterSelection(guestPage);
+        await gotoDTMatchRoom(guestPage, matchId, playerId);
+        if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
+            await waitForCharacterSelectionInRoom(guestPage, {
+                matchId,
+                playerId,
+                timeout: options.characterSelectionTimeout,
+            });
+        }
 
         const playerSetup: DTPlayerSetup = { id: playerId, page: guestPage, context: guestContext };
         playersById.set(playerId, playerSetup);
@@ -375,6 +840,14 @@ export const setupDTOnlineMatchWithPlayers = async (
             .filter((player): player is DTPlayerSetup => Boolean(player));
 
     const guestPlayer = extraPlayers[0];
+
+    if (shouldBatchWaitForCharacterSelection) {
+        await Promise.all(players.map((player) => waitForCharacterSelectionInRoom(player.page, {
+            matchId,
+            playerId: player.id,
+            timeout: options.characterSelectionTimeout,
+        })));
+    }
 
     return {
         hostContext,
@@ -411,7 +884,18 @@ export const cleanupDTMatch = async (setup: DTMatchSetup | DTMultiMatchSetup) =>
     }
 
     for (const context of contexts) {
-        await context.close();
+        try {
+            await context.close();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (
+                /Target page, context or browser has been closed/i.test(message)
+                || /Browser has been closed/i.test(message)
+            ) {
+                continue;
+            }
+            throw error;
+        }
     }
 };
 
@@ -729,6 +1213,34 @@ export const dispatchDiceThroneCommand = async (
     await page.evaluate(async (nextCommand) => {
         await (window as Window).__BG_TEST_HARNESS__!.command.dispatch(nextCommand);
     }, command);
+};
+
+export const dispatchDiceThroneCommandWithTimeout = async (
+    page: Page,
+    command: {
+        type: string;
+        playerId: string;
+        payload?: Record<string, unknown>;
+    },
+    timeoutMs = 5000,
+): Promise<'ok' | 'timeout' | `error:${string}`> => {
+    await waitForDiceThroneHarness(page);
+    return page.evaluate(async ({ nextCommand, nextTimeoutMs }) => {
+        try {
+            const result = await Promise.race([
+                (window as Window).__BG_TEST_HARNESS__!.command.dispatch(nextCommand).then(() => 'ok' as const),
+                new Promise<'timeout'>((resolve) => {
+                    setTimeout(() => resolve('timeout'), nextTimeoutMs);
+                }),
+            ]);
+            return result;
+        } catch (error) {
+            return `error:${error instanceof Error ? error.message : String(error)}` as const;
+        }
+    }, {
+        nextCommand: command,
+        nextTimeoutMs: timeoutMs,
+    });
 };
 
 export const setDiceThroneDiceValues = async (page: Page, values: number[]) => {

@@ -1,4 +1,6 @@
-# DiceThrone AI afterRollConfirmed 真实响应链 E2E 证据
+# DiceThrone AI afterRollConfirmed 历史真实响应链 E2E 证据
+
+> 2026-06-06 当前有效口径：本文只保留 `afterRollConfirmed` 这条 AI 真实响应链的历史 E2E 证据，不代表 DiceThrone 全体响应窗口、在线 AI、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时这条“真人确认后 AI 真实响应并稳定收口”的链路被专项验证过，不能外推成 DiceThrone 当前总体收口。
 
 ## 覆盖用例
 - Online AI afterRollConfirmed: real confirm should let AI打出响应牌并关闭窗口且不重开
@@ -50,3 +52,8 @@
   3. 响应窗口关闭后界面回到正常可推进状态；
   4. 关闭后至少 3 秒内未再次重开。
 - 本轮之前的“收口截图落到平局弹窗脏态”问题已消失，当前证据可用于本链路收口。
+
+## 当前阅读说明
+
+- 本文只覆盖 `afterRollConfirmed` 这一条历史 AI 响应链，不覆盖更广范围 DiceThrone 在线 AI / response watchdog 或新英雄整批完成态。
+- 即使本文中的 E2E、截图和资源消耗结论在当轮成立，也不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

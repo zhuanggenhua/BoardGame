@@ -11,7 +11,13 @@ import {
     diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands,
     type DiceModifyStep, type DiceSelectStep, type DiceModifyResult, type DiceSelectResult,
 } from '../domain/systems';
-import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
+import {
+    INTERACTION_COMMANDS,
+    asCompareRollChoice,
+    asSimpleChoice,
+    createSimpleChoice,
+    type MultistepChoiceData,
+} from '../../../engine/systems/InteractionSystem';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { AbilityCard } from '../types';
 import { GameTestRunner, type StateExpectation } from '../../../engine/testing';
@@ -76,6 +82,120 @@ export const cmd = (type: string, playerId: PlayerId, payload: Record<string, un
     playerId,
     payload,
 });
+
+export const interactionRespondCommandType = INTERACTION_COMMANDS.RESPOND;
+
+export const getCurrentInteractionId = (state: MatchState<DiceThroneCore>): string | undefined => (
+    state.sys.interaction.current?.id
+);
+
+export const getSimpleChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const prompt = asSimpleChoice(state.sys.interaction.current as any);
+    if (!prompt) {
+        throw new Error('Expected a simple-choice prompt, but none was active.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected simple-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+};
+
+export const getCardInteractionPrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const current = state.sys.interaction.current as any;
+    if (!current || current.kind !== 'dt:card-interaction' || !current.data) {
+        throw new Error('Expected a card-interaction prompt, but none was active.');
+    }
+
+    const prompt = {
+        ...(current.data as InteractionDescriptor),
+        id: current.id,
+        playerId: current.playerId,
+        sourceId: current.data.sourceId ?? current.data.sourceCardId,
+    };
+
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected card-interaction sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+
+    return prompt;
+};
+
+export const respondToPrompt = (
+    state: MatchState<DiceThroneCore>,
+    optionId: string,
+    playerId: PlayerId = '0',
+    random: RandomFn = fixedRandom,
+    playerIds: PlayerId[] = Object.keys(state.core.players) as PlayerId[],
+) => executePipeline(
+    { domain: DiceThroneDomain, systems: testSystems },
+    state,
+    {
+        ...cmd(interactionRespondCommandType, playerId, { optionId }),
+        timestamp: Date.now(),
+    } as DiceThroneCommand,
+    random,
+    playerIds,
+);
+
+export const respondToPromptWithSystems = (
+    state: MatchState<DiceThroneCore>,
+    optionId: string,
+    systems: EngineSystem<DiceThroneCore>[],
+    playerId: PlayerId = '0',
+    random: RandomFn = fixedRandom,
+    playerIds: PlayerId[] = Object.keys(state.core.players) as PlayerId[],
+) => executePipeline(
+    { domain: DiceThroneDomain, systems },
+    state,
+    {
+        ...cmd(interactionRespondCommandType, playerId, { optionId }),
+        timestamp: Date.now(),
+    } as DiceThroneCommand,
+    random,
+    playerIds,
+);
+
+export const injectSimpleChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    args: {
+        id: string;
+        playerId: PlayerId;
+        title: string;
+        options: Array<{ id: string; label: string; value: Record<string, unknown> }>;
+        sourceId: string;
+    },
+): void => {
+    state.sys.interaction = {
+        ...state.sys.interaction,
+        current: createSimpleChoice(
+            args.id,
+            args.playerId,
+            args.title,
+            args.options,
+            { sourceId: args.sourceId },
+        ),
+    };
+};
+
+export const getCompareRollChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const prompt = asCompareRollChoice(state.sys.interaction.current as any);
+    if (!prompt) {
+        throw new Error('Expected a compare-roll-choice prompt, but none was active.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected compare-roll-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+};
 
 // ============================================================================
 // Setup 函数

@@ -1,7 +1,9 @@
-# 游戏逻辑 Bug 修复完成
+# 游戏逻辑专项修复证据
+
+> 2026-06-06 当前有效口径：本文只保留 Shadow Thief `Shadow Shank + Sneak Attack` 与 Pyromancer `Burn Down II` 这两条历史游戏逻辑问题的专项修复证据，不代表 DiceThrone 全体英雄、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明这两条当轮命中的旧逻辑 bug 被修掉并回归过，不能外推成 DiceThrone 当前整体已收口。
 
 **修复时间**: 2026-03-04  
-**状态**: ✅ 完成
+**状态**: 当轮专项完成
 
 ---
 
@@ -148,3 +150,8 @@ registerCustomActionHandler('burn-down-2-resolve', (ctx) => resolveBurnDown(ctx,
 **修复负责人**: AI Assistant  
 **修复日期**: 2026-03-04  
 **文档版本**: v1.0
+
+## 当前阅读说明
+
+- 本文只覆盖两条历史游戏逻辑 bug 的专项修复，不是 DiceThrone 当前总审计出口。
+- 本文不能替代新英雄默认全面审计留档所需的对象级矩阵、批次级 `L4` 判等与旧文档统一回写。

@@ -8,6 +8,7 @@ import type { SmashUpReactionSession, TitanState } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { runCommand } from './testRunner';
 
 function makeTitan(overrides: Partial<TitanState> & Pick<TitanState, 'uid' | 'defId' | 'faction' | 'ownerId' | 'controllerId'>): TitanState {
     return {
@@ -80,6 +81,82 @@ describe('SmashUp command validation', () => {
         } as any);
 
         expect(result.valid).toBe(true);
+    });
+
+    it('borrowed setaside Time Box 达到 5 计数后，当前控制者也应能通过 ACTIVATE_SPECIAL 打出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            titans: [
+                makeTitan({
+                    uid: 'borrowed-time-box',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '1',
+                    controllerId: '0',
+                    metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1'],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'borrowed-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+
+        const executed = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'borrowed-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(executed.success).toBe(true);
+        expect(executed.finalState.core.titans?.find(titan => titan.uid === 'borrowed-time-box')).toMatchObject({
+            location: { zone: 'base', baseIndex: 0 },
+            ownerId: '1',
+            controllerId: '0',
+            metadata: expect.objectContaining({ timeBoxCounters: 0, timeBoxPlayArmed: false }),
+        });
+    });
+
+    it('时间盒子上场后不能再通过 ACTIVATE_SPECIAL 触发特殊能力', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            titans: [
+                makeTitan({
+                    uid: 'live-time-box',
+                    defId: 'time_travelers_time_box',
+                    faction: 'time_travelers',
+                    ownerId: '0',
+                    controllerId: '0',
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                    metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
+                }),
+            ],
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1'],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'live-time-box', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(false);
+        expect(result.error).toBe('该泰坦当前不在牌库旁');
     });
 
     it('fairies_spirit_of_the_forest special 需要同时保留通常随从与通常行动额度', () => {
@@ -194,10 +271,24 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('supports active titan ongoing validation and respects suppression', () => {
-        registerAbility('dinosaurs_fort_titanosaurus', 'ongoingActivation', () => ({ events: [] }));
+    it('only validates titan ongoing activation for real production executors and respects suppression', () => {
         const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('penguin-top-minion', 'robot_microbot_guard', 'minion', '0')],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                }),
+            },
             titans: [
+                makeTitan({
+                    uid: 'titan-penguin',
+                    defId: 'penguins_emperor_penguin',
+                    faction: 'penguins',
+                    ownerId: '0',
+                    controllerId: '0',
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                }),
                 makeTitan({
                     uid: 'titan-dino',
                     defId: 'dinosaurs_fort_titanosaurus',
@@ -212,13 +303,19 @@ describe('SmashUp command validation', () => {
         const validResult = validate(makeMatchState(core), {
             type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
             playerId: '0',
-            payload: { titanUid: 'titan-dino', baseIndex: 0 },
+            payload: { titanUid: 'titan-penguin', baseIndex: 0 },
         } as any);
 
         const suppressedResult = validate(makeMatchState({
             ...core,
-            titanOngoingSuppressedUntilTurnEnd: ['titan-dino'],
+            titanOngoingSuppressedUntilTurnEnd: ['titan-penguin'],
         }), {
+            type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
+            playerId: '0',
+            payload: { titanUid: 'titan-penguin', baseIndex: 0 },
+        } as any);
+
+        const missingExecutorResult = validate(makeMatchState(core), {
             type: SU_COMMANDS.ACTIVATE_TITAN_ONGOING,
             playerId: '0',
             payload: { titanUid: 'titan-dino', baseIndex: 0 },
@@ -226,6 +323,180 @@ describe('SmashUp command validation', () => {
 
         expect(validResult.valid).toBe(true);
         expect(suppressedResult.valid).toBe(false);
+        expect(missingExecutorResult).toEqual({
+            valid: false,
+            error: '该泰坦的持续能力不能手动激活',
+        });
+    });
+
+    it('only allows titan special activation for real manual setaside entries', () => {
+        const core = makeState({
+            titans: [
+                makeTitan({
+                    uid: 'titan-mergacon',
+                    defId: 'changerbots_mergacon',
+                    faction: 'changerbots',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-rainboroc',
+                    defId: 'itty_critters_rainboroc',
+                    faction: 'itty_critters',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-kraken',
+                    defId: 'pirates_the_kraken',
+                    faction: 'pirates',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-bride',
+                    defId: 'frankenstein_the_bride',
+                    faction: 'frankenstein',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+        });
+
+        expect([
+            'titan-mergacon',
+            'titan-rainboroc',
+            'titan-kraken',
+            'titan-bride',
+        ].every((titanUid) => {
+            const result = validate(makeMatchState(core), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { titanUid, baseIndex: 0 },
+            } as any);
+            return result.valid === false && result.error === '该泰坦的特殊能力不能手动激活';
+        })).toBe(true);
+    });
+
+    it('preserves real manual titan special activation entries in static metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [
+                        makeMinion('ursa-ally', 'ghosts_spectre', '0', 2, '0'),
+                        makeMinion('six-legs-ally', 'ghosts_spectre', '0', 2, {
+                            owner: '0',
+                            powerCounters: 7,
+                        }),
+                    ],
+                }),
+            ],
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-real',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-ursa-real',
+                    defId: 'bear_cavalry_major_ursa',
+                    faction: 'bear_cavalry',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-six-legs-real',
+                    defId: 'giant_ants_death_on_six_legs',
+                    faction: 'giant_ants',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+                makeTitan({
+                    uid: 'titan-category-5-real',
+                    defId: 'tornados_category_5',
+                    faction: 'tornados',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+            minionMovesThisTurnByPlayer: { '0': 2 },
+        });
+
+        expect([
+            'ghosts_creampuff_man',
+            'bear_cavalry_major_ursa',
+            'giant_ants_death_on_six_legs',
+            'tornados_category_5',
+        ].every((defId) => hasCardActivatableAbility(defId, {
+            kind: 'special',
+            zone: 'setaside',
+            window: 'playCards',
+        }))).toBe(true);
+
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ghost-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ursa-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-six-legs-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-category-5-real', baseIndex: 0 },
+        } as any).valid).toBe(true);
+    });
+
+    it('preserves real manual titan talent activation entries in static metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                }),
+            ],
+            titans: [
+                makeTitan({
+                    uid: 'titan-dino-talent',
+                    defId: 'dinosaurs_fort_titanosaurus',
+                    faction: 'dinosaurs',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 4,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                }),
+            ],
+        });
+
+        expect(hasCardActivatableAbility('dinosaurs_fort_titanosaurus', {
+            kind: 'talent',
+            zone: 'board',
+            window: 'playCards',
+        })).toBe(true);
+
+        expect(validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 'titan-dino-talent', baseIndex: 0 },
+        } as any).valid).toBe(true);
     });
 
     it('uses frame-backed reaction session as the truth source for meFirst minion plays', () => {
@@ -292,8 +563,7 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('uses smashupReactionSession as the truth source for scoreBases special activation order', () => {
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+    it('frame-backed reaction session 不会把仅限 playCards 的泰坦 special 误放行到 scoreBases', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -333,7 +603,10 @@ describe('SmashUp command validation', () => {
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
     it('frame-backed reaction session 不会把仅限 playCards 的 minion special 误放行到 scoreBases', () => {
@@ -374,8 +647,7 @@ describe('SmashUp command validation', () => {
         });
     });
 
-    it('afterScoring 响应窗口中的 special 只能指向当前正在结算的基地', () => {
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+    it('afterScoring 响应窗口不会放行仅限 playCards 的泰坦 special', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -408,22 +680,90 @@ describe('SmashUp command validation', () => {
             responseWindowType: 'afterScoring',
         });
 
-        const wrongBaseResult = validate(ms, {
-            type: SU_COMMANDS.ACTIVATE_SPECIAL,
-            playerId: '1',
-            payload: { titanUid: 'titan-ghost-1', baseIndex: 1 },
-        } as any);
-        expect(wrongBaseResult).toEqual({
-            valid: false,
-            error: 'afterScoring 只能选择当前正在结算的基地',
-        });
-
-        const correctBaseResult = validate(ms, {
+        const result = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
-        expect(correctBaseResult.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
+    });
+
+    it('afterScoring 响应窗口仍应放行当前结算基地上的计分后 special，即使该基地已不在达标列表', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('pink-1', 'mega_troopers_pink_trooper', '0', 3)],
+                }),
+                makeBase({ defId: 'base_b' }),
+            ],
+            scoringEligibleBaseIndices: [1],
+            currentPlayerIndex: 0,
+        });
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-after:0:test',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'pink-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({ valid: true });
+    });
+
+    it('afterScoring 响应窗口中的计分后 special 不能改指向其他基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_a' }),
+                makeBase({
+                    defId: 'base_b',
+                    minions: [makeMinion('pink-1', 'mega_troopers_pink_trooper', '0', 3)],
+                }),
+            ],
+            scoringEligibleBaseIndices: [0, 1],
+            currentPlayerIndex: 0,
+        });
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-after:0:test',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'pink-1', baseIndex: 1 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: 'afterScoring 只能选择当前正在结算的基地',
+        });
     });
 
     it('ignores orphaned responseWindow state without a frame-backed reaction session', () => {
@@ -471,10 +811,13 @@ describe('SmashUp command validation', () => {
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
-    it('frame-backed reaction session 已切到 smashup_reaction_choose 时，不应再被 legacy Me First 门禁拦掉 special', () => {
+    it('frame-backed reaction session 已切到 smashup_reaction_choose 时，仍不得绕过泰坦 special 窗口合同', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -493,7 +836,6 @@ describe('SmashUp command validation', () => {
             scoringEligibleBaseIndices: [0],
             currentPlayerIndex: 0,
         });
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const ms = attachReactionSession(makeMatchState(core), {
             frameId: 'score-before:0:test',
             frameKind: 'score-before',
@@ -540,6 +882,52 @@ describe('SmashUp command validation', () => {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
+    });
+
+    it('legacy responderQueue 被 ghost 污染时，validate 仍应按 live current player 放行 special', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-2',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
+            bases: [makeBase({ defId: 'test_base' })],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'scoreBases';
+        ms.sys.responseWindow = {
+            ...(ms.sys.responseWindow ?? {}),
+            current: {
+                id: 'legacy-window',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: ['ghost', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        } as any;
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { titanUid: 'titan-ghost-2', baseIndex: 0 },
         } as any);
 
         expect(result.valid).toBe(true);
@@ -618,6 +1006,68 @@ describe('SmashUp command validation', () => {
             zone: 'board',
             window: 'afterScoring',
         })).toBe(false);
+    });
+
+    it('supports hand-based special validation for geeks_fan during playCards only', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('fan-1', 'geeks_fan', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+            currentPlayerIndex: 0,
+        });
+
+        const validResult = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { handCardUid: 'fan-1', baseIndex: 0 },
+        } as any);
+
+        const invalidTurnResult = validate(makeMatchState({
+            ...core,
+            currentPlayerIndex: 1,
+        }), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { handCardUid: 'fan-1', baseIndex: 0 },
+        } as any);
+
+        expect(validResult.valid).toBe(true);
+        expect(invalidTurnResult.valid).toBe(false);
+    });
+
+    it('beforeScoring 仍只允许在达标基地上激活计分前 special', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [makeMinion('mole-1', 'super_spies_mole', '0', 4)],
+                }),
+                makeBase({ defId: 'base_b' }),
+            ],
+            scoringEligibleBaseIndices: [1],
+            currentPlayerIndex: 0,
+        });
+        const state = makeMatchState(core);
+        state.sys.phase = 'scoreBases';
+
+        const result = validate(state, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'mole-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: '只能在达到临界点的基地上激活计分前特殊能力',
+        });
     });
 
     it('rejects ninja_acolyte_pod talent on the same turn it was played', () => {
@@ -932,6 +1382,37 @@ describe('SmashUp command validation', () => {
 
         expect(result.valid).toBe(false);
         expect((result as any).error).toContain('条件不满足');
+    });
+
+    it('allows borrowed ongoing talent when metadata.sourceControllerId matches the acting player', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('base-ongoing-1', 'trickster_enshrouding_mist_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    ongoingActions: [{
+                        uid: 'hideout-pod-borrowed',
+                        defId: 'trickster_hideout_pod',
+                        ownerId: '1',
+                        talentUsed: false,
+                        metadata: { sourceControllerId: '0' },
+                    } as any],
+                }),
+            ],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'hideout-pod-borrowed', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
     });
 
     it('rejects steampunk_zeppelin talent when no friendly minion can be moved', () => {

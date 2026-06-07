@@ -1,4 +1,6 @@
-# DiceThrone "红热"卡牌 ActionLog 显示修复
+# DiceThrone “红热”卡牌历史修复证据
+
+> 2026-06-06 当前有效口径：本文只保留火法师 `红热！ / red-hot` 攻击修正与 ActionLog/bonusDamage 事件驱动链这一条历史专项修复证据，不代表 DiceThrone 全体伤害修正体系、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时 `BONUS_DAMAGE_ADDED` 与 `pendingBonusDamage` 这条 shared seam 被专项修补并回归过，不能外推成 DiceThrone 当前总体收口。
 
 ## 问题描述
 
@@ -561,3 +563,8 @@ Steps: [
 - `src/games/dicethrone/__tests__/red-hot-meteor-integration.test.ts`
   - 新增“先加伤、后发起攻击”的转移测试
   - 新增“回合切换清空 pendingBonusDamage”的回归测试
+
+## 当前阅读说明
+
+- 本文只覆盖 `red-hot / bonusDamage / ActionLog` 这一条共享伤害修正链，不覆盖更广范围 DiceThrone 伤害系统或新英雄整批完成态。
+- 文中的“实现完成”“测试全部通过”都只代表该专项在当轮的历史结论，不能把它当成当前 DiceThrone 总审计出口。

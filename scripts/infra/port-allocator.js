@@ -3,6 +3,7 @@ import { createServer } from 'node:net';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { E2E_MULTI_WORKER_BASE_PORTS } from './e2e-port-config.js';
+import { listActiveRuntimes } from './e2e-runtime-registry.js';
 import { withWindowsHide } from './windows-hide.js';
 
 export const BASE_PORTS = {
@@ -11,14 +12,18 @@ export const BASE_PORTS = {
 
 const PORT_OFFSET = 100;
 const PORT_SCAN_RANGE = 200;
-const RESERVATION_LOCK_TIMEOUT_MS = 10000;
+const RESERVATION_LOCK_TIMEOUT_MS = 30000;
 const RESERVATION_LOCK_RETRY_MS = 100;
 const RESERVATION_STALE_MS = 30000;
 const SHARED_RUNTIME_DIR = 'boardgame-e2e';
 const PORT_RESERVATION_DIR = 'port-reservations';
 const PORT_RESERVATION_LOCK = 'port-reservations.lock';
+const WINDOWS_NETSTAT_CACHE_TTL_MS = 500;
 
-let windowsNetstatCache = null;
+let windowsNetstatCache = {
+  lines: null,
+  capturedAt: 0,
+};
 
 function execHidden(command, options = {}) {
   return execSync(command, withWindowsHide(options));
@@ -132,18 +137,35 @@ function getReservationFilePath(workerId, scope = process.env.PW_RUNTIME_SCOPE, 
   return path.join(getSharedReservationDir(cwd), `${getRuntimeScope(scope)}-worker-${workerId}.json`);
 }
 
+function clearWindowsNetstatCache() {
+  windowsNetstatCache = {
+    lines: null,
+    capturedAt: 0,
+  };
+}
+
 function getWindowsNetstatLines() {
-  if (windowsNetstatCache) {
-    return windowsNetstatCache;
+  if (
+    Array.isArray(windowsNetstatCache.lines)
+    && (Date.now() - windowsNetstatCache.capturedAt) <= WINDOWS_NETSTAT_CACHE_TTL_MS
+  ) {
+    return windowsNetstatCache.lines;
   }
 
   try {
     const result = execHidden('netstat -ano -p tcp', { encoding: 'utf-8' });
-    windowsNetstatCache = result.split(/\r?\n/).filter(Boolean);
-    return windowsNetstatCache;
+    const lines = result.split(/\r?\n/).filter(Boolean);
+    windowsNetstatCache = {
+      lines,
+      capturedAt: Date.now(),
+    };
+    return lines;
   } catch {
-    windowsNetstatCache = [];
-    return windowsNetstatCache;
+    windowsNetstatCache = {
+      lines: [],
+      capturedAt: Date.now(),
+    };
+    return windowsNetstatCache.lines;
   }
 }
 
@@ -270,6 +292,24 @@ function getReservedPortSet(cwd = process.cwd(), options = {}) {
   return ports;
 }
 
+function getRuntimeReservedPortSet(cwd = process.cwd(), options = {}) {
+  const ignoreScope = options.ignoreScope ? getRuntimeScope(options.ignoreScope) : null;
+  const ports = new Set();
+  const activeRuntimes = listActiveRuntimes(cwd);
+
+  for (const runtime of activeRuntimes) {
+    if (ignoreScope !== null && runtime.scope === ignoreScope) {
+      continue;
+    }
+
+    for (const port of flattenPorts(runtime.ports)) {
+      ports.add(port);
+    }
+  }
+
+  return ports;
+}
+
 async function acquireReservationLock(cwd = process.cwd()) {
   const lockPath = getReservationLockPath(cwd);
   ensureSharedReservationDir(cwd);
@@ -364,6 +404,7 @@ export function allocatePorts(workerId) {
 export function isPortInUse(port) {
   try {
     if (process.platform === 'win32') {
+      clearWindowsNetstatCache();
       return parseWindowsPortPids(port).length > 0;
     }
 
@@ -390,6 +431,11 @@ export async function findAvailablePort(startPort, options = {}) {
     if (reservedPorts.has(port)) {
       continue;
     }
+    // Windows 上某些 127.0.0.1 监听端口仍可能被 createServer(...exclusive) 误判为可绑定；
+    // 端口扫描阶段额外跳过 netstat 已在监听的端口，避免 isolated runtime 又抢回共享固定端口。
+    if (isPortInUse(port)) {
+      continue;
+    }
     if (await canBindPort(port, host)) {
       return port;
     }
@@ -400,7 +446,10 @@ export async function findAvailablePort(startPort, options = {}) {
 
 export async function allocateAvailablePorts(workerId, options = {}) {
   const preferred = allocatePorts(workerId);
-  const reservedPorts = getReservedPortSet(process.cwd(), options);
+  const reservedPorts = new Set([
+    ...getReservedPortSet(process.cwd(), options),
+    ...getRuntimeReservedPortSet(process.cwd(), options),
+  ]);
   return {
     frontend: await findAvailablePort(preferred.frontend, { reservedPorts }),
     gameServer: await findAvailablePort(preferred.gameServer, { reservedPorts }),
@@ -409,7 +458,10 @@ export async function allocateAvailablePorts(workerId, options = {}) {
 }
 
 export async function allocateAvailablePortSet(preferredPorts, options = {}) {
-  const reservedPorts = getReservedPortSet(process.cwd(), options);
+  const reservedPorts = new Set([
+    ...getReservedPortSet(process.cwd(), options),
+    ...getRuntimeReservedPortSet(process.cwd(), options),
+  ]);
   return {
     frontend: await findAvailablePort(Number(preferredPorts.frontend), { reservedPorts }),
     gameServer: await findAvailablePort(Number(preferredPorts.gameServer), { reservedPorts }),
@@ -465,10 +517,15 @@ export async function reserveAvailablePorts(workerId, options = {}) {
 
   return await withReservationLock(async () => {
     pruneStaleReservations(cwd);
-    const reservedPorts = getReservedPortSet(cwd, {
-      ignoreScope: scope,
-      ignoreWorkerId: workerId,
-    });
+    const reservedPorts = new Set([
+      ...getReservedPortSet(cwd, {
+        ignoreScope: scope,
+        ignoreWorkerId: workerId,
+      }),
+      ...getRuntimeReservedPortSet(cwd, {
+        ignoreScope: scope,
+      }),
+    ]);
     const preferred = allocatePorts(workerId);
     const ports = {
       frontend: await findAvailablePort(preferred.frontend, { reservedPorts }),

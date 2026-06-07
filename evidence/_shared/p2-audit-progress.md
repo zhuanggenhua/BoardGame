@@ -1,5 +1,7 @@
 # P2 审计进度跟踪文档（已完成 - 抽样验证）
 
+> 状态提示（2026-06-05）：已归档的历史阶段进度稿。当前 P2 结论以 `evidence/_shared/p2-verification-final.md`、`evidence/_shared/p2-high-priority-complete.md` 与各批次明细为准；本文件不能再作为当前未完成范围的默认入口。
+
 ## ⚠️ 重要更新：抽样验证显示 P2 文件无需恢复！
 
 **验证时间**：2026-03-04

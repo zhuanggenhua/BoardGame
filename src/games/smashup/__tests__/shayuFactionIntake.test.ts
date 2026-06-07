@@ -143,9 +143,9 @@ describe('SmashUp shayu 三派系 intake 静态合同', () => {
         }
     });
 
-    it('三个 shayu 新派系在派系选择页标记为实施中', () => {
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SHARKS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TORNADOS)).toBe(true);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MYTHIC_GREEKS)).toBe(true);
+    it('三个 shayu 派系已不再标记为实施中', () => {
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.SHARKS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TORNADOS)).toBe(false);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.MYTHIC_GREEKS)).toBe(false);
     });
 });

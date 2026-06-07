@@ -10,14 +10,14 @@ import type { EffectAction, RollDieConditionalEffect, RollDieDefaultEffect } fro
 export type { RollDieConditionalEffect, RollDieDefaultEffect };
 import type { AbilityEffect, EffectTiming, EffectResolutionContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
-import { getActiveDice, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
+import { getActiveDice, getAttackDiceFaceCounts, getAttackDiceValues, getFaceCounts, getOpponents, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { RESOURCE_IDS } from './resources';
+import { STATUS_IDS } from './ids';
 import type {
     DiceThroneCore,
     DiceThroneEvent,
     DamageDealtEvent,
     HealAppliedEvent,
-    StatusAppliedEvent,
     StatusRemovedEvent,
     TokenGrantedEvent,
     ChoiceRequestedEvent,
@@ -30,9 +30,11 @@ import type {
     BonusDiceRerollRequestedEvent,
     PendingBonusDiceSettlement,
     DieFace,
+    BonusDamageAddedEvent,
 } from './types';
 import { CP_MAX } from './types';
 import { buildDrawEvents } from './deckEvents';
+import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
 import {
     shouldOpenTokenResponse,
     createPendingDamage,
@@ -117,6 +119,8 @@ export interface CustomActionMeta {
     categories: CustomActionCategory[];
     /** 是否需要玩家交互 */
     requiresInteraction?: boolean;
+    /** 该处理器在跨阶段攻击结算中读取攻击骰结果，必须使用 pendingAttack 中的攻击快照。 */
+    usesAttackDiceSnapshot?: boolean;
     /** 是否依赖当前已选中的单一 defender（常见于 2v2 攻击修正/主阶段对手卡） */
     requiresSelectedDefender?: boolean;
     /** 可用阶段（不指定则不限制） */
@@ -283,6 +287,8 @@ export interface BonusDiceRollConfig {
      * 例：Wild West（荒野西部）在 Loaded 奖励骰确定后再额外 +1。
      */
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
+    /** 自定义奖励骰收口处理器 ID（用于按骰面而非点数结算的技能） */
+    customResolutionId?: string;
     /** 可选：构建每颗奖励骰的 effectParams（用于文案插值/日志展示） */
     effectParamsBuilder?: (params: { value: number; index: number; face: DieFace }) => Record<string, string | number>;
 }
@@ -356,6 +362,7 @@ export function createBonusDiceWithReroll(
             attackBonusScale: config.attackBonusScale ?? 'raw',
             attackBonusSourceCardId: config.attackBonusSourceCardId,
             postSettleBonusDamageAdds: config.postSettleBonusDamageAdds,
+            customResolutionId: config.customResolutionId,
         };
         events.push({
             type: 'BONUS_DICE_REROLL_REQUESTED',
@@ -459,6 +466,46 @@ export function createDTPassiveTriggerHandler(
     };
 }
 
+/**
+ * 估算既有护盾吸收后的有效伤害，仅用于 Token 响应开窗门禁。
+ *
+ * 注意：
+ * - 这里只做“是否还剩可响应伤害”的判断，不会真正消耗护盾。
+ * - 真正的护盾消耗仍由 reducer 在 DAMAGE_DEALT 时统一处理，避免双扣。
+ */
+function estimateDamageAfterExistingShields(
+    state: DiceThroneCore,
+    targetId: PlayerId,
+    incomingDamage: number,
+    options?: { bypassShields?: boolean },
+): number {
+    if (incomingDamage <= 0) return 0;
+    if (options?.bypassShields) return incomingDamage;
+    if (state.pendingAttack?.isUltimate) return incomingDamage;
+
+    const target = state.players[targetId];
+    const shields = target?.damageShields ?? [];
+    if (shields.length === 0) return incomingDamage;
+
+    let remainingDamage = incomingDamage;
+    const percentShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent !== undefined);
+    const fixedShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent === undefined);
+
+    for (const shield of percentShields) {
+        if (remainingDamage <= 0) break;
+        const reductionPercent = shield.reductionPercent ?? 0;
+        const reductionAmount = Math.ceil(remainingDamage * (reductionPercent / 100));
+        remainingDamage = Math.max(0, remainingDamage - reductionAmount);
+    }
+
+    for (const shield of fixedShields) {
+        if (remainingDamage <= 0) break;
+        remainingDamage = Math.max(0, remainingDamage - shield.value);
+    }
+
+    return remainingDamage;
+}
+
 
 
 /**
@@ -478,6 +525,12 @@ function resolveEffectAction(
 
     switch (action.type) {
         case 'damage': {
+            const isAttackDamage = (action.damageScope ?? 'attack') === 'attack';
+            const parleyStacks = state.players[attackerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+            if (isAttackDamage && parleyStacks > 0) {
+                break;
+            }
+
             // target: 'all' → 对所有玩家（含自己）; 'allOpponents' → 当前玩家的真实敌方集合
             const damageTargets = action.target === 'all'
                 ? Object.keys(state.players)
@@ -502,12 +555,13 @@ function resolveEffectAction(
                     damageScope: action.damageScope ?? 'attack',
                     autoCollectTokens: true,
                     autoCollectStatus: true,
-                    autoCollectShields: true,
+                    // 护盾统一由 reducer 消耗，避免在计算管线与 reducer 间被重复扣减。
+                    autoCollectShields: false,
                     autoCollectBonusDamage: false,
                     passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
                     timestamp,
                     // bonusDamage 作为显式修正传入（而非直接加到 baseDamage）
-                    additionalModifiers: bonusDmg > 0 ? [{
+                    additionalModifiers: bonusDmg !== 0 ? [{
                         id: '__bonus_damage_from_config__',
                         type: 'flat',
                         value: bonusDmg,
@@ -534,12 +588,18 @@ function resolveEffectAction(
                 // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口；
                 // 明确标记为 unblockable 的动作伤害也不允许任何减伤/回避类 Token 响应。
                 if (!action.unblockable && action.target !== 'all' && action.target !== 'allOpponents') {
+                    const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
+                        state,
+                        dmgTargetId,
+                        result.finalDamage,
+                    );
+
                     // 检查是否需要打开 Token 响应窗口
                     const tokenResponseType = shouldOpenTokenResponse(
                         state,
                         attackerId,
                         dmgTargetId,
-                        result.finalDamage,
+                        effectiveDamageForTokenResponse,
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
@@ -548,6 +608,7 @@ function resolveEffectAction(
                         attackerId,
                         dmgTargetId,
                         damage: result.finalDamage,
+                        effectiveDamageForTokenResponse,
                         isDefensiveContext: ctx.isDefensiveContext,
                         tokenResponseType,
                         hasPendingDamage: !!state.pendingDamage,
@@ -625,27 +686,17 @@ function resolveEffectAction(
 
         case 'grantStatus': {
             if (!action.statusId) break;
-            const target = state.players[targetId];
-            const currentStacks = target?.statusEffects[action.statusId] ?? 0;
-            const def = state.tokenDefinitions.find(e => e.id === action.statusId);
-            const maxStacks = def?.stackLimit || 99;
             const stacksToAdd = action.value ?? 1;
-            const newTotal = Math.min(currentStacks + stacksToAdd, maxStacks);
-
-            const event: StatusAppliedEvent = {
-                type: 'STATUS_APPLIED',
-                payload: {
-                    targetId,
-                    statusId: action.statusId,
-                    stacks: stacksToAdd,
-                    newTotal,
-                    sourceAbilityId,
-                },
+            events.push(...buildStatusAppliedOrChoiceEvents({
+                state,
+                targetId,
+                statusId: action.statusId,
+                stacks: stacksToAdd,
+                sourceAbilityId,
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp,
                 sfxKey,
-            };
-            events.push(event);
+            }));
             break;
         }
 
@@ -751,20 +802,44 @@ function resolveEffectAction(
                     timestamp,
                     sfxKey,
                 };
-                events.push(bonusDieEvent);
+                const perDieEvents: DiceThroneEvent[] = [bonusDieEvent];
 
                 // 触发匹配的条件效果，或 defaultEffect
                 if (matchedEffect) {
                     const conditionalEvents = resolveConditionalEffect(matchedEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random);
-                    events.push(...conditionalEvents);
+                    perDieEvents.push(...conditionalEvents);
                 } else if (action.defaultEffect) {
-                    events.push(...resolveDefaultEffect(action.defaultEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random));
+                    perDieEvents.push(...resolveDefaultEffect(action.defaultEffect, ctx, targetId, sourceAbilityId, timestamp, sfxKey, random));
+                }
+
+                events.push(...perDieEvents);
+
+                // rollDie 的多颗奖励骰需要按顺序“看到”前一颗骰子的落点。
+                // 否则像“连续两颗骷髅各施加 1 层状态”或“连续两颗战利品各抽 1 张牌”
+                // 会都基于旧状态计算，导致后续骰子的累计效果被吞掉。
+                for (const evt of perDieEvents) {
+                    ctx.state = reduceDiceThroneCore(ctx.state, evt);
                 }
             }
 
             // 骰子特写展示（单骰或多骰都显示）
             if (diceCount >= 1) {
                 events.push(createDisplayOnlySettlement(sourceAbilityId, targetId, targetId, rollDice, timestamp));
+            }
+
+            if (action.resolutionMode === 'attackBonus' && ctx.accumulatedBonusDamage && ctx.accumulatedBonusDamage > 0) {
+                events.push({
+                    type: 'BONUS_DAMAGE_ADDED',
+                    payload: {
+                        playerId: attackerId,
+                        amount: ctx.accumulatedBonusDamage,
+                        sourceCardId: action.attackBonusSourceCardId ?? sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp,
+                    sfxKey,
+                } as BonusDamageAddedEvent);
+                ctx.accumulatedBonusDamage = 0;
             }
             break;
         }
@@ -811,15 +886,23 @@ function resolveEffectAction(
                         const dmgAmount = dmgPayload.amount ?? 0;
                         const dmgTargetId = dmgPayload.targetId;
                         const isUnblockable = dmgPayload.unblockable === true;
+                        const bypassShields = dmgPayload.bypassShields === true;
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
 
                         // 检查是否需要打开 Token 响应窗口
                         if (shouldCheckTokenResponse && dmgAmount > 0 && !isUnblockable) {
+                            const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
+                                state,
+                                dmgTargetId,
+                                dmgAmount,
+                                { bypassShields },
+                            );
+
                             const tokenResponseType = shouldOpenTokenResponse(
                                 state,
                                 attackerId,
                                 dmgTargetId,
-                                dmgAmount,
+                                effectiveDamageForTokenResponse,
                                 ctx.isDefensiveContext,
                                 damageScope
                             );
@@ -946,6 +1029,25 @@ function resolveConditionalEffect(
         ctx.accumulatedBonusDamage = (ctx.accumulatedBonusDamage ?? 0) + effect.bonusDamage;
     }
 
+    if (effect.unblockableDamage && effect.unblockableDamage > 0) {
+        const targetPlayer = state.players[ctx.defenderId];
+        const targetHp = targetPlayer?.resources[RESOURCE_IDS.HP] ?? 0;
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: ctx.defenderId,
+                amount: effect.unblockableDamage,
+                actualDamage: Math.min(effect.unblockableDamage, targetHp),
+                sourceAbilityId,
+                damageScope: 'attack',
+                unblockable: true,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+            sfxKey,
+        } as DamageDealtEvent);
+    }
+
     // 处理 grantStatus
     if (effect.grantStatus) {
         const { statusId, value, target: targetSpec } = effect.grantStatus;
@@ -962,26 +1064,16 @@ function resolveConditionalEffect(
             actualTargetId = isDebuff ? ctx.defenderId : ctx.attackerId;
         }
         
-        const targetPlayer = state.players[actualTargetId];
-        const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const def = state.tokenDefinitions.find(e => e.id === statusId);
-        const maxStacks = def?.stackLimit || 99;
-        const newTotal = Math.min(currentStacks + value, maxStacks);
-
-        const event: StatusAppliedEvent = {
-            type: 'STATUS_APPLIED',
-            payload: {
-                targetId: actualTargetId,
-                statusId,
-                stacks: value,
-                newTotal,
-                sourceAbilityId,
-            },
+        events.push(...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId: actualTargetId,
+            statusId,
+            stacks: value,
+            sourceAbilityId,
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,
-        };
-        events.push(event);
+        }));
     }
 
     // 处理 grantToken
@@ -1182,18 +1274,16 @@ function resolveDefaultEffect(
             const def = state.tokenDefinitions.find(e => e.id === statusId);
             actualTargetId = def?.category === 'debuff' ? ctx.defenderId : ctx.attackerId;
         }
-        const targetPlayer = state.players[actualTargetId];
-        const currentStacks = targetPlayer?.statusEffects[statusId] ?? 0;
-        const def = state.tokenDefinitions.find(e => e.id === statusId);
-        const maxStacks = def?.stackLimit || 99;
-        const newTotal = Math.min(currentStacks + value, maxStacks);
-        events.push({
-            type: 'STATUS_APPLIED',
-            payload: { targetId: actualTargetId, statusId, stacks: value, newTotal, sourceAbilityId },
+        events.push(...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId: actualTargetId,
+            statusId,
+            stacks: value,
+            sourceAbilityId,
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
             sfxKey,
-        } as StatusAppliedEvent);
+        }));
     }
 
     return events;
@@ -1215,7 +1305,15 @@ export function resolveEffectsToEvents(
         && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
 
     // 构建 EffectResolutionContext 用于条件检查
+    const useAttackDiceSnapshot = (timing === 'withDamage' || timing === 'postDamage')
+        && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
     const activeDice = getActiveDice(ctx.state);
+    const diceValues = useAttackDiceSnapshot
+        ? getAttackDiceValues(ctx.state)
+        : activeDice.map(die => die.value);
+    const faceCounts = useAttackDiceSnapshot
+        ? getAttackDiceFaceCounts(ctx.state)
+        : getFaceCounts(activeDice);
     const resolutionCtx: EffectResolutionContext = {
         attackerId: ctx.attackerId,
         defenderId: ctx.defenderId,
@@ -1223,8 +1321,8 @@ export function resolveEffectsToEvents(
         damageDealt: ctx.damageDealt,
         attackerStatusEffects: ctx.state.players[ctx.attackerId]?.statusEffects,
         defenderStatusEffects: ctx.state.players[ctx.defenderId]?.statusEffects,
-        diceValues: activeDice.map(die => die.value),
-        faceCounts: getFaceCounts(activeDice),
+        diceValues,
+        faceCounts,
     };
 
     const timedEffects = combatAbilityManager.instance.getEffectsByTiming(effects, timing);
@@ -1288,8 +1386,14 @@ export function resolveEffectsToEvents(
         resolutionCtx.attackerStatusEffects = ctx.state.players[ctx.attackerId]?.statusEffects;
         resolutionCtx.defenderStatusEffects = ctx.state.players[ctx.defenderId]?.statusEffects;
         const updatedDice = getActiveDice(ctx.state);
-        resolutionCtx.diceValues = updatedDice.map(die => die.value);
-        resolutionCtx.faceCounts = getFaceCounts(updatedDice);
+        const useUpdatedAttackDiceSnapshot = (timing === 'withDamage' || timing === 'postDamage')
+            && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
+        resolutionCtx.diceValues = useUpdatedAttackDiceSnapshot
+            ? getAttackDiceValues(ctx.state)
+            : updatedDice.map(die => die.value);
+        resolutionCtx.faceCounts = useUpdatedAttackDiceSnapshot
+            ? getAttackDiceFaceCounts(ctx.state)
+            : getFaceCounts(updatedDice);
 
         // TOKEN_RESPONSE_REQUESTED 意味着伤害被挂起等待玩家响应，
         // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。

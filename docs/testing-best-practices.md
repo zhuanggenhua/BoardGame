@@ -28,6 +28,67 @@
   - 1 条主路径用例（功能照常可执行）
   - 1 条兜底路径用例（主路径不满足时仍能走替代动作）
 
+### 0.2 TDD 行为 seam 门禁
+
+- 测试必须锁定公开行为，不默认锁内部实现形状。若一次重构导致大量测试跟着改，而用户可见/调用者可见行为没有变化，必须优先判断为“测试 seam 过浅”或“断言耦合内部结构”。
+- 新增或修复测试时，先写清本用例保护的行为入口：命令入口、公开 API、真实 UI 入口、审计工厂或系统边界。禁止只因为某个内部函数方便调用就直接测它。
+- 交互链测试不得散落直读 `sys.interaction.current` / `queue` / `data.options`；应优先通过游戏专用测试 helper/facade 读取 prompt、选择 option、断言 source/候选/禁用状态。只有在测试目标就是 InteractionSystem 内部契约时，才允许直接断言内部字段。
+- `vi.mock` / `spyOn` / `toHaveBeenCalled*` 默认只用于系统边界（网络、时间、随机数、文件系统、外部服务、浏览器 API）。项目自有模块之间的协作应优先通过输出状态、事件、可见 UI 或公开返回值证明。
+- 禁止通过批量修改 expected 来“适配重构”。如果行为确实变化，测试名、证据文档或提交说明必须写清新行为依据；如果行为未变，应调整测试 seam，而不是让测试继续绑定内部实现。
+
+### 0.3 统一测试分层
+
+| 分层 | 默认用途 | 禁区 |
+|------|----------|------|
+| 逻辑/规则行为测试 | 验证领域规则、命令合法性、最终权威状态 | 绕过真实命令链直接调用深层 helper 来证明完整行为 |
+| 集成链路测试 | 验证 `executePipeline` / `execute()` / Interaction 链路 | 只断言某内部函数被调用 |
+| E2E | 验证真实 UI 入口、交互可操作、关键视觉结果 | 重复铺满同类卡牌逻辑或代替业务状态断言 |
+| 审计/属性测试 | 批量验证注册表、引用链、数据契约、规则覆盖 | 作为单个 bug 修复的唯一成功证据 |
+| 调试/临时测试 | 构造最小复现、定位根因 | 长期留在主测试集或作为收口证据 |
+
+### 0.4 `e2e/src` Junction 禁写
+
+- `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
+- `e2e/src/**` 是本地 Junction 兼容入口，不再作为 Git 跟踪内容；禁止把任何文件通过镜像路径入库。
+- E2E 文件需要引用源码时，必须按相对路径直接指向仓库根 `src/`，不得依赖 `e2e/src` 镜像。
+- 后续拆分/迁移测试文件时，目标是减少镜像目录依赖，而不是继续扩写镜像测试。
+
+### 0.5 测试文件组织门禁
+
+- 新增游戏 E2E 必须放在 `e2e/<gameId>/` 下；根级 `e2e/*.e2e.ts` 只允许保留跨游戏/共享入口或尚未迁移的历史债务。
+- 禁止为同一游戏继续制造“根级文件 + 子目录文件”双入口；迁移时应收敛到子目录版本，并用 `--list` 或目标 E2E 验证 Playwright 仍能发现规范文件。
+- `e2e/<gameId>/legacy-root/` 仅用于安放从根目录迁出的历史 E2E 独有用例，保留覆盖但标明债务来源；新增用例不得进入该目录。
+- 测试文件必须按行为簇命名和归档：能力簇、交互链、配置合同、页面行为、审计合同分别放到清晰目录或文件中。
+- 禁止继续新增 `new*`、`misc`、`regression`、`feedback`、`fixes` 这类可无限吸纳场景的泛名测试文件；已有泛名文件只能迁出或收敛，不作为新增用例入口。
+- Smash Up 的基地能力合同默认优先放到 `src/games/smashup/__tests__/bases/` 下的专项目文件；根级仅保留系统/集成/保护类白名单文件，禁止继续新增类似 `baseAbilitiesPrompt` 这种把多个基地合同塞在一起的聚合壳。
+- 当一个测试文件已经覆盖多个无关派系、页面、反馈编号、规则簇或系统层，新增用例必须优先落到更聚焦的新文件；只有同一行为簇内的少量补充才允许追加。
+- 拆分不是删除覆盖。迁移用例时必须保留该行为簇至少 1 条代表性路径，并运行迁出后的新文件；若原巨型文件仍保留大量相关场景，应按风险决定是否复跑原文件。
+- 示例：Smash Up 音效配置测试应落到 `src/games/smashup/__tests__/audio/faction-audio-config.test.ts`，不再塞回 `newFactionAbilities.test.ts`。
+- 自动门禁：`npm run test:structure` 会阻止新增根级游戏 E2E、`e2e/src/**` 镜像入库、临时/备份/测试输出文件入库、新增泛名测试文件、给旧泛名文件净增加内容，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` / `resolveAbility(...)` / `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 访问，也会阻止新增测试里的 `console.log/warn/error/debug` 调试输出。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
+- 新增或迁出的游戏行为测试不得使用 `it.skip` / `test.skip` / `describe.skip`。如果旧测试是 skip，迁移时必须先补齐真实行为链路并跑绿；无法补齐时保留为历史债务并记录原因，不得把 skip 带进新的聚焦测试文件。
+
+### 0.6 测试接口 / 行为端口门禁
+
+- 每类高频测试对象都应有稳定的测试接口：游戏命令用 `GameTestRunner` / `runCommand`，交互 prompt 用游戏专用 prompt facade，UI 用真实 E2E 入口。
+- 测试主体不应直接依赖内部结构字段，例如 `sys.interaction.current`、`queue`、`data.options`、内部 handler 调用顺序。确需测试内部契约时，测试文件名或 describe 必须写明它是在测系统契约。
+- 业务/能力测试默认禁止新增 `getInteractionHandler(...)`、`getAbilityRuntimePromptHandler(...)` 直调。优先表达成真实 `trigger -> prompt -> respond`、真实命令入口，或通过 facade 读取 prompt 和选择 option。
+- 业务/能力测试默认禁止新增裸 `resolveAbility(...)`。公开行为请走真实命令入口；确需保留 low-level ability executor 合同时，优先通过 `invokeRegisteredAbilityContract(...)` 进入，而不是在测试体中直接摸 ability registry。
+- 业务/能力测试默认禁止新增原始 `resolveAbility` / `getInteractionHandler` / `getAbilityRuntimePromptHandler` 导入。若确实在测系统合同或低层注册表合同，也优先通过 `helpers.ts` 中的显式 contract helper 暴露测试入口。
+- 只有三类场景允许保留 direct handler / runtime prompt handler：注册表存在性合同、PromptSystem/response chain 系统合同、通过测试 helper 显式封装的低层能力合同（例如 stale/runtime resolver/metadata 合同）。这类测试必须明确说明它锁的不是业务路径，而是底层合同。
+- 即使是低层合同，也优先通过 `helpers.ts` 中的显式 helper（如 `invokeRegisteredAbilityContract`、`invokeRegisteredInteractionHandlerContract`、`invokeRegisteredRuntimePromptHandlerContract`）进入，不要在测试体里再次直接摸注册表 API。
+- 测试默认禁止新增 `console.log` / `console.warn` / `console.error` / `console.debug` 作为调试壳层。需要保留失败上下文时，应改成更强的断言、`expect.fail(...)` 消息或证据文档，而不是把控制台当事实载体。
+- `resolvePromptViaRegisteredHandler(...)` 不视为“真实交互入口”。这类 registered-handler 直调 helper 已作为旧 seam 收口，不应再新增或恢复；需要系统级/低层合同时，优先使用显式 contract helper、`resolveSmashUpReactionChoice(...)`，或真实 `respondToPrompt/respondToPromptOption(s)`。
+- 如果一次实现重构导致大量测试改 `option` 读取方式、prompt 字段名、命令 payload 形状或内部 helper 调用，应先新增/调整测试接口层，再迁移用例，禁止在每个测试里重复适配。
+- 新增测试接口要放在对应游戏的 `__tests__/helpers.ts` 或更聚焦的 helper 文件中；测试用例只表达“选择某张牌 / 某玩家 / 某基地 / 某模式”，不表达 InteractionSystem 如何存储这些选项。
+- 示例：Smash Up 交互测试优先使用 `getSimpleChoicePrompt`、`getPromptOption`、`getPromptOptions`、`respondToPrompt`、`respondToPromptOptions`、`cancelPrompt`，而不是在测试体中散落 `prompt.data.options.find(...)` 或手写系统交互命令。
+
+### 0.2.1 runtime callback seam 门禁
+
+- 只要实现经过 `prompt -> onResolve -> helper`、`reaction choose -> resolver`、`branching choice -> handler`、`custom action -> resolve` 这类分段 callback seam，测试最少要覆盖一条“入口触发 + resolve 结算 + 最终 reduce 状态”的完整链，不能只测 prompt 创建或 options 生成。
+- 当一次重构把内联事件改为 shared helper / primitive 时，必须新增或升级测试，打到 helper 真正执行的那一层。只看入口、不看最终 `CARDS_DRAWN` / `DECK_RESHUFFLED` / 伤害 / 资源变化 / 阶段推进，默认视为测试链路不完整。
+- 对于声明层本身不拥有随机或时序语义、只是声明“抽牌/摸牌/结算/造成伤害/重掷/目标选择”的场景，优先使用接受整份 runtime args/context 的 helper，避免每个 `onResolve` / `resolve` 手写解构 `random`、`timestamp`、`matchState`。只有规则本身真的拥有随机、洗牌、排序、多次消费顺序等语义时，才在 callback 层显式消费这些 runtime 依赖。
+- 职责边界统一约束为三层：声明层只表达意图与业务参数；runtime seam 层负责携带本次交互上下文；primitive / helper 层负责消费运行时依赖并产出权威结果。测试应该优先保护这个边界，而不是默许声明层直接手拼底层依赖。
+
 ### 1. 使用正确的测试工具
 
 | 场景 | 推荐工具 | 原因 |
@@ -35,11 +96,16 @@
 | 游戏逻辑测试 | `GameTestRunner` | 完整模拟引擎管线，自动处理状态初始化 |
 | 单个能力测试 | `runCommand` (testRunner.ts) | 简化的命令执行，自动包装 MatchState |
 | 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts) | 自动注入 matchState |
-| 交互处理器测试 | `callHandler` (helpers.ts) | 桥接旧测试到新签名 |
-| UI 集成测试 | Playwright E2E | 端到端验证 |
+| 低层合同测试 | `invokeRegisteredAbilityContract` / `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁能力注册表、prompt resolver、非法值、metadata 等底层合同 |
+| UI 集成测试 | Playwright E2E | 状态注入或真实链路的浏览器级验证 |
 
 ### 1.1 E2E 去重与分层
 
+- 本项目默认把 `E2E / 端到端` 理解为**基于状态注入的浏览器级验证**：允许使用 `GameTestContext.setupScene(...)` 构造场景，重点证明 UI 布局、入口可操作、交互组件和最终可见结果。
+- 只有用户**明确要求真实链路**时，才把 E2E 提升为“从真实玩法入口自然走到目标 prompt / 结算结果”的链路验证；这类用例标题、evidence 和汇报里都必须显式写 `真实链路`，不能和默认状态注入 E2E 混叫。
+- 如果测试直接 `patch`/注入某个 prompt、interaction 或阶段，只能表述成“状态注入 E2E / 状态注入布局验证 / 中间态验证”；不得把它写成“真实链路已验证”。
+- Playwright CLI、Browser snapshot 或其他临时浏览器自动化，只能用于复现、定位、截图和 trace；它们不能自动等同于“项目已新增正式 E2E 覆盖”。
+- 某次 CLI 排查里“点通了流程”只能证明当前复现/定位成功；若需要长期防回归，仍必须把覆盖沉淀到项目 Playwright E2E 用例，并按现有项目命令和配置执行。
 - E2E 的目标是验证真实 UI 入口、交互链是否可操作、以及最终可见结果是否完整，不是把同一种交互模式在不同卡上重复铺满。
 - 同一种交互模式通常只保留 1 条代表性完整流程；只有当入口位置、控件形态、链路阶段、布局风险或跨系统协作明显不同，才新增第二条 E2E。
 - 一条合格的“完整流程 E2E”至少应覆盖：真实 UI 入口 → 中间交互步骤 → 结算完成，并包含最终态断言，以及 `resolved`/`after` 类证据截图之一。
@@ -54,6 +120,14 @@
 - 只有在“显式验证英文文案切换”或“做双语回归”时，才允许单独切到英文；此时测试标题必须写明“英文”或“双语”，避免后续把英文链路误当默认行为。
 - 如果页面真实默认应为中文，就不要再用英文选择器兜底通过；这类兜底会掩盖“页面被旧语言缓存劫持”或“测试自己强制切英文”的回归。
 - 新增 E2E 时，截图里会出现的标题、按钮、占位文案、提示语也应优先断言中文，避免测试虽然跑在中文环境里，代码却继续围绕英文文案编写。
+
+### 1.3 E2E 真实点击规则（强制）
+
+- 交互测试里，禁止使用 `locator.evaluate((el) => el.click())`、`page.evaluate(() => element.click())` 这类“页面内脚本点击”绕过可点击性校验。
+- 必须优先使用 Playwright 原生交互：`locator.click()`（必要时配合 `scrollIntoViewIfNeeded()`、更精确定位器或显式等待）。
+- 这条红线同样适用于 Playwright CLI / Browser snapshot 排查：默认使用 `click`、`fill`、`press`、`hover` 等用户级动作，不得用 `eval`、`run-code`、页面内脚本点击来伪造“已可交互”。
+- 若点击失败，先修定位器/层级/遮挡/时序，不得用 `evaluate(...click())` 掩盖真实交互问题。
+- `evaluate` 仅可用于“读取/观测”类操作（如 DOM 状态采样），不用于触发用户交互。
 
 ### 2. 永远不要直接调用 domain 层函数
 
@@ -410,15 +484,16 @@ const newCore = applyEvents(core, events);
 #### 测试桥接工具
 
 ```typescript
-// 旧式 InteractionHandler 调用桥接
-const events = callHandler(handler, {
-    state: core,
-    playerId: '0',
-    selectedValue: { baseIndex: 0 },
-    data: { continuationContext: {...} },
+// 低层合同测试：显式调用已注册的 continuation/runtime handler
+const result = invokeRegisteredInteractionHandlerContract(
+    'test_source',
+    matchState,
+    '0',
+    { baseIndex: 0 },
+    { continuationContext: {...} },
+    Date.now(),
     random,
-    now: Date.now(),
-});
+);
 
 // 基地能力测试桥接（自动注入 matchState）
 const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', {
@@ -429,10 +504,15 @@ const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', {
     now: Date.now(),
 });
 
-// 获取 BaseAbilityResult 中的所有 interaction
+// 获取 BaseAbilityResult 中的所有 interaction（低层兼容工具）
 const interactions = getInteractionsFromResult(result);
 
-// 从 MatchState 中获取所有 interaction
+// 业务测试优先使用 prompt facade，不直接枚举 sys.interaction
+const prompt = getSimpleChoicePrompt(matchState, 'alien_crop_circles');
+const option = getPromptOption(prompt, option => option.value?.baseIndex === 0);
+expectNoPrompt(finalState);
+
+// 只有测试目标就是 InteractionSystem/queue 存储契约时，才直接枚举 interaction
 const interactions = getInteractionsFromMS(matchState);
 ```
 
@@ -538,7 +618,7 @@ import { makeMinion } from './helpers';
 | 单命令测试 | `runCommand` |
 | 创建测试状态 | `makeState` + `makeMatchState` |
 | 创建测试实体 | `makeMinion` / `makePlayer` / `makeCard` |
-| 检查交互 | `getInteractionsFromMS` |
+| 检查交互 | `getSimpleChoicePrompt` / `getPromptOption` / `getPromptOptions` / `expectNoPrompt` |
 | 基地能力测试 | `triggerBaseAbilityWithMS` |
 
 ### 相关文档
@@ -613,11 +693,9 @@ test: {
    npm run test:watch
    ```
 
-3. **跳过慢速测试**（临时）：
-   ```typescript
-   // 使用 .skip 跳过慢速测试
-   it.skip('slow property test', () => { ... });
-   ```
+3. **不要提交新的 skipped 行为测试**：
+   - 开发时只跑相关文件或用例，不要把 `it.skip` / `describe.skip` 当作性能优化手段提交进游戏行为测试。
+   - 确实属于慢速专项的测试，应放入明确的 property/audit/E2E 配置，并通过专用命令运行；临时本地跳过不得入库。
 
 4. **CI/CD 中运行完整测试**：
    ```bash
@@ -677,18 +755,22 @@ test: {
 13. **尺寸类 UI 回归必须断言最终包围盒**：按钮、入口、面板、卡槽等“看起来过大/过小”的问题，E2E 必须对最终 `boundingBox()` 或等价尺寸做断言；不要只看 className、设计稿尺寸或截图主观判断
 14. **必要时同时断言最小值和最大值**：只断言“至少可点”不够，像“按钮被做肥”这类回归必须补最大尺寸约束，避免额外 padding、默认 `min-height`、浏览器按钮样式兜底蒙混过关
 15. **先查最终样式，再怪文本或自适应**：文本按钮异常变大时，优先检查 `padding`、`gap`、`min-height`、默认 button 样式和父容器约束；禁止未经验证就把问题归因于“文本自适应”
-16. **isolated 启动超时先看 bootstrap 日志**：`global-setup` 已支持 fail-fast；若出现 `/games`、`/health`、`/__ready` 就绪超时，优先查看 `.tmp/playwright-bootstrap-<scope>-worker-<id>.log` 和错误里附带的日志尾部内容，不要先改业务代码
+16. **时序/重复挂载/动画是否播出这类问题，截图不是充分证据**：凡用户反馈“弹窗半开后重开 / 动画没播 / 浮字丢了 / 只播结果没播过程 / 一闪而过 / 打开两次”这类生命周期问题，E2E 必须补机器可复查的时序证据（例如交互 id 轨迹、modal/overlay 挂载次数、可见段数、事件流与最终 DOM 消费日志、关键元素 `boundingBox`/opacity/transform 采样）。截图仍然要看，但只能证明“画面长什么样”，不能单独证明“中间没有重开/没有丢事件/动画确实播过”。
+17. **isolated 启动超时先看 bootstrap 日志**：`global-setup` 已支持 fail-fast；若出现 `/games`、`/health`、`/__ready` 就绪超时，优先查看 `.tmp/playwright-bootstrap-<scope>-worker-<id>.log` 和错误里附带的日志尾部内容，不要先改业务代码
 
 ### E2E 截图结论约束（补充）
 
 1. 必须先“看图并对照需求”再“下结论”：没有人工核对截图，或虽已看图但尚未确认其满足本轮需求，不得说“正常”或“已修复”。
 2. 必须先“看图并确认符合需求”再“写文档”：证据文档中的结论段不得早于人工看图和需求核对产生，禁止先写结论再回头补观察。
+2.1. 对用户症状的文字复述必须与用户原话等价：用户说“两次缩放”“弹两次”“没播动画”，就按这个症状原样记录；没有证据前不要自行改写成“像重开”“像二段”“像卡了一下”。
+2.2. 若当前证据只支持相近现象，不得写成“已复现原问题”；必须明确标注“仅复现到相近现象”或“未复现原症状”。
 3. 若失败产物目录无图，结论必须显式标注“无图可核对”，并说明为什么无图。
 4. 向他人汇报时必须提供已核对截图的完整工作区绝对路径和可见证据点，路径必须可直接复制使用（不是只贴文件夹名、相对路径或目录名）。
 5. 打开截图所在文件夹时，每轮只打开 1 个目标文件夹；不要连续列出或打开多个兄弟目录刷屏。
 6. 若只是汇报截图位置，默认只给实际核对过的截图完整绝对路径；除非用户明确要求，否则不要额外列父目录或多个文件夹路径。
 7. 证据文档中每张截图都要有自己对应的绝对路径说明；不要只给一个父目录路径再让读者自己找图。
 8. 黑图、纯加载页、纯空白页、只有遮罩层、只有单个亮点/噪点且无法辨认业务界面的截图，不算“已完成看图”；这类情况必须按“无有效截图”处理。
+8.1. 对象完整性优先于元素存在：截图里目标对象被视口、容器、遮挡层或截图边界裁切到只露边角/只露局部时，最多只能证明事件触发或元素存在，不能证明视觉达标。用于证明浮层、表情、popover、HUD overlay、特写、控件位置正确的截图，必须看到目标对象完整主体或足以识别的主要轮廓；若还要证明锚点位置，必须同时看到锚点参照物和目标对象完整边界。全页截图收不全时必须补局部放大图、调整截图时机或调整视口后重验。
 9. 如果只知道某张图存在，但还没亲自打开看过，就不能把这张图当作“已核对证据”汇报给用户；最多只能说“有产物，尚未验图”。
 10. 一旦发现当前轮只有无效截图，下一步应该是补拿有效截图或明确承认“本轮无法完成视觉验收”，不能继续给出像“截图在这”“可直接验收”这种误导性表述。
 

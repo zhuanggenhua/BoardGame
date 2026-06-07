@@ -36,7 +36,7 @@ import {
     setChineseLocale,
     waitForTestHarness,
 } from '../helpers/common';
-import { TOKEN_IDS } from '../src/games/dicethrone/domain/ids';
+import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;

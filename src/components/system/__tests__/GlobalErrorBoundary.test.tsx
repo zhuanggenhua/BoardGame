@@ -60,6 +60,15 @@ vi.mock('react', async () => {
     };
 });
 
+vi.mock('../../../lib/staleChunkReloadGuard', async () => {
+    const actual = await vi.importActual<any>('../../../lib/staleChunkReloadGuard');
+    return {
+        ...actual,
+        isStaleChunkError: vi.fn(actual.isStaleChunkError),
+        reloadForStaleChunkOnce: vi.fn(actual.reloadForStaleChunkOnce),
+    };
+});
+
 describe('GlobalErrorBoundary', () => {
     it('Should be a React Component class', () => {
         expect(GlobalErrorBoundary).toBeDefined();
@@ -73,6 +82,28 @@ describe('GlobalErrorBoundary', () => {
         const error = new Error('Test Error');
         const state = GlobalErrorBoundary.getDerivedStateFromError(error);
         expect(state).toEqual({ hasError: true, error, errorInfo: null });
+    });
+
+    it('stale chunk 渲染错误会触发自动刷新而不是停留在错误页', async () => {
+        const staleChunkReloadGuard = await import('../../../lib/staleChunkReloadGuard');
+        vi.mocked(staleChunkReloadGuard.reloadForStaleChunkOnce).mockReturnValue(true);
+
+        const error = new Error('Failed to fetch dynamically imported module');
+        const errorInfo = {
+            componentStack: '\n    at MatchRoomWithAudio',
+        } as React.ErrorInfo;
+
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+            const boundary = new GlobalErrorBoundary({ children: null });
+            boundary.componentDidCatch(error, errorInfo);
+
+            expect(staleChunkReloadGuard.isStaleChunkError).toHaveBeenCalledWith(error);
+            expect(staleChunkReloadGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('react-error-boundary', window);
+            expect(consoleErrorSpy).not.toHaveBeenCalled();
+        } finally {
+            consoleErrorSpy.mockRestore();
+        }
     });
 });
 
@@ -308,14 +339,14 @@ describe('AndroidBackNavigation helpers', () => {
         })).toBe(3);
     });
 
-    it('有历史栈时执行 history.back', () => {
+    it('对局页即使有历史栈也统一回到大厅', () => {
         expect(resolveAndroidBackNavigationAction({
             pathname: '/play/smashup/match/room-1',
             search: '?playerID=0',
             historyState: { idx: 1 },
             historyLength: 2,
             modalStackDepth: 0,
-        })).toEqual({ type: 'history-back' });
+        })).toEqual({ type: 'fallback-route', path: '/?game=smashup' });
     });
 
     it('有可关闭弹窗时优先关闭弹窗，而不是退路由', () => {
@@ -369,6 +400,15 @@ describe('AndroidBackNavigation helpers', () => {
             historyLength: 1,
             modalStackDepth: 0,
         })).toEqual({ type: 'fallback-route', path: '/' });
+    });
+
+    it('非对局页仍保留 history.back 语义', () => {
+        expect(resolveAndroidBackNavigationAction({
+            pathname: '/maintenance',
+            historyState: { idx: 1 },
+            historyLength: 2,
+            modalStackDepth: 0,
+        })).toEqual({ type: 'history-back' });
     });
 
     it('根页且没有历史栈时允许退出 App', () => {

@@ -8,15 +8,11 @@ import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { runEncodingCheck } from './check-file-encoding.mjs';
 import { runE2ESafetyCheck } from './check-e2e-safety.js';
 import { cleanupTestConnections } from './cleanup_test_connections.js';
-import { prependNodePath, resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
+import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 
-const playwrightCliInfo = resolveWorkspaceNodeModuleFile('playwright/cli.js', {
-    label: 'Playwright CLI',
-    cwd: process.cwd(),
-});
-const playwrightCli = playwrightCliInfo.filePath;
+const playwrightCli = path.resolve(process.cwd(), 'node_modules', 'playwright', 'cli.js');
 const runtimeNode = process.env.PW_NODE_BINARY || process.execPath;
 const PREFLIGHT_CACHE_PATH = path.resolve(process.cwd(), '.tmp', 'e2e-preflight-cache.json');
 const CLEANUP_CACHE_TTL_MS = 90_000;
@@ -199,12 +195,15 @@ function stopManagedRuntime(runtimeId, env) {
 }
 
 function createEnv(overrides = {}) {
-    return prependNodePath({
+    return {
         ...process.env,
         PW_HEADED: 'false',
         PWDEBUG: '0',
+        PW_USE_DEV_SERVERS: 'false',
+        PW_ALLOW_DEV_SERVER_TESTS: 'false',
+        PW_START_SERVERS: 'false',
         ...overrides,
-    }, playwrightCliInfo.nodeModulesRoot);
+    };
 }
 
 function mergeNodeOptions(preferredOption, existingValue = process.env.NODE_OPTIONS) {
@@ -293,18 +292,16 @@ function hasExplicitPlaywrightTarget(args) {
 function createModeEnv(mode) {
     switch (mode) {
         case 'default':
-            return createEnv({
-                NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
-            });
+            return createEnv();
         case 'dev':
             return createEnv({
-                NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
                 PW_USE_DEV_SERVERS: 'true',
+                PW_ALLOW_DEV_SERVER_TESTS: 'true',
+                PW_START_SERVERS: 'false',
                 PW_WORKERS: '1',
             });
         case 'isolated':
             return createEnv({
-                NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
                 PW_USE_DEV_SERVERS: 'false',
             });
         case 'ci':
@@ -313,12 +310,9 @@ function createModeEnv(mode) {
                 PW_SERVER_WATCH: 'false',
             });
         case 'critical':
-            return createEnv({
-                NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
-            });
+            return createEnv();
         case 'parallel':
             return createEnv({
-                NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
                 PW_ALLOW_FULL_RUN: 'true',
             });
         default:
@@ -396,6 +390,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         ...createModeEnv(mode),
         ...envOverrides,
     };
+    assertSafeE2EServerMode(modeEnv);
     modeEnv.PW_RUNTIME_SCOPE = modeEnv.PW_RUNTIME_SCOPE
         || process.env.PW_RUNTIME_SCOPE
         || '';
@@ -418,8 +413,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'
         && !process.env.PW_WORKERS
         && !envOverrides.PW_WORKERS
-        && !process.env.PW_USE_DEV_SERVERS
-        && !envOverrides.PW_USE_DEV_SERVERS
+        && !resolveUseDevServers(modeEnv)
         && !isListMode
     );
     const bootstrapMode = resolveBootstrapMode({ isListMode, shouldUseManagedSingleRuntime });
@@ -444,8 +438,6 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
     if (preferSharedSingleRun) {
         modeEnv.PW_E2E_SERVICE_REUSE = 'shared-single';
         console.log('♻️ 显式启用共享单 worker E2E runtime；将尝试复用 shared-single 服务。');
-    } else if (playwrightCliInfo.usedFallback) {
-        console.log(`🧭 当前 worktree 未找到本地 Playwright CLI，已回退到上级 node_modules: ${playwrightCliInfo.filePath}`);
     } else if (
         !isListMode
         && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'

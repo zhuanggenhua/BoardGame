@@ -17,7 +17,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-pickpocket-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 0 },
-        effects: [{ description: '升级迅捷突袭至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'pickpocket', newAbilityDef: PICKPOCKET_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-pickpocket-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'pickpocket', newAbilityDef: PICKPOCKET_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 1: 破隐一击 II (原名: 肾击 II) ===
     {
@@ -28,7 +28,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-kidney-shot-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 1 },
-        effects: [{ description: '升级破隐一击至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'kidney-shot', newAbilityDef: KIDNEY_SHOT_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-kidney-shot-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'kidney-shot', newAbilityDef: KIDNEY_SHOT_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 2: 鬼鬼崇崇！(新增行动卡) ===
     {
@@ -39,7 +39,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('action-sneaky-sneaky', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 2 },
-        effects: [{ description: '获得隐匿攻击', action: { type: 'grantToken', target: 'self', tokenId: 'sneak_attack', value: 1 }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-sneaky-sneaky', 'description'), action: { type: 'grantToken', target: 'self', tokenId: 'sneak_attack', value: 1 }, timing: 'immediate' }]
     },
     // === 图集索引 3: 与影共生！(原名: 与影同行！) ===
     {
@@ -51,7 +51,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         description: cardText('action-one-with-shadows', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 3 },
         effects: [{
-            description: '投掷1骰：暗影→伏击+2CP；否则抽1牌',
+            description: cardText('action-one-with-shadows', 'description'),
             action: {
                 type: 'rollDie', target: 'self', diceCount: 1,
                 conditionalEffects: [
@@ -71,7 +71,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-shadow-defense-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 4 },
-        effects: [{ description: '升级暗影防御至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'shadow-defense', newAbilityDef: SHADOW_DEFENSE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-shadow-defense-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'shadow-defense', newAbilityDef: SHADOW_DEFENSE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 5: 毒伤！(原名: 淬毒！) ===
     {
@@ -82,7 +82,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'instant',
         description: cardText('action-poison-tip', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 5 },
-        effects: [{ description: '对对手施加中毒', action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-poison-tip', 'description'), action: { type: 'grantStatus', target: 'opponent', statusId: 'poison', value: 1 }, timing: 'immediate' }]
     },
     // === 图集索引 6: 卡牌戏法！===
     {
@@ -93,7 +93,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('action-card-trick', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 6 },
-        effects: [{ description: '卡牌戏法结算', action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-card-trick' }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-card-trick', 'description'), action: { type: 'custom', target: 'opponent', customActionId: 'shadow_thief-card-trick' }, timing: 'immediate' }]
     },
     // === 图集索引 7: 匕首突刺 II (原名: 匕首打击 II) ===
     {
@@ -104,7 +104,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-dagger-strike-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 7 },
-        effects: [{ description: '升级匕首突刺至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'dagger-strike', newAbilityDef: DAGGER_STRIKE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-dagger-strike-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'dagger-strike', newAbilityDef: DAGGER_STRIKE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 8: 暗影币！(新增行动卡) ===
     {
@@ -116,7 +116,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         description: cardText('action-shadow-coins', 'description'),
         sfxKey: SHADOW_THIEF_SFX_LOOT,
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 8 },
-        effects: [{ description: '暗影币结算', action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-shadow-coins' }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-shadow-coins', 'description'), action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-shadow-coins' }, timing: 'immediate' }]
     },
     // === 图集索引 9: 暗影操控！===
     {
@@ -128,7 +128,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         description: cardText('action-shadow-manipulation', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 9 },
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '暗影操控结算', action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-shadow-manipulation' }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-shadow-manipulation', 'description'), action: { type: 'custom', target: 'self', customActionId: 'shadow_thief-shadow-manipulation' }, timing: 'immediate' }]
     },
     // === 图集索引 10: 暗影之舞 II ===
     {
@@ -139,7 +139,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-shadow-dance-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 10 },
-        effects: [{ description: '升级暗影之舞至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'shadow-dance', newAbilityDef: SHADOW_DANCE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-shadow-dance-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'shadow-dance', newAbilityDef: SHADOW_DANCE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 11: 扒窃 II (原名: 偷窃 II) ===
     {
@@ -150,7 +150,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-steal-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 11 },
-        effects: [{ description: '升级扒窃至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'steal', newAbilityDef: STEAL_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-steal-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'steal', newAbilityDef: STEAL_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 12: 卡牌大师 II (原名: 聚宝盆 II) ===
     {
@@ -161,7 +161,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-cornucopia-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 12 },
-        effects: [{ description: '升级卡牌大师至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'cornucopia', newAbilityDef: CORNUCOPIA_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-cornucopia-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'cornucopia', newAbilityDef: CORNUCOPIA_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 13: 后发制人 II ===
     {
@@ -172,7 +172,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-fearless-riposte-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 13 },
-        effects: [{ description: '升级后发制人至 II 级', action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'fearless-riposte', newAbilityDef: FEARLESS_RIPOSTE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
+        effects: [{ description: cardText('upgrade-fearless-riposte-2', 'description'), action: { type: 'replaceAbility', target: 'self', targetAbilityId: 'fearless-riposte', newAbilityDef: FEARLESS_RIPOSTE_2, newAbilityLevel: 2 }, timing: 'immediate' }]
     },
     // === 图集索引 14: 遁入阴影！(原名: 遁入暗影！) ===
     {
@@ -183,7 +183,7 @@ export const SHADOW_THIEF_CARDS: AbilityCard[] = [
         timing: 'instant',
         description: cardText('action-into-the-shadows', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.SHADOW_THIEF, index: 14 },
-        effects: [{ description: '获得1个暗影标记', action: { type: 'grantToken', target: 'self', tokenId: 'sneak', value: 1 }, timing: 'immediate' }]
+        effects: [{ description: cardText('action-into-the-shadows', 'description'), action: { type: 'grantToken', target: 'self', tokenId: 'sneak', value: 1 }, timing: 'immediate' }]
     },
 
     // 注入通用卡牌

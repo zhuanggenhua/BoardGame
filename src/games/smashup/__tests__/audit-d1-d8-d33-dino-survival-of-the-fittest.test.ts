@@ -40,6 +40,7 @@ import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { initAllAbilities } from '../abilities';
 import { DINOSAUR_ACTIONS } from '../data/factions/dinosaurs';
 import { DINOSAUR_POD_ACTIONS } from '../data/factions/dinosaurs_pod';
+import { getFirstPrompt, getPromptOptions, getPromptSourceId } from './helpers';
 
 
 beforeAll(() => {
@@ -136,10 +137,11 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
 
         const state = runner.getState();
         // 验证创建了交互（平局选择）
-        expect(state.sys.interaction.current).toBeDefined();
-        expect(state.sys.interaction.current?.data.sourceId).toBe('dino_survival_tiebreak');
+        const prompt = getFirstPrompt(state);
+        expect(prompt).toBeDefined();
+        expect(getPromptSourceId(prompt)).toBe('dino_survival_tiebreak');
         // 验证选项包含 m2 和 m3
-        const options = state.sys.interaction.current?.data.options ?? [];
+        const options = getPromptOptions(prompt);
         expect(options.some((o: any) => o.value.minionUid === 'm2')).toBe(true);
         expect(options.some((o: any) => o.value.minionUid === 'm3')).toBe(true);
     });

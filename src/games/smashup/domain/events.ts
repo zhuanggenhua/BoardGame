@@ -44,6 +44,7 @@ export const SU_EVENTS = defineEvents({
   // ========== 即时反馈（EventStream）==========
   'su:minion_played': { audio: 'immediate', sound: MINION_PLAY_KEY },
   'su:action_played': 'fx',                                    // 行动卡展示（FX 系统 FeedbackPack）
+  'su:action_countered': { audio: 'immediate', sound: CARD_DISCARD_KEY },
   'su:titan_played': { audio: 'immediate', sound: MINION_PLAY_KEY },
   'su:titan_moved': { audio: 'immediate', sound: MOVE_KEY },
   'su:titan_removed_from_play': { audio: 'immediate', sound: CARD_DISCARD_KEY },
@@ -75,6 +76,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:turn_started': { audio: 'immediate', sound: TURN_NOTIFY_KEY },
   'su:turn_ended': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
+  'su:extra_turn_queued': 'silent',
   
   'su:base_replaced': { audio: 'immediate', sound: UPDATE_CHIME_KEY },  // 基地替换（本地 AnimatePresence 过渡）
   'su:deck_reshuffled': { audio: 'immediate', sound: CARD_SHUFFLE_KEY },
@@ -93,6 +95,7 @@ export const SU_EVENTS = defineEvents({
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
   'su:permanent_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:temp_power_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
+  'su:temp_base_power_modified': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
   'su:ongoing_attached': { audio: 'immediate', sound: ACTION_PLAY_KEY },
   'su:ongoing_detached': { audio: 'immediate', sound: CARD_DISCARD_KEY },
@@ -116,6 +119,7 @@ export const SU_EVENTS = defineEvents({
   'su:special_limit_used': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:special_after_scoring_armed': 'silent',
   'su:special_after_scoring_consumed': 'silent',
+  'su:action_return_to_hand_option_armed': 'silent',
   'su:scoring_eligible_bases_locked': 'silent',  // 进入 scoreBases 阶段时锁定 eligible 基地列表
   'su:before_scoring_triggered': 'silent',  // 标记基地已触发 beforeScoring（防止重复触发）
   'su:before_scoring_cleared': 'silent',  // 清空 beforeScoring 触发标记（计分阶段结束）
@@ -142,6 +146,7 @@ export const SU_EVENTS = defineEvents({
 export const SU_EVENT_TYPES = {
   MINION_PLAYED: SU_EVENTS['su:minion_played'].type,
   ACTION_PLAYED: SU_EVENTS['su:action_played'].type,
+  ACTION_COUNTERED: SU_EVENTS['su:action_countered'].type,
   TITAN_PLAYED: SU_EVENTS['su:titan_played'].type,
   TITAN_MOVED: SU_EVENTS['su:titan_moved'].type,
   TITAN_REMOVED_FROM_PLAY: SU_EVENTS['su:titan_removed_from_play'].type,
@@ -166,6 +171,7 @@ export const SU_EVENT_TYPES = {
   BURIED_CARDS_DISCARDED_WITH_BASE: SU_EVENTS['su:buried_cards_discarded_with_base'].type,
   TURN_STARTED: SU_EVENTS['su:turn_started'].type,
   TURN_ENDED: SU_EVENTS['su:turn_ended'].type,
+  EXTRA_TURN_QUEUED: SU_EVENTS['su:extra_turn_queued'].type,
   BASE_REPLACED: SU_EVENTS['su:base_replaced'].type,
   DECK_RESHUFFLED: SU_EVENTS['su:deck_reshuffled'].type,
   DECK_REORDERED: SU_EVENTS['su:deck_reordered'].type,
@@ -203,11 +209,13 @@ export const SU_EVENT_TYPES = {
   REVEAL_DECK_TOP: SU_EVENTS['su:reveal_deck_top'].type,
   DECK_INSPECTED: SU_EVENTS['su:deck_inspected'].type,
   TEMP_POWER_ADDED: SU_EVENTS['su:temp_power_added'].type,
+  TEMP_BASE_POWER_MODIFIED: SU_EVENTS['su:temp_base_power_modified'].type,
   BREAKPOINT_MODIFIED: SU_EVENTS['su:breakpoint_modified'].type,
   BASE_DECK_SHUFFLED: SU_EVENTS['su:base_deck_shuffled'].type,
   SPECIAL_LIMIT_USED: SU_EVENTS['su:special_limit_used'].type,
   SPECIAL_AFTER_SCORING_ARMED: SU_EVENTS['su:special_after_scoring_armed'].type,
   SPECIAL_AFTER_SCORING_CONSUMED: SU_EVENTS['su:special_after_scoring_consumed'].type,
+  ACTION_RETURN_TO_HAND_OPTION_ARMED: SU_EVENTS['su:action_return_to_hand_option_armed'].type,
   SCORING_ELIGIBLE_BASES_LOCKED: SU_EVENTS['su:scoring_eligible_bases_locked'].type,
   BEFORE_SCORING_TRIGGERED: SU_EVENTS['su:before_scoring_triggered'].type,
   BEFORE_SCORING_CLEARED: SU_EVENTS['su:before_scoring_cleared'].type,

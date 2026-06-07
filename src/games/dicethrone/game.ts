@@ -47,15 +47,20 @@ import type {
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
-import { getNextPhase, getRollerId, getActiveDice, areTeammates } from './domain/rules';
+import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { diceThroneCheatModifier } from './domain/cheatModifier';
 import { diceThroneFlowHooks } from './domain/flowHooks';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { ASSETS } from './ui/assets';
-import { registerGameAiRuntime } from '../../engine/ai';
+import {
+    isManualSetupSelectionEnabledForSeat,
+    registerGameAiRuntime,
+    type ManualSetupSeatControllerLike,
+} from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
+import { resolveDiceThroneLocalPregameControlledPlayerId } from './localPregameControl';
 
 // ============================================================================
 // ActionLog 共享白名单 + 格式化
@@ -192,6 +197,41 @@ function formatDiceThroneActionEntry({
         // 如果包含 '.'，说明是 i18n key
         if (rawName.includes('.')) return rawName;
         return rawName;
+    };
+
+    const buildCompareRollParticipantLabelSegment = (participant: {
+        label?: string;
+        labelKey?: string;
+        labelParams?: Record<string, string | number>;
+    }): ActionLogSegment => {
+        if (participant.labelKey) {
+            return i18nSeg(participant.labelKey, participant.labelParams);
+        }
+        return { type: 'text', text: participant.label ?? '' };
+    };
+
+    const buildCompareRollDiceSegment = (participant: {
+        characterId?: string;
+        roll: number;
+    }): ActionLogSegment | null => {
+        if (!participant.characterId) return null;
+        const spriteAsset = getDiceDefinition(`${participant.characterId}-dice`)?.assets?.spriteSheet
+            ?? ASSETS.DICE_SPRITE(participant.characterId);
+        const SPRITE_COLS = 3;
+        const SPRITE_ROWS = 2;
+        const value = Math.max(1, Math.min(6, participant.roll));
+        const zeroBased = value - 1;
+        return {
+            type: 'diceResult',
+            spriteAsset,
+            spriteCols: SPRITE_COLS,
+            spriteRows: SPRITE_ROWS,
+            dice: [{
+                value,
+                col: zeroBased % SPRITE_COLS,
+                row: Math.floor(zeroBased / SPRITE_COLS),
+            }],
+        };
     };
 
     if (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD') {
@@ -557,6 +597,76 @@ function formatDiceThroneActionEntry({
                             paramI18nKeys,
                         ),
                     ],
+                });
+                return;
+            }
+        }
+
+        if (event.type === 'CHOICE_REQUESTED') {
+            const choiceRequestedEvent = event as GameEvent & {
+                payload?: {
+                    playerId?: PlayerId;
+                    titleKey?: string;
+                    compareRoll?: {
+                        contestants?: Array<{
+                            label?: string;
+                            labelKey?: string;
+                            labelParams?: Record<string, string | number>;
+                            roll: number;
+                            characterId?: string;
+                        }>;
+                        resultText?: string;
+                        resultTextKey?: string;
+                        resultTextParams?: Record<string, string | number>;
+                    };
+                };
+            };
+            const compareRoll = choiceRequestedEvent.payload?.compareRoll;
+            const contestants = compareRoll?.contestants;
+            if (Array.isArray(contestants) && contestants.length === 2) {
+                const first = contestants[0];
+                const second = contestants[1];
+                const firstDice = buildCompareRollDiceSegment(first);
+                const secondDice = buildCompareRollDiceSegment(second);
+                const segments: ActionLogSegment[] = [];
+
+                if (choiceRequestedEvent.payload?.titleKey) {
+                    segments.push(i18nSeg('actionLog.compareRollPrefix'));
+                    segments.push(i18nSeg(choiceRequestedEvent.payload.titleKey));
+                    segments.push({ type: 'text', text: ' ' });
+                }
+
+                segments.push(buildCompareRollParticipantLabelSegment(first));
+                segments.push({ type: 'text', text: ': ' });
+                if (firstDice) {
+                    segments.push(firstDice);
+                } else {
+                    segments.push({ type: 'text', text: String(first.roll) });
+                }
+                segments.push({ type: 'text', text: ' vs ' });
+                segments.push(buildCompareRollParticipantLabelSegment(second));
+                segments.push({ type: 'text', text: ': ' });
+                if (secondDice) {
+                    segments.push(secondDice);
+                } else {
+                    segments.push({ type: 'text', text: String(second.roll) });
+                }
+
+                if (compareRoll.resultTextKey || compareRoll.resultText) {
+                    segments.push({ type: 'text', text: ' ' });
+                    if (compareRoll.resultTextKey) {
+                        segments.push(i18nSeg(compareRoll.resultTextKey, compareRoll.resultTextParams));
+                    } else if (compareRoll.resultText) {
+                        segments.push({ type: 'text', text: compareRoll.resultText });
+                    }
+                }
+
+                entries.push({
+                    id: `COMPARE_ROLL-${choiceRequestedEvent.payload?.playerId ?? command.playerId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: choiceRequestedEvent.payload?.playerId ?? command.playerId,
+                    kind: 'COMPARE_ROLL',
+                    segments,
                 });
                 return;
             }
@@ -1170,8 +1280,280 @@ const adapterConfig = {
     commandTypes: COMMAND_TYPES,
 };
 
+const resolveDiceThroneForcedInteractionRecoveryCommand = (args: {
+    interaction: {
+        kind?: unknown;
+        data?: {
+            options?: unknown;
+        } | undefined;
+    };
+}) => {
+    const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
+    if (interactionKind === 'dt:token-response') {
+        return { type: 'SKIP_TOKEN_RESPONSE', payload: {} };
+    }
+    if (interactionKind === 'dt:bonus-dice') {
+        return { type: 'SKIP_BONUS_DICE_REROLL', payload: {} };
+    }
+    if (interactionKind !== 'dt:defender-choice') {
+        return null;
+    }
+
+    const options = Array.isArray(args.interaction.data?.options) ? args.interaction.data.options : [];
+    const enabledPlayerIds = options
+        .filter((option): option is { playerId: string; disabled?: unknown } =>
+            typeof (option as { playerId?: unknown } | undefined)?.playerId === 'string'
+                && (option as { disabled?: unknown } | undefined)?.disabled !== true,
+        )
+        .map((option) => option.playerId);
+
+    if (enabledPlayerIds.length !== 1) {
+        return null;
+    }
+
+    return {
+        type: 'SELECT_DEFENDER_TARGET',
+        payload: { defenderId: enabledPlayerIds[0] },
+    };
+};
+
+const buildDiceThronePendingDamageRecoveryFingerprintSignature = (pendingDamage: unknown): string => {
+    if (!pendingDamage || typeof pendingDamage !== 'object') {
+        return '';
+    }
+
+    const raw = pendingDamage as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
+        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
+        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
+        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
+        tokenUsageTotals: raw.tokenUsageTotals ?? null,
+    });
+};
+
+const buildDiceThronePendingBonusDiceSettlementRecoveryFingerprintSignature = (settlement: unknown): string => {
+    if (!settlement || typeof settlement !== 'object') {
+        return '';
+    }
+
+    const raw = settlement as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
+        displayOnly: raw.displayOnly === true ? true : null,
+        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
+        dice: raw.dice ?? null,
+    });
+};
+
+const buildDiceThroneDefenderChoiceRecoveryFingerprintOptionSignature = (options: unknown): string => {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+
+    return options
+        .map((option) => {
+            const item = option as { playerId?: unknown; customId?: unknown; disabled?: unknown } | undefined;
+            const playerId = typeof item?.playerId === 'string' ? item.playerId : '';
+            const customId = typeof item?.customId === 'string' ? item.customId : '';
+            const disabledFlag = item?.disabled === true ? '1' : '0';
+            return `${playerId}:${customId}:${disabledFlag}`;
+        })
+        .join(',');
+};
+
+const buildDiceThroneInteractionRecoveryFingerprintHint = (args: {
+    state: MatchState<unknown>;
+    playerId: string;
+    phase: string;
+    interaction: {
+        id?: unknown;
+        kind?: unknown;
+        data?: Record<string, unknown> | undefined;
+    };
+}): string | null => {
+    const interactionKind = typeof args.interaction.kind === 'string' ? args.interaction.kind : '';
+    const interactionId = typeof args.interaction.id === 'string' ? args.interaction.id : '';
+    const sourceId = typeof args.interaction.data?.sourceId === 'string' ? args.interaction.data.sourceId : '';
+
+    if (interactionKind === 'dt:defender-choice') {
+        const attackerId = typeof args.interaction.data?.attackerId === 'string' ? args.interaction.data.attackerId : '';
+        const targetRollValue = typeof args.interaction.data?.targetRollValue === 'number'
+            ? String(args.interaction.data.targetRollValue)
+            : '';
+        const optionSignature = buildDiceThroneDefenderChoiceRecoveryFingerprintOptionSignature(args.interaction.data?.options);
+        return `interaction:${args.playerId}:${args.phase}:dt:defender-choice:${sourceId}:${attackerId}:${targetRollValue}:${optionSignature}:${interactionId}`;
+    }
+
+    const core = args.state.core as {
+        pendingDamage?: unknown;
+        pendingBonusDiceSettlement?: unknown;
+    } | undefined;
+    if (interactionKind === 'dt:token-response') {
+        return `interaction:${args.playerId}:${args.phase}:dt:token-response:${sourceId}:${buildDiceThronePendingDamageRecoveryFingerprintSignature(core?.pendingDamage)}:${interactionId}`;
+    }
+    if (interactionKind === 'dt:bonus-dice') {
+        return `interaction:${args.playerId}:${args.phase}:dt:bonus-dice:${sourceId}:${buildDiceThronePendingBonusDiceSettlementRecoveryFingerprintSignature(core?.pendingBonusDiceSettlement)}:${interactionId}`;
+    }
+
+    return null;
+};
+
+const shouldSuppressDiceThroneUnsatisfiableInteractionFeedback = (args: {
+    sharedInteraction: { kind?: unknown } | null;
+    seatInteraction: { kind?: unknown } | null;
+    sharedSelectability: { selectionState?: unknown } | null;
+    seatSelectability: { selectionState?: unknown } | null;
+}): boolean => (
+    args.sharedInteraction?.kind === 'dt:defender-choice'
+    && args.seatInteraction?.kind === 'dt:defender-choice'
+    && args.sharedSelectability?.selectionState === 'no-options'
+    && args.seatSelectability?.selectionState === 'no-options'
+);
+
+const resolveDiceThroneSeatLegalOnlyRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    if (args.phase === 'offensiveRoll' || args.phase === 'targetingRoll' || args.phase === 'defensiveRoll') {
+        return null;
+    }
+
+    const core = args.state.core as {
+        pendingAttack?: unknown;
+        pendingBonusDiceSettlement?: {
+            id?: unknown;
+            attackerId?: unknown;
+            displayOnly?: unknown;
+        };
+    } | undefined;
+    if (core?.pendingAttack) {
+        return null;
+    }
+
+    const settlement = core?.pendingBonusDiceSettlement;
+    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+        return null;
+    }
+
+    const settlementId = typeof settlement.id === 'string' && settlement.id.length > 0
+        ? settlement.id
+        : 'unknown-display-only-settlement';
+
+    return {
+        playerId: settlement.attackerId,
+        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${args.phase || 'unknown-phase'}:${settlementId}`,
+        attemptSuffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
+        command: { type: 'SKIP_BONUS_DICE_REROLL', payload: {} },
+    };
+};
+
+const resolveDiceThroneOnlineAiCurrentPlayerId = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    if (args.phase !== 'defensiveRoll') {
+        return args.fallbackPlayerId;
+    }
+
+    const pendingAttack = (args.state.core as {
+        pendingAttack?: {
+            defenderId?: unknown;
+        };
+    } | undefined)?.pendingAttack;
+
+    return typeof pendingAttack?.defenderId === 'string'
+        ? pendingAttack.defenderId
+        : args.fallbackPlayerId;
+};
+
+const resolveDiceThroneManualSetupSelectionTakeoverPlayerId = (args: {
+    sharedState: MatchState<unknown>;
+    currentPlayerId: string | null;
+    seatControllers: Record<string, ManualSetupSeatControllerLike | undefined>;
+    hasManualDispatch: boolean;
+}): string | null => {
+    if (!args.hasManualDispatch) {
+        return null;
+    }
+
+    const manualAiSeatIds = Object.entries(args.seatControllers)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(controller))
+        .map(([playerId]) => playerId);
+    if (manualAiSeatIds.length === 0) {
+        return null;
+    }
+
+    const core = (args.sharedState.core as {
+        hostStarted?: unknown;
+        selectedCharacters?: unknown;
+    } | undefined);
+    if (core?.hostStarted !== false || !core.selectedCharacters || typeof core.selectedCharacters !== 'object') {
+        return null;
+    }
+
+    const selectedCharacters = core.selectedCharacters as Record<string, unknown>;
+    if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
+        const currentPlayerCharacter = selectedCharacters[args.currentPlayerId];
+        if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
+            return null;
+        }
+    }
+
+    return manualAiSeatIds.find((playerId) => {
+        const selectedCharacter = selectedCharacters[playerId];
+        return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';
+    }) ?? null;
+};
+
+const shouldReleaseDiceThroneManualSetupAttemptFromSharedState = (args: {
+    sharedState: MatchState<unknown>;
+    playerId: string;
+    actionKind: string;
+    selectionId: string;
+}): boolean | undefined => {
+    if (args.actionKind !== 'setup-select-character') {
+        return undefined;
+    }
+
+    const core = (args.sharedState.core as {
+        hostStarted?: unknown;
+        selectedCharacters?: unknown;
+    } | undefined);
+    const selectedCharacters = core?.selectedCharacters && typeof core.selectedCharacters === 'object'
+        ? core.selectedCharacters as Record<string, unknown>
+        : null;
+    if (selectedCharacters?.[args.playerId] === args.selectionId) {
+        return true;
+    }
+    return core?.hostStarted === true;
+};
+
 // 引擎配置
-export const engineConfig = createGameEngine(adapterConfig);
+export const engineConfig = {
+    ...createGameEngine(adapterConfig),
+    resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
+    onlineAiRecovery: {
+        activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
+        humanTurnLegalActionProbePhases: ['defensiveRoll', 'targetingRoll'],
+        resolveCurrentPlayerId: resolveDiceThroneOnlineAiCurrentPlayerId,
+        resolveManualSetupSelectionTakeoverPlayerId: resolveDiceThroneManualSetupSelectionTakeoverPlayerId,
+        shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseDiceThroneManualSetupAttemptFromSharedState,
+        buildInteractionRecoveryFingerprintHint: ({ state, playerId, phase, interaction }) =>
+            buildDiceThroneInteractionRecoveryFingerprintHint({ state, playerId, phase, interaction }),
+        resolveForcedInteractionCommand: resolveDiceThroneForcedInteractionRecoveryCommand,
+        resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
+        shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
+        offlineAdjudicationCommandByInteractionKind: {
+            'dt:token-response': 'SKIP_TOKEN_RESPONSE',
+            'dt:bonus-dice': 'SKIP_BONUS_DICE_REROLL',
+        },
+        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
+    },
+};
 
 export default engineConfig;
 

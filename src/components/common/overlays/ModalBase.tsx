@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { motion, type Variants } from 'framer-motion';
 import { memo, type ReactNode, type CSSProperties } from 'react';
 import { UI_Z_INDEX } from '../../../core';
+import { OverlayLayerProvider } from './OverlayLayerContext';
 
 interface ModalBaseProps {
     onClose?: () => void;
@@ -11,6 +12,10 @@ interface ModalBaseProps {
     containerClassName?: string;
     containerStyle?: CSSProperties;
     preserveKeyboardLayout?: boolean;
+    disableTextEntryAutoscroll?: boolean;
+    contentWrapperClassName?: string;
+    contentWrapperStyle?: CSSProperties;
+    visualStyle?: 'default' | 'home-v2';
     children: ReactNode;
 }
 
@@ -38,6 +43,18 @@ const contentVariants: Variants = {
     }
 };
 
+const homeV2ContentVariants: Variants = {
+    initial: { opacity: 0 },
+    animate: {
+        opacity: 1,
+        transition: { duration: 0.18, ease: 'easeOut' },
+    },
+    exit: {
+        opacity: 0,
+        transition: { duration: 0.12, ease: 'easeIn' },
+    },
+};
+
 export const ModalBase = memo(({
     onClose,
     closeOnBackdrop = true,
@@ -46,14 +63,22 @@ export const ModalBase = memo(({
     containerClassName,
     containerStyle,
     preserveKeyboardLayout = false,
+    disableTextEntryAutoscroll = false,
+    contentWrapperClassName,
+    contentWrapperStyle,
+    visualStyle = 'default',
     children,
 }: ModalBaseProps) => {
     const resolvedOverlayStyle: CSSProperties = { zIndex: UI_Z_INDEX.modalOverlay, ...overlayStyle };
+    const lockedViewportHeight = 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))';
+    const lockedBottomInset = visualStyle === 'home-v2'
+        ? 'var(--safe-area-bottom)'
+        : 'var(--runtime-modal-bottom-inset)';
     const lockedLayoutContainerStyle = preserveKeyboardLayout
         ? ({
-            '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-            '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-            '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+            '--modal-active-viewport-height': lockedViewportHeight,
+            '--modal-active-bottom-inset': lockedBottomInset,
+            '--modal-max-height': `calc(${lockedViewportHeight} - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, ${lockedBottomInset})))`,
         } as CSSProperties)
         : undefined;
     const resolvedContainerStyle: CSSProperties = {
@@ -61,6 +86,23 @@ export const ModalBase = memo(({
         ...lockedLayoutContainerStyle,
         ...containerStyle,
     };
+    const resolvedContentVariants = visualStyle === 'home-v2' ? homeV2ContentVariants : contentVariants;
+    const resolvedWillChange = visualStyle === 'home-v2' ? 'opacity' : 'transform, opacity';
+
+    const baseContainerClassName = visualStyle === 'home-v2'
+        ? 'fixed inset-0 flex items-center justify-center pointer-events-none'
+        : 'modal-base-container fixed inset-0 flex items-center justify-center pointer-events-none';
+    const homeV2ContainerStyle: CSSProperties | undefined = visualStyle === 'home-v2'
+        ? {
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            height: '100vh',
+            maxHeight: '100vh',
+            overflowY: 'visible',
+        }
+        : undefined;
 
     return (
         <>
@@ -78,19 +120,22 @@ export const ModalBase = memo(({
             />
 
             <motion.div
-                variants={contentVariants}
+                variants={resolvedContentVariants}
                 initial="initial"
                 animate="animate"
                 exit="exit"
                 className={clsx(
-                    'modal-base-container fixed inset-0 flex items-center justify-center pointer-events-none',
+                    baseContainerClassName,
                     containerClassName
                 )}
                 data-lock-layout-viewport={preserveKeyboardLayout ? 'true' : undefined}
-                style={{ willChange: 'transform, opacity', ...resolvedContainerStyle }}
+                data-text-entry-autoscroll={disableTextEntryAutoscroll ? 'off' : undefined}
+                style={{ willChange: resolvedWillChange, ...homeV2ContainerStyle, ...resolvedContainerStyle }}
             >
-                <div className="w-full flex justify-center">
-                    {children}
+                <div className={clsx('w-full flex justify-center', contentWrapperClassName)} style={contentWrapperStyle}>
+                    <OverlayLayerProvider tooltipZIndex={UI_Z_INDEX.modalTooltip}>
+                        {children}
+                    </OverlayLayerProvider>
                 </div>
             </motion.div>
         </>

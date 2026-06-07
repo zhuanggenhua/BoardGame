@@ -3,10 +3,12 @@ import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './scripts/infra/e2e-port-config.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from './scripts/infra/e2e-mode-config.js';
 import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
 import { ensureSharedTestApiToken } from './src/server/testApiToken';
 
 dotenv.config({ quiet: true });
+assertSafeE2EServerMode(process.env);
 
 const configuredWorkers = Number.parseInt(process.env.PW_WORKERS || '1', 10);
 const isMultiWorker = configuredWorkers > 1;
@@ -15,7 +17,7 @@ const SINGLE_WORKER_PORTS = E2E_SINGLE_WORKER_PORTS;
 const DEV_PORTS = DEV_SERVER_PORTS;
 
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
-const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+const useDevServers = resolveUseDevServers(process.env);
 const shouldStartServers = forceStartServers || !useDevServers;
 const shouldReuseExistingServers = !forceStartServers && !process.env.CI;
 const headedByEnv = process.env.PW_HEADED === 'true' || process.env.PWDEBUG === '1';
@@ -135,39 +137,6 @@ function collectForbiddenLocalModeSpecs(rootDir: string): string[] {
     return matches;
 }
 
-const ROOT_SMASHUP_DEPRECATED_SPECS = [
-    'e2e/smashup-alien-atlas-verify.e2e.ts',
-    'e2e/smashup-alien-cards-visual.e2e.ts',
-    'e2e/smashup-alien-terraform-verify.e2e.ts',
-    'e2e/smashup-check-dev-mode.e2e.ts',
-    'e2e/smashup-crypt-base.e2e.ts',
-    'e2e/smashup-gnome-skip.e2e.ts',
-    'e2e/smashup-local-gameplay.e2e.ts',
-    'e2e/smashup-multi-select-elder-thing-fixture.e2e.ts',
-    'e2e/smashup-multi-select-elder-thing.e2e.ts',
-    'e2e/smashup-multistep-pirates.e2e.ts',
-];
-
-function collectRootSmashUpSpecsMissingSkip(): string[] {
-    const matches: string[] = [];
-
-    for (const relativeSpecPath of ROOT_SMASHUP_DEPRECATED_SPECS) {
-        const absolutePath = path.join(process.cwd(), relativeSpecPath);
-        if (!fs.existsSync(absolutePath)) {
-            continue;
-        }
-
-        const content = fs.readFileSync(absolutePath, 'utf-8');
-        if (content.includes('test.describe.skip(') || content.includes('test.skip(')) {
-            continue;
-        }
-
-        matches.push(path.relative(process.cwd(), absolutePath).replace(/\\/g, '/'));
-    }
-
-    return matches;
-}
-
 if (!isMultiWorker) {
     process.env.GAME_SERVER_PORT = String(ports.gameServer);
     process.env.PW_GAME_SERVER_PORT = String(ports.gameServer);
@@ -182,7 +151,6 @@ const singleWorkerBaseURL = process.env.VITE_FRONTEND_URL || `http://127.0.0.1:$
 const e2eRootDir = path.join(process.cwd(), 'e2e');
 const multiWorkerSafeTests = collectFrameworkBackedTests(e2eRootDir);
 const forbiddenLocalModeSpecs = collectForbiddenLocalModeSpecs(e2eRootDir);
-const rootSmashUpSpecsMissingSkip = collectRootSmashUpSpecsMissingSkip();
 const explicitTestMatch = process.env.PW_TEST_MATCH?.trim();
 
 function hasExplicitPlaywrightTarget(argv: string[]): boolean {
@@ -220,12 +188,6 @@ function hasExplicitPlaywrightTarget(argv: string[]): boolean {
 const hasExplicitTarget = process.env.PW_HAS_EXPLICIT_TARGET === 'true'
     || Boolean(explicitTestMatch)
     || hasExplicitPlaywrightTarget(process.argv.slice(2));
-
-const LEGACY_DISCOVERY_BROKEN_TESTS = [
-    '**/dicethrone-toggle-die-lock-in-response-window.e2e.ts',
-    '**/ninja-hidden-ninja-skip-option.e2e.ts',
-    '**/summonerwars-illusion-fix.e2e.ts',
-];
 
 if (isMultiWorker) {
     console.log(`✅ E2E 测试模式：多 worker 并行（${configuredWorkers} workers，隔离端口）`);
@@ -266,17 +228,6 @@ if (forbiddenLocalModeSpecs.length > 0) {
     );
 }
 
-if (rootSmashUpSpecsMissingSkip.length > 0) {
-    throw new Error(
-        [
-            '检测到根级 SmashUp 旧测试文件被重新启用，已阻止本次 Playwright 运行。',
-            '这些文件依赖旧单页入口或调试全局，不得继续作为真实 online 覆盖使用：',
-            ...rootSmashUpSpecsMissingSkip.map((specPath) => `- ${specPath}`),
-            '如需恢复，请先迁到 `e2e/smashup/` 下的在线规范版本。',
-        ].join('\n'),
-    );
-}
-
 const testMatch = explicitTestMatch
     ? explicitTestMatch
     : isMultiWorker && multiWorkerSafeTests.length > 0
@@ -286,7 +237,6 @@ const testMatch = explicitTestMatch
 export default defineConfig({
     testDir: './e2e',
     testMatch,
-    testIgnore: LEGACY_DISCOVERY_BROKEN_TESTS,
     timeout: 30000,
     expect: {
         timeout: 5000,

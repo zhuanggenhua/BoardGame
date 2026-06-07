@@ -45,18 +45,94 @@ function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): P
     return [...turnOrder.slice(idx), ...turnOrder.slice(0, idx)];
 }
 
+function getValidReactionPlayerId(
+    turnOrder: PlayerId[],
+    preferredPlayerId: PlayerId | undefined,
+    fallbackPlayerId: PlayerId | undefined,
+): PlayerId | undefined {
+    if (preferredPlayerId && turnOrder.includes(preferredPlayerId)) return preferredPlayerId;
+    if (fallbackPlayerId && turnOrder.includes(fallbackPlayerId)) return fallbackPlayerId;
+    return turnOrder[0];
+}
+
+function normalizeReactionSessionPlayers(
+    state: MatchState<SmashUpCore>,
+    session: SmashUpReactionSession,
+): SmashUpReactionSession {
+    const turnOrder = state.core.turnOrder ?? [];
+    if (turnOrder.length === 0) return session;
+
+    const liveCurrentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
+    const currentPlayerId = getValidReactionPlayerId(
+        turnOrder,
+        session.currentPlayerId,
+        liveCurrentPlayerId,
+    );
+    const activePlayerId = getValidReactionPlayerId(
+        turnOrder,
+        session.activePlayerId,
+        currentPlayerId,
+    );
+
+    if (currentPlayerId === session.currentPlayerId && activePlayerId === session.activePlayerId) {
+        return session;
+    }
+
+    return {
+        ...session,
+        currentPlayerId: currentPlayerId ?? session.currentPlayerId,
+        activePlayerId: activePlayerId ?? session.activePlayerId,
+    };
+}
+
+function getNormalizedLegacyReactionWindow(
+    state: MatchState<SmashUpCore>,
+    legacyWindow: {
+        windowType?: 'meFirst' | 'afterScoring';
+        responderQueue?: PlayerId[];
+        currentResponderIndex?: number;
+        sourceBaseIndex?: number;
+        passedPlayers?: PlayerId[];
+    },
+): SmashUpReactionWindowPresentation | undefined {
+    const turnOrder = state.core.turnOrder ?? [];
+    if (turnOrder.length === 0) return undefined;
+
+    const filteredQueue = (legacyWindow.responderQueue ?? []).filter(playerId => turnOrder.includes(playerId));
+    const liveCurrentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
+    const currentPlayerId = liveCurrentPlayerId && turnOrder.includes(liveCurrentPlayerId)
+        ? liveCurrentPlayerId
+        : turnOrder[0];
+    if (!currentPlayerId) return undefined;
+    const activePlayerId = currentPlayerId;
+
+    const responderQueue = getClockwiseOrder(turnOrder, currentPlayerId);
+    return {
+        windowType: legacyWindow.windowType!,
+        activePlayerId,
+        currentPlayerId,
+        sourceBaseIndex: typeof legacyWindow.sourceBaseIndex === 'number'
+            ? legacyWindow.sourceBaseIndex
+            : undefined,
+        responderQueue,
+        currentResponderIndex: Math.max(0, responderQueue.indexOf(activePlayerId)),
+        passedPlayers: (legacyWindow.passedPlayers ?? []).filter(playerId => responderQueue.includes(playerId)),
+    };
+}
+
 export function getSmashUpReactionWindowContext(
     state: MatchState<SmashUpCore>,
 ): SmashUpReactionWindowContext | undefined {
     const session = getReactionSessionFromResolution(state);
     if (session?.responseWindowType) {
+        const normalizedSession = normalizeReactionSessionPlayers(state, session);
         const sourceBaseIndex = session.responseWindowType === 'afterScoring'
             ? getCurrentScoringBaseIndex(state)
             : session.sourceBaseIndex;
         return {
-            windowType: session.responseWindowType,
-            activePlayerId: session.activePlayerId,
-            currentPlayerId: session.currentPlayerId,
+            windowType: normalizedSession.responseWindowType,
+            activePlayerId: normalizedSession.activePlayerId,
+            currentPlayerId: normalizedSession.currentPlayerId,
             sourceBaseIndex,
         };
     }
@@ -67,21 +143,13 @@ export function getSmashUpReactionWindowContext(
         (legacyWindowType === 'meFirst' || legacyWindowType === 'afterScoring')
         && legacyWindow.responderQueue?.length
     ) {
-        const currentResponderIndex = Math.max(
-            0,
-            Math.min(legacyWindow.currentResponderIndex ?? 0, legacyWindow.responderQueue.length - 1),
-        );
-        const activePlayerId = legacyWindow.responderQueue[currentResponderIndex];
-        if (!activePlayerId) {
-            return undefined;
-        }
+        const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, legacyWindow);
+        if (!normalizedLegacyWindow) return undefined;
         return {
-            windowType: legacyWindowType,
-            activePlayerId,
-            currentPlayerId: legacyWindow.responderQueue[0] ?? activePlayerId,
-            sourceBaseIndex: typeof legacyWindow.sourceBaseIndex === 'number'
-                ? legacyWindow.sourceBaseIndex
-                : undefined,
+            windowType: normalizedLegacyWindow.windowType,
+            activePlayerId: normalizedLegacyWindow.activePlayerId,
+            currentPlayerId: normalizedLegacyWindow.currentPlayerId,
+            sourceBaseIndex: normalizedLegacyWindow.sourceBaseIndex,
         };
     }
 
@@ -93,21 +161,28 @@ export function getSmashUpReactionWindowPresentation(
 ): SmashUpReactionWindowPresentation | undefined {
     const session = getReactionSessionFromResolution(state);
     const responseWindow = state.sys.responseWindow?.current;
+    const interactionSourceId = (
+        state.sys.interaction?.current?.data as { sourceId?: string } | undefined
+    )?.sourceId;
 
     if (session?.responseWindowType) {
-        const responderQueue = getClockwiseOrder(state.core.turnOrder ?? [], session.currentPlayerId);
-        const currentResponderIndex = Math.max(0, responderQueue.indexOf(session.activePlayerId));
+        if (!responseWindow && interactionSourceId !== 'smashup_reaction_choose') {
+            return undefined;
+        }
+        const normalizedSession = normalizeReactionSessionPlayers(state, session);
+        const responderQueue = getClockwiseOrder(state.core.turnOrder ?? [], normalizedSession.currentPlayerId);
+        const currentResponderIndex = Math.max(0, responderQueue.indexOf(normalizedSession.activePlayerId));
         const mirroredPassedPlayers = responseWindow?.sourceId === 'smashup_reaction_choose'
             ? (responseWindow.passedPlayers ?? [])
             : [];
-        const sourceBaseIndex = session.responseWindowType === 'afterScoring'
+        const sourceBaseIndex = normalizedSession.responseWindowType === 'afterScoring'
             ? getCurrentScoringBaseIndex(state)
-            : session.sourceBaseIndex;
+            : normalizedSession.sourceBaseIndex;
 
         return {
-            windowType: session.responseWindowType,
-            activePlayerId: session.activePlayerId,
-            currentPlayerId: session.currentPlayerId,
+            windowType: normalizedSession.responseWindowType,
+            activePlayerId: normalizedSession.activePlayerId,
+            currentPlayerId: normalizedSession.currentPlayerId,
             sourceBaseIndex,
             responderQueue,
             currentResponderIndex,
@@ -118,6 +193,11 @@ export function getSmashUpReactionWindowPresentation(
     const fallbackContext = getSmashUpReactionWindowContext(state);
     if (!fallbackContext || !responseWindow?.responderQueue?.length) {
         return undefined;
+    }
+
+    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as any);
+    if (normalizedLegacyWindow) {
+        return normalizedLegacyWindow;
     }
 
     return {

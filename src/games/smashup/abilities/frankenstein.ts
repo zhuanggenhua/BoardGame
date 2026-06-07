@@ -399,11 +399,16 @@ const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMob
         const selected = value as ({ __cancel__?: boolean } & Partial<AngryMobCardChoiceValue & AngryMobStopChoiceValue>) | undefined;
         if (selected?.__cancel__ || selected?.stop) return { events: [] };
         if (!selected?.cardUid || !selected?.defId) return { events: [] };
+        const sourceCard = state.core.players[playerId]?.hand.find(card =>
+            card.uid === selected.cardUid && card.defId === selected.defId,
+        );
+        if (!sourceCard) return { events: [] };
 
         const deckBottomEvents = buildValidatedCardToDeckBottomEvents(state, {
-            cardUid: selected.cardUid,
-            defId: selected.defId,
-            ownerId: playerId,
+            cardUid: sourceCard.uid,
+            defId: sourceCard.defId,
+            ownerId: sourceCard.owner,
+            sourcePlayerId: playerId,
             reason: 'frankenstein_angry_mob',
             now: timestamp,
             expectedLocation: 'hand',
@@ -499,14 +504,13 @@ const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShop
         const nextRemaining = currentRemaining - 1;
         if (nextRemaining <= 0) return { events };
 
-        const nextState = withSimulatedMatchState(state, events);
-        if (buildBodyShopDistributeOptions(nextState.core, playerId, nextRemaining).length === 0) {
+        if (buildBodyShopDistributeOptions(state.core, playerId, nextRemaining).length === 0) {
             return { events };
         }
 
         return {
             events,
-            context: createPromptContext(nextState, playerId, timestamp, { remaining: nextRemaining }),
+            context: createPromptContext(state, playerId, timestamp, { remaining: nextRemaining }),
             nextProgram: frankensteinBodyShopDistributePromptProgram,
         };
     },
@@ -769,17 +773,20 @@ const frankensteinBlitzedProgram = createEffectProgram<AbilityContext, SmashUpCo
     nextProgram: frankensteinBlitzedRemovePromptProgram,
 }));
 
+function isFrankensteinGermanEngineeringEligible(ctx: TriggerContext): boolean {
+    const { state, baseIndex, playerId } = ctx;
+    if (baseIndex === undefined) return false;
+    const base = state.bases[baseIndex];
+    if (!base) return false;
+    return base.ongoingActions.some((action) =>
+        matchesDefId(action.defId, 'frankenstein_german_engineering')
+        && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
+    );
+}
+
 const frankensteinGermanEngineeringDslProgram = createEffectDslProgram<TriggerContext>(
     optionalPrimitive({
-        when: (ctx) => {
-            const { state, baseIndex, triggerMinionUid, playerId } = ctx;
-            if (baseIndex === undefined || !triggerMinionUid) return false;
-            const base = state.bases[baseIndex];
-            if (!base) return false;
-            return base.ongoingActions.some((action) =>
-                matchesDefId(action.defId, 'frankenstein_german_engineering') && action.ownerId === playerId,
-            );
-        },
+        when: (ctx) => !!ctx.triggerMinionUid && isFrankensteinGermanEngineeringEligible(ctx),
         effect: addPowerCounterPrimitive<TriggerContext>({
             minionUid: (ctx) => ctx.triggerMinionUid,
             baseIndex: (ctx) => ctx.baseIndex,
@@ -831,12 +838,18 @@ function registerFrankensteinOngoingEffects(): void {
     registerTrigger('frankenstein_igor', 'onMinionDiscardedFromBase', (ctx: TriggerContext) => {
         const isIgor = ctx.triggerMinionDefId === 'frankenstein_igor' || ctx.triggerMinionDefId === 'frankenstein_igor_pod';
         if (!isIgor || ctx.baseIndex === undefined || !ctx.triggerMinionUid) return [];
+        // Igor 的“destroyed or discarded”在 destroy -> discard 真链里只应结算一次；
+        // 若当前 discard trigger 来自 processDestroyTriggers 的 destroy 落地，交给 onDestroy 处理即可。
+        if (typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:')) {
+            return [];
+        }
 
         const base = ctx.state.bases[ctx.baseIndex];
-        const igor = base?.minions.find((minion) => minion.uid === ctx.triggerMinionUid);
-        if (!igor) return [];
-
-        const controllerId = igor.controller;
+        // queued discarded-from-base triggers may execute after Igor has already left the base,
+        // so prefer triggerMinion LKI and only fall back to live base lookup for direct callers.
+        const controllerId = ctx.triggerMinion?.controller
+            ?? base?.minions.find((minion) => minion.uid === ctx.triggerMinionUid)?.controller;
+        if (!controllerId) return [];
         const options = buildCounterTargetOptions(
             ctx.state,
             controllerId,
@@ -869,6 +882,9 @@ function registerFrankensteinOngoingEffects(): void {
 
     registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) =>
         executeAbilityProgram(frankensteinGermanEngineeringDslProgram, ctx).events, {
+        sourceScope: 'triggerBase',
+        canTrigger: isFrankensteinGermanEngineeringEligible,
+        perInstance: true,
     }, {
     });
     registerTriggerProgramExecutor(
@@ -878,17 +894,19 @@ function registerFrankensteinOngoingEffects(): void {
     );
 
     registerTrigger('frankenstein_grave_situation', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, baseIndex, triggerMinionUid, triggerMinionDefId, playerId, now } = ctx;
+        const { state, baseIndex, triggerMinionUid, triggerMinionDefId, now } = ctx;
         if (baseIndex === undefined || !triggerMinionUid || !triggerMinionDefId) return [];
         const base = state.bases[baseIndex];
         if (!base) return [];
+        const minion = ctx.triggerMinion
+            ?? base.minions.find((candidate) => candidate.uid === triggerMinionUid);
+        const controllerId = minion?.controller;
+        if (!controllerId) return [];
         const hasGraveSituation = base.ongoingActions.some((action) =>
-            matchesDefId(action.defId, 'frankenstein_grave_situation') && action.ownerId === playerId,
+            matchesDefId(action.defId, 'frankenstein_grave_situation')
+            && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === controllerId),
         );
         if (!hasGraveSituation) return [];
-
-        const minion = base.minions.find((candidate) => candidate.uid === triggerMinionUid);
-        if (!minion || minion.controller !== playerId) return [];
 
         return [{
             type: SU_EVENTS.MINION_RETURNED,
@@ -897,6 +915,7 @@ function registerFrankensteinOngoingEffects(): void {
                 minionDefId: triggerMinionDefId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: minion.owner,
+                sourcePlayerId: controllerId,
                 reason: 'frankenstein_grave_situation',
             },
             timestamp: now,
@@ -907,20 +926,38 @@ function registerFrankensteinOngoingEffects(): void {
 
     registerTrigger('frankenstein_uberserum', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+                for (const minion of state.bases[baseIndex].minions) {
+                    const attachment = minion.attachedActions.find((action) =>
+                        action.uid === ctx.sourceCardUid
+                        && matchesDefId(action.defId, 'frankenstein_uberserum'),
+                    );
+                    if (!attachment) continue;
+                    const attachmentControllerId = ((attachment.metadata?.sourceControllerId as PlayerId | undefined) ?? attachment.ownerId);
+                    if (attachmentControllerId !== playerId) return [];
+                    return [addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_uberserum', now)];
+                }
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
             for (const minion of state.bases[baseIndex].minions) {
-                const hasUberserum = minion.attachedActions.some((action) =>
-                    matchesDefId(action.defId, 'frankenstein_uberserum') && action.ownerId === playerId,
+                const matchingAttachments = minion.attachedActions.filter((action) =>
+                    matchesDefId(action.defId, 'frankenstein_uberserum')
+                    && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
                 );
-                if (hasUberserum) {
+                for (const _attachment of matchingAttachments) {
                     events.push(addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_uberserum', now));
                 }
             }
         }
         return events;
     }, {
-    }, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 
     registerProtection('frankenstein_uberserum', 'destroy', (ctx) =>

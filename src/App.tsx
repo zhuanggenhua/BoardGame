@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -17,30 +17,32 @@ import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
 import { GlobalErrorBoundary } from './components/system/GlobalErrorBoundary';
 import { BrowserCompatibilityGate } from './components/system/BrowserCompatibilityGate';
-import { AndroidLiveUpdateManager } from './components/system/AndroidLiveUpdateManager';
+import { MobileLiveUpdateManager } from './components/system/MobileLiveUpdateManager';
 import { AndroidNativeUpdateManager } from './components/system/AndroidNativeUpdateManager';
 import { AndroidBackNavigationBridge } from './components/system/AndroidBackNavigationBridge';
 import { GamePageRescueGate } from './components/system/GamePageRescueGate';
 import { LoadingScreen } from './components/system/LoadingScreen';
 import { TextEntryAutoScrollAgent } from './components/system/TextEntryAutoScrollAgent';
 import { MobileTextEntryProxyLayer } from './components/system/MobileTextEntryProxyLayer';
+import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
 import { installGlobalErrorContextCapture } from './lib/feedback/errorContext';
 import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
+import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
-
-import { HomeEntry } from './pages/HomeEntry';
-import { NotFound } from './pages/NotFound';
-import { MaintenancePage } from './pages/Maintenance';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
 // 页面级懒加载：首页是默认入口，保留同步加载避免首屏闪出路由级 loading 文案
 const MatchRoom = React.lazy(() => import('./pages/MatchRoomWithAudio'));
+const LocalMatchRoom = React.lazy(() => import('./pages/LocalMatchRoomWithAudio'));
 const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'));
+const LazyHomeEntry = React.lazy(() => import('./pages/HomeEntry').then(m => ({ default: m.HomeEntry })));
+const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
 const LazyGlobalHUD = React.lazy(() => import('./components/system/GlobalHUD').then(m => ({ default: m.GlobalHUD })));
 const LazyModalStackRoot = React.lazy(() => import('./components/system/ModalStackRoot').then(m => ({ default: m.ModalStackRoot })));
@@ -64,9 +66,6 @@ const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import(
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
-const UgcBuilderPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UnifiedBuilderWithAudio')) : null;
-const UgcSandboxPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UGCSandbox')) : null;
-const UgcRuntimeViewPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/runtime/RuntimeViewPage')) : null;
 const HomeV2AuthoringPage = ENABLE_INTERNAL_DEVTOOLS
   ? React.lazy(() => import('./pages/HomeV2Draft').then(m => ({ default: m.HomeV2Draft })))
   : null;
@@ -91,9 +90,52 @@ const DevMobileEvidenceCaptureAgent = import.meta.env.DEV
     )
   : null;
 
+const AppRouteChrome = ({
+  isNativeAndroid,
+  isNativeMobile,
+}: {
+  isNativeAndroid: boolean;
+  isNativeMobile: boolean;
+}) => {
+  const location = useLocation();
+  const isPlayRoute = location.pathname.startsWith('/play/');
+
+  return (
+    <>
+      {DevMobileEvidenceCaptureAgent ? (
+        <React.Suspense fallback={null}>
+          <DevMobileEvidenceCaptureAgent />
+        </React.Suspense>
+      ) : null}
+      {isNativeAndroid ? <AndroidBackNavigationBridge /> : null}
+      <TextEntryAutoScrollAgent />
+      <MobileTextEntryProxyLayer />
+      <ViewportDebugProbe />
+      {!isPlayRoute ? (
+        <React.Suspense fallback={null}>
+          <LazyGlobalHUD />
+        </React.Suspense>
+      ) : null}
+      <React.Suspense fallback={null}>
+        <LazyModalStackRoot />
+      </React.Suspense>
+      <React.Suspense fallback={null}>
+        <LazyToastViewport />
+      </React.Suspense>
+      <Toaster />
+      {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
+      {isNativeMobile ? <MobileLiveUpdateManager /> : null}
+      {!isPlayRoute ? <PcWebMascot /> : null}
+      <EngineNotificationListener />
+      <GamePageRescueGate />
+    </>
+  );
+};
+
 const AppContent = () => {
   const { t } = useTranslation('lobby');
   const isNativeAndroid = isNativeAndroidRuntime();
+  const isNativeMobile = isNativeMobileRuntime();
   
   // Token 自动刷新
   useTokenRefresh();
@@ -103,7 +145,7 @@ const AppContent = () => {
     installGlobalErrorContextCapture();
     const initialLoader = document.getElementById('initial-loader');
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-    const shouldKeepBootstrapLoader = pathname.startsWith('/play/');
+    const shouldKeepBootstrapLoader = pathname.startsWith('/play/') || pathname.startsWith('/dev/');
     if (initialLoader && !shouldKeepBootstrapLoader) {
       initialLoader.remove();
     }
@@ -134,13 +176,25 @@ const AppContent = () => {
                   <Routes>
                     <Route
                       path="/"
-                      element={<HomeEntry />}
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyHomeEntry />
+                        </React.Suspense>
+                      )}
                     />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
                         <React.Suspense fallback={playRouteFallback}>
                           <MatchRoom />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/play/:gameId/local"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LocalMatchRoom />
                         </React.Suspense>
                       )}
                     />
@@ -178,15 +232,6 @@ const AppContent = () => {
                     {ENABLE_INTERNAL_DEVTOOLS && HomeV2PreviewPage && (
                       <Route path={HOME_V2_PREVIEW_PATH} element={<React.Suspense fallback={null}><HomeV2PreviewPage /></React.Suspense>} />
                     )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcBuilderPage && (
-                      <Route path="/dev/ugc" element={<React.Suspense fallback={null}><UgcBuilderPage /></React.Suspense>} />
-                    )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcSandboxPage && (
-                      <Route path="/dev/ugc/sandbox" element={<React.Suspense fallback={null}><UgcSandboxPage /></React.Suspense>} />
-                    )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcRuntimeViewPage && (
-                      <Route path="/dev/ugc/runtime-view" element={<React.Suspense fallback={null}><UgcRuntimeViewPage /></React.Suspense>} />
-                    )}
                     {ENABLE_INTERNAL_DEVTOOLS && SmashUp4PLayoutTest && (
                       <Route path="/dev/smashup-4p-layout" element={<React.Suspense fallback={null}><SmashUp4PLayoutTest /></React.Suspense>} />
                     )}
@@ -208,7 +253,14 @@ const AppContent = () => {
                         </React.Suspense>
                       )}
                     />
-                    <Route path="/maintenance" element={<MaintenancePage />} />
+                    <Route
+                      path="/maintenance"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyMaintenancePage />
+                        </React.Suspense>
+                      )}
+                    />
 
                     {/* Admin Routes */}
                     <Route path="/admin" element={
@@ -254,31 +306,16 @@ const AppContent = () => {
                       <Route path="notifications" element={renderAdminOnly(<NotificationsPage />)} />
                     </Route>
 
-                    <Route path="*" element={<NotFound />} />
+                    <Route
+                      path="*"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <LazyNotFound />
+                        </React.Suspense>
+                      )}
+                    />
                     </Routes>
-                    {DevMobileEvidenceCaptureAgent ? (
-                      <React.Suspense fallback={null}>
-                        <DevMobileEvidenceCaptureAgent />
-                      </React.Suspense>
-                    ) : null}
-                    {isNativeAndroid ? <AndroidBackNavigationBridge /> : null}
-                    <TextEntryAutoScrollAgent />
-                    <MobileTextEntryProxyLayer />
-                    <ViewportDebugProbe />
-                    <React.Suspense fallback={null}>
-                      <LazyGlobalHUD />
-                    </React.Suspense>
-                    <React.Suspense fallback={null}>
-                      <LazyModalStackRoot />
-                    </React.Suspense>
-                    <React.Suspense fallback={null}>
-                      <LazyToastViewport />
-                    </React.Suspense>
-                    <Toaster />
-                    {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
-                    {isNativeAndroid ? <AndroidLiveUpdateManager /> : null}
-                    <EngineNotificationListener />
-                    <GamePageRescueGate />
+                    <AppRouteChrome isNativeAndroid={isNativeAndroid} isNativeMobile={isNativeMobile} />
                 </MobileOrientationGuard>
                 </BrowserCompatibilityGate>
               </BrowserRouter>

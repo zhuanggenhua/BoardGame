@@ -4,7 +4,7 @@
  * 测试完整流程：
  * 1. 打出能力卡 → CHOICE_REQUESTED 事件
  * 2. 事件系统创建 Interaction
- * 3. 玩家响应 SYS_INTERACTION_RESPOND → SYS_INTERACTION_RESOLVED
+ * 3. 玩家响应交互 → SYS_INTERACTION_RESOLVED
  * 4. 继续函数执行 → 生成后续领域事件（MINION_MOVED/CARDS_DRAWN 等）
  */
 
@@ -13,16 +13,22 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
-import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    expectNoPrompt,
+    expectRegisteredInteractionHandlerContract,
+    expectRegisteredPromptContinuationContract,
+    expectRegisteredRuntimePromptHandlerContract,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -98,7 +104,7 @@ describe('Prompt 响应链集成测试', () => {
                 'robot_tech_center',
             ];
             for (const id of interactionAbilities) {
-                const handler = getInteractionHandler(id) ?? getAbilityRuntimePromptHandler(id);
+                const handler = expectRegisteredPromptContinuationContract(id);
                 expect(handler, `${id} 交互处理函数或 runtime prompt 应已注册`).toBeDefined();
             }
         });
@@ -136,7 +142,7 @@ describe('Prompt 响应链集成测试', () => {
 
             // 如果只有一个基地有随从，麦田怪圈会自动选择，不创建 Interaction
             // 需要两个基地都有随从才会触发 Interaction
-            expect(result1.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(result1.finalState);
         });
     });
 
@@ -147,7 +153,7 @@ describe('Prompt 响应链集成测试', () => {
                 name: '无 Prompt 时响应',
                 commands: [
                     ...DRAFT_COMMANDS,
-                    { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'test' } },
+                    respondCommand('test', '0'),
                 ],
             });
 
@@ -181,8 +187,7 @@ describe('Prompt 响应链集成测试', () => {
 
             // 游戏初始化成功
             expect(result.finalState.core.turnOrder).toHaveLength(2);
-            expect(result.finalState.sys.interaction.current).toBeUndefined();
-            expect(result.finalState.sys.interaction.queue).toEqual([]);
+            expectNoPrompt(result.finalState);
         });
     });
 });
@@ -198,13 +203,13 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('pirate_cannon (加农炮)', () => {
         it('第一次选择的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_cannon_choose_first');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_cannon_choose_first');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
 
         it('第二次选择的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_cannon_choose_second');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_cannon_choose_second');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -212,7 +217,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('zombie_grave_digger (掘墓人)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('zombie_grave_digger');
+            const handler = expectRegisteredRuntimePromptHandlerContract('zombie_grave_digger');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -220,13 +225,13 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('pirate_shanghai (上海)', () => {
         it('选择随从的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_shanghai_choose_minion');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_shanghai_choose_minion');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
 
         it('选择基地的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_shanghai_choose_base');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_shanghai_choose_base');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -234,7 +239,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('alien_crop_circles (麦田怪圈)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('alien_crop_circles');
+            const handler = expectRegisteredRuntimePromptHandlerContract('alien_crop_circles');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -242,7 +247,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('alien_scout_return (侦察兵回手)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('alien_scout_return');
+            const handler = expectRegisteredRuntimePromptHandlerContract('alien_scout_return');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -269,6 +274,6 @@ describe('SYS_PROMPT_RESOLVED 触发继续执行', () => {
             commands: DRAFT_COMMANDS,
         });
 
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 });

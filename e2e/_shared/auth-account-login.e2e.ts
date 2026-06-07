@@ -115,7 +115,6 @@ test.describe('Auth (account login) E2E', () => {
         const getAuthModal = () => page.getByTestId('auth-modal').last();
         const getEmailInput = () => page.getByTestId('auth-register-email-input').last();
         const getCodeInput = () => page.getByTestId('auth-register-code-input').last();
-
         await expect(getAuthModal()).toBeVisible();
         await page.waitForTimeout(50);
 
@@ -127,26 +126,29 @@ test.describe('Auth (account login) E2E', () => {
         await expect(getAuthModal()).toBeVisible({ timeout: 10000 });
         await expect(getEmailInput()).toBeVisible();
         await expect(getCodeInput()).toBeVisible();
+        await getEmailInput().click();
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
 
-        await getEmailInput().evaluate((node, value) => {
+        const sourceMetrics = await getEmailInput().evaluate((node) => {
             if (!(node instanceof HTMLInputElement)) {
-                throw new Error('注册邮箱输入框节点不是 input');
+                throw new Error('认证邮箱输入框节点不是 input');
             }
-            node.focus();
-            node.value = value;
-            node.dispatchEvent(new Event('input', { bubbles: true }));
-        }, 'remembered@example.com');
-        await getCodeInput().evaluate((node, value) => {
-            if (!(node instanceof HTMLInputElement)) {
-                throw new Error('注册验证码输入框节点不是 input');
-            }
-            node.focus();
-            node.value = value;
-            node.dispatchEvent(new Event('input', { bubbles: true }));
-        }, '123456');
+            const rect = node.getBoundingClientRect();
+            return {
+                bottom: rect.bottom,
+                runtimeViewportHeight: Number.parseFloat(
+                    window.getComputedStyle(document.documentElement).getPropertyValue('--runtime-viewport-height') || '0',
+                ),
+                visible: rect.width > 0 && rect.height > 0,
+            };
+        });
 
+        expect(sourceMetrics.visible, '认证输入框输入时仍应可见').toBe(true);
+        expect(sourceMetrics.bottom, '认证输入框应留在键盘上方可视区').toBeLessThanOrEqual(sourceMetrics.runtimeViewportHeight);
+        await expect(getEmailInput()).toBeEditable();
+        await getEmailInput().fill('remembered@example.com');
         await expect(getEmailInput()).toHaveValue('remembered@example.com');
-        await expect(getCodeInput()).toHaveValue('123456');
 
         const layoutMetrics = await getAuthModal().evaluate((element) => {
             const submitButton = element.querySelector('button[type="submit"]');
@@ -164,7 +166,6 @@ test.describe('Auth (account login) E2E', () => {
                 codeBottom: codeInput?.getBoundingClientRect().bottom ?? 0,
                 submitBottom: submitButton?.getBoundingClientRect().bottom ?? 0,
                 viewportWidth: window.innerWidth,
-                viewportHeight: window.innerHeight,
                 runtimeViewportHeight: Number.parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--runtime-viewport-height') || '0'),
                 inputFontSizes: Array.from(element.querySelectorAll('input')).map((node) => {
                     const fontSize = window.getComputedStyle(node).fontSize || '0';

@@ -1,0 +1,4 @@
+interface:
+  display_name: "BoardGame PR Review Merge"
+  short_description: "Review, fix, merge, and fully close BoardGame PRs"
+  default_prompt: "Use $github-pr-review-merge for BoardGame PR work. Unless the user explicitly says review-only or push-only, the task is not complete until the original PR is merged or explicitly blocked, and no related PR is left open for manual cleanup."

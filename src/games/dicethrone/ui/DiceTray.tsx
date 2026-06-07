@@ -148,7 +148,9 @@ export const DiceTray = ({
     const canToggleDieLock = canInteract && rollCount > 0;
 
     const handleDieClick = (dieId: number) => {
-        if (isRolling && !isInteractionMode) return;
+        // 掷骰结果已进入权威状态后，允许玩家立刻锁骰，
+        // 不要让本地最短动画窗口吞掉真实点击。
+        if (isRolling && !isInteractionMode && rollCount === 0) return;
 
         if (isInteractionMode && !isAnyMode && multistepInteraction) {
             // set / copy / selectDie 模式：点击骰子 = step(select/toggle)
@@ -258,15 +260,17 @@ export const DiceTray = ({
                                         ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-lg scale-105' : ''}
                                     `}
                                 >
-                                    <Dice3D
-                                        value={displayValue}
-                                        isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
-                                        index={i}
-                                        size={diceSize}
-                                        locale={locale}
-                                        characterId={d.definitionId?.replace('-dice', '')}
-                                        definitionId={d.definitionId}
-                                    />
+                                    <div className="pointer-events-none">
+                                        <Dice3D
+                                            value={displayValue}
+                                            isRolling={(isRolling && !d.isKept) || (rerollingDiceIds?.includes(d.id) ?? false)}
+                                            index={i}
+                                            size={diceSize}
+                                            locale={locale}
+                                            characterId={d.definitionId?.replace('-dice', '')}
+                                            definitionId={d.definitionId}
+                                        />
+                                    </div>
                                     {!isInteractionMode && d.isKept && (
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                                             <div className={`${lockedLabelClassName} font-black text-white bg-black/50 rounded uppercase tracking-wider shadow-sm border border-white/20`}>

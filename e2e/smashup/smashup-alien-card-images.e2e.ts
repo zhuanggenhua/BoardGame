@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test';
 import { test, expect, type GameTestContext } from '../framework';
-import { computeSpriteStyle, generateUniformAtlasConfig } from '../src/engine/primitives/spriteAtlas';
-import { getCardDef } from '../src/games/smashup/data/cards';
-import { SMASHUP_ATLAS_DEFINITIONS } from '../src/games/smashup/domain/atlasCatalog';
-import { SMASHUP_ATLAS_IDS } from '../src/games/smashup/domain/ids';
+import { computeSpriteStyle, generateUniformAtlasConfig } from '../../src/engine/primitives/spriteAtlas';
+import { getCardDef } from '../../src/games/smashup/data/cards';
+import { SMASHUP_ATLAS_DEFINITIONS } from '../../src/games/smashup/domain/atlasCatalog';
+import { SMASHUP_ATLAS_IDS } from '../../src/games/smashup/domain/ids';
 
 const ALIEN_CARD_IDS = ['alien_probe', 'alien_terraform', 'alien_crop_circles'] as const;
 const BASES = ['base_the_homeworld', 'base_the_mothership'] as const;

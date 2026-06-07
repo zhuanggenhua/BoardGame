@@ -190,7 +190,8 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         effects: [
             {
                 description: abilityEffectText('magma-armor', 'main'),
-                action: { type: 'custom', target: 'self', customActionId: 'magma-armor-resolve' }
+                action: { type: 'custom', target: 'self', customActionId: 'magma-armor-resolve' },
+                timing: 'withDamage',
             }
         ]
     },
@@ -476,7 +477,8 @@ export const MAGMA_ARMOR_2: AbilityDef = {
     effects: [
         {
             description: abilityEffectText('magma-armor-2', 'main'),
-            action: { type: 'custom', target: 'self', customActionId: 'magma-armor-2-resolve' }
+            action: { type: 'custom', target: 'self', customActionId: 'magma-armor-2-resolve' },
+            timing: 'withDamage',
         }
     ]
 };
@@ -490,7 +492,8 @@ export const MAGMA_ARMOR_3: AbilityDef = {
     effects: [
         {
             description: abilityEffectText('magma-armor-3', 'main'),
-            action: { type: 'custom', target: 'self', customActionId: 'magma-armor-3-resolve' }
+            action: { type: 'custom', target: 'self', customActionId: 'magma-armor-3-resolve' },
+            timing: 'withDamage',
         }
     ]
 };

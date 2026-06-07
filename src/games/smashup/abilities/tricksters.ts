@@ -29,10 +29,12 @@ import type {
 import type { MinionCardDef } from '../domain/types';
 import { matchesDefId } from '../domain/utils';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
+import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
+import { reduce } from '../domain/reduce';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -91,6 +93,10 @@ function createTricksterPromptContext<TExtra extends Record<string, unknown> = R
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
+    return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
 }
 
 function buildTricksterGnomePromptOptions(
@@ -303,21 +309,36 @@ const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPrompt
             { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'player', autoCancelOption: true },
         );
     },
-    onResolve: ({ state, value }) => {
+    onResolve: ({ context, state, value }) => {
         if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
         const selected = value as { noActions?: string[]; noMove?: string[] } | undefined;
         const noActions = selected?.noActions ?? [];
         const noMove = selected?.noMove ?? [];
-        const expiresOnTurnNumber = state.core.turnNumber + state.core.turnOrder.length;
+        const existingRestrictions = (state.core.playerRestrictionsUntilTurnStart ?? []).filter(
+            entry => !(entry.sourceDefId === 'trickster_mark_of_sleep_pod' && entry.sourcePlayerId === context.playerId),
+        );
+        const nextRestrictions = [
+            ...existingRestrictions,
+            ...noActions.map(pid => ({
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: context.playerId,
+                targetPlayerId: pid,
+                restrictionType: 'play_action' as const,
+            })),
+            ...noMove.map(pid => ({
+                sourceDefId: 'trickster_mark_of_sleep_pod',
+                sourcePlayerId: context.playerId,
+                targetPlayerId: pid,
+                restrictionType: 'move_minion' as const,
+            })),
+        ];
         return {
             events: [],
             matchState: {
                 ...state,
                 core: {
                     ...state.core,
-                    sleepMarkedPlayers: noActions.length ? noActions : undefined,
-                    sleepMoveMarkedPlayers: noMove.length ? noMove : undefined,
-                    sleepMarkExpiresOnTurnNumber: expiresOnTurnNumber,
+                    playerRestrictionsUntilTurnStart: nextRestrictions.length ? nextRestrictions : undefined,
                 } as any,
             },
         };
@@ -384,7 +405,13 @@ function buildTricksterControlledMinionOptions(
             options.push({
                 id: `minion-${options.length}`,
                 label: `${name} (力量 ${power})`,
-                value: { minionUid: minion.uid, baseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    baseDefId: base.defId,
+                },
                 _source: 'minion',
                 displayMode: 'card',
             });
@@ -411,7 +438,13 @@ function buildTricksterBaseControlledMinionOptions(
             return {
                 id: `minion-${index}`,
                 label: `${name} (力量 ${power})`,
-                value: { minionUid: minion.uid, baseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    baseDefId: base.defId,
+                },
                 _source: 'minion' as const,
                 displayMode: 'card' as const,
             };
@@ -435,7 +468,13 @@ function buildHideoutPodDestroyOptions(
                 return {
                     id: `minion-${index}`,
                     label: `${name} (战斗力 ${power})`,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'minion' as const,
                     displayMode: 'card' as const,
                 };
@@ -525,6 +564,10 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
         const hideout = base?.ongoingActions.find(ongoing => ongoing.uid === context.hideoutUid);
         const player = state.core.players[playerId];
         if (!base || !hideout || !player) return { events: [] };
+        const selectedCard = selected.zone === 'hand'
+            ? player.hand.find(card => card.uid === selected.cardUid && card.defId === selected.defId)
+            : player.deck.find(card => card.uid === selected.cardUid && card.defId === selected.defId);
+        if (!selectedCard) return { events: [] };
 
         const nextHand = selected.zone === 'hand'
             ? player.hand.filter(card => card.uid !== selected.cardUid)
@@ -554,7 +597,7 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
                         ...currentBase,
                         ongoingActions: [
                             ...currentBase.ongoingActions.filter(ongoing => ongoing.uid !== context.hideoutUid),
-                            { uid: selected.cardUid!, defId: selected.defId!, ownerId: playerId, talentUsed: false },
+                            { uid: selected.cardUid!, defId: selected.defId!, ownerId: selectedCard.owner, talentUsed: false },
                         ],
                     };
                 }),
@@ -1112,6 +1155,70 @@ function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
 // Ongoing 拦截器注册?
 // ============================================================================
 
+function canTriggerTricksterBaseOngoingAgainstOtherPlayer(
+    ctx: TriggerContext,
+    sourceDefId: string,
+    options?: { requiresHand?: boolean; exactDefId?: boolean },
+): boolean {
+    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return false;
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return false;
+    const matchesSource = (ongoing: typeof base.ongoingActions[number]) =>
+        options?.exactDefId ? ongoing.defId === sourceDefId : matchesDefId(ongoing.defId, sourceDefId);
+    if (options?.requiresHand && ((ctx.state.players[ctx.playerId]?.hand.length ?? 0) === 0)) return false;
+    return base.ongoingActions.some((ongoing) => {
+        if (ctx.sourceCardUid && ongoing.uid !== ctx.sourceCardUid) return false;
+        if (!matchesSource(ongoing)) return false;
+        const controllerId = ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+        return controllerId !== ctx.playerId;
+    });
+}
+
+function canTriggerTricksterLeprechaun(ctx: TriggerContext, sourceDefId: string, options?: { exactDefId?: boolean }): boolean {
+    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return false;
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return false;
+    const playedMinion = base.minions.find(minion => minion.uid === ctx.triggerMinionUid);
+    if (!playedMinion) return false;
+    const playedPower = getMinionPower(ctx.state, playedMinion, ctx.baseIndex);
+    return base.minions.some((leprechaun) => {
+        if (ctx.sourceCardUid && leprechaun.uid !== ctx.sourceCardUid) return false;
+        const matchesSource = options?.exactDefId
+            ? leprechaun.defId === sourceDefId
+            : matchesDefId(leprechaun.defId, sourceDefId);
+        if (!matchesSource || leprechaun.controller === ctx.playerId) return false;
+        if (options?.exactDefId && (leprechaun as any).metadata?.leprechaunPodLastTurnTriggered === ctx.state.turnNumber) {
+            return false;
+        }
+        return playedPower < getMinionPower(ctx.state, leprechaun, ctx.baseIndex!);
+    });
+}
+
+function canTriggerTricksterBrowniePod(ctx: TriggerContext): boolean {
+    if (!ctx.triggerMinionUid || ctx.baseIndex === undefined) return false;
+    return ctx.state.bases.some((base, baseIndex) =>
+        baseIndex !== ctx.baseIndex
+        && base.minions.some((brownie) => {
+            if (brownie.defId !== 'trickster_brownie_pod' || brownie.controller === ctx.playerId) return false;
+            if ((brownie as any).metadata?.browniePodLastTurnTriggered === ctx.state.turnNumber) return false;
+            const player = ctx.state.players[brownie.controller];
+            return ((player?.deck.length ?? 0) + (player?.discard.length ?? 0)) > 0;
+        }));
+}
+
+function canTriggerTricksterBrownieAffected(ctx: TriggerContext): boolean {
+    if (ctx.triggerMinionDefId !== 'trickster_brownie') return false;
+    if (ctx.sourceCardUid && ctx.sourceCardUid !== ctx.triggerMinionUid) return false;
+    const controlChangeFromController =
+        ctx.affectType === 'control_change'
+        && ctx.affectEvent?.type === SU_EVENTS.MINION_CONTROL_CHANGED
+            ? (ctx.affectEvent as any).payload?.fromControllerId
+            : undefined;
+    const brownieOwner = controlChangeFromController ?? ctx.triggerMinion?.controller;
+    if (!brownieOwner || brownieOwner === ctx.playerId) return false;
+    return (ctx.state.players[ctx.playerId]?.hand.length ?? 0) > 0;
+}
+
 /** 注册诡术师派系的 ongoing 拦截?*/
 function registerTricksterOngoingEffects(): void {
     // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随从
@@ -1120,40 +1227,48 @@ function registerTricksterOngoingEffects(): void {
         // 找到 leprechaun 所在基地
         for (let i = 0; i < trigCtx.state.bases.length; i++) {
             const base = trigCtx.state.bases[i];
-            const leprechaun = base.minions.find(m => matchesDefId(m.defId, 'trickster_leprechaun'));
-            if (!leprechaun) continue;
             // 只在同基地触?
             if (i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
-            if (leprechaun.controller === trigCtx.playerId) continue;
-            // 检查打出的随从力量是否低于 leprechaun
-            const lepPower = getMinionPower(trigCtx.state, leprechaun, i);
             const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
             if (!triggerMinion) continue;
             const trigPower = getMinionPower(trigCtx.state, triggerMinion, i);
-            if (trigPower < lepPower) {
-                return [{
-                    type: SU_EVENTS.MINION_DESTROYED,
-                    payload: {
-                        minionUid: trigCtx.triggerMinionUid,
-                        minionDefId: trigCtx.triggerMinionDefId,
-                        fromBaseIndex: i,
-                        ownerId: trigCtx.playerId,
-                        reason: 'trickster_leprechaun',
-                    },
-                    timestamp: trigCtx.now,
-                }];
+            for (const leprechaun of base.minions.filter(m => matchesDefId(m.defId, 'trickster_leprechaun'))) {
+                // 只对其他玩家触发
+                if (leprechaun.controller === trigCtx.playerId) continue;
+                // 检查打出的随从力量是否低于 leprechaun
+                const lepPower = getMinionPower(trigCtx.state, leprechaun, i);
+                if (trigPower < lepPower) {
+                    return [{
+                        type: SU_EVENTS.MINION_DESTROYED,
+                        payload: {
+                            minionUid: trigCtx.triggerMinionUid,
+                            minionDefId: trigCtx.triggerMinionDefId,
+                            fromBaseIndex: i,
+                            ownerId: triggerMinion.owner,
+                            controllerId: triggerMinion.controller,
+                            destroyerId: leprechaun.controller,
+                            reason: 'trickster_leprechaun',
+                        },
+                        timestamp: trigCtx.now,
+                    }];
+                }
             }
         }
         return [];
     }, {
+        canTrigger: (ctx) => canTriggerTricksterLeprechaun(ctx, 'trickster_leprechaun'),
     });
 
     // 布朗尼：被对手卡牌效果影响时，对手弃两张牌
     // "影响"包含：消灭、移动、负力量修改、附着对手行动卡（规则术语映射）
     registerTrigger('trickster_brownie', 'onMinionAffected', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_brownie') return [];
-        const brownieOwner = trigCtx.triggerMinion?.controller;
+        const controlChangeFromController =
+            trigCtx.affectType === 'control_change'
+            && trigCtx.affectEvent?.type === SU_EVENTS.MINION_CONTROL_CHANGED
+                ? (trigCtx.affectEvent as any).payload?.fromControllerId
+                : undefined;
+        const brownieOwner = controlChangeFromController ?? trigCtx.triggerMinion?.controller;
         if (!brownieOwner || brownieOwner === trigCtx.playerId) return [];
         // 对手（触发影响的玩家）弃两张牌
         const opponent = trigCtx.state.players[trigCtx.playerId];
@@ -1172,102 +1287,115 @@ function registerTricksterOngoingEffects(): void {
             timestamp: trigCtx.now,
         }];
     }, {
+        canTrigger: canTriggerTricksterBrownieAffected,
+        playerContext: 'sourceController',
     });
 
     // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
     registerProtection('trickster_hideout', 'action', (ctx) => {
-        // 检查目标随从是否附着了 hideout（附着在随从上的情况）
-        const attachedHideout = ctx.targetMinion.attachedActions.find(a => matchesDefId(a.defId, 'trickster_hideout'));
-        if (attachedHideout) {
-            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
-            return ctx.targetMinion.controller === attachedHideout.ownerId && ctx.sourcePlayerId !== attachedHideout.ownerId;
-        }
+        // 同一位置上可能并存多张不同控制者的 Hideout，不能只拿第一张同名来源。
+        const hasAttachedProtection = ctx.targetMinion.attachedActions.some((attachedHideout) => {
+            if (attachedHideout.defId !== 'trickster_hideout') return false;
+            const controllerId = attachedHideout.metadata?.sourceControllerId ?? attachedHideout.ownerId;
+            return ctx.targetMinion.controller === controllerId && ctx.sourcePlayerId !== controllerId;
+        });
+        if (hasAttachedProtection) return true;
+
         // 也检查基地上的 ongoing（打在基地上的情况）
         const base = ctx.state.bases[ctx.targetBaseIndex];
-        const baseHideout = base?.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_hideout'));
-        if (baseHideout) {
-            // 只保护 Hideout 拥有者的随从，且行动卡来自对手
-            return ctx.targetMinion.controller === baseHideout.ownerId && ctx.sourcePlayerId !== baseHideout.ownerId;
-        }
-        return false;
+        return base?.ongoingActions.some((baseHideout) => {
+            if (baseHideout.defId !== 'trickster_hideout') return false;
+            const controllerId = baseHideout.metadata?.sourceControllerId ?? baseHideout.ownerId;
+            return ctx.targetMinion.controller === controllerId && ctx.sourcePlayerId !== controllerId;
+        }) ?? false;
     }, { consumable: true });
 
     // 火焰陷阱：其他玩家打出随从到此基地时消灭该随从
     registerTrigger('trickster_flame_trap', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
-        for (let i = 0; i < trigCtx.state.bases.length; i++) {
-            const base = trigCtx.state.bases[i];
-            const trap = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_flame_trap'));
-            if (!trap || i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
-            if (trap.ownerId === trigCtx.playerId) continue;
-            return [
-                // 消灭打出的随从
-                {
-                    type: SU_EVENTS.MINION_DESTROYED,
-                    payload: {
-                        minionUid: trigCtx.triggerMinionUid,
-                        minionDefId: trigCtx.triggerMinionDefId,
-                        fromBaseIndex: i,
-                        ownerId: trigCtx.playerId,
-                        reason: 'trickster_flame_trap',
-                    },
-                    timestamp: trigCtx.now,
+        const base = trigCtx.state.bases[trigCtx.baseIndex];
+        if (!base) return [];
+        const trap = trigCtx.sourceCardUid
+            ? base.ongoingActions.find(o => o.uid === trigCtx.sourceCardUid && matchesDefId(o.defId, 'trickster_flame_trap'))
+            : base.ongoingActions.find((o) =>
+                matchesDefId(o.defId, 'trickster_flame_trap')
+                && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
+        if (!trap) return [];
+        const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
+        if (controllerId === trigCtx.playerId) return [];
+        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
+        return [
+            {
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: {
+                    minionUid: trigCtx.triggerMinionUid,
+                    minionDefId: trigCtx.triggerMinionDefId,
+                    fromBaseIndex: trigCtx.baseIndex,
+                    ownerId: triggerMinion?.owner ?? trigCtx.playerId,
+                    controllerId: triggerMinion?.controller ?? trigCtx.playerId,
+                    destroyerId: controllerId,
+                    reason: 'trickster_flame_trap',
                 },
-                // 消灭火焰陷阱本身
-                {
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: {
-                        cardUid: trap.uid,
-                        defId: trap.defId,
-                        ownerId: trap.ownerId,
-                        reason: 'trickster_flame_trap_self_destruct',
-                    },
-                    timestamp: trigCtx.now,
+                timestamp: trigCtx.now,
+            },
+            {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: trap.uid,
+                    defId: trap.defId,
+                    ownerId: trap.ownerId,
+                    reason: 'trickster_flame_trap_self_destruct',
                 },
-            ];
-        }
-        return [];
+                timestamp: trigCtx.now,
+            },
+        ];
     }, {
+        canTrigger: (ctx) => canTriggerTricksterBaseOngoingAgainstOtherPlayer(ctx, 'trickster_flame_trap'),
     });
 
     // 封路：指定派系不能打出随从到此基地（描述无"对手"限定，对所有玩家生效）
     registerRestriction('trickster_block_the_path', 'play_minion', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return false;
-        const blockAction = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_block_the_path'));
-        if (!blockAction) return false;
-        // 检查被限制的派系
-        const blockedFaction = blockAction.metadata?.blockedFaction as string | undefined;
-        if (!blockedFaction) return false;
         // 检查打出的随从是否属于被限制的派系
         const minionDefId = ctx.extra?.minionDefId as string | undefined;
         if (!minionDefId) return false;
         const def = getCardDef(minionDefId);
-        return def?.faction === blockedFaction;
+        const minionFaction = def?.faction;
+        if (!minionFaction) return false;
+        return base.ongoingActions.some((ongoing) => {
+            if (!matchesDefId(ongoing.defId, 'trickster_block_the_path')) return false;
+            const blockedFaction = ongoing.metadata?.blockedFaction as string | undefined;
+            return blockedFaction === minionFaction;
+        });
     });
 
     // 付笛手的钱：对手打出随从后弃一张牌
     registerTrigger('trickster_pay_the_piper', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
-        for (let i = 0; i < trigCtx.state.bases.length; i++) {
-            const base = trigCtx.state.bases[i];
-            const piper = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_pay_the_piper'));
-            if (!piper || i !== trigCtx.baseIndex) continue;
-            // 只对其他玩家触发
-            if (piper.ownerId === trigCtx.playerId) continue;
-            // 对手随机弃一张牌
-            const opponent = trigCtx.state.players[trigCtx.playerId];
-            if (!opponent || opponent.hand.length === 0) continue;
-            const idx = Math.floor(trigCtx.random.random() * opponent.hand.length);
-            return [{
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: trigCtx.playerId, cardUids: [opponent.hand[idx].uid] },
-                timestamp: trigCtx.now,
-            }];
-        }
-        return [];
+        const base = trigCtx.state.bases[trigCtx.baseIndex];
+        if (!base) return [];
+        const piper = trigCtx.sourceCardUid
+            ? base.ongoingActions.find(o => o.uid === trigCtx.sourceCardUid && matchesDefId(o.defId, 'trickster_pay_the_piper'))
+            : base.ongoingActions.find((o) =>
+                matchesDefId(o.defId, 'trickster_pay_the_piper')
+                && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
+        if (!piper) return [];
+        const controllerId = piper.metadata?.sourceControllerId ?? piper.ownerId;
+        if (controllerId === trigCtx.playerId) return [];
+        const opponent = trigCtx.state.players[trigCtx.playerId];
+        if (!opponent || opponent.hand.length === 0) return [];
+        const idx = Math.floor(trigCtx.random.random() * opponent.hand.length);
+        return [{
+            type: SU_EVENTS.CARDS_DISCARDED,
+            payload: { playerId: trigCtx.playerId, cardUids: [opponent.hand[idx].uid] },
+            timestamp: trigCtx.now,
+        }];
     }, {
+        canTrigger: (ctx) => canTriggerTricksterBaseOngoingAgainstOtherPlayer(ctx, 'trickster_pay_the_piper', {
+            requiresHand: true,
+        }),
+        perInstance: true,
     });
 }
 
@@ -1283,14 +1411,15 @@ function registerTricksterPodOngoingEffects(): void {
         const { toBaseIndex, fromBaseIndex, minionUid } = (event as any).payload as { toBaseIndex: number; fromBaseIndex: number; minionUid: string };
         const toBase = state.bases[toBaseIndex];
         if (!toBase) return undefined;
-        const hideout = toBase.ongoingActions.find(o => o.defId === 'trickster_hideout_pod');
-        if (!hideout) return undefined;
         const fromBase = state.bases[fromBaseIndex];
         const moving = fromBase?.minions.find(m => m.uid === minionUid);
         if (!moving) return undefined;
-        // 近似规则：移动者通常是该随从的控制者
-        if (moving.controller !== hideout.ownerId) return null;
-        return undefined;
+        const blockedByAnyHideout = toBase.ongoingActions.some((ongoing) => {
+            if (ongoing.defId !== 'trickster_hideout_pod') return false;
+            const controllerId = ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+            return moving.controller !== controllerId;
+        });
+        return blockedByAnyHideout ? null : undefined;
     });
 
     // Leprechaun POD：每回合第一次“对手打出力量更低的随从到此基地（结算后仍在场）”时消灭之
@@ -1300,8 +1429,10 @@ function registerTricksterPodOngoingEffects(): void {
         const base = trigCtx.state.bases[baseIndex];
         if (!base) return [];
 
-        // 找到该基地上的 leprechaun（可能多个）
-        const leps = base.minions.filter(m => m.defId === 'trickster_leprechaun_pod');
+        // queued runtime 若已指明 sourceCardUid，必须只结算该实例，不能回退到基地扫描顺序里的第一只同名 POD。
+        const leps = trigCtx.sourceCardUid
+            ? base.minions.filter(m => m.uid === trigCtx.sourceCardUid && m.defId === 'trickster_leprechaun_pod')
+            : base.minions.filter(m => m.defId === 'trickster_leprechaun_pod');
         if (leps.length === 0) return [];
 
         // 触发的随从必须仍在该基地（避免 Twister 等在结算中移动）
@@ -1326,7 +1457,8 @@ function registerTricksterPodOngoingEffects(): void {
                     minionUid: playedMinion.uid,
                     minionDefId: playedMinion.defId,
                     fromBaseIndex: baseIndex,
-                    ownerId: trigCtx.playerId,
+                    ownerId: playedMinion.owner,
+                    controllerId: playedMinion.controller,
                     destroyerId: lep.controller,
                     reason: 'trickster_leprechaun_pod',
                 },
@@ -1346,6 +1478,9 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
+        canTrigger: (ctx) => canTriggerTricksterLeprechaun(ctx, 'trickster_leprechaun_pod', {
+            exactDefId: true,
+        }),
     });
 
     // Brownie POD：每回合一次，当对手在另一基地打出随从后，你抽 1 张牌
@@ -1353,6 +1488,7 @@ function registerTricksterPodOngoingEffects(): void {
         if (!trigCtx.triggerMinionUid || trigCtx.baseIndex === undefined) return [];
         // 对手打出的随从：playerId=打出者；需要找到所有 brownie_pod（可能多个）
         const events: SmashUpEvent[] = [];
+        let workingState = trigCtx.state;
         for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
             const base = trigCtx.state.bases[bi];
             for (const brownie of base.minions.filter(m => m.defId === 'trickster_brownie_pod')) {
@@ -1363,11 +1499,12 @@ function registerTricksterPodOngoingEffects(): void {
                 if (used === trigCtx.state.turnNumber) continue;
 
                 // 抽 1
-                const owner = trigCtx.state.players[ownerId];
+                const owner = workingState.players[ownerId];
                 if (!owner) continue;
-                const drawEvents = buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
+                const drawEvents = buildStandardDrawEvents(workingState, ownerId, 1, trigCtx.random, trigCtx.now);
                 if (drawEvents.length === 0) continue;
                 events.push(...drawEvents);
+                workingState = drawEvents.reduce((state, event) => reduce(state, event), workingState);
                 events.push({
                     type: SU_EVENTS.MINION_METADATA_UPDATED,
                     payload: {
@@ -1382,6 +1519,7 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
+        canTrigger: canTriggerTricksterBrowniePod,
     });
 
     // Gremlin POD：被消灭进入弃牌堆后抽 1；若被消灭则每位对手随机弃 1
@@ -1404,17 +1542,19 @@ function registerTricksterPodOngoingEffects(): void {
             } as CardsDiscardedEvent);
         }
         return events;
-    }, {
     });
 
     // Gremlin POD：基地计分清场时进入弃牌堆（非消灭）也抽 1
     registerTrigger('trickster_gremlin_pod', 'onMinionDiscardedFromBase', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_gremlin_pod') return [];
+        if (isDestroyPipelineDiscardTrigger(trigCtx)) return [];
         const ownerId = trigCtx.triggerMinion?.owner ?? trigCtx.playerId;
         const player = trigCtx.state.players[ownerId];
         if (!player) return [];
         return buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
     }, {
+        global: true,
+        globalZones: ['discard'],
     });
 
     // Flame Trap POD：对手打出随从到此基地后，先自毁再尝试消灭该随从
@@ -1423,9 +1563,15 @@ function registerTricksterPodOngoingEffects(): void {
         const bi = trigCtx.baseIndex;
         const base = trigCtx.state.bases[bi];
         if (!base) return [];
-        const trap = base.ongoingActions.find(o => o.defId === 'trickster_flame_trap_pod');
+        const trap = trigCtx.sourceCardUid
+            ? base.ongoingActions.find(o => o.uid === trigCtx.sourceCardUid && o.defId === 'trickster_flame_trap_pod')
+            : base.ongoingActions.find((o) =>
+                o.defId === 'trickster_flame_trap_pod'
+                && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
         if (!trap) return [];
-        if (trap.ownerId === trigCtx.playerId) return [];
+        const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
+        if (controllerId === trigCtx.playerId) return [];
+        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
         return [
             {
                 type: SU_EVENTS.ONGOING_DETACHED,
@@ -1438,21 +1584,26 @@ function registerTricksterPodOngoingEffects(): void {
                     minionUid: trigCtx.triggerMinionUid,
                     minionDefId: trigCtx.triggerMinionDefId,
                     fromBaseIndex: bi,
-                    ownerId: trigCtx.playerId,
-                    destroyerId: trap.ownerId,
+                    ownerId: triggerMinion?.owner ?? trigCtx.playerId,
+                    controllerId: triggerMinion?.controller ?? trigCtx.playerId,
+                    destroyerId: controllerId,
                     reason: 'trickster_flame_trap_pod',
                 },
                 timestamp: trigCtx.now,
             },
         ];
     }, {
+        canTrigger: (ctx) => canTriggerTricksterBaseOngoingAgainstOtherPlayer(ctx, 'trickster_flame_trap_pod', {
+            exactDefId: true,
+        }),
     });
 
     // Flame Trap POD：你回合开始时，可以让此基地本回合 breakpoint -4
     registerTrigger('trickster_flame_trap_pod', 'onTurnStart', (trigCtx) => {
         if (!trigCtx.matchState || trigCtx.sourceBaseIndex === undefined || !trigCtx.sourceCardUid) return [];
         const trap = trigCtx.state.bases[trigCtx.sourceBaseIndex]?.ongoingActions.find(ongoing => ongoing.uid === trigCtx.sourceCardUid);
-        if (!trap || trap.ownerId !== trigCtx.playerId) return [];
+        const controllerId = trap ? (trap.metadata?.sourceControllerId ?? trap.ownerId) : undefined;
+        if (!trap || controllerId !== trigCtx.playerId) return [];
         return executeAbilityProgram(
             tricksterFlameTrapPodBreakpointPromptProgram,
             createTricksterPromptContext(trigCtx.matchState, trigCtx.playerId, trigCtx.now, {
@@ -1461,6 +1612,7 @@ function registerTricksterPodOngoingEffects(): void {
             }) satisfies TricksterFlameTrapPodPromptContext,
         );
     }, {
+        playerContext: 'sourceController',
         perInstance: true,
     });
 
@@ -1470,9 +1622,14 @@ function registerTricksterPodOngoingEffects(): void {
         const bi = trigCtx.baseIndex;
         const base = trigCtx.state.bases[bi];
         if (!base) return [];
-        const piper = base.ongoingActions.find(o => o.defId === 'trickster_pay_the_piper_pod');
+        const piper = trigCtx.sourceCardUid
+            ? base.ongoingActions.find(o => o.uid === trigCtx.sourceCardUid && o.defId === 'trickster_pay_the_piper_pod')
+            : base.ongoingActions.find((o) =>
+                o.defId === 'trickster_pay_the_piper_pod'
+                && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
         if (!piper) return [];
-        if (piper.ownerId === trigCtx.playerId) return [];
+        const controllerId = piper.metadata?.sourceControllerId ?? piper.ownerId;
+        if (controllerId === trigCtx.playerId) return [];
         const opponent = trigCtx.state.players[trigCtx.playerId];
         if (!opponent || opponent.hand.length === 0) return [];
         const idx = Math.floor(trigCtx.random.random() * opponent.hand.length);
@@ -1482,6 +1639,11 @@ function registerTricksterPodOngoingEffects(): void {
             timestamp: trigCtx.now,
         } as CardsDiscardedEvent];
     }, {
+        canTrigger: (ctx) => canTriggerTricksterBaseOngoingAgainstOtherPlayer(ctx, 'trickster_pay_the_piper_pod', {
+            exactDefId: true,
+            requiresHand: true,
+        }),
+        perInstance: true,
     });
 
     // Block the Path POD：对每个对手指定其拥有的一个派系，阻止该对手派系随从打到此基地
@@ -1505,29 +1667,37 @@ function registerTricksterPodOngoingEffects(): void {
     registerRestriction('trickster_block_the_path_pod', 'play_minion', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return false;
-        const block = base.ongoingActions.find(o => o.defId === 'trickster_block_the_path_pod');
-        if (!block) return false;
-        const per = block.metadata?.blockedFactionsByPlayer as Record<string, string> | undefined;
-        const blockedFaction = per?.[ctx.playerId];
-        if (!blockedFaction) return false;
         const minionDefId = ctx.extra?.minionDefId as string | undefined;
         if (!minionDefId) return false;
         const def = getCardDef(minionDefId);
-        return def?.faction === blockedFaction;
+        const minionFaction = def?.faction;
+        if (!minionFaction) return false;
+        return base.ongoingActions.some((ongoing) => {
+            if (ongoing.defId !== 'trickster_block_the_path_pod') return false;
+            const per = ongoing.metadata?.blockedFactionsByPlayer as Record<string, string> | undefined;
+            return per?.[ctx.playerId] === minionFaction;
+        });
     });
 
     // Mark of Sleep POD：限制“被标记者”的移动（用事件拦截器实现）
     registerInterceptor('trickster_mark_of_sleep_pod', (state, event) => {
         if (event.type !== SU_EVENTS.MINION_MOVED) return undefined;
-        const marked = (state.sleepMoveMarkedPlayers ?? []) as string[];
-        if (marked.length === 0) return undefined;
         const { fromBaseIndex, minionUid } = (event as any).payload as { fromBaseIndex: number; minionUid: string };
         const fromBase = state.bases[fromBaseIndex];
         const minion = fromBase?.minions.find(m => m.uid === minionUid);
         if (!minion) return undefined;
+        const isRestricted = state.playerRestrictionsUntilTurnStart?.some(
+            entry =>
+                entry.sourceDefId === 'trickster_mark_of_sleep_pod'
+                && entry.targetPlayerId === minion.controller
+                && entry.restrictionType === 'move_minion',
+        ) ?? false;
+        const legacyMarked = (state.sleepMoveMarkedPlayers ?? []) as string[];
         const expires = (state.sleepMarkExpiresOnTurnNumber as number | undefined);
-        if (expires !== undefined && state.turnNumber >= expires) return undefined;
-        if (marked.includes(minion.controller)) return null;
+        const legacyRestricted =
+            legacyMarked.includes(minion.controller)
+            && (expires === undefined || state.turnNumber < expires);
+        if (isRestricted || legacyRestricted) return null;
         return undefined;
     });
 }

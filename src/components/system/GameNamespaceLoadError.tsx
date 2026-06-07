@@ -35,7 +35,11 @@ export const GameNamespaceLoadError = ({
     }, [gameId, navigate]);
 
     return (
-        <div data-bg-friendly-screen="true" className="relative w-full h-[100dvh] bg-black overflow-hidden font-sans flex items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div
+            data-bg-friendly-screen="true"
+            className="relative w-full bg-black overflow-hidden font-sans flex items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+            style={{ height: 'var(--runtime-viewport-height, 100vh)' }}
+        >
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/10 p-6 text-center shadow-2xl backdrop-blur-sm">
                 <h2 className="text-xl font-semibold text-white">
                     {title}

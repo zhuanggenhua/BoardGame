@@ -18,8 +18,13 @@ import { nanoid } from 'nanoid';
 import { connectDB } from './src/server/db';
 import { sanitizeChatText } from './src/server/chatUtils';
 import { MAX_CHAT_MESSAGES } from './src/shared/chat';
+import {
+    LOBBY_ALL,
+    LOBBY_EVENTS,
+} from './src/shared/lobby';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
+import { GAME_STATE_VALIDATORS } from './src/games/stateValidators';
 import { mongoStorage } from './src/server/storage/MongoStorage';
 import { hybridStorage } from './src/server/storage/HybridStorage';
 import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/storage/startupCleanup';
@@ -32,29 +37,24 @@ import {
     DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
     planDuplicateOwnerRoomCreate,
 } from './src/server/duplicateOwnerRooms';
+import { applyRematchVoteToggle, resolveRematchPlayerGroups } from './src/server/rematch';
+import {
+    createMatchEmoteRateLimiter,
+    type MatchEmoteRejectReason,
+    resolveMatchEmoteJoinDecision,
+    resolveMatchEmoteSendDecision,
+} from './src/server/matchEmotes';
+import { createLobbyCoordinator } from './src/server/lobbyCoordinator';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
-import { resolveSeatPlayerDisplayName } from './src/engine/ai';
+import { getAiSeatIds } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
-import type { MatchMetadata, MatchStorage } from './src/engine/transport/storage';
-import { resolveMatchStatus } from './src/engine/transport/storage';
+import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
+import { buildMatchDetailPayload } from './src/server/lobbyMatch';
 import logger, { gameLogger } from './server/logger';
 import { createTrainingDataRecorderFromEnv } from './server/trainingDataRecorder';
 import { requestLogger, errorHandler } from './server/middleware/logging';
-
-// ============================================================================
-// 事件常量（与前端保持一致）
-// ============================================================================
-
-const LOBBY_EVENTS = {
-    SUBSCRIBE_LOBBY: 'lobby:subscribe',
-    UNSUBSCRIBE_LOBBY: 'lobby:unsubscribe',
-    LOBBY_UPDATE: 'lobby:update',
-    MATCH_CREATED: 'lobby:matchCreated',
-    MATCH_UPDATED: 'lobby:matchUpdated',
-    MATCH_ENDED: 'lobby:matchEnded',
-    HEARTBEAT: 'lobby:heartbeat',
-} as const;
+import { buildLeaderboardEntries } from './src/server/leaderboard';
 
 const REMATCH_EVENTS = {
     JOIN_MATCH: 'rematch:join',
@@ -73,6 +73,14 @@ const MATCH_CHAT_EVENTS = {
     HISTORY: 'matchChat:history',
 } as const;
 
+const MATCH_EMOTE_EVENTS = {
+    JOIN: 'matchEmote:join',
+    LEAVE: 'matchEmote:leave',
+    SEND: 'matchEmote:send',
+    SHOW: 'matchEmote:show',
+    ERROR: 'matchEmote:error',
+} as const;
+
 // ============================================================================
 // 重赛投票状态
 // ============================================================================
@@ -85,6 +93,55 @@ interface RematchVoteState {
 const rematchStateByMatch = new Map<string, RematchVoteState>();
 const matchSubscribers = new Map<string, Set<string>>();
 
+const normalizeRematchPlayerIds = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(
+        value
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item) => item.trim()),
+    )];
+};
+
+const resolveAutoAcceptedRematchPlayerIds = async (
+    matchID: string,
+    requestedPlayerIds: unknown,
+): Promise<string[]> => {
+    const requested = normalizeRematchPlayerIds(requestedPlayerIds);
+    if (requested.length === 0) return [];
+
+    try {
+        const result = await storage.fetch(matchID, { metadata: true });
+        const setupData = result.metadata?.setupData && typeof result.metadata.setupData === 'object' && !Array.isArray(result.metadata.setupData)
+            ? result.metadata.setupData as { seatControllers?: Record<string, { type?: unknown } | undefined> }
+            : undefined;
+        const aiSeatIds = new Set(getAiSeatIds(setupData?.seatControllers));
+        return requested.filter((playerId) => aiSeatIds.has(playerId));
+    } catch (error) {
+        logger.warn('[RematchIO] 自动同意 AI 座位校验失败', {
+            matchID,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return [];
+    }
+};
+
+const scheduleRematchStateReset = (matchId: string): void => {
+    setTimeout(() => {
+        const currentState = rematchStateByMatch.get(matchId);
+        if (currentState) {
+            currentState.votes = {};
+            currentState.ready = false;
+            currentState.revision += 1;
+            lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
+        }
+    }, 1000);
+};
+
+const updateRematchReady = (state: RematchVoteState): void => {
+    const votedPlayers = Object.entries(state.votes).filter(([, v]) => v).map(([p]) => p);
+    state.ready = votedPlayers.length >= 2;
+};
+
 // 对局聊天历史缓存（内存，对局结束后自动清理）
 interface ChatHistoryMessage {
     id: string;
@@ -96,10 +153,41 @@ interface ChatHistoryMessage {
 }
 const chatHistoryByMatch = new Map<string, ChatHistoryMessage[]>();
 
-const LOBBY_ROOM = 'lobby:subscribers';
-const LOBBY_ALL = 'all';
-const LOBBY_ALL_ROOM = `${LOBBY_ROOM}:${LOBBY_ALL}`;
-const LOBBY_HEARTBEAT_INTERVAL = 15000;
+interface MatchEmotePayload {
+    matchId: string;
+    playerId: string;
+    emoteId: string;
+    createdAt: string;
+}
+
+const matchEmoteRateLimiter = createMatchEmoteRateLimiter();
+
+const emitMatchEmoteError = (
+    socket: IOSocket,
+    reason: MatchEmoteRejectReason,
+    ack?: (response: { ok: false; reason: MatchEmoteRejectReason }) => void,
+) => {
+    const response = { ok: false as const, reason };
+    socket.emit(MATCH_EMOTE_EVENTS.ERROR, response);
+    ack?.(response);
+};
+
+const resolvePlayableMatchEmoteContext = async (
+    matchId: string,
+    playerId: string,
+): Promise<{ metadata: MatchMetadata; gameId: string } | { reason: Exclude<MatchEmoteRejectReason, 'missing_payload' | 'invalid_emote' | 'rate_limited' | 'not_joined'> }> => {
+    const result = await storage.fetch(matchId, { metadata: true });
+    const metadata = result.metadata;
+    const decision = resolveMatchEmoteJoinDecision(metadata, playerId);
+    if (!decision.ok) {
+        return { reason: decision.reason };
+    }
+
+    return {
+        metadata,
+        gameId: decision.gameId,
+    };
+};
 
 // ============================================================================
 // 游戏注册
@@ -111,7 +199,6 @@ const ENABLED_GAME_ENTRIES = GAME_SERVER_MANIFEST.filter(
 
 const SUPPORTED_GAMES: string[] = [];
 type SupportedGame = string;
-type LobbyGameId = SupportedGame | typeof LOBBY_ALL;
 
 const normalizeGameName = (name?: string) => (name || '').toLowerCase();
 const isSupportedGame = (gameName: string): gameName is SupportedGame => {
@@ -235,7 +322,12 @@ const archiveMatchResult = async ({
         const winnerSeatID = gameover?.winner !== undefined ? String(gameover.winner) : undefined;
         const resultType = winnerSeatID ? 'win' : 'draw';
 
-        const players: Array<{ id: string; name: string; result: string; ownerKey?: string }> = [];
+        const setupData = metadata?.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
+            ? metadata.setupData as { seatControllers?: Record<string, { type?: unknown } | undefined> }
+            : undefined;
+        const aiSeatIds = new Set(getAiSeatIds(setupData?.seatControllers));
+
+        const players: Array<{ id: string; name: string; result: string; ownerKey?: string; isAi?: boolean }> = [];
         let winnerOwnerKey: string | undefined;
         if (metadata?.players) {
             for (const [seatId, pdata] of Object.entries(metadata.players)) {
@@ -248,8 +340,9 @@ const archiveMatchResult = async ({
                 players.push({
                     id: playerId,
                     name,
-                    result: isWinner ? 'win' : resultType === 'draw' ? 'draw' : 'loss',
                     ownerKey,
+                    isAi: aiSeatIds.has(seatId),
+                    result: isWinner ? 'win' : resultType === 'draw' ? 'draw' : 'loss',
                 });
             }
         }
@@ -317,6 +410,9 @@ if (USE_PERSISTENT_STORAGE) {
     logger.info('[GameServer] 当前以纯内存模式启动，跳过 Mongo / UGC / 排行榜归档');
 }
 const { engines: SERVER_ENGINES, gameIds: SERVER_GAME_IDS } = await buildServerEngines();
+const SERVER_GAME_MANIFEST_BY_ID = Object.fromEntries(
+    GAME_SERVER_MANIFEST.map(({ manifest }) => [manifest.id, manifest]),
+);
 registerSupportedGames(SERVER_GAME_IDS);
 
 // 创建 Koa 应用
@@ -368,9 +464,7 @@ const gameTransport = new GameTransportServer({
     io,
     storage,
     games: SERVER_ENGINES,
-    gameManifests: Object.fromEntries(
-        GAME_SERVER_MANIFEST.map((entry) => [normalizeGameName(entry.manifest.id), entry.manifest]),
-    ),
+    gameManifests: SERVER_GAME_MANIFEST_BY_ID,
     trainingDataRecorder,
     trainingDataMinMatchDurationMs: TRAINING_DATA_MIN_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,
@@ -391,9 +485,17 @@ const gameTransport = new GameTransportServer({
         // 通知大厅更新（房间仍存在，标记为 gameover，大厅列表显示为已结束）
         const game = normalizeGameName(gameName);
         if (game && isSupportedGame(game)) {
-            scheduleLobbySnapshot(game, `gameover: ${matchID}`);
+            lobbyCoordinator.scheduleLobbySnapshot(game, `gameover: ${matchID}`);
         }
     },
+});
+
+const lobbyCoordinator = createLobbyCoordinator<SupportedGame>({
+    storage,
+    supportedGames: SUPPORTED_GAMES,
+    isSupportedGame,
+    normalizeGameName,
+    logger,
 });
 
 // claim-seat handler
@@ -405,6 +507,9 @@ const claimSeatHandler = createClaimSeatHandler({
         },
         setMetadata: async (matchID: string, metadata: unknown) => {
             await storage.setMetadata(matchID, metadata as MatchMetadata);
+        },
+        claimSeatMetadata: async (matchID: string, input: ClaimSeatMetadataInput) => {
+            return await storage.claimSeatMetadata(matchID, input);
         },
     } as unknown as Parameters<typeof createClaimSeatHandler>[0]['db'],
     auth: {
@@ -558,9 +663,9 @@ const cleanupMatchRoom = async (
 
     const game = normalizeGameName(metadata?.gameName);
     if (emitRemoval && game && isSupportedGame(game)) {
-        emitMatchEnded(game, matchID);
+        lobbyCoordinator.emitMatchEnded(game, matchID);
     } else {
-        matchGameIndex.delete(matchID);
+        lobbyCoordinator.forgetLobbyMatch(matchID);
     }
 
     matchSubscribers.delete(matchID);
@@ -609,11 +714,11 @@ router.get('/internal/rooms', async (ctx) => {
         if (!isSupportedGame(requestedGame)) {
             ctx.throw(400, `Game ${ctx.query.gameName} not found`);
         }
-        ctx.body = { items: await getLobbySnapshot(requestedGame) };
+        ctx.body = { items: await lobbyCoordinator.getLobbySnapshot(requestedGame) };
         return;
     }
 
-    ctx.body = { items: await getLobbySnapshotAll() };
+    ctx.body = { items: await lobbyCoordinator.getLobbySnapshotAll() };
 });
 
 router.delete('/internal/rooms/:matchID', async (ctx) => {
@@ -622,7 +727,7 @@ router.delete('/internal/rooms/:matchID', async (ctx) => {
         ctx.throw(400, 'Missing matchID');
     }
 
-    const deleted = await destroyLobbyRoom(matchID);
+    const deleted = await lobbyCoordinator.destroyLobbyRoom(matchID);
     ctx.body = { deleted, matchID };
 });
 
@@ -638,7 +743,7 @@ router.post('/internal/rooms/bulk-delete', async (ctx) => {
 
     let deleted = 0;
     for (const matchID of uniqueIds) {
-        const ok = await destroyLobbyRoom(matchID);
+        const ok = await lobbyCoordinator.destroyLobbyRoom(matchID);
         if (ok) {
             deleted++;
         }
@@ -861,7 +966,7 @@ router.post('/games/:name/create', async (ctx) => {
         ownerCredentials,
     };
 
-    setTimeout(() => void handleMatchCreated(matchID, gameName), 100);
+    setTimeout(() => void lobbyCoordinator.handleMatchCreated(matchID, gameName), 100);
 });
 
 // POST /games/:name/:matchID/join — 加入对局
@@ -921,8 +1026,10 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
         return;
     }
 
-    // 分配凭证
-    const joinSeat = resolveJoinSeat(result.metadata.players, requestedPlayerID);
+    const latestMetadataForJoin = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
+
+    // 分配凭证时必须基于最新 metadata，避免旧 join 请求把其它 seat 的最新信息覆回去。
+    const joinSeat = resolveJoinSeat(latestMetadataForJoin.players, requestedPlayerID);
     if (!joinSeat.playerID) {
         if (joinSeat.reason === 'player_not_found') {
             ctx.throw(404, `Player ${requestedPlayerID} not found`);
@@ -938,7 +1045,7 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
 
     const playerID = joinSeat.playerID;
     const credentials = nanoid(21);
-    const metadata = result.metadata;
+    const metadata = latestMetadataForJoin;
 
     // 解析真实用户标识
     const authHeader = ctx.get('authorization');
@@ -971,7 +1078,7 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
 
     ctx.body = { playerID, playerCredentials: credentials };
 
-    setTimeout(() => void handleMatchJoined(matchID, gameName), 100);
+    setTimeout(() => void lobbyCoordinator.handleMatchJoined(matchID, gameName), 100);
 });
 
 // POST /games/:name/:matchID/leave — 离开对局（释放座位）
@@ -998,7 +1105,7 @@ router.post('/games/:name/:matchID/leave', async (ctx) => {
         return;
     }
 
-    const metadata = result.metadata;
+    const metadata = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
     const playerMeta = metadata.players[playerID];
     if (!playerMeta) {
         ctx.throw(404, `Player ${playerID} not found`);
@@ -1031,7 +1138,7 @@ router.post('/games/:name/:matchID/leave', async (ctx) => {
 
     ctx.body = {};
 
-    setTimeout(() => void handleMatchLeft(matchID, gameName), 100);
+    setTimeout(() => void lobbyCoordinator.handleMatchLeft(matchID, gameName), 100);
 });
 
 // POST /games/:name/:matchID/destroy — 销毁对局
@@ -1072,7 +1179,7 @@ router.post('/games/:name/:matchID/destroy', async (ctx) => {
 
     const game = normalizeGameName(result.metadata.gameName);
     if (game && isSupportedGame(game)) {
-        emitMatchEnded(game, matchID);
+        lobbyCoordinator.emitMatchEnded(game, matchID);
     }
     matchSubscribers.delete(matchID);
     rematchStateByMatch.delete(matchID);
@@ -1090,9 +1197,18 @@ router.post('/games/:name/:matchID/claim-seat', async (ctx) => {
     if (ctx.status === 200 || !ctx.status) {
         const refreshed = await storage.fetch(matchID, { metadata: true });
         if (refreshed.metadata) {
-            gameTransport.updateMatchMetadata(matchID, refreshed.metadata);
+            const metadata = refreshed.metadata;
+            // claim-seat is used by room creation and host-owned AI seat recovery.
+            // Keep the same occupancy state transition as /join so 4p rooms with
+            // AI seats do not remain in waiting after all seats have credentials.
+            if ((metadata.status === 'waiting' || !metadata.status) && areAllSeatsOccupied(metadata.players)) {
+                metadata.status = 'playing';
+                metadata.updatedAt = Date.now();
+                await storage.setMetadata(matchID, metadata);
+            }
+            gameTransport.updateMatchMetadata(matchID, metadata);
         }
-        setTimeout(() => void handleMatchJoined(matchID, gameName), 50);
+        setTimeout(() => void lobbyCoordinator.handleMatchJoined(matchID, gameName), 50);
     }
 });
 
@@ -1106,37 +1222,9 @@ router.get('/games/:name/leaderboard', async (ctx) => {
 
     try {
         const records = await MatchRecord.find({ gameName });
-        // 用 ownerKey 聚合（新数据），旧数据 fallback 到 name
-        const stats: Record<string, { name: string; wins: number; matches: number }> = {};
-
-        records.forEach((record) => {
-            record.players.forEach((p: { id: string; name: string; ownerKey?: string }) => {
-                // 聚合 key：优先 ownerKey，fallback 到 id（新数据 id 已是 ownerKey/name），再 fallback 到 name
-                const key = p.ownerKey || (p.id !== '0' && p.id !== '1' ? p.id : null) || p.name;
-                if (!key) return;
-                if (!stats[key]) stats[key] = { name: p.name || key, wins: 0, matches: 0 };
-                // 用最新的名字覆盖（用户可能改名）
-                if (p.name) stats[key].name = p.name;
-                stats[key].matches++;
-            });
-            // 统计胜场
-            if (record.winnerID) {
-                const winner = record.players.find((p: { id: string }) => p.id === record.winnerID);
-                if (winner) {
-                    const key = (winner as { ownerKey?: string }).ownerKey
-                        || (winner.id !== '0' && winner.id !== '1' ? winner.id : null)
-                        || winner.name;
-                    if (key && stats[key]) {
-                        stats[key].wins++;
-                    }
-                }
-            }
-        });
 
         ctx.body = {
-            leaderboard: Object.values(stats)
-                .sort((a, b) => b.wins - a.wins)
-                .slice(0, 50),
+            leaderboard: buildLeaderboardEntries(records),
         };
     } catch (err) {
         logger.error('Leaderboard error:', err);
@@ -1160,29 +1248,7 @@ router.get('/games/:name/:matchID', async (ctx) => {
         return;
     }
 
-    const metadata = result.metadata;
-    const setupDataRecord = metadata.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
-        ? metadata.setupData as { seatControllers?: Record<string, unknown> }
-        : undefined;
-    const seatControllers = setupDataRecord?.seatControllers;
-    ctx.body = {
-        matchID,
-        gameName: metadata.gameName,
-        players: Object.entries(metadata.players).map(([id, data]) => ({
-            id: Number(id),
-            name: resolveSeatPlayerDisplayName({
-                playerId: id,
-                name: data.name,
-                seatControllers,
-            }),
-            isConnected: data.isConnected,
-        })),
-        setupData: metadata.setupData,
-        createdAt: metadata.createdAt,
-        updatedAt: metadata.updatedAt,
-        gameover: metadata.gameover,
-        status: resolveMatchStatus(metadata),
-    };
+    ctx.body = buildMatchDetailPayload(matchID, result.metadata);
 });
 
 app.use(router.routes());
@@ -1191,454 +1257,10 @@ app.use(router.allowedMethods());
 // 测试路由（仅在测试/开发环境启用）
 if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
     const { createTestRoutes } = await import('./src/server/routes/test.js');
-    const testRouter = createTestRoutes(gameTransport, storage);
+    const testRouter = createTestRoutes(gameTransport, storage, GAME_STATE_VALIDATORS);
     app.use(testRouter.routes());
     app.use(testRouter.allowedMethods());
     logger.info('[Server] 测试模式已启用 - Test API endpoints available at /test/*');
-}
-
-// ============================================================================
-// 大厅缓存与广播
-// ============================================================================
-
-const lobbySubscribersByGame = new Map<SupportedGame, Set<string>>();
-const lobbyAllSubscribers = new Set<string>();
-
-// lobbyIO 在启动块中赋值，这里先声明用于 emit 函数引用
-let lobbyIO: IOServer | null = null;
-
-interface LobbyMatch {
-    matchID: string;
-    gameName: string;
-    players: Array<{ id: number; name?: string; isConnected?: boolean }>;
-    totalSeats?: number;
-    createdAt?: number;
-    updatedAt?: number;
-    roomName?: string;
-    ownerKey?: string;
-    ownerType?: 'user' | 'guest';
-    isLocked?: boolean;
-    gameover?: boolean;
-    /** 房间状态（waiting/playing/finished/abandoned） */
-    status?: string;
-}
-
-interface LobbySnapshotPayload {
-    gameId: LobbyGameId;
-    version: number;
-    matches: LobbyMatch[];
-}
-
-interface LobbyMatchPayload {
-    gameId: LobbyGameId;
-    version: number;
-    match: LobbyMatch;
-}
-
-interface LobbyMatchEndedPayload {
-    gameId: LobbyGameId;
-    version: number;
-    matchID: string;
-}
-
-interface LobbyHeartbeatPayload {
-    gameId: LobbyGameId;
-    version: number;
-    timestamp: number;
-}
-
-const lobbyVersionByGame = new Map<SupportedGame, number>();
-const lobbyCacheByGame = new Map<SupportedGame, Map<string, LobbyMatch>>();
-const lobbyCacheDirty = new Map<SupportedGame, boolean>();
-const matchGameIndex = new Map<string, SupportedGame>();
-let lobbyHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
-const lobbySnapshotTimers = new Map<SupportedGame, ReturnType<typeof setTimeout>>();
-
-const bumpLobbyVersion = (gameName: SupportedGame): number => {
-    const v = (lobbyVersionByGame.get(gameName) ?? 0) + 1;
-    lobbyVersionByGame.set(gameName, v);
-    return v;
-};
-
-const bumpLobbyAllVersion = (): number => {
-    const v = (lobbyVersionByGame.get(LOBBY_ALL as SupportedGame) ?? 0) + 1;
-    lobbyVersionByGame.set(LOBBY_ALL as SupportedGame, v);
-    return v;
-};
-
-const buildLobbyMatch = (
-    matchID: string,
-    metadata: MatchMetadata,
-): LobbyMatch => {
-    const setupDataRecord = metadata.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
-        ? metadata.setupData as { seatControllers?: Record<string, unknown> }
-        : undefined;
-    const seatControllers = setupDataRecord?.seatControllers;
-    const players = Object.entries(metadata.players).map(([id, data]) => ({
-        id: Number(id),
-        name: resolveSeatPlayerDisplayName({
-            playerId: id,
-            name: data.name,
-            seatControllers,
-        }),
-        isConnected: data.isConnected,
-    }));
-    const setupData = metadata.setupData as {
-        ownerKey?: string;
-        ownerType?: 'user' | 'guest';
-        roomName?: string;
-        password?: string;
-    } | undefined;
-    return {
-        matchID,
-        gameName: metadata.gameName,
-        players,
-        totalSeats: players.length,
-        createdAt: metadata.createdAt,
-        updatedAt: metadata.updatedAt,
-        roomName: setupData?.roomName,
-        ownerKey: setupData?.ownerKey,
-        ownerType: setupData?.ownerType,
-        isLocked: !!setupData?.password,
-        gameover: !!metadata.gameover,
-        status: resolveMatchStatus(metadata),
-    };
-};
-
-const fetchLobbyMatch = async (matchID: string): Promise<LobbyMatch | null> => {
-    try {
-        const result = await storage.fetch(matchID, { metadata: true });
-        if (!result.metadata) return null;
-        const match = buildLobbyMatch(matchID, result.metadata);
-        const game = normalizeGameName(result.metadata.gameName);
-        if (game && isSupportedGame(game)) {
-            matchGameIndex.set(matchID, game);
-            ensureGameState(game);
-            lobbyCacheByGame.get(game)!.set(matchID, match);
-        }
-        return match;
-    } catch {
-        return null;
-    }
-};
-
-const fetchMatchesByGame = async (gameName: SupportedGame): Promise<LobbyMatch[]> => {
-    try {
-        const matchIds = await storage.listMatches({ gameName });
-        const matches: LobbyMatch[] = [];
-        for (const matchID of matchIds) {
-            const result = await storage.fetch(matchID, { metadata: true });
-            if (!result.metadata) continue;
-            // 过滤无人占座的空房间（等待 cleanupEphemeralMatches 回收）
-            const players = result.metadata.players as Record<string, { name?: string; credentials?: string; isConnected?: boolean | null }> | undefined;
-            if (!hasOccupiedPlayers(players)) continue;
-            const match = buildLobbyMatch(matchID, result.metadata);
-            matchGameIndex.set(matchID, gameName);
-            matches.push(match);
-        }
-        return matches;
-    } catch {
-        return [];
-    }
-};
-
-const getLobbyRoomName = (gameName: SupportedGame) => `${LOBBY_ROOM}:${gameName}`;
-
-const getLobbySubscriptions = (socket: IOSocket): Set<LobbyGameId> => {
-    if (!socket.data.lobbyGameIds) {
-        socket.data.lobbyGameIds = new Set<LobbyGameId>();
-    }
-    return socket.data.lobbyGameIds as Set<LobbyGameId>;
-};
-
-const removeLobbySubscription = (socket: IOSocket, gameId: LobbyGameId) => {
-    if (gameId === LOBBY_ALL) {
-        lobbyAllSubscribers.delete(socket.id);
-        socket.leave(LOBBY_ALL_ROOM);
-    } else if (isSupportedGame(gameId)) {
-        lobbySubscribersByGame.get(gameId)?.delete(socket.id);
-        socket.leave(getLobbyRoomName(gameId));
-    }
-};
-
-const ensureGameState = (gameName: SupportedGame) => {
-    if (!lobbySubscribersByGame.has(gameName)) {
-        lobbySubscribersByGame.set(gameName, new Set());
-    }
-    if (!lobbyCacheByGame.has(gameName)) {
-        lobbyCacheByGame.set(gameName, new Map());
-        // 新初始化的缓存必须标记为 dirty，确保首次请求从 MongoDB 拉取
-        // 否则重启后前端收到空 snapshot，误判房间已销毁
-        lobbyCacheDirty.set(gameName, true);
-    }
-};
-
-const syncLobbyCache = async (gameName: SupportedGame): Promise<LobbyMatch[]> => {
-    ensureGameState(gameName);
-    const matches = await fetchMatchesByGame(gameName);
-    const cache = lobbyCacheByGame.get(gameName)!;
-    cache.clear();
-    for (const match of matches) {
-        cache.set(match.matchID, match);
-    }
-    lobbyCacheDirty.set(gameName, false);
-    return matches;
-};
-
-const markLobbyCacheDirty = (gameName: SupportedGame) => {
-    lobbyCacheDirty.set(gameName, true);
-};
-
-const getLobbySnapshot = async (gameName: SupportedGame): Promise<LobbyMatch[]> => {
-    ensureGameState(gameName);
-    if (lobbyCacheDirty.get(gameName)) {
-        return syncLobbyCache(gameName);
-    }
-    return Array.from(lobbyCacheByGame.get(gameName)!.values());
-};
-
-const sendLobbySnapshot = async (socket: IOSocket, gameName: SupportedGame) => {
-    const matches = await getLobbySnapshot(gameName);
-    const payload: LobbySnapshotPayload = {
-        gameId: gameName,
-        matches,
-        version: lobbyVersionByGame.get(gameName) ?? 0,
-    };
-    socket.emit(LOBBY_EVENTS.LOBBY_UPDATE, payload);
-};
-
-const getLobbySnapshotAll = async (): Promise<LobbyMatch[]> => {
-    const all: LobbyMatch[] = [];
-    for (const gameName of SUPPORTED_GAMES) {
-        const matches = await getLobbySnapshot(gameName);
-        all.push(...matches);
-    }
-    return all;
-};
-
-const sendLobbySnapshotAll = async (socket: IOSocket) => {
-    const matches = await getLobbySnapshotAll();
-    const payload: LobbySnapshotPayload = {
-        gameId: LOBBY_ALL,
-        matches,
-        version: lobbyVersionByGame.get(LOBBY_ALL as SupportedGame) ?? 0,
-    };
-    socket.emit(LOBBY_EVENTS.LOBBY_UPDATE, payload);
-};
-
-const emitToLobby = (gameName: SupportedGame, event: string, payload: unknown) => {
-    if (!lobbyIO) return;
-    lobbyIO.to(getLobbyRoomName(gameName)).emit(event, payload);
-};
-
-const emitToLobbyAll = (event: string, payload: unknown) => {
-    if (!lobbyIO) return;
-    lobbyIO.to(LOBBY_ALL_ROOM).emit(event, payload);
-};
-
-const emitMatchCreated = (gameName: SupportedGame, match: LobbyMatch) => {
-    ensureGameState(gameName);
-    lobbyCacheByGame.get(gameName)!.set(match.matchID, match);
-    matchGameIndex.set(match.matchID, gameName);
-    const payload: LobbyMatchPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), match };
-    emitToLobby(gameName, LOBBY_EVENTS.MATCH_CREATED, payload);
-    emitToLobbyAll(LOBBY_EVENTS.MATCH_CREATED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), match });
-};
-
-const emitMatchUpdated = (gameName: SupportedGame, match: LobbyMatch) => {
-    ensureGameState(gameName);
-    lobbyCacheByGame.get(gameName)!.set(match.matchID, match);
-    matchGameIndex.set(match.matchID, gameName);
-    const payload: LobbyMatchPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), match };
-    emitToLobby(gameName, LOBBY_EVENTS.MATCH_UPDATED, payload);
-    emitToLobbyAll(LOBBY_EVENTS.MATCH_UPDATED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), match });
-};
-
-const emitMatchEnded = (gameName: SupportedGame, matchID: string) => {
-    ensureGameState(gameName);
-    lobbyCacheByGame.get(gameName)!.delete(matchID);
-    matchGameIndex.delete(matchID);
-    const payload: LobbyMatchEndedPayload = { gameId: gameName, version: bumpLobbyVersion(gameName), matchID };
-    emitToLobby(gameName, LOBBY_EVENTS.MATCH_ENDED, payload);
-    emitToLobbyAll(LOBBY_EVENTS.MATCH_ENDED, { gameId: LOBBY_ALL, version: bumpLobbyAllVersion(), matchID });
-};
-
-const emitLobbyHeartbeat = () => {
-    if (!lobbyIO) return;
-    for (const gameName of SUPPORTED_GAMES) {
-        const subscribers = lobbySubscribersByGame.get(gameName);
-        if (!subscribers || subscribers.size === 0) continue;
-        const payload: LobbyHeartbeatPayload = {
-            gameId: gameName,
-            version: lobbyVersionByGame.get(gameName) ?? 0,
-            timestamp: Date.now(),
-        };
-        emitToLobby(gameName, LOBBY_EVENTS.HEARTBEAT, payload);
-    }
-    if (lobbyAllSubscribers.size > 0) {
-        const payload: LobbyHeartbeatPayload = {
-            gameId: LOBBY_ALL,
-            version: lobbyVersionByGame.get(LOBBY_ALL as SupportedGame) ?? 0,
-            timestamp: Date.now(),
-        };
-        emitToLobbyAll(LOBBY_EVENTS.HEARTBEAT, payload);
-    }
-};
-
-const startLobbyHeartbeat = () => {
-    if (lobbyHeartbeatTimer) return;
-    lobbyHeartbeatTimer = setInterval(emitLobbyHeartbeat, LOBBY_HEARTBEAT_INTERVAL);
-};
-
-const broadcastLobbySnapshot = async (gameName: SupportedGame, _reason: string) => {
-    if (!lobbyIO) return;
-    ensureGameState(gameName);
-    const matches = await syncLobbyCache(gameName);
-    const payload: LobbySnapshotPayload = {
-        gameId: gameName,
-        matches,
-        version: bumpLobbyVersion(gameName),
-    };
-    emitToLobby(gameName, LOBBY_EVENTS.LOBBY_UPDATE, payload);
-    if (lobbyAllSubscribers.size > 0) {
-        const allMatches = await getLobbySnapshotAll();
-        emitToLobbyAll(LOBBY_EVENTS.LOBBY_UPDATE, {
-            gameId: LOBBY_ALL,
-            matches: allMatches,
-            version: bumpLobbyAllVersion(),
-        });
-    }
-};
-
-const scheduleLobbySnapshot = (gameName: SupportedGame, reason: string) => {
-    const existing = lobbySnapshotTimers.get(gameName);
-    if (existing) clearTimeout(existing);
-    lobbySnapshotTimers.set(
-        gameName,
-        setTimeout(() => {
-            lobbySnapshotTimers.delete(gameName);
-            void broadcastLobbySnapshot(gameName, reason);
-        }, 300),
-    );
-};
-
-const resolveGameFromUrl = (raw?: string): SupportedGame | null => {
-    const normalized = normalizeGameName(raw);
-    if (!normalized) return null;
-    if (!isSupportedGame(normalized)) return null;
-    return normalized;
-};
-
-const resolveGameFromMatch = (match: LobbyMatch | null): SupportedGame | null => {
-    const normalized = normalizeGameName(match?.gameName);
-    if (!normalized) return null;
-    if (!isSupportedGame(normalized)) return null;
-    return normalized;
-};
-
-const destroyLobbyRoom = async (matchID: string): Promise<boolean> => {
-    if (!matchID) return false;
-
-    const match = await fetchLobbyMatch(matchID);
-    const indexed = matchGameIndex.get(matchID) ?? null;
-    const game = indexed || resolveGameFromMatch(match);
-
-    try {
-        await storage.wipe(matchID);
-    } catch (error) {
-        logger.warn(`[LobbyInternal] destroy room failed matchID=${matchID} error=${error instanceof Error ? error.message : String(error)}`);
-        return false;
-    }
-
-    if (game) {
-        emitMatchEnded(game, matchID);
-    }
-
-    return true;
-};
-
-const handleMatchCreated = async (matchID?: string, gameNameFromUrl?: string) => {
-    const gameFromUrl = resolveGameFromUrl(gameNameFromUrl);
-    if (gameFromUrl && lobbySubscribersByGame.get(gameFromUrl)?.size === 0) {
-        markLobbyCacheDirty(gameFromUrl);
-        return;
-    }
-    if (!matchID) {
-        if (gameFromUrl) scheduleLobbySnapshot(gameFromUrl, 'create: 无 matchID');
-        return;
-    }
-    const match = await fetchLobbyMatch(matchID);
-    const game = gameFromUrl || resolveGameFromMatch(match);
-    if (!game) return;
-    if ((lobbySubscribersByGame.get(game)?.size ?? 0) === 0) {
-        markLobbyCacheDirty(game);
-        return;
-    }
-    if (match) {
-        emitMatchCreated(game, match);
-        return;
-    }
-    scheduleLobbySnapshot(game, `create: 获取房间失败 ${matchID}`);
-};
-
-const handleMatchJoined = async (matchID?: string, gameNameFromUrl?: string) => {
-    const gameFromUrl = resolveGameFromUrl(gameNameFromUrl);
-    if (gameFromUrl && lobbySubscribersByGame.get(gameFromUrl)?.size === 0) {
-        markLobbyCacheDirty(gameFromUrl);
-        return;
-    }
-    if (!matchID) {
-        if (gameFromUrl) scheduleLobbySnapshot(gameFromUrl, 'join: 无 matchID');
-        return;
-    }
-    const match = await fetchLobbyMatch(matchID);
-    const game = gameFromUrl || resolveGameFromMatch(match);
-    if (!game) return;
-    if ((lobbySubscribersByGame.get(game)?.size ?? 0) === 0) {
-        markLobbyCacheDirty(game);
-        return;
-    }
-    const cache = lobbyCacheByGame.get(game)!;
-    if (!match) {
-        scheduleLobbySnapshot(game, `join: 获取房间失败 ${matchID}`);
-        return;
-    }
-    if (cache.has(matchID)) {
-        emitMatchUpdated(game, match);
-    } else {
-        emitMatchCreated(game, match);
-    }
-};
-
-async function handleMatchLeft(matchID?: string, gameNameFromUrl?: string) {
-    const gameFromUrl = resolveGameFromUrl(gameNameFromUrl);
-    if (gameFromUrl && lobbySubscribersByGame.get(gameFromUrl)?.size === 0) {
-        markLobbyCacheDirty(gameFromUrl);
-        return;
-    }
-    if (!matchID) {
-        if (gameFromUrl) scheduleLobbySnapshot(gameFromUrl, 'leave: 无 matchID');
-        return;
-    }
-    const match = await fetchLobbyMatch(matchID);
-    const indexed = matchGameIndex.get(matchID) ?? null;
-    const game = gameFromUrl || indexed || resolveGameFromMatch(match);
-    if (!game) return;
-    if ((lobbySubscribersByGame.get(game)?.size ?? 0) === 0) {
-        markLobbyCacheDirty(game);
-        return;
-    }
-    if (match) {
-        // 玩家离开后房间已空 → 从大厅列表移除（等待 cleanupEphemeralMatches 回收）
-        const hasPlayers = match.players.some(p => p.name);
-        if (!hasPlayers) {
-            emitMatchEnded(game, matchID);
-            return;
-        }
-        emitMatchUpdated(game, match);
-        return;
-    }
-    emitMatchEnded(game, matchID);
 }
 
 // ============================================================================
@@ -1668,7 +1290,7 @@ const lobbySocketIO = new IOServer(httpServer, {
         zlibInflateOptions: { windowBits: 13 },
     },
 });
-lobbyIO = lobbySocketIO;
+lobbyCoordinator.attachIO(lobbySocketIO);
 
 lobbySocketIO.on('connection', (socket) => {
     logger.debug(`[LobbyIO] 新连接: ${socket.id}`);
@@ -1681,20 +1303,15 @@ lobbySocketIO.on('connection', (socket) => {
             return;
         }
 
-        const subscriptions = getLobbySubscriptions(socket);
-
         if (requestedGame === LOBBY_ALL) {
-            const isNew = !subscriptions.has(LOBBY_ALL);
-            subscriptions.add(LOBBY_ALL);
-            lobbyAllSubscribers.add(socket.id);
-            socket.join(LOBBY_ALL_ROOM);
+            const { isNew, subscriberCount } = lobbyCoordinator.addLobbySubscription(socket, LOBBY_ALL);
             if (isNew) {
-                logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${lobbyAllSubscribers.size} 个订阅者)`);
+                logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${LOBBY_ALL}) (当前 ${subscriberCount} 个订阅者)`);
             } else {
                 logger.debug(`[LobbyIO] ${socket.id} 刷新大厅(${LOBBY_ALL})`);
             }
-            await sendLobbySnapshotAll(socket);
-            startLobbyHeartbeat();
+            await lobbyCoordinator.sendLobbySnapshotAll(socket);
+            lobbyCoordinator.startLobbyHeartbeat();
             return;
         }
 
@@ -1703,49 +1320,35 @@ lobbySocketIO.on('connection', (socket) => {
             return;
         }
 
-        const isNew = !subscriptions.has(requestedGame);
-        subscriptions.add(requestedGame);
-        ensureGameState(requestedGame);
-        lobbySubscribersByGame.get(requestedGame)!.add(socket.id);
-        socket.join(getLobbyRoomName(requestedGame));
+        const { isNew, subscriberCount } = lobbyCoordinator.addLobbySubscription(socket, requestedGame);
         if (isNew) {
-            logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${lobbySubscribersByGame.get(requestedGame)!.size} 个订阅者)`);
+            logger.info(`[LobbyIO] ${socket.id} 订阅大厅(${requestedGame}) (当前 ${subscriberCount} 个订阅者)`);
         } else {
             logger.debug(`[LobbyIO] ${socket.id} 刷新大厅(${requestedGame})`);
         }
 
-        await sendLobbySnapshot(socket, requestedGame);
-        startLobbyHeartbeat();
+        await lobbyCoordinator.sendLobbySnapshot(socket, requestedGame);
+        lobbyCoordinator.startLobbyHeartbeat();
     });
 
     // 取消订阅
     socket.on(LOBBY_EVENTS.UNSUBSCRIBE_LOBBY, (payload?: { gameId?: string }) => {
         const requestedGame = normalizeGameName(payload?.gameId);
-        const subscriptions = getLobbySubscriptions(socket);
 
         if (!requestedGame) {
-            subscriptions.forEach((gameId) => removeLobbySubscription(socket, gameId));
-            subscriptions.clear();
-            socket.data.lobbyGameIds = undefined;
+            lobbyCoordinator.clearLobbySubscriptions(socket);
             logger.info(`[LobbyIO] ${socket.id} 取消全部订阅`);
             return;
         }
 
         const gameId = requestedGame === LOBBY_ALL ? LOBBY_ALL : requestedGame;
-        removeLobbySubscription(socket, gameId);
-        subscriptions.delete(gameId);
-        if (subscriptions.size === 0) {
-            socket.data.lobbyGameIds = undefined;
-        }
+        lobbyCoordinator.removeLobbySubscription(socket, gameId);
         logger.debug(`[LobbyIO] ${socket.id} 取消订阅 ${gameId}`);
     });
 
     // 断开连接清理
     socket.on('disconnect', () => {
-        const subscriptions = getLobbySubscriptions(socket);
-        subscriptions.forEach((gameId) => removeLobbySubscription(socket, gameId));
-        subscriptions.clear();
-        socket.data.lobbyGameIds = undefined;
+        lobbyCoordinator.clearLobbySubscriptions(socket);
 
         // 清理重赛订阅
         const matchId = socket.data.rematchMatchId as string | undefined;
@@ -1763,12 +1366,20 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.chatMatchId = undefined;
 
+        // 清理局内座位表情订阅
+        const emoteMatchId = socket.data.emoteMatchId as string | undefined;
+        if (emoteMatchId) {
+            socket.leave(`matchemote:${emoteMatchId}`);
+        }
+        socket.data.emoteMatchId = undefined;
+        socket.data.emotePlayerId = undefined;
+
         logger.debug(`[LobbyIO] ${socket.id} 断开连接`);
     });
 
     // ========== 重赛投票事件处理 ==========
 
-    socket.on(REMATCH_EVENTS.JOIN_MATCH, (payload?: { matchId?: string; playerId?: string }) => {
+    socket.on(REMATCH_EVENTS.JOIN_MATCH, async (payload?: { matchId?: string; playerId?: string; autoAcceptedPlayerIds?: unknown }) => {
         const { matchId, playerId } = payload || {};
         if (!matchId || !playerId) {
             logger.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
@@ -1794,8 +1405,10 @@ lobbySocketIO.on('connection', (socket) => {
         }
 
         const state = rematchStateByMatch.get(matchId)!;
+        const autoAcceptedPlayerIds = await resolveAutoAcceptedRematchPlayerIds(matchId, payload?.autoAcceptedPlayerIds);
+        socket.data.rematchAutoAcceptedPlayerIds = autoAcceptedPlayerIds;
         socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
-        logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
+        logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})，登记 AI 自动同意席位=${autoAcceptedPlayerIds.join(',') || 'none'}`);
     });
 
     socket.on(REMATCH_EVENTS.LEAVE_MATCH, () => {
@@ -1811,6 +1424,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.rematchMatchId = undefined;
         socket.data.rematchPlayerId = undefined;
+        socket.data.rematchAutoAcceptedPlayerIds = undefined;
         logger.info(`[RematchIO] ${socket.id} 离开对局`);
     });
 
@@ -1820,36 +1434,33 @@ lobbySocketIO.on('connection', (socket) => {
         socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, data);
     });
 
-    socket.on(REMATCH_EVENTS.VOTE, () => {
+    socket.on(REMATCH_EVENTS.VOTE, async () => {
         const matchId = socket.data.rematchMatchId as string | undefined;
         const playerId = socket.data.rematchPlayerId as string | undefined;
         if (!matchId || !playerId) return;
 
         const state = rematchStateByMatch.get(matchId);
         if (!state || state.ready) return;
+        const autoAcceptedPlayerIds = normalizeRematchPlayerIds(socket.data.rematchAutoAcceptedPlayerIds);
+        const matchResult = await storage.fetch(matchId, { metadata: true });
+        const nextState = applyRematchVoteToggle(state, {
+            playerId,
+            autoAcceptedPlayerIds,
+            playerGroups: resolveRematchPlayerGroups(matchResult.metadata),
+        });
+        state.votes = nextState.votes;
 
-        const currentVote = state.votes[playerId] ?? false;
-        state.votes[playerId] = !currentVote;
-
-        const votedPlayers = Object.entries(state.votes).filter(([, v]) => v).map(([p]) => p);
-        state.ready = votedPlayers.length >= 2;
+        const wasReady = state.ready;
+        state.ready = nextState.ready;
         state.revision += 1;
 
-        logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}`);
+        logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}, autoAcceptedAi=${autoAcceptedPlayerIds.join(',') || 'none'}`);
 
         lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
 
-        if (state.ready) {
+        if (!wasReady && state.ready) {
             lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.TRIGGER_RESET);
-            setTimeout(() => {
-                const currentState = rematchStateByMatch.get(matchId);
-                if (currentState) {
-                    currentState.votes = {};
-                    currentState.ready = false;
-                    currentState.revision += 1;
-                    lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
-                }
-            }, 1000);
+            scheduleRematchStateReset(matchId);
         }
     });
 
@@ -1916,6 +1527,116 @@ lobbySocketIO.on('connection', (socket) => {
 
         lobbySocketIO.to(`matchchat:${matchId}`).emit(MATCH_CHAT_EVENTS.MESSAGE, message);
     });
+
+    // ========== 对局座位表情事件处理 ==========
+
+    socket.on(MATCH_EMOTE_EVENTS.JOIN, async (
+        payload?: { matchId?: string; playerId?: string },
+        ack?: (response: { ok: boolean; reason?: MatchEmoteRejectReason }) => void,
+    ) => {
+        const matchId = payload?.matchId?.trim();
+        const playerId = payload?.playerId?.trim();
+        if (!matchId || !playerId) {
+            emitMatchEmoteError(socket, 'missing_payload', ack);
+            return;
+        }
+
+        try {
+            const context = await resolvePlayableMatchEmoteContext(matchId, playerId);
+            if ('reason' in context) {
+                emitMatchEmoteError(socket, context.reason, ack);
+                return;
+            }
+
+            const prevMatchId = socket.data.emoteMatchId as string | undefined;
+            if (prevMatchId && prevMatchId !== matchId) {
+                socket.leave(`matchemote:${prevMatchId}`);
+            }
+
+            socket.data.emoteMatchId = matchId;
+            socket.data.emotePlayerId = playerId;
+            socket.join(`matchemote:${matchId}`);
+            ack?.({ ok: true });
+            logger.info(`[MatchEmote] ${socket.id} 加入对局表情 ${matchId} (玩家 ${playerId})`);
+        } catch (error) {
+            logger.warn('[MatchEmote] 加入表情房间失败', {
+                socketId: socket.id,
+                matchId,
+                playerId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            emitMatchEmoteError(socket, 'match_not_found', ack);
+        }
+    });
+
+    socket.on(MATCH_EMOTE_EVENTS.LEAVE, () => {
+        const matchId = socket.data.emoteMatchId as string | undefined;
+        if (matchId) {
+            socket.leave(`matchemote:${matchId}`);
+        }
+        socket.data.emoteMatchId = undefined;
+        socket.data.emotePlayerId = undefined;
+    });
+
+    socket.on(MATCH_EMOTE_EVENTS.SEND, async (
+        payload?: { emoteId?: string; matchId?: string; playerId?: string },
+        ack?: (response: { ok: boolean; reason?: MatchEmoteRejectReason }) => void,
+    ) => {
+        const matchId = (socket.data.emoteMatchId as string | undefined) ?? payload?.matchId?.trim();
+        const playerId = (socket.data.emotePlayerId as string | undefined) ?? payload?.playerId?.trim();
+        const emoteId = payload?.emoteId?.trim();
+
+        if (!matchId || !playerId) {
+            emitMatchEmoteError(socket, 'not_joined', ack);
+            return;
+        }
+        if (!emoteId) {
+            emitMatchEmoteError(socket, 'missing_payload', ack);
+            return;
+        }
+
+        const now = Date.now();
+        const lastSentAt = matchEmoteRateLimiter.getLastSentAt(matchId, playerId);
+
+        try {
+            const result = await storage.fetch(matchId, { metadata: true });
+            const decision = resolveMatchEmoteSendDecision({
+                matchId,
+                playerId,
+                emoteId,
+                metadata: result.metadata,
+                now,
+                lastSentAt,
+                cooldownMs: matchEmoteRateLimiter.cooldownMs,
+            });
+            if (!decision.ok) {
+                emitMatchEmoteError(socket, decision.reason, ack);
+                return;
+            }
+
+            matchEmoteRateLimiter.markSent(matchId, playerId, now);
+            socket.data.emoteMatchId = matchId;
+            socket.data.emotePlayerId = playerId;
+            socket.join(`matchemote:${matchId}`);
+            const message: MatchEmotePayload = {
+                matchId,
+                playerId,
+                emoteId,
+                createdAt: new Date(now).toISOString(),
+            };
+            lobbySocketIO.to(`matchemote:${matchId}`).emit(MATCH_EMOTE_EVENTS.SHOW, message);
+            ack?.({ ok: true });
+        } catch (error) {
+            logger.warn('[MatchEmote] 发送表情失败', {
+                socketId: socket.id,
+                matchId,
+                playerId,
+                emoteId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            emitMatchEmoteError(socket, 'match_not_found', ack);
+        }
+    });
 });
 
 // ============================================================================
@@ -1954,7 +1675,7 @@ const runStartupCleanupInBackground = async () => {
     await runStartupCleanupTasks(cleanupTasks, {
         onDirty: (reason) => {
             for (const gameName of SUPPORTED_GAMES) {
-                void broadcastLobbySnapshot(gameName, reason);
+                void lobbyCoordinator.broadcastLobbySnapshot(gameName, reason);
             }
         },
         onError: (message, error) => {
@@ -1976,7 +1697,7 @@ async function startServer() {
                 const cleaned = await hybridStorage.cleanupEphemeralMatches();
                 if (cleaned > 0) {
                     for (const gameName of SUPPORTED_GAMES) {
-                        void broadcastLobbySnapshot(gameName, 'cleanupEphemeralMatches:timer');
+                        void lobbyCoordinator.broadcastLobbySnapshot(gameName, 'cleanupEphemeralMatches:timer');
                     }
                 }
             } catch (err) {
@@ -1986,7 +1707,7 @@ async function startServer() {
                 const cleanedTtl = await mongoStorage.cleanupExpiredTtlMatches();
                 if (cleanedTtl > 0) {
                     for (const gameName of SUPPORTED_GAMES) {
-                        void broadcastLobbySnapshot(gameName, 'cleanupExpiredTtlMatches:timer');
+                        void lobbyCoordinator.broadcastLobbySnapshot(gameName, 'cleanupExpiredTtlMatches:timer');
                     }
                 }
             } catch (err) {

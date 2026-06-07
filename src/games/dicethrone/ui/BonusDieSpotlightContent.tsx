@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import type { DieFace } from '../types';
 import { Dice3D } from './Dice3D';
 import { resolveBonusDieText } from './bonusDieTranslation';
+import { useResultRevealAnimation } from '../../../hooks/ui/useResultRevealAnimation';
 
 interface BonusDieSpotlightContentProps {
     value: number;
@@ -27,8 +28,8 @@ interface BonusDieSpotlightContentProps {
     rollingDurationMs?: number;
     /** 首次挂载时是否播放滚动动画 */
     animateOnMount?: boolean;
-    /** 显式滚动触发 key；变化时才重新播放滚动动画 */
-    rollAnimationKey?: string | number;
+    /** 表现事件身份；变化时即使结果值相同也重新播放揭示动画 */
+    presentationKey?: string | number;
     /** 骰子资源所属角色（用于图集选择） */
     characterId?: string;
     /** 是否为紧凑模式（多骰场景，文字变小） */
@@ -70,44 +71,20 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
     size = '8vw',
     rollingDurationMs = 800,
     animateOnMount = true,
-    rollAnimationKey,
+    presentationKey,
     characterId = 'monk',
     compact = false,
     hideEffectText = false,
 }) => {
 
     const { t, i18n } = useTranslation('game-dicethrone');
-    const [isRolling, setIsRolling] = React.useState(animateOnMount);
-    const mountedRef = React.useRef(false);
-    const previousValueRef = React.useRef(value);
-    const previousRollAnimationKeyRef = React.useRef(rollAnimationKey);
     const face = propFace || 'fist';
-
-    React.useEffect(() => {
-        let shouldStartRolling = false;
-        if (!mountedRef.current) {
-            mountedRef.current = true;
-            shouldStartRolling = animateOnMount;
-        } else if (rollAnimationKey !== undefined) {
-            shouldStartRolling = previousRollAnimationKeyRef.current !== rollAnimationKey;
-        } else {
-            shouldStartRolling = previousValueRef.current !== value;
-        }
-
-        previousValueRef.current = value;
-        previousRollAnimationKeyRef.current = rollAnimationKey;
-
-        if (!shouldStartRolling) {
-            setIsRolling(false);
-            return;
-        }
-
-        setIsRolling(true);
-        const stopRolling = setTimeout(() => {
-            setIsRolling(false);
-        }, rollingDurationMs);
-        return () => clearTimeout(stopRolling);
-    }, [animateOnMount, rollAnimationKey, rollingDurationMs, value]);
+    const { isRevealing: isRolling } = useResultRevealAnimation({
+        value,
+        presentationKey,
+        durationMs: rollingDurationMs,
+        animateOnMount,
+    });
 
     // 获取翻译后的效果文本
     const effectText = React.useMemo(() => {
@@ -120,7 +97,7 @@ export const BonusDieSpotlightContent: React.FC<BonusDieSpotlightContentProps> =
         <div
             className="flex flex-col items-center gap-[1.5vw]"
             data-testid="bonus-die-spotlight-content"
-            data-roll-animation-key={rollAnimationKey ?? ''}
+            data-presentation-key={presentationKey ?? ''}
             data-animate-on-mount={animateOnMount ? 'true' : 'false'}
             data-is-rolling={isRolling ? 'true' : 'false'}
         >

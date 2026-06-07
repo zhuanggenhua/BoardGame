@@ -100,7 +100,7 @@ export const openSmashUpModal = async (page: Page) => {
     }
 
     const modalRoot = page.locator('#modal-root');
-    const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i });
+    const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i }).first();
     if (!(await heading.isVisible().catch(() => false))) {
         const gameCard = page.locator('[data-game-id="smashup"]').first();
         await gameCard.scrollIntoViewIfNeeded();
@@ -147,7 +147,14 @@ export const createRoom = async (page: Page): Promise<string | null> => {
 };
 
 export const waitForFactionSelection = async (page: Page, timeout = 20000) => {
-    await expect(page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i })).toBeVisible({ timeout });
+    const title = page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i });
+    const selectionShell = page.locator('[data-tutorial-id="su-faction-select"]');
+    await expect.poll(async () => {
+        if (await title.count()) {
+            return await title.first().isVisible().catch(() => false);
+        }
+        return await selectionShell.first().isVisible().catch(() => false);
+    }, { timeout }).toBe(true);
 };
 
 export const openFactionCard = async (page: Page, index: number) => {
@@ -316,6 +323,7 @@ export const setupTwoPlayerMatch = async (
     options?: {
         enableE2EDebug?: boolean;
         skipImageGate?: boolean;
+        blockLobbySocket?: boolean;
         contextOptions?: BrowserContextOptions;
     },
 ): Promise<TwoPlayerSetup | null> => {
@@ -331,6 +339,7 @@ export const setupTwoPlayerMatch = async (
     await initContext(hostContext, {
         storageKey: '__smashup_storage_reset',
         skipImageGate: options?.skipImageGate ?? false,
+        blockLobbySocket: options?.blockLobbySocket,
     });
     const hostPage = await hostContext.newPage();
 
@@ -347,7 +356,6 @@ export const setupTwoPlayerMatch = async (
 
     await seedMatchCredentials(hostContext, matchId, '0', hostCredentials);
     await hostPage.goto(`/play/smashup/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-    await waitForFactionSelection(hostPage);
 
     const guestContext = await browser.newContext({ baseURL, ...(options?.contextOptions ?? {}) });
     
@@ -361,6 +369,7 @@ export const setupTwoPlayerMatch = async (
     await initContext(guestContext, {
         storageKey: '__smashup_storage_reset',
         skipImageGate: options?.skipImageGate ?? false,
+        blockLobbySocket: options?.blockLobbySocket,
     });
     const guestPage = await guestContext.newPage();
 
@@ -370,7 +379,10 @@ export const setupTwoPlayerMatch = async (
 
     await seedMatchCredentials(guestContext, matchId, '1', guestCredentials);
     await guestPage.goto(`/play/smashup/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
-    await waitForFactionSelection(guestPage);
+    await Promise.all([
+        waitForFactionSelection(hostPage),
+        waitForFactionSelection(guestPage),
+    ]);
 
     return { hostContext, guestContext, hostPage, guestPage, matchId };
 };

@@ -125,6 +125,16 @@ public/**/*.webm
 !public/assets/demo/
 !public/assets/demo/**
 !public/assets/dicethrone/thumbnails/
+!public/assets/i18n/zh-CN/cardia/thumbnails/**/
+!public/assets/i18n/zh-CN/cardia/thumbnails/**/*.webp
+!public/assets/i18n/zh-CN/dicethrone/thumbnails/**/
+!public/assets/i18n/zh-CN/dicethrone/thumbnails/**/*.webp
+!public/assets/i18n/zh-CN/qidahen/thumbnails/**/
+!public/assets/i18n/zh-CN/qidahen/thumbnails/**/*.webp
+!public/assets/i18n/zh-CN/smashup/thumbnails/**/
+!public/assets/i18n/zh-CN/smashup/thumbnails/**/*.webp
+!public/assets/i18n/zh-CN/summonerwars/thumbnails/**/
+!public/assets/i18n/zh-CN/summonerwars/thumbnails/**/*.webp
 
 # 赞助二维码等小图（允许提交）
 !public/logos/
@@ -152,6 +162,9 @@ test-results/
 playwright-report/
 blob-report/
 e2e/screenshots/
+
+# e2e/src 是指向 src 的 Junction 镜像；禁止把新测试通过镜像路径入库
+e2e/src/**
 
 # 用户上传文件
 uploads/
@@ -189,6 +202,8 @@ _*.mjs
 check-*.mjs
 !scripts/infra/check-file-encoding.mjs
 test-*.mjs
+temp-*.mjs
+scripts/temp_*.py
 
 # 临时数据文件（应移到 temp/）
 wiki-*.json
@@ -204,6 +219,7 @@ tmp_*.txt
 _vitest_*.log
 *-failures.txt
 *-output.txt
+test-out.txt
 
 # 其他临时文件
 threshold
@@ -222,6 +238,9 @@ android/build/
 android/captures/
 android/keystore.properties
 android/keystores/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+!ios/App/App/Assets.xcassets/**/*.png
 
 # Python/cache/temp artifacts
 **/__pycache__/

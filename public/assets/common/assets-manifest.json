@@ -12109,6 +12109,699 @@
         }
       }
     },
+    "images/home-v2/book-catalog-wide/1": {
+      "variants": {
+        "png": {
+          "sha256": "e8146bcb64e92f6ea77039febd3649ee3a69cacd98d641f0ac930f53c7369dd1",
+          "bytes": 2167651,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/book-close/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-close/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "d2b1633e4a20a9781571f439c367dad4ef70b942f079992e6ee8ef91e5a3bc4c",
+          "bytes": 10904,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-close/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "18478054628456c69c79475aee9e3971f7aec19948e302110a5111d558367bdb",
+          "bytes": 7686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-close/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "dc5beaa17e276f68f84b33fc8972d73043b6f7a9366e64c0cfce5471d44d5ca3",
+          "bytes": 2728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "42a1a955facdedff5ead66ab03aaedb5a6cd4cfe08cda593b3d2bd2a0eb5944e",
+          "bytes": 4702,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "8b6e05d2bfaaaf28d720e5d5b68d932786f43e21cb30829837619a8d10b09670",
+          "bytes": 19256,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "cfec35213f0b0e5dcd96d9172b2bfe80fd2ab96448777df991af10c7838fcbef",
+          "bytes": 15974,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "5d31731adb6f722b50f6664fe2a23387a19790f9d681ddf3b585183556357367",
+          "bytes": 3060,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "6a3605b867d68d77636ae643046aad93f3e8d2395b1aab258362590f0016a353",
+          "bytes": 3082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "a70c9854110c35e15bc304e2b2e4e80fdabc607cd63b716bef76e38c37c9bf95",
+          "bytes": 5302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-desk/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "fce1fe250b9b4a95832aa7e691a513eec879edba4f8a061fa15d3bd85b213143",
+          "bytes": 5928,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-idle/1": {
+      "variants": {
+        "png": {
+          "sha256": "7b136044d6eb1c3e447243bea5d1b57a111d08051742ebfdabb76830066c1cbc",
+          "bytes": 1925780,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/book-idle/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "acad86beb37aeff8e9258cc967747b6dc33f729b73bdb35f5cead6bc5e209370",
+          "bytes": 75590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-open/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "dc5beaa17e276f68f84b33fc8972d73043b6f7a9366e64c0cfce5471d44d5ca3",
+          "bytes": 2728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-open/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "18478054628456c69c79475aee9e3971f7aec19948e302110a5111d558367bdb",
+          "bytes": 7686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-open/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "d2b1633e4a20a9781571f439c367dad4ef70b942f079992e6ee8ef91e5a3bc4c",
+          "bytes": 10904,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/book-open/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/catalog-thumbnails/compressed/splendor-reference": {
+      "variants": {
+        "webp": {
+          "sha256": "7cbbb04b8dcd93d5bdd10825b070c3cc0686738c8fc342ffe8ffde92147c3e1f",
+          "bytes": 5530,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/catalog-thumbnails/compressed/summonerwars-reference": {
+      "variants": {
+        "webp": {
+          "sha256": "968e6c7099d971c2106681c0809b3f9ef0291988a010edcbc740f603258f6c34",
+          "bytes": 7630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/catalog-thumbnails/splendor-reference": {
+      "variants": {
+        "png": {
+          "sha256": "9078cae21b8ffc700546467ab44bf02bf71c44c6d4040386526d8a9ac3fd775a",
+          "bytes": 52071,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/catalog-thumbnails/summonerwars-reference": {
+      "variants": {
+        "png": {
+          "sha256": "6e07ed9c50df3e6ab499529862c57755b5c0c7dd1127ee45ac6a2d570b2c562b",
+          "bytes": 58426,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/generated-reference-homepage/1": {
+      "variants": {
+        "png": {
+          "sha256": "da1cef60e0c1d7eb7b6b99622b67e1434fa156211413d53d17439f11236aa48b",
+          "bytes": 2554009,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/holders/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "977808d669109e654f680f69967b3f2daf271e484ed653ce9a1559c450ecae83",
+          "bytes": 1534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/overview-homepage/1": {
+      "variants": {
+        "png": {
+          "sha256": "bf8386f2b24577ce39af98ae7d1f6cf6072ebb674a0cc56fd1287e6f85b0bbd8",
+          "bytes": 2134136,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/overview-homepage/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "8a11ddaec5e49a5b0e2a8f94407a22ac50c84009398f416ce11501ba7d8c57b7",
+          "bytes": 1040912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/overview-spread/1": {
+      "variants": {
+        "png": {
+          "sha256": "7b136044d6eb1c3e447243bea5d1b57a111d08051742ebfdabb76830066c1cbc",
+          "bytes": 1925780,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/overview-spread/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "acad86beb37aeff8e9258cc967747b6dc33f729b73bdb35f5cead6bc5e209370",
+          "bytes": 75590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "874f9597bdc11a7a06963394b4a60dca3348bd0f0d3a77a296da5d8b85f2d387",
+          "bytes": 6056,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "84e97cbd27c4a024b0e242a8044cef734302a57d6feb0420d28faad4de3de501",
+          "bytes": 7206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "73d2e89c26e7c83ae515c068f328477f981dbe577d8418d8f30b1e20ecb80ade",
+          "bytes": 6368,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "dc66b684c0d7fe037acf1bfa75026b34683aee4b217a4c00e97ffc8889192cf6",
+          "bytes": 6650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "9cedfae3449e810a33e087a60b73005d818c31e364dbd615cfcbbbd946823a0f",
+          "bytes": 6854,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "402d5681238b669d23acde27108736c8087a82f60a692595d06ae185c5027842",
+          "bytes": 6108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "5b65d143c59cf52418a41d9f9fe80fd7eed401eab94928e454adf50014ac3278",
+          "bytes": 6286,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "11391ad9477e2bc9a4abbf106f6789cf8e22d176f7f6b7c90888fbb0adbd4807",
+          "bytes": 7212,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "6bc02032e290270c676a3277af3719c3e312ffc0ed559dabded84072f7d2708d",
+          "bytes": 6478,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "2b1783aa5049274607c2e06d1e7bab8cb13ee00087c1bfb94b125d6639b1452f",
+          "bytes": 6652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "2c70126d4f5137af5d3463c795ea443c9e1a26500f05ef5e3c1979d4cd3c054e",
+          "bytes": 6774,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "67b5d52aae7e1dda38e2267f399eb93d683e51c75b9336534d49bcf1bc38472d",
+          "bytes": 6254,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-right/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/reference-homepage/1": {
+      "variants": {
+        "png": {
+          "sha256": "cf9f8916c1a17407de6b56ee094f1fc39201f05d86dcbb7c7b11a2b88d95e6a4",
+          "bytes": 2435727,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/cardia": {
+      "variants": {
+        "png": {
+          "sha256": "cd073de67487b30ab6fbcebab480ffc17bdbeb73f57ad2ed9ca95774b691c477",
+          "bytes": 28745,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/dicethrone": {
+      "variants": {
+        "png": {
+          "sha256": "1a14e936265704bd190676eb0d7f4bfee1e594c5ab71b26af6b587e248f9e5e6",
+          "bytes": 30762,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/smashup": {
+      "variants": {
+        "png": {
+          "sha256": "15696a4857006115092ccfb40b14a3cb6898e2487ec750f348c6bb212b131d48",
+          "bytes": 30439,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/splendor": {
+      "variants": {
+        "png": {
+          "sha256": "f7a084cea9fcd99c2c0d177cbfafbbe4c9eeb532ef3b340ee5632d5ae8684e03",
+          "bytes": 24690,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/summonerwars": {
+      "variants": {
+        "png": {
+          "sha256": "4a41fa974df51b42d2ecceb19f7bed8b05976355dca1325c2924815025bf635c",
+          "bytes": 25684,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/reference-thumbnails/tictactoe": {
+      "variants": {
+        "png": {
+          "sha256": "62298f98a23dd137da713bff220865c6cac2ab852838ac347483f813414862f9",
+          "bytes": 27113,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "4e1802f547dfb1999401074242143b03a4deebcf5949718580ca5b24912eedce",
+          "bytes": 5712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/10": {
+      "variants": {
+        "webp": {
+          "sha256": "67411626e8091b3a326bb4628bbd5d5fec8ec247ef6e47cacc6c2b7891a26504",
+          "bytes": 6440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/11": {
+      "variants": {
+        "webp": {
+          "sha256": "38586fafe7be56438b9113ae25d45c798b384d37639561b93d18b1c6aa090a99",
+          "bytes": 6458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/12": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/13": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/14": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/15": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/16": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/17": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "af9d42d69301186df3286b52a204dde149ec25402f3a4ba25079c9541b8e0fad",
+          "bytes": 5688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "7fb096e933ff66ee46435bc426ac2638916aafc6672a2eef6f23008827851e92",
+          "bytes": 5722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "b87fa9e8b6fedf3ddcdcbae07132ce17ead7338277e6b1b4e920f4e722c67c84",
+          "bytes": 5804,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "fd9cef0aee98619b896a03ddbecfe9613ba030671c7403edde257d2613cbb725",
+          "bytes": 5932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "0f11d2c59ea9e81e5d9bdf2db4e9cd60f7c003b0668507859155f270b12f7220",
+          "bytes": 6062,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "18e5b390b7eb8d777b698fc5a88b0b5f63047e9ed78cb35c6d19ffc2da3cc5db",
+          "bytes": 6164,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "1ff55f76a3e2c4b1d68aaf79f39b25b345e5752a3154275ffc145d5e714ca068",
+          "bytes": 6276,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-appear/compressed/9": {
+      "variants": {
+        "webp": {
+          "sha256": "1445bd7af92f30c80f657eea80ed6345a2d236b11e82a572761237dc480efc78",
+          "bytes": 6388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "c9395f9b49fce73100946d49256f6c75322569d8d081dcf952866705c55e5e6d",
+          "bytes": 6438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "472fd24e5c74914401fc0e316f0ec16816fd5c2605dbe841f944aa4bc6084cc6",
+          "bytes": 6556,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "493bf517ae588e26c39e85bcb118e632960f5b21e66249dfd47415a5ac7cea63",
+          "bytes": 6572,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "74873edd9e169c22d4a53b38ca2d57755c7991b85593b170b4b200850fe2aade",
+          "bytes": 6558,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "2c8cfc1677facdc2d6e6d02b931cbe72e619bd42c6e6f7de65ba75f5bf6e214c",
+          "bytes": 6588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "0ece43c303259dc6b880e12b0b96ad3b2c1140f064fd3d5e7f4666022e77ba5b",
+          "bytes": 6560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/side-tabs-static/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "2b48fce5fc424675cefe8d88fc911071e20f8f4b0df3b089524ae718adb6ba5a",
+          "bytes": 6512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/mascot/compressed/easyboardgame-kanban-girl": {
+      "variants": {
+        "webp": {
+          "sha256": "87aa2dbaa84f52af85f26362045c54b25cf9c0fc0f23acf8954d79c7ec0f34c3",
+          "bytes": 190484,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/mascot/easyboardgame-kanban-girl": {
+      "variants": {
+        "png": {
+          "sha256": "55c290794e0718e72f54875bc2f4e7866f9d3241add2d16a379c3228071884bf",
+          "bytes": 2891751,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/noise": {
       "variants": {
         "svg": {

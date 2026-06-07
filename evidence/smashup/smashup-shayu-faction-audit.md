@@ -87,17 +87,17 @@
 | `tornados_not_in_kansas` | 摧毁基地和附着行动；用牌库顶基地替换，原仆从保留。 | `abilities/tornados.ts` `tornadosNotInKansas` | base replace keepCards | L3 | E2E 证明基地替换后原随从保留、基地/随从行动被清理，baseDeck 顺序符合预期。 |
 | `tornados_over_the_rainbow` | 计分前 special：把你另一基地仆从移到计分基地。 | `abilities/tornados.ts` `tornadosOverTheRainbow` | beforeScoring move-in special | L3/L4 | E2E 从 Me First 窗口真实打出，随从从非计分基地移入计分基地。 |
 | `base_trailer_park` | 仆从移动到这里后，其上 +1 指示物。 | `abilities/tornados.ts` `baseTrailerPark` | onMinionMoved base ability | L1/L2 | 共享 move hook；Whirlwinds/Carried Away 行为链覆盖移动，指示物未单独 E2E。 |
-| `base_tornado_alley` | 每回合第一次仆从移到这里后，可把另一个仆从移到这里。 | `abilities/tornados.ts` `baseTornadoAlley` | once/turn base move hook | L3 | E2E 证明首次移入触发可选拉入，且同回合第二次移入不重复触发。 |
+| `base_tornado_alley` | 每回合第一次仆从移到这里后，可把另一个仆从移到这里。 | `abilities/tornados.ts` `baseTornadoAlley` | once/turn base move hook | L3 | 旧结论只证明“同回合首次触发 + 第二次不重复”，未覆盖 once 状态跨回合清理。2026-06-01 已补 `tornado-alley-base.test.ts`，证明上一位玩家回合残留记录不会阻止新回合首次移入触发。 |
 | `mythic_greeks_odysseus` | 你打出行动后，在你的一个仆从上放 +1 指示物。 | `abilities/mythic_greeks.ts` `odysseusActionTrigger` | onActionPlayed trigger | L2 | Argonaut 行为测试覆盖代表触发。 |
 | `mythic_greeks_argonaut` | 触发所有因你打出行动而触发的能力；可替代行动打出。 | `abilities/mythic_greeks.ts` `argonautOnPlay` | action trigger replay / special play | L2/L3 | 行为测试与 E2E 覆盖 Mythic Greeks 内 Odysseus/Heracles/Spartan action-trigger 代表链；跨派系泛化由共享注册表审计兜底。 |
-| `mythic_greeks_jason` | 每回合一次，打出行动后选基地，你在那里的仆从 +1 到回合结束。 | `abilities/mythic_greeks.ts` `jasonActionTrigger` | once/turn action trigger | L1/L2 | 行为链复用 trigger；Jason 未单独 E2E。 |
+| `mythic_greeks_jason` | 每回合一次，打出行动后选基地，你在那里的仆从 +1 到回合结束。 | `abilities/mythic_greeks.ts` `jasonActionTrigger` | once/turn action trigger | L2 / scoped L3 | 行为链复用 trigger；Argonaut 真实入口已补 Jason base prompt 与 chosen-base buff E2E，不再是“未单独 E2E”。 |
 | `mythic_greeks_heracles` | 任意玩家打出行动后，本仆从 +1 到回合结束。 | `abilities/mythic_greeks.ts` `heraclesActionTrigger` | action trigger temp buff | L2 | Argonaut 行为测试覆盖代表触发。 |
 | `mythic_greeks_spartan` | 每回合一次，打出行动后本仆从 +1 指示物。 | `abilities/mythic_greeks.ts` `spartanActionTrigger` | once/turn counter trigger | L2/L3 | Apollo E2E 里 Spartan 出现在手牌，行为测试覆盖 trigger。 |
 | `mythic_greeks_favor_of_hades` | 从弃牌堆将一张行动回手。 | `abilities/mythic_greeks.ts` `favorOfHades` | discard recovery | L1 | 结构与 helper 路径通过；未专项行为测试。 |
 | `mythic_greeks_favor_of_ares` | 你的一个仆从 +3 到回合结束。 | `abilities/mythic_greeks.ts` `favorOfAres` | temporary buff | L1 | 简单 buff 路径；未专项行为测试。 |
 | `mythic_greeks_favor_of_aphrodite` | 打出一名额外仆从。 | `abilities/mythic_greeks.ts` `favorOfAphrodite` | extra minion | L1 | 复用额外仆从事件；未专项 E2E。 |
 | `mythic_greeks_favor_of_dionysus` | 仆从 +1；额外行动；可放回牌库顶替代弃牌。 | `abilities/mythic_greeks.ts` `favorOfDionysus` | temp buff + extra action + top deck prompt | L2 | 行为测试覆盖可选放顶；E2E 未纳入，见风险。 |
-| `mythic_greeks_favor_of_hera` | 至多两个你的仆从各 +1 指示物。 | `abilities/mythic_greeks.ts` `favorOfHera` | multi target counters | L2/L3 | 行为测试与 E2E 覆盖多选两个随从。 |
+| `mythic_greeks_favor_of_hera` | 至多两个仆从各 +1 指示物。 | `abilities/mythic_greeks.ts` `favorOfHera` | multi target counters | L2/L3 | 2026-06-04 已按卡面 `temp/smashup-hera-card-crop-20260604-r5c8/slot-33.webp` 回写旧“己方”误判；行为测试与 E2E 已补可选对手随从。 |
 | `mythic_greeks_favor_of_athena` | 展示牌库顶 5，取 1 张行动，其余任意顺序回牌库顶。 | `abilities/mythic_greeks.ts` `favorOfAthena` | reveal/pick deck helper | L1 | 复用 revealAndPick；未专项行为测试。 |
 | `mythic_greeks_favor_of_apollo` | 抽 1 并额外行动。 | `abilities/mythic_greeks.ts` `favorOfApollo` | draw + extra action | L2/L3 | 行为测试与 E2E 覆盖 `actionLimit=2`。 |
 | `mythic_greeks_favor_of_hermes` | 打出两个额外行动。 | `abilities/mythic_greeks.ts` `favorOfHermes` | extra action x2 | L1 | 简单额外行动路径；未专项行为测试。 |
@@ -114,11 +114,11 @@
 | Sharks 与 Tornados 代表行动 | 1) `Torn Apart` 手动选目标消灭并抽牌；2) `Carried Away` 选随从后选目标基地移动 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-与-Tornados-代表行动可从手牌真实打出并完成交互\shayu-sharks-torn-apart-after-destroy.png`；`...\shayu-tornados-carried-away-after-move.png` | 第一张实际看到 `Torn Apart` 已在弃牌区、低力量目标消失；第二张实际看到 `Mako` 已移到 `Tornado Alley`、`Carried Away` 在弃牌区，无待处理交互。达标。 |
 | Mythic Greeks Apollo | 3) `Favor of Apollo` 抽牌 + 额外行动 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-代表行动可从手牌真实打出并改变权威状态\shayu-mythic-greeks-apollo-after-action.png` | 实际看到 `Favor of Apollo` 已打出，手牌区出现 `Spartan`；测试同时断言额外行动额度。达标。 |
 | Sharks Feeding Frenzy + Tornados Whirlwinds | 4) `Feeding Frenzy` 多选消灭；5) `Whirlwinds` 多选后逐目标选择目标基地 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-疯狂进食与-Tornados-旋风群覆盖多选和逐目标移动交互\shayu-sharks-feeding-frenzy-after-multi-destroy.png`；`...\shayu-tornados-whirlwinds-after-per-minion-destinations.png` | 第一张实际看到低力量目标被销毁后只剩未选参照；第二张实际看到两个 `Twister` 分别落到不同基地，不是统一移动到同一目标。达标。 |
-| Mythic Greeks Hera + Poseidon | 6) `Favor of Hera` 随从多选放指示物；7) `Favor of Poseidon` 弃牌多选洗回牌库 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-赫拉与波塞冬覆盖随从多选和弃牌多选交互\shayu-mythic-greeks-hera-after-two-counters.png`；`...\shayu-mythic-greeks-poseidon-after-discard-shuffle.png` | 第一张实际看到两个目标上出现 +1 指示物；第二张流程结束后无待处理交互，测试断言弃牌多选洗回牌库。达标。 |
+| Mythic Greeks Hera + Poseidon | 6) `Favor of Hera` 任意随从多选放指示物；7) `Favor of Poseidon` 弃牌多选洗回牌库 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-赫拉与波塞冬覆盖随从多选和弃牌多选交互\shayu-mythic-greeks-hera-after-two-counters.png`；`...\shayu-mythic-greeks-poseidon-after-discard-shuffle.png` | 2026-06-04 回写：旧“己方随从”结论被 `slot-33.webp` 卡面推翻。现已要求 Hera 真实入口能同时选己方与对手随从；第一张截图来自本工作树复跑后的修复验证。 |
 | Tornados Ripped Off | 8) 基地持续行动 detach+attach 转移；9) 随从附着行动 detach+attach 转移 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-扯走覆盖基地持续行动与随从附着行动的-detach-+-attach-转移\shayu-tornados-ripped-off-base-action-transferred.png`；`...\shayu-tornados-ripped-off-minion-action-transferred.png` | 实际看到持续行动从源基地/源随从离开并附着到新目标；测试断言源宿主数组为空、目标宿主包含对应 action uid。达标。 |
 | Tornados Not in Kansas | 10) 基地替换 + 保留随从 + 清理基地/随从行动 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-不在堪萨斯替换基地时保留随从并清理基地-随从行动卡\shayu-tornados-not-in-kansas-after-base-replace.png` | 实际看到基地已替换，随从仍在对应基地；测试断言原基地 ongoing 与随从 attached action 被清空，牌库顺序更新。达标。 |
 | Tornado Alley | 11) 基地移动触发 may prompt；12) once/turn 第二次移入不重复触发 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`；`...\shayu-tornado-alley-second-move-no-repeat-trigger.png` | 第一张实际看到 Tornado Alley 触发交互；第二张第二次移入后没有重复拉入 prompt，测试断言 `second-trigger-target` 未被再次移动。达标。 |
-| Mythic Greeks Argonaut | 13) 真实打出 Argonaut 后触发 action-played 能力队列 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-阿尔戈英雄真实入场会触发奥德修斯-赫拉克勒斯-斯巴达人的行动后能力\shayu-mythic-greeks-argonaut-odysseus-prompt.png`；`...\shayu-mythic-greeks-argonaut-after-action-triggers.png` | 实际看到 Odysseus 选择提示；完成后测试断言 Odysseus/Spartan 获得 +1、Heracles 获得临时 +1，并记录 Spartan once/turn metadata。达标。 |
+| Mythic Greeks Argonaut | 13) 真实打出 Argonaut 后触发 action-played 能力队列 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-阿尔戈英雄真实入场会触发奥德修斯-赫拉克勒斯-斯巴达人的行动后能力\shayu-mythic-greeks-argonaut-odysseus-prompt.png`；`...\shayu-mythic-greeks-argonaut-jason-prompt.png`；`...\shayu-mythic-greeks-argonaut-after-action-triggers.png` | 实际看到 Odysseus 选择提示、Jason 基地选择提示和后续结算状态；测试断言 Odysseus/Spartan 获得 +1、Heracles 获得临时 +1，并记录 Spartan once/turn metadata，Jason 选中基地的己方随从 +1。达标。 |
 | Tornados beforeScoring specials | 14) `Over the Rainbow` 从 Me First 移入计分基地；15) `Picked Up` 从 Me First 移出计分基地 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-计分前特殊牌从-Me-First-窗口打出并完成移入-移出计分基地\shayu-tornados-before-scoring-me-first-open.png`；`...\shayu-tornados-over-the-rainbow-after-move-in.png`；`...\shayu-tornados-picked-up-after-move-out.png` | 实际看到 Me First 真实响应入口；移入后目标随从进入计分基地，随后 `Picked Up` 又将其移出。达标。 |
 | Tornados Dust Devil | 16) beforeScoring 在场 special may prompt，可选择移入计分基地 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-尘卷风计分前触发可选移动到计分基地\shayu-tornados-dust-devil-before-scoring-prompt.png`；`...\shayu-tornados-dust-devil-after-move-to-scoring.png` | 第一张实际看到“尘卷风：是否移动到即将计分的基地？”提示与尘卷风本体；第二张实际看到尘卷风进入海渊，计分分数从 16 变 18，并仍处于可继续响应窗口。达标。 |
 | Tornados Gone with the Wind | 17) afterScoring special 从真实窗口打出；18) 清场前把随从移走并避免弃牌 | `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-shayu-factions\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`；`...\shayu-tornados-gone-with-the-wind-after-scoring-cleanup.png` | 第一张实际看到 afterScoring 反应选择中有“随风而逝”；清场后截图显示 `Twister` 留在 Trailer Park，进入出牌阶段，测试断言它不在弃牌堆。达标。 |
@@ -175,6 +175,20 @@
 - **本轮审计口径**：按 `docs/ai-rules/testing-audit.md` 新补强的通用交互入口语义矩阵，对 shayu 三派系全部对象做 P0/P1 重审，逐项核对第一入口、目标归属、数量/可选、上下文携带、UI/validator/handler/reducer 单一真相。
 - **新结论**：截至本轮静态 + 行为证据复核，未发现新的 P0/P1 blocker；但本轮未新增浏览器 E2E 截图，因此不能把本轮结论升级为“全量 L3 E2E 收口”。
 - **当前等级**：shayu 三派系可表述为“全量入口矩阵 P0/P1 已审 + 代表性 L2/L3 已验证 + 仍保留非逐对象 L3 残余范围”。
+
+## 2026-05-23 +08 destroyerId 共享合同补审回写
+
+- **旧结论失效项**：
+  1. `sharks_mako` 旧条目“已注册 `perInstance + triggerBase`；未单独 E2E”不足以证明规则正确，因为问题不在卡牌注册，而在共享 destroyer 归因消费。
+  2. `base_shark_reef` 旧条目“已修正用 `destroyerId`，不是被消灭者 owner”只证明了正向归属，未覆盖 destroyerId 缺失时的否定链。
+- **真实根因**：`src/games/smashup/domain/reducer.ts` 旧逻辑会把缺失 `destroyerId` 的 `MINION_DESTROYED` 事件兜底成当前操作者/目标控制者，误触发 `you destroyed` 类能力。
+- **本次补审范围**：仅 shayu 批次中真正依赖 `destroyerId` 的对象：`sharks_mako`、`base_shark_reef`。
+- **新增证据**：
+  - `src/games/smashup/__tests__/abilities/sharks.test.ts`
+    - `灰鲭鲨不会把缺少 destroyerId 的消灭事件默认算成当前玩家消灭`
+    - `鲨鱼领地不会把缺少 destroyerId 的消灭事件默认算成当前玩家触发`
+  - 专项 evidence：`evidence/smashup/smashup-shayu-destroyerid-contract-reaudit-2026-05-23.md`
+- **更新后口径**：shayu 新派系 destroy trigger 家族必须以后续 destroyerId 专项文档为准，旧本文条目不再单独支撑“destroyer 共享合同已收口”。
 
 ## 2026-05-12 再次抽样调查回写
 
@@ -256,3 +270,13 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## 2026-06-01 回写：`龙卷风走廊` 旧审计结论失效
+
+- **旧结论是什么**：本文 `base_tornado_alley` 条目此前写的是“首次移入触发可选拉入，且同回合第二次移入不重复触发”。
+- **为何失效**：旧证据只打到了对象级 happy path，没有打穿共享回合态 `usedBaseAbilitiesThisTurn` 的生命周期。旧实现会在 `TURN_STARTED` 时仅按 `playerId` 过滤 once 记录，而 `龙卷风走廊` 的判重只看 `baseIndex + baseDefId`，不看触发玩家，因此上一位玩家回合残留的记录会错误挡住下一位玩家本回合第一次移入触发。
+- **新增证据**：
+  - [src/games/smashup/domain/reduce.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/domain/reduce.ts:1739)：新回合开始时整组清空 `usedBaseAbilitiesThisTurn`。
+  - [src/games/smashup/__tests__/bases/tornado-alley-base.test.ts](/D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/tornado-alley-base.test.ts:72)：新增“上一位玩家回合留下的 once 记录不应阻止新回合首次移入触发”。
+  - 验证：`npx vitest run src/games/smashup/__tests__/bases/tornado-alley-base.test.ts --config vitest.config.ts`、`npx vitest run src/games/smashup/__tests__/abilities/tornados.test.ts --config vitest.config.ts`。
+- **新结论**：`龙卷风走廊（base_tornado_alley）` 现在不仅验证“同回合只触发一次”，也验证“跨回合必须重置 once 状态”。本次漏审命中 D5/D8/D18/D49：旧审计把共享 turn-state 边界遗漏成了对象已通过，不能再把“代表性 E2E 已验证”解释成 once/turn 生命周期已全面收口。

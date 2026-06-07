@@ -43,12 +43,19 @@ const parseAndroidVersionCode = (versionName) => {
     return (segments[0] * 10000) + (segments[1] * 100) + segments[2];
 };
 
+const resolveAndroidVersionCode = (packageJsonValue, versionName) => {
+    if (typeof packageJsonValue === 'number' && Number.isFinite(packageJsonValue) && packageJsonValue > 0) {
+        return Math.trunc(packageJsonValue);
+    }
+    return parseAndroidVersionCode(versionName);
+};
+
 const channel = readArgValue('channel', process.env.VITE_ANDROID_NATIVE_UPDATE_CHANNEL?.trim() || 'stable');
 const version = readArgValue('version', packageJson.version);
 const parsedVersionCode = Number.parseInt(readArgValue('version-code', ''), 10);
 const versionCode = Number.isFinite(parsedVersionCode) && parsedVersionCode > 0
     ? parsedVersionCode
-    : parseAndroidVersionCode(version);
+    : resolveAndroidVersionCode(packageJson.androidVersionCode, version);
 const notes = readArgValue('notes', 'Android native APK update');
 const forceUpdate = hasFlag('no-force-update') ? false : true;
 const forceUpdateTitle = forceUpdate
@@ -101,10 +108,13 @@ if (!dryRun) {
 
 const apkBuffer = readFileSync(apkPath);
 const checksum = createHash('sha256').update(apkBuffer).digest('hex');
+const apkFingerprint = checksum.slice(0, 12);
+const fingerprintedApkKey = `${releasePrefix}/packages/${encodeURIComponent(version)}-${apkFingerprint}.apk`;
+const fingerprintedApkUrl = `${assetsBaseUrl}/native-app-updates/android/${channel}/packages/${encodeURIComponent(version)}-${apkFingerprint}.apk`;
 const manifest = {
     version,
     versionCode,
-    url: apkUrl,
+    url: fingerprintedApkUrl,
     checksum,
     channel,
     ...(forceUpdate ? { forceUpdate: true } : {}),
@@ -136,6 +146,7 @@ const uploadObject = async (key, body, contentType, cacheControl) => {
 
 if (!dryRun) {
     await uploadObject(apkKey, apkBuffer, 'application/vnd.android.package-archive', 'public, max-age=31536000, immutable');
+    await uploadObject(fingerprintedApkKey, apkBuffer, 'application/vnd.android.package-archive', 'public, max-age=31536000, immutable');
     await uploadObject(versionManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
     if (!skipLatest) {
         await uploadObject(latestManifestKey, `${JSON.stringify(manifest, null, 2)}\n`, 'application/json', 'public, max-age=60, must-revalidate');
@@ -154,7 +165,8 @@ console.log(`apkBytes=${apkBuffer.length}`);
 console.log(`apkMtime=${apkStats.mtime.toISOString()}`);
 console.log(`apkPath=${apkPath}`);
 console.log(`apkKey=${apkKey}`);
+console.log(`fingerprintedApkKey=${fingerprintedApkKey}`);
 console.log(`latestManifestKey=${latestManifestKey}`);
-console.log(`apkUrl=${apkUrl}`);
+console.log(`apkUrl=${fingerprintedApkUrl}`);
 console.log(`checksum=${checksum}`);
 console.log(`manifest=${JSON.stringify(manifest)}`);

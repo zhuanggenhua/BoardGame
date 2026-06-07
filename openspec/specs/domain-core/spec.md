@@ -37,4 +37,3 @@ TBD - created by archiving change implement-domain-core-and-systems. Update Purp
 - **WHEN** 系统创建一个新的对局
 - **THEN** 状态 MUST 同时包含 `sys` 与 `core`
 - **AND** 平台状态与领域状态 MUST 分别存放
-

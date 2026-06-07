@@ -1,4 +1,6 @@
-# DiceThrone 响应窗口 sourceId 重开场景 watchdog E2E 证据
+# DiceThrone 响应窗口 sourceId 重开场景历史 watchdog E2E 证据
+
+> 2026-06-06 当前有效口径：本文只保留 `sourceId` 连续变化导致响应窗口重复 reopen 时，watchdog 仍能收口这一条历史 E2E 证据，不代表 DiceThrone 全体 response window / watchdog、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时这条单链路被专项验证过，不能外推成 DiceThrone 当前总体收口。
 
 - 测试用例：`Online AI 响应窗口在 sourceId 变化的重复 reopen 下仍应被 watchdog 收口`
 - 文件：`e2e/dicethrone/dicethrone-simple-start.e2e.ts`
@@ -24,3 +26,7 @@ AI 响应窗口被人为注入为“pendingInteractionId 阻塞”，并在 watc
 ## 结果
 - **通过**：watchdog 在 `sourceId` 连续变化的 reopen 场景下仍能强制关闭响应窗口，未出现卡死。
 
+## 当前阅读说明
+
+- 本文只覆盖 `sourceId` 抖动 reopen 这一条历史 watchdog 单链路，不覆盖更广范围 DiceThrone 在线 AI / response watchdog 或新英雄整批完成态。
+- 即使本文中的通过结论与截图在当轮成立，也不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

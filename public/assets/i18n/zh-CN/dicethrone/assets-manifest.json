@@ -4,6 +4,114 @@
   "id": "dicethrone",
   "basePrefix": "official/dicethrone/",
   "files": {
+    "emotes/barbarian/compressed/thumbs-up-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "d47f6a1ee96f4cef89756acf5222eded650b98552c1b23eeeb2216b02574834b",
+          "bytes": 226422,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/barbarian/compressed/thumbs-up-v2": {
+      "variants": {
+        "webp": {
+          "sha256": "d47f6a1ee96f4cef89756acf5222eded650b98552c1b23eeeb2216b02574834b",
+          "bytes": 226422,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/barbarian/thumbs-up-v1": {
+      "variants": {
+        "png": {
+          "sha256": "02c8d57acc9a827bacc5403cd12c3f24e1c86efad1dd51436c7bf4c39cb0519c",
+          "bytes": 2192536,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/barbarian/thumbs-up-v2": {
+      "variants": {
+        "png": {
+          "sha256": "02c8d57acc9a827bacc5403cd12c3f24e1c86efad1dd51436c7bf4c39cb0519c",
+          "bytes": 2192536,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/moon-elf/compressed/confused-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "3cba8b9d2cb98e5699f6ce7cff43655ec65e47c57bf8a168fd126ffeec00b673",
+          "bytes": 155104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/moon-elf/compressed/confused-v2": {
+      "variants": {
+        "webp": {
+          "sha256": "3cba8b9d2cb98e5699f6ce7cff43655ec65e47c57bf8a168fd126ffeec00b673",
+          "bytes": 155104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/moon-elf/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
+          "bytes": 133764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/moon-elf/compressed/speechless-facepalm-chibi-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "d073e74d3fc9bb0323f637541caf84ff546761ccc1741610069cf32fd00f6a8d",
+          "bytes": 114334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/moon-elf/confused-v1": {
+      "variants": {
+        "png": {
+          "sha256": "09481fa2eeac157f8604938ff36a6e73856f991611cb077ac87656b9a3ee5ae4",
+          "bytes": 1543390,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/moon-elf/confused-v2": {
+      "variants": {
+        "png": {
+          "sha256": "09481fa2eeac157f8604938ff36a6e73856f991611cb077ac87656b9a3ee5ae4",
+          "bytes": 1543390,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/moon-elf/smug-v1": {
+      "variants": {
+        "png": {
+          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
+          "bytes": 1932442,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/moon-elf/speechless-facepalm-chibi-v1": {
+      "variants": {
+        "png": {
+          "sha256": "0319ca5d1b08e308aace6bb15be9185ed0879677ab2d1dc2b866ccdc28de7ce0",
+          "bytes": 2064233,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/barbarian/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -67,6 +175,24 @@
         }
       }
     },
+    "images/Common/character-portraits": {
+      "variants": {
+        "png": {
+          "sha256": "f472e4b082cf299ddb4399ce08937bd061ca643fa25a4e73a8ca4080c7144912",
+          "bytes": 10378152,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/Common/characterhead2": {
+      "variants": {
+        "png": {
+          "sha256": "c72c311c9360b6c019e627cf4c2326db03eeea4a3bf91ef246b6cb0cf1ed2747",
+          "bytes": 21314719,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/Common/compressed/background": {
       "variants": {
         "webp": {
@@ -91,6 +217,258 @@
           "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
           "bytes": 165570,
           "mime": "image/webp"
+        }
+      }
+    },
+    "images/Common/compressed/characterhead2": {
+      "variants": {
+        "webp": {
+          "sha256": "8f06ae83f1aa0004f8f9300d3337b064489a40a0e586194b4e49bed8dbbd1c98",
+          "bytes": 257068,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/cursed/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/cursed/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
+          "bytes": 16513454,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "c7fda28cb36a60ea32e59260106569039df89e460b00e1bfad1a23f40066d224",
+          "bytes": 402186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "f6e6941cd1ced0d8d4b09631b21e5201f6dbc676f2ab75d978b64c407c2ceecb",
+          "bytes": 18542,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "04fbe0261a54e903b8f9d716b3b8122eff4fadf306c0603be51c83bf31de172c",
+          "bytes": 377108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "4302e07073ddbdc5cb98a31255d7d3fe0af813f9f5f0d14abc1d82104bd2ad4b",
+          "bytes": 39222,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6b2b2bca95347bdfc898719d8f90d7f9247792fd4ec5e79c0a34510c92212be9",
+          "bytes": 334460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "6eb4477e52e10396ca8d6804b627b8f8e882aff60fd92a617d687e6c063a722b",
+          "bytes": 120704,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/cursed/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "9fe81a7c56552961a7648fdbd88ac2af46523bbca4108fde50cdab14cd894a84",
+          "bytes": 9948505,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
+          "bytes": 317204,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
+          "bytes": 604,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/cursed/status/凋零": {
+      "variants": {
+        "png": {
+          "sha256": "9f786ba6cb8ae1b6c90bec0f76dd86a99c0e60875618e77e7141764334577d06",
+          "bytes": 64632,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status/休战": {
+      "variants": {
+        "png": {
+          "sha256": "51aac7cb57d742e84d0f08b9827fbfc309b5e6a1c37cae8013cfc1db04d8921d",
+          "bytes": 40862,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status/炸药": {
+      "variants": {
+        "png": {
+          "sha256": "55cdff24a5ce8b057d4b80e1718e83fbe89fbb045c64b8be233228df6239f8ac",
+          "bytes": 77380,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status/诅咒金币": {
+      "variants": {
+        "png": {
+          "sha256": "ac01167c8e5dc794df31648a5be03d56a7e42974342bf7eefde79c685a9abcec",
+          "bytes": 86639,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/status/compressed/凋零": {
+      "variants": {
+        "webp": {
+          "sha256": "bb8c259642f136eef1ccec63c7a37c68626f75adada662624e03e96bc3edfed7",
+          "bytes": 8754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/status/compressed/休战": {
+      "variants": {
+        "webp": {
+          "sha256": "f6166c3e7750c80b4998ed8d132831e96b89c66b0124ff30d031e992a6a61156",
+          "bytes": 5350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/status/compressed/炸药": {
+      "variants": {
+        "webp": {
+          "sha256": "1badeb9c191635a2ad4c30ecd3ef72d1abcf64c4a7477451ef71cd73bf49caf7",
+          "bytes": 10170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/status/compressed/诅咒金币": {
+      "variants": {
+        "webp": {
+          "sha256": "c05e23cf7dea065102dec2b9107148f50271d3b606aacd5006c6bb912d651cc4",
+          "bytes": 11300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/cursed/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "f19909890fa8453a7b4a44d867b2468f71909e5855635aa459da99a3f93ceb18",
+          "bytes": 1541631,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -283,6 +661,123 @@
         }
       }
     },
+    "images/ninja/慢性中毒": {
+      "variants": {
+        "png": {
+          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
+          "bytes": 49098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/忍术icon": {
+      "variants": {
+        "png": {
+          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
+          "bytes": 34564,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
+          "bytes": 9404983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
+          "bytes": 10431472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/烟雾弹icon": {
+      "variants": {
+        "png": {
+          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
+          "bytes": 42841,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/Ablilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "2c1605f4b0e8188b5c1ca051cffbe2a81a41c9151ff7f20e94737cef7bb4c66b",
+          "bytes": 14972616,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "663fb66746f4e856f1274dad1487621692aa6163d9a41f603d511400ef0bc5c7",
+          "bytes": 366232,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/ninja/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "df592e2229f68db43c67903c08105cbf41306bd80a04f16e51da794ff62aa752",
+          "bytes": 17402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/ninja/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "faa5bcfe26aa666438c0a91515378c19f1248bb70c8066212cf7ac785df63c70",
+          "bytes": 433332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/ninja/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "524534b96f15127de8f218bb1620e3abb392610287a0bfdd47faf44a07fcb679",
+          "bytes": 20226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/ninja/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "0f783bc91187b47a927652c496261313f4cb18bd73fc14ae7f7dd0041fb192ab",
+          "bytes": 344592,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/ninja/dice": {
+      "variants": {
+        "png": {
+          "sha256": "85882a0e782e061275fab30f86ea016f072d76c9a6ee06650fdd5d6d9dc70c7e",
+          "bytes": 35654,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/ninja/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
+          "mime": "application/json"
+        }
+      }
+    },
     "images/paladin/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -412,8 +907,8 @@
     "images/samurai/compressed/dice": {
       "variants": {
         "webp": {
-          "sha256": "0ccbe3652e69cab8aae748a895eca659f7565a8f507b4f49280070ba93faaf1e",
-          "bytes": 115678,
+          "sha256": "95119577131dc9420e3793149ee243f72f02d2a974d32e69bf3bc1f3cb59618c",
+          "bytes": 24920,
           "mime": "image/webp"
         }
       }
@@ -442,6 +937,15 @@
           "sha256": "bb9d82afbf65233f792bb8dd3a77bb76967a0fef38402c4ba53b27e405c90851",
           "bytes": 473174,
           "mime": "image/webp"
+        }
+      }
+    },
+    "images/samurai/dice": {
+      "variants": {
+        "png": {
+          "sha256": "578e964552d4b06502aa9edcf9b0c71f143b0300456aba1ca9f5f70300b6c3cc",
+          "bytes": 53337,
+          "mime": "image/png"
         }
       }
     },
@@ -475,8 +979,8 @@
     "images/samurai/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "aec1b6413c51c921105ad70e33fc216ac736b73c995315353d707ae09e01eb7f",
-          "bytes": 622,
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
           "mime": "application/json"
         }
       }
@@ -532,6 +1036,339 @@
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
           "bytes": 521,
           "mime": "application/json"
+        }
+      }
+    },
+    "images/treant/木苗树灵": {
+      "variants": {
+        "png": {
+          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
+          "bytes": 69810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/神性树灵": {
+      "variants": {
+        "png": {
+          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
+          "bytes": 63315,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/生命源泉": {
+      "variants": {
+        "png": {
+          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
+          "bytes": 64314,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
+          "bytes": 9228891,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
+          "bytes": 12598188,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/幼种树灵": {
+      "variants": {
+        "png": {
+          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
+          "bytes": 50153,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/abilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "d7a894a209b8acf4c3d47ee4de693464e2938c7334073508b687d7ef54304a5d",
+          "bytes": 14960145,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "adbdb46798f1a53730e2d9db2524c40eab14a6ad1a1c9ef7bb20ed84f91dc0f9",
+          "bytes": 372972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/treant/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "4cf6e2e53cad4af5d240a3c8158308bed9667b7994b63629cabbc370d05c7db0",
+          "bytes": 20634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/treant/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "df02384eab0bea93cf2b490c03308d857fbab5001cd10916adc35986ad165515",
+          "bytes": 546910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/treant/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "65fbfb0e1cdddf2d80426d39c2673842efde2dd896b1d13f91d7b9fe2c7cdff6",
+          "bytes": 31972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/treant/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e84b5a9a2b0491ac340f2f9c503bee9bcf67792e98b3cd29cee449ea80c9b8a5",
+          "bytes": 416672,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/treant/dice": {
+      "variants": {
+        "png": {
+          "sha256": "ca7df6144dd6323bd9e71f7e57591eeaa6957534337bbf6f47120363e936fcb4",
+          "bytes": 58772,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/treant/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/zhanshujia/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/提示板": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/zhanshujia/骰子": {
+      "variants": {
+        "png": {
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "f67df49bfa8cf18bfc06aea79fc499a6d3bd264b03274439a4990738fb4c2890",
+          "bytes": 14961151,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/提示板": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/玩家面板": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "e918ab6bca2a9e376d968a041022fd8e189eb37c50c470bc4267b671500c9425",
+          "bytes": 372752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "513ac00be1b446db57c33d8387bd9fdbb5824cd2e73e60f7ebc9dea66642c54d",
+          "bytes": 17972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "2c9b8a0c22942dc4aa2b92329bb91904d5c9f1f4a7593a613ae25d76f283af3b",
+          "bytes": 375712,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "3b2e6fda8981e00eaec25b51828d36ead3d4b87df17400cf2cd460a3753cc203",
+          "bytes": 17752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "11323399ce88f0f0436fb0d9b98f3fbe50adad3d2b7fc29e71117e6fa7d2b87b",
+          "bytes": 262658,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/dice": {
+      "variants": {
+        "png": {
+          "sha256": "2e90cf1a758ab20a913683104db4cdc1d938307b008aa1dd914195e6a156ee73",
+          "bytes": 57745,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "99249473964d38b70d26ab97bb85bc90123362c56c3a4d1ff7d9f047f5ca6249",
+          "bytes": 9871576,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
+          "bytes": 135997,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
+          "bytes": 370,
+          "mime": "application/json"
+        }
+      }
+    },
+    "images/zhanshujia/status/紧缚": {
+      "variants": {
+        "png": {
+          "sha256": "7c001e38d4a9cdc3683f9b5cc7c8467a884ac22dfcd0a1406e1f406bfce8caf0",
+          "bytes": 79639,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/status/战术优势": {
+      "variants": {
+        "png": {
+          "sha256": "0763e121bd7742d11b0124845314184e2c97ef636d7bb6cfe405b60937b2a999",
+          "bytes": 100459,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/zhanshujia/status/compressed/紧缚": {
+      "variants": {
+        "webp": {
+          "sha256": "5782a864984f2b5e308dd456c8ac676b6b267317bd2a9de189b0afe71aaba377",
+          "bytes": 8876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/status/compressed/战术优势": {
+      "variants": {
+        "webp": {
+          "sha256": "7f580d391764df39183b2aa0183cdb7e82d25b19b2c1089f1fdc14f7673ca472",
+          "bytes": 11332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/zhanshujia/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe950f903c0cd59edb1fa5a53fe21b46f5aec2cdf9e517ee1b57f4fb6c4a8035",
+          "bytes": 1354426,
+          "mime": "image/jpeg"
         }
       }
     },

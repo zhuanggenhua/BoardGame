@@ -75,6 +75,9 @@ export class User {
     @Prop({ type: String, default: null, trim: true })
     bannedReason?: string | null;
 
+    @Prop({ type: Number, default: 0, min: 0 })
+    feedbackPoints!: number;
+
     createdAt!: Date;
     updatedAt!: Date;
 }

@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
-import { FEEDBACK_API_URL as API_URL } from '../../config/server';
+import { FEEDBACK_API_URL as API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST } from '../../games/manifest.generated';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
@@ -170,7 +170,7 @@ const clearFeedbackDraft = (storageKey: string) => {
 
 export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeContext }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
-    const { token } = useAuth();
+    const { token, addFeedbackPoints } = useAuth();
     const { success, error } = useToast();
     const location = useLocation();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -323,6 +323,10 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
         e.preventDefault();
         if (!content.trim() && !pastedImage) return;
 
+        if (IS_DEV_API_DISABLED) {
+            return;
+        }
+
         setSubmitting(true);
         try {
             // Append image to content as Markdown if present
@@ -394,8 +398,19 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 );
             }
 
+            const payload = await res.json().catch(() => null) as { rewardPoints?: number } | null;
+            const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
             clearFeedbackDraft(draftStorageKey);
-            success(t('hud.feedback.success'));
+            if (rewardPoints > 0) {
+                addFeedbackPoints(rewardPoints);
+                success({
+                    kind: 'reward-points',
+                    text: t('hud.feedback.success'),
+                    points: rewardPoints,
+                });
+            } else {
+                success(t('hud.feedback.success'));
+            }
             onClose();
         } catch (err) {
             console.error(err);
@@ -425,9 +440,9 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
             data-lock-layout-viewport="true"
             style={{
                 zIndex: UI_Z_INDEX.modalContent,
-                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh))',
-                '--modal-active-bottom-inset': 'var(--safe-area-bottom)',
-                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100dvh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--safe-area-bottom)))',
+                '--modal-active-viewport-height': 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))',
+                '--modal-active-bottom-inset': 'var(--runtime-modal-bottom-inset)',
+                '--modal-max-height': 'calc(var(--layout-viewport-height, var(--runtime-viewport-height, 100vh)) - max(1rem, var(--safe-area-top)) - max(1rem, var(--modal-active-bottom-inset, var(--runtime-modal-bottom-inset))))',
                 paddingTop: isCompactLandscape ? 'max(0.5rem, var(--safe-area-top))' : 'max(1rem, var(--safe-area-top))',
                 paddingRight: 'max(1rem, var(--safe-area-right))',
                 paddingBottom: isCompactLandscape
@@ -630,6 +645,15 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                         />
                     </div>
 
+                    {IS_DEV_API_DISABLED ? (
+                        <div
+                            className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-900"
+                            data-testid="feedback-api-disabled-banner"
+                        >
+                            {t('hud.feedback.errors.apiDisabled')}
+                        </div>
+                    ) : null}
+
                     </div>
 
                     {/* 提交按钮固定在底部，不随内容滚动 */}
@@ -639,7 +663,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                     )}>
                         <button
                             type="submit"
-                            disabled={submitting || (!content.trim() && !pastedImage)}
+                            disabled={submitting || IS_DEV_API_DISABLED || (!content.trim() && !pastedImage)}
                             className="flex items-center gap-2 px-6 py-2 bg-parchment-brown hover:bg-parchment-brown/90 text-parchment-cream rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

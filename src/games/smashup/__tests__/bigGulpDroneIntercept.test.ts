@@ -10,9 +10,20 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMinion, makeCard, makePlayer, makeState, makeMatchState } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    makeMinion,
+    makeCard,
+    makePlayer,
+    makeState,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -68,49 +79,38 @@ describe('一大口 + 雄蜂防止消灭', () => {
         expect(result1.success).toBe(true);
 
         // 应创建一大口的选择交互（多个候选）
-        const interaction1 = result1.finalState.sys.interaction?.current;
-        expect(interaction1).toBeDefined();
-        expect(interaction1!.playerId).toBe('1'); // 一大口属于玩家1
-        expect((interaction1!.data as any).sourceId).toBe('vampire_big_gulp');
+        const interaction1 = getSimpleChoicePrompt(result1.finalState, 'vampire_big_gulp');
+        expect(getPromptPlayerId(interaction1)).toBe('1'); // 一大口属于玩家1
+        expect(getPromptSourceId(interaction1)).toBe('vampire_big_gulp');
 
         // 步骤2：玩家1选择消灭科学小怪
-        const options = (interaction1!.data as any).options;
-        const igorOption = options.find((o: any) => {
+        const igorOption = getPromptOption(interaction1, (o: any) => {
             const val = o.value;
             return val?.minionUid === 'igor1' || val?.defId === 'frankenstein_igor';
-        });
-        expect(igorOption).toBeDefined();
+        }, 'Igor destroy option');
 
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: { optionId: igorOption.id },
-            timestamp: 200,
-        } as any);
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '1');
 
         expect(result2.success).toBe(true);
 
         // 关键验证：雄蜂防止消灭交互应被创建
-        const interaction2 = result2.finalState.sys.interaction?.current;
+        const interaction2 = getSimpleChoicePrompt(result2.finalState, 'giant_ant_drone_prevent_destroy');
 
-        expect(interaction2).toBeDefined();
-        expect(interaction2!.playerId).toBe('0'); // 雄蜂交互属于玩家0（随从拥有者）
-        expect((interaction2!.data as any).sourceId).toBe('giant_ant_drone_prevent_destroy');
+        expect(getPromptPlayerId(interaction2)).toBe('0'); // 雄蜂交互属于玩家0（随从拥有者）
+        expect(getPromptSourceId(interaction2)).toBe('giant_ant_drone_prevent_destroy');
 
         // 验证科学小怪还在基地上（未被消灭，等待雄蜂决定）
         const igorStillOnBase = result2.finalState.core.bases[0].minions.some(m => m.uid === 'igor1');
         expect(igorStillOnBase).toBe(true);
 
         // 步骤3：玩家0选择防止消灭（移除雄蜂指示物）
-        const droneOption = (interaction2!.data as any).options.find((o: any) => o.value?.droneUid);
-        expect(droneOption).toBeDefined();
+        const droneOption = getPromptOption(
+            interaction2,
+            (o: any) => Boolean(o.value?.droneUid),
+            'Drone prevent destroy option',
+        );
 
-        const result3 = runCommand(result2.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: droneOption.id },
-            timestamp: 300,
-        } as any);
+        const result3 = respondToPrompt(result2.finalState, droneOption.id, '0');
 
         expect(result3.success).toBe(true);
 
@@ -124,7 +124,7 @@ describe('一大口 + 雄蜂防止消灭', () => {
         expect(drone!.powerCounters).toBe(0); // 从1减到0
 
         // 验证：交互已清除
-        expect(result3.finalState.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(result3.finalState);
     });
 
     /**
@@ -171,34 +171,25 @@ describe('一大口 + 雄蜂防止消灭', () => {
         expect(result1.success).toBe(true);
 
         // 应创建一大口的选择交互（Igor 或跳过）
-        const interaction1 = result1.finalState.sys.interaction?.current;
-        expect(interaction1).toBeDefined();
-        expect(interaction1!.playerId).toBe('1'); // 一大口交互属于玩家1
-        expect((interaction1!.data as any).sourceId).toBe('vampire_big_gulp');
+        const interaction1 = getSimpleChoicePrompt(result1.finalState, 'vampire_big_gulp');
+        expect(getPromptPlayerId(interaction1)).toBe('1'); // 一大口交互属于玩家1
+        expect(getPromptSourceId(interaction1)).toBe('vampire_big_gulp');
 
         // 步骤2：选择消灭 Igor
-        const options = (interaction1!.data as any).options;
-        const igorOption = options.find((o: any) => {
+        const igorOption = getPromptOption(interaction1, (o: any) => {
             const val = o.value;
             return val?.minionUid === 'igor1' || val?.defId === 'frankenstein_igor';
-        });
-        expect(igorOption).toBeDefined();
+        }, 'Igor destroy option');
 
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '1',
-            payload: { optionId: igorOption.id },
-            timestamp: 200,
-        } as any);
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '1');
 
         expect(result2.success).toBe(true);
 
         // 关键验证：雄蜂防止消灭交互应被创建
-        const interaction2 = result2.finalState.sys.interaction?.current;
+        const interaction2 = getSimpleChoicePrompt(result2.finalState, 'giant_ant_drone_prevent_destroy');
 
-        expect(interaction2).toBeDefined();
-        expect(interaction2!.playerId).toBe('0'); // 雄蜂交互属于玩家0（随从拥有者）
-        expect((interaction2!.data as any).sourceId).toBe('giant_ant_drone_prevent_destroy');
+        expect(getPromptPlayerId(interaction2)).toBe('0'); // 雄蜂交互属于玩家0（随从拥有者）
+        expect(getPromptSourceId(interaction2)).toBe('giant_ant_drone_prevent_destroy');
 
         // 科学小怪应还在基地上（等待雄蜂决定）
         const igorOnBase = result2.finalState.core.bases[0].minions.some(m => m.uid === 'igor1');

@@ -1,3 +1,6 @@
+> 2026-05-30 更正说明：
+> 本文档若被用于引用隐形忍者（`ninjas_invisible_ninja`）规则，请以 `evidence/smashup/smashup-feedback-6a1a888c-invisible-ninja-card-destroy-trigger-2026-05-30.md` 为准。旧口径把它收窄成“消灭对手随从后触发”，现已确认正式卡图实际是“每回合一次，消灭另一名玩家的一张卡，或将自己一个随从返回手牌后触发”。
+
 # SmashUp lane-2 人类反馈遗留簇复验与最小修复（2026-04-26）
 
 ## 范围

@@ -502,7 +502,7 @@ export function executePipeline<
     const systems = sortSystems(config.systems);
     const MAX_AFTER_EVENTS_ROUNDS = 10;
 
-    let currentState = state;
+    let currentState = domain.normalizeRuntimeState ? domain.normalizeRuntimeState(state) : state;
     const allEvents: GameEvent[] = [];
     const preCommandEvents: GameEvent[] = [];
     const systemEventsToReduce: GameEvent[] = [];

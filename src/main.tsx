@@ -4,10 +4,10 @@ import './index.css';
 import { i18nInitPromise } from './lib/i18n';
 import App from './App.tsx';
 import { SENTRY_DSN } from './config/server';
-import { notifyAndroidBundleReady } from './lib/mobile/androidLiveUpdates';
+import { notifyMobileBundleReady } from './lib/mobile/mobileLiveUpdates';
 import { isStaleChunkError, reloadForStaleChunkOnce } from './lib/staleChunkReloadGuard';
 import { hydrateInstalledNativeGamePackages } from './features/mobile-packages/packageManagerService';
-import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
+import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 
 const STALE_CHUNK_BOOTSTRAP_WINDOW_MS = 8000;
 const bootstrapStartedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
@@ -103,8 +103,8 @@ if (SENTRY_DSN) {
   });
 }
 
-if (isNativeAndroidRuntime()) {
-  void notifyAndroidBundleReady();
+if (isNativeMobileRuntime()) {
+  void notifyMobileBundleReady();
   void hydrateInstalledNativeGamePackages().catch((error) => {
     console.warn('[MobilePackages] 同步原生已安装游戏包失败', error);
   });

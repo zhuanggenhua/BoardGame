@@ -23,11 +23,22 @@ interface ProxyState {
     inlineStyle?: Record<string, string>;
 }
 
+interface PendingLayoutLockSnapshot {
+    target: HTMLElement;
+    lockedViewportContainer: HTMLElement | null;
+    scrollTop: number;
+    scrollLeft: number;
+}
+
 interface TargetProxySnapshot {
     readonly?: boolean;
     contentEditable?: string | null;
     caretColor?: string;
     hostPointerEvents?: string;
+    lockedViewportBottomInset?: string | null;
+    lockedViewportOverflowY?: string;
+    lockedViewportScrollTop?: number;
+    lockedViewportScrollLeft?: number;
 }
 
 const KEYBOARD_PROXY_MIN_INSET = 72;
@@ -59,6 +70,34 @@ const readCssKeyboardInset = () => {
     const rawValue = window.getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset-height');
     const parsed = Number.parseFloat(rawValue || '0');
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+};
+
+const readCssViewportMetric = (name: string) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return 0;
+    }
+
+    const rawValue = window.getComputedStyle(document.documentElement).getPropertyValue(name);
+    const parsed = Number.parseFloat(rawValue || '0');
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+};
+
+const resolveProxyBottomInset = (keyboardInset: number) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return Math.max(0, keyboardInset);
+    }
+
+    const runtimeViewportHeight = readCssViewportMetric('--runtime-viewport-height');
+    const layoutViewportHeight = Math.max(
+        readCssViewportMetric('--layout-viewport-height'),
+        window.innerHeight,
+        document.documentElement.clientHeight,
+    );
+    const runtimeViewportGap = runtimeViewportHeight > 0
+        ? Math.max(0, layoutViewportHeight - runtimeViewportHeight)
+        : 0;
+
+    return Math.max(0, keyboardInset, runtimeViewportGap);
 };
 
 const isProxyUiElement = (candidate: EventTarget | Element | null | undefined): boolean => {
@@ -228,11 +267,40 @@ const areProxyStatesEquivalent = (current: ProxyState | null, next: ProxyState) 
         && areInlineStylesEqual(current.inlineStyle, next.inlineStyle);
 };
 
-const freezeTargetForProxy = (target: HTMLElement): TargetProxySnapshot => {
+const capturePendingLayoutLockSnapshot = (target: HTMLElement): PendingLayoutLockSnapshot => {
+    const lockedViewportContainer = target.closest('[data-lock-layout-viewport="true"]');
+    return {
+        target,
+        lockedViewportContainer: lockedViewportContainer instanceof HTMLElement ? lockedViewportContainer : null,
+        scrollTop: lockedViewportContainer instanceof HTMLElement ? lockedViewportContainer.scrollTop : 0,
+        scrollLeft: lockedViewportContainer instanceof HTMLElement ? lockedViewportContainer.scrollLeft : 0,
+    };
+};
+
+const freezeTargetForProxy = (
+    target: HTMLElement,
+    pendingLayoutLockSnapshot: PendingLayoutLockSnapshot | null,
+): TargetProxySnapshot => {
     const host = target.closest('[data-mobile-text-entry-proxy-host="true"]');
+    const lockedViewportContainer = target.closest('[data-lock-layout-viewport="true"]');
+    const matchedPendingLayoutSnapshot = (
+        pendingLayoutLockSnapshot
+        && pendingLayoutLockSnapshot.target === target
+        && pendingLayoutLockSnapshot.lockedViewportContainer === lockedViewportContainer
+    ) ? pendingLayoutLockSnapshot : null;
     const snapshot: TargetProxySnapshot = {
         caretColor: target.style.caretColor,
         hostPointerEvents: host instanceof HTMLElement ? host.style.pointerEvents : undefined,
+        lockedViewportBottomInset: lockedViewportContainer instanceof HTMLElement
+            ? lockedViewportContainer.style.getPropertyValue('--modal-active-bottom-inset')
+            : null,
+        lockedViewportOverflowY: lockedViewportContainer instanceof HTMLElement ? lockedViewportContainer.style.overflowY : undefined,
+        lockedViewportScrollTop: lockedViewportContainer instanceof HTMLElement
+            ? (matchedPendingLayoutSnapshot?.scrollTop ?? lockedViewportContainer.scrollTop)
+            : undefined,
+        lockedViewportScrollLeft: lockedViewportContainer instanceof HTMLElement
+            ? (matchedPendingLayoutSnapshot?.scrollLeft ?? lockedViewportContainer.scrollLeft)
+            : undefined,
     };
 
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -247,6 +315,12 @@ const freezeTargetForProxy = (target: HTMLElement): TargetProxySnapshot => {
     if (host instanceof HTMLElement) {
         host.style.pointerEvents = 'none';
     }
+    if (lockedViewportContainer instanceof HTMLElement) {
+        lockedViewportContainer.scrollTop = matchedPendingLayoutSnapshot?.scrollTop ?? lockedViewportContainer.scrollTop;
+        lockedViewportContainer.scrollLeft = matchedPendingLayoutSnapshot?.scrollLeft ?? lockedViewportContainer.scrollLeft;
+        lockedViewportContainer.style.setProperty('--modal-active-bottom-inset', 'var(--safe-area-bottom)');
+        lockedViewportContainer.style.overflowY = 'hidden';
+    }
     target.setAttribute(TARGET_PROXY_ATTR, 'true');
 
     return snapshot;
@@ -254,10 +328,21 @@ const freezeTargetForProxy = (target: HTMLElement): TargetProxySnapshot => {
 
 const restoreTargetAfterProxy = (target: HTMLElement, snapshot: TargetProxySnapshot | null) => {
     const host = target.closest('[data-mobile-text-entry-proxy-host="true"]');
+    const lockedViewportContainer = target.closest('[data-lock-layout-viewport="true"]');
     target.removeAttribute(TARGET_PROXY_ATTR);
     target.style.caretColor = snapshot?.caretColor ?? '';
     if (host instanceof HTMLElement) {
         host.style.pointerEvents = snapshot?.hostPointerEvents ?? '';
+    }
+    if (lockedViewportContainer instanceof HTMLElement) {
+        lockedViewportContainer.scrollTop = snapshot?.lockedViewportScrollTop ?? lockedViewportContainer.scrollTop;
+        lockedViewportContainer.scrollLeft = snapshot?.lockedViewportScrollLeft ?? lockedViewportContainer.scrollLeft;
+        lockedViewportContainer.style.overflowY = snapshot?.lockedViewportOverflowY ?? '';
+        if (snapshot?.lockedViewportBottomInset && snapshot.lockedViewportBottomInset.length > 0) {
+            lockedViewportContainer.style.setProperty('--modal-active-bottom-inset', snapshot.lockedViewportBottomInset);
+        } else {
+            lockedViewportContainer.style.removeProperty('--modal-active-bottom-inset');
+        }
     }
 
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -283,6 +368,7 @@ export const MobileTextEntryProxyLayer = () => {
     const lastKeyboardInsetRef = useRef<number>(0);
     const lastPointerIntentRef = useRef<{ at: number; target: HTMLElement | null }>({ at: 0, target: null });
     const suppressProxyRestoreUntilRef = useRef<number>(0);
+    const pendingLayoutLockSnapshotRef = useRef<PendingLayoutLockSnapshot | null>(null);
     const proxyTarget = proxyState?.target ?? null;
 
     const dismissProxySession = () => {
@@ -447,6 +533,7 @@ export const MobileTextEntryProxyLayer = () => {
                 return;
             }
 
+            pendingLayoutLockSnapshotRef.current = capturePendingLayoutLockSnapshot(targetElement);
             window.setTimeout(() => {
                 if (readKeyboardInset() >= KEYBOARD_PROXY_MIN_INSET) {
                     activateProxy(targetElement);
@@ -587,8 +674,9 @@ export const MobileTextEntryProxyLayer = () => {
         }
 
         if (proxiedTargetRef.current !== proxyTarget) {
-            proxiedSnapshotRef.current = freezeTargetForProxy(proxyTarget);
+            proxiedSnapshotRef.current = freezeTargetForProxy(proxyTarget, pendingLayoutLockSnapshotRef.current);
             proxiedTargetRef.current = proxyTarget;
+            pendingLayoutLockSnapshotRef.current = null;
             debugProxyEvent('freeze-target', {
                 tag: proxyTarget.tagName,
                 testId: proxyTarget.getAttribute('data-testid'),
@@ -670,7 +758,7 @@ export const MobileTextEntryProxyLayer = () => {
         autoCapitalize: 'sentences' as const,
         autoCorrect: 'on',
         spellCheck: true,
-        className: proxyState.className || 'w-full',
+        className: `pointer-events-auto ${proxyState.className || 'w-full'}`,
         style: {
             width: '100%',
             ...proxyState.inlineStyle,
@@ -799,15 +887,17 @@ export const MobileTextEntryProxyLayer = () => {
         'data-testid': 'mobile-text-entry-proxy-input',
     };
 
+    const proxyBottomInset = resolveProxyBottomInset(keyboardInset);
+
     return createPortal(
         <div
             className="fixed inset-x-0 bottom-0 pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.modalRoot + 120 }}
+            style={{ zIndex: UI_Z_INDEX.textEntryProxy }}
             data-testid="mobile-text-entry-proxy"
         >
             <form
-                className="pointer-events-auto mx-auto w-full max-w-3xl px-3"
-                style={{ paddingBottom: `max(12px, calc(${Math.max(0, keyboardInset)}px + var(--safe-area-bottom)))` }}
+                className="pointer-events-none mx-auto w-full max-w-3xl px-3"
+                style={{ paddingBottom: `max(12px, calc(${proxyBottomInset}px + var(--safe-area-bottom)))` }}
                 onSubmit={(event) => {
                     event.preventDefault();
                     if (!proxyState.multiline) {

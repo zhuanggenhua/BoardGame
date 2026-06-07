@@ -25,12 +25,13 @@ import {
     createHeroMatchup,
     getCardById,
     advanceTo,
+    getCurrentInteractionId,
 } from './test-utils';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
-import { resolveLocalPregameControlledPlayerId } from '../../../engine/transport/followCurrentTurnPlayer';
+import { resolveDiceThroneLocalPregameControlledPlayerId } from '../localPregameControl';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { InteractionDescriptor } from '../domain/core-types';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
@@ -154,6 +155,37 @@ describe('TOGGLE_DIE_LOCK 锁定/解锁骰子', () => {
         expect(core.dice[0].isKept).toBe(false);
         // 解锁后 die 0 也被重掷
         expect(core.dice[0].value).toBe(2);
+    });
+
+    it('防御阶段应允许防御方锁定自己的防御骰', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '1';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 2;
+        state.core.rollConfirmed = false;
+        state.core.rollDiceCount = 3;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist',
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+            bonusDamage: 0,
+        } as any;
+        state.core.dice = [
+            { id: 0, value: 1, isKept: false, definitionId: 'ninja-dice', symbol: 'katana', symbols: ['katana'] },
+            { id: 1, value: 4, isKept: false, definitionId: 'ninja-dice', symbol: 'mask', symbols: ['mask'] },
+            { id: 2, value: 6, isKept: false, definitionId: 'ninja-dice', symbol: 'mask', symbols: ['mask'] },
+            { id: 3, value: 4, isKept: true, definitionId: 'ninja-dice', symbol: 'mask', symbols: ['mask'] },
+            { id: 4, value: 5, isKept: true, definitionId: 'ninja-dice', symbol: 'shuriken', symbols: ['shuriken'] },
+        ] as any;
+
+        const result = tryCmd(state, cmd('TOGGLE_DIE_LOCK', '1', { dieId: 0 }));
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(result.state.core.dice[0].isKept).toBe(true);
     });
 
     it('非 offensiveRoll/defensiveRoll 阶段锁定骰子失败', () => {
@@ -361,6 +393,35 @@ describe('AI legal actions', () => {
         )).toBe(false);
     });
 
+    it('旧 pendingBonusDiceSettlement 脏 dice shape 不应让 AI 构建奖励骰动作时崩溃', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main2';
+        (state.core as any).pendingBonusDiceSettlement = {
+            id: 'legacy-bonus-dice-shape',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: { legacy: true },
+            rerollCostTokenId: TOKEN_IDS.TAIJI,
+            rerollCostAmount: 1,
+            rerollCount: 0,
+            readyToSettle: false,
+            resolutionMode: 'damage',
+        };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.some((action) =>
+            action.kind === 'bonus-die-reroll' || action.kind === 'skip-bonus-dice-reroll'
+        )).toBe(true);
+        expect(actions.filter((action) => action.kind === 'bonus-die-reroll')).toHaveLength(0);
+        expect(actions.some((action) => action.kind === 'skip-bonus-dice-reroll')).toBe(true);
+    });
+
     it('本地 AI 在奖励骰未达阈值且重掷低骰有正期望时，应优先重掷该骰', async () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
@@ -537,7 +598,7 @@ describe('AI legal actions', () => {
                 kind: 'interaction-choice',
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: { optionIds: ['__emergency_skip__'] },
+                    payload: { interactionId: 'unsat-multi-choice', optionIds: ['__emergency_skip__'] },
                 }],
             }),
         ]));
@@ -554,7 +615,7 @@ describe('AI legal actions', () => {
         expect(resolution?.playerId).toBe('0');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionIds: ['__emergency_skip__'] },
+            payload: { interactionId: 'unsat-multi-choice', optionIds: ['__emergency_skip__'] },
         });
     });
 
@@ -591,7 +652,7 @@ describe('AI legal actions', () => {
             kind: 'interaction-cancel',
             commands: [{
                 type: 'SYS_INTERACTION_CANCEL',
-                payload: { reason: 'no-legal-actions' },
+                payload: { interactionId: 'unsat-multi-choice-no-fallback-option', reason: 'no-legal-actions' },
             }],
         })]);
     });
@@ -613,12 +674,13 @@ describe('AI legal actions', () => {
             playerId: '0',
             state,
         });
+        const currentInteractionId = getCurrentInteractionId(state);
 
         expect(actions).toEqual([expect.objectContaining({
             kind: 'interaction-cancel',
             commands: [{
                 type: 'SYS_INTERACTION_CANCEL',
-                payload: { reason: 'no-legal-actions' },
+                payload: { interactionId: currentInteractionId, reason: 'no-legal-actions' },
             }],
         })]);
     });
@@ -677,7 +739,7 @@ describe('AI legal actions', () => {
 
         expect(resolution?.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'option-0' },
+            payload: { interactionId: 'ai-choice-token', optionId: 'option-0' },
         });
     });
 
@@ -3467,8 +3529,7 @@ describe('本地 AI setup 视角切换', () => {
             } as MatchState<DiceThroneCore>['sys'],
         };
 
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3478,8 +3539,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('0');
 
         core.selectedCharacters['0'] = 'barbarian';
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3489,8 +3549,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('1');
 
         core.selectedCharacters['1'] = 'monk';
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3500,8 +3559,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('1');
 
         core.readyPlayers['1'] = true;
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {

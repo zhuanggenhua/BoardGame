@@ -1,13 +1,42 @@
 import type { CSSProperties } from 'react';
 import type { HeroState } from '../types';
 import type { TranslateFn } from './utils';
-import { buildLocalizedImageSet, getAssetsBaseUrl, getLocalizedImageUrls } from '../../../core';
+import {
+    buildLocalizedImageSet,
+    buildSpriteBackgroundImage as buildGenericSpriteBackgroundImage,
+    isDirectSpriteAsset,
+    resolveSpriteAssetUrl as resolveGenericSpriteAssetUrl,
+    resolveSpriteAssetUrls as resolveGenericSpriteAssetUrls,
+} from '../../../core';
 import { createScopedLogger } from '../../../lib/logger';
 import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
+const CHARACTER_ASSET_DIR: Record<string, string> = {
+    cursed_pirate: 'cursed',
+};
+
 const getCharacterAssetBase = (charId: string = 'monk') => (
-    `dicethrone/images/${charId}`
+    `dicethrone/images/${CHARACTER_ASSET_DIR[charId] ?? charId}`
 );
+
+const getPlayerBoardAssetName = (
+    charId: string,
+    playerBoardFace?: HeroState['playerBoardFace'],
+) => {
+    if (charId === 'cursed_pirate' && playerBoardFace === 'normal') {
+        return 'human-player-board';
+    }
+    return 'player-board';
+};
+
+export const getPlayerBoardAssetPath = (
+    charId: string = 'monk',
+    playerBoardFace?: HeroState['playerBoardFace'],
+) => withExtension(
+    `${getCharacterAssetBase(charId)}/${getPlayerBoardAssetName(charId, playerBoardFace)}`,
+    charId,
+);
+
 const diceAssetsLogger = createScopedLogger('dicethrone:dice-assets');
 
 /**
@@ -18,7 +47,9 @@ const withExtension = (path: string, charId: string) => (
 );
 
 export const ASSETS = {
-    PLAYER_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/player-board`, charId),
+    PLAYER_BOARD: (charId: string = 'monk', playerBoardFace?: HeroState['playerBoardFace']) => (
+        getPlayerBoardAssetPath(charId, playerBoardFace)
+    ),
     TIP_BOARD: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/tip`, charId),
     CARDS_ATLAS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/ability-cards`, charId),
     HAND_CARDS_ATLAS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/hand-cards-atlas`, charId),
@@ -26,9 +57,9 @@ export const ASSETS = {
     EFFECT_ICONS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/status-icons-atlas`, charId),
     CARD_BG: 'dicethrone/images/Common/card-background',
     AVATAR: 'dicethrone/images/Common/character-portraits',
+    NEW_AVATAR: 'dicethrone/images/Common/characterhead2',
 };
 
-const DIRECT_SPRITE_ASSET_RE = /^(?:https?:|data:|blob:|\/game-data\/)/i;
 const GAME_DATA_DICE_SPRITE_RE = /^\/game-data\/dicethrone\/([^/]+)\/dice-sprite\.png$/i;
 const LOGICAL_DICE_SPRITE_RE =
     /^(?:\/assets\/|https?:\/\/[^/]+\/official\/)?(?:i18n\/[^/]+\/)?dicethrone\/images\/([^/]+)\/(?:compressed\/)?(dice(?:-sprite)?)(?:\.(?:png|webp|avif))?$/i;
@@ -89,65 +120,17 @@ const getSpriteAssetPathCandidates = (assetPath?: string | null) => {
     ]);
 };
 
-const getLogicalSpriteUrlCandidates = (assetPath: string, locale?: string) => {
-    const localized = getLocalizedImageUrls(assetPath, locale);
-    const urls = dedupeStringList([
-        localized.primary.webp,
-        localized.fallback.webp,
-    ]);
-    // DiceThrone 骰图优先走语言化压缩资源；
-    // 但如果定义里给的是 /game-data 直链，resolveSpriteAssetUrls 仍会把原始 PNG 保留为最后回退，
-    // 避免某些角色的压缩资源链路缺失时整块骰面空白。
-    // 这里依然不追加未语言化的本地 /assets 回退，避免 dev server 把 SPA HTML 误探测成图片。
-    const base = getAssetsBaseUrl().replace(/\/+$/, '');
-    const toR2AbsoluteUrl = (url: string) => {
-        if (url.startsWith('/assets/')) {
-            if (base.startsWith('http://') || base.startsWith('https://')) {
-                return `${base}/${url.replace(/^\/+assets\/+/, '')}`;
-            }
-            return url;
-        }
-        if (url.startsWith('/')) {
-            if (base.startsWith('http://') || base.startsWith('https://')) {
-                return `${base}/${url.replace(/^\/+/, '')}`;
-            }
-            return url;
-        }
-        return url;
-    };
-
-    const candidates = dedupeStringList(urls.map(toR2AbsoluteUrl));
-    diceAssetsLogger.debug('logical-url-candidates', {
-        assetPath,
-        locale: locale ?? null,
-        base,
-        candidates,
-    });
-    return candidates;
-};
-
-export const isDirectSpriteAsset = (assetPath?: string | null) => (
-    Boolean(assetPath && DIRECT_SPRITE_ASSET_RE.test(assetPath.trim()))
-);
-
 export const resolveSpriteAssetUrls = (assetPath?: string | null, locale?: string) => {
     const paths = getSpriteAssetPathCandidates(assetPath);
-    const urls: string[] = [];
-    for (const path of paths) {
-        if (isDirectSpriteAsset(path)) {
-            diceAssetsLogger.debug('resolve-direct-url', {
-                locale: locale ?? null,
-                path,
-            });
-            urls.push(path);
-            continue;
-        }
-        diceAssetsLogger.debug('resolve-logical-path', {
+    const urls = paths.flatMap((path) => {
+        const resolved = resolveGenericSpriteAssetUrls(path, locale);
+        diceAssetsLogger.debug(isDirectSpriteAsset(path) ? 'resolve-direct-url' : 'resolve-logical-path', {
             locale: locale ?? null,
             path,
+            resolved,
         });
-        urls.push(...getLogicalSpriteUrlCandidates(path, locale));
-    }
+        return resolved;
+    });
     const deduped = dedupeStringList(urls);
     diceAssetsLogger.debug('resolve-final-urls', {
         input: assetPath ?? null,
@@ -159,12 +142,11 @@ export const resolveSpriteAssetUrls = (assetPath?: string | null, locale?: strin
 
 export const resolveSpriteAssetUrl = (assetPath?: string | null, locale?: string) => {
     const urls = resolveSpriteAssetUrls(assetPath, locale);
-    return urls[0];
+    return urls[0] ?? resolveGenericSpriteAssetUrl(normalizeDiceSpriteAssetPath(assetPath), locale);
 };
 
 export const buildSpriteBackgroundImage = (assetPath?: string | null, locale?: string) => {
-    const spriteUrl = resolveSpriteAssetUrl(assetPath, locale);
-    return spriteUrl ? `url("${spriteUrl}")` : '';
+    return buildGenericSpriteBackgroundImage(resolveSpriteAssetUrl(assetPath, locale));
 };
 
 export const getDiceSpriteAssetPath = (definitionId?: string, characterId: string = 'monk') => {
@@ -222,59 +204,82 @@ export const getBonusFaceLabel = (
     return face ? (t(`dice.face.${face}`) as string) : (t('bonusDie.title') as string);
 };
 
+// @atlas-contract character-portraits.png uses the legacy shared portrait contract for existing heroes.
 const PORTRAIT_ATLAS = {
+    imageW: 3950,
+    imageH: 4096,
+    deckX: 0,
+    deckY: 0,
+    deckW: 3934,
+    deckH: 1054,
+    cols: 10,
+    rows: 2,
+};
+
+// @atlas-contract characterhead2.png is a separate 6-column portrait source for newer Dice Throne heroes.
+const NEW_PORTRAIT_ATLAS = {
     imageW: 3570,
-    imageH: 2589,
+    imageH: 6042,
     deckX: 0,
     deckY: 0,
     deckW: 3570,
-    deckH: 2589,
+    deckH: 6041,
     cols: 6,
-    rows: 3,
-};
-
-const PORTRAIT_CELL_W = PORTRAIT_ATLAS.deckW / PORTRAIT_ATLAS.cols;
-const PORTRAIT_CELL_H = PORTRAIT_ATLAS.deckH / PORTRAIT_ATLAS.rows;
-const PORTRAIT_BG_SIZE = {
-    x: (PORTRAIT_ATLAS.imageW / PORTRAIT_CELL_W) * 100,
-    y: (PORTRAIT_ATLAS.imageH / PORTRAIT_CELL_H) * 100,
+    rows: 7,
 };
 
 const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
-    seraph: 0,
-    pyromancer: 1,
-    ninja: 2,
-    barbarian: 3,
-    vampire_lord: 4,
-    cursed_pirate: 5,
-    huntress: 6,
-    moon_elf: 7,
-    samurai: 8,
+    huntress: 0,
+    gunslinger: 1,
+    treant: 2,
+    monk: 3,
+    moon_elf: 4,
+    paladin: 5,
+    pyromancer: 6,
+    vampire_lord: 11,
+    cursed_pirate: 8,
     shadow_thief: 9,
-    paladin: 10,
-    gunslinger: 11,
+    ninja: 10,
+    samurai: 7,
+    barbarian: 13,
+    seraph: 14,
+};
+
+const NEW_CHARACTER_PORTRAIT_INDEX: Partial<Record<HeroState['characterId'], number>> = {
+    ninja: 2,
     treant: 13,
-    monk: 14,
 };
 
-const getPortraitAtlasPosition = (index: number) => {
-    const safeIndex = index % (PORTRAIT_ATLAS.cols * PORTRAIT_ATLAS.rows);
-    const col = safeIndex % PORTRAIT_ATLAS.cols;
-    const row = Math.floor(safeIndex / PORTRAIT_ATLAS.cols);
-    const x = PORTRAIT_ATLAS.deckX + col * PORTRAIT_CELL_W;
-    const y = PORTRAIT_ATLAS.deckY + row * PORTRAIT_CELL_H;
-    const xPos = (x / (PORTRAIT_ATLAS.imageW - PORTRAIT_CELL_W)) * 100;
-    const yPos = (y / (PORTRAIT_ATLAS.imageH - PORTRAIT_CELL_H)) * 100;
-    return { xPos, yPos };
-};
+const buildPortraitAtlasStyle = (
+    atlas: typeof PORTRAIT_ATLAS,
+    imagePath: string,
+    index: number,
+    locale?: string,
+) => {
+    const cellW = atlas.deckW / atlas.cols;
+    const cellH = atlas.deckH / atlas.rows;
+    const safeIndex = index % (atlas.cols * atlas.rows);
+    const col = safeIndex % atlas.cols;
+    const row = Math.floor(safeIndex / atlas.cols);
+    const x = atlas.deckX + col * cellW;
+    const y = atlas.deckY + row * cellH;
+    const xPos = (x / (atlas.imageW - cellW)) * 100;
+    const yPos = (y / (atlas.imageH - cellH)) * 100;
 
-export const getPortraitStyle = (characterId: HeroState['characterId'], locale?: string) => {
-    const index = CHARACTER_PORTRAIT_INDEX[characterId] ?? 0;
-    const { xPos, yPos } = getPortraitAtlasPosition(index);
     return {
-        backgroundImage: buildLocalizedImageSet(ASSETS.AVATAR, locale),
-        backgroundSize: `${PORTRAIT_BG_SIZE.x}% ${PORTRAIT_BG_SIZE.y}%`,
+        backgroundImage: buildLocalizedImageSet(imagePath, locale),
+        backgroundSize: `${((atlas.imageW / cellW) * 100).toFixed(4)}% ${((atlas.imageH / cellH) * 100).toFixed(4)}%`,
         backgroundRepeat: 'no-repeat',
         backgroundPosition: `${xPos.toFixed(4)}% ${yPos.toFixed(4)}%`,
     } as CSSProperties;
+};
+
+export const getPortraitStyle = (characterId: HeroState['characterId'], locale?: string) => {
+    const newPortraitIndex = NEW_CHARACTER_PORTRAIT_INDEX[characterId];
+    if (typeof newPortraitIndex === 'number') {
+        return buildPortraitAtlasStyle(NEW_PORTRAIT_ATLAS, ASSETS.NEW_AVATAR, newPortraitIndex, locale);
+    }
+
+    const index = CHARACTER_PORTRAIT_INDEX[characterId] ?? 0;
+    return buildPortraitAtlasStyle(PORTRAIT_ATLAS, ASSETS.AVATAR, index, locale);
 };

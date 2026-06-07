@@ -439,6 +439,7 @@ test.describe('角色选择系统', () => {
         const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'character-selection.e2e', '树精和忍者应该能够选角并进入游戏');
         mkdirSync(evidenceDir, { recursive: true });
         const selectionEvidencePath = join(evidenceDir, 'treant-ninja-selection.png');
+        const mobileSelectionEvidencePath = join(evidenceDir, 'treant-ninja-selection-mobile-landscape.png');
         const treantCardEvidencePath = join(evidenceDir, 'treant-implementation-card.png');
         const ninjaCardEvidencePath = join(evidenceDir, 'ninja-implementation-card.png');
         const gameplayEvidencePath = join(evidenceDir, 'treant-ninja-gameplay.png');
@@ -447,15 +448,17 @@ test.describe('角色选择系统', () => {
         await withOnlineMatch(page, async (guestPage) => {
             await page.click('[data-character-id="treant"]');
             await expect(page.locator('[data-character-id="treant"]')).toContainText(/P1/i);
-            await expect(page.getByTestId('character-badge-treant-implementation_in_progress')).toContainText('实施中');
 
             await guestPage.click('[data-character-id="ninja"]');
             await expect(guestPage.locator('[data-character-id="ninja"]')).toContainText(/P2/i);
-            await expect(guestPage.getByTestId('character-badge-ninja-implementation_in_progress')).toContainText('实施中');
             await page.locator('[data-character-id="treant"]').screenshot({ path: treantCardEvidencePath });
             await guestPage.locator('[data-character-id="ninja"]').screenshot({ path: ninjaCardEvidencePath });
             await page.screenshot({ path: selectionEvidencePath, fullPage: false });
             await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection.png'), fullPage: false });
+            await page.setViewportSize({ width: 812, height: 375 });
+            await page.screenshot({ path: mobileSelectionEvidencePath, fullPage: false });
+            await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection-mobile-landscape.png'), fullPage: false });
+            await page.setViewportSize({ width: 1280, height: 720 });
 
             await guestPage.getByRole('button', { name: readyButtonPattern }).click();
             const startButton = page.getByRole('button', { name: /开始游戏|Press Start/i });

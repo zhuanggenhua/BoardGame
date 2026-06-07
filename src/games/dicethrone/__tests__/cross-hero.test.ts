@@ -23,6 +23,7 @@ import {
     testSystems,
     assertState,
     advanceTo,
+    getCompareRollChoicePrompt,
     type CommandInput,
 } from './test-utils';
 import { getAbilitySlotId } from '../ui/abilitySlotMapping';
@@ -192,6 +193,51 @@ describe('cross hero battles', () => {
             });
             expect(result.assertionErrors).toEqual([]);
             expect(result.finalState.core.pendingAttack?.defenseAbilityId).toBe('holy-defense');
+        });
+
+        it('paladin 使用 Accuracy 后应让原本可防御的攻击直接跳过防御窗口', () => {
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random: createQueuedRandom([1, 2, 3, 4, 5]),
+                setup: (playerIds: PlayerId[], r: RandomFn) => {
+                    const state = createInitializedStateWithCharacters(playerIds, r, { '0': 'paladin', '1': 'monk' });
+                    state.core.players['0'].tokens[TOKEN_IDS.ACCURACY] = 1;
+                    state.core.players['0'].tokens[TOKEN_IDS.CRIT] = 0;
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: 'paladin accuracy should skip defense on holy-strike-large',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'holy-strike-large' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    players: {
+                        '0': {
+                            hp: 52,
+                            tokens: { [TOKEN_IDS.ACCURACY]: 0 },
+                        },
+                        '1': { hp: 42 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.pendingAttack).toBeNull();
+            expect(result.finalState.core.pendingDamage).toBeUndefined();
         });
 
         it('tithes II 在激活包含 pray 面的技能时额外获得 1 CP', () => {
@@ -620,6 +666,34 @@ describe('cross hero battles', () => {
 
             expect(advanceResult.success).toBe(true);
             state = advanceResult.state as MatchState<DiceThroneCore>;
+
+            const compareRollPrompt = getCompareRollChoicePrompt(state, 'showdown');
+            expect(compareRollPrompt).toMatchObject({
+                confirmValue: {
+                    customId: 'gunslinger-showdown-apply-bonus',
+                    value: 2,
+                },
+            });
+            expect(state.core.pendingAttack?.bonusDamage).toBe(0);
+
+            const compareRollInteractionId = compareRollPrompt.id;
+            expect(compareRollInteractionId).toBeTruthy();
+
+            const confirmResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'SYS_INTERACTION_CONFIRM',
+                    playerId: '0',
+                    payload: { interactionId: compareRollInteractionId },
+                    timestamp: Date.now() + 1,
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(confirmResult.success).toBe(true);
+            state = confirmResult.state as MatchState<DiceThroneCore>;
 
             expect(state.sys.interaction.current).toBeUndefined();
             expect(state.core.pendingAttack?.bonusDamage).toBe(2);
@@ -2249,13 +2323,64 @@ describe('cross hero battles', () => {
                     pendingInteraction: null,
                     players: {
                         '0': { hp: 49 },
-                        '1': { hp: 48 },
+                        '1': { hp: 45 },
                     },
                 },
             });
 
             expect(result.assertionErrors).toEqual([]);
             expect(result.finalState.core.players['1'].tokens[TOKEN_IDS.SHAME] ?? 0).toBe(0);
+            expect(result.finalState.core.pendingAttack).toBeNull();
+        });
+
+        it('stand-tall fully prevents the attack without opening back-strike mitigation window', () => {
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random: createQueuedRandom([1, 1, 1, 1, 2, 6, 6, 6]),
+                setup: (playerIds: PlayerId[], random: RandomFn) => {
+                    const state = createInitializedStateWithCharacters(
+                        playerIds,
+                        random,
+                        { '0': 'monk', '1': 'samurai' }
+                    );
+                    state.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: 'samurai stand-tall full prevent keeps back strike unused',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-4' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    pendingInteraction: null,
+                    players: {
+                        '0': { hp: 50 },
+                        '1': { hp: 50 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION]).toBe(1);
+            expect(result.finalState.core.pendingDamage ?? null).toBeNull();
             expect(result.finalState.core.pendingAttack).toBeNull();
         });
 

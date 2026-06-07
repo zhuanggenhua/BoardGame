@@ -17,19 +17,22 @@ import {
     Users,
     ListOrdered,
     ArrowLeftRight,
+    SmilePlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
 import { UI_Z_INDEX, HudPortal } from '../../../../core';
 import { FabMenu, type FabAction } from '../../../system/FabMenu';
 import { UNDO_COMMANDS } from '../../../../engine';
+import type { MatchState } from '../../../../engine/types';
 import { AudioControlSection } from './AudioControlSection';
 import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { matchSocket, type MatchChatMessage } from '../../../../services/matchSocket';
+import { matchSocket, type MatchChatMessage, type MatchEmoteEvent } from '../../../../services/matchSocket';
 import { MAX_CHAT_LENGTH, MAX_CHAT_MESSAGES } from '../../../../shared/chat';
+import { getAvailableEmotesForGame } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
 import { useOptionalSocial } from '../../../../contexts/SocialContext';
@@ -39,8 +42,11 @@ import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardP
 import { generateId, copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
-import { useSmashUpOverlay } from '../../../../games/smashup/ui/SmashUpOverlayContext';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
+import { GameHudRuntimeSettingsSection } from '../../../../games/gameHudRuntimeAdapter';
+import { OptimizedImage } from '../../../common/media/OptimizedImage';
+import { EmotePicker } from './EmotePicker';
+import { SeatEmoteOverlay } from './SeatEmoteOverlay';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -71,8 +77,23 @@ interface GameHUDProps {
     seatSwapActionColor?: string;
     onSeatSwapClick?: () => void;
     seatSwapContent?: FabAction['content'];
+    isPregameSetupPhase?: boolean;
     isLoading?: boolean;
 }
+
+type HudPhaseStateLike = {
+    sys?: {
+        phase?: unknown;
+        flow?: {
+            phase?: unknown;
+        };
+    };
+};
+
+export const resolveGameHudPhase = (state?: HudPhaseStateLike | null) => {
+    const phase = state?.sys?.phase ?? state?.sys?.flow?.phase;
+    return typeof phase === 'string' ? phase : null;
+};
 
 // 判断消息是否来自自己
 export const isSelfChatMessage = (
@@ -108,6 +129,101 @@ export const trimChatMessages = (
 
 export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
 
+const FEEDBACK_ACTION_LOG_TAIL_LIMIT = 12;
+const FEEDBACK_EVENT_STREAM_TAIL_LIMIT = 12;
+const FEEDBACK_UNDO_SNAPSHOT_LIMIT = 3;
+
+type FeedbackActionLogRow = {
+    timeLabel: string;
+    playerLabel: string;
+    text: string;
+};
+
+const sanitizeFeedbackCore = (core: unknown): unknown => {
+    if (!core || typeof core !== 'object') return core;
+    const obj = core as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
+            const first = val[0] as Record<string, unknown>;
+            const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
+            if (isStaticDef) {
+                result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
+                continue;
+            }
+        }
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            result[key] = sanitizeFeedbackCore(val);
+        } else {
+            result[key] = val;
+        }
+    }
+    return result;
+};
+
+const cloneJsonValue = <T,>(value: T): T | undefined => {
+    if (value === undefined) return undefined;
+    try {
+        return JSON.parse(JSON.stringify(value)) as T;
+    } catch {
+        return undefined;
+    }
+};
+
+export const buildGameHudFeedbackActionLog = (
+    state: MatchState<unknown>,
+    actionLogRows: FeedbackActionLogRow[],
+): string => {
+    const actionLogEntries = Array.isArray(state.sys?.actionLog?.entries)
+        ? state.sys.actionLog.entries
+        : [];
+    const eventStreamEntries = Array.isArray(state.sys?.eventStream?.entries)
+        ? state.sys.eventStream.entries
+        : [];
+    const undoSnapshots = Array.isArray(state.sys?.undo?.snapshots)
+        ? state.sys.undo.snapshots
+        : [];
+    const interaction = cloneJsonValue(state.sys?.interaction?.current);
+    const responseWindow = cloneJsonValue(state.sys?.responseWindow?.current);
+    const humanReadableLog = actionLogRows.length > 0
+        ? actionLogRows.map((row) => `[${row.timeLabel}] ${row.playerLabel}: ${row.text}`).join('\n')
+        : '';
+
+    return JSON.stringify({
+        kind: 'user-feedback-diagnostic',
+        phase: state.sys?.phase,
+        turnNumber: state.sys?.turnNumber,
+        humanReadableLog,
+        actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((entry) => ({
+            text: typeof entry?.text === 'string' ? entry.text : undefined,
+            type: entry?.event?.type,
+            timestamp: entry?.timestamp,
+        })),
+        eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((entry) => ({
+            type: entry?.type,
+            timestamp: entry?.timestamp,
+            payload: cloneJsonValue(entry?.payload),
+        })),
+        interaction,
+        responseWindow,
+        undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((snapshot, index) => ({
+            index: undoSnapshots.length - Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT) + index,
+            turnNumber: snapshot?.sys?.turnNumber,
+            phase: snapshot?.sys?.phase,
+            core: sanitizeFeedbackCore(snapshot?.core),
+        })),
+        currentStateSummary: {
+            turnNumber: state.sys?.turnNumber,
+            phase: state.sys?.phase,
+            core: sanitizeFeedbackCore(state.core),
+        },
+    }, null, 2);
+};
+
+export const buildGameHudFeedbackStateSnapshot = (state: MatchState<unknown>): string => (
+    JSON.stringify(state, null, 2)
+);
+
 export const GameHUD = ({
     mode,
     matchId,
@@ -132,13 +248,13 @@ export const GameHUD = ({
     seatSwapActionColor,
     onSeatSwapClick,
     seatSwapContent,
+    isPregameSetupPhase,
     isLoading = false,
 }: GameHUDProps) => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('game');
     const toast = useToast();
     const { user } = useAuth();
-    const { overlayEnabled, interactionMode, toggleOverlay, setInteractionMode } = useSmashUpOverlay();
 
     // 从注册表获取游戏特定的卡牌预览函数
     const getCardPreviewRef = useMemo(() => {
@@ -166,14 +282,17 @@ export const GameHUD = ({
     const isTutorial = mode === 'tutorial';
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
-    const isSmashUp = _gameId === 'smashup';
     const suppressGlobalFab = _gameId === 'qidahen';
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
+    const isSetupPhase = isPregameSetupPhase
+        ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
 
     // 聊天逻辑
     const [chatMessages, setChatMessages] = useState<MatchChatMessage[]>([]);
     const [chatInput, setChatInput] = useState('');
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const [showChatEmotePicker, setShowChatEmotePicker] = useState(false);
+    const [localChatEmotes, setLocalChatEmotes] = useState<MatchEmoteEvent[]>([]);
     const isChatReadonly = isSpectator;
     const [unreadChatState, setUnreadChatState] = useState<{ matchId?: string; count: number }>({
         matchId,
@@ -182,6 +301,9 @@ export const GameHUD = ({
     const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
     const isChatPanelOpenRef = useRef(false);
     const unreadChatCount = unreadChatState.matchId === matchId ? unreadChatState.count : 0;
+    const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
+    const availableEmotes = useMemo(() => getAvailableEmotesForGame(_gameId), [_gameId]);
+    const canUseSeatEmotes = isOnline && !isSpectator && !isSetupPhase && !!matchId && !!myPlayerId && availableEmotes.length > 0;
 
     const myDisplayName = useMemo(() => {
         if (user?.username) return user.username;
@@ -295,6 +417,22 @@ export const GameHUD = ({
         };
     }, [incrementUnreadChatCount, isOnline, matchId, isSelfMessage]);
 
+    useEffect(() => {
+        if (!canUseSeatEmotes || !matchId || !myPlayerId) return;
+
+        matchSocket.joinEmotes(matchId, String(myPlayerId));
+        const unsubscribe = matchSocket.subscribeEmote((event) => {
+            if (event.matchId !== matchId) return;
+            if (myPlayerId != null && String(event.playerId) === String(myPlayerId)) return;
+            setSeatEmoteEvents((prev) => [...prev.slice(-19), event]);
+        });
+
+        return () => {
+            unsubscribe();
+            matchSocket.leaveEmotes();
+        };
+    }, [canUseSeatEmotes, matchId, myPlayerId]);
+
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         const trimmed = chatInput.trim();
@@ -347,6 +485,48 @@ export const GameHUD = ({
 
         setChatInput('');
     };
+
+    const handleSendEmote = useCallback((emoteId: string) => {
+        const selfEmoteEvent: MatchEmoteEvent | null = matchId && myPlayerId != null
+            ? {
+                matchId,
+                playerId: String(myPlayerId),
+                emoteId,
+                createdAt: new Date().toISOString(),
+            }
+            : null;
+        const handleRejected = (reason?: string) => {
+            if (selfEmoteEvent) {
+                setLocalChatEmotes((prev) => prev.filter((event) => event.createdAt !== selfEmoteEvent.createdAt));
+            }
+            if (reason === 'rate_limited') {
+                toast.info(t('hud.emotes.rateLimited'));
+            } else if (reason === 'invalid_emote') {
+                toast.warning(t('hud.emotes.invalid'));
+            } else if (reason && reason !== 'not_connected') {
+                toast.info(t('hud.emotes.sendFailed'));
+            }
+        };
+        if (selfEmoteEvent) {
+            setLocalChatEmotes((prev) => [...prev.slice(-9), selfEmoteEvent]);
+            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+        }
+        const result = matchSocket.sendEmote(emoteId, (response) => {
+            if (response.ok) return;
+            handleRejected(response.reason);
+        });
+        if (!result.ok) {
+            if (selfEmoteEvent) {
+                setLocalChatEmotes((prev) => prev.filter((event) => event.createdAt !== selfEmoteEvent.createdAt));
+            }
+            if (result.reason === 'not_connected') {
+                toast.error(t('hud.emotes.notConnected'));
+            } else {
+                if (matchId && myPlayerId != null) matchSocket.joinEmotes(matchId, String(myPlayerId));
+                toast.info(t('hud.emotes.connecting'));
+            }
+        }
+    }, [matchId, myPlayerId, t, toast]);
 
     // 全屏状态
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
@@ -599,9 +779,49 @@ export const GameHUD = ({
                                 </div>
                             </div>
                         ))}
+                        {localChatEmotes.map((event) => {
+                            const emote = availableEmotes.find((item) => item.id === event.emoteId);
+                            if (!emote) return null;
+                            return (
+                                <div key={`${event.playerId}:${event.createdAt}`} className="flex flex-col items-end" data-testid={`hud-chat-local-emote-${event.emoteId}`}>
+                                    <span className="mb-0.5 text-[10px] font-bold text-white/40">{myDisplayName}</span>
+                                    <div className="rounded-lg rounded-tr-none bg-cyan-400/10 p-2">
+                                        <OptimizedImage
+                                            src={emote.assetPath}
+                                            alt={emote.label}
+                                            placeholder={false}
+                                            draggable={false}
+                                            className="h-16 w-16 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                         <div ref={chatEndRef} />
                     </div>
+                    {showChatEmotePicker && canUseSeatEmotes && (
+                        <div className="mt-2 rounded-md border border-white/10 bg-white/5 p-2" data-testid="hud-chat-emote-panel">
+                            <EmotePicker
+                                emotes={availableEmotes}
+                                onSelect={(emoteId) => {
+                                    handleSendEmote(emoteId);
+                                    setShowChatEmotePicker(false);
+                                }}
+                            />
+                        </div>
+                    )}
                     <form onSubmit={handleSendMessage} className="shrink-0 mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
+                        {canUseSeatEmotes && (
+                            <button
+                                type="button"
+                                onClick={() => setShowChatEmotePicker((prev) => !prev)}
+                                aria-label={t('hud.actions.emotes')}
+                                className="p-1.5 bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-200 rounded border border-cyan-300/25 transition-colors"
+                                data-testid="hud-chat-emote-toggle"
+                            >
+                                <SmilePlus size={14} />
+                            </button>
+                        )}
                         <div className="relative flex-1">
                             <input
                                 type="text"
@@ -675,54 +895,7 @@ export const GameHUD = ({
                     </div>
                 )}
 
-                {isSmashUp && (
-                    <div className="mt-4 space-y-3 rounded-lg border border-violet-400/20 bg-violet-500/10 p-3">
-                        <div>
-                            <div className="text-xs font-bold uppercase tracking-wider text-violet-200">{t('hud.smashup.title')}</div>
-                            <div className="mt-1 text-[11px] text-white/55">{t('hud.smashup.interactionHint')}</div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="text-[10px] font-bold uppercase text-white/45">{t('hud.smashup.interaction')}</div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setInteractionMode('click')}
-                                    className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors ${interactionMode === 'click'
-                                        ? 'border-violet-300 bg-violet-300/25 text-white'
-                                        : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
-                                >
-                                    {t('hud.smashup.modeClick')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setInteractionMode('drag')}
-                                    className={`rounded-md border px-3 py-2 text-xs font-bold transition-colors ${interactionMode === 'drag'
-                                        ? 'border-violet-300 bg-violet-300/25 text-white'
-                                        : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'}`}
-                                >
-                                    {t('hud.smashup.modeDrag')}
-                                </button>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={toggleOverlay}
-                            className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-left transition-colors hover:bg-white/10"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-bold text-white">{t('hud.smashup.overlay')}</div>
-                                    <div className="mt-1 text-[11px] text-white/55">{t('hud.smashup.overlayHint')}</div>
-                                </div>
-                                <div className={`rounded-full px-2 py-1 text-[10px] font-bold ${overlayEnabled
-                                    ? 'bg-emerald-400/20 text-emerald-200'
-                                    : 'bg-white/10 text-white/60'}`}>
-                                    {overlayEnabled ? t('hud.smashup.enabled') : t('hud.smashup.disabled')}
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-                )}
+                <GameHudRuntimeSettingsSection gameId={_gameId} t={t} />
 
                 <AudioControlSection isDark={true} />
             </div>
@@ -882,8 +1055,8 @@ export const GameHUD = ({
         });
     }
 
-    // 5. 撤回
-    if (!isSpectator) {
+    // 5. 撤回：setup/选角阶段不展示，避免移动端 FAB 轨道挤占选角与换位入口。
+    if (!isSpectator && !isSetupPhase) {
         if (!undoState) {
             items.push({
                 id: 'undo-loading',
@@ -961,8 +1134,8 @@ export const GameHUD = ({
 
     // 5.5 强制操作（将强制结束 AI / 强制去弹窗合并到一个展开面板）
     // 注意：这里要放在撤回之后 push，反转渲染后才会出现在“撤回上面”。
-    if (canForceEndAiPhase || canForceDismissPopup) {
-        items.push({
+    const forceActionsItem: FabAction | null = !isSetupPhase && (canForceEndAiPhase || canForceDismissPopup)
+        ? {
             id: 'force-actions',
             icon: <AlertTriangle size={20} />,
             label: canForceEndAiPhase && canForceDismissPopup
@@ -1030,7 +1203,10 @@ export const GameHUD = ({
                     )}
                 </div>
             ),
-        });
+        }
+        : null;
+    if (forceActionsItem) {
+        items.push(forceActionsItem);
     }
 
     // 5.6 换位（位于操作日志与强制操作之间）
@@ -1048,7 +1224,7 @@ export const GameHUD = ({
     }
 
     // 6. 操作日志
-    if (useChatAsMain) {
+    if (useChatAsMain && !isSetupPhase) {
         items.push(actionLogAction);
     }
 
@@ -1072,6 +1248,7 @@ export const GameHUD = ({
                     name={opponentName}
                 />
             )}
+            <SeatEmoteOverlay events={seatEmoteEvents} />
             {!suppressGlobalFab ? (
                 <FabMenu
                     isDark={true}
@@ -1094,56 +1271,12 @@ export const GameHUD = ({
                     actionLogText={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        // 操作日志（人类可读）
-                        const logLines = actionLogRows.length > 0
-                            ? actionLogRows.map(r => `[${r.timeLabel}] ${r.playerLabel}: ${r.text}`).join('\n')
-                            : '';
-                        // 精简 core 状态：去掉静态定义，只保留动态数据
-                        const summarizeCore = (core: unknown): unknown => {
-                            if (!core || typeof core !== 'object') return core;
-                            const obj = core as Record<string, unknown>;
-                            const result: Record<string, unknown> = {};
-                            for (const [key, val] of Object.entries(obj)) {
-                                // 跳过大型静态定义数组（token 定义、技能定义、被动定义）
-                                // 只保留 id 列表作为摘要
-                                if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0] !== null) {
-                                    const first = val[0] as Record<string, unknown>;
-                                    const isStaticDef = 'description' in first || 'effects' in first || 'i18n' in first || 'colorTheme' in first;
-                                    if (isStaticDef) {
-                                        result[key] = val.map((item: Record<string, unknown>) => item.id ?? item.name ?? '?');
-                                        continue;
-                                    }
-                                }
-                                // 递归处理 players 等嵌套对象
-                                if (val && typeof val === 'object' && !Array.isArray(val)) {
-                                    result[key] = summarizeCore(val);
-                                } else {
-                                    result[key] = val;
-                                }
-                            }
-                            return result;
-                        };
-                        // 撤回栈快照（精简版）
-                        const snapshots = (G.sys.undo.snapshots ?? []) as Array<{ sys: { turnNumber: number; phase: string }; core: unknown }>;
-                        const snapshotEntries = snapshots.map((snap, i) => {
-                            return `[${i}] turn=${snap.sys.turnNumber} phase=${snap.sys.phase}\n${JSON.stringify(summarizeCore(snap.core))}`;
-                        });
-                        // 当前状态（精简版）
-                        const current = `[current] turn=${G.sys.turnNumber} phase=${G.sys.phase}\n${JSON.stringify(summarizeCore(G.core))}`;
-                        return [
-                            `--- Action Log ---`,
-                            logLines,
-                            ``,
-                            `--- State Snapshots (${snapshotEntries.length} undo + current) ---`,
-                            ...snapshotEntries,
-                            current,
-                        ].join('\n');
+                        return buildGameHudFeedbackActionLog(G, actionLogRows);
                     })()}
                     stateSnapshot={(() => {
                         const G = undoState?.G;
                         if (!G) return undefined;
-                        // 完整状态 JSON（用于精确复现）
-                        return JSON.stringify({ core: G.core, sys: G.sys }, null, 2);
+                        return buildGameHudFeedbackStateSnapshot(G);
                     })()}
                 />
             )}

@@ -12,6 +12,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, TurnPhase } from './core-types';
 import { RESOURCE_IDS } from './resources';
+import { TOKEN_IDS } from './ids';
 
 // ============================================================================
 // 被动能力数据定义
@@ -85,6 +86,25 @@ export function getPlayerPassiveAbilities(
     return player?.passiveAbilities ?? [];
 }
 
+const TREANT_TREE_SPIRIT_TOKEN_IDS = new Set<string>([
+    TOKEN_IDS.TREANT_SEEDLING,
+    TOKEN_IDS.TREANT_SAPLING,
+    TOKEN_IDS.TREANT_DIVINE,
+]);
+
+export function isTreantTreeSpiritToken(tokenId: string): boolean {
+    return TREANT_TREE_SPIRIT_TOKEN_IDS.has(tokenId);
+}
+
+export function hasSpentTreantTreeSpiritThisTurn(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    tokenId: string,
+): boolean {
+    return isTreantTreeSpiritToken(tokenId)
+        && state.treantSpiritSpentThisTurn?.[playerId]?.[tokenId] === true;
+}
+
 /**
  * 检查被动动作在当前阶段是否可用
  */
@@ -108,6 +128,7 @@ export function isPassiveActionUsable(
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
     if (action.tokenCost && (player.tokens[action.tokenCost.tokenId] ?? 0) < action.tokenCost.amount) return false;
+    if (action.tokenCost && hasSpentTreantTreeSpiritThisTurn(state, playerId, action.tokenCost.tokenId)) return false;
 
     // rerollDie 额外检查：只能在投掷阶段重掷"自己的骰子"（和 roll 手牌一致）
     if (action.type === 'rerollDie') {

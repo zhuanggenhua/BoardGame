@@ -11,6 +11,16 @@ import { onPageVisible } from './visibilityResync';
 import { socketHealthChecker } from './socketHealthCheck';
 import { SOCKET_CONNECT_TIMEOUT_MS, getSocketIoTransports, shouldTryAllSocketTransports } from '../lib/socketConnectionConfig';
 import i18n from '../lib/i18n';
+import {
+    LOBBY_ALL,
+    LOBBY_EVENTS,
+    type LobbyGameId,
+    type LobbyHeartbeatPayload,
+    type LobbyMatch,
+    type LobbyMatchEndedPayload,
+    type LobbyMatchPayload,
+    type LobbySnapshotPayload,
+} from '../shared/lobby';
 
 const normalizeGameName = (name?: unknown) => {
     if (typeof name === 'string') return name.toLowerCase();
@@ -19,21 +29,8 @@ const normalizeGameName = (name?: unknown) => {
     return '';
 };
 
-// 大厅事件类型
-export const LOBBY_EVENTS = {
-    // 客户端 -> 服务器
-    SUBSCRIBE_LOBBY: 'lobby:subscribe',
-    UNSUBSCRIBE_LOBBY: 'lobby:unsubscribe',
-
-    // 服务器 -> 客户端
-    LOBBY_UPDATE: 'lobby:update',
-    MATCH_CREATED: 'lobby:matchCreated',
-    MATCH_UPDATED: 'lobby:matchUpdated',
-    MATCH_ENDED: 'lobby:matchEnded',
-    HEARTBEAT: 'lobby:heartbeat',
-} as const;
-
-const LOBBY_ALL = 'all';
+export { LOBBY_EVENTS };
+export type { LobbyMatch };
 
 const tLobbySocket = (key: string, params?: Record<string, string | number>) => (
     i18n.t(`lobby:socket.${key}`, params)
@@ -42,50 +39,6 @@ const tLobbySocket = (key: string, params?: Record<string, string | number>) => 
 const formatErrorMessage = (error: unknown) => (
     error instanceof Error ? error.message : String(error)
 );
-
-// 房间信息类型
-export interface LobbyMatch {
-    matchID: string;
-    gameName: string;
-    players: Array<{
-        id: number;
-        name?: string;
-        isConnected?: boolean;
-    }>;
-    totalSeats?: number;
-    createdAt?: number;
-    updatedAt?: number;
-    roomName?: string;
-    ownerKey?: string;
-    ownerType?: 'user' | 'guest';
-    isLocked?: boolean;
-}
-
-type LobbyGameId = string;
-
-interface LobbySnapshotPayload {
-    gameId: LobbyGameId;
-    version: number;
-    matches: LobbyMatch[];
-}
-
-interface LobbyMatchPayload {
-    gameId: LobbyGameId;
-    version: number;
-    match: LobbyMatch;
-}
-
-interface LobbyMatchEndedPayload {
-    gameId: LobbyGameId;
-    version: number;
-    matchID: string;
-}
-
-interface LobbyHeartbeatPayload {
-    gameId: LobbyGameId;
-    version: number;
-    timestamp: number;
-}
 
 // 大厅更新回调类型
 export type LobbyUpdateCallback = (matches: LobbyMatch[]) => void;

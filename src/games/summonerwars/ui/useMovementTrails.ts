@@ -29,7 +29,12 @@ export function useMovementTrails({ entries }: UseMovementTrailsParams) {
 
   // 监听 UNIT_MOVED 事件
   useEffect(() => {
-    const { entries: newEntries } = consumeNew();
+    const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+
+    if (didReset || didOptimisticRollback) {
+      setTrails([]);
+      if (newEntries.length === 0) return;
+    }
 
     for (const entry of newEntries) {
       const event = entry.event;

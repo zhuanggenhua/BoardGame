@@ -43,6 +43,15 @@ import { registerPrincessesAbilities } from './princesses';
 import { registerSharksAbilities } from './sharks';
 import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
+import { registerDragonAbilities } from './dragons';
+import { registerGeekAbilities } from './geeks';
+import { registerSuperheroesAbilities, registerSuperheroesInteractionHandlers } from './superheroes';
+import { registerYuanhouAbilities } from './yuanhou';
+import { registerIttyCrittersAbilities } from './itty_critters';
+import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
+import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
+import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
+import { registerHuluwawaAbilities } from './huluwawa';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -53,11 +62,13 @@ import {
 import { registerMultiBaseScoringInteractionHandler } from '../domain/index';
 import { registerDuelInteractionHandlers } from '../domain/duel';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
+import { registerActionCounterInteractionHandlers } from '../domain/actionCounter';
 import { registerMulliganInteractionHandlers } from '../domain/mulliganHandlers';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry, registerPodPowerModifierAliases } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, registerPodOngoingAliases } from '../domain/ongoingEffects';
 import { clearDiscardPlayProviders } from '../domain/discardPlayability';
+import { clearDiscardActionPlayProviders } from '../domain/discardActionPlayability';
 import { clearDiscardSpecialProviders } from '../domain/discardSpecialAbilities';
 import { clearRegistry, registerPodAbilityAliases } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, registerPodInteractionAliases } from '../domain/abilityInteractionHandlers';
@@ -77,6 +88,7 @@ export function initAllAbilities(): void {
     clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
     clearDiscardPlayProviders();
+    clearDiscardActionPlayProviders();
     clearDiscardSpecialProviders();
     clearTitanAbilityValidators();
 
@@ -102,6 +114,7 @@ export function initAllAbilities(): void {
 
     // 全局反应队列（同时触发排序）
     registerReactionQueueInteractionHandlers();
+    registerActionCounterInteractionHandlers();
     registerMulliganInteractionHandlers();
     registerBuryInteractionHandlers();
     registerDuelInteractionHandlers();
@@ -146,6 +159,19 @@ export function initAllAbilities(): void {
     registerSharksAbilities();
     registerTornadosAbilities();
     registerMythicGreeksAbilities();
+    registerDragonAbilities();
+    registerGeekAbilities();
+    registerSuperheroesAbilities();
+    registerSuperheroesInteractionHandlers();
+    registerYuanhouAbilities();
+    registerIttyCrittersAbilities();
+    registerKaijuAbilities();
+    registerKaijuInteractionHandlers();
+    registerMagicalGirlsAbilities();
+    registerMagicalGirlsInteractionHandlers();
+    registerMegaTroopersAbilities();
+    registerMegaTroopersInteractionHandlers();
+    registerHuluwawaAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 
@@ -170,5 +196,6 @@ export function resetAbilityInit(): void {
     clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
     clearDiscardPlayProviders();
+    clearDiscardActionPlayProviders();
     clearTitanAbilityValidators();
 }

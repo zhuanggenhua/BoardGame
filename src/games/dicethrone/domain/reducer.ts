@@ -10,14 +10,15 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getTokenStackLimit, getRollerId } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getTokenStackLimit, getRollerId } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
-import { initHeroState, createCharacterDice } from './characters';
-import { registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
+import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
+import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import { removeCard } from './utils';
+import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
     handleHealApplied, handleAttackInitiated, handleBonusDamageAdded, handleAttackResolved,
@@ -84,7 +85,7 @@ const handleBonusDieRolled: EventHandler<Extract<DiceThroneEvent, { type: 'BONUS
             type: 'token' as const,
             value: pendingDamageBonus,
             sourceId: 'sneak_attack',
-            sourceName: '伏击',
+            sourceName: 'damageSource.sneakAttack',
         });
         pendingDamage = {
             ...state.pendingDamage,
@@ -281,6 +282,7 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
     }
 
     let rollDiceCount = state.rollDiceCount;
+    let rollLimit = state.rollLimit;
     let dice = state.dice;
 
     // 防御技能选择后，根据技能定义设置 rollDiceCount
@@ -292,11 +294,17 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
             if (a.id === abilityId) return true;
             return a.variants?.some(v => v.id === abilityId);
         });
-        if (ability?.trigger) {
-            const triggerDiceCount = (ability.trigger as { diceCount?: number }).diceCount;
+        const matchedVariant = ability?.variants?.find(variant => variant.id === abilityId);
+        const trigger = matchedVariant?.trigger ?? ability?.trigger;
+        if (trigger) {
+            const triggerDiceCount = (trigger as { diceCount?: number }).diceCount;
             if (triggerDiceCount !== undefined && triggerDiceCount > 0) {
                 rollDiceCount = triggerDiceCount;
                 dice = resetDiceArray(state.dice, triggerDiceCount);
+            }
+            const triggerRollLimit = (trigger as { rollLimit?: number }).rollLimit;
+            if (triggerRollLimit !== undefined && triggerRollLimit > 0) {
+                rollLimit = triggerRollLimit;
             }
         }
     }
@@ -305,6 +313,7 @@ const handleAbilityActivated: EventHandler<Extract<DiceThroneEvent, { type: 'ABI
         ...state,
         activatingAbilityId: abilityId,
         pendingAttack: { ...state.pendingAttack, defenseAbilityId: abilityId },
+        rollLimit,
         rollDiceCount,
         dice,
     };
@@ -432,7 +441,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
     state,
     event
 ) => {
-    const { playerId, tokenId, newTotal } = event.payload;
+    const { playerId, tokenId, newTotal, sourceAbilityId } = event.payload;
     const player = state.players[playerId];
     if (!player) return state;
 
@@ -443,6 +452,23 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
         delete sneakGainedTurn[playerId];
     }
 
+    let treantSpiritSpentThisTurn = state.treantSpiritSpentThisTurn;
+    if (
+        isTreantTreeSpiritToken(tokenId)
+        && (
+            event.sourceCommandType === 'USE_PASSIVE_ABILITY'
+            || sourceAbilityId === TOKEN_IDS.TREANT_DIVINE
+        )
+    ) {
+        treantSpiritSpentThisTurn = {
+            ...(treantSpiritSpentThisTurn ?? {}),
+            [playerId]: {
+                ...(treantSpiritSpentThisTurn?.[playerId] ?? {}),
+                [tokenId]: true,
+            },
+        };
+    }
+
     return {
         ...state,
         players: {
@@ -450,6 +476,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
             [playerId]: { ...player, tokens: { ...player.tokens, [tokenId]: newTotal } },
         },
         sneakGainedTurn,
+        treantSpiritSpentThisTurn,
     };
 };
 
@@ -483,11 +510,12 @@ const handleTokenLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TO
  */
 const handleChoiceRequested: EventHandler<Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }>> = (
     state,
-    _event
-) => {
-    // 不修改核心状态，prompt 由系统层管理
-    return state;
-};
+    event
+) => ({
+    ...state,
+    activatingAbilityId: event.payload.sourceAbilityId,
+    currentChoiceSourceAbilityId: event.payload.sourceAbilityId,
+});
 
 const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'DEFENDER_SELECTION_REQUESTED' }>> = (
     state,
@@ -539,6 +567,9 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 ) => {
     const { playerId, statusId, tokenId, value, customId, sourceAbilityId } = event.payload;
     let resultState = state;
+    const hasValidChoiceDelta = typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
+    const hasChoiceAnchor = hasCurrentChoiceAnchor(state, sourceAbilityId);
+    const allowGenericChoiceDelta = !sourceAbilityId || hasChoiceAnchor;
 
     const player = state.players[playerId];
     if (player) {
@@ -552,13 +583,18 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
                 tokenActiveUseTiming === 'onOffensiveRollEnd'
                 || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
             );
+        const shouldSkipGenericStatusDelta = statusId === 'cursed_coin'
+            && (
+                customId === 'cursed-pirate-human-verdict-command-choice'
+                || customId === 'cursed-pirate-human-merciless-plunder-choice'
+            );
 
-        if (tokenId && !shouldSkipGenericTokenDelta) {
+        if (tokenId && !shouldSkipGenericTokenDelta && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const maxStacks = getTokenStackLimit(state, playerId, tokenId);
             const currentAmount = player.tokens[tokenId] || 0;
             const nextAmount = Math.max(0, Math.min(currentAmount + value, maxStacks));
             playerUpdates = { tokens: { ...player.tokens, [tokenId]: nextAmount } };
-        } else if (statusId) {
+        } else if (statusId && !shouldSkipGenericStatusDelta && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const def = state.tokenDefinitions.find(e => e.id === statusId);
             const maxStacks = def?.stackLimit || 99;
             const currentStacks = player.statusEffects[statusId] || 0;
@@ -586,6 +622,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 
     if (
         sourceAbilityId
+        && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
     ) {
@@ -602,6 +639,20 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         resultState = {
             ...resultState,
             lastEffectSourceByPlayerId: { ...(resultState.lastEffectSourceByPlayerId || {}), [playerId]: sourceAbilityId },
+        };
+    }
+
+    if (sourceAbilityId && resultState.activatingAbilityId === sourceAbilityId) {
+        resultState = {
+            ...resultState,
+            activatingAbilityId: undefined,
+        };
+    }
+
+    if (sourceAbilityId && resultState.currentChoiceSourceAbilityId === sourceAbilityId) {
+        resultState = {
+            ...resultState,
+            currentChoiceSourceAbilityId: undefined,
         };
     }
 
@@ -636,8 +687,11 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         activePlayerId: nextPlayerId,
         turnNumber,
         lastResolvedAttackDamage: undefined,
+        currentChoiceSourceAbilityId: undefined,
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
+        treantSpiritSpentThisTurn: undefined,
         offensiveRollAttemptsThisTurn: undefined,
+        offensiveRollAttackMadeThisTurn: undefined,
         lastSoldCardId: undefined,
     };
 };
@@ -814,6 +868,8 @@ const handleInteractionCancelled: EventHandler<Extract<DiceThroneEvent, { type: 
     return {
         ...state,
         players,
+        activatingAbilityId: undefined,
+        currentChoiceSourceAbilityId: undefined,
     };
 };
 
@@ -843,14 +899,13 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     // 更新 pendingBonusDiceSettlement
     let pendingBonusDiceSettlement = state.pendingBonusDiceSettlement;
     if (state.pendingBonusDiceSettlement) {
-        const newDice = state.pendingBonusDiceSettlement.dice.map(d =>
+        const newDice = getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(d =>
             d.index === dieIndex ? { ...d, value: newValue, face: newFace, effectParams } : d);
         pendingBonusDiceSettlement = {
             ...state.pendingBonusDiceSettlement,
             dice: newDice,
             rerollCount: state.pendingBonusDiceSettlement.rerollCount + 1,
             lastRerolledDieIndex: dieIndex,
-            rerollAnimationKey: (state.pendingBonusDiceSettlement.rerollAnimationKey ?? 0) + 1,
         };
     }
 
@@ -923,6 +978,31 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
         ...state,
         players: { ...state.players, [playerId]: heroState },
         dice: shouldCreateDice ? createCharacterDice(characterId) : state.dice,
+    };
+};
+
+const handlePlayerBoardFaceChanged: EventHandler<Extract<DiceThroneEvent, { type: 'PLAYER_BOARD_FACE_CHANGED' }>> = (
+    state,
+    event,
+) => {
+    const { playerId, face } = event.payload;
+    const player = state.players[playerId];
+    if (!player || player.playerBoardFace === face || player.characterId === 'unselected') return state;
+
+    return {
+        ...state,
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                playerBoardFace: face,
+                abilities: buildHeroAbilitiesForFace(
+                    player.characterId,
+                    face,
+                    player.abilityLevels,
+                ),
+            },
+        },
     };
 };
 
@@ -1047,6 +1127,8 @@ export const reduce = (
             return handleCharacterSelected(state, event);
         case 'HERO_INITIALIZED':
             return handleHeroInitialized(state, event);
+        case 'PLAYER_BOARD_FACE_CHANGED':
+            return handlePlayerBoardFaceChanged(state, event);
         case 'HOST_STARTED':
             return handleHostStarted(state, event);
         case 'OFFENSIVE_ROLL_ATTEMPTS_RECORDED':
@@ -1078,6 +1160,9 @@ export const reduce = (
                         rollDiceCount: 5,
                         rollConfirmed: false,
                         pendingAttack: null,
+                        extraAttackInProgress: state.extraAttackInProgress
+                            ? { ...state.extraAttackInProgress, phaseEntered: true }
+                            : state.extraAttackInProgress,
                         dice: resetDiceArray(playerDice ?? state.dice, 5),
                     };
                 }

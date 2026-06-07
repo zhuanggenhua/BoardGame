@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
-import { TOKEN_META, getStatusEffectIconNode } from './statusEffects';
+import { getStatusEffectIconNode } from './statusEffects';
 import type { StatusAtlases } from './statusEffects';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
-import { UI_Z_INDEX } from '../../../core';
 import { resolveI18nList } from './utils';
+import { getVisualMetaById } from '../domain/statusEffects';
 
 interface ChoiceOption {
     id: string;
     label: string;
+    labelParams?: Record<string, string | number>;
     statusId?: string;
     tokenId?: string;
     customId?: string;
@@ -47,6 +48,18 @@ function translateRuntimeKey(
     return t(runtimeKey.value, opts);
 }
 
+const translateInterpolatedParam = (
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    value: string | number,
+): string | number => {
+    if (typeof value !== 'string') return value;
+    const separator = ', ';
+    return value.split(separator).map(part => {
+        if (!part.startsWith('cards.')) return part;
+        return translateRuntimeKey(t, part, { defaultValue: part });
+    }).join(separator);
+};
+
 export const ChoiceModal = ({
     choice,
     canResolve,
@@ -75,14 +88,20 @@ export const ChoiceModal = ({
     const skipOption = isSlider && choice!.options.length > 1 ? choice!.options[choice!.options.length - 1] : undefined;
     const maxValue = confirmOption?.value ?? 1;
 
-    const resolveOptionLabel = (option: Pick<ChoiceOption, 'label'>) => {
+    const resolveOptionLabel = (option: Pick<ChoiceOption, 'label' | 'labelParams'>) => {
         if (option.label.startsWith('choices.option-')) {
             const index = Number(option.label.replace('choices.option-', ''));
             if (!Number.isNaN(index)) {
                 return t('choices.option', { index: index + 1 });
             }
         }
-        return translateRuntimeKey(t, option.label, { defaultValue: option.label });
+        const translatedParams = Object.fromEntries(
+            Object.entries(option.labelParams ?? {}).map(([key, value]) => [
+                key,
+                translateInterpolatedParam(t, value),
+            ]),
+        );
+        return translateRuntimeKey(t, option.label, { ...translatedParams, defaultValue: option.label });
     };
 
     const handleSliderConfirm = (selectedValue: number) => {
@@ -240,7 +259,7 @@ const TokenChoiceIcon = ({
 }) => {
     const [isHovered, setIsHovered] = React.useState(false);
     const tokenId = option.tokenId!;
-    const meta = TOKEN_META[tokenId] || { color: 'from-gray-500 to-gray-600' };
+    const meta = getVisualMetaById(tokenId) || { color: 'from-gray-500 to-gray-600' };
 
     // 检查精灵图是否存在
     let hasSprite = false;
@@ -285,7 +304,6 @@ const TokenChoiceIcon = ({
                 content={description}
                 isVisible={isHovered}
                 position="bottom"
-                zIndex={UI_Z_INDEX.modalTooltip}
             />
         </div>
     );
@@ -320,7 +338,7 @@ const SliderChoice = ({
     t: (key: string, opts?: Record<string, unknown>) => string;
 }) => {
     const [value, setValue] = useState(1);
-    const meta = (confirmOption.tokenId ? TOKEN_META[confirmOption.tokenId] : undefined)
+    const meta = (confirmOption.tokenId ? getVisualMetaById(confirmOption.tokenId) : undefined)
         || { color: 'from-slate-500 to-slate-600' };
     const iconNode = getStatusEffectIconNode(meta, locale, 'choice', statusIconAtlas);
 

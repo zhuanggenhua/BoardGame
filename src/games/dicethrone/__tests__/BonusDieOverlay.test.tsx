@@ -11,6 +11,7 @@ import { BoardOverlays } from '../ui/BoardOverlays';
 import { SpotlightContainer } from '../ui/SpotlightContainer';
 import {
     resolveInteractivePendingBonusDiceSettlement,
+    shouldSuppressForegroundBonusDieOverlay,
     shouldSuppressPendingDisplayOnlyBonusOverlay,
 } from '../ui/bonusDiceOverlayVisibility';
 import { shouldHighlightOpponentViewAbilities } from '../ui/abilityHighlightVisibility';
@@ -359,6 +360,30 @@ describe('BonusDieOverlay', () => {
         expect(onReroll).toHaveBeenCalledWith(0);
     });
 
+    it('单骰有汇总文案时应只显示一句描述，不重复渲染每骰文案', async () => {
+        vi.useFakeTimers();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={[
+                    { index: 0, value: 1, face: 'fist', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 1 } },
+                ]}
+                canReroll={false}
+                displayOnly
+                summaryEffectKey="bonusDie.effect.watchOut.bow"
+                summaryEffectParams={{ value: 1 }}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+
+        expect(screen.getAllByText('弓🏹：伤害+2')).toHaveLength(1);
+    });
+
     it('多骰重掷后只应让被选中的那颗骰子播放重投动画', async () => {
         vi.useFakeTimers();
 
@@ -396,11 +421,49 @@ describe('BonusDieOverlay', () => {
                 ]}
                 canReroll
                 lastRerolledDieIndex={1}
-                rerollAnimationKey={1}
+                rerollPresentationKey={1}
             />
         );
 
         expect(readRollingStates()).toEqual([false, true, false]);
+    });
+
+    it('单骰特写在结果相同但 presentationKey 变化时也应重播滚动动画', async () => {
+        vi.useFakeTimers();
+
+        const readIsRolling = () => {
+            const cube = screen.getByTestId('dice-3d').firstElementChild as HTMLElement | null;
+            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
+        };
+
+        const { rerender } = render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="lotus"
+                presentationKey="bonus-1"
+                autoCloseDelay={10000}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+        expect(readIsRolling()).toBe(false);
+
+        rerender(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="lotus"
+                presentationKey="bonus-2"
+                autoCloseDelay={10000}
+            />
+        );
+
+        expect(readIsRolling()).toBe(true);
     });
 
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {
@@ -1111,6 +1174,38 @@ describe('BonusDieOverlay', () => {
         ).toBe(true);
     });
 
+    it('displayOnly 结算的旧脏 dice shape 不应在可见性判断里崩溃', () => {
+        const settlement = {
+            id: 'legacy-display-only',
+            sourceAbilityId: 'volley',
+            attackerId: '1',
+            targetId: '0',
+            dice: { legacy: true },
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 0,
+            readyToSettle: false,
+            displayOnly: true,
+        } as any;
+
+        expect(
+            shouldSuppressPendingDisplayOnlyBonusOverlay({
+                settlement,
+                viewerPlayerId: '0',
+                cardSpotlightQueue: [
+                    {
+                        id: 'legacy-volley-1000',
+                        timestamp: 1000,
+                        playerId: '1',
+                        playerName: '对手',
+                        bonusDice: [],
+                    },
+                ],
+            })
+        ).toBe(false);
+    });
+
     it('displayOnly 结算缺少时间戳时，若卡牌特写已完整绑定骰子也应隐藏重复面板', () => {
         const settlement = {
             id: 'volley-display',
@@ -1257,8 +1352,211 @@ describe('BonusDieOverlay', () => {
             const state = JSON.parse(screen.getByTestId('opponent-lucky-state').textContent ?? '{}');
             expect(state.cardSpotlightQueue).toHaveLength(1);
             expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(3);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[1].presentationKey).toBe('BONUS_DIE_ROLLED:1101');
+            expect(state.cardSpotlightQueue[0].bonusDice[2].presentationKey).toBe('BONUS_DIE_ROLLED:1102');
             expect(state.cardSpotlightQueue[0].summaryText?.effectKey).toBe('bonusDie.effect.luckyRoll.result');
             expect(state.bonusDie.show).toBe(false);
+        });
+    });
+
+    it('对手打出一掷千金时，卡牌特写骰子应携带可重放的 presentationKey', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'CARD_PLAYED',
+                    payload: {
+                        playerId: '1',
+                        cardId: 'card-one-throw-fortune',
+                    },
+                    timestamp: 1000,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 6,
+                        face: 'lotus',
+                        effectKey: 'bonusDie.effect.gainCp',
+                        effectParams: { cp: 3 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'barbarian',
+                    '1': 'monk',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-one-throw-fortune-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-one-throw-fortune-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[0].index).toBe(0);
+            expect(state.bonusDie.show).toBe(false);
+        });
+    });
+
+    it('对手视角下的自掷单骰 standalone 奖励骰也应显示特写，不能静默跳过', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectKey: 'bonusDie.effect.powderKeg.bang',
+                        effectParams: { value: 1 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'gunslinger',
+                    '1': 'cursed_pirate',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-standalone-single-die-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-standalone-single-die-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(0);
+            expect(state.bonusDie.show).toBe(true);
+            expect(state.bonusDie.value).toBe(1);
+            expect(state.bonusDie.face).toBe('heart');
+            expect(state.bonusDie.effectKey).toBe('bonusDie.effect.powderKeg.bang');
+        });
+    });
+
+    it('对手视角下的自掷多骰 standalone 奖励骰也应聚合展示，不能只静默吃掉前几颗', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectParams: { index: 0 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 2,
+                        face: 'axe',
+                        effectParams: { index: 1 },
+                    },
+                    timestamp: 1101,
+                },
+            },
+            {
+                id: 3,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 1,
+                        face: 'heart',
+                        effectKey: 'bonusDie.effect.syntheticStandalone.result',
+                        effectParams: { heartCount: 1 },
+                    },
+                    timestamp: 1102,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'gunslinger',
+                    '1': 'barbarian',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-standalone-multi-dice-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-standalone-multi-dice-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(0);
+            expect(state.bonusDie.show).toBe(true);
+            expect(state.bonusDie.bonusDice).toHaveLength(2);
+            expect(state.bonusDie.bonusDice[0].index).toBe(0);
+            expect(state.bonusDie.bonusDice[1].index).toBe(1);
+            expect(state.bonusDie.summaryEffectKey).toBe('bonusDie.effect.syntheticStandalone.result');
+            expect(state.bonusDie.displayOnly).toBe(true);
         });
     });
 
@@ -1576,6 +1874,8 @@ describe('BonusDieOverlay', () => {
             expect(state.cardSpotlightQueue[0].bonusDice[0].value).toBe(4);
             expect(state.cardSpotlightQueue[0].bonusDice[1].value).toBe(6);
             expect(state.cardSpotlightQueue[0].bonusDice[1].index).toBe(1);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[1].presentationKey).toBe('BONUS_DIE_REROLLED:1200');
         });
     });
 
@@ -1680,6 +1980,76 @@ describe('BonusDieOverlay', () => {
             },
             responseWindowState: {
                 current: undefined,
+            },
+        })).toBe(settlement);
+    });
+
+    it('keeps powder keg standalone spotlight visible even when choice prompt is already open', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: true,
+            interactiveSettlement: undefined,
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.powderKeg.6',
+            },
+        })).toBe(false);
+    });
+
+    it('keeps non-powder-keg standalone spotlight visible when choice prompt is already open', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: true,
+            interactiveSettlement: undefined,
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.cursedPirateMarkedLoot',
+            },
+        })).toBe(false);
+    });
+
+    it('always suppresses foreground spotlight when interactive bonus settlement is active', () => {
+        expect(shouldSuppressForegroundBonusDieOverlay({
+            hasChoice: false,
+            interactiveSettlement: {
+                id: 'samurai-righteousness-1000',
+                sourceAbilityId: 'samurai-righteousness',
+                attackerId: '0',
+                targetId: '1',
+                dice: [{ index: 0, value: 4, face: 'sword' as const }],
+                rerollCostTokenId: '',
+                rerollCostAmount: 0,
+                rerollCount: 0,
+                readyToSettle: false,
+            },
+            bonusDie: {
+                show: true,
+                effectKey: 'bonusDie.effect.powderKeg.6',
+            },
+        })).toBe(true);
+    });
+
+    it('旧脏 interactive pendingBonusDiceSettlement 不应在前台奖励骰弹层链路里崩溃', () => {
+        const settlement = {
+            id: 'legacy-interactive-settlement',
+            sourceAbilityId: 'volley',
+            attackerId: '0',
+            targetId: '1',
+            dice: { legacy: true },
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            maxRerollCount: 1,
+            readyToSettle: false,
+            displayOnly: false,
+        } as any;
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: {
+                    kind: 'dt:bonus-dice',
+                    playerId: '0',
+                },
             },
         })).toBe(settlement);
     });

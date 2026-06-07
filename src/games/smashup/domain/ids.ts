@@ -10,6 +10,9 @@ export const SMASHUP_ATLAS_IDS = {
     BASE5: 'smashup:base5',
     BASE6: 'smashup:base6',
     BASE7: 'smashup:base7',
+    BASE8: 'smashup:base8',
+    BASE9: 'smashup:base9',
+    HULUWAWA_BASES: 'smashup:huluwawa-bases',
     CARDS1: 'smashup:cards1',
     CARDS2: 'smashup:cards2',
     CARDS3: 'smashup:cards3',
@@ -19,6 +22,11 @@ export const SMASHUP_ATLAS_IDS = {
     CARDS7: 'smashup:cards7',
     CARDS8: 'smashup:cards8',
     CARDS9: 'smashup:cards9',
+    CARDS10: 'smashup:cards10',
+    CARDS11: 'smashup:cards11',
+    CARDS12: 'smashup:cards12',
+    HULUWAWA_CARDS: 'smashup:huluwawa-cards',
+    HULUWAWA_TITAN: 'smashup:huluwawa-titan',
     TITANS: 'smashup:titans',
 } as const;
 
@@ -40,10 +48,15 @@ export const SMASHUP_FACTION_IDS = {
     DINOSAURS_POD: 'dinosaurs_pod',
     EXPLORERS: 'explorers',
     FAIRIES: 'fairies',
+    DRAGONS: 'dragons',
+    GEEKS: 'geeks',
+    HULUWAWA: 'huluwawa',
     PRINCESSES: 'princesses',
     SHARKS: 'sharks',
     TORNADOS: 'tornados',
     MYTHIC_GREEKS: 'mythic_greeks',
+    SHAPESHIFTERS: 'shapeshifters',
+    CYBORG_APES: 'cyborg_apes',
     GHOSTS: 'ghosts',
     GHOSTS_POD: 'ghosts_pod',
     IGNOBLES: 'ignobles',
@@ -94,6 +107,7 @@ export const SMASHUP_FACTION_IDS = {
     MERMAIDS: 'mermaids',
     SKELETONS: 'skeletons',
     WORLD_CHAMPS: 'world_champs',
+    SUPERHEROES: 'superheroes',
     MISKATONIC_UNIVERSITY_POD: 'miskatonic_university_pod',
     NINJAS_POD: 'ninjas_pod',
 } as const;
@@ -118,6 +132,24 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
+
+export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.HULUWAWA,
+]);
+
+export function isSmashUpDiyFaction(factionId: string | null | undefined): boolean {
+    const normalizedId = normalizeFactionSelectionId(factionId);
+    return SMASHUP_DIY_FACTION_IDS.has(factionId ?? '')
+        || SMASHUP_DIY_FACTION_IDS.has(normalizedId);
+}
+
+export function isSmashUpFactionImplementationInProgress(factionId: string): boolean {
+    const normalizedId = normalizeFactionSelectionId(factionId);
+    return SMASHUP_IN_PROGRESS_FACTION_IDS.has(factionId)
+        || SMASHUP_IN_PROGRESS_FACTION_IDS.has(normalizedId);
+}
+
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',
@@ -128,10 +160,15 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.DINOSAURS_POD]: '恐龙 (POD版)',
     [SMASHUP_FACTION_IDS.EXPLORERS]: '探索者',
     [SMASHUP_FACTION_IDS.FAIRIES]: '仙灵',
+    [SMASHUP_FACTION_IDS.DRAGONS]: '龙',
+    [SMASHUP_FACTION_IDS.GEEKS]: '极客',
+    [SMASHUP_FACTION_IDS.HULUWAWA]: '葫芦娃',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
     [SMASHUP_FACTION_IDS.TORNADOS]: '龙卷风',
     [SMASHUP_FACTION_IDS.MYTHIC_GREEKS]: '希腊神话',
+    [SMASHUP_FACTION_IDS.SHAPESHIFTERS]: '变形者',
+    [SMASHUP_FACTION_IDS.CYBORG_APES]: '电子猿',
     [SMASHUP_FACTION_IDS.ALIENS]: '外星人',
     [SMASHUP_FACTION_IDS.ALIENS_POD]: '外星人 (POD版)',
     [SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS]: '古埃及人',
@@ -179,6 +216,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.MERMAIDS]: '美人鱼',
     [SMASHUP_FACTION_IDS.SKELETONS]: '骷髅',
     [SMASHUP_FACTION_IDS.WORLD_CHAMPS]: '世界冠军',
+    [SMASHUP_FACTION_IDS.SUPERHEROES]: '超级英雄',
     [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD]: '米斯卡塔尼克 (POD版)',
     [SMASHUP_FACTION_IDS.NINJAS_POD]: '忍者 (POD版)',
     [SMASHUP_FACTION_IDS.SUPER_SPIES]: '超级间谍',

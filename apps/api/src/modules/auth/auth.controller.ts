@@ -164,6 +164,7 @@ export class AuthController {
                 emailVerified: user.emailVerified,
                 ...serializeBackofficeRole(user),
                 banned: user.banned,
+                feedbackPoints: user.feedbackPoints ?? 0,
             },
             token,
         });
@@ -276,6 +277,7 @@ export class AuthController {
                 emailVerified: user.emailVerified,
                 ...serializeBackofficeRole(user),
                 banned: user.banned,
+                feedbackPoints: user.feedbackPoints ?? 0,
             },
         });
     }
@@ -305,6 +307,7 @@ export class AuthController {
                 banned: user.banned,
                 bannedAt: user.bannedAt ?? null,
                 bannedReason: user.bannedReason ?? null,
+                feedbackPoints: user.feedbackPoints ?? 0,
                 createdAt: user.createdAt,
             },
         });
@@ -392,6 +395,7 @@ export class AuthController {
                 emailVerified: user.emailVerified,
                 ...serializeBackofficeRole(user),
                 banned: user.banned,
+                feedbackPoints: user.feedbackPoints ?? 0,
             },
         });
     }
@@ -432,6 +436,7 @@ export class AuthController {
                 emailVerified: user.emailVerified,
                 ...serializeBackofficeRole(user),
                 banned: user.banned,
+                feedbackPoints: user.feedbackPoints ?? 0,
             },
             token,
         });
@@ -463,6 +468,7 @@ export class AuthController {
                 avatar: user.avatar,
                 ...serializeBackofficeRole(user),
                 banned: user.banned,
+                feedbackPoints: user.feedbackPoints ?? 0,
             },
         });
     }
@@ -519,6 +525,7 @@ export class AuthController {
                     avatar: result.user.avatar,
                     ...serializeBackofficeRole(result.user),
                     banned: result.user.banned,
+                    feedbackPoints: result.user.feedbackPoints ?? 0,
                 },
             });
         } catch (err) {

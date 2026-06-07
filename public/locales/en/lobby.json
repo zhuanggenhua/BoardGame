@@ -16,15 +16,144 @@
       "players": "{{count}} seated"
     }
   },
+  "homeV2": {
+    "waitingPlayers": "Waiting for players",
+    "roomTitleFallback": "Room {{id}}",
+    "roomLedgerTitle": "Room List",
+    "roomCount": "{{count}} rooms",
+    "emptyRoomTitle": "No public rooms yet",
+    "emptyRoomDescription": "No joinable room records yet.",
+    "lockedRoomLabel": "Locked",
+    "lockedRoomHint": "Please use the legacy lobby to enter password-protected rooms for now.",
+    "confirm": {
+      "destroyDescription": "Destroying the room closes it immediately and removes every player from the current match."
+    },
+    "details": {
+      "typeLabel": "Type",
+      "defaultCategory": "Board Game",
+      "playerCountLabel": "Recommended Players",
+      "overviewLabel": "Overview",
+      "onlineLobbyLabel": "Online Lobby",
+      "onlineLobbyCompactLabel": "Lobby"
+    },
+    "catalog": {
+      "allGames": "All Games",
+      "accountSettings": "Account and Settings",
+      "playerNickname": "Player",
+      "help": "Filter"
+    },
+    "referenceCatalog": {
+      "emptyTitle": "Nothing in this category yet",
+      "emptyDescription": "Switch to another category to browse games.",
+      "badges": {
+        "strategy": "Strategy",
+        "collection": "Collection",
+        "war": "War"
+      },
+      "games": {
+        "cardia": {
+          "summary": "Build your deck in a magical card world and fight for glory."
+        },
+        "dicethrone": {
+          "summary": "Claim the throne, battle for honor, and rule the realm."
+        },
+        "smashup": {
+          "summary": "Survive the chaotic battlefield and crush every enemy."
+        },
+        "splendor": {
+          "summary": "Gather gems and forge your own legendary empire."
+        },
+        "summonerwars": {
+          "summary": "Summon mighty creatures and enter an epic battle."
+        },
+        "tictactoe": {
+          "summary": "The classic XO game—simple, clean, and still fun."
+        }
+      }
+    },
+    "sceneTabs": {
+      "lobby": "Lobby",
+      "rooms": "Login",
+      "leaderboard": "",
+      "changelog": "Updates"
+    },
+    "tabs": {
+      "rooms": {
+        "eyebrow": "Account",
+        "title": "Account Login",
+        "description": "View recent active public rooms.",
+        "accountActionLabel": "Account",
+        "loading": "Checking account status…",
+        "emptyTitle": "No public rooms yet",
+        "emptyDescription": "No public room records yet.",
+        "loggedInHint": "Signed in",
+        "playerSummary": "{{players}} / {{seats}} seated",
+        "openGame": "Open Game",
+        "brandFeatureStrategyTitle": "Deep Strategy",
+        "brandFeatureStrategyDescription": "Build endless card combinations",
+        "brandFeatureBattleTitle": "Fair Competition",
+        "brandFeatureBattleDescription": "Balanced matches decided by skill",
+        "brandFeaturePartyTitle": "Play With Friends",
+        "brandFeaturePartyDescription": "Team up and enjoy board games together",
+        "brandTitle": "Yi Board Game",
+        "brandSubtitle": "Strategy · Cards · Battles"
+      },
+      "leaderboard": {
+        "eyebrow": "Leaderboard",
+        "title": "Live Ranking",
+        "description": "View current trending games.",
+        "loading": "Loading ranking data…",
+        "emptyTitle": "No ranking data yet",
+        "emptyDescription": "No ranking data yet.",
+        "statSummary": "{{rooms}} rooms · {{players}} players"
+      },
+      "changelog": {
+        "eyebrow": "Changelog",
+        "title": "Recent Updates",
+        "description": "View recent update entries.",
+        "loading": "Reading release notes…",
+        "emptyTitle": "No updates yet",
+        "emptyDescription": "No update records yet."
+      }
+    },
+    "reviews": {
+      "error": "Failed to load reviews. Please try again later.",
+      "empty": "No reviews yet"
+    },
+    "detailTabs": {
+      "updates": "Updates",
+      "updatesCompact": "Updates",
+      "reviews": "Reviews",
+      "reviewsCompact": "Reviews",
+      "ranking": "Leaderboard",
+      "rankingCompact": "Ranks"
+    },
+    "detailSearchPlaceholder": "Search rooms or players",
+    "detailNoMatchTitle": "No rooms match this search",
+    "detailNoMatchDescription": "Try another keyword or create a new room.",
+    "detailOpenSummary": "Open {{open}} · Locked {{locked}}",
+    "detailFilters": {
+      "all": "All",
+      "open": "Open",
+      "locked": "Locked",
+      "full": "Full"
+    },
+    "detailColumns": {
+      "roomName": "Room",
+      "players": "Seats",
+      "status": "Status",
+      "action": "Action"
+    }
+  },
   "password": {
     "modalTitle": "Private Room",
     "modalDesc": "This room requires a password.",
-    "placeholder": "Enter password..."
+    "placeholder": "Password"
   },
   "confirm": {
     "destroy": {
       "title": "Destroy Room",
-      "description": "Are you sure you want to destroy this room?"
+      "description": "Destroying the room closes it immediately and removes every player from the current match."
     },
     "leave": {
       "title": "Leave Room",
@@ -74,6 +203,7 @@
     "empty": "No active rooms",
     "matchTitle": "Match #{{id}}",
     "mine": "Mine",
+    "enabledExpansions": "Exp",
     "seatSeparator": " / ",
     "emptySlot": "Empty",
     "ownerMustReconnect": "This is your room. Please reconnect.",
@@ -84,9 +214,13 @@
   },
   "tabs": {
     "lobby": "Lobby",
+    "lobbyCompact": "Lobby",
     "reviews": "Reviews",
+    "reviewsCompact": "Reviews",
     "leaderboard": "Leaderboard",
-    "changelog": "Updates"
+    "leaderboardCompact": "Rank",
+    "changelog": "Updates",
+    "changelogCompact": "Updates"
   },
   "leaderboard": {
     "loading": "Loading...",
@@ -97,6 +231,7 @@
     "changelogEmpty": "No updates yet"
   },
   "changelog": {
+    "title": "Recent Updates",
     "loading": "Loading changelog...",
     "error": "Failed to load changelog",
     "pinned": "Pinned"
@@ -121,6 +256,12 @@
     "installedCompletedBadge": "Completed",
     "installedVersionBadge": "Completed · {{version}}",
     "installAction": "Install Pack",
+    "homeV2UpdateAppShort": "Update App",
+    "homeV2DownloadingShort": "Downloading",
+    "homeV2RetryShort": "Retry",
+    "homeV2InstalledShort": "Ready",
+    "homeV2InstallCompactShort": "Get Pack",
+    "homeV2InstallShort": "Download",
     "confirmEyebrow": "Install Confirm",
     "confirmTitle": "Download {{game}} packages",
     "confirmDescription": "This download prepares a dedicated local resource pack for the current game only.",
@@ -241,6 +382,11 @@
       "description": "An asymmetric three-faction historical strategy game about card resources, action wheel tempo, Northeast Asian area control, and complex battle resolution.",
       "players": "3 Players"
     },
+    "fantasyrealms": {
+      "title": "Fantasy Realms",
+      "description": "A 2-6 player fantasy hand-building card game centered on a 7-card hand, the face-up discard row, and high-synergy endgame scoring.",
+      "players": "2-6 Players"
+    },
     "smashup": {
       "title": "Smash Up",
       "description": "Smash Up is a 2-4 player card battle game! Combine two different factions to compete for base control and victory points; the first to 15 points wins. The base game includes 8 distinct factions, enabling many strategic pairings and playstyles. (Year: 2012; Type: Competitive/Card; Rating: 7.2)",
@@ -261,19 +407,9 @@
       "description": "Browse and preview all common audio assets by category, with keyword search and filtering.",
       "players": "Solo Tool"
     },
-    "ugcbuilder": {
-      "title": "UGC Prototype Builder",
-      "description": "Quickly create board game prototypes. Supports card design, rule config, and AI-assisted generation.",
-      "players": "Solo Tool"
-    },
     "archview": {
       "title": "Architecture View",
       "description": "Interactive node-edge diagram showing the platform's layered architecture and module dependencies.",
-      "players": "Solo Tool"
-    },
-    "airepoworkbench": {
-      "title": "AI Repo Workbench",
-      "description": "A repo-centric AI workbench centered on RepoSession, WorkflowRun, DecisionRequest, and ArtifactBundle.",
       "players": "Solo Tool"
     },
     "summonerwars": {
@@ -504,6 +640,7 @@
     "ownerSeatUnit": "Seat {{seat}} (Host)",
     "occupiedSeatUnit": "Seat {{seat}}",
     "aiPlayerName": "AI Seat {{seat}}",
+    "aiManualFactionSelection": "Player chooses AI factions",
     "confirm": "Create Room"
   },
   "socket": {

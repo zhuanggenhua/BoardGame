@@ -13,7 +13,6 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
-import { resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId, HAND_LIMIT, VP_TO_WIN, DRAW_PER_TURN } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -22,9 +21,18 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { advanceSmashUpReactionSession } from '../domain/reactionSession';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import {
+    expectNoPrompt,
+    getFirstPrompt,
+    getPromptSourceId,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPromptOption,
+} from './helpers';
 import { runCommand } from './testRunner';
 
 const PLAYER_IDS = ['0', '1'];
@@ -169,14 +177,14 @@ describe('完整回合循环', () => {
         } as any);
 
         const state = makeMatchState(core);
-        expect(state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(state);
 
         const result = runCommand(state, { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any);
 
         expect(result.success, result.error).toBe(true);
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.currentPlayerIndex).toBe(1);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
         expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
             'c33',
             'c32',
@@ -310,7 +318,7 @@ describe('完整回合循环', () => {
                     ongoingActions: [{ uid: 'de1', defId: 'steampunk_difference_engine', ownerId: '1', talentUsed: false }],
                 }),
                 makeBase('base_saloon'),
-                makeBase('base_factory_436-1337'),
+                makeBase('base_the_factory'),
                 makeBase('base_longhouse'),
             ],
             titans: [
@@ -337,7 +345,7 @@ describe('完整回合循环', () => {
         } as any);
         expect(enterTurnEnd.success).toBe(true);
         expect(enterTurnEnd.finalState.sys.phase).toBe('playCards');
-        expect(enterTurnEnd.finalState.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(enterTurnEnd.finalState);
         expect(enterTurnEnd.finalState.core.players['1'].hand.map(card => card.uid)).toContain('d1');
         expect(
             (enterTurnEnd.finalState.core.triggerQueue ?? []).some(
@@ -414,31 +422,23 @@ describe('完整回合循环', () => {
 
         const resolved = maybeResolveReactionQueue(state, random, 0);
         expect(resolved).toBeDefined();
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+        const firstPrompt = getFirstPrompt(resolved!.state);
+        expect(getPromptSourceId(firstPrompt)).toBe('base_mushroom_kingdom');
+        expect(getPromptSourceId(firstPrompt)).not.toBe('smashup_reaction_choose');
         expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'ninjas_invisible_ninja')).toBe(true);
         expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_mushroom_kingdom')).toBe(false);
 
-        const firstInteraction = resolved!.state.sys.interaction?.current as any;
-        const firstHandler = getInteractionHandler(firstInteraction?.data?.sourceId);
-        expect(firstHandler).toBeDefined();
-
-        const firstResolved = firstHandler!(
+        const firstResolved = respondToPromptOption(
             resolved!.state,
+            option => option.value?.skip === true,
+            'Mushroom Kingdom skip option',
             '0',
-            { skip: true },
-            firstInteraction.data,
             random,
-            1,
         );
-        expect(firstResolved).toBeDefined();
-        const afterFirstResolve = resolveInteraction(firstResolved!.state);
-        expect(afterFirstResolve.sys.interaction?.current).toBeUndefined();
-
-        const resumed = advanceSmashUpReactionSession(afterFirstResolve, random, 2);
-        expect(resumed).toBeDefined();
-        expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('titan_ninjas_invisible_ninja_start_turn');
-        expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+        expect(firstResolved.success, firstResolved.error).toBe(true);
+        const resumedPrompt = getFirstPrompt(firstResolved.finalState);
+        expect(getPromptSourceId(resumedPrompt)).toBe('titan_ninjas_invisible_ninja_start_turn');
+        expect(getPromptSourceId(resumedPrompt)).not.toBe('smashup_reaction_choose');
     });
 
     it('蘑菇王国面对对手幼苗时不应把对手回合开始触发误入队', () => {
@@ -497,8 +497,9 @@ describe('完整回合循环', () => {
 
         const resolved = maybeResolveReactionQueue(state, random, 5);
         expect(resolved).toBeDefined();
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+        const prompt = getFirstPrompt(resolved!.state);
+        expect(getPromptSourceId(prompt)).toBe('base_mushroom_kingdom');
+        expect(getPromptSourceId(prompt)).not.toBe('smashup_reaction_choose');
     });
 
     it('同名 sourceController 回合开始触发应跳过对手来源并选择当前玩家来源', () => {
@@ -662,8 +663,35 @@ describe('完整回合循环', () => {
 
         const resolved = maybeResolveReactionQueue(state, random, 8);
         expect(resolved).toBeDefined();
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
-        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+        const prompt = getFirstPrompt(resolved!.state);
+        expect(getPromptSourceId(prompt)).toBe('base_mushroom_kingdom');
+        expect(getPromptSourceId(prompt)).not.toBe('smashup_reaction_choose');
+
+        const skippedMushroomKingdom = respondToPromptOption(
+            resolved!.state,
+            option => option.value?.skip === true,
+            'Mushroom Kingdom skip option',
+            '0',
+            random,
+        );
+        expect(skippedMushroomKingdom.success, skippedMushroomKingdom.error).toBe(true);
+
+        const reactionPrompt = getFirstPrompt(skippedMushroomKingdom.finalState);
+        expect(getPromptSourceId(reactionPrompt)).toBe('smashup_reaction_choose');
+
+        const passedBridePrompt = respondToPromptOption(
+            skippedMushroomKingdom.finalState,
+            option => option.id === 'pass',
+            'Bride titan pass option',
+            '0',
+            random,
+        );
+        expect(passedBridePrompt.success, passedBridePrompt.error).toBe(true);
+        expectNoPrompt(passedBridePrompt.finalState);
+        expect((passedBridePrompt.finalState.core.triggerQueue ?? []).some(
+            trigger => trigger.sourceDefId === 'frankenstein_the_bride',
+        )).toBe(false);
+        expect(passedBridePrompt.finalState.sys.phase).toBe('playCards');
     });
 
     it('线上反馈 69feede0：场下巨狼之灵不应在回合开始入队询问触发', () => {

@@ -1,9 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, TriggerInstance } from '../domain/types';
-import { makeMatchState, makeState, makeBase } from './helpers';
+import {
+  getPromptOptions,
+  getPromptPlayerId,
+  getReactionPrompt,
+  makeMatchState,
+  makeState,
+  makeBase,
+  respondToPromptOption,
+} from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 
@@ -21,19 +29,6 @@ beforeEach(() => {
   clearInteractionHandlers();
   registerReactionQueueInteractionHandlers();
 });
-
-function withResolvedInteraction(ms: any) {
-  return {
-    ...ms,
-    sys: {
-      ...ms.sys,
-      interaction: {
-        current: undefined,
-        queue: [],
-      },
-    },
-  };
-}
 
 describe('Reaction queue: optional base triggers resolve clockwise', () => {
   it('optional triggers use smashup reaction session and start with the first clockwise eligible player', () => {
@@ -56,14 +51,13 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    const current = (rq!.state.sys.interaction.current as any);
+    const current = getReactionPrompt(rq!.state);
 
     // Optional: current player 0 has no options, so the first eligible player clockwise is 1.
-    expect(current.playerId).toBe('1');
-    expect(current.data.sourceId).toBe('smashup_reaction_choose');
-    expect(current.data.options.some((option: any) => String(option.id).includes('base_a'))).toBe(true);
-    expect(current.data.options.some((option: any) => String(option.id).includes('base_b'))).toBe(false);
-    expect(current.data.options.some((option: any) => option.id === 'pass')).toBe(true);
+    expect(getPromptPlayerId(current)).toBe('1');
+    expect(getPromptOptions(current).some((option: any) => String(option.id).includes('base_a'))).toBe(true);
+    expect(getPromptOptions(current).some((option: any) => String(option.id).includes('base_b'))).toBe(false);
+    expect(getPromptOptions(current).some((option: any) => option.id === 'pass')).toBe(true);
   });
 
   it('a player who passed may still act later in the same optional cycle', () => {
@@ -87,41 +81,33 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    const handler = getInteractionHandler('smashup_reaction_choose');
-    expect(handler).toBeTruthy();
+    const current1 = getReactionPrompt(rq!.state);
+    expect(getPromptPlayerId(current1)).toBe('1');
 
-    const current1 = rq!.state.sys.interaction.current as any;
-    expect(current1.playerId).toBe('1');
-
-    const afterPass = handler!(
-      withResolvedInteraction(rq!.state) as any,
+    const afterPass = respondToPromptOption(
+      rq!.state,
+      (option: any) => option.id === 'pass',
+      'pass option in optional reaction cycle',
       '1',
-      { kind: 'pass' },
-      current1.data,
       { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
-      2,
     );
     expect(afterPass).toBeDefined();
-    const current2 = afterPass!.state.sys.interaction.current as any;
-    expect(current2.playerId).toBe('2');
-    expect(current2.data.options.some((option: any) => String(option.id).includes('base_b'))).toBe(true);
+    const current2 = getReactionPrompt(afterPass.finalState);
+    expect(getPromptPlayerId(current2)).toBe('2');
+    expect(getPromptOptions(current2).some((option: any) => String(option.id).includes('base_b'))).toBe(true);
 
-    const triggerB = current2.data.options.find((option: any) => String(option.id).includes('base_b'));
-    expect(triggerB).toBeDefined();
-    const afterPlayerTwoActs = handler!(
-      withResolvedInteraction(afterPass!.state) as any,
+    const afterPlayerTwoActs = respondToPromptOption(
+      afterPass.finalState,
+      (option: any) => String(option.id).includes('base_b'),
+      'reaction option for base_b',
       '2',
-      triggerB.value,
-      current2.data,
       { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
-      3,
     );
     expect(afterPlayerTwoActs).toBeDefined();
 
-    const current3 = afterPlayerTwoActs!.state.sys.interaction.current as any;
-    expect(current3.playerId).toBe('1');
-    expect(current3.data.sourceId).toBe('smashup_reaction_choose');
-    expect(current3.data.options.filter((option: any) => String(option.id).includes('base_a')).length).toBe(2);
+    const current3 = getReactionPrompt(afterPlayerTwoActs.finalState);
+    expect(getPromptPlayerId(current3)).toBe('1');
+    expect(getPromptOptions(current3).filter((option: any) => String(option.id).includes('base_a')).length).toBe(2);
   });
 });
 

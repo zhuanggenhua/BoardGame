@@ -1,11 +1,15 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { UI_Z_INDEX, buildLocalizedImageSet } from '../../../core';
+import { UI_Z_INDEX } from '../../../core';
+import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
+import type { AbilityCard } from '../types';
+import type { HeroState } from '../domain/types';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -22,8 +26,10 @@ export interface CenterBoardProps {
     activatingAbilityId?: string;
     abilityLevels?: Record<string, number>;
     characterId?: string;
+    playerBoardFace?: HeroState['playerBoardFace'];
     locale?: string;
     onMagnifyImage: (image: string) => void;
+    onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
 }
@@ -43,8 +49,10 @@ export const CenterBoard = ({
     activatingAbilityId,
     abilityLevels,
     characterId = 'monk',
+    playerBoardFace,
     locale,
     onMagnifyImage,
+    onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
 }: CenterBoardProps) => {
@@ -75,10 +83,20 @@ export const CenterBoard = ({
     const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
     const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
 
-    const playerBoardPath = ASSETS.PLAYER_BOARD(characterId);
+    const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
-    const playerBoardBackground = buildLocalizedImageSet(playerBoardPath, locale);
-    const tipBoardBackground = buildLocalizedImageSet(tipBoardPath, locale);
+    const shouldAnimateBoardFlip = characterId === 'cursed_pirate';
+    const cursedPirateVisibleFace = playerBoardFace === 'normal' ? 'normal' : 'cursed';
+    const cursedPirateNormalBoardPath = shouldAnimateBoardFlip
+        ? ASSETS.PLAYER_BOARD(characterId, 'normal')
+        : playerBoardPath;
+    const cursedPirateCursedBoardPath = shouldAnimateBoardFlip
+        ? ASSETS.PLAYER_BOARD(characterId, 'cursed')
+        : playerBoardPath;
+    const true3DBoardFlipMotion = {
+        rotateY: cursedPirateVisibleFace === 'normal' ? 0 : 180,
+        transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] as const },
+    };
 
     const handleMagnifySurfaceClick = React.useCallback((
         event: React.MouseEvent<HTMLElement>,
@@ -117,35 +135,166 @@ export const CenterBoard = ({
                     }}
                     data-tutorial-id="player-board"
                     data-testid="player-board-surface"
+                    data-character-id={characterId}
                     onClick={(event) => handleMagnifySurfaceClick(event, playerBoardPath)}
                 >
-                    <div
-                        className="h-full"
-                        role="img"
-                        aria-label={t('imageAlt.playerBoard')}
-                        style={{
-                            width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
-                            backgroundImage: playerBoardBackground,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'center',
-                            backgroundSize: 'contain',
-                        }}
-                    />
-                    <AbilityOverlays
-                        ref={abilityOverlaysRef}
-                        isEditing={isLayoutEditing && isSelfView}
-                        availableAbilityIds={availableAbilityIds}
-                        canSelect={canSelectAbility}
-                        canHighlight={canHighlightAbility}
-                        onSelectAbility={onSelectAbility}
-                        onHighlightedAbilityClick={onHighlightedAbilityClick}
-                        selectedAbilityId={selectedAbilityId}
-                        activatingAbilityId={activatingAbilityId}
-                        abilityLevels={abilityLevels}
-                        characterId={characterId}
-                        locale={locale}
-                        playerTokens={playerTokens}
-                    />
+                    {shouldAnimateBoardFlip ? (
+                        <div
+                            className="relative h-full"
+                            style={{
+                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                                perspective: '2200px',
+                                WebkitPerspective: '2200px',
+                                perspectiveOrigin: '50% 50%',
+                                WebkitPerspectiveOrigin: '50% 50%',
+                            }}
+                        >
+                            <motion.div
+                                className="relative h-full"
+                                data-testid="player-board-face-shell"
+                                data-player-board-face={cursedPirateVisibleFace}
+                                style={{
+                                    width: '100%',
+                                    transformStyle: 'preserve-3d',
+                                    WebkitTransformStyle: 'preserve-3d',
+                                    transformOrigin: '50% 50%',
+                                }}
+                                initial={false}
+                                animate={true3DBoardFlipMotion}
+                            >
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        backfaceVisibility: 'hidden',
+                                        WebkitBackfaceVisibility: 'hidden',
+                                        transform: 'rotateY(0deg)',
+                                        pointerEvents: cursedPirateVisibleFace === 'normal' ? 'auto' : 'none',
+                                    }}
+                                >
+                                    <OptimizedImage
+                                        src={cursedPirateNormalBoardPath}
+                                        locale={locale}
+                                        alt={t('imageAlt.playerBoard')}
+                                        className="h-full w-full"
+                                        placeholder={false}
+                                        data-testid={cursedPirateVisibleFace === 'normal' ? 'player-board-image' : 'player-board-image-hidden'}
+                                        style={{
+                                            display: 'block',
+                                            objectFit: 'contain',
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
+                                    />
+                                    {cursedPirateVisibleFace === 'normal' && (
+                                        <AbilityOverlays
+                                            ref={abilityOverlaysRef}
+                                            isEditing={isLayoutEditing && isSelfView}
+                                            availableAbilityIds={availableAbilityIds}
+                                            canSelect={canSelectAbility}
+                                            canHighlight={canHighlightAbility}
+                                            onSelectAbility={onSelectAbility}
+                                            onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                            selectedAbilityId={selectedAbilityId}
+                                            activatingAbilityId={activatingAbilityId}
+                                            abilityLevels={abilityLevels}
+                                            characterId={characterId}
+                                            playerBoardFace="normal"
+                                            locale={locale}
+                                            onMagnifyCard={onMagnifyCard}
+                                            playerTokens={playerTokens}
+                                        />
+                                    )}
+                                </div>
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        backfaceVisibility: 'hidden',
+                                        WebkitBackfaceVisibility: 'hidden',
+                                        transform: 'rotateY(180deg)',
+                                        pointerEvents: cursedPirateVisibleFace === 'cursed' ? 'auto' : 'none',
+                                    }}
+                                >
+                                    <OptimizedImage
+                                        src={cursedPirateCursedBoardPath}
+                                        locale={locale}
+                                        alt={t('imageAlt.playerBoard')}
+                                        className="h-full w-full"
+                                        placeholder={false}
+                                        data-testid={cursedPirateVisibleFace === 'cursed' ? 'player-board-image' : 'player-board-image-hidden'}
+                                        style={{
+                                            display: 'block',
+                                            objectFit: 'contain',
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
+                                    />
+                                    {cursedPirateVisibleFace === 'cursed' && (
+                                        <AbilityOverlays
+                                            ref={abilityOverlaysRef}
+                                            isEditing={isLayoutEditing && isSelfView}
+                                            availableAbilityIds={availableAbilityIds}
+                                            canSelect={canSelectAbility}
+                                            canHighlight={canHighlightAbility}
+                                            onSelectAbility={onSelectAbility}
+                                            onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                            selectedAbilityId={selectedAbilityId}
+                                            activatingAbilityId={activatingAbilityId}
+                                            abilityLevels={abilityLevels}
+                                            characterId={characterId}
+                                            playerBoardFace="cursed"
+                                            locale={locale}
+                                            onMagnifyCard={onMagnifyCard}
+                                            playerTokens={playerTokens}
+                                        />
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    ) : (
+                        <motion.div
+                            className="relative h-full"
+                            data-testid="player-board-face-shell"
+                            data-player-board-face={playerBoardFace ?? 'default'}
+                            style={{
+                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                            }}
+                            initial={{ opacity: 0.96 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.12 }}
+                        >
+                            <OptimizedImage
+                                src={playerBoardPath}
+                                locale={locale}
+                                alt={t('imageAlt.playerBoard')}
+                                className="h-full w-full"
+                                placeholder={false}
+                                data-testid="player-board-image"
+                                style={{
+                                    display: 'block',
+                                    objectFit: 'contain',
+                                    width: '100%',
+                                    height: '100%',
+                                }}
+                            />
+                            <AbilityOverlays
+                                ref={abilityOverlaysRef}
+                                isEditing={isLayoutEditing && isSelfView}
+                                availableAbilityIds={availableAbilityIds}
+                                canSelect={canSelectAbility}
+                                canHighlight={canHighlightAbility}
+                                onSelectAbility={onSelectAbility}
+                                onHighlightedAbilityClick={onHighlightedAbilityClick}
+                                selectedAbilityId={selectedAbilityId}
+                                activatingAbilityId={activatingAbilityId}
+                                abilityLevels={abilityLevels}
+                                characterId={characterId}
+                                playerBoardFace={playerBoardFace}
+                                locale={locale}
+                                onMagnifyCard={onMagnifyCard}
+                                playerTokens={playerTokens}
+                            />
+                        </motion.div>
+                    )}
                     <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onMagnifyImage(playerBoardPath); }}
@@ -177,21 +326,31 @@ export const CenterBoard = ({
                     </button>
                     <div className={`relative h-full transition-[width,opacity,transform] duration-500 overflow-hidden rounded-[0.8vw] ${isTipOpen ? 'w-auto opacity-100 scale-100' : 'w-0 opacity-0 scale-95'}`}>
                         <div
-                            className={`relative h-full w-auto aspect-[1311/2048] group ${isLayoutEditing ? '' : 'cursor-zoom-in'}`}
+                            className={`relative h-full group ${isLayoutEditing ? '' : 'cursor-zoom-in'}`}
+                            style={{
+                                width: `calc(${tipBoardHeightVw}vw * ${1311 / 2048})`,
+                            }}
                             data-testid="tip-board-surface"
                             onClick={(event) => handleMagnifySurfaceClick(event, tipBoardPath)}
                         >
                             <div
                                 className="w-full h-full"
-                                role="img"
-                                aria-label={t('imageAlt.tipBoard')}
-                                style={{
-                                    backgroundImage: tipBoardBackground,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'center',
-                                    backgroundSize: 'contain',
-                                }}
-                            />
+                            >
+                                <OptimizedImage
+                                    src={tipBoardPath}
+                                    locale={locale}
+                                    alt={t('imageAlt.tipBoard')}
+                                    className="h-full w-full"
+                                    placeholder={false}
+                                    data-testid="tip-board-image"
+                                    style={{
+                                        display: 'block',
+                                        objectFit: 'contain',
+                                        width: '100%',
+                                        height: '100%',
+                                    }}
+                                />
+                            </div>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}

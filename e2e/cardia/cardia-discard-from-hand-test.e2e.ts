@@ -76,7 +76,7 @@ test.describe('Cardia - 从手牌弃牌功能测试', () => {
         console.log('\n=== 阶段2：在 Node.js 中直接测试 reduce 函数 ===');
         
         // 在 Node.js 环境中直接导入并测试 reduce 函数
-        const { reduce } = await import('../src/games/cardia/domain/reduce.js');
+        const { reduce } = await import('../../src/games/cardia/domain/reduce.js');
         
         const event = {
             type: 'cardia:cards_discarded',

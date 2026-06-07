@@ -140,6 +140,37 @@
       "description": [
         "Incoming damage +2. Persistent."
       ]
+    },
+    "bind": {
+      "name": "Bind",
+      "description": [
+        "Each additional roll attempt costs 1 CP; remove at the end of the Offensive Roll Phase."
+      ]
+    },
+    "cursed_coin": {
+      "name": "Cursed Coin",
+      "description": [
+        "During Upkeep, take 1 damage for each Cursed Coin.",
+        "Cursed Pirate may refuse gained coins; coins cannot be moved or removed."
+      ]
+    },
+    "powder_keg": {
+      "name": "Powder Keg",
+      "description": [
+        "During Upkeep, roll 1 die: 1-2 explodes for 3 undefendable damage; 6 may pass it to any player."
+      ]
+    },
+    "wither": {
+      "name": "Wither",
+      "description": [
+        "When dealing damage through the Offensive Roll Phase, reduce that damage by 1 per Wither. Persistent, limit 2."
+      ]
+    },
+    "parley": {
+      "name": "Parley",
+      "description": [
+        "The holder cannot deal damage through the Offensive Roll Phase; remove at the end of that phase."
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -234,6 +265,13 @@
         "Add half the result, rounded up, as bonus damage to this attack."
       ]
     },
+    "knockdown": {
+      "name": "Knockdown",
+      "description": [
+        "During an attack, this status forces you to skip the Offensive Roll Phase.",
+        "You can remove it with Purify."
+      ]
+    },
     "bounty": {
       "name": "Bounty",
       "description": [
@@ -267,19 +305,19 @@
     "treant_seedling": {
       "name": "Seedling Spirit",
       "description": [
-        "Limit 3. During your roll phase, spend 1 to reroll one of your dice."
+        "Limit 3. During your roll phase, spend 1 to reroll one of your dice. Each Spirit type may be spent only once per turn."
       ]
     },
     "treant_sapling": {
       "name": "Sapling Spirit",
       "description": [
-        "Limit 2. During your main phase, spend 1 to heal 1 and gain 1 CP; or also spend 1 CP to draw 1 card."
+        "Limit 2. During your main phase, spend 1 to heal 1 and gain 1 CP; or also spend 1 CP to draw 1 card. Each Spirit type may be spent only once per turn."
       ]
     },
     "treant_divine": {
       "name": "Divine Spirit",
       "description": [
-        "Limit 1. Before dealing damage, spend it to add +3 damage; if an opponent attack would apply a negative status to you, prevent that status."
+        "Limit 1. Before dealing damage, spend it to add +3 damage. At the end of an opponent's Offensive Roll phase, if their attack would apply a negative status to you, you may spend it to prevent that status. Each Spirit type may be spent only once per turn."
       ]
     },
     "life_sap": {
@@ -291,7 +329,7 @@
     "thorn": {
       "name": "Thorn",
       "description": [
-        "Limit 1. During offensive roll, each additional roll attempt deals 1 damage to its owner; remove it at the end of the roll phase."
+        "Limit 1. During offensive roll, each additional roll attempt deals 1 damage to its owner, up to 2 damage per turn this way; remove it at the end of the roll phase."
       ]
     },
     "delayed_poison": {
@@ -310,6 +348,12 @@
       "name": "Smoke Bomb",
       "description": [
         "Limit 1. Before receiving damage, spend it and roll 1 die; on 1-3, prevent that damage."
+      ]
+    },
+    "tactical_advantage": {
+      "name": "Tactical Advantage",
+      "description": [
+        "Limit 5. Spend 1 to gain 1 CP or reroll 1 die; spend 3 to draw 1 or inflict Targeted on 1 opponent; spend 4 to let 1 player gain Protect or transfer 1 status."
       ]
     }
   },
@@ -349,7 +393,8 @@
       "unknown": "Unknown",
       "shieldReduction": "Shield reduction",
       "attackModifier": "Attack Modifier",
-      "backStrike": "Back Strike"
+      "backStrike": "Back Strike",
+      "sneakAttack": "Sneak Attack"
     },
     "damageOriginal": "(Original {{amount}})",
     "damageModifiers": "(Original {{original}}, {{modifiers}})",
@@ -402,6 +447,7 @@
     "confirmRollWithAbility": "Confirmed roll ({{abilityName}}):",
     "confirmRollDefense": "Confirmed defense roll:",
     "confirmRollDefenseWithAbility": "Confirmed defense roll ({{abilityName}}):",
+    "compareRollPrefix": "Roll-off result:",
     "cardRollResult": "Roll result:",
     "dieModified": "Modified die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieModifiedSource": "({{source}})",
@@ -452,7 +498,36 @@
     "gunslinger": "Gunslinger",
     "samurai": "Samurai",
     "treant": "Treant",
-    "ninja": "Ninja"
+    "ninja": "Ninja",
+    "zhanshujia": "Tactician",
+    "cursed_pirate": "Cursed Pirate"
+  },
+  "config": {
+    "dice": {
+      "barbarian": { "name": "Barbarian Dice" },
+      "pyromancer": { "name": "Pyromancer Dice" },
+      "monk": { "name": "Monk Dice" },
+      "moonElf": { "name": "Moon Elf Dice" },
+      "paladin": { "name": "Paladin Dice" },
+      "gunslinger": { "name": "Gunslinger Dice" },
+      "samurai": { "name": "Samurai Dice" },
+      "shadowThief": {
+        "name": "Shadow Thief Dice",
+        "face": {
+          "dagger": "Dagger Face",
+          "bag": "Bag Face",
+          "card": "Card Face",
+          "shadow": "Shadow Face"
+        }
+      },
+      "treant": { "name": "Treant Dice" },
+      "ninja": { "name": "Ninja Dice" },
+      "zhanshujia": { "name": "Tactician Dice" }
+    },
+    "resources": {
+      "cp": { "name": "CP" },
+      "hp": { "name": "HP" }
+    }
   },
   "imageAlt": {
     "deck": "Deck",
@@ -486,7 +561,18 @@
     "evaded": "Evaded",
     "noTokens": "No tokens available",
     "confirm": "Confirm",
-    "skip": "Skip"
+    "skip": "Skip",
+    "preview": {
+      "critBoost": "+4 damage",
+      "critRequires": "Requires damage >= 5",
+      "damageBoost": "+{{amount}} damage",
+      "damageHalved": "Damage halved (-{{amount}})",
+      "damageReduce": "{{amount}} damage",
+      "damageReflect": "Reflect {{amount}} damage back to the opponent",
+      "undefendable": "Make the attack undefendable",
+      "evasive": "Roll 1-2 to fully evade",
+      "unknown": "Unknown effect"
+    }
   },
   "offensiveRollEndToken": {
     "title": "End of Offensive Roll Phase",
@@ -550,7 +636,13 @@
       "spirit": "Spirit",
       "ninja_katana": "Ninja Blade",
       "shuriken": "Shuriken",
-      "mask": "Mask"
+      "mask": "Mask",
+      "sabre": "Sabre",
+      "banner": "Banner",
+      "medal": "Medal",
+      "cutlass": "Cutlass",
+      "loot": "Loot",
+      "skull": "Skull"
     }
   },
   "bonusDie": {
@@ -575,8 +667,20 @@
       "taiji": "Taiji: Gain 2 Taiji Tokens",
       "lotus": "Lotus: Choose Evasive or Purify",
       "gainCp": "Gain {{cp}} CP",
+      "powderKeg": {
+        "1": "Powder Keg: explodes",
+        "2": "Powder Keg: explodes",
+        "3": "Powder Keg: nothing happens",
+        "4": "Powder Keg: nothing happens",
+        "5": "Powder Keg: nothing happens",
+        "6": "Powder Keg: may be passed"
+      },
       "enlightenmentLotus": "Lotus! Gain 2 Taiji + Evasive + Purify",
       "enlightenmentOther": "Draw 1 card",
+      "ninjaGoingForward": "Going Forward: this die counts toward total damage",
+      "ninjaGoingForwardReroll": "Going Forward: this die was rerolled",
+      "ninjaGoingForwardResult": "Going Forward: total damage {{totalDamage}}",
+      "ninjaGoingForwardBleed": "Bleed: deal {{damage}} undefendable damage",
       "thunderStrikeDie": "This die's {{value}} counts toward the final damage",
       "thunderStrikeReroll": "Reroll: {{value}} (counts toward total damage)",
       "thunderStrike2Die": "Thunder Strike Roll: {{value}} (3-dice total damage; total ≥12: Knockdown)",
@@ -604,9 +708,23 @@
       "morePleaseRoll.otherContribution": "Non-sword face: no extra damage",
       "holyLight": "Holy Light",
       "holyDefense": "Holy Defense",
+      "holyLight2.sword": "Sword: gain 1 Crit",
+      "holyLight2.helm": "Helm: gain 1 Protect",
+      "holyLight2.heart": "Heart: draw 1 card",
+      "holyLight2.pray": "Pray: gain 2 CP",
       "godsGrace": "God's Grace",
+      "godsGrace.pray": "Pray: gain 4 CP",
+      "godsGrace.other": "Otherwise: draw 1 card",
       "divineFavor": "Divine Favor",
+      "divineFavor.sword": "Sword: draw 2 cards",
+      "divineFavor.helm": "Helm: heal 3",
+      "divineFavor.heart": "Heart: heal 4",
+      "divineFavor.pray": "Pray: gain 3 CP",
       "absolution": "Absolution",
+      "absolution.sword": "Sword: deal 3 damage",
+      "absolution.helm": "Helm: prevent 3 damage",
+      "absolution.heart": "Heart: prevent 5 damage",
+      "absolution.pray": "Pray: prevent 2 damage and gain 2 CP",
       "pyrohotstreak2.1": "2 Damage",
       "pyrohotstreak2.2": "2 Damage",
       "pyrohotstreak2.3": "2 Damage",
@@ -619,6 +737,7 @@
       "magmaArmor.4": "Magma",
       "magmaArmor.5": "Fiery Soul!",
       "magmaArmor.6": "Meteor!",
+      "infernalEmbrace.fire": "Fire: gain 2 Fire Mastery",
       "infernalEmbrace.1": "Draw 1 Card",
       "infernalEmbrace.2": "Draw 1 Card",
       "infernalEmbrace.3": "Draw 1 Card",
@@ -685,8 +804,69 @@
       "totalDamageContributionThreshold": "This die's {{value}} counts toward the final damage; reaching the threshold also triggers the extra effect",
       "treantLifeSap": "Life Sap: rolled {{value}}, healing {{heal}}.",
       "treantLifeSapResult": "Life Sap heals {{heal}}.",
+      "treantRooted": {
+        "branch": "Rooted: Branch prevents 1 damage",
+        "leaf": "Rooted: Leaf counts toward the two-Leaf cultivate effect",
+        "spirit": "Rooted: Spirit prevents 1 damage; two Spirits can grant Life Sap"
+      },
+      "treantTrample": {
+        "branch": "Trample: Branch adds +1 attack damage",
+        "leaf": "Trample: Leaf has no extra effect",
+        "spirit": "Trample: Spirit has no extra effect",
+        "other": "Trample: no extra effect",
+        "result": "Trample: {{branchCount}} Branch, +{{branchCount}} attack damage; apply Thorn if this added at least +3"
+      },
+      "treantSoulfire": {
+        "branch": "Soulfire: Branch deals 1 collateral damage to all opponents",
+        "leaf": "Soulfire: Leaf gains Life Sap",
+        "spirit": "Soulfire: Spirit cultivates 1 Spirit",
+        "other": "Soulfire: no extra effect",
+        "result": "Soulfire: {{branchCount}} Branch / {{leafCount}} Leaf / {{spiritCount}} Spirit"
+      },
+      "treantMotherTree": {
+        "branch": "Mother Tree: not Spirit, draw 1",
+        "leaf": "Mother Tree: not Spirit, draw 1",
+        "spirit": "Mother Tree: Spirit, cultivate 4 Spirits",
+        "other": "Mother Tree: not Spirit, draw 1"
+      },
       "ninjaNinjutsu": "Ninjutsu: rolled {{value}}.",
-      "ninjaNinjutsuResult": "Ninjutsu adds +{{bonusDamage}} damage."
+      "ninjaNinjutsuResult": "Ninjutsu adds +{{bonusDamage}} damage.",
+      "ninjaDojoMask": "Dojo: Mask, gain Smoke Bomb and 2 Ninjutsu",
+      "ninjaDojoOther": "Dojo: otherwise draw 1",
+      "zhanshujiaWarMongerSabre": "War Monger: Sabre deals 5 damage",
+      "zhanshujiaWarMongerBanner": "War Monger: Banner gains 4 Tactical Advantage",
+      "zhanshujiaWarMongerMedal": "War Monger: Medal draws 1 card",
+      "zhanshujiaWarMonger2Sabre": "War Monger II: Sabre deals 6 damage",
+      "zhanshujiaWarMonger2Banner": "War Monger II: Banner gains 3 Tactical Advantage",
+      "zhanshujiaWarMonger2Medal": "War Monger II: Medal draws 1 card and triggers an extra Offensive Roll Phase",
+      "zhanshujiaWarMonger2Other": "War Monger II: no extra effect",
+      "zhanshujiaGainUpperHandMedal": "Gain the Upper Hand: Medal gains 4 Tactical Advantage",
+      "zhanshujiaGainUpperHandOther": "Gain the Upper Hand: otherwise draw 1 card",
+      "zhanshujiaDisengageSabre": "Disengage: Sabre deals 2 damage",
+      "zhanshujiaDisengageBanner": "Disengage: Banner prevents 3 damage",
+      "zhanshujiaDisengageMedal": "Disengage: Medal gains Protect",
+      "zhanshujiaWarRoom": "War Room: gain {{amount}} Tactical Advantage",
+      "cursedPirateMarkedCutlass": "Marked for Death: Cutlass deals 2 undefendable damage",
+      "cursedPirateMarkedLoot": "Marked for Death: Loot draws 1 card",
+      "cursedPirateMarkedSkull": "Marked for Death: Skull inflicts Cursed Coin",
+      "cursedPirateWeighAnchorSkull": "Weigh Anchor: Skull inflicts Parley",
+      "cursedPirateWeighAnchorOther": "Weigh Anchor: otherwise draw 1 card",
+      "cursedPirateBlusterCutlass": "Bluster: Cutlass deals 2 damage",
+      "cursedPirateBlusterLoot": "Bluster: Loot draws 2 cards",
+      "cursedPirateBlusterSkull": "Bluster: Skull inflicts Powder Keg",
+      "cursedPirateFlayCutlass": "Flay: Cutlass adds 1 attack damage",
+      "cursedPirateFlayOther": "Flay: no damage added",
+      "cursedPirateCrowsNestCutlass": "Crow's Nest: Cutlass checks the hand",
+      "cursedPirateCrowsNestLoot": "Crow's Nest: Loot makes the target discard 1 card",
+      "cursedPirateCrowsNestSkull": "Crow's Nest: Skull randomly discards 1 card",
+      "cursedPirateCrowsNestOther": "Crow's Nest: no trigger",
+      "cursedPirateHeftyLoot": "Hefty: Loot triggers draw and CP",
+      "cursedPirateHeftyOther": "Hefty: no trigger",
+      "cursedPirateHumanMakeYourMarkCutlass": "Make Your Mark: Cutlass deals 2 undefendable damage",
+      "cursedPirateHumanMakeYourMarkLoot": "Make Your Mark: Loot draws 1 card",
+      "cursedPirateHumanMakeYourMarkSkull": "Make Your Mark: Skull gains Cursed Coin",
+      "cursedPirateSipHit": "Sip: 3-6, gain Powder Keg and Wither",
+      "cursedPirateSipMiss": "Sip: 1-2, nothing happens"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -853,9 +1033,21 @@
       "pray": "Pray",
       "katana": "Katana",
       "rising_sun": "Rising Sun",
+      "branch": "Branch",
+      "leaf": "Leaf",
+      "spirit": "Spirit",
       "bullet": "Bullet",
       "bullseye": "Bullseye",
-      "dash": "Dash"
+      "dash": "Dash",
+      "ninja_katana": "Ninja Blade",
+      "shuriken": "Shuriken",
+      "mask": "Mask",
+      "sabre": "Sabre",
+      "banner": "Banner",
+      "medal": "Medal",
+      "cutlass": "Cutlass",
+      "loot": "Loot",
+      "skull": "Skull"
     },
     "trigger": {
       "generic": "variant condition",
@@ -899,11 +1091,190 @@
       "deal3": "Deal 3 undefendable damage",
       "preventHalf": "Prevent half of the incoming damage"
     },
-    "critOrAccuracy": "Choose to gain Crit or Accuracy",
+    "cursedCoinGain": {
+      "title": "Gain Cursed Coin?",
+      "accept": "Gain Cursed Coin",
+      "decline": "Decline"
+    },
+      "cursedPirateCurseCard": {
+        "title": "Curse Card: choose the resolution",
+        "draw1": "Draw 1 card",
+        "damage2Draw2": "Receive 2 damage and draw 2 cards",
+        "damage4Draw3": "Receive 4 damage and draw 3 cards"
+      },
+      "cursedPirateRansomDie": {
+        "title": "Ransom: choose one opponent die",
+        "choose": "Die {{die}} (currently {{value}})"
+      },
+      "cursedPirateRansomResolve": {
+        "title": "Ransom: pay 2 CP?",
+        "pay": "Pay 2 CP to your opponent",
+        "reroll": "Do not pay; reroll die {{die}} (currently {{value}})"
+      },
+      "cursedPirateCrowsNestView": {
+        "title": "Crow's Nest: check the hand",
+        "confirm": "Checked {{player}}'s hand: {{cards}}"
+      },
+      "mercilessCursePowderKeg": {
+        "title": "Choose up to two opponents to gain Powder Keg",
+        "apply": "Apply to {{targets}}",
+        "skip": "Do not apply Powder Keg"
+      },
+      "cursedPirateGoFish": {
+        "title": "Choose up to three opponents to gain Powder Keg",
+        "apply": "Apply to {{targets}}",
+        "skip": "Do not apply Powder Keg"
+      },
+      "cursedPirateSip": {
+        "title": "Sip: choose whether to roll instead",
+        "acceptPowderKeg": "Gain Powder Keg",
+        "rollInstead": "Do not gain Powder Keg; roll 1 die instead"
+      },
+      "cursedPirateHumanWalkThePlank": {
+        "title": "Walk the Plank: choose the resolution",
+        "stealCp": "Steal 1 CP",
+        "discardCard": "Make the opponent choose and discard 1 card"
+      },
+      "cursedPirateHumanRemoveCoins": {
+        "title": "Shiver Me Timbers: remove any number of Cursed Coins",
+        "keep": "Do not remove any",
+        "remove": "Remove {{count}} Cursed Coin(s)"
+      },
+      "powderKegTransfer": {
+        "title": "Powder Keg: choose who receives it",
+        "give": "Give to {{target}}"
+      },
+      "critOrAccuracy": "Choose to gain Crit or Accuracy",
     "ninjaNinjutsu": {
       "title": "Ninjutsu 6 result",
       "poison": "+2 damage and apply Delayed Poison",
       "undefendable": "+2 damage and make the attack undefendable"
+    },
+    "treantWildGrowth": {
+      "title": "Wild Growth: choose Spirits and Life Sap",
+      "none": "Do not remove Spirits",
+      "none_life": "Spend Life Sap: make this attack undefendable",
+      "seedling1": "Remove 1 Seedling Spirit: +4 damage",
+      "seedling1_life": "Remove 1 Seedling Spirit and spend Life Sap: +4 damage, undefendable",
+      "seedling2": "Remove 2 Seedling Spirits: +8 damage",
+      "seedling2_life": "Remove 2 Seedling Spirits and spend Life Sap: +8 damage, undefendable",
+      "sapling1": "Remove 1 Sapling Spirit: +4 damage",
+      "sapling1_life": "Remove 1 Sapling Spirit and spend Life Sap: +4 damage, undefendable",
+      "sapling2": "Remove 2 Sapling Spirits: +8 damage",
+      "sapling2_life": "Remove 2 Sapling Spirits and spend Life Sap: +8 damage, undefendable",
+      "divine1": "Remove 1 Divine Spirit: +4 damage",
+      "divine1_life": "Remove 1 Divine Spirit and spend Life Sap: +4 damage, undefendable",
+      "seedling1_sapling1": "Remove 1 Seedling + 1 Sapling Spirit: +8 damage",
+      "seedling1_sapling1_life": "Remove 1 Seedling + 1 Sapling Spirit and spend Life Sap: +8 damage, undefendable",
+      "seedling1_divine1": "Remove 1 Seedling + 1 Divine Spirit: +8 damage",
+      "seedling1_divine1_life": "Remove 1 Seedling + 1 Divine Spirit and spend Life Sap: +8 damage, undefendable",
+      "sapling1_divine1": "Remove 1 Sapling + 1 Divine Spirit: +8 damage",
+      "sapling1_divine1_life": "Remove 1 Sapling + 1 Divine Spirit and spend Life Sap: +8 damage, undefendable"
+    },
+    "treantShatteringFist": {
+      "title": "Shattering Fist: remove 1 Spirit to apply Thorn?",
+      "cultivateTitle": "Shattering Fist III: choose final Spirits",
+      "none": "Do not remove a Spirit",
+      "seedling": "Remove 1 Seedling Spirit and apply Thorn",
+      "sapling": "Remove 1 Sapling Spirit and apply Thorn",
+      "divine": "Remove 1 Divine Spirit and apply Thorn"
+    },
+    "treantDivinePreventDebuff": {
+      "title": "Divine Spirit: prevent the incoming negative status?",
+      "prevent": "Spend Divine Spirit: prevent the status",
+      "skip": "Do not spend"
+    },
+    "treantQuietCultivation": {
+      "title": "Quiet Cultivation: choose final Spirits"
+    },
+    "treantTendCare": {
+      "title": "Tend & Care: choose Spirits and targets",
+      "option": "After cultivate: {{seedling}} Seedling / {{sapling}} Sapling / {{divine}} Divine; {{lifeSapTarget}} gains Life Sap; {{thornTarget}} gains Thorn"
+    },
+    "treantForestAwakens": {
+      "title": "Forest Awakens: choose final Spirits"
+    },
+    "treantDrinkDeep": {
+      "title": "Drink Deep: choose a player to gain Life Sap",
+      "option": "{{player}} gains Life Sap"
+    },
+    "treantHarvest": {
+      "title": "Harvest: choose Spirits to remove and Life Sap targets",
+      "option": "Remove: {{seedling}} Seedling / {{sapling}} Sapling / {{divine}} Divine; gain {{cp}} CP; Life Sap targets: {{targets}}"
+    },
+    "treantDownpour": {
+      "title": "Downpour: choose final Spirits"
+    },
+    "treantSoulfire": {
+      "title": "Soulfire: choose final Spirits"
+    },
+    "treantMotherTree": {
+      "title": "Mother Tree: choose final Spirits"
+    },
+    "treantCultivate": {
+      "title": "Nature Touch: choose final Spirits",
+      "s0_a0_d0": "After cultivate: no Spirits",
+      "s1_a0_d0": "After cultivate: 1 Seedling",
+      "s2_a0_d0": "After cultivate: 2 Seedlings",
+      "s3_a0_d0": "After cultivate: 3 Seedlings",
+      "s0_a1_d0": "After cultivate: 1 Sapling",
+      "s1_a1_d0": "After cultivate: 1 Seedling, 1 Sapling",
+      "s2_a1_d0": "After cultivate: 2 Seedlings, 1 Sapling",
+      "s3_a1_d0": "After cultivate: 3 Seedlings, 1 Sapling",
+      "s0_a2_d0": "After cultivate: 2 Saplings",
+      "s1_a2_d0": "After cultivate: 1 Seedling, 2 Saplings",
+      "s2_a2_d0": "After cultivate: 2 Seedlings, 2 Saplings",
+      "s3_a2_d0": "After cultivate: 3 Seedlings, 2 Saplings",
+      "s0_a0_d1": "After cultivate: 1 Divine",
+      "s1_a0_d1": "After cultivate: 1 Seedling, 1 Divine",
+      "s2_a0_d1": "After cultivate: 2 Seedlings, 1 Divine",
+      "s3_a0_d1": "After cultivate: 3 Seedlings, 1 Divine",
+      "s0_a1_d1": "After cultivate: 1 Sapling, 1 Divine",
+      "s1_a1_d1": "After cultivate: 1 Seedling, 1 Sapling, 1 Divine",
+      "s2_a1_d1": "After cultivate: 2 Seedlings, 1 Sapling, 1 Divine",
+      "s3_a1_d1": "After cultivate: 3 Seedlings, 1 Sapling, 1 Divine",
+      "s0_a2_d1": "After cultivate: 2 Saplings, 1 Divine",
+      "s1_a2_d1": "After cultivate: 1 Seedling, 2 Saplings, 1 Divine",
+      "s2_a2_d1": "After cultivate: 2 Seedlings, 2 Saplings, 1 Divine",
+      "s3_a2_d1": "After cultivate: 3 Seedlings, 2 Saplings, 1 Divine"
+    },
+    "treantRooted": {
+      "title": "Rooted: choose bonus effect",
+      "s0_a0_d0_none": "After cultivate: no Spirits",
+      "s1_a0_d0_none": "After cultivate: 1 Seedling",
+      "s2_a0_d0_none": "After cultivate: 2 Seedlings",
+      "s3_a0_d0_none": "After cultivate: 3 Seedlings",
+      "s0_a1_d0_none": "After cultivate: 1 Sapling",
+      "s1_a1_d0_none": "After cultivate: 1 Seedling, 1 Sapling",
+      "s2_a1_d0_none": "After cultivate: 2 Seedlings, 1 Sapling",
+      "s0_a2_d0_none": "After cultivate: 2 Saplings",
+      "s0_a0_d1_none": "After cultivate: 1 Divine",
+      "s1_a0_d1_none": "After cultivate: 1 Seedling, 1 Divine",
+      "s0_a1_d1_none": "After cultivate: 1 Sapling, 1 Divine",
+      "none_p0": "You gain Life Sap",
+      "none_p1": "Opponent gains Life Sap",
+      "s0_a0_d0_p0": "After cultivate: no Spirits; you gain Life Sap",
+      "s1_a0_d0_p0": "After cultivate: 1 Seedling; you gain Life Sap",
+      "s2_a0_d0_p0": "After cultivate: 2 Seedlings; you gain Life Sap",
+      "s3_a0_d0_p0": "After cultivate: 3 Seedlings; you gain Life Sap",
+      "s0_a1_d0_p0": "After cultivate: 1 Sapling; you gain Life Sap",
+      "s1_a1_d0_p0": "After cultivate: 1 Seedling, 1 Sapling; you gain Life Sap",
+      "s2_a1_d0_p0": "After cultivate: 2 Seedlings, 1 Sapling; you gain Life Sap",
+      "s0_a2_d0_p0": "After cultivate: 2 Saplings; you gain Life Sap",
+      "s0_a0_d1_p0": "After cultivate: 1 Divine; you gain Life Sap",
+      "s1_a0_d1_p0": "After cultivate: 1 Seedling, 1 Divine; you gain Life Sap",
+      "s0_a1_d1_p0": "After cultivate: 1 Sapling, 1 Divine; you gain Life Sap",
+      "s0_a0_d0_p1": "After cultivate: no Spirits; opponent gains Life Sap",
+      "s1_a0_d0_p1": "After cultivate: 1 Seedling; opponent gains Life Sap",
+      "s2_a0_d0_p1": "After cultivate: 2 Seedlings; opponent gains Life Sap",
+      "s3_a0_d0_p1": "After cultivate: 3 Seedlings; opponent gains Life Sap",
+      "s0_a1_d0_p1": "After cultivate: 1 Sapling; opponent gains Life Sap",
+      "s1_a1_d0_p1": "After cultivate: 1 Seedling, 1 Sapling; opponent gains Life Sap",
+      "s2_a1_d0_p1": "After cultivate: 2 Seedlings, 1 Sapling; opponent gains Life Sap",
+      "s0_a2_d0_p1": "After cultivate: 2 Saplings; opponent gains Life Sap",
+      "s0_a0_d1_p1": "After cultivate: 1 Divine; opponent gains Life Sap",
+      "s1_a0_d1_p1": "After cultivate: 1 Seedling, 1 Divine; opponent gains Life Sap",
+      "s0_a1_d1_p1": "After cultivate: 1 Sapling, 1 Divine; opponent gains Life Sap"
     }
   },
   "common": {
@@ -920,6 +1291,7 @@
     "modifyDie": "Modify die value",
     "selectStatus": "Select a status to remove",
     "selectPlayer": "Select a player",
+    "selectTwoDifferentOpponentsForCollateralDamage": "Select 2 different opponents",
     "selectTargetStatus": "Select a status to transfer",
     "transferSelectTarget": "Select transfer target player",
     "noStatus": "No status effects",
@@ -938,9 +1310,10 @@
     "selectStatusToRemove": "Select a status effect to remove",
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
-    "selectPlayerForConsecrate": "Select a player to consecrate",
-    "gunslingerTheLaw": "Select up to 2 target players",
-    "selectStatusToTransfer": "Select a status effect to transfer",
+      "selectPlayerForConsecrate": "Select a player to consecrate",
+      "gunslingerTheLaw": "Select up to 2 target players",
+      "selectHandCardToDiscard": "Select 1 card from your hand to discard",
+      "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
     "hint_done": "Done",
@@ -1067,6 +1440,7 @@
       "name": "Taiji Combo",
       "description": "Flowing palm strikes with extra effects based on dice faces",
       "effects": {
+        "rollDie": "Roll 1 die: Fist +2 damage; Palm +3 damage; Taiji gain 2 Taiji tokens; Lotus choose Evasive or Purify",
         "damage6": "Deal 6 damage",
         "inflictStun": "Inflict 1 Stun token",
         "bonusFist": "If this roll contains Fist: +2 damage",
@@ -1211,6 +1585,14 @@
     "fearless-riposte-2": {
       "name": "Fearless Riposte II",
       "description": "Defensive phase (5 dice): Deal 2× Dagger count damage; if Dagger+Shadow, inflict Poison"
+    },
+    "piercing-attack": {
+      "name": "Piercing Attack",
+      "description": "1 each of Dagger+Bag+Card+Shadow: Gain 1 CP, Sneak Attack, draw 1, inflict Poison",
+      "effects": {
+        "draw1": "Draw 1 card",
+        "poison": "Inflict Poison"
+      }
     },
     "righteous-combat": {
       "name": "Righteous Combat",
@@ -1403,7 +1785,8 @@
         "damage3": "Deal 3 damage",
         "damage5": "Deal 5 damage",
         "damage7": "Deal 7 damage",
-        "damage9": "Deal 9 damage"
+        "damage9": "Deal 9 damage",
+        "bonusEntangle3Kind": "If 3 or more dice match, inflict Entangle"
       }
     },
     "longbow-4": {
@@ -1422,7 +1805,8 @@
       "effects": {
         "damage4": "Deal 4 damage",
         "damage6": "Deal 6 damage",
-        "damage8": "Deal 8 damage"
+        "damage8": "Deal 8 damage",
+        "bonusEntangle4Kind": "If 4 or more dice match, inflict Entangle"
       }
     },
     "covert-fire": {
@@ -1473,7 +1857,8 @@
       "name": "Silencing Trace",
       "description": "3 Foot: gain Evasive, deal 2 undefendable damage",
       "effects": {
-        "gainEvasive": "Gain 1 Evasive token"
+        "gainEvasive": "Gain 1 Evasive token",
+        "damage2Unblockable": "Deal 2 undefendable damage"
       }
     },
     "exploding-arrow": {
@@ -1813,6 +2198,14 @@
         "selfDamage4": "Take 4 self-damage (only if damage was dealt)"
       }
     },
+    "rage": {
+      "name": "Rage",
+      "description": "Ultimate ability: trigger with 5 Strength faces, inflict Daze, and deal 15 damage",
+      "effects": {
+        "inflictDaze": "Inflict Daze",
+        "damage15": "Deal 15 damage"
+      }
+    },
     "thick-skin": {
       "name": "Thick Skin",
       "description": "Defense: heal 2 × Heart faces.",
@@ -2068,41 +2461,265 @@
       "taijiByResult": "Gain Taiji tokens based on results",
       "damageByFist": "Deal 3 damage for each [Fist]"
     },
+    "revolver": {
+      "name": "Revolver",
+      "description": "3/4/5 Bullet: deal 3/4/5 damage.",
+      "effects": {
+        "damage3": "Deal 3 damage.",
+        "damage4": "Deal 4 damage.",
+        "damage5": "Deal 5 damage."
+      }
+    },
+    "revolver-2": {
+      "name": "Revolver II",
+      "description": "3/4/5 Bullet: deal 4/5/6 damage. If at least 4 dice show the same number, inflict Knockdown.",
+      "effects": {
+        "damage4": "Deal 4 damage.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "knockdownIfFourKind": "If at least 4 dice show the same number, inflict Knockdown."
+      }
+    },
+    "bounty-hunter": {
+      "name": "Bounty Hunter",
+      "description": "Inflict 1 Bounty and deal 1 undefendable damage.",
+      "effects": {
+        "inflictBounty": "Target gains 1 Bounty.",
+        "damage1Unblockable": "Deal 1 undefendable damage."
+      }
+    },
+    "bounty-hunter-2": {
+      "name": "Bounty Hunter II",
+      "description": "Inflict 1 Bounty and deal 2 undefendable damage.",
+      "effects": {
+        "inflictBounty": "Target gains 1 Bounty.",
+        "damage2Unblockable": "Deal 2 undefendable damage."
+      }
+    },
+    "quick-draw": {
+      "name": "Quick Draw",
+      "description": "At the start of your Upkeep phase, gain 1 Loaded.",
+      "effects": {
+        "gainLoaded": "Gain 1 Loaded."
+      }
+    },
+    "quick-draw-2": {
+      "name": "Quick Draw II",
+      "description": "At the start of your Upkeep phase, gain 1 Loaded. Whenever you spend Loaded, you may reroll that die once.",
+      "effects": {
+        "gainLoaded": "Gain 1 Loaded."
+      }
+    },
+    "take-cover": {
+      "name": "Take Cover",
+      "description": "Gain 1 Evasive and deal 5 damage.",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive.",
+        "damage5": "Deal 5 damage."
+      }
+    },
+    "take-cover-2": {
+      "name": "Take Cover II",
+      "description": "Includes the Take Cover II and Mark the Target variants."
+    },
+    "mark-the-target": {
+      "name": "Mark the Target",
+      "description": "3 Dash: gain 2 Evasive and inflict 1 Bounty.",
+      "effects": {
+        "gainEvasive2": "Gain 2 Evasive.",
+        "chooseTargetGainBounty": "Choose 1 opposing player to gain 1 Bounty."
+      }
+    },
+    "take-cover-2-main": {
+      "name": "Take Cover II",
+      "description": "2 Bullet + 3 Dash: gain 1 Evasive and deal 6 damage.",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "showdown": {
+      "name": "Showdown",
+      "description": "Both players roll 1 die. If your result is not lower than your opponent's, deal 7 damage instead; otherwise deal 5 damage.",
+      "effects": {
+        "bonusRollWin2": "Both players roll 1 die. If your result is not lower than your opponent's, this attack gains +2 damage.",
+        "damage5": "Deal 5 damage."
+      }
+    },
+    "showdown-2": {
+      "name": "Showdown II",
+      "description": "Both players roll 1 die. If your result is not lower than your opponent's, deal 8 damage instead; otherwise deal 6 damage.",
+      "effects": {
+        "bonusRollWin2": "Both players roll 1 die. If your result is not lower than your opponent's, this attack gains +2 damage.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "showdown-3": {
+      "name": "Showdown III",
+      "description": "Both players roll 1 die. If your result is not lower than your opponent's, deal 9 damage instead; otherwise deal 6 damage.",
+      "effects": {
+        "bonusRollWin3": "Both players roll 1 die. If your result is not lower than your opponent's, this attack gains +3 damage.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "deadeye": {
+      "name": "Deadeye",
+      "description": "Inflict Knockdown and deal 6 undefendable damage.",
+      "effects": {
+        "inflictKnockdown": "Inflict Knockdown.",
+        "damage6Unblockable": "Deal 6 undefendable damage."
+      }
+    },
+    "deadeye-2": {
+      "name": "Deadeye II",
+      "description": "Includes the Deadeye II and The Law variants."
+    },
+    "the-law": {
+      "name": "The Law",
+      "description": "3 Bullseye: gain 1 Evasive; up to 2 target players gain Bounty and Knockdown.",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive.",
+        "chooseUpToTwoTargetsGainBountyKnockdown": "Choose up to 2 target players. Each chosen player gains 1 Bounty and 1 Knockdown."
+      }
+    },
+    "deadeye-2-main": {
+      "name": "Deadeye II",
+      "description": "4 Bullseye: inflict Knockdown and deal 8 undefendable damage.",
+      "effects": {
+        "inflictKnockdown": "Inflict Knockdown.",
+        "damage8Unblockable": "Deal 8 undefendable damage."
+      }
+    },
+    "fan-the-hammer": {
+      "name": "Fan the Hammer",
+      "description": "Gain 2 Evasive and deal 7 damage.",
+      "effects": {
+        "gainEvasive2": "Gain 2 Evasive.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "fan-the-hammer-2": {
+      "name": "Fan the Hammer II",
+      "description": "Includes the Fan the Hammer II and Pistol Whip variants."
+    },
+    "pistol-whip": {
+      "name": "Pistol Whip",
+      "description": "2 Dash + 1 Bullseye: gain 1 Evasive, inflict Knockdown, and deal 1 undefendable damage.",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive.",
+        "inflictKnockdown": "Inflict Knockdown.",
+        "damage1Unblockable": "Deal 1 undefendable damage."
+      }
+    },
+    "fan-the-hammer-2-main": {
+      "name": "Fan the Hammer II",
+      "description": "Large Straight: gain 2 Evasive and deal 8 damage.",
+      "effects": {
+        "gainEvasive2": "Gain 2 Evasive.",
+        "damage8": "Deal 8 damage."
+      }
+    },
+    "duel": {
+      "name": "Duel",
+      "description": "Defensive Roll: roll 1 die. You and the attacker each roll 1 die; if your result is higher, choose to deal 3 undefendable damage or prevent half the incoming damage (rounded up). If lower, deal 1 undefendable damage.",
+      "effects": {
+        "resolveDefense": "Compare both die results. If you win, choose one of two outcomes; if you lose, deal 1 undefendable damage."
+      }
+    },
+    "duel-2": {
+      "name": "Duel II",
+      "description": "Defensive Roll: roll 1 die. You and the attacker each roll 1 die; if your result is equal to or higher, choose to deal 3 undefendable damage or prevent half the incoming damage (rounded up). If lower, deal 1 undefendable damage.",
+      "effects": {
+        "resolveDefense": "Compare both die results. Ties count as a win; if you win, choose one of two outcomes; if you lose, deal 1 undefendable damage."
+      }
+    },
+    "fill-em-with-lead": {
+      "name": "Fill 'Em with Lead!",
+      "description": "Gain 1 Evasive, make your opponent gain Bounty and Knockdown, then deal 10 undefendable damage. If you spend Loaded to add damage, you may reroll that die once.",
+      "effects": {
+        "gainEvasive": "Gain 1 Evasive.",
+        "inflictBounty": "Target gains 1 Bounty.",
+        "inflictKnockdown": "Inflict Knockdown.",
+        "damage10Unblockable": "Deal 10 undefendable damage."
+      }
+    },
     "katana-slice": {
       "name": "Katana Slice",
-      "description": "3/4/5 Katana: deal 5/6/7 damage."
+      "description": "3/4/5 Katana: deal 5/6/7 damage.",
+      "effects": {
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "katana-slice-2": {
       "name": "Katana Slice II",
-      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 4 dice show the same number, inflict 1 Shame."
+      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 4 dice show the same number, inflict 1 Shame.",
+      "effects": {
+        "inflictShameIfFourKind": "If at least 4 dice show the same number, inflict 1 Shame.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage.",
+        "damage8": "Deal 8 damage."
+      }
     },
     "katana-slice-3": {
       "name": "Katana Slice III",
-      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 3 dice show the same number, inflict 1 Shame."
+      "description": "3/4/5 Katana: deal 6/7/8 damage. If at least 3 dice show the same number, inflict 1 Shame.",
+      "effects": {
+        "inflictShameIfThreeKind": "If at least 3 dice show the same number, inflict 1 Shame.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage.",
+        "damage8": "Deal 8 damage."
+      }
     },
     "wakizashi": {
       "name": "Wakizashi",
-      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 3 undefendable damage."
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 3 undefendable damage.",
+      "effects": {
+        "gainBackStrike": "Gain 1 Back Strike.",
+        "damage3Unblockable": "Deal 3 undefendable damage."
+      }
     },
     "wakizashi-2": {
       "name": "Wakizashi II",
-      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 4 undefendable damage."
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike and deal 4 undefendable damage.",
+      "effects": {
+        "gainBackStrike": "Gain 1 Back Strike.",
+        "damage4Unblockable": "Deal 4 undefendable damage."
+      }
     },
     "wakizashi-3": {
       "name": "Wakizashi III",
-      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike, inflict 1 Shame, and deal 4 undefendable damage."
+      "description": "2 Katana + 2 Rising Sun: gain 1 Back Strike, inflict 1 Shame, and deal 4 undefendable damage.",
+      "effects": {
+        "gainBackStrike": "Gain 1 Back Strike.",
+        "inflictShame": "Inflict 1 Shame.",
+        "damage4Unblockable": "Deal 4 undefendable damage."
+      }
     },
     "bushido": {
       "name": "Bushido",
-      "description": "Passive. If you are the starting player, gain 1 Honor. At end of turn, if you rolled fewer than 3 times during Offensive Roll, gain 1 Honor."
+      "description": "Passive. If you are the starting player, gain 1 Honor. At end of turn, if you rolled fewer than 3 times during Offensive Roll, gain 1 Honor.",
+      "effects": {
+        "gainHonorIfStartingPlayer": "If you are the starting player, gain 1 Honor at game start.",
+        "gainHonorIfFewerThanThreeRolls": "If you rolled fewer than 3 times during Offensive Roll this turn, gain 1 Honor at end of turn."
+      }
     },
     "solemnity": {
       "name": "Solemnity",
-      "description": "2 Katana + 3 Helm: inflict 1 Shame and deal 7 damage."
+      "description": "2 Katana + 3 Helm: inflict 1 Shame and deal 7 damage.",
+      "effects": {
+        "inflictShame": "Inflict 1 Shame.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "solemnity-2": {
       "name": "Solemnity II",
-      "description": "Includes the Solemnity II and Solemn variants."
+      "description": "Includes the Solemnity II and Solemn variants.",
+      "effects": {
+        "inflictShame2": "Inflict 2 Shame.",
+        "damage8": "Deal 8 damage."
+      }
     },
     "solemnity-2-main": {
       "name": "Solemnity II",
@@ -2110,19 +2727,36 @@
     },
     "solemnity-2-solemn": {
       "name": "Solemn",
-      "description": "3 Helm: inflict 2 Shame."
+      "description": "3 Helm: inflict 2 Shame.",
+      "effects": {
+        "inflictShame2": "Inflict 2 Shame."
+      }
     },
     "budo": {
       "name": "Budo",
-      "description": "Small Straight: gain 1 Honor and deal 6 damage."
+      "description": "Small Straight: gain 1 Honor and deal 6 damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "damage6": "Deal 6 damage."
+      }
     },
     "budo-2": {
       "name": "Budo II",
-      "description": "Small Straight: gain 1 Honor and deal 8 damage."
+      "description": "Small Straight: gain 1 Honor and deal 8 damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "damage8": "Deal 8 damage."
+      }
     },
     "samurai-slot-06": {
       "name": "Heart of Hagakure",
-      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 1 Shame, then deal 5 undefendable damage."
+      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 1 Shame, then deal 5 undefendable damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "gainBackStrike": "Gain 1 Back Strike.",
+        "inflictShame": "Inflict 1 Shame.",
+        "damage5Unblockable": "Deal 5 undefendable damage."
+      }
     },
     "samurai-slot-06-2": {
       "name": "Heart of Hagakure II",
@@ -2130,19 +2764,38 @@
     },
     "samurai-slot-06-2-main": {
       "name": "Heart of Hagakure II",
-      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 2 Shame, then deal 7 undefendable damage."
+      "description": "4 Rising Sun: gain 1 Honor, gain 1 Back Strike, inflict 2 Shame, then deal 7 undefendable damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "gainBackStrike": "Gain 1 Back Strike.",
+        "inflictShame2": "Inflict 2 Shame.",
+        "damage7Unblockable": "Deal 7 undefendable damage."
+      }
     },
     "samurai-slot-06-2-feather-blade-style": {
       "name": "Feather Blade Style",
-      "description": "3 Rising Sun: gain 1 Honor, inflict 2 Shame, then deal 2 undefendable damage."
+      "description": "3 Rising Sun: gain 1 Honor, inflict 2 Shame, then deal 2 undefendable damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "inflictShame2": "Inflict 2 Shame.",
+        "damage2Unblockable": "Deal 2 undefendable damage."
+      }
     },
     "masamune": {
       "name": "Masamune",
-      "description": "Large Straight: deal 7 damage, then roll 5 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+      "description": "Large Straight: deal 7 damage, then roll 5 dice. Each Katana adds 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike.",
+      "effects": {
+        "damage7": "Deal 7 damage.",
+        "roll5": "Roll 5 dice: each Katana deals 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+      }
     },
     "masamune-2": {
       "name": "Masamune II",
-      "description": "Includes the Masamune II and Honor variants."
+      "description": "Includes the Masamune II and Honor variants.",
+      "effects": {
+        "damage7": "Deal 7 damage.",
+        "roll6": "Roll 6 dice: each Katana deals 1 damage, each Helm inflicts 1 Shame, and each Rising Sun gains 1 Back Strike."
+      }
     },
     "masamune-2-large-straight": {
       "name": "Masamune II",
@@ -2150,83 +2803,177 @@
     },
     "masamune-2-honor": {
       "name": "Honor",
-      "description": "Katana + Helm + Rising Sun: gain 1 Back Strike."
+      "description": "Katana + Helm + Rising Sun: gain 1 Back Strike.",
+      "effects": {
+        "gainBackStrike": "Gain 1 Back Strike."
+      }
     },
     "stand-tall": {
       "name": "Stand Tall",
-      "description": "Defensive Roll: roll 3 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage. If you roll no Helm or Rising Sun, gain 1 Shame."
+      "description": "Defensive Roll: roll 3 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage. If you roll no Helm or Rising Sun, gain 1 Shame.",
+      "effects": {
+        "resolveDefense": "Each Katana deals 1 undefendable damage; each Helm prevents 1 damage; each Rising Sun prevents 2 damage. If you roll no Helm or Rising Sun, gain 1 Shame."
+      }
     },
     "stand-tall-2": {
       "name": "Stand Tall II",
-      "description": "Defensive Roll: roll 4 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage."
+      "description": "Defensive Roll: roll 4 dice. Each Katana deals 1 undefendable damage, each Helm prevents 1 damage, each Rising Sun prevents 2 damage.",
+      "effects": {
+        "resolveDefense": "Each Katana deals 1 undefendable damage; each Helm prevents 1 damage; each Rising Sun prevents 2 damage."
+      }
     },
     "samurai-ultimate": {
       "name": "Shogun!",
-      "description": "Gain 1 Honor, inflict 2 Shame, then deal 13 undefendable damage."
+      "description": "Gain 1 Honor, inflict 2 Shame, then deal 13 undefendable damage.",
+      "effects": {
+        "gainHonor": "Gain 1 Honor.",
+        "inflictShame2": "Inflict 2 Shame.",
+        "damage13Unblockable": "Deal 13 undefendable damage."
+      }
     },
     "shattering-fist": {
       "name": "Shattering Fist",
-      "description": "3/4/5 Branch deal 5/6/7 damage. Upgrades add stronger damage and Thorn support."
+      "description": "3/4/5 Branch deal 5/6/7 damage. You may remove 1 Spirit to apply Thorn.",
+      "effects": {
+        "removeSpiritToInflictThorn": "You may remove 1 Spirit to inflict Thorn.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "shattering-fist-2": {
       "name": "Shattering Fist II",
-      "description": "3/4/5 Branch deal 6/7/8 damage."
+      "description": "3/4/5 Branch deal 5/6/7 damage and apply Thorn.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "shattering-fist-3": {
       "name": "Shattering Fist III",
-      "description": "3/4/5 Branch deal 6/7/8 damage and apply Thorn."
+      "description": "3/4/5 Branch deal 5/6/7 damage. If you rolled 3 matching values, cultivate 1 Spirit. Apply Thorn.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "cultivateIfThreeKind": "If you rolled 3 matching values, cultivate 1 Spirit.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "tend-care": {
       "name": "Tend & Care",
-      "description": "Draw 1, cultivate Spirits, gain Life Sap, and apply Thorn."
+      "description": "Draw 1, cultivate 3 Spirits; choose 1 player to gain Life Sap; choose 1 opponent to receive Thorn.",
+      "effects": {
+        "draw1": "Draw 1 card.",
+        "cultivate3ChooseLifeSapAndThorn": "Cultivate 3 Spirits; choose 1 player to gain Life Sap; choose 1 opponent to receive Thorn."
+      }
     },
     "tend-care-2": {
       "name": "Tend & Care II",
-      "description": "Draw 1, cultivate Spirits, gain an extra Sapling Spirit, gain Life Sap, and apply Thorn."
+      "description": "2 Leaf + 2 Spirit: draw 1, cultivate 4 Spirits, choose 1 player to gain Life Sap, and choose 1 opponent to receive Thorn. Cultivate (2 Branch + 2 Spirit): cultivate 6 Spirits.",
+      "effects": {
+        "draw1": "Draw 1 card.",
+        "cultivate4ChooseLifeSapAndThorn": "Cultivate 4 Spirits; choose 1 player to gain Life Sap; choose 1 opponent to receive Thorn.",
+        "cultivate6": "Cultivate 6 Spirits."
+      }
     },
     "vengeful-vines": {
       "name": "Vengeful Vines",
-      "description": "Small Straight: apply Thorn and deal 7 damage."
+      "description": "Small Straight: apply Thorn and deal 7 damage.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "damage7": "Deal 7 damage."
+      }
     },
     "vengeful-vines-2": {
       "name": "Vengeful Vines II",
-      "description": "Small Straight: apply Thorn and deal 8 damage."
+      "description": "Small Straight: apply Thorn and deal 8 damage. Painful Roots (3 Leaf): deal 1 direct damage per Spirit.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "damage8": "Deal 8 damage.",
+        "dealDamagePerSpirit": "Deal 1 direct damage per Spirit."
+      }
     },
     "nature-touch": {
       "name": "Nature Touch",
-      "description": "4 Spirit: cultivate 2 Spirits and deal 5 undefendable damage."
+      "description": "4 Spirit: cultivate 2 Spirits, then deal 5 undefendable damage. Add +1 damage per Spirit you have.",
+      "effects": {
+        "cultivate2ThenBonusDamage": "Cultivate 2 Spirits, then increase damage based on your Spirit count after cultivating.",
+        "damage5Unblockable": "Deal 5 undefendable damage."
+      }
     },
     "nature-touch-2": {
       "name": "Nature Touch II",
-      "description": "4 Spirit: cultivate 2 Spirits and deal 6 undefendable damage."
+      "description": "4 Spirit: cultivate 2 Spirits, then deal 6 undefendable damage. Add +1 damage per Spirit you have. Nature's Mercy (3 Spirit): heal 1, gain 1 CP, draw 1, and cultivate 1 Spirit.",
+      "effects": {
+        "cultivate2ThenBonusDamage": "Cultivate 2 Spirits, then increase damage based on your Spirit count after cultivating.",
+        "damage6Unblockable": "Deal 6 undefendable damage.",
+        "heal1Gain1CpDraw1Cultivate1": "Heal 1, gain 1 CP, draw 1 card, and cultivate 1 Spirit."
+      }
     },
     "quiet-cultivation": {
       "name": "Quiet Cultivation",
-      "description": "At the start of your Upkeep phase, cultivate 1 Spirit."
+      "description": "At the start of your Upkeep phase, cultivate 1 Spirit.",
+      "effects": {
+        "upkeepCultivate1": "Cultivate 1 Spirit during Upkeep."
+      }
     },
     "wild-growth": {
       "name": "Wild Growth",
-      "description": "2 Branch + 3 Leaf: deal 2 damage and heal."
+      "description": "2 Branch + 3 Leaf: deal 2 damage. You may remove up to 2 Spirits; each removed Spirit adds +4 damage. You may spend Life Sap to make this attack undefendable.",
+      "effects": {
+        "removeUpTo2SpiritsForDamageAndSpendLifeSap": "You may remove up to 2 Spirits to increase damage, and you may spend Life Sap to make this attack undefendable.",
+        "damage2": "Deal 2 damage."
+      }
     },
     "wild-growth-2": {
       "name": "Wild Growth II",
-      "description": "2 Branch + 3 Leaf: deal 4 damage and heal."
+      "description": "Large Straight: deal 8 damage, then roll 5 dice. Each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit. Dazzle Bloom (2 Branch + 2 Spirit): inflict Thorn and deal 4 undefendable damage.",
+      "effects": {
+        "roll5BranchLeafSpirit": "Deal 8 damage and roll 5 dice: each Branch adds +1 damage; if you roll a Leaf, gain Life Sap; each Spirit cultivates 1 Spirit.",
+        "damage8": "Deal 8 damage."
+      }
+    },
+    "wild-growth-2-dazzle": {
+      "name": "Dazzle Bloom",
+      "description": "2 Branch + 2 Spirit: inflict Thorn and deal 4 undefendable damage.",
+      "effects": {
+        "inflictThorn": "Inflict Thorn.",
+        "damage4Unblockable": "Deal 4 undefendable damage."
+      }
     },
     "rooted": {
       "name": "Rooted",
-      "description": "Defensive roll 3 dice; Branch, Leaf, and Spirit grant different defensive rewards."
+      "description": "Defensive roll 3 dice; prevent 1 Branch + 1 Spirit damage. Two Leaves cultivate 1 Spirit; two Spirits let 1 player gain Life Sap.",
+      "effects": {
+        "resolveDefense": "During the defensive roll, Branch and Spirit prevent damage; two Leaves cultivate; two Spirits let you choose a player to gain Life Sap."
+      }
     },
     "rooted-2": {
       "name": "Rooted II",
-      "description": "Defensive roll 4 dice; Branch, Leaf, and Spirit grant different defensive rewards."
+      "description": "Defensive roll 4 dice; prevent 1 Branch + 1 Spirit damage. Two Leaves cultivate 1 Spirit; two Spirits let 1 player gain Life Sap.",
+      "effects": {
+        "resolveDefense": "During the defensive roll, Branch and Spirit prevent damage; two Leaves cultivate; two Spirits let you choose a player to gain Life Sap."
+      }
     },
     "forest-awakens": {
       "name": "Forest Awakens",
-      "description": "Ultimate: gain Life Sap, cultivate 5 Spirits, apply Thorn, and deal 10 damage."
+      "description": "Ultimate: you and 1 teammate gain Life Sap; cultivate 5 Spirits; apply Thorn; deal 10 damage.",
+      "effects": {
+        "choosePlayersCultivateAndThorn": "You and 1 teammate gain Life Sap; cultivate 5 Spirits; inflict Thorn.",
+        "damage10": "Deal 10 damage."
+      }
     },
     "slash": {
       "name": "Slash",
-      "description": "3/4/5 Ninja Blade deal 5/6/7 damage."
+      "description": "3/4/5 Ninja Blade deal 5/6/7 damage.",
+      "effects": {
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage",
+        "damage7": "Deal 7 damage"
+      }
     },
     "slash-2": {
       "name": "Slash II",
@@ -2234,7 +2981,11 @@
     },
     "going-forward": {
       "name": "Going Forward",
-      "description": "4 Shuriken: deal 7 damage."
+      "description": "4 Shuriken: deal 7 damage.",
+      "effects": {
+        "roll2DiceDamageTotal": "Roll 2 dice and deal damage equal to the total",
+        "resolveRolledDamage": "Deal damage based on the roll result"
+      }
     },
     "going-forward-2": {
       "name": "Going Forward II",
@@ -2242,7 +2993,11 @@
     },
     "poison-blade": {
       "name": "Poison Blade",
-      "description": "Small Straight: apply Delayed Poison and deal 5 damage."
+      "description": "Small Straight: apply Delayed Poison and deal 5 damage.",
+      "effects": {
+        "inflictDelayedPoison": "Inflict 1 Delayed Poison",
+        "damage5": "Deal 5 damage"
+      }
     },
     "poison-blade-2": {
       "name": "Poison Blade II",
@@ -2250,7 +3005,12 @@
     },
     "shadow-step": {
       "name": "Shadow Step",
-      "description": "4 Mask: gain Smoke Bomb, apply Delayed Poison, and deal 6 undefendable damage."
+      "description": "4 Mask: gain Smoke Bomb, apply Delayed Poison, and deal 6 undefendable damage.",
+      "effects": {
+        "gainSmokeBomb": "Gain 1 Smoke Bomb",
+        "inflictDelayedPoison": "Inflict 1 Delayed Poison",
+        "damage6Unblockable": "Deal 6 undefendable damage"
+      }
     },
     "shadow-step-2": {
       "name": "Shadow Step II",
@@ -2258,7 +3018,10 @@
     },
     "death-blossom": {
       "name": "Death Blossom",
-      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result."
+      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result.",
+      "effects": {
+        "roll5DiceResolveDamage": "Roll 5 dice and total damage from Ninja Blade and Shuriken results"
+      }
     },
     "death-blossom-2": {
       "name": "Death Blossom II",
@@ -2266,7 +3029,12 @@
     },
     "smoke-screen": {
       "name": "Smoke Screen",
-      "description": "1 Ninja Blade + 2 Shuriken + 1 Mask: gain Smoke Bomb and 2 Ninjutsu, then apply Delayed Poison."
+      "description": "1 Ninja Blade + 2 Shuriken + 1 Mask: gain Smoke Bomb and 2 Ninjutsu, then apply Delayed Poison.",
+      "effects": {
+        "gainSmokeBomb": "Gain 1 Smoke Bomb",
+        "gainNinjutsu2": "Gain 2 Ninjutsu",
+        "inflictDelayedPoison": "Inflict 1 Delayed Poison"
+      }
     },
     "smoke-screen-2": {
       "name": "Smoke Screen II",
@@ -2274,7 +3042,11 @@
     },
     "shadow-fang": {
       "name": "Shadow Fang",
-      "description": "Large Straight: gain 2 Ninjutsu and deal 8 damage."
+      "description": "Large Straight: gain 2 Ninjutsu and deal 8 damage.",
+      "effects": {
+        "gainNinjutsu2": "Gain 2 Ninjutsu",
+        "damage8": "Deal 8 damage"
+      }
     },
     "shadow-fang-2": {
       "name": "Shadow Fang II",
@@ -2282,15 +3054,522 @@
     },
     "blink": {
       "name": "Blink",
-      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+      "description": "Defensive roll 3 dice; if you roll a Ninja Blade, deal 1 damage; if you roll a Shuriken, deal 2 damage; if you roll a Mask, gain 1 Smoke Bomb.",
+      "effects": {
+        "resolveDefense": "Defensive roll 3 dice; Ninja Blade deals 1 damage, Shuriken deals 2 damage, Mask gains 1 Smoke Bomb"
+      }
     },
     "blink-2": {
       "name": "Blink II",
-      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+      "description": "Defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "ninja-assassinate": {
       "name": "Assassinate",
-      "description": "Ultimate: apply Delayed Poison, gain Smoke Bomb, and deal 10 damage."
+      "description": "Ultimate: apply Delayed Poison, gain Smoke Bomb, and deal 10 damage.",
+      "effects": {
+        "inflictDelayedPoison2": "Inflict 2 Delayed Poison",
+        "gainSmokeBomb": "Gain 1 Smoke Bomb",
+        "damage10": "Deal 10 damage"
+      }
+    },
+    "sabre-thrust": {
+      "name": "Sabre Thrust",
+      "description": "3/4/5 Sabres deal 4/5/6 damage.",
+      "effects": {
+        "damage4": "Deal 4 damage",
+        "damage5": "Deal 5 damage",
+        "damage6": "Deal 6 damage"
+      }
+    },
+    "sabre-thrust-2": {
+      "name": "Sabre Thrust II",
+      "description": "3/4/5 Sabres deal 5/6/7 damage; if you rolled three matching numbers, inflict Bind.",
+      "effects": {
+        "bindIfThreeKind": "If you rolled three matching numbers, inflict Bind.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "carpet-bombing": {
+      "name": "Carpet Bombing",
+      "description": "2 Sabres + 2 Medals: gain Tactical Advantage, then deal 2 collateral damage to all opponents.",
+      "effects": {
+        "gainTa1": "Gain 1 Tactical Advantage.",
+        "targetTwoOpponents": "Deal 2 collateral damage to 2 different opponents."
+      }
+    },
+    "carpet-bombing-2": {
+      "name": "Carpet Bombing II",
+      "description": "2 Sabres + 2 Medals: gain 2 Tactical Advantage, then deal 2 collateral damage to two different opponents. Plan Strategy (4 Banners): gain 3 Tactical Advantage and draw 2 cards.",
+      "effects": {
+        "mainGainTa2": "Gain 2 Tactical Advantage.",
+        "mainTargetTwoOpponents": "Deal 2 collateral damage to 2 different opponents.",
+        "strategyGainTa3": "Gain 3 Tactical Advantage.",
+        "strategyDraw2": "Draw 2 cards."
+      }
+    },
+    "war-monger": {
+      "name": "War Monger",
+      "description": "1 Sabre + 3 Banners: gain 1 Tactical Advantage and roll 1 die; Sabre deals 5 damage, Banner gains 4 Tactical Advantage, Medal draws 1 card; after resolution, immediately enter an extra Offensive Roll Phase.",
+      "effects": {
+        "gainTa1": "Gain 1 Tactical Advantage.",
+        "bonusRoll": "Roll 1 die: Sabre deals 5 damage; Banner gains 4 Tactical Advantage; Medal draws 1 card.",
+        "extraOffensiveRoll": "Immediately enter an extra Offensive Roll Phase."
+      }
+    },
+    "war-monger-2": {
+      "name": "War Monger II",
+      "description": "1 Sabre + 3 Banners: gain 2 Tactical Advantage and roll 1 die; Sabre deals 6, Banner gains 3 Tactical Advantage, Medal draws 1 and immediately grants an extra Offensive Roll Phase.",
+      "effects": {
+        "gainTa2": "Gain 2 Tactical Advantage.",
+        "bonusRoll": "Roll 1 die: Sabre deals 6 damage; Banner gains 3 Tactical Advantage; Medal draws 1 card and immediately grants an extra Offensive Roll Phase."
+      }
+    },
+    "drum-movement": {
+      "name": "Drum Movement",
+      "description": "3 Sabres + 2 Medals: inflict Bind and deal 7 damage.",
+      "effects": {
+        "inflictBind": "Inflict Bind.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "drum-movement-2": {
+      "name": "Drum Movement II",
+      "description": "3 Sabres + 2 Medals: gain Tactical Advantage, inflict Bind, then deal 7 damage. Indirect Engagement (3 Sabres + Banner): gain 2 Tactical Advantage, then deal 2 undefendable damage.",
+      "effects": {
+        "mainGainTa1": "Gain 1 Tactical Advantage.",
+        "mainInflictBind": "Inflict Bind.",
+        "mainDamage7": "Deal 7 damage.",
+        "indirectGainTa2": "Gain 2 Tactical Advantage.",
+        "indirectDamage2": "Deal 2 undefendable damage."
+      }
+    },
+    "flanking": {
+      "name": "Flanking",
+      "description": "Small Straight: gain Tactical Advantage, then deal 6 damage.",
+      "effects": {
+        "gainTa1": "Gain 1 Tactical Advantage.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "flanking-2": {
+      "name": "Flanking II",
+      "description": "Small Straight: gain 2 Tactical Advantage, then deal 6 damage.",
+      "effects": {
+        "gainTa2": "Gain 2 Tactical Advantage.",
+        "damage6": "Deal 6 damage."
+      }
+    },
+    "expand-battlefield": {
+      "name": "Expand Battlefield",
+      "description": "Large Straight: gain 2 Tactical Advantage, inflict Bind, then deal 9 damage.",
+      "effects": {
+        "gainTa2": "Gain 2 Tactical Advantage.",
+        "inflictBind": "Inflict Bind.",
+        "damage9": "Deal 9 damage."
+      }
+    },
+    "expand-battlefield-2": {
+      "name": "Expand Battlefield II",
+      "description": "Large Straight: gain 3 Tactical Advantage, inflict Bind, then deal 9 damage. Full Lockdown (Sabre + 2 Banners + Medal): draw 2 cards and inflict Bind on an opponent.",
+      "effects": {
+        "mainGainTa3": "Gain 3 Tactical Advantage.",
+        "mainInflictBind": "Inflict Bind.",
+        "mainDamage9": "Deal 9 damage.",
+        "lockdownDraw2": "Draw 2 cards.",
+        "lockdownInflictBind": "Inflict Bind."
+      }
+    },
+    "strategic-shift": {
+      "name": "Strategic Shift",
+      "description": "4 Medals: gain 5 Tactical Advantage, then deal 5 undefendable damage.",
+      "effects": {
+        "gainTa5": "Gain 5 Tactical Advantage.",
+        "damage5": "Deal 5 undefendable damage."
+      }
+    },
+    "strategic-shift-2": {
+      "name": "Strategic Shift II",
+      "description": "4 Medals: gain 5 Tactical Advantage, inflict Bind, then deal 5 undefendable damage. Early Recon (3 Medals): gain 5 Tactical Advantage.",
+      "effects": {
+        "mainGainTa5": "Gain 5 Tactical Advantage.",
+        "mainInflictBind": "Inflict Bind.",
+        "mainDamage5": "Deal 5 undefendable damage.",
+        "reconGainTa5": "Gain 5 Tactical Advantage."
+      }
+    },
+    "countermeasures": {
+      "name": "Countermeasures",
+      "description": "Defensive roll 4 dice; each pair of Sabres deals 1 counter damage; each Banner prevents 1 damage; each Medal gains 1 Tactical Advantage.",
+      "effects": {
+        "defense4": "Defensive roll 4 dice: each pair of Sabres deals 1 damage; each Banner prevents 1 damage; each Medal gains 1 Tactical Advantage."
+      }
+    },
+    "countermeasures-2": {
+      "name": "Countermeasures II",
+      "description": "Defensive roll 5 dice; each pair of Sabres deals 1 damage; prevent 1 damage per Banner; gain 1 Tactical Advantage per Medal.",
+      "effects": {
+        "defense5": "Defensive roll 5 dice: each pair of Sabres deals 1 damage; each Banner prevents 1 damage; each Medal gains 1 Tactical Advantage."
+      }
+    },
+    "countermeasures-3": {
+      "name": "Countermeasures III",
+      "description": "Defensive roll 5 dice; each pair of Sabres deals 2 damage; prevent 1 damage per Banner; gain 1 Tactical Advantage per Medal.",
+      "effects": {
+        "defense5Heavy": "Defensive roll 5 dice: each pair of Sabres deals 2 damage; each Banner prevents 1 damage; each Medal gains 1 Tactical Advantage."
+      }
+    },
+    "high-ground": {
+      "name": "High Ground",
+      "description": "Ultimate: inflict Targeted and Bind; increase Tactical Advantage limit by 1, then gain to the limit and deal 12 damage.",
+      "effects": {
+        "inflictTargeted": "Inflict Targeted.",
+        "inflictBind": "Inflict Bind.",
+        "capUpAndFill": "Increase Tactical Advantage limit by 1, then gain Tactical Advantage up to the new limit.",
+        "damage12": "Deal 12 damage."
+      }
+    },
+    "card-zhanshujia-gain-the-upper-hand": {
+      "effects": {
+        "roll": "Roll 1 die: if you roll Medal, gain 4 Tactical Advantage. Otherwise draw 1 card."
+      }
+    },
+    "card-zhanshujia-ambush": {
+      "effects": {
+        "gainTa2": "Gain 2 Tactical Advantage."
+      }
+    },
+    "card-zhanshujia-disengage": {
+      "effects": {
+        "roll": "Roll 1 die: Sabre deals 2 damage; Banner prevents 3 damage; Medal gains Protect."
+      }
+    },
+    "card-zhanshujia-tactical-retreat": {
+      "effects": {
+        "inflictBind": "Inflict Bind on the opponent attacking you.",
+        "prevent3": "Prevent 3 incoming damage."
+      }
+    },
+    "card-zhanshujia-war-room": {
+      "effects": {
+        "roll": "Roll 1 die: gain Tactical Advantage equal to half the value, rounded up."
+      }
+    },
+    "card-zhanshujia-strategic-defense": {
+      "effects": {
+        "choosePlayer": "Choose 1 player to gain Protect."
+      }
+    },
+    "upgrade-zhanshujia-countermeasures-3": {
+      "effects": {
+        "upgrade": "Upgrade Countermeasures to Level III."
+      }
+    },
+    "upgrade-zhanshujia-countermeasures-2": {
+      "effects": {
+        "upgrade": "Upgrade Countermeasures to Level II."
+      }
+    },
+    "upgrade-zhanshujia-strategic-shift-2": {
+      "effects": {
+        "upgrade": "Upgrade Strategic Shift to Level II."
+      }
+    },
+    "upgrade-zhanshujia-expand-battlefield-2": {
+      "effects": {
+        "upgrade": "Upgrade Expand Battlefield to Level II."
+      }
+    },
+    "upgrade-zhanshujia-flanking-2": {
+      "effects": {
+        "upgrade": "Upgrade Flanking to Level II."
+      }
+    },
+    "upgrade-zhanshujia-drum-movement-2": {
+      "effects": {
+        "upgrade": "Upgrade Drum Movement to Level II."
+      }
+    },
+    "upgrade-zhanshujia-carpet-bombing-2": {
+      "effects": {
+        "upgrade": "Upgrade Carpet Bombing to Level II."
+      }
+    },
+    "upgrade-zhanshujia-war-monger-2": {
+      "effects": {
+        "upgrade": "Upgrade War Monger to Level II."
+      }
+    },
+    "upgrade-zhanshujia-sabre-thrust-2": {
+      "effects": {
+        "upgrade": "Upgrade Sabre Thrust to Level II."
+      }
+    },
+    "soul-stab": {
+      "name": "Soul Stab",
+      "description": "3/4/5 Cutlasses deal 5/7/9 damage; if you rolled three matching numbers, inflict Powder Keg.",
+      "effects": {
+        "damage5": "Deal 5 damage.",
+        "powderKegIfThreeKind": "If you rolled three matching numbers, inflict Powder Keg.",
+        "damage7": "Deal 7 damage.",
+        "damage9": "Deal 9 damage."
+      }
+    },
+    "marked-for-death": {
+      "name": "Marked for Death",
+      "description": "3 Loot: roll 4 dice; Cutlasses deal undefendable damage, Loot draws cards, Skulls inflict Cursed Coin.",
+      "effects": {
+        "gain2Cp": "Gain 2 CP.",
+        "roll4": "Roll 4 dice: Cutlasses deal undefendable damage, Loot draws cards, Skulls inflict Cursed Coin."
+      }
+    },
+    "cursed": {
+      "name": "Cursed",
+      "description": "Passive: during your Upkeep, take 4 damage that cannot be reduced or prevented; opponents who made no attack during their Offensive Roll Phase are inflicted with Powder Keg.",
+      "effects": {
+        "selfDamage4": "Take 4 damage that cannot be reduced or prevented.",
+        "powderKegToPassiveOpponents": "Inflict Powder Keg on opponents who made no attack during their Offensive Roll Phase."
+      }
+    },
+    "deep-sea-dive": {
+      "name": "Deep Sea Dive",
+      "description": "1 Cutlass + 2 Loot + 1 Skull: steal 1 CP, force the opponent to discard 1 card, inflict Wither, then deal 8 damage.",
+      "effects": {
+        "steal1Cp": "Steal 1 CP.",
+        "opponentDiscard1": "Force the opponent to discard 1 card.",
+        "inflictWither": "Inflict Wither.",
+        "damage8": "Deal 8 damage."
+      }
+    },
+    "breath-of-death": {
+      "name": "Breath of Death",
+      "description": "Small Straight inflicts Wither and Powder Keg, then deals 7; Large Straight inflicts Wither and Powder Keg, then deals 10.",
+      "effects": {
+        "smallInflictWither": "Inflict Wither.",
+        "smallInflictPowderKeg": "Inflict Powder Keg.",
+        "smallDamage7": "Deal 7 damage.",
+        "largeInflictWither": "Inflict Wither.",
+        "largeInflictPowderKeg": "Inflict Powder Keg.",
+        "largeDamage10": "Deal 10 damage."
+      }
+    },
+    "soul-command": {
+      "name": "Soul Command",
+      "description": "4 Skulls: inflict Parley, Powder Keg, and Wither, then deal 8 undefendable damage.",
+      "effects": {
+        "inflictParley": "Inflict Parley.",
+        "inflictPowderKeg": "Inflict Powder Keg.",
+        "inflictWither": "Inflict Wither.",
+        "damage8": "Deal 8 undefendable damage."
+      }
+    },
+    "undead-claw": {
+      "name": "Undead Claw",
+      "description": "1 Cutlass + 3 Skulls: deal 8 undefendable damage; all opponents take 1 damage for each Cursed Coin they have.",
+      "effects": {
+        "damage8": "Deal 8 undefendable damage.",
+        "damageByCursedCoins": "All opponents take 1 damage for each Cursed Coin they have."
+      }
+    },
+    "still-wet-behind-ears": {
+      "name": "Still Wet Behind the Ears",
+      "description": "Defensive roll 5 dice; each Cutlass deals 1 counter damage, each Loot gains 1 CP, each Skull prevents 2 damage; if you rolled at least 1 Cutlass and 1 Skull, inflict Cursed Coin.",
+      "effects": {
+        "defense5": "Defensive roll 5 dice: each Cutlass deals 1 counter damage, each Loot gains 1 CP, each Skull prevents 2 damage; if you rolled at least 1 Cutlass and 1 Skull, inflict Cursed Coin."
+      }
+    },
+    "merciless-curse": {
+      "name": "Merciless Curse",
+      "description": "Ultimate: deal 13 damage, inflict Parley, Cursed Coin, and Wither; inflict Powder Keg on up to two opponents.",
+      "effects": {
+        "damage13": "Deal 13 damage.",
+        "inflictParley": "Inflict Parley.",
+        "inflictCursedCoin": "Inflict Cursed Coin.",
+        "inflictWither": "Inflict Wither.",
+        "powderKegTargets": "Inflict Powder Keg on up to two opponents."
+      }
+    },
+    "cutlass-stab": {
+      "name": "Cutlass Stab",
+      "description": "3/4/5 Cutlasses deal 5/6/7 damage; if you rolled four matching numbers, inflict Powder Keg.",
+      "effects": {
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "damage7": "Deal 7 damage.",
+        "powderKegIfFourKind": "If you rolled four matching numbers, inflict Powder Keg."
+      }
+    },
+    "make-your-mark": {
+      "name": "Make Your Mark",
+      "description": "Gain 1 CP, then roll 3 dice: each Cutlass deals 2 undefendable damage; each Loot draws 1 card; each Skull gains 1 Cursed Coin.",
+      "effects": {
+        "gain1Cp": "Gain 1 CP.",
+        "roll3": "Roll 3 dice: each Cutlass deals 2 undefendable damage; each Loot draws 1 card; each Skull gains 1 Cursed Coin."
+      }
+    },
+    "human-cursed": {
+      "name": "Cursed",
+      "description": "At the end of your turn, remove 1 Cursed Coin; if none can be removed, flip your hero board to the other side and remain there for the rest of the game.",
+      "effects": {
+        "endTurnFlipCheck": "At the end of your turn, remove 1 Cursed Coin; if none can be removed, flip to the other side and remain there."
+      }
+    },
+    "walk-the-plank": {
+      "name": "Walk the Plank",
+      "description": "Choose one: steal 1 CP, or make the opponent choose and discard 1 of their cards, then deal 7 damage.",
+      "effects": {
+        "choice": "Choose to steal 1 CP, or make the opponent discard 1 card.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "light-the-fuse": {
+      "name": "Light the Fuse",
+      "description": "Small Straight: inflict Powder Keg, then deal 7 damage. Large Straight: inflict Powder Keg, then deal 9 damage.",
+      "effects": {
+        "smallInflictPowderKeg": "Inflict Powder Keg.",
+        "smallDamage7": "Deal 7 damage.",
+        "largeInflictPowderKeg": "Inflict Powder Keg.",
+        "largeDamage9": "Deal 9 damage."
+      }
+    },
+    "verdict-command": {
+      "name": "Verdict Command",
+      "description": "Gain 1 Cursed Coin, inflict Parley, then deal 7 undefendable damage.",
+      "effects": {
+        "coinChoiceThenContinue": "Gain 1 Cursed Coin; after the choice resolves, continue by inflicting Parley and dealing 7 undefendable damage."
+      }
+    },
+    "astonishing": {
+      "name": "Astonishing",
+      "description": "Deal 7 undefendable damage. You may remove any number of Cursed Coins.",
+      "effects": {
+        "damage7": "Deal 7 undefendable damage.",
+        "removeAnyCursedCoins": "You may remove any number of Cursed Coins."
+      }
+    },
+    "human-still-wet-behind-ears": {
+      "name": "Hey, Buddy",
+      "description": "Defensive roll 4 dice: each Cutlass deals 1 damage; each Loot gains 1 CP; each Skull prevents 2 damage; if you rolled 2 Cutlasses and 1 Skull, gain 1 Cursed Coin.",
+      "effects": {
+        "defense4": "Defensive roll 4 dice: Cutlasses counterattack, Loot gains CP, Skulls prevent damage, and if you rolled 2 Cutlasses plus 1 Skull, gain 1 Cursed Coin."
+      }
+    },
+    "merciless-plunder": {
+      "name": "Merciless Plunder!",
+      "description": "Deal 12 damage. Gain 2 Cursed Coins. Inflict Parley and Powder Keg.",
+      "effects": {
+        "damage12": "Deal 12 damage.",
+        "coinChoiceThenContinue": "Gain 2 Cursed Coins; after the choice resolves, continue by inflicting Parley and Powder Keg."
+      }
+    },
+    "card-turning-up-the-heat": {
+      "effects": {
+        "gainFM1": "Gain 1 Fire Mastery",
+        "spendCP": "You may spend any amount of CP; gain 1 Fire Mastery per CP spent"
+      }
+    },
+    "card-infernal-embrace": {
+      "effects": {
+        "roll": "Roll 1 die: Fire gain 2 Fire Mastery; otherwise draw 1 card"
+      }
+    },
+    "card-fan-the-flames": {
+      "effects": {
+        "increaseLimit": "Increase your Fire Mastery limit by 1",
+        "gainFM2": "Gain 2 Fire Mastery"
+      }
+    },
+    "card-red-hot": {
+      "effects": {
+        "dmgPerFM": "This turn, your damage +1 per Fire Mastery"
+      }
+    },
+    "card-get-fired-up": {
+      "effects": {
+        "roll": "Roll 1 die: Fire +3 damage; Lava inflict Burn; Fire Soul gain 2 Fire Mastery; Meteor inflict Knockdown"
+      }
+    },
+    "card-cursed-pirate-weigh-anchor": {
+      "effects": {
+        "roll": "Roll 1 die: if you roll Skull, inflict Parley on 1 opponent. Otherwise draw 1 card."
+      }
+    },
+    "card-cursed-pirate-curse-card": {
+      "effects": {
+        "choice": "Choose one: draw 1; or take 2 damage and draw 2; or take 4 damage and draw 3."
+      }
+    },
+    "card-cursed-pirate-batten-down": {
+      "effects": {
+        "discardHandDraw4": "Discard your hand, then draw 4."
+      }
+    },
+    "card-cursed-pirate-shark-bait": {
+      "effects": {
+        "attackDamagePlus2": "Attack damage +2."
+      }
+    },
+    "card-cursed-pirate-flay": {
+      "effects": {
+        "roll5": "Roll 5 dice; add 1 damage per Cutlass to the attack total; if at least 3 damage was added, inflict Powder Keg."
+      }
+    },
+    "card-cursed-pirate-ransom": {
+      "effects": {
+        "chooseDieOrPay2": "Choose one of your opponent's dice; unless they pay 2 CP, reroll it."
+      }
+    },
+    "card-cursed-pirate-bluster": {
+      "effects": {
+        "roll": "Roll 1 die: Cutlass deals 2 damage; Loot draws 2 cards; Skull inflicts Powder Keg on 1 opponent."
+      }
+    },
+    "card-cursed-pirate-scurvy": {
+      "effects": {
+        "selfDamage1": "Take 1 damage.",
+        "inflictWither": "Inflict Wither on 1 opponent."
+      }
+    },
+    "card-cursed-pirate-pillage": {
+      "effects": {
+        "steal1Cp": "Steal 1 CP from 1 opponent."
+      }
+    },
+    "card-cursed-pirate-parley": {
+      "effects": {
+        "inflictParley": "Inflict Parley on 1 opponent."
+      }
+    },
+    "card-cursed-pirate-crows-nest": {
+      "effects": {
+        "roll": "Choose 1 opponent and roll 1 die: Cutlass checks their hand; Loot makes them choose and discard 1 card; Skull makes them discard 1 random card."
+      }
+    },
+    "card-cursed-pirate-hefty": {
+      "effects": {
+        "roll2": "Roll 2 dice: if you roll Loot, draw 2 and gain 2 CP."
+      }
+    },
+    "card-cursed-pirate-pirates-life": {
+      "effects": {
+        "faceDependent": "Normal-side path: gain 1 Cursed Coin. Cursed-side path: heal 3 instead."
+      }
+    },
+    "card-cursed-pirate-go-fish": {
+      "effects": {
+        "powderKegTargets": "Inflict Powder Keg on up to 3 different opponents."
+      }
+    },
+    "card-cursed-pirate-give-me-some": {
+      "effects": {
+        "inflictPowderKeg": "Inflict Powder Keg on 1 opponent."
+      }
+    },
+    "card-cursed-pirate-sip": {
+      "effects": {
+        "choice": "Inflict Powder Keg on 1 opponent; that opponent may instead roll 1 die, and on 3-6 they gain Powder Keg and Wither."
+      }
     }
   },
   "cards": {
@@ -2320,7 +3599,10 @@
     },
     "card-play-six": {
       "name": "Play Six!",
-      "description": "Set 1 of your dice to 6."
+      "description": "Set 1 of your dice to 6.",
+      "effects": {
+        "modifyDieTo6": "Set 1 die to 6"
+      }
     },
     "upgrade-revolver-2": {
       "name": "Revolver II",
@@ -2414,73 +3696,297 @@
       "name": "Contemplation II",
       "description": "3 Taiji: Gain 6 Chi, Evasive and Purify. Zen Combat (2 Fist + 2 Taiji): Deal 6 damage, gain 2 Chi."
     },
+    "card-zhanshujia-gain-the-upper-hand": {
+      "name": "Gain the Upper Hand!",
+      "description": "Roll 1 die: if you roll Medal, gain 4 Tactical Advantage. Otherwise draw 1 card."
+    },
+    "card-zhanshujia-ambush": {
+      "name": "Ambush!",
+      "description": "Gain 2 Tactical Advantage."
+    },
+    "card-zhanshujia-disengage": {
+      "name": "Disengage!",
+      "description": "Only play after being attacked. Roll 1 die: Sabre deals 2 damage; Banner prevents 3 damage; Medal gains Protect."
+    },
+    "card-zhanshujia-tactical-retreat": {
+      "name": "Tactical Retreat!",
+      "description": "Only play after being attacked. Inflict Bind on the opponent attacking you. Prevent 3 incoming damage."
+    },
+    "card-zhanshujia-war-room": {
+      "name": "War Room!",
+      "description": "Roll 1 die: gain Tactical Advantage equal to half the value, rounded up."
+    },
+    "card-zhanshujia-strategic-defense": {
+      "name": "Strategic Defense!",
+      "description": "Choose 1 player to gain Protect."
+    },
+    "upgrade-zhanshujia-countermeasures-3": {
+      "name": "Countermeasures III",
+      "description": "Defensive roll 5 dice. For each pair of Sabres, deal 2 damage. Prevent 1× Banner damage. Gain 1× Medal Tactical Advantage."
+    },
+    "upgrade-zhanshujia-countermeasures-2": {
+      "name": "Countermeasures II",
+      "description": "Defensive roll 5 dice. For each pair of Sabres, deal 1 damage. Prevent 1× Banner damage. Gain 1× Medal Tactical Advantage."
+    },
+    "upgrade-zhanshujia-strategic-shift-2": {
+      "name": "Strategic Shift II",
+      "description": "4 Medal: Gain 5 Tactical Advantage, inflict Bind, then deal 5 undefendable damage. Recon (3 Medal): gain 5 Tactical Advantage."
+    },
+    "upgrade-zhanshujia-expand-battlefield-2": {
+      "name": "Expand Battlefield II",
+      "description": "Large Straight: gain 3 Tactical Advantage, inflict Bind, then deal 9 damage. Total Lockdown (Sabre + 2 Banner + Medal): draw 2 cards and inflict Bind on 1 opponent."
+    },
+    "upgrade-zhanshujia-flanking-2": {
+      "name": "Flanking II",
+      "description": "Small Straight: gain 2 Tactical Advantage, then deal 6 damage."
+    },
+    "upgrade-zhanshujia-drum-movement-2": {
+      "name": "Drum Movement II",
+      "description": "3 Sabre + 2 Medal: gain Tactical Advantage, inflict Bind, then deal 7 damage. Indirect Engagement (3 Sabre + Banner): gain 2 Tactical Advantage, then deal 2 undefendable damage."
+    },
+    "upgrade-zhanshujia-carpet-bombing-2": {
+      "name": "Carpet Bombing II",
+      "description": "2 Sabre + 2 Medal: gain 2 Tactical Advantage, then deal 2 collateral damage to 2 different opponents. Plan Strategy (4 Banner): gain 3 Tactical Advantage and draw 2 cards."
+    },
+    "upgrade-zhanshujia-war-monger-2": {
+      "name": "War Monger II",
+      "description": "1 Sabre + 3 Banner: gain 2 Tactical Advantage and roll 1 die. Sabre deals 6 damage; Banner gains 3 Tactical Advantage; Medal draws 1 card, then immediately take an extra offensive roll phase."
+    },
+    "upgrade-zhanshujia-sabre-thrust-2": {
+      "name": "Sabre Thrust II",
+      "description": "3/4/5 Sabres deal 5/6/7 damage. If you rolled 3 matching numbers, inflict Bind."
+    },
+    "card-cursed-pirate-weigh-anchor": {
+      "name": "Weigh Anchor!",
+      "description": "Roll 1 die: if you roll Skull, inflict Parley on 1 opponent. Otherwise draw 1 card.",
+      "effects": {
+        "roll": "Roll 1 die: if you roll Skull, inflict Parley on 1 opponent; otherwise draw 1 card"
+      }
+    },
+    "card-cursed-pirate-curse-card": {
+      "name": "Curse Card!",
+      "description": "Choose one: draw 1; or receive 2 damage and draw 2; or receive 4 damage and draw 3.",
+      "effects": {
+        "choice": "Choose one: draw 1; or take 2 damage and draw 2; or take 4 damage and draw 3"
+      }
+    },
+    "card-cursed-pirate-batten-down": {
+      "name": "Batten Down!",
+      "description": "Discard all cards in your hand. Then draw 4 cards.",
+      "effects": {
+        "discardHandDraw4": "Discard your hand, then draw 4 cards"
+      }
+    },
+    "card-cursed-pirate-shark-bait": {
+      "name": "Shark Bait!",
+      "description": "Attack modifier: add 2 to your attack damage.",
+      "effects": {
+        "attackDamagePlus2": "Attack damage +2"
+      }
+    },
+    "card-cursed-pirate-flay": {
+      "name": "Flay!",
+      "description": "Attack modifier: roll 5 dice. Add 1× Cutlass to the total damage. If at least 3 damage was added, inflict Powder Keg.",
+      "effects": {
+        "roll5": "Roll 5 dice; add 1× Cutlass to total damage; if at least 3 damage was added, inflict Powder Keg"
+      }
+    },
+    "card-cursed-pirate-ransom": {
+      "name": "Ransom!",
+      "description": "Choose one of your opponent's dice. Unless they pay you 2 CP, reroll that die.",
+      "effects": {
+        "chooseDieOrPay2": "Choose one of your opponent's dice; unless they pay 2 CP, reroll it"
+      }
+    },
+    "card-cursed-pirate-bluster": {
+      "name": "Bluster!",
+      "description": "Roll 1 die: Cutlass deals 2 damage to 1 opponent; Loot draws 2 cards; Skull inflicts Powder Keg on 1 opponent.",
+      "effects": {
+        "roll": "Roll 1 die: Cutlass deals 2 damage; Loot draws 2 cards; Skull inflicts Powder Keg on 1 opponent"
+      }
+    },
+    "card-cursed-pirate-scurvy": {
+      "name": "Scurvy!",
+      "description": "Receive 1 damage. Then inflict Wither on 1 opponent.",
+      "effects": {
+        "selfDamage1": "Take 1 damage",
+        "inflictWither": "Inflict Wither on 1 opponent"
+      }
+    },
+    "card-cursed-pirate-pillage": {
+      "name": "Pillage!",
+      "description": "Steal 1 CP from 1 opponent.",
+      "effects": {
+        "steal1Cp": "Steal 1 CP from 1 opponent"
+      }
+    },
+    "card-cursed-pirate-parley": {
+      "name": "Parley!",
+      "description": "Inflict Parley on 1 opponent.",
+      "effects": {
+        "inflictParley": "Inflict Parley on 1 opponent"
+      }
+    },
+    "card-cursed-pirate-crows-nest": {
+      "name": "Crow's Nest!",
+      "description": "Choose 1 opponent and roll 1 die: Cutlass checks their hand; Loot makes them choose and discard 1 card; Skull makes them discard 1 random card.",
+      "effects": {
+        "roll": "Choose 1 opponent and roll 1 die: Cutlass checks their hand; Loot lets them choose and discard 1 card; Skull makes them discard 1 random card"
+      }
+    },
+    "card-cursed-pirate-hefty": {
+      "name": "Hefty!",
+      "description": "Roll 2 dice: if you roll Loot, draw 2 and gain 2 CP.",
+      "effects": {
+        "roll2": "Roll 2 dice: if you roll Loot, draw 2 and gain 2 CP"
+      }
+    },
+    "card-cursed-pirate-pirates-life": {
+      "name": "A Pirate's Life!",
+      "description": "Gain 1 Cursed Coin. But if your board is on the Cursed side, heal 3 instead.",
+      "effects": {
+        "faceDependent": "Gain 1 Cursed Coin; if your board is on the Cursed side, heal 3 instead"
+      }
+    },
+    "card-cursed-pirate-go-fish": {
+      "name": "Go Fish!",
+      "description": "Inflict Powder Keg on up to 3 different opponents.",
+      "effects": {
+        "powderKegTargets": "Inflict Powder Keg on up to 3 different opponents"
+      }
+    },
+    "card-cursed-pirate-give-me-some": {
+      "name": "Give Me Some!",
+      "description": "Inflict Powder Keg on 1 opponent.",
+      "effects": {
+        "inflictPowderKeg": "Inflict Powder Keg on 1 opponent"
+      }
+    },
+    "card-cursed-pirate-sip": {
+      "name": "Sip!",
+      "description": "Inflict Powder Keg on 1 opponent. That opponent may choose not to gain it and instead roll 1 die: on 1-2 nothing happens; on 3-6 they gain Powder Keg and Wither.",
+      "effects": {
+        "choice": "Inflict Powder Keg on 1 opponent; that opponent may instead roll 1 die"
+      }
+    },
     "card-just-this": {
       "name": "Just This?",
-      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their defensive roll phase."
+      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their defensive roll phase.",
+      "effects": {
+        "rerollUpTo5Dice": "Reroll up to 5 dice"
+      }
     },
     "card-give-hand": {
       "name": "Give a Hand!",
-      "description": "Select 1 opponent's die and force them to reroll it."
+      "description": "Select 1 opponent's die and force them to reroll it.",
+      "effects": {
+        "forceOpponentReroll1Die": "Force an opponent to reroll 1 die"
+      }
     },
     "card-i-can-again": {
       "name": "I Can Again!",
-      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their offensive roll phase."
+      "description": "1 player may make 1 extra roll attempt with up to 5 dice during their offensive roll phase.",
+      "effects": {
+        "rerollUpTo5Dice": "Reroll up to 5 dice"
+      }
     },
     "card-me-too": {
       "name": "Me Too!",
-      "description": "Set 1 of your dice to match another of your dice (same phase and purpose)."
+      "description": "Set 1 of your dice to match another of your dice (same phase and purpose).",
+      "effects": {
+        "copyOneDieValue": "Set 1 die to match another die"
+      }
     },
     "card-surprise": {
       "name": "Surprise!",
-      "description": "Change any 1 die to any value."
+      "description": "Change any 1 die to any value.",
+      "effects": {
+        "modifyAny1Die": "Change any 1 die to any value"
+      }
     },
     "card-worthy-of-me": {
       "name": "Worthy of Me!",
-      "description": "You or 1 teammate may reroll up to 2 dice (same die twice or 2 different dice once each)."
+      "description": "You or 1 teammate may reroll up to 2 dice (same die twice or 2 different dice once each).",
+      "effects": {
+        "rerollUpTo2Dice": "Reroll up to 2 dice"
+      }
     },
     "card-unexpected": {
       "name": "Unexpected!",
-      "description": "Change any 2 dice to any values."
+      "description": "Change any 2 dice to any values.",
+      "effects": {
+        "modifyAny2Dice": "Change any 2 dice to any values"
+      }
     },
     "card-next-time": {
       "name": "Next Time!",
-      "description": "One player prevents 6 points of incoming damage."
+      "description": "One player prevents 6 points of incoming damage.",
+      "effects": {
+        "prevent6Damage": "Prevent 6 damage"
+      }
     },
     "card-boss-generous": {
       "name": "Boss Generous!",
-      "description": "Gain 2 CP."
+      "description": "Gain 2 CP.",
+      "effects": {
+        "gain2CP": "Gain 2 CP"
+      }
     },
     "card-flick": {
       "name": "Flick!",
-      "description": "Increase or decrease any 1 die by 1 (1 cannot go lower, 6 cannot go higher)."
+      "description": "Increase or decrease any 1 die by 1 (1 cannot go lower, 6 cannot go higher).",
+      "effects": {
+        "adjust1DieBy1": "Increase or decrease 1 die by 1"
+      }
     },
     "card-bye-bye": {
       "name": "Bye Bye!",
-      "description": "Remove 1 status effect from 1 player."
+      "description": "Remove 1 status effect from 1 player.",
+      "effects": {
+        "remove1Status": "Remove 1 status effect"
+      }
     },
     "card-double": {
       "name": "Double!",
-      "description": "Draw 2 cards."
+      "description": "Draw 2 cards.",
+      "effects": {
+        "draw2Cards": "Draw 2 cards"
+      }
     },
     "card-super-double": {
       "name": "Super Double!",
-      "description": "Draw 3 cards."
+      "description": "Draw 3 cards.",
+      "effects": {
+        "draw3Cards": "Draw 3 cards"
+      }
     },
     "card-get-away": {
       "name": "Get Away!",
-      "description": "Remove 1 status effect from 1 player."
+      "description": "Remove 1 status effect from 1 player.",
+      "effects": {
+        "remove1StatusFromAPlayer": "Remove 1 status effect from 1 player"
+      }
     },
     "card-one-throw-fortune": {
       "name": "One Throw Fortune!",
-      "description": "Roll 1 die: gain CP equal to half the value (rounded up)."
+      "description": "Roll 1 die: gain CP equal to half the value (rounded up).",
+      "effects": {
+        "roll1DieGainCP": "Roll 1 die and gain CP"
+      }
     },
     "card-what-status": {
       "name": "What Status?",
-      "description": "Remove all status effects from 1 player."
+      "description": "Remove all status effects from 1 player.",
+      "effects": {
+        "removeAllStatusesFrom1Player": "Remove all statuses from 1 player"
+      }
     },
     "card-transfer-status": {
       "name": "Transfer Status!",
-      "description": "Transfer 1 status effect from 1 player to another player."
+      "description": "Transfer 1 status effect from 1 player to another player.",
+      "effects": {
+        "transferStatuses": "Transfer statuses"
+      }
     },
     "card-energetic": {
       "name": "Energetic!",
@@ -2548,23 +4054,40 @@
     },
     "card-turning-up-the-heat": {
       "name": "Turning Up the Heat!",
-      "description": "Gain 1 Fire Mastery. Then you may spend any amount of CP; for each CP, gain 1 Fire Mastery."
+      "description": "Gain 1 Fire Mastery. Then you may spend any amount of CP; for each CP, gain 1 Fire Mastery.",
+      "effects": {
+        "gainFM1": "Gain 1 Fire Mastery",
+        "spendCP": "You may spend any amount of CP; gain 1 Fire Mastery per CP spent"
+      }
     },
     "card-infernal-embrace": {
       "name": "Infernal Embrace!",
-      "description": "Roll 1 die:\nMeteor: gain Fire Mastery to the cap\nOtherwise: draw 1 card"
+      "description": "Roll 1 die:\nMeteor: gain Fire Mastery to the cap\nOtherwise: draw 1 card",
+      "effects": {
+        "roll": "Roll 1 die: Fire gain 2 Fire Mastery; otherwise draw 1 card"
+      }
     },
     "card-fan-the-flames": {
       "name": "Fan the Flames!",
-      "description": "Fire Mastery stack limit +1. Gain 2 Fire Mastery."
+      "description": "Fire Mastery stack limit +1. Gain 2 Fire Mastery.",
+      "effects": {
+        "increaseLimit": "Increase your Fire Mastery limit by 1",
+        "gainFM2": "Gain 2 Fire Mastery"
+      }
     },
     "card-red-hot": {
       "name": "Red Hot!",
-      "description": "This turn, your damage +1 per Fire Mastery."
+      "description": "This turn, your damage +1 per Fire Mastery.",
+      "effects": {
+        "dmgPerFM": "This turn, your damage +1 per Fire Mastery"
+      }
     },
     "card-get-fired-up": {
       "name": "Get Fired Up!",
-      "description": "Roll 1 die:\nFire: +3 damage\nLava: inflict Burn\nFire Soul: gain 2 Fire Mastery\nMeteor: inflict Knockdown"
+      "description": "Roll 1 die:\nFire: +3 damage\nLava: inflict Burn\nFire Soul: gain 2 Fire Mastery\nMeteor: inflict Knockdown",
+      "effects": {
+        "roll": "Roll 1 die: Fire +3 damage; Lava inflict Burn; Fire Soul gain 2 Fire Mastery; Meteor inflict Knockdown"
+      }
     },
     "card-magma-armor-2": {
       "name": "Magma Armor II",
@@ -2866,27 +4389,27 @@
     },
     "treant-card-trample": {
       "name": "Trample!",
-      "description": "Roll 5 dice; each Branch adds +1 attack damage, and Spirit applies Thorn."
+      "description": "Roll 5 dice. Each Branch adds +1 attack damage. If this card added at least +3 damage, apply Thorn."
     },
     "upgrade-tend-care-2": {
       "name": "Tend & Care II",
-      "description": "Upgrade Tend & Care."
+      "description": "Upgrade Tend & Care: draw 1; cultivate 4 Spirits; choose 1 player to gain Life Sap; choose 1 opponent to receive Thorn."
     },
     "upgrade-rooted-2": {
       "name": "Rooted II",
-      "description": "Upgrade Rooted."
+      "description": "Upgrade Rooted: roll 4 defense dice; prevent damage equal to Branch + Spirit rolled. If you roll 2 Leaf, cultivate 1 Spirit. If you roll 2 Spirit, choose 1 player to gain Life Sap."
     },
     "treant-card-drink-deep": {
       "name": "Drink Deep!",
-      "description": "Gain Life Sap."
+      "description": "Choose 1 player to gain Life Sap."
     },
     "upgrade-shattering-fist-3": {
       "name": "Shattering Fist III",
-      "description": "Upgrade Shattering Fist to level III."
+      "description": "Upgrade Shattering Fist: 3/4/5 Branch deal 5/6/7 damage. If you rolled 3 matching values, cultivate 1 Spirit. Apply Thorn."
     },
     "treant-card-harvest": {
       "name": "Harvest!",
-      "description": "Draw 1 and cultivate 1 Spirit."
+      "description": "Remove up to 3 Spirits. Gain 1 CP per removed Spirit. If you removed at least 2 Spirits, up to 2 players gain Life Sap."
     },
     "treant-card-cultivate": {
       "name": "Cultivate!",
@@ -2894,35 +4417,35 @@
     },
     "treant-card-downpour": {
       "name": "Downpour!",
-      "description": "Heal and cultivate a Spirit."
+      "description": "You may cultivate each current Spirit once, in any order."
     },
     "upgrade-nature-touch-2": {
       "name": "Nature Touch II",
-      "description": "Upgrade Nature Touch."
+      "description": "Upgrade Nature Touch: 4 Spirit; cultivate 2 Spirits, then deal 6 undefendable damage. +1 damage for each Spirit you have."
     },
     "treant-card-soulfire": {
       "name": "Soulfire!",
-      "description": "Roll 3 dice and gain attack or resource benefits by result."
+      "description": "Roll 3 dice: Branch deals 1 collateral damage to all opponents; Leaf gains Life Sap; Spirit cultivates 1 Spirit."
     },
     "treant-card-mother-tree": {
       "name": "Mother Tree!",
-      "description": "Roll 1 die; Spirit cultivates, otherwise draw a card."
+      "description": "Roll 1 die. If you roll Spirit, cultivate 4 Spirits. Otherwise, draw 1."
     },
     "upgrade-vengeful-vines-2": {
       "name": "Vengeful Vines II",
-      "description": "Upgrade Vengeful Vines."
+      "description": "Upgrade Vengeful Vines: small straight; apply Thorn; deal 8 damage."
     },
     "upgrade-wild-growth-2": {
       "name": "Wild Growth II",
-      "description": "Upgrade Wild Growth."
+      "description": "Upgrade Wild Growth: 2 Branch + 3 Leaf; deal 4 damage. You may remove up to 2 Spirits; each removed Spirit adds +4 damage. You may discard Life Sap to make this attack undefendable."
     },
     "upgrade-shattering-fist-2": {
       "name": "Shattering Fist II",
-      "description": "Upgrade Shattering Fist to level II."
+      "description": "Upgrade Shattering Fist: 3/4/5 Branch deal 5/6/7 damage and apply Thorn."
     },
     "treant-card-planting": {
       "name": "Planting",
-      "description": "Cultivate 4 Spirits."
+      "description": "Cultivate 3 Spirits."
     },
     "ninja-card-training": {
       "name": "Training!",
@@ -2930,7 +4453,7 @@
     },
     "upgrade-blink-2": {
       "name": "Blink II",
-      "description": "Upgrade Blink."
+      "description": "Upgrade Blink: defensive roll 3 dice; you may reroll up to 2 of those dice; deal damage equal to the number of Ninja Blades rolled; each Shuriken deals 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "upgrade-going-forward-2": {
       "name": "Going Forward II",
@@ -2982,7 +4505,7 @@
     },
     "ninja-card-dojo": {
       "name": "Dojo!",
-      "description": "Gain Smoke Bomb and 2 Ninjutsu."
+      "description": "Roll 1 die. If you roll Mask, gain Smoke Bomb and 2 Ninjutsu. Otherwise, draw 1."
     }
   },
   "passive": {
@@ -3024,6 +4547,21 @@
     "name": "Life Sap",
     "rollHealShort": "Heal",
     "rollHeal": "Roll to heal half"
+  },
+  "zhanshujiaTacticalAdvantage": {
+    "name": "Tactical Advantage",
+    "cpShort": "+1 CP",
+    "cp": "Spend 1 Tactical Advantage to gain 1 CP",
+    "rerollShort": "Reroll",
+    "reroll": "Spend 1 Tactical Advantage to reroll 1 die",
+    "drawShort": "Draw",
+    "draw": "Spend 3 Tactical Advantage to draw 1 card",
+    "targetedShort": "Targeted",
+    "targeted": "Spend 3 Tactical Advantage to inflict 1 Targeted on the opponent",
+    "protectShort": "Protect",
+    "protect": "Spend 4 Tactical Advantage to gain 1 Protect",
+    "transferShort": "Transfer",
+    "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
   }
   },
   "cardSpotlight": {
@@ -3032,6 +4570,7 @@
   },
   "compareRoll": {
     "confirming": "Confirming...",
+    "waitingForOwnerChoice": "Waiting for the other player to choose...",
     "rolled": "Rolled {{value}}",
     "gunslingerDuel": {
       "title": "Duel Roll-Off",
@@ -3040,6 +4579,13 @@
       "win": "You won the duel. Choose the resolution.",
       "lose": "You lost the duel: deal 1 undefendable damage to the attacker.",
       "tieLose": "Tie does not win this duel: deal 1 undefendable damage to the attacker."
+    },
+    "gunslingerShowdown": {
+      "title": "Showdown",
+      "attacker": "Gunslinger",
+      "defender": "Opponent",
+      "win": "Attack damage +{{amount}}",
+      "lose": "You did not win the roll-off. Keep base damage."
     }
   },
   "selection": {

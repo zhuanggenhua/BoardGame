@@ -13,7 +13,7 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent, MinionOnBase } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { clearRegistry, clearBaseAbilityRegistry } from '../domain';
 import { resetAbilityInit } from '../abilities';
@@ -21,7 +21,14 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpSystemsForTest } from '../game';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -141,8 +148,8 @@ const BREAKPOINT_COMMANDS = [
 
 /** Me First! 响应：两人都让过 */
 const ME_FIRST_PASS_ALL = [
-    { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'pass' } },
-    { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+    respondCommand('pass', '0'),
+    respondCommand('pass', '1'),
 ] as any[];
 
 beforeAll(() => {
@@ -206,7 +213,13 @@ describe('Me First! 响应窗口', () => {
         });
 
         expect(result.finalState.sys.responseWindow.current).toBeUndefined();
-        expect(result.finalState.sys.phase).not.toBe('scoreBases');
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+        expect(result.finalState.sys.flowHalted).toBe(true);
+        expect((result.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
+        expect(result.finalState.sys.resolution?.frames?.find((frame: any) => frame.id === 'smashup:score-bases')).toMatchObject({
+            step: 'awaiting-post-scoring-delay',
+            phase: 'scoreBases',
+        });
     });
 
     it('有基地达标时跳过无特殊牌玩家，从有特殊牌玩家开始响应', () => {
@@ -228,9 +241,9 @@ describe('Me First! 响应窗口', () => {
         expect(window?.responderQueue).toEqual(['0', '1']);
         expect(window?.currentResponderIndex).toBe(1);
         expect(window?.passedPlayers).toEqual([]);
-        const choice = asSimpleChoice(result.finalState.sys.interaction.current);
-        expect(choice?.sourceId).toBe('smashup_reaction_choose');
-        expect(choice?.playerId).toBe('1');
+        const choice = getSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(choice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(choice)).toBe('1');
     });
 
     it('有基地达标时所有玩家让过后关闭响应窗口', () => {
@@ -268,7 +281,7 @@ describe('Me First! 响应窗口', () => {
         });
 
         expect(result.finalState.sys.responseWindow.current).toBeUndefined();
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('loopUntilAllPass：玩家打出 special 后循环重启，全部 pass 才关闭', () => {
@@ -298,13 +311,13 @@ describe('Me First! 响应窗口', () => {
                 // 进入 scoreBases，打开 Me First! 窗口
                 ...BREAKPOINT_COMMANDS,
                 // P0 在统一反应窗口里选择打出 special
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:special-0:0' } },
+                respondCommand('play_action:special-0:0', '0'),
                 // P1 让过 → 到达队列末尾，但本轮有人出牌 → 循环重启
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+                respondCommand('pass', '1'),
                 // 新一轮：P0 让过（已无 special 牌）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'pass' } },
+                respondCommand('pass', '0'),
                 // P1 让过 → 窗口关闭
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+                respondCommand('pass', '1'),
             ] as any[],
         });
 
@@ -331,7 +344,7 @@ describe('Me First! 响应窗口', () => {
                 ...BREAKPOINT_COMMANDS,
                 // P0 打出第一张 special；P1 无可响应内容，会被自动 skip
                 // 正确行为：窗口应重开到 P0（其手里还有第二张 special）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:special-0-a:0' } },
+                respondCommand('play_action:special-0-a:0', '0'),
             ] as any[],
         });
 
@@ -339,6 +352,74 @@ describe('Me First! 响应窗口', () => {
         expect(window).toBeUndefined();
         expect(result.finalState.sys.phase).toBe('scoreBases');
         expect(result.finalState.core.players['0'].hand.some(c => c.uid === 'special-0-b')).toBe(true);
+    });
+
+    it('Me First! 窗口中打出《力量的代价》会真实结算亮手牌并给己方随从加力量', () => {
+        const setupPriceOfPower = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+            const state = setupWithBreakpoint(ids, random);
+            state.core.bases[0] = {
+                defId: 'base_the_mothership',
+                minions: [
+                    {
+                        uid: 'ally-main',
+                        defId: 'test_minion',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 12,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'enemy-main',
+                        defId: 'test_minion',
+                        owner: '1',
+                        controller: '1',
+                        basePower: 8,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                ],
+                ongoingActions: [],
+            };
+            state.core.players['0'].hand = [
+                { uid: 'price-0', defId: 'elder_thing_the_price_of_power', type: 'action', owner: '0' },
+            ];
+            state.core.players['1'].hand = [
+                { uid: 'mad-1', defId: MADNESS_CARD_DEF_ID, type: 'action', owner: '1' },
+                { uid: 'mad-2', defId: MADNESS_CARD_DEF_ID, type: 'action', owner: '1' },
+                { uid: 'normal-1', defId: 'elder_thing_insanity', type: 'action', owner: '1' },
+            ];
+            return state;
+        };
+
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupPriceOfPower,
+        });
+        const result = runner.run({
+            name: 'Me First: 力量的代价真实响应链',
+            commands: [
+                ...BREAKPOINT_COMMANDS,
+                respondCommand('play_action:price-0:0', '0'),
+            ] as any[],
+        });
+
+        expect(result.steps[1]?.success).toBe(true);
+        expect(result.steps[1]?.events).toContain(SU_EVENTS.ACTION_PLAYED);
+        expect(result.steps[1]?.events).toContain(SU_EVENTS.REVEAL_HAND);
+        const emittedEventTypes = result.steps[1]?.events ?? [];
+        expect(emittedEventTypes.filter(eventType => eventType === SU_EVENTS.POWER_COUNTER_ADDED)).toHaveLength(2);
+
+        expect(result.finalState.sys.responseWindow.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('loopUntilAllPass：无人出牌时一轮 pass 即关闭', () => {
@@ -463,46 +544,50 @@ describe('Me First! 响应窗口', () => {
         });
         const r2 = runner2.run({
             name: 'mandatory_reading: P0 打出 special',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:mandatory-1:0' } }] as any[],
+            commands: [respondCommand('play_action:mandatory-1:0', '0')] as any[],
         });
         expect(r2.steps[0]?.success).toBe(true);
         // 有活跃的 interaction（选随从）
-        const choice1 = asSimpleChoice(r2.finalState.sys.interaction.current);
-        expect(choice1).toBeDefined();
+        const choice1 = getSimpleChoicePrompt(r2.finalState);
 
         // Step 3: 选择随从
         const runner3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS,
             setup: () => r2.finalState,
         });
-        const minionOpt = choice1!.options.find((o: any) => o.value?.minionUid === 'target-minion');
-        expect(minionOpt).toBeDefined();
+        const minionOpt = getPromptOption(
+            choice1,
+            option => option.value?.minionUid === 'target-minion',
+            'Mandatory Reading target minion option',
+        );
         const r3 = runner3.run({
             name: 'mandatory_reading: 选随从',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: minionOpt!.id } }] as any[],
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
         });
         expect(r3.steps[0]?.success).toBe(true);
         // 现在应该有第二个 interaction（选抽牌数）
-        const choice2 = asSimpleChoice(r3.finalState.sys.interaction.current);
-        expect(choice2).toBeDefined();
+        const choice2 = getSimpleChoicePrompt(r3.finalState);
 
         // Step 4: 选择抽1张疯狂卡
         const runner4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS,
             setup: () => r3.finalState,
         });
-        const drawOpt = choice2!.options.find((o: any) => o.value?.count === 1);
-        expect(drawOpt).toBeDefined();
+        const drawOpt = getPromptOption(
+            choice2,
+            option => option.value?.count === 1,
+            'Mandatory Reading draw-one option',
+        );
         const r4 = runner4.run({
             name: 'mandatory_reading: 选抽1张',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: drawOpt!.id } }] as any[],
+            commands: [respondCommand(drawOpt.id, '0')] as any[],
         });
         expect(r4.steps[0]?.success).toBe(true);
 
         // 关键断言：交互完成后，统一反应窗口自动推进到 P1
-        const resumedChoice = asSimpleChoice(r4.finalState.sys.interaction.current);
-        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
-        expect(resumedChoice?.playerId).toBe('1');
+        const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(resumedChoice)).toBe('1');
         expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
         // 疯狂卡已抽到 P0 手牌（defId 为 MADNESS_CARD_DEF_ID = 'special_madness'）
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(true);
@@ -541,40 +626,371 @@ describe('Me First! 响应窗口', () => {
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r1.finalState,
         }).run({
             name: 'skip: 打出 special',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:mandatory-skip:0' } }] as any[],
+            commands: [respondCommand('play_action:mandatory-skip:0', '0')] as any[],
         });
         expect(r2.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r2.finalState.sys.interaction.current);
-        expect(choice1).toBeDefined();
+        const choice1 = getSimpleChoicePrompt(r2.finalState);
 
         // 选随从
-        const minionOpt = choice1!.options.find((o: any) => o.value?.minionUid === 'skip-minion');
+        const minionOpt = getPromptOption(
+            choice1,
+            option => option.value?.minionUid === 'skip-minion',
+            'Mandatory Reading skip target minion option',
+        );
         const r3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r2.finalState,
         }).run({
             name: 'skip: 选随从',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: minionOpt!.id } }] as any[],
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
         });
         expect(r3.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r3.finalState.sys.interaction.current);
-        expect(choice2).toBeDefined();
+        const choice2 = getSimpleChoicePrompt(r3.finalState);
 
         // 选择"不抽"（skip）
-        const skipOpt = choice2!.options.find((o: any) => o.value?.skip === true);
-        expect(skipOpt).toBeDefined();
+        const skipOpt = getPromptOption(
+            choice2,
+            option => option.value?.skip === true,
+            'Mandatory Reading skip draw option',
+        );
         const r4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r3.finalState,
         }).run({
             name: 'skip: 选不抽',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: skipOpt!.id } }] as any[],
+            commands: [respondCommand(skipOpt.id, '0')] as any[],
         });
         expect(r4.steps[0]?.success).toBe(true);
         // 交互完成，响应窗口推进到 P1
-        const resumedChoice = asSimpleChoice(r4.finalState.sys.interaction.current);
-        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
-        expect(resumedChoice?.playerId).toBe('1');
+        const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(resumedChoice)).toBe('1');
         expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
         // 没有疯狂卡被抽取
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(false);
+    });
+
+    it('Me First! 窗口内大学派系连续打出《最好不知道的事》后仍可继续打出《老詹金斯!?》', () => {
+        const madnessDeck = Array.from({ length: 3 }, (_, i) => ({
+            uid: `madness-chain-${i}`, defId: MADNESS_CARD_DEF_ID, type: 'action' as const, owner: '0',
+        }));
+        const setupWithMiskatonicChain = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+            const state = setupWithBreakpointOnlyP0TwoSpecial(ids, random);
+            const p0 = state.core.players['0'];
+            if (p0) {
+                p0.hand = [
+                    { uid: 'mandatory-chain', defId: 'miskatonic_mandatory_reading', type: 'action', owner: '0' },
+                    { uid: 'doorstep-chain', defId: 'miskatonic_thing_on_the_doorstep', type: 'action', owner: '0' },
+                ];
+            }
+            state.core.bases[0] = {
+                defId: 'base_the_mothership',
+                ongoingActions: [],
+                minions: [
+                    {
+                        uid: 'strong-target',
+                        defId: 'test_strong',
+                        owner: '1',
+                        controller: '1',
+                        basePower: 6,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'chain-filler-1',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'chain-filler-2',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'chain-filler-3',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'support-minion',
+                        defId: 'test_support',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 4,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                ],
+            };
+            (state.core as any).madnessDeck = madnessDeck;
+            return state;
+        };
+
+        const r1 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupWithMiskatonicChain,
+        }).run({
+            name: 'miskatonic chain 1: 进入 scoreBases',
+            commands: [...BREAKPOINT_COMMANDS] as any[],
+        });
+        const initialChoice = getSimpleChoicePrompt(r1.finalState, 'smashup_reaction_choose');
+        expect(getPromptPlayerId(initialChoice)).toBe('0');
+
+        const r2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r1.finalState,
+        }).run({
+            name: 'miskatonic chain 1: 先打最好不知道的事',
+            commands: [respondCommand('play_action:mandatory-chain:0', '0')] as any[],
+        });
+        expect(r2.steps[0]?.success).toBe(true);
+        const chooseMinionPrompt = getSimpleChoicePrompt(r2.finalState, 'miskatonic_mandatory_reading');
+        const minionOpt = getPromptOption(
+            chooseMinionPrompt,
+            option => option.value?.minionUid === 'strong-target',
+            'Mandatory Reading chain target minion option',
+        );
+
+        const r3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r2.finalState,
+        }).run({
+            name: 'miskatonic chain 1: 选随从',
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
+        });
+        expect(r3.steps[0]?.success).toBe(true);
+        const chooseDrawPrompt = getSimpleChoicePrompt(r3.finalState, 'miskatonic_mandatory_reading_draw');
+        const drawOpt = getPromptOption(
+            chooseDrawPrompt,
+            option => option.value?.count === 1,
+            'Mandatory Reading chain draw-one option',
+        );
+
+        const r4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r3.finalState,
+        }).run({
+            name: 'miskatonic chain 1: 选抽1张',
+            commands: [respondCommand(drawOpt.id, '0')] as any[],
+        });
+        expect(r4.steps[0]?.success).toBe(true);
+        const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
+        const doorstepOption = getPromptOption(
+            resumedChoice,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'doorstep-chain',
+            'Miskatonic chain doorstep reaction option',
+        );
+        expect(getPromptPlayerId(resumedChoice)).toBe('0');
+        expect(doorstepOption.value?.targetBaseIndex).toBe(0);
+
+        const r5 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r4.finalState,
+        }).run({
+            name: 'miskatonic chain 1: 再打老詹金斯!?',
+            commands: [respondCommand(doorstepOption.id, '0')] as any[],
+        });
+        expect(r5.steps[0]?.success).toBe(true);
+        expect(r5.steps[0]?.events).toContain(SU_EVENTS.ACTION_PLAYED);
+        expect(r5.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
+        expect(r5.finalState.core.bases[0].minions.some(minion => minion.uid === 'strong-target')).toBe(false);
+    });
+
+    it('Me First! 窗口内大学派系先打《老詹金斯!?》后，窗口里仍可继续打出《最好不知道的事》', () => {
+        const madnessDeck = Array.from({ length: 3 }, (_, i) => ({
+            uid: `madness-reverse-${i}`, defId: MADNESS_CARD_DEF_ID, type: 'action' as const, owner: '0',
+        }));
+        const setupWithReverseMiskatonicChain = (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+            const state = setupWithBreakpointOnlyP0TwoSpecial(ids, random);
+            const p0 = state.core.players['0'];
+            if (p0) {
+                p0.hand = [
+                    { uid: 'doorstep-reverse', defId: 'miskatonic_thing_on_the_doorstep', type: 'action', owner: '0' },
+                    { uid: 'mandatory-reverse', defId: 'miskatonic_mandatory_reading', type: 'action', owner: '0' },
+                ];
+            }
+            state.core.bases[0] = {
+                defId: 'base_the_mothership',
+                ongoingActions: [],
+                minions: [
+                    {
+                        uid: 'reverse-strong-target',
+                        defId: 'test_strong',
+                        owner: '1',
+                        controller: '1',
+                        basePower: 6,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'reverse-filler-1',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'reverse-filler-2',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'reverse-filler-3',
+                        defId: 'test_filler',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 5,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                    {
+                        uid: 'reverse-support-target',
+                        defId: 'test_support',
+                        owner: '0',
+                        controller: '0',
+                        basePower: 3,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        attachedActions: [],
+                        talentUsed: false,
+                    },
+                ],
+            };
+            (state.core as any).madnessDeck = madnessDeck;
+            return state;
+        };
+
+        const r1 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: setupWithReverseMiskatonicChain,
+        }).run({
+            name: 'miskatonic chain 2: 进入 scoreBases',
+            commands: [...BREAKPOINT_COMMANDS] as any[],
+        });
+
+        const r2 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r1.finalState,
+        }).run({
+            name: 'miskatonic chain 2: 先打老詹金斯!?',
+            commands: [respondCommand('play_action:doorstep-reverse:0', '0')] as any[],
+        });
+        expect(r2.steps[0]?.success).toBe(true);
+        expect(r2.steps[0]?.events).toContain(SU_EVENTS.ACTION_PLAYED);
+        expect(r2.steps[0]?.events).toContain(SU_EVENTS.MINION_DESTROYED);
+
+        const resumedChoice = getSimpleChoicePrompt(r2.finalState, 'smashup_reaction_choose');
+        const mandatoryOption = getPromptOption(
+            resumedChoice,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'mandatory-reverse',
+            'Miskatonic reverse mandatory reaction option',
+        );
+        expect(getPromptPlayerId(resumedChoice)).toBe('0');
+        expect(mandatoryOption.value?.targetBaseIndex).toBe(0);
+
+        const r3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r2.finalState,
+        }).run({
+            name: 'miskatonic chain 2: 再打最好不知道的事',
+            commands: [respondCommand(mandatoryOption.id, '0')] as any[],
+        });
+        expect(r3.steps[0]?.success).toBe(true);
+        const chooseMinionPrompt = getSimpleChoicePrompt(r3.finalState, 'miskatonic_mandatory_reading');
+        const minionOpt = getPromptOption(
+            chooseMinionPrompt,
+            option => option.value?.minionUid === 'reverse-support-target',
+            'Mandatory Reading reverse target minion option',
+        );
+
+        const r4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r3.finalState,
+        }).run({
+            name: 'miskatonic chain 2: 选随从',
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
+        });
+        expect(r4.steps[0]?.success).toBe(true);
+        const chooseDrawPrompt = getSimpleChoicePrompt(r4.finalState, 'miskatonic_mandatory_reading_draw');
+        const drawOpt = getPromptOption(
+            chooseDrawPrompt,
+            option => option.value?.count === 1,
+            'Mandatory Reading reverse draw-one option',
+        );
+
+        const r5 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => r4.finalState,
+        }).run({
+            name: 'miskatonic chain 2: 选抽1张',
+            commands: [respondCommand(drawOpt.id, '0')] as any[],
+        });
+        expect(r5.steps[0]?.success).toBe(true);
+        expect(r5.finalState.core.players['0'].hand.some(card => card.defId === MADNESS_CARD_DEF_ID)).toBe(true);
+        expect(r5.finalState.sys.responseWindow.current).toBeUndefined();
     });
 });

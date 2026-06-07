@@ -1,8 +1,8 @@
 import { test, expect } from '../framework';
-import type { MatchState } from '../src/engine/types';
-import { STATUS_IDS } from '../src/games/dicethrone/domain/ids';
-import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
-import type { DiceThroneCore } from '../src/games/dicethrone/types';
+import type { MatchState } from '../../src/engine/types';
+import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import type { DiceThroneCore } from '../../src/games/dicethrone/types';
 import {
     dispatchDiceThroneCommand,
     getDiceThroneUi,

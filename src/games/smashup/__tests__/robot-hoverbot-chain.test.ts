@@ -16,6 +16,13 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import { refreshInteractionOptions } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
+import {
+    getOptionalSimpleChoicePrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'] as const;
 const systems = smashUpSystemsForTest;
@@ -119,9 +126,9 @@ describe('盘旋机器人链式打出', () => {
                 // 1. 打出第一个盘旋机器人
                 { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } },
                 // 2. 响应交互：选择打出第二个盘旋机器人
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+                respondCommand('play', '0'),
                 // 3. 响应交互：选择打出 zapbot（新的牌库顶）
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+                respondCommand('play', '0'),
             ] as any[],
         });
 
@@ -201,7 +208,7 @@ describe('盘旋机器人链式打出', () => {
                 // 1. 打出第一个盘旋机器人
                 { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } },
                 // 2. 响应交互：选择打出第二个盘旋机器人
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+                respondCommand('play', '0'),
             ] as any[],
         });
 
@@ -222,19 +229,84 @@ describe('盘旋机器人链式打出', () => {
 
         // 验证第二个盘旋机器人触发后创建的交互，选项应该引用 zapbot
         const refreshedState = refreshInteractionOptions(result.finalState);
-        const interaction = refreshedState.sys.interaction?.current;
+        const interaction = getOptionalSimpleChoicePrompt(refreshedState);
         expect(interaction).toBeDefined();
-        expect(interaction?.playerId).toBe('0');
+        expect(getPromptPlayerId(interaction)).toBe('0');
 
         // live 交互需要按最新状态刷新候选，第二个盘旋此时应看到 zapbot
-        const options = (interaction?.data as any)?.options;
-        expect(options).toBeDefined();
+        const options = getPromptOptions(interaction);
         expect(options.length).toBe(2);
 
-        const playOption = options.find((opt: any) => opt.id === 'play');
-        expect(playOption).toBeDefined();
+        const playOption = getPromptOption(
+            interaction,
+            (opt: any) => opt.id === 'play',
+            'Hoverbot play option after refresh',
+        );
         expect(playOption.value.cardUid).toBe('zapbot-1');
         expect(playOption.value.defId).toBe('robot_zapbot');
+    });
+
+    it('从牌库顶打出 borrowed 随从时，应保留真实 owner', () => {
+        const core = makeState({
+            players: {
+                '0': {
+                    id: '0',
+                    vp: 0,
+                    hand: [
+                        { uid: 'hoverbot-1', defId: 'robot_hoverbot', type: 'minion', owner: '0' },
+                    ],
+                    deck: [
+                        { uid: 'borrowed-zapbot', defId: 'robot_zapbot', type: 'minion', owner: '1' },
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['robots', 'wizards'] as [string, string],
+                    minionsPlayedPerBase: {},
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['pirates', 'ninjas'] as [string, string],
+                    minionsPlayedPerBase: {},
+                    sameNameMinionDefId: null,
+                },
+            },
+        });
+
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: PLAYER_IDS,
+            setup: () => ({ core, sys: { ...createInitialSystemState(PLAYER_IDS, systems), phase: 'playCards' } }),
+        });
+
+        const result = runner.run({
+            name: '盘旋机器人打出牌库顶 borrowed 随从',
+            commands: [
+                { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot-1', baseIndex: 0 } },
+                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+            ] as any[],
+        });
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[1]?.success).toBe(true);
+
+        const borrowed = result.finalState.core.bases[0].minions.find(m => m.uid === 'borrowed-zapbot');
+        expect(borrowed?.controller).toBe('0');
+        expect(borrowed?.owner).toBe('1');
+        expect(result.finalState.core.players['0'].deck).toEqual([]);
+        expect(result.finalState.core.players['1'].deck).toEqual([]);
     });
 
     it('应该阻止打出已经不在牌库顶的卡', () => {
@@ -314,7 +386,7 @@ describe('盘旋机器人链式打出', () => {
         const staleRespond = runner2.run({
             name: '尝试打出不在牌库顶的卡',
             commands: [
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: 'play' } },
+                respondCommand('play', '0'),
             ] as any[],
         });
 

@@ -18,8 +18,8 @@
 import { type BrowserContext, type Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
-import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
-import { BOARD_COLS, BOARD_ROWS, HAND_SIZE } from '../src/games/summonerwars/domain/helpers';
+import { createDeckByFactionId } from '../../src/games/summonerwars/config/factions';
+import { BOARD_COLS, BOARD_ROWS, HAND_SIZE } from '../../src/games/summonerwars/domain/helpers';
 import {
   applyCoreState as applyCoreStateViaServer,
   clickBoardElement as clickBoardElementViaHelper,

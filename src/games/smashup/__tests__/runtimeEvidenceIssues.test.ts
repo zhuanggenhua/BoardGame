@@ -3,10 +3,21 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS } from './helpers';
+import {
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    getSimpleChoicePrompt,
+    getPromptOption,
+    getPromptOptions,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -45,18 +56,32 @@ describe('runtime evidence repros (for debugging)', () => {
         );
 
         expect(played.success).toBe(true);
-        const i1: any = getInteractionsFromMS(played.finalState)[0];
-        expect(i1?.data?.sourceId).toBe('vampire_big_gulp_pod');
-        const onlyOpt = i1.data.options[0];
+        const i1 = getSimpleChoicePrompt(played.finalState, 'vampire_big_gulp_pod');
+        const onlyOpt = getPromptOptions(i1)[0];
         expect(onlyOpt).toBeTruthy();
 
-        const afterDestroy = runCommand(
+        const afterDestroy = respondToPrompt(
             played.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: onlyOpt.id } },
+            onlyOpt.id,
+            '0',
             defaultTestRandom,
         );
         expect(afterDestroy.success).toBe(true);
-        void getInteractionsFromMS(afterDestroy.finalState);
+
+        const reactionPrompt = getReactionPrompt(afterDestroy.finalState);
+        const fledglingOption = getReactionPromptOptionBySourceDefId(
+            afterDestroy.finalState,
+            reactionPrompt,
+            'vampire_fledgling_vampire_pod',
+        );
+        const afterFledgling = respondToPrompt(
+            afterDestroy.finalState,
+            fledglingOption.id,
+            undefined,
+            defaultTestRandom,
+        );
+        expect(afterFledgling.success).toBe(true);
+        getSimpleChoicePrompt(afterFledgling.finalState, 'vampire_fledgling_vampire_pod_bury_source');
     });
 
     it('Mi-go POD: if no one drew madness, counter prompt appears (and currently only targets own minions)', () => {
@@ -86,22 +111,21 @@ describe('runtime evidence repros (for debugging)', () => {
         );
         expect(play.success).toBe(true);
 
-        const i1: any = getInteractionsFromMS(play.finalState)[0];
-        expect(i1?.data?.sourceId).toBe('elder_thing_mi_go_pod');
-        const noOpt = i1.data.options.find((o: any) => o.id === 'no');
+        const i1 = getSimpleChoicePrompt(play.finalState, 'elder_thing_mi_go_pod');
+        const noOpt = getPromptOption(i1, (option: any) => option.id === 'no', 'Mi-go decline option');
         expect(noOpt).toBeTruthy();
 
-        const afterOpp = runCommand(
+        const afterOpp = respondToPrompt(
             play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: noOpt.id } },
+            noOpt.id,
+            '1',
             defaultTestRandom,
         );
         expect(afterOpp.success).toBe(true);
 
-        const i2: any = getInteractionsFromMS(afterOpp.finalState)[0];
-        expect(i2?.data?.sourceId).toBe('elder_thing_mi_go_pod_counter');
+        const i2 = getSimpleChoicePrompt(afterOpp.finalState, 'elder_thing_mi_go_pod_counter');
 
-        const optionUids = i2.data.options.map((o: any) => o.value?.minionUid).filter(Boolean);
+        const optionUids = getPromptOptions(i2).map((o: any) => o.value?.minionUid).filter(Boolean);
         expect(optionUids).toContain('m0');
         // After fix, it should be able to target opponent minions too.
         expect(optionUids).toContain('m1');

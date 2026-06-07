@@ -53,6 +53,64 @@ const PRE_PUSH_GAME_SMOKE_TARGETS = {
   tictactoe: ['src/games/tictactoe/__tests__/flow.test.ts'],
   cardia: ['src/games/cardia/__tests__/smoke.test.ts'],
 };
+const DICETHRONE_SYNC_BLOCKER_PATTERNS = [
+  /^src\/engine\/transport\//,
+  /^src\/games\/dicethrone\/domain\//,
+  /^src\/games\/dicethrone\/game\.ts$/,
+];
+const DICETHRONE_SYNC_BLOCKER_TESTS = [
+  {
+    label: 'BLOCKER: DiceThrone sync transport contract',
+    reason: '王权同步/旧状态兼容链路改动，强制回归 state:sync、playerView 与 legacy state 包装合同',
+    target: 'src/engine/transport/__tests__/server.test.ts',
+    testNamePattern: 'dicethrone sync',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: DiceThrone legacy runtime-state contract',
+    reason: '王权同步/旧状态兼容链路改动，强制回归 authoritative 旧状态与 pendingBonusDiceSettlement 归一化合同',
+    target: 'src/games/dicethrone/__tests__/flow.test.ts',
+    testNamePattern: '旧 pendingBonusDiceSettlement 脏 dice shape',
+    vitestArgs: GAME_VITEST_ARGS,
+  },
+];
+const GAME_ENTRY_BLOCKER_PATTERNS = [
+  /^src\/App\.tsx$/,
+  /^src\/pages\/MatchRoom.*\.tsx$/,
+  /^src\/pages\/matchRoom.*\.(ts|tsx)$/,
+  /^src\/pages\/useMatchRoom.*\.(ts|tsx)$/,
+  /^src\/pages\/useOnlineAiSeat.*\.(ts|tsx)$/,
+  /^src\/pages\/onlineAi.*\.(ts|tsx)$/,
+  /^src\/lib\/prefetchPlayRoute\.ts$/,
+  /^src\/lib\/staleChunkReloadGuard\.ts$/,
+  /^src\/components\/system\/GlobalErrorBoundary\.tsx$/,
+  /^src\/hooks\/useGameImplementationReady\.ts$/,
+  /^src\/games\/registry\.ts$/,
+  /^src\/engine\/transport\/client\.ts$/,
+];
+const GAME_ENTRY_BLOCKER_TESTS = [
+  {
+    label: 'BLOCKER: Play route stale chunk recovery',
+    reason: '进房入口链路改动，强制回归 lazy route / stale chunk 自动恢复，不允许卡死在错误边界',
+    target: 'src/components/system/__tests__/GlobalErrorBoundary.test.tsx',
+    testNamePattern: 'stale chunk 渲染错误会触发自动刷新',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: Game runtime stale chunk recovery',
+    reason: '进房入口链路改动，强制回归游戏 runtime 动态导入 stale chunk 自动恢复',
+    target: 'src/pages/__tests__/Maintenance.test.tsx',
+    testNamePattern: '游戏 runtime 动态导入命中 stale chunk 时会触发一次页面刷新',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+  {
+    label: 'BLOCKER: MatchRoom blocking-state contract',
+    reason: '进房入口链路改动，强制回归 MatchRoom 阻塞态优先级，防止实现加载失败被伪装成 loading',
+    target: 'src/pages/__tests__/matchRoomBlockingState.test.ts',
+    testNamePattern: 'implementation 加载失败时，应返回明确错误态',
+    vitestArgs: FAST_VITEST_ARGS,
+  },
+];
 const PLAY_ROUTE_ENTRY_GUARD_PATTERNS = new Set([
   'src/App.tsx',
   'src/lib/prefetchPlayRoute.ts',
@@ -132,6 +190,7 @@ const CACHE_DIR = path.join(repoRoot, 'temp', 'quality-gate-cache');
 const PRE_PUSH_CACHE_FILE = path.join(CACHE_DIR, 'pre-push.json');
 const COMMAND_CACHE_FILE = path.join(CACHE_DIR, 'command-results.json');
 const QUALITY_GATE_TYPECHECK_BUILD_INFO = path.join('temp', 'quality-gate-cache', 'typecheck.tsbuildinfo');
+const TEST_STRUCTURE_FILES_LIST = path.join(CACHE_DIR, 'test-structure-files.txt');
 const STABLE_VITEST_NODE_OPTIONS = '--max-old-space-size=8192';
 const STABLE_ESLINT_NODE_OPTIONS = '--max-old-space-size=8192';
 const ESLINT_CHUNK_LIMIT = 2;
@@ -152,6 +211,12 @@ function runGit(args, options = {}) {
   }
 }
 
+function writeListFile(filename, values) {
+  mkdirSync(path.dirname(filename), { recursive: true });
+  writeFileSync(filename, `${values.join('\n')}\n`, 'utf8');
+  return filename;
+}
+
 function readGitFile(ref, file) {
   return runGit(['show', `${ref}:${file}`], { allowFailure: true });
 }
@@ -163,15 +228,17 @@ function getMergeCommitParents(commit) {
   return parents.length === 2 ? parents : null;
 }
 
-function getIntersectingChangedFiles(parentA, parentB, commit) {
+function getIntersectingChangedFiles(parentA, parentB, baseRef = '') {
+  const mergeBase = baseRef || runGit(['merge-base', parentA, parentB], { allowFailure: true });
+  if (!mergeBase) return [];
   const changedA = new Set(
-    runGit(['diff', '--name-only', parentA, commit], { allowFailure: true })
+    runGit(['diff', '--name-only', '--no-renames', mergeBase, parentA], { allowFailure: true })
       .split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean),
   );
   const changedB = new Set(
-    runGit(['diff', '--name-only', parentB, commit], { allowFailure: true })
+    runGit(['diff', '--name-only', '--no-renames', mergeBase, parentB], { allowFailure: true })
       .split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean),
@@ -229,7 +296,7 @@ function getConflictFilesFromCommitMessage(commit) {
   return [...files];
 }
 
-function hasMergeConflictEvidence(commit) {
+function hasMergeConflictEvidenceInCommit(commit) {
   const changedFiles = runGit(['show', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
     .split(/\r?\n/)
     .map((value) => value.trim())
@@ -237,19 +304,33 @@ function hasMergeConflictEvidence(commit) {
   return changedFiles.some((file) => file.startsWith('evidence/merge-conflict-') && file.endsWith('.md'));
 }
 
+function hasMergeConflictEvidenceInDescendants(commit, headRef) {
+  if (!headRef || headRef === commit) return false;
+  const changedFiles = runGit(['diff', '--name-only', '--no-renames', `${commit}..${headRef}`], { allowFailure: true })
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return changedFiles.some((file) => file.startsWith('evidence/merge-conflict-') && file.endsWith('.md'));
+}
+
+function hasMergeConflictEvidence(commit, headRef) {
+  return hasMergeConflictEvidenceInCommit(commit) || hasMergeConflictEvidenceInDescendants(commit, headRef);
+}
+
 function runMergeAuditStrict(commit) {
   const result = spawnSync(process.execPath, ['scripts/verify/merge-conflict-audit.mjs', commit, '--fail-on-single-side'], {
     cwd: repoRoot,
-    stdio: 'inherit',
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
   });
   if (result.error) {
     console.error(`[changed-quality-gate] merge:audit 启动失败: ${result.error.message}`);
     process.exit(1);
   }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  return result.status ?? 1;
 }
 
 function runMergeConflictGuards({ baseRef, headRef }) {
@@ -261,20 +342,35 @@ function runMergeConflictGuards({ baseRef, headRef }) {
   console.log(`[changed-quality-gate] merge commits: ${mergeCommits.length}`);
 
   for (const commit of mergeCommits) {
+    const parents = getMergeCommitParents(commit);
+    const overlapFiles = parents ? getIntersectingChangedFiles(parents[0], parents[1]) : [];
     const conflictFiles = getConflictFilesFromCommitMessage(commit);
-    if (conflictFiles.length === 0) {
-      console.log(`[changed-quality-gate] merge commit ${commit} 未记录真实冲突文件，按 clean merge 跳过冲突留档门禁。`);
+    if (conflictFiles.length === 0 && overlapFiles.length === 0) {
+      console.log(`[changed-quality-gate] merge commit ${commit} 未识别到双侧重叠改动，按 clean merge 跳过冲突留档门禁。`);
       continue;
     }
 
     console.log(`[changed-quality-gate] 审计 merge commit: ${commit}`);
-    console.log(`[changed-quality-gate] 记录的真实冲突文件数: ${conflictFiles.length}`);
-    runMergeAuditStrict(commit);
+    if (conflictFiles.length > 0) {
+      console.log(`[changed-quality-gate] 记录的真实冲突文件数: ${conflictFiles.length}`);
+    } else {
+      console.log(`[changed-quality-gate] merge commit ${commit} 未记录真实冲突文件，退化为双侧重叠改动审计。`);
+      console.log(`[changed-quality-gate] 双侧重叠改动文件数: ${overlapFiles.length}`);
+    }
+    const mergeAuditStatus = runMergeAuditStrict(commit);
+    const hasEvidence = hasMergeConflictEvidence(commit, headRef);
+    if (mergeAuditStatus !== 0 && !hasEvidence) {
+      process.exit(mergeAuditStatus);
+    }
 
-    if (!hasMergeConflictEvidence(commit)) {
+    if (!hasEvidence) {
       console.error(`[changed-quality-gate] merge commit ${commit} 缺少 evidence/merge-conflict-*.md 冲突汇报。`);
-      console.error('[changed-quality-gate] 请补充冲突汇报文档并重新提交。');
+      console.error('[changed-quality-gate] 请在 merge commit 内，或紧跟其后的补记提交中补充冲突汇报文档并重新提交。');
       process.exit(1);
+    }
+
+    if (mergeAuditStatus !== 0) {
+      console.log(`[changed-quality-gate] merge commit ${commit} 存在单边结果，但已检测到冲突汇报文档，继续执行后续门禁。`);
     }
   }
 }
@@ -353,9 +449,9 @@ function ensurePassWithNoTests(vitestArgs) {
 }
 
 function resolveRunnableVitestWorkspaceTarget(file) {
-    const normalized = normalizeFile(file);
-    if (!isRunnableVitestTestFile(normalized)) return null;
-    return fileExistsInWorkspace(normalized) ? normalized : null;
+  const normalized = normalizeFile(file);
+  if (!isRunnableVitestTestFile(normalized)) return null;
+  return fileExistsInWorkspace(normalized) ? normalized : null;
 }
 
 function collectRunnableVitestWorkspaceTargets(files) {
@@ -636,6 +732,10 @@ function isGameFile(file) {
   return file.startsWith('src/games/');
 }
 
+function isGameVitestTest(file) {
+  return file.startsWith('src/games/') && isTestFile(file);
+}
+
 function isGameSourceFile(file) {
   return isGameFile(file) && !isTestFile(file);
 }
@@ -661,6 +761,28 @@ function affectsPlayRouteEntry(file) {
   return PLAY_ROUTE_ENTRY_GUARD_PATTERNS.has(normalizeFile(file));
 }
 
+function affectsSharedGameEntrySmoke(file) {
+  return affectsPlayRouteEntry(file) || affectsGameEntryBlocker(file);
+}
+
+function affectsSmashUpRuntimeRandomSeam(file) {
+  const normalized = normalizeFile(file);
+  return normalized === 'src/games/smashup/domain/abilityHelpers.ts'
+    || normalized === 'src/games/smashup/domain/abilityRuntime.ts'
+    || normalized === 'src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts'
+    || normalized.startsWith('src/games/smashup/abilities/');
+}
+
+function affectsDiceThroneSyncBlocker(file) {
+  const normalized = normalizeFile(file);
+  return DICETHRONE_SYNC_BLOCKER_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function affectsGameEntryBlocker(file) {
+  const normalized = normalizeFile(file);
+  return GAME_ENTRY_BLOCKER_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 function isNonGameTestFile(file) {
   return isTestFile(file) && !isGameFile(file);
 }
@@ -669,7 +791,7 @@ function collectGameIds(files, { sourceOnly = false } = {}) {
   const ids = new Set();
   for (const file of files) {
     if (sourceOnly && !isGameSourceFile(file)) continue;
-    const match = file.match(/^src\/games\/([^/]+)\//);
+    const match = file.match(/^(?:src|e2e\/src)\/games\/([^/]+)\//);
     if (match && KNOWN_GAME_IDS.has(match[1])) ids.add(match[1]);
   }
   return [...ids];
@@ -828,6 +950,21 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     workspaceScopeFiles.filter((file) => isGameFile(file) && isTestFile(file)),
   );
 
+  if (hasAny(files, isGameVitestTest)) {
+    commands.push({
+      label: 'Test structure guard',
+      reason: '存在游戏测试改动，检查测试文件命名与巨型泛名文件净新增',
+      command: process.execPath,
+      args: [
+        'scripts/infra/testing-structure-guard.mjs',
+        '--base',
+        baseRef,
+        '--files-from',
+        writeListFile(TEST_STRUCTURE_FILES_LIST, files),
+      ],
+    });
+  }
+
   if (hasAny(files, affectsTypecheck)) {
     commands.push({
       label: 'Typecheck',
@@ -932,16 +1069,73 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     });
   }
 
-  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsPlayRouteEntry)) {
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsSharedGameEntrySmoke)) {
     commands.push({
       label: 'Play route smoke (online)',
-      reason: '在线对局入口改动，真实浏览器进房兜底动态 import / 路由白屏 / TDZ 运行时错误',
+      reason: '共享进房链路改动，真实浏览器进房兜底动态 import / 路由白屏 / 房间阻塞态错误',
       command: process.execPath,
       args: [
         'scripts/infra/run-e2e-single.mjs',
         'ci',
-        'e2e/dicethrone-simple-start.e2e.ts',
+        'e2e/dicethrone/dicethrone-simple-start.e2e.ts',
         'Online match: Can start a game successfully',
+      ],
+    });
+  }
+
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsDiceThroneSyncBlocker)) {
+    DICETHRONE_SYNC_BLOCKER_TESTS.forEach((blocker) => {
+      commands.push({
+        label: blocker.label,
+        reason: blocker.reason,
+        command: process.execPath,
+        args: [
+          ...VITEST_SAFE_ENTRY,
+          'run',
+          blocker.target,
+          '--configLoader',
+          'native',
+          ...ensurePassWithNoTests(blocker.vitestArgs),
+          '-t',
+          blocker.testNamePattern,
+        ],
+      });
+    });
+  }
+
+  if (isPrePushMode && hasAny(workspaceScopeFiles, affectsGameEntryBlocker)) {
+    GAME_ENTRY_BLOCKER_TESTS.forEach((blocker) => {
+      commands.push({
+        label: blocker.label,
+        reason: blocker.reason,
+        command: process.execPath,
+        args: [
+          ...VITEST_SAFE_ENTRY,
+          'run',
+          blocker.target,
+          '--configLoader',
+          'native',
+          ...ensurePassWithNoTests(blocker.vitestArgs),
+          '-t',
+          blocker.testNamePattern,
+        ],
+      });
+    });
+  }
+
+  if (hasAny(workspaceScopeFiles, affectsSmashUpRuntimeRandomSeam)) {
+    commands.push({
+      label: 'SmashUp runtime random audit',
+      reason: 'SmashUp runtime prompt / draw seam 改动，执行定向审计防止 random 依赖再次泄漏到 onResolve',
+      command: process.execPath,
+      args: [
+        ...VITEST_SAFE_ENTRY,
+        'run',
+        'src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts',
+        '--config',
+        'vitest.config.audit.ts',
+        '--configLoader',
+        'native',
       ],
     });
   }

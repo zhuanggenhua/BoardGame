@@ -170,7 +170,7 @@ export type ActionLogSegment =
       }
     | {
           type: 'diceResult';
-          /** 精灵图资源路径（不含扩展名，如 'game/images/unit/dice'） */
+          /** 精灵图资源路径（不含扩展名，如 'game/images/asset'） */
           spriteAsset: string;
           /** 精灵图网格列数 */
           spriteCols: number;
@@ -526,6 +526,14 @@ export interface DomainCore<
 
     /** 初始化游戏状态（仅返回 core，sys 由系统层 setup） */
     setup(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): TState;
+
+    /**
+     * 可选：命令进入 pipeline 前的权威状态归一化。
+     *
+     * 用于兼容旧快照/线上脏数据，确保 systems.beforeCommand 与后续领域逻辑
+     * 看到的是同一份语义稳定的 runtime state。
+     */
+    normalizeRuntimeState?(state: MatchState<TState>): MatchState<TState>;
 
     /** 验证命令合法性（允许读取 sys 状态，例如 sys.phase） */
     validate(state: MatchState<TState>, command: TCommand): ValidationResult;

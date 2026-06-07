@@ -4,7 +4,7 @@ import {
     readCoreState,
     waitForPhase,
 } from '../helpers/cardia';
-import { ABILITY_IDS } from '../src/games/cardia/domain/ids';
+import { ABILITY_IDS } from '../../src/games/cardia/domain/ids';
 
 /**
  * 影响力9 - 伏击者

@@ -16,14 +16,23 @@ import {
     getDiceSpriteUrls,
     resolveSpriteAssetUrls,
 } from '../ui/assets';
-import { getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
-import { getAssetsBaseUrl, markImageLoaded, setAssetsBaseUrl } from '../../../core';
+import { TokenBadge, getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
+import {
+    clearGameAssetBaseOverrides,
+    getAssetsBaseUrl,
+    markImageLoaded,
+    setAssetsBaseUrl,
+    setGameAssetBaseOverride,
+} from '../../../core';
+import { setAssetHashesForTesting } from '../../../core/AssetLoader';
 
 registerDiceDefinition(moonElfDiceDefinition);
 
 describe('StatusEffectsIcons', () => {
     beforeEach(() => {
         setAssetsBaseUrl('/assets');
+        setAssetHashesForTesting({});
+        clearGameAssetBaseOverrides();
     });
 
     afterEach(() => {
@@ -49,7 +58,8 @@ describe('StatusEffectsIcons', () => {
             )
         );
 
-        expect(html).toContain('/assets/dicethrone/images/monk/compressed/status-icons-atlas.webp');
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/monk/compressed/status-icons-atlas.webp');
+        expect(html).toContain('<img');
     });
 
     it('token 展示查询 debuff token 时应回退到对应视觉元数据', () => {
@@ -80,8 +90,32 @@ describe('StatusEffectsIcons', () => {
             )
         );
 
-        expect(html).toContain('icons/compressed/');
-        expect(html).toContain('background-size:contain');
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/samurai/icons/compressed/荣誉.webp');
+        expect(html).toContain('object-contain');
+    });
+
+    it('players.tokens 中的 debuff token 应复用视觉元数据，不再误显示加载态', () => {
+        const html = renderToStaticMarkup(
+            <TokenBadge
+                tokenId={TOKEN_IDS.BOUNTY}
+                amount={1}
+                locale="zh-CN"
+                atlas={{
+                    [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: {
+                        imageW: 800,
+                        imageH: 400,
+                        imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+                        frames: {
+                            loaded: { x: 0, y: 0, w: 400, h: 400 },
+                            bounty: { x: 402, y: 0, w: 400, h: 400 },
+                        },
+                    },
+                }}
+            />
+        );
+
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
+        expect(html).not.toContain('atlas-shimmer');
     });
 
     it('会把 game-data 骰图路径折算成 dice-sprite 资源 key', () => {
@@ -285,7 +319,7 @@ describe('StatusEffectsIcons', () => {
         expect(html).toContain('https://old-cdn.example.com/i18n/zh-CN/dicethrone/images/moon_elf/compressed/dice.webp');
     });
 
-    it('状态图集 JSON 在远程资源模式下应优先走官方资源域名', async () => {
+    it('状态图集 JSON 在远程资源模式下仍应只走本地 /assets', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const fetchMock = vi.fn(async (_input: RequestInfo | URL) => ({
@@ -303,16 +337,16 @@ describe('StatusEffectsIcons', () => {
 
         expect(Object.keys(atlases).length).toBeGreaterThan(0);
         expect(fetchMock).toHaveBeenCalled();
-        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('https://assets.easyboardgame.top/official/'))).toBe(true);
+        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
         expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/i18n/zh-CN/'))).toBe(true);
     });
 
-    it('远端状态图集 JSON 缺失时应回退到本地 /assets', async () => {
+    it('状态图集 JSON 应按当前语言和备用语言查找本地路径', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
             const url = String(input);
-            if (url.startsWith('https://assets.easyboardgame.top/official/')) {
+            if (url.includes('/i18n/zh-CN/')) {
                 return {
                     ok: false,
                     json: async () => null,
@@ -334,6 +368,178 @@ describe('StatusEffectsIcons', () => {
 
         expect(Object.keys(atlases).length).toBeGreaterThan(0);
         expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/i18n/en/'))).toBe(true);
+    });
+
+    it('新英雄状态图集应从本地 zh-CN JSON 加载坐标', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.includes('/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 512, h: 256 } },
+                        frames: {
+                            tactical_advantage: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                            bind: { frame: { x: 256, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            if (url.includes('/i18n/zh-CN/dicethrone/images/cursed/status-icons-atlas.json')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 1024, h: 256 } },
+                        frames: {
+                            wither: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                            parley: { frame: { x: 256, y: 0, w: 256, h: 256 } },
+                            powder_keg: { frame: { x: 512, y: 0, w: 256, h: 256 } },
+                            cursed_coin: { frame: { x: 768, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            return {
+                ok: false,
+                json: async () => null,
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.tactical_advantage).toEqual({
+            x: 0,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.bind).toEqual({
+            x: 256,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE]?.frames.cursed_coin).toEqual({
+            x: 768,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+    });
+
+    it('新英雄 atlas 不可用时应回退到单图 iconPath，避免手机端整组空白', () => {
+        const tacticalHtml = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                {
+                    frameId: 'tactical_advantage',
+                    atlasId: DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA,
+                    iconPath: 'dicethrone/images/zhanshujia/status/战术优势',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            )
+        );
+        const cursedCoinHtml = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                {
+                    frameId: 'cursed_coin',
+                    atlasId: DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE,
+                    iconPath: 'dicethrone/images/cursed/status/诅咒金币',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            )
+        );
+
+        expect(tacticalHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status/compressed/战术优势.webp');
+        expect(cursedCoinHtml).toContain('/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp');
+        expect(tacticalHtml).toContain('object-contain');
+        expect(cursedCoinHtml).toContain('object-contain');
+    });
+
+    it('游戏包 override 下的状态图标首候选失败后应切到下一个 _capacitor_file_ 候选', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp': 'coin1234',
+        });
+
+        const { container } = render(
+            getStatusEffectIconNode(
+                {
+                    iconPath: 'dicethrone/images/cursed/status/诅咒金币',
+                },
+                'zh-CN',
+                'normal',
+                null,
+            ),
+        );
+        const img = container.querySelector('img');
+        const hashedUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp?v=coin1234';
+        const plainUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/cursed/status/compressed/诅咒金币.webp';
+
+        expect(img?.getAttribute('src')).toBe(hashedUrl);
+        fireEvent.error(img!);
+
+        await waitFor(() => {
+            expect(container.querySelector('img')?.getAttribute('src')).toBe(plainUrl);
+        });
+    });
+
+    it('游戏包 override 下的状态图集 JSON 应先走本地游戏包，并在 _capacitor_file_ query 失败后回退无 query URL', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json': 'atlas1234',
+        });
+
+        const hashedUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json?v=atlas1234';
+        const plainUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json';
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === hashedUrl) {
+                return {
+                    ok: false,
+                    json: async () => null,
+                };
+            }
+            if (url === plainUrl) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 512, h: 256 } },
+                        frames: {
+                            tactical_advantage: { frame: { x: 0, y: 0, w: 256, h: 256 } },
+                        },
+                    }),
+                };
+            }
+            return {
+                ok: false,
+                json: async () => null,
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA]?.frames.tactical_advantage).toEqual({
+            x: 0,
+            y: 0,
+            w: 256,
+            h: 256,
+        });
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === hashedUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === plainUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(false);
     });
 
     it('骰图切片坐标应匹配 3x3 atlas（使用下两行）', () => {

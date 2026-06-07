@@ -43,18 +43,18 @@ vi.mock('../../../../contexts/ToastContext', () => ({
 
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, onClick }: any) => (
-      <div className={className} onClick={onClick}>
+    div: ({ children, className, onClick, style }: any) => (
+      <div className={className} onClick={onClick} style={style}>
         {children}
       </div>
     ),
-    button: ({ children, className, onClick }: any) => (
-      <button className={className} onClick={onClick}>
+    button: ({ children, className, onClick, style }: any) => (
+      <button className={className} onClick={onClick} style={style}>
         {children}
       </button>
     ),
-    h1: ({ children, className }: any) => (
-      <h1 className={className}>{children}</h1>
+    h1: ({ children, className, style }: any) => (
+      <h1 className={className} style={style}>{children}</h1>
     ),
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
@@ -160,6 +160,17 @@ describe('FactionSelection', () => {
   it('应该在 isOpen=true 时渲染', () => {
     render(<FactionSelection {...defaultProps} />);
     expect(screen.getByText('factionSelection.title')).toBeInTheDocument();
+  });
+
+  it('预览占位卡应提供显式宽高，兼容旧 WebView', async () => {
+    render(<FactionSelection {...defaultProps} />);
+
+    const placeholder = await screen.findByText('factionSelection.hoverToPreview');
+    const frame = placeholder.parentElement as HTMLElement | null;
+
+    expect(frame?.style.height).toBeTruthy();
+    expect(frame?.style.width).toContain('4 / 3');
+    expect(frame?.style.aspectRatio).toBe('4 / 3');
   });
 
   it('应该加载自定义牌组列表', async () => {

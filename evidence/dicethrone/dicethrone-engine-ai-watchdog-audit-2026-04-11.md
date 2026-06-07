@@ -1,4 +1,6 @@
-# DiceThrone 引擎层 AI 决策 / 交互 / 响应窗口 / force-skip 链路审计（2026-04-11）
+# DiceThrone 引擎层 AI 决策 / 交互 / 响应窗口 / force-skip 历史链路审计（2026-04-11）
+
+> 2026-06-06 当前有效口径：本文只记录 2026-04-11 那轮引擎层 AI/watchdog/force-skip 链路审计的历史结论，不是当前 DiceThrone transport/watchdog 已完全收口的证明，也不是新英雄补审出口。阅读时只能把它理解成引擎侧历史链路审计证据。
 
 ## 审计范围
 - `src/engine/ai/context.ts`
@@ -200,3 +202,7 @@
    - 响应窗口循环检测；
    - 前端自动恢复事件也接入统一 feedback reporter；
    - watchdog snapshot 增加 legalActions / chosenAction / reasoningSummary。
+
+---
+
+**当前阅读说明**：本文只能证明当时引擎层 watchdog/force-skip 链路做过一轮系统审计，不能外推成当前 transport/server/MatchRoom 相关残余都已清空。

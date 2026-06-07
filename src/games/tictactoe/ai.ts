@@ -103,6 +103,7 @@ const baselineLocalPolicy: LocalAiPolicy = {
 export const ticTacToeAiRuntime: GameAiRuntime = {
     gameId: 'tictactoe',
     buildLegalActions: buildTicTacToeAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localPolicies: {
         baseline: baselineLocalPolicy,
     },

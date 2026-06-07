@@ -660,6 +660,115 @@ function buildActionSpotlightState(baseState: any, currentPlayerIndex: 0 | 1) {
     return nextState;
 }
 
+function buildOnlineSharedVisibleWaitingPromptState(baseState: any) {
+    const nextState = JSON.parse(JSON.stringify(baseState));
+    const existingPlayers = nextState.core?.players ?? {};
+    const existingBases = Array.isArray(nextState.core?.bases) ? nextState.core.bases : [];
+    const primaryBase = existingBases[0] ?? { defId: 'base_temple_of_goju', minions: [], ongoingActions: [] };
+    const turnOrder = Array.isArray(nextState.core?.turnOrder) && nextState.core.turnOrder.length > 0
+        ? [...nextState.core.turnOrder]
+        : ['0', '1'];
+
+    nextState.core = {
+        ...nextState.core,
+        currentPlayerIndex: 0,
+        phase: 'playCards',
+        turnNumber: 1,
+        turnOrder,
+        factionSelection: undefined,
+        players: {
+            ...existingPlayers,
+            '0': {
+                ...(existingPlayers['0'] ?? {}),
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['super_spies', 'time_travelers'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                minionsPlayedPerBase: {},
+                sameNameMinionDefId: null,
+            },
+            '1': {
+                ...(existingPlayers['1'] ?? {}),
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['super_spies', 'time_travelers'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                minionsPlayedPerBase: {},
+                sameNameMinionDefId: null,
+            },
+        },
+        bases: [{
+            ...primaryBase,
+            defId: primaryBase.defId ?? 'base_temple_of_goju',
+            minions: [],
+            ongoingActions: Array.isArray(primaryBase.ongoingActions) ? primaryBase.ongoingActions : [],
+        }],
+    };
+
+    nextState.sys = {
+        ...nextState.sys,
+        turnOrder,
+        currentPlayerIndex: 0,
+        phase: 'playCards',
+        turnNumber: 1,
+        flowHalted: false,
+        interaction: {
+            current: {
+                id: 'spy-visible-waiting-probe',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    title: 'Host-SU-E2E 选择要弃掉的手牌',
+                    sourceId: 'the_spy_who_ditched_me_waiting_probe',
+                    targetType: 'button',
+                    options: [
+                        { id: 'confirm', label: '确认', value: { action: 'confirm' }, displayMode: 'button' },
+                    ],
+                },
+            },
+            queue: [],
+            isBlocked: false,
+        },
+        responseWindow: {
+            current: null,
+            history: [],
+        },
+        eventStream: {
+            ...(nextState.sys?.eventStream ?? {}),
+            entries: [],
+            nextId: 1,
+        },
+    };
+
+    return nextState;
+}
+
+function buildOnlineClosedPromptState(baseState: any) {
+    const nextState = JSON.parse(JSON.stringify(baseState));
+    nextState.sys = {
+        ...nextState.sys,
+        interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: false,
+        },
+        eventStream: {
+            ...(nextState.sys?.eventStream ?? {}),
+            entries: [],
+            nextId: Math.max(2, Number(nextState.sys?.eventStream?.nextId ?? 1) + 1),
+        },
+    };
+    return nextState;
+}
+
 function buildFactionSelectStuckState(baseState: any) {
     const nextState = JSON.parse(JSON.stringify(baseState));
 
@@ -2206,6 +2315,69 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
     } finally {
         await secondSetup.guestContext.close();
         await secondSetup.hostContext.close();
+    }
+});
+
+test('在线双人非目标页在 prompt 打开与权威关闭后都不应残留 waiting overlay', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupSmashUpMatchSkipSetup(browser, baseURL);
+    if (!setup) {
+        test.skip(true, 'SmashUp 联机房间创建失败');
+        return;
+    }
+
+    try {
+        const { hostPage, guestPage, matchId } = setup;
+        const waitingText = /正在等待\s*Host-SU-E2E|Waiting for\s*Host-SU-E2E/i;
+
+        await applyOnlineMatchState(matchId, hostPage, buildOnlineSharedVisibleWaitingPromptState);
+        await waitForSmashUpUI(hostPage);
+        await waitForSmashUpUI(guestPage);
+
+        await expect(hostPage.getByRole('button', { name: /确认|Confirm/i })).toBeVisible({ timeout: 15000 });
+        await expect.poll(async () => {
+            return guestPage.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return {
+                    currentId: state?.sys?.interaction?.current?.id ?? null,
+                    isBlocked: state?.sys?.interaction?.isBlocked ?? null,
+                };
+            });
+        }, {
+            timeout: 15000,
+            message: '等待 Guest 非目标页收到过滤后的 prompt 打开态',
+        }).toEqual({
+            currentId: null,
+            isBlocked: true,
+        });
+        await expect(guestPage.getByText(waitingText)).toHaveCount(0, { timeout: 15000 });
+        await saveEvidenceScreenshot(guestPage, testInfo, 'online-waiting-overlay-open-filtered-nontarget');
+
+        await applyOnlineMatchState(matchId, hostPage, buildOnlineClosedPromptState);
+
+        await expect.poll(async () => {
+            return guestPage.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return {
+                    currentId: state?.sys?.interaction?.current?.id ?? null,
+                    isBlocked: state?.sys?.interaction?.isBlocked ?? null,
+                };
+            });
+        }, {
+            timeout: 15000,
+            message: '等待 Host 页面收到 prompt 权威关闭态',
+        }).toEqual({
+            currentId: null,
+            isBlocked: false,
+        });
+
+        await expect(guestPage.getByText(waitingText)).toHaveCount(0, { timeout: 15000 });
+        await saveEvidenceScreenshot(guestPage, testInfo, 'online-waiting-overlay-after-authoritative-close');
+    } finally {
+        await setup.guestContext.close();
+        await setup.hostContext.close();
     }
 });
 

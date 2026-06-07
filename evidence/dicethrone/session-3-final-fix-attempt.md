@@ -1,5 +1,7 @@
 # Session 3: Final Fix Attempt
 
+> 2026-06-06 当前有效口径：本文是一次历史性的“最终修复尝试”记录，正文结论仍显示结果未达预期，不是当前 DiceThrone 已修复或已审完的证明，也不是新英雄补审出口。阅读时只能把它当作历史排障过程中的失败/半成品记录。
+
 ## Problem
 `rollDie=莲花` tests failing with phase stuck at `defensiveRoll` instead of advancing to `main2`
 
@@ -62,3 +64,7 @@ This could mean:
 ## Files Modified
 - `src/games/dicethrone/domain/systems.ts` (lines 405-420)
 - `src/games/dicethrone/domain/flowHooks.ts` (removed debug logs and displayOnly check)
+
+---
+
+**当前阅读说明**：本文只能证明当时进行过一轮未完全收口的修复尝试，不能外推为当前 displayOnly/bonus-dice/phase advance 链路已经修好，也不能替代后续正式修复证据。

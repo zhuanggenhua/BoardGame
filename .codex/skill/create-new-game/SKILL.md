@@ -1,0 +1,1508 @@
+---
+name: create-new-game
+description: "为本项目创建新游戏或先做新游戏资源/data intake。当用户要求新增游戏，或只给图片/位置就希望先开工时使用。基于 dicethrone/summonerwars/smashup 的真实模式，分阶段完成，并带启动询问、素材 intake 与验收门禁。"
+---
+
+# 创建新游戏（分阶段工作流）
+
+> **核心原则**：每个阶段独立可验证、独立可提交。阶段之间不留 TODO 缺口。AI 必须在完成当前阶段验收后才能进入下一阶段。
+
+## 流程完整度口径（强制）
+
+- **适用范围**：凡是新游戏 workflow 已经进入 proposal / spec / design / tasks / approval gate / change 拆分阶段时。
+- **默认口径**：这里默认追求的是**流程完整度与边界真实度**，不是“先做一条最小 proposal 再说”。
+- **`最小` 的允许位置**：
+  - 仅可用于描述局部补救动作、低风险辅助检查、单次压缩/脚本调用等非流程主交付物；
+  - 不得用于 change 定义、proposal 范围表达、spec 拆分、approval gate 解释或“走流程”的默认策略。
+- **用户说“走流程 / 补 spec / 提 proposal / 按流程来”时的强制理解**：
+  - 先审计当前真实阶段已经跨到哪些边界；
+  - 再把对应的 proposal / design / tasks / spec delta / approval 状态补齐；
+  - 不得为了“更快开工”故意只保留最小 foundation、最小提案或最小 change。
+- **禁止行为**：
+  - 禁止把“先最小提案”“先最小 foundation”“先挂一条再说”当成默认响应；
+  - 禁止明知当前范围已经涉及 `card-catalog / gameplay / scoring / runtime-entry`，却仍强行收缩成单条 foundation change；
+  - 禁止用“实现范围先最小”偷换成“流程交付物也最小化”。
+- **最低汇报要求**：只要进入流程阶段，汇报里必须明确写出“当前已存在哪些 change / 当前请求实际跨到哪些 change / 本轮补的是哪几层主文档 / 哪些 change 仍待批准”，不能只说“我先补一个最小提案”。
+
+## 新游戏 worktree 覆盖口径（强制）
+
+- **适用范围**：仅在“新增/创建新游戏”命中本 skill 时生效。
+- **优先级**：在 `branch/worktree` 决策上，本 skill 对新游戏 workflow 的口径高于根 `AGENTS.md` 的通用默认规则；其它非新游戏任务仍按根 `AGENTS.md` 执行。
+- **默认动作**：新增新游戏时，默认先创建**独立 git worktree** 作为执行现场，而不是继续在仓库根主工作区直接开工。
+- **默认授权**：当用户明确提出“新增游戏 / 创建新游戏 / 做新游戏 / 接入一个新 gameId”时，默认视为**已授权**为该游戏创建隔离 worktree；不再把“能不能开 worktree”当成额外阻塞问题重复确认。
+- **最低要求**：
+  - worktree 默认从职责正确的 `main` 基线派生；
+  - 默认配套新分支命名为 `feat/game-<gameId>`；
+  - 汇报里必须明确 worktree 路径、目标 `gameId`、对应分支名。
+- **例外**：只有以下情况才不默认新开 worktree：
+  - 用户当轮明确说“就在当前工作区做 / 不要新开工作树”；
+  - 当前任务已经在一个明确服务该新游戏的独立 worktree 中；
+  - 本地 git、权限、磁盘或路径环境阻止创建 worktree，此时必须汇报阻塞点并给出最小补救步骤。
+- **禁止降级**：不得因为“只是先录数据 / 先做 UI 草稿 / 先看素材”就留在主工作区推进；这些同样属于新游戏 workflow，应默认在独立 worktree 中完成。
+
+## 新游戏执行现场锁定（强制）
+
+- **真实问题定义**：新游戏 workflow 的失败点不只是“没开 worktree”，还包括“已经开了 worktree，但后续命令、读写文件、测试或汇报仍落回主工作区”。
+- **适用范围**：一旦本 skill 为某个新游戏创建或选定了独立 worktree，本轮后续所有与该游戏直接相关的实现、读写、验证、截图、OpenSpec 更新，都必须以该 worktree 作为唯一执行现场。
+- **默认动作**：
+  1. 创建/确认 worktree 后，立即记录 `worktree 绝对路径 + 分支名 + gameId`；
+  2. 第一次继续实施前，必须再次显式核对一次 `git rev-parse --show-toplevel` 与 `git rev-parse --abbrev-ref HEAD`；
+  3. 后续每个工具调用都应显式把 `workdir` 指向该 worktree，直到用户明确要求切回别处。
+- **汇报门禁**：进入正式编辑前，必须能说清“当前正在 `<worktree-path>` / `<branch>` 上执行”；如果实际仍在主工作区，只能先纠正执行现场，不能继续假装已经切过去。
+- **禁止行为**：
+  - 禁止在已创建新游戏 worktree 后，继续在仓库根主工作区实现同一 `gameId`；
+  - 禁止把“我已经建过 worktree”当成“后续自然就在 worktree 里”的默认前提；
+- 禁止在未核对当前 cwd/branch 的情况下继续写某个新游戏的代码。
+- **发现偏移后的处理**：
+  - 一旦发现命令落在错误现场，必须立即停止继续编辑；
+  - 先审计主工作区与目标 worktree 是否已出现同一 `gameId` 的重复产物；
+  - 再明确哪边是当前正式实现现场，避免两边继续分叉推进。
+
+## 共享基线与游戏实现分线收口（强制）
+
+- **真实问题定义**：新游戏 workflow 中常见失误不是“没建 worktree”，而是把两类改动混在一起处理：
+  1. 本应进入 `main` 的共享基线改动（项目 skill、通用 workflow、全局规范补强）；
+  2. 只应留在 `feat/game-<gameId>` worktree 的游戏实现（`src/games/<gameId>/**`、该游戏 i18n、OpenSpec change、测试、evidence、design-system 等）。
+- **正规做法**：
+  1. 先把共享基线改动在职责正确的主线现场整理清楚；
+  2. 共享基线单独提交到 `main`；
+  3. 再让目标新游戏 worktree 吸收这批 `main` 更新；
+  4. 游戏实现继续只在 `feat/game-<gameId>` worktree 推进。
+- **主工作区允许保留的内容**：
+  - 只允许保留本次应进入 `main` 的共享改动；
+  - 不得把误落到主工作区的该 `gameId` 实现，一并作为“顺手带上”的改动提交到 `main`。
+- **发现主工作区与 worktree 同时存在同一 `gameId` 改动时的默认处理**：
+  1. 先列出交集文件，按“共享基线 / 游戏实现”分组；
+  2. 共享基线留在主工作区整理；
+  3. 游戏实现以目标 worktree 为正式现场；
+  4. 主工作区里的重复游戏实现只做精确去重，不得继续在主工作区推进。
+- **禁止行为**：
+  - 禁止因为主工作区里已经有一份新游戏实现，就先把它提交进 `main`，再让 worktree “回头吸收”；
+  - 禁止把共享规范提交、游戏功能实现提交、误落重复文件清理，混成一次无边界的大收口；
+  - 禁止在未区分“共享改动”和“游戏实现”前，直接宣称“先提交主分支就行”。
+- **最低汇报要求**：只要出现主工作区 / worktree 双现场并存，就必须明确汇报：
+  - 哪些文件属于共享基线、准备进 `main`；
+  - 哪些文件属于该 `gameId` 实现、必须留在 worktree；
+  - 主工作区里哪些重复实现需要去重但不能进 `main`。
+
+## 新游戏与 OpenSpec 的职责边界（强制）
+
+- **create-new-game 是通用流程，不是具体方案文档**：它负责新游戏的 intake、来源裁定、阶段切分、worktree/分支现场和实施门禁；一旦任务进入某个新游戏的**具体设计、具体布局、具体 runtime 边界、具体任务拆分**，就不能继续只靠本 skill 口头推进。
+- **进入具体方案阶段时必须切到 OpenSpec**：只要出现以下任一情况，就必须立即打开 `openspec/AGENTS.md`，为该新游戏建立或更新正式 change：
+  - 用户开始要求某个新游戏的具体布局、风格、玩家关注点排序、UI 不变量；
+  - 用户开始要求该新游戏的具体实现阶段拆分、proposal、spec、design、tasks；
+  - 用户开始要求把探索性 `Board`、`design-system`、`evidence`、`manifest`、`game.ts`、`domain` 等产物纳入正式范围管理；
+  - 需求已经不再是“能不能做 / 先 intake 一下”，而是“这次新游戏到底做什么、不做什么、先后顺序是什么”。
+- **默认动作**：
+  1. 先继续使用本 skill 完成 intake、来源裁定、现场隔离和必要的素材/规则摸底；
+  2. 一旦进入具体方案阶段，立即切换到 `openspec` 流程，补 `proposal.md`、`tasks.md`、必要时补 `design.md` 与 spec delta；
+  3. proposal 未批准前，不得把探索实现伪装成“已经完成的新游戏接入”。
+- **禁止语义降级**：
+  - 禁止把具体新游戏的方案阶段表述成“先随便做个静态页 / 先最小提案再说”；
+  - 禁止用“最小改动”替代“完整流程”。这里应该收敛的是**实现范围**，不是**流程交付物**；proposal / design / tasks / spec 必须把当前真实范围、边界、风险和待决策项写全。
+- **允许的 proposal 前动作**：
+  - 来源裁定、素材盘点、规则整理、现有探索产物审计；
+  - 为 proposal/service design 提供证据的低风险草稿、截图、布局验证；
+  - 但这些只能作为 proposal 的输入或 evidence，不得越过 approval gate 宣称 runtime 接入已正式完成。
+
+## 新游戏 OpenSpec 拆分与升级规则（强制）
+
+- **适用范围**：当新游戏已经从 intake 进入正式 OpenSpec change 管理后。
+- **先分 change 类型，再继续实现**：默认先判断当前工作属于哪一类 change，而不是把所有后续内容都塞进第一条 foundation change。
+  - `foundation`：方向、布局不变量、首期边界、探索产物转正。
+  - `card-catalog`：官方卡表、数据合同、真相源映射、录入验证。
+  - `gameplay`：回合循环、命令、领域规则、结算链路。
+  - `scoring`：正式计分、胜负裁定、复杂语义求值。
+  - `runtime-entry`：`manifest.enabled`、大厅入口、loaderMap、本地入口开放。
+- **范围升级必须显式升级 change**：
+  - 如果当前实现已经越过现有 change 的边界，必须先新建后续 change，或显式更新现有 proposal/design/tasks/spec。
+  - 禁止继续沿用“还是同一条最小 foundation change”的口径，把后续 gameplay / scoring / runtime-entry 混写进旧 change。
+- **用户说“走流程”时的默认动作**：
+  1. 读取 `openspec/AGENTS.md`、`openspec list`、`openspec list --specs`；
+  2. 审计当前新游戏已有哪些 change、当前请求实际跨到哪些边界、缺哪一层主文档；
+  3. 按真实范围补 proposal / design / tasks / spec delta；如果已跨出当前 change，先补新的 change 或显式升级旧 change；
+  4. 运行 `openspec validate <change-id> --strict --no-interactive`；
+  5. 再汇报“当前 change 范围、已完成 change、待批准 change、下一条 change”。
+- **禁止把“走流程”收缩成单条最小 change**：
+  - 如果用户当前要求已经明确覆盖玩法、计分、运行时入口或 UI 不变量，不得只补 foundation；
+  - 如果当前已有多条 change 在并行服务同一个新游戏，不得假装只有最靠前那条存在；
+  - 如果主文档缺的是 `design.md`、`tasks.md` 或 spec delta，不得只补一份 proposal 交差。
+- **禁止只补旁证，不补主文档**：
+  - 禁止只改 `design-system`、`evidence`、静态稿或截图，而不同时更新对应的 proposal / design / tasks / spec。
+  - 禁止只说“已经做完 foundation / 已经有 runtime”，却说不清它分别落在哪些 change 里。
+- **批准门禁保持真实**：
+  - 未获批时，只能说“proposal 已就绪 / 已校验 / 待批准”，不能把后续实现任务直接标成已完成。
+  - 若实现已先行存在，必须明确标注为“探索产物”或“待 proposal 对齐”，不得把它反向包装成流程已经走完。
+- **批准语义不得偷换**：
+  - 用户说“继续”“继续任务”“继续做”“按 OpenSpec 走流程”“先补 spec”“先提 proposal”，只代表**允许继续推进流程产物**，不等于批准任意一条 change 的实现范围。
+  - 只有当用户明确点名当前 change，或明确说“按这个 proposal / 这条 change 的范围继续做”，才可把对应 `Approval Gate` 记为已批准。
+  - 某一条 change 已获批，不自动外溢到后续 `card-catalog / gameplay / scoring / runtime-entry` 等新 change；后续每条 change 都要分别确认范围。
+  - `tasks.md` 中的 `0.1 Approval Gate` 必须写成“批准哪条 change、批准到什么边界”的具体语义，禁止用“用户要求继续流程”或“用户说继续某个新游戏”冒充批准记录。
+
+## 必读索引（单一权威来源，避免本文档过时）
+
+> 本 skill 只做“分阶段流程 + 验收门禁 + 单阶段闭环”。
+> 任何**规范/红线/最佳实践**若在下列文档中已有定义，必须以它们为准；本 skill 不重复展开。
+> 若本文与下列权威文档出现路径、组件、命令或门禁冲突，先按权威文档执行，并立即修正本文，不得用本文内的旧示例覆盖实施规范。
+
+- 总则：`AGENTS.md`
+- 引擎/系统/move/command：`docs/ai-rules/engine-systems.md`
+- UI/布局/组件：`docs/ai-rules/ui-ux.md`
+- React 白屏/渲染错误/Hook 规则：`docs/ai-rules/golden-rules.md`
+- 动画/特效：`docs/ai-rules/animation-effects.md`
+- 数据录入/真相源契约：`docs/ai-rules/data-entry.md`
+- 图片/音频资源接入：`docs/ai-rules/asset-pipeline.md`
+- 音频细则：`./.codex/skill/audio-integration/SKILL.md`（workflow） + `docs/audio/audio-usage.md`（合同）；新增音频资产流程见 `docs/audio/add-audio.md`
+- 工具脚本：`docs/tools.md`
+- 图片 intake 复刻案例：`docs/games/smashup/workflows/smashup-faction-intake.md`
+- 不确定该读哪份：`docs/ai-rules/doc-index.md`
+
+## 实施规范接入门禁（强制）
+
+进入任何目录创建、素材落盘、压缩、资源引用、`thumbnail.tsx`、`criticalImageResolver` 或 manifest 资源字段之前，先执行对应实施规范；本 skill 不允许自带第二套路由。
+
+- 图片/缩略图/图集/音频落盘与引用：以 `docs/ai-rules/asset-pipeline.md` 为单一实施合同。
+- UI 组件与布局：以 `docs/ai-rules/ui-ux.md` 为实施合同。
+- 引擎、系统、move/command：以 `docs/ai-rules/engine-systems.md` 为实施合同。
+- React 白屏、Hook、函数提升、注册时机：以 `docs/ai-rules/golden-rules.md` 为实施合同。
+
+资源实施最低门禁：
+
+1. 新游戏图片默认进入 `public/assets/i18n/zh-CN/<gameId>/...`；`public/assets/<gameId>/...` 只作为历史兼容或 `asset-pipeline` 明确允许的例外，不得作为新资源默认落点。
+2. 缩略图也属于图片资源，默认落到 `public/assets/i18n/zh-CN/<gameId>/thumbnails/`，运行时由 `ManifestGameThumbnail` / `OptimizedImage` 解析。
+3. 代码里传资源路径只传相对逻辑路径，例如 `<gameId>/thumbnails/cover`；禁止硬编码 `/assets/`、`compressed/`、`.webp` 或版本参数。
+4. 如果必须偏离上述公共链路，必须在当前任务证据中写明原因、影响范围和验收方式。
+
+## 前置 0：环境与来源确认（强制）
+
+开始任何目录创建、规则录入、素材落盘前，先做以下确认。**这是本 skill 的默认提问模板，不等用户自己提醒**：
+
+1. **主分支基线确认**
+   - 先检查当前是否基于职责正确的 `main` 基线。
+   - 主动询问用户是否要先同步/更新 `main`；默认推荐“是”，尤其是准备新开 `feat/game-<gameId>` 时。
+   - 命中新游戏 workflow 时，默认直接从 `main` 派生 `feat/game-<gameId>` 并创建独立 worktree；只有用户明确要求留在当前工作区时才跳过。
+2. **R2 本地同步确认**
+   - 主动询问是否要先执行 `npm run assets:download -- --check` 或 `npm run assets:download`，把远端资源拉到本地。
+   - 推荐场景：换机/新环境、本地缺图、要复用 `common/` 资源、或当前游戏已有远端图片资产。
+3. **真相源 / 对照源裁定**
+   - 主动询问本轮主真相源是什么：官方规则书、官方站点、用户图片、用户指定网站、数据库等。
+   - 主动询问是否要把 Wiki、用户给的网站或其他数据库作为对照源一起比对。
+   - 未裁定前，禁止把多个来源的内容直接混写进代码。
+4. **素材处理授权**
+    - 主动询问是否允许 AI 自动重命名、自动移动到语义目录、自动压缩。
+    - 若用户只给图片路径 + 位置表 / 行列数 / 裁片顺序，也允许直接进入资源 intake，不必等到完整玩法阶段。
+    - **自动重命名的依据必须先说明**：默认依据是读图得到的对象语义 + 真相源合同，不是原文件名。
+    - **默认不改用户已有命名**：只有当文件名明显是随机值、导出默认名或无语义占位名时，才默认自动改名；否则先询问，未获确认就保留原命名。
+5. **移动端适配默认启用**
+   - 移动端适配是全游戏统一规范，不作为“是否需要”的可选问题询问用户。
+   - 只允许询问主使用姿态或验收优先级（例如手机横屏、竖屏、平板），不允许把“要不要考虑移动端”交给用户触发。
+   - 新游戏设计阶段必须主动选定 `mobileProfile / preferredOrientation / mobileLayoutPreset`，并写入游戏专属 UI 规范。
+
+## 前置 1：信息收集（启动门禁）
+
+收集以下信息后才能开始。**已有信息直接使用，缺失项回问用户，不猜测**：
+
+1. **gameId**（小写，与目录名一致，如 `smashup`）
+2. **玩家人数范围**（如 `[2]`、`[2,3,4]`）
+3. **核心机制简述**（如"卡牌驱动+区域控制"、"骰子+角色技能"、"战棋+召唤"）
+4. **是否需要阶段/流程系统**（多阶段回合制 → FlowSystem）
+5. **规则文档位置**（若有，先放 `rule/` 目录下）
+6. **i18n 标题与简介**（中英文）
+7. **当前素材输入形态**（规则书/PDF/图片路径/位置表/网站/Wiki/用户整理表）
+8. **是否允许自动重命名并移动素材到正式目录**
+9. **是否需要先拉取 R2 本地资源**
+10. **是否需要与 Wiki / 官网 / 用户指定站点做对照录入**
+11. **主视觉素材**（按游戏实际形态识别：主地图/主棋盘/桌面板、角色板、卡牌 atlas、骰子/转盘、token、牌背、缩略图等）
+12. **空间承载类型**（先分类：无空间载体 / 网格 / 区域地图 / 点位网络 / 轨道 / 桌面区位 / 混合）
+13. **空间载体交互**（仅当存在地图/棋盘/大桌面/轨道时继续判断：是否需要拖拽、缩放、聚焦、旋转、翻面或局部放大）
+14. **空间数据来源**（仅当存在空间载体时继续判断：格子、区域、点位、轨道、邻接、区位坐标是否已有来源）
+15. **空间实体定位方式**（仅当实体会进入空间载体时继续判断：卡/棋子/token/标记/资源在格子、区域、点位、轨道或桌面区位上的定位与堆叠方式）
+16. **移动端主姿态**（只收集横屏/竖屏/平板优先级；不询问是否适配）
+
+**先查已有字段**：阅读 `src/games/manifest.types.ts` 确认可用字段，避免重复询问。
+
+## 前置 1.1：用户问“添加新游戏怎么做”时的主动指导模板（强制）
+
+当用户只是问“添加新游戏该怎么做”“我想做一个新游戏”“给你素材能不能做”时，AI 必须主动给出可执行 intake 指南，而不是只说“提供规则和素材即可”。
+
+### 必须主动说明的输入清单
+
+1. **规则来源**
+   - 官方规则书 PDF/Markdown、玩家帮助卡、FAQ/勘误、用户指定对照网站。
+   - 若只有 PDF，先走 `前置 1.4` 转 Markdown。
+2. **核心素材**
+   - 缩略图、主棋盘/主地图、玩家面板、卡牌正反面、牌背、单位/标记/token、骰子或转盘、帮助卡。
+   - UI 设计必须优先参考这些图片素材，尤其主地图、主棋盘、角色板这类决定构图的素材。
+3. **空间/桌面数据（按游戏类型触发）**
+   - 先判断游戏是否存在空间载体：地图、棋盘、轨道、桌面区位、玩家面板槽位、token 区域等。
+   - 有空间载体时，再收集网格行列、区域边界、区域名称、邻接关系、轨道点、实体定位点、槽位、控制点等。
+   - 无空间载体时跳过本项，不得把地图类问题套给纯卡牌、骰子、词语、经济、问答、拍卖等游戏。
+   - 若用户没有坐标表且该游戏确实依赖空间载体，AI 必须主动记录“坐标/槽位合同缺口”和建议产出时机；不得默认立刻做脱离真实 Board 的独立工具。
+4. **玩法信息**
+   - 玩家人数、回合/阶段结构、胜利条件、隐藏信息、随机性来源、资源类型、交互复杂度。
+5. **移动端基线**
+   - AI 直接说明移动端是默认工作内容，并根据游戏形态建议横屏/竖屏与 `mobileLayoutPreset`。
+
+### 默认回答结构
+
+```text
+我会先做这几步：
+1. 规则转 Markdown，并保留来源和质量说明。
+2. 盘点素材，找出主地图/主棋盘/主面板作为 UI 设计参考。
+3. 判断是否有空间载体：没有就跳过地图/点位问题；有则继续分为网格、区域地图、点位网络、轨道或桌面区位。
+4. 如果有地图、棋盘、轨道或桌面区位，先记录坐标/槽位合同需求与工具需求；默认等真实 Board/地图壳初版可运行后，再做嵌入式校准工具。
+5. 产出 design-system/games/<gameId>.md，包含桌面与移动端方案。
+6. 再进入骨架、数据结构、规则实现、UI 闭环。
+```
+
+## 前置 1.2：素材驱动 UI 与空间/工具时机裁决（强制）
+
+新游戏 UI 设计不得脱离素材凭空发挥。只要用户提供了图片目录或图片文件，AI 在生成 `design-system/games/<gameId>.md` 前必须先做：
+
+1. **素材视觉盘点**
+   - 识别最大图、主地图/主棋盘、角色板、牌背、卡牌 atlas、token/marker。
+   - 记录关键图片的路径、尺寸、疑似用途。
+   - 主 UI 设计必须引用这些素材观察结论，尤其主地图/主棋盘的实际构图、颜色、已有 UI 区块和留白。
+2. **空间承载类型裁决**
+   - 先判断游戏是否有空间载体。可能是无空间载体、网格、区域地图、点位网络、轨道、桌面区位、玩家面板槽位或混合形态。
+   - 无空间载体的游戏，不触发地图拖拽、区域划分、实体定位点等问题。
+   - 有大地图/大棋盘/大桌面时，默认评估拖拽、滚轮缩放、双指缩放、重置视角、聚焦目标；地图类优先复用 `src/games/summonerwars/ui/MapContainer.tsx` 的交互模式。
+3. **空间合同与工具时机门禁**
+   - 区域地图、点位网络、轨道、桌面区位、可放置实体的空间载体，必须先识别坐标/槽位合同需求。
+   - 前置阶段默认只产出合同字段、待标注对象、素材依据和风险清单；不要为了“有工具”先做脱离运行时的独立页面。
+   - 即使用户说“制作工具”，AI 也必须先判断最佳时机，并说明推荐路线：通常等真实 Board、真实缩放/拖拽、真实资源和真实坐标系跑通后，再做嵌入式编辑/校准工具。
+   - 地图/棋盘类工具优先复用 SummonerWars 式模式：在真实游戏 Board 或 MapContainer 内开启开发编辑态，直接校准运行时使用的坐标、命中区、堆叠点和导出数据。
+   - 独立工具只允许作为临时低保真/离线数据采集方案，必须明确“不是最终工具”，且不得替代真实 Board 内校准与截图验收。
+   - 区域地图最终工具至少支持：导入/绑定地图图、标多边形区域、标实体定位点/城市点/人口点/控制点、编辑 `id/name/type/adjacentRegionIds`、导出 JSON。
+4. **空间实体定位主动设计**
+   - 只有当规则里存在“实体进入空间载体”时才触发；实体可以是棋子、卡牌、token、资源、标记、骰子、人物、建筑等，不限于单位。
+   - 区域控制/地图游戏不能只标区域中心；必须按规则需要单独设计实体定位点或槽位，避免多个实体挤在同一个点。
+   - 定位点应带 role，例如 `piece/card/token/resource/city/population/control/marker`；具体 role 由当前游戏定义，不能写成所有游戏通用字段。
+5. **移动端默认设计**
+   - 移动端适配不再作为可选问题；每个游戏 UI 规范都必须写桌面和移动端。
+   - 地图类默认优先 `landscape-adapted + map-shell`；固定牌桌默认优先 `landscape-adapted + board-shell`；天然单列轻游戏才考虑 `portrait-simple`。
+   - 如果素材或规则证明该游戏暂不适合手机，也必须在 manifest/UI 规范中写明降级策略，而不是跳过移动端思考。
+
+## 前置 1.3：规则配件表白名单与正式资源准入（强制）
+
+当规则书、PDF、素材包、Workshop/TTS 导出目录或用户素材目录中存在“配件表 / 组件表 / 素材清单 / 起始设置表 / 牌表”时，AI 必须先把它整理成正式资源准入白名单，再移动、压缩、上传任何运行时图片。
+
+### 默认动作
+
+1. **先抽取规则配件表**
+   - 从规则书或用户指定真相源中抽取组件清单，至少记录对象类别、阵营/归属、数量、是否运行时可见、规则出处。
+   - 若规则书没有显式配件表，必须用规则文本和素材图面建立“临时准入表”，并标注为待复核；不得因为来源目录里有文件就默认全部接入。
+2. **给每个源文件做准入裁决**
+   - `runtime`：规则/MVP 运行态需要，默认进入 `public/assets/i18n/<locale>/<gameId>/`。
+   - `reference`：只作为规则、帮助、剧本或人工核对资料，允许进入明确的 `aids/` 或留在 `rule/` / `evidence/`，但不得被当成运行时对象。
+   - `candidate`：可能有用但规则依据不足，只能登记到 `temp/<gameId>-intake/` 或清单里，禁止进正式运行时目录。
+   - `excluded`：TTS/Workshop 材质色块、编辑器占位图、无规则对象对应的贴图、重复导出、下载站装饰图等，必须写排除原因，禁止压缩、上传和引用。
+3. **正式目录只接收白名单资源**
+   - 进入 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
+   - 新游戏不得默认把正式图片放入顶层 `public/assets/<gameId>`；确需使用历史兼容落点时，必须先说明 `asset-pipeline` 依据和运行时加载链路。
+   - 不能用“以免漏资产”“以后可能用到”“目录里有”作为正式接入理由。
+   - 若需要保留原始包的完整快照，只能放在用户原目录、`temp/<gameId>-intake/raw/` 或外部资料目录，不能混入正式运行时资源树。
+4. **命名必须有证据链**
+   - 正式文件名必须是稳定语义名：小写 kebab-case，按 `阵营/类别/对象/序号或批次` 组合，例如 `ming-card-back`、`jin-regular-infantry`、`chronology-cards-atlas`。
+   - 图面无法读清、规则表无法对应、同名对象无法区分时，不得硬塞进正式目录；先标为 `candidate`，等 OCR/人工核对后再命名。
+   - 允许临时序号只用于 `temp/` 或清单；正式资源不得长期使用下载哈希、扫描流水号、`image-01`、`unknown-*`、`misc-*` 这类无法回溯语义的名字。
+5. **上传前复核**
+   - 运行 `assets:manifest`、`assets:check`、`assets:upload` 之前，必须先确认正式目录没有 `candidate/excluded` 文件。
+   - 如果发现已经把排除项放进正式目录，本轮不能继续按“资源闭环已完成”收口；必须先说明对象、依据和最小补救方案，并按删除/降级规则取得用户确认后再处理。
+
+### 准入表最低字段
+
+`sourceFile | sourceSize | visualLabel | ruleRef | requiredComponent | intakeStatus | targetPath | canonicalName | decisionReason | reviewerNotes`
+
+其中 `intakeStatus` 只能是 `runtime`、`reference`、`candidate`、`excluded`。缺少 `ruleRef` 或 `decisionReason` 的文件，默认不能进入正式运行时目录。
+
+## 前置 1.4：规则 PDF 转 Markdown 与可行性评估（强制前置）
+
+当用户提供的是“规则 PDF + 图片素材目录”，或明确要求先判断新游戏是否可做时，先完成本阶段，**不要直接进入游戏骨架实现**。
+
+### 默认动作
+
+1. **规则转档**
+   - 优先使用项目脚本：`npm run pdf:md -- "<输入PDF>" -o "src/games/<gameId>/rule/<游戏名>规则.md"`。
+   - 若 PDF 无原生文字，先说明当前脚本无法直接提取，再选择 OCR/截图转写方案；OCR 中间图必须放 `temp/<gameId>-intake/`。
+   - Markdown 顶部必须写明来源路径、转换日期、转换方式和质量说明；不得在转写时改写规则语义。
+2. **素材盘点**
+   - 生成 `temp/<gameId>-intake/image-inventory.tsv` 或等价清单，至少包含原文件名、尺寸、类型、疑似用途。
+   - 先按 `前置 1.3` 生成正式资源准入白名单；只有 `runtime` 或明确 `reference` 的图片，才允许按本 skill 的资源目录与语义命名落正式目录。
+   - 不能可靠识别、不能对应规则配件表或当前 MVP 不需要的图片，只登记为 `candidate` / `excluded`，不强行命名，不移动到正式资源树。
+3. **资源闭环**
+   - 正式图片落盘后运行最小必要压缩命令。
+   - 压缩前再次确认正式目录没有 `candidate/excluded` 文件。
+   - 运行 `npm run assets:manifest` 与 `npm run assets:validate`。
+   - 若本轮新增运行时资源，执行 `npm run assets:check`；发现远端缺失时继续 `npm run assets:upload`，并抽查代表性远端 URL 返回 200。
+4. **可行性分析**
+   - 在 `evidence/<gameId>/<gameId>-feasibility-<date>.md` 写结论，至少覆盖：核心机制、引擎原语映射、状态模型难点、UI/资源难点、MVP 切分、主要风险与建议阶段。
+   - 结论必须区分“可做”与“建议怎么做”：复杂游戏默认先给 MVP 边界，不承诺一次性全规则自动化。
+
+### 验收
+
+- `rule/<游戏名>规则.md` 存在且可读。
+- 素材准入表能回溯原始文件、规则配件表依据、准入状态与正式目标路径。
+- 正式资源目录中不存在 `candidate/excluded` 文件。
+- 正式资源已有 `compressed/*.webp` 或明确说明为何不能压缩。
+- 资源 manifest 已重建并校验通过。
+- 可行性分析已落到 `evidence/<gameId>/`，并能指导后续是否开分支建骨架。
+
+## 前置 1.5：图片 / 位置驱动的快速 intake（可直接启动）
+
+当用户还没把完整规则讲完，但已经给了**图片路径、裁片位置、行列数、顺序说明或对象定位**时，可以直接启动资源 intake。不要要求“先把所有规则补齐再开始”。
+
+### 允许直接开工的最小输入
+
+1. `gameId`
+2. 原图路径或图片文件列表
+3. 每张图的素材类别（缩略图 / 卡牌 atlas / 基地 atlas / 角色板 / 棋盘 / 通用插图）
+4. 位置口径（行列数、row-major 顺序、裁图坐标、对象列表之一即可）
+5. 当前主真相源与是否需要对照源
+
+### AI 默认动作
+
+1. 先写素材录入契约：真相源表、规则配件表白名单、切图表、核对合同表、对照表、冲突待裁定表。
+2. 先读图识别对象，再判断现有文件名是否明显随机/无语义：
+   - 若是随机名、默认导出名、批量下载残留名，则按**图片内容语义**自动重命名并移动到正式目录。
+   - 若现有文件名看起来是用户有意命名的语义名，则默认不改名，只询问是否需要统一为项目规范命名。
+3. 移动正式资源前必须完成 `runtime/reference/candidate/excluded` 裁决；`candidate/excluded` 不得进入 `public/assets/` 正式树。
+4. 原图落盘后立即运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
+5. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
+6. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
+
+### 默认目录与命名约定
+
+| 素材类型 | 默认命名 | 默认目录 |
+|---------|---------|---------|
+| 缩略图 | `cover.png` | `public/assets/i18n/zh-CN/<gameId>/thumbnails/` |
+| 卡牌 atlas | `<batch>.png` | `public/assets/i18n/zh-CN/<gameId>/cards/` |
+| 基地 atlas | `<batch>_base.png` | `public/assets/i18n/zh-CN/<gameId>/base/` |
+| 角色/英雄面板 | `<entityId>-board.png` | `public/assets/i18n/zh-CN/<gameId>/hero/` |
+| 棋盘/地图/公共插图 | 按语义命名 | `public/assets/i18n/zh-CN/<gameId>/board/` 或 `common/` |
+| 图集配置 | `<name>.atlas.json` | `public/assets/atlas-configs/<gameId>/` |
+
+若用户没有给命名方案，AI 默认采用上述语义命名；若用户已给命名规则，以用户规则为准。
+
+### 命名依据（强制）
+
+1. **正式命名依据 = 图片内容语义 + 真相源合同**
+   - 能从图片中直接读到对象名称、类别、批次、角色身份时，必须以这些内容作为正式命名依据。
+2. **原文件名只当输入，不当正式命名依据**
+   - 像 `IMG_1234.png`、`新建文件夹 (2).png`、`scan0007.png`、`image(1).png` 这类随机名/默认名不能直接沿用为长期正式命名。
+   - 若文件名本身已经是明显语义化的用户命名，则默认保留，不自动替换。
+3. **按层级决定命名粒度**
+   - 整体缩略图按用途命名，如 `cover`
+   - atlas 按批次/对象集合命名，如 `<batch>`、`<batch>_base`
+   - 单张裁片按对象命名，如卡名、基地名、角色名或稳定 `defId`
+4. **图面名与 canonical 名冲突时必须分离**
+   - 若图面显示名和正式对象名不一致，必须在合同里显式记录“显示名”和“正式命名/defId”的裁决，不能暗改。
+5. **看不清就停**
+   - 图片内容不足以支持可靠命名时，不得硬命名；应标记待确认并拉入对照源比对。
+6. **只有明显随机名才默认自动改**
+   - “明显随机名”指随机字符串、设备默认导出名、截图默认名、扫描仪流水号、下载站无语义序号等。
+   - 只要文件名存在明确语义且看起来是用户主动命名，就应先询问，不要默认替换。
+
+---
+
+## 阶段 1：目录骨架与 Manifest 落地
+
+**目标**：建立完整目录结构与最小占位实现，`npm run generate:manifests` 可成功运行。
+
+### 1.1 创建目录结构
+
+> **默认拆分**：中等以上复杂度游戏（命令数 ≥5 或有多阶段回合）从第一天就用拆分结构。
+
+```
+src/games/<gameId>/
+  manifest.ts          # 清单元数据
+  game.ts              # 引擎适配器组装（只做组装，不写逻辑）
+  Board.tsx            # UI 布局组装（逻辑拆到 hooks/，子组件拆到 ui/）
+  thumbnail.tsx        # 缩略图组件
+  tutorial.ts          # 教学配置（占位）
+  audio.config.ts      # 音频配置（占位）
+  criticalImageResolver.ts  # 关键图片预加载（若有精灵图）
+  domain/
+    index.ts           # 领域内核入口
+    types.ts           # re-export barrel（导出 core-types + commands + events）
+    core-types.ts      # 状态接口（PlayerState, GameCore, 基础类型）
+    commands.ts        # 命令类型 + XX_COMMANDS 常量
+    events.ts          # 事件类型 + XX_EVENTS 常量
+    ids.ts             # 领域 ID 常量表
+    utils.ts           # 游戏内共享工具（从第一天就建立）
+  rule/
+    <游戏名>规则.md     # 规则文档占位
+  hooks/               # 游戏业务 hooks
+  ui/                  # 游戏 UI 子组件
+  __tests__/
+    smoke.test.ts      # 冒烟测试占位
+```
+
+### 1.2 manifest.ts（参考真实游戏）
+
+```ts
+import type { GameManifestEntry } from '../manifest.types';
+
+const entry: GameManifestEntry = {
+    id: '<gameId>',
+    type: 'game',
+    enabled: true,
+    titleKey: 'games.<gameId>.title',
+    descriptionKey: 'games.<gameId>.description',
+    category: 'strategy',         // strategy | casual | party | abstract
+    playersKey: 'games.<gameId>.players',
+    icon: '🎮',
+    thumbnailPath: '<gameId>/thumbnails/cover',
+    allowLocalMode: false,        // 默认仅联机
+    playerOptions: [2],           // 可选 [2,3,4]
+    tags: [],                     // dice_driven | card_driven | tactical 等
+    bestPlayers: [2],
+};
+
+export const <GAME_ID>_MANIFEST: GameManifestEntry = entry;
+export default entry;
+```
+
+### 1.3 domain 类型文件（默认拆分结构）
+
+**core-types.ts** — 状态接口：
+```ts
+import type { PlayerId } from '../../../engine/types';
+export type GamePhase = 'factionSelect' | 'startTurn' | 'playCards' | ...;
+export const PHASE_ORDER: GamePhase[] = [...];
+export interface PlayerState { id: PlayerId; /* ... */ }
+export interface <GameId>Core {
+    players: Record<PlayerId, PlayerState>;
+    turnNumber: number;
+    gameResult?: { winner?: string; draw?: boolean };
+}
+```
+
+**commands.ts** — 命令类型：
+```ts
+import type { Command } from '../../../engine/types';
+export const XX_COMMANDS = { DO_SOMETHING: 'DO_SOMETHING', ... } as const;
+export interface DoSomethingCommand extends Command<'DO_SOMETHING'> { payload: { ... }; }
+export type <GameId>Command = DoSomethingCommand | ...;
+```
+
+**events.ts** — 事件类型：
+```ts
+import type { GameEvent } from '../../../engine/types';
+export const XX_EVENTS = { SOMETHING_DONE: 'SOMETHING_DONE', ... } as const;
+export interface SomethingDoneEvent extends GameEvent<'SOMETHING_DONE'> { payload: { ... }; }
+export type <GameId>Event = SomethingDoneEvent | ...;
+```
+
+**types.ts** — re-export barrel：
+```ts
+export * from './core-types';
+export * from './commands';
+export * from './events';
+```
+
+### 1.4 domain/ids.ts（领域 ID 常量表）
+
+所有稳定 ID 必须在此定义，禁止字符串字面量。
+
+### 1.5 domain/index.ts（领域内核占位）
+
+```ts
+import type { DomainCore, PlayerId, RandomFn, GameOverResult } from '../../../engine/types';
+import type { <GameId>Core } from './types';
+
+export const <GameId>Domain: DomainCore<<GameId>Core> = {
+    gameId: '<gameId>',
+    setup: (playerIds: PlayerId[], random: RandomFn): <GameId>Core => ({
+        // 最小初始状态
+        players: Object.fromEntries(playerIds.map(pid => [pid, createPlayerState(pid)])),
+        turnNumber: 1,
+        // ...其他必要字段
+    }),
+    validate: (state, command) => ({ valid: true }),  // 占位
+    execute: (state, command, random) => [],            // 占位
+    reduce: (core, event) => core,                     // 占位
+    isGameOver: (core) => core.gameResult,
+};
+```
+
+### 1.6 game.ts（引擎适配器占位）
+
+```ts
+import { createGameEngine, createBaseSystems, createFlowSystem } from '../../engine';
+import { <GameId>Domain } from './domain';
+import type { <GameId>Core } from './domain/types';
+
+// FlowHooks 占位（阶段 4 实现）
+const flowHooks = {
+    initialPhase: '<firstPhase>',
+    getNextPhase: () => '<firstPhase>',
+    getActivePlayerId: ({ state }) => Object.keys(state.core.players)[0],
+};
+
+const systems = [
+    createFlowSystem<<GameId>Core>({ hooks: flowHooks }),
+    ...createBaseSystems<<GameId>Core>(),
+];
+
+export const <GameId> = createGameEngine<<GameId>Core>({
+    domain: <GameId>Domain,
+    systems,
+    minPlayers: 2,
+    maxPlayers: 2,
+    commandTypes: [],  // 阶段 4 填充
+});
+
+export default <GameId>;
+```
+
+### 1.7 Board.tsx（最小占位）
+
+```tsx
+import React from 'react';
+import type { GameBoardProps } from '../../engine/transport/protocol';
+import type { <GameId>Core } from './domain/types';
+
+type Props = GameBoardProps<<GameId>Core>;
+
+const <GameId>Board: React.FC<Props> = ({ G, playerID }) => {
+    return <div className="p-4 text-white">
+        <h1>{'<gameId> - 骨架占位'}</h1>
+        <p>当前玩家：{playerID ?? 'observer'}</p>
+        <pre>{JSON.stringify(G.core, null, 2)}</pre>
+    </div>;
+};
+
+export default <GameId>Board;
+```
+
+### 1.8 其他占位文件
+
+- **thumbnail.tsx**：使用 `ManifestGameThumbnail` 组件
+- **tutorial.ts**：导出空 `TutorialManifest`（`{ id: '<gameId>-basic', steps: [] }`）
+- **audio.config.ts**：导出空 `GameAudioConfig`
+- **__tests__/smoke.test.ts**：验证 domain.setup 不报错
+
+### 1.9 资源目录
+
+```
+public/assets/i18n/zh-CN/<gameId>/
+  thumbnails/.gitkeep
+  board/.gitkeep
+  cards/.gitkeep
+```
+
+### 1.10 i18n 文件
+
+创建 `public/locales/zh-CN/game-<gameId>.json` 和 `public/locales/en/game-<gameId>.json`，包含 title/description/players。
+
+### 验收
+
+```bash
+npm run generate:manifests    # 成功生成清单
+npx vitest run src/games/<gameId>  # 冒烟测试通过
+npm run dev                   # 编译无报错（游戏可在大厅列表看到）
+```
+
+---
+
+## 阶段 1.5：机制分解与数据结构设计（强制前置）
+
+**目标**：在录入数据前，先将游戏机制分解为引擎原语组合，设计面向百游戏的通用数据结构，避免后期重构。
+
+### 1.5.1 机制分解与引擎原语映射（强制）
+
+> **核心原则：面向百游戏设计，不依赖现有游戏的具体实现。**
+
+将新游戏的核心机制分解为引擎原语的组合：
+
+| 机制类别 | 游戏中的表现 | 引擎原语映射 | 是否需要扩展 |
+|---------|------------|------------|------------|
+| **随机性** | 骰子/抽牌/洗牌 | `dice.ts` / `zones.ts` | ? |
+| **资源管理** | 魔力/行动点/金币 | `resources.ts` | ? |
+| **状态效果** | buff/debuff/标记 | `tags.ts` (层数/持续时间/层级匹配) | ? |
+| **数值修改** | 攻击力加成/伤害减免 | `modifier.ts` (flat/percent/priority) | ? |
+| **动态属性** | 可被 buff 修改的属性 | `attribute.ts` (base + modifiers) | ? |
+| **能力系统** | 技能/被动/光环 | `ability.ts` (注册/查找/执行器) | ? |
+| **目标选择** | 选择敌人/友军/格子 | `target.ts` | ? |
+| **条件判断** | 触发条件/激活条件 | `condition.ts` + `expression.ts` | ? |
+| **效果执行** | 伤害/治疗/移动/抽牌 | `effects.ts` | ? |
+| **空间关系** | 棋盘/网格/区域 | `zones.ts` (grid/stack/hand) | ? |
+| **伤害计算** | 伤害修正/防御/护甲 | `damageCalculation.ts` | ? |
+
+**输出产物**：
+1. **引擎原语组合方案**：列出需要使用的 primitives 及其组合方式
+2. **缺口清单**：列出现有 primitives 无法覆盖的机制（需新增或扩展）
+3. **复用策略**：哪些机制可以直接用现有 primitives，哪些需要游戏层封装
+
+### 1.5.2 数据结构设计（强制）
+
+> **核心原则：数据结构必须支持未来扩展，面向百游戏设计，禁止"先录入再重构"。**
+
+在录入具体数据前，先设计通用数据结构：
+
+#### 对象生命周期与延迟交互前置审查（强制）
+
+只要新游戏里存在以下任一机制，就必须在正式录数据前先回答清楚，再决定 core/event/interaction 结构：
+
+1. 对象会跨区移动：手牌、牌库、弃牌、场上、附着区、宿主区、移出游戏区之间转换
+2. 对象会临时换控制者、换持有者、换宿主，或“当前使用者”和“真实拥有者”分离
+3. 某条交互会跨阶段、跨清场、跨宿主变化后继续结算
+4. UI 想根据 payload 里有没有 `defId` / `targetType` / 类似字段来猜展示模式
+
+最低输出必须包含：
+
+- `session context`：当前谁有权决策，统一从底层 seam 读取，不在业务层手猜
+- `object ref / provenance`：对象稳定身份、真实归属、当前控制/持有/宿主、默认终点分别怎么表达
+- `deferred snapshot`：哪些事实在交互创建时冻结，哪些字段允许解决时再查 live state
+- `interaction descriptor`：展示模式由什么显式描述，避免 UI 从业务 payload 猜语义
+
+禁止做法：
+
+- 只传一串 `fromPlayerId / toPlayerId / ownerId / cardId` 散字段，希望 reducer 自己猜真实语义
+- 把“当前控制者/当前宿主/当前持有者”直接当成真实拥有者或默认终点
+- 交互创建时不快照，等 resolve 时再去 live state 碰运气找对象
+- 让 UI 通过 payload 形状猜“这是按钮模式、卡牌模式还是基地模式”
+
+#### 实体类型分析
+
+列出游戏中的所有实体类型（如卡牌/单位/骰子/资源/状态），对每种实体类型回答：
+
+1. **领域语义**：该实体在游戏规则中的核心作用（如"单位=可移动可攻击的棋子"）
+2. **共性字段**：所有该类实体都有的字段（如 id/name/cost）
+3. **变体字段**：部分实体有的字段（如 attack/defense/range）
+4. **扩展性需求**：未来可能新增的字段（如 rarity/tags/keywords）
+5. **引用关系**：该实体引用哪些其他实体（如卡牌引用技能）
+6. **引擎原语映射**：该实体的哪些属性应该用引擎原语表达（如 hp 用 `resources.ts`，buff 用 `tags.ts`）
+
+#### 数据结构设计模板
+
+```ts
+// ❌ 错误示例：字段不完整，未来需要重构
+interface Card {
+    id: string;
+    name: string;
+    cost: number;
+}
+
+// ✅ 正确示例：考虑扩展性，字段完整，面向百游戏
+interface Card {
+    id: string;
+    name: string;
+    type: 'action' | 'unit' | 'event';  // 类型区分（必须）
+    cost: number;  // 费用（若游戏有资源系统）
+    
+    // 可选字段（根据游戏机制决定）
+    rarity?: 'common' | 'rare' | 'epic';  // 稀有度
+    tags?: string[];  // 标签（如 'magic' | 'melee'）
+    abilities?: string[];  // 技能 ID 引用（不嵌套对象）
+    effects?: Effect[];  // 效果定义（结构化）
+    
+    // 触发条件（若有）
+    trigger?: {
+        phase?: GamePhase;  // 触发阶段
+        event?: string;  // 触发事件
+        condition?: Condition;  // 触发条件
+    };
+    
+    // 使用限制（若有）
+    usageLimit?: {
+        perTurn?: number;  // 每回合次数
+        perGame?: number;  // 每局次数
+        cooldown?: number;  // 冷却回合
+    };
+    
+    // 目标选择（若有）
+    targeting?: {
+        type: 'self' | 'opponent' | 'any_unit' | 'any_cell';
+        filter?: Condition;  // 目标过滤条件
+        count?: number | 'all';  // 目标数量
+    };
+}
+```
+
+#### 数据驱动反模式清单（强制）
+
+在设计数据结构时，必须避免以下反模式：
+
+| 反模式 | 错误示例 | 正确做法 | 为什么错误 |
+|--------|---------|---------|-----------|
+| **硬编码技能逻辑** | `validate()` 中 `switch (abilityId)` 每个技能一个 case | 技能定义包含 `validation` 配置，使用通用验证函数 | 第 100 个游戏会有 10000 行 switch |
+| **UI 状态混入 core** | `core.lastPlayedCard`（纯展示） | 通过 EventStream 传递给 UI | core 应该只包含规则判定需要的数据 |
+| **交互状态混入 core** | `core.pendingAttack`（等待输入） | 使用 `sys.interaction` | 交互状态是系统层职责，不是领域层 |
+| **缺少目标字段** | `grantStatus: { statusId, value }` + 执行层猜测目标 | `grantStatus: { statusId, value, target: 'opponent' }` | 数据不完整导致执行层需要"猜测" |
+| **缺少触发条件** | 技能只有效果描述，触发条件在代码里硬编码 | 技能定义包含 `trigger: { phase, event }` | 触发逻辑应该数据驱动，不是代码驱动 |
+| **缺少使用限制** | 技能只有费用，没有"每回合一次"等限制 | 技能定义包含 `usageLimit: { perTurn: 1 }` | 限制规则应该在数据中声明 |
+| **对象嵌套引用** | `card.abilities: Ability[]`（嵌套对象） | `card.abilities: string[]`（ID 引用） | 嵌套导致数据冗余和更新不一致 |
+| **散落的状态字段** | `unit.stunned`, `unit.poisoned`, `unit.buffed` | `unit.tags: TagContainer` | 第 100 个游戏会有 100 种状态字段 |
+| **ad-hoc 修正字段** | `unit.attackBonus`, `unit.defenseBonus` | `unit.attack: Attribute` (base + modifiers) | 修正逻辑应该用 modifier 系统 |
+
+#### 数据完整性自检清单（强制）
+
+设计完数据结构后，逐项检查：
+
+- [ ] 所有实体类型都有唯一 ID 字段（`id: string`）
+- [ ] 所有实体类型都有类型区分字段（`type: 'xxx'`）
+- [ ] 所有引用关系都是 ID 引用，不是对象嵌套
+- [ ] 所有"可能被 buff 修改"的数值都映射到 `Attribute` 或 `resources.ts`
+- [ ] 所有"需要玩家选择"的操作都有目标选择规则（`targeting` 字段）
+- [ ] 所有"有使用限制"的能力都有限制字段（`usageLimit`）
+- [ ] 所有"有触发条件"的效果都有触发规则（`trigger` 字段）
+- [ ] 所有状态效果都映射到 `TagContainer`，不是散落的布尔字段
+- [ ] 所有数值修改都映射到 `modifier.ts`，不是 ad-hoc 的 `xxxBonus` 字段
+
+### 1.5.3 引擎能力缺口分析（强制）
+
+对照 `src/engine/primitives/` 和 `src/engine/systems/`，列出：
+
+1. **可直接复用**：已有的 primitives/systems 可以直接使用
+2. **需要扩展**：已有的 primitives/systems 需要增加新功能
+3. **需要新增**：完全没有的能力，需要新建 primitive/system
+
+**输出产物**：
+- 引擎能力缺口清单（Markdown 表格）
+- 每个缺口的优先级（P0 阻塞 / P1 重要 / P2 可延后）
+- 每个缺口的预计实现阶段（阶段 3 / 阶段 4 / 阶段 6）
+
+### 1.5.4 面向百游戏的设计检查（强制）
+
+> **核心问题：如果未来有 100 个游戏，这个设计会不会导致代码爆炸？**
+
+对每个设计决策，问自己：
+
+1. **如果有 100 个游戏，每个游戏都这样做，会发生什么？**
+   - ❌ 每个游戏在 `validate()` 中加 100 行 switch → 10000 行 switch
+   - ✅ 每个游戏在数据中声明验证规则 → 数据驱动，代码不增长
+
+2. **这个字段/逻辑是游戏特有的，还是可以抽象为通用能力？**
+   - ❌ `core.diceThroneSpecificField` → 只有一个游戏用
+   - ✅ `core.resources: ResourceContainer` → 所有游戏都能用
+
+3. **这个实现是否依赖"已有游戏的具体实现"？**
+   - ❌ "参考 DiceThrone 的 `CombatAbilityManager`" → 耦合具体游戏
+   - ✅ "使用 `engine/primitives/ability.ts`" → 依赖通用抽象
+
+4. **如果规则变化，需要改多少地方？**
+   - ❌ 改技能触发条件需要改 validate/execute/UI 三处 → 散落逻辑
+   - ✅ 只改技能定义的 `trigger` 字段 → 单一数据源
+
+### 验收
+
+- 机制分解表已完成，引擎原语映射明确
+- 数据结构设计已完成，通过完整性自检清单
+- 引擎能力缺口清单已输出，优先级明确
+- 面向百游戏的设计检查已通过（无"代码爆炸"风险）
+- 用户确认数据结构设计合理，可以开始录入
+
+---
+
+## 阶段 2：数据录入（规则文档 + 游戏数据 + 类型定义）
+
+**目标**：完成规则文档录入、静态游戏数据录入、核心类型定义，不写业务逻辑。需要新增引擎原语的部分可标记延后。
+
+### 2.0 数据缺失处理规范（强制）
+
+> **核心原则：不猜测、不编造、不跳过。缺什么问什么，问清楚再录。**
+
+1. **规则文档不完整或有歧义时**：
+   - 列出具体缺失/歧义项（如"火球术的伤害是3还是3+骰子数？规则书第X页描述模糊"）
+   - 回问用户确认，不自行推断
+   - 若用户暂时无法确认，标记 `// TODO: 待确认 — <具体问题>`，不填默认值
+
+2. **数据量大、用户只提供了部分时**：
+   - 先录入已有数据，每批录入后输出 Markdown 核对表（实体名/关键属性/数量）
+   - 明确告知用户"已录入 X 条，还缺 Y 条"，列出缺失清单
+   - 用户补充后继续录入，不等全部数据到齐才开始（已有数据先落地）
+
+3. **素材数据核对（强制，遵循 AGENTS.md）**：
+   - 根据图片/规则书提取数据时，必须全口径核对、逻辑序列化
+   - 关键限定词显式核对（如"每回合一次"vs"每场一次"、"相邻"vs"同行"）
+   - 输出 Markdown 表格作为核对契约，用户确认后才算录入完成
+
+4. **需要新增引擎原语的数据**：
+   - 若某些游戏机制在 `src/engine/primitives/` 中没有现成实现
+   - 先在数据层标记 `// DEFERRED: 需新增引擎原语 <xxx>，暂用占位`
+   - 记录到阶段验收的"延后清单"中，在阶段3或阶段4补充实现
+   - 不因缺少原语而阻塞整个数据录入流程
+5. **对照源主动确认（强制）**：
+   - 如果用户同时给了 Wiki、官网、数据库或自整理网站，必须主动问“要不要把它作为对照源一起比？”。
+   - 对照源只用于发现冲突和补足索引，不得默认覆盖主真相源。
+   - 对照结果必须写进 Markdown 对照表，不允许只在对话里口头比较。
+
+### 2.1 录入规则文档
+
+将规则书/规则图片内容结构化录入 `src/games/<gameId>/rule/` 下的 Markdown 文件，拆解为：
+
+1. **阶段流程**：回合结构、阶段顺序、阶段间切换条件
+2. **核心实体**：卡牌/单位/骰子/资源的类型与属性
+3. **操作类型**：玩家可执行的命令（如出牌/移动/攻击/弃牌）
+4. **结算规则**：积分/伤害/胜利条件
+5. **特殊机制**：如 faction 选择、deck building、技能触发
+
+**规则文档质量要求**：
+- 每条规则必须可追溯到规则书原文位置（页码/章节）
+- 数值必须精确（"3点伤害"而非"一些伤害"）
+- 条件触发必须完整（触发时机 + 触发条件 + 效果 + 持续时间）
+
+### 2.2 录入游戏静态数据
+
+根据规则文档，将所有实体数据录入代码。**不只是名称+描述，必须录入影响游戏机制的全部必要信息**。
+
+#### "必要信息"判断原则（强制）
+
+> 未来的游戏机制不可预知，不预设具体字段清单。用以下原则判断一条信息是否必须录入：
+
+1. **规则判定依赖**：如果 `validate()` / `execute()` / `reduce()` / `isGameOver()` 需要读取该信息来做决策，则必须录入。
+   - 例：攻击力、生命值、费用、射程、触发条件、效果数值、冷却回合、使用限制
+2. **状态区分依赖**：如果该信息用于区分不同实体的行为差异，则必须录入。
+   - 例：近战vs远程、一次性vs持续、主动vs被动、阵营归属
+3. **UI 渲染依赖**：如果界面需要该信息来正确展示实体，则必须录入。
+   - 例：精灵图索引/图集坐标、素材文件引用、牌背符号、中英文名称
+4. **引用关系依赖**：如果该信息建立实体间的引用链（A拥有B、A触发B），则必须录入。
+   - 例：技能ID列表、效果引用、目标选择规则
+5. **数量/分布依赖**：如果该信息影响游戏的随机性或资源分配，则必须录入。
+   - 例：牌组中的数量、骰面分布、初始资源
+
+**反面判断——可以不录入的**：
+- 纯风味文本（不影响任何规则判定的背景故事）
+- 可从其他已录入数据推导出的冗余信息
+- 仅在开发调试时使用、不进入生产的临时标记
+
+#### 录入完整性自检（逐字段，强制）
+
+> **核心问题：素材/规则书上的每一条信息，是否都已在代码中有对应字段？**
+> AI 容易漏录"不好结构化"的信息（如图标表示的触发条件、符号表示的骰面组合）。必须逐项核对，不能只录"好录的"。
+
+每录入一个实体类型，执行以下自检：
+
+1. **素材全信息提取**：将素材（卡牌图片/规则书条目）上的所有可见信息逐条列出，包括：
+   - 文字信息（名称、描述、数值）
+   - 图标/符号信息（骰面图标、元素符号、阵营标记）→ 必须转化为结构化数据
+   - 位置/布局隐含信息（卡牌分区暗示的阶段归属、颜色暗示的稀有度）
+2. **逐条比对**：将提取的信息列表与已定义的 TypeScript 字段逐条比对，确认每条信息都有对应字段承接
+3. **缺字段立即补**：发现素材上有信息但代码中无对应字段 → 补字段，不跳过
+4. **引用完整性**：该实体引用的其他实体 ID 是否都已定义？（断链 → 补或标记 TODO）
+
+**典型漏录场景（警示）**：
+- ❌ 技能卡只录了名称+效果描述，漏了触发骰面组合 → `validate()` 无法判断触发条件
+- ❌ 单位卡只录了攻击力+生命值，漏了移动范围 → 棋盘交互无法校验合法移动
+- ❌ 卡牌只录了效果文本，漏了费用/冷却 → 资源消耗逻辑无数据源
+
+#### 目录结构选择
+
+按游戏复杂度选择合适的数据组织方式：
+
+**简单游戏**：直接在 domain 中定义。
+
+**中等游戏**：
+```
+data/
+  cards.ts           # 实体定义与查询函数
+  factions/          # 按分组组织数据
+```
+
+**复杂游戏**：
+```
+config/ 或 heroes/   # 按实体大类拆分
+  factions/          # 按阵营/角色进一步拆分
+```
+
+具体目录名和文件拆分方式由游戏的实体结构决定，不预设。
+
+#### 录入流程
+
+1. 按实体类别分批录入（如先录基础实体，再录依赖它们的复合实体）
+2. 每批录入后输出核对表，**核对表的列必须覆盖该实体类型的所有必要字段，不只是名称**
+   - 列的选择依据：上述"必要信息判断原则"中命中的字段
+   - 数值字段直接列出数值，引用字段列出引用目标，布尔/枚举字段列出取值
+   - 最后一列标注录入状态（✅ 已录入 / ❌ 缺数据 / ⚠️ 待确认）
+3. 用户确认核对表后，该批数据视为"已验收"
+4. 所有稳定 ID 录入 `domain/ids.ts`（`as const`），禁止字符串字面量
+5. **全量数据确认（阶段门禁）**：所有批次录入完成后，输出一份汇总清单，包含：
+   - 各实体类别的数量统计（如"单位 24 张、技能 18 个、事件 12 种"）
+   - 仍有 `TODO: 待确认` 的条目列表
+   - 标记 `DEFERRED` 的引擎原语需求列表
+   - 用户明确回复"确认"后才可进入阶段 3，否则继续补充
+
+### 2.3 完善类型定义
+
+根据录入的数据，补充 domain/types.ts（或拆分文件）：
+- 完整的 `PlayerState`（根据游戏需要的状态字段）
+  - **状态效果建议用 `TagContainer` 表达**（`engine/primitives/tags.ts`），避免散落的 `statusEffects: Record<string, number>` / `tempAbilities: string[]`
+- 完整的 `<GameId>Core`（玩家状态/回合信息/游戏特有状态等）
+- 所有命令类型（`XX_COMMANDS` 常量对象）
+- 所有事件类型（`XX_EVENTS` 常量对象）
+- 实体定义的 TypeScript 接口
+
+### 2.4 检查系统需求与引擎原语选型
+
+对照规则，在引擎层检索可复用实现：
+- 骰子 → `src/engine/primitives/dice.ts`
+- 资源（消耗品）→ `src/engine/primitives/resources.ts`
+- 状态/buff/debuff（层数/持续时间/净化/层级匹配）→ `src/engine/primitives/tags.ts`
+- 数值修改管线（flat/percent/override/compute + priority）→ `src/engine/primitives/modifier.ts`
+- 可被 buff 修改的属性（base + modifier → current）→ `src/engine/primitives/attribute.ts`
+- 能力系统骨架（注册/查找/执行器分发/可用性检查）→ `src/engine/primitives/ability.ts`
+- 卡牌/区域 → `src/engine/primitives/zones.ts`
+- 条件/表达式 → `src/engine/primitives/condition.ts` + `expression.ts`
+- 目标解析 → `src/engine/primitives/target.ts`
+- 效果执行 → `src/engine/primitives/effects.ts`
+
+**强制要求（新游戏）**：
+- 禁止自行实现 statusEffects / tempAbilities / DamageModifier / PowerModifierFn / abilityRegistry；必须复用上述 primitives（详见 `AGENTS.md` 与 `docs/ai-rules/engine-systems.md`）。
+
+**若缺口存在**：优先补充 `src/engine/primitives/`（通用工具函数）；领域语义放在游戏层（`src/games/<gameId>/domain/`）。若工作量大，记入延后清单，在后续阶段补充。
+
+### 2.5 领域建模前置审查（强制门禁）
+
+> 完整规范见 `docs/ai-rules/engine-systems.md`「领域建模前置审查」节。
+> 核心原则：**规则文本 → 领域模型 → 实现**，禁止跳过建模直接写实现。
+
+1. **领域概念建模**：为每个规则术语定义精确语义边界和事件映射（如"影响"= 哪些具体事件）。
+2. **决策点识别**：标记所有需要玩家选择的点（强制/可选/无），评估引擎是否支持该交互模式。
+3. **引擎能力缺口分析**：建模产出与引擎能力逐一比对，列出缺口和扩展计划。
+
+产出：术语→事件映射表 + 决策点清单 + 引擎缺口清单。
+
+### 验收
+
+- 规则文档完整录入 `rule/*.md`，覆盖所有阶段/实体/操作/结算/特殊机制
+- 静态数据全部录入代码，核对表已获用户确认
+- types.ts 中所有类型能覆盖规则文档描述的实体
+- ids.ts 常量表覆盖所有稳定 ID
+- 数据文件可正常导入，无循环依赖
+- 冒烟测试仍通过
+- **领域建模审查已完成**（术语映射表/决策点清单/引擎缺口清单）
+- **延后清单**（若有）：列出需要新增引擎原语的项目及预计补充阶段
+
+---
+
+## 阶段 3：领域内核实现（Command → Event → Reduce）
+
+## 旧浏览器兼容门禁（新游戏强制）
+
+新游戏默认遵循这条原则：**能继续兼容就继续兼容，真缺关键能力才提示**。
+
+1. 禁止按浏览器版本号硬拦
+   - 版本号只能作为经验参考，不得直接作为 `/play/:gameId/*` 的拦截条件。
+   - 旧版本只要关键能力仍然齐全，就必须允许进入并继续游玩。
+2. 可降级能力优先做 fallback
+   - `matchMedia`、监听 API 差异（`addEventListener('change')` vs `addListener`）这类能力，优先在通用工具层或游戏层补 fallback。
+   - 只有在确认没有安全 fallback、且缺失后会破坏核心游玩时，才允许升级成兼容门禁。
+3. 门禁必须按游戏/页面精确收敛
+   - 不要把某个游戏需要的浏览器能力写成所有 `/play/*` 的统一硬门槛。
+   - 若某项能力只影响特定游戏或特定 dev 页面，门禁必须按 `gameId` 或页面前缀精确判断。
+4. `ResizeObserver` 视为高风险能力，但不是全站默认门槛
+   - 只有当该游戏的核心游玩布局确实依赖 `ResizeObserver`，且缺失后会导致棋盘/地图/主操作区明显错位或不可操作时，才允许把它加入该游戏的拦截条件。
+   - 教程浮层、关于页特效、UGC 编辑器这类外围能力，不得外扩成所有游戏的游玩门槛。
+
+**目标**：完成确定性核心逻辑，测试通过。
+
+### 3.1 实现 validate（命令校验）
+
+```ts
+// domain/commands.ts 或 domain/validate.ts
+export function validate(state: MatchState<Core>, command: Command): ValidationResult {
+    // 1. 检查是否是当前玩家的回合
+    // 2. 检查当前阶段是否允许此命令
+    // 3. 检查命令参数合法性
+    // 4. 检查资源/条件是否满足
+}
+```
+
+**三个游戏共同模式**：
+- dicethrone: `domain/commands.ts` → `validateCommand()`
+- summonerwars: `domain/validate.ts` → `validateCommand()`
+- smashup: `domain/commands.ts` → `validate()`
+
+### 3.2 实现 execute（生成事件）
+
+```ts
+// domain/execute.ts 或 domain/reducer.ts
+export function execute(state: MatchState<Core>, command: Command, random?: RandomFn): GameEvent[] {
+    // 根据 command.type 分发处理
+    // 返回一系列事件（不直接修改状态）
+}
+```
+
+### 3.3 实现 reduce（应用事件到状态）
+
+```ts
+// domain/reducer.ts
+export function reduce(core: Core, event: GameEvent): Core {
+    switch (event.type) {
+        case 'DAMAGE_DEALT': {
+            // ✅ 结构共享：只 spread 变更路径
+            const { targetId, amount } = event.payload;
+            const target = core.players[targetId];
+            if (!target) return core;
+            return {
+                ...core,
+                players: {
+                    ...core.players,
+                    [targetId]: { ...target, hp: Math.max(0, target.hp - amount) },
+                },
+            };
+        }
+        // 每种事件类型一个 case
+        default: return core;
+    }
+}
+```
+
+**关键约束**：
+- reduce 必须是纯函数，不依赖随机数。
+- **禁止 `JSON.parse(JSON.stringify())`**（性能灾难）。只 spread 变更路径，未变路径保持原引用。
+- 嵌套超过 3 层时提取 `updatePlayer()` 等 helper 到 `domain/utils.ts`。
+- 详见 `docs/ai-rules/engine-systems.md`「Reducer 结构共享范例」。
+
+### 3.4 实现 isGameOver
+
+```ts
+isGameOver: (core): GameOverResult | undefined => {
+    // 检查胜利条件
+    // 返回 { winner: playerId } 或 { draw: true } 或 undefined
+}
+```
+
+### 3.5 补充单元测试
+
+在 `__tests__/` 创建测试文件，覆盖：
+- 正常流程（happy path）
+- 非法操作被拒绝
+- 边界条件
+- 胜利条件判定
+
+**测试辅助模式**（参考 smashup/__tests__/helpers.ts）：
+```ts
+export function makePlayer(id: string, overrides?: Partial<PlayerState>): PlayerState { ... }
+export function makeState(overrides?: Partial<Core>): Core { ... }
+export function makeMatchState(core: Core): MatchState<Core> { ... }
+```
+
+### 验收
+
+```bash
+npx vitest run src/games/<gameId>  # 所有测试通过
+```
+
+核心规则正常 + 异常场景有覆盖。
+
+---
+
+## 阶段 4：FlowSystem 与系统组装
+
+**目标**：接入 FlowSystem 完成阶段流转，`game.ts` 组装完毕。
+
+### 4.1 实现 FlowHooks
+
+创建 `domain/flowHooks.ts`（参考 summonerwars/domain/flowHooks.ts）：
+
+```ts
+import type { FlowHooks, PhaseExitResult } from '../../../engine/systems/FlowSystem';
+
+export const flowHooks: FlowHooks<Core> = {
+    // 初始阶段（通常为 factionSelect 或第一个游戏阶段）
+    initialPhase: 'factionSelect',
+
+    // 是否允许推进
+    canAdvance: ({ state }) => ({ ok: true }),
+
+    // 下一阶段计算
+    getNextPhase: ({ state, from }) => {
+        const idx = PHASE_ORDER.indexOf(from as GamePhase);
+        return PHASE_ORDER[(idx + 1) % PHASE_ORDER.length];
+    },
+
+    // 当前活跃玩家
+    getActivePlayerId: ({ state }) => state.core.currentPlayer,
+
+    // 阶段退出副作用（如：抽牌/切换回合/结算伤害）
+    onPhaseExit: ({ state, from }): PhaseExitResult => {
+        const events: GameEvent[] = [];
+        // 按阶段处理副作用
+        return { events };
+    },
+
+    // 阶段进入副作用（如：回合开始事件/状态重置）
+    onPhaseEnter: ({ state, from, to }): GameEvent[] => {
+        const events: GameEvent[] = [];
+        // 按阶段处理副作用
+        return events;
+    },
+
+    // 自动推进检查（如：非交互阶段自动跳过）
+    onAutoContinueCheck: ({ state, events }) => {
+        // 如 startTurn/endTurn 等纯自动阶段
+        return undefined;
+    },
+};
+```
+
+**三个游戏的 FlowHooks 复杂度对比**：
+- smashup: `domain/index.ts` 内联（~150 行），阶段退出处理记分逻辑
+- summonerwars: 独立 `domain/flowHooks.ts`（~250 行），阶段进退处理抽牌/换人/技能触发
+- dicethrone: `game.ts` 内联（~500 行），最复杂，攻防阶段有大量分支
+
+### 4.2 完善 game.ts
+
+```ts
+// 系统选择模式（三个游戏共同模式）
+const systems = [
+    createFlowSystem<Core>({ hooks: flowHooks }),
+    // 方式 A：逐个选择（dicethrone/summonerwars 风格，精细控制）
+    createEventStreamSystem(),
+    createLogSystem(),
+    createActionLogSystem({ commandAllowlist: ACTION_ALLOWLIST, formatEntry }),
+    createUndoSystem({ snapshotCommandAllowlist: UNDO_ALLOWLIST }),
+    createInteractionSystem(),
+    createRematchSystem(),
+    createResponseWindowSystem({  // 需要响应窗口时配置注入
+        allowedCommands: ['PLAY_CARD'],  // 响应期间允许的游戏命令
+        responseAdvanceEvents: [         // 触发响应者推进的事件
+            { eventType: 'CARD_PLAYED' },
+        ],
+        // interactionLock: { ... },     // 多步交互锁定（可选）
+    }),
+    createTutorialSystem(),
+    createCheatSystem<Core>(cheatModifier),
+
+    // 方式 B：默认集合（smashup 风格，简洁）
+    // ...createBaseSystems<Core>(),
+    // createCheatSystem<Core>(cheatModifier),
+];
+
+// 命令类型（只列业务命令，系统命令由 adapter 自动合并）
+const commandTypes = [
+    ...Object.values(XX_COMMANDS),
+];
+```
+
+### 4.3 实现 CheatModifier（开发调试必备）
+
+参考 summonerwars/game.ts 的 `summonerWarsCheatModifier`，至少实现：
+- `getResource` / `setResource`
+- `setPhase`
+- `dealCardByIndex`（如有牌库）
+
+### 4.4 ActionLog + 卡牌预览（避免重复说明，按权威实现做）
+
+**强制先读（权威单一来源）**：
+- `docs/ai-rules/engine-systems.md`（ActionLogSystem 使用规范）
+- `evidence/dicethrone/action-log-card-preview.md`（卡牌预览注册表模式 + 数据流说明）
+
+**你在新游戏里只需要做这些（最小闭环）**：
+1. 在 `game.ts` 配置 `createActionLogSystem({ commandAllowlist, formatEntry })`，`formatEntry` 产出包含 `segments` 的 `ActionLogEntry`。
+2. 若游戏有卡牌：实现 `ui/cardPreviewHelper.ts` 提供 `cardId → CardPreviewRef` 查询，并在 `game.ts` **文件末尾**调用 `registerCardPreviewGetter(gameId, getter)` 注册。
+
+> 关键点：Vite SSR 的函数提升陷阱与“注册必须放文件末尾”的原因，详见 `AGENTS.md` / `docs/ai-rules/golden-rules.md`。
+
+### 4.5 补充 FlowHooks 测试
+
+```bash
+npx vitest run src/games/<gameId>/__tests__/flow.test.ts
+```
+
+### 验收
+
+```bash
+npm run generate:manifests   # 清单生成成功
+npx vitest run src/games/<gameId>  # 所有测试通过
+npm run dev                  # 游戏可从大厅创建对局，基础回合可推进
+```
+
+---
+
+## 阶段 5：Board/UI 与交互闭环
+
+**目标**：提供最小可玩 UI，完成交互闭环。
+
+### 5.0A 新 UI 端到端完成门禁（强制）
+
+- 只要本阶段新增或重做了游戏主 UI、主 Board、关键面板、核心交互布局，就必须把“完成”定义为**真实页面端到端通过**，而不是“组件存在 / 局部截图可看 / 测试通过”。
+- 若该阶段同时包含桌面端与移动端工作，默认顺序固定为：**先让桌面端真实页面通过，再进入移动端适配**。除非用户当轮明确要求并行推进，或明确说先做移动端，否则不得把“移动端适配”升级成下一主阶段。
+- 若真实路由或真实牌桌里仍存在以下任一项，本阶段不得收口为完成：
+  - 信息层级错误，主次关系与设计/规则不符
+  - 空态、终局态、等待态等关键状态误导用户
+  - 文案溢出、标题挤压、卡面/面板比例失真、首屏结构被空白或次级区错误撑大
+  - 关键操作虽存在，但在真实页面路径中阅读顺序、可达性或可理解性仍失败
+- 组件测试、领域测试、局部截图都只能证明“部分约束成立”；**只要真实页面还有已知 UI bug，就不能说新游戏 UI 已实施完毕**。
+- 只要桌面端真实页面仍有阻塞级 UI bug，就不能把“已经开始做移动端适配”描述成自然的下一步完成阶段；此时正确状态仍然是“桌面端未完成”。
+- 最终汇报必须显式区分三类状态：
+  - `已完成`：真实页面主路径已端到端通过，未留已知阻塞级 UI bug
+  - `未完成`：真实页面仍有阻塞级 UI bug
+  - `可选 polish`：不影响主路径验收的后续微调
+- 禁止把“我还在继续收最后几处真实页面问题”和“这一阶段已经完成”同时成立地对外汇报；如果前者成立，默认后者不成立，除非已明确证明剩余项只是非阻塞 polish。
+
+### 5.0 UI 设计规范生成（强制前置）
+
+**强制先读（权威单一来源）**：
+- `docs/ai-rules/ui-ux.md`
+- 若要生成 UI 概念图或 imagegen prompt：`.codex/skill/boardgame-ui-imagegen/SKILL.md`
+- 若涉及动画/特效：`docs/ai-rules/animation-effects.md`
+- 若出现白屏/渲染错误/函数未定义：`docs/ai-rules/golden-rules.md`
+
+> 每个游戏的视觉风格各不相同，**禁止直接复用已有游戏的样式规范**。必须为新游戏生成独立的设计规范。
+
+1. **先看素材再设计（强制）**
+   - 若用户提供了图片目录，先识别并打开主地图/主棋盘/角色板/卡牌 atlas/牌背/缩略图。
+   - `design-system/games/<gameId>.md` 必须写明至少 1 张主视觉素材的路径、尺寸和肉眼观察结论。
+   - UI 构图必须优先尊重真实素材的空间结构：地图自带的牌库区、行动轮、流程轨道、区域名称、边界与留白都要先作为设计约束处理。
+   - 禁止先用泛化风格词生成一套 UI，再回头硬套用户素材。
+   - 生图前必须先按 `boardgame-ui-imagegen` 输出 UI 元素拆解：素材已有 UI、规则必须常驻、按需展开、禁止出现；未完成拆解不得直接调用 imagegen。
+2. **执行 ui-ux-pro-max `--design-system`**：根据新游戏的类型、题材、美术风格生成专属设计系统：
+   ```bash
+   python3 .codex/skill/ui-ux-pro-max/scripts/search.py "<游戏类型> <题材> <风格关键词>" --design-system --persist -p "<游戏名>" --page "game-board"
+   ```
+3. **产出保存到 `design-system/games/<gameId>.md`**：作为该游戏的 UI 权威参考，后续 Board/组件开发以此为准。
+4. **移动端适配写入同一份规范（强制）**
+   - 必须写桌面基线与移动端基线。
+   - 必须明确 `mobileProfile / preferredOrientation / mobileLayoutPreset` 推荐值。
+   - 地图类游戏必须说明拖拽缩放、双指缩放、触控查看、HUD 让位策略。
+5. **与通用规范的关系**：`design-system/game-ui/MASTER.md` 中的交互原则（反馈/状态清晰/动画时长等）仍然适用，但配色/字体/视觉风格以游戏专属规范为准。
+
+### 5.1 Board.tsx 主组件
+
+**三个游戏的 Board 共同模式**：
+
+```tsx
+const Board: React.FC<Props> = ({ G, moves, playerID, ctx }) => {
+    const core = G.core;
+    const phase = G.sys.phase;
+    const gameMode = useGameMode();
+    const { t } = useTranslation('game-<gameId>');
+
+    // 1. 基础状态
+    const isGameOver = ctx.gameover;
+    const isMyTurn = playerID === core.currentPlayer;
+
+    // 2. 教学系统集成
+    useTutorialBridge(G.sys.tutorial, moves as Record<string, unknown>);
+    const { isActive: isTutorialActive, currentStep: tutorialStep } = useTutorial();
+
+    // 3. 音效系统
+    useGameAudio({ config: AUDIO_CONFIG, gameId: MANIFEST.id, G: core, ctx: { ... } });
+
+    // 4. 事件消费 → 动画驱动
+    const gameEvents = useGameEvents({ G, myPlayerId: playerID || '0' });
+
+    // 5. 阵营/角色选择阶段
+    if (isInSelectionPhase) {
+        return <FactionSelection ... />;
+    }
+
+    // 6. 游戏主 UI
+    return (
+        <div className="...">
+            {/* 棋盘/基地/卡牌区域 */}
+            {/* 手牌区 */}
+            {/* 阶段指示/操作按钮 */}
+            {/* 结算覆盖层 */}
+            {isGameOver && <EndgameOverlay ... />}
+        </div>
+    );
+};
+```
+
+### 5.2 UI 子模块拆分
+
+当 Board.tsx 超过 300 行时，按职责拆分到 `ui/` 目录：
+
+**参考 summonerwars/ui/**：
+- `BoardGrid.tsx` — 棋盘网格渲染
+- `HandArea.tsx` — 手牌区
+- `PhaseTracker.tsx` — 阶段指示器
+- `PlayerInfo.tsx` — 玩家信息面板
+- `GameButton.tsx` — 游戏操作按钮
+- `useGameEvents.ts` — 事件消费 hook
+- `useCellInteraction.ts` — 格子交互 hook
+- `BoardEffects.tsx` — 特效层
+- `FactionSelection.tsx` — 阵营选择 UI
+
+**参考 smashup/ui/**：
+- `HandArea.tsx` — 手牌区
+- `FactionSelection.tsx` — 派系选择
+- `PromptOverlay.tsx` — 提示覆盖层
+- `useGameEvents.ts` — 事件消费
+- `BoardEffects.tsx` — 特效层
+
+### 5.3 交互映射
+
+所有用户操作通过 `moves[COMMAND_TYPE](payload)` 触发：
+- 点击/拖拽 → Command
+- Board 不直接改 core
+
+### 5.4 阵营/角色选择
+
+**三个游戏共同模式**：初始阶段是 `factionSelect`/`setup`，通过 FlowHooks 的 `onAutoContinueCheck` 在所有玩家准备后自动推进到游戏阶段。
+
+UI 侧使用 `TutorialSelectionGate`（框架组件）或自定义选择组件。
+
+### 验收
+
+- 核心操作可在 UI 中完成
+- 阶段推进正常
+- 结束界面正常显示
+- 已按真实页面端到端复核主路径、空态、等待态、终局态；没有仍阻塞完成口径的已知 UI bug
+
+---
+
+## 阶段 6：收尾与启用
+
+**目标**：补齐 i18n、测试、教学、音效。
+
+### 6.1 i18n 文案
+
+补齐 `public/locales/{zh-CN,en}/game-<gameId>.json` 中的所有文案：
+- 阶段名称
+- 命令/事件描述
+- UI 文本
+- 教学步骤文案
+
+### 6.2 教学配置
+
+参考 smashup/tutorial.ts 的模式：
+1. setup 步骤：AI 自动完成选角 + 作弊设置手牌
+2. UI 介绍步骤：逐个高亮 UI 元素（`highlightTarget` + `blockedCommands`）
+3. 操作教学步骤：`requireAction: true` + `allowedCommands` + `advanceOnEvents`
+
+### 6.3 音频配置（已重构，避免重复造轮子）
+
+**强制先读**（权威单一来源，避免本文档过时）：
+- `AGENTS.md`「音频资源架构（强制）」
+- `docs/ai-rules/asset-pipeline.md`「🔊 音频资源规范」
+- `./.codex/skill/audio-integration/SKILL.md`（workflow） + `docs/audio/audio-usage.md`（新增音频资产流程见 `docs/audio/add-audio.md`）
+
+**你在新游戏里只需要做这些（最小闭环）**：
+1. 创建 `src/games/<gameId>/audio.config.ts`，导出 `GameAudioConfig`：
+   - `feedbackResolver(event): SoundKey | null`：无动画事件返回 SoundKey；有动画事件返回 `null`，音效交给动画层 `onImpact()` 播放
+   - `criticalSounds`：进入游戏后立即预加载的高频音效 key（建议 5~15）
+   - （可选）`contextualPreloadKeys`：根据上下文增量预热
+   - BGM 列表按现有游戏格式配置（具体规则以 `docs/audio/audio-usage.md` 为准）
+2. **音效 key 的唯一来源**：`public/assets/common/audio/registry.json`。
+   - 禁止在游戏层声明 `basePath/sounds`
+   - 禁止手写 `compressed/`
+   - 禁止定义短 key（如 `click/dice_roll`），必须使用 registry 的完整 key
+3. **避免重复播放**：同一动作只能走一条路径（`feedbackResolver` / FX `FeedbackPack` / 动画 `onImpact` / UI `GameButton` / `playDeniedSound()`）。
+
+> 参考实现：`src/games/smashup/audio.config.ts` / `src/games/summonerwars/audio.config.ts`。
+
+### 6.4 关键图片预加载（若游戏有精灵图/图集）
+
+**强制先读（权威单一来源）**：
+- `docs/ai-rules/asset-pipeline.md`（critical/warm 规则、路径格式、门禁与验收清单）
+
+**你在新游戏里只需要做这些（最小闭环）**：
+1. 实现 `criticalImageResolver.ts`，返回 `{ critical, warm }`，并按“选择阶段 vs 游戏阶段”动态解析。
+2. 在 `game.ts`（或游戏入口约定的位置）注册 resolver。
+
+> 参考实现：`src/games/smashup/criticalImageResolver.ts` / `src/games/summonerwars/criticalImageResolver.ts` / `src/games/dicethrone/criticalImageResolver.ts`。
+
+### 6.5 debug-config（可选）
+
+若需要调试面板，创建 `debug-config.tsx` 提供游戏专属调试选项。
+
+**调试面板规范**：
+- 调试入口统一使用 `GameDebugPanel` 组件挂载在 Board 内，不得创建新的全局入口。
+- 调试操作必须通过 `SYS_CHEAT_*` 指令（依赖 CheatSystem），禁止直接修改 core。
+- 若包含“发牌/出牌”类调试：
+  - **必须以精灵图索引为发牌依据**（或等价的稳定索引），保证可复现。
+  - **必须提供索引对照表**（索引 → 名称/类型），支持快速查找与一键发牌。
+- 面板内状态复制/赋值需校验 JSON，失败给出明确提示。
+- 重要调试动作尽量提供快捷按钮（如“清零/满值/切换阶段”）。
+
+### 6.6 资源命名与落盘（缩略图 / 图集 / 插图）
+
+1. 若用户已给素材类型或图片位置，AI 默认负责：
+   - 先读图，再判断是否属于明显随机文件名；只有这类文件才按图片内容语义自动命名（如 `cover`、`<batch>`、`<entityId>-board`）
+   - 自动移动到正确目录
+   - 自动运行最小必要范围的压缩命令
+2. 缩略图默认流程：
+   - 原图放入 `public/assets/i18n/zh-CN/<gameId>/thumbnails/cover.png`
+   - 运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails`
+   - `manifest.ts` 中 `thumbnailPath` 使用 `<gameId>/thumbnails/cover`
+   - `thumbnail.tsx` 使用 `ManifestGameThumbnail`，禁止自写 `<img src="/assets/...">`
+3. 图集 / 运行时图片默认流程：
+   - 原图按业务语义落到 `public/assets/i18n/zh-CN/<gameId>/<category>/`
+   - 图集配置落到 `public/assets/atlas-configs/<gameId>/`
+   - 切片顺序、索引和命名先写合同，再接入代码
+4. 若当前环境依赖远端默认资源基址：
+   - 启动前主动询问是否先 `npm run assets:download -- --check`
+   - 交付前必须执行 `npm run assets:check`
+   - 若检查到本轮新增/变更的运行时资源远端缺失，必须继续上传并用远端 URL 复核到 `200/206`，再算交付完成
+
+### 6.7 最终验证
+
+```bash
+npm run generate:manifests          # 清单生成成功
+npx vitest run src/games/<gameId>   # 所有测试通过
+npm run typecheck                   # 类型检查通过
+npm run assets:check                # 若本轮新增了运行时资源，检查远端缺口
+npm run assets:upload               # check 发现本轮运行时资源远端缺失时必须执行
+npm run dev                         # 大厅可见、可创建对局、可完整游玩
+```
+
+### 验收
+
+- 清单生成成功
+- 所有测试通过
+- 游戏可从大厅进入并完成完整游玩流程
+- i18n 双语齐全
+- 若本轮新增/修改了运行时资源：远端对象已上传，并已用实际远端 URL 复核可访问
+
+---
+
+## 系统与红线速查（只保留本 skill 的最小提醒）
+
+**权威来源**：系统清单/红线/反模式以 `AGENTS.md` + `docs/ai-rules/engine-systems.md` 为准，本节不再重复抄写。
+
+### 系统组装最小提醒
+
+- `createBaseSystems()` 默认包含：EventStream + Log + ActionLog + Undo + Interaction + Rematch + ResponseWindow + Tutorial
+- `createBaseSystems()` **不包含** FlowSystem / CheatSystem：需要自行追加
+- `commandTypes` **只列业务命令**：系统命令由 adapter 自动合并
+- ResponseWindowSystem **必须配置注入**：`allowedCommands` / `responseAdvanceEvents`（禁止改引擎文件）
+
+### 新架构强制复用（新游戏）
+
+- 能力系统：必须使用 `engine/primitives/ability.ts`
+- 状态/buff/debuff：必须使用 `engine/primitives/tags.ts`
+- 数值修改：必须使用 `engine/primitives/modifier.ts`
+- 可被 buff 修改的属性：必须使用 `engine/primitives/attribute.ts`（纯资源消耗仍用 `resources.ts`）
+- 当前决策者读取：必须优先复用 `src/engine/sessionContext.ts` 这一层语义，不再在共享层手写 `currentPlayer/currentPlayerId/currentPlayerIndex` 分支
+- 跨区对象/临时控制/附着脱离：必须先设计稳定 `object ref + provenance`，禁止直接复制历史 `owner/originalOwner/fromPlayerId/toPlayerId` 弱协议
+- 跨阶段交互：必须显式设计 `deferred snapshot`，禁止把创建时事实偷偷挂在 ad hoc `runtimeContext/context` 上
+- 交互展示：必须给出独立 descriptor，禁止靠 payload 形状推断 UI 模式
+
+---
+
+## 参考资料
+
+- 目录骨架与最小模板：references/game-skeleton.md
+- 图片 / 位置驱动 intake：references/asset-intake.md
+- 清单生成说明：references/manifest-generation.md
+- 项目结构速览：references/project-structure.md
+
+## 架构参考路径（仅用于理解，不照抄）
+
+- **最复杂流程**：`src/games/dicethrone/`（角色系统/骰子/攻防/状态效果/Token响应）
+- **中等复杂 + 棋盘战棋**：`src/games/summonerwars/`（网格棋盘/单位管理/阵营牌组/技能系统）
+- **中等复杂 + 卡牌区控**：`src/games/smashup/`（多人支持/基地记分/派系混搭/持续效果）
+- **框架层组件**：`src/components/game/framework/`
+- **引擎系统**：`src/engine/systems/`
+- **引擎原语**：`src/engine/primitives/`
+
+## 缩略图配置模板（thumbnail.tsx）
+
+```tsx
+import manifest from './manifest';
+import { ManifestGameThumbnail } from '../../components/lobby/thumbnails';
+
+export default function Thumbnail() {
+    return <ManifestGameThumbnail manifest={manifest} />;
+}
+```
+
+- `manifest.ts` 中配置 `thumbnailPath: '<gameId>/thumbnails/cover'`（不含扩展名、不含 `compressed/`）。
+- 用户提供图片后，运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails` 压缩。
+- 禁止在 `thumbnail.tsx` 中硬编码 `/assets/<gameId>/.../compressed/*.webp`；如需定制视觉，在 `ManifestGameThumbnail` 或公共缩略图组件层扩展。

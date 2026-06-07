@@ -22,7 +22,7 @@ export const PALADIN_SYMBOLS = PALADIN_DICE_FACE_IDS;
  */
 export const paladinDiceDefinition: DiceDefinition = {
     id: 'paladin-dice',
-    name: 'Paladin Dice',
+    name: 'config.dice.paladin.name',
     sides: 6,
     category: 'hero',
     faces: [

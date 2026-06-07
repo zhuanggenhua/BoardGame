@@ -24,9 +24,13 @@ export interface FlyingEffectData {
     endPos: { x: number; y: number };
     /** 效果强度（伤害/治疗量），影响粒子密度。默认 1 */
     intensity?: number;
+    /** 可选：覆盖飘字的视觉预设 */
+    floatingTextPreset?: 'default' | 'dicethrone-damage';
     /** 飞行体到达目标（冲击帧）时触发的回调，用于同步播放音效/震屏等 */
     onImpact?: () => void;
 }
+
+const DICETHRONE_DAMAGE_Z_INDEX = UI_Z_INDEX.overlayRaised + 120;
 
 // ============================================================================
 // 工具函数
@@ -150,7 +154,9 @@ const FlameTrailCanvas: React.FC<{
     emitting: boolean;
     /** 强度 */
     intensity: number;
-}> = ({ headXRef, headYRef, dirX, dirY, flameColors, emitting, intensity }) => {
+    /** 画布层级 */
+    zIndex: number;
+}> = ({ headXRef, headYRef, dirX, dirY, flameColors, emitting, intensity, zIndex }) => {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const particlesRef = React.useRef<Particle[]>([]);
     const rafRef = React.useRef(0);
@@ -303,7 +309,7 @@ const FlameTrailCanvas: React.FC<{
         <canvas
             ref={canvasRef}
             className="fixed inset-0 pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+            style={{ zIndex }}
         />
     );
 };
@@ -328,20 +334,30 @@ const FloatingTextInner: React.FC<{
     y: number;
     floatColor: string;
     intensity: number;
+    preset?: FlyingEffectData['floatingTextPreset'];
     onComplete: () => void;
-}> = ({ content, x, y, floatColor, intensity, onComplete }) => {
+}> = ({ content, x, y, floatColor, intensity, preset = 'default', onComplete }) => {
+    const isDiceThroneDamage = preset === 'dicethrone-damage';
+    const floatingZIndex = isDiceThroneDamage ? DICETHRONE_DAMAGE_Z_INDEX : UI_Z_INDEX.overlayRaised + 1;
     const [scope, animate] = useAnimate();
-    const isCritical = intensity >= 5;
-    const fontSize = isCritical
-        ? Math.min(2.2, 1.4 + intensity * 0.08)
-        : Math.min(1.6, 1.0 + intensity * 0.06);
+    const isCritical = intensity >= 5 && !isDiceThroneDamage;
+    const fontSize = isDiceThroneDamage
+        ? 1.58
+        : isCritical
+            ? Math.min(2.2, 1.4 + intensity * 0.08)
+            : Math.min(1.6, 1.0 + intensity * 0.06);
 
-    const popScale = isCritical ? 1.8 : 1.3;
-    const holdScale = isCritical ? 1.15 : 1.0;
+    const popScale = isDiceThroneDamage ? 1.52 : isCritical ? 1.8 : 1.3;
+    const holdScale = isDiceThroneDamage ? 1.02 : isCritical ? 1.15 : 1.0;
     // 使用 vw 相对值，使飘字运动距离自适应视口尺寸（在 1920px 下与原 50/20px 一致）
     const vw = typeof window !== 'undefined' ? window.innerWidth / 100 : 19.2;
-    const floatDistance = Math.round(2.6 * vw);
-    const driftX = Math.round(1 * vw);
+    const floatDistance = isDiceThroneDamage ? Math.round(1.8 * vw) : Math.round(2.6 * vw);
+    const driftX = isDiceThroneDamage ? Math.round(0.2 * vw) : Math.round(1 * vw);
+    // DiceThrone 伤害跳字整段生命周期统一按 3 秒控制，避免来伤/反伤刚出现就消失。
+    const popDuration = isDiceThroneDamage ? 0.12 : 0.06;
+    const holdDuration = isDiceThroneDamage ? 1.18 : 0.1;
+    const floatDuration = isDiceThroneDamage ? 1.7 : 0.5;
+    const burstClipPath = 'polygon(50% 0%,58% 17%,75% 8%,75% 28%,96% 25%,84% 43%,100% 55%,78% 61%,88% 82%,66% 76%,57% 100%,45% 78%,24% 92%,28% 68%,4% 70%,20% 52%,0% 39%,23% 32%,15% 10%,38% 20%)';
 
     React.useEffect(() => {
         const run = async () => {
@@ -350,7 +366,7 @@ const FloatingTextInner: React.FC<{
                 scale: popScale,
                 opacity: 1,
             }, {
-                duration: 0.06,
+                duration: popDuration,
                 ease: [0.2, 0, 0.4, 1],
             });
 
@@ -358,7 +374,7 @@ const FloatingTextInner: React.FC<{
             await animate(scope.current, {
                 scale: holdScale,
             }, {
-                duration: 0.1,
+                duration: holdDuration,
                 ease: [0.34, 1.56, 0.64, 1], // 弹性回弹
             });
 
@@ -369,7 +385,7 @@ const FloatingTextInner: React.FC<{
                 opacity: 0,
                 scale: holdScale * 0.85,
             }, {
-                duration: 0.5,
+                duration: floatDuration,
                 ease: [0.2, 0.8, 0.3, 1], // 上升减速
             });
 
@@ -382,29 +398,69 @@ const FloatingTextInner: React.FC<{
     return (
         <motion.div
             ref={scope}
+            data-floating-text-preset={preset}
             className="absolute pointer-events-none"
             style={{
                 left: '50%', top: '50%',
                 translateX: '-50%', translateY: '-50%',
                 x, y,
                 opacity: 0,
-                scale: 0.3,
-                zIndex: UI_Z_INDEX.overlayRaised + 1,
+                scale: isDiceThroneDamage ? 0.5 : 0.3,
+                zIndex: floatingZIndex,
             }}
         >
-            <span
-                className={`font-black whitespace-nowrap ${floatColor}`}
-                style={{
-                    fontSize: `${fontSize}vw`,
-                    textShadow: `
-                        0 0 4px currentColor,
-                        0 2px 6px rgba(0,0,0,0.9)
-                    `,
-                    WebkitTextStroke: '0.3px rgba(0,0,0,0.4)',
-                }}
-            >
-                {content}
-            </span>
+            {isDiceThroneDamage ? (
+                <div
+                    className="relative inline-flex items-center justify-center"
+                    style={{
+                        minWidth: '4.5vw',
+                        height: '3.2vw',
+                        padding: '0.08vw 0.84vw 0.18vw',
+                        filter: 'drop-shadow(0 0.18vw 0.28vw rgba(0,0,0,0.5))',
+                    }}
+                >
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: 'rgba(104, 16, 24, 0.98)',
+                            clipPath: burstClipPath,
+                            filter: 'drop-shadow(0 0 0.55vw rgba(239, 68, 68, 0.42))',
+                        }}
+                    />
+                    <div
+                        className="absolute inset-[0.16vw]"
+                        style={{
+                            background: 'linear-gradient(145deg, #ef4444 0%, #c81e1e 58%, #7f1d1d 100%)',
+                            clipPath: burstClipPath,
+                            boxShadow: 'inset 0 0 0 0.12vw rgba(254, 202, 202, 0.76)',
+                        }}
+                    />
+                    <span
+                        className="relative whitespace-nowrap font-black text-white"
+                        style={{
+                            fontSize: `${fontSize}vw`,
+                            lineHeight: 1,
+                            textShadow: '0 0.11vw 0 rgba(127,29,29,0.95), 0 0 0.35vw rgba(255,255,255,0.34)',
+                        }}
+                    >
+                        {content}
+                    </span>
+                </div>
+            ) : (
+                <span
+                    className={`font-black whitespace-nowrap ${floatColor}`}
+                    style={{
+                        fontSize: `${fontSize}vw`,
+                        textShadow: `
+                            0 0 4px currentColor,
+                            0 2px 6px rgba(0,0,0,0.9)
+                        `,
+                        WebkitTextStroke: '0.3px rgba(0,0,0,0.4)',
+                    }}
+                >
+                    {content}
+                </span>
+            )}
         </motion.div>
     );
 };
@@ -417,8 +473,9 @@ const FloatingText: React.FC<{
     floatColor: string;
     type: string;
     intensity: number;
+    preset?: FlyingEffectData['floatingTextPreset'];
     onComplete: () => void;
-}> = ({ active, content, x, y, floatColor, type, intensity, onComplete }) => {
+}> = ({ active, content, x, y, floatColor, type, intensity, preset, onComplete }) => {
     if (!active || (type !== 'damage' && type !== 'heal')) return null;
     return (
         <FloatingTextInner
@@ -426,6 +483,7 @@ const FloatingText: React.FC<{
             x={x} y={y}
             floatColor={floatColor}
             intensity={intensity}
+            preset={preset}
             onComplete={onComplete}
         />
     );
@@ -448,6 +506,12 @@ const FlyingEffectItem: React.FC<{
     const hasTrail = effect.type === 'damage' || effect.type === 'heal';
     const intensity = effect.intensity ?? 1;
     const flightDuration = calcFlightDuration(deltaX, deltaY);
+    const effectZIndex = effect.floatingTextPreset === 'dicethrone-damage'
+        ? DICETHRONE_DAMAGE_Z_INDEX
+        : UI_Z_INDEX.overlayRaised + 1;
+    const trailZIndex = effect.floatingTextPreset === 'dicethrone-damage'
+        ? DICETHRONE_DAMAGE_Z_INDEX - 1
+        : UI_Z_INDEX.overlayRaised;
 
     // 零距离标记：framer-motion 在 initial === animate 时不触发 onAnimationComplete
     const isZeroDistance = dist < 1;
@@ -534,13 +598,14 @@ const FlyingEffectItem: React.FC<{
                     flameColors={style.flameColors}
                     emitting={emitting}
                     intensity={intensity}
+                    zIndex={trailZIndex}
                 />
             )}
 
             <motion.div
                 data-testid={`flying-effect-${effect.type}`}
                 className="fixed pointer-events-none"
-                style={{ left: effect.startPos.x, top: effect.startPos.y, zIndex: UI_Z_INDEX.overlayRaised + 1 }}
+                style={{ left: effect.startPos.x, top: effect.startPos.y, zIndex: effectZIndex }}
                 initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -612,6 +677,7 @@ const FlyingEffectItem: React.FC<{
                     floatColor={style.floatColor}
                     type={effect.type}
                     intensity={intensity}
+                    preset={effect.floatingTextPreset}
                     onComplete={handlePhaseComplete}
                 />
             </motion.div>

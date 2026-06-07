@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
-import { AUTH_API_URL } from '../config/server';
+import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
 
@@ -20,6 +20,7 @@ interface User {
     role: UserRole;
     developerGameIds?: string[];
     banned: boolean;
+    feedbackPoints: number;
 }
 
 interface AuthContextType {
@@ -40,6 +41,7 @@ interface AuthContextType {
     updateUsername: (username: string) => Promise<User>;
     updateAvatar: (avatar: string) => Promise<User>;
     uploadAvatar: (file: File, cropData?: { x: number; y: number; width: number; height: number }) => Promise<User>;
+    addFeedbackPoints: (delta: number) => void;
     isLoading: boolean;
 }
 
@@ -60,6 +62,7 @@ const defaultAuthContext: AuthContextType = {
     updateUsername: async () => { throw new Error('AuthProvider 未初始化'); },
     updateAvatar: async () => { throw new Error('AuthProvider 未初始化'); },
     uploadAvatar: async () => { throw new Error('AuthProvider 未初始化'); },
+    addFeedbackPoints: () => { throw new Error('AuthProvider 未初始化'); },
     isLoading: true,
 };
 
@@ -122,6 +125,9 @@ const normalizeAuthUser = (value: unknown): User | null => {
         role,
         developerGameIds,
         banned: typeof raw.banned === 'boolean' ? raw.banned : false,
+        feedbackPoints: typeof raw.feedbackPoints === 'number' && Number.isFinite(raw.feedbackPoints)
+            ? raw.feedbackPoints
+            : 0,
     };
 };
 
@@ -139,6 +145,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const syncCurrentUser = useCallback(async (tokenToSync: string) => {
+        if (IS_DEV_API_DISABLED) {
+            return;
+        }
+
         try {
             const response = await fetch(`${AUTH_API_URL}/me`, {
                 method: 'GET',
@@ -555,6 +565,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return updatedUser;
     }, [token, user]);
 
+    const addFeedbackPoints = useCallback((delta: number) => {
+        if (!Number.isFinite(delta) || delta === 0) {
+            return;
+        }
+        setUser((currentUser) => {
+            if (!currentUser) {
+                return currentUser;
+            }
+            const nextUser = {
+                ...currentUser,
+                feedbackPoints: Math.max(0, (currentUser.feedbackPoints ?? 0) + Math.trunc(delta)),
+            };
+            localStorage.setItem('auth_user', JSON.stringify(nextUser));
+            return nextUser;
+        });
+    }, []);
+
     const contextValue = useMemo(() => ({
         user,
         token,
@@ -571,6 +598,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUsername,
         updateAvatar,
         uploadAvatar,
+        addFeedbackPoints,
         isLoading,
     }), [
         user,
@@ -588,6 +616,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUsername,
         updateAvatar,
         uploadAvatar,
+        addFeedbackPoints,
         isLoading,
     ]);
 

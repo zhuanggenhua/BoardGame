@@ -12,9 +12,9 @@ import {
     findMinionOnBases, findMinionByAttachedCard, buildAbilityFeedback,
     modifyBreakpoint,
     buildValidatedDestroyEvents,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
-import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
@@ -26,7 +26,7 @@ import {
     createPromptProgram,
 } from '../domain/abilityRuntime';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import { drawCards, matchesDefId } from '../domain/utils';
+import { matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
 
 // ============================================================================
@@ -697,6 +697,7 @@ function registerWerewolfOngoingEffects(): void {
     }, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
 
     // 阿尔法狼群 异能（Special）：基地计分前同基地己方所有随从+1力量直到回合结束
@@ -718,14 +719,50 @@ function registerWerewolfOngoingEffects(): void {
     }, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
 
     // 制造恐慌 ongoing：回合开始时若你力量最高，爆破点降到0
     registerTrigger('werewolf_marking_territory', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            const candidateBases = ctx.sourceBaseIndex !== undefined
+                ? [{ base: state.bases[ctx.sourceBaseIndex], baseIndex: ctx.sourceBaseIndex }]
+                : state.bases.map((base, baseIndex) => ({ base, baseIndex }));
+            for (const { base, baseIndex } of candidateBases) {
+                if (!base) continue;
+                const source = base.ongoingActions.find(a =>
+                    a.uid === ctx.sourceCardUid && matchesDefId(a.defId, 'werewolf_marking_territory'));
+                if (!source) continue;
+                const controllerId = (source.metadata?.sourceControllerId as PlayerId | undefined) ?? source.ownerId;
+                if (controllerId !== playerId) return [];
+
+                let myTotal = 0;
+                const opponentTotals = new Map<string, number>();
+                for (const m of base.minions) {
+                    const power = getEffectivePower(state, m, baseIndex);
+                    if (m.controller === playerId) myTotal += power;
+                    else opponentTotals.set(m.controller, (opponentTotals.get(m.controller) ?? 0) + power);
+                }
+                let isHighest = myTotal > 0;
+                for (const total of opponentTotals.values()) {
+                    if (total >= myTotal) { isHighest = false; break; }
+                }
+                if (!isHighest) return [];
+                const currentBp = getEffectiveBreakpoint(state, baseIndex);
+                return currentBp > 0
+                    ? [modifyBreakpoint(baseIndex, -currentBp, 'werewolf_marking_territory', now)]
+                    : [];
+            }
+            return [];
+        }
+
         for (let i = 0; i < state.bases.length; i++) {
             const base = state.bases[i];
-            const hasMT = base.ongoingActions.some(a => matchesDefId(a.defId, 'werewolf_marking_territory') && a.ownerId === playerId);
+            const hasMT = base.ongoingActions.some(a =>
+                matchesDefId(a.defId, 'werewolf_marking_territory')
+                && (((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === playerId),
+            );
             if (!hasMT) continue;
             let myTotal = 0;
             let maxOther = 0;
@@ -754,6 +791,8 @@ function registerWerewolfOngoingEffects(): void {
         }
         return [];
     }, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 
     // 势不可挡 ongoing(minion)：本随从不可被消灭
@@ -790,16 +829,8 @@ function registerWerewolfOngoingEffects(): void {
             }
         }
         if (!isHighest) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.not_highest_power', ctx.now)] };
-        const player = ctx.state.players[ctx.playerId];
-        if (!player || player.deck.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
-        const { drawnUids } = drawCards(player, 1, ctx.random);
-        if (drawnUids.length === 0) return { events: [] };
-        return {
-            events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ctx.playerId, count: 1, cardUids: drawnUids },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent],
-        };
+        const events = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+        if (events.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+        return { events };
     });
 }

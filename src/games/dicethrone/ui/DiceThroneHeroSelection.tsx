@@ -16,6 +16,7 @@ import { getPortraitStyle, ASSETS } from './assets';
 import { getPlayerBoardAspectRatio } from './abilitySlotLayout';
 import {
     DICETHRONE_CHARACTER_CATALOG,
+    getDiceThroneCharacterNameKey,
     type CharacterDefinition,
     type SelectableCharacterId,
     type CharacterId,
@@ -194,23 +195,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
     const renderSeatPlayerCard = (pid: PlayerId, seatIndex: number) => {
         const colors = PLAYER_COLORS[pid] || PLAYER_COLORS['0'];
         const hasSelected = selectedCharacters[pid] && selectedCharacters[pid] !== 'unselected';
-        const selectedCharacterNameKey = selectedCharacters[pid] === 'monk'
-            ? 'characters.monk'
-            : selectedCharacters[pid] === 'barbarian'
-                ? 'characters.barbarian'
-                : selectedCharacters[pid] === 'pyromancer'
-                    ? 'characters.pyromancer'
-                    : selectedCharacters[pid] === 'shadow_thief'
-                        ? 'characters.shadow_thief'
-                        : selectedCharacters[pid] === 'moon_elf'
-                            ? 'characters.moon_elf'
-                            : selectedCharacters[pid] === 'paladin'
-                                ? 'characters.paladin'
-                                : selectedCharacters[pid] === 'gunslinger'
-                                    ? 'characters.gunslinger'
-                                    : selectedCharacters[pid] === 'samurai'
-                                        ? 'characters.samurai'
-                                        : null;
+        const selectedCharacterNameKey = getDiceThroneCharacterNameKey(selectedCharacters[pid]);
         const isMe = pid === currentPlayerId;
         const controller = seatControllers?.[pid];
         const controllerType = controller?.type ?? 'human';
@@ -383,7 +368,8 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                     className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 content-start"
                     style={{
                         padding: inlineUnit(1),
-                        gap: inlineUnit(0.8),
+                        columnGap: inlineUnit(0.8),
+                        rowGap: inlineUnit(0.9),
                     }}
                 >
                     {availableCharacters.map((char, index) => {
@@ -398,12 +384,12 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: index * 0.03 }}
                                 className={clsx(
-                                    "relative aspect-[3/4] border-2 transition-all duration-300 overflow-hidden cursor-pointer group",
+                                    "relative border-2 transition-all duration-300 overflow-hidden cursor-pointer group",
                                     isSelectedByMe
                                         ? "border-amber-400 shadow-[0_0_1.5vw_rgba(251,191,36,0.4)] z-20 scale-[1.02]"
                                         : "border-white/10 hover:border-white/30 hover:scale-[1.02]"
                                 )}
-                                style={{ borderRadius: inlineUnit(0.4) }}
+                                style={{ borderRadius: inlineUnit(0.4), height: 0, paddingTop: `${100 / 0.75}%`, aspectRatio: '3 / 4' }}
                                 onClick={() => handleSelectCharacter(char.id as SelectableCharacterId)}
                             >
                                 <div className={clsx(
@@ -724,23 +710,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                             hasSelected ? "text-amber-400" : "text-white/50"
                                         )} style={{ fontSize: inlineUnit(0.9) }}>
                                             {hasSelected
-                                                ? t(
-                                                    charId === 'monk'
-                                                        ? 'characters.monk'
-                                                        : charId === 'barbarian'
-                                                            ? 'characters.barbarian'
-                                                            : charId === 'pyromancer'
-                                                                ? 'characters.pyromancer'
-                                                                : charId === 'shadow_thief'
-                                                                    ? 'characters.shadow_thief'
-                                                                    : charId === 'moon_elf'
-                                                                        ? 'characters.moon_elf'
-                                                                        : charId === 'paladin'
-                                                                            ? 'characters.paladin'
-                                                                            : charId === 'gunslinger'
-                                                                                ? 'characters.gunslinger'
-                                                                                : 'characters.samurai',
-                                                )
+                                                ? t(getDiceThroneCharacterNameKey(charId) ?? 'selection.notSelected')
                                                 : t('selection.notSelected')}
                                         </div>
                                         <div className="text-white/50 truncate" style={{ fontSize: inlineUnit(0.6), maxWidth: inlineUnit(8) }}>

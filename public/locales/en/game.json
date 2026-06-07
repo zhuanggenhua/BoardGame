@@ -36,6 +36,11 @@
       "tutorial": "Tutorial",
       "online": "Online Room"
     },
+    "homeStyle": {
+      "title": "Home Style",
+      "book": "Book",
+      "classic": "Classic"
+    },
     "copyRoomId": "Copy Room ID",
     "roomId": "ID: {{id}}",
     "status": {
@@ -88,6 +93,7 @@
       "settings": "Settings",
       "audio": "Audio",
       "chat": "Chat",
+      "emotes": "Emotes",
       "seatSwap": "Seat Swap",
       "actionLog": "Action Log",
       "info": "Info",
@@ -134,6 +140,7 @@
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
         "loginRequired": "Login for better feedback tracking experience",
+        "apiDisabled": "The dev:lite mode does not start the API service, so feedback submission is disabled. Your draft stays on this device.",
         "submitFailed": "Submission failed. Please try again later."
       },
       "type": {
@@ -163,6 +170,14 @@
       "notConnected": "Chat service disconnected. Please try again.",
       "connecting": "Connecting to chat. Please try again."
     },
+    "emotes": {
+      "empty": "No emotes available",
+      "rateLimited": "You're sending emotes too quickly.",
+      "invalid": "This emote is not available.",
+      "sendFailed": "Emote was not sent.",
+      "notConnected": "Emote connection is not ready.",
+      "connecting": "Connecting to emote channel."
+    },
     "fullscreen": {
       "enterFailed": "Failed to enter fullscreen. Check browser permissions.",
       "exitFailed": "Failed to exit fullscreen. Check browser status."
@@ -180,6 +195,9 @@
       "waiting": "Waiting for {{player}} to approve the seat swap.",
       "incoming": "{{player}} requested to swap seats with you.",
       "pendingOther": "{{requester}} is waiting for {{target}} to respond to a seat swap request.",
+      "me": "You",
+      "requester": "Requester",
+      "target": "Target",
       "approve": "Approve Swap",
       "reject": "Reject Swap",
       "cancel": "Cancel Swap Request",

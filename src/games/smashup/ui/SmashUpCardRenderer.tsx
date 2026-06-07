@@ -46,6 +46,7 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
     // 由于只有 renderer 类型的 previewRef 能任意传参，我们假设这里的 payload 透传了 defId
     const defId = previewRef.type === 'renderer' ? (previewRef.payload?.defId as string | undefined) : undefined;
     const cardUid = previewRef.type === 'renderer' ? (previewRef.payload?.cardUid as string | undefined) : undefined;
+    const overlayDefId = previewRef.type === 'renderer' ? (previewRef.payload?.overlayDefId as string | undefined) : undefined;
     const disableHoverOverlay = previewRef.type === 'renderer' ? (previewRef.payload?.disableHoverOverlay as boolean | undefined) ?? false : false;
     const forceShowOverlay = previewRef.type === 'renderer' ? (previewRef.payload?.forceShowOverlay as boolean | undefined) ?? false : false;
     const [, forceAtlasRefresh] = useReducer((n: number) => n + 1, 0);
@@ -137,6 +138,21 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
         }
     }, [finalAtlasId, forceAtlasRefresh]);
 
+    const overlayPreviewRef = useMemo(() => {
+        if (!overlayDefId || overlayDefId === defId) return null;
+        return getCardDef(overlayDefId)?.previewRef
+            ? {
+                type: 'renderer' as const,
+                rendererId: 'smashup-card-renderer',
+                payload: {
+                    defId: overlayDefId,
+                    cardUid,
+                    disableHoverOverlay: true,
+                },
+            }
+            : null;
+    }, [cardUid, defId, overlayDefId]);
+
     // 获取当前语言的翻译用于覆盖层显示
     const { name, text } = useMemo(() => {
         if (!defId) return { name: '', text: '' };
@@ -219,6 +235,20 @@ export const SmashUpCardRenderer: React.FC<SmashUpRendererArgs> = ({
                     });
                 }}
             />
+            {overlayPreviewRef && (
+                <div
+                    data-testid="su-card-bottom-overlay"
+                    className="absolute inset-0 z-[5] pointer-events-none overflow-hidden"
+                    style={{ clipPath: 'inset(54% 0 0 0)' }}
+                >
+                    <CardPreview
+                        previewRef={overlayPreviewRef}
+                        locale={effectiveLocale}
+                        className="w-full h-full"
+                    />
+                    <div className="absolute inset-x-0 top-0 h-[12%] bg-gradient-to-b from-black/30 via-black/10 to-transparent" />
+                </div>
+            )}
             {/* 覆盖层：仅在需要时显示，且未禁用 hover 时才响应 hover */}
             {shouldShowOverlay && (
                 <div

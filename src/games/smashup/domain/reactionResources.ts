@@ -155,12 +155,30 @@ function addGenericResourcesFromValue(
             if (/minionUid$/i.test(key)) add(target, { kind: 'minion', uid: raw });
             if (/titanUid$/i.test(key)) add(target, { kind: 'titan', uid: raw });
             if (/cardUid$/i.test(key) || key === 'uid') add(target, { kind: 'cardInstance', uid: raw });
+            if (/actionUid$/i.test(key)) add(target, { kind: 'cardInstance', uid: raw });
+            if (/madnessUid$/i.test(key)) add(target, { kind: 'cardInstance', uid: raw });
             if (mode === 'read' && /playerId$/i.test(key)) {
                 add(target, { kind: 'playerControl', playerId: raw });
             }
         } else if (typeof raw === 'number' && Number.isFinite(raw)) {
             if (/baseIndex$/i.test(key) || key === 'baseIndex') add(target, { kind: 'base', index: raw });
         } else if (Array.isArray(raw)) {
+            if (/(cardUids|topUids|bottomUids|deckUids|newDeckUids|removedActionUids|pickedToHandUids|playedHandUids|extraDeckUidsForShuffle|inspectedUids)$/i.test(key)) {
+                for (const item of raw) {
+                    if (typeof item === 'string') add(target, { kind: 'cardInstance', uid: item });
+                }
+            } else if (/(movedUids|selectedMinionUids|destroyedUids)$/i.test(key)) {
+                for (const item of raw) {
+                    if (typeof item === 'string') add(target, { kind: 'minion', uid: item });
+                }
+            } else if (/candidateUids$/i.test(key)) {
+                for (const item of raw) {
+                    if (!item || typeof item !== 'object') continue;
+                    const uid = (item as Record<string, unknown>).uid;
+                    if (typeof uid === 'string') add(target, { kind: 'minion', uid });
+                }
+                continue;
+            }
             for (const item of raw) addGenericResourcesFromValue(fp, item, mode, seen);
         } else if (raw && typeof raw === 'object') {
             addGenericResourcesFromValue(fp, raw, mode, seen);
@@ -210,6 +228,13 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.ACTION_PLAYED:
             addGenericResourcesFromValue(fp, payload, 'write');
             addPlayerZoneWrites(fp, playerId(payload.playerId), ['hand', 'playLimit']);
+            if (payload.fromDiscard) {
+                addPlayerZoneWrites(fp, playerId(payload.playerId), ['discard']);
+                const owner = playerId(payload.ownerId);
+                if (owner && owner !== playerId(payload.playerId)) {
+                    addPlayerZoneWrites(fp, owner, ['discard']);
+                }
+            }
             break;
         case SU_EVENTS.TITAN_PLAYED:
             addGenericResourcesFromValue(fp, payload, 'write');
@@ -285,10 +310,14 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.ONGOING_ATTACHED:
             addGenericResourcesFromValue(fp, payload, 'write');
             add(fp.writes, { kind: 'base', index: numberValue(payload.targetBaseIndex) ?? -1 });
+            if (playerId(payload.sourcePlayerId) && playerId(payload.sourcePlayerId) !== playerId(payload.ownerId)) {
+                addPlayerZoneWrites(fp, playerId(payload.sourcePlayerId), ['hand', 'deck', 'discard']);
+            }
             addPlayerZoneWrites(fp, playerId(payload.ownerId), ['hand', 'deck', 'discard']);
             break;
         case SU_EVENTS.ONGOING_DETACHED:
             addGenericResourcesFromValue(fp, payload, 'write');
+            addPlayerZoneWrites(fp, playerId(payload.ownerId), ['discard']);
             break;
         case SU_EVENTS.CARDS_DRAWN:
         case SU_EVENTS.CARD_RECOVERED_FROM_DISCARD:
@@ -304,6 +333,9 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.CARD_REMOVED_FROM_GAME:
             addGenericResourcesFromValue(fp, payload, 'write');
             addPlayerZoneWrites(fp, playerId(payload.playerId), ['hand', 'deck', 'discard', 'removed']);
+            if (payload.ownerId && payload.ownerId !== payload.playerId) {
+                addPlayerZoneWrites(fp, playerId(payload.ownerId), ['removed']);
+            }
             break;
         case SU_EVENTS.CARD_REMOVED_FROM_DECK:
             addGenericResourcesFromValue(fp, payload, 'write');
@@ -312,6 +344,12 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
         case SU_EVENTS.CARD_TO_DECK_TOP:
         case SU_EVENTS.CARD_TO_DECK_BOTTOM:
             addGenericResourcesFromValue(fp, payload, 'write');
+            {
+                const sourceZonePlayerId = playerId(payload.sourcePlayerId) ?? playerId(payload.sourceControllerId);
+                if (sourceZonePlayerId && sourceZonePlayerId !== playerId(payload.ownerId)) {
+                    addPlayerZoneWrites(fp, sourceZonePlayerId, ['hand', 'deck', 'discard']);
+                }
+            }
             addPlayerZoneWrites(fp, playerId(payload.ownerId), ['deck', 'discard']);
             break;
         case SU_EVENTS.CARD_TRANSFERRED:
@@ -435,9 +473,39 @@ function deriveFootprintFromOption(option: PromptOption, fp: MutableFootprint): 
     }
     addGenericResourcesFromValue(fp, option.value, 'write');
     if (option.value && typeof option.value === 'object') {
-        const optionPlayerId = playerId((option.value as Record<string, unknown>).playerId);
-        if (optionPlayerId) add(fp.writes, { kind: 'playerControl', playerId: optionPlayerId });
+        const optionValue = option.value as Record<string, unknown>;
+        addStructuredPlayerWritesFromValue(fp, optionValue);
+        if (typeof optionValue.baseDefId === 'string' && numberValue(optionValue.baseIndex) == null) {
+            add(fp.writes, { kind: 'baseDeck' });
+        }
     }
+}
+
+function addTheBrideChoiceResources(fp: MutableFootprint, value: unknown): void {
+    if (!value || typeof value !== 'object') return;
+    const record = value as Record<string, unknown>;
+    if (typeof record.targetUid === 'string') {
+        add(fp.writes, { kind: 'minion', uid: record.targetUid });
+    }
+    if (Array.isArray(record.selectedTargetUids)) {
+        for (const item of record.selectedTargetUids) {
+            if (typeof item === 'string') add(fp.writes, { kind: 'minion', uid: item });
+        }
+    }
+    if (typeof record.titanUid === 'string') {
+        add(fp.writes, { kind: 'cardInstance', uid: record.titanUid });
+    }
+}
+
+function addStructuredPlayerWritesFromValue(fp: MutableFootprint, value: unknown): void {
+    if (!value || typeof value !== 'object') return;
+    const record = value as Record<string, unknown>;
+    const structuredPlayerId = playerId(record.playerId);
+    if (structuredPlayerId) add(fp.writes, { kind: 'playerControl', playerId: structuredPlayerId });
+    const structuredTargetPlayerId = playerId(record.targetPlayerId);
+    if (structuredTargetPlayerId) add(fp.writes, { kind: 'playerControl', playerId: structuredTargetPlayerId });
+    const structuredPid = playerId(record.pid);
+    if (structuredPid) add(fp.writes, { kind: 'playerControl', playerId: structuredPid });
 }
 
 export function deriveFootprintFromInteraction(interaction: InteractionDescriptor): SmashUpReactionResourceFootprint | undefined {
@@ -448,8 +516,33 @@ export function deriveFootprintFromInteraction(interaction: InteractionDescripto
     for (const option of data.options ?? []) {
         deriveFootprintFromOption(option, fp);
     }
-    addGenericResourcesFromValue(fp, (data as SimpleChoiceData & { continuationContext?: unknown }).continuationContext, 'write');
+    const continuationContext = (data as SimpleChoiceData & { continuationContext?: unknown }).continuationContext;
+    addGenericResourcesFromValue(fp, continuationContext, 'write');
+    addStructuredPlayerWritesFromValue(fp, continuationContext);
+    const runtimePromptContinuationContext = ((data as SimpleChoiceData & {
+        runtimePrompt?: {
+            continuation?: { context?: unknown };
+        };
+    }).runtimePrompt?.continuation?.context);
+    addGenericResourcesFromValue(
+        fp,
+        runtimePromptContinuationContext,
+        'write',
+    );
+    addStructuredPlayerWritesFromValue(fp, runtimePromptContinuationContext);
+    addGenericResourcesFromValue(fp, {
+        inspectedUids: (data as SimpleChoiceData & { inspectedUids?: unknown }).inspectedUids,
+        inspectedCards: (data as SimpleChoiceData & { inspectedCards?: unknown }).inspectedCards,
+    }, 'write');
     addGenericResourcesFromValue(fp, data.displayCard, 'read');
+    if (data.sourceId === 'titan_frankenstein_the_bride_start_choose_target') {
+        for (const option of data.options ?? []) {
+            if (option.disabled || option.id === 'skip' || option.id === 'pass') continue;
+            addTheBrideChoiceResources(fp, option.value);
+        }
+        addTheBrideChoiceResources(fp, continuationContext);
+        addTheBrideChoiceResources(fp, runtimePromptContinuationContext);
+    }
     if (fp.writes.size === 0 && (data.options ?? []).some(option => !option.disabled && option.id !== 'skip' && option.id !== 'pass')) {
         fp.fallbackReason = `interaction:${data.sourceId ?? interaction.id}:unstructured-options`;
     }
@@ -516,6 +609,7 @@ function buildTriggerProbeContext(
         sourceCardUid: trigger.sourceCardUid,
         sourceBaseIndex: trigger.sourceBaseIndex,
         sourceControllerId: trigger.sourceControllerId,
+        sourceOwnerPlayerId: trigger.sourceOwnerPlayerId,
         triggerBaseControllersAtTrigger: trigger.triggerBaseControllersAtTrigger,
         playerId: trigger.ownerPlayerId,
         baseIndex: trigger.baseIndex,
@@ -526,6 +620,10 @@ function buildTriggerProbeContext(
         triggerMinionDefId: trigger.triggerMinionDefId,
         triggerMinionPower: trigger.triggerMinionPower,
         destroyerId: trigger.destroyerId,
+        triggerCardUid: trigger.triggerCardUid,
+        triggerCardDefId: trigger.triggerCardDefId,
+        triggerCardOwnerId: trigger.triggerCardOwnerId,
+        triggerCardKind: trigger.triggerCardKind,
         triggerMinion: trigger.lkiMinion
             ? {
                 uid: trigger.lkiMinion.uid,

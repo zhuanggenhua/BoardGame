@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
 import { UI_Z_INDEX } from '../../core';
+import { OverlayLayerProvider } from '../common/overlays/OverlayLayerContext';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../games/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
@@ -47,12 +48,45 @@ const FAB_PANEL_GAP_MOBILE = 14;
 const FAB_PANEL_GAP_DESKTOP = 10;
 const HUD_FAB_POSITION_KEY = 'hud_fab_position';
 const HUD_FAB_LEGACY_OFFSET_KEY = 'hud_fab_offset';
+export const MOBILE_FAB_VISIBLE_ITEM_LIMIT = 7;
+
+export type FabLayerZIndex = {
+    panel: number;
+    root: number;
+    sheetBackdrop: number;
+    sheet: number;
+    floatingText: number;
+};
+
+export const resolveFabLayerZIndex = (baseZIndex = UI_Z_INDEX.hud): FabLayerZIndex => ({
+    panel: baseZIndex + 1,
+    root: baseZIndex + 2,
+    sheetBackdrop: baseZIndex + 1,
+    sheet: baseZIndex + 2,
+    floatingText: baseZIndex + 3,
+});
 
 export interface FabAction {
     mobilePanelVariant?: 'popover' | 'sheet';
 }
 
 export const resolveFabSatellitesToRender = <T,>(items: T[]) => [...items].reverse();
+
+export const resolveMobileFabOverflowWarning = (
+    items: Array<Pick<FabAction, 'id' | 'label'>>,
+    isMobileViewport: boolean,
+) => {
+    if (!isMobileViewport || items.length <= MOBILE_FAB_VISIBLE_ITEM_LIMIT) {
+        return null;
+    }
+
+    return {
+        count: items.length,
+        limit: MOBILE_FAB_VISIBLE_ITEM_LIMIT,
+        itemIds: items.map((item) => item.id),
+        labels: items.map((item) => item.label),
+    };
+};
 
 export const shouldTrackFabButtonRect = ({
     showTooltip,
@@ -97,6 +131,7 @@ export const FabMenu = ({
     const [liveDragOffset, setLiveDragOffset] = useState({ x: 0, y: 0 });
     const renderButtonSize = isOpen ? expandedButtonSize : dockedButtonSize;
     const renderButtonGap = isOpen ? expandedButtonGap : dockedButtonGap;
+    const lastMobileOverflowWarningKeyRef = useRef<string | null>(null);
 
     // 动态对齐状态
     const [alignment, setAlignment] = useState<FabAlignment>({ v: 'bottom', h: 'right' });
@@ -352,6 +387,25 @@ export const FabMenu = ({
         prevActiveItemIdRef.current = activeItemId;
     }, [activeItemId, items]);
 
+    useEffect(() => {
+        const warning = resolveMobileFabOverflowWarning(items, isMobileViewport);
+        if (!warning) {
+            lastMobileOverflowWarningKeyRef.current = null;
+            return;
+        }
+
+        const warningKey = warning.itemIds.join('|');
+        if (lastMobileOverflowWarningKeyRef.current === warningKey) {
+            return;
+        }
+
+        lastMobileOverflowWarningKeyRef.current = warningKey;
+        logger.warn('移动端悬浮球数量超过上限', {
+            event: 'mobile_fab_visible_item_overflow',
+            ...warning,
+        });
+    }, [isMobileViewport, items]);
+
     const getExpandedLayout = useCallback((target: FabPosition) => {
         const rawPosition = normalizePosition(target);
         return resolveExpandedFabLayout({
@@ -402,6 +456,7 @@ export const FabMenu = ({
     };
     const renderAlignment = renderLayout.alignment;
     const satellitesToRender = resolveFabSatellitesToRender(items.slice(1));
+    const layerZIndex = resolveFabLayerZIndex(zIndex);
 
     const hasAnyNotification = items.some((item) => item.active);
     // 波纹/辉光颜色跟随"选中态"同色系，避免不明显
@@ -423,7 +478,7 @@ export const FabMenu = ({
                 top: renderPosition.top,
                 x: dragX,
                 y: dragY,
-                zIndex: zIndex + 2,
+                zIndex: layerZIndex.root,
                 touchAction: 'none',
             }}
             data-testid="fab-menu"
@@ -448,7 +503,7 @@ export const FabMenu = ({
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
                 panelAnchorPosition={liveRenderPosition}
-                layerZIndex={zIndex + 1}
+                layerZIndex={layerZIndex}
                 onRequestClose={() => {
                     setIsOpen(false);
                     setActiveItemId(null);
@@ -475,7 +530,7 @@ export const FabMenu = ({
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
-                layerZIndex={zIndex + 1}
+                layerZIndex={layerZIndex}
             />
         </motion.div>
     );
@@ -636,6 +691,7 @@ const FabButtonSlot = ({
                 isDark={isDark}
                 alignment={alignment}
                 tooltipPortalRoot={tooltipPortalRoot}
+                layerZIndex={layerZIndex}
                 glowColor={glowColor}
                 isDragging={isDragging}
                 buttonSize={buttonSize}
@@ -740,6 +796,11 @@ const Panel = ({
     const renderedContent = typeof item.content === 'function'
         ? item.content(panelContext)
         : item.content;
+    const layeredContent = (
+        <OverlayLayerProvider tooltipZIndex={layerZIndex.floatingText}>
+            {renderedContent}
+        </OverlayLayerProvider>
+    );
 
     if (isMobileSheetPanel) {
         const sheetHorizontalMargin = 12;
@@ -762,7 +823,7 @@ const Panel = ({
             <>
                 <div
                     className="fixed inset-0 bg-black/55 backdrop-blur-[2px]"
-                    style={{ zIndex: UI_Z_INDEX.modalOverlay }}
+                    style={{ zIndex: layerZIndex.sheetBackdrop }}
                     onClick={(event) => {
                         event.stopPropagation();
                         onRequestClose?.();
@@ -778,7 +839,7 @@ const Panel = ({
                         left: resolvedSheetLeft,
                         bottom: sheetBottomOffset,
                         width: resolvedSheetWidth > 0 ? resolvedSheetWidth : undefined,
-                        zIndex: UI_Z_INDEX.modalContent,
+                        zIndex: layerZIndex.sheet,
                     }}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => event.stopPropagation()}
@@ -802,7 +863,7 @@ const Panel = ({
                             </div>
                         </div>
                         <div className="px-3 pb-3 pt-3">
-                            {renderedContent}
+                            {layeredContent}
                         </div>
                     </div>
                 </motion.div>
@@ -824,7 +885,7 @@ const Panel = ({
                     top: panelContainerTop,
                     width: resolvedAnchor.width,
                     height: resolvedVerticalAnchor.height,
-                    zIndex: layerZIndex ?? Math.max(UI_Z_INDEX.hud - 1, 1),
+                    zIndex: layerZIndex.panel,
                     pointerEvents: 'none',
                 }}
             >
@@ -851,7 +912,7 @@ const Panel = ({
                     data-testid={`fab-panel-${item.id}`}
                 >
                     {panelHeading}
-                    {renderedContent}
+                    {layeredContent}
                 </motion.div>
             </div>,
         </AnimatePresence>,
@@ -867,6 +928,7 @@ const MenuButton = ({
     isDark,
     alignment,
     tooltipPortalRoot,
+    layerZIndex,
     showGlow,
     glowColor,
     isDragging,
@@ -1006,7 +1068,7 @@ const MenuButton = ({
                                             ? viewportWidth - tooltipRect.left + gap
                                             : undefined,
                                         transform: `translate(${tooltipSide === 'right' ? '0' : '-100%'}, -50%)`,
-                                        zIndex: UI_Z_INDEX.tooltip,
+                                        zIndex: layerZIndex.floatingText,
                                         maxWidth: floatingMaxWidth,
                                     }}
                                 >
@@ -1037,7 +1099,7 @@ const MenuButton = ({
                                             ? viewportWidth - tooltipRect.left + gap
                                             : undefined,
                                         transform: `translate(${previewSide === 'right' ? '0' : '-100%'}, -50%)`,
-                                        zIndex: UI_Z_INDEX.tooltip,
+                                        zIndex: layerZIndex.floatingText,
                                         maxWidth: floatingMaxWidth,
                                     }}
                                 >

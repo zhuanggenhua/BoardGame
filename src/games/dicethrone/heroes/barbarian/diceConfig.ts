@@ -21,7 +21,7 @@ export const BARBARIAN_SYMBOLS = BARBARIAN_DICE_FACE_IDS;
  */
 export const barbarianDiceDefinition: DiceDefinition = {
     id: 'barbarian-dice',
-    name: 'Barbarian Dice',
+    name: 'config.dice.barbarian.name',
     sides: 6,
     category: 'hero',
     faces: [

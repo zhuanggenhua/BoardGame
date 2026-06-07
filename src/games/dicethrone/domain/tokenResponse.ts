@@ -27,6 +27,7 @@ import type {
 import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
+import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 
 // ============================================================================
 // Token 可用性检查
@@ -44,6 +45,7 @@ export function getUsableTokenAmountForTiming(
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;
+    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) return 0;
 
     const damageScope = options?.damageScope ?? 'attack';
     const hasAttackContext = !!state.pendingAttack;
@@ -156,8 +158,8 @@ export function hasOffensiveTokens(
 export function hasPurifyToken(state: DiceThroneCore, playerId: PlayerId): boolean {
     const player = state.players[playerId];
     if (!player) return false;
-    
-    return (player.tokens[TOKEN_IDS.PURIFY] ?? 0) > 0;
+
+    return ((player.tokens ?? {})[TOKEN_IDS.PURIFY] ?? 0) > 0;
 }
 
 /**
@@ -166,13 +168,15 @@ export function hasPurifyToken(state: DiceThroneCore, playerId: PlayerId): boole
 export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
     const player = state.players[playerId];
     if (!player) return false;
+    const playerStatusEffects = player.statusEffects ?? {};
+    const playerTokens = player.tokens ?? {};
 
     // 可被净化移除的负面状态：由状态定义驱动（支持未来扩展）
     const removableDebuffIds = (state.tokenDefinitions ?? [])
         .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
         .map(def => def.id);
 
-    return removableDebuffIds.some(id => (player.statusEffects[id] ?? 0) > 0 || (player.tokens[id] ?? 0) > 0);
+    return removableDebuffIds.some(id => (playerStatusEffects[id] ?? 0) > 0 || (playerTokens[id] ?? 0) > 0);
 }
 
 // ============================================================================
@@ -426,6 +430,13 @@ export function processTokenUsage(
     const events: DiceThroneEvent[] = [];
     const player = state.players[playerId];
     const currentAmount = player?.tokens[tokenDef.id] ?? 0;
+    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) {
+        return {
+            events,
+            result: { success: false },
+            newTokenAmount: currentAmount,
+        };
+    }
     const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[tokenDef.id] ?? 0;
     const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
     const hasExplicitWindowCap = (tokenDef.activeUse?.allowedConsumeAmounts?.length ?? 0) > 0;
@@ -493,6 +504,7 @@ export function processTokenUsage(
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
             evasionRoll: result.rollResult,
+            deferredDamageEvents: result.extra?.deferredDamageEvents as PendingDamage['deferredDamageEvents'] | undefined,
         },
         sourceCommandType: 'USE_TOKEN',
         timestamp,
@@ -544,12 +556,29 @@ export function finalizeTokenResponse(
                 actualDamage,
                 sourceAbilityId: pendingDamage.sourceAbilityId,
                 sourcePlayerId: pendingDamage.sourcePlayerId,
+                damageScope: pendingDamage.damageScope,
                 modifiers: pendingDamage.modifiers,
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
         };
         events.push(damageEvent);
+    }
+
+    for (const deferredDamage of pendingDamage.deferredDamageEvents ?? []) {
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: deferredDamage.targetId,
+                amount: deferredDamage.amount,
+                actualDamage: deferredDamage.actualDamage,
+                sourceAbilityId: deferredDamage.sourceAbilityId,
+                sourcePlayerId: deferredDamage.sourcePlayerId,
+                damageScope: deferredDamage.damageScope,
+            },
+            sourceCommandType: deferredDamage.sourceCommandType ?? 'ABILITY_EFFECT',
+            timestamp,
+        } as DamageDealtEvent);
     }
     
     return events;

@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import ImageLightbox from '../../components/common/ImageLightbox';
+import { RewardPointsBadge } from '../../components/common/labels/RewardPointsBadge';
 import {
     CopyFeedbackButton,
     extractText,
@@ -45,6 +46,8 @@ interface FeedbackItem {
     type: 'bug' | 'suggestion' | 'other';
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
+    closedReason?: string | null;
+    rewardPoints?: number;
     reporterType?: 'user' | 'system';
     source?: string;
     autoReportKind?: string;
@@ -89,11 +92,33 @@ type ReporterTypeOptionWithLabel = ReporterTypeOption & { label: string };
 type SourceOptionValue =
     | 'feedback-modal'
     | 'online-ai-watchdog'
+    | 'client-auto-report'
+    | 'client-runtime-guard'
+    | 'client-window-error'
+    | 'client-unhandled-rejection'
+    | 'react-error-boundary'
+    | 'board-render-error'
+    | 'home-modal-error-boundary'
     | 'global-error-capture'
     | 'system-unsatisfiable-interaction'
     | 'unknown';
 type SourceOption = { value: SourceOptionValue; label: string };
 type SeverityConfig = Record<FeedbackItem['severity'], { label: string; dot: string; tone: string }>;
+
+const SOURCE_OPTIONS: Array<{ value: SourceOptionValue; labelKey: string }> = [
+    { value: 'feedback-modal', labelKey: 'feedback.source.feedbackModal' },
+    { value: 'online-ai-watchdog', labelKey: 'feedback.source.onlineAiWatchdog' },
+    { value: 'client-auto-report', labelKey: 'feedback.source.clientAutoReport' },
+    { value: 'client-runtime-guard', labelKey: 'feedback.source.clientRuntimeGuard' },
+    { value: 'client-window-error', labelKey: 'feedback.source.clientWindowError' },
+    { value: 'client-unhandled-rejection', labelKey: 'feedback.source.clientUnhandledRejection' },
+    { value: 'react-error-boundary', labelKey: 'feedback.source.reactErrorBoundary' },
+    { value: 'board-render-error', labelKey: 'feedback.source.boardRenderError' },
+    { value: 'home-modal-error-boundary', labelKey: 'feedback.source.homeModalErrorBoundary' },
+    { value: 'global-error-capture', labelKey: 'feedback.source.globalErrorCapture' },
+    { value: 'system-unsatisfiable-interaction', labelKey: 'feedback.source.unsatAutoSkip' },
+    { value: 'unknown', labelKey: 'feedback.source.unknown' },
+];
 
 const STATUS_OPTIONS: StatusOption[] = [
     { value: 'open', color: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -145,13 +170,10 @@ const buildReporterTypeOptions = (t: TFunction<'admin'>): ReporterTypeOptionWith
 );
 
 const buildSourceOptions = (t: TFunction<'admin'>): SourceOption[] => (
-    [
-        { value: 'feedback-modal', label: t('feedback.source.feedbackModal') },
-        { value: 'online-ai-watchdog', label: t('feedback.source.onlineAiWatchdog') },
-        { value: 'global-error-capture', label: t('feedback.source.globalErrorCapture') },
-        { value: 'system-unsatisfiable-interaction', label: t('feedback.source.unsatAutoSkip') },
-        { value: 'unknown', label: t('feedback.source.unknown') },
-    ]
+    SOURCE_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+    }))
 );
 
 const buildSeverityConfig = (t: TFunction<'admin'>): SeverityConfig => ({
@@ -189,19 +211,13 @@ const resolveOriginInfo = (item: FeedbackItem): {
     };
 };
 
+const requiresClosedReason = (item: FeedbackItem): boolean => {
+    return resolveOriginInfo(item).reporterType !== 'system';
+};
+
 const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
-    switch (source) {
-        case 'feedback-modal':
-            return t('feedback.source.feedbackModal');
-        case 'online-ai-watchdog':
-            return t('feedback.source.onlineAiWatchdog');
-        case 'global-error-capture':
-            return t('feedback.source.globalErrorCapture');
-        case 'system-unsatisfiable-interaction':
-            return t('feedback.source.unsatAutoSkip');
-        default:
-            return t('feedback.source.unknown');
-    }
+    const option = SOURCE_OPTIONS.find((item) => item.value === source);
+    return option ? t(option.labelKey) : t('feedback.source.unknown');
 };
 
 function StatusSelect({
@@ -367,7 +383,6 @@ export default function AdminFeedbackPage() {
         const requestId = ++requestIdRef.current;
         if (!silent) setLoading(true);
         if (silent) setIsPolling(true);
-
         try {
             const params = new URLSearchParams({
                 limit: String(PAGE_LIMIT),
@@ -496,6 +511,19 @@ export default function AdminFeedbackPage() {
             error('你没有权限修改该反馈');
             return;
         }
+
+        let closedReason: string | undefined;
+        if (newStatus === 'closed' && requiresClosedReason(target)) {
+            const promptValue = window.prompt(t('feedback.messages.closedReasonPrompt'), target.closedReason ?? '');
+            if (promptValue === null) {
+                return;
+            }
+            closedReason = promptValue.trim();
+            if (!closedReason) {
+                error(t('feedback.messages.closedReasonRequired'));
+                return;
+            }
+        }
         try {
             const response = await fetch(`${ADMIN_API_URL}/feedback/${id}/status`, {
                 method: 'PATCH',
@@ -503,18 +531,26 @@ export default function AdminFeedbackPage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: newStatus }),
+                body: JSON.stringify({ status: newStatus, ...(closedReason ? { closedReason } : {}) }),
             });
-            if (!response.ok) throw new Error('update_failed');
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null;
+                throw new Error(
+                    payload?.error
+                    || payload?.message
+                    || t('feedback.messages.updateFailed')
+                );
+            }
+            const updated = await response.json() as FeedbackItem;
 
             setFeedbacks((prev) => prev
                 .map((feedback) => (
-                    feedback._id === id ? { ...feedback, status: newStatus as FeedbackItem['status'] } : feedback
+                    feedback._id === id ? { ...feedback, ...updated } : feedback
                 ))
                 .filter((feedback) => statusFilter === 'all' || feedback.status === statusFilter));
             success(t('feedback.messages.updateSuccess'));
-        } catch {
-            error(t('feedback.messages.updateFailed'));
+        } catch (err) {
+            error(err instanceof Error ? err.message : t('feedback.messages.updateFailed'));
         }
     }, [error, feedbacks, statusFilter, success, t, token]);
 
@@ -1206,6 +1242,9 @@ function FeedbackDetailPanel({
                         </MetaBadge>
                     )}
                     {item.stateSnapshot && <MetaBadge>JSON</MetaBadge>}
+                    {item.rewardPoints ? (
+                        <RewardPointsBadge points={item.rewardPoints} signed className="rounded-md px-1.5 py-0.5 text-[10px]" />
+                    ) : null}
                     <div className="ml-auto">
                         <CopyFeedbackButton item={item} t={t} onAiPayloadCopy={onAiPayloadCopy} />
                     </div>
@@ -1303,6 +1342,18 @@ function FeedbackDetailPanel({
                                 {statusOptions.find((option) => option.value === item.status)?.label ?? item.status}
                             </span>
                         </MetaField>
+
+                        {item.status === 'closed' ? (
+                            <MetaField label={t('feedback.detail.closedReason')}>
+                                <span className="text-zinc-700">{item.closedReason?.trim() || t('feedback.detail.closedReasonEmpty')}</span>
+                            </MetaField>
+                        ) : null}
+
+                        {item.rewardPoints ? (
+                            <MetaField label={t('feedback.detail.rewardPoints')}>
+                                <RewardPointsBadge points={item.rewardPoints} signed className="text-xs" />
+                            </MetaField>
+                        ) : null}
 
                         <MetaField label="ID">
                             <span className="rounded-md bg-zinc-50 px-2 py-1 font-mono text-[11px] text-zinc-500">

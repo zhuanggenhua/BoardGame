@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 import type { CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
+import type { DieFace } from '../types';
 import SpotlightContainer from './SpotlightContainer';
 import BonusDieSpotlightContent from './BonusDieSpotlightContent';
 import { GameButton } from './components/GameButton';
@@ -11,6 +12,7 @@ import { UI_Z_INDEX } from '../../../core';
 interface CompareRollOverlayProps {
     compareRoll?: CompareRollChoiceData & { id: string; playerId: string };
     isVisible: boolean;
+    canResolve?: boolean;
     locale?: string;
     onResolveOption: (optionId: string) => void;
     onConfirm: () => void;
@@ -27,6 +29,7 @@ const RESULT_TONE_CLASS: Record<NonNullable<CompareRollChoiceData['resultTone']>
 export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     compareRoll,
     isVisible,
+    canResolve = true,
     locale,
     onResolveOption,
     onConfirm,
@@ -36,20 +39,26 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     const hasTranslation = React.useCallback((key?: string) => {
         return Boolean(key && i18n.exists(key, { ns: 'game-dicethrone' }));
     }, [i18n]);
+    const onConfirmRef = React.useRef(onConfirm);
+
+    React.useEffect(() => {
+        onConfirmRef.current = onConfirm;
+    }, [onConfirm]);
 
     const options = compareRoll?.options ?? [];
     const hasOptions = options.length > 0;
     const contestants = compareRoll?.contestants ?? [];
+    const compareRollId = compareRoll?.id ?? null;
+    const autoConfirmDelayMs = compareRoll?.autoConfirmDelayMs ?? 3000;
 
     React.useEffect(() => {
-        if (!isVisible || !compareRoll || hasOptions) return;
+        if (!canResolve || !isVisible || !compareRollId || hasOptions) return;
 
-        const delay = compareRoll.autoConfirmDelayMs ?? 1500;
         const timer = window.setTimeout(() => {
-            onConfirm();
-        }, delay);
+            onConfirmRef.current();
+        }, autoConfirmDelayMs);
         return () => window.clearTimeout(timer);
-    }, [compareRoll, hasOptions, isVisible, onConfirm]);
+    }, [autoConfirmDelayMs, canResolve, compareRollId, hasOptions, isVisible]);
 
     if (!isVisible || !compareRoll || contestants.length !== 2) {
         return null;
@@ -108,12 +117,13 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                                 </div>
                                 <BonusDieSpotlightContent
                                     value={contestant.roll}
-                                    face={contestant.face as any}
+                                    face={contestant.face as DieFace | undefined}
                                     effectKey={contestant.effectKey}
                                     effectParams={contestant.effectParams}
                                     locale={locale}
                                     size="7vw"
                                     rollingDurationMs={850 + index * 120}
+                                    presentationKey={compareRoll.id}
                                     characterId={contestant.characterId}
                                 />
                             </motion.div>
@@ -133,7 +143,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                     </motion.div>
                 ) : null}
 
-                {hasOptions ? (
+                {hasOptions && canResolve ? (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -164,9 +174,11 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.7 }}
                         className="text-white/70 text-[1vw] font-semibold tracking-wide"
-                        data-testid="compare-roll-autoconfirm"
+                        data-testid={hasOptions ? 'compare-roll-waiting' : 'compare-roll-autoconfirm'}
                     >
-                        {t('compareRoll.confirming')}
+                        {hasOptions && !canResolve
+                            ? t('compareRoll.waitingForOwnerChoice')
+                            : t('compareRoll.confirming')}
                     </motion.div>
                 )}
             </div>

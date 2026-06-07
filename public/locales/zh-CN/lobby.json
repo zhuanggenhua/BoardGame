@@ -16,15 +16,144 @@
       "players": "{{count}} 人在席"
     }
   },
+  "homeV2": {
+    "waitingPlayers": "等待玩家进入",
+    "roomTitleFallback": "房间 {{id}}",
+    "roomLedgerTitle": "房间列表",
+    "roomCount": "{{count}} 间",
+    "emptyRoomTitle": "还没有公开房间",
+    "emptyRoomDescription": "暂无可加入房间记录。",
+    "lockedRoomLabel": "加密",
+    "lockedRoomHint": "密码房间暂时请从原大厅进入。",
+    "confirm": {
+      "destroyDescription": "销毁后会立即关闭房间，所有玩家将被移出当前对局。"
+    },
+    "details": {
+      "typeLabel": "类型",
+      "defaultCategory": "桌游",
+      "playerCountLabel": "建议人数",
+      "overviewLabel": "玩法概览",
+      "onlineLobbyLabel": "在线大厅",
+      "onlineLobbyCompactLabel": "大厅"
+    },
+    "catalog": {
+      "allGames": "全部游戏",
+      "accountSettings": "账号与设置",
+      "playerNickname": "玩家昵称",
+      "help": "筛选"
+    },
+    "referenceCatalog": {
+      "emptyTitle": "该分类暂时为空",
+      "emptyDescription": "先切回其它分类浏览游戏。",
+      "badges": {
+        "strategy": "策略",
+        "collection": "收集",
+        "war": "战争"
+      },
+      "games": {
+        "cardia": {
+          "summary": "在卡牌与魔法的世界中，构筑你的卡组，赢得荣耀。"
+        },
+        "dicethrone": {
+          "summary": "建立王权，争夺荣耀，成为统治者。"
+        },
+        "smashup": {
+          "summary": "在混乱战场中生存，消灭一切敌人！"
+        },
+        "splendor": {
+          "summary": "收集宝石，创造你的传奇帝国。"
+        },
+        "summonerwars": {
+          "summary": "召唤强大的生物，展开史诗对战。"
+        },
+        "tictactoe": {
+          "summary": "经典的 XO 游戏，简单却充满乐趣。"
+        }
+      }
+    },
+    "sceneTabs": {
+      "lobby": "大厅",
+      "rooms": "登录",
+      "leaderboard": "",
+      "changelog": "更新"
+    },
+    "tabs": {
+      "rooms": {
+        "eyebrow": "账号",
+        "title": "账号登录",
+        "description": "查看最近活跃的公开房间。",
+        "accountActionLabel": "账号入口",
+        "loading": "正在读取账号状态…",
+        "emptyTitle": "还没有公开房间",
+        "emptyDescription": "暂无公开房间记录。",
+        "loggedInHint": "已登录",
+        "playerSummary": "{{players}} / {{seats}} 在席",
+        "openGame": "查看游戏",
+        "brandFeatureStrategyTitle": "丰富策略",
+        "brandFeatureStrategyDescription": "海量卡牌组合，构筑无限可能",
+        "brandFeatureBattleTitle": "公平竞技",
+        "brandFeatureBattleDescription": "平衡对战环境，凭实力一决高下",
+        "brandFeaturePartyTitle": "好友畅玩",
+        "brandFeaturePartyDescription": "组队开黑，享受桌游乐趣",
+        "brandTitle": "易桌游",
+        "brandSubtitle": "策略 · 卡牌 · 对战"
+      },
+      "leaderboard": {
+        "eyebrow": "排行榜",
+        "title": "实时排行",
+        "description": "查看当前热门游戏。",
+        "loading": "正在读取排行…",
+        "emptyTitle": "还没有排行数据",
+        "emptyDescription": "暂无排行数据。",
+        "statSummary": "{{rooms}} 间房 · {{players}} 位玩家"
+      },
+      "changelog": {
+        "eyebrow": "更新日志",
+        "title": "最近更新",
+        "description": "查看最近更新记录。",
+        "loading": "正在翻阅更新札记…",
+        "emptyTitle": "暂时没有更新记录",
+        "emptyDescription": "暂无更新记录。"
+      }
+    },
+    "reviews": {
+      "error": "加载评价失败，请稍后重试",
+      "empty": "暂无评论"
+    },
+    "detailTabs": {
+      "updates": "更新",
+      "updatesCompact": "更新",
+      "reviews": "评价",
+      "reviewsCompact": "评价",
+      "ranking": "排行榜",
+      "rankingCompact": "排行"
+    },
+    "detailSearchPlaceholder": "搜索房间或玩家",
+    "detailNoMatchTitle": "没有符合搜索的房间",
+    "detailNoMatchDescription": "试试换个关键词，或直接创建新房间。",
+    "detailOpenSummary": "可加入 {{open}} · 加密 {{locked}}",
+    "detailFilters": {
+      "all": "全部",
+      "open": "可加入",
+      "locked": "加密",
+      "full": "满员"
+    },
+    "detailColumns": {
+      "roomName": "房间名称",
+      "players": "人数",
+      "status": "状态",
+      "action": "操作"
+    }
+  },
   "password": {
     "modalTitle": "私密房间",
     "modalDesc": "该房间需要密码才能进入。",
-    "placeholder": "请输入密码..."
+    "placeholder": "输入密码"
   },
   "confirm": {
     "destroy": {
       "title": "销毁房间",
-      "description": "确定要销毁房间吗？"
+      "description": "销毁后会立即关闭房间，所有玩家将被移出当前对局。"
     },
     "leave": {
       "title": "离开房间",
@@ -74,6 +203,7 @@
     "empty": "暂无活跃房间",
     "matchTitle": "对局 #{{id}}",
     "mine": "我的",
+    "enabledExpansions": "扩展",
     "seatSeparator": " / ",
     "emptySlot": "空位",
     "ownerMustReconnect": "这是您创建的房间，请重连进入",
@@ -84,9 +214,13 @@
   },
   "tabs": {
     "lobby": "在线大厅",
+    "lobbyCompact": "大厅",
     "reviews": "评价",
+    "reviewsCompact": "评价",
     "leaderboard": "排行榜",
-    "changelog": "更新"
+    "leaderboardCompact": "排行",
+    "changelog": "更新",
+    "changelogCompact": "更新"
   },
   "leaderboard": {
     "loading": "加载中...",
@@ -97,6 +231,7 @@
     "changelogEmpty": "暂无日志"
   },
   "changelog": {
+    "title": "最近更新",
     "loading": "加载更新日志中...",
     "error": "更新日志加载失败",
     "pinned": "置顶"
@@ -104,10 +239,10 @@
   "authorInfo": {
     "button": "电子化作者：{{author}}",
     "mobileButton": "电子化作者：{{author}}",
-    "buttonHint": "点击查看电子化作者信息",
-    "title": "电子化作者",
+    "buttonHint": "点击查看作者信息",
+    "title": "作者",
     "game": "作品：{{game}}",
-    "hint": "当前先展示电子化作者署名，后续如有更完整的作者介绍，会从这里展开。",
+    "hint": "当前先展示作者署名，后续如有更完整的作者介绍，会从这里展开。",
     "close": "关闭"
   },
   "packageManager": {
@@ -121,6 +256,12 @@
     "installedCompletedBadge": "已完成",
     "installedVersionBadge": "已完成 · {{version}}",
     "installAction": "安装游戏包",
+    "homeV2UpdateAppShort": "更新App",
+    "homeV2DownloadingShort": "下载中",
+    "homeV2RetryShort": "重试",
+    "homeV2InstalledShort": "已就绪",
+    "homeV2InstallCompactShort": "下载包",
+    "homeV2InstallShort": "下载资源",
     "confirmEyebrow": "安装确认",
     "confirmTitle": "下载 {{game}} 游戏包",
     "confirmDescription": "本次会为当前游戏准备独立的本地资源包，未游玩的其他游戏不会一起下载。",
@@ -241,6 +382,11 @@
       "description": "三势力非对称历史策略游戏。使用手牌资源与行动轮盘争夺东北亚区域控制，并在复杂战斗流程中取得政治霸权。",
       "players": "3人"
     },
+    "fantasyrealms": {
+      "title": "幻想国度",
+      "description": "2-6 人奇幻卡牌组合游戏。围绕 7 张手牌与公开弃牌堆做取舍，通过套牌联动冲高终局分数。",
+      "players": "2-6人"
+    },
     "smashup": {
       "title": "大杀四方",
       "description": "2-4 人阵营混搭卡牌对战。选择两个派系组成牌组，围绕基地展开争夺，率先到达胜利分数即可获胜。不同派系组合会带来截然不同的战术节奏。",
@@ -261,19 +407,9 @@
       "description": "按分类浏览和试听所有通用音频资源，支持关键词搜索和分类筛选。",
       "players": "单人工具"
     },
-    "ugcbuilder": {
-      "title": "UGC 原型制作器",
-      "description": "快速创建桌游原型。支持卡牌设计、规则配置、AI辅助生成。",
-      "players": "单人工具"
-    },
     "archview": {
       "title": "架构可视化",
       "description": "交互式节点连线图，展示平台分层架构与模块依赖关系。",
-      "players": "单人工具"
-    },
-    "airepoworkbench": {
-      "title": "AI 仓库工作台",
-      "description": "围绕 RepoSession、WorkflowRun、DecisionRequest 和 ArtifactBundle 的 repo-centric AI 工作台。",
       "players": "单人工具"
     },
     "summonerwars": {
@@ -504,6 +640,7 @@
     "ownerSeatUnit": "{{seat}} 号位（房主）",
     "occupiedSeatUnit": "{{seat}} 号位",
     "aiPlayerName": "AI {{seat}} 号位",
+    "aiManualFactionSelection": "玩家选择 AI 派系",
     "confirm": "确认创建"
   },
   "socket": {

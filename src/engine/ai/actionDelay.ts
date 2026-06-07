@@ -103,6 +103,7 @@ export function resolveLocalAiActionDelayPlan(args: {
     controller: AiSeatController;
     actionVisibility: LocalAiActionVisibility;
     now: number;
+    defaultMinimumActionDelayMs?: number;
     lastVisibleActionAt?: number | null;
     observedState?: MatchState<unknown> | null;
     extraElapsedBudgetMs?: Array<number | null | undefined>;
@@ -118,7 +119,7 @@ export function resolveLocalAiActionDelayPlan(args: {
         ? Math.max(0, visibleStepElapsedMs ?? 0)
         : 0;
     const minimumDelayMs = args.actionVisibility === 'visible'
-        ? resolveAiMinimumActionDelayMs(args.controller)
+        ? resolveAiMinimumActionDelayMs(args.controller, args.defaultMinimumActionDelayMs)
         : 0;
     const remainingDelayMs = args.actionVisibility === 'visible'
         ? Math.max(0, minimumDelayMs - delayBudgetElapsedMs)

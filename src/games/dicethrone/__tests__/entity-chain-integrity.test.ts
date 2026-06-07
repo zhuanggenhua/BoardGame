@@ -474,6 +474,8 @@ describe('能力效果双重授予检测', () => {
         // righteous-prayer: grantToken(CRIT) 与 gain-cp(CP获取) 操作不同类型
         'paladin/righteous-prayer',
         'paladin/righteous-prayer/righteous-prayer-2-main',
+        // war-monger: 先获得战术优势，再通过 custom action 进入额外进攻投掷阶段，不会重复授予 token
+        'zhanshujia/war-monger',
     ]);
 
     /** 可能产生 token 授予的 custom action 分类 */
@@ -543,6 +545,8 @@ describe('能力效果双重授予检测', () => {
         const STATUS_WHITELIST = new Set<string>([
             // meteor: inflictStatus(STUN) 与 meteor-resolve(FM获取+FM伤害) 操作不同类型
             'pyromancer/meteor',
+            // merciless-curse: 固定施加休战/诅咒金币/凋零；custom action 只负责给选中的目标施加火药桶
+            'cursed_pirate/merciless-curse',
         ]);
         for (const group of getAllEffectGroups()) {
             if (WHITELIST.has(group.label) || STATUS_WHITELIST.has(group.label)) continue;

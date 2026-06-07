@@ -1,6 +1,8 @@
 # Dice Throne 树精真相源表
 
 > 本轮主真相源：用户放入的本地中文图片素材。对照源：本轮代码定义、DiceThrone 旧英雄共享合同（尤其 Gunslinger/Samurai 的 v2 面板与复合升级模式）。日期：2026-05-10。工作树：`.worktrees/dicethrone-treant-ninja`。
+>
+> 2026-06-05 当前有效口径：本文只保留树精素材、图面合同与图集合同的真相源清单，不代表树精整英雄、树精升级技能批次或四位新英雄整批当前完成态。当前若要判断树精对象级残余、升级技能 `L3/L4`、或批次级治理尾项，应以 `src/games/dicethrone/rule/treant录入核对.md`、`src/games/dicethrone/rule/treant卡牌录入核对.md`、`evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准。
 
 ## 素材与用途
 
@@ -13,6 +15,17 @@
 | 骰子 | `public/assets/i18n/zh-CN/dicethrone/images/treant/dice.png` | `1024x1024` | 骰子精灵 | L1 |
 | 状态图集 | `public/assets/i18n/zh-CN/dicethrone/images/treant/status-icons-atlas.png/json` | 5 帧 | 树灵、生命源泉、刺藤 | L1 |
 | 压缩运行时资源 | `public/assets/i18n/zh-CN/dicethrone/images/treant/compressed/*.webp` | player-board/tip/ability-cards/dice/status-icons-atlas | 客户端真实加载 | L1，远端回查见 evidence |
+
+## 玩家板图面合同
+
+| 图面区域 / 槽位 | 图片直接观察结论 | 运行时对象 | 允许状态 | 备注 |
+|---|---|---|---|---|
+| `sky` | 左下紫色独立槽，不属于普通技能列 | `quiet-cultivation` | passive / 非普通技能候选 | 旧共享语义误把它混入普通技能槽，现已纠正 |
+| `lotus` | 下排普通技能槽 | `wild-growth` | offensive | 与 Treant v2 图面一致 |
+| `combo` | 中排普通技能槽 | `vengeful-vines` | offensive | 与 Treant v2 图面一致 |
+| `lightning` | 上排普通技能槽 | `nature-touch` | offensive | 与 Treant v2 图面一致 |
+| `meditate` | 右下独立防御槽 | `rooted` | defensive | 真实防御位，不是旧 `calm` 语义 |
+| `calm` | Treant 图面不承载 `rooted` | 空 / 不命中 `rooted` | empty / 非 `rooted` | 不能再让运行时自动补成“最像的旧防御槽” |
 
 ## 图集合同
 
@@ -28,3 +41,9 @@
 | 卡图规格 | 5x8 窄图 | 旧公共 atlas 为宽图 | 新增专属 atlas，禁止复用旧公共合同 |
 | 复合升级语义 | 升级卡替换基础技能 | Samurai/Gunslinger 等旧实现同样走 `targetAbilityId` | 复用共享升级合同，不拆成多张手牌 |
 | Token 机制 | 提示板定义树灵/生命源泉/刺藤 | 代码已实现并有 L2 测试 | 继续用 L2/L3 分层记录，不再保留旧债务结论 |
+
+## 当前阅读门禁
+
+- 本文的职责是回答“图片/资源/槽位合同是什么”，不是回答“树精当前还有哪些对象级缺口”。
+- 即使这里的素材、atlas 与玩家板槽位合同已经盘清，也不能单独外推成树精当前已完成全面审计。
+- 2026-06-05 当前若还要判断树精是否存在未完成项，只能回到录入核对矩阵、卡牌核对矩阵和主审计 / 升级重审 evidence；不能从本文的 `L0/L1` 素材盘点直接推出“当前已收口”。

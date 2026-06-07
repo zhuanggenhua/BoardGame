@@ -1,5 +1,7 @@
 # P2 测试恢复计划
 
+> 状态提示（2026-06-05）：已归档的历史恢复计划。当前 P2 结论以 `evidence/_shared/p2-high-priority-complete.md`、`evidence/_shared/p2-verification-final.md` 等完成文档为准；本文件只保留当时的恢复候选分析。
+
 ## 背景
 
 P2 验证发现约 8-10 个文件的测试用例确实缺失，需要评估恢复必要性。

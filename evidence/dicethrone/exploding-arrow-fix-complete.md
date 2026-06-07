@@ -1,4 +1,6 @@
-# 爆裂箭特写描述修复完成
+# 爆裂箭特写描述专项修复证据
+
+> 2026-06-06 当前有效口径：本文只保留月精灵“爆裂箭特写描述/公式文案”这一条专项修复证据，不代表月精灵整英雄、DiceThrone 全体英雄，或四位新英雄整批当前已经审计完成。它的现行用途仅限说明当时如何把特写文案从“只显示结果”修到“显示计算公式”；若要判断新英雄批次当前残余，应回到 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 与对应单英雄主审计文档。
 
 ## 问题描述
 
@@ -91,3 +93,8 @@ effectKey: 'bonusDie.effect.explodingArrow3.result',  // 从 explodingArrow.resu
 - `src/games/dicethrone/domain/customActions/moon_elf.ts`
 - `evidence/dicethrone/exploding-arrow-verification.md`（初步验证报告）
 - `evidence/dicethrone/exploding-arrow-display-fix.md`（修复方案）
+
+## 当前阅读说明
+
+- 本文只覆盖“特写描述公式是否清楚”这一条专项，不覆盖技能本体实现、对象级 `L3/L4`、单英雄审计完成态或新英雄整批完成态。
+- 即使本文描述的修复在当轮成立，也不能把标题里的“修复”外推成“月精灵或 DiceThrone 当前已经全面收口”。

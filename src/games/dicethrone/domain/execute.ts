@@ -43,14 +43,15 @@ import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
 
-import { DICETHRONE_COMMANDS } from './ids';
+import { DICETHRONE_COMMANDS, STATUS_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
-import { getPlayerPassiveAbilities } from './passiveAbility';
+import { getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
+import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
 import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
@@ -64,21 +65,20 @@ const resolveTimestamp = (command?: DiceThroneCommand): number => {
     return typeof command?.timestamp === 'number' ? command.timestamp : 0;
 };
 
-const resolveStatusNewTotal = (
-    state: DiceThroneCore,
-    targetPlayerId: PlayerId,
-    statusId: string,
-    amount: number,
-): number => {
-    const currentStacks = state.players[targetPlayerId]?.statusEffects[statusId] ?? 0;
-    const def = (state.tokenDefinitions ?? []).find(entry => entry.id === statusId);
-    const maxStacks = def?.stackLimit || 99;
-    return Math.min(currentStacks + amount, maxStacks);
+const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
+    if (!playerId) return false;
+    return findPlayerAbility(state, playerId, abilityId) !== null;
 };
 
-const normalizeSelectedAbilityId = (abilityId: string): string => {
+const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
     if (abilityId === 'shadow-guard') return 'shadow-defense';
-    if (abilityId === 'shadow-step') return 'elusive-step';
+    if (
+        abilityId === 'shadow-step'
+        && !playerHasAbility(state, playerId, 'shadow-step')
+        && playerHasAbility(state, playerId, 'elusive-step')
+    ) {
+        return 'elusive-step';
+    }
     return abilityId;
 };
 
@@ -164,6 +164,26 @@ export function execute(
     switch (command.type) {
         case 'ROLL_DICE': {
             const rollerId = getRollerId(state, phase);
+            const bindStacks = state.players[rollerId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+            const isBindExtraOffensiveRoll = phase === 'offensiveRoll' && bindStacks > 0 && state.rollCount > 0;
+            if (isBindExtraOffensiveRoll) {
+                const currentCp = state.players[rollerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+                if (currentCp < 1) {
+                    break;
+                }
+                events.push({
+                    type: 'CP_CHANGED',
+                    payload: {
+                        playerId: rollerId,
+                        delta: -1,
+                        newValue: currentCp - 1,
+                        sourceAbilityId: STATUS_IDS.BIND,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                });
+            }
+
             const results: number[] = [];
             // 教程模式：骰子固定为 1（fist），确保教程流程中技能匹配
             // randomPolicy.values:[6] 控制其他随机（如悟道卡 rollDie → lotus）
@@ -446,7 +466,10 @@ export function execute(
 
         case 'SELECT_ABILITY': {
             const { abilityId: rawAbilityId } = command.payload as { abilityId: string };
-            const abilityId = normalizeSelectedAbilityId(rawAbilityId);
+            const selectingPlayerId = phase === 'defensiveRoll'
+                ? state.pendingAttack?.defenderId
+                : state.activePlayerId;
+            const abilityId = normalizeSelectedAbilityId(state, selectingPlayerId, rawAbilityId);
 
             if (phase === 'defensiveRoll') {
                 // 防御技能选择
@@ -745,13 +768,14 @@ export function execute(
                         timestamp,
                     } as StatusRemovedEvent);
                     // 给目标玩家添加状态
-                    const toStacks = toPlayer.statusEffects[statusId] ?? 0;
-                    events.push({
-                        type: 'STATUS_APPLIED',
-                        payload: { targetId: toPlayerId, statusId, stacks: fromStacks, newTotal: toStacks + fromStacks },
+                    events.push(...buildStatusAppliedOrChoiceEvents({
+                        state,
+                        targetId: toPlayerId,
+                        statusId,
+                        stacks: fromStacks,
                         sourceCommandType: command.type,
                         timestamp,
-                    } as DiceThroneEvent);
+                    }));
                 } else if (fromTokens > 0) {
                     // 移除源玩家的 token
                     events.push({
@@ -808,6 +832,40 @@ export function execute(
             }
 
             const interaction = currentInteraction.data as PendingInteraction;
+            if (interaction.type === 'selectHandCard') {
+                const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
+                const player = state.players[interaction.playerId];
+                if (!player) break;
+
+                const handCardIds = new Set(player.hand.map(card => card.id));
+                const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => handCardIds.has(cardId))))
+                    .slice(0, interaction.selectCount ?? 1);
+                for (const [cardIndex, cardId] of resolvedCardIds.entries()) {
+                    events.push({
+                        type: 'CARD_DISCARDED',
+                        payload: {
+                            playerId: interaction.playerId,
+                            cardId,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + cardIndex,
+                    } as DiceThroneEvent);
+                }
+
+                if (resolvedCardIds.length > 0) {
+                    events.push({
+                        type: 'INTERACTION_COMPLETED',
+                        payload: {
+                            interactionId: currentInteraction.id,
+                            sourceCardId: interaction.sourceCardId ?? '',
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + resolvedCardIds.length + 1,
+                    } as DiceThroneEvent);
+                }
+                break;
+            }
+
             if (interaction.type !== 'selectPlayer') {
                 break;
             }
@@ -816,9 +874,9 @@ export function execute(
             const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(state.players);
             const resolvedPlayerIds = Array.from(new Set(
                 selectedPlayerIds.filter(playerId => targetPlayerIds.includes(playerId))
-            ));
+            )).slice(0, interaction.selectCount ?? 1);
 
-            if (resolvedPlayerIds.length === 0) {
+            if (resolvedPlayerIds.length < (interaction.minSelectCount ?? 1)) {
                 break;
             }
 
@@ -885,18 +943,15 @@ export function execute(
                     }
 
                     for (const [configIndex, statusConfig] of statusConfigs.entries()) {
-                        events.push({
-                            type: 'STATUS_APPLIED',
-                            payload: {
-                                targetId: targetPlayerId,
-                                statusId: statusConfig.statusId,
-                                stacks: statusConfig.amount,
-                                newTotal: resolveStatusNewTotal(state, targetPlayerId, statusConfig.statusId, statusConfig.amount),
-                                sourceAbilityId: interaction.sourceCardId,
-                            },
+                        events.push(...buildStatusAppliedOrChoiceEvents({
+                            state,
+                            targetId: targetPlayerId,
+                            statusId: statusConfig.statusId,
+                            stacks: statusConfig.amount,
+                            sourceAbilityId: interaction.sourceCardId,
                             sourceCommandType: command.type,
                             timestamp: timestamp + playerIndex * 10 + tokenConfigs.length + configIndex,
-                        } as DiceThroneEvent);
+                        }));
                     }
                     continue;
                 }
@@ -965,8 +1020,16 @@ export function execute(
             const passives = getPlayerPassiveAbilities(state, command.playerId);
             const passive = passives.find(p => p.id === passiveId);
             if (!passive) break;
+            if (!Number.isInteger(actionIndex)) break;
             const action = passive.actions[actionIndex];
             if (!action) break;
+            if (!isPassiveActionUsable(state, command.playerId, passiveId, actionIndex, phase)) break;
+            if (action.type === 'rerollDie') {
+                if (!Number.isInteger(targetDieId)) break;
+                const dieIndex = state.dice.findIndex(d => d.id === targetDieId);
+                const die = dieIndex >= 0 ? state.dice[dieIndex] : undefined;
+                if (!die || dieIndex >= state.rollDiceCount || state.rollCount === 0 || die.isKept) break;
+            }
 
             const player = state.players[command.playerId];
             if (!player) break;
@@ -994,6 +1057,7 @@ export function execute(
                         tokenId: action.tokenCost.tokenId,
                         amount: action.tokenCost.amount,
                         newTotal: Math.max(0, currentTokenAmount - action.tokenCost.amount),
+                        sourceAbilityId: passiveId,
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -1001,8 +1065,9 @@ export function execute(
             }
 
             // 执行动作
-            if (action.type === 'rerollDie' && targetDieId !== undefined) {
+            if (action.type === 'rerollDie') {
                 const die = state.dice.find(d => d.id === targetDieId);
+                if (!die) break;
                 const newValue = random.d(6);
                 events.push({
                     type: 'DIE_REROLLED',

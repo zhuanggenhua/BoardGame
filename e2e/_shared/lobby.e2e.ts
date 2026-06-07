@@ -1,6 +1,12 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
-import { getGameServerBaseURL, setChineseLocale } from '../helpers/common';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import {
+    getGameServerBaseURL,
+    setChineseLocale,
+    waitForFrontendAssets,
+    waitForHomeGameList,
+} from '../helpers/common';
 
 function isRetryableNavigationError(error: unknown): boolean {
     return error instanceof Error
@@ -29,26 +35,16 @@ async function gotoLobbyWithRetry(page: Page): Promise<void> {
 }
 
 async function ensureLobbyReady(page: Page): Promise<void> {
-    const maxAttempts = 6;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        await gotoLobbyWithRetry(page);
-
-        try {
-            await expect(page.locator('[data-game-id="tictactoe"]').first()).toBeVisible({ timeout: 10000 });
-            return;
-        } catch (error) {
-            if (attempt === maxAttempts) {
-                throw error;
-            }
-            await page.waitForTimeout(1500);
-        }
-    }
+    await gotoLobbyWithRetry(page);
+    await waitForFrontendAssets(page, 45000);
+    await waitForHomeGameList(page, 45000);
+    await expect(page.locator('[data-game-id]').first()).toBeVisible({ timeout: 15000 });
 }
 
 async function applyKeyboardViewportSimulation(page: Page, options: { runtimeViewportHeight: number; keyboardInsetHeight: number }) {
     await page.evaluate(({ runtimeViewportHeight, keyboardInsetHeight }) => {
         const root = document.documentElement;
+        root.style.setProperty('--layout-viewport-height', `${window.innerHeight}px`);
         root.style.setProperty('--runtime-viewport-height', `${runtimeViewportHeight}px`);
         root.style.setProperty('--keyboard-inset-height', `${keyboardInsetHeight}px`);
         root.dataset.keyboardVisible = 'true';
@@ -84,7 +80,7 @@ async function confirmCreateRoomFromModal(page: Page): Promise<void> {
 }
 
 const MOBILE_AUTHOR_ENTRY_TEST_NAME = '移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框';
-const MOBILE_PACKAGE_ENTRY_TEST_NAME = '移动端 package-managed 游戏详情在左下角显示包管理入口';
+const MOBILE_PACKAGE_ENTRY_TEST_NAME = '网页版 package-managed 游戏详情在移动端不应显示包管理入口，但详情头部仍应完整';
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
@@ -204,6 +200,38 @@ test.describe('Lobby E2E', () => {
         await expect(page.getByRole('heading', { name: '王权骰铸' })).toBeVisible();
         await expect(page.getByRole('heading', { name: '井字棋' })).toBeVisible();
         await expect(page.getByRole('heading', { name: '素材切片机' })).toHaveCount(0);
+    });
+
+    test('经典首页分类栏在手机竖屏下不应把后半段分类挤到屏外', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+
+        const categoryLabels = ['全部游戏', '卡牌', '骰子', '抽象', '战棋', '休闲', '工具'] as const;
+        for (const label of categoryLabels) {
+            const button = page.getByRole('button', { name: label });
+            await expect(button).toBeVisible();
+            const box = await button.boundingBox();
+            expect(box, `${label} 分类按钮未正确渲染`).not.toBeNull();
+            if (!box) {
+                throw new Error(`${label} 分类按钮未正确渲染`);
+            }
+            expect(box.x, `${label} 分类按钮左边缘不应掉出屏幕`).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width, `${label} 分类按钮右边缘不应掉出 390 宽视口`).toBeLessThanOrEqual(390);
+        }
+
+        await page.getByRole('button', { name: '工具' }).click();
+        await expect(page.getByRole('heading', { name: '素材切片机' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: '王权骰铸' })).toHaveCount(0);
+
+        const hasHorizontalOverflow = await page.evaluate(() => {
+            const maxScrollWidth = Math.max(
+                document.documentElement.scrollWidth,
+                document.body.scrollWidth,
+                document.documentElement.clientWidth,
+                document.body.clientWidth,
+            );
+            return maxScrollWidth > window.innerWidth + 1;
+        });
+        expect(hasHorizontalOverflow).toBeFalsy();
     });
 
     test('游戏详情弹窗会显示当前中文动作入口', async ({ page }) => {
@@ -422,24 +450,50 @@ test.describe('Lobby E2E', () => {
         const getCreateRoomModal = () => page.getByTestId('create-room-modal').last();
         const getRoomNameInput = () => page.getByTestId('create-room-name-input').last();
         const getPasswordInput = () => page.getByTestId('create-room-password-input').last();
-        const getPasswordToggle = () => page.getByTestId('create-room-password-toggle').last();
+        const mobileProxy = page.getByTestId('mobile-text-entry-proxy').last();
+        const mobileProxyInput = page.getByTestId('mobile-text-entry-proxy-input').last();
 
         await expect(getCreateRoomModal()).toBeVisible();
+        await page.waitForTimeout(250);
+
+        const beforeFocusMetrics = await getCreateRoomModal().evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+
+        await getRoomNameInput().click();
         await applyKeyboardViewportSimulation(page, {
             runtimeViewportHeight: 564,
             keyboardInsetHeight: 280,
         });
+        await expect(mobileProxy).toBeVisible();
+        await expect(mobileProxyInput).toBeEditable();
 
-        await getRoomNameInput().click();
-        await getRoomNameInput().fill('移动端建房输入校验');
+        const proxyMetrics = await mobileProxyInput.evaluate((node) => {
+            if (!(node instanceof HTMLInputElement)) {
+                throw new Error('建房代理输入框节点不是 input');
+            }
+            const rect = node.getBoundingClientRect();
+            const hitTarget = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return {
+                bottom: rect.bottom,
+                runtimeViewportHeight: Number.parseFloat(
+                    window.getComputedStyle(document.documentElement).getPropertyValue('--runtime-viewport-height') || '0',
+                ),
+                isTopmost: hitTarget === node || node.contains(hitTarget),
+            };
+        });
+
+        expect(proxyMetrics.isTopmost, '建房代理输入框输入时不应被弹窗盖住').toBe(true);
+        expect(proxyMetrics.bottom, '建房代理输入框应留在键盘上方可视区').toBeLessThanOrEqual(proxyMetrics.runtimeViewportHeight);
+
+        await mobileProxyInput.fill('移动端建房输入校验');
         await expect(getPasswordInput()).toBeVisible();
         await expect(getPasswordInput()).toHaveAttribute('type', 'password');
-        await getPasswordToggle().click();
-        await expect(getPasswordInput()).toHaveAttribute('type', 'text');
-        await getPasswordInput().click();
-        await getPasswordInput().fill('123456');
         await expect(getRoomNameInput()).toHaveValue('移动端建房输入校验');
-        await expect(getPasswordInput()).toHaveValue('123456');
 
         const layoutMetrics = await getCreateRoomModal().evaluate((element) => {
             const roomName = element.querySelector('[data-testid="create-room-name-input"]');
@@ -465,11 +519,22 @@ test.describe('Lobby E2E', () => {
                 }).filter((fontSize) => Number.isFinite(fontSize) && fontSize > 0),
             };
         });
+        const afterFocusMetrics = await getCreateRoomModal().evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        const modalTopDelta = Math.abs(afterFocusMetrics.top - beforeFocusMetrics.top);
+        const modalCenterYDelta = Math.abs(afterFocusMetrics.centerY - beforeFocusMetrics.centerY);
 
         expect(layoutMetrics.modalTop, '建房弹窗聚焦输入后顶部不应被顶出屏幕').toBeGreaterThanOrEqual(0);
         expect(layoutMetrics.roomNameBottom, '房间名输入框应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(layoutMetrics.passwordBottom, '密码输入框应留在键盘上方可视区').toBeLessThanOrEqual(layoutMetrics.runtimeViewportHeight);
         expect(Math.min(...layoutMetrics.inputFontSizes), '移动端建房输入区至少应为 16px').toBeGreaterThanOrEqual(16);
+        expect(modalTopDelta, '建房代理输入激活后弹窗顶部不应继续被键盘顶走').toBeLessThan(6);
+        expect(modalCenterYDelta, '建房代理输入激活后弹窗整体位置应基本保持稳定').toBeLessThan(6);
 
         await page.screenshot({
             path: 'test-results/evidence-screenshots/_shared/create-room-modal-mobile-keyboard-safe.png',
@@ -520,6 +585,10 @@ test.describe('Lobby E2E', () => {
             }
             node.focus();
         });
+        await page.waitForTimeout(120);
+        await expect(page.getByTestId('mobile-text-entry-proxy')).toHaveCount(0);
+        await expect(passwordInput).toBeEditable();
+
         // 输入密码（先保持默认 password 类型），确保“能输入”和“值确实写进去了”
         await passwordInput.fill(privateRoom.password);
         await expect(passwordInput).toHaveValue(privateRoom.password);
@@ -615,8 +684,13 @@ test.describe('Lobby E2E', () => {
         await page.getByRole('button', { name: /加入 AI/ }).click();
         await expect(page.getByRole('button', { name: /加入 AI/ })).toContainText('已开启');
         await expect(page.getByRole('button', { name: '普通' })).toHaveAttribute('aria-pressed', 'true');
+        const manualFactionCheckbox = page.getByTestId('create-room-ai-manual-faction-checkbox');
+        await expect(manualFactionCheckbox).not.toBeChecked();
+        await manualFactionCheckbox.check();
+        await expect(manualFactionCheckbox).toBeChecked();
+        await expect(page.getByText('玩家选择 AI 派系')).toBeVisible();
 
-        await game.screenshot('lobby-smashup-create-room-ai-config-default-normal', testInfo);
+        await game.screenshot('lobby-smashup-create-room-ai-config-manual-faction', testInfo);
 
         await page.getByRole('button', { name: '困难' }).click();
         await expect(page.getByRole('button', { name: '1 号位（房主）' })).toBeDisabled();
@@ -640,7 +714,7 @@ test.describe('Lobby E2E', () => {
             setupData?: {
                 enableAi?: boolean;
                 setupSelections?: { expansions?: string[] };
-                seatControllers?: Record<string, { type?: string; difficulty?: string }>;
+                seatControllers?: Record<string, { type?: string; difficulty?: string; manualFactionSelection?: boolean }>;
             };
         };
 
@@ -650,6 +724,8 @@ test.describe('Lobby E2E', () => {
         expect(payload.setupData?.seatControllers?.['2']?.type).toBe('local-ai');
         expect(payload.setupData?.seatControllers?.['1']?.difficulty).toBe('hard');
         expect(payload.setupData?.seatControllers?.['2']?.difficulty).toBe('hard');
+        expect(payload.setupData?.seatControllers?.['1']?.manualFactionSelection).toBe(true);
+        expect(payload.setupData?.seatControllers?.['2']?.manualFactionSelection).toBe(true);
 
         const storedPreferences = await page.evaluate(() => {
             const raw = localStorage.getItem('local_ai_match_preferences:smashup');
@@ -658,10 +734,10 @@ test.describe('Lobby E2E', () => {
         expect(storedPreferences).not.toBeNull();
         expect(storedPreferences?.numPlayers).toBe(3);
         expect(storedPreferences?.setupSelections?.expansions ?? []).toEqual([]);
-        expect(storedPreferences?.seatControllers?.['1']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['2']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['1']?.difficulty).toBe('hard');
-        expect(storedPreferences?.seatControllers?.['2']?.difficulty).toBe('hard');
+        expect(storedPreferences?.seatControllers?.['1']?.type).toBe('human');
+        expect(storedPreferences?.seatControllers?.['2']?.type).toBe('human');
+        expect(storedPreferences?.seatControllers?.['1']?.manualFactionSelection).toBeUndefined();
+        expect(storedPreferences?.seatControllers?.['2']?.manualFactionSelection).toBeUndefined();
 
         const aiSeatCredentials = await page.evaluate(() => {
             const key = Object.keys(localStorage).find((item) => item.startsWith('match_ai_creds_'));
@@ -679,9 +755,9 @@ test.describe('Lobby E2E', () => {
 
         await ensureLobbyReady(page);
 
-        const banner = page.getByTestId('home-active-match-banner');
-        const card = page.getByTestId('home-active-match-card');
-        const actions = page.getByTestId('home-active-match-actions');
+        const banner = page.locator('[data-testid="home-active-match-banner"]:visible');
+        const card = page.locator('[data-testid="home-active-match-card"]:visible');
+        const actions = page.locator('[data-testid="home-active-match-actions"]:visible');
 
         await expect(banner).toBeVisible({ timeout: 15000 });
         await expect(card.getByText(new RegExp(roomCode, 'i'))).toBeVisible();
@@ -704,14 +780,24 @@ test.describe('Lobby E2E', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(card).toBeVisible();
 
+        const mobileViewport = page.viewportSize();
         const mobileCardBox = await card.boundingBox();
         expect(mobileCardBox).not.toBeNull();
-        if (!mobileCardBox) {
+        expect(mobileViewport).not.toBeNull();
+        if (!mobileCardBox || !mobileViewport) {
             throw new Error('首页活跃房间浮层未正确渲染，无法校验移动端布局');
         }
 
         expect(mobileCardBox.x).toBeGreaterThanOrEqual(8);
         expect(mobileCardBox.x + mobileCardBox.width).toBeLessThanOrEqual(390 - 8);
+        expect(Math.abs(mobileCardBox.x + mobileCardBox.width / 2 - mobileViewport.width / 2)).toBeLessThan(4);
+
+        const mobileBannerPosition = await banner.evaluate(node => window.getComputedStyle(node).position);
+        expect(mobileBannerPosition).toBe('fixed');
+
+        const mobileBottomGap = mobileViewport.height - (mobileCardBox.y + mobileCardBox.height);
+        expect(mobileBottomGap).toBeGreaterThanOrEqual(8);
+        expect(mobileBottomGap).toBeLessThanOrEqual(24);
 
         const actionButtons = actions.getByRole('button');
         await expect(actionButtons).toHaveCount(2);
@@ -744,14 +830,19 @@ test.describe('Lobby E2E', () => {
 
     test(MOBILE_AUTHOR_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
-        await page.goto('/?game=tictactoe', { waitUntil: 'domcontentloaded' });
+        await ensureLobbyReady(page);
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const sidebar = page.getByTestId('game-details-sidebar');
         const mobileAuthorButton = page.getByTestId('game-details-author-button-mobile');
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(sidebar).toBeVisible({ timeout: 15000 });
         await expect(mobileAuthorButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
         await expect(page.getByTestId('game-details-description')).toBeHidden();
         await expect(page.getByTestId('game-details-player-recommendation')).toBeHidden();
 
@@ -794,6 +885,17 @@ test.describe('Lobby E2E', () => {
             || /^rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, rgba\(0, 0, 0, 0\) 0px 0px 0px 0px)*$/.test(normalizedBoxShadow)
         ).toBeTruthy();
 
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
+
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端详情弹窗 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
+
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
+
         await game.screenshot('lobby-mobile-author-entry-right-top', testInfo);
 
         await mobileAuthorButton.click();
@@ -805,56 +907,40 @@ test.describe('Lobby E2E', () => {
     test(MOBILE_PACKAGE_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await ensureLobbyReady(page);
-        await page.getByRole('heading', { name: /Tic-Tac-Toe/i }).click();
+        await page.getByRole('heading', { name: /井字棋|Tic-Tac-Toe/i }).click();
         await expect(page).toHaveURL(/game=tictactoe/);
 
         const modalRoot = getVisibleGameDetailsModal(page);
         const packageCard = page.getByTestId('game-details-mobile-package-card');
         const installButton = page.getByRole('button', { name: /Install Pack/i });
+        const leaderboardTabButton = page.getByTestId('game-details-tab-leaderboard');
+        const closeButton = page.getByTestId('game-details-close-button');
 
         await expect(modalRoot).toBeVisible({ timeout: 15000 });
-        await expect(packageCard).toBeVisible();
-        await expect(page.getByText(/Not installed/i)).toBeVisible();
-        await expect(installButton).toBeVisible();
+        await expect(leaderboardTabButton).toBeVisible();
+        await expect(closeButton).toBeVisible();
+        await expect(packageCard).toHaveCount(0);
+        await expect(installButton).toHaveCount(0);
 
         const modalBox = await modalRoot.boundingBox();
-        const cardBox = await packageCard.boundingBox();
         expect(modalBox).not.toBeNull();
-        expect(cardBox).not.toBeNull();
 
-        if (!modalBox || !cardBox) {
-            throw new Error('移动端详情弹窗或包管理入口未正确渲染，无法校验左下角位置');
+        if (!modalBox) {
+            throw new Error('移动端详情弹窗未正确渲染，无法校验窄屏头部布局');
         }
 
-        const leftOffset = cardBox.x - modalBox.x;
-        const bottomOffset = modalBox.y + modalBox.height - (cardBox.y + cardBox.height);
+        const leaderboardTabBox = await leaderboardTabButton.boundingBox();
+        const closeButtonBox = await closeButton.boundingBox();
+        expect(leaderboardTabBox).not.toBeNull();
+        expect(closeButtonBox).not.toBeNull();
 
-        expect(leftOffset).toBeGreaterThanOrEqual(0);
-        expect(leftOffset).toBeLessThan(36);
-        expect(bottomOffset).toBeGreaterThanOrEqual(0);
-        expect(bottomOffset).toBeLessThan(36);
+        if (!leaderboardTabBox || !closeButtonBox) {
+            throw new Error('移动端包管理详情 tab 或关闭按钮未正确渲染，无法校验窄屏头部布局');
+        }
 
-        await game.screenshot('lobby-mobile-package-entry-left-bottom', testInfo);
+        expect(leaderboardTabBox.x + leaderboardTabBox.width).toBeLessThanOrEqual(closeButtonBox.x - 4);
 
-        await installButton.click();
-        await expect(page.getByText(/Download Tic-Tac-Toe packages/i)).toBeVisible();
-        await expect(page.getByText(/Estimated Download/i)).toBeVisible();
-        await expect(page.getByText('Code Pack', { exact: true })).toBeVisible();
-        await expect(page.getByText('Asset Pack', { exact: true })).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-confirm-modal', testInfo);
-
-        await page.getByRole('button', { name: /Confirm Download/i }).click();
-        await expect(page.getByTestId('game-details-mobile-package-progress-track')).toBeVisible();
-        await expect(page.getByText(/Reading Manifest/i)).toBeVisible();
-
-        await game.screenshot('lobby-mobile-package-entry-progress-card', testInfo);
-
-        await expect(page.getByText(/does not support downloading game packages yet/i)).toBeVisible({ timeout: 5000 });
-        await expect(page.getByRole('button', { name: /Retry/i })).toBeVisible();
-        await expect(page.getByTestId('game-details-mobile-package-card')).toHaveAttribute('data-status', 'failed');
-
-        await game.screenshot('lobby-mobile-package-entry-failed-retry', testInfo);
+        await game.screenshot('lobby-mobile-web-package-entry-absent', testInfo);
     });
 
     test('Dice Throne 更新日志 tab 会请求公开接口并结束 loading', async ({ page }) => {
@@ -891,6 +977,50 @@ test.describe('Lobby E2E', () => {
         await expect(detailsModal.getByTestId('game-details-open-create-room')).toBeVisible();
         await expect(detailsModal.getByRole('button', { name: '教程模式' })).toBeVisible();
         await expect(detailsModal.getByRole('button', { name: /对战AI|Play AI/i })).toHaveCount(0);
+    });
+
+    test('桌面端悬浮球面板与悬浮文本使用同一层级族', async ({ page }, testInfo) => {
+        await setChineseLocale(page.context());
+        await ensureLobbyReady(page);
+
+        await page.locator('[data-fab-id="settings"]').click();
+        const settingsPanel = page.getByTestId('fab-panel-settings');
+        await expect(settingsPanel).toBeVisible({ timeout: 10000 });
+
+        await page.locator('[data-fab-id="feedback"]').hover();
+        const feedbackTooltip = page.getByTestId('fab-tooltip-feedback');
+        await expect(feedbackTooltip).toBeVisible({ timeout: 10000 });
+
+        const layerMetrics = await page.evaluate(() => {
+            const panel = document.querySelector('[data-testid="fab-panel-settings"]') as HTMLElement | null;
+            const tooltip = document.querySelector('[data-testid="fab-tooltip-feedback"]') as HTMLElement | null;
+            const menu = document.querySelector('[data-testid="fab-menu"]') as HTMLElement | null;
+            const resolveZIndex = (element: HTMLElement | null) => {
+                let current: HTMLElement | null = element;
+                while (current) {
+                    const parsed = Number.parseInt(window.getComputedStyle(current).zIndex || '0', 10);
+                    if (Number.isFinite(parsed)) return parsed;
+                    current = current.parentElement;
+                }
+                return 0;
+            };
+            return {
+                panelZIndex: resolveZIndex(panel),
+                menuZIndex: resolveZIndex(menu),
+                tooltipZIndex: resolveZIndex(tooltip),
+            };
+        });
+
+        expect(layerMetrics.panelZIndex).toBeGreaterThan(0);
+        expect(layerMetrics.menuZIndex).toBeGreaterThan(layerMetrics.panelZIndex);
+        expect(layerMetrics.tooltipZIndex).toBeGreaterThan(layerMetrics.menuZIndex);
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'fab-layer-tooltip-over-panel', {
+                filename: 'fab-layer-tooltip-over-panel.png',
+            }),
+            fullPage: false,
+        });
     });
 
     test('Dice Throne 更新日志 tab 会渲染接口返回的已发布内容', async ({ page, game }, testInfo) => {

@@ -1,6 +1,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, SmashUpTeamId, SmashUpTeamMode } from './types';
 import { TEAM_VP_TO_WIN_2V2, VP_TO_WIN } from './types';
+export { readSmashUpTeamMode } from '../roomSetup';
 
 export const DEFAULT_SMASHUP_TEAM_MODE: SmashUpTeamMode = 'ffa';
 export const SMASHUP_TEAM_MODE_OPTIONS = {
@@ -23,31 +24,6 @@ export function getSmashUpSeatOrder(core: Pick<SmashUpCore, 'seatOrder' | 'playe
         return [...core.seatOrder];
     }
     return buildSeatOrderFallback(core);
-}
-
-export function readSmashUpTeamMode(
-    setupData: Record<string, unknown> | undefined,
-    playerCount: number,
-): SmashUpTeamMode {
-    if (playerCount !== 4) {
-        return DEFAULT_SMASHUP_TEAM_MODE;
-    }
-
-    if (setupData?.teamMode === '2v2') {
-        return '2v2';
-    }
-
-    const setupSelections = setupData?.setupSelections;
-    if (
-        setupSelections
-        && typeof setupSelections === 'object'
-        && !Array.isArray(setupSelections)
-        && (setupSelections as Record<string, unknown>).teamMode === '2v2'
-    ) {
-        return '2v2';
-    }
-
-    return DEFAULT_SMASHUP_TEAM_MODE;
 }
 
 export function isSmashUpTwoVsTwoMode(

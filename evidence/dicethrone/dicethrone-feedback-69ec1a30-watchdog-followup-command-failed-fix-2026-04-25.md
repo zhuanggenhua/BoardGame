@@ -1,5 +1,7 @@
 # DiceThrone 系统反馈修复证据（69ec1a30）- 2026-04-25
 
+> 2026-06-06 当前有效口径：本文只对应系统反馈 `69ec1a309087da2a55c90f19` 这条 watchdog reason 聚合修复证据，不是当前 DiceThrone 所有 watchdog 统计噪音、所有 `command_failed` 桶增长问题都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条系统反馈修复记录。
+
 ## 反馈
 - ID: `69ec1a309087da2a55c90f19`
 - 来源: `online-ai-watchdog`
@@ -22,3 +24,7 @@
 ## 结论
 - 针对 `force-end-turn-failed ... command_failed` 的关键混淆根因已被修复并由回归测试覆盖。
 - 该反馈可推进为 `resolved`，后续按线上观测继续看是否再出现同桶增长。
+
+---
+
+**当前阅读说明**：本文只能证明这条 `steps=0` / `command_failed` 聚合混淆问题曾被修复，不能外推为当前所有 watchdog reason、所有恢复统计或 DiceThrone 当前整体审计都已收口。

@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { UI_Z_INDEX } from '../../../core';
 import { syncProxyValueToTextEntry } from '../../../lib/textEntry';
 import { MobileTextEntryProxyLayer } from '../MobileTextEntryProxyLayer';
 
@@ -197,6 +198,126 @@ describe('MobileTextEntryProxyLayer', () => {
         });
 
         expect(screen.queryByTestId('mobile-text-entry-proxy-input')).toBeNull();
+    });
+
+    it('代理层不应让整块表单拦截底部按钮点击，只允许代理输入自己接收事件', async () => {
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        document.body.appendChild(sourceInput);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyInput = screen.getByTestId('mobile-text-entry-proxy-input') as HTMLInputElement;
+        const proxyForm = proxyInput.closest('form');
+        expect(proxyForm).not.toBeNull();
+        expect(proxyForm?.className).toContain('pointer-events-none');
+        expect(proxyInput.className).toContain('pointer-events-auto');
+    });
+
+    it('代理输入层级应高于标准 modal 内容层，避免被弹窗盖住', async () => {
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        document.body.appendChild(sourceInput);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyLayer = screen.getByTestId('mobile-text-entry-proxy');
+        expect(proxyLayer).toHaveStyle({ zIndex: String(UI_Z_INDEX.textEntryProxy) });
+        expect(UI_Z_INDEX.textEntryProxy).toBeGreaterThan(UI_Z_INDEX.modalContent);
+        expect(UI_Z_INDEX.textEntryProxy).toBeGreaterThan(UI_Z_INDEX.modalTooltip);
+    });
+
+    it('代理输入底部应对齐 runtime viewport，可视区收缩时不能压进键盘区', async () => {
+        document.documentElement.style.setProperty('--runtime-viewport-height', '564px');
+        document.documentElement.style.setProperty('--layout-viewport-height', '852px');
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        document.body.appendChild(sourceInput);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyInput = screen.getByTestId('mobile-text-entry-proxy-input');
+        const proxyForm = proxyInput.closest('form');
+        expect(proxyForm).not.toBeNull();
+        expect(proxyForm?.getAttribute('style')).toContain('288px');
+    });
+
+    it('代理激活时应冻结最近锁定视口弹窗的键盘底部 inset，避免弹窗继续上移', async () => {
+        const modalRoot = document.getElementById('modal-root');
+        if (!modalRoot) throw new Error('missing modal root');
+
+        const lockedViewportContainer = document.createElement('div');
+        lockedViewportContainer.setAttribute('data-lock-layout-viewport', 'true');
+        lockedViewportContainer.style.setProperty('--modal-active-bottom-inset', 'var(--runtime-modal-bottom-inset)');
+        lockedViewportContainer.scrollTop = 36;
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        lockedViewportContainer.appendChild(sourceInput);
+        modalRoot.appendChild(lockedViewportContainer);
+
+        const view = render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            lockedViewportContainer.scrollTop = 144;
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        expect(lockedViewportContainer.style.getPropertyValue('--modal-active-bottom-inset')).toBe('var(--safe-area-bottom)');
+        expect(lockedViewportContainer.style.overflowY).toBe('hidden');
+        expect(lockedViewportContainer.scrollTop).toBe(36);
+
+        view.unmount();
+
+        expect(lockedViewportContainer.style.getPropertyValue('--modal-active-bottom-inset')).toBe('var(--runtime-modal-bottom-inset)');
+        expect(lockedViewportContainer.style.overflowY).toBe('');
+        expect(lockedViewportContainer.scrollTop).toBe(36);
+    });
+
+    it('显式标记 data-text-entry-autoscroll=off 的新 UI 弹窗不应启动代理输入', async () => {
+        const modalRoot = document.getElementById('modal-root');
+        if (!modalRoot) throw new Error('missing modal root');
+
+        const modalSurface = document.createElement('div');
+        modalSurface.setAttribute('data-text-entry-autoscroll', 'off');
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        modalSurface.appendChild(sourceInput);
+        modalRoot.appendChild(modalSurface);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        expect(screen.queryByTestId('mobile-text-entry-proxy')).toBeNull();
+        expect(sourceInput.readOnly).toBe(false);
     });
 
     it('代理输入改值时不应重建节点或丢失焦点', async () => {

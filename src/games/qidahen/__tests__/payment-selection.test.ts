@@ -747,6 +747,7 @@ describe('七大恨支付手牌选择', () => {
         expect(next.regions.find((region) => region.id === 'song-jin')?.troops).toBe(2);
         expect(factionHandCards(next, 'ming')).toHaveLength(3);
         expect(next.turnPhase).toBe('recruit-choice');
+        expect(next.selectedRegionId).toBe('song-jin');
         expect(next.recruitSelection?.targetRegionId).toBe('song-jin');
         expect(next.recruitSelection?.choices.map((choice) => choice.id)).toEqual(['level-2-troops', 'level-4-chuanbing', 'level-1-artillery']);
         expect(next.actionLog[0]?.text).toContain('进入征召军队建军选择');
@@ -1855,6 +1856,7 @@ describe('七大恨支付手牌选择', () => {
         expect(next.discardPileCount).toBe(10);
         expect(next.factions.ming.handCount).toBe(0);
         expect(next.turnPhase).toBe('drive-tiger-consent');
+        expect(next.selectedRegionId).toBe('jinzhou');
         expect(next.pendingTargetAction).toBeNull();
         expect(next.wheelDispatchSelection).toBeNull();
         expect(next.driveTigerConsentSelection).toMatchObject({
@@ -1890,6 +1892,7 @@ describe('七大恨支付手牌选择', () => {
 
         expect(targeting.factions.jin.handCount).toBe(16);
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('jinzhou');
         expect(targeting.driveTigerConsentSelection).toBeNull();
         expect(targeting.wheelDispatchSelection).toMatchObject({
             attackerFactionId: 'jin',
@@ -3050,6 +3053,7 @@ describe('七大恨支付手牌选择', () => {
 
         expect(next.currentPlayer).toBe('1');
         expect(next.turnPhase).toBe('hand-limit-discard');
+        expect(next.selectedRegionId).toBe('city-region-14');
         expect(next.handLimitDiscardSelection).toMatchObject({
             factionId: 'mongol',
             handLimit: 10,
@@ -3082,6 +3086,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('action-window');
+        expect(resolved.selectedRegionId).toBe('city-region-14');
         expect(resolved.handLimitDiscardSelection).toBeNull();
         expect(resolved.factions.mongol.handCount).toBe(10);
         expect(resolved.factions.mongol.discardPileCount).toBe(3);
@@ -3480,6 +3485,7 @@ describe('七大恨支付手牌选择', () => {
 
         expect(pending.pendingTargetAction).not.toBeNull();
         expect(pending.turnPhase).toBe('resolve-pending');
+        expect(pending.selectedRegionId).toBe('jinzhou');
         expect(pending.currentPlayer).toBe('0');
 
         const resolved = apply(pending, {
@@ -3518,6 +3524,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('city-region-24');
         expect(targeting.pendingTargetAction).toBeNull();
         expect(targeting.factions.mongol.handCount).toBe(8);
         expect(targeting.factions.mongol.drawPileCount).toBe(18);
@@ -3844,6 +3851,8 @@ describe('七大恨支付手牌选择', () => {
 
         const candidate = targeting.wheelDispatchSelection?.candidates.find((item) => item.targetRuntimeRegionId === 'city-region-14');
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('city-region-16');
+        expect(targeting.wheelDispatchSelection?.sourceRegionId).toBe('city-region-16');
         expect(targeting.wheelDispatchSelection?.restriction).toBe('轮盘进攻/调度 · 调骑 4');
         expect(candidate).toMatchObject({
             sourceAvailableTroops: 1,
@@ -4098,6 +4107,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(next.turnPhase).toBe('action-window');
+        expect(next.selectedRegionId).toBe('city-region-16');
         expect(next.wheelDispatchSelection).toBeNull();
         expect(next.pendingTargetAction).toBeNull();
     });
@@ -4147,6 +4157,8 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('city-region-24');
+        expect(targeting.wheelDispatchSelection?.sourceRegionId).toBe('city-region-24');
         expect(targeting.wheelDispatchSelection?.candidates.some((candidate) => candidate.targetRuntimeRegionId === 'city-region-16')).toBe(false);
         expect((targeting.wheelDispatchSelection?.candidates.length ?? 0)).toBeGreaterThan(0);
         expect(targeting.wheelDispatchSelection?.candidates.some((candidate) => candidate.targetRuntimeRegionId === 'city-region-20')).toBe(true);
@@ -9559,6 +9571,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('city-region-24');
         expect(targeting.wheelDispatchSelection).toMatchObject({
             sourceRegionId: 'city-region-24',
             sourceRegionName: '宁远',
@@ -9832,6 +9845,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(targeting.turnPhase).toBe('dispatch-targeting');
+        expect(targeting.selectedRegionId).toBe('city-region-20');
         expect(targeting.wheelDispatchSelection).toMatchObject({
             sourceRegionId: 'city-region-20',
             sourceRegionName: '山海关围城军',
@@ -10087,6 +10101,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(resolved.turnPhase).toBe('post-battle-decision');
+        expect(resolved.selectedRegionId).toBe('city-region-25');
         expect(resolved.postBattleSelection).toMatchObject({
             battleMode: 'field',
             targetKind: 'siege-attacker',
@@ -12220,6 +12235,8 @@ describe('七大恨支付手牌选择', () => {
             payload: { moveId: 'move-1-free' },
         });
 
+        expect(pending.turnPhase).toBe('season-resolution');
+        expect(pending.selectedRegionId).toBe('song-jin');
         expect(pending.fortificationMaintenanceSelection?.title).toBe('新年防线维护');
         const anchoredRegionId = pending.selectedRegionId;
 
@@ -12232,6 +12249,92 @@ describe('七大恨支付手牌选择', () => {
         expect(reselected.turnPhase).toBe('season-resolution');
         expect(reselected.selectedRegionId).toBe(anchoredRegionId);
         expect(reselected.fortificationMaintenanceSelection?.title).toBe('新年防线维护');
+    });
+
+    it('蒙古跨到后金的新年防线维护等待态会重新锚定逻辑区辽西，而不是沿当前玩家默认选区漂到建州', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        core.currentPlayer = '1';
+        core.turnLabel = '第 1 轮 · 蒙古 · 行动窗口';
+        core.turnPhase = 'action-window';
+        core.wheelActionUsed = false;
+        core.factionActionUsed = false;
+        core.actionWheelPosition = 'wheel-hire';
+        core.selectedWheelMoveId = 'move-2-one-opponent';
+        core.selectedRegionId = 'city-region-25';
+        core.selectedActionId = 'khan-edict';
+        core.selectedPaymentCardIds = [];
+        core.recruitSelection = null;
+        core.khanEdictSelection = null;
+        core.maShiTradeSelection = null;
+        core.wheelDispatchSelection = null;
+        core.pendingTargetAction = null;
+        core.postBattleSelection = null;
+        core.lastSeasonSummary = null;
+        core.factions = {
+            ...core.factions,
+            ming: {
+                ...core.factions.ming,
+                defeatMarkers: 1,
+                characters: core.factions.ming.characters.map((character) => ({
+                    ...character,
+                    inPlay: character.id === 'ming-mao-wenlong',
+                })),
+            },
+            mongol: {
+                ...core.factions.mongol,
+                defeatMarkers: 1,
+            },
+            jin: {
+                ...core.factions.jin,
+                defeatMarkers: 1,
+            },
+        };
+        core.payment = { required: 1, selected: 0, prompt: '需弃 1 / 已选 0' };
+        core.actionChoices = [
+            { id: 'upgrade-armament', label: '升级军备', cost: 2, detail: '打出军备牌并弃 1 张手牌，当前低保真先升级己方已开发军备。' },
+            { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
+            { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
+            { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },
+        ];
+        core.regions = core.regions.map((region) => {
+            if (region.isLogicalRegion) {
+                return region;
+            }
+            if (region.id === 'city-region-25') {
+                return { ...region, controller: 'mongol', controlLabel: '蒙古', troops: 2 };
+            }
+            if (region.id === 'city-region-24') {
+                return { ...region, controller: 'ming', controlLabel: '大明', troops: 1 };
+            }
+            return region;
+        });
+
+        const khanEdict = apply(core, {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: '1',
+            payload: { actionId: 'khan-edict' },
+        });
+        const khanResolved = apply(khanEdict, {
+            type: QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE,
+            playerId: '1',
+            payload: { choiceId: 'recruit-train' },
+        });
+        const midyear = apply(khanResolved, {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: '1',
+            payload: { moveId: 'move-2-one-opponent' },
+        });
+        const pending = apply(midyear, {
+            type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
+            playerId: String(midyear.currentPlayer),
+            payload: { moveId: 'move-1-free' },
+        });
+
+        expect(midyear.currentPlayer).toBe('2');
+        expect(midyear.selectedRegionId).toBe('city-region-13');
+        expect(pending.turnPhase).toBe('season-resolution');
+        expect(pending.fortificationMaintenanceSelection?.title).toBe('新年防线维护');
+        expect(pending.selectedRegionId).toBe('song-jin');
     });
 
     it('阿敏在场时后金控制的朝鲜区域会在新年朝贡时每区额外多抽 1 张朝鲜牌', () => {
@@ -15065,6 +15168,7 @@ describe('七大恨支付手牌选择', () => {
         });
 
         expect(firstWindow.turnPhase).toBe('sun-yuanhua-tech-choice');
+        expect(firstWindow.selectedRegionId).toBe('city-region-25');
         expect(firstWindow.sunYuanhuaTechSelection).toMatchObject({
             source: 'sun-yuanhua',
             requiredCardCount: 2,
@@ -15168,6 +15272,7 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'city-region-25' },
         });
         expect(firstWindow.turnPhase).toBe('sun-yuanhua-tech-choice');
+        expect(firstWindow.selectedRegionId).toBe('city-region-25');
 
         const afterSunSkip = apply(firstWindow, {
             type: QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH,

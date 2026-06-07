@@ -32,13 +32,18 @@
 - 一张或多张派系卡牌 atlas 原图
 - 一张或多张基地 atlas 原图
 - 该批派系的英文 canonical 名称来源
-- 该批派系的卡牌/基地效果文本来源
+- 该批派系的卡牌/基地名称与效果文本主真相源
 
 本次 Oops, You Did It Again 批次的权威分工如下（保留为案例）：
 
-- 图片：切片顺序、中文图面、中文图内标题
-- Smash Up Wiki：英文名称、英文效果文本
+- 图片：切片顺序、中文图面、卡牌/基地名称、卡牌/基地正文
+- Smash Up Wiki：英文 canonical 名称对照、图片看不清字段的辅助对照、count/power 对照
 - TTS / atlas-config 源：canonical 英文基地名、deck/base 对应关系
+
+强制说明：
+
+- 只要卡牌/基地主裁图能清晰读出名称或正文，图片就是该字段的主真相源，`zh-CN` 与 `en` locale 都必须先回看图片核对。
+- Wiki、脚本抓取结果、既有 `i18n`、既有实现只能作为对照源，不能覆盖图片正文。
 
 ## intake 输出口径
 
@@ -83,6 +88,20 @@ intake 的目标不是“尽快改代码”，而是交付一份能安全进入 
 - 是否存在命名冲突
 - 本轮 scope 是否只做 intake，还是要继续进入 implementation
 
+这里的“负责什么”必须细到字段级，不允许只写“图片负责中文、Wiki 负责英文”这类会把正文主真相源写偏的笼统分工。至少要单列：
+
+- `nameZh`
+- `nameEn`
+- `effectTextZh`
+- `effectTextEn`
+- `count / power / breakpoint / vp`
+- `atlas slot / row-major index`
+
+其中：
+
+- 只要图片可读，`nameZh / nameEn / effectTextZh / effectTextEn` 都必须先绑定到单卡/单基地主裁图。
+- 如果 `nameEn` 或 `effectTextEn` 采用 canonical 英文或官方英文正文而不是图面原文，必须在 contract 里写明覆盖原因和适用范围。
+
 如果存在图面英文和 canonical 英文不一致，必须先裁定：
 
 - `defId`
@@ -122,6 +141,14 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 ### 4. 确认切片网格与索引
 
 直接看图，不允许猜。
+
+但大图不能直接整张读：
+
+- 先用脚本读取原图像素尺寸和文件大小。
+- 若单边超过 `2500px`、总像素超过 `8MP`、或文件超过 `8MB`，必须先生成低清总览和分块图，再读取图片。
+- 总览图只用于判断整体行列、尾格和批次边界；卡名、数值、效果文本必须裁到对应分块或单格后核对。
+- 禁止把整张大 atlas 直接交给视觉工具反复查看；这容易触发视觉链路超时、返回体过大或 502，并且会把行列判断带偏。
+- 分块/单格产物放在 `temp/<task>-intake/`，并在 evidence 里记录实际查看过的文件名。
 
 至少确认：
 
@@ -191,7 +218,17 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 - card 名称与文本
 - base 名称与文本
 
-中文可基于图片和英文文本翻译，但必须保留英文权威来源可回查。
+强制门禁：
+
+- 每张 card/base 的 `name`、`effect`、`abilityText` 都必须能追溯到单卡/单基地主裁图，或追溯到 contract 中已明确声明的主真相源。
+- `zh-CN` 和 `en` locale 不能按“中文看图片、英文抄 Wiki”分裂录入；只要图片清晰覆盖正文，两边都必须先回单卡主裁图逐词核对。
+- 出现以下高风险限定词时，必须逐词回看主裁图，不得只看摘要、既有实现或 Wiki 对照：
+  - `你的 / 其他 / 任意 / 至多 / 可以 / 改为 / 每个`
+  - `your / other / any / up to / may / instead / each / one of`
+- 若图面可读但图面与 Wiki/既有实现冲突，默认以图面为准；若本轮需要偏离图面，必须先落用户故事或 contract 裁定，再改 locale。
+- `npm run i18n:check` 只能证明 key 完整、缺失项可见，不能证明文本语义正确。
+
+中文可基于图片和英文文本翻译，但必须保留英文权威来源可回查；若英文正文可直接从图片读取，则图片本身就是英文正文的首要回查源。
 
 ### 8. 接入 UI faction metadata
 
@@ -229,6 +266,12 @@ npm run assets:check
 
 如果只想上传本次新增 atlas，建议用最小上传脚本或定向上传，避免把无关文件一起推送。
 
+额外门禁：
+
+- 新增 `cards/<atlas>` 或 `base/<atlas>` 后，除了游戏级 `public/assets/i18n/zh-CN/smashup/assets-manifest.json`，还必须确认根级 `public/assets/i18n/assets-manifest.json` 也已经出现对应键；不能只看 incremental validate 通过。
+- 如果经旧派系对照确认某批基地实际复用既有 atlas，就不要再把“候选 longzu 基地图”留在 `public/assets/i18n/zh-CN/smashup/base/` 等正式运行时目录。错图/候选图必须移出或删除，再执行上传。
+- 真实发布阻塞以运行时会请求的 URL 为准。像手牌卡图这类运行时 atlas，最终必须给出远端 `HEAD 200` 的完整路径，不能只证明本地 PNG/WebP 存在。
+
 本次实际上传对象：
 
 - `official/i18n/zh-CN/smashup/cards/compressed/aiji.webp`
@@ -246,6 +289,11 @@ npm run typecheck
 openspec validate add-smashup-oops-faction-intake --strict --no-interactive
 npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops 四派系在派系选择与注入场景中都能显示资源"
 ```
+
+补充说明：
+
+- `cardI18nIntegrity`、`i18n:check`、typecheck 只能证明结构完整、key 对齐、运行时不会因缺 key 报错。
+- 它们不能替代“逐张卡/逐基地回看主裁图核对文案语义”的人工门禁；限定词录错、作用对象录错、数量上限录错，仍必须靠 contract + 主裁图核对拦住。
 
 ### 11. 自审截图与 evidence
 
@@ -267,6 +315,7 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops 四派�
 - [ ] 主真相源 / 对照源已经锁定
 - [ ] atlas 几何与 row-major 索引已经锁定
 - [ ] faction / card / base 的 canonical 名称已锁定
+- [ ] locale 的 `name/effect/abilityText` 已能逐项回溯到主裁图或已声明真相源
 - [ ] 冲突项已裁定，或已被明确登记为 blocker
 - [ ] 资源链路（压缩 / 运行时接线 / 上传要求）已明确
 - [ ] intake evidence 已留档

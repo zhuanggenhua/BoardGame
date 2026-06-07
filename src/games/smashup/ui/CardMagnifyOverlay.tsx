@@ -10,13 +10,30 @@ import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, getBasePodVariantId, resolveCardName, resolveCardText } from '../data/cards';
+import { getSmashUpRendererPreviewRef } from './cardPreviewHelper';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
 
 export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function magnifyFrameStyle(isBase: boolean): React.CSSProperties {
+    const width = isBase ? '40vw' : '25vw';
+    const maxWidth = isBase ? '600px' : '400px';
+    const aspectRatio = isBase ? BASE_CARD_ASPECT_RATIO : CARD_ASPECT_RATIO;
+    return {
+        width,
+        maxWidth,
+        height: `calc(${width} / ${aspectRatio})`,
+        maxHeight: `calc(${maxWidth} / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
 
 export interface CardMagnifyTarget {
     defId: string;
     type: 'minion' | 'base' | 'action' | 'titan';
+    overlayDefId?: string;
 }
 
 interface Props {
@@ -52,6 +69,10 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     const resolvedName = resolveCardName(def, t) || previewDefId;
     const resolvedText = resolveCardText(def, t);
     const isBase = target.type === 'base';
+    const previewRef = getSmashUpRendererPreviewRef(previewDefId, {
+        forceShowOverlay: true,
+        overlayDefId: target.type === 'minion' ? target.overlayDefId : undefined,
+    });
 
     return (
         <MagnifyOverlay isOpen onClose={onClose} overlayTestId="su-card-magnify-overlay">
@@ -59,7 +80,8 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
                 data-testid="su-card-magnify-content"
                 data-card-type={target.type}
                 data-card-def-id={target.defId}
-                className={`relative bg-transparent ${isBase ? 'w-[40vw] max-w-[600px] aspect-[1.43]' : 'w-[25vw] max-w-[400px] aspect-[0.714]'}`}
+                className="relative bg-transparent"
+                style={magnifyFrameStyle(isBase)}
             >
                 <button
                     onClick={onClose}
@@ -68,13 +90,11 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
                     X
                 </button>
                 <CardPreview
-                    previewRef={def.previewRef
-                        ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: previewDefId, forceShowOverlay: true } }
-                        : undefined}
+                    previewRef={previewRef ?? undefined}
                     className="w-full h-full rounded-xl shadow-2xl"
                     title={resolvedName}
                 />
-                {!def.previewRef && (
+                {!previewRef && (
                     <div className="absolute inset-0 bg-white rounded-xl p-6 border-4 border-slate-800 flex flex-col items-center justify-center text-center">
                         <h2 className="text-3xl font-black uppercase mb-4">{resolvedName}</h2>
                         <p className="font-mono text-lg">{resolvedText}</p>

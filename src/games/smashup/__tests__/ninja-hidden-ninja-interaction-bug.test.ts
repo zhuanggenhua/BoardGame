@@ -1,92 +1,90 @@
 /**
- * 便衣忍者交互创建失败 Bug 测试
- * 
- * Bug 报告：便衣忍者在 Me First! 窗口中打出后，没有创建选择随从的交互
- * 
- * 状态快照显示：
- * - specialLimitUsed 已记录 ninja_hidden_ninja
- * - 手牌中有 2 张随从（ninja_tiger_assassin 和 ninja_acolyte）
- * - 但没有创建交互
+ * 便衣忍者交互创建失败 Bug 回归。
+ *
+ * 不变量：在 Me First! 窗口打出便衣忍者后，如果玩家手牌里有可打出的随从，
+ * 必须创建 `ninja_hidden_ninja` prompt，而不是只记录 specialLimitUsed 后静默结束。
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { GameTestRunner } from '../../../engine/testing';
-import { SmashUpDomain } from '../domain';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SU_COMMANDS } from '../domain/types';
-import { initAllAbilities } from '../abilities';
-import { clearRegistry, clearBaseAbilityRegistry } from '../domain';
-import { resetAbilityInit } from '../abilities';
+import {
+    getPromptOptions,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+} from './helpers';
+import { runCommand } from './testRunner';
 
-const PLAYER_IDS = ['0', '1'];
+beforeAll(() => {
+    resetAbilityInit();
+    initAllAbilities();
+});
+
+function makeMeFirstState() {
+    const core = makeState({
+        players: {
+            '0': makePlayer('0', {
+                factions: ['ninjas', 'pirates'] as [string, string],
+                hand: [
+                    makeCard('c23', 'ninja_tiger_assassin', 'minion', '0'),
+                    makeCard('c28', 'ninja_acolyte', 'minion', '0'),
+                    makeCard('c35', 'ninja_hidden_ninja', 'action', '0'),
+                ],
+                minionsPlayed: 1,
+                minionsPlayedPerBase: { '0': 1 },
+            }),
+            '1': makePlayer('1', {
+                factions: ['dinosaurs', 'aliens'] as [string, string],
+                minionsPlayed: 1,
+                minionsPlayedPerBase: { '0': 1 },
+            }),
+        },
+        bases: [
+            makeBase('base_the_mothership', [
+                makeMinion('m1', 'pirate_saucy_wench', '0', 3),
+                makeMinion('opp1', 'test_minion', '1', 10),
+            ]),
+        ],
+        scoringEligibleBaseIndices: [0],
+    });
+    const matchState = makeMatchState(core);
+    matchState.sys.phase = 'scoreBases';
+    matchState.sys.responseWindow.current = {
+        windowId: 'meFirst_scoreBases_1',
+        responderQueue: ['0', '1'],
+        currentResponderIndex: 0,
+        passedPlayers: [],
+        windowType: 'meFirst',
+        sourceId: 'scoreBases',
+    };
+    return matchState;
+}
 
 describe('便衣忍者交互创建 Bug', () => {
-    beforeAll(() => {
-        clearRegistry();
-        clearBaseAbilityRegistry();
-        resetAbilityInit();
-        initAllAbilities();
-    });
-
-    it.skip('便衣忍者在 Me First 窗口中打出后应该创建交互', () => {
-        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
-            domain: SmashUpDomain,
-            systems: [],
-            playerIds: PLAYER_IDS,
-        });
-
-        const result = runner.run({
-            name: '便衣忍者创建交互',
-            setup: (ids, random) => {
-                const core = SmashUpDomain.setup(ids, random);
-                // 设置测试场景：Me First 窗口已打开
-                core.bases = [{
-                    defId: 'base_the_mothership',
-                    minions: [
-                        { uid: 'm1', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'opp1', defId: 'test_minion', controller: '1', owner: '1', basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                    ],
-                    ongoingActions: [],
-                }];
-                core.players['0'].hand = [
-                    { uid: 'c23', defId: 'ninja_tiger_assassin', type: 'minion', owner: '0' },
-                    { uid: 'c28', defId: 'ninja_acolyte', type: 'minion', owner: '0' },
-                    { uid: 'c35', defId: 'ninja_hidden_ninja', type: 'action', owner: '0' },
-                ];
-                core.players['0'].minionsPlayed = 1;
-                core.players['0'].factions = ['pirates', 'ninjas'];
-                return { 
-                    core, 
-                    sys: { 
-                        phase: 'scoreBases', 
-                        interaction: { current: undefined, queue: [] }, 
-                        responseWindow: { 
-                            current: {
-                                windowId: 'meFirst_scoreBases_1',
-                                responderQueue: ['0', '1'],
-                                currentResponderIndex: 0,
-                                windowType: 'meFirst',
-                                sourceId: 'scoreBases',
-                            }
-                        }, 
-                        gameover: null 
-                    } as any 
-                };
+    it('Me First 窗口中打出后会创建手牌随从选择 prompt', () => {
+        const result = runCommand(makeMeFirstState(), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'c35',
+                targetBaseIndex: 0,
             },
-            commands: [
-                {
-                    type: SU_COMMANDS.PLAY_ACTION,
-                    playerId: '0',
-                    payload: {
-                        cardUid: 'c35',
-                        targetBaseIndex: 0,
-                    },
-                },
-            ],
-        });
+        } as any);
 
-        // 验证：应该创建交互
-        expect(result.finalState.sys.interaction.current).toBeDefined();
-        expect(result.finalState.sys.interaction.current?.id).toContain('ninja_hidden_ninja');
+        expect(result.success).toBe(true);
+        expect(result.finalState.core.specialLimitUsed).toEqual({ ninja_hidden_ninja: [0] });
+
+        const prompt = getSimpleChoicePrompt(result.finalState, 'ninja_hidden_ninja');
+        expect(getPromptSourceId(prompt)).toBe('ninja_hidden_ninja');
+        expect(prompt.playerId).toBe('0');
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid)).toEqual(
+            expect.arrayContaining(['c23', 'c28']),
+        );
     });
 });

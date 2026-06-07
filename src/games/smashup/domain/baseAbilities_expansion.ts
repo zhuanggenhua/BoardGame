@@ -10,6 +10,7 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
+    CardsDiscardedEvent,
     MinionDestroyedEvent,
     MinionPlayedEvent,
     PendingPostScoringAction,
@@ -19,6 +20,7 @@ import { getEffectivePower } from './ongoingModifiers';
 import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
+    grantExtraMinion,
     grantExtraAction,
     addTempPower,
     recoverCardsFromDiscard,
@@ -38,6 +40,7 @@ import { registerBaseAbility, registerExtended as registerExtendedBase, type Bas
 import { registerProtection, registerTrigger } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
+import { reduce } from './reduce';
 import { getPlayerLabel } from './utils';
 import {
     appendPendingPostScoringActions,
@@ -59,6 +62,28 @@ import {
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
+}
+
+type TableTopHandChoiceValue = {
+    cardUid?: string;
+    defId?: string;
+};
+
+function normalizeFactionId(factionId: string | undefined): string | undefined {
+    if (!factionId) return undefined;
+    return factionId.endsWith('_pod') ? factionId.slice(0, -4) : factionId;
+}
+
+function buildTableTopDiscardOptions(
+    hand: Array<{ uid: string; defId: string }>,
+): PromptOption<TableTopHandChoiceValue>[] {
+    return hand.map((card, index) => ({
+        id: `card-${index}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId },
+        _source: 'hand' as const,
+        displayMode: 'card' as const,
+    }));
 }
 
 function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
@@ -199,7 +224,11 @@ export function registerExpansionBaseAbilities(): void {
             ...candidates.map((candidate, index) => ({
                 id: `minion-${index}`,
                 label: candidate.label,
-                value: candidate,
+                value: {
+                    minionUid: candidate.minionUid,
+                    minionDefId: candidate.minionDefId,
+                    fromBaseIndex: candidate.fromBaseIndex,
+                },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             })),
@@ -335,9 +364,10 @@ export function registerExpansionBaseAbilities(): void {
         const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
         const ownerId = playedMinion?.owner ?? ctx.playerId;
 
-        // Infiltrate：只让拥有者自己忽略（不影响其他玩家）
+        // Infiltrate：按行动控制者忽略基地能力，不能被 borrowed 牌的真实 owner 串线。
+        const playedControllerId = playedMinion?.controller ?? ctx.playerId;
         const ignoredByOwner = base?.ongoingActions?.some(o =>
-            o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignoredByOwner) return { events: [] };
 
@@ -372,9 +402,9 @@ export function registerExpansionBaseAbilities(): void {
         canTrigger: (ctx) => {
             const base = ctx.state.bases[ctx.baseIndex];
             const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
-            const ownerId = playedMinion?.owner ?? ctx.playerId;
+            const playedControllerId = playedMinion?.controller ?? ctx.playerId;
             const ignoredByOwner = base?.ongoingActions?.some(o =>
-                o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+                ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === playedControllerId && o.defId === 'ninja_infiltrate',
             ) ?? false;
             return !ignoredByOwner && Object.values(ctx.state.players).some(player => player.discard.length > 0);
         },
@@ -497,13 +527,25 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
-    // "On your turn" 语义统一在进入 playCards 时发放额度，
-    // 避免把 phase 2 持续许可错误建模为 startTurn 事件。
-    // 发放逻辑见 domain/index.ts 的 collectPhaseTwoOngoingExtraEvents。
+    // "On your turn, you may play an extra minion of power 2 or less here."
+    // 历史正确行为：回合开始授予本回合可暂存的基地限定额度；
+    // power≤2 限制由基地 restrictions.extraPlayMinionPowerMax 统一消费。
+    registerBaseAbility('base_secret_garden', 'onTurnStart', (ctx) => {
+        return {
+            events: [grantExtraMinion(ctx.playerId, '神秘花园：额外打出力量≤2的随从', ctx.now, ctx.baseIndex, { playTiming: 'banked' })],
+        };
+    });
+    registerBaseAbility('base_secret_garden_pod', 'onTurnStart', (ctx) => {
+        return {
+            events: [grantExtraMinion(ctx.playerId, '神秘花园：额外打出力量≤2的随从', ctx.now, ctx.baseIndex, { playTiming: 'banked' })],
+        };
+    });
 
     // ── 发明家沙龙（Inventor's Salon）──────────────────────────
     // "在这个基地计分后，冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌堆?
@@ -538,6 +580,124 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_inventors_salon', targetType: 'generic' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+    });
+
+    // ── 水晶堡垒（Crystal Fortress）────────────────────────────
+    // "你在这里打出随从后，可将弃牌堆中的一个随从放到牌库底"
+    registerBaseAbility('base_crystal_fortress', 'onMinionPlayed', (ctx) => {
+        const player = ctx.state.players[ctx.playerId];
+        if (!player || !ctx.matchState) return { events: [] };
+
+        const minionsInDiscard = player.discard.filter((card) => card.type === 'minion');
+        if (minionsInDiscard.length === 0) return { events: [] };
+
+        const options: PromptOption<Record<string, unknown>>[] = [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...minionsInDiscard.map((card, index) => ({
+                id: `minion-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+                _source: 'discard' as const,
+                displayMode: 'card' as const,
+            })),
+        ];
+
+        const interaction = createSimpleChoice(
+            `base_crystal_fortress_${ctx.now}`,
+            ctx.playerId,
+            '水晶堡垒：从弃牌堆选择一个随从放到牌库底',
+            options,
+            { sourceId: 'base_crystal_fortress', targetType: 'generic' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+    });
+
+    // ── 桌游桌（TableTop）────────────────────────────
+    // "在这个基地计分后，冠军抽 3 张牌，然后弃 2 张牌"
+    registerBaseAbility('base_tabletop', 'afterScoring', (ctx) => {
+        if (!ctx.rankings || ctx.rankings.length === 0) return { events: [] };
+        const winnerId = ctx.rankings[0].playerId;
+        const winner = ctx.state.players[winnerId];
+        if (!winner) return { events: [] };
+
+        const drawEvents = buildStandardDrawEvents(ctx.state, winnerId, 3, ctx.random, ctx.now);
+        const previewState = drawEvents.reduce((state, event) => reduce(state, event), ctx.state);
+        const previewWinner = previewState.players[winnerId];
+        if (!previewWinner || previewWinner.hand.length === 0) {
+            return { events: drawEvents };
+        }
+        if (previewWinner.hand.length <= 2) {
+            return {
+                events: [
+                    ...drawEvents,
+                    {
+                        type: SU_EVENTS.CARDS_DISCARDED,
+                        payload: {
+                            playerId: winnerId,
+                            cardUids: previewWinner.hand.map((card) => card.uid),
+                        },
+                        timestamp: ctx.now,
+                    } as CardsDiscardedEvent,
+                ],
+            };
+        }
+        if (!ctx.matchState) {
+            return {
+                events: [
+                    ...drawEvents,
+                    {
+                        type: SU_EVENTS.CARDS_DISCARDED,
+                        payload: {
+                            playerId: winnerId,
+                            cardUids: previewWinner.hand.slice(0, 2).map((card) => card.uid),
+                        },
+                        timestamp: ctx.now,
+                    } as CardsDiscardedEvent,
+                ],
+            };
+        }
+
+        const interaction = createSimpleChoice(
+            `base_tabletop_${ctx.now}`,
+            winnerId,
+            '桌游桌：选择 2 张手牌弃掉',
+            buildTableTopDiscardOptions(previewWinner.hand),
+            {
+                sourceId: 'base_tabletop',
+                targetType: 'hand',
+                multi: { min: 2, max: 2 },
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => {
+            const liveWinner = (state.core as SmashUpCore).players[winnerId];
+            return buildTableTopDiscardOptions(liveWinner?.hand ?? []);
+        };
+
+        return {
+            events: drawEvents,
+            matchState: queueInteraction(ctx.matchState, interaction),
+        };
+    }, {
+    });
+
+    // ── 展会（The Con）──────────────────────────────
+    // "当一个随从打到这里时，这里其他同派系随从本回合 +1 力量"
+    registerBaseAbility('base_the_con', 'onMinionPlayed', (ctx) => {
+        if (!ctx.minionUid || !ctx.minionDefId) return { events: [] };
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const playedFactionId = normalizeFactionId(getCardDef(ctx.minionDefId)?.faction);
+        if (!playedFactionId) return { events: [] };
+
+        return {
+            events: base.minions
+                .filter((minion) => minion.uid !== ctx.minionUid)
+                .filter((minion) => normalizeFactionId(getCardDef(minion.defId)?.faction) === playedFactionId)
+                .map((minion) => addTempPower(minion.uid, ctx.baseIndex, 1, 'base_the_con', ctx.now)),
+        };
     }, {
     });
 
@@ -729,15 +889,16 @@ export function registerExpansionBaseAbilities(): void {
         // 随从在九命之屋本身被消灭→不触发（只拦截其他基地）
         if (baseIndex === houseBaseIndex) return [];
 
-        // 查找被消灭随从的拥有者
+        // 九命之屋文本里的 “your minion” 看控制者，不看真实 owner。
         const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
         const ownerId = minion?.owner ?? trigCtx.playerId;
+        const controllerId = minion?.controller ?? trigCtx.controllerId ?? trigCtx.playerId;
 
         // 创建玩家选择交互：移动到九命之屋 or 正常消灭
         if (!trigCtx.matchState) return [];
         const interaction = createSimpleChoice(
             `nine_lives_${triggerMinionUid}_${trigCtx.now}`,
-            ownerId,
+            controllerId,
             '九命之屋：是否将随从移动到九命之屋？',
             [
                 {
@@ -760,6 +921,7 @@ export function registerExpansionBaseAbilities(): void {
                     fromBaseIndex: baseIndex,
                     houseBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId: trigCtx.destroyerId,
                 },
             },
@@ -794,9 +956,9 @@ export function registerExpansionBaseAbilities(): void {
         if (eggIndex === -1) return false;
         if (ctx.targetBaseIndex !== eggIndex) return false;
         const eggBase = ctx.state.bases[eggIndex];
-        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护
+        // Infiltrate：该随从控制者若选择忽略，则其随从不再受保护。
         const ignored = eggBase.ongoingActions?.some(o =>
-            o.ownerId === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
+            ((o.metadata?.sourceControllerId as string | undefined) ?? o.ownerId) === ctx.targetMinion.controller && o.defId === 'ninja_infiltrate',
         ) ?? false;
         if (ignored) return false;
         // 仅“+1 power counters”（力量指示物）提供保护
@@ -875,18 +1037,21 @@ export function registerExpansionBaseAbilities(): void {
 
         return { events: [], matchState: ms };
     }, {
-        mandatory: false,
+        // 整条 revealed-base 效果必须执行；“可选”应由每位玩家自己的 skip 选项承接，
+        // 不能让当前反应玩家一次跳过所有玩家的移动资格。
+        mandatory: true,
     });
 
     // ── 牧场（The Pasture）──────────────────────────────────
     // "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
     // 通过 onMinionMoved 扩展时机触发，在 processMoveTriggers 中调用
     registerExtendedBase('base_the_pasture', 'onMinionMoved', (ctx) => {
-        // 检查是否为本回合该玩家首次移动到此基地
-        // processMoveTriggers 在 execute 返回前调用，reducer 尚未处理 MINION_MOVED 事件
-        // 所以 moveCount === 0 表示这是首次移动
+        // 检查是否为本回合该玩家首次移动到此基地。
+        // 直接调用时仍是移动前现场；queued onMinionMoved 消费时已经 reduce 了本次 MINION_MOVED。
         const moveCount = ctx.state.minionsMovedToBaseThisTurn?.[ctx.playerId]?.[ctx.baseIndex] ?? 0;
-        if (moveCount > 0) return { events: [] };
+        const isQueuedMoveFrame = ctx.sourceEventId?.startsWith('minion-moved:') === true;
+        const alreadyMovedBeforeThisFrame = isQueuedMoveFrame ? moveCount > 1 : moveCount > 0;
+        if (alreadyMovedBeforeThisFrame) return { events: [] };
 
         if (!ctx.matchState) return { events: [] };
 
@@ -972,6 +1137,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (selected.skip) return { state, events: [] };
         const ctx = getContinuationContext<{ targetBaseIndex: number }>(iData);
         if (!ctx || !selected.cardUid || !selected.defId) return { state, events: [] };
+        const trueOwnerId = state.core.players[playerId]?.discard.find(card => card.uid === selected.cardUid)?.owner ?? playerId;
         return {
             state,
             events: buildBuryCardEvents({
@@ -981,7 +1147,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 baseIndex: ctx.targetBaseIndex,
-                trueOwnerId: playerId,
+                trueOwnerId,
                 buriedFrom: 'discard',
                 reason: 'base_ossuary',
                 random,
@@ -1034,7 +1200,13 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionOptions.push({
                         id: `minion-${baseIndex}-${index}`,
                         label: `${minionDef?.name ?? minion.defId} (${baseDef?.name ?? '基地'})`,
-                        value: { minionUid: minion.uid, baseIndex },
+                        value: {
+                            minionUid: minion.uid,
+                            minionDefId: minion.defId,
+                            defId: minion.defId,
+                            baseIndex,
+                            baseDefId: base.defId,
+                        },
                         _source: 'field' as const,
                         displayMode: 'card' as const,
                     });
@@ -1088,6 +1260,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     type: SU_EVENTS.CARD_BOXED,
                     payload: {
                         playerId,
+                        ownerId: boxedCard.owner,
                         cardUid: boxedCard.uid,
                         defId: boxedCard.defId,
                         from: 'hand',
@@ -1126,7 +1299,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             return {
                 id: `card-${i}`,
                 label: def?.name ?? c.defId,
-                value: { cardUid: c.uid, defId: c.defId, ownerId: targetPlayerId },
+                value: { cardUid: c.uid, defId: c.defId, ownerId: c.owner, sourcePlayerId: targetPlayerId },
                 _source: 'discard' as const,
                 displayMode: 'card' as const,
             };
@@ -1149,7 +1322,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
     // 印斯茅斯基地第二步：选择卡牌后，放入牌库底
     registerInteractionHandler('base_innsmouth_base_choose_card', (state, _playerId, value, _iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string };
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string; sourcePlayerId?: string };
         if (selected.skip) return { state, events: [] };
         return {
             state,
@@ -1157,6 +1330,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid!,
                 defId: selected.defId!,
                 ownerId: selected.ownerId!,
+                sourcePlayerId: selected.sourcePlayerId,
                 reason: '印斯茅斯基地：弃牌堆卡放入牌库底',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -1204,12 +1378,12 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         const player = state.core.players[playerId];
         if (!player || !selected.cardUid || !selected.defId) return { state, events: [] };
-        const cardInDeck = player.deck.some(card =>
+        const selectedCard = player.deck.find(card =>
             card.uid === selected.cardUid
             && card.defId === selected.defId
             && card.type === 'minion',
         );
-        if (!cardInDeck) return { state, events: [] };
+        if (!selectedCard) return { state, events: [] };
         const power = selected.power ?? (getMinionDef(selected.defId!)?.power ?? 0);
         if (isScoringSessionAwaitingDeferredResolution(state)) {
             const replacementBaseDefId = getDeferredReplacementBaseDefId(state, iData);
@@ -1219,6 +1393,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 playerId,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
+                ownerId: selectedCard.owner,
                 baseIndex: ctx.baseIndex,
                 targetBaseDefId: replacementBaseDefId,
                 power,
@@ -1240,6 +1415,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 baseDefId: replacementBaseDefId,
                 power,
                 fromDeck: true,
+                ownerId: selectedCard.owner,
                 consumesNormalLimit: false,
             },
             timestamp,
@@ -1258,6 +1434,45 @@ export function registerExpansionBaseInteractionHandlers(): void {
         );
         if (!cardInDiscard) return { state, events: [] };
         return { state, events: [recoverCardsFromDiscard(playerId, [selected.cardUid!], '发明家沙龙：从弃牌堆取回行动卡', timestamp)] };
+    });
+
+    registerInteractionHandler('base_crystal_fortress', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string };
+        if (selected.skip) return { state, events: [] };
+        if (!selected.cardUid || !selected.defId || !selected.ownerId) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedCardToDeckBottomEvents(state, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId,
+                reason: '水晶堡垒：弃牌堆随从置于牌库底',
+                now: timestamp,
+                expectedLocation: 'discard',
+            }),
+        };
+    });
+
+    registerInteractionHandler('base_tabletop', (state, playerId, value, _iData, _random, timestamp) => {
+        const selections = (Array.isArray(value) ? value : []) as TableTopHandChoiceValue[];
+        const selectedCardUids = Array.from(new Set(
+            selections
+                .map((selection) => selection.cardUid)
+                .filter((cardUid): cardUid is string => typeof cardUid === 'string'),
+        ));
+        if (selectedCardUids.length !== 2) return { state, events: [] };
+        const player = state.core.players[playerId];
+        if (!player) return { state, events: [] };
+        const liveSelected = selectedCardUids.filter((cardUid) => player.hand.some((card) => card.uid === cardUid));
+        if (liveSelected.length !== 2) return { state, events: [] };
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId, cardUids: liveSelected },
+                timestamp,
+            } as CardsDiscardedEvent],
+        };
     });
 
     registerInteractionHandler('base_cat_fanciers_alley', (state, playerId, value, iData, _random, timestamp) => {
@@ -1356,6 +1571,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         const fromBaseIndex = selected.fromBaseIndex ?? ctx?.fromBaseIndex;
         const houseBaseIndex = selected.houseBaseIndex ?? ctx?.houseBaseIndex;
         const ownerId = selected.ownerId ?? ctx?.ownerId ?? playerId;
+        const controllerId = selected.controllerId ?? ctx?.controllerId ?? playerId;
         const destroyerId = selected.destroyerId ?? ctx?.destroyerId;
 
         if (!minionUid || !minionDefId || fromBaseIndex === undefined) return { state, events: [] };
@@ -1382,6 +1598,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionDefId,
                     fromBaseIndex,
                     ownerId,
+                    controllerId,
                     destroyerId,
                     reason: '九命之屋：玩家选择不拯救',
                 },

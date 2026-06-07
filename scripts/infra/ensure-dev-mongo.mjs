@@ -7,4 +7,5 @@ try {
   console.warn('[Dev] 跳过自动启动 MongoDB：Docker 不可用或无权限。');
   console.warn(`[Dev] 详细信息：${message}`);
   console.warn('[Dev] 如需本地数据库，请手动执行 `docker compose up -d mongodb` 或使用现有 MONGO_URI。');
+  console.warn('[Dev] 如需完全无 Docker 的本地开发，请改用 `npm run dev:lite`。');
 }

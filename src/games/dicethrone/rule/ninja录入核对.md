@@ -1,47 +1,87 @@
 # Dice Throne 忍者录入核对
 
-> 主真相源：`public/assets/i18n/zh-CN/dicethrone/images/ninja/**`。实现入口：`src/games/dicethrone/heroes/ninja/**`、`src/games/dicethrone/domain/customActions/ninja.ts`、`flowHooks.ts`。状态等级：L0 素材定位；L1 静态/i18n/资源；L2 领域行为测试；L3 真实 UI/E2E；L4 复杂交互闭环。
+> 2026-05-30 重审范围：只审**忍者全部升级技能**，不再沿用旧“代表链通过 = 录入正确”的口径。
+>
+> 主真相源：
+> - `public/assets/i18n/zh-CN/dicethrone/images/ninja/Ablilitycards.png`
+> - `temp/ninja-upgrade-crops/goingforward2_precise.png`
+> - `temp/ninja-upgrade-crops/slash2_precise2.png`
+> - `temp/ninja-upgrade-crops/shadowstep2_precise.png`
+> - `temp/ninja-upgrade-crops/smokescreen2.png`
+> - `temp/ninja-upgrade-crops/shadowfang2.png`
+> - `temp/ninja-upgrade-crops/poisonblade2_precise.png`
+> - `temp/ninja-upgrade-crops/deathblossom2_full.png`
+> - `temp/ninja-upgrade-crops/blink2_precise.png`
+>
+> 对照实现：
+> - `src/games/dicethrone/heroes/ninja/abilities.ts`
+> - `src/games/dicethrone/heroes/ninja/cards.ts`
+> - `src/games/dicethrone/domain/customActions/ninja.ts`
 
-## 角色基础
+## 2026-06-05 当前结论
 
-| 项 | 结构化字段 | 来源定位 | 状态 | 疑点 |
-|---|---|---|---|---|
-| 角色 ID | `ninja` | 目录名/代码注册 | L3：选角进局 E2E | 无 |
-| 中文名 | 忍者 | 玩家面板/选角文案 | L3：选角截图可见 | 无 |
-| 骰面 | 1/2/3=`ninja_katana`，4/5=`shuriken`，6=`mask` | `dice.png`/`diceConfig.ts` | L1 | 无 |
-| 面板规格 | v2 宽屏面板，`2048x1260` | `player-board.png` | L3：进局截图可见 | 无 |
+- 本文件当前只负责**忍者升级技能录入合同**的现行口径，不代表四英雄整批已完成；若要看四英雄总补审当前 residual，入口是 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 的 `2026-06-06 当前真实未收口矩阵`。
+- 忍者升级技能这批对象已经不再是“很多技能仍被录成单一路线”。截至 2026-06-04，`一往无前 II / 刀尖舔血`、`暗影步 II / 勒杀`、`烟雾阵 II / 九字切`、`影牙 II / 诳惑` 都已按同一基础技能下的双分支 `variants` 落地。
+- `斩击 II`、`毒刃 II`、`死亡盛放 II` 已从“录入错 / 实现错”转成“实现与录入已对齐，关键 L4 已补，剩余是批次级治理与旧文档统一收口”；`瞬身 II` 则在 2026-06-06 再次确认：仅有 `rollLimit=2` 还不够，必须连“第二次至多只重掷 2 颗”的共享命令校验一起落地，当前已补成 `rerollDieLimit=2 + validateRollDice(...)`。
+- 截至 2026-06-05，`斩击 II` 的攻击快照 `postDamage` 合同、`影牙 II / 诳惑` 的 token 响应窗 / 不可防御直结算边界、`暗影步 II / 勒杀` 与 `烟雾阵 II / 九字切` 的 nonattack/simple-choice 收口边界，也都已补到关键 `L4` 子句。
+- 当前真正风险不再是“卡图语义还没落进实现”，而是旧 rule/evidence 摘要若不及时回写，会继续把后续审计误导成“这些对象还没实现”；剩余残余已继续收敛为批次级 `L4` 与旧文档统一收口。下方新增的批次级 `L4` 判等矩阵，就是当前这批对象可直接复查的治理入口。
 
-## 技能 / 防御逐项核对
+## 2026-06-05 批次级 L4 判等矩阵
 
-| ID | 类型 | 原文/图文要点 | 结构化字段 | 实现入口 | 状态 |
+> 判等标准按 `docs/ai-rules/testing-audit.md` 与升级重审 evidence 的“共享链路仅配置不同”门禁执行：只有 handler / resolver / interaction family / 清理语义一致，且差异只剩静态配置时，才允许复用 `L3/L4`。
+
+| 对象 | 共享链名称 | 代表对象 | 是否满足“仅配置不同” | 判等依据 | 当前残余 |
+| --- | --- | --- | --- | --- | --- |
+| `一往无前 II` 主分支 | 奖励骰重投攻击加伤链 | — | 否 | 奖励骰总和还会分流到 `<=6` 不可防御 / `>6` 可防御，不是纯配置差异 | 对象级 `L3/L4` 已补；剩更高阶组合分支与批次口径统一 |
+| `刀尖舔血` | 单骰展示后真实伤害直收口 | — | 否 | `displayOnly` 单骰后直接 `nonattack closeout`，不与其他奖励骰攻击链同构 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `死亡盛放 II` | 奖励骰重投攻击加伤链 | — | 否 | settlement 读取 5 骰的忍刀 / 手里剑 / 面具计数，并按 `0/1/2` 面具数量分层 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `毒刃 II` | `displayOnly` 奖励骰后继续攻击链 | — | 否 | 奖励骰只负责慢性中毒，伤害仍走原攻击 / 防御清理链 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `瞬身 II` | 防御重投 + 防御选择收口链 | — | 否 | `defensiveRoll + rollLimit=2 + rerollDieLimit=2 + ninja-blink-2` 属防御专用 family；2026-06-05 命中过 `DiceTray / Dice3D` UI 命中层回归，2026-06-06 又补上“第二次不能放行 3 颗全重掷”的共享校验缺口 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `暗影步 II` 主分支 / `诳惑` | 标准 token + 不可防御伤害直结算链 | `诳惑` | 是 | 不走 custom handler / 选择窗 / bonus settlement，只走标准 `grantToken + damage(unblockable)` 攻击清理管线 | 可按代表对象复用 `L4`，当前无额外对象级差异 |
+| `影牙 II` 主分支 | 标准 token + 普通伤害直结算链 | `影牙 II` 主分支 | 是 | 走标准 `grantToken + damage` 攻击清理管线，并已补攻击方 token 响应窗 `L4` | 作为该 family 代表对象保留 |
+| `斩击 II` | 直接伤害 + `postDamage` 快照链 | — | 否 | `postDamage` 需要读取攻击快照授予忍术，不是纯标准伤害 family | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `勒杀` | 非攻击直收口链 | — | 否 | `ninja-nonattack-closeout` 不生成 `DAMAGE_DEALT` / `TOKEN_RESPONSE_REQUESTED`，与攻击链不同 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+| `烟雾阵 II` 主分支 / `九字切` | `simple-choice -> choiceResolved -> nonattack closeout` | — | 否 | 一个是玩家 / 对手双目标 token 链，一个是双次真实伤害链，差异不止配置项 | 对象级 `L3/L4` 已补；保留对象级代表证据 |
+
+## 2026-06-04 补记
+
+- `斩击 II` 的旧“录入错 + 实现错”结论已失效。当前 `SLASH_2` 已按 `4/6/8` 伤害与“`3` 同点获得 `1` 忍术”落地，并由 `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`、`src/games/dicethrone/__tests__/ninja-token-mechanics.test.ts` 与 `e2e/dicethrone/dicethrone-ninja-direct-closeout.e2e.ts` 补到对象级 L3。
+- `影牙 II / 诳惑` 的旧“只有主路线且主路线伤害写高”结论已失效。当前 `SHADOW_FANG_2` 已按主路线 + `诳惑` 双分支落地，并由同一合同测试 + `e2e/dicethrone/dicethrone-ninja-direct-closeout.e2e.ts` 补到对象级 L3。
+- 因此，忍者升级技能当前剩余缺口不再是“这两张还没实现”，而是**旧 evidence/rule 结论回写**与整批 `L4` 治理口径统一；上述对象的关键 `L4` 子句已补，不再应继续表述成“对象级 L4 仍待补”。
+
+## 升级技能重审矩阵
+
+| 基础技能 | 卡图主路线 | 卡图下挂分支 | 当前实现 | 应有结构 | 结论 |
 |---|---|---|---|---|---|
-| `slash` | offensive | 3/4/5 忍刀造成 5/6/7 伤害 | `diceSet katana=3/4/5`，damage 5/6/7 | `abilities.ts` | L1 |
-| `slash-2` | upgrade | 斩击 II，伤害提升 | replace `slash`，damage 6/7/8 | `cards.ts` + `abilities.ts` | L1 |
-| `going-forward` | offensive | 4 手里剑造成 7 伤害 | `shuriken=4`，damage 7 | `abilities.ts` | L1 |
-| `going-forward-2` | upgrade | 一往无前 II | replace `going-forward` | `cards.ts` + `abilities.ts` | L1 |
-| `poison-blade` | offensive | 小顺子，慢性中毒 + 5 伤害 | smallStraight；delayed_poison 1；damage 5 | `abilities.ts` | L2：慢性中毒后续结算已测 |
-| `poison-blade-2` | upgrade | 毒刃 II，慢性中毒 + 不可防御伤害 | delayed_poison 1；unblockable damage 6 | `cards.ts` + `abilities.ts` | L2：神性树灵防 debuff 已测 |
-| `shadow-step` | offensive | 4 面具，烟雾弹、慢性中毒、不可防御伤害 | mask=4；smoke_bomb 1；delayed_poison 1；unblockable damage 6 | `abilities.ts` | L2：烟雾弹/慢性中毒 token 已测 |
-| `shadow-step-2` | upgrade | 暗影步 II，慢性中毒 2、伤害 7 | smoke_bomb 1；delayed_poison 2；unblockable damage 7 | `cards.ts` + `abilities.ts` | L2 |
-| `death-blossom` | offensive | 忍刀/手里剑累计伤害，面具给忍术 | rollDie 5；katana +1，shuriken +2，mask ninjutsu +1 | `abilities.ts` | L1 |
-| `death-blossom-2` | upgrade | 死亡盛放 II | replace `death-blossom` | `cards.ts` + `abilities.ts` | L1 |
-| `smoke-screen` | utility | 获得烟雾弹/忍术并给慢性中毒 | smoke_bomb 1；ninjutsu 2；opponent delayed_poison 1 | `abilities.ts` | L2：token 后续机制已测 |
-| `smoke-screen-2` | upgrade | 烟雾阵 II，忍术 3 | smoke_bomb 1；ninjutsu 3；delayed_poison 1 | `cards.ts` + `abilities.ts` | L2 |
-| `shadow-fang` | offensive | 大顺子，忍术 2 + 8 伤害 | largeStraight；ninjutsu 2；damage 8 | `abilities.ts` | L2：忍术后续机制已测 |
-| `shadow-fang-2` | upgrade | 影牙 II，忍术 2 + 9 伤害 | largeStraight；ninjutsu 2；damage 9 | `cards.ts` + `abilities.ts` | L2 |
-| `blink` | defensive | 防御掷 3 骰，忍刀/手里剑反击，面具烟雾弹 | diceCount 3；katana +1，shuriken +2，mask smoke_bomb | `abilities.ts` | L1 |
-| `blink-2` | upgrade | 瞬身 II | replace `blink` | `cards.ts` + `abilities.ts` | L1 |
-| `ninja-assassinate` | ultimate | 终极技：慢性中毒 2、烟雾弹、10 伤害 | ultimate；delayed_poison 2；smoke_bomb 1；damage 10 | `abilities.ts` | L2：慢性中毒/烟雾弹后续机制已测 |
+| `一往无前 II` | `4 手里剑`；投 `2` 骰并造成等于点数和的伤害；可重掷其中 `1` 颗；若最终总和 `<=6`，本次攻击变为不可防御 | `刀尖舔血`：`3 手里剑`；投 `1` 骰，造成等于点数的真实伤害 | `GOING_FORWARD_2` 现已按同一基础技能的双分支 `variants` 落地；主路线走 `ninja-going-forward-2` 奖励骰合同并限制重掷 `1` 次，`刀尖舔血` 分支走单骰真实伤害收口 | 保持 `going-forward` 基础技能 ID，升级版内部保留主路线 + `刀尖舔血` 分支 | **结构与实现已对齐；对象级 L3 已补齐，关键 L4 分层合同已锁，剩批次级治理与旧文档统一收口** |
+| `斩击 II` | `3/4/5 忍刀` 分别造成 `4/6/8` 伤害；若投出 `3` 个相同数字，获得 `1` 忍术 | 无独立下挂分支 | `SLASH_2` 当前已按 `4/6/8` 伤害与“3 同点得 1 忍术”落地；对象级 direct closeout L3 已补齐，且关键 `L4` 已锁：忍术奖励必须读取攻击快照，而不是 live 活跃骰 | 保持 `slash` 基础技能 ID；当前重点从实现转为整对象与批次口径统一 | **录入与实现已对齐；对象级 L3 已达标，关键 L4 子句已锁，剩批次级治理与旧文档统一收口** |
+| `暗影步 II` | `4 面具`；获得烟雾弹；施加 `2` 慢性中毒；造成 `5` 不可防御伤害 | `勒杀`：`3 面具`；获得 `3` 忍术；对 `1` 名对手施加 `2` 慢性中毒 | `SHADOW_STEP_2` 现已按主路线 + `勒杀` 双分支 `variants` 落地；主路线为 `5` 点不可防御伤害 + `2` 慢性中毒，`勒杀` 分支为 `3` 忍术 + `2` 慢性中毒并直接收口 | `shadow-step` 升级版应含主路线与 `勒杀` 两个 `variants` | **结构与实现已对齐；对象级 L3 已补齐，关键 nonattack closeout L4 已锁，剩批次级治理与旧文档统一收口** |
+| `烟雾阵 II` | `1 忍刀 + 2 手里剑 + 1 面具`；`1` 名玩家获得烟雾弹和 `3` 忍术；对 `1` 名对手施加慢性中毒 | `九字切`：`3 手里剑 + 2 面具`；对 `2` 名对手各造成 `4` 真实伤害，可选同一名对手两次 | `SMOKE_SCREEN_2` 现已按主路线 + `九字切` 双分支 `variants` 落地；主路线走真实目标选择，`九字切` 走两次 `4` 点真实伤害目标选择 | `smoke-screen` 升级版应含主路线与 `九字切` 两个 `variants` | **结构与实现已对齐；对象级 L3 已补齐，关键 simple-choice/多目标 L4 已锁，剩批次级治理与旧文档统一收口** |
+| `影牙 II` | 大顺子；获得烟雾弹；获得 `2` 忍术；造成 `8` 伤害 | `诳惑`：`2 忍刀 + 2 面具`；获得烟雾弹；造成 `2` 不可防御伤害 | `SHADOW_FANG_2` 当前已按主路线 + `诳惑` 双分支 `variants` 落地；主路线为 `1` 烟雾弹 + `2` 忍术 + `8` 伤害，`诳惑` 分支为 `1` 烟雾弹 + `2` 不可防御伤害 | `shadow-fang` 升级版应含主路线与 `诳惑` 两个 `variants` | **结构与实现已对齐；对象级 L3 已达标，关键 token 响应窗 / 不可防御直结算 L4 已锁，剩批次级治理与旧文档统一收口** |
+| `毒刃 II` | 小顺子；投 `1` 骰；若投出忍刀则施加 `1` 慢性中毒；若投出手里剑或面具则施加 `2` 慢性中毒；造成 `5` 伤害 | 无独立下挂分支 | `POISON_BLADE_2` 当前实现已与图片语义对齐：走 `1` 颗 display-only 奖励骰分支结算，忍刀给 `1` 层慢性中毒，手里剑/面具给 `2` 层慢性中毒，随后进入正常攻击收口 | `poison-blade` 升级版应保持奖励骰分支结算，而不是改成固定不可防御 | **录入与实现已对齐；对象级 L1/L2/L3 已达标，剩批次级 L4 治理与旧文档统一收口** |
+| `死亡盛放 II` | `3 忍刀 + 2 手里剑`；投 `5` 骰；造成 `1×忍刀 + 2×手里剑` 伤害；若有 `1` 面具则本次攻击不可防御；若有 `2` 面具则施加慢性中毒；可重掷至多 `2` 颗 | 无独立下挂分支 | `DEATH_BLOSSOM_2` 现已改走升级版奖励骰合同：按忍刀/手里剑累计伤害，`1` 面具使攻击不可防御，`2` 面具施加慢性中毒，并允许至多 `2` 次奖励骰重掷 | 升级版应使用独立奖励骰合同，而不是继续复用基础版 | **录入与实现已对齐；对象级 L3 已补齐，关键面具分层 L4 已锁，剩批次级治理与旧文档统一收口** |
+| `瞬身 II` | 防御投掷 `3` 骰；造成 `1×忍刀` 伤害；若投出手里剑，造成 `2` 伤害；若投出 `2` 个面具，获得烟雾弹；可重掷至多 `2` 颗 | 无独立下挂分支 | 2026-06-03 先确认旧实现只接了 3 骰与结算，漏了“可重掷至多 2 颗”；当时补了 `rollLimit: 2`。但 2026-06-06 再复审后又确认：仅补 `rollLimit` 仍会放行“第二次把 3 颗骰子一起重掷”，因此还必须在防御阶段共享命令校验中补 `rerollDieLimit: 2`，拒绝 3 颗全重掷。2026-06-05 命中过的 `DiceTray / Dice3D` UI 命中层回归也仍是另一条独立已修问题 | 保持 `blink` 基础技能 ID；升级版通过 `trigger.rollLimit=2 + rerollDieLimit=2` 明确声明共享防御重投窗口，并由真实防御 UI 与命令级合同共同验证“保留 1 颗、重投另外 2 颗” | **录入基本对；共享实现曾先后漏过 `rollLimit` 与 `rerollDieLimit` 两层合同，UI 命中层也曾回归；现均已修复并补合同测试/E2E，关键防御重投 L4 已锁** |
 
-## Token / 状态逐项核对
+## 需要立即撤销的旧结论
 
-| ID | 中文 | 类型/上限 | 原文/图文要点 | 结构化字段 | 实现/验证 | 状态 |
-|---|---|---:|---|---|---|---|
-| `delayed_poison` | 慢性中毒 | debuff / 2 | 拥有者回合结束移除全部，每层受 3 伤害 | `discard` phase exit，consume all，damage `stacks*3` | `flowHooks.ts`；`ninja-token-mechanics.test.ts` | L2；待 L3 |
-| `ninjutsu` | 忍术 | consumable / 3 | 造成伤害前花费并掷骰；1-3 +1，4-5 +2，6 选择慢性中毒或不可防御且 +2 | `activeUse.customActionId=ninja-ninjutsu-use`；choice handler | `customActions/ninja.ts`；4-5 与 6 两分支已测 | L2；待 L3 骰子/选择链 |
-| `smoke_bomb` | 烟雾弹 | buff / 1 | 受到伤害前花费并掷骰，1-3 避免本次伤害 | `rollToNegate`，success range 1-3 | `tokenResponse.ts`；`ninja-token-mechanics.test.ts` | L2；待 L3 |
+- 2026-05-30 初版中关于下列对象的“仍未实现 / 仍错录”结论已经失效：
+  - `slash-2`
+  - `shadow-fang-2`
+- 对这些对象，当前问题已从“实现缺失”转为“旧结论未回写、批次级 L4 与旧文档统一收口仍待补”。
 
-## 当前结论
+## 当前最重要的结构裁定
 
-- 旧结论“忍术固定 +1、烟雾弹固定减伤 2、慢性中毒为债务”已失效：这些机制已改为提示板口径并进入 L2 测试层。
-- 当前仍不能写成 L3/L4 完成，直到真实入口 E2E 机制截图链补齐。
+- `一往无前 II / 刀尖舔血`
+  - 这是同一基础技能 `going-forward` 的两个分支。
+  - 运行时应是**一个升级卡替换一个基础技能**，升级后的能力定义内部带 `variants`。
+  - 不能拆成两张独立升级卡，也不能只保留上半主路线。
+- `暗影步 II / 勒杀`
+  - 同理，应是 `shadow-step` 升级后的双分支。
+- `烟雾阵 II / 九字切`
+  - 同理，应是 `smoke-screen` 升级后的双分支。
+- `影牙 II / 诳惑`
+  - 同理，应是 `shadow-fang` 升级后的双分支。
+
+## 关联证据
+
+- 全量升级重审汇总：`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`

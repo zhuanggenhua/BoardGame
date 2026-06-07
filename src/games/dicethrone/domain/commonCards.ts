@@ -2,6 +2,7 @@ import type { AbilityCard } from '../types';
 import type { CardPreviewRef } from '../../../core';
 
 const cardText = (id: string, field: 'name' | 'description') => `cards.${id}.${field}`;
+const cardEffectText = (id: string, effectKey: string) => `cards.${id}.effects.${effectKey}`;
 
 export type CommonCardAtlasIndexMap = Record<string, number>;
 
@@ -130,7 +131,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-play-six', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '将1颗骰子改为6', action: { type: 'custom', target: 'self', customActionId: 'modify-die-to-6' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-play-six', 'modifyDieTo6'), action: { type: 'custom', target: 'self', customActionId: 'modify-die-to-6' }, timing: 'immediate' }],
     },
     {
         id: 'card-just-this',
@@ -140,7 +141,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-just-this', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '重投至5颗骰子', action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-just-this', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
         id: 'card-give-hand',
@@ -155,7 +156,7 @@ export const COMMON_CARDS: AbilityCard[] = [
             requireHasRolled: true,
             requireOpponentDiceExists: true,
         },
-        effects: [{ description: '强制对手重投1颗骰子', action: { type: 'custom', target: 'opponent', customActionId: 'reroll-opponent-die-1' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-give-hand', 'forceOpponentReroll1Die'), action: { type: 'custom', target: 'opponent', customActionId: 'reroll-opponent-die-1' }, timing: 'immediate' }],
     },
     {
         id: 'card-i-can-again',
@@ -165,7 +166,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-i-can-again', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '重掷至多5颗骰子', action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-i-can-again', 'rerollUpTo5Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-5' }, timing: 'immediate' }],
     },
     {
         id: 'card-me-too',
@@ -175,7 +176,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-me-too', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true, requireMinDiceCount: 2 },
-        effects: [{ description: '将1颗骰子改为另1颗的值', action: { type: 'custom', target: 'self', customActionId: 'modify-die-copy' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-me-too', 'copyOneDieValue'), action: { type: 'custom', target: 'self', customActionId: 'modify-die-copy' }, timing: 'immediate' }],
     },
     {
         id: 'card-surprise',
@@ -185,7 +186,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-surprise', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '改变任意1颗骰子的数值', action: { type: 'custom', target: 'select', customActionId: 'modify-die-any-1' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-surprise', 'modifyAny1Die'), action: { type: 'custom', target: 'select', customActionId: 'modify-die-any-1' }, timing: 'immediate' }],
     },
     {
         id: 'card-worthy-of-me',
@@ -195,7 +196,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-worthy-of-me', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '重掷至多2颗骰子', action: { type: 'custom', target: 'self', customActionId: 'reroll-die-2' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-worthy-of-me', 'rerollUpTo2Dice'), action: { type: 'custom', target: 'self', customActionId: 'reroll-die-2' }, timing: 'immediate' }],
     },
     {
         id: 'card-unexpected',
@@ -205,7 +206,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'roll',
         description: cardText('card-unexpected', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true, requireMinDiceCount: 2 },
-        effects: [{ description: '改变任意2颗骰子的数值', action: { type: 'custom', target: 'select', customActionId: 'modify-die-any-2' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-unexpected', 'modifyAny2Dice'), action: { type: 'custom', target: 'select', customActionId: 'modify-die-any-2' }, timing: 'immediate' }],
     },
     {
         id: 'card-next-time',
@@ -220,7 +221,7 @@ export const COMMON_CARDS: AbilityCard[] = [
                 responseType: 'beforeDamageReceived',
             },
         },
-        effects: [{ description: '防止6伤害', action: { type: 'grantDamageShield', target: 'self', value: 6 }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-next-time', 'prevent6Damage'), action: { type: 'grantDamageShield', target: 'self', value: 6 }, timing: 'immediate' }],
     },
     {
         id: 'card-boss-generous',
@@ -229,7 +230,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'instant',
         description: cardText('card-boss-generous', 'description'),
-        effects: [{ description: '获得2CP', action: { type: 'custom', target: 'self', customActionId: 'grant-cp-2' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-boss-generous', 'gain2CP'), action: { type: 'custom', target: 'self', customActionId: 'grant-cp-2' }, timing: 'immediate' }],
     },
     {
         id: 'card-flick',
@@ -239,7 +240,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'instant',
         description: cardText('card-flick', 'description'),
         playCondition: { requireDiceExists: true, requireHasRolled: true },
-        effects: [{ description: '增加或减少1骰子数值', action: { type: 'custom', target: 'select', customActionId: 'modify-die-adjust-1' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-flick', 'adjust1DieBy1'), action: { type: 'custom', target: 'select', customActionId: 'modify-die-adjust-1' }, timing: 'immediate' }],
     },
     {
         id: 'card-bye-bye',
@@ -249,7 +250,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'instant',
         description: cardText('card-bye-bye', 'description'),
         playCondition: { requireAnyStatusOnBoard: true },
-        effects: [{ description: '移除1状态效果', action: { type: 'custom', target: 'self', customActionId: 'remove-status-1' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-bye-bye', 'remove1Status'), action: { type: 'custom', target: 'self', customActionId: 'remove-status-1' }, timing: 'immediate' }],
     },
     {
         id: 'card-double',
@@ -258,7 +259,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 1,
         timing: 'instant',
         description: cardText('card-double', 'description'),
-        effects: [{ description: '抽取2张牌', action: { type: 'drawCard', target: 'self', drawCount: 2 }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-double', 'draw2Cards'), action: { type: 'drawCard', target: 'self', drawCount: 2 }, timing: 'immediate' }],
     },
     {
         id: 'card-super-double',
@@ -267,7 +268,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 2,
         timing: 'instant',
         description: cardText('card-super-double', 'description'),
-        effects: [{ description: '抽取3张牌', action: { type: 'drawCard', target: 'self', drawCount: 3 }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-super-double', 'draw3Cards'), action: { type: 'drawCard', target: 'self', drawCount: 3 }, timing: 'immediate' }],
     },
     {
         id: 'card-get-away',
@@ -277,7 +278,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-get-away', 'description'),
         playCondition: { requireAnyStatusOnBoard: true },
-        effects: [{ description: '移出1名玩家身上1个状态', action: { type: 'custom', target: 'select', customActionId: 'remove-status-1' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-get-away', 'remove1StatusFromAPlayer'), action: { type: 'custom', target: 'select', customActionId: 'remove-status-1' }, timing: 'immediate' }],
     },
     {
         id: 'card-one-throw-fortune',
@@ -286,7 +287,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         cpCost: 0,
         timing: 'main',
         description: cardText('card-one-throw-fortune', 'description'),
-        effects: [{ description: '投掷1骰获得CP', action: { type: 'custom', target: 'self', customActionId: 'one-throw-fortune-cp' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-one-throw-fortune', 'roll1DieGainCP'), action: { type: 'custom', target: 'self', customActionId: 'one-throw-fortune-cp' }, timing: 'immediate' }],
     },
     {
         id: 'card-what-status',
@@ -296,7 +297,7 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-what-status', 'description'),
         playCondition: { requireAnyStatusOnBoard: true },
-        effects: [{ description: '移除1名玩家所有状态', action: { type: 'custom', target: 'self', customActionId: 'remove-all-status' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-what-status', 'removeAllStatusesFrom1Player'), action: { type: 'custom', target: 'self', customActionId: 'remove-all-status' }, timing: 'immediate' }],
     },
     {
         id: 'card-transfer-status',
@@ -306,6 +307,6 @@ export const COMMON_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-transfer-status', 'description'),
         playCondition: { requireAnyStatusOnBoard: true },
-        effects: [{ description: '转移状态', action: { type: 'custom', target: 'self', customActionId: 'transfer-status' }, timing: 'immediate' }],
+        effects: [{ description: cardEffectText('card-transfer-status', 'transferStatuses'), action: { type: 'custom', target: 'self', customActionId: 'transfer-status' }, timing: 'immediate' }],
     },
 ];

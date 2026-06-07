@@ -7,10 +7,10 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
-import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower } from '../domain/abilityHelpers';
-import { getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
+import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
+import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore, CardsDrawnEvent, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
 import { registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
 import type { RestrictionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -24,6 +24,11 @@ import { reduce } from '../domain/reduce';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import { buildAffectRecords } from '../domain/affect';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import {
+    createCardObjectRef,
+    createCardObjectRefFromInstance,
+    createCardTransferEvent,
+} from '../domain/objectProvenance';
 
 type SteampunkPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -75,6 +80,28 @@ function withSimulatedMatchState(
     };
 }
 
+function buildReplayOngoingAttachedEvent(
+    context: Pick<SteampunkPromptContext, 'replayCardUid' | 'replayDefId' | 'replayOwnerId'>,
+    sourcePlayerId: PlayerId,
+    target:
+        | { targetType: 'base'; targetBaseIndex: number }
+        | { targetType: 'minion'; targetBaseIndex: number; targetMinionUid: string },
+    timestamp: number,
+): SmashUpEvent {
+    const ownerId = context.replayOwnerId ?? sourcePlayerId;
+    return {
+        type: SU_EVENTS.ONGOING_ATTACHED,
+        payload: {
+            cardUid: context.replayCardUid,
+            defId: context.replayDefId,
+            ownerId,
+            ...(ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
+            ...target,
+        },
+        timestamp,
+    } as SmashUpEvent;
+}
+
 function buildDiscardActionOptions(
     core: SmashUpCore,
     playerId: PlayerId,
@@ -118,7 +145,8 @@ function buildChangeOfVenueOngoingOptions(
     for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex++) {
         const base = core.bases[baseIndex];
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.ownerId !== playerId) continue;
+            const ongoingControllerId = ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+            if (ongoingControllerId !== playerId) continue;
             options.push({
                 id: `ongoing-${options.length}`,
                 label: getCardDef(ongoing.defId)?.name ?? ongoing.defId,
@@ -126,6 +154,19 @@ function buildChangeOfVenueOngoingOptions(
                 _source: 'ongoing' as const,
                 displayMode: 'card' as const,
             });
+        }
+        for (const minion of base.minions) {
+            for (const attached of minion.attachedActions) {
+                const attachedControllerId = attached.metadata?.sourceControllerId ?? attached.ownerId;
+                if (attachedControllerId !== playerId) continue;
+                options.push({
+                    id: `ongoing-${options.length}`,
+                    label: getCardDef(attached.defId)?.name ?? attached.defId,
+                    value: { cardUid: attached.uid, defId: attached.defId, ownerId: attached.ownerId },
+                    _source: 'ongoing' as const,
+                    displayMode: 'card' as const,
+                });
+            }
         }
     }
     return options;
@@ -140,7 +181,7 @@ function buildCaptainAhabBaseOptions(
     for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex++) {
         if (baseIndex === currentBaseIndex) continue;
         const base = core.bases[baseIndex];
-        if (!base.ongoingActions.some(ongoing => ongoing.ownerId === playerId)) continue;
+        if (!base.ongoingActions.some(ongoing => (ongoing.metadata?.sourceControllerId ?? ongoing.ownerId) === playerId)) continue;
         candidates.push({
             baseIndex,
             label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
@@ -254,6 +295,9 @@ function findOngoingBaseIndexByUid(core: SmashUpCore, cardUid: string): number {
         if (core.bases[baseIndex].ongoingActions.some(ongoing => ongoing.uid === cardUid)) {
             return baseIndex;
         }
+        if (core.bases[baseIndex].minions.some(minion => minion.attachedActions.some(action => action.uid === cardUid))) {
+            return baseIndex;
+        }
     }
     return -1;
 }
@@ -280,12 +324,12 @@ export function steampunkSteamQueenInterceptor(state: SmashUpCore, event: SmashU
         if (!record.sourcePlayerId) continue;
         if (record.reason?.includes('self_destruct') || record.reason?.includes('expired')) continue;
 
-        const actionOwnerId = findInPlayActionOwner(state, record.targetUid);
-        if (!actionOwnerId) continue;
-        if (record.sourcePlayerId === actionOwnerId) continue;
+        const actionControllerId = findInPlayActionController(state, record.targetUid);
+        if (!actionControllerId) continue;
+        if (record.sourcePlayerId === actionControllerId) continue;
 
         const hasSteamQueen = state.bases.some(base =>
-            base.minions.some(minion => minion.defId.startsWith('steampunk_steam_queen') && minion.controller === actionOwnerId),
+            base.minions.some(minion => minion.defId.startsWith('steampunk_steam_queen') && minion.controller === actionControllerId),
         );
         if (hasSteamQueen) return null;
     }
@@ -293,14 +337,14 @@ export function steampunkSteamQueenInterceptor(state: SmashUpCore, event: SmashU
     return undefined;
 }
 
-function findInPlayActionOwner(state: SmashUpCore, cardUid: string): string | undefined {
+function findInPlayActionController(state: SmashUpCore, cardUid: string): string | undefined {
     for (const base of state.bases) {
         const ongoing = base.ongoingActions.find(action => action.uid === cardUid);
-        if (ongoing) return ongoing.ownerId;
+        if (ongoing) return (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
 
         for (const minion of base.minions) {
             const attached = minion.attachedActions.find(action => action.uid === cardUid);
-            if (attached) return attached.ownerId;
+            if (attached) return (attached.metadata?.sourceControllerId as PlayerId | undefined) ?? attached.ownerId;
         }
     }
     return undefined;
@@ -312,10 +356,12 @@ function findInPlayActionOwner(state: SmashUpCore, cardUid: string): string | un
 export function steampunkOrnateDomeChecker(ctx: RestrictionCheckContext): boolean {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    const dome = base.ongoingActions.find(o => o.defId.startsWith('steampunk_ornate_dome'));
-    if (!dome) return false;
-    // 只限制非拥有者
-    return ctx.playerId !== dome.ownerId;
+    return base.ongoingActions
+        .filter(ongoing => ongoing.defId.startsWith('steampunk_ornate_dome'))
+        .some(dome => {
+            const domeControllerId = dome.metadata?.sourceControllerId ?? dome.ownerId;
+            return ctx.playerId !== domeControllerId;
+        });
 }
 
 /**
@@ -329,7 +375,8 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
 
     // 摧毁基地上所有非己方的 ongoing 行动卡
     for (const ongoing of base.ongoingActions) {
-        if (ongoing.ownerId === ctx.playerId) continue;
+        const ongoingControllerId = ongoing.metadata?.sourceControllerId ?? ongoing.ownerId;
+        if (ongoingControllerId === ctx.playerId) continue;
         // 排除 ornate_dome 自身（使用 uid 排除更安全，同时支持 POD 版）
         if (ongoing.uid === ctx.cardUid) continue;
         events.push({
@@ -352,7 +399,8 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
     // 摧毁基地上随从附着的非己方行动卡
     for (const m of base.minions) {
         for (const a of m.attachedActions) {
-            if (a.ownerId === ctx.playerId) continue;
+            const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
+            if (attachedControllerId === ctx.playerId) continue;
             events.push({
                 type: SU_EVENTS.ONGOING_DETACHED,
             payload: {
@@ -381,23 +429,40 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
  * difference_engine 触发：回合结束时，如果拥有者在此基地有随从，多抽一张牌
  */
 export function steampunkDifferenceEngineTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.sourceCardUid) {
+        for (let i = 0; i < ctx.state.bases.length; i++) {
+            const ongoing = ctx.state.bases[i].ongoingActions.find(action =>
+                action.uid === ctx.sourceCardUid && action.defId.startsWith('steampunk_difference_engine'),
+            );
+            if (!ongoing) continue;
+            const controllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+            if (controllerId !== ctx.playerId) return [];
+            const hasMinion = ctx.state.bases[i].minions.some(m => m.controller === controllerId);
+            if (!hasMinion) return [];
+            const player = ctx.state.players[controllerId];
+            if (!player || player.deck.length === 0) return [];
+            const drawnUid = player.deck[0].uid;
+            return [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: controllerId, count: 1, cardUids: [drawnUid] },
+                timestamp: ctx.now,
+            } as CardsDrawnEvent];
+        }
+        return [];
+    }
+
     // difference_engine 是 ongoing action，在 base.ongoingActions 中查找
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         for (const ongoing of base.ongoingActions) {
             if (!ongoing.defId.startsWith('steampunk_difference_engine')) continue;
-            if (ongoing.ownerId !== ctx.playerId) continue;
-            // 检查拥有者在此基地是否有随从
-            const hasMinion = base.minions.some(m => m.controller === ongoing.ownerId);
+            const controllerId = ctx.sourceControllerId ?? ongoing.ownerId;
+            if (controllerId !== ctx.playerId) continue;
+            // 检查控制者在此基地是否有随从
+            const hasMinion = base.minions.some(m => m.controller === controllerId);
             if (!hasMinion) continue;
-            const player = ctx.state.players[ongoing.ownerId];
-            if (!player || player.deck.length === 0) continue;
-            const drawnUid = player.deck[0].uid;
-            return [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ongoing.ownerId, count: 1, cardUids: [drawnUid] },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent];
+            const events = buildStandardDrawEvents(ctx.state, controllerId, 1, ctx.random, ctx.now);
+            if (events.length > 0) return events;
         }
     }
     return [];
@@ -414,14 +479,18 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return [];
 
-    const hatch = base.ongoingActions.find(o => o.defId.startsWith('steampunk_escape_hatch'));
+    const hatch = ctx.sourceCardUid
+        ? base.ongoingActions.find(o =>
+            o.uid === ctx.sourceCardUid && o.defId.startsWith('steampunk_escape_hatch'))
+        : base.ongoingActions.find(o => o.defId.startsWith('steampunk_escape_hatch'));
     if (!hatch) return [];
 
     // 找被消灭的随从
     const minion = base.minions.find(m => m.uid === ctx.triggerMinionUid);
     if (!minion) return [];
-    // 只保护?hatch 拥有者的随从
-    if (minion.controller !== hatch.ownerId) return [];
+    // borrowed ongoing 的保护归当前控制者，不归真实 owner。
+    const hatchControllerId = (hatch.metadata?.sourceControllerId as PlayerId | undefined) ?? hatch.ownerId;
+    if (minion.controller !== hatchControllerId) return [];
 
     const evt: MinionReturnedEvent = {
         type: SU_EVENTS.MINION_RETURNED,
@@ -430,6 +499,7 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
             minionDefId: minion.defId,
             fromBaseIndex: ctx.baseIndex,
             toPlayerId: minion.owner,
+            sourcePlayerId: hatchControllerId,
             reason: 'steampunk_escape_hatch',
         },
         timestamp: ctx.now,
@@ -551,11 +621,16 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
         if (
             typeof selected?.baseIndex !== 'number'
             || context.fromBaseIndex === undefined
+            || !context.sourceCardUid
             || !context.selectedMinionUid
             || !context.selectedMinionDefId
         ) {
             return { events: [] };
         }
+        const sourceStillThere = state.core.bases[context.zepBaseIndex ?? -1]?.ongoingActions.some(
+            ongoing => ongoing.uid === context.sourceCardUid && ongoing.defId === 'steampunk_zeppelin',
+        );
+        if (!sourceStillThere) return { events: [] };
         const stillThere = state.core.bases[context.fromBaseIndex]?.minions.some(
             minion => minion.uid === context.selectedMinionUid,
         );
@@ -598,6 +673,7 @@ const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<Steampunk
         return {
             events: [],
             context: createPromptContext(state, playerId, timestamp, {
+                sourceCardUid: context.sourceCardUid,
                 zepBaseIndex: context.zepBaseIndex,
                 fromBaseIndex: selected.baseIndex,
                 selectedMinionUid: selected.minionUid,
@@ -618,7 +694,7 @@ const steampunkZeppelinProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { zepBaseIndex }),
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { sourceCardUid: ctx.cardUid, zepBaseIndex }),
         nextProgram: steampunkZeppelinChooseMinionPromptProgram,
     };
 });
@@ -667,20 +743,16 @@ const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPrompt
                     playerId,
                     cardUid: context.replayCardUid,
                     defId: context.replayDefId,
+                    ownerId: context.replayOwnerId,
                     targetBaseIndex: selected.baseIndex,
                     timestamp,
                 }),
-                {
-                    type: SU_EVENTS.ONGOING_ATTACHED,
-                    payload: {
-                        cardUid: context.replayCardUid,
-                        defId: context.replayDefId,
-                        ownerId: playerId,
-                        targetType: 'base',
-                        targetBaseIndex: selected.baseIndex,
-                    },
+                buildReplayOngoingAttachedEvent(
+                    context,
+                    playerId,
+                    { targetType: 'base', targetBaseIndex: selected.baseIndex },
                     timestamp,
-                } as SmashUpEvent,
+                ),
                 grantExtraAction(playerId, 'steampunk_mechanic_replay_refund', timestamp, {
                     playTiming: resolveExtraPlayTiming(state),
                 }),
@@ -716,13 +788,20 @@ const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContex
         if (!liveCard || !isMechanicReplayableDiscardAction(state.core, playerId, defId, (state.core.players[playerId]?.hand.length ?? 0) + 1)) {
             return { events: [] };
         }
-        const recoverEvent = recoverCardsFromDiscard(playerId, [selected.cardUid], 'steampunk_mechanic', timestamp);
+        const recoverEvent = createCardTransferEvent({
+            card: createCardObjectRefFromInstance(liveCard),
+            fromPlayerId: playerId,
+            toPlayerId: playerId,
+            reason: 'steampunk_mechanic',
+            timestamp,
+        }) as SmashUpEvent;
         const promptState = withSimulatedMatchState(state, [recoverEvent]);
         return {
             events: [recoverEvent],
             context: createPromptContext(promptState, playerId, timestamp, {
                 replayCardUid: selected.cardUid,
                 replayDefId: defId,
+                replayOwnerId: liveCard.owner,
             }),
             nextProgram: steampunkMechanicTargetPromptProgram,
         };
@@ -785,22 +864,21 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
                     playerId,
                     cardUid: context.replayCardUid,
                     defId: context.replayDefId,
+                    ownerId: context.replayOwnerId,
                     targetBaseIndex: selected.baseIndex,
                     targetMinionUid: selected.minionUid,
                     timestamp,
                 }),
-                {
-                    type: SU_EVENTS.ONGOING_ATTACHED,
-                    payload: {
-                        cardUid: context.replayCardUid,
-                        defId: context.replayDefId,
-                        ownerId: playerId,
+                buildReplayOngoingAttachedEvent(
+                    context,
+                    playerId,
+                    {
                         targetType: 'minion',
                         targetBaseIndex: selected.baseIndex,
                         targetMinionUid: selected.minionUid,
                     },
                     timestamp,
-                } as SmashUpEvent,
+                ),
                 grantExtraAction(playerId, 'steampunk_change_of_venue_replay_refund', timestamp, {
                     playTiming: resolveExtraPlayTiming(state),
                 }),
@@ -853,20 +931,16 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
                     playerId,
                     cardUid: context.replayCardUid,
                     defId: context.replayDefId,
+                    ownerId: context.replayOwnerId,
                     targetBaseIndex: selected.baseIndex,
                     timestamp,
                 }),
-                {
-                    type: SU_EVENTS.ONGOING_ATTACHED,
-                    payload: {
-                        cardUid: context.replayCardUid,
-                        defId: context.replayDefId,
-                        ownerId: playerId,
-                        targetType: 'base',
-                        targetBaseIndex: selected.baseIndex,
-                    },
+                buildReplayOngoingAttachedEvent(
+                    context,
+                    playerId,
+                    { targetType: 'base', targetBaseIndex: selected.baseIndex },
                     timestamp,
-                } as SmashUpEvent,
+                ),
                 grantExtraAction(playerId, 'steampunk_change_of_venue_replay_refund', timestamp, {
                     playTiming: resolveExtraPlayTiming(state),
                 }),
@@ -899,7 +973,17 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'steampunk_change_of_venue' },
             timestamp,
         } as SmashUpEvent;
-        const recoverEvent = recoverCardsFromDiscard(playerId, [selected.cardUid], 'steampunk_change_of_venue', timestamp);
+        const recoverEvent = createCardTransferEvent({
+            card: createCardObjectRef({
+                uid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId as PlayerId,
+            }),
+            fromPlayerId: selected.ownerId as PlayerId,
+            toPlayerId: playerId,
+            reason: 'steampunk_change_of_venue',
+            timestamp,
+        }) as SmashUpEvent;
         const replayState = withSimulatedMatchState(state, [detachEvent, recoverEvent]);
 
         if (cardDef?.subtype === 'ongoing') {
@@ -916,6 +1000,7 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
                 context: createPromptContext(replayState, playerId, timestamp, {
                     replayCardUid: selected.cardUid,
                     replayDefId: selected.defId,
+                    replayOwnerId: selected.ownerId,
                 }),
                 nextProgram: (cardDef.ongoingTarget ?? 'base') === 'minion'
                     ? steampunkChangeOfVenueChooseMinionPromptProgram
@@ -934,7 +1019,13 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             events: [
                 detachEvent,
                 recoverEvent,
-                buildActionPlayedEvent({ playerId, cardUid: selected.cardUid, defId: selected.defId, timestamp }),
+                buildActionPlayedEvent({
+                    playerId,
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId as PlayerId,
+                    timestamp,
+                }),
                 grantExtraAction(playerId, 'steampunk_change_of_venue_replay_refund', timestamp, {
                     playTiming: resolveExtraPlayTiming(state),
                 }),
@@ -989,18 +1080,11 @@ export function registerSteampunkAbilities(): void {
     registerAbilityProgram('steampunk_captain_ahab', 'talent', {
         program: steampunkCaptainAhabProgram,
         validateUse: (ctx) => {
-            let currentBaseIndex = -1;
-            for (let i = 0; i < ctx.state.bases.length; i++) {
-                if (ctx.state.bases[i].minions.some(m => m.uid === ctx.cardUid)) {
-                    currentBaseIndex = i;
-                    break;
-                }
-            }
+            const currentBaseIndex = findMinionBaseIndexByUid(ctx.state, ctx.cardUid);
             if (currentBaseIndex === -1) return '当前没有可选择的目标';
-            const hasCandidateBase = ctx.state.bases.some((base, index) =>
-                index !== currentBaseIndex && base.ongoingActions.some(action => action.ownerId === ctx.playerId),
-            );
-            return hasCandidateBase ? null : '当前没有可选择的目标';
+            return buildCaptainAhabBaseOptions(ctx.state, ctx.playerId, currentBaseIndex).length > 0
+                ? null
+                : '当前没有可选择的目标';
         },
     });
 
@@ -1009,8 +1093,11 @@ export function registerSteampunkAbilities(): void {
     registerSimpleAbility('steampunk_ornate_dome', 'onPlay', steampunkOrnateDomeOnPlay);
     registerRestriction('steampunk_ornate_dome', 'play_action', steampunkOrnateDomeChecker);
     registerTrigger('steampunk_difference_engine', 'onTurnEnd', steampunkDifferenceEngineTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger, {
+        perInstance: true,
         phase: 'replacement',
     });
     registerAbilityProgram('steampunk_zeppelin', 'talent', {

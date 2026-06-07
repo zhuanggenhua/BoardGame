@@ -1,10 +1,67 @@
 # DiceThrone Treant / Ninja 新英雄接入审计与 E2E 证据（2026-05-10 修订版）
 
+> 2026-06-05 当前有效口径：本文只保留 2026-05-10 这一轮 Treant / Ninja 新英雄 intake 的历史快照，不再代表当前“新派系补审”总状态。当前总范围已按四位新英雄（枪手、武士、树精、忍者）统一重审；Treant / Ninja 的升级技能对象级 `L3` 与关键 `L4` 已在后续补审中大幅补齐，当前残余不能再读成“这两个英雄还有一批对象级未实现”，而应读作批次级 `L4` 判等治理、旧 evidence / rule 统一回写与最终发布口径统一。现行总汇总以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 为准。
+
+## 2026-05-16 Treant 旧结论再次失效
+
+本文件此前把 `treant` 写成 `passed`，但 2026-05-16 用户实测又发现一组旧漏项：
+
+- `quiet-cultivation` 被错误落在普通技能共享槽语义里，导致被动区出现“可选/高亮”；
+- `rooted` 被错误挂到 `calm`，防御阶段高亮到了倒数第二个技能；
+- 先是数据录入阶段没有把“玩家板槽位合同”建成正式录入口径；随后审计虽然拿到了 Treant 玩家板主图和压缩图，但也没有把这份合同缺口拦下来，而是继续沿用了旧共享槽位语义。
+
+因此，本文件中关于 `treant` 的“数据录入 / 审计 / E2E / 最终 passed”结论已经失效，不能继续作为 Treant 全面审计完成证明。下列文档只应用作“首轮失效说明 / 槽位专项 / 当时修复证据”；Treant 当前主线状态应统一回到“单英雄主审计 + 升级重审 + 现行 rule 矩阵”三层现行阅读入口：
+
+- `evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md`
+- `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`
+- `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`
+- `src/games/dicethrone/rule/treant录入核对.md`
+
+其中：
+
+- `dicethrone-treant-slot-audit-2026-05-16.md` 只负责槽位 / 图面合同专项证据，不能单独充当当前现行阅读入口。
+- `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`
+  - 负责把图面合同、技能、token、专属卡与 shared seam 放回单英雄主审计口径。
+- `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`
+  - 负责升级技能对象级回写与批次级 `L4` 治理口径。
+- `src/games/dicethrone/rule/treant录入核对.md`
+  - 负责现行录入矩阵与批次级 `L4` 判等入口。
+- `src/games/dicethrone/__tests__/treant-ability-card-contract.test.ts`
+- `e2e/dicethrone/dicethrone-treant-slot-mapping.e2e.ts`
+
+## 2026-05-14 旧结论再次失效
+
+本文件在 2026-05-10 修订版中仍把 Ninja 若干机制写成已收口，但 2026-05-14 用户复核发现四项漏审：
+
+- `poison-blade` 小顺子与 `death-blossom` 左下角技能使用了旧共享槽位语义，未按 Ninja v2 玩家面板真实贴图槽位映射。
+- `blink` 防御技能的 `rollDie` effect 时机错误，导致真实防御结算无效果。
+- 忍术 6 点选择“不可防御”后，攻击结算仍继续执行已挂载防御技能。
+- `ninja-card-knife-fan`（刀扇）被误录为投掷阶段攻击修正，实际应为主要阶段行动牌。
+
+因此，本文件中关于 Ninja 的“当前发布口径已收口 / passed”只能作为 2026-05-10 当时代表链证据，不能再作为 Ninja 全面审计完成证明。下列文档只应用作“首轮回归修复 / 当时降级证据”；Ninja 当前主线状态应统一回到“单英雄主重审 + 升级重审 + 现行 rule 矩阵”三层现行阅读入口：
+
+- `evidence/dicethrone/dicethrone-ninja-regression-audit-2026-05-14.md`
+- `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`
+- `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`
+- `src/games/dicethrone/rule/ninja录入核对.md`
+
+其中：
+
+- `dicethrone-ninja-regression-audit-2026-05-14.md` 只负责那一轮回归修复与当时证据，不能单独充当当前现行阅读入口。
+- `dicethrone-ninja-full-flow-reaudit-2026-05-15.md`
+  - 负责单英雄历史重审轨迹与对象级回写门禁。
+- `dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`
+  - 负责升级技能对象级回写与批次级 `L4` 治理口径。
+- `src/games/dicethrone/rule/ninja录入核对.md`
+  - 负责现行录入矩阵与批次级 `L4` 判等入口。
+- `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`
+- `e2e/dicethrone/dicethrone-ninja-regression.e2e.ts`
+
 ## 旧结论失效说明
 
 本文件修订前曾把“选角可进入对局 + 静态资源可显示 + 少量 smoke 测试”写成接入完成。该结论现已失效：旧 E2E 只证明 `treant` / `ninja` 可被选择并进入游戏，不证明新增英雄的 token、被动、奖励骰、伤害修正等真实机制在 UI 链路中可触发、可展示、可收口。
 
-本修订版按 `.windsurf/skills/add-new-faction/SKILL.md` 的通用新增派系门禁重写证据，完成数据录入、资源链、机制、审计、真实入口 E2E 与完成判定矩阵。
+本修订版按当前仓库实际使用的新增派系 / 新英雄 workflow（`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/game-audit-workflow/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`）回写历史证据。需要强调的是：这些 workflow 在 2026-06-05 的现行口径下已经明确“新增批次默认全面审计留档、不再追问”，因此本文只能作为 2026-05-10 当轮 intake 证据快照，不能再被外推成当前默认收口范围。
 
 ## 范围
 
@@ -17,10 +74,12 @@
 
 ## 批次矩阵
 
+> 2026-06-05 当前阅读门禁：下表保留的是这份 2026-05-10 intake 文档在后续被推翻后留下的**历史批次状态快照**，作用是说明“这份旧 intake 文档整体已失效，应改看哪些新文档”。它不是 2026-06-05 当前四位新英雄总补审的正式矩阵，也不是当前 `treant / ninja` 的残余清单。当前实时范围与未完成项应以总汇总、单英雄主审计与升级重审主文档为准。
+
 | objectId | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
 |---|---|---|---|---|---|---|
-| `treant` | passed | passed | passed | passed | passed | passed |
-| `ninja` | passed | passed | passed | passed | passed | passed |
+| `treant` | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 当前现行阅读入口改读 `dicethrone-treant-full-audit-2026-05-16.md` + `dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` + `treant录入核对.md`；`slot-audit` 仅保留槽位专项子证据 |
+| `ninja` | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 当前现行阅读入口改读 `dicethrone-ninja-full-flow-reaudit-2026-05-15.md` + `dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` + `ninja录入核对.md`；`ninja-regression` 仅保留历史回归子证据 |
 
 ## 数据录入与真相源文档
 
@@ -103,6 +162,8 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 
 最新结果：10 passed（2026-05-10 复跑整文件，隔离端口 6481 / 20308 / 21308）。
 
+2026-05-13 追补复跑结果：10 passed（隔离端口 6481 / 20308 / 21308）。本次复跑补充了烟雾弹使用后关闭特写并回到主界面的截图，避免只用中间特写作为免伤收口证据。
+
 覆盖路径：
 
 1. 真实在线双玩家入口选择 Treant / Ninja，并进入 DiceThrone 对局。
@@ -116,7 +177,7 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 9. Ninja 忍术 6：真实选择窗覆盖慢性中毒分支与不可防御分支；慢性中毒在回合结束链路中真实扣血并归零。
 10. Ninja 烟雾弹：防御方响应窗使用 `smoke_bomb` 后清空 pendingDamage，防御者 HP 不下降。
 
-补充 UI 标记验证：Treant / Ninja 在选角卡片上显示 `实施中` pill badge；该 badge 不禁用选角，只作为状态提示。
+补充 UI 标记验证：2026-05-10 当时，Treant / Ninja 在选角卡片上显示唯一的 `实施中` 斜向覆盖横幅；不再存在第二套小胶囊 / pill UI；该横幅不禁用选角，只作为状态提示。该结论现仅保留为历史 UI 快照，不能外推成 2026-06-05 当前主线状态。
 
 ## 截图核验
 
@@ -338,6 +399,15 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - 使用烟雾弹后出现技能特写，说明真实 token 链路已触发玩家可见反馈。
 - 防御者 HP 保持 30，pendingDamage 已清空；达到“真实免除伤害”的验收标准。
 
+2026-05-13 追补收口截图：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者烟雾弹应在防御方响应窗中真实免除伤害\03-smoke-bomb-after-closeout.png`
+
+肉眼观察：
+
+- “继续”特写已关闭，页面回到真实对局主界面。
+- 左侧生命值仍为 30，烟雾弹 token 已消耗，pendingDamage 不再阻塞后续阶段。
+- 该截图补足烟雾弹链路的收口证据：不只证明响应窗可用，也证明免伤后能回到可继续推进状态。
+
 ### Ninja / 不可防御分支与慢性中毒回合结束
 
 不可防御前截图：
@@ -378,7 +448,9 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - 回合结束后目标 HP 从 20 到 14，慢性中毒 token 计数归零。
 - 页面回到主阶段，流程没有卡住；达到“慢性中毒回合结束扣血并收口”的验收标准。
 
-### 选角 UI / 实施中 badge
+### 选角 UI / 实施中斜向覆盖横幅
+
+> 2026-06-05 当前阅读门禁：本节只记录 2026-05-10 当时选角页 still 挂 `implementation_in_progress` 的历史截图观察，不代表树精 / 忍者当前仍保留该横幅。当前若要判断选角状态，应以当前代码与后续主文档为准。
 
 选角截图：
 `D:\gongzuo\webgame\BoardGame\.worktrees\dicethrone-treant-ninja\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\treant-ninja-selection.png`
@@ -386,8 +458,26 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 肉眼观察：
 
 - Treant 与 Ninja 均可在真实选角界面选择，并分别出现玩家标记。
-- 两张英雄卡显示 `实施中` pill badge；该 badge 不覆盖点击区、不禁用选角。
-- 该截图用于证明“实施中 UI 组件”是状态提示，而不是将新增英雄重新锁死。
+- 这是 2026-05-10 当时的历史截图：两张英雄卡只显示一套 `实施中` 斜向覆盖横幅；未看到左上角小胶囊 / pill 形态，横幅不覆盖点击区、不禁用选角。
+- 该截图用于证明当时“实施中 UI 组件”唯一形态为斜向覆盖横幅，是状态提示，而不是将新增英雄重新锁死；它不能再反向证明 2026-06-05 当前仍保留该状态。
+
+
+## 2026-05-13 追补修订：规则核对与 UI / 头像收口
+
+本次追补用于消除主审计文档与规则核对表之间的不一致：四份规则核对表中旧的 `待 L3`、`仍不能写成 L3/L4 完成`、`真实入口卡牌 UI/机制 L3 仍待` 口径，已在 2026-05-13 当时回写为该轮可发布口径；这些表述现在只能作为当轮历史快照，不再自动代表 2026-06-05 的现行总状态。
+
+- `src/games/dicethrone/rule/treant录入核对.md`：幼种树灵、木苗树灵、神性树灵、生命源泉、刺藤均已绑定到对应 L3/L4 真实入口证据链。
+- `src/games/dicethrone/rule/ninja录入核对.md`：慢性中毒、忍术、烟雾弹均已绑定到对应 L4 响应窗 / 奖励骰 / 回合结束证据链。
+- `src/games/dicethrone/rule/treant卡牌录入核对.md` 与 `src/games/dicethrone/rule/ninja卡牌录入核对.md`：不再把“逐卡真实打出 E2E”误写成当前发布阻塞；当前结论限定为专属卡静态/i18n/图集 L1 全量核对完成，专属 token/状态后续机制通过代表性 L2/L3/L4 链路覆盖。
+- 头像追补证据：2026-05-13 当时曾尝试把 Common `characterhead2.png` 中第 3 个忍者、第 14 个树精裁入 `character-portraits` 图集；该方案后来已被判定为错误方案。当前应以 `evidence/dicethrone/dicethrone-treant-ninja-portrait-atlas-fix-2026-05-13.md` 为准：老角色继续使用旧 `character-portraits`，Treant / Ninja 单独分流到 `characterhead2`。
+- 实施中 UI 追补证据：`evidence/dicethrone/dicethrone-implementation-status-ribbon-e2e-test.md`。该文档现在只保留 2026-05-12 当时“只剩单一 overlay 形态”的历史 UI 收敛证据，不能再当作树精 / 忍者当前仍处于实施中状态的证明。
+- 2026-05-13 复跑验证：
+  - `npx vitest run src/games/dicethrone/__tests__/treant-token-mechanics.test.ts src/games/dicethrone/__tests__/ninja-token-mechanics.test.ts src/games/dicethrone/__tests__/treant-ninja-intake.test.ts --reporter=dot`：3 files / 16 tests passed。
+  - `npm run typecheck`：passed。
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts`：10 passed。
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/character-selection.e2e.ts "树精和忍者应该能够选角并进入游戏"`：1 passed。
+
+审计边界声明：2026-05-10 当时的发布口径没有要求逐张专属卡都从手牌真实打出一遍；这条边界现在只能作为该轮 intake 历史说明，不能再外推成 2026-06-05 的“新派系默认范围”。按现行 skill / workflow，新英雄默认交付已经包含对象级全面审计留档，不需要再次追问是否补审。
 
 ## 审计维度
 
@@ -402,16 +492,26 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - D31：重掷 / 骰子选择链路，幼种树灵通过真实骰子按钮完成重掷。
 - D37 / D40：交互链和显示层深审，旧“按钮可见即完成”结论失效；本轮补足真实点击、状态变化、截图链。
 - D45：资源上传后外部目标回查，远端媒体 SHA 与本地一致。
+- 但该版审计漏掉了后来被单独抽出的通用维度：**权威可视合同一致性**。也就是“有图时，是否逐槽核对玩家板/可交互区/故意留空区/共享语义覆盖风险”。Treant 这次漏审就落在这里。
 
 ## 最终结论
 
-Treant / Ninja 新英雄按通用新增派系门禁已经完成到可准备合并前状态：
+下列“最终结论”已经失效，保留仅作 2026-05-10 当时证据快照，不再代表当前有效收口状态。
 
-- 数据录入：passed
-- 资源压缩 / manifest / 上传 / 远端回查：passed
-- 机制实现与 L2 单测：passed
-- 真实入口 E2E 与截图链：passed（10 条机制 E2E + 选角 UI badge 验证）
-- 审计 evidence：passed
-- 选角 UI：Treant / Ninja 已显示 `实施中` pill badge，仍可选择并进入对局。
+Treant / Ninja 新英雄在 2026-05-10 当时的阶段性结论快照如下：
 
-未执行 commit / push；当前成果保留在隔离 worktree，等待用户后续明确合并 / 提交指令。
+- 数据录入：2026-05-10 当时判定 `passed`
+- 资源压缩 / manifest / 上传 / 远端回查：2026-05-10 当时判定 `passed`
+- 机制实现与 L2 单测：2026-05-10 当时判定 `passed`
+- 真实入口 E2E 与截图链：2026-05-10 当时判定 `passed`（10 条机制 E2E + 选角 UI 斜向横幅验证）
+- 审计 evidence 与规则核对表回写：2026-05-10 当时判定 `passed`
+- 选角 UI：2026-05-10 当时已验证 Treant / Ninja 显示唯一 `实施中` 斜向覆盖横幅，仍可选择并进入对局；第二套 pill UI 已删除。该条现在只保留为历史快照，不代表 2026-06-05 当前主线仍保留该横幅。
+
+### 2026-06-05 后的当前有效口径
+
+- `treant`：本文件旧结论失效。原因不是“没测试到 token / 卡牌效果”，而是“录入阶段没先建立玩家板槽位合同，审计阶段也没把这个缺口拦住”。当前不应只回到槽位专项文档，而应以 `src/games/dicethrone/rule/treant真相源表.md`、`src/games/dicethrone/rule/treant录入核对.md`、`evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md` 与 `evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 的现行矩阵为准。
+- 2026-05-16 继续全面审计后，Treant 失效范围进一步扩大：不只是槽位合同漏审，还新增命中提示板 / 玩家板 / 专属卡图的批量语义冲突，包括 `养成树灵` 领域合同缺失、`每回合每种树灵仅限花费1次` 未实现、神性树灵防负面自动触发、刺藤上限缺失，以及多张基础技能 / 专属卡错录。Treant 当前现行阅读入口应改看单英雄主审计文档与升级重审主文档，而不是只看首轮槽位专项。
+- `ninja`：本文件旧结论同样失效。当前不应再把 `dicethrone-ninja-regression-audit-2026-05-14.md` 当作现行阅读入口，而应以 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.md`、`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md` 与 `src/games/dicethrone/rule/ninja录入核对.md` 的现行矩阵为准。
+- 进一步到 2026-06-05，Treant / Ninja 升级技能对象级 `L3` 与关键 `L4` 已在后续补审中大幅补齐；因此，当前残余不能再读成“这两个英雄仍有一批升级技能对象级未完成”，而应读作批次级 `L4` 判等治理、旧文档统一回写与最终发布口径统一。
+- 因此，这份 2026-05-10 主审计文档不能再作为 Treant / Ninja 的全面审计完成证明；它只能证明当时已覆盖的那批代表链，不证明后续新增发现的槽位合同、共享语义错位、升级技能对象级补审、旧结论降级与批次治理尾项都已包含在内。
+- 同时也不能再把本文里的 `passed`、当轮 E2E 通过或旧 workflow 边界，外推成 2026-06-05 当前“新英雄默认范围已完成/可发布”。当前若还要判断是否存在未完成项，只能回到现行总汇总和单英雄主审计文档逐项核对。

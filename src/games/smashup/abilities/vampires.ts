@@ -15,11 +15,12 @@ import {
     addTempPower,
     addPermanentPower,
     revealAndPickFromDeck,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore } from '../domain/types';
+import type { MinionOnBase, SmashUpEvent, SmashUpCore } from '../domain/types';
 import { registerTrigger, registerRestriction } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
@@ -29,6 +30,7 @@ import type { MinionPlayedEvent } from '../domain/types';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { buildBuryCardEvents } from '../domain/bury';
 import { reduce } from '../domain/reduce';
 import {
     createEffectProgram,
@@ -64,17 +66,20 @@ type VampireCountPodAddCounterPromptContext = VampirePromptContext & {
 type VampireBuffetPodPlayPromptContext = VampirePromptContext & {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
 };
 
 type VampireMadMonsterPartyPodPlayPromptContext = VampirePromptContext & {
     cardUid: string;
     defId: string;
+    ownerId: PlayerId;
     baseIndex: number;
 };
 
 type VampireFledglingPodBuryBasePromptContext = VampirePromptContext & {
     cardUid: string;
     fromDiscard: boolean;
+    trueOwnerId: PlayerId;
 };
 
 type VampireDinnerDatePodPromptContext = VampirePromptContext & {
@@ -196,28 +201,30 @@ function registerVampirePodAbilities(): void {
     // Specials implemented via triggers after destroy (see ongoing effects)
 }
 
-function schedulePowerModifierUntilNextTurnStart(
+function addPermanentPowerUntilNextTurnStart(
     state: MatchState<SmashUpCore>,
     minionUid: string,
+    baseIndex: number,
     amount: number,
     reason: string,
-): MatchState<SmashUpCore> {
-    if (amount === 0) return state;
+    timestamp: number,
+): SmashUpEvent | null {
+    if (amount === 0) return null;
     const expiresOnTurnNumber = state.core.turnNumber + state.core.turnOrder.length;
-    const timed = state.core.timedPowerModifiers ?? [];
+    const event = addPermanentPower(minionUid, baseIndex, amount, reason, timestamp);
     return {
-        ...state,
-        core: {
-            ...state.core,
-            timedPowerModifiers: [
-                ...timed,
-                { minionUid, amount, expiresOnTurnNumber, reason },
-            ],
+        ...event,
+        payload: {
+            ...event.payload,
+            expiresOnTurnNumber,
         },
-    };
+    } as any;
 }
 
 function registerVampirePodOngoingEffects(): void {
+    const sourceIsDestroyer = (ctx: TriggerContext) =>
+        ctx.destroyerId !== undefined && ctx.sourceControllerId === ctx.destroyerId;
+
     // The Count POD: after any minion destroyed, you may place a +1 counter on a minion at its base.
     registerTrigger('vampire_the_count_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
         const { state, baseIndex, now } = ctx;
@@ -226,13 +233,24 @@ function registerVampirePodOngoingEffects(): void {
         if (!base) return [];
         if (!ctx.matchState) return [];
 
+        if (base.minions.length === 0) return [];
+        const sourceControllerId = ctx.sourceControllerId as PlayerId | undefined;
+        if (ctx.sourceCardUid && sourceControllerId) {
+            return executeAbilityProgram(
+                vampireCountPodAddCounterPromptProgram,
+                createVampirePromptContext(ctx.matchState, sourceControllerId, now, {
+                    targetBaseIndex: baseIndex,
+                }),
+            ) as any;
+        }
+
         // 规则：任意基地上的 The Count POD 都可在“被消灭随从所在基地”放置指示物。
+        // direct caller 可能没有 source provenance；保留旧扫描 fallback。
         const counts = state.bases.flatMap(
             b => b.minions.filter(m => matchesDefId(m.defId, 'vampire_the_count_pod')),
         );
         if (counts.length === 0) return [];
 
-        if (base.minions.length === 0) return [];
         let matchState = ctx.matchState;
         for (const count of counts) {
             const result = executeAbilityProgram(
@@ -246,7 +264,56 @@ function registerVampirePodOngoingEffects(): void {
         return { events: [], matchState } as any;
     }, {
         optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
     });
+
+    const getProjectedDinnerDateHostPower = (
+        ctx: TriggerContext,
+        minion: MinionOnBase,
+        baseIndex: number,
+    ): number => {
+        const currentPower = getEffectivePower(ctx.state, minion, baseIndex);
+        if (ctx.affectType !== 'power_change') return currentPower;
+
+        type PowerChangePayload = { minionUid?: string; baseIndex?: number; amount?: number };
+        const payload = ctx.affectEvent && 'payload' in ctx.affectEvent
+            ? ctx.affectEvent.payload as PowerChangePayload
+            : undefined;
+        const targetsThisMinion = !payload?.minionUid || payload.minionUid === minion.uid;
+        const targetsThisBase = payload?.baseIndex === undefined || payload.baseIndex === baseIndex;
+        if (targetsThisMinion && targetsThisBase && typeof payload?.amount === 'number') {
+            switch (ctx.affectEvent?.type) {
+                case SU_EVENTS.POWER_COUNTER_ADDED:
+                case SU_EVENTS.TEMP_POWER_ADDED:
+                case SU_EVENTS.PERMANENT_POWER_ADDED:
+                    return currentPower + payload.amount;
+                case SU_EVENTS.POWER_COUNTER_REMOVED:
+                    return currentPower - Math.abs(payload.amount);
+                default:
+                    break;
+            }
+        }
+
+        return typeof ctx.counterDelta === 'number'
+            ? currentPower + ctx.counterDelta
+            : currentPower;
+    };
+
+    const canTriggerVampireDinnerDatePod = (ctx: TriggerContext): boolean => {
+        const { state, baseIndex, triggerMinionUid } = ctx;
+        if (baseIndex === undefined || !triggerMinionUid) return false;
+        const base = state.bases[baseIndex];
+        if (!base) return false;
+        const minion = base.minions.find(m => m.uid === triggerMinionUid);
+        if (!minion) return false;
+        const attachment = minion.attachedActions.find(a =>
+            a.defId === 'vampire_dinner_date_pod'
+            && (!ctx.sourceCardUid || a.uid === ctx.sourceCardUid)
+        );
+        if (!attachment) return false;
+        return getProjectedDinnerDateHostPower(ctx, minion, baseIndex) <= 0;
+    };
 
     // Dinner Date POD：被附着随从若力量变为 0，则将其消灭。
     registerTrigger('vampire_dinner_date_pod', 'onMinionAffected', (ctx: TriggerContext) => {
@@ -256,18 +323,25 @@ function registerVampirePodOngoingEffects(): void {
         if (!base) return [];
         const minion = base.minions.find(m => m.uid === triggerMinionUid);
         if (!minion) return [];
-        const attachment = minion.attachedActions.find(a => a.defId === 'vampire_dinner_date_pod');
+        const attachment = minion.attachedActions.find(a =>
+            a.defId === 'vampire_dinner_date_pod'
+            && (!ctx.sourceCardUid || a.uid === ctx.sourceCardUid)
+        );
         if (!attachment) return [];
         if (getEffectivePower(state, minion, baseIndex) > 0) return [];
+        const destroyerId = (attachment.metadata?.sourceControllerId as PlayerId | undefined) ?? attachment.ownerId;
         return buildValidatedDestroyEvents(state, {
             minionUid: minion.uid,
             minionDefId: minion.defId,
             fromBaseIndex: baseIndex,
-            destroyerId: attachment.ownerId,
+            destroyerId,
             reason: 'vampire_dinner_date_pod',
             now,
         });
     }, {
+        canTrigger: canTriggerVampireDinnerDatePod,
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 
     // Buffet POD: after you destroy a minion, you may play Buffet from hand (draw 2).
@@ -283,12 +357,15 @@ function registerVampirePodOngoingEffects(): void {
             createVampirePromptContext(ctx.matchState!, destroyerId, now, {
                 cardUid: buffet.uid,
                 defId: buffet.defId,
+                ownerId: buffet.owner as PlayerId,
             }),
         );
         return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
     }, {
         optional: true,
         global: true,
+        playerContext: 'sourceController',
+        canTrigger: sourceIsDestroyer,
     });
 
     // Mad Monster Party POD: after you destroy a minion, choose its base and place +1 counter on each of your minions there.
@@ -305,6 +382,7 @@ function registerVampirePodOngoingEffects(): void {
             createVampirePromptContext(ctx.matchState!, destroyerId, ctx.now, {
                 cardUid: card.uid,
                 defId: card.defId,
+                ownerId: card.owner as PlayerId,
                 baseIndex,
             }),
         );
@@ -312,16 +390,14 @@ function registerVampirePodOngoingEffects(): void {
     }, {
         optional: true,
         global: true,
+        playerContext: 'sourceController',
+        canTrigger: sourceIsDestroyer,
     });
 
     // Fledgling Vampire POD: after you destroy another minion, you may bury this card from hand or discard on any base.
     registerTrigger('vampire_fledgling_vampire_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, destroyerId, triggerMinionUid, now } = ctx;
+        const { state, destroyerId, now } = ctx;
         if (!destroyerId) return [];
-        // "another minion" => don't trigger if the destroyed minion itself is a Fledgling in play
-        if (triggerMinionUid && state.bases.some(b => b.minions.some(m => m.uid === triggerMinionUid && m.defId === 'vampire_fledgling_vampire_pod'))) {
-            return [];
-        }
         const p = state.players[destroyerId];
         if (!p) return [];
         const inHand = p.hand.filter(c => c.defId === 'vampire_fledgling_vampire_pod');
@@ -336,16 +412,16 @@ function registerVampirePodOngoingEffects(): void {
     }, {
         optional: true,
         global: true,
+        playerContext: 'sourceController',
+        canTrigger: sourceIsDestroyer,
     });
 
     // Stakeout POD restriction: block minions power>=3 when active
     registerRestriction('vampire_stakeout_pod', 'play_minion', (rctx) => {
         const blocks = rctx.state.stakeoutPodBlocks ?? [];
-        const block = blocks.find(b => b.baseIndex === rctx.baseIndex);
-        if (!block) return false;
-        if (rctx.playerId === block.ownerId) return false;
         const power = (rctx.extra?.basePower as number | undefined) ?? 0;
-        return power >= 3;
+        if (power < 3) return false;
+        return blocks.some(block => block.baseIndex === rctx.baseIndex && rctx.playerId !== block.ownerId);
     }, {
     });
 }
@@ -597,8 +673,10 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
                     label: `消灭 ${target.label}`,
                     value: {
                         minionUid: target.uid,
+                        minionDefId: target.defId,
                         defId: target.defId,
                         baseIndex: target.baseIndex,
+                        baseDefId: context.matchState.core.bases[target.baseIndex]?.defId,
                     },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
@@ -610,11 +688,17 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
     },
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
-        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const selected = value as {
+            minionUid?: string;
+            minionDefId?: string;
+            defId?: string;
+            baseIndex?: number;
+        } | undefined;
+        const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
+        if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
-            minionDefId: selected.defId,
+            minionDefId: selectedMinionDefId,
             fromBaseIndex: selected.baseIndex,
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker',
@@ -731,7 +815,13 @@ const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext,
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -856,7 +946,13 @@ const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -905,8 +1001,8 @@ const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDu
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
-        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === context.cardUid);
-        if (!stillInDiscard) return { events: [] };
+        const cardInDiscard = state.core.players[context.playerId]?.discard.find(card => card.uid === context.cardUid);
+        if (!cardInDiscard) return { events: [] };
         const minionDef = getMinionDef(context.defId);
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
@@ -915,6 +1011,7 @@ const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDu
                 cardUid: context.cardUid,
                 defId: context.defId,
                 baseIndex: selected.baseIndex,
+                ownerId: cardInDiscard.owner,
                 power: minionDef?.power ?? 0,
                 fromDiscard: true,
             } as any,
@@ -977,7 +1074,13 @@ const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountP
         const options = (base?.minions ?? []).map((minion, index) => ({
             id: `minion-${index}`,
             label: getCardDef(minion.defId)?.name ?? minion.defId,
-            value: { minionUid: minion.uid, baseIndex: context.targetBaseIndex },
+            value: {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                defId: minion.defId,
+                baseIndex: context.targetBaseIndex,
+                baseDefId: base?.defId,
+            },
             _source: 'field' as const,
             displayMode: 'card' as const,
         }));
@@ -1014,12 +1117,20 @@ const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPl
         ] as any[],
         { sourceId: 'vampire_buffet_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
-    onResolve: ({ state, context, value, playerId, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, context, value, playerId, timestamp } = args;
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const events: SmashUpEvent[] = [
-            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: context.defId, isExtraAction: true, timestamp }) as any,
+            buildActionPlayedEvent({
+                playerId,
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                isExtraAction: true,
+                timestamp,
+            }) as any,
         ];
-        events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
+        events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 2));
         return { events };
     },
 });
@@ -1041,7 +1152,15 @@ const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMa
         const base = state.core.bases[context.baseIndex];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [
-            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: context.defId, isExtraAction: true, timestamp }) as any,
+            buildActionPlayedEvent({
+                playerId,
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                isExtraAction: true,
+                targetBaseIndex: context.baseIndex,
+                timestamp,
+            }) as any,
         ];
         for (const minion of base.minions) {
             if (minion.controller === playerId) {
@@ -1067,23 +1186,23 @@ const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFled
         ),
         { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base' },
     ),
-    onResolve: ({ context, value, playerId, timestamp }) => {
+    onResolve: ({ context, value, playerId, random, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.CARD_BURIED,
-                payload: {
-                    playerId,
-                    cardUid: context.cardUid,
-                    defId: 'vampire_fledgling_vampire_pod',
-                    baseIndex: selected.baseIndex,
-                    trueOwnerId: playerId,
-                    buriedFrom: context.fromDiscard ? 'discard' : 'hand',
-                    reason: 'vampire_fledgling_vampire_pod',
-                } as any,
-                timestamp,
-            } as SmashUpEvent],
+            events: buildBuryCardEvents({
+                core: context.matchState.core,
+                matchState: context.matchState,
+                playerId,
+                cardUid: context.cardUid,
+                defId: 'vampire_fledgling_vampire_pod',
+                baseIndex: selected.baseIndex,
+                trueOwnerId: context.trueOwnerId,
+                buriedFrom: context.fromDiscard ? 'discard' : 'hand',
+                reason: 'vampire_fledgling_vampire_pod',
+                random,
+                now: timestamp,
+            }),
         };
     },
 });
@@ -1098,7 +1217,7 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `hand-${index}`,
                     label: '从手牌埋葬',
-                    value: { cardUid: card.uid, fromDiscard: false },
+                    value: { cardUid: card.uid, defId: card.defId, fromDiscard: false },
                     _source: 'hand' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1107,7 +1226,7 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `discard-${index}`,
                     label: '从弃牌堆埋葬',
-                    value: { cardUid: card.uid, fromDiscard: true },
+                    value: { cardUid: card.uid, defId: card.defId, fromDiscard: true },
                     _source: 'discard' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1125,11 +1244,17 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as { cardUid?: string; fromDiscard?: boolean } | undefined;
         if (!selected?.cardUid) return { events: [] };
+        const player = state.core.players[context.playerId];
+        const selectedCard = [
+            ...(player?.hand ?? []),
+            ...(player?.discard ?? []),
+        ].find(card => card.uid === selected.cardUid);
         return {
             events: [],
             context: createVampirePromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 fromDiscard: !!selected.fromDiscard,
+                trueOwnerId: (selectedCard?.owner as PlayerId | undefined) ?? context.playerId,
             }),
             nextProgram: vampireFledglingPodBuryBasePromptProgram,
         };
@@ -1177,7 +1302,13 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
                 ...otherOwnTargets.map((target, index) => ({
                     id: `own-${index}`,
                     label: `消灭：${target.label}`,
-                    value: { minionUid: target.uid, defId: target.defId, baseIndex: target.baseIndex },
+                    value: {
+                        minionUid: target.uid,
+                        minionDefId: target.defId,
+                        defId: target.defId,
+                        baseIndex: target.baseIndex,
+                        baseDefId: context.matchState.core.bases[target.baseIndex]?.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1188,11 +1319,17 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
     },
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
-        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const selected = value as {
+            minionUid?: string;
+            minionDefId?: string;
+            defId?: string;
+            baseIndex?: number;
+        } | undefined;
+        const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
+        if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
-            minionDefId: selected.defId,
+            minionDefId: selectedMinionDefId,
             fromBaseIndex: selected.baseIndex,
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker_pod',
@@ -1240,15 +1377,17 @@ const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptCont
         if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
-        const nextState = schedulePowerModifierUntilNextTurnStart(
+        const powerEvent = addPermanentPowerUntilNextTurnStart(
             state,
             selected.minionUid,
+            selected.baseIndex,
             -1,
             'vampire_the_count_pod',
+            timestamp,
         );
+        if (!powerEvent) return { events: [] };
         return {
-            matchState: nextState,
-            events: [addPermanentPower(selected.minionUid, selected.baseIndex, -1, 'vampire_the_count_pod', timestamp)],
+            events: [powerEvent],
         };
     },
 });
@@ -1346,8 +1485,8 @@ const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackO
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
         if (selected?.baseIndex === undefined) return { events: [] };
-        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === context.cardUid);
-        if (!stillInDiscard) return { events: [] };
+        const cardInDiscard = state.core.players[context.playerId]?.discard.find(card => card.uid === context.cardUid);
+        if (!cardInDiscard) return { events: [] };
         const minionDef = getMinionDef(context.defId);
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
@@ -1356,6 +1495,7 @@ const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackO
                 cardUid: context.cardUid,
                 defId: context.defId,
                 baseIndex: selected.baseIndex,
+                ownerId: cardInDiscard.owner,
                 power: minionDef?.power ?? 0,
                 fromDiscard: true,
                 consumesNormalLimit: false,
@@ -1421,7 +1561,13 @@ const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDateP
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1478,7 +1624,13 @@ const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireW
             .map((minion, index) => ({
                 id: `recipient-${index}`,
                 label: getCardDef(minion.defId)?.name ?? minion.defId,
-                value: { minionUid: minion.uid, baseIndex: context.wolfBaseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex: context.wolfBaseIndex,
+                    baseDefId: base?.defId,
+                },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             }));
@@ -1531,16 +1683,18 @@ const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPac
         if (!base) return { events: [] };
         const recipients = base.minions.filter(minion => minion.controller === context.playerId && minion.uid !== context.wolfUid);
         if (recipients.length === 0) return { events: [] };
-        const nextState = schedulePowerModifierUntilNextTurnStart(
+        const powerEvent = addPermanentPowerUntilNextTurnStart(
             state,
             selected.minionUid,
+            selected.baseIndex,
             -1,
             'vampire_wolf_pact_pod',
+            timestamp,
         );
+        if (!powerEvent) return { events: [] };
         return {
-            matchState: nextState,
-            events: [addPermanentPower(selected.minionUid, selected.baseIndex, -1, 'vampire_wolf_pact_pod', timestamp)],
-            context: createVampirePromptContext(nextState, context.playerId, timestamp, {
+            events: [powerEvent],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
                 wolfBaseIndex: context.wolfBaseIndex,
             }),
             nextProgram: vampireWolfPactPodMinionTargetPromptProgram,
@@ -1555,7 +1709,7 @@ const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptC
         const options = (player?.discard ?? []).map((card, index) => ({
             id: `card-${index}`,
             label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid },
+            value: { cardUid: card.uid, defId: card.defId },
             _source: 'discard' as const,
             displayMode: 'card' as const,
         }));
@@ -1573,11 +1727,17 @@ const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptC
         const player = state.core.players[playerId];
         const card = player?.discard.find(entry => entry.uid === selected.cardUid);
         if (!card) return { events: [] };
-        const newDeckUids = random.shuffle([...player.deck.map(entry => entry.uid), card.uid]);
+        const ownerId = state.core.players[card.owner] ? card.owner : playerId;
+        const owner = state.core.players[ownerId];
+        const newDeckUids = random.shuffle([...owner.deck.map(entry => entry.uid), card.uid]);
         return {
             events: [{
                 type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: newDeckUids },
+                payload: {
+                    playerId: ownerId,
+                    deckUids: newDeckUids,
+                    ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                },
                 timestamp,
             } as any],
         };
@@ -1796,28 +1956,32 @@ function vampireStakeoutPodTalent(ctx: AbilityContext): AbilityResult {
 function registerVampireOngoingEffects(): void {
     // 吸血鬼伯爵 ongoing：对手随从被消灭后+1指示物
     registerTrigger('vampire_the_count', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, playerId: destroyedOwnerId, triggerMinionUid, now } = ctx;
+        const { state, triggerMinionUid, now } = ctx;
         if (!triggerMinionUid) return [];
+        const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
-                if (matchesDefId(m.defId, 'vampire_the_count') && m.controller !== destroyedOwnerId) {
+                if (matchesDefId(m.defId, 'vampire_the_count') && m.controller !== destroyedControllerId) {
                     events.push(addPowerCounter(m.uid, i, 1, 'vampire_the_count', now));
                 }
             }
         }
         return events;
-    }, {
     });
 
     // 投机主义 ongoing(minion)：对手随从被消灭后+1指示物
     registerTrigger('vampire_opportunist', 'onMinionDestroyed', (ctx: TriggerContext) => {
-        const { state, playerId: destroyedOwnerId, now } = ctx;
+        const { state, now } = ctx;
+        const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const m of state.bases[i].minions) {
-                if (m.controller === destroyedOwnerId) continue;
-                if (m.attachedActions.some(a => matchesDefId(a.defId, 'vampire_opportunist'))) {
+                if (m.controller === destroyedControllerId) continue;
+                const opportunistCount = m.attachedActions.filter(a =>
+                    matchesDefId(a.defId, 'vampire_opportunist'),
+                ).length;
+                for (let index = 0; index < opportunistCount; index += 1) {
                     events.push(addPowerCounter(m.uid, i, 1, 'vampire_opportunist', now));
                 }
             }
@@ -1829,16 +1993,40 @@ function registerVampireOngoingEffects(): void {
     // 召唤狼群 ongoing(base)：回合开始在本卡上放+1力量指示物
     registerTrigger('vampire_summon_wolves', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
+        if (ctx.sourceCardUid) {
+            const candidateBases = ctx.sourceBaseIndex !== undefined
+                ? [{ base: state.bases[ctx.sourceBaseIndex], baseIndex: ctx.sourceBaseIndex }]
+                : state.bases.map((base, baseIndex) => ({ base, baseIndex }));
+            for (const candidate of candidateBases) {
+                const ongoing = candidate.base?.ongoingActions.find((oa) =>
+                    oa.uid === ctx.sourceCardUid && matchesDefId(oa.defId, 'vampire_summon_wolves'));
+                if (!ongoing) continue;
+                const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+                if (ongoingControllerId !== playerId) return [];
+                return [addOngoingCardCounter(
+                    ongoing.uid,
+                    candidate.baseIndex,
+                    1,
+                    'vampire_summon_wolves',
+                    now,
+                ) as unknown as SmashUpEvent];
+            }
+            return [];
+        }
+
         const events: SmashUpEvent[] = [];
         for (let i = 0; i < state.bases.length; i++) {
             for (const oa of state.bases[i].ongoingActions) {
-                if (matchesDefId(oa.defId, 'vampire_summon_wolves') && oa.ownerId === playerId) {
+                const ongoingControllerId = (oa.metadata?.sourceControllerId as PlayerId | undefined) ?? oa.ownerId;
+                if (matchesDefId(oa.defId, 'vampire_summon_wolves') && ongoingControllerId === playerId) {
                     events.push(addOngoingCardCounter(oa.uid, i, 1, 'vampire_summon_wolves', now) as unknown as SmashUpEvent);
                 }
             }
         }
         return events;
     }, {
+        perInstance: true,
+        playerContext: 'sourceController',
     });
 
     // 自助餐 special：基地计分后如果打出者是赢家（排名第一），己方所有随从+1指示物
@@ -1861,7 +2049,7 @@ function registerVampireOngoingEffects(): void {
         for (const entry of armed) {
             // 只有排名第一（赢家）才触发效果
             if (rankings[0].playerId !== entry.playerId) continue;
-            
+
             // 给所有基地上的己方随从加指示物（包括计分基地）
             for (let i = 0; i < state.bases.length; i++) {
                 for (const m of state.bases[i].minions) {
@@ -1873,5 +2061,6 @@ function registerVampireOngoingEffects(): void {
         }
         return events;
     }, {
+        playerContext: 'sourceController',
     });
 }

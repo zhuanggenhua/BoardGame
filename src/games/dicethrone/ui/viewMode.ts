@@ -39,6 +39,11 @@ export interface ResponseViewSuggestionParams {
     autoResponseEnabled: boolean;
 }
 
+export interface ResponseAutoViewSession {
+    suggestionKey: string;
+    restoreMode: ViewMode;
+}
+
 export interface ResponseViewSuggestionKeyParams {
     rootPlayerId: PlayerId;
     isResponseWindowOpen?: boolean;
@@ -83,6 +88,59 @@ export const shouldSuggestOpponentViewOnResponseChange = (
     return autoResponseEnabled
         && currentSuggestionKey !== null
         && currentSuggestionKey !== previousSuggestionKey;
+};
+
+export interface ResponseAutoViewTransitionParams {
+    currentSuggestionKey: string | null;
+    autoResponseEnabled: boolean;
+    manualViewMode: ViewMode;
+    session: ResponseAutoViewSession | null;
+}
+
+export interface ResponseAutoViewTransitionResult {
+    nextSession: ResponseAutoViewSession | null;
+    nextViewMode?: ViewMode;
+}
+
+export const resolveResponseAutoViewTransition = (
+    params: ResponseAutoViewTransitionParams,
+): ResponseAutoViewTransitionResult => {
+    const {
+        currentSuggestionKey,
+        autoResponseEnabled,
+        manualViewMode,
+        session,
+    } = params;
+
+    if (!autoResponseEnabled || !currentSuggestionKey) {
+        if (!session) {
+            return { nextSession: null };
+        }
+        return {
+            nextSession: null,
+            nextViewMode: session.restoreMode,
+        };
+    }
+
+    if (session) {
+        if (session.suggestionKey === currentSuggestionKey) {
+            return { nextSession: session };
+        }
+        return {
+            nextSession: {
+                ...session,
+                suggestionKey: currentSuggestionKey,
+            },
+        };
+    }
+
+    return {
+        nextSession: {
+            suggestionKey: currentSuggestionKey,
+            restoreMode: manualViewMode,
+        },
+        nextViewMode: 'opponent',
+    };
 };
 
 export const computeViewModeState = (params: ViewModeParams): ViewModeResult => {

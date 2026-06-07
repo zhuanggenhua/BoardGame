@@ -1,5 +1,7 @@
 # 冲突解决汇报：feat-dicethrone-gunslinger-samurai
 
+> 2026-06-05 当前有效口径：本文是历史 merge 冲突处理记录，只说明当时如何解决 `feat-dicethrone-gunslinger-samurai` 合并冲突，不构成当前枪手/武士审计完成证明。当前若要判断对象级残余或整批发布口径，应以现行单英雄主审计与新英雄总汇总文档为准。
+
 ## 1. 背景
 - base: `main@ddb7ca69c1ee001ce0c0873b58d5a177c99fd64e`
 - head: `feat/dicethrone-gunslinger-samurai@91862e3e95888f4b2682a4d1ad0c026621aaf7aa`

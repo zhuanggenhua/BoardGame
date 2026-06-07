@@ -40,6 +40,7 @@ const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; 
   '0': { bg: '#F43F5E', border: '#fb7185', text: 'white', glow: 'rgba(244,63,94,0.4)' },
   '1': { bg: '#3B82F6', border: '#60a5fa', text: 'white', glow: 'rgba(59,130,246,0.4)' },
 };
+const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 const getPlayerShortLabel = (t: TFunction, pid: string) => t('player.short', {
   id: pid === '0' ? 1 : 2,
 });
@@ -517,8 +518,11 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       data-game-page="true"
       data-game-id="summonerwars"
       data-mobile-layout-preset="board-shell"
-      className="fixed inset-0 flex flex-col bg-[#0d1117] overflow-hidden select-none text-white font-sans w-screen h-screen"
-      style={selectionRootStyle}
+      className="fixed inset-0 flex flex-col bg-[#0d1117] overflow-hidden select-none text-white font-sans w-screen"
+      style={{
+        ...selectionRootStyle,
+        height: 'var(--runtime-viewport-height, 100vh)',
+      }}
     >
       {/* 背景氛围层 - 动态流光 */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -713,8 +717,8 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                     key="placeholder"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="aspect-[4/3] rounded-lg border border-dashed border-white/10 flex items-center justify-center"
-                    style={{ height: blockUnit(24) }}
+                    className="rounded-lg border border-dashed border-white/10 flex items-center justify-center"
+                    style={{ height: blockUnit(24), width: `calc(${blockUnit(24)} * 4 / 3)`, aspectRatio: '4 / 3' }}
                   >
                     <span className="text-white/20" style={previewPlaceholderTextStyle}>
                       {t('factionSelection.hoverToPreview')}
@@ -832,12 +836,17 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
       >
         {magnifySprite && (
           <div style={magnifySpriteViewportStyle}>
-            <CardSprite
-              atlasId={magnifySprite.atlasId}
-              frameIndex={magnifySprite.frameIndex}
-              className="max-h-full w-auto rounded-lg shadow-2xl"
-              style={{ minWidth: `${magnifySpriteMinWidthPx}px` }}
-            />
+            <div
+              style={{
+                width: `min(90vw, max(${magnifySpriteMinWidthPx}px, calc(80vh * ${SUMMONER_WARS_CARD_ASPECT_RATIO})))`,
+              }}
+            >
+              <CardSprite
+                atlasId={magnifySprite.atlasId}
+                frameIndex={magnifySprite.frameIndex}
+                className="w-full rounded-lg shadow-2xl"
+              />
+            </div>
           </div>
         )}
       </MagnifyOverlay>

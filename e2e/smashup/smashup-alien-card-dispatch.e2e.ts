@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect, type GameTestContext } from '../framework';
-import { getCardDef } from '../src/games/smashup/data/cards';
+import { getCardDef } from '../../src/games/smashup/data/cards';
 
 const ALIEN_CARD_IDS = ['alien_terraform', 'alien_probe', 'alien_crop_circles'] as const;
 const BASES = ['base_the_homeworld', 'base_the_mothership'] as const;

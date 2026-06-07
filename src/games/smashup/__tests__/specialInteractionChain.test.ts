@@ -31,7 +31,6 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { ActionCardDef } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
@@ -44,6 +43,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
+import { expectNoPrompt, getFirstPrompt, getPromptOptions, getSimpleChoicePrompt, respondCommand } from './helpers';
 
 // ============================================================================
 // 测试工具（与 interactionChainE2E.test.ts 保持一致）
@@ -145,12 +145,13 @@ function runCommand(state: MatchState<SmashUpCore>, cmd: { type: string; playerI
 }
 
 function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: string, name: string) {
-    return runCommand(state, { type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId } }, name);
+    return runCommand(state, respondCommand(optionId, playerId), name);
 }
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
-    const opt = choice.options.find(predicate);
-    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(choice.options.map((o: any) => o.id))}`);
+    const options = getPromptOptions(choice);
+    const opt = options.find(predicate);
+    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(options.map((o: any) => o.id))}`);
     return opt.id;
 }
 
@@ -198,7 +199,7 @@ describe('Protection (destroy): robot_warbot', () => {
             payload: { cardUid: 'cannon1' },
         }, 'cannon vs warbot');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
         // warbot 力量4 > 2，本来就不在加农炮范围内
         // 用激光三角龙（消灭力量≤2）来验证 warbot 保护更直接
@@ -301,7 +302,7 @@ describe('Protection (affect): ghost_incorporeal', () => {
             payload: { cardUid: 'sh1' },
         }, 'shanghai vs incorporeal');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
         
         // 验证：prot1（受保护）不在选项中，normal1（未保护）在选项中
@@ -382,13 +383,13 @@ describe('Laseratops POD printed-power prompt', () => {
         }, 'laseratops_pod printed power prompt');
         expect(r1.steps[0]?.success).toBe(true);
 
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(r1.finalState, 'dino_laser_triceratops_pod');
         expect(choice).toBeDefined();
         expect(choice.sourceId).toBe('dino_laser_triceratops_pod');
         expect(choice.title).toBe('你可以消灭这里一个印制力量≤2的随从');
         expect(choice.subtitle).toContain('按印制力量判断');
 
-        const targetOptionIds = choice.options
+        const targetOptionIds = getPromptOptions(choice)
             .filter((opt) => (opt.value as { minionUid?: string } | undefined)?.minionUid)
             .map((opt) => ({
                 minionUid: (opt.value as { minionUid: string }).minionUid,
@@ -633,6 +634,77 @@ describe('onMinionPlayed trigger: trickster_flame_trap', () => {
         // 火焰陷阱仍在
         expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(true);
     });
+
+    it('对手火焰陷阱影响己方随从时，藏身处应自毁并取消这次消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'pirate_first_mate', '0', 'minion')],
+                    factions: ['pirates', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'ft1', defId: 'trickster_flame_trap', ownerId: '1', metadata: {} },
+                ]),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'hideout cancels opponent flame trap');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).toContain('su:ongoing_detached');
+        const base = result.finalState.core.bases[0];
+        expect(base.minions.some((m: MinionOnBase) => m.uid === 'm1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'hideout-1')).toBe(false);
+        expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(false);
+        expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'm1')).toBe(false);
+    });
+
+    it('不散阴魂在打出后手牌≤2时应先获得保护，阻止对手火焰陷阱消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('haunting-1', 'ghost_haunting', '0', 'minion'),
+                        makeCard('keep-1', 'ghost_ghost', '0', 'minion'),
+                        makeCard('keep-2', 'ghost_seance', '0', 'action'),
+                    ],
+                    factions: ['ghosts', 'pirates'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'ft1', defId: 'trickster_flame_trap', ownerId: '1', metadata: {} },
+                ]),
+                makeBase('test_base_2'),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'haunting-1', baseIndex: 0 },
+        }, 'haunting blocks opponent flame trap after play');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).not.toContain('su:minion_destroyed');
+        expect(result.steps[0]?.events).toContain('su:ongoing_detached');
+        const base = result.finalState.core.bases[0];
+        expect(base.minions.some((m: MinionOnBase) => m.uid === 'haunting-1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'ft1')).toBe(false);
+        expect(result.finalState.core.players['0'].hand).toHaveLength(2);
+        expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'haunting-1')).toBe(false);
+    });
 });
 
 // ============================================================================
@@ -668,7 +740,7 @@ describe('onMinionPlayed trigger: trickster_pay_the_piper', () => {
         }, 'pay_the_piper: 对手打出随从');
         expect(r1.steps[0]?.success).toBe(true);
         expect(r1.steps[0]?.events).toContain('su:cards_discarded');
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // P0 手牌减少：打出1张 + 被随机弃1张 = 减少2张
         const p0 = r1.finalState.core.players['0'];
@@ -678,6 +750,43 @@ describe('onMinionPlayed trigger: trickster_pay_the_piper', () => {
         expect(['h1', 'h2']).toContain(discardedCardUid);
         expect(p0.hand.some(card => card.uid === discardedCardUid)).toBe(false);
         expect(p0.hand.some(card => card.uid === 'm1')).toBe(false);
+    });
+
+    it('留下买路钱只让玩家弃手牌，不应消耗同基地的藏身处', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('m1', 'pirate_first_mate', '0', 'minion'),
+                        makeCard('h1', 'test_action_a', '0', 'action'),
+                    ],
+                    factions: ['pirates', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', { factions: ['tricksters', 'robots'] as [string, string] }),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'ptp1', defId: 'trickster_pay_the_piper', ownerId: '1', metadata: {} },
+                ]),
+            ],
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        }, 'pay_the_piper should not consume hideout');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.steps[0]?.events).toContain('su:cards_discarded');
+        expect(result.steps[0]?.events).not.toContain('su:ongoing_detached');
+        expect(result.finalState.core.bases[0].ongoingActions).toEqual([
+            expect.objectContaining({ uid: 'hideout-1', defId: 'trickster_hideout' }),
+            expect.objectContaining({ uid: 'ptp1', defId: 'trickster_pay_the_piper' }),
+        ]);
+        expectNoPrompt(result.finalState);
     });
 });
 
@@ -714,14 +823,14 @@ describe('onMinionMoved trigger: bear_cavalry_cub_scout', () => {
             payload: { cardUid: 'dinghy1' },
         }, 'cub_scout: 打出 dinghy');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
         // 选 weak1
         const m1Opt = findOption(choice1, (o: any) => o.value?.minionUid === 'weak1');
         const r2 = respond(r1.finalState, '0', m1Opt, 'cub_scout: 选随从');
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
 
         // 选 base1（有 cub_scout）
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
@@ -729,7 +838,7 @@ describe('onMinionMoved trigger: bear_cavalry_cub_scout', () => {
         expect(r3.steps[0]?.success).toBe(true);
 
         // 跳过第二个随从
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current);
+        const choice3 = getFirstPrompt(r3.finalState) ? getSimpleChoicePrompt(r3.finalState) : undefined;
         if (choice3) {
             const r4 = respond(r3.finalState, '0', 'skip', 'cub_scout: 跳过第二个');
             expect(r4.steps[0]?.success).toBe(true);
@@ -791,6 +900,45 @@ describe('onMinionDestroyed trigger: steampunk_escape_hatch', () => {
         const inHand = p0.hand.some((c: CardInstance) => c.uid === 'target1');
         const inDiscard = p0.discard.some((c: CardInstance) => c.uid === 'target1');
         // escape_hatch 应该让它回手牌
+        expect(inHand || inDiscard).toBe(true);
+    });
+
+    it('自己的逃生舱回手牌效果不应被自己的藏身处挡掉', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    factions: ['steampunks', 'tricksters'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('lt1', 'dino_laser_triceratops', '1', 'minion')],
+                    factions: ['dinosaurs', 'aliens'] as [string, string],
+                }),
+            },
+            bases: [
+                makeBase('test_base_1', [
+                    makeMinion('target1', 'test_minion', '0', 2),
+                ], [
+                    { uid: 'hideout-1', defId: 'trickster_hideout', ownerId: '0', metadata: {} },
+                    { uid: 'eh1', defId: 'steampunk_escape_hatch', ownerId: '0', metadata: {} },
+                ]),
+            ],
+            currentPlayerIndex: 1,
+        });
+        const state = makeFullMatchState(core);
+
+        const result = runCommand(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '1',
+            payload: { cardUid: 'lt1', baseIndex: 0 },
+        }, 'own escape hatch should not consume own hideout');
+
+        expect(result.steps[0]?.success).toBe(true);
+        const base = result.finalState.core.bases[0];
+        expect(base.ongoingActions.some(o => o.uid === 'hideout-1')).toBe(true);
+        expect(base.ongoingActions.some(o => o.uid === 'eh1')).toBe(true);
+        const inHand = result.finalState.core.players['0'].hand.some((c: CardInstance) => c.uid === 'target1');
+        const inDiscard = result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'target1');
         expect(inHand || inDiscard).toBe(true);
     });
 });
@@ -957,18 +1105,18 @@ describe('beforeScoring trigger: cthulhu_chosen', () => {
         }, '69ff0310: 进入计分触发 cthulhu_chosen');
 
         expect(enterScoring.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(enterScoring.finalState.sys.interaction?.current);
-        expect(choice?.sourceId).toBe('cthulhu_chosen_confirm');
-        expect(choice?.targetType).toBe('generic');
-        expect(choice?.playerId).toBe('0');
-        expect(choice?.options?.map(option => option.id)).toEqual(['yes', 'no']);
-        expect(choice?.options?.every(option => option.displayMode === 'button')).toBe(true);
+        const choice = getSimpleChoicePrompt(enterScoring.finalState, 'cthulhu_chosen_confirm');
+        const options = getPromptOptions(choice);
+        expect(choice.targetType).toBe('generic');
+        expect(choice.playerId).toBe('0');
+        expect(options.map(option => option.id)).toEqual(['yes', 'no']);
+        expect(options.every(option => option.displayMode === 'button')).toBe(true);
 
         const skipOption = findOption(choice, option => option.id === 'no');
         const resolved = respond(enterScoring.finalState, '0', skipOption, '69ff0310: 不触发并收口确认交互');
 
         expect(resolved.steps[0]?.success).toBe(true);
-        expect(resolved.finalState.sys.interaction?.current?.id).not.toBe(choice?.id);
+        expect(getFirstPrompt(resolved.finalState)?.id).not.toBe(choice.id);
     });
 });
 

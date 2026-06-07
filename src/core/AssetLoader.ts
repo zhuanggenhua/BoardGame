@@ -23,6 +23,7 @@ const VERSION_PARAM = 'v';
 const COMMON_AUDIO_BASE_PATH = 'common/audio';
 const IMAGE_READY_HINT_STORAGE_KEY = '__BG_IMAGE_READY_HINTS__';
 const IMAGE_READY_HINT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const IMAGE_CANDIDATE_FAILURE_RETRY_MS = 30_000;
 
 const normalizeAssetsBaseUrl = (value?: string) => {
     if (!value) return null;
@@ -128,6 +129,8 @@ export function setLocalizedImageIndexForTesting(value?: Record<string, 1>): voi
 export function __resetAssetLoaderCachesForTests(options?: { keepPersistentHints?: boolean }): void {
     preloadedImages.clear();
     preloadedAudio.clear();
+    resolvedImageUrls.clear();
+    imageCandidateFailures.clear();
     preloadFailCount.clear();
     inFlightPreloads.clear();
 
@@ -158,6 +161,8 @@ const _win = typeof window !== 'undefined' ? window as Window & {
         gameAssetsRegistry: Map<string, GameAssets>;
         preloadedImages: Map<string, HTMLImageElement>;
         preloadedAudio: Map<string, HTMLAudioElement>;
+        resolvedImageUrls: Map<string, string>;
+        imageCandidateFailures: Map<string, { failedAt: number; count: number }>;
     };
 } : undefined;
 
@@ -166,12 +171,16 @@ if (_win && !_win.__BG_ASSET_CACHE__) {
         gameAssetsRegistry: new Map(),
         preloadedImages: new Map(),
         preloadedAudio: new Map(),
+        resolvedImageUrls: new Map(),
+        imageCandidateFailures: new Map(),
     };
 }
 
 const gameAssetsRegistry = _win?.__BG_ASSET_CACHE__?.gameAssetsRegistry ?? new Map<string, GameAssets>();
 const preloadedImages = _win?.__BG_ASSET_CACHE__?.preloadedImages ?? new Map<string, HTMLImageElement>();
 const preloadedAudio = _win?.__BG_ASSET_CACHE__?.preloadedAudio ?? new Map<string, HTMLAudioElement>();
+const resolvedImageUrls = _win?.__BG_ASSET_CACHE__?.resolvedImageUrls ?? new Map<string, string>();
+const imageCandidateFailures = _win?.__BG_ASSET_CACHE__?.imageCandidateFailures ?? new Map<string, { failedAt: number; count: number }>();
 
 // ============================================================================
 // 公共 API
@@ -467,7 +476,7 @@ export async function preloadCriticalImages(
     onProgress?.(0, total);
 
     const preloadCriticalImageCandidates = async (path: string): Promise<void> => {
-        const candidates = getLocalizedImageCandidateUrls(path, effectiveLocale);
+        const candidates = getRuntimeImageCandidateUrls(path, effectiveLocale);
         if (candidates.length === 0) return;
         for (const candidate of candidates) {
             if (isImagePreloaded(candidate)) return;
@@ -686,10 +695,16 @@ function normalizePreloadedImageCacheKey(src: string, locale?: string): string {
     if (!normalized) return '';
 
     if (normalized.includes(`/${COMPRESSED_SUBDIR}/`)) {
-        return `${stripExtension(normalized)}.webp`;
+        return replaceImageExtension(normalized, '.webp');
     }
 
     return getOptimizedImageUrls(getLocalizedAssetPath(normalized, effectiveLocale)).webp;
+}
+
+function replaceImageExtension(src: string, nextExtension: string): string {
+    const { path, query, hash } = splitUrlParts(src);
+    const normalizedPath = path.replace(/\.(avif|webp|png|jpe?g|gif|svg)$/i, '');
+    return `${normalizedPath}${nextExtension}${query ? `?${query}` : ''}${hash}`;
 }
 
 function stripVersionParam(value: string): string {
@@ -860,21 +875,69 @@ function getPreloadedImageCacheKeys(src: string, locale?: string): string[] {
     return [...keys];
 }
 
-function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: string): void {
+function getImageCandidateRuntimeKey(src: string, locale?: string, candidateUrl?: string): string {
+    const effectiveLocale = locale || 'zh-CN';
+    const sourceKey = toCanonicalAssetCacheKey(normalizePreloadedImageCacheKey(src, effectiveLocale))
+        || toCanonicalAssetCacheKey(assetsPath(src))
+        || src;
+    const resolvedCandidate = candidateUrl ? stripVersionParam(assetsPath(candidateUrl)) : '';
+    return `${effectiveLocale}|${sourceKey}|${resolvedCandidate}`;
+}
+
+function rememberImageCandidateFailure(src: string, locale: string | undefined, candidateUrl: string): void {
+    const key = getImageCandidateRuntimeKey(src, locale, candidateUrl);
+    const record = imageCandidateFailures.get(key);
+    imageCandidateFailures.set(key, {
+        failedAt: Date.now(),
+        count: (record?.count ?? 0) + 1,
+    });
+}
+
+function forgetImageCandidateFailure(src: string, locale: string | undefined, candidateUrl?: string): void {
+    if (!candidateUrl) return;
+    imageCandidateFailures.delete(getImageCandidateRuntimeKey(src, locale, candidateUrl));
+}
+
+function isImageCandidateRecentlyFailed(src: string, locale: string | undefined, candidateUrl: string): boolean {
+    const record = imageCandidateFailures.get(getImageCandidateRuntimeKey(src, locale, candidateUrl));
+    if (!record) return false;
+    return Date.now() - record.failedAt < IMAGE_CANDIDATE_FAILURE_RETRY_MS;
+}
+
+function orderImageCandidatesByRuntimeState(src: string, locale: string, candidateUrls: readonly string[]): string[] {
+    if (candidateUrls.length === 0) return [];
+    const preferred: string[] = [];
+    const deferred: string[] = [];
+    for (const candidateUrl of candidateUrls) {
+        if (isImageCandidateRecentlyFailed(src, locale, candidateUrl)) {
+            deferred.push(candidateUrl);
+        } else {
+            preferred.push(candidateUrl);
+        }
+    }
+    return preferred.length > 0 ? [...preferred, ...deferred] : [...candidateUrls];
+}
+
+function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: string, resolvedUrl?: string): void {
     const keys = getPreloadedImageCacheKeys(src, locale);
+    const effectiveResolvedUrl = resolvedUrl || imgElement.currentSrc || imgElement.src || '';
     for (const key of keys) {
         preloadedImages.set(key, imgElement);
+        if (effectiveResolvedUrl) {
+            resolvedImageUrls.set(key, effectiveResolvedUrl);
+        }
+        forgetImageCandidateFailure(src, locale, effectiveResolvedUrl);
     }
     rememberPersistentImageReadyHint(src, locale);
     _emitImageReady(src);
     keys.forEach((key) => _emitImageReady(key));
 }
 
-export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement): void {
+export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement, resolvedUrl?: string): void {
     const cacheKeys = getPreloadedImageCacheKeys(src, locale);
     if (cacheKeys.length === 0) return;
     if (imgElement && imgElement.naturalWidth > 0) {
-        cacheLoadedImage(src, imgElement, locale);
+        cacheLoadedImage(src, imgElement, locale, resolvedUrl);
     } else {
         // 回退：创建 Image 并设置 src，浏览器磁盘缓存命中时 naturalWidth 立即可用
         const img = new Image();
@@ -898,6 +961,57 @@ export function getPreloadedImageElement(src: string, locale?: string): HTMLImag
         }
     }
     return null;
+}
+
+/**
+ * 获取缓存中真实加载成功的图片 URL。
+ *
+ * 这是渲染组件恢复成功候选的统一入口：同一逻辑资源如果曾经从 fallback
+ * 候选加载成功，后续重新挂载时必须复用 img.currentSrc/img.src，而不是重新
+ * 回到候选链起点。
+ */
+export function getResolvedImageCacheUrl(src: string, locale?: string): string {
+    for (const key of [src, ...getPreloadedImageCacheKeys(src, locale)]) {
+        const cached = preloadedImages.get(key);
+        if (!cached || cached.naturalWidth <= 0) {
+            continue;
+        }
+
+        return resolvedImageUrls.get(key) || cached.currentSrc || cached.src || '';
+    }
+
+    return '';
+}
+
+/**
+ * 从一组候选 URL 中恢复已经命中的真实 URL。
+ *
+ * candidateUrls 用于精确匹配当前候选链；sourceImage 作为逻辑资源兜底，
+ * 用于处理资源 base/override 变化后，缓存里仍保存着上一轮真实 currentSrc
+ * 的情况。
+ */
+export function getResolvedImageCandidateUrl(
+    candidateUrls: readonly string[],
+    sourceImage?: string,
+    locale?: string,
+): string {
+    for (const candidateUrl of candidateUrls) {
+        const resolved = getResolvedImageCacheUrl(candidateUrl);
+        if (resolved) {
+            return resolved;
+        }
+    }
+
+    return sourceImage ? getResolvedImageCacheUrl(sourceImage, locale) : '';
+}
+
+export function getRuntimeImageCandidateUrls(src: string, locale: string): string[] {
+    return orderImageCandidatesByRuntimeState(src, locale, getLocalizedImageCandidateUrls(src, locale));
+}
+
+export function markImageCandidateFailed(src: string, locale: string | undefined, candidateUrl: string): void {
+    if (!candidateUrl) return;
+    rememberImageCandidateFailure(src, locale, candidateUrl);
 }
 
 /**
@@ -1476,7 +1590,9 @@ export function buildLocalizedImageSet(src: string, locale?: string): string {
         return '';
     }
     const { primary } = getLocalizedImageUrls(src, locale);
-    const primaryUrl = primary.webp;
+    const primaryUrl = isCapacitorFileAssetUrl(primary.webp)
+        ? stripVersionParam(primary.webp)
+        : primary.webp;
     // CSS background-image 的多 url 是叠层，不是可靠的失败回退。
     // 统一只返回主路径；需要显式回退的场景在调用层处理。
     return primaryUrl ? `url("${primaryUrl}")` : '';
@@ -1506,8 +1622,17 @@ export function getDirectAssetPath(relativePath: string): string {
 export function getLocalAssetPath(path: string): string {
     if (!isString(path) || !path) return '/assets';
     if (isPassthroughSource(path)) return path;
-    const trimmed = path.startsWith('/') ? path.slice(1) : path;
-    return resolveVersionedAssetUrl(`/assets/${trimmed}`);
+    const relative = stripKnownAssetPrefixes(splitUrlParts(path).path);
+    if (!relative) {
+        return '/assets';
+    }
+
+    const overrideBaseUrl = resolveAssetBaseUrlForPath(relative);
+    if (overrideBaseUrl) {
+        return resolveVersionedAssetUrl(`${overrideBaseUrl}/${relative}`);
+    }
+
+    return resolveVersionedAssetUrl(`/assets/${relative}`);
 }
 
 /**
@@ -1516,13 +1641,16 @@ export function getLocalAssetPath(path: string): string {
  */
 export function getLocalizedLocalAssetPath(path: string, locale?: string): string {
     if (!locale || isPassthroughSource(path)) return getLocalAssetPath(path);
-    // 去掉可能的前缀
-    let relative = splitUrlParts(path).path;
-    if (relative.startsWith('/assets/')) relative = relative.slice('/assets/'.length);
-    if (relative.startsWith(assetsBaseUrl + '/')) relative = relative.slice(assetsBaseUrl.length + 1);
-    relative = relative.replace(/^\/+/, '');
-    // 幂等性检查
+    const relative = stripKnownAssetPrefixes(splitUrlParts(path).path);
+    const overrideBaseUrl = resolveAssetBaseUrlForPath(relative);
     const localizedPrefix = `${LOCALIZED_ASSETS_SUBDIR}/${locale}/`;
-    if (relative.startsWith(localizedPrefix)) return resolveVersionedAssetUrl(`/assets/${relative}`);
-    return resolveVersionedAssetUrl(`/assets/${localizedPrefix}${relative}`);
+    const localizedRelative = relative.startsWith(localizedPrefix)
+        ? relative
+        : `${localizedPrefix}${relative}`;
+
+    if (overrideBaseUrl) {
+        return resolveVersionedAssetUrl(`${overrideBaseUrl}/${localizedRelative}`);
+    }
+
+    return resolveVersionedAssetUrl(`/assets/${localizedRelative}`);
 }

@@ -1,5 +1,7 @@
 # DiceThrone 燃烧 Token 持续性修复
 
+> 2026-06-06 当前有效口径：本文只覆盖 Pyromancer 的 `Burn` 规则口径纠偏与持续性专项修复，不是当前 DiceThrone 全体状态系统、也不是新英雄补审完成证明。阅读时只能把它当作单条规则修复证据；当前新英雄与整批补审状态应回到现行主审计文档判断。
+
 ## 结论
 
 Burn 以图片为准，必须统一为：
@@ -39,3 +41,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/pyroma
 ```
 
 - 结果：`5 passed / 157 tests passed`
+
+---
+
+**当前阅读说明**：本文只能证明 `Burn` 持续性与层数口径这一个专项问题曾被统一修正，不能外推为所有状态对象、所有持续伤害或 DiceThrone 整体审计都已收口。

@@ -8,7 +8,7 @@ import Router from '@koa/router';
 import type { GameTransportServer } from '../../engine/transport/server';
 import type { MatchStorage, StoredMatchState } from '../../engine/transport/storage';
 import type { MatchState } from '../../core/types';
-import { validateMatchState, deepMerge } from '../../engine/transport/stateValidator';
+import { validateMatchState, deepMerge, type StateValidatorRegistry } from '../../engine/transport/stateValidator';
 import { resolveSharedTestApiToken } from '../testApiToken';
 
 const TEST_PLAYER_ID_HEADER = 'x-test-player-id';
@@ -58,7 +58,8 @@ const snapshotStorage = new SnapshotStorage();
  */
 export function createTestRoutes(
     transportServer: GameTransportServer,
-    storage: MatchStorage
+    storage: MatchStorage,
+    validators: StateValidatorRegistry = {},
 ): Router {
     const router = new Router({ prefix: '/test' });
 
@@ -149,7 +150,7 @@ export function createTestRoutes(
 
         try {
             // 验证状态结构
-            const validation = await validateMatchState(matchId, state, storage);
+            const validation = await validateMatchState(matchId, state, storage, validators);
             if (!validation.valid) {
                 ctx.status = 400;
                 ctx.body = { error: 'Invalid state', details: validation.errors };
@@ -202,7 +203,7 @@ export function createTestRoutes(
             const merged = deepMerge(current.state.G as MatchState<unknown>, patch);
 
             // 验证合并后的状态
-            const validation = await validateMatchState(matchId, merged, storage);
+            const validation = await validateMatchState(matchId, merged, storage, validators);
             if (!validation.valid) {
                 ctx.status = 400;
                 ctx.body = { error: 'Invalid merged state', details: validation.errors };
@@ -320,7 +321,7 @@ export function createTestRoutes(
                 return;
             }
 
-            const validation = await validateMatchState(matchId, snapshot.G as MatchState<unknown>, storage);
+            const validation = await validateMatchState(matchId, snapshot.G as MatchState<unknown>, storage, validators);
             if (!validation.valid) {
                 ctx.status = 400;
                 ctx.body = { error: 'Invalid snapshot state', details: validation.errors };

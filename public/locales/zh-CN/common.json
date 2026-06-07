@@ -2,7 +2,8 @@
   "button": {
     "confirm": "确定",
     "cancel": "取消",
-    "close": "关闭"
+    "close": "关闭",
+    "processing": "处理中"
   },
   "category": {
     "all": "全部游戏",
@@ -25,6 +26,7 @@
     "under_construction": "实施中"
   },
   "game_details": {
+    "description": "游戏简介",
     "best_players": "最佳人数",
     "people": "人",
     "player_count": "支持人数",
@@ -118,7 +120,6 @@
   },
   "game_names": {
     "archview": "架构可视化",
-    "airepoworkbench": "AI 仓库工作台",
     "assetslicer": "素材切片机",
     "audiobrowser": "音效浏览器",
     "cardia": "卡迪亚",
@@ -127,8 +128,7 @@
     "dicethrone": "王权骰铸",
     "fxpreview": "特效预览",
     "smashup": "大杀四方",
-    "summonerwars": "召唤师战争",
-    "ugcbuilder": "UGC 原型制作器"
+    "summonerwars": "召唤师战争"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - 教学模式",

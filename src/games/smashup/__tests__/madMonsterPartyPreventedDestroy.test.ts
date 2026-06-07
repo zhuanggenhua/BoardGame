@@ -5,10 +5,9 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMatchState, makeMinion, makePlayer, getInteractionsFromMS } from './helpers';
+import { getPromptsBySourceId, makeMatchState, makeMinion, makePlayer, resolveDestroyedMinions } from './helpers';
 import { defaultTestRandom } from './testRunner';
 import { SU_EVENTS } from '../domain/types';
-import { processDestroyTriggers } from '../domain/reducer';
 
 beforeAll(() => {
     clearRegistry();
@@ -58,15 +57,14 @@ describe('onMinionDestroyed: prevented destroy should not queue reaction trigger
             timestamp: 10,
         } as any;
 
-        const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 10);
+        const result = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 10);
 
         // The destruction is pending-save (replacement prompt created), so it must not be queued as a real destroy yet.
         expect(result.events.some(e => e.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(false);
 
-        const interactions = getInteractionsFromMS(result.matchState ?? ms) as any[];
-        const sourceIds = interactions.map(i => i?.data?.sourceId);
-        expect(sourceIds).toContain('giant_ant_drone_prevent_destroy');
-        expect(sourceIds).not.toContain('vampire_mad_monster_party_pod_play');
+        const promptState = result.matchState ?? ms;
+        expect(getPromptsBySourceId(promptState, 'giant_ant_drone_prevent_destroy')).toHaveLength(1);
+        expect(getPromptsBySourceId(promptState, 'vampire_mad_monster_party_pod_play')).toHaveLength(0);
     });
 });
 

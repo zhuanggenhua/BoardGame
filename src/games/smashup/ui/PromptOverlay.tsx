@@ -12,7 +12,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Check } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import { logger } from '../../../lib/logger';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay, type CardMagnifyTarget } from './CardMagnifyOverlay';
@@ -26,12 +26,14 @@ import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScro
 import { useToast } from '../../../contexts/ToastContext';
 import { isSmashUpPromptOwnedByPlayer } from './interactionMode';
 
-type DisplayCardItem = { uid: string; defId: string };
+type DisplayCardItem = { uid: string; defId: string; count?: number };
+type DeckReorderCardItem = { uid: string; defId: string };
 
 type DisplayCardsBase = {
     title: string;
     cards: DisplayCardItem[];
     onClose: () => void;
+    panelKind?: 'deck' | 'discard';
 };
 
 type DisplayCardsViewOnly = DisplayCardsBase & {
@@ -69,18 +71,35 @@ function buildRendererPreviewRef(defId: string | undefined): CardPreviewRef | un
     };
 }
 
-/** 从选项 value 中提取 defId（卡牌/随从/基地） */
-function extractDefId(value: unknown): string | undefined {
-    if (!value || typeof value !== 'object') return undefined;
-    const v = value as Record<string, unknown>;
+const CARD_ASPECT_RATIO = 0.714;
+const BASE_CARD_ASPECT_RATIO = 1.43;
+
+function cardFrameStyle(widthVw: number, aspectRatio = CARD_ASPECT_RATIO): React.CSSProperties {
+    return {
+        width: `${widthVw}vw`,
+        height: `calc(${widthVw}vw / ${aspectRatio})`,
+        aspectRatio: `${aspectRatio} / 1`,
+    };
+}
+
+/** 从选项或其 value 中提取 defId（卡牌/随从/基地） */
+function extractDefId(source: unknown): string | undefined {
+    if (!source || typeof source !== 'object') return undefined;
+    const v = source as Record<string, unknown>;
+    const displayCard = v.displayCard;
+    if (displayCard && typeof displayCard === 'object' && typeof (displayCard as { defId?: unknown }).defId === 'string') {
+        return (displayCard as { defId: string }).defId;
+    }
+    if (typeof v.previewDefId === 'string') return v.previewDefId;
     if (typeof v.defId === 'string') return v.defId;
     if (typeof v.minionDefId === 'string') return v.minionDefId;
     if (typeof v.baseDefId === 'string') return v.baseDefId;
+    if (v.value && typeof v.value === 'object') return extractDefId(v.value);
     return undefined;
 }
 
 /** 判断选项是否为卡牌类型：根据 value 中是否包含 defId/minionDefId 自动推断 */
-function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' }): boolean {
+function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button'; displayCard?: { defId?: string } }): boolean {
     // 显式声明 card 时强制卡牌模式
     if (option.displayMode === 'card') {
         return true;
@@ -92,7 +111,7 @@ function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' 
     }
     
     // 自动推断：value 中包含 defId/minionDefId 即为卡牌选项
-    const defId = extractDefId(option.value);
+    const defId = extractDefId(option);
     return !!defId;
 }
 
@@ -223,19 +242,97 @@ function formatSliderText(template: string | undefined, value: number, max: numb
         .replace(/\{\{\s*max\s*\}\}/g, String(max));
 }
 
+const DECK_REORDER_SOURCE_IDS = new Set([
+    'super_spies_spy_reorder',
+    'super_spies_for_my_eyes_only_reorder',
+    'base_isis_swingin_pad_reorder',
+]);
+
+function areStringArraysEqual(a: string[], b: string[]): boolean {
+    return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function shouldShowCardSearch(options: Array<{ value: unknown; displayMode?: 'card' | 'button'; displayCard?: { defId?: string } }>): boolean {
+    const cardOptions = options.filter(option => isCardOption(option));
+    if (cardOptions.length <= 1) return false;
+
+    const widestCardWidth = cardOptions.reduce((maxWidth, option) => {
+        const defId = extractDefId(option);
+        const isBase = !!getBaseDef(defId ?? '');
+        return Math.max(maxWidth, isBase ? 248 : 156);
+    }, 0);
+
+    if (widestCardWidth <= 0) return false;
+
+    const panelMaxWidth = 1480;
+    const horizontalPadding = 32;
+    const gridGap = 16;
+    const usableWidth = panelMaxWidth - horizontalPadding;
+    const singleRowCapacity = Math.max(1, Math.floor((usableWidth + gridGap) / (widestCardWidth + gridGap)));
+
+    return cardOptions.length > singleRowCapacity;
+}
+
+function extractDeckReorderCards(prompt: unknown): DeckReorderCardItem[] {
+    if (!prompt || typeof prompt !== 'object') return [];
+    const sourceId = typeof (prompt as { sourceId?: unknown }).sourceId === 'string'
+        ? (prompt as { sourceId?: string }).sourceId
+        : undefined;
+    if (!sourceId || !DECK_REORDER_SOURCE_IDS.has(sourceId)) return [];
+
+    const inspectedCards = (prompt as { inspectedCards?: unknown }).inspectedCards;
+    if (!Array.isArray(inspectedCards)) return [];
+
+    return inspectedCards.flatMap((item) => {
+        if (!item || typeof item !== 'object') return [];
+        const uid = typeof (item as { uid?: unknown }).uid === 'string' ? (item as { uid: string }).uid : undefined;
+        const defId = typeof (item as { defId?: unknown }).defId === 'string' ? (item as { defId: string }).defId : undefined;
+        return uid && defId ? [{ uid, defId }] : [];
+    });
+}
+
 /** 鼠标滚轮转水平滚动 */
 
 export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, displayCards }) => {
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
+    const [cardSearch, setCardSearch] = useState('');
 
     const { ref: revealScrollRef } = useHorizontalDragScroll();
-    const { ref: cardScrollRef } = useHorizontalDragScroll();
     const toast = useToast();
     const promptOwnerName = prompt?.playerId != null
         ? (playerNames?.[prompt.playerId] ?? `P${Number(prompt.playerId) + 1}`)
         : undefined;
+    const promptTitleKey = (prompt as { titleKey?: string } | undefined)?.titleKey;
+    const promptTitleParams = (prompt as { titleParams?: Record<string, string | number> } | undefined)?.titleParams;
+    const promptRenderKey = useMemo(() => {
+        if (!prompt) return 'no-prompt';
+        const optionSignature = JSON.stringify(
+            (prompt.options ?? []).map((option) => ({
+                id: option.id,
+                label: option.label,
+                displayMode: option.displayMode ?? null,
+                value: option.value,
+            })),
+        );
+        const inspectedSignature = JSON.stringify((prompt as { inspectedCards?: unknown }).inspectedCards ?? []);
+        const sliderSignature = JSON.stringify((prompt as { slider?: unknown }).slider ?? null);
+        return [
+            prompt.id,
+            prompt.sourceId,
+            prompt.title,
+            promptTitleKey ?? '',
+            JSON.stringify(promptTitleParams ?? {}),
+            optionSignature,
+            inspectedSignature,
+            sliderSignature,
+        ].join('||');
+    }, [prompt, promptTitleKey, promptTitleParams]);
+
+    useEffect(() => {
+        setCardSearch('');
+    }, [promptRenderKey]);
 
     // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = isSmashUpPromptOwnedByPlayer({ currentPrompt: prompt, playerID });
@@ -293,7 +390,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     useEffect(() => {
         setSubmittingInteractionId(null);
         setSelectedIds([]);
-    }, [interaction]);  // ← 监听 interaction 对象引用，而不是 interaction?.id
+    }, [promptRenderKey]);
 
     const canSubmitMulti = useMemo(
         () => isMyPrompt && selectedIds.length >= minSelections,
@@ -313,9 +410,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !isMulti && !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;
 
-    const promptTitleKey = (prompt as { titleKey?: string } | undefined)?.titleKey;
-    const promptTitleParams = (prompt as { titleParams?: Record<string, string | number> } | undefined)?.titleParams;
-
     // 解析标题中的 i18n key（使用 useMemo 确保响应式更新）
     const title = useMemo(() => {
         if (!prompt) return '';
@@ -326,7 +420,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             t,
             i18n,
         );
-    }, [prompt?.title, promptTitleKey, promptTitleParams, t]);
+    }, [promptRenderKey, t, i18n]);
 
     // 解析所有选项 label 中的 i18n key
     const resolvedOptions = useMemo(() => {
@@ -340,13 +434,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                 })
                 : resolveI18nKeys(opt.label, t),
         }));
-    }, [prompt?.options, t]);
+    }, [promptRenderKey, t]);
 
     // 通用跳过选项检测：自动分离 id === 'skip' 的选项，渲染为独立按钮
     const skipOption = useMemo(() => resolvedOptions.find(opt => opt.id === 'skip'), [resolvedOptions]);
     const nonSkipOptions = useMemo(() => resolvedOptions.filter(opt => opt.id !== 'skip'), [resolvedOptions]);
+    const showBulkSelectControl = isMulti && !isOrderedMulti && nonSkipOptions.length > 2;
+    const useCompactMultiTextMode = isMulti && !useCardMode && hasOptions && nonSkipOptions.length <= 2;
     const rawSlider = (prompt as { slider?: unknown } | undefined)?.slider;
-    const sliderConfig = useMemo(() => parseSliderConfig({ slider: rawSlider }), [prompt?.id, rawSlider]);
+    const sliderConfig = useMemo(() => parseSliderConfig({ slider: rawSlider }), [promptRenderKey, rawSlider]);
     const [sliderValue, setSliderValue] = useState(1);
 
     useEffect(() => {
@@ -359,7 +455,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             Math.max(sliderConfig.min, Math.floor(sliderConfig.defaultValue)),
         );
         setSliderValue(normalized);
-    }, [prompt?.id, sliderConfig?.min, sliderConfig?.max, sliderConfig?.defaultValue]);
+    }, [promptRenderKey, sliderConfig?.min, sliderConfig?.max, sliderConfig?.defaultValue]);
 
     const sliderConfirmOption = useMemo(() => {
         if (!sliderConfig) return undefined;
@@ -377,6 +473,118 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         }
         return skipOption;
     }, [sliderConfig, resolvedOptions, skipOption]);
+    const deckReorderCardsRaw = (prompt as { inspectedCards?: unknown } | undefined)?.inspectedCards;
+    const deckReorderCards = useMemo(
+        () => extractDeckReorderCards(prompt),
+        [promptRenderKey, deckReorderCardsRaw],
+    );
+    const deckReorderCardsKey = useMemo(
+        () => deckReorderCards.map(card => `${card.uid}:${card.defId}`).join('|'),
+        [deckReorderCards],
+    );
+    const [deckReorderTopUids, setDeckReorderTopUids] = useState<string[]>([]);
+    const [deckReorderBottomUids, setDeckReorderBottomUids] = useState<string[]>([]);
+    const [selectedDeckReorderUid, setSelectedDeckReorderUid] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (deckReorderCards.length === 0) {
+            setDeckReorderTopUids([]);
+            setDeckReorderBottomUids([]);
+            setSelectedDeckReorderUid(null);
+            return;
+        }
+
+        const initialTopUids = deckReorderCards.map(card => card.uid);
+        setDeckReorderTopUids(initialTopUids);
+        setDeckReorderBottomUids([]);
+        setSelectedDeckReorderUid(initialTopUids[0] ?? null);
+    }, [promptRenderKey, deckReorderCardsKey]);
+
+    const deckReorderCardMap = useMemo(
+        () => new Map(deckReorderCards.map(card => [card.uid, card])),
+        [deckReorderCards],
+    );
+    const deckReorderSelectedPile = useMemo<'top' | 'bottom' | null>(() => {
+        if (!selectedDeckReorderUid) return null;
+        if (deckReorderTopUids.includes(selectedDeckReorderUid)) return 'top';
+        if (deckReorderBottomUids.includes(selectedDeckReorderUid)) return 'bottom';
+        return null;
+    }, [selectedDeckReorderUid, deckReorderTopUids, deckReorderBottomUids]);
+    const deckReorderSelectedIndex = useMemo(() => {
+        if (!selectedDeckReorderUid || !deckReorderSelectedPile) return -1;
+        const uids = deckReorderSelectedPile === 'top' ? deckReorderTopUids : deckReorderBottomUids;
+        return uids.indexOf(selectedDeckReorderUid);
+    }, [selectedDeckReorderUid, deckReorderSelectedPile, deckReorderTopUids, deckReorderBottomUids]);
+    const deckReorderSelectedPileSize = deckReorderSelectedPile === 'top'
+        ? deckReorderTopUids.length
+        : deckReorderSelectedPile === 'bottom'
+            ? deckReorderBottomUids.length
+            : 0;
+    const canMoveSelectedToOtherPile = Boolean(isMyPrompt && selectedDeckReorderUid && deckReorderSelectedPile);
+    const canShiftSelectedBackward = canMoveSelectedToOtherPile && deckReorderSelectedIndex > 0;
+    const canShiftSelectedForward = canMoveSelectedToOtherPile && deckReorderSelectedIndex >= 0 && deckReorderSelectedIndex < deckReorderSelectedPileSize - 1;
+    const isDeckReorderDirty = useMemo(() => {
+        const initialTopUids = deckReorderCards.map(card => card.uid);
+        return !(deckReorderBottomUids.length === 0 && areStringArraysEqual(deckReorderTopUids, initialTopUids));
+    }, [deckReorderCards, deckReorderTopUids, deckReorderBottomUids]);
+    const deckReorderMatchedOption = useMemo(() => {
+        return nonSkipOptions.find((option) => {
+            const value = option.value as { targetPlayerId?: unknown; topUids?: unknown; bottomUids?: unknown } | undefined;
+            return Array.isArray(value?.topUids)
+                && Array.isArray(value?.bottomUids)
+                && areStringArraysEqual(value.topUids.filter((uid): uid is string => typeof uid === 'string'), deckReorderTopUids)
+                && areStringArraysEqual(value.bottomUids.filter((uid): uid is string => typeof uid === 'string'), deckReorderBottomUids);
+        });
+    }, [nonSkipOptions, deckReorderTopUids, deckReorderBottomUids]);
+    const moveDeckReorderSelection = useCallback((targetPile: 'top' | 'bottom') => {
+        if (!selectedDeckReorderUid) return;
+
+        setDeckReorderTopUids(prevTop => {
+            const topWithoutSelected = prevTop.filter(uid => uid !== selectedDeckReorderUid);
+
+            if (targetPile === 'top') {
+                if (prevTop.includes(selectedDeckReorderUid)) return prevTop;
+                return [...topWithoutSelected, selectedDeckReorderUid];
+            }
+
+            return topWithoutSelected;
+        });
+
+        setDeckReorderBottomUids(prevBottom => {
+            const bottomWithoutSelected = prevBottom.filter(uid => uid !== selectedDeckReorderUid);
+
+            if (targetPile === 'bottom') {
+                if (prevBottom.includes(selectedDeckReorderUid)) return prevBottom;
+                return [...bottomWithoutSelected, selectedDeckReorderUid];
+            }
+
+            return bottomWithoutSelected;
+        });
+    }, [selectedDeckReorderUid]);
+    const shiftDeckReorderSelection = useCallback((delta: -1 | 1) => {
+        if (!selectedDeckReorderUid) return;
+
+        const reorder = (uids: string[]): string[] => {
+            const index = uids.indexOf(selectedDeckReorderUid);
+            if (index < 0) return uids;
+            const nextIndex = index + delta;
+            if (nextIndex < 0 || nextIndex >= uids.length) return uids;
+
+            const next = [...uids];
+            const [selected] = next.splice(index, 1);
+            next.splice(nextIndex, 0, selected);
+            return next;
+        };
+
+        setDeckReorderTopUids(prev => reorder(prev));
+        setDeckReorderBottomUids(prev => reorder(prev));
+    }, [selectedDeckReorderUid]);
+    const resetDeckReorder = useCallback(() => {
+        const initialTopUids = deckReorderCards.map(card => card.uid);
+        setDeckReorderTopUids(initialTopUids);
+        setDeckReorderBottomUids([]);
+        setSelectedDeckReorderUid(initialTopUids[0] ?? null);
+    }, [deckReorderCards]);
 
     // ====== 通用卡牌展示模式（弃牌堆查看等，优先级最高） ======
     // 统一渲染：永远显示所有卡牌，可打出的高亮，不分"选择模式"和"查看模式"
@@ -387,6 +595,33 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         if (prompt) setSubmittingInteractionId(prompt.id);
         dispatch(type, payload);
     }, [isSubmitLocked, prompt, dispatch]);
+
+    const lockedPromptRespond = useCallback((payload: Record<string, unknown>) => {
+        if (!prompt?.id) return;
+        lockedDispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: prompt.id,
+            ...payload,
+        });
+    }, [lockedDispatch, prompt?.id]);
+
+    const handleSelect = (optionId: string) => {
+        if (!isMyPrompt || isSubmitLocked) return;
+        lockedPromptRespond({ optionId });
+    };
+
+    const handleToggle = (optionId: string, disabled?: boolean) => {
+        if (!isMyPrompt || disabled || isSubmitLocked) return;
+        setSelectedIds(prev => {
+            if (prev.includes(optionId)) return prev.filter(id => id !== optionId);
+            if (maxSelections !== undefined && prev.length >= maxSelections) return prev;
+            return [...prev, optionId];
+        });
+    };
+
+    const handleAction = (optionId: string, disabled?: boolean) => {
+        if (isMulti) handleToggle(optionId, disabled);
+        else handleSelect(optionId);
+    };
 
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel } = displayCards;
@@ -403,8 +638,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     className="fixed bottom-0 inset-x-0"
                     style={{ zIndex: UI_Z_INDEX.overlay }}
                 >
-                    <div 
-                        data-discard-view-panel
+                    <div
+                        data-discard-view-panel={displayCards.panelKind !== 'deck' ? true : undefined}
+                        data-card-view-panel={displayCards.panelKind === 'deck' ? true : undefined}
                         className="bg-gradient-to-t from-black/90 via-black/75 to-transparent pt-8 pb-4 px-4"
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
@@ -450,7 +686,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             <div className="rounded shadow-xl overflow-hidden">
                                                 <CardPreview
                                                     previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
-                                                    className="w-[8.5vw] aspect-[0.714] bg-slate-900 rounded"
+                                                    className="bg-slate-900 rounded"
+                                                    style={cardFrameStyle(8.5)}
                                                     alt={name}
                                                 />
                                             </div>
@@ -466,6 +703,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         <span className={`text-xs font-bold max-w-[8.5vw] truncate text-center ${isSel ? 'text-amber-300' : 'text-white/80'}`}>
                                             {name}
                                         </span>
+                                        {typeof card.count === 'number' && card.count > 1 && (
+                                            <span
+                                                data-card-count
+                                                className="rounded-full bg-amber-300/95 px-2 py-0.5 text-[11px] font-black text-slate-950 shadow-lg"
+                                            >
+                                                ×{card.count}
+                                            </span>
+                                        )}
                                     </motion.div>
                                 );
                             })}
@@ -495,6 +740,36 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         return null;
     }
 
+    const waitingText = t('ui.waiting_for_player', {
+        id: promptOwnerName,
+        player: promptOwnerName,
+        defaultValue: '正在等待 {{player}}',
+    });
+
+    // 非 owner 的等待页必须收敛成单一语义，避免把等待态误读成可操作 prompt。
+    if (!isMyPrompt && deckReorderCards.length === 0) {
+        return (
+            <motion.div
+                key={`prompt-waiting-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 flex items-center justify-center bg-black/78 pointer-events-auto p-4"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <motion.div
+                    initial={{ scale: 0.96, y: 16 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                    className="w-full max-w-md rounded-2xl border border-yellow-500/35 bg-slate-950/96 px-6 py-6 text-center shadow-[0_24px_64px_rgba(0,0,0,0.55)]"
+                >
+                    <div className="text-sm font-black tracking-tight text-yellow-100">
+                        {waitingText}
+                    </div>
+                </motion.div>
+            </motion.div>
+        );
+    }
+
     if (sliderConfig) {
         const confirmLabel = formatSliderText(
             sliderConfig.confirmLabel,
@@ -511,22 +786,19 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         const skipLabel = sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' });
 
         return (
-            <AnimatePresence mode="wait">
+            <motion.div
+                key={`prompt-slider-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 pointer-events-auto"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
                 <motion.div
-                    key="prompt-slider"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 pointer-events-auto"
-                    style={{ zIndex: UI_Z_INDEX.overlay }}
+                    initial={{ scale: 0.95, y: 16 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    className="bg-slate-900 border-2 border-slate-600 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.6)] max-w-lg w-full overflow-hidden"
                 >
-                    <motion.div
-                        initial={{ scale: 0.95, y: 16 }}
-                        animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className="bg-slate-900 border-2 border-slate-600 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.6)] max-w-lg w-full overflow-hidden"
-                    >
                         <div className="px-5 py-4 border-b border-slate-700">
                             <h2 className="text-lg font-black text-amber-100 uppercase tracking-tight text-center">
                                 {title}
@@ -587,15 +859,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
                             {isMyPrompt && sliderConfirmOption && (
                                 <div className="flex items-center justify-center gap-3">
-                                    <GameButton
-                                        variant="primary"
-                                        size="md"
-                                        disabled={isSubmitLocked}
-                                        onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, {
-                                            optionId: sliderConfirmOption.id,
-                                            mergedValue: { value: sliderValue, amount: sliderValue },
-                                        })}
-                                    >
+                                        <GameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={isSubmitLocked}
+                                            onClick={() => lockedPromptRespond({
+                                                optionId: sliderConfirmOption.id,
+                                                mergedValue: { value: sliderValue, amount: sliderValue },
+                                            })}
+                                        >
                                         {confirmLabel}
                                     </GameButton>
                                     {sliderSkipOption && (
@@ -603,7 +875,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             variant="secondary"
                                             size="md"
                                             disabled={isSubmitLocked}
-                                            onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionId: sliderSkipOption.id })}
+                                            onClick={() => lockedPromptRespond({ optionId: sliderSkipOption.id })}
                                             className="opacity-80 hover:opacity-100"
                                         >
                                             {skipLabel}
@@ -614,49 +886,213 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         </div>
                     </motion.div>
                 </motion.div>
-            </AnimatePresence>
         );
     }
 
-    const handleSelect = (optionId: string) => {
-        if (!isMyPrompt || isSubmitLocked) return;
-        
-        // 锁定当前交互，防止重复提交
-        if (prompt) {
-            setSubmittingInteractionId(prompt.id);
-        }
-        
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
-    };
+    if (deckReorderCards.length > 0) {
+        const renderDeckReorderLane = (lane: 'top' | 'bottom', uids: string[], emptyText: string) => (
+            <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-black tracking-tight text-amber-200 uppercase">
+                        {lane === 'top' ? '牌库顶' : '牌库底'}
+                    </h3>
+                    <span className="text-xs text-slate-400">
+                        {uids.length} 张
+                    </span>
+                </div>
+                <div className="min-h-[12rem] rounded-lg border border-slate-700 bg-slate-950/70 p-3">
+                    {uids.length === 0 ? (
+                        <div className="flex h-full min-h-[9rem] items-center justify-center text-sm text-slate-500">
+                            {emptyText}
+                        </div>
+                    ) : (
+                        <div className="flex gap-3 overflow-x-auto pb-2 smashup-h-scrollbar">
+                            {uids.map((uid) => {
+                                const card = deckReorderCardMap.get(uid);
+                                if (!card) return null;
+                                const def = getCardDef(card.defId) ?? getBaseDef(card.defId);
+                                const name = def ? resolveCardName(def, t) : card.defId;
+                                const isSelected = uid === selectedDeckReorderUid;
 
-    const handleToggle = (optionId: string, disabled?: boolean) => {
-        if (!isMyPrompt || disabled || isSubmitLocked) return;
-        setSelectedIds(prev => {
-            if (prev.includes(optionId)) return prev.filter(id => id !== optionId);
-            if (maxSelections !== undefined && prev.length >= maxSelections) return prev;
-            return [...prev, optionId];
-        });
-    };
+                                return (
+                                    <div
+                                        key={`${lane}-${uid}`}
+                                        data-deck-reorder-card-uid={uid}
+                                        data-deck-reorder-pile={lane}
+                                        className={`group flex-shrink-0 cursor-pointer ${isSelected ? 'scale-[1.03]' : 'hover:scale-[1.02]'}`}
+                                        style={{ transition: 'transform 160ms ease' }}
+                                        onClick={() => setSelectedDeckReorderUid(uid)}
+                                    >
+                                        <div className={`rounded ${isSelected ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)]' : 'ring-2 ring-white/15 hover:ring-white/40'}`}>
+                                            <div className="rounded overflow-hidden shadow-xl">
+                                                <CardPreview
+                                                    previewRef={{ type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }}
+                                                    className="w-[8.5vw] min-w-[5.8rem] aspect-[0.714] bg-slate-900 rounded"
+                                                    alt={name}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className={`mt-2 max-w-[8.5vw] min-w-[5.8rem] truncate text-center text-xs font-bold ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
+                                            {name}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
 
-    const handleAction = (optionId: string, disabled?: boolean) => {
-        if (isMulti) handleToggle(optionId, disabled);
-        else handleSelect(optionId);
-    };
+        const moveButtonLabel = deckReorderSelectedPile === 'bottom' ? '移到牌库顶' : '移到牌库底';
+        const selectedDeckReorderCardName = selectedDeckReorderUid
+            ? (() => {
+                const selectedCard = deckReorderCardMap.get(selectedDeckReorderUid);
+                if (!selectedCard) return selectedDeckReorderUid;
+                const def = getCardDef(selectedCard.defId) ?? getBaseDef(selectedCard.defId);
+                return def ? resolveCardName(def, t) : selectedCard.defId;
+            })()
+            : null;
+
+        return (
+            <motion.div
+                key={`prompt-deck-reorder-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 flex items-center justify-center p-4 bg-black/70 pointer-events-auto"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <motion.div
+                    initial={{ scale: 0.96, y: 18 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="w-full max-w-6xl rounded-xl border-2 border-slate-700 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.65)] overflow-hidden"
+                >
+                        <div className="border-b border-slate-800 px-6 py-4">
+                            <h2 className="text-center text-lg font-black tracking-tight text-amber-100 uppercase">
+                                {title}
+                            </h2>
+                            <p className="mt-2 text-center text-sm text-slate-300">
+                                选中一张牌后，只显示当前可执行的整理操作。
+                            </p>
+                        </div>
+
+                        <div className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto]">
+                            <div className="grid gap-4">
+                                {renderDeckReorderLane('top', deckReorderTopUids, '这里的牌会按从左到右的顺序放回牌库顶')}
+                                {renderDeckReorderLane('bottom', deckReorderBottomUids, '这里的牌会按从左到右的顺序放回牌库底')}
+                            </div>
+
+                            <div className="flex min-w-[13rem] flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
+                                {isMyPrompt ? (
+                                    <>
+                                        <div className="rounded-md border border-slate-700 bg-slate-950/50 px-3 py-3">
+                                            <div className="text-[11px] font-semibold tracking-tight text-slate-400">
+                                                当前操作对象
+                                            </div>
+                                            <div className="mt-1 text-sm font-bold text-amber-200 min-h-[1.25rem]">
+                                                {selectedDeckReorderCardName ?? '先从左侧选一张牌'}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            {canMoveSelectedToOtherPile && (
+                                                <GameButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    disabled={!selectedDeckReorderUid || !deckReorderSelectedPile}
+                                                    onClick={() => {
+                                                        if (!deckReorderSelectedPile) return;
+                                                        moveDeckReorderSelection(deckReorderSelectedPile === 'top' ? 'bottom' : 'top');
+                                                    }}
+                                                >
+                                                    {moveButtonLabel}
+                                                </GameButton>
+                                            )}
+                                            {canShiftSelectedBackward && (
+                                                <GameButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    disabled={!selectedDeckReorderUid || !deckReorderSelectedPile}
+                                                    onClick={() => shiftDeckReorderSelection(-1)}
+                                                >
+                                                    前移
+                                                </GameButton>
+                                            )}
+                                            {canShiftSelectedForward && (
+                                                <GameButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    disabled={!selectedDeckReorderUid || !deckReorderSelectedPile}
+                                                    onClick={() => shiftDeckReorderSelection(1)}
+                                                >
+                                                    后移
+                                                </GameButton>
+                                            )}
+                                            {isDeckReorderDirty && (
+                                                <GameButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={resetDeckReorder}
+                                                    className="opacity-80 hover:opacity-100"
+                                                >
+                                                    重置
+                                                </GameButton>
+                                            )}
+                                        </div>
+                                        <div className="mt-2 h-px bg-slate-800" />
+                                        <GameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={!deckReorderMatchedOption || isSubmitLocked}
+                                            onClick={() => handleAction(deckReorderMatchedOption!.id, deckReorderMatchedOption!.disabled)}
+                                        >
+                                            确认顺序
+                                        </GameButton>
+                                        {skipOption && (
+                                            <GameButton
+                                                variant="secondary"
+                                                size="sm"
+                                                disabled={skipOption.disabled}
+                                                onClick={() => handleAction(skipOption.id, skipOption.disabled)}
+                                                className="opacity-70 hover:opacity-100"
+                                            >
+                                                {skipOption.label}
+                                            </GameButton>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-xs font-bold uppercase tracking-tight text-slate-400">
+                                            等待调整
+                                        </div>
+                                        <div className="rounded-md border border-yellow-500/25 bg-yellow-500/10 px-3 py-3 text-sm font-bold leading-6 text-yellow-100/90">
+                                            {t('ui.waiting_for_player', {
+                                                id: promptOwnerName,
+                                                player: promptOwnerName,
+                                                defaultValue: '正在等待 {{player}}',
+                                            })}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                </motion.div>
+            </motion.div>
+        );
+    }
 
     // ====== 内联面板模式（≤3 选项，居中浮动） ======
     if (useInlineMode) {
         return (
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key="prompt-inline"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    className="fixed inset-0 flex items-center justify-center pointer-events-none"
-                    style={{ zIndex: UI_Z_INDEX.overlay }}
-                >
-                    <div className="flex flex-col items-center gap-4 pointer-events-auto">
+            <motion.div
+                key={`prompt-inline-${promptRenderKey}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="fixed inset-0 flex items-center justify-center pointer-events-none"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <div className="flex flex-col items-center gap-4 pointer-events-auto">
                         {/* 标题条：半透明深色背景 */}
                         <div className="bg-black/70 px-6 py-2 rounded">
                             <h3 className="text-base font-black text-amber-100 uppercase tracking-tight">
@@ -668,7 +1104,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             <div data-testid="prompt-context-card">
                                 <CardPreview
                                     previewRef={contextPreviewRef}
-                                    className="w-[8.5vw] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                    className="rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                    style={cardFrameStyle(8.5)}
                                 />
                             </div>
                         )}
@@ -709,9 +1146,138 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 )}
                             </div>
                         )}
-                    </div>
-                </motion.div>
-            </AnimatePresence>
+                </div>
+            </motion.div>
+        );
+    }
+
+    if (useCompactMultiTextMode) {
+        return (
+            <motion.div
+                key={`prompt-compact-multi-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 flex items-center justify-center bg-black pointer-events-auto p-4 backdrop-blur-[6px]"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <div className="relative isolate w-full max-w-[26rem]">
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-[-8rem] inset-y-[-6rem] rounded-[3rem] bg-black shadow-[0_0_200px_rgba(0,0,0,0.98)]"
+                    />
+                    <motion.div
+                        initial={{ scale: 0.96, y: 16 }}
+                        animate={{ scale: 1, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                        className="relative w-full rounded-2xl border-2 border-slate-500 bg-slate-950 shadow-[0_44px_120px_rgba(0,0,0,0.96),0_0_0_1px_rgba(15,23,42,0.92)] overflow-hidden"
+                    >
+                        <div className="border-b border-slate-700 bg-slate-900 px-5 py-4">
+                            <h2 className="text-center text-lg font-black text-amber-100 tracking-tight leading-tight">
+                                {title}
+                            </h2>
+                            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs md:text-sm">
+                                {isMyPrompt && (
+                                    <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 font-semibold text-slate-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                                        已选 {selectedIds.length}
+                                        {maxSelections !== undefined ? ` / ${maxSelections}` : ''}
+                                        {minSelections > 0 ? `，至少 ${minSelections}` : ''}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {contextPreviewRef && (
+                            <div className="border-b border-slate-800 bg-slate-950 px-5 py-4">
+                                <div className="flex justify-center" data-testid="prompt-context-card">
+                                    <CardPreview
+                                        previewRef={contextPreviewRef}
+                                        className="w-[10rem] aspect-[0.714] rounded-lg bg-slate-900 shadow-[0_14px_30px_rgba(0,0,0,0.6)] ring-2 ring-white/10"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-950 px-5 py-5">
+                            {isMyPrompt ? (
+                                <div className="flex flex-col gap-3">
+                                    {nonSkipOptions.map((option, idx) => {
+                                        const isSelected = selectedIds.includes(option.id);
+                                        return (
+                                            <GameButton
+                                                key={`compact-${idx}-${option.id}`}
+                                                variant={isSelected ? 'primary' : 'secondary'}
+                                                size="md"
+                                                fullWidth
+                                                onClick={() => handleAction(option.id, option.disabled)}
+                                                disabled={option.disabled}
+                                                className={`justify-between text-left min-h-12 rounded-xl border border-slate-700/90 ${isSelected ? 'ring-2 ring-amber-400 border-amber-300/70 shadow-[0_0_0_1px_rgba(251,191,36,0.2)]' : ''}`}
+                                            >
+                                                <span className="truncate">{option.label}</span>
+                                                <span className={`ml-3 flex h-5 min-w-5 items-center justify-center rounded-full border-2 px-1 text-[10px] font-black ${
+                                                    isSelected
+                                                        ? 'border-amber-400 bg-amber-400 text-black'
+                                                        : 'border-slate-500 text-slate-400'
+                                                }`}>
+                                                    {isSelected
+                                                        ? (isOrderedMulti ? selectedIds.indexOf(option.id) + 1 : <Check size={10} strokeWidth={3} />)
+                                                        : ''}
+                                                </span>
+                                            </GameButton>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="py-6 text-center text-sm text-slate-400">
+                                    {t('ui.waiting_for_player', {
+                                        id: promptOwnerName,
+                                        player: promptOwnerName,
+                                        defaultValue: '正在等待 {{player}}',
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {isMyPrompt && (
+                            <div className="border-t border-slate-700 bg-slate-900 px-5 py-4">
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                    {selectedIds.length > 0 && (
+                                        <GameButton
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setSelectedIds([])}
+                                        >
+                                            清空选择
+                                        </GameButton>
+                                    )}
+                                    <GameButton
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => {
+                                            lockedPromptRespond({ optionIds: selectedIds });
+                                        }}
+                                        disabled={!canSubmitMulti || isSubmitLocked}
+                                    >
+                                        {t('ui.confirm', { defaultValue: '确认' })}
+                                        {selectedIds.length > 0 && ` (${selectedIds.length})`}
+                                    </GameButton>
+                                    {skipOption && (
+                                        <GameButton
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => lockedPromptRespond({ optionIds: [skipOption.id] })}
+                                            disabled={skipOption.disabled || isSubmitLocked}
+                                            className="opacity-85 hover:opacity-100"
+                                        >
+                                            {skipOption.label}
+                                        </GameButton>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+                <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />
+            </motion.div>
         );
     }
 
@@ -719,135 +1285,198 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     if (useCardMode) {
         const cardOptions = nonSkipOptions.filter(opt => isCardOption(opt));
         const textOptions = nonSkipOptions.filter(opt => !isCardOption(opt));
-        
+        const showCardSearch = shouldShowCardSearch(cardOptions);
+        const normalizedCardSearch = cardSearch.trim().toLowerCase();
+        const visibleCardOptions = normalizedCardSearch
+            ? cardOptions.filter((option) => {
+                const defId = extractDefId(option);
+                const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
+                const name = def ? resolveCardName(def, t) : option.label;
+                const haystack = [name, option.label, defId].filter(Boolean).join(' ').toLowerCase();
+                return haystack.includes(normalizedCardSearch);
+            })
+            : cardOptions;
         // 提取基地上下文信息（用于高亮和标题显示）
         const contextBaseIndex = (prompt as any)?.continuationContext?.baseIndex;
         const contextBaseDef = contextBaseIndex !== undefined ? getBaseDef(prompt.state?.bases?.[contextBaseIndex]?.defId) : undefined;
         const contextBaseName = contextBaseDef ? resolveCardName(contextBaseDef, t) : undefined;
 
         return (
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key="prompt-cards"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 flex flex-col items-center justify-center bg-black/70 pointer-events-auto"
-                    style={{ zIndex: UI_Z_INDEX.overlay }}
+            <motion.div
+                key={`prompt-cards-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 flex flex-col items-center justify-center bg-black/70 pointer-events-auto px-4 py-6"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <div
+                    data-testid="prompt-card-banner"
+                    className="mb-4 w-full max-w-[min(92vw,58rem)] rounded-2xl border border-amber-300/22 bg-black/56 px-5 py-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] backdrop-blur-[2px]"
                 >
-                    <h2 className="text-2xl font-black text-amber-100 uppercase tracking-tight mb-6 drop-shadow-lg">
+                    <h2 className="text-center text-lg md:text-xl font-black text-amber-100 tracking-tight leading-tight">
                         {title}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs md:text-sm">
                         {contextBaseName && (
-                            <span className="block text-base text-amber-300/80 font-normal mt-2">
+                            <span className="font-bold text-amber-300/85">
                                 @ {contextBaseName}
                             </span>
                         )}
-                    </h2>
-
-                    {!isMyPrompt && (
-                        <div className="mb-4 text-base text-yellow-400/80 font-bold animate-pulse">
-                            {t('ui.waiting_for_player', {
-                                id: promptOwnerName,
-                                player: promptOwnerName,
-                                defaultValue: '正在等待 {{player}}',
-                            })}
+                        {isMyPrompt && isMulti && (
+                            <span className="font-semibold text-slate-200">
+                                已选 {selectedIds.length}
+                                {maxSelections !== undefined ? ` / ${maxSelections}` : ''}
+                                {minSelections > 0 ? `，至少 ${minSelections}` : ''}
+                            </span>
+                        )}
+                    </div>
+                    {showCardSearch && (
+                        <div className="mx-auto mt-3 max-w-xl">
+                            <div className="relative min-w-0 flex-1">
+                                <span
+                                    data-testid="prompt-card-search-leading-icon"
+                                    className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-amber-200/75"
+                                >
+                                    <Search className="h-4 w-4" strokeWidth={2.1} />
+                                </span>
+                                <input
+                                    type="search"
+                                    value={cardSearch}
+                                    onChange={(event) => setCardSearch(event.target.value)}
+                                    placeholder={t('ui.card_search_placeholder', { defaultValue: '搜索卡牌' })}
+                                    data-testid="prompt-card-search-input"
+                                    className="h-10 w-full rounded-full border border-amber-200/25 bg-black/28 pl-10 pr-10 text-sm font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25"
+                                />
+                                {cardSearch.trim().length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setCardSearch('')}
+                                        data-testid="prompt-card-search-clear"
+                                        className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-amber-50 transition-colors hover:bg-white/20"
+                                        aria-label={t('ui.card_search_clear', { defaultValue: '清空搜索' })}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="mt-2 text-center text-[11px] font-bold text-amber-100/70">
+                                {t('ui.card_filter_result_count', {
+                                    visible: visibleCardOptions.length,
+                                    total: cardOptions.length,
+                                    defaultValue: '显示 {{visible}} / {{total}}',
+                                })}
+                            </div>
                         </div>
                     )}
+                </div>
 
-                    {isMyPrompt && (
-                        <div 
-                            ref={cardScrollRef} 
-                            className="flex gap-4 overflow-x-auto max-w-[90vw] px-8 py-6 smashup-h-scrollbar relative z-50"
-                            style={{ pointerEvents: 'auto' }}
-                        >
-                            {cardOptions.map((option, idx) => {
-                                const defId = extractDefId(option.value);
-                                const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
-                                const previewRef = buildRendererPreviewRef(defId);
-                                const name = def ? resolveCardName(def, t) : option.label;
-                                const isSelected = selectedIds.includes(option.id);
-                                const isBase = !!getBaseDef(defId ?? '');
-                                // 基地使用场上基地尺寸 14vw，行动卡/随从使用手牌尺寸 8.5vw
-                                const cardWidth = isBase ? 'w-[14vw]' : 'w-[8.5vw]';
-                                const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                {!isMyPrompt && (
+                    <div className="mb-4 rounded-full bg-black/50 px-4 py-2 text-sm font-bold text-yellow-300/90">
+                        {t('ui.waiting_for_player', {
+                            id: promptOwnerName,
+                            player: promptOwnerName,
+                            defaultValue: '正在等待 {{player}}',
+                        })}
+                    </div>
+                )}
 
-                                return (
-                                    <motion.div
-                                        key={`card-${idx}-${option.id}`}
-                                        data-testid={`prompt-card-${idx}`}
-                                        data-option-id={option.id}
-                                        initial={{ y: 40, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
-                                        onClick={() => handleAction(option.id, option.disabled)}
-                                        className={`
-                                            flex-shrink-0 cursor-pointer relative group
-                                            ${option.disabled ? 'opacity-40 cursor-not-allowed' : ''}
-                                            ${isSelected ? 'scale-110 z-10' : 'hover:scale-105 hover:z-10'}
-                                        `}
-                                        style={{ 
-                                            transition: 'transform 200ms, box-shadow 200ms',
-                                            pointerEvents: option.disabled ? 'none' : 'auto',
-                                        }}
-                                    >
-                                        <div className={`
-                                            rounded shadow-xl overflow-hidden
-                                            ${isSelected
-                                                ? 'ring-4 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.6)]'
-                                                : 'ring-2 ring-white/20 group-hover:ring-white/50 group-hover:shadow-2xl'}
-                                        `}>
-                                            {previewRef ? (
-                                                <CardPreview
-                                                    previewRef={previewRef}
-                                                    className={`${cardWidth} ${cardAspect} bg-slate-900 rounded`}
-                                                />
-                                            ) : (
-                                                <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded flex items-center justify-center p-2`}>
-                                                    <span className="text-white text-sm font-bold text-center">{option.label}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className={`mt-2 text-center text-xs font-bold truncate ${isBase ? 'max-w-[14vw]' : 'max-w-[8.5vw]'} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
-                                            {name || option.label}
-                                        </div>
-                                        {isMulti && isSelected && (
-                                            <div className={`absolute -top-[0.5vw] -right-[0.5vw] min-w-[2vw] h-[2vw] px-[0.2vw] bg-amber-400 rounded-full flex items-center justify-center shadow-lg`}>
-                                                {isOrderedMulti ? (
-                                                    <span className="text-[0.75vw] font-black text-black leading-none">
-                                                        {selectedIds.indexOf(option.id) + 1}
-                                                    </span>
+                {isMyPrompt && (
+                    <div
+                        data-testid="prompt-card-grid"
+                        ref={revealScrollRef}
+                        className="flex max-h-[min(62vh,48rem)] max-w-[96vw] flex-wrap items-start justify-center gap-4 overflow-y-auto px-1 py-1"
+                        style={{ pointerEvents: 'auto' }}
+                    >
+                        {visibleCardOptions.map((option, idx) => {
+                                    const defId = extractDefId(option);
+                                    const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
+                                    const previewRef = buildRendererPreviewRef(defId);
+                                    const name = def ? resolveCardName(def, t) : option.label;
+                                    const isSelected = selectedIds.includes(option.id);
+                                    const isBase = !!getBaseDef(defId ?? '');
+                                    const cardWidth = isBase ? 'w-[210px] sm:w-[232px] lg:w-[248px]' : 'w-[128px] sm:w-[142px] lg:w-[156px]';
+                                    const cardAspect = isBase ? 'aspect-[1.43]' : 'aspect-[0.714]';
+                                    const cardLabelWidth = isBase ? 'max-w-[210px] sm:max-w-[232px] lg:max-w-[248px]' : 'max-w-[128px] sm:max-w-[142px] lg:max-w-[156px]';
+
+                                    return (
+                                        <motion.div
+                                            key={`card-${idx}-${option.id}`}
+                                            data-testid={`prompt-card-${idx}`}
+                                            data-option-id={option.id}
+                                            data-card-def-id={defId ?? undefined}
+                                            initial={{ y: 40, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            transition={{ delay: idx * 0.05, type: 'spring', stiffness: 400, damping: 25 }}
+                                            onClick={() => handleAction(option.id, option.disabled)}
+                                            className={`
+                                                relative flex-shrink-0 cursor-pointer group
+                                                ${option.disabled ? 'opacity-40 cursor-not-allowed' : ''}
+                                                ${isSelected ? 'scale-[1.03] z-10' : 'hover:scale-[1.02] hover:z-10'}
+                                            `}
+                                            style={{
+                                                transition: 'transform 180ms, box-shadow 180ms',
+                                                pointerEvents: option.disabled ? 'none' : 'auto',
+                                            }}
+                                            >
+                                            <div className={`
+                                                rounded-lg bg-slate-950/85 p-2 shadow-[0_14px_28px_rgba(0,0,0,0.45)] transition-[background-color,box-shadow]
+                                                ${isSelected
+                                                    ? 'ring-4 ring-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.45)]'
+                                                    : 'group-hover:bg-slate-900 group-hover:shadow-2xl'}
+                                            `}>
+                                                {previewRef ? (
+                                                    <CardPreview
+                                                        previewRef={previewRef}
+                                                        className={`${cardWidth} ${cardAspect} bg-slate-900 rounded-lg`}
+                                                    />
                                                 ) : (
-                                                    <Check size={14} strokeWidth={3} className="text-black" />
+                                                    <div className={`${cardWidth} ${cardAspect} bg-slate-800 rounded-lg flex items-center justify-center p-2`}>
+                                                        <span className="text-white text-sm font-bold text-center">{option.label}</span>
+                                                    </div>
                                                 )}
                                             </div>
-                                        )}
-                                        {/* 放大镜按钮 - 右上角突出显示，多选模式下勾选在左上角 */}
-                                        {defId && (
-                                            <button
-                                                className={`absolute top-[0.3vw] right-[0.3vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-xl border-2 border-white/30 z-50 cursor-zoom-in`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const cardType = getBaseDef(defId) ? 'base' as const : (def && 'type' in def ? def.type : 'action' as const);
-                                                    setMagnifyTarget({ defId, type: cardType });
-                                                }}
-                                            >
-                                                <svg className="w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        )}
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* 文本选项 + 跳过按钮 + 多选确认 */}
-                    {isMyPrompt && (textOptions.length > 0 || isMulti || skipOption) && (
-                        <div className="flex flex-col items-center gap-3 mt-5">
-                            {/* 文本选项 + 多选按钮 */}
-                            {(textOptions.length > 0 || isMulti) && (
-                                <div className="flex gap-3">
+                                            <div className={`mt-2 text-center text-xs font-bold truncate ${cardLabelWidth} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
+                                                {name || option.label}
+                                            </div>
+                                            {isMulti && isSelected && (
+                                                <div className="absolute -top-2 -right-2 min-w-8 h-8 px-1 bg-amber-400 rounded-full flex items-center justify-center shadow-lg">
+                                                    {isOrderedMulti ? (
+                                                        <span className="text-xs font-black text-black leading-none">
+                                                            {selectedIds.indexOf(option.id) + 1}
+                                                        </span>
+                                                    ) : (
+                                                        <Check size={16} strokeWidth={3} className="text-black" />
+                                                    )}
+                                                </div>
+                                            )}
+                                            {defId && (
+                                                <button
+                                                    className="absolute top-1 right-1 w-8 h-8 flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-xl border-2 border-white/30 z-50 cursor-zoom-in"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const cardType = getBaseDef(defId) ? 'base' as const : (def && 'type' in def ? def.type : 'action' as const);
+                                                        setMagnifyTarget({ defId, type: cardType });
+                                                    }}
+                                                >
+                                                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </motion.div>
+                                    );
+                        })}
+                        {visibleCardOptions.length === 0 && (
+                            <div className="mx-auto flex min-h-[260px] w-full items-center justify-center rounded-xl border border-dashed border-amber-200/20 bg-black/20 px-6 text-center text-sm font-bold text-amber-100/70">
+                                {t('ui.card_search_empty', { defaultValue: '没有匹配的卡牌' })}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {isMyPrompt && (textOptions.length > 0 || isMulti || skipOption) && (
+                    <div className="mt-4 w-full max-w-[min(92vw,60rem)] rounded-2xl border border-white/10 bg-black/46 px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.22)]">
+                            {textOptions.length > 0 && (
+                                <div className="flex flex-wrap items-center justify-center gap-2 pb-3">
                                     {textOptions.map((opt, idx) => {
                                         const isSelected = selectedIds.includes(opt.id);
                                         return (
@@ -868,98 +1497,95 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             </GameButton>
                                         );
                                     })}
-                                    {isMulti && (
-                                        <>
-                                            {!isOrderedMulti && (
-                                                <GameButton
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        const allIds = cardOptions.map(o => o.id);
-                                                        setSelectedIds(prev =>
-                                                            prev.length === allIds.length ? [] : (maxSelections !== undefined ? allIds.slice(0, maxSelections) : allIds),
-                                                        );
-                                                    }}
-                                                >
-                                                    {selectedIds.length === cardOptions.length
-                                                        ? t('ui.deselect_all', { defaultValue: '取消全选' })
-                                                        : t('ui.select_all', { defaultValue: '全选' })}
-                                                </GameButton>
-                                            )}
-                                            <GameButton
-                                                variant="primary"
-                                                size="sm"
-                                                onClick={() => {
-                                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
-                                                }}
-                                                disabled={!canSubmitMulti || isSubmitLocked}
-                                            >
-                                                {t('ui.confirm', { defaultValue: '确认' })}
-                                                {selectedIds.length > 0 && ` (${selectedIds.length})`}
-                                            </GameButton>
-                                        </>
-                                    )}
                                 </div>
                             )}
-                            {/* 独立跳过按钮 */}
-                            {skipOption && (
-                                <GameButton
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => {
-                                        if (isMulti) {
-                                            // 多选模式下跳过直接提交，不走 toggle 流程
-                                            lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [skipOption.id] });
-                                        } else {
-                                            handleAction(skipOption.id, skipOption.disabled);
-                                        }
-                                    }}
-                                    disabled={skipOption.disabled}
-                                    className="opacity-70 hover:opacity-100"
-                                >
-                                    {skipOption.label}
-                                </GameButton>
-                            )}
-                        </div>
-                    )}
-                    <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />
-                </motion.div>
-            </AnimatePresence>
+
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                                {isMulti && selectedIds.length > 0 && (
+                                    <GameButton
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => setSelectedIds([])}
+                                    >
+                                        清空选择
+                                    </GameButton>
+                                )}
+                                {showBulkSelectControl && (
+                                    <GameButton
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            const allIds = nonSkipOptions.map(o => o.id);
+                                            setSelectedIds(prev =>
+                                                prev.length === allIds.length ? [] : (maxSelections !== undefined ? allIds.slice(0, maxSelections) : allIds),
+                                            );
+                                        }}
+                                    >
+                                        {selectedIds.length === nonSkipOptions.length
+                                            ? t('ui.deselect_all', { defaultValue: '取消全选' })
+                                            : (maxSelections !== undefined && maxSelections < cardOptions.length
+                                                ? '选满可选'
+                                                : t('ui.select_all', { defaultValue: '全选' }))}
+                                    </GameButton>
+                                )}
+                                {isMulti && (
+                                    <GameButton
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => {
+                                            lockedPromptRespond({ optionIds: selectedIds });
+                                        }}
+                                        disabled={!canSubmitMulti || isSubmitLocked}
+                                    >
+                                        {t('ui.confirm', { defaultValue: '确认' })}
+                                        {selectedIds.length > 0 && ` (${selectedIds.length})`}
+                                    </GameButton>
+                                )}
+                                {skipOption && (
+                                    <GameButton
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (isMulti) {
+                                                lockedPromptRespond({ optionIds: [skipOption.id] });
+                                            } else {
+                                                handleAction(skipOption.id, skipOption.disabled);
+                                            }
+                                        }}
+                                        disabled={skipOption.disabled}
+                                        className="opacity-85 hover:opacity-100"
+                                    >
+                                        {skipOption.label}
+                                    </GameButton>
+                                )}
+                            </div>
+                    </div>
+                )}
+                <CardMagnifyOverlay target={magnifyTarget} onClose={() => setMagnifyTarget(null)} />
+            </motion.div>
         );
     }
 
     // ====== 列表模式（>3 文本选项，全屏深色面板） ======
     return (
-        <AnimatePresence mode="wait">
+        <motion.div
+            key={`prompt-list-${promptRenderKey}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 pointer-events-auto"
+            style={{ zIndex: UI_Z_INDEX.overlay }}
+        >
             <motion.div
-                key="prompt-list"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 pointer-events-auto"
-                style={{ zIndex: UI_Z_INDEX.overlay }}
+                initial={{ scale: 0.95, y: 16 }}
+                animate={{ scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="bg-slate-900 border-2 border-slate-600 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.6)] max-w-lg w-full overflow-hidden"
             >
-                <motion.div
-                    initial={{ scale: 0.95, y: 16 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    className="bg-slate-900 border-2 border-slate-600 rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.6)] max-w-lg w-full overflow-hidden"
-                >
                     {/* 标题 */}
                     <div className="px-5 py-4 border-b border-slate-700">
                         <h2 className="text-lg font-black text-amber-100 uppercase tracking-tight text-center">
                             {title}
                         </h2>
-                        {!isMyPrompt && (
-                            <div className="mt-2 text-center text-xs text-yellow-400/80 font-bold animate-pulse">
-                                {t('ui.waiting_for_player', {
-                                    id: promptOwnerName,
-                                    player: promptOwnerName,
-                                    defaultValue: '正在等待 {{player}}',
-                                })}
-                            </div>
-                        )}
                     </div>
 
                     {/* 选项列表 */}
@@ -988,7 +1614,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             <div className="text-sm text-slate-500 text-center py-6">
                                 {isMyPrompt
                                     ? t('ui.prompt_no_options', { defaultValue: '暂无可选项' })
-                                    : t('ui.prompt_wait', { defaultValue: '等待对方选择…' })}
+                                    : t('ui.waiting_for_player', {
+                                        id: promptOwnerName,
+                                        player: promptOwnerName,
+                                        defaultValue: '正在等待 {{player}}',
+                                    })}
                             </div>
                         )}
                         {/* 独立跳过按钮 */}
@@ -1009,7 +1639,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     {/* 多选确认 */}
                     {isMyPrompt && isMulti && (
                         <div className="px-4 pb-4 pt-2 border-t border-slate-700 flex justify-end gap-3">
-                            {!isOrderedMulti && (
+                            {showBulkSelectControl && (
                                 <GameButton
                                     variant="secondary"
                                     size="sm"
@@ -1029,7 +1659,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 variant="primary"
                                 size="sm"
                                 onClick={() => {
-                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
+                                    lockedPromptRespond({ optionIds: selectedIds });
                                 }}
                                 disabled={!canSubmitMulti || isSubmitLocked}
                             >
@@ -1038,8 +1668,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             </GameButton>
                         </div>
                     )}
-                </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </motion.div>
     );
 };

@@ -55,7 +55,7 @@ describe('smashUpCriticalImageResolver', () => {
         );
 
         expect(result.critical).toEqual(ALL_CARD_ATLAS);
-        expect(result.phaseKey).toBe('factionSelect:0:0:dinosaurs,miskatonic_university|1:robots,wizards');
+        expect(result.phaseKey).toBe('factionSelect');
 
         const base1Index = result.warm.indexOf('smashup/base/base1');
         const base4Index = result.warm.indexOf('smashup/base/base4');
@@ -162,6 +162,19 @@ describe('smashUpCriticalImageResolver', () => {
         );
 
         expect(result.critical).toContain('smashup/cards/tts_atlas_9aed5872d2');
+        expect(result.critical).toContain('smashup/cards/tts_atlas_0b888d02fd');
+    });
+
+    it('普通版远古物种也会预热修正后的南极基地图集', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['elder_things', 'pirates'],
+                '1': ['dinosaurs', 'wizards'],
+            }),
+            undefined,
+            '0',
+        );
+
         expect(result.critical).toContain('smashup/cards/tts_atlas_0b888d02fd');
     });
 

@@ -40,6 +40,11 @@ export const DT_FX = {
 
 /** 重击阈值（伤害 >= 此值使用重击音效） */
 const HEAVY_HIT_THRESHOLD = 8;
+/**
+ * DiceThrone 伤害飞字现在保留约 3 秒，外加最长 1 秒飞行。
+ * FxBus 的安全超时必须覆盖整段合法生命周期，避免动画尚未结束就被总线提前移除。
+ */
+const DAMAGE_FX_TIMEOUT_MS = 5000;
 
 const IMPACT_SFX = {
   HEAVY_HIT: 'combat.general.fight_fury_vol_2.special_hit.fghtimpt_special_hit_01_krst',
@@ -109,6 +114,29 @@ function renderSingleFlyingEffect(
  * - soundKey?: string — 动态音效 key（从 params 读取）
  */
 const DamageRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
+  const stableComplete = useStableComplete(onComplete);
+
+  const damage = event.params?.damage as number | undefined;
+  const startPos = event.params?.startPos as { x: number; y: number } | undefined;
+  const endPos = event.params?.endPos as { x: number; y: number } | undefined;
+
+  if (!damage || !startPos || !endPos) {
+    stableComplete();
+    return null;
+  }
+
+  return renderSingleFlyingEffect({
+    type: 'damage',
+    content: `-${damage}`,
+    startPos,
+    endPos,
+    intensity: damage,
+    floatingTextPreset: 'dicethrone-damage',
+    onImpact,
+  }, stableComplete);
+};
+
+const DotDamageRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
 
   const damage = event.params?.damage as number | undefined;
@@ -422,10 +450,10 @@ function createRegistry(): FxRegistry {
   const registry = new FxRegistry();
 
   registry.register(DT_FX.DAMAGE, DamageRenderer, {
-    timeoutMs: 2000,
+    timeoutMs: DAMAGE_FX_TIMEOUT_MS,
   }, DAMAGE_FEEDBACK);
 
-  registry.register(DT_FX.DOT_DAMAGE, DamageRenderer, {
+  registry.register(DT_FX.DOT_DAMAGE, DotDamageRenderer, {
     timeoutMs: 2000,
   }, DOT_DAMAGE_FEEDBACK);
 

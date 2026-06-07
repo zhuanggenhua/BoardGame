@@ -5,7 +5,7 @@ export const SAMURAI_SYMBOLS = SAMURAI_DICE_FACE_IDS;
 
 export const samuraiDiceDefinition: DiceDefinition = {
     id: 'samurai-dice',
-    name: 'Samurai Dice',
+    name: 'config.dice.samurai.name',
     sides: 6,
     category: 'hero',
     faces: [

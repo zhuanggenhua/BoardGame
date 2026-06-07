@@ -1,7 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import packageJson from '../../package.json';
 import { CategoryPills, type Category } from '../components/layout/CategoryPills';
 import { GameList } from '../components/lobby/GameList';
 import { getGamesByCategory, getGameById, subscribeGameRegistry } from '../config/games.config';
@@ -42,26 +41,17 @@ import { useLobbyStats } from '../hooks/useLobbyStats';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { versionedPublicFileUrl } from '../lib/publicFileUrl';
-import {
-    readAndroidLiveUpdateActivityState,
-    readAndroidLiveUpdateConfig,
-    readAndroidLiveUpdateSnapshot,
-    requestAndroidLiveUpdateCheck,
-    subscribeAndroidLiveUpdateActivityState,
-    type AndroidLiveUpdateSnapshot,
-} from '../lib/mobile/androidLiveUpdates';
-import { isNativeAndroidRuntime } from '../lib/mobile/androidRuntime';
-import { RefreshCw } from 'lucide-react';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
+import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
+import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
 const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
 const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((m) => ({ default: m.GameDetailsModal })));
-const toShortVersionLabel = (version: string) => version.replace(/^v/i, '').split('-')[0] || version.replace(/^v/i, '');
 
 type IdleSchedulerHost = Pick<Window, 'setTimeout' | 'clearTimeout'> & Partial<Pick<Window, 'requestIdleCallback' | 'cancelIdleCallback'>>;
 
@@ -85,6 +75,18 @@ class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProps, Home
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('[Home] 游戏详情弹窗渲染失败，已回退到首页', error, errorInfo);
+        const signature = `home-modal-error-boundary:${error.name}:${error.message}`;
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][home-modal-error-boundary] ${error.message || 'Home modal render error'}`,
+            autoReportKind: 'home-modal-render-error',
+            source: 'home-modal-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: error.name || 'Error',
+            errorMessage: error.message || 'Home modal render error',
+            errorSource: 'home.modal_error_boundary',
+            stack: [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n'),
+        });
         this.props.onError();
     }
 
@@ -235,9 +237,6 @@ const HomeGameDetailsModalFallback = ({
 
 export const Home = () => {
     useGlobalCursor();
-    const isNativeAndroid = isNativeAndroidRuntime();
-    const otaConfig = readAndroidLiveUpdateConfig(import.meta.env);
-    const otaEnabledForCurrentShell = isNativeAndroid && otaConfig.enabled;
     const [activeCategory, setActiveCategory] = useState<Category>('All');
     const [, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
@@ -250,45 +249,13 @@ export const Home = () => {
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [missingMatchConfirmRetryTick, setMissingMatchConfirmRetryTick] = useState(0);
     const [guestId, setGuestId] = useState<string | null>(null);
-    const [otaSnapshot, setOtaSnapshot] = useState<AndroidLiveUpdateSnapshot | null>(null);
-    const [isVersionExpanded, setIsVersionExpanded] = useState(false);
-    const [otaActivityState, setOtaActivityState] = useState(() => readAndroidLiveUpdateActivityState());
     const [pendingAction, setPendingAction] = useState<{
         matchID: string;
         playerID: string;
         credentials: string;
         isHost: boolean;
     } | null>(null);
-
-    const refreshOtaSnapshot = useCallback(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        let cancelled = false;
-        void readAndroidLiveUpdateSnapshot({ includeManifest: true })
-            .then((snapshot) => {
-                if (!cancelled) {
-                    setOtaSnapshot(snapshot);
-                }
-            })
-            .catch((error) => {
-                console.warn('[Home] 读取 OTA 快照失败', error);
-                if (!cancelled) {
-                    setOtaSnapshot({
-                        enabled: false,
-                        manifestUrl: '',
-                        channel: 'stable',
-                        nativeAndroid: true,
-                        updaterLoaded: false,
-                    });
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [isNativeAndroid]);
+    const forceExitModalIdRef = useRef<string | null>(null);
 
     // Monitoring & Stats
     const { mostPopularGameId } = useLobbyStats();
@@ -338,24 +305,6 @@ export const Home = () => {
         AudioManager.stopBgm();
     }, []);
 
-    useEffect(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        return refreshOtaSnapshot();
-    }, [isNativeAndroid, refreshOtaSnapshot]);
-
-    useEffect(() => {
-        if (!isNativeAndroid) {
-            return;
-        }
-
-        return subscribeAndroidLiveUpdateActivityState((state) => {
-            setOtaActivityState(state);
-        });
-    }, [isNativeAndroid]);
-
     const storedLocalMatchRole = useMemo(() => {
         void localStorageTick;
         const latestCreds = getLatestStoredMatchCredentials();
@@ -394,81 +343,6 @@ export const Home = () => {
     }, [ownerActive, ownerKey, storedLocalMatchRole, suppressedOwnerMatchId]);
     const localMatchRole = storedLocalMatchRole ?? ownerLocalMatchRole;
     const activePlayerCount = activeMatch?.players.filter(player => player.name).length ?? 0;
-    const activeBundleVersion = useMemo(() => {
-        const bundleVersion = otaSnapshot?.currentBundleVersion?.trim();
-        return bundleVersion || packageJson.version;
-    }, [otaSnapshot?.currentBundleVersion]);
-    const shouldShowNativeAppVersion = isNativeAndroid;
-    const homeVersionLabel = useMemo(
-        () => isVersionExpanded ? activeBundleVersion.replace(/^v/i, '') : toShortVersionLabel(activeBundleVersion),
-        [activeBundleVersion, isVersionExpanded],
-    );
-    const nativeAppVersion = otaSnapshot?.nativeVersion?.trim() || packageJson.version;
-    const appVersionLabel = useMemo(
-        () => isVersionExpanded ? nativeAppVersion.replace(/^v/i, '') : toShortVersionLabel(nativeAppVersion),
-        [isVersionExpanded, nativeAppVersion],
-    );
-    const latestManifestVersion = otaSnapshot?.manifestVersion?.trim() || null;
-    const latestManifestVersionLabel = useMemo(
-        () => latestManifestVersion
-            ? (isVersionExpanded ? latestManifestVersion.replace(/^v/i, '') : toShortVersionLabel(latestManifestVersion))
-            : null,
-        [isVersionExpanded, latestManifestVersion],
-    );
-    const otaVersionMismatch = otaEnabledForCurrentShell
-        && Boolean(latestManifestVersion)
-        && latestManifestVersion !== activeBundleVersion;
-    const isImmediateOtaActive = otaEnabledForCurrentShell && otaActivityState.active;
-    const handleVersionFooterClick = () => {
-        if (shouldShowNativeAppVersion) {
-            if (!otaEnabledForCurrentShell) {
-                return;
-            }
-            if (otaActivityState.active) {
-                return;
-            }
-            requestAndroidLiveUpdateCheck({
-                interactive: true,
-                applyMode: 'immediate',
-                initialImmediatePhase: otaVersionMismatch ? 'downloading' : 'checking',
-            });
-            return;
-        }
-
-        setIsVersionExpanded((expanded) => !expanded);
-    };
-    const nativeVersionTitle = useMemo(() => {
-        if (!shouldShowNativeAppVersion) {
-            return `当前版本 ${activeBundleVersion.replace(/^v/i, '')}\n点击${isVersionExpanded ? '收起' : '展开'}完整版本号`;
-        }
-
-        const lines = [
-            `当前 Bundle ${activeBundleVersion.replace(/^v/i, '')}`,
-            `App 壳版本 ${nativeAppVersion.replace(/^v/i, '')}`,
-        ];
-        if (latestManifestVersion) {
-            lines.push(`最新 OTA ${latestManifestVersion.replace(/^v/i, '')}`);
-        }
-        lines.push(
-            !otaEnabledForCurrentShell
-                ? '状态：当前测试壳已禁用 OTA，请改用正式版 App'
-                : isImmediateOtaActive
-                    ? '状态：正在检查并应用 OTA 更新'
-                    : otaVersionMismatch
-                        ? '状态：当前 Bundle 与最新 OTA 不一致，点击立即更新'
-                        : '状态：点击立即检查 OTA 更新',
-        );
-        return lines.join('\n');
-    }, [
-        activeBundleVersion,
-        isImmediateOtaActive,
-        isVersionExpanded,
-        latestManifestVersion,
-        nativeAppVersion,
-        otaVersionMismatch,
-        shouldShowNativeAppVersion,
-    ]);
-
     const confirmModalIdRef = useRef<string | null>(null);
     const authModalIdRef = useRef<string | null>(null);
     const missingMatchConfirmRef = useRef<string | null>(null);
@@ -957,6 +831,47 @@ export const Home = () => {
         });
     };
 
+    const handleForceExitLocal = useCallback((matchID: string) => {
+        clearMatchCredentials(matchID);
+        clearOwnerActiveMatch(matchID);
+        setActiveMatch(null);
+        setMyMatchRole(null);
+        setPendingAction(null);
+        setLocalStorageTick((t) => t + 1);
+        toastWarning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
+    }, [toastWarning]);
+
+    const openForceExitModal = useCallback((matchID: string) => {
+        if (forceExitModalIdRef.current) {
+            return;
+        }
+
+        forceExitModalIdRef.current = openModal({
+            closeOnBackdrop: true,
+            closeOnEsc: true,
+            lockScroll: true,
+            onClose: () => {
+                forceExitModalIdRef.current = null;
+            },
+            render: ({ close, closeOnBackdrop: stackCloseOnBackdrop }) => (
+                <ConfirmModal
+                    title={t('lobby:matchRoom.destroy.forceExitTitle')}
+                    description={t('lobby:matchRoom.destroy.forceExitDescription')}
+                    confirmText={t('lobby:matchRoom.destroy.forceExitConfirm')}
+                    onConfirm={() => {
+                        close();
+                        handleForceExitLocal(matchID);
+                    }}
+                    onCancel={() => {
+                        close();
+                    }}
+                    tone="cool"
+                    closeOnBackdrop={stackCloseOnBackdrop}
+                />
+            ),
+        });
+    }, [handleForceExitLocal, openModal, t]);
+
     const handleConfirmAction = useCallback(async () => {
         if (!pendingAction) return;
 
@@ -977,6 +892,14 @@ export const Home = () => {
         );
         if (!result.success) {
             notifyExitMatchErrorToast(toastError, result.error, pendingAction.isHost);
+            if (pendingAction.isHost) {
+                if (confirmModalIdRef.current) {
+                    closeModal(confirmModalIdRef.current);
+                    confirmModalIdRef.current = null;
+                }
+                setPendingAction(null);
+                openForceExitModal(pendingAction.matchID);
+            }
             return;
         }
 
@@ -991,8 +914,10 @@ export const Home = () => {
         setLocalStorageTick(t => t + 1);
     }, [
         activeMatch,
+        closeModal,
         myMatchRole,
         pendingAction,
+        openForceExitModal,
         toastError,
         toastWarning,
     ]);
@@ -1034,8 +959,71 @@ export const Home = () => {
         }
     }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction, t]);
 
+    useEffect(() => {
+        return () => {
+            if (forceExitModalIdRef.current) {
+                closeModal(forceExitModalIdRef.current);
+                forceExitModalIdRef.current = null;
+            }
+        };
+    }, [closeModal]);
+
+    const activeMatchCard = activeMatch ? (
+        <div
+            data-testid="home-active-match-card"
+            className="pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
+        >
+            <div className="min-w-0 text-center sm:flex-1 sm:text-left">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-parchment-light-text sm:text-[10px] sm:tracking-wider">
+                    {t('lobby:home.activeMatch.status')}
+                </span>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] font-bold leading-tight sm:justify-start sm:gap-x-2 sm:gap-y-1 sm:text-sm">
+                    <span className="max-w-full truncate">
+                        {t('lobby:home.activeMatch.room', { id: activeMatch.matchID.slice(0, 4) })}
+                    </span>
+                    <span className="hidden opacity-50 sm:inline">|</span>
+                    <span
+                        className={clsx(
+                            'max-w-full truncate',
+                            activeMatch.players.some(p => p.name) ? 'opacity-100' : 'opacity-50 italic'
+                        )}
+                    >
+                        {t('lobby:home.activeMatch.players', { count: activePlayerCount })}
+                    </span>
+                </div>
+            </div>
+            <div
+                data-testid="home-active-match-actions"
+                className="flex w-fit max-w-full flex-row flex-wrap items-center justify-center gap-1.5 self-center sm:w-auto sm:max-w-none sm:flex-nowrap sm:justify-end sm:self-auto sm:gap-2"
+            >
+                {myMatchRole?.credentials && (
+                    <button
+                        onClick={handleDestroyOrLeave}
+                        className={clsx(
+                            "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
+                            myMatchRole.playerID === '0'
+                                ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
+                                : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
+                        )}
+                    >
+                        {myMatchRole.playerID === '0' ? t('lobby:actions.destroy') : t('lobby:actions.leave')}
+                    </button>
+                )}
+                <button
+                    onClick={handleReconnect}
+                    className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
+                >
+                    {t('lobby:actions.reconnectEnter')}
+                </button>
+            </div>
+        </div>
+    ) : null;
+
     return (
-        <div className="min-h-[100dvh] bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]">
+        <div
+            className="bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]"
+            style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}
+        >
             <SEO
                 title={activeCategory === 'All' ? undefined : seoT(`common:category.${activeCategory}`)}
                 description={seoT('lobby:home.subtitle')}
@@ -1102,105 +1090,14 @@ export const Home = () => {
             </main>
 
             {/* 活跃对局指示器 */}
-            <button
-                type="button"
-                onClick={handleVersionFooterClick}
-                className="fixed right-[max(0.75rem,env(safe-area-inset-right))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 max-w-[min(72vw,20rem)] select-none text-right text-[0.7rem] md:text-[0.78rem] leading-none tracking-[0.08em] text-parchment-light-text/80 cursor-pointer"
-                aria-label={shouldShowNativeAppVersion
-                    ? otaEnabledForCurrentShell
-                        ? otaVersionMismatch
-                            ? `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}, latest ota version ${latestManifestVersionLabel ?? 'unknown'}, versions are not aligned`
-                            : `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}`
-                        : `Current bundle version ${homeVersionLabel}, app version ${appVersionLabel}, ota disabled for current shell`
-                    : `Current version ${homeVersionLabel}`}
-                title={nativeVersionTitle}
-            >
-                <span className="inline-flex max-w-full items-center justify-end gap-1 break-all">
-                    {shouldShowNativeAppVersion && (
-                        <RefreshCw size={11} className={`shrink-0 ${otaEnabledForCurrentShell ? (isImmediateOtaActive ? 'animate-spin text-amber-700' : otaVersionMismatch ? 'text-red-700' : 'text-parchment-light-text/60') : 'text-parchment-light-text/30'}`} />
-                    )}
-                    <span>{shouldShowNativeAppVersion ? `Bundle ${homeVersionLabel}` : homeVersionLabel}</span>
-                </span>
-                {shouldShowNativeAppVersion && (
-                    <span className="mt-1 block text-[0.58rem] tracking-[0.04em] text-parchment-light-text/60 md:text-[0.64rem]">
-                        App {appVersionLabel}
-                    </span>
-                )}
-                {shouldShowNativeAppVersion && latestManifestVersionLabel && (
-                    <span className={`mt-1 block text-[0.58rem] tracking-[0.04em] md:text-[0.64rem] ${otaEnabledForCurrentShell && otaVersionMismatch ? 'text-red-700/90' : 'text-parchment-light-text/55'}`}>
-                        Latest {latestManifestVersionLabel}
-                    </span>
-                )}
-                {!otaEnabledForCurrentShell && shouldShowNativeAppVersion && (
-                    <span className="mt-1 block text-[0.58rem] font-bold tracking-[0.04em] text-parchment-light-text/70 md:text-[0.64rem]">
-                        当前测试壳已禁用 OTA
-                    </span>
-                )}
-                {otaEnabledForCurrentShell && otaVersionMismatch && (
-                    <span className={`mt-1 block text-[0.58rem] font-bold tracking-[0.04em] md:text-[0.64rem] ${isImmediateOtaActive ? 'text-amber-800' : 'text-red-800'}`}>
-                        {isImmediateOtaActive ? '正在立即更新' : 'OTA 未对齐，点击立即更新'}
-                    </span>
-                )}
-                {otaEnabledForCurrentShell && !otaVersionMismatch && shouldShowNativeAppVersion && (
-                    <span className={`mt-1 block text-[0.58rem] font-bold tracking-[0.04em] md:text-[0.64rem] ${isImmediateOtaActive ? 'text-amber-800' : 'text-parchment-light-text/55'}`}>
-                        {isImmediateOtaActive ? '正在检查更新' : '点击检查更新'}
-                    </span>
-                )}
-            </button>
+            <HomeVersionFooter />
 
             {activeMatch && (
                 <div
                     data-testid="home-active-match-banner"
                     className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 flex justify-center px-3 sm:px-4 md:px-6 animate-in slide-in-from-bottom-4 fade-in duration-300"
                 >
-                    <div
-                        data-testid="home-active-match-card"
-                        className="pointer-events-auto flex w-fit max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-[10px] border border-parchment-brown bg-parchment-base-text/98 px-3 py-2.5 text-parchment-card-bg shadow-xl backdrop-blur-sm sm:max-w-[min(46rem,calc(100vw-2rem))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-3"
-                    >
-                        <div className="min-w-0 text-center sm:flex-1 sm:text-left">
-                            <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-parchment-light-text sm:text-[10px] sm:tracking-wider">
-                                {t('lobby:home.activeMatch.status')}
-                            </span>
-                            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-[13px] font-bold leading-tight sm:justify-start sm:gap-x-2 sm:gap-y-1 sm:text-sm">
-                                <span className="max-w-full truncate">
-                                    {t('lobby:home.activeMatch.room', { id: activeMatch.matchID.slice(0, 4) })}
-                                </span>
-                                <span className="hidden opacity-50 sm:inline">|</span>
-                                <span
-                                    className={clsx(
-                                        'max-w-full truncate',
-                                        activeMatch.players.some(p => p.name) ? 'opacity-100' : 'opacity-50 italic'
-                                    )}
-                                >
-                                    {t('lobby:home.activeMatch.players', { count: activePlayerCount })}
-                                </span>
-                            </div>
-                        </div>
-                        <div
-                            data-testid="home-active-match-actions"
-                            className="flex w-fit max-w-full flex-row flex-wrap items-center justify-center gap-1.5 self-center sm:w-auto sm:max-w-none sm:flex-nowrap sm:justify-end sm:self-auto sm:gap-2"
-                        >
-                            {myMatchRole?.credentials && (
-                                <button
-                                    onClick={handleDestroyOrLeave}
-                                    className={clsx(
-                                        "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
-                                        myMatchRole.playerID === '0'
-                                            ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                            : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
-                                    )}
-                                >
-                                    {myMatchRole.playerID === '0' ? t('lobby:actions.destroy') : t('lobby:actions.leave')}
-                                </button>
-                            )}
-                            <button
-                                onClick={handleReconnect}
-                                className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
-                            >
-                                {t('lobby:actions.reconnectEnter')}
-                            </button>
-                        </div>
-                    </div>
+                    {activeMatchCard}
                 </div>
             )}
         </div>

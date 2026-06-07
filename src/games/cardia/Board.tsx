@@ -26,7 +26,6 @@ import { CardTransition, CardListTransition } from './ui/CardTransition';
 import { CardFlip } from './ui/CardFlip';
 import { getInitialOpponentFlipState, getNextOpponentFlipState } from './ui/encounterFlipState';
 import type { FactionId } from './domain/ids';
-import { CARDIA_EVENTS } from './domain/events';
 import cardRegistry from './domain/cardRegistry';
 import { exposeDebugTools } from './debug';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
@@ -37,6 +36,7 @@ import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery'
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { isNodeContainedBy } from './ui/domGuards';
 import { resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
+import { useCardiaEventAnimations } from './hooks/useCardiaEventAnimations';
 
 type Props = GameBoardProps<CardiaCore>;
 
@@ -46,9 +46,20 @@ const CARDIA_TIGHT_LANDSCAPE_SIDEBAR_WIDTH = '8.4rem';
 // - 鼠标稳定悬停 200ms 后才打开，避免快速扫过时频繁误触发；
 // - 鼠标离开目标后立即关闭，不做关闭延迟，保证反馈干脆。
 const CARDIA_PC_HOVER_MAGNIFY_DELAY_MS = 200;
+const CARDIA_CARD_ASPECT_RATIO = 106 / 160;
+const CARDIA_PLAYER_ZONE_HEIGHT = 'clamp(8.9rem, calc(var(--runtime-viewport-height, 100vh) * 0.31), 10.6rem)';
 
-const CARD_SIZE_CLASSES = 'w-[var(--cardia-card-width)] aspect-[106/160]';
-const SMALL_CARD_SIZE_CLASSES = 'w-[var(--cardia-small-card-width)] aspect-[106/160]';
+const CARD_SIZE_CLASSES = 'w-[var(--cardia-card-width)]';
+const SMALL_CARD_SIZE_CLASSES = 'w-[var(--cardia-small-card-width)]';
+
+function getCardSizeStyle(size: 'normal' | 'small'): React.CSSProperties {
+    const widthVar = size === 'small' ? 'var(--cardia-small-card-width)' : 'var(--cardia-card-width)';
+    return {
+        width: widthVar,
+        height: `calc(${widthVar} / ${CARDIA_CARD_ASPECT_RATIO})`,
+        aspectRatio: `${CARDIA_CARD_ASPECT_RATIO} / 1`,
+    };
+}
 
 const detectTouchLikeInput = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -332,75 +343,13 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     
     useTutorialBridge(G.sys.tutorial, dispatch as any);
     
-    // 用于追踪已处理的事件 ID（必须在组件顶层声明）
-    const lastProcessedIdRef = React.useRef<number>(-1);
-    
-    // 监听事件流，触发动画
-    React.useEffect(() => {
-        if (!G.sys.eventStream) return;
-        
-        const stream = G.sys.eventStream;
-        
-        // 初始化 lastProcessedId（仅在首次有事件时）
-        if (lastProcessedIdRef.current === -1 && stream.entries.length > 0) {
-            lastProcessedIdRef.current = stream.entries[stream.entries.length - 1].id;
-            return; // 首次挂载时跳过历史事件
-        }
-        
-        // 处理新事件
-        const newEntries = stream.entries.filter(entry => entry.id > lastProcessedIdRef.current);
-        
-        newEntries.forEach(entry => {
-            const event = entry.event;
-            
-            // 能力激活闪光
-            if (event.type === CARDIA_EVENTS.ABILITY_ACTIVATED) {
-                animations.triggerAbilityFlash();
-            }
-            
-            // 能力无有效目标提示
-            if (event.type === CARDIA_EVENTS.ABILITY_NO_VALID_TARGET) {
-                const payload = event.payload as any;
-                if (payload.reason === 'no_markers') {
-                    toast.warning(t('ability.noValidTarget.noMarkers', '场上没有带有修正标记或持续标记的卡牌'));
-                }
-            }
-            
-            // 修正标记放置动画
-            if (event.type === CARDIA_EVENTS.MODIFIER_TOKEN_PLACED) {
-                const payload = event.payload as any;
-                const targetElement = cardRefs.current.get(payload.cardId);
-                if (targetElement) {
-                    // 从屏幕中心飞向目标卡牌
-                    animations.addModifierToken(null, targetElement, payload.value);
-                }
-            }
-            
-            // 持续标记放置动画
-            if (event.type === CARDIA_EVENTS.ONGOING_ABILITY_PLACED) {
-                const payload = event.payload as any;
-                const targetElement = cardRefs.current.get(payload.cardId);
-                if (targetElement) {
-                    animations.addOngoingMarker(targetElement);
-                }
-            }
-            
-            // 印戒移动动画
-            if (event.type === CARDIA_EVENTS.SIGNET_MOVED) {
-                const payload = event.payload as any;
-                const fromElement = cardRefs.current.get(payload.fromCardId);
-                const toElement = cardRefs.current.get(payload.toCardId);
-                if (fromElement && toElement) {
-                    animations.addSignetMove(fromElement, toElement);
-                }
-            }
-        });
-        
-        // 更新最后处理的事件 ID
-        if (newEntries.length > 0) {
-            lastProcessedIdRef.current = newEntries[newEntries.length - 1].id;
-        }
-    }, [G.sys.eventStream, animations, toast, t]);
+    useCardiaEventAnimations({
+        eventStreamEntries: G.sys.eventStream?.entries ?? [],
+        animations,
+        toast,
+        t,
+        cardRefs,
+    });
     
     const { overlayProps: endgameProps } = useEndgame({
         result: isGameOver || undefined,
@@ -529,6 +478,14 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             playerId: myPlayerId,
         });
     };
+
+    const respondCurrentInteraction = React.useCallback((payload: Record<string, unknown>) => {
+        if (!currentInteraction?.id) return;
+        dispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: currentInteraction.id,
+            ...payload,
+        });
+    }, [currentInteraction?.id, dispatch]);
     
     // 处理卡牌选择确认
     const handleCardSelectionConfirm = (selectedCardUids: string[]) => {
@@ -567,9 +524,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             }
             
             // 使用 optionIds（用于验证）+ mergedValue（用于传递给 handler）
-            dispatch(INTERACTION_COMMANDS.RESPOND, { 
+            respondCurrentInteraction({
                 optionIds,
-                mergedValue: { cardUids: selectedCardUids }
+                mergedValue: { cardUids: selectedCardUids },
             });
         } else {
             // 单选模式：找到对应的选项
@@ -579,7 +536,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 logger.debug('[CardiaBoard] Single-select mode: dispatching with optionId', {
                     optionId: selectedCard.optionId,
                 });
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedCard.optionId });
+                respondCurrentInteraction({ optionId: selectedCard.optionId });
             } else {
                 logger.error('[CardiaBoard] No optionId found for selected card');
             }
@@ -608,7 +565,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 optionId: selectedOption.id,
                 faction: factionId,
             });
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedOption.id });
+            respondCurrentInteraction({ optionId: selectedOption.id });
         } else {
             logger.error('[CardiaBoard] No optionId found for selected faction', { factionId });
         }
@@ -627,7 +584,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         if (!currentInteraction) return;
         
         logger.debug('[CardiaBoard] Choice selected, dispatching RESPOND', { optionId });
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+        respondCurrentInteraction({ optionId });
         
         setShowChoice(false);
     };
@@ -831,9 +788,12 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                             {/* 我的区域（横屏右侧下栏） */}
                             <div
                                 data-testid="cardia-player-zone"
-                                className={`mt-0.5 flex h-[clamp(8.9rem,31dvh,10.6rem)] items-end gap-2 overflow-visible pb-1 ${focusedHandCardUid ? 'relative z-[260]' : ''}`}
+                                className={`mt-0.5 flex items-end gap-2 overflow-visible pb-1 ${focusedHandCardUid ? 'relative z-[260]' : ''}`}
 
-                                style={playerZoneWrapperStyle}
+                                style={{
+                                    ...playerZoneWrapperStyle,
+                                    height: CARDIA_PLAYER_ZONE_HEIGHT,
+                                }}
                             >
                                 <div className="min-w-0 flex-1">
                                     <PlayerArea
@@ -1791,6 +1751,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
     
     // 卡牌尺寸由棋盘根节点的 CSS 变量统一控制：PC 固定，移动端自适应。
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     
     // 计算修正标记总和（从 core.modifierTokens 中过滤）
     const modifierTotal = core.modifierTokens
@@ -1879,6 +1840,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
             ref={handleContainerRef}
             data-testid={`card-${card.uid}`}
             className={`group relative ${sizeClasses} overflow-hidden rounded-lg border-2 border-white/20 shadow-lg ${expanded ? 'z-30' : ''}`}
+            style={sizeStyle}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUpOrCancel}
             onPointerCancel={handlePointerUpOrCancel}
@@ -1944,9 +1906,10 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
 const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
     const [imageError, setImageError] = React.useState(false);
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     
     return (
-        <div className={`${sizeClasses} overflow-hidden rounded-lg border-2 border-purple-600 shadow-lg`}>
+        <div className={`${sizeClasses} overflow-hidden rounded-lg border-2 border-purple-600 shadow-lg`} style={sizeStyle}>
             {!imageError ? (
                 <OptimizedImage
                     src={CARDIA_IMAGE_PATHS.DECK1_BACK}
@@ -1968,8 +1931,9 @@ const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) 
  */
 const EmptySlot: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
+    const sizeStyle = getCardSizeStyle(size);
     return (
-        <div className={`${sizeClasses} flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 text-gray-500`}>
+        <div className={`${sizeClasses} flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 text-gray-500`} style={sizeStyle}>
             <div className="text-[10px] sm:text-xs">等待中...</div>
         </div>
     );

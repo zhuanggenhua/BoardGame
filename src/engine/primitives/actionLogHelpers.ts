@@ -85,7 +85,7 @@ export interface DamageLogPayload {
         sourceId: string;
         sourceName?: string;
     }>;
-    /** 防御/减伤资源消耗记录 */
+    /** 防护/减免来源的消耗记录 */
     shieldsConsumed?: Array<{
         sourceId: string;
         value?: number;

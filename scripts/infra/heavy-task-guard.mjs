@@ -96,6 +96,19 @@ function compareGuardPriority(left, right) {
     return leftPid - rightPid;
 }
 
+function isSameGuardFamilyName(recordName, baseName) {
+    const normalizedRecordName = sanitizeGuardName(recordName);
+    const normalizedBaseName = sanitizeGuardName(baseName);
+    return normalizedRecordName === normalizedBaseName
+        || normalizedRecordName.startsWith(`${normalizedBaseName}--pid-`);
+}
+
+function listActiveGuardsByBaseName(baseName) {
+    const normalizedBaseName = sanitizeGuardName(baseName);
+    return listTaskGuards()
+        .filter(record => isSameGuardFamilyName(record.name, normalizedBaseName));
+}
+
 function formatMetadata(metadata) {
     const pairs = Object.entries(metadata ?? {}).filter(([, value]) => (
         value !== undefined
@@ -183,11 +196,16 @@ export function acquireTaskGuard({
 } = {}) {
     const normalizedName = sanitizeGuardName(name);
     const normalizedConflicts = [...new Set(conflicts.map(sanitizeGuardName))];
+    const guardRecordName = allowConcurrency
+        ? `${normalizedName}--pid-${process.pid}`
+        : normalizedName;
 
     pruneTaskGuards({ logger });
 
-    const existingSameGuard = readGuardRecord(normalizedName);
-    if (existingSameGuard?.active && Number(existingSameGuard.pid) !== process.pid) {
+    const existingSameGuard = listActiveGuardsByBaseName(normalizedName)
+        .filter(record => Number(record.pid) !== process.pid)
+        .sort(compareGuardPriority)[0];
+    if (!allowConcurrency && existingSameGuard) {
         throw new Error(
             [
                 `已有同类重任务在运行，拒绝重复启动: ${normalizedName}`,
@@ -199,7 +217,7 @@ export function acquireTaskGuard({
 
     const startedAt = nowIso();
     const state = {
-        name: normalizedName,
+        name: guardRecordName,
         pid: process.pid,
         startedAt,
         updatedAt: startedAt,
@@ -209,18 +227,18 @@ export function acquireTaskGuard({
         metadata,
     };
 
-    writeGuardRecord(normalizedName, state);
+    writeGuardRecord(guardRecordName, state);
 
     if (!allowConcurrency) {
         const activeConflicts = normalizedConflicts
-            .map(readGuardRecord)
-            .filter(record => record?.active && Number(record.pid) !== process.pid);
+            .flatMap(conflictName => listActiveGuardsByBaseName(conflictName))
+            .filter(record => Number(record.pid) !== process.pid);
 
         const blockingConflict = activeConflicts
             .sort(compareGuardPriority)[0];
 
         if (blockingConflict && compareGuardPriority(blockingConflict, state) <= 0) {
-            removeGuardFile(normalizedName);
+            removeGuardFile(guardRecordName);
             throw new Error(
                 [
                     `检测到冲突重任务正在运行，拒绝并发启动: ${normalizedName} -> ${blockingConflict.name}`,
@@ -232,7 +250,7 @@ export function acquireTaskGuard({
     }
 
     const heartbeat = setInterval(() => {
-        writeGuardRecord(normalizedName, {
+        writeGuardRecord(guardRecordName, {
             ...state,
             updatedAt: nowIso(),
             leaseExpiresAt: new Date(Date.now() + heartbeatTtlMs).toISOString(),
@@ -250,9 +268,9 @@ export function acquireTaskGuard({
         released = true;
         clearInterval(heartbeat);
 
-        const latest = readGuardRecord(normalizedName);
+        const latest = readGuardRecord(guardRecordName);
         if (latest && Number(latest.pid) === process.pid) {
-            removeGuardFile(normalizedName);
+            removeGuardFile(guardRecordName);
         }
 
         process.removeListener('exit', release);

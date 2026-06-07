@@ -6,8 +6,6 @@ import os from 'node:os';
 import { resolve } from 'path';
 
 const envPath = resolve(process.cwd(), '.env.test.local');
-const DEFAULT_TEST_MONGO_URI = 'mongodb://localhost:27017/boardgame_test';
-
 if (existsSync(envPath)) {
     config({ path: envPath });
 }
@@ -32,10 +30,6 @@ MongoMemoryServer.create = ((opts) => {
         },
     });
 }) as typeof MongoMemoryServer.create;
-
-if (!process.env.MONGO_URI) {
-    process.env.MONGO_URI = DEFAULT_TEST_MONGO_URI;
-}
 
 const resolveDbName = (uri: string): string | undefined => {
     const match = uri.match(/\/([^/?]+)(\?|$)/);

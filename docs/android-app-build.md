@@ -26,13 +26,21 @@
 - `npm run mobile:android:build:release`
 - `npm run mobile:android:build:bundle`
 
+补充约束：
+
+- `mobile:android:build:release`、`mobile:android:build:bundle`、`mobile:android:prepare-release` 默认强制正式壳：
+  - `CAPACITOR_APP_ID=top.easyboardgame.app`
+  - `CAPACITOR_APP_NAME=易桌游`
+- `debug / run / sync` 才继续默认使用测试壳；禁止再出现“release 命令打出 易桌游测试 / top.easyboardgame.app.debug”的情况。
+
 ## WebView 模式（强制约定）
 
 通过环境变量 `ANDROID_WEBVIEW_MODE` 控制 Android 壳加载方式：
 
 - `embedded`：默认模式（未显式指定时生效）
   - 将 `dist/` 同步到 `android/app/src/main/assets/public/`
-  - APK 内置完整前端资源
+  - APK 只内置壳运行必需的 H5 bundle 与轻量静态文件
+  - `public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路，禁止跟随 embedded 打进 APK
   - 这是当前主线发布方案
 - `remote`：仅在明确指定时启用
   - 通过 `Capacitor server.url` 加载线上页面
@@ -62,6 +70,29 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
 - 依据 Capacitor 官方文档，长期更新 Web 内容的主流方向是 **Live Update / Realtime Updates**：原生壳保持不变，按版本下发新的 Web bundle；不涉及原生二进制能力变更时，这类更新是可行的。
 - 仍然需要重新发包的内容包括：原生插件、Java/Kotlin/Swift/Objective-C 代码、权限、Manifest、原生启动逻辑、图标与启动图等二进制侧变更。
 - 结论：文档和实现都应以 `embedded` 为默认，以 OTA/Live Update 作为热更新主线；`remote` 仅保留为兼容/调试路径，不再作为产品默认推荐。
+
+## Embedded 包体门禁
+
+- Android embedded 构建前会先裁剪 `dist/`，至少删除：
+  - `dist/assets/i18n/**`
+  - `dist/assets/common/audio/**`
+  - `dist/assets/common/images/mascot/**`
+  - `dist/assets/common/images/home-v2/book-close/**`
+  - `dist/assets/common/images/home-v2/catalog-thumbnails/**`
+  - `dist/assets/common/images/home-v2/generated-reference-homepage/**`
+  - `dist/assets/common/images/home-v2/overview-spread/**`
+  - `dist/assets/common/images/home-v2/reference-homepage/**`
+  - `dist/assets/common/images/home-v2/reference-thumbnails/**`
+- 构建阶段如果检测到 `dist/` 或 `android/app/src/main/assets/public/` 里仍包含以下前缀，脚本必须直接失败：
+  - `assets/common/audio/**`
+  - `assets/common/images/mascot/**`
+  - `assets/common/images/home-v2/book-close/**`
+  - `assets/common/images/home-v2/catalog-thumbnails/**`
+  - `assets/common/images/home-v2/generated-reference-homepage/**`
+  - `assets/common/images/home-v2/overview-spread/**`
+  - `assets/common/images/home-v2/reference-homepage/**`
+  - `assets/common/images/home-v2/reference-thumbnails/**`
+- 这条门禁的本质约束是：**native APK 不得重复内置本应从 R2 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
 
 ## 原生 APK 自更新
 
@@ -261,6 +292,17 @@ npm run mobile:android:packages:publish -- --channel stable --game dicethrone
 - `official/mobile-packages/android/<channel>/bundles/<gameId>/<version>.zip`
 - `official/mobile-packages/android/<channel>/manifests/<gameId>/<version>.json`
 - `official/mobile-packages/android/<channel>/games/<gameId>.json`
+
+### 游戏包 / 共享包路径合同（强制）
+
+- **zip entry、file index、原生落盘、H5 读取必须同构**：移动包里每个文件的相对路径，一旦从 `public/assets` 计算出来，就必须原样贯穿：
+  1. 发布脚本写入 zip 的 entry path
+  2. `file-index/*.json` 里的 `files[].path`
+  3. 原生解压后 `current/assets/` 下的相对路径
+  4. 前端 `readInstalledAsset(gameId, relativePath)` 传入的 `relativePath`
+- **禁止单层裁前缀**：发布脚本、原生解压、增量下载、H5 读取，任何一层都不得单独把 `common/audio/` 改成 `bgm/` / `sfx/`，也不得把 `<gameId>/`、`atlas-configs/<gameId>/`、`i18n/<locale>/...` 等前缀只在某一层做扁平化。
+- **共享音频包 `common-audio` 的标准合同**：相对路径必须继续使用 `common/audio/...`，而不是把 `bgm/...` / `sfx/...` 当成包根。BGM 缺失时，先查这条路径合同是否被打破，不要先改 BGM 调用逻辑。
+- **修复顺序**：真机发现“包已安装但本地读取不到文件”时，先判定是 `打包脚本 / file index / 原生落盘 / H5 读取` 哪一层先偏离标准合同；确认偏离层后再修。只有历史已发包无法立刻替换时，才允许补一层兼容读取。
 
 manifest 结构示例：
 

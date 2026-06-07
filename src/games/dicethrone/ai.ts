@@ -44,7 +44,7 @@ import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
-import { areTeammates, getOpponents, getRollerId } from './domain/rules';
+import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
@@ -53,6 +53,7 @@ import { getCustomActionMeta } from './domain/effects';
 import type { AbilityEffect, TriggerCondition } from './domain/combat';
 import type {
     AbilityCard,
+    CharacterDefinition,
     DiceThroneCore,
     DtResponseWindowType,
     PendingBonusDiceSettlement,
@@ -68,6 +69,14 @@ type DiceThroneStrategyTag =
     | 'dice-setup'
     | 'upgrade-engine'
     | 'purify-control';
+
+const isDiceThroneCharacterReadyForAiSetup = (character: CharacterDefinition): boolean => (
+    !character.badges?.some((badge) => badge.id === 'implementation_in_progress')
+);
+
+const AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG = DICETHRONE_CHARACTER_CATALOG.filter(
+    isDiceThroneCharacterReadyForAiSetup,
+);
 
 type DiceRequirement =
     | { kind: 'faces'; faces: Record<string, number> }
@@ -970,7 +979,7 @@ const buildEmergencyInteractionCancelAction = (
     label: '跳过（无可用选项）',
     commands: [{
         type: 'SYS_INTERACTION_CANCEL',
-        payload: { reason },
+        payload: { interactionId, reason },
     }],
     metadata: {
         interactionId,
@@ -1009,7 +1018,7 @@ const buildInteractionActions = (
                     label: '不选择任何项',
                     commands: [{
                         type: 'SYS_INTERACTION_RESPOND',
-                        payload: { optionIds: [] },
+                        payload: { interactionId: current.id, optionIds: [] },
                     }],
                     aiHints: [OPTIONAL_SKIP_AI_HINT],
                     metadata: {
@@ -1033,7 +1042,10 @@ const buildInteractionActions = (
                         label: emergencySkipOption.label ?? '跳过（当前无可执行选项）',
                         commands: [{
                             type: 'SYS_INTERACTION_RESPOND',
-                            payload: buildSimpleChoicePayload([emergencySkipOption.id], data.multi),
+                            payload: {
+                                interactionId: current.id,
+                                ...buildSimpleChoicePayload([emergencySkipOption.id], data.multi),
+                            },
                         }],
                         aiHints: [OPTIONAL_SKIP_AI_HINT],
                         metadata: {
@@ -1051,10 +1063,13 @@ const buildInteractionActions = (
                     label: combination.map((option) => option.label ?? option.id).join(' + ') || `选择 ${index + 1}`,
                     commands: [{
                         type: 'SYS_INTERACTION_RESPOND',
-                        payload: buildSimpleChoicePayload(
-                            combination.map((option) => option.id),
-                            data.multi,
-                        ),
+                        payload: {
+                            interactionId: current.id,
+                            ...buildSimpleChoicePayload(
+                                combination.map((option) => option.id),
+                                data.multi,
+                            ),
+                        },
                     }],
                     ...(aiHints.length > 0 ? { aiHints } : {}),
                     metadata: {
@@ -1074,7 +1089,10 @@ const buildInteractionActions = (
                 label: option.label ?? `选择 ${index + 1}`,
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: buildSimpleChoicePayload([option.id], data.multi),
+                    payload: {
+                        interactionId: current.id,
+                        ...buildSimpleChoicePayload([option.id], data.multi),
+                    },
                 }],
                 ...(aiHints.length > 0 ? { aiHints } : {}),
                 metadata: {
@@ -1099,8 +1117,8 @@ const buildInteractionActions = (
                 kind: 'interaction-choice',
                 label: '确认比较结果',
                 commands: [{
-                    type: 'SYS_INTERACTION_CONFIRM',
-                    payload: {},
+                type: 'SYS_INTERACTION_CONFIRM',
+                    payload: { interactionId: current.id },
                 }],
                 metadata: {
                     interactionId: current.id,
@@ -1114,7 +1132,7 @@ const buildInteractionActions = (
             label: option.label ?? `选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: { optionId: option.id },
+                payload: { interactionId: current.id, optionId: option.id },
             }],
             metadata: {
                 interactionId: current.id,
@@ -1151,6 +1169,26 @@ const buildInteractionActions = (
             });
             return actions.length > 0
                 ? actions
+                : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
+        }
+
+        if (data.type === 'selectHandCard') {
+            const player = state.core.players[playerId];
+            const selectedCardId = player?.hand[0]?.id;
+            return selectedCardId
+                ? [{
+                    actionId: createAiLegalActionId('interaction', current.id, 'select-hand-card', selectedCardId),
+                    kind: 'interaction-choice',
+                    label: `弃置手牌 ${selectedCardId}`,
+                    commands: [{
+                        type: 'RESOLVE_INTERACTION',
+                        payload: { selectedCardIds: [selectedCardId] },
+                    }],
+                    metadata: {
+                        interactionId: current.id,
+                        selectedCardIds: [selectedCardId],
+                    },
+                }]
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
         }
 
@@ -1446,12 +1484,12 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                 takenCharacters.add(value as SelectableCharacterId);
             }
         }
-        const availableCharacters = DICETHRONE_CHARACTER_CATALOG.filter(
+        const availableCharacters = AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG.filter(
             (character) => !takenCharacters.has(character.id),
         );
         const candidates = availableCharacters.length > 0
             ? availableCharacters
-            : DICETHRONE_CHARACTER_CATALOG;
+            : AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG;
 
         for (const character of candidates) {
             appendAction(actions, state, playerId, {
@@ -1655,7 +1693,7 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
     // 否则会把纯展示特写误当成真实 blocker，导致 watchdog / 本地 AI 继续围绕它“决策”。
     if (!settlement || settlement.attackerId !== playerId || settlement.displayOnly === true) return actions;
 
-    for (const die of settlement.dice) {
+    for (const die of getPendingBonusSettlementDice(settlement)) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('bonus-die', 'reroll', die.index),
             kind: 'bonus-die-reroll',
@@ -1685,11 +1723,13 @@ const buildPurifyActions = (state: DiceThroneState, playerId: PlayerId): AiLegal
     if (!player || !hasPurifyToken(state.core, playerId) || !hasDebuffs(state.core, playerId)) {
         return actions;
     }
+    const playerStatusEffects = player.statusEffects ?? {};
+    const playerTokens = player.tokens ?? {};
 
     const removableDebuffs = (state.core.tokenDefinitions ?? [])
         .filter((definition) => definition.category === 'debuff' && (definition.passiveTrigger?.removable ?? true))
         .map((definition) => definition.id)
-        .filter((statusId) => (player.statusEffects[statusId] ?? 0) > 0 || (player.tokens[statusId] ?? 0) > 0);
+        .filter((statusId) => (playerStatusEffects[statusId] ?? 0) > 0 || (playerTokens[statusId] ?? 0) > 0);
 
     for (const statusId of removableDebuffs) {
         appendAction(actions, state, playerId, {
@@ -1904,6 +1944,12 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
     }
 
     if (phase === 'main1' || phase === 'main2') {
+        // 主阶段出牌/卖牌只属于当前行动玩家。
+        // 若让非当前玩家先枚举候选，再依赖最终 validate 拒绝，会制造大量误导性 player_mismatch 日志。
+        if (playerId !== state.core.activePlayerId) {
+            return actions;
+        }
+
         for (const card of player.hand) {
             if (card.type === 'upgrade') {
                 const targetAbilityId = card.effects?.find((effect) => effect.action?.type === 'replaceAbility')?.action?.targetAbilityId;
@@ -2241,14 +2287,25 @@ const diceThroneKindScorer = createActionKindScorer('kind-weight', {
     'advance-phase': 10,
 });
 
+const setupCharacterProfileScorer: LocalAiActionScorer = {
+    id: 'setup-character-neutral',
+    score(_context, action) {
+        if (action.kind !== 'setup-select-character') return null;
+        return {
+            score: 0,
+            reason: '从已完成角色池中随机选择',
+        };
+    },
+};
+
 const setupCharacterRandomScorer: LocalAiActionScorer = {
     id: 'setup-character-random',
     score(context, action) {
         if (action.kind !== 'setup-select-character') return null;
         const noise = buildDeterministicAiNoise(context, action, 'setup');
         return {
-            score: Number((noise * 20).toFixed(3)),
-            reason: '角色选择随机扰动',
+            score: Number((noise * 8).toFixed(3)),
+            reason: '已完成角色池内保留可复现随机',
             metadata: { noise },
         };
     },
@@ -2679,7 +2736,7 @@ const bonusDieScorer: LocalAiActionScorer = {
         const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
         if (!settlement) return null;
         const currentValue = evaluateBonusDiceSettlementValue(state, settlement);
-        const bestRerollDelta = settlement.dice.reduce((best, die) => {
+        const bestRerollDelta = getPendingBonusSettlementDice(settlement).reduce((best, die) => {
             const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
             if (expectedValue === null) return best;
             return Math.max(best, expectedValue - currentValue);
@@ -2690,7 +2747,7 @@ const bonusDieScorer: LocalAiActionScorer = {
                 ? action.metadata.dieIndex
                 : null;
             const die = dieIndex !== null
-                ? settlement.dice.find((item) => item.index === dieIndex)
+                ? getPendingBonusSettlementDice(settlement).find((item) => item.index === dieIndex)
                 : null;
             if (!die) return null;
             const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
@@ -3379,7 +3436,7 @@ const evaluateBonusDiceSettlementValue = (
     settlement: PendingBonusDiceSettlement,
     diceOverride?: PendingBonusDiceSettlement['dice'],
 ): number => {
-    const dice = diceOverride ?? settlement.dice;
+    const dice = diceOverride ?? getPendingBonusSettlementDice(settlement);
     const total = dice.reduce((sum, die) => sum + die.value, 0);
     const thresholdTriggered = settlement.threshold ? total >= settlement.threshold : false;
 
@@ -3414,11 +3471,12 @@ const evaluateExpectedBonusDieRerollValue = (
     settlement: PendingBonusDiceSettlement,
     dieIndex: number,
 ): number | null => {
-    const die = settlement.dice.find((item) => item.index === dieIndex);
+    const settlementDice = getPendingBonusSettlementDice(settlement);
+    const die = settlementDice.find((item) => item.index === dieIndex);
     if (!die) return null;
 
     const outcomes = [1, 2, 3, 4, 5, 6].map((value) => {
-        const projectedDice = settlement.dice.map((item) => (
+        const projectedDice = settlementDice.map((item) => (
             item.index === dieIndex ? { ...item, value } : item
         ));
         return evaluateBonusDiceSettlementValue(state, settlement, projectedDice);
@@ -4076,6 +4134,7 @@ const projectDiceThroneAction = (args: {
 
 const diceThroneLocalPolicyScorers: LocalAiActionScorer[] = [
     diceThroneKindScorer,
+    setupCharacterProfileScorer,
     setupCharacterRandomScorer,
     abilityValueScorer,
     cardValueScorer,
@@ -4137,6 +4196,7 @@ function shouldUseRemoteDecisionForDiceThrone(context: AiDecisionContext): boole
 export const diceThroneAiRuntime: GameAiRuntime = {
     gameId: 'dicethrone',
     buildLegalActions: buildDiceThroneAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localVisibleStepDelayConfig: {
         mode: 'whitelist',
         actionKinds: [

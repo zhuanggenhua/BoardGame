@@ -71,7 +71,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-katana-slice-2', 'description'),
         sfxKey: SAMURAI_SFX_LIGHT,
         previewRef: atlasPreview(18),
-        effects: [replaceAbility('katana-slice', KATANA_SLICE_2, 2, '升级太刀斩至 II 级。')],
+        effects: [replaceAbility('katana-slice', KATANA_SLICE_2, 2, cardText('upgrade-katana-slice-2', 'description'))],
     },
     {
         id: 'upgrade-katana-slice-3',
@@ -82,7 +82,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-katana-slice-3', 'description'),
         sfxKey: SAMURAI_SFX_LIGHT,
         previewRef: atlasPreview(19),
-        effects: [replaceAbility('katana-slice', KATANA_SLICE_3, 3, '升级太刀斩至 III 级。')],
+        effects: [replaceAbility('katana-slice', KATANA_SLICE_3, 3, cardText('upgrade-katana-slice-3', 'description'))],
     },
     {
         id: 'upgrade-wakizashi-2',
@@ -93,7 +93,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-wakizashi-2', 'description'),
         sfxKey: SAMURAI_SFX_LIGHT,
         previewRef: atlasPreview(20),
-        effects: [replaceAbility('wakizashi', WAKIZASHI_2, 2, '升级胁差至 II 级。')],
+        effects: [replaceAbility('wakizashi', WAKIZASHI_2, 2, cardText('upgrade-wakizashi-2', 'description'))],
     },
     {
         id: 'upgrade-wakizashi-3',
@@ -104,7 +104,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-wakizashi-3', 'description'),
         sfxKey: SAMURAI_SFX_LIGHT,
         previewRef: atlasPreview(21),
-        effects: [replaceAbility('wakizashi', WAKIZASHI_3, 3, '升级胁差至 III 级。')],
+        effects: [replaceAbility('wakizashi', WAKIZASHI_3, 3, cardText('upgrade-wakizashi-3', 'description'))],
     },
     {
         id: 'upgrade-solemnity-2',
@@ -115,7 +115,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-solemnity-2', 'description'),
         sfxKey: SAMURAI_SFX_HEAVY,
         previewRef: atlasPreview(22),
-        effects: [replaceAbility('solemnity', SOLEMNITY_2, 2, '升级肃穆之仪至 II 级。')],
+        effects: [replaceAbility('solemnity', SOLEMNITY_2, 2, cardText('upgrade-solemnity-2', 'description'))],
     },
     {
         id: 'upgrade-budo-2',
@@ -126,7 +126,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-budo-2', 'description'),
         sfxKey: SAMURAI_SFX_HEAVY,
         previewRef: atlasPreview(23),
-        effects: [replaceAbility('budo', BUDO_2, 2, '升级武道至 II 级。')],
+        effects: [replaceAbility('budo', BUDO_2, 2, cardText('upgrade-budo-2', 'description'))],
     },
     {
         id: 'upgrade-masamune-2',
@@ -137,7 +137,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-masamune-2', 'description'),
         sfxKey: SAMURAI_SFX_HEAVY,
         previewRef: atlasPreview(24),
-        effects: [replaceAbility('masamune', MASAMUNE_2, 2, '升级正宗至 II 级。')],
+        effects: [replaceAbility('masamune', MASAMUNE_2, 2, cardText('upgrade-masamune-2', 'description'))],
     },
     {
         id: 'upgrade-slot-06-2',
@@ -148,7 +148,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-slot-06-2', 'description'),
         sfxKey: SAMURAI_SFX_HEAVY,
         previewRef: atlasPreview(25),
-        effects: [replaceAbility('samurai-slot-06', SAMURAI_SLOT_06_2, 2, '升级叶隐之心至 II 级。')],
+        effects: [replaceAbility('samurai-slot-06', SAMURAI_SLOT_06_2, 2, cardText('upgrade-slot-06-2', 'description'))],
     },
     {
         id: 'upgrade-stand-tall-2',
@@ -159,7 +159,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('upgrade-stand-tall-2', 'description'),
         sfxKey: SAMURAI_SFX_DEFENSE,
         previewRef: atlasPreview(26),
-        effects: [replaceAbility('stand-tall', STAND_TALL_2, 2, '升级昂首无畏至 II 级。')],
+        effects: [replaceAbility('stand-tall', STAND_TALL_2, 2, cardText('upgrade-stand-tall-2', 'description'))],
     },
     {
         id: 'card-samurai-honor',
@@ -170,7 +170,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('card-samurai-honor', 'description'),
         sfxKey: SAMURAI_TOKEN_SFX_HONOR,
         previewRef: atlasPreview(27),
-        effects: [grantToken('self', TOKEN_IDS.HONOR, 2, '获得 2 个荣誉指示物。')],
+        effects: [grantToken('self', TOKEN_IDS.HONOR, 2, cardText('card-samurai-honor', 'description'))],
     },
     {
         id: 'card-you-should-be-ashamed',
@@ -182,7 +182,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         sfxKey: SAMURAI_TOKEN_SFX_SHAME,
         previewRef: atlasPreview(28),
         effects: [{
-            description: '选择 1 位敌方玩家，使其获得 2 层耻辱。',
+            description: cardText('card-you-should-be-ashamed', 'description'),
             action: { type: 'custom', target: 'self', customActionId: 'samurai-card-you-should-be-ashamed' },
             timing: 'immediate',
         }],
@@ -196,7 +196,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         description: cardText('card-no-retreat', 'description'),
         sfxKey: SAMURAI_TOKEN_SFX_RETRIBUTION,
         previewRef: atlasPreview(29),
-        effects: [grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。')],
+        effects: [grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, cardText('card-no-retreat', 'description'))],
     },
     {
         id: 'card-righteousness',
@@ -212,7 +212,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [
             {
-                description: '掷 1 颗骰子并获得该骰面的效果。',
+                description: cardText('card-righteousness', 'description'),
                 action: { type: 'custom', target: 'self', customActionId: 'samurai-card-righteousness' },
                 timing: 'immediate',
             },
@@ -232,7 +232,7 @@ export const SAMURAI_CARDS: AbilityCard[] = [
         playCondition: { requireDiceExists: true, requireHasRolled: true },
         effects: [
             {
-                description: '额外掷 5 颗骰子；每个武士刀 +1 伤害、每个头盔 +1 耻辱、每个旭日 +1 反击。',
+                description: cardText('card-zanshin', 'description'),
                 action: { type: 'custom', target: 'self', customActionId: 'samurai-masamune' },
                 timing: 'immediate',
             },

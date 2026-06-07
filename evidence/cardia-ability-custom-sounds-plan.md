@@ -1,5 +1,7 @@
 # Cardia - 为每张卡牌定制能力音效方案
 
+> 状态提示（2026-06-05）：已归档的历史方案文档。当前该专项完成口径以 `evidence/cardia-ability-custom-sounds-complete.md` 为准；本文件只保留当时的选型依据，不再作为当前任务入口。
+
 ## 目标
 
 为 Cardia Deck I 的 16 张卡牌（card01-16）的能力定制专属音效，替代当前统一的 `arcane_spells_mana_surge_001`。

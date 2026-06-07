@@ -1,5 +1,7 @@
 # Dice Throne 反馈 69f2a81c 本地验收收口说明（2026-05-04）
 
+> 2026-06-06 当前有效口径：本文只对应反馈 `69f2a81c5cacc4e6b5cdb4e5` 这一条本地 closeout 记录，不是当前 DiceThrone 所有 token modal / hidden interaction / pendingInteractionId 问题都已彻底收口的证明，也不是新英雄补审出口。阅读时必须把它理解成单条反馈的历史验收记录。
+
 ## 反馈原文
 
 - `弹窗选择目标，然后弹token弹窗，token弹窗要点两次，选择目标没恢复`
@@ -59,3 +61,7 @@
 
 - 按当前任务口径，`resolved` 表示“本地已经修好并完成本地验收”，不代表已上传/已上线。
 - 本条反馈与现有修复簇一致，且生产快照已经显示链路正常收口到 `main2`，因此可按本地验收转 `resolved`。
+
+---
+
+**当前阅读说明**：本文只能证明这条 `token modal / target restore` 反馈曾按本地验收收口，不能外推为当前所有 token 响应链、所有 hidden interaction 场景或 DiceThrone 当前整体审计都已收口。

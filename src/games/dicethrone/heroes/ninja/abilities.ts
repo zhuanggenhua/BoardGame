@@ -1,4 +1,4 @@
-import { abilityText } from '../../../../engine/primitives/ability';
+import { abilityText, abilityEffectText } from '../../../../engine/primitives/ability';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../../domain/combat';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../../domain/ids';
 
@@ -27,6 +27,17 @@ const grantToken = (target: 'self' | 'opponent', tokenId: string, value: number,
     timing,
 });
 
+const customEffect = (
+    customActionId: string,
+    target: 'self' | 'opponent',
+    description: string,
+    timing: EffectTiming = 'preDefense',
+): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target, customActionId },
+    timing,
+});
+
 const SLASH: AbilityDef = {
     id: 'slash',
     name: abilityText('slash', 'name'),
@@ -34,9 +45,9 @@ const SLASH: AbilityDef = {
     description: abilityText('slash', 'description'),
     sfxKey: NINJA_SFX_SLASH,
     variants: [
-        { id: 'slash-3', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } }, effects: [damage(5, '造成 5 点伤害。')], priority: 1 },
-        { id: 'slash-4', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } }, effects: [damage(6, '造成 6 点伤害。')], priority: 2 },
-        { id: 'slash-5', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } }, effects: [damage(7, '造成 7 点伤害。')], priority: 3 },
+        { id: 'slash-3', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } }, effects: [damage(5, abilityEffectText('slash', 'damage5'))], priority: 1 },
+        { id: 'slash-4', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } }, effects: [damage(6, abilityEffectText('slash', 'damage6'))], priority: 2 },
+        { id: 'slash-5', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } }, effects: [damage(7, abilityEffectText('slash', 'damage7'))], priority: 3 },
     ],
 };
 
@@ -45,9 +56,33 @@ export const SLASH_2: AbilityDef = {
     name: abilityText('slash-2', 'name'),
     description: abilityText('slash-2', 'description'),
     variants: [
-        { id: 'slash-2-3', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } }, effects: [damage(6, '造成 6 点伤害。')], priority: 1 },
-        { id: 'slash-2-4', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } }, effects: [damage(7, '造成 7 点伤害。')], priority: 2 },
-        { id: 'slash-2-5', trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } }, effects: [damage(8, '造成 8 点伤害。')], priority: 3 },
+        {
+            id: 'slash-2-3',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } },
+            effects: [
+                damage(4, abilityEffectText('slash-2', 'damage4')),
+                customEffect('ninja-slash-2-bonus', 'self', abilityEffectText('slash-2', 'gainNinjutsuOnThreeKind'), 'postDamage'),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'slash-2-4',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } },
+            effects: [
+                damage(6, abilityEffectText('slash-2', 'damage6')),
+                customEffect('ninja-slash-2-bonus', 'self', abilityEffectText('slash-2', 'gainNinjutsuOnThreeKind'), 'postDamage'),
+            ],
+            priority: 2,
+        },
+        {
+            id: 'slash-2-5',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } },
+            effects: [
+                damage(8, abilityEffectText('slash-2', 'damage8')),
+                customEffect('ninja-slash-2-bonus', 'self', abilityEffectText('slash-2', 'gainNinjutsuOnThreeKind'), 'postDamage'),
+            ],
+            priority: 3,
+        },
     ],
 };
 
@@ -58,13 +93,35 @@ const GOING_FORWARD: AbilityDef = {
     description: abilityText('going-forward', 'description'),
     sfxKey: NINJA_SFX_SLASH,
     trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 4 } },
-    effects: [damage(7, '造成 7 点伤害。')],
+    effects: [
+        customEffect('ninja-going-forward', 'opponent', abilityEffectText('going-forward', 'roll2DiceDamageTotal')),
+        damage(0, abilityEffectText('going-forward', 'resolveRolledDamage'), { timing: 'withDamage' }),
+    ],
 };
 
 export const GOING_FORWARD_2: AbilityDef = {
     ...GOING_FORWARD,
     name: abilityText('going-forward-2', 'name'),
     description: abilityText('going-forward-2', 'description'),
+    variants: [
+        {
+            id: 'going-forward-2-main',
+            trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 4 } },
+            effects: [
+                customEffect('ninja-going-forward-2', 'opponent', abilityEffectText('going-forward-2', 'roll2DiceDamageTotalRerollUnblockable')),
+                damage(0, abilityEffectText('going-forward-2', 'resolveRolledDamage'), { timing: 'withDamage' }),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'going-forward-2-bleed',
+            trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 3 } },
+            effects: [
+                customEffect('ninja-going-forward-bleed', 'opponent', abilityEffectText('going-forward-2', 'bleedRollDirectDamage')),
+            ],
+            priority: 0,
+        },
+    ],
 };
 
 const POISON_BLADE: AbilityDef = {
@@ -75,8 +132,8 @@ const POISON_BLADE: AbilityDef = {
     sfxKey: NINJA_SFX_POISON,
     trigger: { type: 'smallStraight' },
     effects: [
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, '对手获得 1 个慢性中毒。'),
-        damage(5, '造成 5 点伤害。'),
+        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, abilityEffectText('poison-blade', 'inflictDelayedPoison')),
+        damage(5, abilityEffectText('poison-blade', 'damage5')),
     ],
 };
 
@@ -84,10 +141,9 @@ export const POISON_BLADE_2: AbilityDef = {
     ...POISON_BLADE,
     name: abilityText('poison-blade-2', 'name'),
     description: abilityText('poison-blade-2', 'description'),
-    tags: ['unblockable'],
     effects: [
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, '对手获得 1 个慢性中毒。'),
-        damage(6, '造成 6 点不可防御伤害。', { unblockable: true }),
+        customEffect('ninja-poison-blade-2', 'opponent', abilityEffectText('poison-blade-2', 'roll1DieApplyPoison')),
+        damage(5, abilityEffectText('poison-blade-2', 'damage5')),
     ],
 };
 
@@ -100,9 +156,9 @@ const SHADOW_STEP: AbilityDef = {
     sfxKey: NINJA_SFX_SMOKE,
     trigger: { type: 'diceSet', faces: { [FACE.MASK]: 4 } },
     effects: [
-        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, '对手获得 1 个慢性中毒。'),
-        damage(6, '造成 6 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('shadow-step', 'gainSmokeBomb')),
+        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, abilityEffectText('shadow-step', 'inflictDelayedPoison')),
+        damage(6, abilityEffectText('shadow-step', 'damage6Unblockable'), { unblockable: true }),
     ],
 };
 
@@ -110,10 +166,28 @@ export const SHADOW_STEP_2: AbilityDef = {
     ...SHADOW_STEP,
     name: abilityText('shadow-step-2', 'name'),
     description: abilityText('shadow-step-2', 'description'),
-    effects: [
-        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, '对手获得 2 个慢性中毒。'),
-        damage(7, '造成 7 点不可防御伤害。', { unblockable: true }),
+    variants: [
+        {
+            id: 'shadow-step-2-main',
+            trigger: { type: 'diceSet', faces: { [FACE.MASK]: 4 } },
+            tags: ['unblockable'],
+            effects: [
+                grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('shadow-step-2', 'gainSmokeBomb')),
+                grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, abilityEffectText('shadow-step-2', 'inflictDelayedPoison2')),
+                damage(5, abilityEffectText('shadow-step-2', 'damage5Unblockable'), { unblockable: true }),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'shadow-step-2-strangle',
+            trigger: { type: 'diceSet', faces: { [FACE.MASK]: 3 } },
+            effects: [
+                grantToken('self', TOKEN_IDS.NINJUTSU, 3, abilityEffectText('shadow-step-2-strangle', 'gainNinjutsu3')),
+                grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, abilityEffectText('shadow-step-2-strangle', 'inflictDelayedPoison2')),
+                customEffect('ninja-nonattack-closeout', 'self', abilityEffectText('shadow-step-2-strangle', 'nonAttackCloseout')),
+            ],
+            priority: 0,
+        },
     ],
 };
 
@@ -126,7 +200,7 @@ const DEATH_BLOSSOM: AbilityDef = {
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3, [FACE.SHURIKEN]: 2 } },
     effects: [
         {
-            description: '投掷 5 骰并按忍刀/手里剑累计伤害。',
+            description: abilityEffectText('death-blossom', 'roll5DiceResolveDamage'),
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -146,6 +220,10 @@ export const DEATH_BLOSSOM_2: AbilityDef = {
     ...DEATH_BLOSSOM,
     name: abilityText('death-blossom-2', 'name'),
     description: abilityText('death-blossom-2', 'description'),
+    effects: [
+        customEffect('ninja-death-blossom-2', 'opponent', abilityEffectText('death-blossom-2', 'roll5DiceDamageMaskBonusesReroll2')),
+        damage(0, abilityEffectText('death-blossom-2', 'resolveRolledDamage'), { timing: 'withDamage' }),
+    ],
 };
 
 const SMOKE_SCREEN: AbilityDef = {
@@ -156,9 +234,9 @@ const SMOKE_SCREEN: AbilityDef = {
     sfxKey: NINJA_SFX_SMOKE,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 1, [FACE.SHURIKEN]: 2, [FACE.MASK]: 1 } },
     effects: [
-        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-        grantToken('self', TOKEN_IDS.NINJUTSU, 2, '获得 2 个忍术。'),
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, '对手获得 1 个慢性中毒。'),
+        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('smoke-screen', 'gainSmokeBomb')),
+        grantToken('self', TOKEN_IDS.NINJUTSU, 2, abilityEffectText('smoke-screen', 'gainNinjutsu2')),
+        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, abilityEffectText('smoke-screen', 'inflictDelayedPoison')),
     ],
 };
 
@@ -166,10 +244,23 @@ export const SMOKE_SCREEN_2: AbilityDef = {
     ...SMOKE_SCREEN,
     name: abilityText('smoke-screen-2', 'name'),
     description: abilityText('smoke-screen-2', 'description'),
-    effects: [
-        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-        grantToken('self', TOKEN_IDS.NINJUTSU, 3, '获得 3 个忍术。'),
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 1, '对手获得 1 个慢性中毒。'),
+    variants: [
+        {
+            id: 'smoke-screen-2-main',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 1, [FACE.SHURIKEN]: 2, [FACE.MASK]: 1 } },
+            effects: [
+                customEffect('ninja-smoke-screen-2', 'self', abilityEffectText('smoke-screen-2', 'grantSmokeBombNinjutsu3Poison')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'smoke-screen-2-kuji-kiri',
+            trigger: { type: 'diceSet', faces: { [FACE.SHURIKEN]: 3, [FACE.MASK]: 2 } },
+            effects: [
+                customEffect('ninja-smoke-screen-kuji-kiri', 'self', abilityEffectText('smoke-screen-2-kuji-kiri', 'deal4DirectDamageToTwoTargets')),
+            ],
+            priority: 0,
+        },
     ],
 };
 
@@ -181,8 +272,8 @@ const SHADOW_FANG: AbilityDef = {
     sfxKey: NINJA_SFX_SLASH,
     trigger: { type: 'largeStraight' },
     effects: [
-        grantToken('self', TOKEN_IDS.NINJUTSU, 2, '获得 2 个忍术。'),
-        damage(8, '造成 8 点伤害。'),
+        grantToken('self', TOKEN_IDS.NINJUTSU, 2, abilityEffectText('shadow-fang', 'gainNinjutsu2')),
+        damage(8, abilityEffectText('shadow-fang', 'damage8')),
     ],
 };
 
@@ -190,9 +281,27 @@ export const SHADOW_FANG_2: AbilityDef = {
     ...SHADOW_FANG,
     name: abilityText('shadow-fang-2', 'name'),
     description: abilityText('shadow-fang-2', 'description'),
-    effects: [
-        grantToken('self', TOKEN_IDS.NINJUTSU, 2, '获得 2 个忍术。'),
-        damage(9, '造成 9 点伤害。'),
+    variants: [
+        {
+            id: 'shadow-fang-2-main',
+            trigger: { type: 'largeStraight' },
+            effects: [
+                grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('shadow-fang-2', 'gainSmokeBomb')),
+                grantToken('self', TOKEN_IDS.NINJUTSU, 2, abilityEffectText('shadow-fang-2', 'gainNinjutsu2')),
+                damage(8, abilityEffectText('shadow-fang-2', 'damage8')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'shadow-fang-2-deceive',
+            trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.MASK]: 2 } },
+            tags: ['unblockable'],
+            effects: [
+                grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('shadow-fang-2-deceive', 'gainSmokeBomb')),
+                damage(2, abilityEffectText('shadow-fang-2-deceive', 'damage2Unblockable'), { unblockable: true }),
+            ],
+            priority: 0,
+        },
     ],
 };
 
@@ -206,18 +315,9 @@ const BLINK: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3 },
     effects: [
         {
-            description: '防御掷 3 骰。忍刀/手里剑反击，面具获得烟雾弹。',
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 3,
-                conditionalEffects: [
-                    { face: FACE.KATANA, bonusDamage: 1 },
-                    { face: FACE.SHURIKEN, bonusDamage: 2 },
-                    { face: FACE.MASK, grantToken: { tokenId: TOKEN_IDS.SMOKE_BOMB, value: 1 } },
-                ],
-            },
-            timing: 'immediate',
+            description: abilityEffectText('blink', 'resolveDefense'),
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-blink' },
+            timing: 'withDamage',
         },
     ],
 };
@@ -226,6 +326,14 @@ export const BLINK_2: AbilityDef = {
     ...BLINK,
     name: abilityText('blink-2', 'name'),
     description: abilityText('blink-2', 'description'),
+    trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3, rollLimit: 2, rerollDieLimit: 2 },
+    effects: [
+        {
+            description: abilityEffectText('blink-2', 'resolveDefense'),
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-blink-2' },
+            timing: 'withDamage',
+        },
+    ],
 };
 
 const NINJA_ASSASSINATE: AbilityDef = {
@@ -237,9 +345,9 @@ const NINJA_ASSASSINATE: AbilityDef = {
     sfxKey: NINJA_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.MASK]: 5 } },
     effects: [
-        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, '对手获得 2 个慢性中毒。'),
-        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-        damage(10, '造成 10 点伤害。'),
+        grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, abilityEffectText('ninja-assassinate', 'inflictDelayedPoison2')),
+        grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, abilityEffectText('ninja-assassinate', 'gainSmokeBomb')),
+        damage(10, abilityEffectText('ninja-assassinate', 'damage10')),
     ],
 };
 

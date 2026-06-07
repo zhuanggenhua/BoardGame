@@ -10,6 +10,8 @@ import { resolveCardAtlasId, initSpriteAtlases } from '../cardAtlas';
 import type { Card } from '../../domain/types';
 import { useToast } from '../../../../contexts/ToastContext';
 
+const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
+
 /** 获取卡牌的精灵图配置 */
 function getCardSpriteConfig(card: Card): { atlasId: string; frameIndex: number } {
     const spriteAtlasType = card.spriteAtlas ?? (card.cardType === 'unit' && card.unitClass === 'summoner' ? 'hero' : 'cards');
@@ -293,11 +295,17 @@ export const MyDeckPanel: React.FC<MyDeckPanelProps> = ({
                 closeLabel={t('actions.closePreview')}
             >
                 {magnifiedCard && (
-                    <CardSprite
-                        atlasId={magnifiedCard.atlasId}
-                        frameIndex={magnifiedCard.frameIndex}
-                        className="h-[75vh] w-auto rounded-xl shadow-2xl"
-                    />
+                    <div
+                        style={{
+                            width: `min(90vw, calc(75vh * ${SUMMONER_WARS_CARD_ASPECT_RATIO}))`,
+                        }}
+                    >
+                        <CardSprite
+                            atlasId={magnifiedCard.atlasId}
+                            frameIndex={magnifiedCard.frameIndex}
+                            className="w-full rounded-xl shadow-2xl"
+                        />
+                    </div>
                 )}
             </MagnifyOverlay>
         </div>

@@ -4,6 +4,10 @@ function normalizeE2EPath(value) {
     return value.trim().replace(/\\/g, '/');
 }
 
+function escapePlaywrightGrepLiteral(value) {
+    return value.replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&');
+}
+
 function parseArgs(argv) {
     let file = process.env.PW_TEST_MATCH?.trim() ?? '';
     let testCase = process.env.PW_TEST_GREP?.trim() ?? '';
@@ -78,7 +82,7 @@ if (!file) {
 
 const forwardArgs = [file];
 if (testCase) {
-    forwardArgs.push('--grep', testCase);
+    forwardArgs.push('--grep', escapePlaywrightGrepLiteral(testCase));
 }
 forwardArgs.push(...playwrightArgs);
 

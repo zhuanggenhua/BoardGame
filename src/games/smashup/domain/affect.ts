@@ -3,7 +3,6 @@ import type { AffectType } from './ongoingEffects';
 import type {
     AttachedActionOnMinion,
     BaseAbilitySuppressedEvent,
-    BaseInPlay,
     CardSuppressedEvent,
     CardToDeckBottomEvent,
     CardToDeckTopEvent,
@@ -38,10 +37,16 @@ export interface AffectRecord {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
     triggerMinion?: MinionOnBase;
+    protectionTargetMinion?: MinionOnBase;
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
+    triggerCardUid?: string;
+    triggerCardDefId?: string;
+    triggerCardOwnerId?: PlayerId;
+    triggerCardKind?: Extract<AffectTargetKind, 'ongoing' | 'attached_action'>;
     counterChangeKind?: 'added' | 'removed';
     counterDelta?: number;
 }
@@ -51,6 +56,7 @@ interface CardSourceMeta {
     sourceCardUid?: string;
     sourceDefId?: string;
     sourceControllerId?: PlayerId;
+    sourceOwnerPlayerId?: PlayerId;
     sourceBaseIndex?: number;
 }
 
@@ -111,6 +117,7 @@ function resolveSourceMeta(
             ?? defaultSourceDefId
             ?? normalizeReasonToSourceDefId(payload.reason as string | undefined),
         sourceControllerId: payload.sourceControllerId as PlayerId | undefined,
+        sourceOwnerPlayerId: payload.sourceOwnerPlayerId as PlayerId | undefined,
         sourceBaseIndex: payload.sourceBaseIndex as number | undefined,
     };
 }
@@ -133,6 +140,7 @@ function buildMinionAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
         triggerMinion: minion,
         triggerMinionUid: minion.uid,
@@ -157,7 +165,12 @@ function buildInPlayCardAffectRecord(
         sourceCardUid: source.sourceCardUid,
         sourceDefId: source.sourceDefId,
         sourceControllerId: source.sourceControllerId,
+        sourceOwnerPlayerId: source.sourceOwnerPlayerId,
         sourceBaseIndex: source.sourceBaseIndex,
+        triggerCardUid: lookup.targetKind === 'ongoing' ? lookup.ongoing.uid : lookup.action.uid,
+        triggerCardDefId: lookup.targetKind === 'ongoing' ? lookup.ongoing.defId : lookup.action.defId,
+        triggerCardOwnerId: lookup.targetKind === 'ongoing' ? lookup.ongoing.ownerId : lookup.action.ownerId,
+        triggerCardKind: lookup.targetKind,
     };
 }
 
@@ -228,16 +241,18 @@ export function buildAffectRecords(
             if (payload.targetType !== 'minion' || !payload.targetMinionUid) return [];
             const minion = core.bases[payload.targetBaseIndex]?.minions.find(candidate => candidate.uid === payload.targetMinionUid);
             if (!minion) return [];
+            const sourcePlayerId = payload.sourcePlayerId ?? payload.ownerId;
             return [buildMinionAffectRecord(
                 minion,
                 payload.targetBaseIndex,
                 'attach_action',
                 undefined,
                 {
-                    sourcePlayerId: payload.ownerId,
+                    sourcePlayerId,
                     sourceCardUid: payload.cardUid,
                     sourceDefId: payload.defId,
-                    sourceControllerId: payload.ownerId,
+                    sourceControllerId: sourcePlayerId,
+                    sourceOwnerPlayerId: payload.ownerId,
                     sourceBaseIndex: payload.targetBaseIndex,
                 },
             )];
@@ -257,13 +272,19 @@ export function buildAffectRecords(
             const payload = (event as MinionControlChangedEvent).payload;
             const minion = core.bases[payload.baseIndex]?.minions.find(candidate => candidate.uid === payload.minionUid);
             if (!minion) return [];
-            return [buildMinionAffectRecord(
-                minion,
+            const affectedMinion: MinionOnBase = {
+                ...minion,
+                controller: payload.toControllerId,
+            };
+            const record = buildMinionAffectRecord(
+                affectedMinion,
                 payload.baseIndex,
                 'control_change',
                 payload.reason,
                 resolveSourceMeta(payload as unknown as Record<string, unknown>, payload.sourcePlayerId, payload.reason),
-            )];
+            );
+            record.protectionTargetMinion = minion;
+            return [record];
         }
         case SU_EVENTS.POWER_COUNTER_ADDED: {
             const payload = (event as PowerCounterAddedEvent).payload;

@@ -21,8 +21,7 @@ import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { getCardDef, getBaseDef, getMinionDef, resolveCardName, resolveCardText } from './data/cards';
-import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
-import { isOperationRestricted } from './domain/ongoingEffects';
+import { getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
 import { useGameAudio, playDeniedSound, playSound } from '../../lib/audio/useGameAudio';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -31,7 +30,7 @@ import { initSmashUpAtlases } from './ui/cardAtlas';
 // 同步注册所有图集（cards1-4 + base1-4，懒解析模式），确保首次渲染时 atlas 注册已就绪
 initSmashUpAtlases();
 import { SMASH_UP_MANIFEST } from './manifest';
-import { getLayoutConfig } from './ui/layoutConfig';
+import { getLayoutConfig, layoutInlineSize } from './ui/layoutConfig';
 import './cursor';
 import { HandArea, type HandAreaDragPreview, type HandAreaDropTarget } from './ui/HandArea';
 
@@ -49,14 +48,12 @@ import { CardMagnifyOverlay, type CardMagnifyTarget } from './ui/CardMagnifyOver
 import { GameButton as SmashUpGameButton } from './ui/GameButton';
 import { DeckDiscardZone } from './ui/DeckDiscardZone';
 import { getDiscardPlayOptions } from './domain/discardPlayability';
+import { getDiscardActionPlayOptions } from './domain/discardActionPlayability';
 import { getDiscardSpecialOptions } from './domain/discardSpecialAbilities';
 import {
-    actionLikeNeedsPlayBase,
-    actionLikeNeedsPlayMinion,
-    actionLikePlayTargetMinionController,
     actionLikeNeedsResponseWindowBase,
-    canCardBePlayedInResponseWindow,
-    getResponseWindowPlayableBaseIndicesForCard,
+    canCardBePlayedInResponseWindowForMatchState,
+    getResponseWindowPlayableBaseIndicesForMatchState,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
     isActionLikeRespondableInWindow,
@@ -87,16 +84,27 @@ import { UI_Z_INDEX } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { SmashUpEndgameContent, SmashUpEndgameActions } from './ui/SmashUpEndgame';
-import type { PlayConstraint } from './domain/types';
 import type { SpotlightItem } from '../../components/game/framework';
 import { resolveRuntimeLayoutScaleMetrics } from '../mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
-import { RevealOverlay } from './ui/RevealOverlay';
+import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
-import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay } from './ui/interactionMode';
+import {
+    getSmashUpDirectHandPromptCardState,
+    isSmashUpPromptOwnedByPlayer,
+    resolveSmashUpHandInteractionMode,
+    resolveSmashUpHandPromptUiMode,
+    shouldForceSmashUpPromptOverlay,
+} from './ui/interactionMode';
+import { getHandSpecialPlayableBaseIndices, shouldPreferHandSpecialSelection } from './ui/handSpecialSelection';
+import { resolveMinionUiPlayPlan } from './ui/resolveMinionUiPlayPlan';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
+import { normalizeSmashUpCoreForUi } from './ui/normalizeRuntimeState';
+import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
+import { collectLegalActionPlayTargets, getActionPlayTargetMode } from './domain/playLegality';
+import { buildDiscardStripCards } from './ui/discardStripCards';
 
 const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'ui.extra_minion_granted': '获得{{count}}次额外随从机会',
@@ -111,6 +119,7 @@ const ABILITY_FEEDBACK_DEFAULT_MESSAGES: Record<string, string> = {
     'feedback.hand_empty': '手牌中没有符合条件的卡牌',
     'feedback.condition_not_met': '条件不满足，能力未生效',
     'feedback.target_protected': '目标受到保护，能力未生效',
+    'feedback.all_protected': '所有目标都受到保护，能力未生效',
     'feedback.not_highest_power': '本随从不是这里力量最高的，能力未生效',
     'feedback.no_power_counters': '没有可移除的+1力量指示物',
 };
@@ -233,31 +242,15 @@ function buildDragArrowGuide(
     };
 }
 
-/** UI 层打出约束检查（与 commands.ts 的 checkPlayConstraint 对齐） */
-function checkPlayConstraintUI(
-    constraint: PlayConstraint,
-    core: SmashUpCore,
-    baseIndex: number,
-    playerId: string,
-): boolean {
-    if (constraint === 'requireOwnMinion') {
-        return core.bases[baseIndex].minions.some(m => m.owner === playerId);
-    }
-    if (typeof constraint === 'object' && constraint.type === 'requireOwnPower') {
-        const base = core.bases[baseIndex];
-        const myPower = getPlayerEffectivePowerOnBase(core, base, baseIndex, playerId);
-        return myPower >= constraint.minPower;
-    }
-    return true;
-}
-
 const getPhaseNameKey = (phase: string) => `phases.${phase}`;
 
 const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, matchData, isMultiplayer }) => {
     const { t, i18n } = useTranslation('game-smashup');
     const { setSelectedFactions, interactionMode } = useSmashUpOverlay();
 
-    const core = G?.core;
+    const runtimeStateNormalization = useMemo(() => normalizeSmashUpCoreForUi(G?.core), [G?.core]);
+    const core = runtimeStateNormalization.core;
+    const matchState = useMemo(() => (G && core ? { ...G, core } : G), [G, core]);
     const phase = G?.sys?.phase;
     const corePlayers = core?.players ?? EMPTY_PLAYERS;
     const coreBases = core?.bases ?? EMPTY_BASES;
@@ -316,6 +309,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
     const playerDisplayOrder = playerView.orderedPlayerIds;
     const playerNames = playerView.playerNames;
+    const [isNonEssentialUiHidden, setIsNonEssentialUiHidden] = useState(false);
     
     // 响应式布局配置
     const playerCount = playerDisplayOrder.length || coreTurnOrder.length || 2;
@@ -347,9 +341,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         ? 'w-3 h-3 fill-amber-300 shrink-0 drop-shadow-[0_0_2px_rgba(252,211,77,0.6)]'
         : 'w-3.5 h-3.5 fill-amber-300 shrink-0 drop-shadow-[0_0_2px_rgba(252,211,77,0.6)]';
     const floatingHintClassName = isMobileViewport
-        ? 'absolute inset-x-0 flex justify-center pointer-events-none'
-        : 'fixed inset-x-0 flex justify-center pointer-events-none';
+        ? 'absolute inset-x-0 flex justify-center pointer-events-auto'
+        : 'fixed inset-x-0 flex justify-center pointer-events-auto';
     const floatingHintStyle = { zIndex: UI_Z_INDEX.hint, bottom: `${layout.floatingActionBottom}px` };
+    const battlefieldBottomInset = layout.handAreaHeight;
+    const battlefieldBaseTopPadding = `max(${layout.boardPaddingTop}px, calc(${layoutInlineSize((layout.minionCardWidth / 0.714) - 0.6, layout)} + 4px))`;
     const topFloatingBannerClassName = isMobileViewport
         ? 'absolute inset-x-0 z-30 flex justify-center pointer-events-none'
         : 'fixed inset-x-0 z-30 flex justify-center pointer-events-none';
@@ -367,6 +363,33 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return resolveI18nKeys(opt.label, t);
     }, [t]);
+
+    useEffect(() => {
+        const anomalies = runtimeStateNormalization.anomalies;
+        if (!core || anomalies.length === 0) return;
+
+        const summarized = anomalies.slice(0, 8).map((item) => `${item.path}:${item.actual}`);
+        const extraCount = anomalies.length - summarized.length;
+        const summaryText = extraCount > 0 ? `${summarized.join(', ')} (+${extraCount})` : summarized.join(', ');
+        const signature = `smashup-runtime-state-normalized:${summaryText}`;
+
+        void reportClientAutoFeedbackOnce(signature, {
+            content: `[auto][smashup-runtime-guard] 大杀四方运行时状态被强制规范化：${summaryText}`,
+            autoReportKind: 'smashup-runtime-state-normalized',
+            source: 'client-runtime-guard',
+            gameId: 'smashup',
+            gameName: 'smashup',
+            playerId: playerID ?? rootPid,
+            errorName: 'SmashUpRuntimeStateNormalized',
+            errorMessage: `大杀四方运行时状态存在空数组合同破坏：${summaryText}`,
+            errorSource: 'smashup.runtime_state_guard',
+            stack: JSON.stringify({
+                phase,
+                turnNumber: core.turnNumber,
+                anomalies,
+            }),
+        });
+    }, [core, phase, playerID, rootPid, runtimeStateNormalization.anomalies]);
     
     // 更新选择的派系到 Context（游戏开始后）
     useEffect(() => {
@@ -455,7 +478,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     });
 
     const [selectedCardUid, setSelectedCardUid] = useState<string | null>(null);
-    const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | null>(null);
+    const [selectedCardMode, setSelectedCardMode] = useState<'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | 'hand-special' | null>(null);
     const [selectedSetAsideTitanUid, setSelectedSetAsideTitanUid] = useState<string | null>(null);
     const [pendingFusionChoiceUid, setPendingFusionChoiceUid] = useState<string | null>(null);
     const [discardSelection, setDiscardSelection] = useState<Set<string>>(new Set());
@@ -530,13 +553,32 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isMyTurn || phase !== 'playCards' || !playerID) return [];
         return getDiscardSpecialOptions(core, playerID);
     }, [core, isMyTurn, phase, playerID]);
+    const discardActionPlayOptions = useMemo(() => {
+        if (!isMyTurn || phase !== 'playCards' || !playerID) return [];
+        return getDiscardActionPlayOptions(core, playerID);
+    }, [core, isMyTurn, phase, playerID]);
 
     // 手牌交互语义分流：
     // - direct: 单选 hand prompt，由手牌区直接承接点击
     // - overlay: 多选 hand prompt，继续走 PromptOverlay
     const currentInteraction = G?.sys?.interaction?.current;
     const currentPrompt = useMemo(() => asSimpleChoice(currentInteraction), [currentInteraction]);
-    const currentPromptTargetType = (currentInteraction?.data as Record<string, unknown> | undefined)?.targetType;
+    const respondCurrentPrompt = useCallback((payload: Record<string, unknown>) => {
+        if (!currentPrompt?.id) return;
+        dispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: currentPrompt.id,
+            ...payload,
+        });
+    }, [currentPrompt?.id, dispatch]);
+    const cancelCurrentPrompt = useCallback((reason?: string) => {
+        if (!currentPrompt?.id) return;
+        dispatch(INTERACTION_COMMANDS.CANCEL, {
+            interactionId: currentPrompt.id,
+            ...(reason ? { reason } : {}),
+        });
+    }, [currentPrompt?.id, dispatch]);
+    const currentPromptData = currentInteraction?.data as Record<string, unknown> | undefined;
+    const currentPromptTargetType = currentPromptData?.targetType;
     const shouldRenderPromptInOverlay = useMemo(() => shouldForceSmashUpPromptOverlay(currentPrompt), [currentPrompt]);
     const isCurrentPromptForPlayer = useMemo(() => {
         return isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID });
@@ -549,23 +591,22 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         });
     }, [currentPrompt, currentPromptTargetType, playerID]);
     const isDirectHandSelectPrompt = handPromptUiMode === 'direct';
+    const isReactionChoicePrompt = currentPrompt?.sourceId === 'smashup_reaction_choose';
 
     // 手牌交互中不可选的 uid 集合（置灰）
     // 框架层已支持通用刷新（所有交互自动刷新），此处只处理明确禁用的选项
-    const handPromptDisabledUids = useMemo<Set<string> | undefined>(() => {
-        if (!isDirectHandSelectPrompt || !currentPrompt || !myPlayer) return undefined;
-
-        // 只标记选项中明确禁用的卡牌（opt.disabled === true）
-        const disabled = new Set<string>();
-        for (const opt of currentPrompt.options) {
-            if (opt.disabled) {
-                const val = opt.value as { cardUid?: string } | undefined;
-                if (val?.cardUid) disabled.add(val.cardUid);
-            }
+    const handPromptCardState = useMemo(() => {
+        if (!currentPrompt || !myPlayer) {
+            return { selectableCardUids: new Set<string>(), disabledCardUids: undefined as Set<string> | undefined };
         }
-
-        return disabled.size > 0 ? disabled : undefined;
-    }, [isDirectHandSelectPrompt, currentPrompt, myPlayer]);
+        return getSmashUpDirectHandPromptCardState({
+            currentPrompt,
+            playerID,
+            targetType: currentPromptTargetType,
+            hand: myPlayer.hand,
+        });
+    }, [currentPrompt, currentPromptTargetType, myPlayer, playerID]);
+    const handPromptSelectableUids = handPromptCardState.selectableCardUids;
 
     const handPromptTitanUids = useMemo<Set<string>>(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return new Set();
@@ -622,6 +663,29 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }));
     }, [currentPrompt, isTitanReactionPrompt, resolvePromptOptionLabel]);
 
+    const titanPromptBaseSelection = useMemo(() => {
+        if (!isCurrentPromptForPlayer || !currentPrompt || currentPromptTargetType !== 'base') return null;
+        if (!currentPrompt.sourceId?.startsWith('titan_')) return null;
+
+        const continuation = currentPromptData?.continuationContext as { titanUid?: unknown } | undefined;
+        if (typeof continuation?.titanUid !== 'string') return null;
+
+        const titan = coreTitans.find(candidate => candidate.uid === continuation.titanUid);
+        if (!titan || titan.location.zone !== 'setaside') return null;
+
+        const baseIndices = new Set<number>();
+        for (const opt of currentPrompt.options) {
+            if (opt.disabled) continue;
+            const val = opt.value as { baseIndex?: unknown } | undefined;
+            if (typeof val?.baseIndex === 'number' && val.baseIndex >= 0) {
+                baseIndices.add(val.baseIndex);
+            }
+        }
+        if (baseIndices.size === 0) return null;
+
+        return { titanUid: continuation.titanUid, baseIndices };
+    }, [coreTitans, currentPrompt, currentPromptData, currentPromptTargetType, isCurrentPromptForPlayer]);
+
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return [];
@@ -638,12 +702,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 基地选择交互检测：当前 interaction 的选项包含有效 baseIndex 时，用基地区直接点击选择
     const isBaseSelectPrompt = useMemo(() => {
+        if (titanPromptBaseSelection) return false;
         if (!isCurrentPromptForPlayer || !currentPrompt || shouldRenderPromptInOverlay) return false;
         // 多选交互不走棋盘点击模式，交给 PromptOverlay 卡牌多选面板处理
         if (currentPrompt.multi) return false;
-        const data = currentInteraction?.data as Record<string, unknown> | undefined;
-        return data?.targetType === 'base';
-    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer, shouldRenderPromptInOverlay]);
+        return currentPromptData?.targetType === 'base';
+    }, [currentPrompt, currentPromptData, isCurrentPromptForPlayer, shouldRenderPromptInOverlay, titanPromptBaseSelection]);
 
     const _baseSelectPromptTitle = isBaseSelectPrompt && currentPrompt ? currentPrompt.title : '';
 
@@ -893,6 +957,16 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         });
     }, [isOngoingSelectPrompt, currentPrompt]);
 
+    // 响应窗口状态判断（meFirst 或 afterScoring）
+    const reactionWindow = useMemo(() => getSmashUpReactionWindowPresentation(G), [G]);
+    const isMeFirstResponse = useMemo(() => {
+        return reactionWindow?.windowType === 'meFirst' && playerID === reactionWindow.activePlayerId;
+    }, [reactionWindow, playerID]);
+
+    const isAfterScoringResponse = useMemo(() => {
+        return reactionWindow?.windowType === 'afterScoring' && playerID === reactionWindow.activePlayerId;
+    }, [reactionWindow, playerID]);
+
     // 交互驱动的选择提示标题（基地/随从/手牌/行动卡选择统一）
     const interactionSelectTitle = useMemo(() => {
         let raw = '';
@@ -925,7 +999,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
             return 'board';
         }
         return 'overlay';
@@ -939,9 +1013,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         isMinionSelectPrompt,
         isOngoingSelectPrompt,
         isCurrentPromptForPlayer,
+        titanPromptBaseSelection,
     ]);
 
-    const shouldLockNormalHandInteraction = activePromptSurface !== 'none' && activePromptSurface !== 'hand';
+    const shouldLockNormalHandInteraction = activePromptSurface !== 'none'
+        && activePromptSurface !== 'hand'
+        && !isReactionChoicePrompt;
 
     // 手牌区交互模式需要额外门禁：
     // - 用户全局偏好可以是 drag
@@ -979,6 +1056,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
                 setPendingFusionChoiceUid(null);
+                setSelectedSetAsideTitanUid(null);
             }
             setDiscardStripSelectedUid(null);
             setMultiSelectedOptionIds(new Set());
@@ -989,36 +1067,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [currentPrompt]);
 
     // 统一弃牌堆出牌：合并正常弃牌堆出牌 + interaction 驱动的弃牌堆随从选择
-    const discardStripCards = useMemo<Array<{
-        uid: string;
-        defId: string;
-        label: string;
-        optionId?: string;
-        optionValue?: unknown;
-        mode: 'interaction' | 'play_minion' | 'activate_special';
-    }>>(() => {
-        // interaction 驱动模式优先（僵尸领主等）
-        if (isDiscardMinionPrompt && currentPrompt) {
-            return currentPrompt.options
-                .filter(opt => !(opt.value as Record<string, unknown>)?.done)
-                .map(opt => {
-                    const val = opt.value as { cardUid: string; defId: string };
-                    return { uid: val.cardUid, defId: val.defId, label: opt.label, optionId: opt.id, optionValue: opt.value, mode: 'interaction' as const };
-                });
-        }
-        // 正常弃牌堆出牌模式
-        if (discardPlayOptions.length > 0 || discardSpecialOptions.length > 0) {
-            return [
-                ...discardPlayOptions.map(opt => ({
-                    uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'play_minion' as const,
-                })),
-                ...discardSpecialOptions.map(opt => ({
-                    uid: opt.card.uid, defId: opt.defId, label: opt.name, mode: 'activate_special' as const,
-                })),
-            ];
-        }
-        return [];
-    }, [isDiscardMinionPrompt, currentPrompt, discardPlayOptions, discardSpecialOptions]);
+    const discardStripCards = useMemo(() => buildDiscardStripCards({
+        isDiscardMinionPrompt,
+        currentPromptOptions: currentPrompt?.options,
+        discardPlayOptions,
+        discardActionPlayOptions,
+        discardSpecialOptions,
+    }), [isDiscardMinionPrompt, currentPrompt, discardPlayOptions, discardActionPlayOptions, discardSpecialOptions]);
 
     // 弃牌堆出牌横排的"完成"选项（interaction 模式下的 done 选项）
     const discardStripDoneOption = useMemo(() => {
@@ -1047,29 +1102,31 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 正常弃牌堆出牌：从 discardPlayOptions 读取
         const discardCard = discardStripCards.find(card => card.uid === discardStripSelectedUid);
         if (!discardCard) return new Set();
-        const allowedBaseIndices = discardCard.mode === 'activate_special'
+        const allowedBaseIndices = discardCard.mode === 'activate_special_base'
             ? discardSpecialOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices
-            : discardPlayOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices;
+            : discardCard.mode === 'play_action_minion'
+                ? discardActionPlayOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices
+                : discardPlayOptions.find(option => option.card.uid === discardStripSelectedUid)?.allowedBaseIndices;
         if (!allowedBaseIndices) return new Set();
         if (allowedBaseIndices === 'all') {
             return new Set(coreBases.map((_, i) => i));
         }
         return new Set(allowedBaseIndices);
-    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardMinionAllowedBases, discardPlayOptions, discardSpecialOptions, discardStripCards, coreBases]);
+    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardMinionAllowedBases, discardPlayOptions, discardActionPlayOptions, discardSpecialOptions, discardStripCards, coreBases]);
 
+    const discardStripAllowedMinionUids = useMemo<Set<string>>(() => {
+        if (!discardStripSelectedUid || isDiscardMinionPrompt) return new Set();
+        const specialOption = discardSpecialOptions.find(candidate => candidate.card.uid === discardStripSelectedUid);
+        if (specialOption?.allowedMinionUids?.length) {
+            return new Set(specialOption.allowedMinionUids);
+        }
+        const option = discardActionPlayOptions.find(candidate => candidate.card.uid === discardStripSelectedUid);
+        return new Set(option?.allowedMinionUids ?? []);
+    }, [discardStripSelectedUid, isDiscardMinionPrompt, discardActionPlayOptions, discardSpecialOptions]);
 
-    // 响应窗口状态判断（meFirst 或 afterScoring）
-    const reactionWindow = useMemo(() => getSmashUpReactionWindowPresentation(G), [G]);
-    const isMeFirstResponse = useMemo(() => {
-        return reactionWindow?.windowType === 'meFirst' && playerID === reactionWindow.activePlayerId;
-    }, [reactionWindow, playerID]);
-
-    const isAfterScoringResponse = useMemo(() => {
-        return reactionWindow?.windowType === 'afterScoring' && playerID === reactionWindow.activePlayerId;
-    }, [reactionWindow, playerID]);
 
     // 响应窗口期间禁用不匹配的卡牌（置灰）
-    // 但当有手牌直选交互时（isDirectHandSelectPrompt），不禁用手牌（交互会自己处理可选项）
+    // 但当有普通 hand prompt 直选交互时，不禁用手牌（交互自己控制可选项）
     const meFirstDisabledUids = useMemo<Set<string> | undefined>(() => {
         // 只在响应窗口期间且轮到我时生效
         const isMyResponseTurn = isMeFirstResponse || isAfterScoringResponse;
@@ -1085,12 +1142,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 disabled.add(card.uid);
                 continue;
             }
-            if (!canCardBePlayedInResponseWindow(core, card, windowType)) {
+            if (!canCardBePlayedInResponseWindowForMatchState(G, card, windowType)) {
                 disabled.add(card.uid);
             }
         }
         return disabled.size > 0 ? disabled : undefined;
-    }, [isMeFirstResponse, isAfterScoringResponse, myPlayer, isDirectHandSelectPrompt, reactionWindow?.windowType]);
+    }, [G, isMeFirstResponse, isAfterScoringResponse, myPlayer, isDirectHandSelectPrompt, reactionWindow?.windowType]);
 
     // Me First! 可选基地集合（达到临界点的基地索引）
     // 使用统一查询函数：优先使用进入 scoreBases 阶段时锁定的列表（Wiki Phase 3 Step 4）
@@ -1150,6 +1207,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const selectableSetAsideTitanUids = useMemo(() => {
         const next = new Set<string>(activatableSetAsideTitanUids);
         if (displayedDeckPlayerId !== playerID) return next;
+        if (titanPromptBaseSelection) {
+            next.add(titanPromptBaseSelection.titanUid);
+        }
         for (const titanUid of handPromptTitanUids) {
             next.add(titanUid);
         }
@@ -1159,12 +1219,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
         }
         return next;
-    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, isTitanReactionPrompt, playerID, reactionTitanPromptUids]);
+    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, isTitanReactionPrompt, playerID, reactionTitanPromptUids, titanPromptBaseSelection]);
 
     const selectedTitanDeployableBaseIndices = useMemo(() => {
         if (!selectedSetAsideTitanUid) return new Set<number>();
+        if (titanPromptBaseSelection?.titanUid === selectedSetAsideTitanUid) {
+            return new Set(titanPromptBaseSelection.baseIndices);
+        }
         return new Set(setAsideTitanActivationState.get(selectedSetAsideTitanUid)?.baseIndices ?? []);
-    }, [selectedSetAsideTitanUid, setAsideTitanActivationState]);
+    }, [selectedSetAsideTitanUid, setAsideTitanActivationState, titanPromptBaseSelection]);
     const activeSelectedSetAsideTitanUid = selectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.size > 0
         ? selectedSetAsideTitanUid
         : null;
@@ -1239,7 +1302,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             const base = coreBases[baseIndex];
 
             for (const ongoing of base.ongoingActions ?? []) {
-                if (ongoing.ownerId !== playerID) continue;
+                const ongoingControllerId =
+                    (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? ongoing.ownerId;
+                if (ongoingControllerId !== playerID) continue;
                 const validation = validate(G, {
                     type: SU_COMMANDS.USE_TALENT,
                     playerId: playerID,
@@ -1252,7 +1318,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
             for (const minion of base.minions) {
                 for (const attachedAction of minion.attachedActions ?? []) {
-                    if (attachedAction.ownerId !== playerID) continue;
+                    const attachedControllerId =
+                        (attachedAction.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                        ?? attachedAction.ownerId;
+                    if (attachedControllerId !== playerID) continue;
                     const validation = validate(G, {
                         type: SU_COMMANDS.USE_TALENT,
                         playerId: playerID,
@@ -1294,21 +1363,21 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (card.type !== 'action') return null;
         const actionDef = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
         if (!actionDef) return null;
-        if (actionDef.subtype === 'ongoing') {
-            return actionDef.ongoingTarget === 'minion' ? 'ongoing-minion' : 'ongoing';
-        }
-        if (actionLikeNeedsPlayMinion(actionDef)) return 'action-minion';
-        if (actionLikeNeedsPlayBase(actionDef)) return 'ongoing';
+        const targetMode = getActionPlayTargetMode(actionDef);
+        const isOngoing = actionDef.subtype === 'ongoing';
+        if (targetMode === 'minion') return isOngoing ? 'ongoing-minion' : 'action-minion';
+        if (targetMode === 'base') return 'ongoing';
         return 'action';
     }, [selectedCardMode, selectedCardUid]);
 
     const getDeployableBaseStateForCard = useCallback((card: CardInstance, cardMode: 'minion' | 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion' | null): { deployableBaseIndices: Set<number>; deployBlockReason: string | null } => {
         const indices = new Set<number>();
         if (!playerID || !cardMode) return { deployableBaseIndices: indices, deployBlockReason: null };
+        let firstValidationError: string | null = null;
 
         // 响应窗口中的可打出卡：若需要基地，则只允许即将计分的基地
         if ((isMeFirstResponse || isAfterScoringResponse) && reactionWindow?.windowType) {
-            const responseWindowEligible = getResponseWindowPlayableBaseIndicesForCard(core, card.defId, reactionWindow.windowType);
+            const responseWindowEligible = getResponseWindowPlayableBaseIndicesForMatchState(G, card.defId, reactionWindow.windowType);
             if (responseWindowEligible.length > 0) {
                 for (const idx of responseWindowEligible) {
                     indices.add(idx);
@@ -1343,64 +1412,36 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
         for (let i = 0; i < core.bases.length; i++) {
             if (cardMode === 'minion') {
-                const minionDef = getMinionDef(card.defId);
-                const basePower = minionDef?.power ?? 0;
-                const onlyBaseQuota = mustUseBaseLimitedMinionQuota(core, player, i, card.defId, basePower);
-                const onlyGlobalPowerLimitedQuota = mustUseGlobalPowerLimitedMinionQuota(core, player, i, card.defId, basePower);
-                const maxAllowedPower = getMaxRemainingGlobalPowerLimitedQuota(player);
-                if (onlyGlobalPowerLimitedQuota && maxAllowedPower !== undefined && basePower > maxAllowedPower) {
-                    continue;
-                }
-                if (!isOperationRestricted(core, i, playerID, 'play_minion', {
-                    minionDefId: card.defId,
-                    basePower,
-                    usesBaseLimitedMinionQuota: onlyBaseQuota,
-                })) {
-                    if (onlyBaseQuota) {
-                        const bQuota = player.baseLimitedMinionQuota?.[i] ?? 0;
-                        if (bQuota <= 0) continue;
-                        if (!canUseBaseLimitedMinionQuota(core, player, i, card.defId, basePower)) continue;
-                    }
-                    if (minionDef?.playConstraint) {
-                        if (checkPlayConstraintUI(minionDef.playConstraint, core, i, playerID)) {
-                            indices.add(i);
-                        }
-                    } else {
-                        indices.add(i);
-                    }
+                const playPlan = resolveMinionUiPlayPlan(matchState, playerID, card, i);
+                if (playPlan.validation.valid) {
+                    indices.add(i);
+                } else if (!firstValidationError && playPlan.validation.error) {
+                    firstValidationError = playPlan.validation.error;
                 }
             } else if (cardMode === 'ongoing-minion' || cardMode === 'action-minion') {
-                if (core.bases[i].minions.length === 0) {
-                    continue;
-                }
-                const actionDef = getCardDef(card.defId) as ActionCardDef | undefined;
-                const controllerConstraint = actionDef ? actionLikePlayTargetMinionController(actionDef) : 'any';
-                const hasControllerValidMinion = core.bases[i].minions.some((minion) => {
-                    if (controllerConstraint === 'self') return minion.controller === playerID;
-                    if (controllerConstraint === 'opponent') return minion.controller !== playerID;
-                    return true;
+                const targets = collectLegalActionPlayTargets(core, playerID, {
+                    defId: card.defId,
+                    effectiveHandSize: player.hand.length,
                 });
-                if (!hasControllerValidMinion) {
-                    continue;
+                for (const baseIndex of targets.baseIndices) {
+                    indices.add(baseIndex);
                 }
-                if (actionDef?.playConstraint) {
-                    if (checkPlayConstraintUI(actionDef.playConstraint, core, i, playerID)) {
-                        indices.add(i);
-                    }
-                } else {
-                    indices.add(i);
+                if (!firstValidationError && targets.firstError) {
+                    firstValidationError = targets.firstError;
                 }
+                break;
             } else if (cardMode === 'ongoing') {
-                if (!isOperationRestricted(core, i, playerID, 'play_action')) {
-                    const actionDef = getCardDef(card.defId) as ActionCardDef | undefined;
-                    if (actionDef?.playConstraint) {
-                        if (checkPlayConstraintUI(actionDef.playConstraint, core, i, playerID)) {
-                            indices.add(i);
-                        }
-                    } else {
-                        indices.add(i);
-                    }
+                const targets = collectLegalActionPlayTargets(core, playerID, {
+                    defId: card.defId,
+                    effectiveHandSize: player.hand.length,
+                });
+                for (const baseIndex of targets.baseIndices) {
+                    indices.add(baseIndex);
                 }
+                if (!firstValidationError && targets.firstError) {
+                    firstValidationError = targets.firstError;
+                }
+                break;
             }
         }
         if (cardMode === 'minion' && indices.size === 0) {
@@ -1453,23 +1494,32 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 }
             }
         }
-        return { deployableBaseIndices: indices, deployBlockReason: null };
-    }, [core, getBaseLimitedQuotaMeta, isMeFirstResponse, playerID, t]);
+        return {
+            deployableBaseIndices: indices,
+            deployBlockReason: cardMode === 'minion' ? firstValidationError : null,
+        };
+    }, [core, getBaseLimitedQuotaMeta, isAfterScoringResponse, isMeFirstResponse, matchState, playerID, reactionWindow?.sourceBaseIndex, reactionWindow?.windowType, t]);
 
     const collectMinionTargetUids = useCallback((baseIndices: Set<number>, card?: CardInstance) => {
         const uids = new Set<string>();
-        const actionDef = card ? getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined : undefined;
-        const controllerConstraint = actionDef ? actionLikePlayTargetMinionController(actionDef) : 'any';
+        if (!card || !playerID) return uids;
+        const player = core.players[playerID];
+        if (!player) return uids;
+        const targets = collectLegalActionPlayTargets(core, playerID, {
+            defId: card.defId,
+            effectiveHandSize: player.hand.length,
+        });
+        const legalMinionUids = new Set(targets.minionUids);
         for (let i = 0; i < coreBases.length; i++) {
             if (!baseIndices.has(i)) continue;
             for (const minion of coreBases[i].minions) {
-                if (controllerConstraint === 'self' && minion.controller !== playerID) continue;
-                if (controllerConstraint === 'opponent' && minion.controller === playerID) continue;
-                uids.add(minion.uid);
+                if (legalMinionUids.has(minion.uid)) {
+                    uids.add(minion.uid);
+                }
             }
         }
         return uids;
-    }, [coreBases, playerID]);
+    }, [core, coreBases, playerID]);
 
     const getCardPlayTargetState = useCallback((card: CardInstance, cardMode: 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion') => {
         if (cardMode === 'action') {
@@ -1506,8 +1556,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!selectedCardUid || !myPlayer) return { deployableBaseIndices: new Set(), deployBlockReason: null };
         const card = myPlayer.hand.find(c => c.uid === selectedCardUid);
         if (!card) return { deployableBaseIndices: new Set(), deployBlockReason: null };
+        if (selectedCardMode === 'hand-special') {
+            return {
+                deployableBaseIndices: getHandSpecialPlayableBaseIndices(G, rootPid, selectedCardUid),
+                deployBlockReason: null,
+            };
+        }
         return getDeployableBaseStateForCard(card, selectedCardMode);
-    }, [getDeployableBaseStateForCard, myPlayer, selectedCardMode, selectedCardUid]);
+    }, [G, getDeployableBaseStateForCard, myPlayer, rootPid, selectedCardMode, selectedCardUid]);
 
     // ongoing-minion 模式下的有效随从 UID 集合（只包含未被限制基地上的随从）
     const ongoingMinionTargetUids = useMemo<Set<string>>(() => {
@@ -1562,7 +1618,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 事件流消费 → FX 特效驱动
     const myPid = playerID || '0';
-    const gameEvents = useGameEvents({ G, myPlayerId: myPid, fxBus, baseRefs: baseRefsMap });
+    const gameEvents = useGameEvents({
+        G: (matchState ?? G) as MatchState<SmashUpCore>,
+        myPlayerId: myPid,
+        fxBus,
+        baseRefs: baseRefsMap,
+        playerNames,
+    });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
 
     // 行动卡特写队列：
@@ -1596,6 +1658,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         dismissAllSpotlight();
     }, [currentPrompt, dismissAllSpotlight, isCurrentPromptForPlayer]);
 
+    const revealSuppressionRules = useMemo(() => {
+        if (!currentPrompt) return [];
+        return resolveRevealSuppressionRules(
+            { ...currentPrompt, ...(currentPromptData ?? {}) },
+            isCurrentPromptForPlayer,
+        );
+    }, [currentPrompt, currentPromptData, isCurrentPromptForPlayer]);
+
     // 行动卡特写渲染
     const renderSpotlightCard = useCallback((item: SpotlightItem<{ defId: string }>) => {
         const def = getCardDef(item.cardData.defId);
@@ -1603,7 +1673,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const resolvedText = resolveCardText(def, t);
         return (
             <div
-                className="relative w-[20vw] max-w-[320px] aspect-[0.714] bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
+                className="relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
+                style={{
+                    width: '20vw',
+                    maxWidth: '320px',
+                    height: 'calc(20vw / 0.714)',
+                    maxHeight: 'calc(320px / 0.714)',
+                    aspectRatio: '0.714 / 1',
+                }}
                 data-testid="smashup-action-spotlight-card"
                 data-card-def-id={item.cardData.defId}
             >
@@ -1688,7 +1765,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 回合切换提示
     const [showTurnNotice, setShowTurnNotice] = useState(false);
-    const [isEndTurnUiHidden, setIsEndTurnUiHidden] = useState(false);
     const prevCurrentPidRef = useRef(currentPid);
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
@@ -1719,7 +1795,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setDiscardSelection(new Set());
             setMeFirstPendingCard(null);
             setIsSubmitting(false);
-            setIsEndTurnUiHidden(false);
+            setIsNonEssentialUiHidden(false);
             setHandDragPreview(null);
         });
         return () => {
@@ -1748,6 +1824,18 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [endTurnCooldownUntil]);
 
     useEffect(() => {
+        if (phase !== 'scoreBases') return;
+        if (!playerID || playerID !== currentPid) return;
+        if (G.sys.interaction?.current || reactionWindow) return;
+        const delayUntil = (G.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+        if (typeof delayUntil !== 'number') return;
+        const timeout = window.setTimeout(() => {
+            dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
+        }, Math.max(0, delayUntil - Date.now()));
+        return () => window.clearTimeout(timeout);
+    }, [G.sys, currentPid, dispatch, phase, playerID, reactionWindow]);
+
+    useEffect(() => {
         let cancelled = false;
         queueMicrotask(() => {
             if (cancelled) return;
@@ -1770,10 +1858,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        dispatch(SU_COMMANDS.PLAY_MINION, { cardUid, baseIndex });
+        const card = myPlayer?.hand.find(entry => entry.uid === cardUid);
+        const playPlan = card ? resolveMinionUiPlayPlan(G, rootPid, card, baseIndex) : null;
+        const playAsAction = playPlan?.playAsAction === true;
+        dispatch(SU_COMMANDS.PLAY_MINION, { cardUid, baseIndex, ...(playAsAction ? { playAsAction: true } : {}) });
         setSelectedCardUid(null);
         setSelectedCardMode(null);
-    }, [dispatch, isTutorialCommandAllowed]);
+    }, [G, dispatch, isTutorialCommandAllowed, myPlayer?.hand, rootPid]);
 
     const handlePlayOngoingAction = useCallback((cardUid: string, baseIndex: number) => {
         if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {
@@ -1885,8 +1976,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
-    }, [dispatch, reactionTitanTriggerOptionIdsByUid]);
+        respondCurrentPrompt({ optionId });
+    }, [reactionTitanTriggerOptionIdsByUid, respondCurrentPrompt]);
 
     const handleSetAsideTitanSelect = useCallback((titanUid: string) => {
         if (!playerID) return;
@@ -1894,19 +1985,28 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             handleTitanReactionTrigger(titanUid);
             return;
         }
-        if (shouldLockNormalHandInteraction) {
-            playDeniedSound();
-            return;
-        }
         if (isDirectHandSelectPrompt && currentPrompt && handPromptTitanUids.has(titanUid)) {
             const option = currentPrompt.options.find(
                 opt => (opt.value as CardOrTitanChoiceValue | undefined)?.titanUid === titanUid,
             );
             if (option) {
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
             }
+            return;
+        }
+        if (titanPromptBaseSelection?.titanUid === titanUid) {
+            setSelectedCardUid(null);
+            setSelectedCardMode(null);
+            setPendingFusionChoiceUid(null);
+            setDiscardStripSelectedUid(null);
+            setMeFirstPendingCard(null);
+            setSelectedSetAsideTitanUid((prev) => (prev === titanUid ? null : titanUid));
+            return;
+        }
+        if (shouldLockNormalHandInteraction) {
+            playDeniedSound();
             return;
         }
         const activation = setAsideTitanActivationState.get(titanUid);
@@ -1924,7 +2024,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setDiscardStripSelectedUid(null);
         setMeFirstPendingCard(null);
         setSelectedSetAsideTitanUid((prev) => (prev === titanUid ? null : titanUid));
-    }, [playerID, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, dispatch, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
+    }, [playerID, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, respondCurrentPrompt, titanPromptBaseSelection, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
 
     // VIEWING STATE
     const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
@@ -1954,14 +2054,22 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             // interaction 驱动模式（僵尸领主等）：合并 cardUid + baseIndex 响应
             if (isDiscardMinionPrompt && currentPrompt) {
                 if (discardCard.optionId) {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: discardCard.optionId, mergedValue: { ...discardCard.optionValue as Record<string, unknown>, baseIndex: index } });
+                    respondCurrentPrompt({ optionId: discardCard.optionId, mergedValue: { ...discardCard.optionValue as Record<string, unknown>, baseIndex: index } });
                 }
                 setDiscardStripSelectedUid(null);
                 return;
             }
-            if (discardCard.mode === 'activate_special') {
+            if (discardCard.mode === 'activate_special_base') {
                 dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { discardCardUid: discardStripSelectedUid, baseIndex: index });
                 setDiscardStripSelectedUid(null);
+                return;
+            }
+            if (discardCard.mode === 'activate_special_minion') {
+                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
+                return;
+            }
+            if (discardCard.mode === 'play_action_minion') {
+                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
                 return;
             }
             // 正常弃牌堆出牌模式
@@ -1972,6 +2080,16 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (activeSelectedSetAsideTitanUid && playerID) {
             if (!selectedTitanDeployableBaseIndices.has(index)) {
                 toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                return;
+            }
+            if (titanPromptBaseSelection?.titanUid === activeSelectedSetAsideTitanUid && currentPrompt) {
+                const option = currentPrompt.options.find(
+                    opt => !opt.disabled && (opt.value as { baseIndex?: number })?.baseIndex === index
+                );
+                if (option) {
+                    respondCurrentPrompt({ optionId: option.id });
+                }
+                setSelectedSetAsideTitanUid(null);
                 return;
             }
             dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { titanUid: activeSelectedSetAsideTitanUid, baseIndex: index });
@@ -1990,7 +2108,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (option) {
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             }
             return;
         }
@@ -2030,6 +2148,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 playDeniedSound();
                 return;
             }
+            if (selectedCardMode === 'hand-special') {
+                dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, { handCardUid: selectedCardUid, baseIndex: index });
+                setSelectedCardUid(null);
+                setSelectedCardMode(null);
+                return;
+            }
             if (selectedCardMode === 'ongoing') {
                 handlePlayOngoingAction(selectedCardUid, index);
             } else {
@@ -2044,7 +2168,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             dispatch(SU_COMMANDS.USE_BASE_ABILITY, { baseIndex: index });
         }
-    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, currentPrompt, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction]);
+    }, [selectedCardUid, selectedCardMode, activeSelectedSetAsideTitanUid, selectedTitanDeployableBaseIndices, titanPromptBaseSelection, currentPrompt, respondCurrentPrompt, handlePlayMinion, handlePlayOngoingAction, t, isBaseSelectPrompt, selectableBaseIndices, dispatch, meFirstPendingCard, deployableBaseIndices, deployBlockReason, discardStripSelectedUid, discardStripAllowedBases, isDiscardMinionPrompt, discardStripCards, meFirstEligibleBaseIndices, reactionWindow, playerID, myPlayer, usableActiveBaseAbilityIndices, isTutorialCommandAllowed, shouldLockNormalHandInteraction, toastCommandFeedback, toast]);
 
     const handleBuriedCardSelect = useCallback((cardUid: string) => {
         if (!isBuriedSelectPrompt || !currentPrompt) return;
@@ -2064,7 +2188,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
 
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: optionMeta.optionId });
+        respondCurrentPrompt({ optionId: optionMeta.optionId });
     }, [buriedPromptOptionsByUid, currentPrompt, dispatch, isBuriedSelectPrompt, isMultiBuriedSelect, multiMinionConstraints.max]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
@@ -2080,7 +2204,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 opt => (opt.value as { cardUid?: string })?.cardUid === card.uid
             );
             if (option) {
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
                 toast(t('ui.card_not_in_options', { defaultValue: '该卡牌不在当前可选范围内' }));
@@ -2104,7 +2228,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const isInResponseWindow = isMeFirstResponse || isAfterScoringResponse;
         if (isInResponseWindow) {
             const windowType = reactionWindow?.windowType;
-            if (!windowType || !canCardBePlayedInResponseWindow(core, card, windowType)) {
+            if (!windowType || !canCardBePlayedInResponseWindowForMatchState(G, card, windowType)) {
                 playDeniedSound();
                 return;
             }
@@ -2133,7 +2257,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
 
             if (actionLikeNeedsResponseWindowBase(cardDef)) {
-                if (getResponseWindowPlayableBaseIndicesForCard(core, card.defId, windowType).length === 0) {
+                if (getResponseWindowPlayableBaseIndicesForMatchState(G, card.defId, windowType).length === 0) {
                     playDeniedSound();
                     toast(t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
                     return;
@@ -2179,6 +2303,25 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
 
+        if (card.type === 'minion') {
+            const normalMinionBaseState = getDeployableBaseStateForCard(card, 'minion');
+            if (shouldPreferHandSpecialSelection({
+                matchState,
+                playerId: rootPid,
+                card,
+                normalPlayableBaseIndices: normalMinionBaseState.deployableBaseIndices,
+            })) {
+                if (selectedCardUid === card.uid && selectedCardMode === 'hand-special') {
+                    setSelectedCardUid(null);
+                    setSelectedCardMode(null);
+                } else {
+                    setSelectedCardUid(card.uid);
+                    setSelectedCardMode('hand-special');
+                }
+                return;
+            }
+        }
+
         if (card.type === 'fusion') {
             if (selectedCardUid === card.uid && !pendingFusionChoiceUid) {
                 setSelectedCardUid(null);
@@ -2199,33 +2342,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 return;
             }
 
-            if (cardDef?.subtype === 'ongoing') {
-                const cardMode = cardDef.ongoingTarget === 'minion' ? 'ongoing-minion' : 'ongoing';
+            const cardMode = resolvePlayableCardMode(card);
+            if (cardMode === 'ongoing' || cardMode === 'ongoing-minion' || cardMode === 'action-minion') {
                 if (selectedCardUid === card.uid && selectedCardMode === cardMode) {
                     setSelectedCardUid(null);
                     setSelectedCardMode(null);
                 } else {
                     enterActionTargetSelection(card, cardMode);
-                }
-                return;
-            }
-
-            if (cardDef && actionLikeNeedsPlayMinion(cardDef)) {
-                if (selectedCardUid === card.uid && selectedCardMode === 'action-minion') {
-                    setSelectedCardUid(null);
-                    setSelectedCardMode(null);
-                } else {
-                    enterActionTargetSelection(card, 'action-minion');
-                }
-                return;
-            }
-
-            if (cardDef && actionLikeNeedsPlayBase(cardDef)) {
-                if (selectedCardUid === card.uid && selectedCardMode === 'ongoing') {
-                    setSelectedCardUid(null);
-                    setSelectedCardMode(null);
-                } else {
-                    enterActionTargetSelection(card, 'ongoing');
                 }
                 return;
             }
@@ -2254,7 +2377,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardUid(card.uid);
             setSelectedCardMode('minion');
         }
-    }, [activeSelectedSetAsideTitanUid, core, currentPrompt, discardCount, dispatch, enterActionTargetSelection, handlePlayActionWithoutTarget, isAfterScoringResponse, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionWindow, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback]);
+    }, [activeSelectedSetAsideTitanUid, core, currentPrompt, discardCount, dispatch, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionWindow, resolvePlayableCardMode, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
 
     const confirmFusionPlayAs = useCallback((playAs: 'minion' | 'action') => {
         if (!pendingFusionChoiceUid || !myPlayer) return;
@@ -2279,18 +2402,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
 
-        if (def.actionSubtype === 'ongoing') {
-            enterActionTargetSelection(card, (def.actionOngoingTarget ?? 'base') === 'minion' ? 'ongoing-minion' : 'ongoing');
-            return;
-        }
-
-        if (actionLikeNeedsPlayMinion(def)) {
-            enterActionTargetSelection(card, 'action-minion');
-            return;
-        }
-
-        if (actionLikeNeedsPlayBase(def)) {
-            enterActionTargetSelection(card, 'ongoing');
+        const targetMode = getActionPlayTargetMode(def);
+        if (targetMode === 'minion' || targetMode === 'base') {
+            enterActionTargetSelection(
+                card,
+                targetMode === 'minion' && def.actionSubtype === 'ongoing' ? 'ongoing-minion'
+                    : targetMode === 'minion' ? 'action-minion'
+                        : 'ongoing',
+            );
             return;
         }
 
@@ -2326,15 +2445,43 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             // 单选模式：立即提交
             setSelectedCardUid(null);
             setSelectedCardMode(null);
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            respondCurrentPrompt({ optionId: option.id });
             return;
         }
         // 需要随从目标的行动卡：点击随从后直接打出
         if (selectedCardUid && (selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion')) {
             if (!ongoingMinionTargetUids.has(minionUid)) return;
             handlePlayOngoingToMinion(selectedCardUid, baseIndex, minionUid);
+            return;
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isMultiMinionSelect, multiMinionConstraints, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids]);
+        if (discardStripSelectedUid) {
+            const discardCard = discardStripCards.find(card => card.uid === discardStripSelectedUid);
+            if (discardCard?.mode === 'play_action_minion') {
+                if (!discardStripAllowedMinionUids.has(minionUid)) return;
+                if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {
+                    playDeniedSound();
+                    return;
+                }
+                dispatch(SU_COMMANDS.PLAY_ACTION, {
+                    cardUid: discardStripSelectedUid,
+                    targetBaseIndex: baseIndex,
+                    targetMinionUid: minionUid,
+                    fromDiscard: true,
+                });
+                setDiscardStripSelectedUid(null);
+                return;
+            }
+            if (discardCard?.mode === 'activate_special_minion') {
+                if (!discardStripAllowedMinionUids.has(minionUid)) return;
+                dispatch(SU_COMMANDS.ACTIVATE_SPECIAL, {
+                    discardCardUid: discardStripSelectedUid,
+                    baseIndex,
+                    targetMinionUid: minionUid,
+                });
+                setDiscardStripSelectedUid(null);
+            }
+        }
+    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isMultiMinionSelect, multiMinionConstraints, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed]);
 
     /** 持续行动卡点击回调：交互驱动的行动卡选择 */
     const handleOngoingSelect = useCallback((ongoingUid: string) => {
@@ -2346,7 +2493,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (option) {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            respondCurrentPrompt({ optionId: option.id });
         }
     }, [currentPrompt, dispatch, isOngoingSelectPrompt, selectableOngoingUids, setSelectedCardMode, setSelectedCardUid]);
 
@@ -2474,9 +2621,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [setViewingCard]);
 
     const visibleActivatableTitanUids = useMemo<Set<string>>(() => {
-        if (shouldLockNormalHandInteraction && !isTitanReactionPrompt) return new Set();
+        if (shouldLockNormalHandInteraction && !isTitanReactionPrompt && !titanPromptBaseSelection) return new Set();
         return selectableSetAsideTitanUids;
-    }, [isTitanReactionPrompt, selectableSetAsideTitanUids, shouldLockNormalHandInteraction]);
+    }, [isTitanReactionPrompt, selectableSetAsideTitanUids, shouldLockNormalHandInteraction, titanPromptBaseSelection]);
 
     const dragGuideTarget = useMemo(() => {
         if (!handDragPreview?.dropTarget || typeof document === 'undefined') return null;
@@ -2590,7 +2737,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 防御性检查：HMR 或 client 重建时 core 可能不完整
     if (!core.turnOrder || !core.bases) {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+            <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <LoadingScreen
                     anchor="container"
                     description={t('ui.loading', { defaultValue: '加载中...' })}
@@ -2603,7 +2750,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // EARLY RETURN: Faction Selection
     if (phase === 'factionSelect' && core.factionSelection) {
         return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+            <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <TutorialSelectionGate
                     isTutorialMode={isTutorialMode}
                     isTutorialActive={isTutorialActive}
@@ -2637,7 +2784,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }
 
     return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
+        <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
             {/* BACKGROUND: A warm, dark wooden table texture. */}
             <div className="relative w-full h-full bg-[#3e2723] overflow-hidden font-sans select-none"
             >
@@ -2655,147 +2802,181 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <div className="relative z-20 flex justify-between items-start pt-6 px-[2vw] pointer-events-none">
 
                     {/* Left: Turn Tracker (Yellow Notepad) */}
-                    <div
-                        className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
-                        data-tutorial-id="su-turn-tracker"
-                        style={turnTrackerStyle}
-                    >
-                        <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
-                        <motion.div
-                            key={`turn-${core.turnNumber}`}
-                            initial={{ scale: 0.9, rotate: -3 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                            className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
+                    {isNonEssentialUiHidden ? (
+                        <div
+                            aria-hidden="true"
+                            className="min-w-[140px] pointer-events-none"
+                            style={turnTrackerStyle}
+                        />
+                    ) : (
+                        <div
+                            className={`bg-[#fef3c7] text-slate-800 p-3 pt-4 shadow-[2px_3px_5px_rgba(0,0,0,0.2)] -rotate-1 min-w-[140px] clip-path-jagged ${isMobileViewport ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                            data-tutorial-id="su-turn-tracker"
+                            style={turnTrackerStyle}
                         >
-                            {t('ui.turn')} {core.turnNumber}
-                        </motion.div>
-                        <div className="flex justify-between items-center text-sm font-bold font-mono">
-                            <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
-                            <motion.span
-                                key={phase}
-                                initial={{ scale: 0.7, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                            <div className="w-3 h-3 rounded-full bg-red-400 absolute top-1 left-1/2 -translate-x-1/2 opacity-50 shadow-inner" /> {/* Pin */}
+                            <motion.div
+                                key={`turn-${core.turnNumber}`}
+                                initial={{ scale: 0.9, rotate: -3 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                                className="text-center font-black uppercase text-xl leading-none tracking-tighter mb-1 border-b-2 border-slate-800/20 pb-1"
                             >
-                                {t(getPhaseNameKey(phase))}
-                            </motion.span>
+                                {t('ui.turn')} {core.turnNumber}
+                            </motion.div>
+                            <div className="flex justify-between items-center text-sm font-bold font-mono">
+                                <span>{isMyTurn ? t('ui.you') : t('ui.opp')}</span>
+                                <motion.span
+                                    key={phase}
+                                    initial={{ scale: 0.7, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                    className="text-blue-600 bg-blue-100 px-1 rounded transform rotate-2 inline-block"
+                                >
+                                    {t(getPhaseNameKey(phase))}
+                                </motion.span>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Right: Score Sheet + Player Info */}
                     <div
-                        className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[500px] rounded-sm pointer-events-auto"
+                        className={`relative pointer-events-auto ${isNonEssentialUiHidden ? 'h-9 w-9' : ''}`}
                         data-tutorial-id="su-scoreboard"
                         style={scoreboardStyle}
                     >
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
-                        {isTeamMode && teamScores && (
-                            <div className="mb-2 flex flex-wrap justify-center gap-2 text-[10px] font-black uppercase tracking-wide">
-                                {SMASHUP_TEAM_IDS.map((teamId) => (
-                                    <div
-                                        key={teamId}
-                                        className="rounded-full border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700"
-                                    >
-                                        {t(teamId === 'team_13' ? 'ui.team_13' : 'ui.team_24')}
-                                        {' · '}
-                                        {t('ui.team_total', {
-                                            score: teamScores[teamId],
-                                            target: victoryTarget,
-                                            defaultValue: '{{score}} / {{target}}',
+                        <AnimatePresence initial={false}>
+                            {!isNonEssentialUiHidden && (
+                                <motion.div
+                                    key="scoreboard-panel"
+                                    data-testid="su-scoreboard-panel"
+                                    initial={{ opacity: 0, y: -8, rotate: 1 }}
+                                    animate={{ opacity: 1, y: 0, rotate: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                                    transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+                                    className="relative bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] max-w-[500px] rounded-sm"
+                                >
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
+                                    {isTeamMode && teamScores && (
+                                        <div className="mb-2 flex flex-wrap justify-center gap-2 text-[10px] font-black uppercase tracking-wide">
+                                            {SMASHUP_TEAM_IDS.map((teamId) => (
+                                                <div
+                                                    key={teamId}
+                                                    className="rounded-full border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700"
+                                                >
+                                                    {t(teamId === 'team_13' ? 'ui.team_13' : 'ui.team_24')}
+                                                    {' · '}
+                                                    {t('ui.team_total', {
+                                                        score: teamScores[teamId],
+                                                        target: victoryTarget,
+                                                        defaultValue: '{{score}} / {{target}}',
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="flex gap-5">
+                                        {playerDisplayOrder.map(pid => {
+                                            const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
+                                            const isCurrent = pid === currentPid;
+                                            const player = core.players[pid];
+                                            const isMe = pid === playerID;
+                                            const isOpponent = !isMe;
+                                            const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
+                                            // 派系图标
+                                            const factionIcons = (player.factions ?? [])
+                                                .map(fid => getFactionMeta(fid))
+                                                .filter(Boolean);
+                                            return (
+                                                <motion.div
+                                                    key={pid}
+                                                    className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
+                                                    animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
+                                                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                                    data-player-seat-anchor={pid}
+                                                    onMouseEnter={() => {
+                                                        // 悬浮在对手区域时显示眼睛图标
+                                                    }}
+                                                >
+                                                    <span className="mb-1 max-w-[6rem] truncate text-xs font-black">
+                                                        {displayName}
+                                                    </span>
+                                                    <motion.div
+                                                        key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
+                                                        data-testid={`su-score-vp-${pid}`}
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
+                                                        initial={{ scale: 1 }}
+                                                        animate={{ scale: [1, 1.3, 1] }}
+                                                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                                                        onPointerUp={(event) => {
+                                                            if (!isOpponent || event.pointerType !== 'touch') {
+                                                                return;
+                                                            }
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            triggerAlternateViewFromTouch(pid);
+                                                        }}
+                                                        onTouchEnd={(event) => {
+                                                            if (!isOpponent) {
+                                                                return;
+                                                            }
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            triggerAlternateViewFromTouch(pid);
+                                                        }}
+                                                        onClick={() => {
+                                                            if (isOpponent) {
+                                                                if (Date.now() - opponentScoreTouchHandledAtRef.current < 400) {
+                                                                    return;
+                                                                }
+                                                                setViewedPlayerId(pid);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {core.players[pid]?.vp ?? 0}
+                                                        {/* 对手区域悬浮时显示眼睛图标（无背景，直接叠加在圆球上） */}
+                                                        {isOpponent && !isMobileViewport && (
+                                                            <svg
+                                                                viewBox="0 0 24 24"
+                                                                className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${displayedDeckPlayerId === pid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                                            >
+                                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                                            </svg>
+                                                        )}
+                                                    </motion.div>
+                                                    {/* 派系图标 */}
+                                                    <div className="flex gap-0.5 mt-1">
+                                                        {factionIcons.map(meta => {
+                                                            if (!meta) return null;
+                                                            const Icon = meta.icon;
+                                                            return (
+                                                                <span key={meta.id} title={t(meta.nameKey)}>
+                                                                    <Icon className="w-4 h-4" style={{ color: meta.color }} />
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
+                                                </motion.div>
+                                            );
                                         })}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex gap-5">
-                            {playerDisplayOrder.map(pid => {
-                                const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
-                                const isCurrent = pid === currentPid;
-                                const player = core.players[pid];
-                                const isMe = pid === playerID;
-                                const isOpponent = !isMe;
-                                const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
-                                // 派系图标
-                                const factionIcons = (player.factions ?? [])
-                                    .map(fid => getFactionMeta(fid))
-                                    .filter(Boolean);
-                                return (
-                                    <motion.div
-                                        key={pid}
-                                        className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
-                                        animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
-                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                                        onMouseEnter={() => {
-                                            // 悬浮在对手区域时显示眼睛图标
-                                        }}
-                                    >
-                                        <span className="mb-1 max-w-[6rem] truncate text-xs font-black">
-                                            {displayName}
-                                        </span>
-                                        <motion.div
-                                            key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
-                                            data-testid={`su-score-vp-${pid}`}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
-                                            initial={{ scale: 1 }}
-                                            animate={{ scale: [1, 1.3, 1] }}
-                                            transition={{ duration: 0.4, ease: 'easeOut' }}
-                                            onPointerUp={(event) => {
-                                                if (!isOpponent || event.pointerType !== 'touch') {
-                                                    return;
-                                                }
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                triggerAlternateViewFromTouch(pid);
-                                            }}
-                                            onTouchEnd={(event) => {
-                                                if (!isOpponent) {
-                                                    return;
-                                                }
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                triggerAlternateViewFromTouch(pid);
-                                            }}
-                                            onClick={() => {
-                                                if (isOpponent) {
-                                                    if (Date.now() - opponentScoreTouchHandledAtRef.current < 400) {
-                                                        return;
-                                                    }
-                                                    setViewedPlayerId(pid);
-                                                }
-                                            }}
-                                        >
-                                            {core.players[pid]?.vp ?? 0}
-                                            {/* 对手区域悬浮时显示眼睛图标（无背景，直接叠加在圆球上） */}
-                                            {isOpponent && !isMobileViewport && (
-                                                <svg 
-                                                    viewBox="0 0 24 24" 
-                                                    className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${displayedDeckPlayerId === pid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                                                >
-                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                </svg>
-                                            )}
-                                        </motion.div>
-                                        {/* 派系图标 */}
-                                        <div className="flex gap-0.5 mt-1">
-                                            {factionIcons.map(meta => {
-                                                if (!meta) return null;
-                                                const Icon = meta.icon;
-                                                return (
-                                                    <span key={meta.id} title={t(meta.nameKey)}>
-                                                        <Icon className="w-4 h-4" style={{ color: meta.color }} />
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                        {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
+                <button
+                    type="button"
+                    data-testid="su-scoreboard-visibility-toggle"
+                    aria-label={isNonEssentialUiHidden
+                        ? t('ui.show_nonessential_controls', { defaultValue: '显示手牌、结束回合、记分板和回合指示' })
+                        : t('ui.hide_nonessential_controls', { defaultValue: '隐藏手牌、结束回合、记分板和回合指示' })}
+                    onClick={() => setIsNonEssentialUiHidden(prev => !prev)}
+                    className={`absolute right-2 top-2 z-50 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-9 w-9 text-sm' : 'h-10 w-10 text-base'}`}
+                >
+                    <span className="font-black leading-none">{isNonEssentialUiHidden ? '显' : '隐'}</span>
+                </button>
 
                 {/* 对手视角指示器 */}
                 <AnimatePresence>
@@ -2839,7 +3020,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                                 className="pointer-events-auto relative h-24 w-24"
                             >
-                                {!isEndTurnUiHidden && (
+                                {!isNonEssentialUiHidden && (
                                     <>
                                 <button
                                     data-testid="su-end-turn-action-button"
@@ -2994,17 +3175,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 )}
                                     </>
                                 )}
-                                <button
-                                    type="button"
-                                    data-testid="su-end-turn-visibility-toggle"
-                                    aria-label={isEndTurnUiHidden
-                                        ? t('ui.show_end_turn_controls', { defaultValue: '显示结束回合按钮和额度提示' })
-                                        : t('ui.hide_end_turn_controls', { defaultValue: '隐藏结束回合按钮和额度提示' })}
-                                    onClick={() => setIsEndTurnUiHidden(prev => !prev)}
-                                    className={`absolute right-0 bottom-0 z-10 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-7 w-7 translate-x-[30%] translate-y-[30%] text-[11px]' : 'h-8 w-8 translate-x-[35%] translate-y-[35%] text-xs'}`}
-                                >
-                                    <span className="font-black leading-none">{isEndTurnUiHidden ? '显' : '隐'}</span>
-                                </button>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -3086,7 +3256,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3119,7 +3289,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             variant="primary"
                                             size="md"
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
-                                            onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: Array.from(multiSelectedOptionIds) })}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
                                             确认选择
                                         </SmashUpGameButton>
@@ -3132,9 +3302,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         size="md"
                                         onClick={() => {
                                             if (isMultiMinionSelect) {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [opt.id] });
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
                                             } else {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id });
+                                                respondCurrentPrompt({ optionId: opt.id });
                                             }
                                         }}
                                     >
@@ -3169,7 +3339,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             variant="primary"
                                             size="md"
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
-                                            onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: Array.from(multiSelectedOptionIds) })}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
                                             确认选择
                                         </SmashUpGameButton>
@@ -3182,9 +3352,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         size="md"
                                         onClick={() => {
                                             if (isMultiBuriedSelect) {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [opt.id] });
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
                                             } else {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id });
+                                                respondCurrentPrompt({ optionId: opt.id });
                                             }
                                         }}
                                     >
@@ -3212,7 +3382,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3238,7 +3408,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        data-testid={opt.id === 'pass' ? 'su-titan-reaction-pass-button' : undefined}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3264,7 +3435,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3281,25 +3452,26 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     transformTarget="content"
                     visibleInsets={{
                         top: layout.hudTopOffset,
-                        bottom: layout.handAreaHeight,
+                        bottom: battlefieldBottomInset,
                     }}
                     className="absolute inset-0 z-10"
                     testId="su-battlefield-viewport"
                 >
                     <div
-                        className="absolute inset-0 flex items-center justify-center overflow-x-auto overflow-y-hidden no-scrollbar"
+                        className="absolute inset-0 flex justify-center overflow-x-auto overflow-y-hidden no-scrollbar"
                         data-tutorial-id="su-base-area"
                         style={{
-                            paddingTop: `${layout.boardPaddingTop}px`,
-                            paddingBottom: `${layout.handAreaHeight}px`,
+                            alignItems: 'safe center',
+                            paddingTop: battlefieldBaseTopPadding,
+                            paddingBottom: `${battlefieldBottomInset}px`,
                         }}
                     >
                         <div
-                            className="flex items-center min-w-max"
+                            className="flex items-start min-w-max"
                             data-testid="su-battlefield-zoom-target"
                             data-mobile-battlefield-zoom-target="true"
                             style={{
-                                gap: `${layout.baseGap}vw`,
+                                gap: layoutInlineSize(layout.baseGap, layout),
                                 paddingInline: `${layout.boardHorizontalPadding}px`,
                             }}
                         >
@@ -3320,12 +3492,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     }
                                     isMinionSelectMode={!isOngoingSelectPrompt && (
                                         ((selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') && ongoingMinionTargetUids.size > 0)
+                                        || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0)
                                         || (isMinionSelectPrompt && selectableMinionUids.size > 0)
                                         || (!!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion') && dragOngoingMinionTargetUids.size > 0)
                                     )}
                                     selectableMinionUids={
                                         isMinionSelectPrompt
                                             ? selectableMinionUids
+                                            : discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0
+                                                ? discardStripAllowedMinionUids
                                             : (selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion')
                                                 ? ongoingMinionTargetUids
                                                 : !!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion')
@@ -3337,7 +3512,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
                                     multiSelectedBuriedCardUids={isMultiBuriedSelect ? multiSelectedBuriedCardUids : undefined}
-                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedBases.has(idx))}
+                                    isSelectable={(isBaseSelectPrompt && selectableBaseIndices.has(idx)) || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size === 0 && discardStripAllowedBases.has(idx))}
                                     isDimmed={
                                         (isBaseSelectPrompt && !selectableBaseIndices.has(idx))
                                         || (discardStripSelectedUid != null && !discardStripAllowedBases.has(idx))
@@ -3354,7 +3529,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onOngoingSelect={handleOngoingSelect}
                                     onBuriedCardSelect={handleBuriedCardSelect}
                                     selectableOngoingUids={isOngoingSelectPrompt ? selectableOngoingUids : undefined}
-                                    onViewMinion={(defId) => setViewingCard({ defId, type: 'minion' })}
+                                    onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
                                     onViewAction={handleViewAction}
                                     onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
                                     onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
@@ -3461,128 +3636,139 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     document.body,
                 )}
                 {/* 手牌区：z-60，在弃牌遮罩之上 */}
-                {
-                    myPlayer && (
-                        <div 
-                            className="absolute bottom-0 inset-x-0 z-60 pointer-events-none"
-                            style={{ height: `${layout.handAreaHeight}px` }}
-                        >
+                {myPlayer && (
+                    <>
+                        {!isNonEssentialUiHidden && (
+                            <div
+                                className="absolute bottom-0 inset-x-0 z-60 pointer-events-none"
+                                style={{ height: `${layout.handAreaHeight}px` }}
+                            >
+                                <HandArea
+                                    hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
+                                    selectedCardUid={selectedCardUid}
+                                    onCardSelect={handleCardClick}
+                                    compactLayout={isMobileViewport}
+                                    isDiscardMode={needDiscard}
+                                    discardSelection={discardSelection}
+                                    highlightCardUids={isDirectHandSelectPrompt ? handPromptSelectableUids : undefined}
+                                    // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
+                                    disableInteraction={
+                                        shouldLockNormalHandInteraction ||
+                                        isTutorialActive &&
+                                        !isDirectHandSelectPrompt &&
+                                        !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
+                                        !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
+                                    }
+                                    disabledCardUids={meFirstDisabledUids ?? tutorialDisabledUids}
+                                    onCardView={handleViewCardDetail}
+                                    isOpponentView={isAlternateView}
+                                    interactionMode={handInteractionMode}
+                                    onResolveDropTarget={resolveHandDropTarget}
+                                    onCardDragPlay={handleCardDragPlay}
+                                    onDragStateChange={setHandDragPreview}
+                                />
+                            </div>
+                        )}
 
-                            <HandArea
-                                hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
-                                selectedCardUid={selectedCardUid}
-                                onCardSelect={handleCardClick}
-                                compactLayout={isMobileViewport}
-                                isDiscardMode={needDiscard || isDirectHandSelectPrompt}
-                                discardSelection={discardSelection}
-                                // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
-                                disableInteraction={
-                                    shouldLockNormalHandInteraction ||
-                                    isTutorialActive &&
-                                    !isDirectHandSelectPrompt &&
-                                    !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
-                                    !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
-                                }
-                                disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
-                                onCardView={handleViewCardDetail}
-                                isOpponentView={isAlternateView}
-                                interactionMode={handInteractionMode}
-                                onResolveDropTarget={resolveHandDropTarget}
-                                onCardDragPlay={handleCardDragPlay}
-                                onDragStateChange={setHandDragPreview}
-                            />
-
-                            {/* Fusion card playAs selector */}
-                            <AnimatePresence>
-                                {pendingFusionChoiceUid && (
+                        {/* Fusion card playAs selector */}
+                        <AnimatePresence>
+                            {pendingFusionChoiceUid && (
+                                <motion.div
+                                    className="fixed inset-0 flex items-center justify-center"
+                                    style={{ zIndex: UI_Z_INDEX.overlayRaised }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={() => {
+                                        setPendingFusionChoiceUid(null);
+                                        setSelectedCardUid(null);
+                                        setSelectedCardMode(null);
+                                    }}
+                                >
+                                    <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
                                     <motion.div
-                                        className="fixed inset-0 flex items-center justify-center"
-                                        style={{ zIndex: UI_Z_INDEX.overlayRaised }}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        onClick={() => {
-                                            setPendingFusionChoiceUid(null);
-                                            setSelectedCardUid(null);
-                                            setSelectedCardMode(null);
-                                        }}
+                                        className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-4 pointer-events-auto"
+                                        initial={{ y: 16, scale: 0.98 }}
+                                        animate={{ y: 0, scale: 1 }}
+                                        exit={{ y: 10, scale: 0.98 }}
+                                        onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
-                                        <motion.div
-                                            className="relative w-[92vw] max-w-[520px] rounded-lg border-2 border-amber-300/60 bg-[#f3f0e8] shadow-2xl p-4 pointer-events-auto"
-                                            initial={{ y: 16, scale: 0.98 }}
-                                            animate={{ y: 0, scale: 1 }}
-                                            exit={{ y: 10, scale: 0.98 }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <div className="font-black text-slate-900 text-lg mb-3">
-                                                {t('ui.fusion_choose_playas', { defaultValue: '选择打出方式' })}
-                                            </div>
-                                            <div className="text-slate-700 text-sm mb-4">
-                                                {t('ui.fusion_choose_playas_desc', { defaultValue: '融合卡可以作为随从或战术打出。请选择本次打出的类型。' })}
-                                            </div>
-                                            <div className="flex gap-3">
-                                                <SmashUpGameButton
-                                                    variant="primary"
-                                                    className="flex-1"
-                                                    onClick={() => confirmFusionPlayAs('minion')}
-                                                >
-                                                    {t('ui.play_as_minion', { defaultValue: '作为随从' })}
-                                                </SmashUpGameButton>
-                                                <SmashUpGameButton
-                                                    variant="secondary"
-                                                    className="flex-1"
-                                                    onClick={() => confirmFusionPlayAs('action')}
-                                                >
-                                                    {t('ui.play_as_action', { defaultValue: '作为战术' })}
-                                                </SmashUpGameButton>
-                                            </div>
-                                        </motion.div>
+                                        <div className="font-black text-slate-900 text-lg mb-3">
+                                            {t('ui.fusion_choose_playas', { defaultValue: '选择打出方式' })}
+                                        </div>
+                                        <div className="text-slate-700 text-sm mb-4">
+                                            {t('ui.fusion_choose_playas_desc', { defaultValue: '融合卡可以作为随从或战术打出。请选择本次打出的类型。' })}
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <SmashUpGameButton
+                                                variant="primary"
+                                                className="flex-1"
+                                                onClick={() => confirmFusionPlayAs('minion')}
+                                            >
+                                                {t('ui.play_as_minion', { defaultValue: '作为随从' })}
+                                            </SmashUpGameButton>
+                                            <SmashUpGameButton
+                                                variant="secondary"
+                                                className="flex-1"
+                                                onClick={() => confirmFusionPlayAs('action')}
+                                            >
+                                                {t('ui.play_as_action', { defaultValue: '作为战术' })}
+                                            </SmashUpGameButton>
+                                        </div>
                                     </motion.div>
-                                )}
-                            </AnimatePresence>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
-                            {/* NEW: Deck & Discard Zone */}
-                            <DeckDiscardZone
-                                deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
-                                madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
-                                discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
-                                compactLayout={isMobileViewport}
-                                isMyTurn={isMyTurn}
-                                hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}
-                                autoOpenPanel={isDiscardMinionPrompt}
-                                playableCards={discardStripCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
-                                selectedUid={discardStripSelectedUid}
-                                onSelectCard={setDiscardStripSelectedUid}
-                                selectHint={discardStripSelectedUid
-                                    ? (() => {
-                                        const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
-                                        if (selected?.mode === 'activate_special') {
-                                            return t('ui.click_base_to_bury', { defaultValue: '点击基地埋葬这张牌' });
-                                        }
-                                        return t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' });
-                                    })()
-                                    : undefined}
-                                onClosePanel={isDiscardMinionPrompt
-                                    ? (discardStripDoneOption
-                                        ? () => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: discardStripDoneOption!.id })
-                                        : () => dispatch(INTERACTION_COMMANDS.CANCEL, {}))
-                                    : () => { setDiscardStripSelectedUid(null); }
-                                }
-                                setAsideTitans={setAsideTitansForDisplay}
-                                activatableTitanUids={visibleActivatableTitanUids}
-                                reactionTitanUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
-                                selectedTitanUid={activeSelectedSetAsideTitanUid}
-                                onSelectTitan={handleSetAsideTitanSelect}
-                                onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
-                                onViewCard={handleViewCardDetail}
-                                dispatch={dispatch}
-                                playerID={playerID}
-                                playerNames={playerNames}
-                            />
-                        </div>
-                    )
-                }
+                        {/* NEW: Deck & Discard Zone */}
+                        <DeckDiscardZone
+                            deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
+                            deckQueryEnabled={core.deckQueryEnabled === true}
+                            deckCards={isAlternateView ? (displayedDeckPlayer?.deck ?? []) : (myPlayer?.deck ?? [])}
+                            deckFactions={isAlternateView ? (displayedDeckPlayer?.factions ?? []) : (myPlayer?.factions ?? [])}
+                            madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
+                            discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
+                            compactLayout={isMobileViewport}
+                            isMyTurn={isMyTurn}
+                            hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardActionPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}
+                            autoOpenPanel={isDiscardMinionPrompt}
+                            playableCards={discardStripCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
+                            selectedUid={discardStripSelectedUid}
+                            onSelectCard={setDiscardStripSelectedUid}
+                            selectHint={discardStripSelectedUid
+                                ? (() => {
+                                    const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
+                                    if (selected?.mode === 'activate_special_base') {
+                                        return t('ui.click_base_to_activate_discard_special', { defaultValue: '点击基地发动这张牌' });
+                                    }
+                                    if (selected?.mode === 'activate_special_minion') {
+                                        return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });
+                                    }
+                                    if (selected?.mode === 'play_action_minion') {
+                                        return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });
+                                    }
+                                    return t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' });
+                                })()
+                                : undefined}
+                            onClosePanel={isDiscardMinionPrompt
+                                ? (discardStripDoneOption
+                                    ? () => respondCurrentPrompt({ optionId: discardStripDoneOption!.id })
+                                    : () => cancelCurrentPrompt())
+                                : () => { setDiscardStripSelectedUid(null); }
+                            }
+                            setAsideTitans={setAsideTitansForDisplay}
+                            activatableTitanUids={visibleActivatableTitanUids}
+                            reactionTitanUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
+                            selectedTitanUid={activeSelectedSetAsideTitanUid}
+                            onSelectTitan={handleSetAsideTitanSelect}
+                            onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
+                            onViewCard={handleViewCardDetail}
+                            dispatch={dispatch}
+                            playerID={playerID}
+                            playerNames={playerNames}
+                        />
+                    </>
+                )}
 
                 {/* FX 特效层 */}
                 <FxLayer
@@ -3639,6 +3825,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     entries={eventStreamEntries}
                     currentPlayerId={revealViewerId}
                     playerNames={playerNames}
+                    suppressionRules={revealSuppressionRules}
                 />
 
                 {/* PREVIEW OVERLAY */}
@@ -3646,7 +3833,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆出牌交互时隐藏，由对应区域直接处理） */}
                 {(() => {
-                    const shouldRender = !isDirectHandSelectPrompt && !isBaseSelectPrompt && !isBuriedSelectPrompt && !isMinionSelectPrompt && !isOngoingSelectPrompt && !isDiscardMinionPrompt && !isTitanReactionPrompt;
+                    const shouldRender = !isDirectHandSelectPrompt
+                        && !isBaseSelectPrompt
+                        && !isBuriedSelectPrompt
+                        && !isMinionSelectPrompt
+                        && !isOngoingSelectPrompt
+                        && !isDiscardMinionPrompt
+                        && !isTitanReactionPrompt
+                        && !titanPromptBaseSelection;
                     return shouldRender ? (
                         <PromptOverlay
                             interaction={G.sys.interaction?.current}
@@ -3659,7 +3853,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* ME FIRST! 响应窗口 */}
                 <MeFirstOverlay
-                    G={G}
+                    G={(matchState ?? G) as MatchState<SmashUpCore>}
                     dispatch={dispatch}
                     playerID={playerID}
                     pendingCard={meFirstPendingCard}

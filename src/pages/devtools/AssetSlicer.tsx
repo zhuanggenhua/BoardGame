@@ -89,6 +89,9 @@ export const AssetSlicer = () => {
     const [toolMode, setToolMode] = useState<'slicer' | 'splendorMapping'>(() =>
         searchParams.get('mode') === 'splendor-mapping' ? 'splendorMapping' : 'slicer',
     );
+    const [isCompactViewport, setIsCompactViewport] = useState(() => (
+        typeof window === 'undefined' ? false : window.innerWidth <= 1023
+    ));
 
     useEffect(() => {
         const nextParams = new URLSearchParams(searchParams);
@@ -107,6 +110,22 @@ export const AssetSlicer = () => {
         setSearchParams(nextParams, { replace: true });
     }, [searchParams, setSearchParams, toolMode]);
 
+    useEffect(() => {
+        if (isCompactViewport && toolMode === 'slicer') {
+            setIsSidebarOpen(false);
+        }
+    }, [isCompactViewport, toolMode]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+        const updateViewportMode = () => {
+            setIsCompactViewport(window.innerWidth <= 1023);
+        };
+        updateViewportMode();
+        window.addEventListener('resize', updateViewportMode);
+        return () => window.removeEventListener('resize', updateViewportMode);
+    }, []);
+
     // 基础状态
     const [sourceImage, setSourceImage] = useState<string | null>(null);
     const [imageName, setImageName] = useState<string>('图片');
@@ -117,7 +136,9 @@ export const AssetSlicer = () => {
     const [extractedAssets, setExtractedAssets] = useState<ExtractedAsset[]>([]);
 
     // UI 状态
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(() => (
+        typeof window === 'undefined' ? true : window.innerWidth > 1023
+    ));
 
     // 视图状态 (Transform Engine)
     const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
@@ -723,7 +744,7 @@ export const AssetSlicer = () => {
     return (
         <div
             className={cn(
-                "flex h-screen w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans transition-colors duration-300",
+                "relative flex h-screen w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans transition-colors duration-300",
                 isDraggingFile && "bg-teal-900/30"
             )}
             onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
@@ -732,10 +753,28 @@ export const AssetSlicer = () => {
             onMouseUp={handleMouseUp}
             tabIndex={0}
         >
+            {isCompactViewport && isSidebarOpen && (
+                <button
+                    type="button"
+                    aria-label="关闭素材切片机侧栏"
+                    data-testid="asset-slicer-sidebar-backdrop"
+                    className="absolute inset-0 z-10 bg-black/45 backdrop-blur-[1px]"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
             <motion.div
-                animate={{ width: isSidebarOpen ? 320 : 0, opacity: isSidebarOpen ? 1 : 0 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-                className="flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col z-20 shadow-2xl relative overflow-hidden"
+                animate={{
+                    width: isSidebarOpen ? (isCompactViewport ? 'min(320px, calc(100vw - 56px))' : 320) : 0,
+                    opacity: isSidebarOpen ? 1 : 0,
+                }}
+                transition={isCompactViewport
+                    ? { type: 'tween', duration: 0.18, ease: 'easeOut' }
+                    : { type: 'spring', damping: 20, stiffness: 100 }}
+                data-testid="asset-slicer-sidebar"
+                className={cn(
+                    "bg-gray-900 border-r border-gray-800 flex flex-col z-20 shadow-2xl relative overflow-hidden",
+                    isCompactViewport ? "absolute inset-y-0 left-0" : "flex-shrink-0"
+                )}
             >
                 <div className="p-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur shrink-0">
                     <div className="flex items-center justify-between mb-1">
@@ -756,7 +795,12 @@ export const AssetSlicer = () => {
                     <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Creative Workshop</p>
                 </div>
 
-                <div className="p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar min-w-[320px]">
+                <div
+                    className={cn(
+                        "p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar",
+                        isCompactViewport ? "w-full min-w-0" : "min-w-[320px]"
+                    )}
+                >
                     <div
                         className={cn(
                             "border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer group",
@@ -926,8 +970,19 @@ export const AssetSlicer = () => {
                 </div>
             </motion.div>
 
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30" style={{ left: isSidebarOpen ? 320 : 0 }}>
-                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="w-6 h-12 bg-gray-800 border border-l-0 border-gray-700 rounded-r-md flex items-center justify-center text-gray-400 hover:text-white hover:bg-teal-600 transition-all shadow-xl group">
+            <div
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-30"
+                style={{ left: isSidebarOpen ? (isCompactViewport ? 'min(320px, calc(100vw - 56px))' : 320) : (isCompactViewport ? 8 : 0) }}
+            >
+                <button
+                    type="button"
+                    data-testid="asset-slicer-sidebar-toggle"
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className={cn(
+                        "w-6 h-12 bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 hover:text-white hover:bg-teal-600 transition-all shadow-xl group",
+                        isSidebarOpen ? "border-l-0 rounded-r-md" : "rounded-md"
+                    )}
+                >
                     {isSidebarOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
                 </button>
             </div>
@@ -943,7 +998,12 @@ export const AssetSlicer = () => {
                 ref={containerRef}
             >
                 {!sourceImage ? (
-                    <div className="flex flex-col items-center justify-center p-16 border-2 border-dashed border-gray-800 rounded-[32px] bg-gray-900/20 text-gray-500 pointer-events-none max-w-md w-full select-none">
+                    <div
+                        className={cn(
+                            "flex flex-col items-center justify-center border-2 border-dashed border-gray-800 rounded-[32px] bg-gray-900/20 text-gray-500 pointer-events-none max-w-md w-full select-none",
+                            isCompactViewport ? "p-8" : "p-16"
+                        )}
+                    >
                         <UploadIcon />
                         <h2 className="mt-6 text-2xl font-black text-gray-300">无图片</h2>
                         <p className="mt-3 text-sm text-center leading-relaxed text-gray-600">更换图片 (Ctrl+V) / 拖入图片</p>
@@ -1004,7 +1064,12 @@ export const AssetSlicer = () => {
                 )}
 
                 {sourceImage && (
-                    <div className="fixed bottom-6 right-6 bg-gray-900/90 backdrop-blur-xl border border-gray-700 px-4 py-2 rounded-full text-[10px] text-gray-400 flex items-center gap-4 z-50 shadow-2xl select-none pointer-events-none">
+                    <div
+                        className={cn(
+                            "fixed bg-gray-900/90 backdrop-blur-xl border border-gray-700 rounded-full text-[10px] text-gray-400 flex items-center z-50 shadow-2xl select-none pointer-events-none",
+                            isCompactViewport ? "bottom-4 right-4 gap-2 px-3 py-1.5" : "bottom-6 right-6 gap-4 px-4 py-2"
+                        )}
+                    >
                         <div className="flex items-center gap-1.5"><span className="font-mono text-teal-400 font-bold">{(transform.scale * 100).toFixed(0)}%</span><span>视角</span></div>
                         <div className="w-px h-3 bg-gray-700" />
                         <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", (isAltPressed || isPanning) ? "bg-blue-500 animate-pulse" : "bg-gray-700")} /><span>{isPanning ? "平移中" : "右键/Alt 拖拽"}</span></div>

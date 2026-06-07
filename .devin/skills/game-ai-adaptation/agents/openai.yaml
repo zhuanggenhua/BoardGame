@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI接入与卡死收口"
+  short_description: "BoardGame 项目的 AI 接入唯一入口，覆盖 watchdog、响应窗口、隐藏交互与测试留证"
+  default_prompt: "请按本技能流程检查 AI 接入/卡死/response-window/watchdog 问题，并给出修复与验证清单"

@@ -148,6 +148,9 @@ export const isTextEntryProxyEligible = (candidate: Element | null): candidate i
     if (!isTextEntryElement(candidate)) {
         return false;
     }
+    if (candidate.closest('[data-text-entry-autoscroll="off"]')) {
+        return false;
+    }
 
     return isMobileTextEntryRuntime();
 };

@@ -2,6 +2,7 @@ import { type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Layers } from 'lucide-react';
 import type { HeroState } from '../types';
+import { getDiceThroneCharacterNameKey } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { TokenDef } from '../domain/tokenTypes';
 import { ShakeContainer } from '../../../components/common/animations/ShakeContainer';
@@ -83,7 +84,7 @@ export const OpponentHeader = ({
 }: OpponentHeaderProps) => {
     const { t } = useTranslation('game-dicethrone');
     const isMobileNarrowViewport = useMobileViewport();
-    const heroLabel = t(`hero.${opponent.characterId}`);
+    const heroLabel = t(getDiceThroneCharacterNameKey(opponent.characterId) ?? 'selection.notSelected');
     const isObserved = observed ?? viewMode === 'opponent';
     const pointerEventsClassName = allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none';
     const baseContainerClassName = isMobileNarrowViewport
@@ -153,6 +154,7 @@ export const OpponentHeader = ({
             data-testid={testId}
             data-team-tone={tone}
             data-player-id={playerId}
+            data-player-seat-anchor={playerId}
         >
             {headerError && (
                 <div className="px-[1.2vw] py-[0.4vw] bg-red-600/90 text-white font-bold text-[0.8vw] rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4 pointer-events-auto flex items-center gap-[0.35vw]">

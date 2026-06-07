@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import { AndroidForceUpdateGate } from './AndroidForceUpdateGate';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { isNativeMobileRuntime } from '../../lib/mobile/mobileRuntime';
 import {
     type AndroidForceUpdateState,
     registerAndroidLiveUpdateListeners,
@@ -20,10 +21,11 @@ const HIDDEN_FORCE_UPDATE_STATE: AndroidForceUpdateState = {
 export const AndroidLiveUpdateManager = () => {
     const toast = useToast();
     const isNativeAndroid = isNativeAndroidRuntime();
+    const isNativeMobile = isNativeAndroid || isNativeMobileRuntime();
     const [forceUpdateState, setForceUpdateState] = useState<AndroidForceUpdateState>(HIDDEN_FORCE_UPDATE_STATE);
 
     useEffect(() => {
-        if (!isNativeAndroid) {
+        if (!isNativeMobile) {
             return;
         }
 
@@ -74,7 +76,9 @@ export const AndroidLiveUpdateManager = () => {
 
             if (result.status === 'incompatible') {
                 console.info('[OTA] 检测到不兼容更新，已跳过', result.reason);
-                requestAndroidNativeUpdateCheck({ interactive: options?.interactive === true });
+                if (isNativeAndroid) {
+                    requestAndroidNativeUpdateCheck({ interactive: options?.interactive === true });
+                }
             }
         };
 
@@ -109,9 +113,9 @@ export const AndroidLiveUpdateManager = () => {
             disposed = true;
             unsubscribeRequest();
         };
-    }, [isNativeAndroid, toast]);
+    }, [isNativeAndroid, isNativeMobile, toast]);
 
-    if (!isNativeAndroid) {
+    if (!isNativeMobile) {
         return null;
     }
 

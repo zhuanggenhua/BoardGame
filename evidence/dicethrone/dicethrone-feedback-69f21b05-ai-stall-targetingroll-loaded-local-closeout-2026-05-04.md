@@ -1,4 +1,6 @@
-# Dice Throne 反馈 69f21b05 本地验收收口说明（2026-05-04）
+# Dice Throne 反馈 69f21b05 历史本地验收收口说明（2026-05-04）
+
+> 2026-06-06 当前有效口径：本文只保留 `69f21b05ab54eadcc2bb2b9e` 这条 `targetingRoll + Loaded + bonus die` 卡死反馈的历史本地收口证据，不代表 DiceThrone 全体 targetingRoll / watchdog / bonus die 链、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时这条同根因簇反馈在本地被对位验证过，不能外推成 DiceThrone 当前总体收口。
 
 ## 反馈原文
 
@@ -66,3 +68,8 @@
   - 与已收口同根因簇的明确对位；
   - 当前代码基线下的本地聚焦回归通过。
 - 因此本条可以按本地验收转 `resolved`。
+
+## 当前阅读说明
+
+- 本文只覆盖一条历史 targetingRoll / Loaded / bonus die 反馈链，不覆盖更广范围 DiceThrone 在线对局或新英雄整批完成态。
+- 文中的 `resolved` 只代表当轮本地验收收口，不是当前 DiceThrone 总审计出口。

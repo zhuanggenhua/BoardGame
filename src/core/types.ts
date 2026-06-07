@@ -7,6 +7,7 @@
 
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameEngineConfig } from '../engine/transport/server';
+import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
 
 // ============================================================================
 // 游戏实现注册类型
@@ -27,6 +28,8 @@ export interface GameImplementation {
     tutorialCatalog?: TutorialCollection;
     /** 延迟优化配置（可选，不传则不启用任何优化） */
     latencyConfig?: import('../engine/transport/latency/types').LatencyOptimizationConfig;
+    /** 可选的页面/HUD 运行时适配器 */
+    runtimeAdapter?: GameRuntimeAdapter;
 }
 
 // ============================================================================

@@ -712,6 +712,26 @@ export function deriveSystemAbilityMode(
     abilityId?: string;
     step?: string;
   };
+
+  if (swInteraction.type === 'ice_ram_target') {
+    return {
+      abilityId: 'ice_ram',
+      step: 'selectUnit',
+      sourceUnitId: 'ice_ram',
+      structurePosition: isCellCoord(meta.structurePosition) ? meta.structurePosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'ice_ram_push') {
+    return {
+      abilityId: 'ice_ram',
+      step: 'selectPushDirection',
+      sourceUnitId: 'ice_ram',
+      structurePosition: isCellCoord(meta.structurePosition) ? meta.structurePosition : undefined,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
   if (!meta.sourceUnitId) return null;
 
   if (swInteraction.type === 'on_phase_start_illusion') {
@@ -813,25 +833,6 @@ export function deriveSystemAbilityMode(
         selectedCardId: typeof meta.targetCardId === 'string' ? meta.targetCardId : undefined,
       };
     }
-  }
-
-  if (swInteraction.type === 'ice_ram_target') {
-    return {
-      abilityId: 'ice_ram',
-      step: 'selectUnit',
-      sourceUnitId: 'ice_ram',
-      structurePosition: isCellCoord(meta.structurePosition) ? meta.structurePosition : undefined,
-    };
-  }
-
-  if (swInteraction.type === 'ice_ram_push') {
-    return {
-      abilityId: 'ice_ram',
-      step: 'selectPushDirection',
-      sourceUnitId: 'ice_ram',
-      structurePosition: isCellCoord(meta.structurePosition) ? meta.structurePosition : undefined,
-      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
-    };
   }
 
   if (!isCellCoord(meta.targetPosition)) return null;

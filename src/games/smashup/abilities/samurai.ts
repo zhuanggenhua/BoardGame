@@ -19,7 +19,7 @@ import {
     grantExtraAction,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
-import type { MinionMetadataUpdatedEvent, MinionOnBase, SmashUpCore, SmashUpEvent, VpAwardedEvent } from '../domain/types';
+import type { CardInstance, MinionMetadataUpdatedEvent, MinionOnBase, SmashUpCore, SmashUpEvent, VpAwardedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
@@ -95,41 +95,105 @@ export function registerSamuraiAbilities(): void {
     registerSimpleAbility('samurai_way_of_the_warrior_pod', 'onPlay', samuraiWayOfTheWarriorOnPlay);
     registerAbilityProgram('samurai_heart_of_the_battle', 'special', { program: samuraiHeartOfTheBattleSpecialProgram });
 
-    registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan_pod', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan_pod', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi_pod', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi_pod', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun_pod', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun_pod', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku_pod', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku_pod', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
+    registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_samurai_chan', 'onMinionDiscardedFromBase', samuraiChanTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_samurai_chan_pod', 'onMinionDestroyed', samuraiChanTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_samurai_chan_pod', 'onMinionDiscardedFromBase', samuraiChanTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_bushi', 'onMinionDestroyed', samuraiBushiTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_bushi', 'onMinionDiscardedFromBase', samuraiBushiTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_bushi_pod', 'onMinionDestroyed', samuraiBushiTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_bushi_pod', 'onMinionDiscardedFromBase', samuraiBushiTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_shogun', 'onMinionDestroyed', samuraiShogunTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_shogun', 'onMinionDiscardedFromBase', samuraiShogunTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_shogun_pod', 'onMinionDestroyed', samuraiShogunTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_shogun_pod', 'onMinionDiscardedFromBase', samuraiShogunTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_final_haiku', 'onMinionDestroyed', samuraiFinalHaikuTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_final_haiku', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_final_haiku_pod', 'onMinionDestroyed', samuraiFinalHaikuTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_final_haiku_pod', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+    });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, {
+        global: true,
+        canTrigger: canTriggerSamuraiWayOfTheWarrior,
+    });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDiscardedFromBase', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('samurai_honor_the_fallen_pod', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('samurai_honor_the_fallen_pod', 'onMinionDiscardedFromBase', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('base_sakura_garden', 'onMinionDestroyed', samuraiSakuraGardenTrigger, {
         sourceScope: 'triggerBase',
@@ -281,7 +345,7 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         if (isMinionProtected(state.core, target, selected.baseIndex, playerId, 'destroy')) {
-            return { events: [] };
+            return { events: [buildAbilityFeedback(playerId, 'feedback.target_protected', timestamp, undefined, 'warning')] };
         }
         return {
             events: [
@@ -612,6 +676,7 @@ function samuraiWayOfTheWarriorOnPlay(ctx: AbilityContext): AbilityResult {
                     metadataUpdate: {
                         samuraiWayOfTheWarriorDrawUntilTurnNumber: (ctx.state.turnNumber ?? 0) + 1,
                         samuraiWayOfTheWarriorDrawPlayerId: ctx.playerId,
+                        samuraiWayOfTheWarriorSourceCardUid: ctx.cardUid,
                     },
                     reason: 'samurai_way_of_the_warrior',
                 },
@@ -621,13 +686,18 @@ function samuraiWayOfTheWarriorOnPlay(ctx: AbilityContext): AbilityResult {
     };
 }
 
+function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
+    return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
+}
 
 function samuraiChanTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (!ctx.sourceControllerId || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
 
 function samuraiBushiTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (!ctx.sourceControllerId || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
     const power = ctx.triggerMinionPower
         ?? ctx.triggerMinion?.basePower
@@ -641,6 +711,7 @@ function samuraiBushiTrigger(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function samuraiShogunTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (!ctx.sourceControllerId || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return [];
     if (!ctx.triggerMinion || ctx.triggerMinionUid === ctx.sourceCardUid) return [];
     if (ctx.triggerMinion.controller !== ctx.sourceControllerId) return [];
@@ -650,14 +721,18 @@ function samuraiShogunTrigger(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function samuraiHonorTheFallenTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (!ctx.sourceControllerId || ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return [];
     if (ctx.triggerMinion?.controller !== ctx.sourceControllerId) return [];
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
 
 function samuraiFinalHaikuTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    if (!ctx.sourceCardUid || !ctx.sourceControllerId) return [];
-    const host = findAttachedActionHost(ctx.state, ctx.sourceCardUid, ctx.sourceBaseIndex);
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
+    if (!ctx.sourceCardUid || !ctx.sourceControllerId || !ctx.triggerMinion) return [];
+    const host = ctx.triggerMinion.attachedActions.some(action => action.uid === ctx.sourceCardUid)
+        ? ctx.triggerMinion
+        : findAttachedActionHost(ctx.state, ctx.sourceCardUid, ctx.sourceBaseIndex);
     if (!host || host.uid !== ctx.triggerMinionUid) return [];
     const events: SmashUpEvent[] = [];
     ctx.state.bases.forEach((base, baseIndex) => {
@@ -671,6 +746,7 @@ function samuraiFinalHaikuTrigger(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function samuraiWayOfTheWarriorTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     const metadata = ctx.triggerMinion?.metadata ?? {};
     const drawUntilTurnNumber = typeof metadata.samuraiWayOfTheWarriorDrawUntilTurnNumber === 'number'
         ? metadata.samuraiWayOfTheWarriorDrawUntilTurnNumber
@@ -698,14 +774,23 @@ function samuraiWayOfTheWarriorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     return buildStandardDrawEvents(ctx.state, drawPlayerId, 2, ctx.random, ctx.now);
 }
 
+function canTriggerSamuraiWayOfTheWarrior(ctx: TriggerContext): boolean {
+    const metadata = ctx.triggerMinion?.metadata ?? {};
+    const sourceCardUid = typeof metadata.samuraiWayOfTheWarriorSourceCardUid === 'string'
+        ? metadata.samuraiWayOfTheWarriorSourceCardUid
+        : undefined;
+    return !sourceCardUid || ctx.sourceCardUid === sourceCardUid;
+}
+
 function samuraiSakuraGardenTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.sourceBaseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex || !ctx.triggerMinion) return [];
-    const ownerId = ctx.triggerMinion.owner;
+    const controllerId = ctx.triggerMinion.controller;
     const alreadyTriggered = (ctx.state.turnDestroyedMinions ?? []).some(record => (
-        record.baseIndex === ctx.baseIndex && record.owner === ownerId
+        record.baseIndex === ctx.baseIndex
+        && (record.controller ?? record.owner) === controllerId
     ));
     if (alreadyTriggered) return [];
-    return buildStandardDrawEvents(ctx.state, ctx.triggerMinion.controller, 1, ctx.random, ctx.now);
+    return buildStandardDrawEvents(ctx.state, controllerId, 1, ctx.random, ctx.now);
 }
 
 function samuraiBaseShogunsPalaceOnMinionPlayed(ctx: BaseAbilityContext): AbilityResult {
@@ -743,12 +828,24 @@ function buildHonorAncestorsEvents(
     if (discardMinions.length === 0) return events;
 
     const selectedCards = discardMinions.slice(0, maxShuffle);
-    const shuffledDeck = random.shuffle([...player.deck, ...selectedCards]);
-    events.push({
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: { playerId, deckUids: shuffledDeck.map(card => card.uid) },
-        timestamp: now,
-    } as SmashUpEvent);
+    const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+    for (const card of selectedCards) {
+        const ownerId = state.players[card.owner] ? card.owner : playerId;
+        cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+    }
+    for (const [ownerId, cards] of cardsByOwner) {
+        const owner = state.players[ownerId] ?? player;
+        const shuffledDeck = random.shuffle([...owner.deck, ...cards]);
+        events.push({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: {
+                playerId: ownerId,
+                deckUids: shuffledDeck.map(card => card.uid),
+                ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            },
+            timestamp: now,
+        } as SmashUpEvent);
+    }
     return events;
 }
 

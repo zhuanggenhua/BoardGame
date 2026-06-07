@@ -12,6 +12,9 @@ archivesBaseName = archiveBaseNameOverride ?: 'easyboardgame'
 def packageJsonFile = rootProject.file('../package.json')
 def packageJson = packageJsonFile.exists() ? new JsonSlurper().parse(packageJsonFile) : [:]
 def packageVersionName = (packageJson.version ?: '1.0.0').toString()
+def explicitAndroidVersionCode = packageJson.androidVersionCode instanceof Number
+    ? packageJson.androidVersionCode.intValue()
+    : null
 def parseAndroidVersionCode = { versionName ->
     def segments = versionName
         .split('\\.')
@@ -27,7 +30,7 @@ def parseAndroidVersionCode = { versionName ->
     return (segments[0] * 10000) + (segments[1] * 100) + segments[2]
 }
 // 保持原生版本与 package.json 单一真实来源一致，避免 OTA targetNativeVersion 对不齐。
-def packageVersionCode = parseAndroidVersionCode(packageVersionName)
+def packageVersionCode = explicitAndroidVersionCode ?: parseAndroidVersionCode(packageVersionName)
 
 def keystorePropertiesFile = rootProject.file('keystore.properties')
 def keystoreProperties = new Properties()

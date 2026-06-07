@@ -10,6 +10,7 @@
  */
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import type { SmashUpCore, SmashUpEvent } from './types';
 import { getAbilityRuntimePromptHandler, getRegisteredAbilityRuntimePromptIds } from './abilityRuntime';
 
@@ -32,6 +33,7 @@ export type InteractionHandler = (
 // ============================================================================
 
 const interactionHandlers = new Map<string, InteractionHandler>();
+const generatedPodInteractionAliasIds = new Set<string>();
 
 type InteractionHandlerRegistration =
     | string
@@ -71,6 +73,7 @@ export function getInteractionHandler(
 /** 清空注册表（测试用） */
 export function clearInteractionHandlers(): void {
     interactionHandlers.clear();
+    generatedPodInteractionAliasIds.clear();
 }
 
 /** 获取注册表大小（调试用） */
@@ -80,10 +83,15 @@ export function getInteractionHandlersSize(): number {
 
 /** 获取所有已注册的 handler sourceId（用于交互完整性审计） */
 export function getRegisteredInteractionHandlerIds(): Set<string> {
-    return new Set([
-        ...interactionHandlers.keys(),
-        ...getRegisteredAbilityRuntimePromptIds(),
-    ]);
+    const ids = new Set<string>();
+    for (const id of interactionHandlers.keys()) {
+        if (shouldHideGeneratedPodInteractionAlias(id)) continue;
+        ids.add(id);
+    }
+    for (const id of getRegisteredAbilityRuntimePromptIds()) {
+        ids.add(id);
+    }
+    return ids;
 }
 
 /**
@@ -97,7 +105,7 @@ export function registerPodInteractionAliases(): void {
     const allEntries = Array.from(interactionHandlers.entries());
 
     for (const [sourceId, handler] of allEntries) {
-        if (sourceId.endsWith('_pod')) continue;
+        if (sourceId.endsWith('_pod') || sourceId.includes('_pod_')) continue;
         if (sourceId.startsWith('titan_')) continue;
 
         const podSourceId = `${sourceId}_pod`;
@@ -105,5 +113,12 @@ export function registerPodInteractionAliases(): void {
         if (interactionHandlers.has(podSourceId)) continue;
 
         interactionHandlers.set(podSourceId, handler);
+        generatedPodInteractionAliasIds.add(podSourceId);
     }
+}
+
+function shouldHideGeneratedPodInteractionAlias(sourceId: string): boolean {
+    if (!sourceId.endsWith('_pod')) return false;
+    if (!generatedPodInteractionAliasIds.has(sourceId)) return false;
+    return !getCardDef(sourceId) && !getBaseDef(sourceId) && !getTitanDef(sourceId);
 }

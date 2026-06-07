@@ -31,10 +31,12 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.retention') return '保留时长';
             if (key === 'createRoom.retentionHint') return '可选';
             if (key.startsWith('createRoom.retentionOptions.')) return key;
+            if (key === 'createRoom.playerCountUnit') return `${options?.count}人`;
             if (key === 'createRoom.occupiedSeats') return 'AI 占位';
             if (key === 'createRoom.occupiedSeatsHint') return '选择 AI 座位';
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
             if (key === 'createRoom.occupiedSeatUnit') return `seat-${options?.seat}`;
+            if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
             return key;
         },
     }),
@@ -107,6 +109,7 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(screen.getByText('Enabled')).toBeInTheDocument();
         expect(screen.getByText('AI 占位')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).not.toBeChecked();
     });
 
     it('房间密码支持右侧眼睛按钮切换显隐', () => {
@@ -154,6 +157,53 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 
+    it('勾选手动选派系后会写入 AI 座位配置', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        fireEvent.click(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            enableAi: true,
+            seatControllers: expect.objectContaining({
+                '1': {
+                    type: 'local-ai',
+                    difficulty: 'normal',
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                },
+            }),
+        }));
+    });
+
+    it('initialPreferences 只提供 manualSetupSelection 时，也应正确回显手动前置选择开关', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest,
+            initialPreferences: {
+                numPlayers: 2,
+                setupSelections: {},
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', difficulty: 'normal', manualSetupSelection: true },
+                },
+            },
+        }));
+
+        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).toBeChecked();
+    });
+
     it('切换难度后会同步到本地 AI 座位', () => {
         const onConfirm = vi.fn();
         const initialPreferences: LocalMatchPreferences = {
@@ -180,6 +230,38 @@ describe('CreateRoomModal AI default state', () => {
             seatControllers: expect.objectContaining({
                 '1': { type: 'local-ai', difficulty: 'hard' },
             }),
+        }));
+    });
+
+    it('四人房开启 AI 时会保留显式真人空座，不把第三座补成 AI', () => {
+        const onConfirm = vi.fn();
+        const fourPlayerManifest: GameManifestEntry = {
+            ...gameManifest,
+            playerOptions: [2, 4],
+        };
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: fourPlayerManifest,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: '4人' }));
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        fireEvent.click(screen.getByRole('button', { name: 'seat-4' }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            enableAi: true,
+            numPlayers: 4,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', difficulty: 'normal' },
+                '2': { type: 'human' },
+                '3': { type: 'local-ai', difficulty: 'normal' },
+            },
         }));
     });
 

@@ -14,7 +14,7 @@ import type {
     DamageDealtEvent,
     StatusAppliedEvent,
 } from './types';
-import { getPlayerDieFace } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -23,8 +23,11 @@ import {
     finalizeTokenResponse,
     hasDefensiveTokens,
     createTokenResponseRequestedEvent,
+    getUsableTokenAmountForTiming,
 } from './tokenResponse';
+import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
+import { getBonusDiceSettlementHandler } from './bonusDiceSettlement';
 import { applyEvents } from './utils';
 
 /**
@@ -56,6 +59,7 @@ export function executeTokenCommand(
         case 'USE_TOKEN': {
             const { tokenId, amount } = command.payload as { tokenId: string; amount: number };
             const pendingDamage = state.pendingDamage;
+            const deferredDamageEvents: NonNullable<PendingDamage['deferredDamageEvents']> = [];
             
             if (!pendingDamage) {
                 console.warn('[DiceThrone] USE_TOKEN: no pending damage');
@@ -63,11 +67,39 @@ export function executeTokenCommand(
             }
             
             const playerId = pendingDamage.responderId;
+            if (command.playerId !== playerId) {
+                console.warn('[DiceThrone] USE_TOKEN: player mismatch');
+                break;
+            }
             
             // 获取 Token 定义（由 state.tokenDefinitions 驱动，避免与具体英雄耦合）
             const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
             if (!tokenDef) {
                 console.warn(`[DiceThrone] USE_TOKEN: unknown token ${tokenId}`);
+                break;
+            }
+            if (!Number.isInteger(amount) || amount <= 0) {
+                console.warn('[DiceThrone] USE_TOKEN: invalid amount');
+                break;
+            }
+            if (!tokenDef.activeUse?.timing?.includes(pendingDamage.responseType)) {
+                console.warn('[DiceThrone] USE_TOKEN: invalid token timing');
+                break;
+            }
+            if (tokenDef.activeUse.requiresAttackDamage && !state.pendingAttack) {
+                console.warn('[DiceThrone] USE_TOKEN: missing attack context');
+                break;
+            }
+            const availableAmount = getUsableTokenAmountForTiming(
+                state,
+                playerId,
+                tokenId,
+                pendingDamage.responseType,
+                { damageScope: pendingDamage.damageScope },
+            );
+            const allowedConsumeAmounts = getTokenUseOptions(tokenDef, availableAmount);
+            if (!allowedConsumeAmounts.includes(amount)) {
+                console.warn('[DiceThrone] USE_TOKEN: amount not allowed');
                 break;
             }
             
@@ -81,7 +113,7 @@ export function executeTokenCommand(
                 pendingDamage.responseType,
                 timestamp
             );
-            events.push(...tokenEvents);
+            const reflectDamage = result.extra?.reflectDamage as number | undefined;
 
             // 精准 (accuracy)：使攻击不可防御
             if (result.extra?.makeUndefendable && state.pendingAttack) {
@@ -93,23 +125,20 @@ export function executeTokenCommand(
                 } as DiceThroneEvent);
             }
 
-            // 神罚 (retribution)：反弹伤害给攻击者
-            const reflectDamage = result.extra?.reflectDamage as number | undefined;
+            // 神罚 (retribution)：反弹伤害给攻击者。
+            // 这类反伤必须等响应窗口收口后再播，否则会在 Token/奖励骰特写尚未结束时提前播完。
             if (reflectDamage && reflectDamage > 0) {
                 const attackerPlayer = state.players[pendingDamage.sourcePlayerId];
                 const attackerHp = attackerPlayer?.resources[RESOURCE_IDS.HP] ?? 0;
                 const actualReflect = Math.min(reflectDamage, attackerHp);
-                events.push({
-                    type: 'DAMAGE_DEALT',
-                    payload: {
-                        targetId: pendingDamage.sourcePlayerId,
-                        amount: reflectDamage,
-                        actualDamage: actualReflect,
-                        sourceAbilityId: 'retribution-reflect',
-                    },
+                deferredDamageEvents.push({
+                    targetId: pendingDamage.sourcePlayerId,
+                    amount: reflectDamage,
+                    actualDamage: actualReflect,
+                    sourceAbilityId: 'retribution-reflect',
+                    sourcePlayerId: pendingDamage.targetPlayerId,
                     sourceCommandType: command.type,
-                    timestamp,
-                } as DiceThroneEvent);
+                });
             }
 
             // 伏击等 value=0 的 token：触发对应 custom action（如掷骰加伤）
@@ -146,15 +175,39 @@ export function executeTokenCommand(
                         action: { type: 'custom', target: 'opponent', customActionId: resolvedCustomActionId },
                     };
                     const customEvents = handler(customCtx);
-                    events.push(...customEvents);
+                    for (const customEvent of customEvents) {
+                        if (customEvent.type !== 'DAMAGE_DEALT') {
+                            events.push(customEvent);
+                            continue;
+                        }
+
+                        const payload = customEvent.payload as DamageDealtEvent['payload'];
+                        deferredDamageEvents.push({
+                            targetId: payload.targetId,
+                            amount: payload.amount,
+                            actualDamage: payload.actualDamage ?? payload.amount,
+                            sourceAbilityId: payload.sourceAbilityId,
+                            sourcePlayerId: payload.sourcePlayerId,
+                            sourceCommandType: customEvent.sourceCommandType,
+                        });
+                    }
                 }
             }
+
+            if (deferredDamageEvents.length > 0) {
+                for (const tokenEvent of tokenEvents) {
+                    if (tokenEvent.type === 'TOKEN_USED') {
+                        (tokenEvent.payload as { deferredDamageEvents?: PendingDamage['deferredDamageEvents'] }).deferredDamageEvents = deferredDamageEvents;
+                    }
+                }
+            }
+            events.unshift(...tokenEvents);
             
             // 如果完全闪避，关闭响应窗口
             if (result.fullyEvaded) {
                 const stateAfterToken = applyEvents(state, events, reduce);
                 const updatedPendingDamage: PendingDamage = {
-                    ...pendingDamage,
+                    ...(stateAfterToken.pendingDamage ?? pendingDamage),
                     currentDamage: 0,
                     isFullyEvaded: true,
                 };
@@ -173,6 +226,10 @@ export function executeTokenCommand(
             
             if (!pendingDamage) {
                 console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: no pending damage');
+                break;
+            }
+            if (command.playerId !== pendingDamage.responderId) {
+                console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: player mismatch');
                 break;
             }
             
@@ -308,7 +365,8 @@ export function executeTokenCommand(
                 break;
             }
             
-            const die = settlement.dice.find(d => d.index === dieIndex);
+            const settlementDice = getPendingBonusSettlementDice(settlement);
+            const die = settlementDice.find(d => d.index === dieIndex);
             if (!die) {
                 console.warn('[DiceThrone] REROLL_BONUS_DIE: die not found');
                 break;
@@ -353,16 +411,24 @@ export function executeTokenCommand(
                 break;
             }
             
-            // 计算最终伤害
-            const totalDamage = settlement.dice.reduce((sum, d) => sum + d.value, 0);
-            const thresholdTriggered = settlement.threshold ? totalDamage >= settlement.threshold : false;
+            // 计算最终伤害；特殊技能可覆盖“点数和即伤害”的默认收口。
+            const settlementDice = getPendingBonusSettlementDice(settlement);
+            const defaultTotalDamage = settlementDice.reduce((sum, d) => sum + d.value, 0);
+            const settlementHandler = settlement.customResolutionId
+                ? getBonusDiceSettlementHandler(settlement.customResolutionId)
+                : undefined;
+            const settlementResult = settlementHandler?.({ state, settlement, timestamp });
+            const totalDamage = settlementResult?.totalDamage ?? defaultTotalDamage;
+            const thresholdTriggered = settlementResult?.thresholdTriggered
+                ?? (settlement.threshold ? totalDamage >= settlement.threshold : false);
+            const followupEvents = settlementResult?.followupEvents ?? [];
             
             // 发出 BONUS_DICE_SETTLED 事件
             // displayOnly 标记传递给 systems.ts，避免误 resolve 其他活跃交互
             events.push({
                 type: 'BONUS_DICE_SETTLED',
                 payload: {
-                    finalDice: settlement.dice,
+                    finalDice: settlementDice,
                     totalDamage,
                     thresholdTriggered,
                     attackerId: settlement.attackerId,
@@ -376,6 +442,7 @@ export function executeTokenCommand(
             
             // displayOnly 模式：仅展示骰子结果，伤害/状态已由 custom action 处理
             if (settlement.displayOnly) {
+                events.push(...followupEvents);
                 break;
             }
 
@@ -409,10 +476,12 @@ export function executeTokenCommand(
                         } as DiceThroneEvent);
                     }
                 }
+                events.push(...followupEvents);
                 break;
             }
 
             if (settlement.resolutionMode === 'none') {
+                events.push(...followupEvents);
                 break;
             }
 
@@ -451,6 +520,7 @@ export function executeTokenCommand(
                     timestamp,
                 } as StatusAppliedEvent);
             }
+            events.push(...followupEvents);
             break;
         }
     }

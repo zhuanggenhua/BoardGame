@@ -9,6 +9,7 @@ import { playSynthSound, getSynthSoundKeys } from './SynthAudio';
 import type { AudioRuntimeContext, BgmDefinition, BgmGroupId, GameAudioConfig, SoundKey } from './types';
 import { resolveAudioEvent, resolveFeedback, resolveBgmGroup, resolveBgmKey } from './audioRouting';
 import { useAudio } from '../../contexts/AudioContext';
+import { useEventStreamRollback } from '../../engine/hooks/EventStreamRollbackContext';
 import { COMMON_AUDIO_BASE_PATH, loadCommonAudioRegistry } from './commonRegistry';
 
 interface UseGameAudioOptions<G, Ctx = unknown, Meta extends Record<string, unknown> = Record<string, unknown>> {
@@ -171,6 +172,9 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
     const initializedRef = useRef(false);
     const prevRuntimeRef = useRef<AudioRuntimeContext<G, Ctx, Meta> | null>(null);
     const lastLogSignatureRef = useRef<string | null>(null);
+    const rollback = useEventStreamRollback();
+    const lastRollbackSeqRef = useRef<number>(rollback.seq);
+    const optimisticRollbackPendingRef = useRef(false);
     const currentBgmKeyRef = useRef<string | null>(null);
     const currentBgmGroupRef = useRef<BgmGroupId | null>(null);
     const contextualPreloadRef = useRef<Set<SoundKey>>(new Set());
@@ -370,13 +374,20 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
     ]);
 
     useEffect(() => {
+        if (rollback.seq !== lastRollbackSeqRef.current) {
+            lastRollbackSeqRef.current = rollback.seq;
+            optimisticRollbackPendingRef.current = true;
+        }
+
         if (!registryLoaded) return;
         const safeEntries = eventEntries ?? [];
         const totalEntries = safeEntries.length;
         if (totalEntries === 0) {
-            // 撤回恢复快照时 eventStream.entries 被清空，
-            // 必须重置签名指针，否则后续新事件 ID 与旧签名碰撞会被误判为"已播放"
-            lastLogSignatureRef.current = null;
+            // reconnect/resync 的 optimistic rollback 会先把 entries 清空；
+            // 此时要保留最后一次已播放签名，避免旧事件恢复时被重新播放。
+            if (!optimisticRollbackPendingRef.current) {
+                lastLogSignatureRef.current = null;
+            }
             return;
         }
 
@@ -439,6 +450,8 @@ export function useGameAudio<G, Ctx = unknown, Meta extends Record<string, unkno
                 playSound(key);
             }
         }
+
+        optimisticRollbackPendingRef.current = false;
     }, [registryLoaded, eventEntriesVersion, config]);
 
     useEffect(() => {

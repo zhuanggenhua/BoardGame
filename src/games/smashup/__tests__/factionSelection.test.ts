@@ -530,6 +530,25 @@ describe('派系选择系统', () => {
             ]);
         });
 
+        it('保留原版克苏鲁扩展派系的基地归属', () => {
+            expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU]).sort()).toEqual([
+                'base_mountains_of_madness',
+                'base_rlyeh',
+            ]);
+            expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.ELDER_THINGS]).sort()).toEqual([
+                'base_antarctic_base',
+                'base_plateau_of_leng',
+            ]);
+            expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.INNSMOUTH]).sort()).toEqual([
+                'base_innsmouth_base',
+                'base_ritual_site',
+            ]);
+            expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY]).sort()).toEqual([
+                'base_miskatonic_university_base',
+                'base_the_asylum',
+            ]);
+        });
+
         it('resolves the POD locale key for reassigned cthulhu bases', () => {
             expect(getBasePodVariantId(
                 getBaseDef('base_antarctic_base'),
@@ -698,6 +717,20 @@ describe('派系选择系统', () => {
                 base_the_asylum_pod: { atlasId: 'tts_atlas_0b888d02fd', index: 6 },
                 base_miskatonic_university_base_pod: { atlasId: 'tts_atlas_0b888d02fd', index: 7 },
             }));
+        });
+
+        it('南极基地不再误用本地 base4 的更衣室槽位', () => {
+            const englishMap = smashUpEnglishMap as Record<string, { atlasId: string; index: number }>;
+
+            expect(getBaseDef('base_antarctic_base')?.previewRef).toEqual({
+                type: 'atlas',
+                atlasId: 'tts_atlas_0b888d02fd',
+                index: 0,
+            });
+            expect(englishMap.base_antarctic_base).toEqual({
+                atlasId: 'tts_atlas_0b888d02fd',
+                index: 0,
+            });
         });
 
         it('uses the corrected POD base atlas for monster smash bases', () => {

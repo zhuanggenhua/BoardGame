@@ -13,8 +13,23 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { resolveUseDevServers } from '../../scripts/infra/e2e-mode-config.js';
 import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/smashup/data/cards';
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
+import {
+    BARBARIAN_DICE_FACE_IDS,
+    DICE_FACE_IDS,
+    GUNSLINGER_DICE_FACE_IDS,
+    MOON_ELF_DICE_FACE_IDS,
+    NINJA_DICE_FACE_IDS,
+    PALADIN_DICE_FACE_IDS,
+    PYROMANCER_DICE_FACE_IDS,
+    SAMURAI_DICE_FACE_IDS,
+    SHADOW_THIEF_DICE_FACE_IDS,
+    TREANT_DICE_FACE_IDS,
+    ZHANSHUJIA_DICE_FACE_IDS,
+    CURSED_PIRATE_DICE_FACE_IDS,
+} from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import type { AbilityCard, SelectableCharacterId } from '../../src/games/dicethrone/types';
 import { createEmptyTokens } from '../../src/games/splendor/domain/rules';
@@ -190,6 +205,12 @@ function resolveSmashUpCardType(defId: string, explicitType?: SmashUpCardType): 
     return 'minion';
 }
 
+function assertValidSmashUpBaseDefId(defId: string, source: string): void {
+    if (!getBaseDef(defId)) {
+        throw new Error(`SmashUp 场景含有无效基地 defId: ${defId} @ ${source}`);
+    }
+}
+
 const DICE_THRONE_DEFAULT_CHARACTERS: Record<'0' | '1', SelectableCharacterId> = {
     '0': 'monk',
     '1': 'barbarian',
@@ -274,6 +295,74 @@ function normalizeDiceThronePlayerConfig(
     };
 }
 
+function normalizeDiceThroneExtraDice(
+    config: SceneConfig,
+    prebuiltPlayers?: Partial<Record<'0' | '1', Record<string, any>>>,
+): Record<string, any> | undefined {
+    const extra = config.extra;
+    if (!extra || !Array.isArray(extra.dice)) {
+        return extra;
+    }
+
+    const selectedCharacters = extra.selectedCharacters as Record<string, SelectableCharacterId> | undefined;
+    const rollerId = String(
+        extra.activePlayerId
+        ?? extra.currentPlayer
+        ?? config.currentPlayer
+        ?? '0',
+    ) as '0' | '1';
+    const characterId = selectedCharacters?.[rollerId]
+        ?? prebuiltPlayers?.[rollerId]?.characterId;
+
+    if (!characterId || characterId === 'unselected') {
+        return extra;
+    }
+
+    const definitionId = CHARACTER_DATA_MAP[characterId]?.diceDefinitionId;
+    const getFaceByValue = (value: number): string | null => {
+        const faceMap: Partial<Record<SelectableCharacterId, string[]>> = {
+            monk: [DICE_FACE_IDS.FIST, DICE_FACE_IDS.FIST, DICE_FACE_IDS.PALM, DICE_FACE_IDS.TAIJI, DICE_FACE_IDS.TAIJI, DICE_FACE_IDS.LOTUS],
+            barbarian: [BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.SWORD, BARBARIAN_DICE_FACE_IDS.HEART, BARBARIAN_DICE_FACE_IDS.HEART, BARBARIAN_DICE_FACE_IDS.STRENGTH],
+            pyromancer: [PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.FIRE, PYROMANCER_DICE_FACE_IDS.MAGMA, PYROMANCER_DICE_FACE_IDS.FIERY_SOUL, PYROMANCER_DICE_FACE_IDS.METEOR],
+            moon_elf: [MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.BOW, MOON_ELF_DICE_FACE_IDS.FOOT, MOON_ELF_DICE_FACE_IDS.FOOT, MOON_ELF_DICE_FACE_IDS.MOON],
+            shadow_thief: [SHADOW_THIEF_DICE_FACE_IDS.DAGGER, SHADOW_THIEF_DICE_FACE_IDS.DAGGER, SHADOW_THIEF_DICE_FACE_IDS.BAG, SHADOW_THIEF_DICE_FACE_IDS.BAG, SHADOW_THIEF_DICE_FACE_IDS.CARD, SHADOW_THIEF_DICE_FACE_IDS.SHADOW],
+            paladin: [PALADIN_DICE_FACE_IDS.SWORD, PALADIN_DICE_FACE_IDS.SWORD, PALADIN_DICE_FACE_IDS.HELM, PALADIN_DICE_FACE_IDS.HELM, PALADIN_DICE_FACE_IDS.HEART, PALADIN_DICE_FACE_IDS.PRAY],
+            gunslinger: [GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.BULLET, GUNSLINGER_DICE_FACE_IDS.DASH, GUNSLINGER_DICE_FACE_IDS.DASH, GUNSLINGER_DICE_FACE_IDS.BULLSEYE],
+            samurai: [SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.KATANA, SAMURAI_DICE_FACE_IDS.HELM, SAMURAI_DICE_FACE_IDS.HELM, SAMURAI_DICE_FACE_IDS.RISING_SUN],
+            treant: [TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.BRANCH, TREANT_DICE_FACE_IDS.LEAF, TREANT_DICE_FACE_IDS.LEAF, TREANT_DICE_FACE_IDS.SPIRIT],
+            ninja: [NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.MASK],
+            zhanshujia: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL],
+            cursed_pirate: [CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.SKULL],
+        };
+        const normalized = Math.max(1, Math.min(6, Math.floor(value))) - 1;
+        return faceMap[characterId]?.[normalized] ?? null;
+    };
+    const normalizedDice = extra.dice.map((die: any, index: number) => {
+        if (!die || typeof die !== 'object') {
+            return die;
+        }
+
+        const value = typeof die.value === 'number' ? die.value : 1;
+        const face = getFaceByValue(value);
+
+        return {
+            ...die,
+            id: die.id ?? index,
+            value,
+            definitionId: die.definitionId ?? definitionId,
+            symbol: die.symbol ?? face,
+            symbols: Array.isArray(die.symbols)
+                ? die.symbols
+                : (face ? [face] : []),
+        };
+    });
+
+    return {
+        ...extra,
+        dice: normalizedDice,
+    };
+}
+
 function normalizeSmashUpCardEntry(entry: string | SmashUpCardSceneConfig): SmashUpCardSceneConfig {
     const card = typeof entry === 'string' ? { defId: entry } : { ...entry };
     return {
@@ -307,7 +396,7 @@ export class GameTestContext {
 
     private async gotoWithRetry(url: string, timeout: number): Promise<void> {
         const maxAttempts = 3;
-        const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+        const useDevServers = resolveUseDevServers(process.env);
         const navigationTimeout = useDevServers
             ? Math.max(timeout, 60000)
             : Math.max(timeout, 15000);
@@ -485,6 +574,30 @@ export class GameTestContext {
         let preparedConfig: SceneConfig = config;
         
         if (config.gameId === 'smashup') {
+            const validateBaseConfig = (baseConfig: SmashUpBaseSceneConfig | undefined, baseIndex: number) => {
+                if (!baseConfig) return;
+                if (baseConfig.defId) {
+                    assertValidSmashUpBaseDefId(baseConfig.defId, `bases[${baseIndex}].defId`);
+                }
+            };
+
+            const validateBaseDeckEntry = (defId: unknown, index: number, source: string) => {
+                if (typeof defId !== 'string') return;
+                assertValidSmashUpBaseDefId(defId, `${source}[${index}]`);
+            };
+
+            config.bases?.forEach(validateBaseConfig);
+
+            const extraCore = config.extra?.core as Record<string, unknown> | undefined;
+            const extraBaseDeck = extraCore?.baseDeck;
+            if (Array.isArray(extraBaseDeck)) {
+                extraBaseDeck.forEach((defId, index) => validateBaseDeckEntry(defId, index, 'extra.core.baseDeck'));
+            }
+            const extraBaseDiscard = extraCore?.baseDiscard;
+            if (Array.isArray(extraBaseDiscard)) {
+                extraBaseDiscard.forEach((defId, index) => validateBaseDeckEntry(defId, index, 'extra.core.baseDiscard'));
+            }
+
             // 1. 自动填充随从的 basePower（从卡牌定义读取）
             const autoFillMinionPower = (minion: SmashUpMinionSceneConfig): SmashUpMinionSceneConfig => {
                 if (minion.basePower !== undefined) return minion; // 已有值，不覆盖
@@ -566,15 +679,17 @@ export class GameTestContext {
                     },
                 };
             };
+            const prebuiltPlayers = {
+                '0': buildPrebuiltPlayer('0', config.player0 as DiceThronePlayerConfig | undefined),
+                '1': buildPrebuiltPlayer('1', config.player1 as DiceThronePlayerConfig | undefined),
+            } satisfies Partial<Record<'0' | '1', Record<string, any>>>;
 
             preparedConfig = {
                 ...config,
                 player0: normalizeDiceThronePlayerConfig(config.player0 as DiceThronePlayerConfig | undefined, '0', selectedCharacters),
                 player1: normalizeDiceThronePlayerConfig(config.player1 as DiceThronePlayerConfig | undefined, '1', selectedCharacters),
-                prebuiltPlayers: {
-                    '0': buildPrebuiltPlayer('0', config.player0 as DiceThronePlayerConfig | undefined),
-                    '1': buildPrebuiltPlayer('1', config.player1 as DiceThronePlayerConfig | undefined),
-                },
+                extra: normalizeDiceThroneExtraDice(config, prebuiltPlayers),
+                prebuiltPlayers,
             };
         } else if (config.gameId === 'splendor') {
             preparedConfig = config;
@@ -1191,11 +1306,6 @@ export class GameTestContext {
 
         // 4. 如果需要选择目标随从，点击随从
         if (options?.targetMinionUid) {
-            if (options.targetBaseIndex === undefined && await isCardStillInHand()) {
-                await this.page.click(`[data-card-uid="${cardUid}"]`);
-                await this.page.waitForTimeout(300);
-            }
-
             const interactionOption = await this.page.evaluate((targetMinionUid) => {
                 const harness = (window as any).__BG_TEST_HARNESS__;
                 const state = harness?.state?.get?.();
@@ -1334,9 +1444,9 @@ export class GameTestContext {
         }, optionId);
 
         if (optionMeta?.existsInCurrentInteraction && optionMeta?.interactionPlayerId) {
-            await this.page.evaluate(({ id, playerId }) => {
+            await this.page.evaluate(async ({ id, playerId }) => {
                 const harness = (window as any).__BG_TEST_HARNESS__;
-                harness.command.dispatch({
+                await harness.command.dispatch({
                     type: 'SYS_INTERACTION_RESPOND',
                     playerId,
                     payload: { optionId: id },
@@ -1383,7 +1493,7 @@ export class GameTestContext {
             throw new Error(`Interaction option ${optionId} not found`);
         }
 
-        await this.page.evaluate((id) => {
+        await this.page.evaluate(async (id) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const interaction = state?.sys?.interaction?.current;
@@ -1394,7 +1504,7 @@ export class GameTestContext {
                 throw new Error(`Interaction option ${id} not found in current interaction`);
             }
 
-            harness.command.dispatch({
+            await harness.command.dispatch({
                 type: 'SYS_INTERACTION_RESPOND',
                 playerId: interaction.playerId,
                 payload: { optionId: id },
@@ -1545,7 +1655,7 @@ export class GameTestContext {
      * 多人 E2E 若只打开一个页面，可用它代替另一个玩家的 PASS。
      */
     async passResponseWindow(playerId?: string): Promise<void> {
-        await this.page.evaluate((explicitPlayerId) => {
+        await this.page.evaluate(async (explicitPlayerId) => {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const responseWindow = state?.sys?.responseWindow?.current;
@@ -1559,7 +1669,7 @@ export class GameTestContext {
                 throw new Error('Response window responder not found');
             }
 
-            harness.command.dispatch({
+            await harness.command.dispatch({
                 type: 'RESPONSE_PASS',
                 playerId: responderId,
                 payload: undefined,

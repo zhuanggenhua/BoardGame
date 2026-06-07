@@ -32,6 +32,9 @@ const buildGameRegistry = () => {
     const registry: Record<string, GameConfig> = {};
     for (const entry of GAME_CLIENT_MANIFEST) {
         const { manifest, thumbnail } = entry;
+        if (!manifest.enabled) {
+            continue;
+        }
         if (isAndroidShellBuild && manifest.type === 'tool') {
             continue;
         }

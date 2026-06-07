@@ -1,7 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { setAssetsBaseUrl } from '../../../core/AssetLoader';
+import { __resetAssetLoaderCachesForTests, markImageLoaded, setAssetsBaseUrl } from '../../../core/AssetLoader';
 import { SPLENDOR_CARD_DEFS, SPLENDOR_NOBLE_DEFS } from '../domain/data';
 import {
     LEVEL_1_CARD_ORDER,
@@ -30,6 +30,7 @@ vi.mock('react-i18next', () => ({
 describe('splendor sprite mapping', () => {
     beforeEach(() => {
         setAssetsBaseUrl('/assets');
+        __resetAssetLoaderCachesForTests();
     });
 
     test('level order arrays match expected counts and contain unique ids', () => {
@@ -114,6 +115,8 @@ describe('splendor sprite mapping', () => {
 
         expect(cardHtml).toContain('/assets/i18n/zh-CN/splendor/compressed/level-1-cards.webp');
         expect(nobleHtml).toContain('/assets/i18n/zh-CN/splendor/compressed/nobles.webp');
+        expect(cardHtml).toContain('padding-top:142.857');
+        expect(nobleHtml).toContain('padding-top:100%');
     });
 
     test('card preview renderer uses localized compressed atlases', () => {
@@ -121,5 +124,31 @@ describe('splendor sprite mapping', () => {
         const html = renderToStaticMarkup(preview);
 
         expect(html).toContain('/assets/i18n/zh-CN/splendor/compressed/level-1-cards.webp');
+        expect(html).toContain('padding-top:142.857');
+    });
+
+    test('sprite preview prefers the resolved atlas candidate cached by preloading', () => {
+        const cachedImage = new Image();
+        Object.defineProperty(cachedImage, 'naturalWidth', { configurable: true, value: 1200 });
+        Object.defineProperty(
+            cachedImage,
+            'currentSrc',
+            {
+                configurable: true,
+                value: 'https://assets.easyboardgame.top/official/i18n/zh-CN/splendor/compressed/level-1-cards.webp',
+            },
+        );
+        markImageLoaded(
+            'splendor/level-1-cards.jpg',
+            'zh-CN',
+            cachedImage,
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/splendor/compressed/level-1-cards.webp',
+        );
+
+        const html = renderToStaticMarkup(
+            React.createElement(SpritePreview, { preview: { kind: 'card', cardId: 't1-white-1', tier: 1 } }),
+        );
+
+        expect(html).toContain('https://assets.easyboardgame.top/official/i18n/zh-CN/splendor/compressed/level-1-cards.webp');
     });
 });

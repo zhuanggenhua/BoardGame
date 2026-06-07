@@ -16,10 +16,6 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry, getEffectivePower } from '../domain/ongoingModifiers';
 import type { SmashUpCore, MinionOnBase, BaseInPlay } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { execute } from '../domain/reducer';
-import { reduce } from '../domain/reduce';
-
 
 beforeEach(() => {
     clearRegistry();
@@ -112,15 +108,7 @@ describe('睡眠孢子力量修正 E2E', () => {
         expect(base.ongoingActions.length).toBe(1);
         expect(base.ongoingActions[0].defId).toBe('killer_plant_sleep_spores');
 
-        // 验证 Mi-go 的力量
-        console.log('=== Mi-go 力量分析 ===');
-        console.log('basePower:', migo.basePower);
-        console.log('powerModifier:', migo.powerModifier);
-        console.log('tempPowerModifier:', migo.tempPowerModifier);
-
         const effectivePower = getEffectivePower(state, migo, 0);
-        console.log('effectivePower:', effectivePower);
-        console.log('显示的修正值:', effectivePower - migo.basePower);
 
         // 验证有效力量
         expect(migo.basePower).toBe(3); // Mi-go 的基础力量是 3

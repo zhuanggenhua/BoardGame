@@ -1,5 +1,7 @@
 # 冲突解决汇报：feat/dicethrone-gunslinger-samurai
 
+> 2026-06-05 当前有效口径：本文是历史 merge/cherry-pick 冲突处理记录，只说明当时如何保留主线并吸收分支增量，不构成当前枪手/武士审计完成证明。当前若要判断对象级残余或整批发布口径，应以现行单英雄主审计与新英雄总汇总文档为准。
+
 ## 1. 背景
 - base: `main`
 - head: `feat/dicethrone-gunslinger-samurai`

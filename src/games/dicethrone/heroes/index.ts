@@ -18,14 +18,20 @@ import { TREANT_CARDS, getTreantStartingDeck } from './treant/cards';
 import { TREANT_ABILITIES } from './treant/abilities';
 import { NINJA_CARDS, getNinjaStartingDeck } from './ninja/cards';
 import { NINJA_ABILITIES } from './ninja/abilities';
+import { ZHANSHUJIA_CARDS, getZhanshujiaStartingDeck } from './zhanshujia/cards';
+import { ZHANSHUJIA_ABILITIES } from './zhanshujia/abilities';
+import { CURSED_PIRATE_CARDS, getCursedPirateStartingDeck } from './cursed_pirate/cards';
+import { CURSED_PIRATE_ABILITIES, getCursedPirateAbilitiesForFace } from './cursed_pirate/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
+import type { HeroState } from '../domain/types';
 import type { RandomFn } from '../../../engine/types';
 
 export interface HeroData {
     cards: AbilityCard[];
     abilities: AbilityDef[];
     getStartingDeck: (random: RandomFn) => AbilityCard[];
+    getAbilitiesForFace?: (playerBoardFace?: HeroState['playerBoardFace']) => AbilityDef[];
 }
 
 export const HEROES_DATA: Record<string, HeroData> = {
@@ -78,6 +84,17 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: NINJA_CARDS,
         abilities: NINJA_ABILITIES,
         getStartingDeck: getNinjaStartingDeck,
+    },
+    zhanshujia: {
+        cards: ZHANSHUJIA_CARDS,
+        abilities: ZHANSHUJIA_ABILITIES,
+        getStartingDeck: getZhanshujiaStartingDeck,
+    },
+    cursed_pirate: {
+        cards: CURSED_PIRATE_CARDS,
+        abilities: CURSED_PIRATE_ABILITIES,
+        getStartingDeck: getCursedPirateStartingDeck,
+        getAbilitiesForFace: getCursedPirateAbilitiesForFace,
     },
 };
 

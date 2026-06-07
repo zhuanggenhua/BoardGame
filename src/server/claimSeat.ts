@@ -15,6 +15,16 @@ type ClaimSeatFetchResult = {
 type ClaimSeatDb = {
     fetch: (matchID: string, opts: { metadata?: boolean; state?: boolean }) => Promise<ClaimSeatFetchResult>;
     setMetadata: (matchID: string, metadata: MatchMetadata) => Promise<void>;
+    claimSeatMetadata: (matchID: string, input: {
+        playerID: string;
+        playerCredentials: string;
+        playerName?: string;
+        updatedAt?: number;
+    }) => Promise<{
+        metadata?: MatchMetadata;
+        playerExists: boolean;
+        playerCredentials?: string;
+    }>;
 };
 
 type ClaimSeatContext = {
@@ -118,18 +128,31 @@ export const createClaimSeatHandler = ({
             return;
         }
 
-        const playerCredentials = await auth.generateCredentials(ctx);
-        player.credentials = playerCredentials;
-        if (!player.name) {
-            const resolvedName = requestedName || payload?.username;
-            if (resolvedName) {
-                player.name = resolvedName;
-            }
+        const existingCredentials = typeof player.credentials === 'string' && player.credentials.trim()
+            ? player.credentials
+            : undefined;
+        const playerCredentials = existingCredentials ?? await auth.generateCredentials(ctx);
+        const resolvedName = !player.name
+            ? requestedName || payload?.username
+            : undefined;
+        const claimResult = await db.claimSeatMetadata(matchID, {
+            playerID: resolvedPlayerID,
+            playerCredentials,
+            playerName: resolvedName,
+            updatedAt: Date.now(),
+        });
+        if (!claimResult.metadata) {
+            ctx.throw(404, 'Match ' + matchID + ' not found');
+            return;
+        }
+        if (!claimResult.playerExists) {
+            logger.warn(`[claim-seat] rejected reason=player_not_found_after_mutation matchID=${matchID} playerID=${resolvedPlayerID}`);
+            ctx.throw(404, 'Player ' + resolvedPlayerID + ' not found');
+            return;
         }
 
-        await db.setMetadata(matchID, metadata);
         logger.info(`[claim-seat] success matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel}`);
-        ctx.body = { playerID: resolvedPlayerID, playerCredentials };
+        ctx.body = { playerID: resolvedPlayerID, playerCredentials: claimResult.playerCredentials ?? playerCredentials };
     };
 };
 

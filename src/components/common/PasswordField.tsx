@@ -26,13 +26,14 @@ export const PasswordField = ({
     return (
         <div
             className={clsx('relative', wrapperClassName)}
-            data-mobile-text-entry-proxy-host="true"
         >
-            <input
-                {...inputProps}
-                type={isVisible ? 'text' : 'password'}
-                className={clsx(className, 'pr-11')}
-            />
+            <div data-mobile-text-entry-proxy-host="true">
+                <input
+                    {...inputProps}
+                    type={isVisible ? 'text' : 'password'}
+                    className={clsx(className, 'pr-11')}
+                />
+            </div>
             <button
                 type="button"
                 aria-label={isVisible ? hideLabel : showLabel}

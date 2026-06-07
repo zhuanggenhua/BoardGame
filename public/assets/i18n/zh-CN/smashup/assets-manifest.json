@@ -4,6 +4,15 @@
   "id": "smashup",
   "basePrefix": "official/smashup/",
   "files": {
+    "base/baokemeng": {
+      "variants": {
+        "png": {
+          "sha256": "f7fc34a83ea20b2627c468eec16af61a01578bd58ff7b9349c6cb284cac4a6d1",
+          "bytes": 17275734,
+          "mime": "image/png"
+        }
+      }
+    },
     "base/base3": {
       "variants": {
         "png": {
@@ -13,11 +22,56 @@
         }
       }
     },
+    "base/compressed/aiji_base": {
+      "variants": {
+        "webp": {
+          "sha256": "abf449a390d70e2fa80df773fbfae0dce6b588a4f9e9638edbb0b7e59206bf92",
+          "bytes": 251770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/baokemeng": {
+      "variants": {
+        "webp": {
+          "sha256": "0a6e96f8851b2b0139a2df2095b8aea54518fd9d33207b877bb25f84c39f4e87",
+          "bytes": 313540,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/base1": {
+      "variants": {
+        "webp": {
+          "sha256": "df5073cdb7969644092ed41e8a6edd2ea5ec44e5ab44fcf4f3db6e84cbb618ee",
+          "bytes": 540744,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/base2": {
+      "variants": {
+        "webp": {
+          "sha256": "44e2436a03a0b459d6a279cc76ca83fec35b00986ac0557e748ab8715699ecf5",
+          "bytes": 269722,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/base3": {
       "variants": {
         "webp": {
           "sha256": "ed34508db2241fcafc1bac46698964f3359d279b90fc1187ab8ff8bbb56872d4",
           "bytes": 683480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/base4": {
+      "variants": {
+        "webp": {
+          "sha256": "b0267cef7bd8cac875040f0eda7cc97228f5fcbbf358e8462af9a73ffe8adb63",
+          "bytes": 314420,
           "mime": "image/webp"
         }
       }
@@ -31,12 +85,120 @@
         }
       }
     },
+    "base/compressed/wangling_base": {
+      "variants": {
+        "webp": {
+          "sha256": "ac6bf989362e14fe01b84c86b3ffefb0d00a2a8e711c1ac6a97d1ca225bfa9ad",
+          "bytes": 708688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/yuanhou": {
+      "variants": {
+        "webp": {
+          "sha256": "220cbe4472d819376d280c4e9b62b6cb792fd70a6a113d70b2a3825147d220b7",
+          "bytes": 321544,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/shayu": {
       "variants": {
         "png": {
           "sha256": "bce7b42d41111d454117c40b32efad6e13ae512d3f03980757793ca1e6ebd607",
           "bytes": 17007487,
           "mime": "image/png"
+        }
+      }
+    },
+    "base/yuanhou": {
+      "variants": {
+        "png": {
+          "sha256": "3fa3dc9dafc50279272829e229a3c12993c11588e549b3b8d30e363f4776aafc",
+          "bytes": 16968513,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/baokemeng": {
+      "variants": {
+        "png": {
+          "sha256": "2cfeb319147c365d5a0c554f1a2d3f99979b026baf8d6d149591307530e2a36f",
+          "bytes": 40776506,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/aiji": {
+      "variants": {
+        "webp": {
+          "sha256": "a99c4731a714ac0a20489d10c6b04dba863e5044c5dd9000f263af41ff8db18e",
+          "bytes": 827752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/baokemeng": {
+      "variants": {
+        "webp": {
+          "sha256": "2a9157d4f3d28633f6d3215411d5e0fd426b0163b9224151dc46cd7e5b93f631",
+          "bytes": 1126378,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/cards1": {
+      "variants": {
+        "webp": {
+          "sha256": "a07220cb8d13a0ee4469a9996ea4a08b72ce5cff6a16e0e339c3f231f9901766",
+          "bytes": 933066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/cards2": {
+      "variants": {
+        "webp": {
+          "sha256": "16aebda53fdc1e57741a4a8f65dc687f3de62494faa99b9de30ca9c25d017711",
+          "bytes": 691772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/cards3": {
+      "variants": {
+        "webp": {
+          "sha256": "89f82ec778ea14d767235f401bc553a23147c431b1132badd91c4f273e32eecc",
+          "bytes": 896796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/cards4": {
+      "variants": {
+        "webp": {
+          "sha256": "95b38d3e2cb27d77ea623a475d6340731731e46440a3010e2b778248eb4d0193",
+          "bytes": 858772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/cards5": {
+      "variants": {
+        "webp": {
+          "sha256": "6d01aa62abf961b76c75d398a4d4ac2a4e670e353956912efe95fd346ff88270",
+          "bytes": 899038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/longzu": {
+      "variants": {
+        "webp": {
+          "sha256": "3850908ee5521dc3e58b77ce142c26a1d5e3909aeb36ca1fe5788ecb207f6e8b",
+          "bytes": 953548,
+          "mime": "image/webp"
         }
       }
     },
@@ -58,6 +220,42 @@
         }
       }
     },
+    "cards/compressed/tts_atlas_752d625ca7": {
+      "variants": {
+        "webp": {
+          "sha256": "aa4c5c1206a52a6fbc1eca1872a91bfd6ed01b51b35fd4427de63db82d1fc04b",
+          "bytes": 1715632,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/wangling": {
+      "variants": {
+        "webp": {
+          "sha256": "13554fc412e309bd19557ef55dee237263a57ab24b2056abbb0ac4a846ce5ff5",
+          "bytes": 852528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/yuanhou": {
+      "variants": {
+        "webp": {
+          "sha256": "c32bbf6f88f3f7c952d07fa8f573d82aea72daa422861894dfc1df857bf76492",
+          "bytes": 1018858,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/longzu": {
+      "variants": {
+        "png": {
+          "sha256": "090bbb869f292a94906cb7c45db043482b5ec05438450a7daa290105ef71cf13",
+          "bytes": 42040387,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/pretty_pretty": {
       "variants": {
         "png": {
@@ -72,6 +270,51 @@
         "png": {
           "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
           "bytes": 42559123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/yuanhou": {
+      "variants": {
+        "png": {
+          "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
+          "bytes": 44486175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/raider/angry-v1": {
+      "variants": {
+        "png": {
+          "sha256": "dea49ad8d2eaa960cb89cb8cc534c7ff9b8d6bf01ad15bd234bcd2da021398fc",
+          "bytes": 1979623,
+          "mime": "image/png"
+        }
+      }
+    },
+    "emotes/raider/compressed/angry-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "6f591eec6d11e5074e4548b6c2c53be348a7de77132581d70cd23bca68dd8168",
+          "bytes": 217900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/supreme-overlord/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "541efae459b1fa18230ebfd4cc94877b9f804042fc97d11eb65ad91a3d001dfb",
+          "bytes": 168952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "emotes/supreme-overlord/smug-v1": {
+      "variants": {
+        "png": {
+          "sha256": "4bddb3080d05b2305cc55f4e275a852070c205f09ac6e627c19952aaf09e4a69",
+          "bytes": 2008286,
           "mime": "image/png"
         }
       }
@@ -91,6 +334,15 @@
           "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
           "bytes": 23674169,
           "mime": "image/png"
+        }
+      }
+    },
+    "thumbnails/compressed/smashup": {
+      "variants": {
+        "webp": {
+          "sha256": "1ae0270532e40348e0a2a03ae6cd576b082c28fcf0488d696c68030a03d829b4",
+          "bytes": 71064,
+          "mime": "image/webp"
         }
       }
     }

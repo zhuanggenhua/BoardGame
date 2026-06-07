@@ -2,7 +2,7 @@ import { test, expect } from '../framework';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { setupOnlineMatch, readCoreState, applyCoreStateDirect } from '../helpers/cardia';
-import type { CardInstance } from '../src/games/cardia/domain/core-types';
+import type { CardInstance } from '../../src/games/cardia/domain/core-types';
 
 function createCard(overrides: Partial<CardInstance> = {}): CardInstance {
     return {

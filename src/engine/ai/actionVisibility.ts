@@ -10,6 +10,10 @@ const FAST_AI_COMMAND_TYPES = new Set([
 
 const DEFAULT_HIDDEN_ACTION_KINDS = new Set([
     'response-pass',
+    'select-faction',
+    'setup-ready',
+    'setup-select-character',
+    'setup-select-faction',
     'token-response',
     'skip-token-response',
 ]);

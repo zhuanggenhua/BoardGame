@@ -124,6 +124,7 @@ function getCardSpriteConfig(card: Card): { atlasId: string; frameIndex: number 
 
 const CARD_WIDTH_RATIO = 'var(--sw-hand-card-width-ratio, 0.16)';
 const HAND_REFERENCE_WIDTH = `var(--sw-hand-reference-width, ${BOARD_SHELL_REFERENCE_WIDTH})`;
+const HAND_CARD_ASPECT_RATIO = 1044 / 729;
 const MAGNIFY_BUTTON_OFFSET_CSS = `clamp(4px, calc(${HAND_REFERENCE_WIDTH} * 0.0045), 8px)`;
 const MAGNIFY_BUTTON_SIZE_CSS = `clamp(24px, calc(${HAND_REFERENCE_WIDTH} * 0.026), 32px)`;
 const MAGNIFY_ICON_SIZE_CSS = `clamp(13px, calc(${HAND_REFERENCE_WIDTH} * 0.014), 18px)`;
@@ -234,6 +235,8 @@ const HandCard: React.FC<{
       data-layout-mode={compactLayout ? 'compact' : 'default'}
       style={{
         width: `calc(${HAND_REFERENCE_WIDTH} * ${CARD_WIDTH_RATIO})`,
+        height: `calc(((${HAND_REFERENCE_WIDTH} * ${CARD_WIDTH_RATIO})) / ${HAND_CARD_ASPECT_RATIO})`,
+        aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
         marginLeft: index === 0 ? 0 : `calc(${HAND_REFERENCE_WIDTH} * ${cardSpacingRatio})`,
         zIndex: isSelected ? 100 : isHovered ? 50 : index,
       }}
@@ -253,7 +256,7 @@ const HandCard: React.FC<{
     >
       <div
         className={`
-          relative w-full rounded-lg overflow-hidden pointer-events-none
+          relative w-full h-full rounded-lg overflow-hidden pointer-events-none
           border-2 transition-all duration-150
           ${isSelected
             ? selectedCardClass
@@ -270,10 +273,10 @@ const HandCard: React.FC<{
           <CardSprite
             atlasId={spriteConfig.atlasId}
             frameIndex={spriteConfig.frameIndex}
-            className="w-full pointer-events-none"
+            className="w-full h-full pointer-events-none"
           />
         ) : (
-          <div className="w-full aspect-[1044/729] bg-gradient-to-b from-slate-700 to-slate-900 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-b from-slate-700 to-slate-900 flex items-center justify-center">
             <span className="text-slate-400 text-sm">{card.name}</span>
           </div>
         )}

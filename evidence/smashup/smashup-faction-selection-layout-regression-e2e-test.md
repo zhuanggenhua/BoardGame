@@ -52,3 +52,68 @@
 - 这轮收口的是：**SmashUp 选择页布局回归 + 旧 E2E 错误前提**。
 - 旧文档里“手机横屏 2 列紧凑布局达标”的结论已经失效，不能再作为当前验收依据。
 - 本地单机页“视角跟随当前回合玩家”是当前既有设计，不建议为了这条测试去改共享本地模式逻辑。
+
+## 2026-05-19 复核补充
+
+命令：
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-faction-selection-spacing.e2e.ts "移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图"`
+
+结果：
+- 通过
+
+### 本轮根因与修正
+- **旧结论失效（再次更正）**：此前把“桌面态直接平铺完整候选集也没问题”当成可接受结论，这和后续补入的 `高密度候选池必须提供减负入口` 规范不一致。用户指出“候选太多不好扫”是对的。
+- **本轮 UI 修正**：
+  - `FactionSelection.tsx` 默认先聚焦 `available`，不再把 `all` 当成桌面默认。
+  - 桌面高密度候选池也露出搜索 + 状态筛选入口，不再只有窄视口才有减负工具。
+  - 2 人桌面草稿单独走 `useFocusedDesktopDraftLayout`，候选卡与底栏摘要进一步收紧。
+  - 多人 compact 桌面把工具条压成单行，避免为了减负入口反过来挤掉候选主区。
+- **本轮 E2E 几何修正**：
+  - 几何断言不再把“滚动区里下一排预露出的半截卡”直接当成“被底栏遮挡”。
+  - 现在只统计 **在玩家 rail 上方有足够可见面积** 的候选卡；若完整可见的底排真被遮住，断言仍会失败。
+
+### 1. 移动端横屏参考图
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\mobile-landscape.png`
+- 我实际看到：横屏下仍是桌面化主布局，顶部标题和状态贴纸居中，没有缩成左上角一小块。
+- 我实际看到：搜索框和 `可选 / 全部 / 已锁定` 筛选按钮已经进入主视口，说明移动端高密度候选池也能直接减负，不必先硬扫满屏卡。
+- 我实际看到：首行仍是 5 列派系卡，页面没有横向溢出；底部玩家 rail 在 ultra-compact 横屏下继续隐藏，没有挤压候选主区。
+- 验收结论：**达到。**
+
+### 2. 桌面参考图
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\desktop-reference.png`
+- 我实际看到：桌面态顶部保留单行减负工具条，默认聚焦 `可选`，不再是“整屏先铺满全部候选再让用户自己扫”。
+- 我实际看到：候选卡已经收成更紧的 2 人桌面密度分支，当前有效可见的底排卡都在底栏上方，没有肉眼级被玩家摘要 rail 压住。
+- 我实际看到：画面底部露出的下一排卡只属于滚动区的预露头，不是完整可操作行；本轮几何断言已改成只统计 rail 上方足够可见的候选卡。
+- 验收结论：**达到。**
+
+### 3. 本轮修正点
+- `src/games/smashup/ui/FactionSelection.tsx`
+  - 默认 `visibilityMode` 改为 `available`
+  - 桌面高密度候选池显示搜索/筛选入口
+  - 2 人桌面与多人 compact 桌面分支分别压缩密度
+- `e2e/smashup/smashup-faction-selection-spacing.e2e.ts`
+  - 几何门禁从“视口内半可见就算到底排”改为“rail 上方有足够可见面积才算有效候选行”
+
+## 2026-05-20 搜索图标复核补充
+
+命令：
+- `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.3 npm run test:e2e:ci:file -- e2e/smashup/smashup-faction-selection-spacing.e2e.ts "移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图"`
+
+结果：
+- 通过
+
+### 本轮根因与修正
+- **根因**：派系选择页直接使用 raw `lucide-react` `Search` SVG 贴在输入框左侧，视觉重心容易偏右下，看起来像“放大镜歪了”。
+- **本轮 UI 修正**：改成统一的 `SearchGlyph`，放进固定前导槽位，再用 E2E 断言输入框与图标槽位中心对齐，避免继续靠手写偏移猜位置。
+
+### 1. 搜索工具条近景（桌面）
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\desktop-search-toolbar.png`
+- 我实际看到：放大镜已稳定落在搜索框左侧内边距内，没有贴边，也没有上飘/下坠。
+- 我实际看到：输入框、图标和右侧筛选按钮处于同一条工具条上，视觉重心没有再偏到右下角。
+- 验收结论：**达到。**
+
+### 2. 搜索工具条近景（移动端横屏）
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\mobile-search-toolbar.png`
+- 我实际看到：缩窄后图标仍保留清晰左侧留白，没有被压成斜着贴边的小图形。
+- 我实际看到：工具条仍是单行减负入口，不会挤爆候选主区。
+- 验收结论：**达到。**

@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { triggerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import type { SmashUpCore } from '../domain/types';
-import { makeMatchState } from './helpers';
+import { getPromptOptions, getSimpleChoicePrompt, makeMatchState } from './helpers';
 import { initAllAbilities } from '../abilities';
 
 describe('母舰基地 afterScoring - 只能收回本基地随从', () => {
@@ -92,12 +92,11 @@ describe('母舰基地 afterScoring - 只能收回本基地随从', () => {
         
         // 验证：应该创建交互
         expect(result.matchState).toBeDefined();
-        const interaction = result.matchState?.sys.interaction.current || result.matchState?.sys.interaction.queue[0];
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.title).toBe('母舰：选择收回的随从');
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'base_the_mothership');
+        expect(prompt.title).toBe('母舰：选择收回的随从');
         
         // 验证：选项中只包含母舰基地上的随从（m1），不包含忍者道场的随从（m2, m3）
-        const options = interaction?.data.options as any[];
+        const options = getPromptOptions(prompt);
         expect(options).toBeDefined();
         
         // 应该有2个选项：跳过 + m1
@@ -113,8 +112,8 @@ describe('母舰基地 afterScoring - 只能收回本基地随从', () => {
         expect(options[1].displayMode).toBe('card'); // 验证 displayMode 存在
         
         // 验证：continuationContext 包含 baseIndex
-        expect(interaction?.data.continuationContext).toBeDefined();
-        expect((interaction?.data.continuationContext as any).baseIndex).toBe(0);
+        expect(prompt.continuationContext).toBeDefined();
+        expect((prompt.continuationContext as any).baseIndex).toBe(0);
         
         // 验证：不应该包含 m2 或 m3（忍者道场上的随从）
         const minionUids = options.slice(1).map((opt: any) => opt.value.minionUid);

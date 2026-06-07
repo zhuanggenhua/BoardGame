@@ -51,15 +51,18 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 **强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
 未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
 
+**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+
 ### 回滚 / 状态 / 日志
 
 ```bash
 bash deploy-image.sh rollback v1.2.3   # 回滚到指定版本
+bash deploy-image.sh rollback-last     # 回滚到上次成功部署版本
 bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```
 
-### 固定版本部署（推荐）
+### 固定版本部署（仅明确指定 / 回滚排障）
 
 ```bash
 bash deploy-image.sh deploy v1.2.3  # 首次部署指定 tag
@@ -69,6 +72,7 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
 - 不传 tag 时默认部署 `latest`
 - 传入 tag 时，脚本会统一把 `game-server` 和 `web` 切到同一版本，便于排障与回滚
 - 这些 tag 来自 GitHub Actions 发布的镜像标签（例如推送 Git tag `v1.2.3` 后生成对应镜像）
+- 固定版本部署只适用于“用户明确指定版本”或“已验证精确 tag 存在”的场景；不得把短 commit、`sha-xxxxxx`、GitHub Actions run number 等推测值当作可部署 tag。
 
 ### CI 配置说明
 
@@ -79,6 +83,7 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
   - `ghcr.io/zhuanggenhua/boardgame-game:latest`
   - `ghcr.io/zhuanggenhua/boardgame-web:latest`
 - **版本标签**：`latest`（main 分支）、`v1.2.3`（tag）、`sha-xxxxxx`（commit）
+- **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，直接使用 `update` 拉取 `latest`。
 
 > **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
 
@@ -254,6 +259,8 @@ GitHub Actions 自动化：
 约束：
 
 - `--dry-run` 只本地打 zip 和 manifest，不上传
+- Android native embedded APK 也必须遵守“轻包体”约束：只允许内置壳运行必需的 H5 bundle 与轻量静态文件，`public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路。
+- `scripts/mobile/android.mjs` 会在 Android embedded 构建阶段主动裁掉 `dist/assets/common/audio/**`，并在 `dist/` 或 `android/app/src/main/assets/public/` 里仍检测到这些前缀时直接失败。
 - `--skip-latest` 会上传 bundle 与版本 manifest，但不会切换该 channel 的 `latest.json`
 - 正式覆盖 `latest.json` 后，指向该 channel 的 Android App 会在下一次启动后的后台检查中感知到新 bundle，并在切后台或重启后生效
 - OTA 只覆盖 Web bundle；涉及原生层改动时仍必须重新发 APK / AAB
@@ -321,6 +328,8 @@ GitHub Actions 自动化：
 - **服务端缓存头**：生产单体服务会把上述目录按 `Cache-Control: public, max-age=31536000, immutable` 提供；浏览器或 Cloudflare 拿到新 URL 才会请求新内容。
 - **例外文件**：`/game-data/summonerwars.layout.json` 仍保持 `no-cache, no-store, must-revalidate`，因为它承载运行时布局编辑结果，不能误进长期缓存。
 - **入口页策略不变**：`index.html` 和 SPA fallback 继续 `no-cache, no-store, must-revalidate`，确保部署后刷新页面一定拿到新的资源引用关系。
+- **部署门禁新增**：`scripts/deploy/deploy-image.sh` 现在会在源站 smoke 通过后，再校验**公网首页引用的入口资源**是否与 `http://127.0.0.1/` 一致；如果 Cloudflare 仍在发旧 `index-*.js` / `MatchRoom-*.js`，部署不会被视为完成。
+- **Cloudflare purge 约定**：若服务器环境提供 `CLOUDFLARE_ZONE_ID` 与 `CLOUDFLARE_API_TOKEN`，部署脚本默认按 `CLOUDFLARE_PURGE_MODE=auto` 自动执行 purge（有凭据时等价于 `everything`）；若公网仍可能命中旧入口包，这是正式部署链的第一补救动作。
 - **新增 game-data 的判断规则**：如果文件是“构建期静态产物”，应纳入版本指纹 + 长缓存；如果文件可能被后台、编辑器或运行时直接改写，则默认保守缓存，除非同时设计了独立版本号或发布链路。
 
 ## 资源发布流程（官方）
@@ -329,7 +338,8 @@ GitHub Actions 自动化：
 2. 生成清单：`npm run assets:manifest`（输出 `assets-manifest.json`）。
 3. 校验清单：`npm run assets:validate`（缺文件/变体不一致会报错）。
 4. 上传资源与清单到对象存储（路径 `official/<gameId>/...`）。
-5. 如仅修改了对象元数据（例如 `Cache-Control`），使用 `npm run assets:upload:force` 重新上传；常规资源内容更新不需要手动 purge，因为 URL 会随内容 hash 自动变化。
+5. 如仅修改了对象元数据（例如 `Cache-Control`），使用 `npm run assets:upload:force` 重新上传；常规图片/音频资源内容更新不需要手动 purge，因为 URL 会随内容 hash 自动变化。
+6. 但 **Web 首页入口与 Vite 产物映射不是 R2 资源**。若线上反馈表现为“源站已是新版本，公网仍在发旧 `index-*.js` / `MatchRoom-*.js`”，必须改走 Cloudflare purge / 公网入口一致性排查，而不是继续猜修业务代码。
 
 ### Android OTA 产物发布流程
 

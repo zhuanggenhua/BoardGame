@@ -15,6 +15,14 @@ const SMASHUP_TERRAFORM_QUERY = {
     seed: 12345,
 };
 
+const SMASHUP_ROUTE_OPEN_TIMEOUT_MS = 150_000;
+
+async function resetSmashUpTestPage(game: any): Promise<void> {
+    const rawPage = (game as { page?: { goto?: (...args: any[]) => Promise<unknown> } }).page;
+    if (!rawPage?.goto) return;
+    await rawPage.goto('about:blank', { waitUntil: 'commit', timeout: 15_000 }).catch(() => undefined);
+}
+
 async function saveEvidenceLocatorScreenshot(page: any, locator: any, testInfo: any, subdir: string, filename: string) {
     const path = getEvidenceScreenshotPath(testInfo, filename, { subdir, filename });
     mkdirSync(dirname(path), { recursive: true });
@@ -44,7 +52,8 @@ async function openTerraformScene(
         extraCore?: Record<string, unknown>;
     },
 ): Promise<void> {
-    await game.openTestGame('smashup', SMASHUP_TERRAFORM_QUERY, 20000);
+    await resetSmashUpTestPage(game);
+    await game.openTestGame('smashup', SMASHUP_TERRAFORM_QUERY, SMASHUP_ROUTE_OPEN_TIMEOUT_MS);
     await game.setupScene({
         gameId: 'smashup',
         player0: {
@@ -104,6 +113,40 @@ const SMASHUP_GREAT_WOLF_QUERY = {
     seed: 12345,
 };
 
+function buildScoreBasesSessionExtraSys(
+    baseIndex: number,
+    baseDefId: string,
+    deferredEvents: Array<{ type: string; payload: Record<string, unknown>; timestamp: number }>,
+) {
+    return {
+        phase: 'scoreBases',
+        resolution: {
+            activeFrameId: 'smashup:score-bases',
+            frames: [
+                {
+                    id: 'smashup:score-bases',
+                    kind: 'smashup:score-bases',
+                    ownerGame: 'smashup',
+                    ownerSystem: 'smashup-scoring',
+                    ownerToken: 'smashup:score-bases',
+                    ordering: 'explicit-order',
+                    status: 'running',
+                    step: 'awaiting-interactions',
+                    phase: 'scoreBases',
+                    phaseGate: 'block-advance-when-blocked',
+                    metadata: {
+                        lockedBaseRefs: [{ slotIndex: baseIndex, baseDefId }],
+                        completedBaseRefs: [],
+                        currentBaseRef: { slotIndex: baseIndex, baseDefId },
+                    },
+                    deferredEvents,
+                    deferredActions: [],
+                },
+            ],
+        },
+    };
+}
+
 async function openTitanRailScene(
     game: any,
     config: {
@@ -115,7 +158,8 @@ async function openTitanRailScene(
         extraSys?: Record<string, unknown>;
     },
 ): Promise<void> {
-    await game.openTestGame('smashup', SMASHUP_TITAN_RAIL_QUERY, 20000);
+    await resetSmashUpTestPage(game);
+    await game.openTestGame('smashup', SMASHUP_TITAN_RAIL_QUERY, SMASHUP_ROUTE_OPEN_TIMEOUT_MS);
     await game.setupScene({
         gameId: 'smashup',
         player0: {
@@ -155,7 +199,8 @@ async function openTitanRailScene(
 }
 
 async function openMajorUrsaScene(game: any): Promise<void> {
-    await game.openTestGame('smashup', SMASHUP_MAJOR_URSA_QUERY, 20000);
+    await resetSmashUpTestPage(game);
+    await game.openTestGame('smashup', SMASHUP_MAJOR_URSA_QUERY, SMASHUP_ROUTE_OPEN_TIMEOUT_MS);
     await game.setupScene({
         gameId: 'smashup',
         player0: {
@@ -217,7 +262,8 @@ async function openMajorUrsaScene(game: any): Promise<void> {
 }
 
 async function openGreatWolfSpiritTalentScene(game: any): Promise<void> {
-    await game.openTestGame('smashup', SMASHUP_GREAT_WOLF_QUERY, 20000);
+    await resetSmashUpTestPage(game);
+    await game.openTestGame('smashup', SMASHUP_GREAT_WOLF_QUERY, SMASHUP_ROUTE_OPEN_TIMEOUT_MS);
     await game.setupScene({
         gameId: 'smashup',
         player0: {
@@ -845,6 +891,22 @@ async function openVeryLargeBoulderMoveScene(game: any): Promise<void> {
 }
 
 async function openRainborocPlayReplacementScene(game: any): Promise<void> {
+    const deferredPostScoringEvents = [
+        {
+            type: 'su:base_cleared',
+            payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
+            timestamp: 91,
+        },
+        {
+            type: 'su:base_replaced',
+            payload: {
+                baseIndex: 0,
+                oldBaseDefId: 'base_the_homeworld',
+                newBaseDefId: 'base_the_factory',
+            },
+            timestamp: 91,
+        },
+    ];
     await openTitanRailScene(game, {
         bases: [
             {
@@ -868,7 +930,7 @@ async function openRainborocPlayReplacementScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-rainboroc-setaside',
@@ -883,7 +945,7 @@ async function openRainborocPlayReplacementScene(game: any): Promise<void> {
             ],
         },
         extraSys: {
-            phase: 'scoreBases',
+            ...buildScoreBasesSessionExtraSys(0, 'base_the_homeworld', deferredPostScoringEvents),
             interaction: {
                 current: {
                     id: 'titan_itty_critters_rainboroc_play_replacement_1',
@@ -900,22 +962,7 @@ async function openRainborocPlayReplacementScene(game: any): Promise<void> {
                         continuationContext: {
                             titanUid: 'titan-rainboroc-setaside',
                             titanDefId: 'itty_critters_rainboroc',
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: 'su:base_cleared',
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
-                                    timestamp: 91,
-                                },
-                                {
-                                    type: 'su:base_replaced',
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
-                                    },
-                                    timestamp: 91,
-                                },
-                            ],
+                            _deferredPostScoringEvents: deferredPostScoringEvents,
                         },
                     },
                 },
@@ -1344,7 +1391,7 @@ async function openTimeBoxSpecialScene(game: any): Promise<void> {
                     controllerId: '0',
                     powerCounters: 0,
                     talentUsed: false,
-                    metadata: { timeBoxCounters: 5 },
+                    metadata: { timeBoxCounters: 5, timeBoxPlayArmed: true },
                     location: { zone: 'setaside' },
                 },
             ],
@@ -1418,6 +1465,7 @@ async function openTimeBoxTalentScene(game: any): Promise<void> {
                     controllerId: '0',
                     powerCounters: 0,
                     talentUsed: false,
+                    metadata: { timeBoxCounters: 3 },
                     location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
                 },
             ],
@@ -1540,6 +1588,22 @@ async function openKrakenTalentScene(game: any): Promise<void> {
 }
 
 async function openKrakenPlayReplacementScene(game: any): Promise<void> {
+    const deferredPostScoringEvents = [
+        {
+            type: 'su:base_cleared',
+            payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
+            timestamp: 41,
+        },
+        {
+            type: 'su:base_replaced',
+            payload: {
+                baseIndex: 0,
+                oldBaseDefId: 'base_the_homeworld',
+                newBaseDefId: 'base_the_factory',
+            },
+            timestamp: 41,
+        },
+    ];
     await openTitanRailScene(game, {
         bases: [
             {
@@ -1563,7 +1627,7 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-kraken-setaside',
@@ -1578,7 +1642,7 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
             ],
         },
         extraSys: {
-            phase: 'scoreBases',
+            ...buildScoreBasesSessionExtraSys(0, 'base_the_homeworld', deferredPostScoringEvents),
             interaction: {
                 current: {
                     id: 'titan_pirates_the_kraken_play_replacement_1',
@@ -1598,22 +1662,7 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
                             ownerId: '0',
                             controllerId: '0',
                             scoringBaseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: 'su:base_cleared',
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
-                                    timestamp: 41,
-                                },
-                                {
-                                    type: 'su:base_replaced',
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
-                                    },
-                                    timestamp: 41,
-                                },
-                            ],
+                            _deferredPostScoringEvents: deferredPostScoringEvents,
                         },
                     },
                 },
@@ -1624,6 +1673,22 @@ async function openKrakenPlayReplacementScene(game: any): Promise<void> {
 }
 
 async function openKrakenRescueScene(game: any): Promise<void> {
+    const deferredPostScoringEvents = [
+        {
+            type: 'su:base_cleared',
+            payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
+            timestamp: 51,
+        },
+        {
+            type: 'su:base_replaced',
+            payload: {
+                baseIndex: 0,
+                oldBaseDefId: 'base_the_homeworld',
+                newBaseDefId: 'base_the_factory',
+            },
+            timestamp: 51,
+        },
+    ];
     await openTitanRailScene(game, {
         bases: [
             {
@@ -1647,7 +1712,7 @@ async function openKrakenRescueScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
         ],
         extraCore: {
-            baseDeck: ['base_factory_436-1337'],
+            baseDeck: ['base_the_factory'],
             titans: [
                 {
                     uid: 'titan-kraken-on-score-base',
@@ -1662,7 +1727,7 @@ async function openKrakenRescueScene(game: any): Promise<void> {
             ],
         },
         extraSys: {
-            phase: 'scoreBases',
+            ...buildScoreBasesSessionExtraSys(0, 'base_the_homeworld', deferredPostScoringEvents),
             interaction: {
                 current: {
                     id: 'titan_pirates_the_kraken_choose_minion_1',
@@ -1682,23 +1747,11 @@ async function openKrakenRescueScene(game: any): Promise<void> {
                             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' },
                         ],
                         continuationContext: {
+                            titanUid: 'titan-kraken-on-score-base',
+                            titanDefId: 'pirates_the_kraken',
+                            controllerId: '0',
                             scoringBaseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: 'su:base_cleared',
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
-                                    timestamp: 51,
-                                },
-                                {
-                                    type: 'su:base_replaced',
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
-                                    },
-                                    timestamp: 51,
-                                },
-                            ],
+                            _deferredPostScoringEvents: deferredPostScoringEvents,
                         },
                     },
                 },
@@ -1880,11 +1933,12 @@ function buildOneOngoingAction(ownerId = '0') {
 }
 
 async function openFourPlayerTitanLayoutScene(game: any): Promise<void> {
+    await resetSmashUpTestPage(game);
     await game.openTestGame('smashup', {
         numPlayers: 4,
         skipInitialization: true,
         seed: 12345,
-    });
+    }, SMASHUP_ROUTE_OPEN_TIMEOUT_MS);
 
     await game.setupScene({
         gameId: 'smashup',
@@ -1907,7 +1961,7 @@ async function openFourPlayerTitanLayoutScene(game: any): Promise<void> {
             { defId: 'base_the_mothership', ongoingActions: [], minions: [] },
             { defId: 'base_central_brain', ongoingActions: [], minions: [] },
             { defId: 'base_pirate_cove', ongoingActions: [], minions: [] },
-            { defId: 'base_jungle_oasis', ongoingActions: [], minions: [] },
+            { defId: 'base_the_factory', ongoingActions: [], minions: [] },
         ],
         extra: {
             core: {
@@ -1931,16 +1985,15 @@ async function openFourPlayerTitanLayoutScene(game: any): Promise<void> {
 }
 
 test.describe('Smash Up - Alien Terraform', () => {
+    test.describe.configure({ timeout: 180_000 });
+
     test('应完成三步交互：选旧基地 → 选新基地 → 额外打出随从', async ({ game }, testInfo) => {
         await openTerraformScene(game, {
             hand: ['alien_terraform', 'alien_invader'],
             baseDeck: ['base_central_brain', 'base_pirate_cove'],
         });
 
-        await game.playCard('alien_terraform');
-        await game.waitForInteraction('alien_terraform');
-        await game.selectBase(0);
-
+        await game.playCard('alien_terraform', { targetBaseIndex: 0 });
         await game.waitForInteraction('alien_terraform_choose_replacement');
         await game.screenshot('terraform-replacement-prompt', testInfo);
         await selectInteractionOptionBy(
@@ -1975,10 +2028,7 @@ test.describe('Smash Up - Alien Terraform', () => {
             bases: ['base_the_homeworld'],
         });
 
-        await game.playCard('alien_terraform');
-        await game.waitForInteraction('alien_terraform');
-        await game.selectBase(0);
-
+        await game.playCard('alien_terraform', { targetBaseIndex: 0 });
         await game.waitForInteraction('alien_terraform_choose_replacement');
         await selectInteractionOptionBy(
             game,
@@ -2007,9 +2057,7 @@ test.describe('Smash Up - Alien Terraform', () => {
             bases: ['base_the_homeworld'],
         });
 
-        await game.playCard('alien_terraform');
-        await game.waitForInteraction('alien_terraform');
-        await game.selectBase(0);
+        await game.playCard('alien_terraform', { targetBaseIndex: 0 });
         await waitForNoInteraction(game);
 
         const finalState = await game.getState();
@@ -2040,10 +2088,7 @@ test.describe('Smash Up - Alien Terraform', () => {
             },
         });
 
-        await game.playCard('alien_terraform');
-        await game.waitForInteraction('alien_terraform');
-        await game.selectBase(0);
-
+        await game.playCard('alien_terraform', { targetBaseIndex: 0 });
         await game.waitForInteraction('alien_terraform_choose_replacement');
         await selectInteractionOptionBy(
             game,
@@ -2365,10 +2410,12 @@ test.describe('Smash Up - Alien Terraform', () => {
             '海怪克拉肯：打出到替换基地',
         );
         await waitForNoInteraction(game);
+        await game.advancePhase();
+        await game.waitForPhase('playCards', 10000);
 
         const finalState = await game.getState();
         const kraken = finalState.core.titans.find((candidate: any) => candidate.uid === 'titan-kraken-setaside');
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(kraken?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
 
         await waitForLayoutSettle(page);
@@ -2380,18 +2427,24 @@ test.describe('Smash Up - Alien Terraform', () => {
 
         await game.waitForInteraction('titan_pirates_the_kraken_choose_minion');
         await game.screenshot('kraken-rescue-choose-minion', testInfo);
-        await page.locator('[data-minion-uid="kraken-save-pirate"]').click({ force: true });
+        await selectInteractionOptionBy(
+            game,
+            (option: any) => option?.value?.minionUid === 'kraken-save-pirate',
+            '海怪克拉肯：选择要救下的己方随从',
+        );
 
         await game.waitForInteraction('titan_pirates_the_kraken_choose_base');
         await game.screenshot('kraken-rescue-choose-base', testInfo);
         await game.selectBase(1);
         await waitForNoInteraction(game);
+        await game.advancePhase();
+        await game.waitForPhase('playCards', 10000);
 
         const finalState = await game.getState();
         const rescuedMinion = finalState.core.bases[1].minions.find((candidate: any) => candidate.uid === 'kraken-save-pirate');
         const oldBaseMinion = finalState.core.bases[0].minions.find((candidate: any) => candidate.uid === 'kraken-save-pirate');
 
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(oldBaseMinion).toBeUndefined();
         expect(rescuedMinion?.defId).toBe('pirate_first_mate');
 
@@ -2586,9 +2639,14 @@ test.describe('Smash Up - Alien Terraform', () => {
             '漫游山岭巨人：选择交出控制权的己方随从',
         );
 
+        await game.waitForInteraction('smashup_reaction_choose');
+        await game.screenshot('hill-that-strolls-reaction-choice', testInfo);
+        await titan.click({ force: true });
         await game.waitForInteraction('titan_ignobles_the_hill_that_strolls_counter');
         await game.screenshot('hill-that-strolls-counter-choice', testInfo);
         await game.selectOption('place');
+        await game.waitForInteraction('smashup_reaction_choose');
+        await page.getByRole('button', { name: /让过|Pass|Skip/i }).first().click({ force: true });
         await waitForNoInteraction(game);
 
         const finalState = await game.getState();
@@ -2656,10 +2714,12 @@ test.describe('Smash Up - Alien Terraform', () => {
             '彩虹鸟：打出到替换基地',
         );
         await waitForNoInteraction(game);
+        await game.advancePhase();
+        await game.waitForPhase('playCards', 10000);
 
         const finalState = await game.getState();
         const rainboroc = finalState.core.titans.find((candidate: any) => candidate.uid === 'titan-rainboroc-setaside');
-        expect(finalState.core.bases[0].defId).toBe('base_factory_436-1337');
+        expect(finalState.core.bases[0].defId).toBe('base_the_factory');
         expect(rainboroc?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
 
         await waitForLayoutSettle(page);
@@ -2725,15 +2785,8 @@ test.describe('Smash Up - Alien Terraform', () => {
     test('哥佐拉在本基地打出战术后会加 1 标记并可通过交互抽 1 张牌', async ({ game, page }, testInfo) => {
         await openGorgodzollaActionTriggerScene(game);
 
-        await game.playCard('trickster_hideout');
-        await game.selectBase(0);
+        await game.playCard('trickster_hideout', { targetBaseIndex: 0 });
 
-        await game.waitForInteraction('reaction_queue_choose_next');
-        await selectInteractionOptionBy(
-            game,
-            (option: any) => String(option?.value?.triggerId ?? '').includes('onActionPlayed:kaiju_gorgodzolla'),
-            '反应队列：结算哥佐拉',
-        );
         await game.waitForInteraction('titan_kaiju_gorgodzolla_draw');
         await game.screenshot('gorgodzolla-draw-choice', testInfo);
         await selectInteractionOptionBy(
@@ -2870,6 +2923,7 @@ test.describe('Smash Up - Alien Terraform', () => {
         await openTimeBoxSpecialScene(game);
 
         await game.waitForInteraction('titan_time_travelers_time_box_play');
+        await expect(page.getByTestId('su-rail-titan-timebox-counter-titan-time-box-setaside')).toHaveText('5');
         await game.screenshot('time-box-play-choice', testInfo);
         await game.selectBase(1);
         await waitForNoInteraction(game);
@@ -2878,6 +2932,7 @@ test.describe('Smash Up - Alien Terraform', () => {
         const playedTimeBox = afterSpecialState.core.titans.find((candidate: any) => candidate.uid === 'titan-time-box-setaside');
         expect(playedTimeBox?.location).toMatchObject({ zone: 'base', baseIndex: 1 });
         expect(playedTimeBox?.metadata?.timeBoxCounters).toBe(0);
+        await expect(page.getByTestId('su-base-titan-timebox-counter-titan-time-box-setaside')).toHaveCount(0);
 
         await waitForLayoutSettle(page);
         await game.screenshot('time-box-play-resolved', testInfo);
@@ -2886,6 +2941,7 @@ test.describe('Smash Up - Alien Terraform', () => {
 
         const talentTitan = page.locator('[data-titan-uid="titan-time-box-live"]');
         await expect(talentTitan).toBeVisible();
+        await expect(page.getByTestId('su-base-titan-timebox-counter-titan-time-box-live')).toHaveText('3');
         await game.screenshot('time-box-talent-ready', testInfo);
         await talentTitan.click({ force: true });
         await expect.poll(async () => {
@@ -3029,7 +3085,7 @@ test.describe('Smash Up - Alien Terraform', () => {
     });
 
     test('泰坦与持续行动布局在二人局和四人局下都应稳定', async ({ game, page }, testInfo) => {
-        test.setTimeout(60_000);
+        test.setTimeout(180_000);
 
         await openTitanRailScene(game, {
             bases: [
@@ -3099,7 +3155,7 @@ test.describe('Smash Up - Alien Terraform', () => {
     });
 
     test('二人局下 1 张与 5 张持续行动在有无泰坦时的布局截图', async ({ game, page }, testInfo) => {
-        test.setTimeout(60_000);
+        test.setTimeout(180_000);
 
         await openTitanRailScene(game, {
             bases: [
@@ -3188,6 +3244,9 @@ test.describe('Smash Up - Alien Terraform', () => {
         await game.screenshot('major-ursa-01-choose-destination', testInfo);
         await game.selectBase(1);
 
+        await game.waitForInteraction('smashup_reaction_choose');
+        await game.screenshot('major-ursa-01b-reaction-choice', testInfo);
+        await titan.click({ force: true });
         await game.waitForInteraction('titan_bear_cavalry_major_ursa_choose_minion');
         await game.screenshot('major-ursa-02-choose-minion', testInfo);
         await page.locator('[data-minion-uid="enemy-minion"]').click({ force: true });

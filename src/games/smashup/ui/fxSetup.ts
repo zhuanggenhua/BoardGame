@@ -18,6 +18,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { UI_Z_INDEX } from '../../../core';
 import { Zap } from 'lucide-react';
 import i18next from 'i18next';
+import { PLAYER_CONFIG } from './playerConfig';
 
 // ============================================================================
 // Cue 常量
@@ -34,6 +35,9 @@ export const SU_FX = {
   /** 持续效果/触发器激活 */
   ABILITY_TRIGGERED: 'fx.ability-triggered',
 } as const;
+
+const BASE_SCORED_TOTAL_DURATION_MS = 3000;
+const BASE_SCORED_ITEM_DELAY_S = 0.12;
 
 // ============================================================================
 // 稳定回调 hook
@@ -148,7 +152,12 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
     // 卡牌
     React.createElement(motion.div, {
-      className: 'relative w-[18vw] aspect-[0.714] bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
+      className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
+      style: {
+        width: '18vw',
+        height: 'calc(18vw / 0.714)',
+        aspectRatio: '0.714 / 1',
+      },
       initial: { scale: 0.3, y: 200, rotate: -10 },
       animate: { scale: 1, y: 0, rotate: 2 },
       exit: { scale: 0.2, y: -100, x: 300, rotate: 15, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } },
@@ -183,13 +192,15 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 
 /**
  * params:
- * - rankings: Array<{ playerId: string; power: number; vp: number }>
+ * - rankings: Array<{ playerId: string; power: number; vp: number; playerName?: string }>
  */
 const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
-  const rankings = event.params?.rankings as Array<{ playerId: string; power: number; vp: number }> | undefined;
+  const rankings = event.params?.rankings as Array<{ playerId: string; power: number; vp: number; playerName?: string }> | undefined;
   const validRankings = (rankings ?? []).filter(r => r.vp > 0);
   const shouldRender = validRankings.length > 0;
+  const lastItemDelayMs = Math.max(0, validRankings.length - 1) * BASE_SCORED_ITEM_DELAY_S * 1000;
+  const perItemDurationS = Math.max(2.2, (BASE_SCORED_TOTAL_DURATION_MS - lastItemDelayMs) / 1000);
 
   const impactFired = useRef(false);
   useEffect(() => {
@@ -201,7 +212,7 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, 2500);
+    const timer = setTimeout(stableComplete, BASE_SCORED_TOTAL_DURATION_MS);
     return () => clearTimeout(timer);
   }, [shouldRender, stableComplete]);
 
@@ -225,20 +236,41 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     transition: { duration: 0.2 },
   },
     ...validRankings.map((r, i) => {
-      const startY = 30 + i * 20;
+      const playerIndex = Number.parseInt(r.playerId, 10);
+      const playerNumber = Number.isFinite(playerIndex) ? playerIndex + 1 : r.playerId;
+      const playerLabel = r.playerName || t('ui.player_short', { id: playerNumber });
+      const conf = PLAYER_CONFIG[(Number.isFinite(playerIndex) ? playerIndex : 0) % PLAYER_CONFIG.length];
+      const offsetY = (i - (validRankings.length - 1) / 2) * 68;
       return React.createElement(motion.div, {
         key: `${event.id}-${r.playerId}`,
+        'data-testid': `su-vp-gain-feedback-${r.playerId}`,
         className: 'absolute pointer-events-none select-none',
-        style: { left: '50%', top: `${startY}%` },
-        initial: { opacity: 1, scale: 1.5, x: '-50%' },
-        animate: { opacity: 0, scale: 0.8, y: -80, x: '-50%' },
-        transition: { duration: 2, ease: 'easeOut', delay: i * 0.3 },
+        style: { left: '50%', top: `calc(50% + ${offsetY}px)` },
+        initial: { opacity: 0, scale: 0.92, x: '-50%', y: 28 },
+        animate: {
+          opacity: [0, 1, 1, 0],
+          scale: [0.92, 1.08, 1, 0.98],
+          y: [28, 0, -10, -36],
+          x: '-50%',
+        },
+        transition: {
+          duration: perItemDurationS,
+          ease: 'easeOut',
+          times: [0, 0.16, 0.74, 1],
+          delay: i * BASE_SCORED_ITEM_DELAY_S,
+        },
       },
         React.createElement('div', {
-          className: 'flex items-center gap-2 bg-yellow-400/90 text-slate-900 px-3 py-1.5 rounded-full shadow-xl border-2 border-yellow-600',
+          className: 'flex min-w-[190px] max-w-[min(76vw,380px)] items-center gap-3 rounded-full border-2 border-yellow-700 bg-yellow-300/95 px-4 py-2 text-slate-950 shadow-2xl',
         },
-          React.createElement('span', { className: 'text-[1.5vw] font-black' }, t('ui.vp_award', { vp: r.vp })),
-          React.createElement('span', { className: 'text-[0.8vw] font-bold opacity-70' }, t('ui.player_short', { id: r.playerId })),
+          React.createElement('span', {
+            className: `flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-white text-sm font-black text-white shadow-md ${conf.bg}`,
+          }, playerNumber),
+          React.createElement('span', { className: 'min-w-0 flex-1 truncate text-base font-black' }, t('ui.vp_award_notice', {
+            player: playerLabel,
+            vp: r.vp,
+            defaultValue: '{{player}} 获得 +{{vp}} VP',
+          })),
         ),
       );
     }),
@@ -393,7 +425,7 @@ function createRegistry(): FxRegistry {
   }, ACTION_SHOW_FEEDBACK);
 
   registry.register(SU_FX.BASE_SCORED, BaseScoredRenderer, {
-    timeoutMs: 4000,
+    timeoutMs: 5000,
   }, BASE_SCORED_FEEDBACK);
 
   registry.register(SU_FX.ABILITY_TRIGGERED, AbilityTriggeredRenderer, {

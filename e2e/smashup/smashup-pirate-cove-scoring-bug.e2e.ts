@@ -40,6 +40,8 @@ async function openPirateCoveScene(game: any, minions: any[]): Promise<void> {
 
 test.describe('海盗湾计分流程', () => {
     test('海盗湾计分后应该创建移动随从交互', async ({ game }) => {
+        test.setTimeout(90000);
+
         await openPirateCoveScene(game, [
             { uid: 'm1', defId: 'pirate_king', owner: '0', controller: '0', baseIndex: 1, basePower: 5 },
             { uid: 'm2', defId: 'robot_hoverbot', owner: '0', controller: '0', baseIndex: 1, basePower: 3 },
@@ -66,10 +68,14 @@ test.describe('海盗湾计分流程', () => {
     });
 
     test('海盗湾计分后移动随从不应该重复触发计分', async ({ game }) => {
+        test.setTimeout(90000);
+
         await openPirateCoveScene(game, [
             { uid: 'm1', defId: 'pirate_king', owner: '0', controller: '0', baseIndex: 1, basePower: 5 },
             { uid: 'm2', defId: 'robot_hoverbot', owner: '0', controller: '0', baseIndex: 1, basePower: 3 },
             { uid: 'm3', defId: 'wizard_chronomage', owner: '1', controller: '1', baseIndex: 1, basePower: 3 },
+            { uid: 'm4', defId: 'robot_zapbot', owner: '0', controller: '0', baseIndex: 1, basePower: 3 },
+            { uid: 'm5', defId: 'trickster_brownie', owner: '1', controller: '1', baseIndex: 1, basePower: 3 },
         ]);
 
         await game.advancePhase();

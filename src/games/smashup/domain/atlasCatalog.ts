@@ -25,6 +25,11 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS7, kind: 'card', image: 'smashup/cards/wangling', grid: { rows: 5, cols: 9 } },
     { id: SMASHUP_ATLAS_IDS.CARDS8, kind: 'card', image: 'smashup/cards/pretty_pretty', grid: { rows: 7, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS9, kind: 'card', image: 'smashup/cards/shayu', grid: { rows: 5, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.CARDS10, kind: 'card', image: 'smashup/cards/baokemeng', grid: { rows: 7, cols: 9 } },
+    { id: SMASHUP_ATLAS_IDS.CARDS11, kind: 'card', image: 'smashup/cards/yuanhou', grid: { rows: 6, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
+    { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },
@@ -34,6 +39,9 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.BASE5, kind: 'base', image: 'smashup/base/aiji_base', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE6, kind: 'base', image: 'smashup/base/wangling_base', grid: { rows: 3, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.BASE7, kind: 'base', image: 'smashup/base/shayu', grid: { rows: 4, cols: 3 } },
+    { id: SMASHUP_ATLAS_IDS.BASE8, kind: 'base', image: 'smashup/base/baokemeng', grid: { rows: 2, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.BASE9, kind: 'base', image: 'smashup/base/yuanhou', grid: { rows: 2, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, kind: 'base', image: 'smashup/base/huluwawa_bases', grid: { rows: 1, cols: 2 } },
 ];
 
 const atlasById = new Map(SMASHUP_ATLAS_DEFINITIONS.map((atlas) => [atlas.id, atlas] as const));

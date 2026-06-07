@@ -15,8 +15,203 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 };
 void __ensureThreeAxesMarker;
 
+function createFactionSelectionPlayerState(
+  playerId: string,
+  factions: [string, string],
+) {
+  return {
+    id: playerId,
+    vp: 0,
+    hand: [],
+    deck: [],
+    discard: [],
+    factions,
+    minionsPlayed: 1,
+    minionLimit: 1,
+    actionsPlayed: 1,
+    actionLimit: 1,
+  };
+}
+
+function buildFactionSearchRegressionScene() {
+  return {
+    gameId: 'smashup',
+    currentPlayer: '0' as const,
+    phase: 'factionSelect' as const,
+    extra: {
+      core: {
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        nextUid: 1000,
+        players: {
+          '0': createFactionSelectionPlayerState('0', ['aliens', 'pirates']),
+          '1': createFactionSelectionPlayerState('1', ['robots', 'ninjas']),
+        },
+        factionSelection: {
+          takenFactions: ['robots'],
+          playerSelections: {
+            '0': [],
+            '1': ['robots'],
+          },
+          completedPlayers: [],
+        },
+      },
+    },
+  };
+}
+
+async function waitForFactionSelectionReady(page: import('@playwright/test').Page) {
+  const title = page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i });
+  await expect(title).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId('faction-filter-toolbar')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('faction-search-input')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('faction-option-pirates')).toBeVisible({ timeout: 10000 });
+}
+
+async function assertFactionCardsClearPlayerRail(page: import('@playwright/test').Page) {
+  const PLAYER_RAIL_CLEARANCE_PX = 12;
+    const metrics = await page.evaluate(() => {
+      const viewportHeight = window.innerHeight;
+      const rail = document.querySelector('[data-testid="faction-selection-player-rail"]') as HTMLElement | null;
+    const cards = Array.from(document.querySelectorAll('[data-testid^="faction-option-"]')) as HTMLElement[];
+    const playerCards = Array.from(document.querySelectorAll('[data-testid^="faction-selection-player-card-"]')) as HTMLElement[];
+    if (!rail || cards.length === 0 || playerCards.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const railRect = rail.getBoundingClientRect();
+    const railVisibleHeight = Math.min(railRect.bottom, viewportHeight) - Math.max(railRect.top, 0);
+    if (railRect.bottom <= 0 || railRect.top >= viewportHeight || railVisibleHeight < 24) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const cardRects = cards
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        const visibleHeightAboveRail = Math.min(rect.bottom, railRect.top) - Math.max(rect.top, 0);
+        return { rect, visibleHeight, visibleHeightAboveRail };
+      })
+      .filter(({ rect, visibleHeight, visibleHeightAboveRail }) =>
+        rect.bottom > 0
+        && rect.top < railRect.top
+        && rect.top < viewportHeight
+        && visibleHeight >= Math.min(rect.height * 0.5, 24)
+        && visibleHeightAboveRail >= Math.min(rect.height * 0.72, 96))
+      .map(({ rect }) => rect);
+    if (cardRects.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const playerCardRects = playerCards
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        return { rect, visibleHeight };
+      })
+      .filter(({ rect, visibleHeight }) => rect.bottom > 0 && rect.top < viewportHeight && visibleHeight >= Math.min(rect.height * 0.5, 24));
+    if (playerCardRects.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    return {
+      maxCardBottom: Math.max(...cardRects.map((rect) => rect.bottom)),
+      minPlayerCardTop: Math.min(...playerCardRects.map(({ rect }) => rect.top)),
+    };
+  });
+
+  expect(metrics, '派系选择页几何断言至少应返回有效结果或显式跳过理由').not.toBeNull();
+  if ('skippedBecausePlayerRailNotVisible' in metrics!) {
+    return;
+  }
+  expect(metrics!.maxCardBottom, '候选卡底边必须位于玩家状态卡上方，不能被底部玩家状态卡遮挡').toBeLessThanOrEqual(metrics!.minPlayerCardTop + PLAYER_RAIL_CLEARANCE_PX);
+}
+
+async function assertFactionSearchIconAligned(page: import('@playwright/test').Page) {
+  const metrics = await page.evaluate(() => {
+    const input = document.querySelector('[data-testid="faction-search-input"]') as HTMLElement | null;
+    const iconSlot = document.querySelector('[data-testid="faction-search-leading-icon"]') as HTMLElement | null;
+    const iconSvg = iconSlot?.querySelector('svg') as SVGElement | null;
+    if (!input || !iconSlot || !iconSvg) {
+      return null;
+    }
+
+    const inputRect = input.getBoundingClientRect();
+    const slotRect = iconSlot.getBoundingClientRect();
+    const svgRect = iconSvg.getBoundingClientRect();
+
+    return {
+      inputCenterY: inputRect.top + inputRect.height / 2,
+      slotCenterY: slotRect.top + slotRect.height / 2,
+      svgCenterY: svgRect.top + svgRect.height / 2,
+      inputLeft: inputRect.left,
+      slotLeft: slotRect.left,
+      svgLeft: svgRect.left,
+      svgWidth: svgRect.width,
+      inputHeight: inputRect.height,
+    };
+  });
+
+  expect(metrics, '派系搜索框必须渲染输入框和前导放大镜图标').not.toBeNull();
+  expect(Math.abs(metrics!.inputCenterY - metrics!.slotCenterY), '放大镜图标槽位必须与搜索框垂直中心对齐').toBeLessThanOrEqual(1);
+  expect(Math.abs(metrics!.inputCenterY - metrics!.svgCenterY), '放大镜 SVG 本体必须与搜索框垂直中心对齐').toBeLessThanOrEqual(1);
+  expect(metrics!.svgWidth, '放大镜 SVG 必须成功渲染').toBeGreaterThan(0);
+  expect(metrics!.svgLeft, '放大镜图标应稳定位于搜索框左侧内边距区域').toBeGreaterThan(metrics!.inputLeft);
+  expect(metrics!.slotLeft, '放大镜图标槽位应稳定位于搜索框内部').toBeGreaterThanOrEqual(metrics!.inputLeft);
+}
+
+async function getPlayerRailVisualMetrics(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const rail = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-rail"]');
+    const playerCard = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-card-0"]');
+    if (!rail || !playerCard) {
+      return { ok: false, reason: 'missing' };
+    }
+
+    const railRect = rail.getBoundingClientRect();
+    const cardRect = playerCard.getBoundingClientRect();
+    const cardStyle = window.getComputedStyle(playerCard);
+    const x = cardRect.left + cardRect.width / 2;
+    const y = cardRect.top + cardRect.height / 2;
+    const topElement = document.elementFromPoint(x, y);
+
+    return {
+      ok: railRect.top < window.innerHeight
+        && railRect.bottom <= window.innerHeight + 2
+        && cardRect.top < window.innerHeight
+        && cardRect.bottom <= window.innerHeight + 2
+        && playerCard.offsetWidth >= 124
+        && Boolean(topElement?.closest('[data-testid="faction-selection-player-rail"]')),
+      reason: topElement instanceof HTMLElement ? topElement.dataset.testid ?? topElement.className : 'no-top-element',
+      railTop: railRect.top,
+      railBottom: railRect.bottom,
+      cardTop: cardRect.top,
+      cardBottom: cardRect.bottom,
+      cardWidth: cardRect.width,
+      cardOffsetWidth: playerCard.offsetWidth,
+      cardComputedWidth: cardStyle.width,
+      cardClassName: playerCard.className,
+      viewportHeight: window.innerHeight,
+    };
+  });
+}
+
+async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Page) {
+  try {
+    await expect.poll(async () => getPlayerRailVisualMetrics(page), {
+    timeout: 5000,
+    message: '玩家状态卡必须真实显示在视觉顶层，不能只是在 DOM 中可见',
+  }).toMatchObject({ ok: true });
+  } catch (error) {
+    const metrics = await getPlayerRailVisualMetrics(page);
+    throw new Error(`玩家状态卡必须真实显示在视觉顶层，不能只是在 DOM 中可见。实际测量: ${JSON.stringify(metrics)}`, { cause: error });
+  }
+}
+
 test.describe('SmashUp 派系选择页移动端间距', () => {
-  test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page }, testInfo) => {
+  test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page, game }, testInfo) => {
+    test.setTimeout(90000);
     const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'smashup-faction-selection-spacing');
     mkdirSync(evidenceDir, { recursive: true });
 
@@ -25,9 +220,21 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     const cards = grid.locator('> div');
 
     await page.setViewportSize({ width: 800, height: 450 });
-    await gotoLocalSmashUp(page);
+    await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+    await game.setupScene(buildFactionSearchRegressionScene());
+    await waitForFactionSelectionReady(page);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('faction-filter-toolbar')).toBeVisible();
+    await expect(page.getByTestId('faction-search-input')).toBeVisible();
+    await expect(page.getByTestId('faction-filter-available')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-all')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-taken')).toHaveCount(0);
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toBeVisible();
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
+    await expect(page.getByTestId('faction-selection-player-rail')).toBeVisible();
+    await assertPlayerRailVisuallyOnTop(page);
 
     const mobileMetrics = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('.grid > div')) as HTMLElement[];
@@ -51,18 +258,43 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     expect(mobileMetrics.horizontalGap, '移动端派系卡之间应保留可见间距').toBeGreaterThanOrEqual(0);
     expect(Math.abs(mobileMetrics.thirdTop - mobileMetrics.firstTop), '手机横屏主布局不应被误改成窄屏双列，前三张卡应仍在同一行').toBeLessThanOrEqual(4);
     expect(mobileMetrics.thirdLeft, '第三张卡应位于第一张卡右侧，证明仍是横屏桌面化排布').toBeGreaterThan(mobileMetrics.firstLeft + mobileMetrics.firstWidth);
+    await assertFactionCardsClearPlayerRail(page);
+    await assertFactionSearchIconAligned(page);
 
     await page.screenshot({ path: join(evidenceDir, 'mobile-landscape.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('mobile-landscape.png'), fullPage: false });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: join(evidenceDir, 'mobile-search-toolbar.png') });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: testInfo.outputPath('mobile-search-toolbar.png') });
+
+    await page.getByTestId('faction-search-input').fill('pirates');
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toHaveCount(0);
+    await page.screenshot({ path: join(evidenceDir, 'mobile-search-pirates.png'), fullPage: false });
+    await page.screenshot({ path: testInfo.outputPath('mobile-search-pirates.png'), fullPage: false });
+
+    await page.getByTestId('faction-search-clear').click();
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await gotoLocalSmashUp(page);
+    await page.waitForTimeout(1000);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('faction-filter-available')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-all')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-taken')).toHaveCount(0);
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
+    await expect(page.getByTestId('faction-selection-player-rail')).toBeVisible();
+    await assertPlayerRailVisuallyOnTop(page);
+    await page.getByTestId('faction-search-input').fill('pirates');
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toHaveCount(0);
+    await assertFactionCardsClearPlayerRail(page);
+    await assertFactionSearchIconAligned(page);
 
     await page.screenshot({ path: join(evidenceDir, 'desktop-reference.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('desktop-reference.png'), fullPage: false });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: join(evidenceDir, 'desktop-search-toolbar.png') });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: testInfo.outputPath('desktop-search-toolbar.png') });
   });
 
   test('回合状态提示不应触发派系详情', async ({ page }, testInfo) => {

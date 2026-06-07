@@ -6,7 +6,11 @@ import {
     getLocalizedImageCandidateUrls,
     getLocalizedImageUrls,
     getPreloadedImageElement,
+    getResolvedImageCacheUrl,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
     isImagePreloaded,
+    markImageCandidateFailed,
     markImageLoaded,
     registerGameAssets,
     preloadCriticalImages,
@@ -195,6 +199,84 @@ describe('preloadCriticalImages', () => {
 
         expect(isImagePreloaded('/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234')).toBe(true);
         expect(getPreloadedImageElement('/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234')).not.toBeNull();
+    });
+
+    it('逻辑资源应能恢复真实加载成功的 fallback URL', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        const fallbackUrl = '/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp';
+        const loadedImage = new Image() as HTMLImageElement;
+        Object.defineProperty(loadedImage, 'naturalWidth', { value: 300, configurable: true });
+        Object.defineProperty(loadedImage, 'naturalHeight', { value: 600, configurable: true });
+        Object.defineProperty(loadedImage, 'src', { value: fallbackUrl, configurable: true });
+        Object.defineProperty(loadedImage, 'currentSrc', { value: fallbackUrl, configurable: true });
+
+        markImageLoaded('smashup/cards/cards1', 'zh-CN', loadedImage);
+
+        const candidateUrls = getLocalizedImageCandidateUrls('smashup/cards/cards1', 'zh-CN');
+
+        expect(getResolvedImageCacheUrl('smashup/cards/cards1', 'zh-CN')).toBe(fallbackUrl);
+        expect(getResolvedImageCandidateUrl(candidateUrls, 'smashup/cards/cards1', 'zh-CN')).toBe(fallbackUrl);
+    });
+
+    it('blob 渲染成功时缓存应保留原始候选 URL 而不是 blob URL', () => {
+        const originalCandidateUrl = '/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp';
+        const blobUrl = 'blob:http://127.0.0.1:6174/mock-blob';
+        const loadedImage = new Image() as HTMLImageElement;
+        Object.defineProperty(loadedImage, 'naturalWidth', { value: 300, configurable: true });
+        Object.defineProperty(loadedImage, 'naturalHeight', { value: 600, configurable: true });
+        Object.defineProperty(loadedImage, 'src', { value: blobUrl, configurable: true });
+        Object.defineProperty(loadedImage, 'currentSrc', { value: blobUrl, configurable: true });
+
+        markImageLoaded('smashup/cards/cards1', 'zh-CN', loadedImage, originalCandidateUrl);
+
+        expect(getResolvedImageCacheUrl('smashup/cards/cards1', 'zh-CN')).toBe(originalCandidateUrl);
+    });
+
+    it('近期失败的候选应在后续挂载时自动后移，避免反复从坏 URL 起步', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        const candidateUrls = getLocalizedImageCandidateUrls('smashup/cards/cards1', 'zh-CN');
+        expect(candidateUrls.length).toBeGreaterThan(1);
+
+        markImageCandidateFailed('smashup/cards/cards1', 'zh-CN', candidateUrls[0]);
+
+        const reordered = getRuntimeImageCandidateUrls('smashup/cards/cards1', 'zh-CN');
+
+        expect(reordered[0]).toBe(candidateUrls[1]);
+        expect(reordered[reordered.length - 1]).toBe(candidateUrls[0]);
+    });
+
+    it('同步缓存探测远端 compressed webp fallback 时，不应重复追加 .webp', () => {
+        const probedUrls: string[] = [];
+
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            complete = false;
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                probedUrls.push(value);
+            }
+        });
+
+        registerGameAssets('test-remote-fallback-probe', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+
+        expect(areAllCriticalImagesCached('test-remote-fallback-probe', undefined, 'zh-CN')).toBe(false);
+        expect(probedUrls.some((url) => url.includes('cards1.webp.webp'))).toBe(false);
+        expect(probedUrls).toContain(
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/cards1.webp',
+        );
     });
 
     it('runtime 内存缓存丢失后，不能仅凭持久化 ready hint 判定关键图已就绪', () => {

@@ -11,7 +11,7 @@ import { MOON_ELF_DICE_FACE_IDS } from '../../domain/ids';
 
 export const moonElfDiceDefinition: DiceDefinition = {
     id: 'moon_elf-dice',
-    name: 'Moon Elf Dice',
+    name: 'config.dice.moonElf.name',
     sides: 6,
     category: 'hero',
     faces: [

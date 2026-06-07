@@ -84,7 +84,7 @@ const resolveDefenseEffects = (
     timestamp: number
 ): { defenseEvents: DiceThroneEvent[]; stateAfterDefense: DiceThroneCore } => {
     const pending = state.pendingAttack;
-    if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved) {
+    if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved || pending.isDefendable === false) {
         return { defenseEvents: [], stateAfterDefense: state };
     }
 
@@ -175,8 +175,8 @@ export const resolveAttack = (
     }
 
     const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = pending;
-    const bonusDamage = pending.bonusDamage ?? 0;
     const { defenseEvents, stateAfterDefense } = resolveDefenseEffects(stateAfterPreDefense, random, timestamp);
+    const bonusDamage = stateAfterDefense.pendingAttack?.bonusDamage ?? pending.bonusDamage ?? 0;
     events.push(...defenseEvents);
     const hasDefenseChoice = defenseEvents.some(e => e.type === 'CHOICE_REQUESTED');
     const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');

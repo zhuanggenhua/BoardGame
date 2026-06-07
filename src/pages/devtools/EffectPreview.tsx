@@ -79,6 +79,12 @@ const EffectPreview: React.FC = () => {
   const [activeEffectId, setActiveEffectId] = useState(ALL_ENTRIES[0]?.id ?? '');
   const [useRealCards, setUseRealCards] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [isCompactViewport, setIsCompactViewport] = useState(() => (
+    typeof window === 'undefined' ? false : window.innerWidth <= 1023
+  ));
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => (
+    typeof window === 'undefined' ? true : window.innerWidth > 1023
+  ));
   const totalCount = ALL_ENTRIES.length;
 
   // 初始化音频系统
@@ -94,6 +100,24 @@ const EffectPreview: React.FC = () => {
     };
     initAudio();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const updateViewportMode = () => {
+      const compact = window.innerWidth <= 1023;
+      setIsCompactViewport(compact);
+      setIsSidebarOpen(prev => (compact ? prev : true));
+    };
+    updateViewportMode();
+    window.addEventListener('resize', updateViewportMode);
+    return () => window.removeEventListener('resize', updateViewportMode);
+  }, []);
+
+  useEffect(() => {
+    if (isCompactViewport) {
+      setIsSidebarOpen(false);
+    }
+  }, [isCompactViewport]);
 
   const activeGroup = useMemo(
     () => EFFECT_GROUPS.find(g => g.entries.some(e => e.id === activeEffectId)) ?? EFFECT_GROUPS[0],
@@ -122,11 +146,52 @@ const EffectPreview: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-slate-900 text-slate-200 flex overflow-hidden">
+    <div className="relative h-screen bg-slate-900 text-slate-200 flex overflow-hidden">
+      {isCompactViewport && isSidebarOpen && (
+        <button
+          type="button"
+          aria-label="关闭特效预览侧栏"
+          data-testid="fx-preview-sidebar-backdrop"
+          className="absolute inset-0 z-20 bg-black/45 backdrop-blur-[1px]"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      {isCompactViewport ? (
+        <button
+          type="button"
+          data-testid="fx-preview-sidebar-toggle"
+          aria-label={isSidebarOpen ? '收起特效分类' : '展开特效分类'}
+          onClick={() => setIsSidebarOpen(prev => !prev)}
+          className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/92 px-3 py-2 text-xs font-semibold text-slate-100 shadow-lg backdrop-blur"
+        >
+          <span className="text-sm leading-none">{isSidebarOpen ? '×' : '≡'}</span>
+          <span>分类</span>
+        </button>
+      ) : null}
       {/* 左侧：两级导航（分类 + 特效条目） */}
-      <nav className="w-52 shrink-0 min-h-0 bg-slate-800/80 border-r border-slate-700 flex flex-col overflow-y-auto">
+      {(!isCompactViewport || isSidebarOpen) ? (
+      <nav
+        data-testid="fx-preview-sidebar"
+        className={[
+          'min-h-0 bg-slate-800/80 border-r border-slate-700 flex flex-col overflow-y-auto',
+          isCompactViewport ? 'absolute inset-y-0 left-0 z-30 w-[min(18rem,calc(100vw-3.5rem))] shadow-2xl' : 'w-52 shrink-0',
+        ].join(' ')}
+      >
         <div className="p-3 pb-2 border-b border-slate-700/50">
-          <a href="/" className="text-slate-400 hover:text-slate-200 text-xs mb-1 block">← 返回首页</a>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <a href="/" className="text-slate-400 hover:text-slate-200 text-xs block">← 返回首页</a>
+            {isCompactViewport ? (
+              <button
+                type="button"
+                data-testid="fx-preview-sidebar-close"
+                aria-label="关闭特效分类"
+                onClick={() => setIsSidebarOpen(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 text-slate-300 transition hover:border-slate-500 hover:text-white"
+              >
+                <span className="text-sm leading-none">×</span>
+              </button>
+            ) : null}
+          </div>
           <div className="flex items-center justify-between">
             <h1 className="text-sm font-black text-slate-100">特效预览 <span className="text-[10px] font-normal text-slate-500">({totalCount})</span></h1>
             <button
@@ -155,7 +220,12 @@ const EffectPreview: React.FC = () => {
                 {!isCollapsed && group.entries.map(entry => (
                   <button
                     key={entry.id}
-                    onClick={() => setActiveEffectId(entry.id)}
+                    onClick={() => {
+                      setActiveEffectId(entry.id);
+                      if (isCompactViewport) {
+                        setIsSidebarOpen(false);
+                      }
+                    }}
                     className={`cursor-pointer w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-[background-color] flex items-center gap-1.5 ${
                       entry.id === activeEffectId
                         ? 'bg-indigo-600/40 text-indigo-200'
@@ -184,9 +254,10 @@ const EffectPreview: React.FC = () => {
           </button>
         </div>
       </nav>
+      ) : null}
 
       {/* 右侧：单一特效预览区（填满屏幕） */}
-      <main className="flex-1 flex flex-col min-h-0 min-w-0">
+      <main className={`flex-1 flex flex-col min-h-0 min-w-0 ${isCompactViewport ? 'pt-14' : ''}`}>
         {Comp && activeEntry && (
           <Comp key={activeEntry.id} useRealCards={useRealCards} iconColor={activeGroup?.colorClass} />
         )}

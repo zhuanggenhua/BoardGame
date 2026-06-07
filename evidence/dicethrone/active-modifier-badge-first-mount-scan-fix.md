@@ -1,5 +1,7 @@
 # ActiveModifierBadge 首次挂载扫描历史事件修复
 
+> 2026-06-06 当前有效口径：本文只记录“ActiveModifierBadge 首次挂载不扫描历史事件”这一条历史专项修复，不是当前 DiceThrone 所有 EventStream 消费型 hook 都已审完的证明，也不是新英雄补审出口。阅读时只能把它当作单条 hook 恢复逻辑的修复记录。
+
 ## 问题描述
 
 用户反馈：打出 Volley 卡（Moon Elf 攻击修正卡）后，右侧边栏骰子区域上方应该显示"攻击修正"徽章，但实际没有显示。
@@ -181,3 +183,7 @@ function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
 2. 刷新页面，确认徽章恢复
 3. 撤回操作，确认徽章消失
 4. 对比其他攻击修正卡（More Please, Red Hot, Get Fired Up），确认行为一致
+
+---
+
+**当前阅读说明**：本文只能证明“首次挂载扫描历史事件”这条专项问题曾被补过，不能外推为当前所有攻击修正徽章、所有 EventStream cursor 相关状态恢复或 DiceThrone 当前整体审计都已收口。

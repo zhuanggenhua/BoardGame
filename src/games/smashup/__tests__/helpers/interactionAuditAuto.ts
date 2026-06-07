@@ -32,6 +32,10 @@ const HELPER_SOURCE_ARG_INDEX = new Map<string, number>([
     ['createTransferSelfAbilityProgram', 0],
     // skeletons.ts: buildOptionalCounterPrompt(id, playerId, title, sourceId, ...)
     ['buildOptionalCounterPrompt', 3],
+    // yuanhou.ts: queueDeckMinionSearch(ctx, sourceId, title, params)
+    ['queueDeckMinionSearch', 1],
+    // yuanhou.ts: queueDiscardMinionSearch(ctx, sourceId, title, params)
+    ['queueDiscardMinionSearch', 1],
 ]);
 
 function listImplementationTsFiles(dir: string): string[] {
@@ -97,12 +101,29 @@ function getPropertyName(name: ts.PropertyName): string | null {
     return null;
 }
 
+function unwrapExpression(expr: ts.Expression | undefined): ts.Expression | undefined {
+    let current = expr;
+    while (current) {
+        if (ts.isAsExpression(current) || ts.isParenthesizedExpression(current)) {
+            current = current.expression;
+            continue;
+        }
+        if ('isSatisfiesExpression' in ts && (ts as any).isSatisfiesExpression(current)) {
+            current = (current as any).expression as ts.Expression;
+            continue;
+        }
+        break;
+    }
+    return current;
+}
+
 function extractSourceIdFromConfigObject(
     expr: ts.Expression | undefined,
     constants?: Map<string, string>,
 ): string | null {
-    if (!expr || !ts.isObjectLiteralExpression(expr)) return null;
-    for (const prop of expr.properties) {
+    const unwrapped = unwrapExpression(expr);
+    if (!unwrapped || !ts.isObjectLiteralExpression(unwrapped)) return null;
+    for (const prop of unwrapped.properties) {
         if (ts.isPropertyAssignment(prop)) {
             const name = getPropertyName(prop.name);
             if (name !== 'sourceId') continue;
@@ -113,6 +134,37 @@ function extractSourceIdFromConfigObject(
         }
     }
     return null;
+}
+
+function hasDynamicSourceIdShorthand(expr: ts.Expression | undefined): boolean {
+    const unwrapped = unwrapExpression(expr);
+    if (!unwrapped || !ts.isObjectLiteralExpression(unwrapped)) return false;
+    return unwrapped.properties.some((prop) =>
+        ts.isShorthandPropertyAssignment(prop)
+        && prop.name.text === 'sourceId',
+    );
+}
+
+function isKnownDynamicSourceIdHelper(expr: ts.Expression | undefined): boolean {
+    if (!expr) return false;
+    if (ts.isIdentifier(expr) && expr.text === 'config') {
+        return true;
+    }
+    return ts.isPropertyAccessExpression(expr) && expr.name.text === 'sourceId';
+}
+
+function isResolveOrPromptSourceIdPassthrough(expr: ts.Expression | undefined): boolean {
+    const unwrapped = unwrapExpression(expr);
+    if (!unwrapped || !ts.isObjectLiteralExpression(unwrapped)) return false;
+    return unwrapped.properties.some((prop) => {
+        if (!ts.isPropertyAssignment(prop)) return false;
+        if (getPropertyName(prop.name) !== 'sourceId') return false;
+        const initializer = prop.initializer;
+        return ts.isPropertyAccessExpression(initializer)
+            && ts.isIdentifier(initializer.expression)
+            && initializer.expression.text === 'config'
+            && initializer.name.text === 'sourceId';
+    });
 }
 
 function extractStringArrayFromConfigObject(
@@ -164,7 +216,12 @@ function collectChoiceSourceIds(
                 ids.add(sourceId);
             } else {
                 // 允许 helper 通过形参传递 sourceId（由调用点静态提取）
-                if (sourceArg && ts.isIdentifier(sourceArg) && sourceArg.text === 'sourceId') {
+                if (
+                    (sourceArg && ts.isIdentifier(sourceArg) && sourceArg.text === 'sourceId')
+                    || hasDynamicSourceIdShorthand(sourceArg)
+                    || isKnownDynamicSourceIdHelper(sourceArg)
+                    || isResolveOrPromptSourceIdPassthrough(sourceArg)
+                ) {
                     ts.forEachChild(node, visit);
                     return;
                 }
@@ -279,7 +336,7 @@ export function collectSmashupInteractionAuditAuto(): InteractionAuditAutoResult
                 return;
             }
 
-            const sourceId = extractStringLiteral(node.arguments[0]);
+            const sourceId = extractStringLiteral(node.arguments[0], constants);
             const handlerExpr = node.arguments[1];
 
             if (!sourceId) {

@@ -79,11 +79,12 @@ export function normalizeLocalMatchPreferences(
         seatControllers[playerId] = getDefaultSeatController(index, numPlayers, gameManifest.ai);
     }
 
+    const rawSetupSelections = raw?.setupSelections && typeof raw.setupSelections === 'object' && !Array.isArray(raw.setupSelections)
+        ? raw.setupSelections as Record<string, unknown>
+        : {};
     const setupSelections = normalizeSetupSelections(
         gameManifest,
-        raw?.setupSelections && typeof raw.setupSelections === 'object' && !Array.isArray(raw.setupSelections)
-            ? raw.setupSelections as Record<string, unknown>
-            : {},
+        rawSetupSelections,
     );
 
     return {
@@ -97,6 +98,15 @@ export function normalizeLocalMatchPreferences(
 export function readLocalMatchPreferences(gameManifest: GameManifestEntry): LocalMatchPreferences {
     return readStoredLocalMatchPreferences(gameManifest)
         ?? createDefaultLocalMatchPreferences(gameManifest);
+}
+
+export function stripAiSeatsFromLocalMatchPreferences(preferences: LocalMatchPreferences): LocalMatchPreferences {
+    return {
+        ...preferences,
+        seatControllers: Object.fromEntries(
+            Array.from({ length: preferences.numPlayers }, (_, index) => [String(index), { type: 'human' } as AiSeatController]),
+        ),
+    };
 }
 
 export function writeLocalMatchPreferences(gameManifest: GameManifestEntry, preferences: LocalMatchPreferences): void {

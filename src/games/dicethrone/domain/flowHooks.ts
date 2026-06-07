@@ -32,6 +32,7 @@ import {
     hasRespondableContent,
     getNextPhase,
     getNextPlayerId,
+    getOpponents,
     getPlayerDieFace,
     getResponderQueue,
     getRollerId,
@@ -53,6 +54,49 @@ import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
 import { getPlayerAbilityBaseDamage, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
+import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
+import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import {
+    POWDER_KEG_TRANSFER_CHOICE_ID,
+    POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+    buildPowderKegExplosionEvents,
+    buildStatusAppliedOrChoiceEvents,
+    getPowderKegTransferTargetIds,
+} from './statusEvents';
+
+const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
+const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
+
+const formatSeatLabel = (playerId: string): string => {
+    const seatNumber = Number.parseInt(playerId, 10) + 1;
+    return Number.isFinite(seatNumber) ? `P${seatNumber}` : playerId;
+};
+
+registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
+    if (sourceAbilityId !== TOKEN_IDS.TREANT_DIVINE) return undefined;
+    if (!hasCurrentChoiceAnchor(state, sourceAbilityId)) return undefined;
+    if (!state.pendingAttack) return undefined;
+    if (state.pendingAttack.defenderId !== playerId) return undefined;
+    return {
+        pendingAttack: {
+            ...state.pendingAttack,
+            treantDivinePreventDebuffChoice: 'prevent',
+        },
+    };
+});
+
+registerChoiceEffectHandler(TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
+    if (sourceAbilityId !== TOKEN_IDS.TREANT_DIVINE) return undefined;
+    if (!hasCurrentChoiceAnchor(state, sourceAbilityId)) return undefined;
+    if (!state.pendingAttack) return undefined;
+    if (state.pendingAttack.defenderId !== playerId) return undefined;
+    return {
+        pendingAttack: {
+            ...state.pendingAttack,
+            treantDivinePreventDebuffChoice: 'skip',
+        },
+    };
+});
 
 const pendingAttackNeedsTargetingRoll = (core: DiceThroneCore): boolean => {
     const pendingAttack = core.pendingAttack;
@@ -120,6 +164,21 @@ function resolvedOffensiveRollEndTokenChoiceThisRound(events: GameEvent[]): bool
 
         return resolvedChoice.customIds.some((customId) => customId.startsWith('use-'))
             && resolvedChoice.customIds.includes('skip');
+    });
+}
+
+function resolvedTreantDivinePreventDebuffChoiceThisRound(events: GameEvent[]): boolean {
+    return events.some((event) => {
+        const resolvedChoice = extractResolvedInteractionChoiceShape(event);
+        if (!resolvedChoice) {
+            return false;
+        }
+
+        return resolvedChoice.sourceId === TOKEN_IDS.TREANT_DIVINE
+            && resolvedChoice.customIds.some((customId) =>
+                customId === TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID
+                || customId === TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID
+            );
     });
 }
 
@@ -192,15 +251,46 @@ function preventIncomingDebuffsWithTreantDivine(
     sourceCommandType: string,
     timestamp: number,
 ): GameEvent[] {
-    const defenderId = core.pendingAttack?.defenderId;
+    const pendingAttack = core.pendingAttack;
+    const defenderId = pendingAttack?.defenderId;
     if (!defenderId) return generatedEvents;
 
     const defender = core.players[defenderId];
     const divineStacks = defender?.tokens?.[TOKEN_IDS.TREANT_DIVINE] ?? 0;
     if (divineStacks <= 0) return generatedEvents;
+    if (hasSpentTreantTreeSpiritThisTurn(core, defenderId, TOKEN_IDS.TREANT_DIVINE)) return generatedEvents;
 
     const hasIncomingDebuff = generatedEvents.some(event => isIncomingDebuffApplication(core, defenderId, event));
     if (!hasIncomingDebuff) return generatedEvents;
+
+    if (pendingAttack?.treantDivinePreventDebuffChoice === 'skip') {
+        return generatedEvents;
+    }
+
+    if (pendingAttack?.treantDivinePreventDebuffChoice !== 'prevent') {
+        return [{
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: defenderId,
+                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
+                titleKey: 'choices.treantDivinePreventDebuff.title',
+                options: [
+                    {
+                        value: 1,
+                        customId: TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID,
+                        labelKey: 'choices.treantDivinePreventDebuff.prevent',
+                    },
+                    {
+                        value: 0,
+                        customId: TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID,
+                        labelKey: 'choices.treantDivinePreventDebuff.skip',
+                    },
+                ],
+            },
+            sourceCommandType,
+            timestamp,
+        } as ChoiceRequestedEvent];
+    }
 
     const filteredEvents = generatedEvents.filter(event => !isIncomingDebuffApplication(core, defenderId, event));
     return [
@@ -211,6 +301,7 @@ function preventIncomingDebuffsWithTreantDivine(
                 tokenId: TOKEN_IDS.TREANT_DIVINE,
                 amount: 1,
                 newTotal: Math.max(0, divineStacks - 1),
+                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
             },
             sourceCommandType,
             timestamp,
@@ -476,9 +567,29 @@ function resolvePostAttackFollowUp(
     timestamp: number,
     phase: TurnPhase
 ): PhaseExitResult {
+    const parleyStacks = core.players[core.activePlayerId]?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+    if (parleyStacks > 0) {
+        events.push({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: core.activePlayerId,
+                statusId: STATUS_IDS.PARLEY,
+                stacks: parleyStacks,
+            },
+            sourceCommandType: commandType,
+            timestamp,
+        } as StatusRemovedEvent);
+    }
+
     const { dazeEvents, triggered } = checkDazeExtraAttack(core, events, commandType, timestamp);
     if (triggered) {
         events.push(...dazeEvents);
+        return { events, overrideNextPhase: 'offensiveRoll' };
+    }
+
+    const existingExtraAttack = events.find(e => e.type === 'EXTRA_ATTACK_TRIGGERED');
+    const pendingExtraAttack = core.extraAttackInProgress;
+    if (existingExtraAttack || (pendingExtraAttack && pendingExtraAttack.phaseEntered !== true)) {
         return { events, overrideNextPhase: 'offensiveRoll' };
     }
 
@@ -489,6 +600,90 @@ function resolvePostAttackFollowUp(
     }
 
     return { events, overrideNextPhase: 'main2' };
+}
+
+function resolveCursedPirateNoAttackPowderKegEvents(
+    core: DiceThroneCore,
+    commandType: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const activePlayerId = core.activePlayerId;
+    if (!core.players[activePlayerId]) return [];
+    if (core.offensiveRollAttackMadeThisTurn?.[activePlayerId]) return [];
+
+    const hasOpposingCursedPirate = getOpponents(core, activePlayerId)
+        .some(playerId => core.players[playerId]?.characterId === 'cursed_pirate');
+    if (!hasOpposingCursedPirate) return [];
+
+    return buildStatusAppliedOrChoiceEvents({
+        state: core,
+        targetId: activePlayerId,
+        statusId: STATUS_IDS.POWDER_KEG,
+        stacks: 1,
+        sourceAbilityId: 'cursed',
+        sourceCommandType: commandType,
+        timestamp,
+    });
+}
+
+function resolvePowderKegUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    commandType: string,
+    timestamp: number,
+    random: RandomFn,
+): DiceThroneEvent[] {
+    const player = core.players[playerId];
+    if (!player || (player.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0) <= 0) return [];
+
+    const value = random.d(6);
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face: String(value),
+            playerId,
+            targetPlayerId: playerId,
+            effectKey: `bonusDie.effect.powderKeg.${value}`,
+        },
+        sourceCommandType: commandType,
+        timestamp,
+    } as DiceThroneEvent];
+
+    if (value <= 2) {
+        events.push(...buildPowderKegExplosionEvents({
+            state: core,
+            targetId: playerId,
+            sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+            sourceCommandType: commandType,
+            timestamp: timestamp + 0.01,
+        }));
+        return events;
+    }
+
+    if (value === 6) {
+        const targetIds = getPowderKegTransferTargetIds(core, playerId);
+        if (targetIds.length === 0) return events;
+
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId,
+                sourceAbilityId: POWDER_KEG_UPKEEP_SOURCE_ABILITY_ID,
+                titleKey: 'choices.powderKegTransfer.title',
+                options: targetIds.map((targetId, index) => ({
+                    value: index,
+                    customId: POWDER_KEG_TRANSFER_CHOICE_ID,
+                    labelKey: 'choices.powderKegTransfer.give',
+                    labelParams: { target: formatSeatLabel(targetId) },
+                })),
+            },
+            sourceCommandType: commandType,
+            timestamp: timestamp + 0.01,
+        } as ChoiceRequestedEvent);
+    }
+
+    return events;
 }
 
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
@@ -664,7 +859,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const activePlayer = core.players[core.activePlayerId];
             const thornStacks = activePlayer?.tokens?.[TOKEN_IDS.THORN] ?? 0;
             if (thornStacks > 0) {
-                const extraRollAttempts = Math.max(0, core.rollCount - 1);
+                const extraRollAttempts = Math.min(Math.max(0, core.rollCount - 1), 2);
                 events.push({
                     type: 'TOKEN_CONSUMED',
                     payload: {
@@ -691,6 +886,34 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         timestamp: timestamp + 0.001,
                     } as DamageDealtEvent);
                 }
+            }
+
+            const bindStacks = activePlayer?.statusEffects[STATUS_IDS.BIND] ?? 0;
+            if (bindStacks > 0) {
+                events.push({
+                    type: 'STATUS_REMOVED',
+                    payload: {
+                        targetId: core.activePlayerId,
+                        statusId: STATUS_IDS.BIND,
+                        stacks: bindStacks,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as StatusRemovedEvent);
+            }
+
+            const parleyStacks = activePlayer?.statusEffects[STATUS_IDS.PARLEY] ?? 0;
+            if (parleyStacks > 0 && !core.pendingAttack) {
+                events.push({
+                    type: 'STATUS_REMOVED',
+                    payload: {
+                        targetId: core.activePlayerId,
+                        statusId: STATUS_IDS.PARLEY,
+                        stacks: parleyStacks,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as StatusRemovedEvent);
             }
 
             if (core.pendingAttack) {
@@ -885,6 +1108,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
             // 额外攻击可能先把首次攻击的 afterAttackResolved 窗口延后到空壳 offensiveRoll 之后。
+            events.push(...resolveCursedPirateNoAttackPowderKegEvents(core, command.type, timestamp));
             return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
         }
 
@@ -1383,7 +1607,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const justEnteredPhase = events.some(
                 e => e.type === 'SYS_PHASE_CHANGED' && (e as any).payload?.to === phase
             );
-            if (justEnteredPhase && canAdvancePhase(core, phase)) {
+            const hasActiveInteraction = state.sys.interaction?.current !== undefined;
+            const hasActiveResponseWindow = state.sys.responseWindow?.current !== undefined;
+            const hasPendingDamage = core.pendingDamage !== null && core.pendingDamage !== undefined;
+            const hasPendingBonusDice = hasInteractivePendingBonusDiceSettlement(core);
+
+            if (
+                justEnteredPhase
+                && canAdvancePhase(core, phase)
+                && !hasActiveInteraction
+                && !hasActiveResponseWindow
+                && !hasPendingDamage
+                && !hasPendingBonusDice
+            ) {
                 return { autoContinue: true, playerId: core.activePlayerId };
             }
             return undefined;
@@ -1424,6 +1660,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasSysInteractionResolved = events.some(e => e.type === 'SYS_INTERACTION_RESOLVED');
             const resolvedDefenderSelectionThisRound = events.some(e => e.type === 'DEFENDER_SELECTION_RESOLVED');
             const resolvedOffensiveRollEndChoice = resolvedOffensiveRollEndTokenChoiceThisRound(events);
+            const resolvedTreantDivinePreventDebuffChoice = resolvedTreantDivinePreventDebuffChoiceThisRound(events);
             // 时序保护：当 SYS_INTERACTION_RESOLVED 在 events 里，且 offensiveRoll 阶段有
             // pendingAttack 时，说明本轮 DiceThroneEventSystem 可能产生了 CHOICE_RESOLVED，
             // 但该事件还没有被 reduce 进 core（reduce 在所有系统 afterEvents 执行完后才发生）。
@@ -1447,13 +1684,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && core.pendingAttack !== undefined
                 && core.pendingAttack.targetingSelectionPending === true;
 
+            const pendingTreantDivinePreventDebuffChoice = hasSysInteractionResolved
+                && phase === 'offensiveRoll'
+                && resolvedTreantDivinePreventDebuffChoice
+                && core.pendingAttack !== null
+                && core.pendingAttack !== undefined;
+
             const shouldAttemptAutoContinue = state.sys.flowHalted
                 || hasSysInteractionResolved
                 || resolvedDefenderSelectionThisRound
                 || hasTokenResponseClosed;
             if (!shouldAttemptAutoContinue) return undefined;
             
-            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !hasPendingBonusDice && !pendingOffensiveTokenChoice && !pendingTargetingChoice) {
+            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !hasPendingBonusDice && !pendingOffensiveTokenChoice && !pendingTargetingChoice && !pendingTreantDivinePreventDebuffChoice) {
                 // autoContinue 的 playerId 必须与 getCurrentPlayerId 返回值一致，
                 // 否则 FlowSystem.afterEvents 中的 player_mismatch 校验会拒绝推进。
                 // defensiveRoll 阶段由防御方（getRollerId）推进，offensiveRoll 由进攻方推进。
@@ -1554,6 +1797,29 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     events.push(...damageEvents);
                     // 持续效果：毒液层数不自动减少，只能通过净化等手段移除
                 }
+
+                // 3. 诅咒金币 (cursed_coin) — 每层在维持阶段造成 1 点伤害，不自动移除层数
+                const cursedCoinStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
+                if (cursedCoinStacks > 0 && player.characterId !== 'cursed_pirate') {
+                    const damageCalc = createDamageCalculation({
+                        source: { playerId: 'system', abilityId: 'upkeep-cursed-coin' },
+                        target: { playerId: activeId },
+                        baseDamage: cursedCoinStacks,
+                        damageScope: 'direct',
+                        state: phaseEnterCore,
+                        timestamp,
+                    });
+                    events.push(...damageCalc.toEvents());
+                }
+
+                // 4. 炸药桶 (powder_keg) — 维持阶段投 1 骰，1-2 爆炸，6 可转交。
+                events.push(...resolvePowderKegUpkeepEvents(
+                    phaseEnterCore,
+                    activeId,
+                    command.type,
+                    timestamp + 0.02,
+                    random,
+                ));
             }
         }
 

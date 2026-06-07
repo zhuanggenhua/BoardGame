@@ -1,11 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { normalizeDeveloperGameIds } from '../auth/schemas/developer-game-access';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import type { UserRole } from '../auth/schemas/user-role';
 import { Feedback, FeedbackDocument, FeedbackReporterType, FeedbackStatus } from './feedback.schema';
-import { CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto } from './dto';
+import { CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, QueryFeedbackDto, UpdateFeedbackStatusDto } from './dto';
 
 type FeedbackManagerScope = {
     actorUserId: string;
@@ -15,11 +15,26 @@ type FeedbackManagerScope = {
 };
 
 const DEFAULT_USER_SOURCE = 'feedback-modal';
+const PUBLIC_AUTO_FEEDBACK_SOURCES = new Set([
+    'client-auto-report',
+    'client-runtime-guard',
+    'client-window-error',
+    'client-unhandled-rejection',
+    'react-error-boundary',
+    'board-render-error',
+    'home-modal-error-boundary',
+]);
+const PUBLIC_AUTO_FEEDBACK_SOURCE_LIST = Array.from(PUBLIC_AUTO_FEEDBACK_SOURCES);
+const ALLOWED_USER_SOURCES = new Set([
+    DEFAULT_USER_SOURCE,
+    ...PUBLIC_AUTO_FEEDBACK_SOURCE_LIST,
+]);
 const LEGACY_WATCHDOG_SOURCE = 'online-ai-watchdog';
 const WATCHDOG_AGGREGATION_SOURCE = 'online-ai-watchdog';
 export const WATCHDOG_AGGREGATION_WINDOW_MS = 6 * 60 * 60 * 1000;
 export const WATCHDOG_RECENT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
 export const WATCHDOG_MAX_RECENT_RECORDS = 100;
+export const FEEDBACK_REWARD_POINTS = 1;
 
 const FEEDBACK_SEVERITY_RANK: Record<string, number> = {
     low: 1,
@@ -47,13 +62,23 @@ export class FeedbackService {
     ) { }
 
     async create(userId: string | null, dto: CreateFeedbackDto): Promise<Feedback> {
-        return this.feedbackModel.create({
+        const source = this.normalizeUserSource(dto.source);
+        const rewardPoints = userId ? FEEDBACK_REWARD_POINTS : 0;
+        const created = await this.feedbackModel.create({
             ...dto,
             gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName),
-            reporterType: FeedbackReporterType.USER,
-            source: DEFAULT_USER_SOURCE,
+            reporterType: this.resolvePublicReporterType(source),
+            source,
+            rewardPoints,
             ...(userId && { userId }),
         });
+        if (userId && rewardPoints > 0) {
+            await this.userModel.updateOne(
+                { _id: userId },
+                { $inc: { feedbackPoints: rewardPoints } },
+            ).exec();
+        }
+        return created;
     }
 
     async createSystem(dto: CreateSystemFeedbackDto): Promise<Feedback> {
@@ -74,11 +99,22 @@ export class FeedbackService {
         const manager = actorUserId ? await this.assertActorCanManage(actorUserId) : null;
         const page = Math.max(1, Number(query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-        const { status, type, severity, sort, reporterType, source, preferMine } = query;
+        const { status, type, severity, sort, reporterType, source, preferMine, mineOnly } = query;
+        if (mineOnly && !manager) {
+            return {
+                items: [],
+                total: 0,
+                page,
+                limit,
+            };
+        }
         const filter: Record<string, unknown> = {};
         if (status) filter.status = status;
         if (type) filter.type = type;
         if (severity) filter.severity = severity;
+        if (mineOnly && manager) {
+            Object.assign(filter, this.buildOwnFeedbackFilter(manager));
+        }
         const originFilter = this.buildOriginFilter(reporterType, source);
         if (originFilter) {
             filter.$and = filter.$and ? [...(filter.$and as Record<string, unknown>[]), originFilter] : [originFilter];
@@ -142,13 +178,45 @@ export class FeedbackService {
         };
     }
 
-    async updateStatus(actorUserId: string, id: string, status: FeedbackStatus): Promise<Feedback | null> {
+    async updateStatus(actorUserId: string, id: string, dto: UpdateFeedbackStatusDto): Promise<Feedback | null> {
         const manager = await this.assertActorCanManage(actorUserId);
         const scopeFilter = this.buildMutationScopeFilter(manager);
+        const status = dto.status;
         if (status === FeedbackStatus.CLOSED) {
+            const current = await this.feedbackModel.findOne({ _id: id, ...scopeFilter }).select({
+                _id: 1,
+                source: 1,
+                reporterType: 1,
+                contactInfo: 1,
+                errorContext: 1,
+                content: 1,
+            }).lean<{
+                _id: unknown;
+                source?: string;
+                reporterType?: FeedbackReporterType;
+                contactInfo?: string | null;
+                errorContext?: { source?: string | null } | null;
+                content?: string;
+            } | null>();
+            if (!current) {
+                return null;
+            }
+            const closedReason = this.normalizeClosedReason(dto.closedReason);
+            if (!this.isAutomaticFeedbackLike(current) && !closedReason) {
+                throw new BadRequestException('关闭理由不能为空');
+            }
             return this.feedbackModel.findOneAndUpdate(
                 { _id: id, ...scopeFilter },
-                { $set: { status }, $unset: { aggregationActiveKey: '' } },
+                {
+                    $set: {
+                        status,
+                        ...(closedReason ? { closedReason } : {}),
+                    },
+                    $unset: {
+                        aggregationActiveKey: '',
+                        ...(closedReason ? {} : { closedReason: '' }),
+                    },
+                },
                 { new: true },
             );
         }
@@ -187,8 +255,14 @@ export class FeedbackService {
                     status,
                     aggregationActiveKey: current.aggregationKey,
                 },
+                $unset: {
+                    closedReason: '',
+                },
             }
-            : { $set: { status } };
+            : {
+                $set: { status },
+                $unset: { closedReason: '' },
+            };
         try {
             return await this.feedbackModel.findOneAndUpdate(
                 { _id: id, ...scopeFilter },
@@ -263,6 +337,51 @@ export class FeedbackService {
         }
         const normalized = value.trim().toLowerCase();
         return normalized || fallback;
+    }
+
+    private normalizeUserSource(value?: string | null): string {
+        const normalized = this.normalizeSource(value, DEFAULT_USER_SOURCE);
+        if (ALLOWED_USER_SOURCES.has(normalized)) {
+            return normalized;
+        }
+        return DEFAULT_USER_SOURCE;
+    }
+
+    private normalizeClosedReason(value?: string | null): string | undefined {
+        if (typeof value !== 'string') {
+            return undefined;
+        }
+        const normalized = value.trim();
+        return normalized || undefined;
+    }
+
+    private isPublicAutoFeedbackSource(source?: string | null): boolean {
+        return Boolean(source && PUBLIC_AUTO_FEEDBACK_SOURCES.has(source));
+    }
+
+    private resolvePublicReporterType(source: string): FeedbackReporterType {
+        return this.isPublicAutoFeedbackSource(source)
+            ? FeedbackReporterType.SYSTEM
+            : FeedbackReporterType.USER;
+    }
+
+    private isAutomaticFeedbackLike(feedback: {
+        reporterType?: FeedbackReporterType;
+        source?: string | null;
+        contactInfo?: string | null;
+        errorContext?: { source?: string | null } | null;
+        content?: string | null;
+    }): boolean {
+        if (feedback.reporterType === FeedbackReporterType.SYSTEM) {
+            return true;
+        }
+        const source = this.normalizeSource(feedback.source ?? undefined, '');
+        if (source === WATCHDOG_AGGREGATION_SOURCE || this.isPublicAutoFeedbackSource(source)) {
+            return true;
+        }
+        return feedback.contactInfo === 'system:online-ai-watchdog'
+            || feedback.errorContext?.source === LEGACY_WATCHDOG_SOURCE
+            || /^\[system\]\[online-ai-watchdog\]\s+/.test(feedback.content ?? '');
     }
 
     private shouldAggregateSystemFeedback(
@@ -825,13 +944,50 @@ export class FeedbackService {
         if (reporterType) base.reporterType = reporterType;
         if (normalizedSource) base.source = normalizedSource;
 
-        if (reporterType === FeedbackReporterType.SYSTEM
-            && (!normalizedSource || normalizedSource === LEGACY_WATCHDOG_SOURCE)) {
-            const legacyFilter = this.buildLegacyWatchdogFilter();
-            return { $or: [base, legacyFilter] };
+        if (reporterType === FeedbackReporterType.USER) {
+            if (normalizedSource && this.isPublicAutoFeedbackSource(normalizedSource)) {
+                return { _id: { $exists: false } };
+            }
+            return normalizedSource
+                ? base
+                : {
+                    ...base,
+                    source: { $nin: PUBLIC_AUTO_FEEDBACK_SOURCE_LIST },
+                };
+        }
+
+        const legacyFilters: Record<string, unknown>[] = [];
+        const legacyWatchdogFilter = this.buildLegacyWatchdogFilterForOrigin(normalizedSource);
+        if (legacyWatchdogFilter) {
+            legacyFilters.push(legacyWatchdogFilter);
+        }
+        const legacyPublicAutoFilter = this.buildLegacyPublicAutoFilter(normalizedSource);
+        if (legacyPublicAutoFilter) {
+            legacyFilters.push(legacyPublicAutoFilter);
+        }
+
+        if (legacyFilters.length > 0) {
+            return { $or: [base, ...legacyFilters] };
         }
 
         return base;
+    }
+
+    private buildLegacyWatchdogFilterForOrigin(source?: string): Record<string, unknown> | null {
+        if (source && source !== LEGACY_WATCHDOG_SOURCE) {
+            return null;
+        }
+        return this.buildLegacyWatchdogFilter();
+    }
+
+    private buildLegacyPublicAutoFilter(source?: string): Record<string, unknown> | null {
+        if (source && !this.isPublicAutoFeedbackSource(source)) {
+            return null;
+        }
+        return {
+            reporterType: FeedbackReporterType.USER,
+            source: source ?? { $in: PUBLIC_AUTO_FEEDBACK_SOURCE_LIST },
+        };
     }
 
     private buildLegacyWatchdogFilter(): Record<string, unknown> {
@@ -847,6 +1003,14 @@ export class FeedbackService {
 
     private decorateLegacyOrigin(item: FeedbackDocument | Feedback): Feedback {
         const raw = this.toFeedbackObject(item);
+        const isLegacyPublicAuto = this.isPublicAutoFeedbackSource(raw.source)
+            && raw.reporterType !== FeedbackReporterType.SYSTEM;
+        if (isLegacyPublicAuto) {
+            return {
+                ...raw,
+                reporterType: FeedbackReporterType.SYSTEM,
+            };
+        }
         const isLegacyWatchdog = raw.contactInfo === 'system:online-ai-watchdog'
             || raw.errorContext?.source === LEGACY_WATCHDOG_SOURCE
             || /^\[system\]\[online-ai-watchdog\]\s+/.test(raw.content);
@@ -922,6 +1086,16 @@ export class FeedbackService {
         }
 
         return null;
+    }
+
+    private buildOwnFeedbackFilter(manager: FeedbackManagerScope): Record<string, unknown> {
+        const ownScope = manager.actorUserObjectId
+            ? [{ userId: manager.actorUserObjectId }, { userId: manager.actorUserId }]
+            : [{ userId: manager.actorUserId }];
+        if (ownScope.length === 0) {
+            return { _id: { $exists: false } };
+        }
+        return ownScope.length === 1 ? ownScope[0] : { $or: ownScope };
     }
 
     private buildMutationScopeFilter(manager: FeedbackManagerScope): Record<string, unknown> {

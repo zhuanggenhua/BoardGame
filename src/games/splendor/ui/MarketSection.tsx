@@ -109,7 +109,10 @@ export function MarketSection({
                         key={tier}
                         deckSlot={(
                             <div className="group w-[8rem] rounded-xl border border-white/10 bg-white/5 p-1.5 shadow-lg transition-transform duration-200 hover:z-20 hover:scale-[1.08]" data-tutorial-id={`sp-market-tier-${tier}`}>
-                                <div className="relative aspect-[0.7] w-full overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                                <div
+                                    className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/20"
+                                    style={{ height: 0, paddingTop: `${100 / 0.7}%`, aspectRatio: '0.7 / 1' }}
+                                >
                                     <OptimizedImage
                                         src={SPLENDOR_DECK_IMAGE_BY_TIER[tier]}
                                         alt={`Level ${tier}`}

@@ -37,10 +37,8 @@ export {
     makeStateWithMadness,
     makeMatchState,
     applyEvents,
-    callHandler,
     triggerBaseAbilityWithMS,
     getInteractionsFromResult,
-    getInteractionsFromMS,
 } from '../helpers';
 
 // ============================================================================
@@ -157,6 +155,8 @@ export interface OngoingRegistrationResult {
         triggerTimings: TriggerTiming[];
         interceptor: boolean;
         baseAbilitySuppression: boolean;
+        baseScoringSuppression: boolean;
+        cardAbilitySuppression: boolean;
         powerModifier: boolean;
         breakpointModifier: boolean;
     };
@@ -164,7 +164,15 @@ export interface OngoingRegistrationResult {
 
 /** 检查持续效果注册表中是否有指定 defId 的注册 */
 export function checkOngoingRegistration(defId: string): OngoingRegistrationResult {
-    const { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds } =
+    const {
+        protectionIds,
+        restrictionIds,
+        triggerIds,
+        interceptorIds,
+        baseAbilitySuppressionIds,
+        baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
+    } =
         getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
 
@@ -175,6 +183,8 @@ export function checkOngoingRegistration(defId: string): OngoingRegistrationResu
         triggerTimings: triggerIds.get(defId) ?? [],
         interceptor: interceptorIds.has(defId),
         baseAbilitySuppression: baseAbilitySuppressionIds.has(defId),
+        baseScoringSuppression: baseScoringSuppressionIds.has(defId),
+        cardAbilitySuppression: cardAbilitySuppressionIds.has(defId),
         powerModifier: powerModifierIds.has(defId),
         breakpointModifier: breakpointModifierIds.has(defId),
     };
@@ -185,8 +195,17 @@ export function checkOngoingRegistration(defId: string): OngoingRegistrationResu
         registries.trigger ||
         registries.interceptor ||
         registries.baseAbilitySuppression ||
+        registries.baseScoringSuppression ||
+        registries.cardAbilitySuppression ||
         registries.powerModifier ||
         registries.breakpointModifier;
+
+    if (!registered && defId.endsWith('_pod')) {
+        const baseDefId = defId.slice(0, -4);
+        if (getCardDef(defId) && getCardDef(baseDefId)) {
+            return checkOngoingRegistration(baseDefId);
+        }
+    }
 
     return { registered, registries };
 }
@@ -248,7 +267,15 @@ export function getInteractionHandlerIds(): Set<string> {
  * 用于快速判断某个 defId 是否在任一 ongoing 注册表中有注册。
  */
 export function collectAllOngoingRegisteredIds(): Set<string> {
-    const { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds } =
+    const {
+        protectionIds,
+        restrictionIds,
+        triggerIds,
+        interceptorIds,
+        baseAbilitySuppressionIds,
+        baseScoringSuppressionIds,
+        cardAbilitySuppressionIds,
+    } =
         getRegisteredOngoingEffectIds();
     const { powerModifierIds, breakpointModifierIds } = getRegisteredModifierIds();
     const all = new Set<string>();
@@ -257,6 +284,8 @@ export function collectAllOngoingRegisteredIds(): Set<string> {
     for (const id of triggerIds.keys()) all.add(id);
     for (const id of interceptorIds) all.add(id);
     for (const id of baseAbilitySuppressionIds) all.add(id);
+    for (const id of baseScoringSuppressionIds) all.add(id);
+    for (const id of cardAbilitySuppressionIds) all.add(id);
     for (const id of powerModifierIds) all.add(id);
     for (const id of breakpointModifierIds) all.add(id);
     return all;

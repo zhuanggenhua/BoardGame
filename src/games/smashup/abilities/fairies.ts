@@ -22,6 +22,7 @@ import {
     markSpiritOfTheForestOrUsed,
     playTitan,
 } from '../domain/abilityHelpers';
+import { reduce } from '../domain/reduce';
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
 import {
@@ -89,6 +90,7 @@ type AttachedActionState = {
 
 type FairiesEnchantmentContinuation = {
     baseIndex: number;
+    attachedCardUid?: string;
     selectedBranchIds?: Array<'plus' | 'minus'>;
     allowBoth?: boolean;
 };
@@ -125,7 +127,7 @@ type FairiesGlymmerPromptContext = FairiesPromptContext & {
 type FairiesTinxPromptContext = FairiesPromptContext & {
     targetBaseIndex: number;
     targetMinionUid: string;
-    options: Array<{ cardUid: string; label: string }>;
+    options: Array<{ cardUid: string; defId: string; label: string }>;
 };
 
 type FairiesPlayfulTricksDestroyPromptContext = FairiesPromptContext & {
@@ -184,6 +186,7 @@ function findAttachedActionState(
 
 function buildTransferAttachedActionEvents(
     attached: AttachedActionState,
+    sourcePlayerId: PlayerId,
     targetBaseIndex: number,
     targetMinionUid: string,
     reason: string,
@@ -206,6 +209,7 @@ function buildTransferAttachedActionEvents(
                 cardUid: attached.cardUid,
                 defId: attached.defId,
                 ownerId: attached.ownerId,
+                ...(attached.ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
                 targetType: 'minion',
                 targetBaseIndex,
                 targetMinionUid,
@@ -339,10 +343,10 @@ function buildPlayfulTricksActionOptions(state: SmashUpCore) {
     return options;
 }
 
-function getOwnedSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
+function getControlledSetAsideSpiritOfTheForest(state: SmashUpCore, playerId: PlayerId) {
     return (state.titans ?? []).find((titan) =>
         titan.defId === 'fairies_spirit_of_the_forest'
-        && titan.ownerId === playerId
+        && titan.controllerId === playerId
         && titan.location.zone === 'setaside',
     );
 }
@@ -503,6 +507,17 @@ function runtimeResultToBranchResult(
     };
 }
 
+function applyEventsToMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
+    };
+}
+
 function createTransferSelfAbilityProgram(
     sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
     title: string,
@@ -534,6 +549,7 @@ function createTransferSelfAbilityProgram(
             return {
                 events: buildTransferAttachedActionEvents(
                     liveAttached,
+                    context.playerId,
                     selected.baseIndex,
                     selected.minionUid,
                     reason,
@@ -685,7 +701,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
             ...context.options.map((option, index) => ({
                 id: `attached-${index}`,
                 label: option.label,
-                value: { cardUid: option.cardUid },
+                value: { cardUid: option.cardUid, defId: option.defId },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             })),
@@ -702,6 +718,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
         return {
             events: buildTransferAttachedActionEvents(
                 attached,
+                context.playerId,
                 context.targetBaseIndex,
                 context.targetMinionUid,
                 'fairies_tinx',
@@ -734,17 +751,41 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
         if (context.baseIndex === undefined) return { events: [] };
         const selectedValue = value as { branchId?: string; skip?: boolean };
         const previousBranchIds = context.selectedBranchIds ?? [];
+        const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
+            action.uid === context.attachedCardUid
+            && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
+        );
+        if (!attached) return { events: [] };
+        const sourcePlayerId = (attached.metadata?.sourcePlayerId as PlayerId | undefined)
+            ?? (attached.metadata?.sourceControllerId as PlayerId | undefined);
 
         if (
             (selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus')
             && context.allowBoth
             && previousBranchIds.length === 0
         ) {
+            const immediateMode = selectedValue.branchId;
+            const immediateEvents = [{
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: attached.uid,
+                    defId: attached.defId,
+                    ownerId: attached.ownerId,
+                    ...(sourcePlayerId && sourcePlayerId !== attached.ownerId ? { sourcePlayerId } : {}),
+                    targetType: 'base',
+                    targetBaseIndex: context.baseIndex,
+                    metadata: { fairiesEnchantmentMode: immediateMode },
+                    talentUsed: attached.talentUsed,
+                },
+                timestamp,
+            } as OngoingAttachedEvent];
+            const nextMatchState = applyEventsToMatchState(state, immediateEvents);
             return {
-                events: [],
+                events: immediateEvents,
+                matchState: nextMatchState,
                 context: {
                     ...context,
-                    matchState: state,
+                    matchState: nextMatchState,
                     playerId,
                     now: timestamp,
                     selectedBranchIds: [selectedValue.branchId],
@@ -757,11 +798,6 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
             ? [...previousBranchIds, selectedValue.branchId]
             : previousBranchIds;
         if (branchIds.length === 0) return { events: [] };
-
-        const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
-            action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
-        );
-        if (!attached) return { events: [] };
         const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
         const fairiesEnchantmentMode = branchIds.includes('plus') && branchIds.includes('minus')
             ? 'both'
@@ -778,6 +814,7 @@ const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentCo
                         cardUid: attached.uid,
                         defId: attached.defId,
                         ownerId: attached.ownerId,
+                        ...(sourcePlayerId && sourcePlayerId !== attached.ownerId ? { sourcePlayerId } : {}),
                         targetType: 'base',
                         targetBaseIndex: context.baseIndex,
                         metadata: { fairiesEnchantmentMode },
@@ -866,7 +903,7 @@ const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesP
         }
         const titan = state.core.titans?.find((candidate) =>
             candidate.uid === context.titanUid
-            && candidate.ownerId === playerId
+            && candidate.controllerId === playerId
             && candidate.location.zone === 'setaside',
         );
         if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { events: [] };
@@ -1000,6 +1037,7 @@ const fairiesTinxProgram = createEffectProgram<AbilityContext, SmashUpCore, Smas
                 const actionName = getCardDef(attached.defId)?.name ?? attached.defId;
                 options.push({
                     cardUid: attached.uid,
+                    defId: attached.defId,
                     label: `${actionName} @ ${minionName} @ ${baseName}`,
                 });
             }
@@ -1066,7 +1104,7 @@ function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
 
 function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
     const actionOptions = buildPlayfulTricksActionOptions(ctx.state);
-    const setAsideSpirit = getOwnedSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
+    const setAsideSpirit = getControlledSetAsideSpiritOfTheForest(ctx.state, ctx.playerId);
     const canPlaySpirit = !!setAsideSpirit && !getTitanByController(ctx.state, ctx.playerId);
 
     if (!canPlaySpirit) {
@@ -1117,6 +1155,7 @@ const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCor
             playerId: ctx.playerId,
             now: ctx.now,
             baseIndex: ctx.baseIndex,
+            attachedCardUid: ctx.cardUid,
             allowBoth: !!upgrade,
         } satisfies FairiesEnchantmentContinuation & FairiesPromptContext,
         nextProgram: fairiesEnchantmentPromptProgram,
@@ -1161,7 +1200,7 @@ function fairiesLadybugProtectionChecker(ctx: ProtectionCheckContext): boolean {
 function fairiesMagicWardRestrictionChecker(ctx: RestrictionCheckContext): boolean {
     return ctx.state.bases[ctx.baseIndex]?.ongoingActions.some(action =>
         (action.defId === 'fairies_magic_ward' || action.defId === 'fairies_magic_ward_pod')
-        && action.ownerId !== ctx.playerId,
+        && ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) !== ctx.playerId,
     ) ?? false;
 }
 

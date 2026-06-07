@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useReducer, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    getLocalizedImageCandidateUrls,
     getPreloadedImageElement,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
+    markImageCandidateFailed,
     markImageLoaded,
     onImageReady,
     type CardPreviewRef,
@@ -116,68 +118,6 @@ const hasUsableAtlasImage = (img: HTMLImageElement | null | undefined): img is H
 
 const hasSynchronousAtlasImageHit = (img: HTMLImageElement): boolean =>
     img.complete === true && hasUsableAtlasImage(img);
-
-const normalizeComparableUrl = (url: string): string => {
-    if (!url) return '';
-    if (typeof window === 'undefined') return url;
-    try {
-        return new URL(url, window.location.href).href;
-    } catch {
-        return url;
-    }
-};
-
-const matchLoadedAtlasCandidateUrl = (
-    img: HTMLImageElement | null | undefined,
-    candidateUrls: string[],
-): string => {
-    if (!hasUsableAtlasImage(img)) return '';
-
-    const normalizedCandidates = candidateUrls.map((candidateUrl) => ({
-        candidateUrl,
-        normalized: normalizeComparableUrl(candidateUrl),
-    }));
-
-    for (const src of [img.currentSrc, img.src]) {
-        const normalizedSrc = normalizeComparableUrl(src);
-        if (!normalizedSrc) continue;
-        const matchedCandidate = normalizedCandidates.find((candidate) => candidate.normalized === normalizedSrc);
-        if (matchedCandidate) {
-            return matchedCandidate.candidateUrl;
-        }
-    }
-
-    return '';
-};
-
-const resolveLoadedAtlasCandidateUrl = (
-    candidateUrls: string[],
-    sourceImage?: string,
-    locale?: string,
-): string => {
-    for (const candidateUrl of candidateUrls) {
-        const matchedCandidate = matchLoadedAtlasCandidateUrl(getPreloadedImageElement(candidateUrl), candidateUrls);
-        if (matchedCandidate) {
-            return matchedCandidate;
-        }
-    }
-
-    if (sourceImage) {
-        const sourceImg = getPreloadedImageElement(sourceImage, locale);
-        const matchedCandidate = matchLoadedAtlasCandidateUrl(sourceImg, candidateUrls);
-        if (matchedCandidate) {
-            return matchedCandidate;
-        }
-
-        // 候选 URL 集可能因 base/override 变化与已缓存 currentSrc 不一致，
-        // 但只要 sourceImage 对应缓存图可用，就应直接复用真实已加载 src，避免重复加载。
-        if (hasUsableAtlasImage(sourceImg)) {
-            return sourceImg.currentSrc || sourceImg.src || '';
-        }
-    }
-
-    return '';
-};
 
 const getAtlasCandidateTimeoutMs = (url: string): number => (
     /^https?:\/\//i.test(url) ? REMOTE_ATLAS_CANDIDATE_TIMEOUT_MS : LOCAL_ATLAS_CANDIDATE_TIMEOUT_MS
@@ -336,7 +276,20 @@ function loadAtlasCandidateUrlsShared(candidateUrls: string[]): Promise<AtlasCan
 }
 
 export function getCardAtlasCandidateUrls(image: string, locale: string): string[] {
-    return getLocalizedImageCandidateUrls(image, locale);
+    return getRuntimeImageCandidateUrls(image, locale);
+}
+
+function markEarlierAtlasCandidateFailures(
+    sourceImage: string,
+    locale: string | undefined,
+    candidateUrls: readonly string[],
+    successfulUrl: string,
+): void {
+    const successfulIndex = candidateUrls.indexOf(successfulUrl);
+    if (successfulIndex <= 0) return;
+    candidateUrls.slice(0, successfulIndex).forEach((candidateUrl) => {
+        markImageCandidateFailed(sourceImage, locale, candidateUrl);
+    });
 }
 
 export function CardPreview({
@@ -390,7 +343,8 @@ export function CardPreview({
 
     const renderer = getCardPreviewRenderer(previewRef.rendererId);
     if (!renderer) return null;
-    return renderer({ previewRef, locale: effectiveLocale, className, style });
+    const Renderer = renderer;
+    return <Renderer previewRef={previewRef} locale={effectiveLocale} className={className} style={style} />;
 }
 
 // ============================================================================
@@ -432,7 +386,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
 
     const checkKey = `${atlasId}|${source?.image ?? ''}|${effectiveLocale}`;
     const loadedCandidateUrl = useMemo(
-        () => (source ? resolveLoadedAtlasCandidateUrl(checkUrls, source.image, effectiveLocale) : ''),
+        () => (source ? getResolvedImageCandidateUrl(checkUrls, source.image, effectiveLocale) : ''),
         [checkUrls, effectiveLocale, source],
     );
     const derivedActiveUrl = loadedCandidateUrl || checkUrls[0] || '';
@@ -542,10 +496,12 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             }
 
             if (!result) {
+                checkUrls.forEach((url) => markImageCandidateFailed(source.image, effectiveLocale, url));
                 scheduleAtlasRetry(`atlas:${atlasId}`);
                 return;
             }
 
+            markEarlierAtlasCandidateFailures(source.image, effectiveLocale, checkUrls, result.url);
             markImageLoaded(source.image, effectiveLocale, result.img);
             markImageLoaded(result.url, undefined, result.img);
             markReady(result.url);
@@ -584,12 +540,14 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             }
 
             if (!result) {
+                candidates.forEach((url) => markImageCandidateFailed(lazy.image, effectiveLocale, url));
                 scheduleAtlasRetry(`lazy-atlas:${atlasId}`);
                 return;
             }
 
             retryAttemptRef.current = 0;
             clearRetryTimer();
+            markEarlierAtlasCandidateFailures(lazy.image, effectiveLocale, candidates, result.url);
             markImageLoaded(lazy.image, effectiveLocale, result.img);
             markImageLoaded(result.url, undefined, result.img);
             setLoadState((current) => ({

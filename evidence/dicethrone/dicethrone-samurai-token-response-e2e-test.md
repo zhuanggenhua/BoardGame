@@ -1,5 +1,7 @@
 # Dice Throne 武士 Token Response 真实点击 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留武士 `Honor / Back Strike` 两条 token 响应链的真实点击 `L3` 证据，不代表武士整英雄或枪手/武士整批当前完成态。当前若要判断武士对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/武士录入核对.md` 为准。`Back Strike` 对非攻击 `direct damage` 的专属负路径证据已另行落档到 `evidence/dicethrone/dicethrone-samurai-direct-damage-no-back-strike-e2e-2026-06-05.md`，本文不再承担该专项。
+
 ## 范围
 
 - `Honor`：攻击方响应窗口内连续点击两次，验证从 `+1` 累积到总计 `+3`，并在同一窗口内禁止第三次使用。

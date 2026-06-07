@@ -7,6 +7,7 @@ import type { PlayerId, RandomFn } from '../../../engine/types';
 import type { TokenDef } from './tokenTypes';
 import type { AbilityCard, HeroState, SelectableCharacterId, Die, DieFace } from './types';
 import type { PassiveAbilityDef } from './passiveAbility';
+import type { AbilityDef } from './combat';
 import { MONK_ABILITIES, MONK_TOKENS, MONK_INITIAL_TOKENS, getMonkStartingDeck } from '../heroes/monk';
 import { BARBARIAN_ABILITIES, BARBARIAN_TOKENS, BARBARIAN_INITIAL_TOKENS, getBarbarianStartingDeck } from '../heroes/barbarian';
 import { PYROMANCER_ABILITIES, PYROMANCER_TOKENS, PYROMANCER_INITIAL_TOKENS, getPyromancerStartingDeck } from '../heroes/pyromancer';
@@ -18,6 +19,8 @@ import { GUNSLINGER_ABILITIES, GUNSLINGER_TOKENS, GUNSLINGER_INITIAL_TOKENS, get
 import { SAMURAI_ABILITIES, SAMURAI_TOKENS, SAMURAI_INITIAL_TOKENS, getSamuraiStartingDeck } from '../heroes/samurai';
 import { TREANT_ABILITIES, TREANT_TOKENS, TREANT_INITIAL_TOKENS, TREANT_PASSIVE_ABILITIES, getTreantStartingDeck } from '../heroes/treant';
 import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDeck } from '../heroes/ninja';
+import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHANSHUJIA_PASSIVE_ABILITIES, getZhanshujiaStartingDeck } from '../heroes/zhanshujia';
+import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck, getCursedPirateAbilitiesForFace } from '../heroes/cursed_pirate';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -28,8 +31,11 @@ import { STATUS_IDS, DICETHRONE_STATUS_ATLAS_IDS } from './ids';
 export interface CharacterData {
     id: SelectableCharacterId;
     abilities: any[];
+    getAbilitiesForFace?: (playerBoardFace?: HeroState['playerBoardFace']) => any[];
     tokens: TokenDef[];
     initialTokens: Record<string, number>;
+    initialStatusEffects?: Record<string, number>;
+    initialPlayerBoardFace?: HeroState['playerBoardFace'];
     diceDefinitionId: string;
     getStartingDeck: (random: RandomFn) => AbilityCard[];
     initialAbilityLevels: Record<string, number>;
@@ -39,6 +45,53 @@ export interface CharacterData {
     statusAtlasPath: string;
     /** 被动能力定义（可选，如圣骑士教皇税） */
     passiveAbilities?: PassiveAbilityDef[];
+}
+
+const CARD_LOOKUP_RANDOM = {
+    random: () => 0.5,
+    d: (_max: number) => 1,
+    range: (min: number) => min,
+    shuffle: <T>(arr: T[]) => arr,
+} as const;
+
+const CHARACTER_UPGRADE_DEF_CACHE = new Map<SelectableCharacterId, Map<string, Map<number, AbilityDef>>>();
+
+function cloneAbilityDefs<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function getCharacterUpgradeDefs(characterId: SelectableCharacterId): Map<string, Map<number, AbilityDef>> {
+    const cached = CHARACTER_UPGRADE_DEF_CACHE.get(characterId);
+    if (cached) {
+        return cached;
+    }
+
+    const data = CHARACTER_DATA_MAP[characterId];
+    const byAbilityId = new Map<string, Map<number, AbilityDef>>();
+
+    for (const card of data.getStartingDeck(CARD_LOOKUP_RANDOM as any)) {
+        for (const effect of card.effects ?? []) {
+            const action = effect.action;
+            if (
+                action?.type !== 'replaceAbility'
+                || !action.targetAbilityId
+                || !action.newAbilityDef
+                || typeof action.newAbilityLevel !== 'number'
+            ) {
+                continue;
+            }
+
+            const level = Math.trunc(action.newAbilityLevel);
+            if (level <= 1) continue;
+
+            const existing = byAbilityId.get(action.targetAbilityId) ?? new Map<number, AbilityDef>();
+            existing.set(level, action.newAbilityDef as AbilityDef);
+            byAbilityId.set(action.targetAbilityId, existing);
+        }
+    }
+
+    CHARACTER_UPGRADE_DEF_CACHE.set(characterId, byAbilityId);
+    return byAbilityId;
 }
 
 const BARBARIAN_DATA: CharacterData = {
@@ -251,6 +304,54 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.NINJA,
         statusAtlasPath: 'dicethrone/images/ninja/status-icons-atlas.json',
     },
+    zhanshujia: {
+        id: 'zhanshujia',
+        abilities: ZHANSHUJIA_ABILITIES,
+        tokens: ZHANSHUJIA_TOKENS,
+        initialTokens: ZHANSHUJIA_INITIAL_TOKENS,
+        diceDefinitionId: 'zhanshujia-dice',
+        getStartingDeck: getZhanshujiaStartingDeck,
+        initialAbilityLevels: {
+            'sabre-thrust': 1,
+            'carpet-bombing': 1,
+            'war-monger': 1,
+            'drum-movement': 1,
+            'flanking': 1,
+            'expand-battlefield': 1,
+            'strategic-shift': 1,
+            'countermeasures': 1,
+            'high-ground': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.ZHANSHUJIA,
+        statusAtlasPath: 'dicethrone/images/zhanshujia/status-icons-atlas.json',
+        passiveAbilities: ZHANSHUJIA_PASSIVE_ABILITIES,
+    },
+    cursed_pirate: {
+        id: 'cursed_pirate',
+        abilities: CURSED_PIRATE_ABILITIES,
+        getAbilitiesForFace: getCursedPirateAbilitiesForFace,
+        tokens: CURSED_PIRATE_TOKENS,
+        initialTokens: CURSED_PIRATE_INITIAL_TOKENS,
+        initialStatusEffects: {
+            [STATUS_IDS.CURSED_COIN]: 3,
+        },
+        initialPlayerBoardFace: 'normal',
+        diceDefinitionId: 'cursed_pirate-dice',
+        getStartingDeck: getCursedPirateStartingDeck,
+        initialAbilityLevels: {
+            'soul-stab': 1,
+            'marked-for-death': 1,
+            'cursed': 1,
+            'deep-sea-dive': 1,
+            'breath-of-death': 1,
+            'soul-command': 1,
+            'undead-claw': 1,
+            'still-wet-behind-ears': 1,
+            'merciless-curse': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.CURSED_PIRATE,
+        statusAtlasPath: 'dicethrone/images/cursed/status-icons-atlas.json',
+    },
 };
 
 /**
@@ -325,6 +426,7 @@ export function initHeroState(
     return {
         id: `player-${playerId}`,
         characterId,
+        playerBoardFace: data.initialPlayerBoardFace,
         // initialDeckCardIds 不包含在返回值中（已消费完毕，避免状态膨胀）
         resources,
         hand: startingHand,
@@ -332,15 +434,62 @@ export function initHeroState(
         discard: [],
         statusEffects: {
             [STATUS_IDS.KNOCKDOWN]: 0,
+            ...(data.initialStatusEffects ?? {}),
         },
         tokens: { ...data.initialTokens },
         tokenStackLimits: Object.fromEntries(data.tokens.map(t => [t.id, t.stackLimit])),
         damageShields: [],
-        abilities: data.abilities,
         abilityLevels: { ...data.initialAbilityLevels },
+        abilities: buildHeroAbilitiesForFace(
+            characterId,
+            data.initialPlayerBoardFace,
+            data.initialAbilityLevels,
+        ),
         upgradeCardByAbilityId: {},
-        passiveAbilities: data.passiveAbilities ? [...data.passiveAbilities] : undefined,
+        passiveAbilities: data.passiveAbilities ? JSON.parse(JSON.stringify(data.passiveAbilities)) : undefined,
     };
+}
+
+export function getCharacterAbilitiesForFace(
+    characterId: SelectableCharacterId,
+    playerBoardFace?: HeroState['playerBoardFace'],
+) {
+    const data = CHARACTER_DATA_MAP[characterId];
+    if (!data) {
+        throw new Error(`[DiceThrone] Unknown characterId: ${characterId}`);
+    }
+    return data.getAbilitiesForFace
+        ? data.getAbilitiesForFace(playerBoardFace)
+        : data.abilities;
+}
+
+export function buildHeroAbilitiesForFace(
+    characterId: SelectableCharacterId,
+    playerBoardFace?: HeroState['playerBoardFace'],
+    abilityLevels?: Record<string, number>,
+): AbilityDef[] {
+    const baseAbilities = cloneAbilityDefs(getCharacterAbilitiesForFace(characterId, playerBoardFace));
+    if (!abilityLevels) {
+        return baseAbilities;
+    }
+
+    const upgradeDefs = getCharacterUpgradeDefs(characterId);
+    return baseAbilities.map((ability) => {
+        const desiredLevel = Math.trunc(abilityLevels[ability.id] ?? 1);
+        if (desiredLevel <= 1) {
+            return ability;
+        }
+
+        const upgradedDef = upgradeDefs.get(ability.id)?.get(desiredLevel);
+        if (!upgradedDef) {
+            return ability;
+        }
+
+        return {
+            ...cloneAbilityDefs(upgradedDef),
+            id: ability.id,
+        };
+    });
 }
 
 /**

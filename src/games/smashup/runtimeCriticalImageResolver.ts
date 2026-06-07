@@ -211,7 +211,7 @@ export const smashUpRuntimeCriticalImageResolver: CriticalImageResolver = (
         return {
             critical: [...ALL_CARD_ATLAS],
             warm: [...selectedBaseAtlases, ...remainingBaseAtlases],
-            phaseKey: `factionSelect:${perspectiveKey}:${buildSelectionSnapshot(state)}`,
+            phaseKey: 'factionSelect',
         };
     }
 

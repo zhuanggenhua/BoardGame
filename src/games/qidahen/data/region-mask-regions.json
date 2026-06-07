@@ -57,8 +57,8 @@
       "name": "大同",
       "color": "#d64c3a",
       "seed": {
-        "x": 188,
-        "y": 186
+        "x": 225,
+        "y": 373
       },
       "links": [
         "city-region-16",

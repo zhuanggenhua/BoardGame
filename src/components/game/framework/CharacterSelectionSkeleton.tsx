@@ -196,11 +196,11 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                 transition={{ delay: index * 0.03 }}
                                 data-char-id={char.id}
                                 className={clsx(
-                                    "relative aspect-[3/4] border-2 transition-all duration-300 overflow-hidden cursor-pointer group",
+                                    "relative border-2 transition-all duration-300 overflow-hidden cursor-pointer group",
                                     isSelectedByMe ? "border-amber-400 shadow-[0_0_1.5vw_rgba(251,191,36,0.4)] z-20 scale-[1.02]" : 
                                     "border-white/10 hover:border-white/30 hover:scale-[1.02]"
                                 )}
-                                style={{ borderRadius: inlineUnit(0.4) }}
+                                style={{ borderRadius: inlineUnit(0.4), height: 0, paddingTop: `${100 / 0.75}%`, aspectRatio: '3 / 4' }}
                                 onClick={() => callbacks.onSelect(char.id)}
                             >
                                 <div className={clsx(

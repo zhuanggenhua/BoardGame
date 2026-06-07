@@ -68,7 +68,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 0 },
         effects: [
             {
-                description: '投掷1骰：⭐→治疗2+脑震荡；否则抽1牌',
+                description: cardText('card-energetic', 'description'),
                 action: {
                     type: 'rollDie', target: 'self', diceCount: 1,
                     conditionalEffects: [
@@ -96,7 +96,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
             requireMinDamageDealt: 8,
         },
         effects: [
-            inflictStatus(STATUS_IDS.CONCUSSION, 1, '施加脑震荡'),
+            inflictStatus(STATUS_IDS.CONCUSSION, 1, cardText('card-dizzy', 'description')),
         ],
     },
     {
@@ -108,7 +108,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         description: cardText('card-head-blow', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 4 },
         effects: [
-            inflictStatus(STATUS_IDS.CONCUSSION, 1, '施加脑震荡'),
+            inflictStatus(STATUS_IDS.CONCUSSION, 1, cardText('card-head-blow', 'description')),
         ],
     },
 
@@ -125,7 +125,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 1 },
         effects: [
             {
-                description: '投掷3骰：治疗1+2x心',
+                description: cardText('card-lucky', 'description'),
                 action: { type: 'custom', target: 'self', customActionId: 'lucky-roll-heal' },
                 timing: 'immediate',
             },
@@ -142,7 +142,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         isAttackModifier: true,
         effects: [
             {
-                description: '投掷5骰：增加 1x剑 伤害；施加脑震荡',
+                description: cardText('card-more-please', 'description'),
                 action: { type: 'custom', target: 'self', customActionId: 'more-please-roll-damage' },
                 timing: 'immediate',
             },
@@ -163,7 +163,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         description: cardText('card-thick-skin-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 5 },
         effects: [
-            replaceAbility('thick-skin', THICK_SKIN_2, 2, '升级厚皮至 II 级'),
+            replaceAbility('thick-skin', THICK_SKIN_2, 2, cardText('card-thick-skin-2', 'description')),
         ],
     },
 
@@ -176,7 +176,7 @@ export const BARBARIAN_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('card-slap-2', 'description'),
         previewRef: { type: 'atlas', atlasId: DICETHRONE_CARD_ATLAS_IDS.BARBARIAN, index: 14 },
-        effects: [replaceAbility('slap', SLAP_2, 2, '升级拍击至 II 级')],
+        effects: [replaceAbility('slap', SLAP_2, 2, cardText('card-slap-2', 'description'))],
     },
     {
         id: 'card-slap-3',

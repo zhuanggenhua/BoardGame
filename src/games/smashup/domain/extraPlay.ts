@@ -11,7 +11,13 @@ import {
     grantExtraAction,
     grantExtraMinion,
 } from './abilityHelpers';
-import { createAbilityRuntimeSimpleChoice, createPromptProgram, executeAbilityProgram } from './abilityRuntime';
+import {
+    attachDeferredInteractionSnapshot,
+    createAbilityRuntimeSimpleChoice,
+    createPromptProgram,
+    executeAbilityProgram,
+    readDeferredInteractionSnapshot,
+} from './abilityRuntime';
 import {
     SU_COMMANDS,
     SU_EVENTS,
@@ -22,9 +28,9 @@ import {
     type SmashUpCore,
     type SmashUpEvent,
 } from './types';
+import { isOperationRestricted } from './ongoingEffects';
+import { getActionPlayTargetMode } from './playLegality';
 import {
-    actionLikeNeedsPlayBase,
-    actionLikeNeedsPlayMinion,
     isCardActionLike,
     isCardMinionLike,
     isSameNameDefId,
@@ -42,6 +48,25 @@ type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
+
+function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
+    const payload = event.payload as ImmediateExtraLimitPayload;
+    return [
+        payload.playerId,
+        payload.limitType,
+        payload.reason,
+        payload.playTiming,
+        payload.delta,
+        payload.restrictToBase ?? '__any_base__',
+        payload.restrictToMinionUid ?? '__any_minion__',
+        payload.specificCardUid ?? '__any_card__',
+        payload.sameNameDefId ?? '__any_name__',
+        payload.sameNameOnly ? 'same_name' : 'not_same_name',
+        payload.powerMax ?? '__any_power__',
+        payload.specialActionWindow ?? '__any_window__',
+        event.timestamp ?? 0,
+    ].join('|');
+}
 
 function matchesImmediateExtraMinionConstraint(
     defId: string,
@@ -61,6 +86,7 @@ function buildValidationState(
     state: MatchState<SmashUpCore>,
     extra: ImmediateExtraLimitPayload,
 ): MatchState<SmashUpCore> {
+    const actingPlayerIndex = state.core.turnOrder.indexOf(extra.playerId);
     const bankedExtra = extra.limitType === 'minion'
         ? grantExtraMinion(
             extra.playerId,
@@ -71,17 +97,23 @@ function buildValidationState(
                 powerMax: extra.powerMax,
                 sameNameOnly: extra.sameNameOnly,
                 sameNameDefId: extra.sameNameDefId,
+                specificCardUid: extra.specificCardUid,
             },
         )
         : grantExtraAction(extra.playerId, extra.reason, 0);
 
     return {
         ...state,
-        core: reduce(state.core, bankedExtra),
+        core: {
+            ...reduce(state.core, bankedExtra),
+            currentPlayerIndex: actingPlayerIndex >= 0 ? actingPlayerIndex : state.core.currentPlayerIndex,
+        },
         sys: {
             ...state.sys,
             phase: 'playCards',
             responseWindow: undefined,
+            // 额外行动只应按正常出牌阶段校验，不应继承当前结算链里残留的 reaction session。
+            resolution: undefined,
         },
     };
 }
@@ -96,6 +128,8 @@ function buildImmediateExtraMinionCardOptions(
 
     const handOptions = player.hand
         .filter(card => isCardMinionLike(card))
+        .filter(card => !extra.specificCardUid || card.uid === extra.specificCardUid)
+        .filter(card => !extra.sameNameDefId || isSameNameDefId(card.defId, extra.sameNameDefId))
         .flatMap((card, index) => {
             const power = getMinionLikePower(card.defId) ?? 0;
             if (!matchesImmediateExtraMinionConstraint(card.defId, power, extra)) return [];
@@ -119,7 +153,8 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    const titanOptions = getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
+    const titanOptions = extra.specificCardUid ? [] : getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
+        .filter(titan => !extra.sameNameDefId || isSameNameDefId(titan.defId, extra.sameNameDefId))
         .flatMap((titan, index) => {
             const power = getMinionLikePower(titan.defId) ?? 0;
             if (!matchesImmediateExtraMinionConstraint(titan.defId, power, extra)) return [];
@@ -155,6 +190,12 @@ function buildImmediateExtraMinionBaseOptions(
     extra: ImmediateExtraMinionPayload,
     choice: ImmediateMinionCardChoice,
 ) {
+    if (extra.sameNameDefId && !isSameNameDefId(choice.defId, extra.sameNameDefId)) {
+        return [];
+    }
+    if (extra.specificCardUid) {
+        if ('titanUid' in choice || choice.cardUid !== extra.specificCardUid) return [];
+    }
     const validationState = buildValidationState(state, extra);
     if ('titanUid' in choice) {
         const candidates = state.core.bases
@@ -191,28 +232,61 @@ function buildImmediateExtraActionCardOptions(
 
     const options = player.hand
         .filter(card => isCardActionLike(card))
+        .filter(card => extra.restrictToCardUid === undefined || card.uid === extra.restrictToCardUid)
+        .filter(card => extra.restrictToCardDefId === undefined || card.defId === extra.restrictToCardDefId)
         .flatMap((card, index) => {
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
 
-            const targetMode = getImmediateActionTargetMode(def);
-            const playable = targetMode === 'none'
-                ? validate(validationState, {
-                    type: SU_COMMANDS.PLAY_ACTION,
-                    playerId: extra.playerId,
-                    payload: { cardUid: card.uid },
-                }).valid
-                : targetMode === 'base'
-                    ? state.core.bases.some((_, baseIndex) => validate(validationState, {
+            const targetMode = getActionPlayTargetMode(def);
+            if (extra.restrictToMinionUid && targetMode !== 'minion') return [];
+            const playable = (() => {
+                if (targetMode === 'none') {
+                    return validate(validationState, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
-                        payload: { cardUid: card.uid, targetBaseIndex: baseIndex },
-                    }).valid)
-                    : state.core.bases.some((base, baseIndex) => base.minions.some(minion => validate(validationState, {
+                        payload: { cardUid: card.uid },
+                    }).valid;
+                }
+                if (targetMode === 'base') {
+                    const baseChecks = state.core.bases.map((_base, baseIndex) => {
+                        const blockedByBaseRestriction = extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex;
+                        const blockedByWindowRestriction = !blockedByBaseRestriction
+                            && Boolean(
+                                extra.specialActionWindow
+                                && isOperationRestricted(validationState.core, baseIndex, extra.playerId, 'play_action', {
+                                    activationWindow: extra.specialActionWindow,
+                                }),
+                            );
+                        const validation = !blockedByBaseRestriction && !blockedByWindowRestriction
+                            ? validate(validationState, {
+                                type: SU_COMMANDS.PLAY_ACTION,
+                                playerId: extra.playerId,
+                                payload: { cardUid: card.uid, targetBaseIndex: baseIndex },
+                            })
+                            : { valid: false, error: blockedByBaseRestriction ? 'restricted_to_other_base' : 'restricted_by_window' };
+                        return {
+                            baseIndex,
+                            blockedByBaseRestriction,
+                            blockedByWindowRestriction,
+                            valid: validation.valid,
+                            error: validation.valid ? null : validation.error ?? null,
+                        };
+                    });
+                    return baseChecks.some(check => check.valid);
+                }
+                return state.core.bases.some((base, baseIndex) => {
+                    if (extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex) return false;
+                    if (extra.specialActionWindow && isOperationRestricted(validationState.core, baseIndex, extra.playerId, 'play_action', {
+                        activationWindow: extra.specialActionWindow,
+                    })) return false;
+                    return base.minions.some(minion => validate(validationState, {
                         type: SU_COMMANDS.PLAY_ACTION,
                         playerId: extra.playerId,
                         payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid },
-                    }).valid));
+                    }).valid);
+                });
+            })();
 
             if (!playable) return [];
 
@@ -228,23 +302,6 @@ function buildImmediateExtraActionCardOptions(
     return [...options, createSkipOption('放弃这次额外战术') as any];
 }
 
-function getImmediateActionTargetMode(def: ActionCardDef | FusionCardDef): 'none' | 'base' | 'minion' {
-    const subtype = (def as any).type === 'fusion'
-        ? (def as FusionCardDef).actionSubtype
-        : (def as ActionCardDef).subtype;
-
-    if (subtype === 'ongoing') {
-        const ongoingTarget = (def as any).type === 'fusion'
-            ? ((def as FusionCardDef).actionOngoingTarget ?? 'base')
-            : ((def as ActionCardDef).ongoingTarget ?? 'base');
-        return ongoingTarget === 'minion' ? 'minion' : 'base';
-    }
-
-    if (actionLikeNeedsPlayMinion(def)) return 'minion';
-    if (actionLikeNeedsPlayBase(def)) return 'base';
-    return 'none';
-}
-
 function buildImmediateExtraActionBaseOptions(
     state: MatchState<SmashUpCore>,
     extra: ImmediateExtraActionPayload,
@@ -253,6 +310,10 @@ function buildImmediateExtraActionBaseOptions(
     const validationState = buildValidationState(state, extra);
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+        .filter(candidate => extra.restrictToBase === undefined || candidate.baseIndex === extra.restrictToBase)
+        .filter(candidate => !extra.specialActionWindow || !isOperationRestricted(validationState.core, candidate.baseIndex, extra.playerId, 'play_action', {
+            activationWindow: extra.specialActionWindow,
+        }))
         .filter(candidate => validate(validationState, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: extra.playerId,
@@ -271,9 +332,14 @@ function buildImmediateExtraActionMinionOptions(
     const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
 
     for (let baseIndex = 0; baseIndex < state.core.bases.length; baseIndex += 1) {
+        if (extra.restrictToBase !== undefined && extra.restrictToBase !== baseIndex) continue;
+        if (extra.specialActionWindow && isOperationRestricted(state.core, baseIndex, extra.playerId, 'play_action', {
+            activationWindow: extra.specialActionWindow,
+        })) continue;
         const base = state.core.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
+            if (extra.restrictToMinionUid && minion.uid !== extra.restrictToMinionUid) continue;
             if (!validate(validationState, {
                 type: SU_COMMANDS.PLAY_ACTION,
                 playerId: extra.playerId,
@@ -304,6 +370,11 @@ function executeImmediateExtraMinionPlay(
     random: Parameters<typeof execute>[2],
 ) {
     const validationState = buildValidationState(state, extra);
+    if (extra.specificCardUid) {
+        if ('titanUid' in choice || choice.cardUid !== extra.specificCardUid) {
+            return { state, events: [] };
+        }
+    }
     const validation = 'titanUid' in choice
         ? validate(validationState, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
@@ -346,6 +417,7 @@ function executeImmediateExtraMinionPlay(
                     powerMax: extra.powerMax,
                     sameNameOnly: extra.sameNameOnly,
                     sameNameDefId: extra.sameNameDefId,
+                    specificCardUid: extra.specificCardUid,
                 },
             ),
             ...events,
@@ -362,6 +434,12 @@ function executeImmediateExtraActionPlay(
     targetBaseIndex?: number,
     targetMinionUid?: string,
 ) {
+    if (extra.restrictToMinionUid && targetMinionUid !== extra.restrictToMinionUid) {
+        return { state, events: [] };
+    }
+    if (extra.restrictToBase !== undefined && targetBaseIndex !== extra.restrictToBase) {
+        return { state, events: [] };
+    }
     const validationState = buildValidationState(state, extra);
     const validation = validate(validationState, {
         type: SU_COMMANDS.PLAY_ACTION,
@@ -379,7 +457,6 @@ function executeImmediateExtraActionPlay(
         payload: { cardUid: choice.cardUid, targetBaseIndex, targetMinionUid },
         timestamp,
     }, random);
-
     return {
         state: execState,
         events: [grantExtraAction(extra.playerId, extra.reason, timestamp), ...events],
@@ -439,23 +516,27 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraMinionPayload; choice?: ImmediateMinionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraMinionPayload;
+                choice?: ImmediateMinionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraMinionBaseOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外随从') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -490,20 +571,21 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = { extra: context.extra };
-        (interaction.data as any).autoRefresh = 'hand';
-        (interaction.data as any).responseValidationMode = 'live';
-        (interaction.data as any).optionsGenerator = (
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
+        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        (interactionWithSnapshot.data as any).responseValidationMode = 'live';
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraMinionPayload } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
+            const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraMinionPayload }>(data);
+            const latestExtra = snapshot?.extra;
             if (!latestExtra) {
                 return [createSkipOption('放弃这次额外随从') as any];
             }
             return buildImmediateExtraMinionCardOptions(latestState, latestExtra) as any[];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -561,23 +643,27 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload; choice?: ImmediateActionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraActionPayload;
+                choice?: ImmediateActionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionBaseOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外战术') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -612,23 +698,27 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = {
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
             extra: context.extra,
             choice: context.choice,
-        };
-        (interaction.data as any).optionsGenerator = (
+        });
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload; choice?: ImmediateActionCardChoice } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
-            const latestChoice = data?.runtimeContext?.choice;
+            const snapshot = readDeferredInteractionSnapshot<{
+                extra?: ImmediateExtraActionPayload;
+                choice?: ImmediateActionCardChoice;
+            }>(data);
+            const latestExtra = snapshot?.extra;
+            const latestChoice = snapshot?.choice;
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionMinionOptions(latestState, latestExtra, latestChoice),
                 createSkipOption('放弃这次额外战术') as any,
             ];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -660,20 +750,21 @@ const immediateExtraActionPromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
             },
         );
-        (interaction.data as any).runtimeContext = { extra: context.extra };
-        (interaction.data as any).autoRefresh = 'hand';
-        (interaction.data as any).responseValidationMode = 'live';
-        (interaction.data as any).optionsGenerator = (
+        const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
+        (interactionWithSnapshot.data as any).autoRefresh = 'hand';
+        (interactionWithSnapshot.data as any).responseValidationMode = 'live';
+        (interactionWithSnapshot.data as any).optionsGenerator = (
             latestState: MatchState<SmashUpCore>,
-            data: { runtimeContext?: { extra?: ImmediateExtraActionPayload } },
+            data: Record<string, unknown> | undefined,
         ) => {
-            const latestExtra = data?.runtimeContext?.extra;
+            const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraActionPayload }>(data);
+            const latestExtra = snapshot?.extra;
             if (!latestExtra) {
                 return [createSkipOption('放弃这次额外战术') as any];
             }
             return buildImmediateExtraActionCardOptions(latestState, latestExtra) as any[];
         };
-        return interaction;
+        return interactionWithSnapshot;
     },
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean })?.skip) {
@@ -690,7 +781,7 @@ const immediateExtraActionPromptProgram = createPromptProgram<
             return { state, events: [] };
         }
 
-        const targetMode = getImmediateActionTargetMode(def);
+        const targetMode = getActionPlayTargetMode(def);
         if (targetMode === 'none') {
             return executeImmediateExtraActionPlay(state, context.extra, choice, timestamp, random);
         }
@@ -743,9 +834,17 @@ export function queueImmediateExtraPlayInteractions(
     events: LimitModifiedEvent[],
 ): MatchState<SmashUpCore> {
     let nextState = state;
+    const sysAny = nextState.sys as Record<string, unknown>;
+    if (!(sysAny._processedImmediateExtraEvents instanceof Set)) {
+        sysAny._processedImmediateExtraEvents = new Set<string>();
+    }
+    const processedImmediateExtraEvents = sysAny._processedImmediateExtraEvents as Set<string>;
 
     for (const event of events) {
         if (event.payload.playTiming !== 'immediate' || event.payload.delta <= 0) continue;
+        const eventKey = buildImmediateExtraEventKey(event);
+        if (processedImmediateExtraEvents.has(eventKey)) continue;
+        processedImmediateExtraEvents.add(eventKey);
         const payload = event.payload as ImmediateExtraLimitPayload;
         const result = executeAbilityProgram(
             payload.limitType === 'minion'

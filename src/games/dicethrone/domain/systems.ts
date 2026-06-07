@@ -3,7 +3,7 @@
  * 处理领域事件到系统状态的映射
  */
 
-import type { GameEvent } from '../../../engine/types';
+import type { GameEvent, MatchState } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import { INTERACTION_EVENTS, queueInteraction, resolveInteraction, createSimpleChoice, createCompareRollChoice, createMultistepChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor as EngineInteractionDescriptor, SimpleChoiceData, PromptOption, MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
@@ -21,6 +21,7 @@ import type {
 import { getPlayerPassiveAbilities } from './passiveAbility';
 import { findPlayerAbility } from './abilityLookup';
 import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
+import { hasCurrentChoiceAnchor } from './choiceEffects';
 import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
 import { getActiveDice } from './rules';
@@ -96,6 +97,33 @@ function isStaleOffensiveRollEndChoiceResolved(core: DiceThroneCore, event: Choi
     }
 
     return (player.tokens[tokenId] ?? 0) <= 0;
+}
+
+function getCurrentInteractionChoiceSourceId(
+    interaction: EngineInteractionDescriptor | undefined,
+): string | undefined {
+    if (!interaction) return undefined;
+    if (interaction.kind !== 'simple-choice' && interaction.kind !== 'compare-roll-choice') {
+        return undefined;
+    }
+    const sourceId = (interaction.data as { sourceId?: unknown } | undefined)?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : undefined;
+}
+
+function syncCurrentChoiceAnchorWithInteraction(
+    state: MatchState<DiceThroneCore>,
+): MatchState<DiceThroneCore> {
+    const sourceId = getCurrentInteractionChoiceSourceId(state.sys.interaction.current as EngineInteractionDescriptor | undefined);
+    if (state.core.currentChoiceSourceAbilityId === sourceId) {
+        return state;
+    }
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            currentChoiceSourceAbilityId: sourceId,
+        },
+    };
 }
 
 function applyEmergencySkipFallback(core: DiceThroneCore, context: EmergencySkipContext): DiceThroneCore | null {
@@ -318,6 +346,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             value: number;
                             customId?: string;
                             labelKey?: string;
+                            labelParams?: Record<string, string | number>;
                             disabled?: boolean;
                         }>[] = payload.options.map((opt, index) => {
                             const label = opt.labelKey
@@ -330,6 +359,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 value: opt,
                                 disabled: opt.disabled,
                                 labelKey: opt.labelKey,
+                                labelParams: opt.labelParams,
                             };
                         });
 
@@ -353,7 +383,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             },
                         );
 
-                        newState = queueInteraction(newState, compareRollInteraction);
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, compareRollInteraction));
                         continue;
                     }
 
@@ -364,6 +394,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         value: number;
                         customId?: string;
                         labelKey?: string;
+                        labelParams?: Record<string, string | number>;
                         disabled?: boolean;
                     }>[] = payload.options.map((opt, index) => {
                         const label = opt.labelKey
@@ -375,6 +406,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             label,
                             value: opt,
                             disabled: opt.disabled,
+                            labelKey: opt.labelKey,
+                            labelParams: opt.labelParams,
                         };
                     });
 
@@ -393,7 +426,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         (interaction.data as SimpleChoiceData & { slider?: unknown }).slider = payload.slider;
                     }
 
-                    newState = queueInteraction(newState, interaction);
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                 }
 
                 if (dtEvent.type === 'DEFENDER_SELECTION_REQUESTED') {
@@ -407,14 +440,14 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             sourceId: payload.sourceAbilityId,
                         },
                     };
-                    newState = queueInteraction(newState, interaction);
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                     continue;
                 }
 
                 if (dtEvent.type === 'DEFENDER_SELECTION_RESOLVED') {
                     const current = newState.sys.interaction.current;
                     if (current?.kind === 'dt:defender-choice') {
-                        newState = resolveInteraction(newState);
+                        newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                     }
                     continue;
                 }
@@ -468,7 +501,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             pendingInteraction.playerId,
                             multistepData,
                         );
-                        newState = queueInteraction(newState, interaction);
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                         continue;
                     }
 
@@ -509,14 +542,15 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             pendingInteraction.playerId,
                             multistepData,
                         );
-                        newState = queueInteraction(newState, interaction);
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                         continue;
                     }
 
                     // 状态选择类交互 → 保持 dt:card-interaction
                     const isStatusType = pendingInteraction.type === 'selectStatus'
                         || pendingInteraction.type === 'selectPlayer'
-                        || pendingInteraction.type === 'selectTargetStatus';
+                        || pendingInteraction.type === 'selectTargetStatus'
+                        || pendingInteraction.type === 'selectHandCard';
 
                     if (isStatusType) {
                         const targetPlayerIds = pendingInteraction.targetPlayerIds || Object.keys(newState.core.players);
@@ -538,7 +572,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             });
                             if (!hasAnyStatus) {
                                 // 无可选项，自动跳过交互（直接 resolve，不生成事件）
-                                newState = resolveInteraction(newState);
+                                newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                                 continue;
                             }
                         }
@@ -552,24 +586,34 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         playerId: pendingInteraction.playerId,
                         data: { ...pendingInteraction, sourceId: pendingInteraction.sourceCardId },
                     };
-                    newState = queueInteraction(newState, interaction);
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                 }
 
-                // ---- 状态交互自动完成：STATUS_REMOVED / TOKEN_CONSUMED 触发时直接 resolve ----
+                // ---- 状态/手牌交互自动完成：只在各自权威完成事件出现时 resolve ----
                 // 注意：REMOVE_STATUS 移除所有状态时会生成多个 STATUS_REMOVED 事件，
                 // 使用 statusInteractionCompleted 标记防止重复 resolve
                 if (!statusInteractionCompleted && (dtEvent.type === 'STATUS_REMOVED' || dtEvent.type === 'TOKEN_CONSUMED'
-                    || dtEvent.type === 'STATUS_APPLIED' || dtEvent.type === 'TOKEN_GRANTED')) {
+                    || dtEvent.type === 'STATUS_APPLIED' || dtEvent.type === 'TOKEN_GRANTED'
+                    || dtEvent.type === 'CARD_DISCARDED')) {
                     const current = newState.sys.interaction.current;
                     if (current?.kind === 'dt:card-interaction') {
                         const interactionData = current.data as DtInteractionDescriptor;
-                        const isStatusType = interactionData.type === 'selectStatus'
+                        const isStatusSelectionCompleted = (
+                            interactionData.type === 'selectStatus'
                             || interactionData.type === 'selectPlayer'
-                            || interactionData.type === 'selectTargetStatus';
-                        if (isStatusType) {
+                            || interactionData.type === 'selectTargetStatus'
+                        ) && (
+                            dtEvent.type === 'STATUS_REMOVED'
+                            || dtEvent.type === 'TOKEN_CONSUMED'
+                            || dtEvent.type === 'STATUS_APPLIED'
+                            || dtEvent.type === 'TOKEN_GRANTED'
+                        );
+                        const isHandCardSelectionCompleted = interactionData.type === 'selectHandCard'
+                            && dtEvent.type === 'CARD_DISCARDED';
+                        if (isStatusSelectionCompleted || isHandCardSelectionCompleted) {
                             statusInteractionCompleted = true;
-                            // 状态交互完成：直接 resolve，不生成事件
-                            newState = resolveInteraction(newState);
+                            // 业务完成事件已经由领域层生成；系统层只清理当前交互。
+                            newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                         }
                     }
                 }
@@ -583,7 +627,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const current = newState.sys.interaction.current;
                     if (current?.kind === 'dt:card-interaction' && (!interactionId || current.id === interactionId)) {
                         statusInteractionCompleted = true;
-                        newState = resolveInteraction(newState);
+                        newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                     }
                 }
 
@@ -625,14 +669,14 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             playerId: payload.pendingDamage.responderId,
                             data: null,
                         };
-                        newState = queueInteraction(newState, interaction);
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                     }
                 }
 
                 // ---- TOKEN_RESPONSE_CLOSED → resolve ----
                 if (dtEvent.type === 'TOKEN_RESPONSE_CLOSED') {
                     console.log('[DT-EventSystem] TOKEN_RESPONSE_CLOSED，resolve 交互');
-                    const resolvedState = resolveInteraction(newState);
+                    const resolvedState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                     newState = {
                         ...resolvedState,
                         sys: {
@@ -659,7 +703,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             playerId: payload.settlement.attackerId,
                             data: null,
                         };
-                        newState = queueInteraction(newState, interaction);
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
                     }
                 }
 
@@ -669,7 +713,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'BONUS_DICE_SETTLED') {
                     const payload = (dtEvent as any).payload;
                     if (!payload?.displayOnly) {
-                        newState = resolveInteraction(newState);
+                        newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                     }
                 }
 
@@ -726,6 +770,37 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     } as DiceThroneEvent);
                 }
 
+                if (event.type === INTERACTION_EVENTS.EXPIRED || event.type === INTERACTION_EVENTS.FORCE_UNLOCKED) {
+                    const payload = event.payload as {
+                        interactionId?: string | null;
+                        playerId: string;
+                        sourceId?: string;
+                    };
+
+                    const sourceCardId = event.type === INTERACTION_EVENTS.EXPIRED
+                        ? (payload.sourceId ?? '')
+                        : '';
+                    let cpCost = 0;
+                    if (sourceCardId) {
+                        const player = newState.core.players[payload.playerId];
+                        const card = player?.discard.find((c: any) => c.id === sourceCardId);
+                        cpCost = card?.cpCost ?? 0;
+                    }
+
+                    const eventTimestamp = typeof event.timestamp === 'number' ? event.timestamp : 0;
+                    nextEvents.push({
+                        type: 'INTERACTION_CANCELLED',
+                        payload: {
+                            playerId: payload.playerId,
+                            sourceCardId,
+                            cpCost,
+                            interactionId: typeof payload.interactionId === 'string' ? payload.interactionId : undefined,
+                        },
+                        sourceCommandType: event.type === INTERACTION_EVENTS.EXPIRED ? 'SYS_INTERACTION_TIMEOUT' : 'SYS_FORCE_UNLOCK',
+                        timestamp: eventTimestamp,
+                    } as DiceThroneEvent);
+                }
+
                 // 处理 Prompt 响应 -> 生成 CHOICE_RESOLVED 领域事件
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
@@ -736,7 +811,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const customId = resolvedEvent.payload.customId;
                     if (customId) {
                         const followupHandler = getChoiceResolvedEventHandler(customId);
-                        if (followupHandler) {
+                        if (followupHandler && hasCurrentChoiceAnchor(newState.core, resolvedEvent.payload.sourceAbilityId)) {
                             nextEvents.push(...followupHandler({
                                 state: newState.core,
                                 playerId: resolvedEvent.payload.playerId,
@@ -833,7 +908,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         : (data.completedSteps ?? 0) + newSteps;
                     if (data.maxSteps !== undefined && completedSteps >= data.maxSteps) {
                         // 达到最大步骤数，自动 resolve
-                        newState = resolveInteraction(newState);
+                        newState = syncCurrentChoiceAnchorWithInteraction(resolveInteraction(newState));
                         nextEvents.push({
                             type: INTERACTION_EVENTS.CONFIRMED,
                             payload: {
@@ -892,6 +967,9 @@ export function handlePromptResolved(
         value: { statusId?: string; tokenId?: string; value: number; customId?: string };
         sourceId?: string;
     };
+    const resolvedValue = typeof payload.value?.value === 'number' && Number.isFinite(payload.value.value)
+        ? payload.value.value
+        : undefined;
     
     return {
         type: 'CHOICE_RESOLVED',
@@ -899,7 +977,7 @@ export function handlePromptResolved(
             playerId: payload.playerId,
             statusId: payload.value.statusId,
             tokenId: payload.value.tokenId,
-            value: payload.value.value,
+            value: resolvedValue,
             customId: payload.value.customId,
             sourceAbilityId: payload.sourceId,
         },

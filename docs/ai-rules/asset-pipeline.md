@@ -74,6 +74,15 @@ public/assets/
 | 精灵图裁切 | `getOptimizedImageUrls` | `const { webp } = getOptimizedImageUrls('dicethrone/images/foo.png')` |
 | 精灵图 CSS 背景 | `buildLocalizedImageSet` | `backgroundImage: buildLocalizedImageSet('dicethrone/images/atlas', locale)` |
 
+**关键图片加载合同（强制）**：
+- **玩家面板、提示板、地图、角色立绘、卡牌大图等缺失后会破坏主体验的图片，必须使用具备候选链/回退链的加载方式**，优先使用 `OptimizedImage`、`CardPreview` 或等价公共组件。
+- **禁止把关键图片降级成裸 CSS background 单路径**。`buildLocalizedImageSet` / `buildOptimizedImageSet` 只负责生成 URL 字符串，不能像 `OptimizedImage` 一样在运行时从本地包、public 资源、manifest/R2 之间逐级回退；浏览器的多 background URL 也不是可靠的失败回退机制。
+- **CSS background 只适合两类场景**：一是精灵图/图集裁剪、Canvas/特殊渲染等必须依赖 `background-position` 的场景；二是丢失后不影响主流程的纯装饰背景。前者必须明确仍然复用统一 URL 解析工具，并补测试或截图证明裁剪合同正确。
+- **Android 已安装包资源（`/_capacitor_file_/.../game-packages/.../current/assets/...`）默认不要把可识别图标继续做成 CSS background**：像状态图标、token 图标、可识别 atlas 裁片这类一旦丢失就会退化成“纯色壳/空心圆”的内容，在移动端应优先用真实 `<img>` / `OptimizedImage` / 等价候选链组件承接，再通过 `overflow:hidden + absolute positioning` 做裁片；只有纯装饰背景或已经有专项回归证据证明稳定时，才允许继续用 CSS background 方案。
+- **发现移动端或离线包中“PC 正常、手机缺图”时，先查该图片是否绕过了统一图片组件**；不得先把问题归因到缓存、旧素材包或 CDN，除非已经证明运行时请求链本身符合回退合同。
+- **禁止为游戏正式素材新增假图兜底**：卡牌、基地、泰坦、角色立绘、地图、token 主视觉等正式游戏素材，如果真实素材未命中、R2 返回慢、或本地包里暂时没有，禁止新增内联 SVG、程序生成占位图、临时拼字卡面、截图裁片冒充正式资源。运行时只能显示真实素材或保持真实未加载状态。
+- **E2E / 截图验收同样禁止假素材**：如果截图时 R2 资源因为冷启动或远端拉取较慢而尚未出现，这是可记录的真实状态；可以等待更久，也可以保留真实空态截图，但不能为了“让截图好看”在游戏里加假的 fallback 素材。
+
 **locale 处理规则**：
 - `OptimizedImage` 默认 `locale="zh-CN"`，自动转换路径为 `i18n/zh-CN/dicethrone/images/foo.png`
 - 符号链接使浏览器能正确加载该路径（实际指向 `../../dicethrone/images/foo.png`）
@@ -85,6 +94,7 @@ public/assets/
 - **禁止在组件内部自建第二套图片加载系统**：自定义图片组件、精灵图组件、3D 骰子组件、状态图标组件、CSS background 精灵图组件，禁止自己再写一套 `fetch`、`Image.onload`、URL probe、同源特判、语言特判或“先判 ready 再渲染”的加载状态机。
 - **必须优先复用统一资源工具**：运行时图片路径解析、语言回退、压缩路径选择、缓存与版本参数，统一走 `AssetLoader`、`OptimizedImage`、`CardPreview`、`getLocalizedImageUrls`、`getOptimizedImageUrls`、`buildLocalizedImageSet`。
 - **特殊渲染只能包裹统一链路，不能绕开统一链路**：例如 3D 骰子、Canvas 纹理、Sprite Atlas、CSS background-position 裁切，如果最终仍然要展示同一张运行时图片，那么只能在统一链路产出的 URL 或图片对象之上做渲染，不能自己重新决定资源候选、回退顺序或本地/远端判断。
+- **Sprite / atlas 裁片允许用“真实 `<img>` + 裁剪容器”替代 `background-position`**：如果目标运行态包含 Android 已安装包、本地 `_capacitor_file_`、WebView 兼容问题或手机端已出现“图存在但背景图不显示/只剩底色”，优先考虑保留统一候选链，再把裁片实现切成 `<img>` 绝对定位，而不是继续在 `background-image` 上堆特判。
 - **同模块已有正确实现时，禁止重发明**：如果同一游戏中已有图片显示稳定的实现（如 `HandArea`/`CardPreview`），其他图片组件必须先对照并沿用该用法；不能因为当前组件表现异常，就在旁边新增一套“只对这个组件生效”的 workaround。
 - **修回归先查接线是否偏离统一链路**：当图片出现“之前正常、后来空白/错图/偶发失败”时，优先检查是否绕过了 `AssetLoader`、是否引入组件内特判、是否手动拼接了与统一规则不一致的路径；禁止直接继续堆特例。
 - **如确实需要补充共享能力，应下沉到公共层**：如果统一链路不能满足某类图片展示需求，应补到 `AssetLoader` 或通用媒体组件，而不是在单个游戏/单个组件里偷偷复制一份资源加载逻辑。
@@ -95,6 +105,8 @@ public/assets/
   ✅ 正确：`backgroundImage` + `backgroundSize` + `backgroundPosition`  
   ❌ 错误：`background: linear-gradient(...);`（与裁剪参数共存）
 - **图集裁剪必须“先看图，再采样”**：不得仅依赖脚本猜测行列；必须先人工核对图片内容，再确定 `rows/cols/faceMap` 或裁剪坐标。
+- **大图禁止直接喂给视觉读取工具（强制）**：单边超过 `2500px`、总像素超过 `8MP`、或文件超过 `8MB` 的 atlas / 扫描图 / 拼图，必须先用脚本读取尺寸和生成降采样总览、分块切片、单格裁图；禁止直接 `view_image` / 截整图后人工读。总览图最长边建议不超过 `1600px`，分块图最长边建议不超过 `1400px`；文字或索引看不清时继续裁单格，不得放大整张大图反复读取。
+- **大图核对必须留三类产物**：尺寸记录、低清总览、关键分块或单格裁图。只有低清总览用于判断布局/行列，具体卡名、数字、效果文本必须从对应分块或单格裁图核对。
 - **所有图集定义必须写裁剪合同注释**：凡在 `ui/` 内定义 `*ATLAS` 且包含 `cols/rows`，必须添加 `// @atlas-contract ...`，写明图片名称、网格布局与采样依据。
 - **修改裁剪配置必须配套测试或契约校验**：至少有一条断言覆盖 `background-size / position` 的关键值，避免回归。
 
@@ -123,6 +135,13 @@ style={{
 - **禁止在路径中硬编码 `compressed/` 子目录**（如 `'dicethrone/images/compressed/foo.png'`）
 - **禁止手动拼 `?v=` / 时间戳参数**，统一交给 `AssetLoader` 的内容 hash 机制处理
 - **原因**：`getOptimizedImageUrls()` 会自动插入 `compressed/`，硬编码会导致路径重复（`compressed/compressed/`）
+
+### `public/assets` 作用域门禁（强制）
+
+- `public/assets/**` 只允许放**正式运行时资源**：代码真实引用、允许进入 `dist/`、允许上传到 R2/CDN、允许被 Web/Android 正式包请求的文件。
+- **参考图、生成对照图、设计稿导出图、预览脚本专用图、人工核对中间产物**，禁止放在 `public/assets/**`。这些文件必须放到 `docs/`、`temp/`、专项 evidence 或其他非运行时目录。
+- 原因不是“目录好不好看”，而是打包行为：`public/**` 会被构建原样复制到 `dist/`；进入 `dist/` 后，Web 发布、Android embedded、OTA/静态上传链路都会把它当成正式资源继续带走。
+- 当同一目录里同时出现“运行时资源”和“参考图/生成图”时，必须先拆目录再继续发布；禁止依赖“反正代码没引用到它”侥幸过关。
 
 ### 图集语义判定门禁（强制）
 
@@ -202,14 +221,19 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 ### 新增游戏资源检查清单
 
-1. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
-2. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
-3. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
-4. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
-5. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
-6. ✅ **确认路径中不含 `compressed/` 子目录**
-7. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
-8. ❌ **禁止**硬编码 `compressed/` 路径
+1. ✅ 先从规则书、配件表、用户指定素材清单或当前 MVP 需求建立正式资源准入白名单，给每个源文件标记 `runtime/reference/candidate/excluded`
+2. ✅ 只有 `runtime` 或明确 `reference` 的图片允许进入 `public/assets/<gameId>/` 或 `public/assets/i18n/<locale>/<gameId>/`
+3. ✅ TTS/Workshop 材质色块、编辑器占位图、下载站装饰图、无规则对象对应的贴图、重复导出必须标为 `excluded` 或留在 `temp/<gameId>-intake/`，不得压缩、上传或引用
+4. ✅ 正式文件名必须使用稳定语义名（小写 kebab-case），能回溯到图面语义和规则配件表；看不清或无法对应规则表时先留在 `candidate`
+5. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
+6. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
+7. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
+8. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
+9. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
+10. ✅ **确认路径中不含 `compressed/` 子目录**
+11. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
+12. ❌ **禁止**硬编码 `compressed/` 路径
+13. ❌ **禁止**把 `candidate/excluded` 文件混入正式资源树后继续执行 `assets:manifest`、`assets:check`、`assets:upload`
 
 ## R2 / CDN 上传与排查规则（强制）
 
@@ -347,7 +371,7 @@ registerCriticalImageResolver('<gameId>', <gameId>CriticalImageResolver);
 
 ## 🔊 音频资源规范
 
-> 新增音频全链路流程详见：`docs/audio/add-audio.md`
+> 音频 workflow 优先走 `./.codex/skill/audio-integration/SKILL.md`；新增外部素材的产物合同详见：`docs/audio/add-audio.md`
 
 ### 音频资源架构（强制）
 
@@ -362,6 +386,26 @@ registerCriticalImageResolver('<gameId>', <gameId>CriticalImageResolver);
 - **禁止**使用旧短 key（如 `click` / `dice_roll` / `card_draw`）。
 - **必须**使用 registry 的完整 key（如 `ui.general....uiclick_dialog_choice_01_krst_none`）。
 - **路径规则**：`getOptimizedAudioUrl()` 自动插入 `compressed/`，配置中**不得**手写 `compressed/`。
+- **移动端已安装包音频直链禁令（强制）**：当音频资源来自 Android 已安装游戏包 / 共享音频包（`/_capacitor_file_/.../game-packages/.../current/assets/...`）时，**禁止**只依赖浏览器直接解码该本地 URL 并在失败后“换个 URL 就算修好”。必须保证：
+  1. 首个本地候选失败后，优先走原生 `readInstalledAsset -> blob URL` 或等价桥接读取；
+  2. 当前这一次播放请求会续到新候选实例上（BGM / SFX 都一样），不能只替换 `Howl` 实例却不重放；
+  3. 官方远端 URL 只能作为最后一道兜底，不能充当对本地包媒体兼容问题的主修复。
+
+### 共享音频包路径合同（强制）
+
+- **单一真相源**：共享音频包 `common-audio` 的运行时相对路径，唯一真相源是 `public/assets` 下的相对路径，例如 `common/audio/bgm/...`、`common/audio/sfx/...`。
+- **四层必须同构**：以下四层必须使用同一份相对路径合同，禁止任意一层私自裁前缀、改根目录或只改其中一处：
+  1. 打包脚本写入 zip entry 的路径
+  2. file index / installed-files-index 中记录的路径
+  3. 原生 `current/assets` 下的实际落盘路径
+  4. H5 运行时传给 `readInstalledAsset` 的 `relativePath`
+- **BGM / SFX 不得各自发明目录语义**：`bgm/...`、`sfx/...` 只是 `common/audio/...` 下的子树，不是独立根路径。禁止因为“只有 BGM 挂了”就单独改 BGM 调用链去迁就目录错位。
+- **先确认合同落点，再决定修复层**：当真实机出现“已安装共享音频包但读不到本地文件”时，必须先确认失配发生在上面四层中的哪一层，再决定修打包、原生、索引还是 H5 兼容。禁止在还没确认合同宿主前，直接把问题归因到 BGM 选择逻辑、自动播放策略或 Howler 参数。
+- **兼容补丁的适用边界**：只有在已确认问题来自历史已发包与当前合同不一致、且短期内不能要求所有设备重装/重下资源包时，才允许在 H5 / bridge 层补“历史路径兼容读取”。这种兼容必须：
+  1. 明确标注兼容的是哪一版历史目录布局
+  2. 优先保留当前标准合同不变
+  3. 补回归测试锁住“标准路径 + 历史路径”两条读取链
+- **R2 兜底不是合同修复**：`官方远端 URL / R2` 只负责兜底可用性，不能作为“本地包路径合同已经正确”的证明。只要真实机日志里仍出现本地 `readInstalledAsset` 找不到文件，就不得把问题表述成“音频链路已完全修好”。
 
 ### ✅ 音效触发规范（当前 + 长期规划）
 
@@ -437,6 +481,6 @@ pushFlyingEffect({
 - **生成 registry**：`node scripts/audio/generate_common_audio_registry.js`
 - **生成语义目录**：`npm run audio:catalog`（产出 `docs/audio/audio-catalog.md`，AI 查找音效首选）
 - **资源清单**：`node scripts/audio/generate_audio_assets_md.js`
-- **详见文档**：`docs/audio/audio-usage.md`
+- **详见入口**：`./.codex/skill/audio-integration/SKILL.md`（workflow） + `docs/audio/audio-usage.md`（架构与运行时合同）
 
 **相关提案**：`openspec/changes/refactor-audio-common-layer/specs/audio-path-auto-compression.md`

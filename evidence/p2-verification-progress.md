@@ -1,5 +1,7 @@
 # P2 验证进度总结
 
+> 状态提示（2026-06-05）：已归档的历史阶段进度稿。当前 P2 高优先级验证结论以 `evidence/p2-high-priority-complete.md` 和 `evidence/p2-verification-complete.md` 为准；本文件只保留阶段性验证轨迹。
+
 ## 当前状态
 
 **任务**：验证 P2 高优先级测试的恢复必要性

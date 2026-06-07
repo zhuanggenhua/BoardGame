@@ -14,6 +14,7 @@ import {
     removePowerCounter,
 } from '../domain/abilityHelpers';
 import { buildBuryCardEvents, uncoverBuriedCard } from '../domain/bury';
+import { reduce } from '../domain/reducer';
 import { SU_EVENTS } from '../domain/types';
 import type { BaseAbilityUsedEvent, SmashUpCore, SmashUpEvent, BuriedCardOnBase } from '../domain/types';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -64,6 +65,17 @@ function runtimeResultToAbilityResult(
     };
 }
 
+function applyPreviewEventsToMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return matchState;
+    return {
+        ...matchState,
+        core: events.reduce((core, event) => reduce(core, event), matchState.core),
+    };
+}
+
 export function registerAncientEgyptiansAbilities(): void {
     registerAbilityProgram('ancient_egyptians_pyramid_engineer', 'onPlay', { program: ancientEgyptiansPyramidEngineerOnPlayProgram });
     registerAbilityProgram('ancient_egyptians_pyramid_engineer', 'talent', {
@@ -90,15 +102,30 @@ export function registerAncientEgyptiansAbilities(): void {
     registerTrigger('ancient_egyptians_mummy', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('ancient_egyptians_mummy_pod', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
+        optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('ancient_egyptians_pharaoh_pod', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
+        optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('base_star_portal', 'onCardBuried', ancientEgyptiansStarPortalOnBuried, {
         perInstance: true,
@@ -761,7 +788,7 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
                 now: timestamp,
                 reason: 'ancient_egyptians_seal_the_tomb',
             });
-            currentState = result.state;
+            currentState = applyPreviewEventsToMatchState(result.state, result.events);
             events.push(...result.events);
         }
         return { events, matchState: currentState };

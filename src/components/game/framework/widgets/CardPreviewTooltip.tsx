@@ -15,6 +15,16 @@ interface CardPreviewTooltipProps {
     maxDim?: number;
 }
 
+function buildMagnifyFrameStyle(width: string, maxWidth: string, aspectRatio: number): React.CSSProperties {
+    return {
+        width,
+        maxWidth,
+        height: `calc(${width} / ${aspectRatio})`,
+        maxHeight: `calc(${maxWidth} / ${aspectRatio})`,
+        aspectRatio,
+    };
+}
+
 /**
  * 卡牌预览 Tooltip 组件
  * 
@@ -86,9 +96,9 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
     const magnifySize = useMemo(() => {
         const ar = aspectRatio ?? (192 / 308);
         if (ar >= 1) {
-            return { width: 'w-[50vw] max-w-[700px]', aspect: `aspect-[${ar}]` };
+            return buildMagnifyFrameStyle('50vw', '700px', ar);
         }
-        return { width: 'w-[30vw] max-w-[450px]', aspect: `aspect-[${ar}]` };
+        return buildMagnifyFrameStyle('30vw', '450px', ar);
     }, [aspectRatio]);
 
     return (
@@ -162,7 +172,7 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
             {/* 点击放大预览（portal 到 modal-root，避免被 FabMenu Panel 的 stacking context 限制） */}
             {isMagnified && portalRoot && createPortal(
                 <MagnifyOverlay isOpen={isMagnified} onClose={() => setIsMagnified(false)}>
-                    <div className={`relative bg-transparent ${magnifySize.width}`} style={{ aspectRatio: aspectRatio ?? (192 / 308) }}>
+                    <div className="relative bg-transparent" style={magnifySize}>
                         <CardPreview
                             previewRef={previewRef}
                             locale={locale}

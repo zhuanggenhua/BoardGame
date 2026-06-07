@@ -21,7 +21,7 @@ import type {
 } from './types';
 import { HAND_LIMIT, PHASE_ORDER } from './types';
 import { RESOURCE_IDS } from './resources';
-import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
+import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
 import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
@@ -105,7 +105,21 @@ export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
  * 获取活跃骰子（根据 rollDiceCount）
  */
 export const getActiveDice = (state: DiceThroneCore): Die[] => {
-    return state.dice.slice(0, state.rollDiceCount);
+    const dice = Array.isArray(state.dice) ? state.dice : [];
+    const rollDiceCount = typeof state.rollDiceCount === 'number' ? state.rollDiceCount : dice.length;
+    return dice.slice(0, rollDiceCount);
+};
+
+/**
+ * 兼容旧/脏快照中的奖励骰 shape。
+ * 线上历史反馈里 `pendingBonusDiceSettlement.dice` 可能不是数组，
+ * 服务器命令管线必须先归一化，避免直接 `.map/.find/.reduce` 崩溃。
+ */
+export const getPendingBonusSettlementDice = (
+    settlement: DiceThroneCore['pendingBonusDiceSettlement'] | null | undefined,
+): Array<NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>['dice'][number]> => {
+    const rawDice = settlement?.dice;
+    return Array.isArray(rawDice) ? rawDice : [];
 };
 
 /**
@@ -128,6 +142,30 @@ export const getMaxDuplicateValueCount = (dice: Die[]): number => {
 };
 
 /**
+ * 获取当前攻击的骰子点数快照。
+ *
+ * 进攻骰会在防御阶段被防御方骰子覆盖；withDamage/postDamage 等跨阶段消费攻击结果的逻辑
+ * 必须优先读取 pendingAttack 快照，只在攻击尚未创建快照的早期窗口回退到当前活跃骰。
+ */
+export const getAttackDiceValues = (state: DiceThroneCore): number[] => (
+    state.pendingAttack?.attackDiceValues ?? getActiveDice(state).map((die) => die.value)
+);
+
+/**
+ * 获取当前攻击的骰面计数快照。
+ *
+ * 供跨阶段效果读取攻击方骰面，避免防御阶段误读防御方当前骰。
+ */
+export const getAttackDiceFaceCounts = (state: DiceThroneCore): Record<DieFace, number> => (
+    (state.pendingAttack?.attackDiceFaceCounts as Record<DieFace, number> | undefined)
+    ?? getFaceCounts(getActiveDice(state))
+);
+
+export const getAttackMaxDuplicateValueCount = (state: DiceThroneCore): number => (
+    getMaxDuplicateValueCountFromValues(getAttackDiceValues(state))
+);
+
+/**
  * 获取玩家某个 Token 的堆叠上限（支持技能永久提高上限，如莲花掌）
  * - player.tokenStackLimits 优先
  * - 回退到 tokenDefinitions.stackLimit
@@ -135,6 +173,11 @@ export const getMaxDuplicateValueCount = (dice: Die[]): number => {
  */
 export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, tokenId: string): number => {
     const player = state.players[playerId];
+
+    if (tokenId === STATUS_IDS.CURSED_COIN) {
+        return player?.characterId === 'cursed_pirate' ? 5 : 3;
+    }
+
     const override = player?.tokenStackLimits?.[tokenId];
     if (typeof override === 'number') {
         return override === 0 ? Infinity : override;
@@ -625,17 +668,17 @@ export const getAvailableAbilityIds = (
 
 
     // 根据阶段过滤技能类型
-    const expectedType = phase === 'defensiveRoll'
-        ? 'defensive'
+    const expectedTypes = phase === 'defensiveRoll'
+        ? ['defensive']
         : phase === 'offensiveRoll'
-            ? 'offensive'
+            ? ['offensive', 'utility']
             : undefined;
 
     // 注意：必须基于玩家当前 abilities（升级卡会替换此处定义）进行判定
     const available: string[] = [];
 
     for (const def of player.abilities) {
-        if (expectedType && def.type !== expectedType) continue;
+        if (expectedTypes && !expectedTypes.includes(def.type)) continue;
 
         if (def.variants?.length) {
             // 收集满足条件的变体，按 priority 降序排列后加入
@@ -708,7 +751,7 @@ const getAttackModifierPlayFailureReason = (
     state: DiceThroneCore,
     playerId: PlayerId,
     card: AbilityCard,
-    phase?: TurnPhase
+    _phase?: TurnPhase
 ): CardPlayFailReason | null => {
     if (!card.isAttackModifier) return null;
     const pendingAttack = state.pendingAttack;

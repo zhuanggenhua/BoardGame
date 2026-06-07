@@ -1,5 +1,7 @@
 # Dice Throne online AI `pendingInteractionId` hidden response 锁死修复
 
+> 2026-06-06 当前有效口径：本文只对应反馈 `69f40b9e9efe1f53e1e9c700` 相关的 `pendingInteractionId` hidden response 锁死专项修复，不是当前 DiceThrone 所有 online AI/watchdog 响应链问题都已清空的证明，也不是新英雄补审出口。阅读时必须把它理解为单问题 closeout 证据。
+
 - 日期：`2026-05-02`
 - 关联反馈：`69f40b9e9efe1f53e1e9c700`
 - 范围：`src/engine/transport/onlineAiRecovery.ts`、`src/engine/transport/server.ts`
@@ -37,3 +39,7 @@
   - human 当前响应者不应误判成 AI 卡死
   - 普通 AI response window 仍可正常 `RESPONSE_PASS`
   - 先合法动作、后 pass 的 response window 不会被误强关
+
+---
+
+**当前阅读说明**：本文只能证明 `pendingInteractionId` hidden response 锁死这条专项问题曾被定位并修复，不能外推成 DiceThrone online AI transport/watchdog 全部场景都已最终收口。

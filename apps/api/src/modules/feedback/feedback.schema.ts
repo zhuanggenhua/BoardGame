@@ -68,6 +68,9 @@ export class Feedback {
     @Prop({ type: String, enum: FeedbackStatus, default: FeedbackStatus.OPEN })
     status!: FeedbackStatus;
 
+    @Prop({ type: String, default: null, trim: true })
+    closedReason?: string | null;
+
     @Prop({ type: String, enum: FeedbackReporterType, default: FeedbackReporterType.USER })
     reporterType!: FeedbackReporterType;
 
@@ -112,6 +115,9 @@ export class Feedback {
 
     @Prop({ type: String })
     stateSnapshot?: string;
+
+    @Prop({ type: Number, default: 0, min: 0 })
+    rewardPoints!: number;
 
     @Prop({ type: Object })
     clientContext?: FeedbackClientContext;

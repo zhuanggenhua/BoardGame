@@ -2,10 +2,10 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { SmashUpCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import { getSimpleChoicePrompt, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, respondToPromptOption } from './helpers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { reduce } from '../domain/reducer';
 import { fireTriggers } from '../domain/ongoingEffects';
@@ -161,6 +161,26 @@ describe('Temple of Goju + First Mate 时序测试', () => {
     });
 
     it('场景4: BASE_CLEARED 后索引漂移时，大副仍可按 baseDefId 移动', () => {
+        const promptCore = makeState({
+            bases: [
+                makeBase('base_scoring', [makeMinion('first_mate_1', 'pirate_first_mate_pod', '0', 2)]),
+                makeBase('base_left', []),
+                makeBase('base_target', []),
+            ],
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+        });
+        const promptResult = fireTriggers(promptCore, 'afterScoring', {
+            state: promptCore,
+            matchState: makeMatchState(promptCore),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 2, vp: 1 }],
+            random: { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+            now: 2000,
+        });
+        const prompt = getSimpleChoicePrompt(promptResult.matchState!, 'pirate_first_mate_choose_base');
+        expect(prompt).toBeDefined();
+
         const core = makeState({
             bases: [
                 makeBase('base_left', []),
@@ -173,34 +193,45 @@ describe('Temple of Goju + First Mate 时序测试', () => {
                 '1': makePlayer('1'),
             },
         });
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-
-        const result = handler!(
-            ms,
+        const result = respondToPromptOption(
+            { ...promptResult.matchState!, core },
+            option => option.value?.baseDefId === 'base_target',
+            'First Mate move target base',
             '0',
-            { baseIndex: 2, baseDefId: 'base_target' },
-            {
-                continuationContext: {
-                    mateUid: 'first_mate_1',
-                    mateDefId: 'pirate_first_mate_pod',
-                    scoringBaseIndex: 0,
-                },
-            },
-            {} as any,
-            1000,
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result.events.length).toBe(1);
-        expect((result.events[0] as any).payload.toBaseIndex).toBe(1);
+        const moveEvents = result.events.filter((event: any) => event.type === 'su:minion_moved');
+        expect(moveEvents).toHaveLength(1);
+        expect((moveEvents[0] as any).payload.toBaseIndex).toBe(1);
 
-        const nextCore = reduce(core, result.events[0] as any);
+        const nextCore = reduce(core, moveEvents[0] as any);
         expect(nextCore.bases[1].minions.some(m => m.uid === 'first_mate_1')).toBe(true);
         expect(nextCore.players['0'].discard.some(c => c.uid === 'first_mate_1')).toBe(false);
     });
 
     it('场景4b: baseDefId 已失效时，大副不应回退到旧索引上的错误基地', () => {
+        const promptCore = makeState({
+            bases: [
+                makeBase('base_scoring', [makeMinion('first_mate_1', 'pirate_first_mate_pod', '0', 2)]),
+                makeBase('base_left', []),
+                makeBase('base_target', []),
+            ],
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+        });
+        const promptResult = fireTriggers(promptCore, 'afterScoring', {
+            state: promptCore,
+            matchState: makeMatchState(promptCore),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 2, vp: 1 }],
+            random: { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+            now: 2001,
+        });
+        const prompt = getSimpleChoicePrompt(promptResult.matchState!, 'pirate_first_mate_choose_base');
+        expect(prompt).toBeDefined();
+
         const core = makeState({
             bases: [
                 makeBase('base_left', []),
@@ -213,26 +244,17 @@ describe('Temple of Goju + First Mate 时序测试', () => {
                 '1': makePlayer('1'),
             },
         });
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('pirate_first_mate_choose_base');
-        expect(handler).toBeDefined();
-
-        const result = handler!(
-            ms,
+        const result = respondToPromptOption(
+            { ...promptResult.matchState!, core },
+            option => option.value?.baseDefId === 'base_target',
+            'First Mate missing target base',
             '0',
-            { baseIndex: 1, baseDefId: 'base_target' },
-            {
-                continuationContext: {
-                    mateUid: 'first_mate_1',
-                    mateDefId: 'pirate_first_mate_pod',
-                    scoringBaseIndex: 0,
-                },
-            },
-            {} as any,
-            1000,
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result.events.length).toBe(0);
+        const moveEvents = result.events.filter((event: any) => event.type === 'su:minion_moved');
+        expect(moveEvents).toHaveLength(0);
     });
 
     it('场景5: first_mate_pod 在 afterScoring 会创建移动交互', () => {
@@ -256,8 +278,6 @@ describe('Temple of Goju + First Mate 时序测试', () => {
         });
 
         expect(result.events.length).toBe(0);
-        const interaction = result.matchState?.sys.interaction.current;
-        expect(interaction).toBeDefined();
-        expect((interaction?.data as any)?.sourceId).toBe('pirate_first_mate_choose_base');
+        expect(getSimpleChoicePrompt(result.matchState!, 'pirate_first_mate_choose_base')).toBeDefined();
     });
 });

@@ -139,4 +139,9 @@
 - 已完成事实：
   - 枪手角色板、专属卡牌、升级卡、攻击修正、状态图标图集与资源清单均已接入。
   - `card-the-law` 的“至多 2 位目标玩家”交互已落地，不再是枪手剩余规则缺口。
-  - 目前未补跑的只剩该 worktree 缺少依赖时的机器校验，不是功能实现欠账。
+- 目前未补跑的只剩该 worktree 缺少依赖时的机器校验，不是功能实现欠账。
+
+## Addendum（2026-05-17）
+
+- 上文 `赏金（BOUNTY）` 的“持续性效果（直到游戏结束）”只保留为历史录入摘要，不能解释为 `removable: false`。
+- 当前口径以 `src/games/dicethrone/rule/枪手录入核对.md` 和 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md` 为准：`Bounty` 不会自然过期，但作为负面 token 可被 `Bye Bye` 等移除状态效果移除。

@@ -4,9 +4,19 @@ import type { SmashUpCore, TriggerInstance } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { defaultTestRandom } from './testRunner';
-import { makeMatchState, makePlayer, makeState, getInteractionsFromMS } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptSourceId,
+    getPromptsBySourceId,
+    getReactionPromptOptionBySourceDefId,
+    makeMatchState,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from './helpers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 
 beforeAll(() => {
@@ -54,32 +64,25 @@ describe('reaction queue: preserves destroyerId context', () => {
         expect(rq).toBeDefined();
 
         const after = rq!.state;
-        const interactions = getInteractionsFromMS(after) as any[];
-        expect(interactions.length).toBeGreaterThanOrEqual(1);
+        const first = getFirstPrompt(after);
+        expect(first).toBeDefined();
 
-        const first = interactions[0];
-        if (first?.data?.sourceId === 'smashup_reaction_choose') {
-            const option = first.data.options.find((opt: any) => opt.id === `trigger:${trigger.id}`)
-                ?? first.data.options.find((opt: any) => String(opt.id).includes('trigger:'));
+        if (getPromptSourceId(first) === 'smashup_reaction_choose') {
+            const option = getReactionPromptOptionBySourceDefId(after, first, 'vampire_mad_monster_party_pod');
             expect(option).toBeDefined();
-            const handler = getInteractionHandler('smashup_reaction_choose');
-            expect(handler).toBeDefined();
-            const resolved = handler!(
-                after as any,
-                first.playerId,
-                option.value,
-                first.data,
+            const resolved = respondToPrompt(
+                after,
+                option.id,
+                '0',
                 defaultTestRandom as any,
-                2,
             );
-            const nextState = resolved?.state ?? after;
-            const nextInteractions = getInteractionsFromMS(nextState) as any[];
-            const prompt = nextInteractions.find(i => i?.data?.sourceId === 'vampire_mad_monster_party_pod_play');
+            const nextState = resolved.finalState;
+            const prompt = getPromptsBySourceId(nextState, 'vampire_mad_monster_party_pod_play')[0];
             expect(prompt).toBeDefined();
-            expect(prompt?.data?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
+            expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
         } else {
-            expect(first?.data?.sourceId).toBe('vampire_mad_monster_party_pod_play');
-            expect(first?.data?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
+            expect(getPromptSourceId(first)).toBe('vampire_mad_monster_party_pod_play');
+            expect(getPromptHandlerData(first)?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
         }
     });
 
@@ -115,25 +118,21 @@ describe('reaction queue: preserves destroyerId context', () => {
         const rq = maybeResolveReactionQueue(ms, defaultTestRandom, 1);
         expect(rq).toBeDefined();
 
-        const first = getInteractionsFromMS(rq!.state)[0] as any;
-        if (first?.data?.sourceId === 'smashup_reaction_choose') {
-            const option = first.data.options.find((opt: any) => opt.id === `trigger:${trigger.id}`)
-                ?? first.data.options.find((opt: any) => String(opt.id).includes('trigger:'));
-            const handler = getInteractionHandler('smashup_reaction_choose');
-            const resolved = handler!(
-                rq!.state as any,
-                first.playerId,
-                option.value,
-                first.data,
+        const first = getFirstPrompt(rq!.state);
+        expect(first).toBeDefined();
+        if (getPromptSourceId(first) === 'smashup_reaction_choose') {
+            const option = getReactionPromptOptionBySourceDefId(rq!.state, first, 'vampire_buffet_pod');
+            const resolved = respondToPrompt(
+                rq!.state,
+                option.id,
+                '0',
                 defaultTestRandom as any,
-                2,
             );
-            const prompt = (getInteractionsFromMS(resolved?.state ?? rq!.state) as any[])
-                .find(i => i?.data?.sourceId === 'vampire_buffet_pod_play');
-            expect(prompt?.data?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
+            const prompt = getPromptsBySourceId(resolved.finalState, 'vampire_buffet_pod_play')[0];
+            expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
         } else {
-            expect(first?.data?.sourceId).toBe('vampire_buffet_pod_play');
-            expect(first?.data?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
+            expect(getPromptSourceId(first)).toBe('vampire_buffet_pod_play');
+            expect(getPromptHandlerData(first)?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
         }
     });
 });

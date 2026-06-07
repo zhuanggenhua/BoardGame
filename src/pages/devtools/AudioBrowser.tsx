@@ -116,7 +116,7 @@ const CategorySidebar: React.FC<{
   totalCount: number;
 }> = ({ categories, selectedGroup, selectedSub, onSelectGroup, onSelectSub, totalCount }) => {
   return (
-    <div className="w-56 shrink-0 overflow-y-auto max-h-[calc(100vh-10rem)] pr-2">
+    <div className="w-56 shrink-0 overflow-y-auto max-h-[calc(100vh-10rem)] pr-2 max-[900px]:w-full max-[900px]:max-h-48 max-[900px]:pr-0">
       <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">分类</div>
       {/* 全部 */}
       <button
@@ -189,7 +189,7 @@ const AudioTable: React.FC<{
   }, []);
 
   return (
-    <div className="max-h-[calc(100vh-14rem)] overflow-y-auto rounded border border-slate-700 bg-slate-800/40">
+    <div className="max-h-[calc(100vh-14rem)] overflow-y-auto rounded border border-slate-700 bg-slate-800/40 max-[900px]:max-h-[40vh]">
       <table className="w-full text-xs table-fixed">
         <thead className="sticky top-0 bg-slate-800 z-10">
           <tr className="text-slate-400 border-b border-slate-700">
@@ -273,7 +273,10 @@ const HistoryPanel: React.FC<{
   onClear: () => void;
 }> = ({ history, replayEntry, playingKey, friendlyName, onClear }) => {
   return (
-    <div className="w-56 shrink-0 flex flex-col max-h-[calc(100vh-10rem)]">
+    <div
+      data-testid="audio-browser-history-panel"
+      className="w-56 shrink-0 flex flex-col max-h-[calc(100vh-10rem)] max-[900px]:w-full max-[900px]:max-h-48 max-[900px]:pb-[calc(env(safe-area-inset-bottom)+6rem)]"
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">历史播放</div>
         {history.length > 0 && (
@@ -285,7 +288,10 @@ const HistoryPanel: React.FC<{
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto rounded border border-slate-700 bg-slate-800/40">
+      <div
+        data-testid="audio-browser-history-surface"
+        className="flex-1 overflow-y-auto rounded border border-slate-700 bg-slate-800/40 max-[900px]:w-[calc(100%_-_5.5rem)] max-[900px]:self-start"
+      >
         {history.length === 0 ? (
           <div className="text-center text-slate-500 text-xs py-6">播放音效后
 此处会记录历史</div>
@@ -559,9 +565,9 @@ const AudioBrowser: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-200 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
+    <div className="min-h-screen bg-slate-900 text-slate-200 p-6 max-[900px]:p-4">
+      <div className="max-w-6xl mx-auto min-w-0">
+        <div className="mb-6 flex flex-wrap items-center gap-3 max-[900px]:mb-4">
           <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">← 返回首页</a>
           <h1 className="text-xl font-black text-slate-100">音效浏览器</h1>
           <span className="text-slate-500 text-sm">({entries.length} 条)</span>
@@ -581,7 +587,7 @@ const AudioBrowser: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="flex gap-3">
+          <div className="flex gap-3 max-[900px]:flex-col">
             {/* 左侧分类 */}
             <CategorySidebar
               categories={categories}
@@ -595,13 +601,13 @@ const AudioBrowser: React.FC = () => {
             {/* 中间列表 */}
             <div className="flex-1 min-w-0">
               {/* 搜索栏 */}
-              <div className="flex gap-2 mb-2">
+              <div className="mb-2 flex gap-2 max-[900px]:flex-wrap">
                 <input
                   type="text"
                   placeholder="搜索键名 / 文件名..."
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="flex-1 px-2 py-1 rounded bg-slate-800 border border-slate-600 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500"
+                  className="min-w-[180px] flex-1 px-2 py-1 rounded bg-slate-800 border border-slate-600 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500"
                 />
                 <select
                   value={typeFilter}

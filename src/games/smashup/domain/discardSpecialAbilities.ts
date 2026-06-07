@@ -4,6 +4,7 @@ import type { CardInstance, SmashUpCore } from './types';
 export interface DiscardSpecialOption {
     card: CardInstance;
     allowedBaseIndices: number[] | 'all';
+    allowedMinionUids?: string[];
     sourceId: string;
     defId: string;
     name: string;
@@ -44,10 +45,20 @@ export function canActivateSpecialFromDiscard(
     playerId: PlayerId,
     cardUid: string,
     baseIndex: number,
+    targetMinionUid?: string,
 ): { allowed: boolean; sourceId: string } | null {
     const options = getDiscardSpecialOptions(core, playerId);
     const option = options.find(entry => entry.card.uid === cardUid);
     if (!option) return null;
     if (option.allowedBaseIndices !== 'all' && !option.allowedBaseIndices.includes(baseIndex)) return null;
+    if (option.allowedMinionUids && option.allowedMinionUids.length > 0) {
+        if (!targetMinionUid || !option.allowedMinionUids.includes(targetMinionUid)) return null;
+    } else if (targetMinionUid !== undefined) {
+        return null;
+    }
     return { allowed: true, sourceId: option.sourceId };
+}
+
+export function __getDiscardSpecialProviderIdsForTest(): string[] {
+    return providers.map(provider => provider.id);
 }

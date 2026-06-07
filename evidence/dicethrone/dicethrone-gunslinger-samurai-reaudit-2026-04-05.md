@@ -5,6 +5,8 @@
 > 本文把“定义链 / 执行链已接上”描述得过于接近“体验已收口”。后续用户反馈证明，枪手 / 武士仍存在 **攻击修正 UI 可见性不足、5 骰结算缺少汇总文案、武士 token 中文与图标展示不一致** 的体验层漏项，因此本文原先可被理解为“已完整收口”的口径已失效。
 >
 > 2026-04-10 的补审与修复证据见：`evidence/dicethrone/dicethrone-gunslinger-samurai-ux-reaudit-2026-04-10.md`
+>
+> 2026-06-05 当前有效口径：本文只保留 2026-04-05 当轮枪手 / 武士复审阶段的历史结论，不代表枪手整英雄、武士整英雄或新英雄整批当前完成态。当前若要判断对象级残余、兄弟能力补审范围或整批发布口径，应以两位英雄的单英雄主审计、对象级回写文档以及 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md`、`evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 的最新口径为准。
 
 ## 审计范围
 

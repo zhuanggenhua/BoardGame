@@ -183,6 +183,32 @@ class InMemoryStorage implements MatchStorage {
         this.metadata.set(matchID, metadata);
     }
 
+    async claimSeatMetadata(matchID: string, input: {
+        playerID: string;
+        playerCredentials: string;
+        playerName?: string;
+        updatedAt?: number;
+    }): Promise<{ metadata?: MatchMetadata; playerExists: boolean; playerCredentials?: string }> {
+        const metadata = this.metadata.get(matchID);
+        const player = metadata?.players[input.playerID];
+        if (!metadata || !player) return { metadata, playerExists: false };
+        const playerCredentials = player.credentials || input.playerCredentials;
+        const nextMetadata = {
+            ...metadata,
+            updatedAt: input.updatedAt ?? Date.now(),
+            players: {
+                ...metadata.players,
+                [input.playerID]: {
+                    ...player,
+                    credentials: playerCredentials,
+                    name: player.name || input.playerName || player.name,
+                },
+            },
+        };
+        this.metadata.set(matchID, nextMetadata);
+        return { metadata: nextMetadata, playerExists: true, playerCredentials };
+    }
+
     async fetch(matchID: string, opts: FetchOpts): Promise<FetchResult> {
         return {
             state: opts.state ? this.states.get(matchID) : undefined,

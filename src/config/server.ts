@@ -3,6 +3,11 @@ const normalizeUrl = (url: string) => url.replace(/\/$/, '');
 const metaEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
 const isDev = metaEnv.DEV === true;
 const safeWindowOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const isTruthyFlag = (value: string | boolean | undefined) => /^(1|true|yes|on)$/i.test(String(value ?? '').trim());
+
+// dev:lite 会显式关闭 API，仅保留前端 + game server 以便快速复现 UI / 对局问题。
+// 该模式下前端不得再主动发起 auth/social 相关后台请求，否则会把 Vite 代理打进预期外的失败路径。
+export const IS_DEV_API_DISABLED = isDev && isTruthyFlag(metaEnv.VITE_DEV_SKIP_API as string | boolean | undefined);
 
 // 部署模式判断：
 // - 同域部署（Docker 单体）：前后端同源，使用相对路径

@@ -33,6 +33,7 @@ import { ensureGameCriticalImageResolverLoaded, hasGameTutorialLoader, prefetchG
 import {
     normalizeLocalMatchPreferences,
     readStoredLocalMatchPreferences,
+    stripAiSeatsFromLocalMatchPreferences,
     writeLocalMatchPreferences,
     type LocalMatchPreferences,
 } from '../../engine/ai';
@@ -169,6 +170,28 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         || packageInstallCardState.status === 'downloading'
         || packageInstallCardState.status === 'verifying'
         || hasInstalledPackageForMobileGame;
+    const detailTabs = useMemo(() => ([
+        {
+            id: 'lobby' as const,
+            label: t('tabs.lobby'),
+            mobileLabel: t('tabs.lobbyCompact', { defaultValue: t('tabs.lobby') }),
+        },
+        {
+            id: 'changelog' as const,
+            label: t('tabs.changelog'),
+            mobileLabel: t('tabs.changelogCompact', { defaultValue: t('tabs.changelog') }),
+        },
+        {
+            id: 'reviews' as const,
+            label: t('tabs.reviews'),
+            mobileLabel: t('tabs.reviewsCompact', { defaultValue: t('tabs.reviews') }),
+        },
+        {
+            id: 'leaderboard' as const,
+            label: t('tabs.leaderboard'),
+            mobileLabel: t('tabs.leaderboardCompact', { defaultValue: t('tabs.leaderboard') }),
+        },
+    ]), [t]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -281,6 +304,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const pendingActionRef = useRef<PendingRoomAction | null>(null);
     const isConfirmingActionRef = useRef(false);
     const roomsRef = useRef<Room[]>([]);
+    const createRoomInFlightRef = useRef(false);
 
     // 排行榜状态
     const [activeTab, setActiveTab] = useState<'lobby' | 'leaderboard' | 'changelog' | 'reviews'>('lobby');
@@ -410,6 +434,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 ownerKey: m.ownerKey,
                 ownerType: m.ownerType,
                 isLocked: m.isLocked,
+                publicSetupSummary: m.publicSetupSummary,
             }));
             setRooms(roomList);
             setIsLobbyLoading(false);
@@ -683,39 +708,35 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         }
 
         const localFallback = readStoredLocalMatchPreferences(gameManifest);
+        const sanitizedLocalFallback = localFallback
+            ? stripAiSeatsFromLocalMatchPreferences(localFallback)
+            : null;
 
         if (!token) {
-            return localFallback;
+            return sanitizedLocalFallback;
         }
 
         try {
             const result = await getLocalMatchPreferences(token, gameManifest.id);
             if (result.empty || !result.settings) {
-                return localFallback;
+                return sanitizedLocalFallback;
             }
-            return normalizeLocalMatchPreferences(
+            return stripAiSeatsFromLocalMatchPreferences(normalizeLocalMatchPreferences(
                 gameManifest,
                 result.settings as unknown as Record<string, unknown>,
-            );
+            ));
         } catch (error) {
             logger.error('[GameDetailsModal] 读取创建房间 AI 偏好失败，回退到本地设置', {
                 gameId,
                 error: error instanceof Error ? error.message : String(error),
             });
-            return localFallback;
+            return sanitizedLocalFallback;
         }
     };
 
-    const stripAiSeatsFromPreferences = useCallback((preferences: LocalMatchPreferences): LocalMatchPreferences => ({
-        ...preferences,
-        seatControllers: Object.fromEntries(
-            Array.from({ length: preferences.numPlayers }, (_, index) => [String(index), { type: 'human' }]),
-        ),
-    }), []);
-
     const persistCreateRoomPreferences = async (preferences: LocalMatchPreferences) => {
         if (!gameManifest) return;
-        const sanitizedPreferences = stripAiSeatsFromPreferences(preferences);
+        const sanitizedPreferences = stripAiSeatsFromLocalMatchPreferences(preferences);
 
         if (!token) {
             writeLocalMatchPreferences(gameManifest, sanitizedPreferences);
@@ -866,6 +887,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             forceReplaceOwnerRoom?: boolean;
         },
     ) => {
+        if (createRoomInFlightRef.current) {
+            logger.warn('[GameDetailsModal] create-room 被重复触发，已忽略');
+            return;
+        }
+        createRoomInFlightRef.current = true;
         let shouldPreserveLoading = false;
         setIsLoading(true);
         setMatchEntryLoadingPhase('creating');
@@ -1035,7 +1061,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
                     if (aiSeatEntries.length > 0) {
                         appendMatchLoadTrace({
-                            stage: 'create-room-ai-seat-claim-background-start',
+                            stage: 'create-room-ai-seat-claim-start',
                             gameId,
                             matchId: matchID,
                             payload: {
@@ -1044,58 +1070,52 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         });
 
                         const aiClaimStartedAt = Date.now();
-                        void Promise.allSettled(
-                            aiSeatEntries.map(async ([playerId]) => {
-                                try {
-                                    return {
-                                        playerId,
-                                        response: await matchApi.claimSeat(gameId, matchID, playerId, {
-                                            token: token ?? undefined,
-                                            guestId,
-                                            playerName: t('createRoom.aiPlayerName', { seat: Number(playerId) + 1 }),
-                                        }),
-                                    };
-                                } catch (error) {
-                                    throw {
-                                        playerId,
-                                        error,
-                                    };
-                                }
-                            }),
-                        ).then((results) => {
-                            const aiSeatCredentials: Record<string, string> = {};
-                            let failureCount = 0;
+                        const aiSeatCredentials: Record<string, string> = {};
+                        let failureCount = 0;
 
-                            results.forEach((result) => {
-                                if (result.status === 'fulfilled') {
-                                    aiSeatCredentials[result.value.playerId] = result.value.response.playerCredentials;
-                                    return;
-                                }
-
+                        for (const [playerId] of aiSeatEntries) {
+                            try {
+                                const aiPlayerName = t('createRoom.aiPlayerName', { seat: Number(playerId) + 1 });
+                                const claimOptions = ownerType === 'guest'
+                                    ? {
+                                        guestId: guestId ?? getGuestId(),
+                                        playerName: aiPlayerName,
+                                    }
+                                    : {
+                                        token: token ?? undefined,
+                                        playerName: aiPlayerName,
+                                    };
+                                const response = await matchApi.claimSeat(gameId, matchID, playerId, claimOptions);
+                                aiSeatCredentials[playerId] = response.playerCredentials;
+                                persistAiSeatCredentials(matchID, aiSeatCredentials);
+                            } catch (error) {
                                 failureCount += 1;
-                                const failurePayload = result.reason as { playerId?: string; error?: unknown } | undefined;
                                 logger.error('[GameDetailsModal] AI 座位占座失败', {
                                     gameId,
                                     matchID,
-                                    playerId: failurePayload?.playerId ?? 'unknown',
-                                    error: failurePayload?.error instanceof Error
-                                        ? failurePayload.error.message
-                                        : String(failurePayload?.error ?? result.reason),
+                                    playerId,
+                                    error: error instanceof Error ? error.message : String(error),
                                 });
-                            });
+                            }
+                        }
 
-                            persistAiSeatCredentials(matchID, aiSeatCredentials);
-                            appendMatchLoadTrace({
-                                stage: 'create-room-ai-seat-claim-background-settled',
-                                gameId,
-                                matchID,
-                                payload: {
-                                    seatCount: aiSeatEntries.length,
-                                    successCount: Object.keys(aiSeatCredentials).length,
-                                    failureCount,
-                                    durationMs: Date.now() - aiClaimStartedAt,
-                                },
-                            });
+                        if (failureCount > 0) {
+                            toast.error(
+                                { kind: 'i18n', key: 'error.aiSeatClaimFailed', ns: 'lobby' },
+                                undefined,
+                                { dedupeKey: `match.ai-seat-claim-failed.${matchID}` },
+                            );
+                        }
+                        appendMatchLoadTrace({
+                            stage: 'create-room-ai-seat-claim-settled',
+                            gameId,
+                            matchID,
+                            payload: {
+                                seatCount: aiSeatEntries.length,
+                                successCount: Object.keys(aiSeatCredentials).length,
+                                failureCount,
+                                durationMs: Date.now() - aiClaimStartedAt,
+                            },
                         });
                     }
                 } else {
@@ -1227,6 +1247,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 { dedupeKey: `create-room-failed.${errorCode}.${errorStatus ?? 'unknown'}` }
             );
         } finally {
+            createRoomInFlightRef.current = false;
             setIsLoading(false);
             if (!shouldPreserveLoading) {
                 setMatchEntryLoadingPhase(null);
@@ -1978,17 +1999,43 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                         {gameDisplayName}
                                     </h2>
                                 </div>
-                                <button
-                                    type="button"
-                                    data-testid="game-details-author-button-mobile"
-                                    onClick={() => setShowAuthorInfoModal(true)}
-                                    className="inline-flex shrink-0 self-baseline whitespace-nowrap border-none bg-transparent p-0 text-right text-[10px] font-semibold leading-none tracking-[0.04em] text-parchment-light-text/85 shadow-none transition-colors hover:bg-transparent hover:text-parchment-base-text focus-visible:outline-none cursor-pointer md:hidden"
-                                    style={{ borderStyle: 'none' }}
-                                    title={gameAuthorButtonHint}
-                                    aria-label={gameAuthorButtonHint}
-                                >
-                                    <span>{gameAuthorMobileLabel}</span>
-                                </button>
+                                <div className="flex shrink-0 items-center gap-1.5 self-center md:hidden">
+                                    <button
+                                        type="button"
+                                        data-testid="game-details-author-button-mobile"
+                                        onClick={() => setShowAuthorInfoModal(true)}
+                                        className="inline-flex h-5 items-center whitespace-nowrap border-none bg-transparent p-0 text-right text-[10px] font-semibold leading-none tracking-[0.04em] text-parchment-light-text/85 underline decoration-parchment-card-border/60 underline-offset-[0.2rem] shadow-none transition-colors hover:bg-transparent hover:text-parchment-base-text hover:decoration-parchment-base-text/55 focus-visible:outline-none cursor-pointer"
+                                        style={{ borderStyle: 'none' }}
+                                        title={gameAuthorButtonHint}
+                                        aria-label={gameAuthorButtonHint}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={showAuthorInfoModal}
+                                    >
+                                        <span>{gameAuthorMobileLabel}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-testid="game-details-author-icon-button-mobile"
+                                        onClick={() => setShowAuthorInfoModal(true)}
+                                        className="transition-colors hover:text-parchment-base-text focus-visible:outline-none cursor-pointer"
+                                        style={{
+                                            all: 'unset',
+                                            display: 'inline-flex',
+                                            width: '1.25rem',
+                                            height: '1.25rem',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'rgb(139 118 89 / 0.85)',
+                                            cursor: 'pointer',
+                                        }}
+                                        title={gameAuthorButtonHint}
+                                        aria-label={gameAuthorButtonHint}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={showAuthorInfoModal}
+                                    >
+                                        <Info size={11} strokeWidth={2.2} className="shrink-0 opacity-90" />
+                                    </button>
+                                </div>
                                 <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
                             </div>
                             {/* 描述区域 - 可滚动 */}
@@ -2055,16 +2102,30 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             ) : null}
 
                             <div className="hidden shrink-0 w-full justify-center pt-2 md:flex md:pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAuthorInfoModal(true)}
-                                    className="inline-flex max-w-full items-center gap-3 rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
-                                    title={gameAuthorButtonHint}
-                                    aria-label={gameAuthorButtonHint}
-                                >
-                                    <span className="truncate">{gameAuthorLabel}</span>
-                                    <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
-                                </button>
+                                <div className="flex max-w-full items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAuthorInfoModal(true)}
+                                        className="inline-flex max-w-full items-center rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text underline decoration-parchment-card-border/60 underline-offset-[0.28rem] shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text hover:decoration-parchment-base-text/55 cursor-pointer"
+                                        title={gameAuthorButtonHint}
+                                        aria-label={gameAuthorButtonHint}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={showAuthorInfoModal}
+                                    >
+                                        <span className="truncate">{gameAuthorLabel}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAuthorInfoModal(true)}
+                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
+                                        title={gameAuthorButtonHint}
+                                        aria-label={gameAuthorButtonHint}
+                                        aria-haspopup="dialog"
+                                        aria-expanded={showAuthorInfoModal}
+                                    >
+                                        <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2072,52 +2133,36 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     {/* 右侧面板 - 大厅/排行 */}
                     <div className="flex-1 p-3 sm:p-8 flex flex-col bg-parchment-card-bg font-serif overflow-hidden">
                         <div className="flex justify-between items-center mb-4 sm:mb-6 gap-2">
-                            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar mask-linear-fade pr-2">
-                                <button
-                                    onClick={() => setActiveTab('lobby')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'lobby' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.lobby')}
-                                    {activeTab === 'lobby' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('changelog')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'changelog' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.changelog')}
-                                    {activeTab === 'changelog' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('reviews')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'reviews' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.reviews')}
-                                    {activeTab === 'reviews' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
-                                <div className="w-px bg-[#e5e0d0] h-4 sm:h-6 shrink-0" />
-                                <button
-                                    onClick={() => setActiveTab('leaderboard')}
-                                    className={clsx(
-                                        "text-sm sm:text-lg font-bold tracking-wider uppercase transition-colors relative whitespace-nowrap shrink-0",
-                                        activeTab === 'leaderboard' ? "text-parchment-base-text" : "text-parchment-light-text hover:text-parchment-base-text"
-                                    )}
-                                >
-                                    {t('tabs.leaderboard')}
-                                    {activeTab === 'leaderboard' && <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-parchment-base-text" />}
-                                </button>
+                            <div
+                                data-testid="game-details-tab-row"
+                                className="flex min-w-0 flex-1 items-center justify-between gap-1.5 pr-1 sm:gap-4 sm:overflow-x-auto sm:no-scrollbar sm:mask-linear-fade sm:pr-2 sm:justify-start"
+                            >
+                                {detailTabs.map((tab, index) => (
+                                    <div key={tab.id} className="contents">
+                                        {index > 0 && <div className="hidden h-4 w-px shrink-0 bg-[#e5e0d0] sm:block sm:h-6" />}
+                                        <button
+                                            type="button"
+                                            data-testid={`game-details-tab-${tab.id}`}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={clsx(
+                                                'min-w-0 shrink whitespace-nowrap border-b-2 border-transparent pb-0.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors sm:shrink-0 sm:text-lg sm:tracking-wider',
+                                                activeTab === tab.id
+                                                    ? 'border-parchment-base-text text-parchment-base-text'
+                                                    : 'text-parchment-light-text hover:text-parchment-base-text',
+                                            )}
+                                        >
+                                            <span className="sm:hidden">{tab.mobileLabel}</span>
+                                            <span className="hidden sm:inline">{tab.label}</span>
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
-                            <button onClick={onClose} className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0">
+                            <button
+                                type="button"
+                                data-testid="game-details-close-button"
+                                onClick={onClose}
+                                className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0"
+                            >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -2127,6 +2172,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         {activeTab === 'lobby' && (
                             <RoomList
                                 roomItems={roomItems}
+                                gameTranslationNamespace={`game-${normalizedGameId}`}
                                 activeMatch={activeMatch}
                                 isActionLoading={isLoading || isPreparingCreateRoom}
                                 isLobbyLoading={isLobbyLoading}

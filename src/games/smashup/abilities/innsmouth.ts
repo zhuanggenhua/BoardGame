@@ -12,9 +12,9 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
-import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents } from '../domain/abilityHelpers';
+import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents, buildStandardDrawEvents, buildStandardDrawEventsFromRuntimeContext } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, DeckReorderedEvent, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
@@ -32,6 +32,7 @@ type ReturnToSeaChoiceValue = {
 
 type ReturnToSeaNameChoiceValue = {
     cardUid: string;
+    defId: string;
     baseIndex: number;
     baseDefId: string;
     minionDefId: string;
@@ -45,6 +46,7 @@ type InnsmouthPromptContext = {
 
 type InnsmouthReturnToSeaNamePromptContext = InnsmouthPromptContext & {
     cardUid: string;
+    defId: string;
     baseIndex: number;
     baseDefId: string;
 };
@@ -80,6 +82,7 @@ export function registerInnsmouthAbilities(): void {
     registerTrigger('innsmouth_return_to_the_sea', 'afterScoring', innsmouthReturnToTheSeaAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     // 深潜者的秘密（行动卡）：3+同名随从时抽牌，可选额外抽牌并获得疯狂卡牌
     registerAbilityProgram('innsmouth_mysteries_of_the_deep', 'onPlay', { program: innsmouthMysteriesOfTheDeepProgram });
@@ -131,22 +134,31 @@ function innsmouthTheDeepOnes(ctx: AbilityContext): AbilityResult {
 /** 新人 onPlay：所有玩家将弃牌堆中的所有随从洗回牌堆 */
 function innsmouthNewAcolytes(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
+    const workingDecks = new Map<PlayerId, typeof ctx.state.players[PlayerId]['deck']>();
     for (const pid of ctx.state.turnOrder) {
         const player = ctx.state.players[pid];
         const minionsInDiscard = player.discard.filter(c => c.type === 'minion');
         if (minionsInDiscard.length === 0) continue;
-        // 合并牌库 + 弃牌堆随从，洗牌
-        const newDeckCards = [...player.deck, ...minionsInDiscard];
-        const shuffled = ctx.random.shuffle([...newDeckCards]);
-        const evt: DeckReorderedEvent = {
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: {
-                playerId: pid,
-                deckUids: shuffled.map(c => c.uid),
-            },
-            timestamp: ctx.now,
-        };
-        events.push(evt);
+        const cardsByOwner = new Map<PlayerId, typeof minionsInDiscard>();
+        for (const card of minionsInDiscard) {
+            const ownerId = ctx.state.players[card.owner] ? card.owner : pid;
+            cardsByOwner.set(ownerId, [...(cardsByOwner.get(ownerId) ?? []), card]);
+        }
+        for (const [ownerId, ownerCards] of cardsByOwner) {
+            const ownerDeck = workingDecks.get(ownerId) ?? ctx.state.players[ownerId]?.deck ?? [];
+            const shuffled = ctx.random.shuffle([...ownerDeck, ...ownerCards]);
+            workingDecks.set(ownerId, shuffled);
+            const evt: DeckReorderedEvent = {
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ownerId,
+                    deckUids: shuffled.map(c => c.uid),
+                    ...(ownerId !== pid ? { sourcePlayerId: pid } : {}),
+                },
+                timestamp: ctx.now,
+            };
+            events.push(evt);
+        }
     }
     return { events };
 }
@@ -206,18 +218,21 @@ const innsmouthRecruitmentProgram = createEffectProgram<AbilityContext, SmashUpC
 function innsmouthInPlainSightChecker(ctx: ProtectionCheckContext): boolean {
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
-    // 检查基地上是否?in_plain_sight ongoing 行动?
-    const sight = base.ongoingActions.find(o => matchesDefId(o.defId, 'innsmouth_in_plain_sight'));
-    if (!sight) return false;
-    // 只保护?sight 拥有者的随从
-    if (ctx.targetMinion.controller !== sight.ownerId) return false;
-    // POD 版按印刷力量（basePower）判断；原版按当前有效力量判断
-    const isPodVersion = sight.defId.endsWith('_pod');
-    const protectedByPower =
-        isPodVersion
-            ? ctx.targetMinion.basePower <= 2
-            : getMinionPower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
-    return protectedByPower && ctx.sourcePlayerId !== sight.ownerId;
+    const matchingSights = base.ongoingActions.filter(o => matchesDefId(o.defId, 'innsmouth_in_plain_sight'));
+    if (matchingSights.length === 0) return false;
+
+    return matchingSights.some((sight) => {
+        const sightControllerId = (sight.metadata?.sourceControllerId as PlayerId | undefined)
+            ?? (sight.metadata?.sourcePlayerId as PlayerId | undefined)
+            ?? sight.ownerId;
+        if (ctx.targetMinion.controller !== sightControllerId) return false;
+        const isPodVersion = sight.defId.endsWith('_pod');
+        const protectedByPower =
+            isPodVersion
+                ? ctx.targetMinion.basePower <= 2
+                : getMinionPower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex) <= 2;
+        return protectedByPower && ctx.sourcePlayerId !== sightControllerId;
+    });
 }
 
 function buildReturnToSeaMinionOptions(
@@ -321,6 +336,7 @@ const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<Innsm
                 label: `${name} x${count}`,
                 value: {
                     cardUid: context.cardUid,
+                    defId: context.defId,
                     baseIndex: resolvedBaseIndex ?? context.baseIndex,
                     baseDefId: base?.defId ?? context.baseDefId,
                     minionDefId,
@@ -414,6 +430,7 @@ const innsmouthReturnToTheSeaProgram = createEffectProgram<AbilityContext, Smash
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
+            defId: ctx.defId,
             baseIndex,
             baseDefId: base.defId,
         } satisfies InnsmouthReturnToSeaNamePromptContext,
@@ -490,18 +507,14 @@ const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPr
         ],
         { sourceId: 'innsmouth_mysteries_of_the_deep', targetType: 'button' },
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: (args) => {
+        const { state, playerId, value, timestamp } = args;
         const { accept } = value as { accept?: boolean };
         if (!accept) return { events: [] };
         const events: SmashUpEvent[] = [];
         const player = state.core.players[playerId];
-        const topTwo = player.deck.slice(0, 2);
-        if (topTwo.length > 0) {
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: topTwo.length, cardUids: topTwo.map(c => c.uid) },
-                timestamp,
-            } as CardsDrawnEvent);
+        if (player) {
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 2));
         }
         const madnessEvt = drawMadnessCards(playerId, 2, state.core, 'innsmouth_mysteries_of_the_deep', timestamp);
         if (madnessEvt) events.push(madnessEvt);
@@ -530,19 +543,7 @@ const innsmouthMysteriesOfTheDeepProgram = createEffectProgram<AbilityContext, S
     }
     if (!hasTriple) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
 
-    const events: SmashUpEvent[] = [];
-    const player = ctx.state.players[ctx.playerId];
-
-    // ?张牌
-    const topThree = player.deck.slice(0, 3);
-    if (topThree.length > 0) {
-        const drawEvt: CardsDrawnEvent = {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: topThree.length, cardUids: topThree.map(c => c.uid) },
-            timestamp: ctx.now,
-        };
-        events.push(drawEvt);
-    }
+    const events: SmashUpEvent[] = buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now);
     return {
         events,
         context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now },

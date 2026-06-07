@@ -20,9 +20,12 @@ interface RematchContextValue {
     isConnected: boolean;
     /** 注册 reset 回调（当双方都投票后触发） */
     registerReset: (callback: () => void) => void;
+    /** 在线房间中需要自动同意重赛的 AI 座位 */
+    setAutoAcceptedPlayerIds: (playerIds: string[]) => void;
 }
 
 const RematchContext = createContext<RematchContextValue | null>(null);
+const EMPTY_AUTO_ACCEPTED_PLAYER_IDS: string[] = [];
 
 export interface RematchProviderProps {
     /** 对局 ID（多人模式必需） */
@@ -31,6 +34,8 @@ export interface RematchProviderProps {
     playerId?: string;
     /** 是否多人模式 */
     isMultiplayer?: boolean;
+    /** 房间内需要自动同意重赛的 AI 座位 */
+    autoAcceptedPlayerIds?: string[];
     children: React.ReactNode;
 }
 
@@ -38,6 +43,7 @@ export function RematchProvider({
     matchId,
     playerId,
     isMultiplayer = false,
+    autoAcceptedPlayerIds = EMPTY_AUTO_ACCEPTED_PLAYER_IDS,
     children,
 }: RematchProviderProps): React.ReactElement {
     const [state, setState] = useState<RematchVoteState>({ votes: {}, ready: false, revision: 0 });
@@ -71,7 +77,7 @@ export function RematchProvider({
         }
 
         // 加入对局
-        matchSocket.joinMatch(matchId, playerId);
+        matchSocket.joinMatch(matchId, playerId, { autoAcceptedPlayerIds });
         setIsConnected(matchSocket.isSocketConnected());
 
         // 订阅状态更新
@@ -104,6 +110,7 @@ export function RematchProvider({
                             playerID: currentPlayerId,
                             credentials,
                             guestId,
+                            token: token ?? undefined,
                         });
                         const fallbackPlayerName = playerName || user?.username || `玩家${currentPlayerId}`;
                         const claimResult = user?.id && token
@@ -164,7 +171,7 @@ export function RematchProvider({
             hasRematchStartedRef.current = false;
             clearResetTimeout();
         };
-    }, [isMultiplayer, matchId, playerId]);
+    }, [isMultiplayer, matchId, playerId, autoAcceptedPlayerIds]);
 
     // 投票
     const vote = useCallback(() => {
@@ -188,6 +195,7 @@ export function RematchProvider({
         vote,
         isConnected,
         registerReset,
+        setAutoAcceptedPlayerIds: (playerIds: string[]) => matchSocket.setAutoAcceptedPlayerIds(playerIds),
     }), [state, vote, isConnected, registerReset]);
 
     return (
@@ -209,6 +217,7 @@ export function useRematch(): RematchContextValue {
             vote: () => {},
             isConnected: false,
             registerReset: () => {},
+            setAutoAcceptedPlayerIds: () => {},
         };
     }
     return context;

@@ -47,11 +47,12 @@ type ChooseMinionForMoveContext = PromptContext & {
     candidates: MinionTarget[];
     fixedDestinationBaseIndex?: number;
     anchorBaseIndex?: number;
+    optional?: boolean;
 };
 
 type TradeWindsFirstContext = PromptContext & { candidates: MinionTarget[] };
 type TradeWindsSecondContext = PromptContext & { first: MinionTarget; candidates: MinionTarget[] };
-type RippedOffContext = PromptContext & { actions: Array<{ cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; baseIndex: number; minionUid?: string; label: string }> };
+type RippedOffContext = PromptContext & { actions: Array<{ cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; baseIndex: number; minionUid?: string; minionDefId?: string; label: string }> };
 type RippedOffTargetContext = PromptContext & { cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; fromBaseIndex: number; fromMinionUid?: string };
 type WhirlwindsContext = PromptContext & { candidates: MinionTarget[] };
 type WhirlwindsTargetContext = PromptContext & { current: MinionTarget; remaining: MinionTarget[] };
@@ -101,16 +102,24 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
         `${context.sourceId}_${context.now}`,
         context.playerId,
         context.title,
-        buildMinionTargetOptions(context.candidates, {
-            state: context.matchState.core,
-            sourcePlayerId: context.playerId,
-            sourceKind: 'action',
-            effectType: 'move',
-        }),
-        { sourceId: context.sourceId, targetType: 'minion' },
+        [
+            ...(context.optional ? [createSkipOption()] : []),
+            ...buildMinionTargetOptions(context.candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceKind: 'action',
+                effectType: 'move',
+            }),
+        ],
+        {
+            sourceId: context.sourceId,
+            targetType: 'minion',
+            ...(context.optional ? { autoResolveIfSingle: false } : {}),
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;
+        if ((choice as { skip?: boolean }).skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
         if (context.fixedDestinationBaseIndex !== undefined) {
             return { events: moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.fixedDestinationBaseIndex, context.sourceId, timestamp) };
@@ -133,7 +142,7 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
     },
 });
 
-function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, candidates: MinionTarget[], fixedDestinationBaseIndex?: number, anchorBaseIndex?: number): AbilityResult {
+function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, candidates: MinionTarget[], fixedDestinationBaseIndex?: number, anchorBaseIndex?: number, optional = false): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return runtimeToAbilityResult(executeAbilityProgram(chooseMinionForMovePromptProgram, {
         matchState: ctx.matchState,
@@ -144,6 +153,7 @@ function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, can
         candidates,
         ...(fixedDestinationBaseIndex !== undefined ? { fixedDestinationBaseIndex } : {}),
         ...(anchorBaseIndex !== undefined ? { anchorBaseIndex } : {}),
+        ...(optional ? { optional } : {}),
     }));
 }
 
@@ -169,7 +179,7 @@ function tornadoPushPull(ctx: AbilityContext, sourceId: string, powerMax: number
         if (baseIndex === currentBase) return ctx.state.bases.length > 1;
         return true;
     });
-    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：选择力量≤${powerMax}的随从进行移动`, candidates, undefined, currentBase);
+    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：你可以选择力量≤${powerMax}的随从进行移动`, candidates, undefined, currentBase, true);
 }
 
 function tornadosMonsterTornado(ctx: AbilityContext): AbilityResult {
@@ -371,7 +381,16 @@ function collectTransferableActions(state: SmashUpCore): RippedOffContext['actio
         }
         for (const minion of base.minions) {
             for (const action of minion.attachedActions) {
-                actions.push({ cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, targetType: 'minion', baseIndex, minionUid: minion.uid, label: `${getCardDef(action.defId)?.name ?? action.defId} @ ${getCardDef(minion.defId)?.name ?? minion.defId}` });
+                actions.push({
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    targetType: 'minion',
+                    baseIndex,
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    label: `${getCardDef(action.defId)?.name ?? action.defId} @ ${getCardDef(minion.defId)?.name ?? minion.defId}`,
+                });
             }
         }
     }
@@ -406,26 +425,36 @@ const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, Smash
 
 const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'tornados_ripped_off_target',
+    interactionSourceIds: [
+        'tornados_ripped_off_target_base',
+        'tornados_ripped_off_target_minion',
+    ],
     buildInteraction: (context) => {
         if (context.targetType === 'base') {
             return createAbilityRuntimeSimpleChoice(
-                `tornados_ripped_off_target_${context.now}`,
+                `tornados_ripped_off_target_base_${context.now}`,
                 context.playerId,
                 '扯走：选择新的基地',
                 buildBaseTargetOptions(collectBaseTargets(context.matchState.core, baseIndex => baseIndex !== context.fromBaseIndex), context.matchState.core),
-                { sourceId: 'tornados_ripped_off_target', targetType: 'base' },
+                { sourceId: 'tornados_ripped_off_target_base', targetType: 'base' },
             );
         }
         const targets = collectMinionTargets(context.matchState.core, (minion) => minion.uid !== context.fromMinionUid);
         return createAbilityRuntimeSimpleChoice(
-            `tornados_ripped_off_target_${context.now}`,
+            `tornados_ripped_off_target_minion_${context.now}`,
             context.playerId,
             '扯走：选择新的随从',
             buildMinionTargetOptions(targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'affect' }),
-            { sourceId: 'tornados_ripped_off_target', targetType: 'minion' },
+            { sourceId: 'tornados_ripped_off_target_minion', targetType: 'minion' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
+        const sourceAction = context.targetType === 'base'
+            ? context.matchState.core.bases[context.fromBaseIndex]?.ongoingActions.find(action => action.uid === context.cardUid)
+            : context.matchState.core.bases[context.fromBaseIndex]?.minions
+                .find(minion => minion.uid === context.fromMinionUid)
+                ?.attachedActions
+                .find(action => action.uid === context.cardUid);
         const events: SmashUpEvent[] = [{
             type: SU_EVENTS.ONGOING_DETACHED,
             payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, reason: 'tornados_ripped_off' },
@@ -436,7 +465,16 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
             if (choice.baseIndex === undefined) return { events: [] };
             events.push({
                 type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, targetType: 'base', targetBaseIndex: choice.baseIndex },
+                payload: {
+                    cardUid: context.cardUid,
+                    defId: context.defId,
+                    ownerId: context.ownerId,
+                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                    targetType: 'base',
+                    targetBaseIndex: choice.baseIndex,
+                    ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+                    ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+                },
                 timestamp,
             } as OngoingAttachedEvent);
             return { events };
@@ -445,7 +483,17 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
         if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
         events.push({
             type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: { cardUid: context.cardUid, defId: context.defId, ownerId: context.ownerId, targetType: 'minion', targetBaseIndex: choice.baseIndex, targetMinionUid: choice.minionUid },
+            payload: {
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                targetType: 'minion',
+                targetBaseIndex: choice.baseIndex,
+                targetMinionUid: choice.minionUid,
+                ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+                ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+            },
             timestamp,
         } as OngoingAttachedEvent);
         return { events };

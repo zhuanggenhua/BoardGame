@@ -131,11 +131,15 @@ export function registerZombieAbilities(): void {
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun', 'onPlay', () => []);
     registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct, {
+        playerContext: 'sourceController',
+        perInstance: true,
     });
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun_pod', 'onPlay', () => []);
     registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct, {
+        playerContext: 'sourceController',
+        perInstance: true,
     });
 
     // === 弃牌堆出牌能力注册 ===
@@ -178,7 +182,8 @@ export function registerZombieAbilities(): void {
             for (let i = 0; i < core.bases.length; i++) {
                 const base = core.bases[i];
                 for (const o of base.ongoingActions) {
-                    if (o.ownerId === playerId && (o.defId === 'zombie_theyre_coming_to_get_you' || o.defId === 'zombie_theyre_coming_to_get_you_pod')) {
+                    const ongoingControllerId = (o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId;
+                    if (ongoingControllerId === playerId && (o.defId === 'zombie_theyre_coming_to_get_you' || o.defId === 'zombie_theyre_coming_to_get_you_pod')) {
                         allowedBases.push(i);
                     }
                 }
@@ -607,15 +612,29 @@ const zombieLendAHandPromptProgram = createPromptProgram<ZombieLendAHandContext,
         if (selectedUids.size === 0) return { events: [] };
         const player = state.core.players[playerId];
         const selectedCards = player.discard.filter((card) => selectedUids.has(card.uid));
-        const combined = [...player.deck, ...selectedCards];
-        const shuffled = random.shuffle([...combined]);
-        return {
-            events: [{
+        const cardsByOwner = new Map<PlayerId, CardInstance[]>();
+        for (const card of selectedCards) {
+            const ownerCards = cardsByOwner.get(card.owner) ?? [];
+            ownerCards.push(card);
+            cardsByOwner.set(card.owner, ownerCards);
+        }
+        const events: DeckReorderedEvent[] = [];
+        for (const [ownerId, cards] of cardsByOwner) {
+            const owner = state.core.players[ownerId];
+            if (!owner) continue;
+            const combined = [...owner.deck, ...cards];
+            const shuffled = random.shuffle([...combined]);
+            events.push({
                 type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: shuffled.map((card) => card.uid) },
+                payload: {
+                    playerId: ownerId,
+                    deckUids: shuffled.map((card) => card.uid),
+                    ...(ownerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                },
                 timestamp,
-            }],
-        };
+            } as DeckReorderedEvent);
+        }
+        return { events };
     },
 });
 
@@ -755,6 +774,7 @@ const zombieTheyKeepComingPromptProgram = createPromptProgram<ZombieTheyKeepComi
                     playerId,
                     cardUid: discardCard.uid,
                     defId: discardCard.defId,
+                    ownerId: discardCard.owner,
                     baseIndex: selected.baseIndex,
                     power: def?.power ?? 0,
                     fromDiscard: true,
@@ -858,6 +878,7 @@ function resolveZombieLordChoice(
             playerId,
             cardUid: discardCard.uid,
             defId: discardCard.defId,
+            ownerId: discardCard.owner,
             baseIndex: resolvedBaseIndex,
             baseDefId: state.core.bases[resolvedBaseIndex]?.defId,
             power: discardDef.power,
@@ -935,25 +956,27 @@ const zombieLordProgram = createBranchProgram<ZombieLordContext, SmashUpCore, Sm
 function zombieOverrunRestriction(ctx: RestrictionCheckContext): boolean {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod');
-    if (!overrun) return false;
-    // 只限制非拥有者?
-    return ctx.playerId !== overrun.ownerId;
+    return base.ongoingActions.some((overrun) => {
+        if (overrun.defId !== 'zombie_overrun' && overrun.defId !== 'zombie_overrun_pod') return false;
+        const controllerId = (overrun.metadata?.sourceControllerId as PlayerId | undefined) ?? overrun.ownerId;
+        return ctx.playerId !== controllerId;
+    });
 }
 
 /** 泛滥横行触发：拥有者回合开始时自毁 */
 function zombieOverrunSelfDestruct(ctx: TriggerContext): SmashUpEvent[] {
-    const events: SmashUpEvent[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const base = ctx.state.bases[i];
-        const overrun = base.ongoingActions.find(o => o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod');
-        if (!overrun) continue;
-        if (overrun.ownerId !== ctx.playerId) continue;
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: overrun.uid, defId: overrun.defId, ownerId: overrun.ownerId, reason: 'zombie_overrun_self_destruct' },
-            timestamp: ctx.now,
-        });
-    }
-    return events;
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return [];
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    if (!base) return [];
+    const overrun = base.ongoingActions.find(o =>
+        o.uid === ctx.sourceCardUid && (o.defId === 'zombie_overrun' || o.defId === 'zombie_overrun_pod'),
+    );
+    if (!overrun) return [];
+    const controllerId = ctx.sourceControllerId ?? overrun.ownerId;
+    if (controllerId !== ctx.playerId) return [];
+    return [{
+        type: SU_EVENTS.ONGOING_DETACHED,
+        payload: { cardUid: overrun.uid, defId: overrun.defId, ownerId: overrun.ownerId, reason: 'zombie_overrun_self_destruct' },
+        timestamp: ctx.now,
+    }];
 }

@@ -50,6 +50,7 @@ export interface UISceneRendererProps {
     debugRegions?: boolean;
     children?: React.ReactNode;
     contentRegions?: Record<string, React.ReactNode>;
+    presentationOverride?: Partial<NonNullable<UISceneDefinition['presentation']>>;
 }
 
 const DEBUG_REGION_STYLES = {
@@ -70,6 +71,7 @@ export const UISceneRenderer = ({
     debugRegions = false,
     children,
     contentRegions,
+    presentationOverride,
 }: UISceneRendererProps) => {
     const { artboard } = scene;
     const { ref, size } = useElementSize<HTMLDivElement>();
@@ -151,9 +153,9 @@ export const UISceneRenderer = ({
         [onNodeEvent, scene.id],
     );
 
-    const presentationScale = scene.presentation?.scaleMultiplier ?? 1;
-    const presentationOffsetXPx = ((scene.presentation?.offsetXPct ?? 0) / 100) * stageSize.width;
-    const presentationOffsetYPx = ((scene.presentation?.offsetYPct ?? 0) / 100) * stageSize.height;
+    const presentationScale = presentationOverride?.scaleMultiplier ?? scene.presentation?.scaleMultiplier ?? 1;
+    const presentationOffsetXPx = ((presentationOverride?.offsetXPct ?? scene.presentation?.offsetXPct ?? 0) / 100) * stageSize.width;
+    const presentationOffsetYPx = ((presentationOverride?.offsetYPct ?? scene.presentation?.offsetYPct ?? 0) / 100) * stageSize.height;
     const presentationTransform = `translate(-50%, -50%) scale(${presentationScale})`;
     return (
         <div

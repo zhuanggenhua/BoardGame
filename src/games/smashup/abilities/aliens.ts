@@ -511,6 +511,7 @@ export function registerAlienAbilities(): void {
     // 若处理函数再“扫描全基地侦察兵”会导致重复创建交互/重复回手。
     registerTrigger('alien_scout', 'afterScoring', alienScoutAfterScoringPerInstance, {
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     // POD 版本会通过 registerPodOngoingAliases() 自动映射，无需手动注册
@@ -731,7 +732,7 @@ const alienScoutReturnPromptProgram = createPromptProgram<
                 id: 'yes',
                 label: '返回手牌',
                 value: { returnIt: true },
-                displayMode: 'card' as const,
+                displayMode: 'button' as const,
             },
             {
                 id: 'no',
@@ -953,7 +954,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
             const selectedTitan = state.core.titans?.find((titan) =>
                 titan.uid === selected.titanUid
                 && titan.defId === selected.defId
-                && titan.ownerId === playerId
+                && titan.controllerId === playerId
                 && titan.location.zone === 'setaside',
             );
             if (!selectedTitan || !canControllerPlayTitan(state.core, playerId, selectedTitan.uid)) {
@@ -995,9 +996,11 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
                         playerId,
                         cardUid: selectedCard.uid,
                         defId: selectedCard.defId,
+                        ownerId: selectedCard.owner,
                         baseIndex: context.selectedBaseIndex,
                         baseDefId: context.newBaseDefId,
                         power: def?.power ?? 0,
+                        reason: 'alien_terraform',
                     },
                     timestamp,
                 } as MinionPlayedEvent,
@@ -1183,7 +1186,7 @@ const alienDisintegratorPromptProgram = createPromptProgram<
             autoResolveIfSingle: false,
         },
     ),
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as AlienMinionChoice | undefined;
         const baseIndex = selected?.baseIndex;
         const minionUid = selected?.minionUid;
@@ -1199,7 +1202,13 @@ const alienDisintegratorPromptProgram = createPromptProgram<
             matchState: state,
             events: [{
                 type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                payload: { cardUid: target.uid, defId: target.defId, ownerId: target.owner, reason: 'alien_disintegrator' },
+                payload: {
+                    cardUid: target.uid,
+                    defId: target.defId,
+                    ownerId: target.owner,
+                    ...(target.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                    reason: 'alien_disintegrator',
+                },
                 timestamp,
             } as CardToDeckBottomEvent],
         };
@@ -1226,7 +1235,13 @@ const alienDisintegratorProgram = createBranchProgram<
             return {
                 events: [{
                     type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                    payload: { cardUid: minion.uid, defId: minion.defId, ownerId: minion.owner, reason: 'alien_disintegrator' },
+                    payload: {
+                        cardUid: minion.uid,
+                        defId: minion.defId,
+                        ownerId: minion.owner,
+                        ...(minion.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                        reason: 'alien_disintegrator',
+                    },
                     timestamp: context.now,
                 } as CardToDeckBottomEvent],
             };
@@ -1613,30 +1628,43 @@ function buildCropCirclesReturnEvents(
     selectedMinionUids: string[],
     timestamp: number,
     sourcePlayerId?: string,
-): MinionReturnedEvent[] {
+): SmashUpEvent[] {
     if (selectedMinionUids.length === 0) return [];
     const base = core.bases[baseIndex];
     if (!base) return [];
     const selectedSet = new Set(selectedMinionUids);
-    return base.minions
-        .filter(m => selectedSet.has(m.uid))
-        .filter(m => {
-            // 跳过受保护的对手随从
-            if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect')) {
-                return false;
-            }
-            return true;
-        })
-        .map(m => ({
+    const events: SmashUpEvent[] = [];
+    let protectedSkipped = 0;
+    for (const m of base.minions.filter(minion => selectedSet.has(minion.uid))) {
+        // 跳过受保护的对手随从
+        if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect', {
+            sourceKind: 'action',
+        })) {
+            protectedSkipped += 1;
+            continue;
+        }
+        events.push({
             type: SU_EVENTS.MINION_RETURNED,
             payload: {
                 minionUid: m.uid,
                 minionDefId: m.defId,
                 fromBaseIndex: baseIndex,
                 toPlayerId: m.owner,
+                sourcePlayerId,
                 reason: 'alien_crop_circles',
             },
             timestamp,
-        } as MinionReturnedEvent));
+        } as MinionReturnedEvent);
+    }
+    if (sourcePlayerId && protectedSkipped > 0) {
+        events.push(buildAbilityFeedback(
+            sourcePlayerId,
+            events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
+            timestamp,
+            undefined,
+            'warning',
+        ));
+    }
+    return events;
 }
 

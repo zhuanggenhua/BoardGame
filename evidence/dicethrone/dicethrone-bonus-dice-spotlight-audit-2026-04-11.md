@@ -1,5 +1,7 @@
 # DiceThrone 骰子特写文案 vs 实际效果审计（2026-04-11）
 
+> 2026-06-06 当前有效口径：本文是 2026-04-11 那轮“骰子特写文案 vs 实际效果”专项审计，只能说明当时 bonus-die 文案与实现的差异核对结果，不是当前所有 bonus-die 文案都已最终无误的证明，也不是当前新英雄补审出口。阅读时必须把它视为局部文案/效果一致性审计。
+
 ## 审计范围
 - UI：`BonusDieSpotlightContent`、`BonusDieOverlay`、`CardSpotlightOverlay`
 - 文案来源：`public/locales/zh-CN/game-dicethrone.json` → `bonusDie.effect.*`
@@ -107,3 +109,7 @@
 - 2026-04-11：已更新 `bonusDie.effect.morePleaseRoll.result`、`bonusDie.effect.volley.result`、`bonusDie.effect.explodingArrow*.result` 文案；新增 `bonusDie.effect.godsGrace.other` 并将 `card-gods-grace` 默认效果改用该 key。
 - 2026-04-11：补充 `barbarianSuppress`、`shadowDamage`、`sneakAttack`、`gunslingerLoadedDie/Reroll`、`samuraiBackStrikeDie`、`thunderStrike*`、`pyroBlast*` 文案，写明加伤/阈值/附加效果。
 - 2026-04-11：`shadowDamage` / `gunslingerLoadedDie(Reroll)` / `samuraiBackStrikeDie` 改为**直接展示计算结果**（通过 effectParams 注入 {{damage}}/{{bonusDamage}}），UI 与 ActionLog 均显示实际数值。
+
+---
+
+**当前阅读说明**：本文只能证明“当时骰子特写文案与实际效果”做过一轮专项核对，不能外推为当前所有 bonus-die 文案、所有英雄新增对象或当前 DiceThrone 整体审计都已收口。

@@ -16,6 +16,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import type { SmashUpCore, CardInstance } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { validate } from '../domain/commands';
+import { collectLegalActionPlayTargets } from '../domain/playLegality';
 import { makePlayer, makeState, makeCard, makeMinion } from './helpers';
 import type { MatchState } from '../../../engine/types';
 
@@ -261,6 +262,66 @@ describe('ongoing-minion 目标选择', () => {
             },
         } as any);
         expect(withTarget.valid).toBe(true);
+    });
+
+    it.each([
+        ['ninja_smoke_bomb'],
+        ['ninja_smoke_bomb_pod'],
+    ])('%s 只能附着到自己的随从，不能选择其他玩家的随从', (defId) => {
+        const core = makeState({
+            phase: 'playCards',
+            currentPlayerId: '0',
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', defId, 'action', '0')],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1', {}),
+            },
+            bases: [
+                {
+                    defId: 'base_test_1',
+                    minions: [
+                        makeMinion('ally-1', 'ninja_henchman', '0', 2, { powerModifier: 0 }),
+                        makeMinion('enemy-1', 'robot_microbot_alpha', '1', 2, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const state = makeMatchState(core);
+        const legalTargets = collectLegalActionPlayTargets(core, '0', {
+            defId,
+            effectiveHandSize: core.players['0'].hand.length,
+        });
+        expect(legalTargets.mode).toBe('minion');
+        expect(legalTargets.baseIndices).toEqual([0]);
+        expect(legalTargets.minionUids).toEqual(['ally-1']);
+
+        const ownTarget = validate(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'c1',
+                targetBaseIndex: 0,
+                targetMinionUid: 'ally-1',
+            },
+        } as any);
+        expect(ownTarget.valid).toBe(true);
+
+        const opponentTarget = validate(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: {
+                cardUid: 'c1',
+                targetBaseIndex: 0,
+                targetMinionUid: 'enemy-1',
+            },
+        } as any);
+        expect(opponentTarget.valid).toBe(false);
+        expect(opponentTarget.error).toContain('需要选择你的随从');
     });
 
     it('月之触可以附着到有 play_action 限制的基地上的随从', () => {

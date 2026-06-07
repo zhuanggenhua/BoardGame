@@ -197,27 +197,28 @@ const createRoomLifecycleRoutes = ({
             return;
         }
 
-        const playerMeta = result.metadata.players[playerID];
+        const latestMetadata = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
+        const playerMeta = latestMetadata.players[playerID];
         if (!playerMeta) {
             ctx.throw(404, `Player ${playerID} not found`);
             return;
         }
 
         const credentials = `cred-${matchID}-${playerID}`;
-        result.metadata.players[playerID] = {
+        latestMetadata.players[playerID] = {
             ...playerMeta,
             name: body?.playerName,
             credentials,
         };
-        result.metadata.updatedAt = Date.now();
+        latestMetadata.updatedAt = Date.now();
 
-        const allSeated = Object.values(result.metadata.players).every((player) => player.name || player.credentials);
+        const allSeated = Object.values(latestMetadata.players).every((player) => player.name || player.credentials);
         if (allSeated) {
-            result.metadata.status = 'playing';
+            latestMetadata.status = 'playing';
         }
 
-        await storage.setMetadata(matchID, result.metadata);
-        gameTransport.updateMatchMetadata(matchID, result.metadata);
+        await storage.setMetadata(matchID, latestMetadata);
+        gameTransport.updateMatchMetadata(matchID, latestMetadata);
 
         ctx.body = { playerCredentials: credentials };
     });
@@ -242,7 +243,8 @@ const createRoomLifecycleRoutes = ({
             return;
         }
 
-        const playerMeta = result.metadata.players[playerID];
+        const latestMetadata = (await storage.fetch(matchID, { metadata: true })).metadata ?? result.metadata;
+        const playerMeta = latestMetadata.players[playerID];
         if (!playerMeta) {
             ctx.throw(404, `Player ${playerID} not found`);
             return;
@@ -255,11 +257,11 @@ const createRoomLifecycleRoutes = ({
         delete playerMeta.name;
         delete playerMeta.credentials;
         playerMeta.isConnected = false;
-        result.metadata.updatedAt = Date.now();
-        result.metadata.status = 'waiting';
+        latestMetadata.updatedAt = Date.now();
+        latestMetadata.status = 'waiting';
 
-        await storage.setMetadata(matchID, result.metadata);
-        gameTransport.updateMatchMetadata(matchID, result.metadata);
+        await storage.setMetadata(matchID, latestMetadata);
+        gameTransport.updateMatchMetadata(matchID, latestMetadata);
         gameTransport.disconnectPlayer(matchID, playerID, { disconnectSockets: true });
 
         ctx.body = {};
@@ -1083,6 +1085,141 @@ describe('Test Routes Integration', () => {
             } finally {
                 await closeSockets();
             }
+        });
+
+        it('join 在第一次读取到 stale metadata 时，落盘前应保留存储层最新的其他 seat 信息', async () => {
+            const matchID = 'lifecycle-join-stale-race';
+            const staleMetadata: MatchMetadata = {
+                matchID,
+                gameName: 'lifecycle-game',
+                players: {
+                    0: { id: 0, isConnected: false },
+                    1: { id: 1, name: '旧对手', credentials: 'old-opponent-cred', isConnected: true },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                status: 'waiting',
+            };
+            const latestMetadata: MatchMetadata = {
+                ...staleMetadata,
+                players: {
+                    0: { id: 0, isConnected: false },
+                    1: { id: 1, name: '新对手', credentials: 'latest-opponent-cred', isConnected: true },
+                },
+                updatedAt: Date.now() + 1,
+            };
+
+            await storage.setMetadata(matchID, latestMetadata);
+
+            const fetchMock = vi.mocked(storage.fetch);
+            fetchMock
+                .mockImplementationOnce(async () => ({ metadata: staleMetadata }))
+                .mockImplementationOnce(async () => ({ metadata: latestMetadata }));
+
+            const response = await fetch(`${baseURL}/games/lifecycle-game/${matchID}/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ playerID: '0', playerName: 'Alice' }),
+            });
+
+            expect(response.status).toBe(200);
+            const data = await response.json() as { playerCredentials: string };
+            expect(data.playerCredentials).toBe(`cred-${matchID}-0`);
+
+            const persisted = await storage.fetch(matchID, { metadata: true });
+            expect(persisted.metadata?.players['0']).toMatchObject({
+                id: 0,
+                name: 'Alice',
+                credentials: `cred-${matchID}-0`,
+            });
+            expect(persisted.metadata?.players['1']).toEqual({
+                id: 1,
+                name: '新对手',
+                credentials: 'latest-opponent-cred',
+                isConnected: true,
+            });
+
+            const matchResponse = await fetch(`${baseURL}/games/lifecycle-game/${matchID}`);
+            expect(matchResponse.status).toBe(200);
+            const matchInfo = await matchResponse.json() as {
+                players: Array<{ id: number; name?: string; isConnected?: boolean }>;
+                status?: string;
+            };
+            expect(matchInfo.players.find((player) => player.id === 0)).toMatchObject({
+                id: 0,
+                name: 'Alice',
+            });
+            expect(matchInfo.players.find((player) => player.id === 1)).toMatchObject({
+                id: 1,
+                name: '新对手',
+                isConnected: true,
+            });
+        });
+
+        it('leave 在第一次读取到 stale metadata 时，必须按最新 seat 凭证复核并拒绝旧凭证清座', async () => {
+            const matchID = 'lifecycle-leave-stale-race';
+            const staleMetadata: MatchMetadata = {
+                matchID,
+                gameName: 'lifecycle-game',
+                players: {
+                    0: { id: 0, name: '旧玩家', credentials: 'old-seat-cred', isConnected: true },
+                    1: { id: 1, name: '新对手', credentials: 'latest-opponent-cred', isConnected: true },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                status: 'playing',
+            };
+            const latestMetadata: MatchMetadata = {
+                ...staleMetadata,
+                players: {
+                    0: { id: 0, name: '接替玩家', credentials: 'new-seat-cred', isConnected: true },
+                    1: { id: 1, name: '新对手', credentials: 'latest-opponent-cred', isConnected: true },
+                },
+                updatedAt: Date.now() + 1,
+            };
+
+            await storage.setMetadata(matchID, latestMetadata);
+
+            const fetchMock = vi.mocked(storage.fetch);
+            fetchMock
+                .mockImplementationOnce(async () => ({ metadata: staleMetadata }))
+                .mockImplementationOnce(async () => ({ metadata: latestMetadata }));
+
+            const response = await fetch(`${baseURL}/games/lifecycle-game/${matchID}/leave`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ playerID: '0', credentials: 'old-seat-cred' }),
+            });
+
+            expect(response.status).toBe(403);
+            const message = await response.text();
+            expect(message).toContain('Invalid credentials');
+
+            const persisted = await storage.fetch(matchID, { metadata: true });
+            expect(persisted.metadata?.players['0']).toEqual({
+                id: 0,
+                name: '接替玩家',
+                credentials: 'new-seat-cred',
+                isConnected: true,
+            });
+            expect(persisted.metadata?.status).toBe('playing');
+
+            const matchResponse = await fetch(`${baseURL}/games/lifecycle-game/${matchID}`);
+            expect(matchResponse.status).toBe(200);
+            const matchInfo = await matchResponse.json() as {
+                players: Array<{ id: number; name?: string; isConnected?: boolean }>;
+                status?: string;
+            };
+            expect(matchInfo.players.find((player) => player.id === 0)).toMatchObject({
+                id: 0,
+                name: '接替玩家',
+                isConnected: true,
+            });
+            expect(matchInfo.status).toBe('playing');
         });
     });
 });

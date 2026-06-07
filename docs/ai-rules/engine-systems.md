@@ -101,6 +101,7 @@
 - 私有决策的 freshness gate 只允许拦 `private-required`，不得再一刀切阻断整个在线 AI。
 - 新增在线 AI 决策点时，先判断它依赖公共真相还是私有 overlay，再决定是否允许 shared fallback。
 - **响应窗口特例（强制）**：`responseWindow` 场景下，freshness 校验不得把 `currentPlayer === responder` 当成硬条件。必须按窗口语义对齐（`windowType/sourceId/currentResponder`），因为响应者本来就可能不是当前行动玩家（如 DiceThrone 防御/干扰响应）。
+- **response-loop 升级门禁（强制）**：watchdog 只有在确认是**纯 AI 响应循环**时，才允许把 `response-window` 升级成 `response-loop` 并执行 `SYS_RESPONSE_WINDOW_FORCE_CLOSE`。最低要求同时满足：① 同一 incident 已有失败/重开证据；② 当前 `responderQueue` 里**没有 human**；③ 若 tracker 已从 `response-window` 升到 `response-loop`，后续 tick 必须沿同一 incident continuity 继续 hard-close，不能因为 key 前缀变化又降回 `RESPONSE_PASS`。凡修改 `resolveOnlineAiRecoveryCandidate()` 或 `runOnlineAiRecoverySequence()` 的 response-loop 逻辑，必须补两类直测：`human still queued -> 不得 hard-close`，以及 `existing response-loop / accumulated failureCount -> 不得空转降级`。
 
 ##### 回归门禁（强制）
 
@@ -316,6 +317,10 @@ fxBus.pushSequence([
 - **领域 ID 常量表**：所有稳定 ID 在 `domain/ids.ts` 用 `as const` 定义，导出派生类型（`StatusId`/`TokenId`）。例外：i18n key、类型定义中的字面量。
 - **新机制先检查引擎**：实现前必须先搜索 `engine/primitives/` 和 `engine/systems/`，无则先在引擎层抽象。
 - **新游戏能力系统必须使用 `ability.ts`**：禁止自行实现注册表。每游戏独立实例，通过 label 区分。
+- **当前决策者统一从 `src/engine/sessionContext.ts` 读取**：禁止在共享层继续扩散 `currentPlayer/currentPlayerId/currentPlayerIndex` 这种每游戏一套的弱约定。
+- **对象生命周期要先建模 provenance**：凡涉及跨区、附着/脱离、临时控制、借用、代持、默认终点，不得只靠 `owner/originalOwner/fromPlayerId/toPlayerId` 散字段拼协议。
+- **延迟交互要先建模 snapshot**：凡交互会跨阶段、跨清场、跨宿主变化继续结算，必须显式区分创建时 snapshot 与 resolve 时 live lookup。
+- **交互展示模式独立描述**：禁止让 UI 仅凭 `defId/baseDefId/targetType` 等 payload 形状反推按钮/卡牌/棋盘展示模式。
 
 ---
 
@@ -413,6 +418,11 @@ isGameOver: (core) => {
 **状态/buff 原语（TagContainer / ModifierStack）**：
 - **SummonerWars 历史债务**：`BoardUnit` 上 `tempAbilities`/`boosts`/`extraAttacks`/`healingMode`/`wasAttackedThisTurn`/`originalOwner` 为 ad-hoc 字段，未用 TagContainer，回合清理靠手动解构。**新游戏禁止模仿**，必须用 `createTagContainer()` + `tickDurations`。
 - DiceThrone 已用引擎层 TagContainer；SmashUp 无 buff 系统。
+
+**对象生命周期 / 延迟交互历史债务**：
+- **SummonerWars 历史债务**：`owner/originalOwner/attachedCards/attachedUnits` 仍是对象身份、临时控制和宿主关系的 ad-hoc 混合表达。**新游戏禁止模仿**，必须先抽稳定 `object ref + provenance`。
+- **DiceThrone 历史债务**：`currentChoiceSourceAbilityId + pending state + payload-shaped choice` 仍有较强隐藏耦合。**新游戏禁止模仿**，必须优先设计显式 `deferred snapshot + interaction descriptor`。
+- **Cardia 历史债务**：`interaction: any`、`context` 透传、resolve 时再按 `sourceId` 回查 handler。**新游戏禁止模仿**，必须让交互 envelope 自足。
 
 ---
 
@@ -692,6 +702,7 @@ interface SimpleChoiceConfig {
 8. **可能跨 `BASE_CLEARED` / `BASE_REPLACED` / 基地移除后再解决的交互，禁止只传 `baseIndex`**。如果 handler 在交互解决时还需要重新定位基地，必须同时携带稳定标识（如 `baseDefId`），并在 handler 中先按稳定标识解析活体基地，再 fallback 到仍有效的 `baseIndex`。`baseIndex` 只是当时快照位置，不是跨时序稳定标识。
 9. **`responseWindow` 与 `simple-choice` 可以并存，命令放行权必须归 `ResponseWindowSystem`**。当 `state.sys.interaction.current.kind === 'simple-choice'` 且同时存在活动 `state.sys.responseWindow.current` 时，`SimpleChoiceSystem` 不能一刀切拦截同玩家的普通非 `SYS_` 命令；此时命令是否合法必须交给 `ResponseWindowSystem` 裁决。只有在没有活动响应窗口时，`SimpleChoiceSystem` 才负责阻塞“请先完成当前选择”类普通命令。
 10. **一个 interaction kind 只能表达一种稳定业务语义（强制）**。`simple-choice` 只保留真正的分支/按钮/数值选择；像“为当前 pendingAttack 选 defender”“选择 compare-roll 胜方”“奖励骰重掷结算确认”这类有独立业务语义的步骤，必须建 dedicated kind / dedicated reader / dedicated modal，禁止继续把不同职责塞进同一个 `simple-choice` / `selectPlayer` 壳子里。
+11. **能直接消费现有交互对象时，不得再创造第二个交互对象（强制）**。如果当前 live interaction / prompt option 已经完整表达了玩家这一步要操作的业务对象（例如卡牌 `cardUid`、基地 `baseIndex`、随从 `minionUid`、已存在的 `optionId`），UI 必须优先直接让玩家点击这个现有对象，并把点击结果回送到同一个 live option / interaction；禁止再额外包一层“先选一个动作/先选一个分支/先开一个总弹窗”的二次交互壳，只是把同一批对象重新描述一遍。只有在**确实新增了一个原交互对象里不存在的新决策步骤**时，才允许创建新的 interaction kind / prompt。
 11. **阻塞交互的前台承载默认走 modal stack（强制）**。如果某个前台直接拥有当前交互步骤的确认权，或它的关闭/确认会决定业务是否继续推进，那么它必须作为 modal stack entry 承载；只有纯展示、不会改变交互 ownership 的特写/放大层，才允许保留在 overlay 通道。
 12. **modal stack entry 的真实可点击内容必须与 entry 同树（强制）**。一旦前台已经进栈，禁止其内部再通过 `HudPortal` / `modal-root` / 其它 portal 把主体内容挪到栈外；否则会出现“栈里的 fixed 空层拦截点击、真正内容在另一棵树里单飞”的命中错误。若同一组件既要支持 overlay 展示态、也要支持入栈阻塞态，必须提供 `usePortal=false` 这类底层开关，让栈式场景原位渲染。
 
@@ -750,6 +761,13 @@ if (state.sys.interaction.current?.kind === 'simple-choice') {
 createSimpleChoice(id, pid, title, opts, {
     sourceId: 'targeting-roll',
 });
+
+// ❌ 当前 live prompt 已经给出了 cardUid/baseIndex/optionId，
+//    UI 仍再造一个“选择一个动作”的总弹窗，让用户重复选择同一批对象
+showActionPicker(existingPrompt.options);
+
+// ✅ 当前 live prompt 已经完整表达了业务对象，UI 直接消费现有对象并回送原 optionId
+onCardClick(cardUid => respondCurrentPrompt({ optionId: liveOptionId }));
 
 // ❌ 会阻塞业务推进的前台绕过 modal stack，单独走 overlay 通道
 return <BonusDieOverlay open settlement={pendingSettlement} onClose={confirmAndAdvance} />;
@@ -1635,14 +1653,20 @@ activeUse: {
 `pendingSave` 用于暂缓 `MINION_DESTROYED` 事件——当 baseTrigger/ongoing 创建了"拯救交互"（如雄蜂防消灭、九命之屋），等待玩家决定。
 
 **核心不变量**：
-1. **`interactionCountBefore` 必须在 `onDestroy` 之后取值** — onDestroy 产生的交互是死亡效果（如 Igor 选目标放指示物），不是拯救交互，不应触发 pendingSave
-2. **不得按 sourceId 过滤"拯救交互"** — 任何 baseTrigger/ongoing 创建的新交互都可能是拯救交互（雄蜂、九命之屋等），硬编码白名单会遗漏新增的拯救能力
-3. **pendingSave 检测公式**：`interactionCountAfter > interactionCountBefore` 即为拯救交互，无需额外过滤
+1. **`interactionCountBefore` 必须在 `onDestroy` 之后取值** — onDestroy 产生的交互是死亡效果（如 Igor 选目标放指示物），不是拯救交互，不应触发 pendingSave。
+2. **通用原则：不能只凭“新交互出现了”就认定是拯救交互** — destroy 链上既可能出现 replacement/save prompt，也可能出现普通死亡效果 prompt；若没有额外合同，`interactionCountAfter > interactionCountBefore` 只能说明“出现了新交互”，不能单独推出“应该 pendingSave”。
+3. **SmashUp 当前 runtime 例外（带作用域）**：`src/games/smashup/domain/reducer.ts` 的 `processDestroyTriggers()` 目前仍依赖 `PREVENT_DESTROY_SOURCE_IDS` 白名单识别交互式 replacement。也就是当前 SmashUp 的 pendingSave 合同是两段式：
+   `interactionCountAfter > interactionCountBefore`
+   且 `newInteraction.data.sourceId ∈ PREVENT_DESTROY_SOURCE_IDS`
+   才进入 pendingSave。
+   当前已锁定的 sourceId 示例：`base_nine_lives_intercept`、`giant_ant_drone_prevent_destroy`、`pirate_buccaneer_move`。
+4. **新增交互式 replacement 时必须同步三处**：`reducer.ts` 的 `PREVENT_DESTROY_SOURCE_IDS`、`src/games/smashup/rule/ENGINE_GUIDE.md`、`src/games/smashup/__tests__/reactionQueueDestroyPendingSaveContract.test.ts`。未同步前，不得把“删白名单”当作默认清理动作。
 
 **历史教训**：
-- ❌ 在 onDestroy 之前取 `interactionCountBefore` → Igor 的效果交互被误判为拯救交互 → Igor 的 `MINION_DESTROYED` 被错误抑制
-- ❌ 添加 `isSaveInteraction = sourceId === 'base_nine_lives_intercept'` 过滤 → 雄蜂的 `giant_ant_drone_prevent_destroy` 被跳过 → 雄蜂防消灭失效
-- ✅ 正确：`interactionCountBefore` 在 onDestroy 之后取值 + 不按 sourceId 过滤
+- ❌ 在 onDestroy 之前取 `interactionCountBefore` → Igor 的效果交互被误判为拯救交互 → Igor 的 `MINION_DESTROYED` 被错误抑制。
+- ❌ 把 `interactionCountAfter > interactionCountBefore` 直接当成 pendingSave → 普通死亡效果 prompt 也会被误判成拯救交互。
+- ❌ 只给个别 sourceId 加临时特判、却不回写统一白名单合同 → 新增 `giant_ant_drone_prevent_destroy` / `pirate_buccaneer_move` 这类入口时会静默漏接。
+- ✅ 当前 SmashUp 正确口径：`interactionCountBefore` 在 onDestroy 之后取值，并通过 `PREVENT_DESTROY_SOURCE_IDS` 明确声明哪些交互式 replacement 会进入 pendingSave。
 
 ### matchState 链式传递（强制）
 

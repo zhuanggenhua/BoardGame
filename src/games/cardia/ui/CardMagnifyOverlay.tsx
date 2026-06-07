@@ -66,10 +66,11 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose, interacti
         >
             {target && (
                 <div
-                    className="relative aspect-[106/160] bg-transparent"
+                    className="relative bg-transparent"
                     style={overlayPositionStyle ?? {
                         height: '75vh',
                         width: `min(75vw, ${widthForThreeQuarterHeight})`,
+                        aspectRatio: '106 / 160',
                     }}
                 >
                     {/* 纯图片展示 */}

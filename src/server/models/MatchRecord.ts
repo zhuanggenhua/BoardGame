@@ -6,6 +6,8 @@ export interface IMatchRecord extends Document {
     players: {
         id: string;
         name: string;
+        ownerKey?: string;
+        isAi?: boolean;
         result?: string; // 'win', 'loss', 'draw'
     }[];
     winnerID?: string; // ID of the winner, or null if draw
@@ -21,6 +23,8 @@ const MatchRecordSchema = new Schema<IMatchRecord>(
             {
                 id: { type: String, required: true },
                 name: { type: String },
+                ownerKey: { type: String },
+                isAi: { type: Boolean },
                 result: { type: String }
             }
         ],

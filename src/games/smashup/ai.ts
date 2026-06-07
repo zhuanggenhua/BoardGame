@@ -32,12 +32,15 @@ import {
 } from './domain/types';
 import {
     buildFactionSelectionIdentitySet,
+    isSmashUpDiyFaction,
+    isSmashUpFactionImplementationInProgress,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
-import { validate } from './domain/commands';
+import { getManualSpecialScoringBaseIndices, validate } from './domain/commands';
 import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
+import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -50,7 +53,7 @@ import {
     getScoringEligibleBaseIndices,
     getTotalEffectivePowerOnBase,
 } from './domain/ongoingModifiers';
-import { getCardDef, getMinionLikePower, getBaseDef } from './data/cards';
+import { getCardDef, getMinionLikePower, getBaseDef, getFactionCards } from './data/cards';
 import {
     getCardStrategyTags,
     getPlayerStrategyProfile,
@@ -114,50 +117,17 @@ const isInteractionControlValue = (value: unknown): boolean => {
     return candidate.skip === true || candidate.done === true || candidate.__cancel__ === true;
 };
 
-const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => factionId !== SMASHUP_FACTION_IDS.MADNESS);
+const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => (
+    factionId !== SMASHUP_FACTION_IDS.MADNESS
+    && !isSmashUpFactionImplementationInProgress(factionId)
+    && getFactionCards(factionId).length > 0
+));
 
-const FACTION_PRIORITY = [
-    SMASHUP_FACTION_IDS.ROBOTS,
-    SMASHUP_FACTION_IDS.WIZARDS,
-    SMASHUP_FACTION_IDS.ALIENS,
-    SMASHUP_FACTION_IDS.DINOSAURS,
-    SMASHUP_FACTION_IDS.ZOMBIES,
-    SMASHUP_FACTION_IDS.NINJAS,
-    SMASHUP_FACTION_IDS.PIRATES,
-    SMASHUP_FACTION_IDS.TRICKSTERS,
-    SMASHUP_FACTION_IDS.GHOSTS,
-    SMASHUP_FACTION_IDS.STEAMPUNKS,
-    SMASHUP_FACTION_IDS.KILLER_PLANTS,
-    SMASHUP_FACTION_IDS.BEAR_CAVALRY,
-    SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
-    SMASHUP_FACTION_IDS.ELDER_THINGS,
-    SMASHUP_FACTION_IDS.INNSMOUTH,
-    SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
-    SMASHUP_FACTION_IDS.FRANKENSTEIN,
-    SMASHUP_FACTION_IDS.WEREWOLVES,
-    SMASHUP_FACTION_IDS.VAMPIRES,
-    SMASHUP_FACTION_IDS.GIANT_ANTS,
-    SMASHUP_FACTION_IDS.ALIENS_POD,
-    SMASHUP_FACTION_IDS.DINOSAURS_POD,
-    SMASHUP_FACTION_IDS.GHOSTS_POD,
-    SMASHUP_FACTION_IDS.NINJAS_POD,
-    SMASHUP_FACTION_IDS.PIRATES_POD,
-    SMASHUP_FACTION_IDS.ROBOTS_POD,
-    SMASHUP_FACTION_IDS.TRICKSTERS_POD,
-    SMASHUP_FACTION_IDS.WIZARDS_POD,
-    SMASHUP_FACTION_IDS.ZOMBIES_POD,
-    SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD,
-    SMASHUP_FACTION_IDS.STEAMPUNKS_POD,
-    SMASHUP_FACTION_IDS.KILLER_PLANTS_POD,
-    SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD,
-    SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
-    SMASHUP_FACTION_IDS.INNSMOUTH_POD,
-    SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD,
-    SMASHUP_FACTION_IDS.FRANKENSTEIN_POD,
-    SMASHUP_FACTION_IDS.WEREWOLVES_POD,
-    SMASHUP_FACTION_IDS.VAMPIRES_POD,
-    SMASHUP_FACTION_IDS.GIANT_ANTS_POD,
-];
+function getSelectableFactions(enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
+    return SELECTABLE_FACTIONS.filter((factionId) =>
+        !isSmashUpDiyFaction(factionId) || enabledExpansions.includes('diy'),
+    );
+}
 
 const EMPTY_CARD_AI_METRICS: SmashUpCardAiMetrics = {
     extraMinion: 0,
@@ -264,7 +234,7 @@ const createCommand = (playerId: PlayerId, type: string, payload: unknown = {}):
 const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.phase !== 'scoreBases') return false;
 
-    const eligibleIndices = getScoringEligibleBaseIndices(state.core);
+    const eligibleIndices = getManualSpecialScoringBaseIndices(state);
     for (const baseIndex of eligibleIndices) {
         const base = state.core.bases[baseIndex];
         if (!base) continue;
@@ -293,7 +263,17 @@ const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: Pl
 const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.current) return false;
     if (state.sys.interaction?.isBlocked === true) return false;
-    if (state.sys.responseWindow?.current) return false;
+    if (getSmashUpReactionWindowPresentation(state)) return false;
+    if (hasBlockingLegacyResponseWindow(state)) return false;
+    const responseWindow = state.sys.responseWindow?.current as {
+        sourceId?: unknown;
+        responderQueue?: unknown[];
+    } | undefined;
+    const hasLiveLegacyResponders = Array.isArray(responseWindow?.responderQueue)
+        && responseWindow.responderQueue.length > 0;
+    if (responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose' && hasLiveLegacyResponders) {
+        return false;
+    }
     if (state.sys.phase === 'scoreBases' && hasPendingScoreBasesSpecialActivation(state, playerId)) {
         return false;
     }
@@ -321,11 +301,6 @@ const getBaseLabel = (state: SmashUpState, baseIndex: number): string => {
 const getCardLabel = (card: CardInstance): string => {
     const cardDef = getCardDef(card.defId);
     return cardDef?.name ?? card.defId;
-};
-
-const getFactionPriority = (factionId: string): number => {
-    const index = FACTION_PRIORITY.indexOf(factionId as (typeof FACTION_PRIORITY)[number]);
-    return index >= 0 ? index : FACTION_PRIORITY.length + 10;
 };
 
 const getBasePressureMetrics = (state: SmashUpState, baseIndex: number): {
@@ -786,7 +761,9 @@ const relativeUtilityByActionIdCache = new WeakMap<AiDecisionContext, Map<string
 const shouldApplySmashUpRelativeUtility = (context: AiDecisionContext): boolean => {
     if (context.responseWindow) return false;
     const state = context.visibleState as SmashUpState;
-    return !state.sys.responseWindow?.current;
+    if (getSmashUpReactionWindowPresentation(state)) return false;
+    if (hasBlockingLegacyResponseWindow(state)) return false;
+    return true;
 };
 
 const buildRelativeUtilityByActionId = (context: AiDecisionContext): Map<string, number> => {
@@ -1127,16 +1104,21 @@ const appendAction = (
 };
 
 const buildSimpleChoicePayload = (
+    _sourceId: string | undefined,
+    interactionId: string,
     optionIds: string[],
     multi: PromptMultiConfig | undefined,
 ): Record<string, unknown> => {
+    if (optionIds.length === 0) {
+        return { interactionId, optionIds: [] };
+    }
     if (optionIds.length <= 1 && !multi) {
-        return { optionId: optionIds[0] };
+        return { interactionId, optionId: optionIds[0] };
     }
     if (optionIds.length <= 1 && (multi?.min ?? 0) <= 1) {
-        return { optionId: optionIds[0] };
+        return { interactionId, optionId: optionIds[0] };
     }
-    return { optionIds };
+    return { interactionId, optionIds };
 };
 
 const enumerateInteractionOptionCombinations = <T extends { id: string }>(
@@ -1220,11 +1202,11 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         actions.push({
             actionId: createAiLegalActionId('interaction', current.id, 'empty-selection'),
             kind: 'interaction-choice',
-            label: '不选择任何项',
-            commands: [{
-                type: 'SYS_INTERACTION_RESPOND',
-                payload: { optionIds: [] },
-            }],
+                label: '不选择任何项',
+                commands: [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: buildSimpleChoicePayload(data.sourceId, current.id, [], data.multi),
+                }],
             aiHints: [OPTIONAL_SKIP_AI_HINT],
             metadata: {
                 interactionId: current.id,
@@ -1245,7 +1227,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: '取消交互（无可用选项）',
                 commands: [{
                     type: 'SYS_INTERACTION_CANCEL',
-                    payload: { reason: 'empty-options' },
+                    payload: {},
                 }],
                 aiHints: [OPTIONAL_SKIP_AI_HINT],
                 metadata: {
@@ -1275,7 +1257,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: combination.map((option) => option.label ?? option.id).join(' + ') || `交互多选 ${index + 1}`,
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: buildSimpleChoicePayload(optionIds, data.multi),
+                    payload: buildSimpleChoicePayload(data.sourceId, current.id, optionIds, data.multi),
                 }],
                 aiHints,
                 metadata: {
@@ -1299,7 +1281,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
             label: option.label ?? `交互选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: buildSimpleChoicePayload([option.id], data.multi),
+                payload: buildSimpleChoicePayload(data.sourceId, current.id, [option.id], data.multi),
             }],
             aiHints,
             metadata: {
@@ -1321,8 +1303,9 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
     if (!selection) return [];
     const taken = buildFactionSelectionIdentitySet(selection.takenFactions);
     const actions: AiLegalAction[] = [];
-    const availableFactions = SELECTABLE_FACTIONS.filter((factionId) => !taken.has(normalizeFactionSelectionId(factionId)));
-    const candidates = availableFactions.length > 0 ? availableFactions : SELECTABLE_FACTIONS;
+    const selectableFactions = getSelectableFactions(state.core.enabledExpansions ?? ['titans', 'diy']);
+    const availableFactions = selectableFactions.filter((factionId) => !taken.has(normalizeFactionSelectionId(factionId)));
+    const candidates = availableFactions.length > 0 ? availableFactions : selectableFactions;
 
     for (const factionId of candidates) {
         appendAction(actions, state, playerId, {
@@ -1335,7 +1318,7 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
             }],
             metadata: {
                 factionId,
-                priority: getFactionPriority(factionId),
+                visibleStepDelayPolicy: 'hidden',
             },
         });
     }
@@ -1548,7 +1531,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
         }
 
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.ownerId !== playerId) continue;
+            const ongoingControllerId =
+                (ongoing.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                ?? ongoing.ownerId;
+            if (ongoingControllerId !== playerId) continue;
             appendAction(actions, state, playerId, {
                 actionId: createAiLegalActionId('use-talent', 'ongoing', ongoing.uid, baseIndex),
                 kind: 'use-talent',
@@ -1568,7 +1554,10 @@ const buildTalentActions = (state: SmashUpState, playerId: PlayerId): AiLegalAct
 
         for (const minion of base.minions) {
             for (const attached of minion.attachedActions) {
-                if (attached.ownerId !== playerId) continue;
+                const attachedControllerId =
+                    (attached.metadata as { sourceControllerId?: string } | undefined)?.sourceControllerId
+                    ?? attached.ownerId;
+                if (attachedControllerId !== playerId) continue;
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('use-talent', 'attached', attached.uid, baseIndex),
                     kind: 'use-talent',
@@ -1599,6 +1588,7 @@ const buildSpecialActions = (
     const actions: AiLegalAction[] = [];
     const includeMinions = options?.includeMinions ?? true;
     const includeTitans = options?.includeTitans ?? true;
+    const manualScoringBaseIndices = new Set(getManualSpecialScoringBaseIndices(state));
 
     state.core.bases.forEach((base, baseIndex) => {
         if (includeMinions) {
@@ -1616,7 +1606,7 @@ const buildSpecialActions = (
                         baseIndex,
                         minionUid: minion.uid,
                         defId: minion.defId,
-                        scoringBase: getScoringEligibleBaseIndices(state.core).includes(baseIndex),
+                        scoringBase: manualScoringBaseIndices.has(baseIndex),
                     },
                 });
             }
@@ -1637,7 +1627,7 @@ const buildSpecialActions = (
                         titanUid: titan.uid,
                         defId: titan.defId,
                         sourceType: 'titan',
-                        scoringBase: getScoringEligibleBaseIndices(state.core).includes(baseIndex),
+                        scoringBase: manualScoringBaseIndices.has(baseIndex),
                     },
                 });
             }
@@ -1726,14 +1716,40 @@ const estimateCardKeepValue = (card: CardInstance): number => {
 };
 
 const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): AiLegalAction[] | null => {
-    const responseWindow = state.sys.responseWindow?.current;
-    if (!responseWindow) return null;
+    const reactionWindow = getSmashUpReactionWindowPresentation(state);
+    if (reactionWindow) {
+        if (reactionWindow.activePlayerId !== playerId) return null;
+        const actions: AiLegalAction[] = [{
+            actionId: createAiLegalActionId('response-pass', reactionWindow.windowType, playerId),
+            kind: 'response-pass',
+            label: '跳过响应',
+            commands: [{
+                type: 'RESPONSE_PASS',
+                payload: {},
+            }],
+            metadata: {
+                windowType: reactionWindow.windowType,
+            },
+        }];
 
-    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex];
+        actions.push(...buildPlayableCardActions(state, playerId, { inResponseWindow: true }));
+        return actions;
+    }
+
+    const responseWindow = state.sys.responseWindow?.current as {
+        sourceId?: unknown;
+        responderQueue?: unknown[];
+        currentResponderIndex?: number;
+        windowType?: string;
+    } | undefined;
+    if (!responseWindow || responseWindow.sourceId === 'smashup_reaction_choose') return null;
+
+    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex ?? 0];
     if (currentResponderId !== playerId) return null;
+    const windowType = responseWindow.windowType ?? 'response';
 
     const actions: AiLegalAction[] = [{
-        actionId: createAiLegalActionId('response-pass', responseWindow.windowType, playerId),
+        actionId: createAiLegalActionId('response-pass', windowType, playerId),
         kind: 'response-pass',
         label: '跳过响应',
         commands: [{
@@ -1741,7 +1757,7 @@ const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): Ai
             payload: {},
         }],
         metadata: {
-            windowType: responseWindow.windowType,
+            windowType,
         },
     }];
 
@@ -1822,19 +1838,16 @@ const actionKindScorer = createActionKindScorer('action-kind', {
 });
 
 const factionScorer: LocalAiActionScorer = {
-    id: 'faction-priority',
+    id: 'setup-faction-composition',
     score(context, action) {
         if (action.kind !== 'select-faction') return null;
-        const priority = typeof action.metadata?.priority === 'number'
-            ? action.metadata.priority
-            : FACTION_PRIORITY.length + 10;
         const factionId = typeof action.metadata?.factionId === 'string' ? action.metadata.factionId : '';
         const state = context.visibleState as SmashUpState;
         const selectedFactionIds = getResolvedPlayerFactionIds(state, context.playerId);
         const synergy = scoreFactionSynergy(selectedFactionIds, factionId);
         return {
-            score: 40 - priority + synergy.score,
-            reason: `优先选择 ${String(action.metadata?.factionId ?? '稳定派系')}：${synergy.reason}`,
+            score: synergy.score,
+            reason: `按派系组合选择 ${String(action.metadata?.factionId ?? '候选派系')}：${synergy.reason}`,
         };
     },
 };
@@ -1843,14 +1856,22 @@ const setupFactionRandomScorer: LocalAiActionScorer = {
     id: 'setup-faction-random',
     score(context, action) {
         if (action.kind !== 'select-faction') return null;
-        const amplitude = Math.max(0, Math.min(12, context.difficulty?.randomness ?? 6));
-        if (amplitude === 0) {
-            return null;
-        }
-        const noise = buildDeterministicAiNoise(context, action, 'setup');
+        const state = context.visibleState as SmashUpState;
+        const selectedFactionIds = getResolvedPlayerFactionIds(state, context.playerId);
+        const factionId = typeof action.metadata?.factionId === 'string' ? action.metadata.factionId : '';
+        const identityAction = selectedFactionIds.length === 0 && factionId
+            ? {
+                ...action,
+                actionId: createAiLegalActionId('select-faction-identity', normalizeFactionSelectionId(factionId)),
+            }
+            : action;
+        const amplitude = 12;
+        const noise = buildDeterministicAiNoise(context, identityAction, 'setup');
         return {
             score: Number((noise * amplitude).toFixed(3)),
-            reason: '派系选择随机扰动',
+            reason: selectedFactionIds.length === 0
+                ? '首个派系从合法身份池中随机选择'
+                : '相近派系组合之间保留可复现变化',
         };
     },
 };
@@ -2455,6 +2476,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
 export const smashUpAiRuntime: GameAiRuntime = {
     gameId: 'smashup',
     buildLegalActions: buildSmashUpAiLegalActions,
+    defaultMinimumActionDelayMs: 3000,
     resolveOnlineDecisionVisibility(args) {
         if (shouldUseSharedDecisionViewForReactionOrdering({
             playerId: args.playerId,

@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { resolveCommandError } from '../errorI18n';
 
 // ── 辅助 ──────────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,19 @@ const DICETHRONE_ERROR_CODES = [
     // 'cannot_advance_phase' 已在上方
 ] as const;
 
+function createMockI18n(nsData: Record<string, Record<string, string>>) {
+    return {
+        exists: (key: string, options?: { ns?: string }) => {
+            const ns = options?.ns ?? 'game';
+            return nsData[ns]?.[key] !== undefined;
+        },
+        t: (key: string, options?: { ns?: string }) => {
+            const ns = options?.ns ?? 'game';
+            return nsData[ns]?.[key] ?? key;
+        },
+    } as any;
+}
+
 // ── 测试 ──────────────────────────────────────────────────────────────────────
 
 describe('引擎 error code 国际化完整性', () => {
@@ -158,5 +172,30 @@ describe('引擎 error code 国际化完整性', () => {
                 });
             }
         }
+    });
+
+    describe('resolveCommandError 泛化错误码展示策略', () => {
+        const mockI18n = createMockI18n({
+            game: {
+                'error.pipeline_error': '命令执行异常，请稍后重试',
+                'error.command_failed': '命令执行失败',
+                'error.invalid_phase': '当前阶段不允许此操作',
+            },
+        });
+
+        it('裸 pipeline_error / command_failed 不再翻成泛提示，而是保留错误码本身', () => {
+            expect(resolveCommandError(mockI18n, 'pipeline_error')).toBe('pipeline_error');
+            expect(resolveCommandError(mockI18n, 'command_failed')).toBe('command_failed');
+        });
+
+        it('带细节的 pipeline_error 保持原始详情字符串', () => {
+            expect(resolveCommandError(mockI18n, 'pipeline_error: SmashUp ability 缺少声明')).toBe(
+                'pipeline_error: SmashUp ability 缺少声明',
+            );
+        });
+
+        it('非泛化错误码仍按 i18n 翻译', () => {
+            expect(resolveCommandError(mockI18n, 'invalid_phase')).toBe('当前阶段不允许此操作');
+        });
     });
 });

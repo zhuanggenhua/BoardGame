@@ -20,7 +20,7 @@ import {
   setupSWOnlineMatch,
   waitForPhase as waitForPhaseViaHelper,
 } from '../helpers/summonerwars';
-import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
+import { createDeckByFactionId } from '../../src/games/summonerwars/config/factions';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;

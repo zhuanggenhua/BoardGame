@@ -36,6 +36,8 @@ export interface LocalInteractionState {
     selectedStatus?: { playerId: string; statusId: string };
     /** 已选择的玩家 ID 列表 */
     selectedPlayers: string[];
+    /** 已选择的手牌 ID 列表 */
+    selectedCardIds: string[];
 }
 
 /**
@@ -50,6 +52,8 @@ export interface InteractionHandlers {
     selectStatus: (playerId: string, statusId: string) => void;
     /** 选择玩家 */
     selectPlayer: (playerId: string) => void;
+    /** 选择手牌 */
+    selectHandCard: (cardId: string) => void;
     /** 重置状态 */
     reset: () => void;
 }
@@ -63,7 +67,37 @@ const INITIAL_STATE: LocalInteractionState = {
     totalAdjustment: 0,
     selectedStatus: undefined,
     selectedPlayers: [],
+    selectedCardIds: [],
 };
+
+function buildInteractionResetSignature(pendingInteraction?: InteractionDescriptor): string {
+    if (!pendingInteraction) return 'none';
+
+    return JSON.stringify({
+        id: pendingInteraction.id,
+        playerId: pendingInteraction.playerId,
+        sourceCardId: pendingInteraction.sourceCardId,
+        type: pendingInteraction.type,
+        titleKey: pendingInteraction.titleKey,
+        selectCount: pendingInteraction.selectCount,
+        minSelectCount: pendingInteraction.minSelectCount,
+        selected: pendingInteraction.selected,
+        skipAbilityReselection: pendingInteraction.skipAbilityReselection,
+        targetPlayerIds: pendingInteraction.targetPlayerIds,
+        dieModifyConfig: pendingInteraction.dieModifyConfig,
+        transferConfig: pendingInteraction.transferConfig,
+        tokenGrantConfig: pendingInteraction.tokenGrantConfig,
+        tokenGrantConfigs: pendingInteraction.tokenGrantConfigs,
+        statusGrantConfig: pendingInteraction.statusGrantConfig,
+        statusGrantConfigs: pendingInteraction.statusGrantConfigs,
+        resolveCustomActionId: pendingInteraction.resolveCustomActionId,
+        diceOwnerId: pendingInteraction.diceOwnerId,
+        targetOpponentDice: pendingInteraction.targetOpponentDice,
+        allowedDieIds: pendingInteraction.allowedDieIds,
+        completedDieIds: pendingInteraction.completedDieIds,
+        requiresTargetWithStatus: pendingInteraction.requiresTargetWithStatus,
+    });
+}
 
 /**
  * 管理交互状态的 Hook
@@ -73,8 +107,9 @@ const INITIAL_STATE: LocalInteractionState = {
  */
 export function useInteractionState(pendingInteraction?: InteractionDescriptor) {
     const [localState, setLocalState] = useState<LocalInteractionState>(INITIAL_STATE);
+    const interactionResetSignature = buildInteractionResetSignature(pendingInteraction);
 
-    // 当 pendingInteraction 变化时自动重置状态
+    // 当交互语义变化时自动重置状态，避免同 id 下候选/上下文漂移时残留旧选择
     useEffect(() => {
         let cancelled = false;
         queueMicrotask(() => {
@@ -85,7 +120,7 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
         return () => {
             cancelled = true;
         };
-    }, [pendingInteraction?.id]);
+    }, [interactionResetSignature]);
 
     /**
      * 选择骰子（支持单选和多选）
@@ -181,6 +216,21 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
     }, [pendingInteraction?.selectCount]);
 
     /**
+     * 选择手牌（用于由持有者自行弃牌的交互）
+     */
+    const selectHandCard = useCallback((cardId: string) => {
+        const maxSelectCount = pendingInteraction?.selectCount ?? 1;
+        setLocalState(prev => ({
+            ...prev,
+            selectedCardIds: prev.selectedCardIds.includes(cardId)
+                ? prev.selectedCardIds.filter(id => id !== cardId)
+                : (prev.selectedCardIds.length < maxSelectCount
+                    ? [...prev.selectedCardIds, cardId]
+                    : prev.selectedCardIds),
+        }));
+    }, [pendingInteraction?.selectCount]);
+
+    /**
      * 手动重置状态
      */
     const reset = useCallback(() => {
@@ -194,6 +244,7 @@ export function useInteractionState(pendingInteraction?: InteractionDescriptor) 
             modifyDie,
             selectStatus,
             selectPlayer,
+            selectHandCard,
             reset
         }
     };

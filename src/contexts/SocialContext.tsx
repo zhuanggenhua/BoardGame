@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useMemo, type ReactNode
 import { useAuth } from './AuthContext';
 import { generateUUID } from '../lib/uuid';
 import { socialSocket, SOCIAL_EVENTS, scheduleDeferredSocialConnect, normalizeNewMessagePayload, type FriendStatusPayload, type FriendRequestPayload, type NewMessagePayload } from '../services/socialSocket';
-import { AUTH_API_URL } from '../config/server';
+import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import type { FriendUser, FriendRequest, Conversation, Message, SearchUserResult } from '../services/social.types';
 import i18n from '../lib/i18n';
 import { createScopedLogger } from '../lib/logger';
@@ -73,6 +73,10 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     const unreadTotal = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
 
     const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+        if (IS_DEV_API_DISABLED) {
+            throw new Error('Social API disabled in dev:lite mode');
+        }
+
         if (!token) throw new Error('Not authenticated');
 
         const headers = {
@@ -140,12 +144,22 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     }, [authenticatedFetch, token, user?.id]);
 
     const ensureRealtimeConnection = useCallback(() => {
+        if (IS_DEV_API_DISABLED) return;
         if (!token) return;
         socialSocket.connect(token);
     }, [token]);
 
     // WebSocket 连接管理：连接生命周期只跟鉴权状态走，避免热更新触发断开
     useEffect(() => {
+        if (IS_DEV_API_DISABLED) {
+            socialSocket.disconnect();
+            setIsConnected(false);
+            setFriends([]);
+            setRequests([]);
+            setConversations([]);
+            return;
+        }
+
         if (token) {
             const cancelDeferredConnect = scheduleDeferredSocialConnect(() => {
                 socialSocket.connect(token);
@@ -163,6 +177,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
     // 心跳定时器：定期发送 heartbeat 刷新服务端在线状态缓存（TTL 60s，每 30s 发一次）
     useEffect(() => {
+        if (IS_DEV_API_DISABLED) return;
         if (!token) return;
 
         const HEARTBEAT_INTERVAL = 30_000;
@@ -177,6 +192,10 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
     // WebSocket 事件绑定：只清理监听，不主动断开连接
     useEffect(() => {
+        if (IS_DEV_API_DISABLED) {
+            return;
+        }
+
         if (!token || !user) {
             return;
         }

@@ -1,6 +1,7 @@
 ## Session: 2026-05-22 七大恨区域制图工具越界修复
 
 - **Status:** verified-current-slice-with-e2e
+- 2026-06-07 01:20 +08：继续沿《七大恨》正式规则实施推进，这轮先清掉 `src/games/qidahen/domain/index.ts` 中混入的 Git 合并冲突标记，恢复 runner 基线；随后继续补 `payment-selection.test.ts` 的真实焦点守卫，没有新增领域实现修补，也没有新建 OpenSpec spec/change。当前新增并经定向验证的结论包括：`征召军队` 进入 `recruit-choice` 时焦点保持 `song-jin`；`驱虎吞狼` 同意后进入 `dispatch-targeting` 时焦点保持 `jinzhou`；`新年防线维护` 等待态保持 `season-resolution + song-jin`；`孙元化与袁崇焕同时在场时会先进入弃 2 牌打科技选择` 这条链当前真实焦点保持 `city-region-25`，不会因为点了 `song-jin` 就切过去；`超限弃牌` 收尾回到 `action-window` 时焦点保持 `city-region-14`；`raid` 进入 `resolve-pending` 的第一拍会先收回真实来源区 `jinzhou`；`调骑 4` 限制态与“无骑兵不进目标选择”两条链都保持 `city-region-16`；另两条 `dispatch-targeting` 入口也已正式锁住 `selectedRegionId / sourceRegionId`。验证结果：`node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/movementRules.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `261 passed`；`npx eslint src/games/qidahen/domain/index.ts src/games/qidahen/__tests__/payment-selection.test.ts --max-warnings 0` 与 `npx tsc --noEmit --pretty false` 通过；对整个 `src/games/qidahen/__tests__` 跑“`turnPhase` 邻域缺少 `selectedRegionId / sourceRegionId`”窄筛，当前结果已清零。结论：这轮先恢复了可持续验证状态，再继续把当前测试层这批仍偏弱的入口/等待态守卫补成正式回归；后续继续从这类窄筛覆盖不到的实现边界或更高层验证入口推进。
 - 2026-06-06 23:19 +08：继续沿《七大恨》正式规则实施推进，这轮继续把外交雇佣三连处理链补成正式焦点守卫，没有新增领域实现修补，也没有新建 OpenSpec spec/change。当前补的 9 条真实落点分两组：其一，`同一次外交雇佣最多可连续处理 3 个相邻区域后自动结算雇佣` 与 `移除友好标记时若雇佣军已进入 cityState，也会同步移除 cityState 雇佣军并扣减势力兵力` 两条三连外交完成态，真实链路都是 `step0 diplomacy-choice + city-region-25 -> step1Target/step1/step2Target/step2 diplomacy-choice + city-region-24 -> step3Target diplomacy-choice + city-region-28 -> finished action-window + city-region-13`，确认收尾时不是停在最后外交目标，而是正常轮转到下一家默认焦点；其二，上一轮同批已补进本次回填的 7 条“后金人物共存豁免 / 蒙古本土外交入口 / 本土回归完成态”链，也都已经按真实 `turnPhase / selectedRegionId / diplomacy target` 锁住。验证结果：定向 2 条三连外交用例 `2 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/movementRules.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 继续为 `261 passed`；`npx eslint src/games/qidahen/domain/index.ts src/games/qidahen/__tests__/payment-selection.test.ts --max-warnings 0` 与 `npx tsc --noEmit --pretty false` 通过。结论：这批外交三连完成态当前也是绿的，没有新的领域红灯；后续继续扫其它尚未显式锁住 `selectedRegionId` 的完成态与收尾分支。
 - 2026-06-06 23:15 +08：继续沿《七大恨》正式规则实施推进，这轮继续把“后金人物共存豁免 / 蒙古本土外交入口 / 本土回归完成态”补成正式焦点守卫，没有新增领域实现修补，也没有新建 OpenSpec spec/change。我先用 `tsx` 读了 7 条链的真实落点：`努尔哈赤在场时会允许后金贝勒共存，不会触发皇太极冲突移除` 与 `努尔哈赤在场时会允许代善与其他后金贝勒共存，不会触发代善冲突回牌堆` 两条后金开窗豁免，结算后都维持 `action-window + city-region-19`；`齐赛诺延在场时会把奈曼部视为蒙古无标记本土，不能再对其执行外交` 的入口链为 `khan-edict-choice + city-region-14 -> diplomacy-choice + city-region-14 -> diplomacy-choice + city-region-17`；`衮楚克图吉在场时会把敖汉部视为蒙古无标记本土，不能再对其执行外交` 的入口链为 `city-region-17 -> city-region-17 -> city-region-19`；`绰克图台吉在场时会把外喀尔喀部视为蒙古无标记本土，不能再对其执行外交` 的入口链为 `city-region-1 -> city-region-1 -> city-region-2`；`林丹·乎图克图在场时会把巴林部视为蒙古无标记本土，不能再对其执行外交` 的入口链为 `city-region-1 -> city-region-1 -> city-region-8`；`齐赛诺延在场时移除奈曼部控制标记后会回归蒙古本土` 的完成态出口则继续保持 `diplomacy-choice + city-region-17`。这些都已补成正式断言。验证结果：定向 6 条入口用例 `6 passed`，定向 1 条完成态用例 `1 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/movementRules.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 继续为 `261 passed`；`npx eslint src/games/qidahen/domain/index.ts src/games/qidahen/__tests__/payment-selection.test.ts --max-warnings 0` 与 `npx tsc --noEmit --pretty false` 通过。结论：这 7 条“共存豁免 / 本土外交入口 / 回归本土完成态”当前也是绿的，没有新的领域红灯；后续继续扫其它尚未显式锁住 `selectedRegionId` 的低频入口与完成态。
 - 2026-06-06 23:09 +08：继续沿《七大恨》正式规则实施推进，这轮继续把“新行动窗口前人物效果 / 同窗重复触发 / 人物冲突移出”补成正式焦点守卫，没有新增领域实现修补，也没有新建 OpenSpec spec/change。我先用 `tsx` 读了 9 条窗口分支的真实落点：`皇太极与其他后金贝勒同场时会在新的后金行动窗口前被拣弃并移出游戏`、`代善与其他后金贝勒同场时会在新的后金行动窗口前被拣弃并回到后金人物牌堆`、`袁崇焕在场时会让努尔哈赤在新的后金行动窗口前被移出游戏` 三条后金开窗冲突，结算后都维持 `action-window + city-region-19`；`林丹·乎图克图在场时会在新的蒙古行动窗口前向蒙古区域放置 1 步影响力，且同一窗口不重复触发` 当前确认首窗焦点落到新加友好标记区 `city-region-8`，同窗改点后会切到 `city-region-25`，下一窗口再次触发后仍收回 `city-region-8`；`毛文龙在场时会在新的大明行动窗口前免费训练东江部队，且同一窗口不重复触发` 则保持普通 `action-window`，首窗焦点在 `city-region-22`，同窗改点后切到 `song-jin`；`王化贞在场时会在新的大明行动窗口前进入免费内部调度选择，且同一窗口不重复触发` 首窗为 `internal-dispatch-choice + city-region-25`，同窗改点后会把 `selectedRegionId / internalDispatchSelection.sourceRegionId` 一起切到 `city-region-24`；`熊廷弼在场时会在新的大明行动窗口前免费训练最多4个部队，且同一窗口不重复触发` 首窗停在 `song-jin`，同窗改点后切到 `city-region-22`；`毛文龙与袁崇焕同场时会在新的大明行动窗口前离场` 会维持 `action-window + city-region-22`；`绰克图台吉在场时会在每个新的蒙古行动窗口前于外喀尔喀部免费建立 2 个骑兵，且同一窗口不重复触发` 三拍焦点依次为 `city-region-2 -> city-region-14 -> city-region-2`。这些都已补成正式断言。验证结果：定向 9 条回归 `9 passed`；`node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/movementRules.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 继续为 `261 passed`；`npx eslint src/games/qidahen/domain/index.ts src/games/qidahen/__tests__/payment-selection.test.ts --max-warnings 0` 与 `npx tsc --noEmit --pretty false` 通过。结论：这 9 条窗口前/人物冲突链当前也是绿的，没有新的领域红灯；后续继续扫其它尚未显式锁住 `selectedRegionId` 的人物启用与完成态分支。
@@ -8838,3 +8839,53 @@
 - 当前结论：
   - 这轮仍然没有新增领域实现改动，继续是在真实绿灯链路上补齐正式回归守卫
   - 接下来可以继续沿 `post-battle-decision / resolve-pending` 的剩余残口推进，不需要回头重复窗口态
+
+## 2026-06-07 06:58 +08 E2E 启动基线与新年防线维护焦点漂移已一起修掉
+
+- 已修改：
+  - `src/games/qidahen/manifest.ts`
+  - `src/games/manifest.generated.ts`
+  - `src/games/manifest.client.generated.tsx`
+  - `android/app/src/main/assets/game-orientation-map.json`
+  - `src/games/qidahen/domain/index.ts`
+  - `src/games/qidahen/__tests__/payment-selection.test.ts`
+  - `e2e/qidahen-basic-flow.e2e.ts`
+  - `task_plan.md`
+  - `progress.md`
+- 本轮推进内容：
+  - 先重试 3 条定向 E2E 时，连续暴露出两类不是《七大恨》业务语义本身、但会直接阻断验证的基线问题：
+    - `src/games/qidahen/manifest.ts` 残留 Git 冲突标记，导致 isolated-single 游戏服务打包直接失败
+    - `src/games/manifest.generated.ts` 仍引用不存在的 `./archview/manifest`，导致 `/play/qidahen/tutorial` 前端被 Vite overlay 拦住
+  - 已分别处理：
+    - 清掉 `qidahen/manifest.ts` 冲突标记，并保留当前素材 key 口径
+    - 重生成 `src/games/manifest.generated.ts` / `manifest.client.generated.tsx`，让当前 worktree 的游戏目录与导入表重新一致
+  - 基线恢复后，最后一条 E2E 暴露出真实业务红灯：
+    - 蒙古跨到后金后进入“新年防线维护”时，领域层把 `selectedRegionId` 留在了换人后的默认区 `city-region-13`
+    - 真实期望应继续锚定逻辑区辽西 `song-jin`
+  - 已修复领域实现：
+    - 在 `wheel-new-year -> season-resolution` 迁移时显式写回 `selectedRegionId: 'song-jin'`
+  - 已补回归：
+    - 单测新增 `蒙古跨到后金的新年防线维护等待态会重新锚定逻辑区辽西，而不是沿当前玩家默认选区漂到建州`
+    - E2E 中补的 3 组 `data-map-selected` 焦点断言现已全部验证通过
+- 已完成验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1 -t "轮盘进入新年时会结算朝鲜朝贡、防线维护与兵力耗损|新年防线维护等待选择时点逻辑区辽西，不会把 selectedRegionId 漂离当前焦点|蒙古跨到后金的新年防线维护等待态会重新锚定逻辑区辽西，而不是沿当前玩家默认选区漂到建州"`
+  - `3 passed`
+  - `node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "进入新势力行动窗口时可手动选择超限弃牌"`
+  - `1 passed`
+  - `node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "驱虎吞狼会先进入同意选择，目标同意后再抽牌并进入指挥调度目标选择"`
+  - `1 passed`
+  - `node scripts/infra/run-e2e-single.mjs default e2e/qidahen-basic-flow.e2e.ts "轮盘跨过年中与新年时会显示结算摘要和防线状态"`
+  - `1 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/movementRules.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1`
+  - `262 passed`
+  - `npx eslint src/games/qidahen/domain/index.ts src/games/qidahen/manifest.ts src/games/qidahen/__tests__/payment-selection.test.ts --max-warnings 0`
+  - `npx tsc --noEmit --pretty false`
+- 补充说明：
+  - `src/games/manifest.generated.ts` 自带 `/* eslint-disable */`，当前内容下会报 `Unused eslint-disable directive` 警告；因此本轮 lint 门禁按人工修改文件执行，不把该生成产物的噪音告警误记成业务红灯
+- 当前结论：
+  - 这轮不只是补了断言，还顺手清掉了两类会持续阻塞后续 UI/E2E 推进的基线问题
+  - “新年防线维护等待态真实焦点应锚定 `song-jin`” 现在已经在领域层、单测层、E2E/UI 层三层对齐
+  - 当前这批已补的 3 条 E2E 焦点守卫全部转绿
+- 下一步：
+  - 继续从其它高层等待态/完成态找还没正式锁 `data-map-selected` 的关键交互
+  - 优先避开已清零的窗口态筛选器，转去查本轮之外的 `season-resolution / post-battle-decision / resolve-pending` 相邻链路

@@ -1,1 +1,18 @@
-export type * from '../shared/gameManifest.types';
+export type {
+    GameCategory,
+    GameManifestAiSupport,
+    GameManifestEntry,
+    GameManifestMobileDelivery,
+    GameManifestType,
+    GameMobileBattlefieldZoom,
+    GameMobileDeliveryMode,
+    GameMobileLayoutPreset,
+    GameMobileProfile,
+    GameOrientationPreference,
+    GamePreloadAssets,
+    GameSetupField,
+    GameSetupMultiSelectField,
+    GameSetupSelectField,
+    GameSetupSelectOption,
+    GameShellTarget,
+} from '../shared/gameManifest.types';

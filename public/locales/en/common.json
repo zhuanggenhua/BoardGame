@@ -2,7 +2,8 @@
   "button": {
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "processing": "Processing"
   },
   "category": {
     "all": "All Games",
@@ -25,6 +26,7 @@
     "under_construction": "Under Construction"
   },
   "game_details": {
+    "description": "Description",
     "best_players": "Best Players",
     "people": "Players",
     "player_count": "Players",
@@ -118,7 +120,6 @@
   },
   "game_names": {
     "archview": "Architecture View",
-    "airepoworkbench": "AI Repo Workbench",
     "assetslicer": "Asset Slicer",
     "audiobrowser": "Audio Browser",
     "cardia": "Cardia",
@@ -127,8 +128,7 @@
     "dicethrone": "Dice Throne",
     "fxpreview": "Effect Preview",
     "smashup": "Smash Up",
-    "summonerwars": "Summoner Wars",
-    "ugcbuilder": "UGC Prototype Builder"
+    "summonerwars": "Summoner Wars"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - Tutorial",

@@ -50,23 +50,37 @@ export interface AiDifficultyProfile {
     evaluatorProfile: 'basic' | 'balanced' | 'strong' | 'expert';
 }
 
+type ManualSetupSelectionFlagFields<TValue> = {
+    manualSetupSelection?: TValue;
+    /**
+     * @deprecated 旧命名仍兼容；新游戏应优先使用 manualSetupSelection。
+     */
+    manualFactionSelection?: TValue;
+};
+
+export type ManualSetupSeatControllerLike = {
+    type?: unknown;
+} & ManualSetupSelectionFlagFields<unknown>;
+
+export type AiManualSetupSelectionFlags = ManualSetupSelectionFlagFields<boolean>;
+
 export type AiSeatController =
     | { type: 'human' }
-    | {
+    | ({
         type: 'local-ai';
         policyId?: string;
         fallbackPolicyId?: string;
         difficulty?: AiDifficultyLevel;
         minimumActionDelayMs?: number;
-    }
-    | {
+    } & AiManualSetupSelectionFlags)
+    | ({
         type: 'remote-ai';
         providerId: string;
         fallbackPolicyId?: string;
         timeoutMs?: number;
         retryCount?: number;
         minimumActionDelayMs?: number;
-    };
+    } & AiManualSetupSelectionFlags);
 
 export interface AiInteractionOptionSnapshot {
     id: string;
@@ -228,6 +242,7 @@ export interface GameAiRuntime {
         privateOverlay: MatchState<unknown> | null;
     }): OnlineAiDecisionVisibility | null | undefined;
     localVisibleStepDelayConfig?: LocalAiVisibleStepDelayConfig;
+    defaultMinimumActionDelayMs?: number;
     /**
      * @deprecated 旧命名；读取仍兼容，建议迁移到 localVisibleStepDelayConfig。
      */

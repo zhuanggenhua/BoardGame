@@ -1,0 +1,336 @@
+import { describe, expect, it } from 'vitest';
+import type { MatchState } from '../../../core/types';
+import { buildSmashUpAiLegalActions } from '../ai';
+import type { SmashUpCore } from '../types';
+import { makeState } from './helpers';
+
+function makeAiState(overrides?: Partial<MatchState<SmashUpCore>>): MatchState<SmashUpCore> {
+    const baseState: MatchState<SmashUpCore> = {
+        core: makeState({ bases: [] }) as any,
+        sys: {
+            phase: 'playCards',
+            flowHalted: false,
+            interaction: {
+                current: null,
+                queue: [],
+            },
+            responseWindow: {
+                current: null,
+                history: [],
+            },
+        } as any,
+    };
+
+    return {
+        ...baseState,
+        ...overrides,
+        core: {
+            ...baseState.core,
+            ...(overrides?.core ?? {}),
+        },
+        sys: {
+            ...baseState.sys,
+            ...(overrides?.sys ?? {}),
+        },
+    } as MatchState<SmashUpCore>;
+}
+
+describe('Smash Up AI 交互候选枚举', () => {
+    it('optional multi 交互应保留空选动作，避免链式 special 卡死', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'miskatonic_field_trip_optional',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'miskatonic_field_trip',
+                            options: [
+                                { id: 'card-1', label: '选择 h1', value: { cardUid: 'h1' } },
+                                { id: 'card-2', label: '选择 h2', value: { cardUid: 'h2' } },
+                            ],
+                            multi: { min: 0, max: 2 },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const emptySelection = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.optionIds
+            && Array.isArray((action.commands[0] as any).payload.optionIds)
+            && (action.commands[0] as any).payload.optionIds.length === 0,
+        );
+
+        expect(emptySelection).toBeDefined();
+        expect(emptySelection?.label).toContain('不选择');
+        expect((emptySelection?.commands[0] as any)?.payload?.interactionId).toBe('miskatonic_field_trip_optional');
+    });
+
+    it('optional multi 显式提供 skip 按钮时，不应再额外生成空选择或 skip+卡牌混合动作', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'optional-multi-with-skip',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'cthulhu_it_begins_again',
+                            options: [
+                                { id: 'card-1', label: '选择 a1', value: { cardUid: 'a1', defId: 'cthulhu_madness' } },
+                                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                            ],
+                            multi: { min: 0, max: 1 },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const emptySelections = legalActions.filter(action =>
+            action.kind === 'interaction-choice'
+            && Array.isArray((action.commands[0] as any)?.payload?.optionIds)
+            && (action.commands[0] as any).payload.optionIds.length === 0,
+        );
+        const hybridSkipCombos = legalActions.filter(action =>
+            action.kind === 'interaction-choice'
+            && Array.isArray((action.commands[0] as any)?.payload?.optionIds)
+            && (action.commands[0] as any).payload.optionIds.includes('skip')
+            && (action.commands[0] as any).payload.optionIds.length > 1,
+        );
+
+        expect(emptySelections).toHaveLength(0);
+        expect(hybridSkipCombos).toHaveLength(0);
+        expect(legalActions.some(action => (action.commands[0] as any)?.payload?.optionId === 'skip')).toBe(true);
+        expect(legalActions.some(action => (action.commands[0] as any)?.payload?.optionId === 'card-1')).toBe(true);
+    });
+
+    it('ordered multi 交互应把不同顺序视为不同 AI 合法动作', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'ordered-multi-test',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'fairies_titania',
+                            options: [
+                                { id: 'branch-a', label: '先做 A', value: { branchId: 'a' } },
+                                { id: 'branch-b', label: '先做 B', value: { branchId: 'b' } },
+                            ],
+                            multi: { min: 2, max: 2, ordered: true },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const orderedPayloads = legalActions
+            .filter(action => action.kind === 'interaction-choice')
+            .map(action => ((action.commands[0] as any)?.payload?.optionIds ?? []).join(','))
+            .sort();
+
+        expect(orderedPayloads).toEqual(['branch-a,branch-b', 'branch-b,branch-a']);
+    });
+
+    it('required 动态交互刷新后无合法选项时，AI 仍应拿到紧急跳过动作', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'required-empty-live',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'alien_probe',
+                            options: [
+                                { id: 'stale-card', label: '过期手牌', value: { cardUid: 'stale-card', defId: 'pirate_first_mate' } },
+                            ],
+                            autoRefresh: 'hand',
+                            responseValidationMode: 'live',
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const emergencyAction = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.optionId === '__emergency_skip__',
+        );
+
+        expect(emergencyAction).toBeDefined();
+    });
+
+    it('鬼屋交互在旧快照仍保留手牌、但 live 手牌已空时，AI 应改发 emergency skip', () => {
+        const state = makeAiState({
+            core: {
+                players: {
+                    '0': {
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                    },
+                },
+            } as any,
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'base-haunted-house-live-empty',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'base_haunted_house_al9000',
+                            options: [
+                                { id: 'card-0', label: 'Cast the Runes', value: { cardUid: 'c94', defId: 'vikings_cast_the_runes' } },
+                                { id: 'card-1', label: 'Ghostly Arrival', value: { cardUid: 'c114', defId: 'ghost_ghostly_arrival_pod' } },
+                            ],
+                            targetType: 'hand',
+                            responseValidationMode: 'live',
+                            optionsGenerator: (nextState: MatchState<SmashUpCore>) => {
+                                const hand = nextState.core.players['0']?.hand ?? [];
+                                return hand.map((card, index) => ({
+                                    id: `card-${index}`,
+                                    label: card.defId,
+                                    value: { cardUid: card.uid, defId: card.defId },
+                                }));
+                            },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const emergencyAction = legalActions.find(action =>
+            action.kind === 'interaction-choice'
+            && (action.commands[0] as any)?.payload?.interactionId === 'base-haunted-house-live-empty'
+            && (action.commands[0] as any)?.payload?.optionId === '__emergency_skip__',
+        );
+
+        expect(emergencyAction).toBeDefined();
+    });
+
+    it('exact-multi 交互应枚举所有合法组合，而不是总拿前两个', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'elder-thing-pod-destroy',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'elder_thing_elder_thing_pod_destroy',
+                            options: [
+                                { id: 'm1', label: '随从 1', value: { minionUid: 'm1' } },
+                                { id: 'm2', label: '随从 2', value: { minionUid: 'm2' } },
+                                { id: 'm3', label: '随从 3', value: { minionUid: 'm3' } },
+                            ],
+                            multi: { min: 2, max: 2 },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const comboPayloads = legalActions
+            .filter(action => action.kind === 'interaction-choice')
+            .map(action => ((action.commands[0] as any)?.payload?.optionIds ?? []).join(','))
+            .sort();
+
+        expect(comboPayloads).toEqual(['m1,m2', 'm1,m3', 'm2,m3']);
+    });
+
+    it('single-choice 交互动作应把当前 interactionId 带进响应 payload', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'single-choice-interaction-id',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'test_single_choice',
+                            options: [
+                                { id: 'opt-a', label: '选项 A', value: { branch: 'a' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const action = legalActions.find((candidate) => candidate.kind === 'interaction-choice');
+        expect(action).toBeDefined();
+        expect((action?.commands[0] as any)?.payload).toMatchObject({
+            interactionId: 'single-choice-interaction-id',
+            optionId: 'opt-a',
+        });
+    });
+});

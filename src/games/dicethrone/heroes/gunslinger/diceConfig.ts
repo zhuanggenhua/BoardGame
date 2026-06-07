@@ -20,7 +20,7 @@ export const GUNSLINGER_SYMBOLS = GUNSLINGER_DICE_FACE_IDS;
  */
 export const gunslingerDiceDefinition: DiceDefinition = {
     id: 'gunslinger-dice',
-    name: 'Gunslinger Dice',
+    name: 'config.dice.gunslinger.name',
     sides: 6,
     category: 'hero',
     faces: [

@@ -11,6 +11,42 @@ import { validateMatchState, deepMerge, type ValidationError } from '../stateVal
 import type { MatchState } from '../../types';
 import type { MatchStorage } from '../storage';
 
+const testValidators = {
+    smashup: (core: unknown, errors: ValidationError[]) => {
+        const state = core as Record<string, unknown>;
+        if (!state.phase || typeof state.phase !== 'string') {
+            errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
+        }
+        if (!state.players || typeof state.players !== 'object') {
+            errors.push({ field: 'core.players', message: 'Missing or invalid players' });
+        }
+        if (!state.bases || !Array.isArray(state.bases)) {
+            errors.push({ field: 'core.bases', message: 'Missing or invalid bases' });
+        }
+    },
+    dicethrone: (core: unknown, errors: ValidationError[]) => {
+        const state = core as Record<string, unknown>;
+        if (!state.phase || typeof state.phase !== 'string') {
+            errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
+        }
+        if (!state.players || typeof state.players !== 'object') {
+            errors.push({ field: 'core.players', message: 'Missing or invalid players' });
+        }
+    },
+    summonerwars: (core: unknown, errors: ValidationError[]) => {
+        const state = core as Record<string, unknown>;
+        if (!state.phase || typeof state.phase !== 'string') {
+            errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
+        }
+        if (!state.players || typeof state.players !== 'object') {
+            errors.push({ field: 'core.players', message: 'Missing or invalid players' });
+        }
+        if (!state.board || typeof state.board !== 'object') {
+            errors.push({ field: 'core.board', message: 'Missing or invalid board' });
+        }
+    },
+};
+
 // Mock storage
 const createMockStorage = (gameName: string): MatchStorage => ({
     fetch: vi.fn().mockResolvedValue({
@@ -32,7 +68,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -47,7 +83,7 @@ describe('stateValidator', () => {
                     sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -63,7 +99,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 };
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -81,7 +117,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -97,7 +133,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -113,7 +149,7 @@ describe('stateValidator', () => {
                     core: { players: {}, bases: [] },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -129,7 +165,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {} },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -145,7 +181,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {} },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors).toContainEqual({
@@ -161,7 +197,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 };
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(true);
                 expect(result.errors).toEqual([]);
@@ -180,7 +216,7 @@ describe('stateValidator', () => {
                     },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 // Should have at least 3 errors: missing sys, missing phase, missing bases
@@ -203,7 +239,7 @@ describe('stateValidator', () => {
                     core: { phase: 'play', players: {}, bases: [] },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors.length).toBeGreaterThanOrEqual(3);
@@ -225,7 +261,7 @@ describe('stateValidator', () => {
                     },
                 } as any;
 
-                const result = await validateMatchState('match-1', state, storage);
+                const result = await validateMatchState('match-1', state, storage, testValidators);
 
                 expect(result.valid).toBe(false);
                 expect(result.errors.length).toBeGreaterThanOrEqual(3);
@@ -248,12 +284,12 @@ describe('stateValidator', () => {
                             
                             // Test missing sys
                             const noSys = { core: {} } as any;
-                            const result1 = await validateMatchState(matchId, noSys, storage);
+                            const result1 = await validateMatchState(matchId, noSys, storage, testValidators);
                             expect(result1.valid).toBe(false);
                             
                             // Test missing core
                             const noCore = { sys: { matchId, turnOrder: [0, 1], currentPlayerIndex: 0 } } as any;
-                            const result2 = await validateMatchState(matchId, noCore, storage);
+                            const result2 = await validateMatchState(matchId, noCore, storage, testValidators);
                             expect(result2.valid).toBe(false);
                         }
                     ),

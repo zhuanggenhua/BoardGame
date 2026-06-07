@@ -25,7 +25,7 @@ import { SmashUpDomain, smashUpSystemsForTest } from '../game';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../types';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { respondCommand } from './helpers';
 
 function setupWithScoutOnBase(ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> {
     const core = SmashUpDomain.setup(ids, random);
@@ -107,9 +107,9 @@ describe('Alien Scout - No Duplicate Scoring', () => {
                 // 执行 ADVANCE_PHASE 进入记分阶段
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
                 // Base abilities are queued; choose Scout first if an ordering prompt appears.
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'trigger:afterScoring:alien_scout:0:0' } },
+                respondCommand('trigger:afterScoring:alien_scout:0:0', '0'),
                 // 用户选择"返回手牌"
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'yes' } },
+                respondCommand('yes', '0'),
             ] as any[],
         });
         
@@ -145,12 +145,12 @@ describe('Alien Scout - No Duplicate Scoring', () => {
                 // 执行 ADVANCE_PHASE 进入记分阶段
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
                 // Choose each Scout trigger first (reaction ordering prompt).
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'trigger:afterScoring:alien_scout:0:0' } },
+                respondCommand('trigger:afterScoring:alien_scout:0:0', '0'),
                 // 用户选择"返回手牌"（第一个侦察兵）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'yes' } },
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'trigger:afterScoring:alien_scout:0:1' } },
+                respondCommand('yes', '0'),
+                respondCommand('trigger:afterScoring:alien_scout:0:1', '0'),
                 // 用户选择"返回手牌"（第二个侦察兵）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'yes' } },
+                respondCommand('yes', '0'),
             ] as any[],
         });
         

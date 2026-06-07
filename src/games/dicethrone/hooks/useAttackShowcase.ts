@@ -16,13 +16,15 @@ import { useState, useEffect, useCallback } from 'react';
 import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase, CharacterId, PendingAttack, DiceThroneCore } from '../domain/types';
 import type { CardPreviewRef } from '../../../core';
-import { getUpgradeCardPreviewRef } from '../ui/AbilityOverlays';
-import { getAbilitySlotId } from '../ui/abilitySlotMapping';
+import { getUpgradeCardPreviewRef } from '../ui/abilityOverlayHelpers';
+import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { findPlayerAbility } from '../domain/abilityLookup';
 
 export interface AttackShowcaseData {
     /** 攻击方角色 ID */
     attackerCharacterId: CharacterId;
+    /** 攻击方当前玩家板朝向 */
+    attackerPlayerBoardFace?: DiceThroneCore['players'][PlayerId]['playerBoardFace'];
     /** 进攻技能 ID */
     sourceAbilityId: string;
     /** 技能槽 ID（用于从面板裁切基础技能） */
@@ -99,7 +101,7 @@ function buildShowcaseData(
     const baseAbilityId = match.ability.id;
     
     // 使用基础ID查找槽位
-    const slotId = getAbilitySlotId(baseAbilityId);
+    const slotId = getAbilitySlotIdForCharacter(attackerCharId, baseAbilityId);
 
     // 使用基础ID查找等级
     const attackerLevels = abilityLevels[pendingAttack.attackerId] ?? {};
@@ -112,6 +114,7 @@ function buildShowcaseData(
 
     return {
         attackerCharacterId: attackerCharId,
+        attackerPlayerBoardFace: state.players[pendingAttack.attackerId]?.playerBoardFace,
         sourceAbilityId,
         slotId,
         upgradePreviewRef,

@@ -210,6 +210,15 @@ export function formatSplendorActionEntry({
     }
 }
 
+const shouldSuppressSplendorOnlineAiActiveTurnCandidate = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    turnNumber: number | null;
+}): boolean => {
+    const core = args.state.core as { hostStarted?: unknown } | undefined;
+    return core?.hostStarted !== true && (!args.phase || args.turnNumber === 0);
+};
+
 export const engineConfig = createGameEngine<SplendorCore, SplendorCommand, SplendorEvent>({
     domain: SplendorDomain,
     systems: createBaseSystems<SplendorCore>({
@@ -232,6 +241,11 @@ export const engineConfig = createGameEngine<SplendorCore, SplendorCommand, Sple
         'CHOOSE_NOBLE',
     ],
 });
+
+engineConfig.onlineAiRecovery = {
+    disableFallbackAdvancePhase: true,
+    shouldSuppressActiveTurnCandidate: shouldSuppressSplendorOnlineAiActiveTurnCandidate,
+};
 
 export default engineConfig;
 

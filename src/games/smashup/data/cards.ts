@@ -1,5 +1,5 @@
 import type { CardDef, BaseCardDef, MinionCardDef, ActionCardDef, FusionCardDef, TitanCardDef } from '../domain/types';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { isSmashUpDiyFaction, SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { TITAN_CARD_DEFS } from './titans';
 
 import { PIRATE_CARDS } from './factions/pirates';
@@ -55,10 +55,22 @@ import { MERMAIDS_CARDS } from './factions/mermaids';
 import { SKELETONS_CARDS } from './factions/skeletons';
 import { WORLD_CHAMPS_CARDS } from './factions/world_champs';
 import { FAIRIES_CARDS } from './factions/fairies';
+import { HULUWAWA_CARDS } from './factions/huluwawa';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
+import { SHAPESHIFTERS_CARDS } from './factions/shapeshifters';
+import { CYBORG_APES_CARDS } from './factions/cyborg_apes';
+import { SUPER_SPIES_CARDS } from './factions/super_spies';
+import { TIME_TRAVELERS_CARDS } from './factions/time_travelers';
+import { ITTY_CRITTERS_CARDS } from './factions/itty_critters';
+import { KAIJU_CARDS } from './factions/kaiju';
+import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
+import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
+import { DRAGONS_CARDS } from './factions/dragons';
+import { SUPERHEROES_CARDS } from './factions/superheroes';
+import { GEEKS_CARDS } from './factions/geeks';
 
 // ============================================================================
 // 注册表
@@ -68,11 +80,6 @@ import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 const _cardRegistry = new Map<string, CardDef>();
 /** 所有基地定义（按 id 索引） */
 const _baseRegistry = new Map<string, BaseCardDef>();
-
-const normalizeCardName = (defId: string, name: string): string => {
-    if (typeof name === 'string' && name.startsWith('cards.')) return name;
-    return `cards.${defId}.name`;
-};
 
 function registerCards(cards: CardDef[]): void {
     for (const card of cards) {
@@ -90,7 +97,6 @@ function registerBases(bases: BaseCardDef[]): void {
 
 // 初始化注册
 const POD_SUFFIX = '_pod';
-const BASES_PER_FACTION = 2;
 const KNOWN_FACTION_IDS = new Set(Object.values(SMASHUP_FACTION_IDS));
 
 function isPodVariantId(id: string): boolean {
@@ -184,10 +190,22 @@ registerCards(MERMAIDS_CARDS);
 registerCards(SKELETONS_CARDS);
 registerCards(WORLD_CHAMPS_CARDS);
 registerCards(FAIRIES_CARDS);
+registerCards(HULUWAWA_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(TORNADOS_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
+registerCards(SHAPESHIFTERS_CARDS);
+registerCards(CYBORG_APES_CARDS);
+registerCards(SUPER_SPIES_CARDS);
+registerCards(TIME_TRAVELERS_CARDS);
+registerCards(ITTY_CRITTERS_CARDS);
+registerCards(KAIJU_CARDS);
+registerCards(MAGICAL_GIRLS_CARDS);
+registerCards(MEGA_TROOPERS_CARDS);
+registerCards(DRAGONS_CARDS);
+registerCards(SUPERHEROES_CARDS);
+registerCards(GEEKS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -516,6 +534,31 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
 registerBases(BASE_CARDS_PRETTY_PRETTY);
 
 // ============================================================================
+// 葫芦娃 DIY 基地
+// ============================================================================
+export const BASE_CARDS_HULUWAWA: BaseCardDef[] = [
+    {
+        id: 'base_huluwawa_mountain',
+        name: '葫芦山',
+        nameEn: 'Huluwawa Mountain',
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.HULUWAWA,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, index: 0 },
+    },
+    {
+        id: 'base_seven_colored_lotus',
+        name: '七彩莲蓬',
+        nameEn: 'Seven-Colored Lotus Pod',
+        breakpoint: 25,
+        vpAwards: [4, 3, 1],
+        faction: SMASHUP_FACTION_IDS.HULUWAWA,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, index: 1 },
+    },
+];
+registerBases(BASE_CARDS_HULUWAWA);
+
+// ============================================================================
 // 扩展基地 (Oops, You Did It Again)
 // ============================================================================
 export const BASE_CARDS_OOPS_YOU_DID_IT_AGAIN: BaseCardDef[] = [
@@ -604,7 +647,6 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'North Pole',
         breakpoint: 24,
         vpAwards: [5, 3, 2],
-        faction: 'cyborg_apes',
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 0 },
         restrictions: [{ type: 'play_minion', condition: { minionPlayLimitPerTurn: 1 } }],
     },
@@ -616,8 +658,8 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         vpAwards: [5, 3, 2],
         faction: 'elder_things',
         podFactions: [SMASHUP_FACTION_IDS.ELDER_THINGS_POD],
-        // NOTE: atlas index 10 is reserved for this base in our atlas map
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 10 },
+        // 本地 zh-CN base4.webp 的 index 10 实际是“更衣室”，这里直接改走正确的 Elder Things 4x2 图集。
+        previewRef: { type: 'atlas', atlasId: 'tts_atlas_0b888d02fd', index: 0 },
         restrictions: [{ type: 'play_minion', condition: { minionPlayLimitPerTurn: 1 } }],
     },
     {
@@ -626,7 +668,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'Ritual Site',
         breakpoint: 20,
         vpAwards: [4, 2, 2],
-        faction: 'elder_things',
+        faction: SMASHUP_FACTION_IDS.INNSMOUTH,
         podFactions: [SMASHUP_FACTION_IDS.INNSMOUTH_POD],
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 1 },
     },
@@ -645,7 +687,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'The Asylum',
         breakpoint: 16,
         vpAwards: [3, 1, 1],
-        faction: 'elder_things',
+        faction: SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
         podFactions: [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD],
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 3 },
     },
@@ -664,7 +706,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'Mountains of Madness',
         breakpoint: 20,
         vpAwards: [6, 4, 3],
-        faction: 'elder_things',
+        faction: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
         podFactions: [SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD],
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 5 },
     },
@@ -683,7 +725,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'Plateau of Leng',
         breakpoint: 18,
         vpAwards: [3, 2, 1],
-        faction: 'innsmouth',
+        faction: SMASHUP_FACTION_IDS.ELDER_THINGS,
         podFactions: [SMASHUP_FACTION_IDS.ELDER_THINGS_POD],
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 7 },
     },
@@ -724,6 +766,86 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_SET4);
+
+// ============================================================================
+// 扩展基地 (Science Fiction Double Feature - yuanhou)
+// ============================================================================
+export const BASE_CARDS_SCIENCE_FICTION_DOUBLE_FEATURE: BaseCardDef[] = [
+    {
+        id: 'base_the_nexus',
+        name: '联结点',
+        nameEn: 'The Nexus',
+        breakpoint: 19,
+        vpAwards: [3, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TIME_TRAVELERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 0 },
+    },
+    {
+        id: 'base_portal_room',
+        name: '传送门',
+        nameEn: 'Portal Room',
+        breakpoint: 22,
+        vpAwards: [2, 3, 1],
+        faction: SMASHUP_FACTION_IDS.TIME_TRAVELERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 1 },
+    },
+    {
+        id: 'base_isis_swingin_pad',
+        name: 'ISI摇摆据点',
+        nameEn: "ISI's Swingin' Pad",
+        breakpoint: 21,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 2 },
+    },
+    {
+        id: 'base_secret_volcano_headquarters',
+        name: '秘密火山总部',
+        nameEn: 'Secret Volcano Headquarters',
+        breakpoint: 18,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 3 },
+    },
+    {
+        id: 'base_the_vats',
+        name: '生体培养缸',
+        nameEn: 'The Vats',
+        breakpoint: 15,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.SHAPESHIFTERS,
+        restrictions: [{ type: 'play_minion', condition: { sameNameAlreadyAtBase: true } }],
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 4 },
+    },
+    {
+        id: 'base_faceless_city',
+        name: '无面者之城',
+        nameEn: 'Faceless City',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.SHAPESHIFTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 5 },
+    },
+    {
+        id: 'base_primate_park',
+        name: '灵长类公园',
+        nameEn: 'Primate Park',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.CYBORG_APES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 6 },
+    },
+    {
+        id: 'base_monkey_lab',
+        name: '猴子实验室',
+        nameEn: 'Monkey Lab',
+        breakpoint: 23,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.CYBORG_APES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE9, index: 7 },
+    },
+];
+registerBases(BASE_CARDS_SCIENCE_FICTION_DOUBLE_FEATURE);
 
 // ============================================================================
 // 扩展基地 (Monster Smash - cards5)
@@ -851,6 +973,24 @@ registerBases(BASE_CARDS_10TH_ANNIVERSARY);
 // ============================================================================
 export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
     {
+        id: 'base_tabletop',
+        name: '桌游桌',
+        nameEn: 'TableTop',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.GEEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 0 },
+    },
+    {
+        id: 'base_wyrms_desolation',
+        name: '龙之荒芜',
+        nameEn: "Wyrm's Desolation",
+        breakpoint: 20,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.DRAGONS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 1 },
+    },
+    {
         id: 'base_shark_reef',
         name: '鲨鱼领地',
         nameEn: 'Shark Reef',
@@ -860,31 +1000,22 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 2 },
     },
     {
-        id: 'base_the_deep',
-        name: '海渊',
-        nameEn: 'The Deep',
-        breakpoint: 16,
-        vpAwards: [3, 2, 2],
-        faction: SMASHUP_FACTION_IDS.SHARKS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 9 },
+        id: 'base_the_con',
+        name: '展会',
+        nameEn: 'The Con',
+        breakpoint: 24,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.GEEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 3 },
     },
     {
-        id: 'base_trailer_park',
-        name: '拖车公园',
-        nameEn: 'Trailer Park',
-        breakpoint: 20,
-        vpAwards: [4, 2, 1],
-        faction: SMASHUP_FACTION_IDS.TORNADOS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 6 },
-    },
-    {
-        id: 'base_tornado_alley',
-        name: '龙卷风走廊',
-        nameEn: 'Tornado Alley',
-        breakpoint: 25,
-        vpAwards: [4, 3, 2],
-        faction: SMASHUP_FACTION_IDS.TORNADOS,
-        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 11 },
+        id: 'base_dragons_lair',
+        name: '龙穴',
+        nameEn: "Dragon's Lair",
+        breakpoint: 18,
+        vpAwards: [2, 2, 1],
+        faction: SMASHUP_FACTION_IDS.DRAGONS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 4 },
     },
     {
         id: 'base_oracle_at_delphi',
@@ -896,6 +1027,24 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 5 },
     },
     {
+        id: 'base_trailer_park',
+        name: '拖车公园',
+        nameEn: 'Trailer Park',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 6 },
+    },
+    {
+        id: 'base_converted_cave',
+        name: '改造洞穴',
+        nameEn: 'Converted Cave',
+        breakpoint: 18,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.SUPERHEROES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 7 },
+    },
+    {
         id: 'base_wooden_horse',
         name: '特洛伊木马',
         nameEn: 'Wooden Horse',
@@ -904,8 +1053,115 @@ export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
         faction: SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 8 },
     },
+    {
+        id: 'base_the_deep',
+        name: '海渊',
+        nameEn: 'The Deep',
+        breakpoint: 16,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.SHARKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 9 },
+    },
+    {
+        id: 'base_crystal_fortress',
+        name: '水晶堡垒',
+        nameEn: 'Crystal Fortress',
+        breakpoint: 19,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.SUPERHEROES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 10 },
+    },
+    {
+        id: 'base_tornado_alley',
+        name: '龙卷风走廊',
+        nameEn: 'Tornado Alley',
+        breakpoint: 25,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 11 },
+    },
 ];
 registerBases(BASE_CARDS_ITS_YOUR_FAULT);
+
+// ============================================================================
+// 扩展基地 (Big in Japan - baokemeng)
+// ============================================================================
+export const BASE_CARDS_BIG_IN_JAPAN: BaseCardDef[] = [
+    {
+        id: 'base_akihabara_high',
+        name: '秋叶原',
+        nameEn: 'Akihabara High',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 0 },
+    },
+    {
+        id: 'base_q_point',
+        name: 'Q Point',
+        nameEn: 'Q Point',
+        breakpoint: 25,
+        vpAwards: [5, 4, 3],
+        faction: SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 1 },
+    },
+    {
+        id: 'base_tokyo',
+        name: '东京',
+        nameEn: 'Tokyo',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.KAIJU,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 2 },
+    },
+    {
+        id: 'base_kaiju_island',
+        name: '怪兽岛',
+        nameEn: 'Kaiju Island',
+        breakpoint: 22,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.KAIJU,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 3 },
+        allowMultipleTitans: true,
+    },
+    {
+        id: 'base_critter_combat_club',
+        name: '宠物战斗俱乐部',
+        nameEn: 'Critter Combat Club',
+        breakpoint: 23,
+        vpAwards: [4, 3, 1],
+        faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 4 },
+    },
+    {
+        id: 'base_itty_city',
+        name: '小城市',
+        nameEn: 'Itty City',
+        breakpoint: 20,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 5 },
+    },
+    {
+        id: 'base_moon_dumpster',
+        name: '月亮垃圾站',
+        nameEn: 'Moon Dumpster',
+        breakpoint: 24,
+        vpAwards: [4, 2, 2],
+        faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 6 },
+    },
+    {
+        id: 'base_juice_bar',
+        name: '果汁吧',
+        nameEn: 'Juice Bar',
+        breakpoint: 20,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE8, index: 7 },
+    },
+];
+registerBases(BASE_CARDS_BIG_IN_JAPAN);
 
 registerPodBaseSkeletons();
 
@@ -1370,44 +1626,11 @@ const POD_BASE_POOL_VARIANT_FACTIONS = new Set<string>([
     SMASHUP_FACTION_IDS.VIKINGS_POD,
 ]);
 
-function getBaseDefIdsForFactionsLegacy(factionIds: string[]): string[] {
-    const selected = new Set(factionIds);
-    const matched = getPublicBaseDefs()
-        .filter(base => base.faction && selected.has(base.faction))
-        .map(base => base.id);
-
-    // 检查是否有派系没有对应基地（如 POD 派系）
-    // 统计每个派系匹配到的基地数量
-    const factionBaseCounts = new Map<string, number>();
-    for (const base of getPublicBaseDefs()) {
-        if (base.faction && selected.has(base.faction)) {
-            factionBaseCounts.set(base.faction, (factionBaseCounts.get(base.faction) || 0) + 1);
-        }
-    }
-
-    // 找出没有基地的派系
-    const factionsWithoutBases = factionIds.filter(fid => !factionBaseCounts.has(fid));
-
-    // 如果有派系没有基地，为每个缺失的派系补充 2 个基地
-    if (factionsWithoutBases.length > 0) {
-        const allBases = getAllBaseDefIds();
-        const usedBases = new Set(matched);
-        const availableBases = allBases.filter(id => !usedBases.has(id));
-
-        const missingCount = factionsWithoutBases.length * 2;
-        // 从可用基地中选择（不洗牌，保持确定性，由调用方洗牌）
-        const supplementBases = availableBases.slice(0, Math.min(missingCount, availableBases.length));
-        return [...matched, ...supplementBases];
-    }
-
-    return matched;
-}
-
-
 /** 查找卡牌定义 */
 /** 根据所选派系获取基地定义 ID（同变体补充：POD 只补 POD，基础只补基础） */
-export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
+export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
     const selectedFactionIds = [...new Set(factionIds)];
+    const diyEnabled = enabledExpansions.includes('diy');
     const selectedOriginalFactions = new Set(
         selectedFactionIds.filter(factionId => !factionId.endsWith('_pod')),
     );
@@ -1416,6 +1639,9 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
         selectedFactionIds.filter(factionId => POD_BASE_POOL_VARIANT_FACTIONS.has(factionId)),
     );
     const matchedBases = getPublicBaseDefs().filter(base => {
+        if (isSmashUpDiyFaction(base.faction) && !diyEnabled) {
+            return false;
+        }
         if (base.faction && selectedOriginalFactions.has(base.faction)) {
             return true;
         }
@@ -1442,7 +1668,11 @@ export function getBaseDefIdsForFactions(factionIds: string[]): string[] {
     if (factionsWithoutBases.length > 0) {
         const allBases = getAllBaseDefIds();
         const usedBases = new Set(matchedBases.map(base => base.id));
-        const availableBases = allBases.filter(id => !usedBases.has(id));
+        const availableBases = allBases.filter(id => {
+            if (usedBases.has(id)) return false;
+            const base = getBaseDef(id);
+            return !isSmashUpDiyFaction(base?.faction) || diyEnabled;
+        });
 
         const missingCount = factionsWithoutBases.length * 2;
         const supplementBases = availableBases.slice(0, Math.min(missingCount, availableBases.length));
@@ -1562,8 +1792,8 @@ export function resolveCardText(def: CardDef | BaseCardDef | undefined, t: (key:
     }
 
     // 未命中则查找原始对象中的属性 fallback
-    // @ts-ignore
-    const fallbackAttr = def[usesEffectText ? 'effectText' : 'abilityText'];
+    const textDef = def as Partial<{ effectText: string; abilityText: string }>;
+    const fallbackAttr = textDef[usesEffectText ? 'effectText' : 'abilityText'];
     return typeof fallbackAttr === 'string' ? fallbackAttr : '';
 }
 

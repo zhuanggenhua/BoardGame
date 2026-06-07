@@ -9,7 +9,7 @@
 import { test, expect } from '../framework';
 
 async function openScene(game: any): Promise<void> {
-    await game.openTestGame('smashup');
+    await game.openTestGame('smashup', { skipInitialization: true });
     await game.setupScene({
         gameId: 'smashup',
         player0: { hand: [], deck: [], discard: [], vp: 0, factions: ['dinosaurs', 'zombies'] },

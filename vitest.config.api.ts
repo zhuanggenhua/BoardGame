@@ -30,9 +30,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
-        // API e2e/unit tests share Mongo and Nest app setup; run them in a single worker to avoid
-        // intermittent worker OOM / startup thrash during pre-push while keeping the full suite intact.
-        pool: 'threads',
+        // API e2e/unit tests share Mongo and Nest app setup; forks + single worker is steadier on Windows.
+        pool: 'forks',
         fileParallelism: false,
         maxWorkers: 1,
         include: [

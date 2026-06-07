@@ -1,50 +1,84 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../framework';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
-async function createIPhoneXRContext(browser: Parameters<typeof test>[0]['browser'], baseURL?: string) {
-  return browser.newContext({
-    baseURL,
-    viewport: { width: 414, height: 896 },
-    isMobile: true,
-    hasTouch: true,
-  });
+async function createIPhoneXRContext(
+    browser: Parameters<typeof test>[0]['browser'],
+    baseURL: string | undefined,
+    viewport: { width: number; height: number },
+) {
+    return browser.newContext({
+        baseURL,
+        viewport,
+        isMobile: true,
+        hasTouch: true,
+    });
 }
 
-test.describe('移动端横屏适配', () => {
-  test('主页在 iPhone XR 竖屏下不显示横屏提示', async ({ browser }, testInfo) => {
-    const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const context = await createIPhoneXRContext(browser, baseURL);
-    const page = await context.newPage();
+test.describe('Cardia 移动端方向兼容', () => {
+    test('主页在 iPhone XR 竖屏下不显示横屏 gate，继续保留首页操作', async ({ browser }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const context = await createIPhoneXRContext(browser, baseURL, { width: 414, height: 896 });
+        const page = await context.newPage();
 
-    try {
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('#root > *', { timeout: 15000 });
-      await expect(page.getByText('建议旋转至横屏')).toHaveCount(0);
-      await expect(page.locator('#root')).toBeVisible();
-    } finally {
-      await context.close();
-    }
-  });
+        try {
+            await page.goto('/', { waitUntil: 'domcontentloaded' });
+            await page.waitForSelector('#root > *', { timeout: 15000 });
 
-  test('Cardia 在 iPhone XR 竖屏下显示横屏提示且可关闭', async ({ browser }, testInfo) => {
-    const baseURL = testInfo.project.use.baseURL as string | undefined;
-    const context = await createIPhoneXRContext(browser, baseURL);
-    const page = await context.newPage();
+            await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+            await expect(page.getByText('请切换到横屏继续')).toHaveCount(0);
+            await expect(page.locator('#root')).toBeVisible();
 
-    try {
-      await page.goto('/play/cardia', { waitUntil: 'domcontentloaded' });
-      await page.waitForSelector('div[data-game-page="true"]', { timeout: 20000 });
+            await page.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'home-portrait-no-game-gate'),
+                fullPage: false,
+            });
+        } finally {
+            await context.close();
+        }
+    });
 
-      const banner = page.getByText('建议旋转至横屏以获得更佳体验');
-      await expect(banner).toBeVisible({ timeout: 15000 });
+    test('Cardia 在 iPhone XR 竖屏下显示独立横屏 gate，转为横屏后正常进入对局', async ({ browser }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
 
-      const closeButton = page.getByRole('button', { name: '关闭提示' });
-      await expect(closeButton).toBeVisible();
-      await closeButton.click();
-      await expect(banner).toHaveCount(0);
+        const portraitContext = await createIPhoneXRContext(browser, baseURL, { width: 414, height: 896 });
+        const portraitPage = await portraitContext.newPage();
 
-      await expect(page.locator('div[data-game-page="true"]').first()).toBeVisible();
-    } finally {
-      await context.close();
-    }
-  });
+        try {
+            await portraitPage.goto('/play/cardia', { waitUntil: 'domcontentloaded' });
+            await portraitPage.waitForSelector('div[data-game-page="true"]', { timeout: 20000 });
+
+            const gate = portraitPage.getByTestId('mobile-orientation-game-gate');
+            await expect(gate).toBeVisible({ timeout: 15000 });
+            await expect(gate.getByText('请切换到横屏继续')).toBeVisible();
+            await expect(portraitPage.getByRole('button', { name: '关闭提示' })).toHaveCount(0);
+            await expect(portraitPage.getByText('建议旋转至横屏以获得更佳体验')).toHaveCount(0);
+
+            await portraitPage.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'cardia-portrait-orientation-gate'),
+                fullPage: false,
+            });
+        } finally {
+            await portraitContext.close();
+        }
+
+        const landscapeContext = await createIPhoneXRContext(browser, baseURL, { width: 896, height: 414 });
+        const landscapePage = await landscapeContext.newPage();
+
+        try {
+            await landscapePage.goto('/play/cardia', { waitUntil: 'domcontentloaded' });
+            await landscapePage.waitForSelector('div[data-game-page="true"]', { timeout: 20000 });
+
+            await expect(landscapePage.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+            await expect(landscapePage.locator('div[data-game-page="true"]').first()).toBeVisible();
+
+            await landscapePage.screenshot({
+                path: getEvidenceScreenshotPath(testInfo, 'cardia-landscape-board-visible'),
+                fullPage: false,
+            });
+        } finally {
+            await landscapeContext.close();
+        }
+    });
 });

@@ -1,5 +1,7 @@
 # 王权骰铸 - 自动响应文本修正
 
+> 2026-06-06 当前有效口径：本文只覆盖“自动响应开关文本与实际行为不一致”这一条历史 UI 文案修复，不是当前 DiceThrone auto-response 整个交互链已全面收口的证明，也不是新英雄补审出口。阅读时只能把它理解成单条文案/语义对齐记录。
+
 ## 问题描述
 AutoResponseToggle 组件的文本和实际行为不一致，导致用户困惑。
 
@@ -148,3 +150,7 @@ React.useEffect(() => {
 - `public/locales/zh-CN/game-dicethrone.json` - 中文文本
 - `public/locales/en/game-dicethrone.json` - 英文文本
 - `src/games/dicethrone/Board.tsx` - 自动跳过逻辑
+
+---
+
+**当前阅读说明**：本文只能证明“auto-response 文本与行为语义不一致”这条专项问题曾被修正，不能外推为当前所有 auto-response 逻辑、所有响应窗口体验或 DiceThrone 当前整体审计都已收口。

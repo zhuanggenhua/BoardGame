@@ -5,7 +5,15 @@
  */
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { processDestroyMoveCycle, processAffectTriggers, processDeckInspectionTriggers, filterProtectedAffectEvents, buildDestroyEventKey } from './reducer';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import {
+    processDestroyMoveCycle,
+    processAffectTriggers,
+    processDeckInspectionTriggers,
+    processReturnToHandTriggers,
+    filterProtectedAffectEvents,
+    buildDestroyEventKey,
+} from './reducer';
 import type { FlowHooks, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import type {
     SmashUpCommand,
@@ -28,6 +36,10 @@ import type {
     MinionDestroyedEvent,
     MinionPowerBreakdown,
     MinionOnBase,
+    TalentUsedEvent,
+    VpAwardedEvent,
+    ActionReturnToHandOptionArmedEvent,
+    SpecialAfterScoringConsumedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -41,16 +53,20 @@ import {
     getCurrentPlayerId,
 } from './types';
 import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './ongoingModifiers';
-import { collectTriggers, fireTriggerForSource, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent } from './ongoingEffects';
+import { collectTriggers, fireTriggerForSource, getModifiedBaseVp, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import {
     getSmashUpReactionSession,
     registerSmashUpReactionPostProcessor,
     startSmashUpReactionSession,
 } from './reactionSession';
+import { getSmashUpReactionWindowContext } from './reactionWindowState';
+import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
+import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
+import { isSmashUpDiyFaction } from './ids';
 import { drawCards } from './utils';
 import {
     countMadnessCards,
@@ -68,16 +84,12 @@ import {
     getSmashUpTeamMembers,
     getSmashUpTeamScores,
     isSmashUpTwoVsTwoMode,
-    readSmashUpTeamMode,
 } from './teamMode';
 import { triggerBaseAbility, triggerExtendedBaseAbility, hasBaseAbility } from './baseAbilities';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { buildBaseTargetOptions, createSkipOption, isSpecialLimitBlocked } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
-import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import type { SpecialAfterScoringConsumedEvent } from './types';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
 import {
     appendScoringFrameDeferredPayload,
@@ -88,6 +100,7 @@ import {
     createScoringSession,
     getRemainingScoringBaseRefs,
     getScoringSession,
+    isSameScoringBaseRef,
     markScoringBaseCompleted,
     resolveScoringBaseRefSlotIndex,
     serializePostScoringEvents,
@@ -96,6 +109,82 @@ import {
     type SmashUpScoringBaseRef,
 } from './scoringSession';
 import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
+
+const POST_SCORING_BASE_REVEAL_DELAY_MS = 2000;
+const POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY = '_smashupPostScoringBaseRevealDelayUntil';
+
+function buildActionReturnToHandPromptKey(event: ActionReturnToHandOptionArmedEvent): string {
+    return [
+        event.type,
+        event.payload.playerId,
+        event.payload.ownerId,
+        event.payload.cardUid,
+        event.payload.reason,
+        event.timestamp ?? 0,
+    ].join(':');
+}
+
+function queueActionReturnToHandPrompts(
+    state: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+    now: number,
+): MatchState<SmashUpCore> {
+    const sysAny = state.sys as Record<string, unknown>;
+    if (!(sysAny._processedActionReturnToHandPromptEvents instanceof Set)) {
+        sysAny._processedActionReturnToHandPromptEvents = new Set<string>();
+    }
+    const processedKeys = sysAny._processedActionReturnToHandPromptEvents as Set<string>;
+
+    let nextState = state;
+    for (const rawEvent of events) {
+        if (rawEvent.type !== SU_EVENTS.ACTION_RETURN_TO_HAND_OPTION_ARMED) continue;
+        const event = rawEvent as ActionReturnToHandOptionArmedEvent;
+        const promptKey = buildActionReturnToHandPromptKey(event);
+        if (processedKeys.has(promptKey)) continue;
+        processedKeys.add(promptKey);
+
+        const owner = nextState.core.players[event.payload.ownerId];
+        const inDiscard = owner?.discard.some((card) => card.uid === event.payload.cardUid && card.defId === event.payload.defId) ?? false;
+        if (!inDiscard) continue;
+
+        const actionName = getCardDef(event.payload.defId)?.name ?? event.payload.defId;
+        nextState = queueInteraction(nextState, createSimpleChoice(
+            `smashup_action_return_to_hand_${event.payload.cardUid}_${event.timestamp ?? now}`,
+            event.payload.playerId,
+            `无限循环：是否将${actionName}收入手牌？`,
+            [
+                {
+                    id: 'return',
+                    label: '收入手牌',
+                    value: {
+                        returnToHand: true,
+                        cardUid: event.payload.cardUid,
+                        defId: event.payload.defId,
+                        ownerId: event.payload.ownerId,
+                        reason: event.payload.reason,
+                    },
+                },
+                {
+                    id: 'leave',
+                    label: '留在原处',
+                    value: {
+                        returnToHand: false,
+                        cardUid: event.payload.cardUid,
+                        defId: event.payload.defId,
+                        ownerId: event.payload.ownerId,
+                        reason: event.payload.reason,
+                    },
+                },
+            ],
+            {
+                sourceId: 'geeks_non_infinite_loop_return',
+                autoResolveIfSingle: false,
+            },
+        ));
+    }
+
+    return nextState;
+}
 
 // ============================================================================
 
@@ -118,18 +207,12 @@ function collectPhaseTwoOngoingExtraEvents(
         }
 
         for (const ongoing of base.ongoingActions) {
-            if (ongoing.defId === 'trickster_enshrouding_mist' && ongoing.ownerId === playerId) {
+            const ongoingControllerId = (ongoing.metadata?.sourceControllerId as PlayerId | undefined) ?? ongoing.ownerId;
+            if (ongoing.defId === 'trickster_enshrouding_mist' && ongoingControllerId === playerId) {
                 events.push(grantExtraMinion(playerId, 'trickster_enshrouding_mist', now, baseIndex, { playTiming: 'banked' }));
             }
         }
 
-        if (
-            (base.defId === 'base_secret_garden' || base.defId === 'base_secret_garden_pod')
-            && base.minions.some(minion => minion.controller === playerId)
-        ) {
-            // "On your turn" base extras also begin in phase 2, not at startTurn.
-            events.push(grantExtraMinion(playerId, '神秘花园：额外打出力量≤2的随从', now, baseIndex, { playTiming: 'banked' }));
-        }
     }
 
     return events;
@@ -204,7 +287,39 @@ function getPlayersWithPlayableAfterScoringResponses(state: MatchState<SmashUpCo
     return playablePlayers;
 }
 
+type TurnEndAdvancePayload = Omit<TurnEndedEvent['payload'], 'playerId'>;
+
+function buildTurnEndAdvancePayload(core: SmashUpCore): TurnEndAdvancePayload {
+    const currentPlayerId = getCurrentPlayerId(core);
+    const activeExtraTurn = core.activeExtraTurn;
+    if (activeExtraTurn && activeExtraTurn.playerId === currentPlayerId) {
+        return {
+            nextPlayerIndex: activeExtraTurn.returnToPlayerIndex,
+            completedExtraTurn: true,
+        };
+    }
+
+    const queuedExtraTurn = core.pendingExtraTurns?.[0];
+    if (queuedExtraTurn) {
+        const queuedPlayerIndex = core.turnOrder.indexOf(queuedExtraTurn.playerId);
+        if (queuedPlayerIndex >= 0) {
+            return {
+                nextPlayerIndex: queuedPlayerIndex,
+                extraTurnPlayerId: queuedExtraTurn.playerId,
+                extraTurnReturnToPlayerIndex: queuedExtraTurn.returnToPlayerIndex,
+                extraTurnReason: queuedExtraTurn.reason,
+            };
+        }
+    }
+
+    return {
+        nextPlayerIndex: (core.currentPlayerIndex + 1) % core.turnOrder.length,
+    };
+}
+
 function buildBaseRankings(
+    core: SmashUpCore,
+    baseIndex: number,
     baseDef: { vpAwards: number[] },
     playerPowers: Map<PlayerId, number>,
 ): { playerId: PlayerId; power: number; vp: number }[] {
@@ -221,7 +336,13 @@ function buildBaseRankings(
         }
 
         const awardSlot = groupEnd;
-        const vp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
+        const printedVp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
+        const vp = getModifiedBaseVp(
+            core,
+            baseIndex,
+            sorted[index][0],
+            printedVp,
+        );
 
         for (let i = index; i <= groupEnd; i += 1) {
             rankings.push({
@@ -338,7 +459,7 @@ function finalizeCurrentScoringBase(
         ),
     );
 
-    const completedState = updateScoringSession(
+    let completedState = updateScoringSession(
         markScoringBaseCompleted(workingState, currentBaseRef),
         (currentSession) => currentSession
             ? {
@@ -347,6 +468,38 @@ function finalizeCurrentScoringBase(
             }
             : currentSession,
     );
+    const completedSession = getScoringSession(completedState);
+    if (completedSession) {
+        const discoveredEligibleRefs = getScoringEligibleBaseIndices(postDeferredCore)
+            .map((baseIndex) => createScoringBaseRef({ ...postDeferredCore }, baseIndex))
+            .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
+            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
+            .filter((baseRef) => !completedSession.lockedBaseRefs.some((lockedRef) => isSameScoringBaseRef(lockedRef, baseRef)));
+
+        if (discoveredEligibleRefs.length > 0) {
+            completedState = updateScoringSession(completedState, (currentSession) => currentSession
+                ? {
+                    ...currentSession,
+                    lockedBaseRefs: [...currentSession.lockedBaseRefs, ...discoveredEligibleRefs],
+                }
+                : currentSession);
+
+            const futureState = { ...completedState, core: postDeferredCore };
+            const futureSession = getScoringSession(futureState);
+            const remainingLockedIndices = futureSession
+                ? futureSession.lockedBaseRefs
+                    .filter((baseRef) => !futureSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
+                    .map((baseRef) => resolveScoringBaseRefSlotIndex(futureState, baseRef))
+                    .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
+                : [];
+
+            events.push({
+                type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
+                payload: { baseIndices: remainingLockedIndices },
+                timestamp: now,
+            } as SmashUpEvent);
+        }
+    }
     const awaitingReduceState = {
         ...completedState,
         sys: {
@@ -358,6 +511,50 @@ function finalizeCurrentScoringBase(
     return {
         updatedState: awaitingReduceState,
         events,
+    };
+}
+
+function beginPostScoringBaseRevealDelay(
+    state: MatchState<SmashUpCore>,
+    now: number,
+): MatchState<SmashUpCore> {
+    const delayStart = now > 0 ? now : Date.now();
+    const delayUntil = delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS;
+    const delayedState = updateScoringSession(state, (session) => session
+        ? {
+            ...session,
+            currentStep: 'awaiting-post-scoring-delay',
+        }
+        : session,
+    );
+    return {
+        ...delayedState,
+        sys: {
+            ...delayedState.sys,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayUntil,
+        } as typeof delayedState.sys,
+    };
+}
+
+function isPostScoringBaseRevealDelayActive(
+    state: MatchState<SmashUpCore>,
+    now: number,
+): boolean {
+    const delayUntil = (state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY];
+    const currentTime = now > 0 ? now : Date.now();
+    return typeof delayUntil === 'number' && delayUntil > currentTime;
+}
+
+function clearPostScoringBaseRevealDelay(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    if ((state.sys as Record<string, unknown>)[POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY] === undefined) {
+        return state;
+    }
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: undefined,
+        } as typeof state.sys,
     };
 }
 
@@ -510,6 +707,10 @@ export function scoreOneBase(
         if (ms) ms = { ...ms, core: updatedCore };
         return { events, newBaseDeck: baseDeck, matchState: ms };
     }
+    if (isBaseScoringSuppressed(updatedCore, baseIndex)) {
+        if (ms) ms = { ...ms, core: updatedCore };
+        return { events, newBaseDeck: baseDeck, matchState: ms };
+    }
     const effectiveBreakpointAfterBefore = getEffectiveBreakpoint(updatedCore, baseIndex);
     const totalPowerAfterBefore = getTotalEffectivePowerOnBase(updatedCore, updatedBaseAfterBefore, baseIndex);
     const lockedAtScoreBasesEnter = updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false;
@@ -522,7 +723,7 @@ export function scoreOneBase(
 
     const updatedBase = updatedCore.bases[baseIndex];
     const playerPowers = collectQualifiedPlayerPowers(updatedCore, updatedBase, baseIndex);
-    const preliminaryRankings = buildBaseRankings(baseDef, playerPowers);
+    const preliminaryRankings = buildBaseRankings(updatedCore, baseIndex, baseDef, playerPowers);
 
     const alreadyTriggeredWhenScoring = updatedCore.whenScoringTriggeredBases?.includes(baseIndex) ?? false;
     const whenScoringFrameId = `score-when:${baseIndex}:${now}`;
@@ -574,7 +775,7 @@ export function scoreOneBase(
     const effectiveBreakpoint = getEffectiveBreakpoint(updatedCore, scoringBase, baseIndex);
     const scoredByLockedEligibility = totalPower < effectiveBreakpoint;
     const finalPlayerPowers = collectQualifiedPlayerPowers(updatedCore, scoringBase, baseIndex);
-    const rankings = buildBaseRankings(baseDef, finalPlayerPowers);
+    const rankings = buildBaseRankings(updatedCore, baseIndex, baseDef, finalPlayerPowers);
 
     const minionBreakdowns: Record<PlayerId, MinionPowerBreakdown[]> = {};
     for (const m of scoringBase.minions) {
@@ -753,6 +954,9 @@ export function scoreOneBase(
     const playersWithAfterScoringCards = ms
         ? getPlayersWithPlayableAfterScoringResponses({ ...ms, core: afterScoringCore }, now)
         : [];
+    // afterScoring 可能已经通过 BASE_DECK_REORDERED / 其他补发事件改写了基地牌库；
+    // 后续换基地与空牌库 reshuffle 必须以最新 core 为准，而不是沿用函数入参的旧 baseDeck 快照。
+    newBaseDeck = [...(updatedCore.baseDeck ?? newBaseDeck)];
 
     // 构建清场 + 换基地 + onBaseRevealed 触发队列（延迟到当前基地彻底结算后再补发）
     const postScoringEvents: SmashUpEvent[] = [];
@@ -792,9 +996,13 @@ export function scoreOneBase(
         };
         postScoringEvents.push(replaceEvt);
         newBaseDeck = newBaseDeck.slice(1);
+        const revealCore = postScoringEvents.reduce(
+            (nextCore, event) => reduce(nextCore, event),
+            updatedCore,
+        );
 
         const queuedReveal = collectExtendedBaseAbilityTriggers({
-            core,
+            core: revealCore,
             timing: 'onBaseRevealed',
             ownerPlayerId: pid,
             baseIndex,
@@ -805,29 +1013,28 @@ export function scoreOneBase(
         }
     }
 
-    const shouldDeferPostScoring = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0;
-    if (shouldDeferPostScoring) {
-        const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
-        if (ms && currentBaseRef) {
-            const waitingStep = getSmashUpReactionSession(ms)
+    const serializedDeferredEvents = serializePostScoringEvents(postScoringEvents);
+    if (ms && currentBaseRef) {
+        const waitingStep = afterScoringCreatedInteraction || playersWithAfterScoringCards.length > 0
+            ? getSmashUpReactionSession(ms)
                 ? 'awaiting-response-window'
-                : 'awaiting-interactions';
-            ms = updateScoringSession(ms, (session) => session
-                ? {
-                    ...session,
-                    currentBaseRef,
-                    currentStep: waitingStep,
-                }
-                : session,
-            );
-            ms = appendScoringFrameDeferredPayload(ms, {
-                deferredEvents: serializedDeferredEvents,
-            });
+                : 'awaiting-interactions'
+            : 'awaiting-post-scoring-delay';
+        ms = updateScoringSession(ms, (session) => session
+            ? {
+                ...session,
+                currentBaseRef,
+                currentStep: waitingStep,
+            }
+            : session,
+        );
+        ms = appendScoringFrameDeferredPayload(ms, {
+            deferredEvents: serializedDeferredEvents,
+        });
+        if (waitingStep === 'awaiting-post-scoring-delay') {
+            ms = beginPostScoringBaseRevealDelay(ms, now);
         }
-        return { events, newBaseDeck, matchState: ms };
     }
-
-    events.push(...postScoringEvents);
     return { events, newBaseDeck, matchState: ms };
 }
 
@@ -1024,36 +1231,22 @@ function processImmediateStartTurnMinionTriggers(
 // Setup
 // ============================================================================
 
-const DEFAULT_SMASHUP_EXPANSIONS = ['titans'];
-
 function isAiSeatControllerType(type: unknown): boolean {
     return type === 'local-ai' || type === 'remote-ai';
 }
 
-function readEnabledExpansions(setupData?: Record<string, unknown>): string[] {
-    if (Array.isArray(setupData?.expansions)) {
-        return setupData.expansions.filter((value): value is string => typeof value === 'string');
-    }
-
-    const setupSelections = setupData?.setupSelections;
-    if (
-        setupSelections
-        && typeof setupSelections === 'object'
-        && !Array.isArray(setupSelections)
-        && Array.isArray((setupSelections as Record<string, unknown>).expansions)
-    ) {
-        return ((setupSelections as Record<string, unknown>).expansions as unknown[])
-            .filter((value): value is string => typeof value === 'string');
-    }
-
-    return [...DEFAULT_SMASHUP_EXPANSIONS];
+function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
+    return getAllBaseDefIds().filter((defId) => {
+        const baseDef = getBaseDef(defId);
+        return !isSmashUpDiyFaction(baseDef?.faction) || enabledExpansions.includes('diy');
+    });
 }
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
-    const enabledExpansions = readEnabledExpansions(setupData);
+    const runtimeSetup = readSmashUpRuntimeSetupConfig(setupData, { playerCount: playerIds.length });
+    const { enabledExpansions, deckQueryEnabled, teamMode } = runtimeSetup;
     const seatOrder = [...playerIds];
-    const teamMode = readSmashUpTeamMode(setupData, playerIds.length);
 
     const players: Record<PlayerId, PlayerState> = {};
     const playerSelections: Record<PlayerId, string[]> = {};
@@ -1073,7 +1266,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         playerSelections[pid] = [];
     }
 
-    let shuffledBaseIds = random.shuffle(getAllBaseDefIds());
+    let shuffledBaseIds = random.shuffle(getSetupBaseDefIds(enabledExpansions));
     const baseCount = playerIds.length + 1;
     const activeBases: BaseInPlay[] = [];
 
@@ -1134,6 +1327,7 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         bases: activeBases,
         titans: [],
         enabledExpansions,
+        deckQueryEnabled,
         baseDeck,
         baseDiscard: [],
         triggerQueue: undefined,
@@ -1148,6 +1342,129 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         cardsPlayedThisTurn: 0,
         powerCountersPlacedOnMinionsThisTurn: 0,
     };
+}
+
+function normalizeSmashUpRuntimeObjectArray<T extends object>(
+    value: T[] | null | undefined,
+): T[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return [];
+
+    let changed = false;
+    const normalized: T[] = [];
+    value.forEach((entry) => {
+        if (entry && typeof entry === 'object') {
+            normalized.push(entry);
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeSmashUpRuntimeStringArray(
+    value: string[] | null | undefined,
+): string[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return undefined;
+
+    let changed = false;
+    const normalized: string[] = [];
+    value.forEach((entry) => {
+        if (typeof entry === 'string') {
+            normalized.push(entry);
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeSmashUpRuntimeMadnessDeck(
+    value: SmashUpCore['madnessDeck'],
+): SmashUpCore['madnessDeck'] {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return [];
+
+    let changed = false;
+    const normalized: string[] = [];
+    value.forEach((entry) => {
+        if (typeof entry === 'string') {
+            normalized.push(entry);
+            return;
+        }
+        if (entry && typeof entry === 'object' && typeof (entry as { defId?: unknown }).defId === 'string') {
+            normalized.push((entry as { defId: string }).defId);
+            changed = true;
+            return;
+        }
+        changed = true;
+    });
+
+    return changed ? normalized : value;
+}
+
+function normalizeLegacySmashUpMatchState(
+    state: MatchState<SmashUpCore>,
+): MatchState<SmashUpCore> {
+    const core = state.core;
+    let changed = false;
+
+    const normalizedPlayers = Object.fromEntries(
+        Object.entries(core.players).map(([playerId, player]) => {
+            const pendingMinionPlayEffects = normalizeSmashUpRuntimeObjectArray(
+                player.pendingMinionPlayEffects,
+            );
+            const usedDiscardPlayAbilities = normalizeSmashUpRuntimeStringArray(
+                player.usedDiscardPlayAbilities,
+            );
+
+            if (
+                pendingMinionPlayEffects === player.pendingMinionPlayEffects
+                && usedDiscardPlayAbilities === player.usedDiscardPlayAbilities
+            ) {
+                return [playerId, player];
+            }
+
+            changed = true;
+            return [playerId, {
+                ...player,
+                pendingMinionPlayEffects,
+                usedDiscardPlayAbilities,
+            }];
+        }),
+    ) as SmashUpCore['players'];
+
+    const normalizedBases = core.bases.map((base) => {
+        const buriedCards = normalizeSmashUpRuntimeObjectArray(base.buriedCards);
+        if (buriedCards === base.buriedCards) {
+            return base;
+        }
+        changed = true;
+        return {
+            ...base,
+            buriedCards,
+        };
+    });
+
+    const normalizedMadnessDeck = normalizeSmashUpRuntimeMadnessDeck(core.madnessDeck);
+    if (normalizedMadnessDeck !== core.madnessDeck) {
+        changed = true;
+    }
+
+    const normalizedState = changed ? {
+        ...state,
+        core: {
+            ...core,
+            players: normalizedPlayers,
+            bases: normalizedBases,
+            madnessDeck: normalizedMadnessDeck,
+        },
+    } : state;
+
+    return normalizeSmashUpMatchStateForUi(normalizedState);
 }
 
 export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
@@ -1183,10 +1500,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 && !(state.core.triggerQueue ?? []).some(trigger => trigger.frameId?.startsWith('turn-end:'));
 
             if (resumedAfterTurnEndReactionResolution) {
-                const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+                const advance = buildTurnEndAdvancePayload(core);
                 return [{
                     type: SU_EVENTS.TURN_ENDED,
-                    payload: { playerId: pid, nextPlayerIndex: nextIndex },
+                    payload: { playerId: pid, ...advance },
                     timestamp: now,
                 } as TurnEndedEvent];
             }
@@ -1239,10 +1556,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 } as PhaseExitResult;
             }
 
-            const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+            const advance = buildTurnEndAdvancePayload(core);
             const evt: TurnEndedEvent = {
                 type: SU_EVENTS.TURN_ENDED,
-                payload: { playerId: pid, nextPlayerIndex: nextIndex },
+                payload: { playerId: pid, ...advance },
                 timestamp: now,
             };
             events.push(evt);
@@ -1287,12 +1604,20 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
             }
 
+            if (currentSession.currentStep === 'awaiting-post-scoring-delay') {
+                if (isPostScoringBaseRevealDelayActive(currentState, now)) {
+                    return { events: [], halt: true, updatedState: currentState } as PhaseExitResult;
+                }
+                const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(currentState), now);
+                return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
+            }
+
             if (currentSession.currentBaseRef && (
                 currentSession.currentStep === 'awaiting-interactions'
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
-                const finalized = finalizeCurrentScoringBase(currentState, now);
-                return { events: finalized.events, updatedState: finalized.updatedState } as PhaseExitResult;
+                const delayedState = beginPostScoringBaseRevealDelay(currentState, now);
+                return { events: [], halt: true, updatedState: delayedState } as PhaseExitResult;
             }
 
             if (!currentSession.currentBaseRef) {
@@ -1392,6 +1717,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
             }
 
+            if (getScoringSession(pipelineReadyState)?.currentStep === 'awaiting-post-scoring-delay') {
+                return { events: result.events, halt: true, updatedState: pipelineReadyState } as PhaseExitResult;
+            }
+
             const completedState = updateScoringSession(
                 markScoringBaseCompleted(pipelineReadyState, activeBaseRef),
                 (session) => session ? { ...session, currentStep: 'awaiting-post-reduce' } : session,
@@ -1426,7 +1755,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             let nextTurnNumber = core.turnNumber;
             let nextPlayerIndex = core.currentPlayerIndex;
             if (from === 'endTurn') {
-                const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+                const turnEndedEvent = exitEvents?.find(event => event.type === SU_EVENTS.TURN_ENDED) as TurnEndedEvent | undefined;
+                const nextIndex = turnEndedEvent?.payload.nextPlayerIndex
+                    ?? ((core.currentPlayerIndex + 1) % core.turnOrder.length);
                 nextPlayerId = core.turnOrder[nextIndex];
                 nextPlayerIndex = nextIndex;
                 if (nextIndex === 0) {
@@ -1700,10 +2031,13 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'scoreBases') {
+            if (isPostScoringBaseRevealDelayActive(state, Date.now())) {
+                return undefined;
+            }
             if (getSmashUpReactionSession(state)) {
                 return undefined;
             }
-            if (state.sys.responseWindow?.current) {
+            if (getSmashUpReactionWindowContext(state)) {
                 return undefined;
             }
             if ((state.sys as any)._waitForScoreBasesInteractionReduce) {
@@ -1782,7 +2116,7 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
                 return {
                     uid: c.uid,
                     defId: 'buried_unknown',
-                    trueOwnerId: c.controllerId,
+                    trueOwnerId: c.trueOwnerId,
                     controllerId: c.controllerId,
                     buriedFrom: c.buriedFrom,
                 };
@@ -2141,8 +2475,10 @@ function postProcessSystemEvents(
         skipDestroyEventKeys: processedDestroyEventKeys,
     });
     if (afterDestroyMove.matchState) ms = afterDestroyMove.matchState;
+    const afterReturnToHand = processReturnToHandTriggers(afterDestroyMove.events, ms, pid, random, now);
+    if (afterReturnToHand.matchState) ms = afterReturnToHand.matchState;
     // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
-    const afterProtectedAffect = filterProtectedAffectEvents(afterDestroyMove.events, ms.core, pid);
+    const afterProtectedAffect = filterProtectedAffectEvents(afterReturnToHand.events, ms.core, pid);
     const afterAffect = processAffectTriggers(afterProtectedAffect, ms, pid, random, now);
     if (afterAffect.matchState) ms = afterAffect.matchState;
     const afterDeckInspection = processDeckInspectionTriggers(afterAffect.events, ms, pid, random, now);
@@ -2184,7 +2520,34 @@ function postProcessSystemEvents(
     }
     
     for (const event of afterDeckInspection.events) {
-        if (event.type === SU_EVENTS.CARDS_DISCARDED) {
+        if (event.type === SU_EVENTS.VP_AWARDED) {
+            const vpEvt = event as VpAwardedEvent;
+            let tempCore = state;
+            for (const preEvt of prePlayEvents) {
+                tempCore = reduce(tempCore, preEvt);
+            }
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            }
+            const sourceEventId = `vp-awarded:${vpEvt.payload.playerId}:${event.timestamp}`;
+            const frameId = `vp-awarded-frame:${vpEvt.payload.playerId}:${event.timestamp}`;
+            const queued = collectTriggers(tempCore, 'onVpAwarded', {
+                state: tempCore,
+                matchState: tempCore === ms.core ? ms : { ...ms, core: tempCore },
+                playerId: vpEvt.payload.playerId,
+                vpAmount: vpEvt.payload.amount,
+                reason: vpEvt.payload.reason,
+                frameId,
+                sourceEventId,
+                random,
+                now: event.timestamp,
+            });
+            if (queued) {
+                derivedEvents.push(queued);
+                ms = queued.matchState ?? ms;
+            }
+            prePlayEvents.push(event);
+        } else if (event.type === SU_EVENTS.CARDS_DISCARDED) {
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
             const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);
             const queued = collectTriggers(tempCore, 'onCardsDiscarded', {
@@ -2296,6 +2659,25 @@ function postProcessSystemEvents(
                     tempCore = reduce(tempCore, queuedBase as unknown as SmashUpEvent);
                     tempMatchState = { ...tempMatchState, core: tempCore };
                 }
+
+                const queuedExtendedBase = collectExtendedBaseAbilityTriggers({
+                    core: tempCore,
+                    timing: 'onActionPlayed',
+                    ownerPlayerId: playedEvt.payload.playerId,
+                    baseIndex: playedEvt.payload.targetBaseIndex,
+                    reason: 'action-played',
+                    actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
+                    actionTargetType: playedEvt.payload.targetType,
+                    actionTargetMinionUid: playedEvt.payload.targetMinionUid,
+                    frameId,
+                    sourceEventId,
+                    now: event.timestamp,
+                });
+                if (queuedExtendedBase) {
+                    derivedEvents.push(queuedExtendedBase as unknown as SmashUpEvent);
+                    tempCore = reduce(tempCore, queuedExtendedBase as unknown as SmashUpEvent);
+                    tempMatchState = { ...tempMatchState, core: tempCore };
+                }
             }
 
             const queuedActionTriggers = collectTriggers(tempCore, 'onActionPlayed', {
@@ -2335,8 +2717,10 @@ function postProcessSystemEvents(
             skipDestroyEventKeys: processedDestroyEventKeys,
         });
         if (afterDerivedDestroyMove.matchState) ms = afterDerivedDestroyMove.matchState;
+        const afterDerivedReturnToHand = processReturnToHandTriggers(afterDerivedDestroyMove.events, ms, pid, random, now);
+        if (afterDerivedReturnToHand.matchState) ms = afterDerivedReturnToHand.matchState;
         // 杩斿洖鎵嬬墝/鏀剧墝搴撳簳淇濇姢杩囨护锛堜笌 execute() 鍚庡鐞嗗榻愶級
-        const afterDerivedProtectedAffect = filterProtectedAffectEvents(afterDerivedDestroyMove.events, ms.core, pid);
+        const afterDerivedProtectedAffect = filterProtectedAffectEvents(afterDerivedReturnToHand.events, ms.core, pid);
         const afterDerivedAffect = processAffectTriggers(afterDerivedProtectedAffect, ms, pid, random, now);
         if (afterDerivedAffect.matchState) ms = afterDerivedAffect.matchState;
         const afterDerivedDeckInspection = processDeckInspectionTriggers(afterDerivedAffect.events, ms, pid, random, now);
@@ -2347,6 +2731,39 @@ function postProcessSystemEvents(
     const combined = [...afterDeckInspection.events, ...finalDerived];
     const alreadyReducedEventCount = inputEventsAlreadyReduced ? afterDeckInspection.events.length : 0;
 
+    const talentDerived: SmashUpEvent[] = [];
+    let talentCore = state;
+    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
+        const event = combined[eventIndex];
+        if (eventIndex >= alreadyReducedEventCount) {
+            talentCore = reduce(talentCore, event);
+        }
+        if (event.type !== SU_EVENTS.TALENT_USED) continue;
+        const talentEvent = event as TalentUsedEvent;
+        const { playerId, minionUid, defId, baseIndex } = talentEvent.payload;
+        if (!minionUid) continue;
+        const triggerMinion = talentCore.bases[baseIndex]?.minions.find(minion => minion.uid === minionUid);
+        const sourceEventId = `onTalentUsed:${minionUid}:${event.timestamp}`;
+        const queuedTalentTriggers = collectTriggers(talentCore, 'onTalentUsed', {
+            state: talentCore,
+            matchState: talentCore === ms.core ? ms : { ...ms, core: talentCore },
+            playerId,
+            baseIndex,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: defId,
+            triggerMinion,
+            frameId: sourceEventId,
+            sourceEventId,
+            random,
+            now: event.timestamp,
+        });
+        if (queuedTalentTriggers) {
+            talentDerived.push(queuedTalentTriggers);
+            talentCore = reduce(talentCore, queuedTalentTriggers);
+        }
+    }
+    const combinedWithTalent = [...combined, ...talentDerived];
+
     // 泰坦位置事件后处理：标准基地双泰坦自动 clash。
     // 使用 sys 上的去重集合，避免 pipeline 多次调用 postProcessSystemEvents 时重复追加同一批 clash 结果。
     const titanSysAny = ms.sys as any;
@@ -2354,37 +2771,47 @@ function postProcessSystemEvents(
         titanSysAny._processedTitanPositionEvents = new Set<string>();
     }
     const processedTitanPositionEvents = titanSysAny._processedTitanPositionEvents as Set<string>;
+    if (!titanSysAny._processedTitanRemovedEvents || !(titanSysAny._processedTitanRemovedEvents instanceof Set)) {
+        titanSysAny._processedTitanRemovedEvents = new Set<string>();
+    }
+    const processedTitanRemovedEvents = titanSysAny._processedTitanRemovedEvents as Set<string>;
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
-    for (let eventIndex = 0; eventIndex < combined.length; eventIndex++) {
-        const event = combined[eventIndex];
+    for (let eventIndex = 0; eventIndex < combinedWithTalent.length; eventIndex++) {
+        const event = combinedWithTalent[eventIndex];
         // state 已经包含了本轮原始领域事件（afterDeckInspection.events）的 reduce 结果；
         // 这里只需要把新增的派生事件继续 reduce 进临时 core，避免原始事件被重复结算。
         if (eventIndex >= alreadyReducedEventCount) {
             titanCore = reduce(titanCore, event);
         }
-        if (event.type !== SU_EVENT_TYPES.TITAN_PLAYED && event.type !== SU_EVENT_TYPES.TITAN_MOVED) continue;
+        if (
+            event.type !== SU_EVENT_TYPES.TITAN_PLAYED
+            && event.type !== SU_EVENT_TYPES.TITAN_MOVED
+            && event.type !== SU_EVENT_TYPES.TITAN_REMOVED_FROM_PLAY
+        ) continue;
 
-        const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
-            ? event.payload.baseIndex
-            : event.payload.toBaseIndex;
-        const eventKey = `${event.type}:${event.payload.titanUid}@${eventBaseIndex}`;
-        if (processedTitanPositionEvents.has(eventKey)) continue;
-        processedTitanPositionEvents.add(eventKey);
+        if (event.type === SU_EVENT_TYPES.TITAN_PLAYED || event.type === SU_EVENT_TYPES.TITAN_MOVED) {
+            const eventBaseIndex = event.type === SU_EVENT_TYPES.TITAN_PLAYED
+                ? event.payload.baseIndex
+                : event.payload.toBaseIndex;
+            const eventKey = `${event.type}:${event.payload.titanUid}@${eventBaseIndex}`;
+            if (processedTitanPositionEvents.has(eventKey)) continue;
+            processedTitanPositionEvents.add(eventKey);
 
-        const clashResult = resolveTitanClashEvents(
-            titanCore,
-            event,
-            titanCore === ms.core ? ms : { ...ms, core: titanCore },
-        );
-        if (clashResult.matchState) {
-            ms = clashResult.matchState;
-        }
-        if (clashResult.events.length > 0) {
-            titanDerived.push(...clashResult.events);
-            for (const clashEvent of clashResult.events) {
-                titanCore = reduce(titanCore, clashEvent);
+            const clashResult = resolveTitanClashEvents(
+                titanCore,
+                event,
+                titanCore === ms.core ? ms : { ...ms, core: titanCore },
+            );
+            if (clashResult.matchState) {
+                ms = clashResult.matchState;
+            }
+            if (clashResult.events.length > 0) {
+                titanDerived.push(...clashResult.events);
+                for (const clashEvent of clashResult.events) {
+                    titanCore = reduce(titanCore, clashEvent);
+                }
             }
         }
 
@@ -2406,6 +2833,32 @@ function postProcessSystemEvents(
                 }
             }
         }
+
+        if (event.type === SU_EVENT_TYPES.TITAN_REMOVED_FROM_PLAY) {
+            const eventKey = `${event.type}:${event.payload.titanUid}:${event.payload.reason}:${event.payload.fromBaseIndex ?? 'none'}`;
+            if (processedTitanRemovedEvents.has(eventKey)) continue;
+            processedTitanRemovedEvents.add(eventKey);
+
+            const queuedTitanRemoved = collectTriggers(titanCore, 'onTitanRemovedFromPlay', {
+                state: titanCore,
+                matchState: ms,
+                playerId: event.payload.controllerId,
+                baseIndex: event.payload.fromBaseIndex,
+                sourceEventId: `titan-removed:${event.payload.titanUid}:${eventIndex}:${now}`,
+                frameId: `titan-removed-frame:${event.payload.titanUid}:${eventIndex}:${now}`,
+                sourceCardUid: event.payload.titanUid,
+                sourceDefId: event.payload.defId,
+                sourceBaseIndex: event.payload.fromBaseIndex,
+                sourceControllerId: event.payload.controllerId,
+                sourceOwnerPlayerId: event.payload.ownerId,
+                random,
+                now,
+            }, { sourceDefIds: [event.payload.defId] });
+            if (queuedTitanRemoved) {
+                titanDerived.push(queuedTitanRemoved);
+                titanCore = reduce(titanCore, queuedTitanRemoved);
+            }
+        }
     }
 
     const deferredClashResult = resolveDeferredPecosBillClashEvents(
@@ -2423,6 +2876,15 @@ function postProcessSystemEvents(
         }
     }
 
+    let finalEvents = [...combinedWithTalent, ...titanDerived];
+    const immediateExtraEvents = finalEvents.filter((event): event is LimitModifiedEvent =>
+        event.type === SU_EVENTS.LIMIT_MODIFIED && event.payload.playTiming === 'immediate',
+    );
+    if (immediateExtraEvents.length > 0) {
+        const msForImmediateExtra = titanCore === ms.core ? ms : { ...ms, core: titanCore };
+        ms = queueImmediateExtraPlayInteractions(msForImmediateExtra, immediateExtraEvents);
+    }
+
     // === Global reaction queue resolution (Wiki simultaneous ordering) ===
     // Important: the resolver must see the latest temporary core, including
     // movement/position events that happened in this post-process pass.
@@ -2431,7 +2893,6 @@ function postProcessSystemEvents(
     const msForQueue = titanCore === ms.core ? ms : { ...ms, core: titanCore };
 
     const rq = maybeResolveReactionQueue(msForQueue, random, now);
-    let finalEvents = [...combined, ...titanDerived];
     if (rq) {
         finalEvents = [...finalEvents, ...rq.events];
         ms = rq.state;
@@ -2480,12 +2941,7 @@ function postProcessSystemEvents(
         };
     }
 
-    const immediateExtraEvents = finalEvents.filter((event): event is LimitModifiedEvent =>
-        event.type === SU_EVENTS.LIMIT_MODIFIED && event.payload.playTiming === 'immediate',
-    );
-    if (immediateExtraEvents.length > 0) {
-        ms = queueImmediateExtraPlayInteractions(ms, immediateExtraEvents);
-    }
+    ms = queueActionReturnToHandPrompts(ms, finalEvents, now);
 
     return { events: finalEvents, matchState: ms };
 }
@@ -2499,6 +2955,7 @@ registerSmashUpReactionPostProcessor(postProcessSystemEvents);
 export const SmashUpDomain: DomainCore<SmashUpCore, SmashUpCommand, SmashUpEvent> = {
     gameId: 'smashup',
     setup,
+    normalizeRuntimeState: normalizeLegacySmashUpMatchState,
     validate,
     execute,
     reduce,

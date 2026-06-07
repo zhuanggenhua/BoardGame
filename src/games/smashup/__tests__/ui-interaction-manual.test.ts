@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
@@ -18,7 +18,7 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, CardInstance, MinionOnBase, BaseInPlay } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -34,6 +34,7 @@ import { ToastProvider } from '../../../contexts/ToastContext';
 import { PromptOverlay } from '../ui/PromptOverlay';
 import { SmashUpCardRenderer } from '../ui/SmashUpCardRenderer';
 import { BaseZone } from '../ui/BaseZone';
+import { CardMagnifyOverlay } from '../ui/CardMagnifyOverlay';
 import {
     buildMinionUidSnapshotByController,
     resolveEnteringMinionUidsByController,
@@ -41,15 +42,18 @@ import {
 import { buildMatchPlayerViewModel } from '../../../components/game/framework/matchPlayerViewModel';
 import { buildPlayerDisplayNameMap, resolveOrderedPlayerIds } from '../../../components/game/framework/playerDisplay';
 import type { TitanState } from '../domain/types';
+import { getSimpleChoicePrompt } from './helpers';
 
 vi.mock('../../../components/common/media/CardPreview', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../../components/common/media/CardPreview')>();
     return {
         ...actual,
-        CardPreview: ({ previewRef }: { previewRef?: unknown }) => (
+        CardPreview: ({ previewRef, className, style }: { previewRef?: unknown; className?: string; style?: React.CSSProperties }) => (
             React.createElement('div', {
                 'data-testid': 'mock-card-preview',
                 'data-preview-ref': JSON.stringify(previewRef ?? null),
+                className,
+                style,
             })
         ),
     };
@@ -65,10 +69,11 @@ function makeCard(uid: string, defId: string, owner: string, type: 'minion' | 'a
     return { uid, defId, owner, type };
 }
 
-function makeMinion(uid: string, defId: string, controller: string, power: number): MinionOnBase {
+function makeMinion(uid: string, defId: string, controller: string, power: number, metadata?: Record<string, unknown>): MinionOnBase {
     return {
         uid, defId, controller, owner: controller,
         basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+        ...(metadata ? { metadata } : {}),
     };
 }
 
@@ -233,6 +238,57 @@ describe('SmashUp UI 交互验证', () => {
         expect(titanCard.className).not.toContain('hover:scale-125');
     });
 
+    it('桌面端附加行动卡可见时应把所属列抬到最高层', () => {
+        const core = makeState({
+            bases: [
+                makeBase('test_base_1', [
+                    {
+                        ...makeMinion('host-minion', 'pirate_first_mate', '0', 2),
+                        attachedActions: [
+                            { uid: 'attached-1', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
+                        ],
+                    },
+                    makeMinion('ally-cover', 'robot_microbot_alpha', '1', 3),
+                ]),
+                makeBase('test_base_2'),
+                makeBase('test_base_3'),
+            ],
+        });
+
+        render(
+            React.createElement(
+                ToastProvider,
+                undefined,
+                React.createElement(BaseZone, {
+                    base: core.bases[0],
+                    baseIndex: 0,
+                    core,
+                    turnOrder: core.turnOrder,
+                    isDeployMode: false,
+                    isMyTurn: true,
+                    myPlayerId: '0',
+                    dispatch: vi.fn(),
+                    onClick: vi.fn(),
+                    onViewMinion: vi.fn(),
+                    onViewAction: vi.fn(),
+                    onViewBase: vi.fn(),
+                    onViewTitan: vi.fn(),
+                    selectableOngoingUids: new Set(['attached-1']),
+                }),
+            ),
+        );
+
+        const hostMinion = document.querySelector('[data-minion-uid="host-minion"]') as HTMLElement | null;
+        const hostColumn = document.querySelector('[data-testid="su-base-player-column-0-0"]') as HTMLElement | null;
+        const attachedOverlay = document.querySelector('[data-attached-overlay-owner="host-minion"]') as HTMLElement | null;
+        expect(hostMinion).not.toBeNull();
+        expect(hostColumn).not.toBeNull();
+        expect(attachedOverlay).not.toBeNull();
+
+        expect(hostMinion?.dataset.attachedOverlayVisible).toBe('true');
+        expect(hostColumn?.className).toContain('z-[1400]');
+    });
+
     it('通用玩家显示工具应优先使用昵称，并在缺失时回退到座位标签', () => {
         const playerNames = buildPlayerDisplayNameMap(
             ['0', '1', '2'],
@@ -330,6 +386,36 @@ describe('SmashUp UI 交互验证', () => {
         expect(overlay.className).not.toContain('group-hover:opacity-100');
     });
 
+    it('基地放大查看应允许使用仅存在 renderer 映射的基地卡图', () => {
+        render(
+            React.createElement(CardMagnifyOverlay, {
+                target: { defId: 'base_crypt', type: 'base' },
+                onClose: vi.fn(),
+            }),
+        );
+
+        const preview = screen.getByTestId('mock-card-preview');
+        expect(JSON.parse(preview.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: { defId: 'base_crypt', forceShowOverlay: true },
+        });
+    });
+
+    it('放大查看卡框应有显式高度，兼容不支持 aspect-ratio 的旧 WebView', () => {
+        render(
+            React.createElement(CardMagnifyOverlay, {
+                target: { defId: 'zombie_lord_pod', type: 'minion' },
+                onClose: vi.fn(),
+            }),
+        );
+
+        const frame = screen.getByTestId('su-card-magnify-content');
+        expect(frame.style.width).toBe('25vw');
+        expect(frame.style.height).toContain('vw');
+        expect(frame.style.maxHeight).toContain('px');
+    });
+
     it('普通卡面中的英文卡图仍保持 hover 才显示中文覆盖层', () => {
         render(
             React.createElement(SmashUpCardRenderer, {
@@ -344,6 +430,85 @@ describe('SmashUp UI 交互验证', () => {
         const overlay = screen.getByTestId('su-card-text-overlay');
         expect(overlay.getAttribute('data-overlay-visibility')).toBe('hover');
         expect(overlay.className).toContain('group-hover:opacity-100');
+    });
+
+    it('模仿者会把目标卡图的下半部叠到自己的卡面上', () => {
+        render(
+            React.createElement(SmashUpCardRenderer, {
+                previewRef: {
+                    type: 'renderer',
+                    rendererId: 'smashup-card-renderer',
+                    payload: {
+                        defId: 'shapeshifters_copycat',
+                        cardUid: 'copycat-1',
+                        overlayDefId: 'cyborg_apes_furious_george',
+                    },
+                },
+            }),
+        );
+
+        const previews = screen.getAllByTestId('mock-card-preview');
+        expect(previews).toHaveLength(2);
+        expect(JSON.parse(previews[0].getAttribute('data-preview-ref') ?? 'null')).toMatchObject({
+            type: 'atlas',
+        });
+        expect(JSON.parse(previews[1].getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: {
+                defId: 'cyborg_apes_furious_george',
+                cardUid: 'copycat-1',
+                disableHoverOverlay: true,
+            },
+        });
+        expect(screen.getByTestId('su-card-bottom-overlay')).toBeTruthy();
+    });
+
+    it('BaseZone 会把模仿者的下半部叠图信息传给渲染器和放大查看', () => {
+        const onViewMinion = vi.fn();
+        render(
+            React.createElement(BaseZone, {
+                base: makeBase('base_the_vats', [
+                    makeMinion('copycat-1', 'shapeshifters_copycat', '0', 2, {
+                        copiedAbilityDefId: 'cyborg_apes_furious_george',
+                    }),
+                ]),
+                baseIndex: 0,
+                core: makeState(),
+                turnOrder: ['0', '1'],
+                isDeployMode: false,
+                isMyTurn: true,
+                myPlayerId: '0',
+                dispatch: vi.fn(),
+                onClick: vi.fn(),
+                onViewMinion,
+                onViewAction: vi.fn(),
+                onViewBase: vi.fn(),
+                onViewTitan: vi.fn(),
+            }),
+        );
+
+        const previews = screen.getAllByTestId('mock-card-preview');
+        const minionPreview = previews.find((node) => (
+            (node.getAttribute('data-preview-ref') ?? '').includes('shapeshifters_copycat')
+        ));
+        expect(minionPreview).toBeTruthy();
+        expect(JSON.parse(minionPreview!.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: {
+                defId: 'shapeshifters_copycat',
+                cardUid: 'copycat-1',
+                overlayDefId: 'cyborg_apes_furious_george',
+            },
+        });
+
+        const inspectButton = document.querySelector('[data-minion-uid="copycat-1"] button');
+        expect(inspectButton).toBeTruthy();
+        fireEvent.click(inspectButton as Element);
+        expect(onViewMinion).toHaveBeenCalledWith('shapeshifters_copycat', {
+            overlayDefId: 'cyborg_apes_furious_george',
+        });
     });
 
     it('PromptOverlay 的卡牌选择模式应始终走 smashup-card-renderer（POD 卡也一样）', () => {
@@ -380,6 +545,8 @@ describe('SmashUp UI 交互验证', () => {
             rendererId: 'smashup-card-renderer',
             payload: { defId: 'zombie_lord_pod' },
         });
+        expect(preview.className).toContain('aspect-[0.714]');
+        expect(preview.className).toContain('bg-slate-900');
     });
 
     it('PromptOverlay 的排序卡牌选项只要带 defId，就应显示对应卡面而不是占位块', async () => {
@@ -420,6 +587,43 @@ describe('SmashUp UI 交互验证', () => {
         });
     });
 
+    it('PromptOverlay 响应 simple-choice 时应带上当前 interactionId', () => {
+        const dispatch = vi.fn();
+        const interaction = createSimpleChoice(
+            'prompt-interaction-id-check',
+            '0',
+            '选择一个选项',
+            [
+                {
+                    id: 'pick-1',
+                    label: '选项一',
+                    value: { branch: 'a' },
+                    displayMode: 'button' as const,
+                },
+            ],
+            { sourceId: 'test_prompt', targetType: 'generic' },
+        );
+
+        render(
+            React.createElement(
+                ToastProvider,
+                null,
+                React.createElement(PromptOverlay, {
+                    interaction,
+                    dispatch,
+                    playerID: '0',
+                }),
+            ),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: '选项一' }));
+
+        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
+            interactionId: 'prompt-interaction-id-check',
+            optionId: 'pick-1',
+        });
+    });
+
     it('zombie_mall_crawl: 验证选项结构', () => {
         // 准备状态：手牌有 mall_crawl，牌库有多种卡牌
         const core = makeState({
@@ -448,34 +652,37 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
         expect(choice?.sourceId).toBe('zombie_mall_crawl');
 
-        // 验证选项结构
-        console.log('\n=== zombie_mall_crawl 选项结构 ===');
-        console.log('标题:', choice?.title);
-        console.log('选项数量:', choice?.options.length);
-        choice?.options.forEach((opt, i) => {
-            console.log(`选项 ${i}:`, {
-                id: opt.id,
-                label: opt.label,
-                value: opt.value,
-                displayMode: opt.displayMode,
-            });
-        });
-
-        // 验证选项可见性
-        expect(choice?.options.length).toBeGreaterThan(0);
-        expect(choice?.options[0]).toHaveProperty('id');
-        expect(choice?.options[0]).toHaveProperty('label');
-        expect(choice?.options[0]).toHaveProperty('value');
-
-        // 验证选项内容
-        const firstOption = choice?.options[0];
-        expect(firstOption?.value).toHaveProperty('defId');
-        expect(typeof firstOption?.label).toBe('string');
-        expect(firstOption?.label.length).toBeGreaterThan(0);
+        expect(choice?.title).toBe('选择一个卡名，将牌库中所有同名卡放入弃牌堆');
+        expect(choice?.options).toHaveLength(3);
+        expect(choice?.options.map(opt => ({
+            id: opt.id,
+            label: opt.label,
+            value: opt.value,
+            displayMode: opt.displayMode,
+        }))).toEqual([
+            {
+                id: 'group-0',
+                label: '行尸 (×2)',
+                value: { defId: 'zombie_walker' },
+                displayMode: undefined,
+            },
+            {
+                id: 'group-1',
+                label: '掘墓者 (×1)',
+                value: { defId: 'zombie_grave_digger' },
+                displayMode: undefined,
+            },
+            {
+                id: 'group-2',
+                label: '加农炮 (×1)',
+                value: { defId: 'pirate_cannon' },
+                displayMode: undefined,
+            },
+        ]);
     });
 
     it('zombie_lend_a_hand: 验证多选选项结构', () => {
@@ -502,20 +709,12 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
 
-        console.log('\n=== zombie_lend_a_hand 多选选项结构 ===');
-        console.log('标题:', choice?.title);
-        console.log('是否多选:', choice?.multi);
-        console.log('最小选择数:', choice?.multi?.min);
-        console.log('最大选择数:', choice?.multi?.max);
-        console.log('选项数量:', choice?.options.length);
-
-        // 验证多选配置
-        expect(choice?.multi).toBeDefined();
-        expect(choice?.multi?.min).toBeGreaterThanOrEqual(0);
-        expect(choice?.options.length).toBe(3); // 弃牌堆有 3 张牌
+        expect(choice?.title).toBe('借把手：选择要洗回牌库的卡牌（任意数量，可不选）');
+        expect(choice?.multi).toEqual({ min: 0, max: 3 });
+        expect(choice?.options).toHaveLength(3); // 弃牌堆有 3 张牌
     });
 
     it('pirate_dinghy: 验证多步链选项结构', () => {
@@ -546,22 +745,18 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
-        console.log('\n=== pirate_dinghy 第一步选项结构 ===');
-        console.log('标题:', choice1?.title);
-        console.log('sourceId:', choice1?.sourceId);
-        console.log('选项数量:', choice1?.options.length);
-        choice1?.options.forEach((opt, i) => {
-            console.log(`选项 ${i}:`, {
-                id: opt.id,
-                label: opt.label,
-                hasValue: !!opt.value,
-            });
-        });
-
-        // 验证第一步选项
-        expect(choice1?.options.length).toBeGreaterThan(0);
+        expect(choice1?.title).toBe('选择要移动的己方随从（至多2个，第1个）');
+        expect(choice1?.sourceId).toBe('pirate_dinghy_choose_first');
+        expect(choice1?.options.map(opt => ({
+            id: opt.id,
+            label: opt.label,
+            hasValue: !!opt.value,
+        }))).toEqual([
+            { id: 'minion-0', label: 'test_minion (力量 3) @ 基地 1', hasValue: true },
+            { id: 'minion-1', label: 'test_minion (力量 2) @ 基地 2', hasValue: true },
+        ]);
     });
 });

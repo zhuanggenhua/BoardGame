@@ -1,7 +1,6 @@
 import { getCardDef } from '../data/cards';
 import type {
     ActionCardDef,
-    FusionCardDef,
     MinionCardDef,
     SmashUpActivatableAbility,
     SmashUpActivationKind,
@@ -47,6 +46,12 @@ function inferLegacyBoardActivationsFromTags(
     return result;
 }
 
+function inferActionSpecialActivations(def: ActionCardDef): SmashUpActivatableAbility[] {
+    if (def.subtype !== 'special') return [];
+    if (def.specialTiming !== 'beforeScoring' && def.specialTiming !== 'afterScoring') return [];
+    return [{ kind: 'special', zone: 'hand', window: def.specialTiming }];
+}
+
 export function getCardDefActivatableAbilities(
     def: ReturnType<typeof getCardDef>,
     options: SmashUpActivationLookupOptions = {},
@@ -63,6 +68,7 @@ export function getCardDefActivatableAbilities(
     if (def.type === 'action') {
         return dedupeActivatableAbilities([
             ...(def.activatableAbilities ?? []),
+            ...inferActionSpecialActivations(def),
             ...inferLegacyBoardActivationsFromTags(def.abilityTags),
         ]);
     }

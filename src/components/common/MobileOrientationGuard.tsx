@@ -5,11 +5,17 @@ import type { GameManifestEntry } from '../../games/manifest';
 import {
     extractGameIdFromPlayPath,
     getGameMobileBannerKind,
+    isMobileViewport,
+    isPortraitViewport,
     resolveGameMobileSupport,
     type GameMobileBannerKind,
 } from '../../games/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import { isHomeEntryRoute, isHomeV2PreviewRoute } from '../../lib/homeV2Routing';
+import {
+    isBookHomeRoute,
+    isHomeEntryRoute,
+    subscribeHomeEntryStyleChange,
+} from '../../lib/homeV2Routing';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -160,6 +166,32 @@ const getBannerMessage = (bannerKind: GameMobileBannerKind) => {
     }
 };
 
+const getGateTitle = (bannerKind: GameMobileBannerKind) => {
+    switch (bannerKind) {
+        case 'rotate-to-landscape':
+            return '请切换到横屏继续';
+        case 'rotate-to-portrait':
+            return '请切换到竖屏继续';
+        case 'tablet-only':
+            return '请改用平板或 PC 继续';
+        case 'not-supported':
+            return '当前手机端暂不支持该游戏';
+    }
+};
+
+const getGateDescription = (bannerKind: GameMobileBannerKind) => {
+    switch (bannerKind) {
+        case 'rotate-to-landscape':
+            return '当前游戏按横屏主界面设计，切换方向后再进入对局。';
+        case 'rotate-to-portrait':
+            return '当前游戏按竖屏主界面设计，切换方向后再继续对局。';
+        case 'tablet-only':
+            return '当前画面需要更大的可视区域，建议改用平板或 PC。';
+        case 'not-supported':
+            return '该游戏尚未完成手机端适配，建议使用 PC 或等待后续补齐。';
+    }
+};
+
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
@@ -167,11 +199,14 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const [nativeAppShell, setNativeAppShell] = useState(() => hasCapacitorRuntime());
     const nativeAppShellRef = useRef(nativeAppShell);
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
+    const [homeEntryStyleRevision, setHomeEntryStyleRevision] = useState(0);
     nativeAppShellRef.current = nativeAppShell;
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
-    const isHomeV2Route = isHomeV2PreviewRoute(location.pathname);
     const isHomeRoute = isHomeEntryRoute(location.pathname);
+    void homeEntryStyleRevision;
+    const isBookHomeEntry = isBookHomeRoute(location.pathname, location.search);
+    const isHomeV2Route = isBookHomeEntry;
     const builtInGameConfig = gameId ? GAME_MANIFEST_BY_ID[gameId] : undefined;
     const gameConfig = builtInGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
@@ -184,12 +219,31 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             : isHomeRoute
                 ? 'portrait'
                 : null;
-    const bannerKind = getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
-    const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
-    const shouldSuppressBannerInAppShell = nativeAppShell && Boolean(gameId);
-    const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
-        ? bannerKind
+    const homeBannerKind: GameMobileBannerKind | null = isHomeRoute && isMobileViewport(viewport.width)
+        ? (
+            isBookHomeEntry
+                ? (isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-landscape' : null)
+                : (!isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null)
+        )
         : null;
+    const bannerKind = homeBannerKind ?? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
+    const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
+    const shouldRenderGameOrientationGate = Boolean(
+        !nativeAppShell
+        && gameId
+        && bannerKind
+        && (bannerKind === 'rotate-to-landscape' || bannerKind === 'rotate-to-portrait'),
+    );
+    const shouldSuppressBannerInAppShell = nativeAppShell && (Boolean(gameId) || isHomeRoute);
+    const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
+        ? (shouldRenderGameOrientationGate ? null : bannerKind)
+        : null;
+
+    useEffect(() => {
+        return subscribeHomeEntryStyleChange(() => {
+            setHomeEntryStyleRevision((value) => value + 1);
+        });
+    }, []);
     useEffect(() => {
         if (!gameId || builtInGameConfig) {
             setDynamicGameConfig(undefined);
@@ -252,6 +306,26 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     }, [bannerKey]);
 
     useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const offsetValue = activeBannerKind && !shouldRenderGameOrientationGate
+            ? 'calc(env(safe-area-inset-top) + 3.75rem)'
+            : '0px';
+        const rootStyle = document.documentElement.style;
+        const bodyStyle = document.body?.style;
+
+        rootStyle.setProperty('--mobile-orientation-banner-offset', offsetValue);
+        bodyStyle?.setProperty('--mobile-orientation-banner-offset', offsetValue);
+
+        return () => {
+            rootStyle.setProperty('--mobile-orientation-banner-offset', '0px');
+            bodyStyle?.setProperty('--mobile-orientation-banner-offset', '0px');
+        };
+    }, [activeBannerKind, shouldRenderGameOrientationGate]);
+
+    useEffect(() => {
         if (!nativeAppShell || !targetOrientation) return;
 
         let disposed = false;
@@ -302,6 +376,32 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
 
     return (
         <>
+            {shouldRenderGameOrientationGate && bannerKind ? (
+                <div
+                    data-testid="mobile-orientation-game-gate"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black text-white"
+                    style={{
+                        paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)',
+                        paddingRight: 'calc(env(safe-area-inset-right) + 1.5rem)',
+                        paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)',
+                        paddingLeft: 'calc(env(safe-area-inset-left) + 1.5rem)',
+                    }}
+                >
+                    <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-[28px] border border-white/12 bg-white/8 px-6 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                        <div className="flex items-center gap-3 text-parchment-gold">
+                            {renderBannerVisual(bannerKind)}
+                        </div>
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-semibold tracking-normal text-white">
+                                {getGateTitle(bannerKind)}
+                            </h1>
+                            <p className="text-sm leading-6 text-white/72">
+                                {getGateDescription(bannerKind)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
             {activeBannerKind ? (
                 <div
                     className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream pb-3 z-[9999] shadow-lg border-b-2 border-parchment-gold/30"

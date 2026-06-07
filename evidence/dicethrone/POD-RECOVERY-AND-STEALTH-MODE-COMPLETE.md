@@ -1,4 +1,6 @@
-# POD 恢复 + 响应窗口隐身模式 - 完成报告
+# POD 恢复 + 响应窗口隐身模式历史证据
+
+> 2026-06-06 当前有效口径：本文是 2026-03-04 那一轮 POD 恢复与响应窗口隐身模式修复的历史阶段证据，不代表当前 DiceThrone 整体、任一单英雄，或四位新英雄整批已经审计完成。它现在只能证明当时一批 POD 相关恢复与信息隐藏修正曾被处理过，不能外推成 DiceThrone 当前总体收口。
 
 ## 工作时间
 2026-03-04
@@ -108,7 +110,7 @@ if (type === 'RESPONSE_WINDOW_OPENED' || type === 'RESPONSE_WINDOW_CLOSED') {
 只有当对手实际打出响应牌时，己方才能看到效果和听到音效。
 
 ## 结论
-✅ **所有工作已完成**
+✅ **本文覆盖的历史阶段工作当轮已完成**
 1. POD 提交恢复工作完成（8/9 功能已恢复）
 2. autoResponse 功能已恢复
 3. 响应窗口隐身模式已实现（UI + 音效）
@@ -121,3 +123,8 @@ if (type === 'RESPONSE_WINDOW_OPENED' || type === 'RESPONSE_WINDOW_CLOSED') {
 - `evidence/dicethrone/POD-AUTORESPONSE-RECOVERY.md` - autoResponse 恢复详情
 - `evidence/dicethrone/dicethrone-response-window-stealth-mode.md` - 隐身模式详情
 - `evidence/_shared/POD-RECOVERY-FINAL-STATUS.md` - 完整恢复状态报告
+
+## 当前阅读说明
+
+- 本文是 POD 恢复 / 信息隐藏专项的历史证据，不是 DiceThrone 当前总审计出口。
+- 本文不能替代新英雄默认全面审计留档所需的对象级矩阵、批次级 `L4` 判等与旧 evidence / rule 统一回写。

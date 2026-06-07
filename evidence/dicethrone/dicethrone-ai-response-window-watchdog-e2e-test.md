@@ -1,4 +1,6 @@
-# DiceThrone AI 响应窗口 watchdog E2E 证据
+# DiceThrone AI 响应窗口 watchdog 历史 E2E 证据
+
+> 2026-06-06 当前有效口径：本文只保留 AI 响应窗口循环卡死 / reopen / sourceId 变化场景下 watchdog 收口链的历史 E2E 证据，不代表 DiceThrone 全体在线 AI、全量 response window、任一单英雄，或四位新英雄整批当前已经审计完成。它现在只能证明当时这组 response watchdog 链路被专项验证过，不能外推成 DiceThrone 当前总体收口。
 
 ## 覆盖用例
 - Online AI 响应窗口反复卡死时，watchdog 应强制关闭响应窗口
@@ -42,3 +44,8 @@
 - 路径：D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-响应窗口在-sourceId-变化的重复-reopen-下仍应被-watchdog-收口\20-online-ai-response-loop-reopen-sourceid-after.png
 - 观察：页面无响应弹窗与失败提示，主界面保持稳定。
 - 结论：sourceId 多次变化后 watchdog 仍能收口，满足用例要求。
+
+## 当前阅读说明
+
+- 本文只覆盖历史 AI response watchdog 链路，不覆盖更广范围 DiceThrone 在线 AI / watchdog 总体完成态。
+- 即使本文中的 E2E、截图和收口结论在当轮成立，也不能把它当成当前 DiceThrone 或新英雄整批“全面收口”的证明。

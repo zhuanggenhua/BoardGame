@@ -14,6 +14,7 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildValidatedMoveEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
     getMinionPower,
@@ -45,6 +46,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type PlayerChoice = { targetPlayerId?: PlayerId; skip?: boolean };
@@ -66,6 +68,7 @@ type AkyeContinuation = {
 };
 
 type HighSpeedChaseContinuation = {
+    sourceCardUid: string;
     sourceBaseIndex: number;
     minionUid: string;
     minionDefId: string;
@@ -144,11 +147,17 @@ function transferCard(
     reason: string,
     timestamp: number,
 ): CardTransferredEvent {
-    return {
-        type: SU_EVENTS.CARD_TRANSFERRED,
-        payload: { cardUid, defId, fromPlayerId, toPlayerId, reason },
+    return createCardTransferEvent({
+        card: createCardObjectRef({
+            uid: cardUid,
+            defId,
+            ownerId: fromPlayerId,
+        }),
+        fromPlayerId,
+        toPlayerId,
+        reason,
         timestamp,
-    };
+    });
 }
 
 function getOtherPlayers(state: SmashUpCore, playerId: PlayerId): PlayerId[] {
@@ -451,13 +460,14 @@ const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCard
             { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand' },
         );
     },
-    onResolve: ({ state, context, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, context, value, timestamp } = args;
         const selected = value as CardChoice;
         if (!selected.cardUid || !selected.defId || !context.targetPlayerId) return { events: [] };
         return {
             events: [
                 transferCard(selected.cardUid, selected.defId, context.playerId, context.targetPlayerId, 'world_champs_akye_the_turtle', timestamp),
-                ...buildStandardDrawEvents(state.core, context.playerId, 2, random, timestamp),
+                ...buildStandardDrawEventsFromRuntimeContext(args, context.playerId, 2),
             ],
         };
     },
@@ -548,7 +558,7 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
         if (selected.baseIndex === undefined) return { events: [] };
 
         const sourceBase = state.core.bases[context.sourceBaseIndex];
-        const ongoing = sourceBase?.ongoingActions.find(action => action.defId === 'world_champs_high_speed_chase' && action.ownerId === context.playerId);
+        const ongoing = sourceBase?.ongoingActions.find(action => action.uid === context.sourceCardUid);
         if (!ongoing) return { events: [] };
         const moveEvents = buildValidatedMoveEvents(state, {
             minionUid: context.minionUid,
@@ -577,8 +587,10 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
                         cardUid: ongoing.uid,
                         defId: ongoing.defId,
                         ownerId: ongoing.ownerId,
+                        ...(ongoing.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                         targetType: 'base',
                         targetBaseIndex: selected.baseIndex,
+                        metadata: ongoing.metadata,
                         talentUsed: true,
                     },
                     timestamp,
@@ -615,7 +627,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
             { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion' },
         );
     },
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ state, context, playerId, value, timestamp }) => {
         const selected = value as MinionChoice;
         if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
         const baseOptions = state.core.bases
@@ -628,6 +640,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
         return {
             events: [],
             context: createWorldChampsPromptContext(state, playerId, timestamp, {
+                sourceCardUid: context.sourceCardUid,
                 sourceBaseIndex: selected.baseIndex,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
@@ -872,6 +885,7 @@ const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChamp
                     cardUid: context.sourceCardUid,
                     defId: context.sourceDefId ?? 'world_champs_bewitched',
                     ownerId: context.ownerId,
+                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                     targetType: 'minion',
                     targetBaseIndex: selected.baseIndex,
                     targetMinionUid: selected.minionUid,
@@ -1049,6 +1063,7 @@ function worldChampsHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
     const result = executeAbilityProgram(
         worldChampsHighSpeedChaseMinionPromptProgram,
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
         }),
     );
@@ -1106,6 +1121,29 @@ function worldChampsSmartSetUpOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 function worldChampsEhSpecial(ctx: AbilityContext): AbilityResult {
+    if (ctx.targetMinionUid) {
+        const base = ctx.state.bases[ctx.baseIndex];
+        const target = base?.minions.find(minion =>
+            minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId,
+        );
+        if (!target) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        }
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.DISCARD_ABILITY_USED,
+                    payload: {
+                        playerId: ctx.playerId,
+                        sourceId: 'world_champs_eh',
+                    },
+                    timestamp: ctx.now,
+                },
+                addTempPower(target.uid, ctx.baseIndex, 1, 'world_champs_eh', ctx.now),
+                recoverCardsFromDiscard(ctx.playerId, [ctx.cardUid], 'world_champs_eh', ctx.now),
+            ],
+        };
+    }
     const ownMinions = collectOwnMinions(ctx.state, ctx.playerId);
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -1122,9 +1160,9 @@ function worldChampsEhSpecial(ctx: AbilityContext): AbilityResult {
 function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return [];
     if (ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
-    if (ctx.playerId !== ctx.sourceControllerId) return [];
+    const aramisControllerId = ctx.sourceControllerId;
     const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
-    if (currentPlayerId !== ctx.sourceControllerId) return [];
+    if (currentPlayerId !== aramisControllerId) return [];
     const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
     if (!isActionDefId(actionDefId)) return [];
 
@@ -1135,7 +1173,7 @@ function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] 
 
     return [
         grantContextualExtraAction(
-            { playerId: ctx.sourceControllerId, now: ctx.now, matchState: ctx.matchState },
+            { playerId: aramisControllerId, now: ctx.now, matchState: ctx.matchState },
             'world_champs_aramis',
         ),
         buildMinionMetadataUpdatedEvent(
@@ -1166,6 +1204,7 @@ function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
         sourceMinion.uid,
         sourceMinion.defId,
         ctx.sourceBaseIndex,
+        sourceMinion.owner,
         ctx.sourceControllerId,
     );
     if (!mirroredEvent) return [];
@@ -1182,25 +1221,53 @@ function worldChampsDivaOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     ];
 }
 
-function worldChampsSmartSetUpOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
-    if (ctx.sourceControllerId === undefined || ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid) return [];
-    if (ctx.baseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return [];
+function canTriggerWorldChampsSmartSetUp(ctx: TriggerContext): boolean {
+    if (ctx.sourceControllerId === undefined || ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid) return false;
+    if (ctx.baseIndex === undefined || ctx.baseIndex !== ctx.sourceBaseIndex) return false;
     const sourceBase = ctx.state.bases[ctx.sourceBaseIndex];
     const host = sourceBase?.minions.find(minion => minion.attachedActions.some(action => action.uid === ctx.sourceCardUid));
-    if (!host || host.controller === ctx.sourceControllerId) return [];
+    if (!host || host.controller === ctx.sourceControllerId) return false;
     const totalPlayedOnBase = ctx.state.turnOrder.reduce(
         (sum, playerId) => sum + (ctx.state.players[playerId]?.minionsPlayedPerBase?.[ctx.baseIndex!] ?? 0),
         0,
     );
-    if (totalPlayedOnBase !== 1) return [];
-    return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
+    return totalPlayedOnBase === 1;
+}
+
+function worldChampsSmartSetUpOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
+    if (!canTriggerWorldChampsSmartSetUp(ctx)) return [];
+    const sourceControllerId = ctx.sourceControllerId;
+    if (sourceControllerId === undefined) return [];
+    return buildStandardDrawEvents(ctx.state, sourceControllerId, 1, ctx.random, ctx.now);
 }
 
 function worldChampsBewitchedTransferOnLeave(ctx: TriggerContext): AbilityResult {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) {
+        return { events: [] };
+    }
     if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceControllerId === undefined || !ctx.triggerMinionUid) {
         return { events: [] };
     }
 
+    const liveSourceOwnerId = (() => {
+        for (const base of ctx.state.bases) {
+            const ongoing = base.ongoingActions.find(action => action.uid === ctx.sourceCardUid);
+            if (ongoing) return ongoing.ownerId;
+            for (const minion of base.minions) {
+                const attached = minion.attachedActions.find(action => action.uid === ctx.sourceCardUid);
+                if (attached) return attached.ownerId;
+            }
+        }
+        for (const player of Object.values(ctx.state.players)) {
+            const zones = [...(player.discard ?? []), ...(player.hand ?? []), ...(player.deck ?? [])];
+            const card = zones.find(candidate => candidate.uid === ctx.sourceCardUid);
+            if (card?.owner) return card.owner;
+        }
+        return undefined;
+    })();
+    const sourceOwnerId = liveSourceOwnerId
+        ?? ctx.triggerMinion?.attachedActions.find(action => action.uid === ctx.sourceCardUid)?.ownerId
+        ?? ctx.sourceControllerId;
     const minionOptions = collectAllMinions(ctx.state).filter(minion => minion.uid !== ctx.triggerMinionUid);
     if (minionOptions.length === 0) return { events: [] };
     return executeAbilityProgram(
@@ -1208,7 +1275,7 @@ function worldChampsBewitchedTransferOnLeave(ctx: TriggerContext): AbilityResult
         createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             sourceCardUid: ctx.sourceCardUid,
             sourceDefId: 'world_champs_bewitched',
-            ownerId: ctx.sourceControllerId,
+            ownerId: sourceOwnerId,
             triggerMinionUid: ctx.triggerMinionUid,
         } satisfies BewitchedTransferContinuation & { triggerMinionUid: string }),
     );
@@ -1236,6 +1303,7 @@ function buildDivaMirroredEvent(
     divaUid: string,
     divaDefId: string,
     divaBaseIndex: number,
+    divaOwnerId: PlayerId,
     divaControllerId: PlayerId,
 ): SmashUpEvent | undefined {
     switch (event.type) {
@@ -1309,7 +1377,8 @@ function buildDivaMirroredEvent(
                     minionUid: divaUid,
                     minionDefId: divaDefId,
                     fromBaseIndex: divaBaseIndex,
-                    ownerId: divaControllerId,
+                    ownerId: divaOwnerId,
+                    controllerId: divaControllerId,
                     destroyerId: payload.destroyerId,
                     reason: 'world_champs_diva_copy_destroyed',
                 },
@@ -1321,6 +1390,7 @@ function buildDivaMirroredEvent(
             return {
                 type: SU_EVENTS.MINION_MOVED,
                 payload: {
+                    ...payload,
                     minionUid: divaUid,
                     minionDefId: divaDefId,
                     fromBaseIndex: divaBaseIndex,
@@ -1376,7 +1446,16 @@ function worldChampsSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
     );
 }
 
+function canQueueWorldChampsBewitchedLeaveTrigger(ctx: TriggerContext): boolean {
+    return !(ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx));
+}
+
+function isDestroyPipelineDiscardTrigger(ctx: TriggerContext): boolean {
+    return typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('minion-discarded-from-base:');
+}
+
 function worldChampsSamuraiChanTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.timing === 'onMinionDiscardedFromBase' && isDestroyPipelineDiscardTrigger(ctx)) return [];
     if (!ctx.sourceControllerId || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
@@ -1449,12 +1528,14 @@ export function registerWorldChampsAbilities(): void {
             if (!player) return [];
             if (player.actionsPlayed < 1) return [];
             if (player.usedDiscardPlayAbilities?.includes('world_champs_eh')) return [];
-            if (collectOwnMinions(core, playerId).length === 0) return [];
+            const ownMinions = collectOwnMinions(core, playerId);
+            if (ownMinions.length === 0) return [];
             return player.discard
                 .filter(card => card.defId === 'world_champs_eh')
                 .map(card => ({
                     card,
-                    allowedBaseIndices: 'all' as const,
+                    allowedBaseIndices: [...new Set(ownMinions.map(minion => minion.baseIndex))],
+                    allowedMinionUids: ownMinions.map(minion => minion.uid),
                     sourceId: 'world_champs_eh',
                     defId: card.defId,
                     name: getCardDef(card.defId)?.name ?? card.defId,
@@ -1464,6 +1545,7 @@ export function registerWorldChampsAbilities(): void {
     registerTrigger('world_champs_aramis', 'onMinionAffected', worldChampsAramisOnMinionAffected, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('world_champs_diva', 'onMinionAffected', worldChampsDivaOnMinionAffected, {
         optional: true,
@@ -1473,34 +1555,47 @@ export function registerWorldChampsAbilities(): void {
     registerTrigger('world_champs_sheriff', 'beforeScoring', worldChampsSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('world_champs_bewitched', 'onMinionDestroyed', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        playerContext: 'sourceController',
+        canTrigger: canQueueWorldChampsBewitchedLeaveTrigger,
     });
     registerTrigger('world_champs_bewitched', 'onMinionDiscardedFromBase', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        playerContext: 'sourceController',
+        canTrigger: canQueueWorldChampsBewitchedLeaveTrigger,
     });
     registerTrigger('world_champs_bewitched', 'onCardReturnedToHand', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        playerContext: 'sourceController',
+        canTrigger: canQueueWorldChampsBewitchedLeaveTrigger,
     });
     registerTrigger('world_champs_samurai_chan', 'onMinionDestroyed', worldChampsSamuraiChanTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('world_champs_samurai_chan', 'onMinionDiscardedFromBase', worldChampsSamuraiChanTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('world_champs_mummy', 'afterScoring', worldChampsMummyAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('world_champs_smart_set_up', 'onMinionPlayed', worldChampsSmartSetUpOnMinionPlayed, {
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        canTrigger: canTriggerWorldChampsSmartSetUp,
     });
 }
 

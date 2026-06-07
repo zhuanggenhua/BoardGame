@@ -21,7 +21,7 @@ const PAGE_COLORS = {
 };
 
 const pageStyle: CSSProperties = {
-    minHeight: '100dvh',
+    minHeight: 'var(--runtime-viewport-height, 100vh)',
     padding: 'calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px)',
     background:
         'radial-gradient(circle at top, rgba(212, 175, 55, 0.18), transparent 32%), linear-gradient(180deg, #fbf7ee 0%, #f4ecd8 100%)',
@@ -37,7 +37,8 @@ const pageStyle: CSSProperties = {
 const panelStyle: CSSProperties = {
     width: '100%',
     maxWidth: '760px',
-    padding: '28px',
+    maxHeight: 'calc(var(--runtime-viewport-height, 100vh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 48px)',
+    padding: 'clamp(18px, 4vw, 28px)',
     borderRadius: '24px',
     border: `1px solid ${PAGE_COLORS.panelBorder}`,
     background: PAGE_COLORS.panel,
@@ -47,6 +48,24 @@ const panelStyle: CSSProperties = {
     position: 'relative',
     zIndex: 1,
     boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+};
+
+const contentAreaStyle: CSSProperties = {
+    flex: '1 1 auto',
+    minHeight: 0,
+    overflowY: 'auto',
+    paddingRight: '4px',
+};
+
+const actionsWrapperStyle: CSSProperties = {
+    flexShrink: 0,
+    marginTop: '16px',
+    paddingTop: '16px',
+    borderTop: '1px solid rgba(74, 59, 42, 0.08)',
+    background: PAGE_COLORS.panel,
 };
 
 const badgeStyle: CSSProperties = {
@@ -139,121 +158,125 @@ export const BrowserCompatibilityPage = ({
             />
 
             <section style={panelStyle}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '18px' }}>
-                    <span style={badgeStyle}>
-                        <Smartphone size={14} />
-                        {contextLabel}
-                    </span>
-                    <span style={{ ...badgeStyle, color: PAGE_COLORS.danger, background: 'rgba(139, 0, 0, 0.06)' }}>
-                        <AlertTriangle size={14} />
-                        {t('compatibility.badge')}
-                    </span>
-                </div>
-
-                <div
-                    style={{
-                        marginBottom: '18px',
-                        padding: '12px 14px',
-                        borderRadius: '14px',
-                        background: 'rgba(74, 59, 42, 0.05)',
-                        border: '1px solid rgba(74, 59, 42, 0.08)',
-                        display: 'grid',
-                        gap: '6px',
-                    }}
-                >
-                    <div style={{ fontSize: '13px', color: PAGE_COLORS.muted }}>
-                        {t('compatibility.currentBrowser', { browser: currentBrowserLabel })}
+                <div style={contentAreaStyle}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '18px' }}>
+                        <span style={badgeStyle}>
+                            <Smartphone size={14} />
+                            {contextLabel}
+                        </span>
+                        <span style={{ ...badgeStyle, color: PAGE_COLORS.danger, background: 'rgba(139, 0, 0, 0.06)' }}>
+                            <AlertTriangle size={14} />
+                            {t('compatibility.badge')}
+                        </span>
                     </div>
-                    <div style={{ fontSize: '13px', color: PAGE_COLORS.muted }}>
-                        {t('compatibility.requiredVersions')}
-                    </div>
-                </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
                     <div
                         style={{
-                            width: '56px',
-                            height: '56px',
-                            borderRadius: '18px',
-                            background: 'rgba(212, 175, 55, 0.18)',
-                            color: PAGE_COLORS.accent,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
+                            marginBottom: '18px',
+                            padding: '12px 14px',
+                            borderRadius: '14px',
+                            background: 'rgba(74, 59, 42, 0.05)',
+                            border: '1px solid rgba(74, 59, 42, 0.08)',
+                            display: 'grid',
+                            gap: '6px',
                         }}
                     >
-                        <AlertTriangle size={28} />
+                        <div style={{ fontSize: '13px', color: PAGE_COLORS.muted }}>
+                            {t('compatibility.currentBrowser', { browser: currentBrowserLabel })}
+                        </div>
+                        <div style={{ fontSize: '13px', color: PAGE_COLORS.muted }}>
+                            {t('compatibility.requiredVersions')}
+                        </div>
                     </div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: 'clamp(28px, 5vw, 42px)', lineHeight: 1.1, color: PAGE_COLORS.accent }}>
-                            {t('compatibility.title')}
-                        </h1>
-                        <p style={{ margin: '10px 0 0', fontSize: '16px', lineHeight: 1.7, color: PAGE_COLORS.muted }}>
-                            {t('compatibility.description')}
-                        </p>
+
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
+                        <div
+                            style={{
+                                width: 'clamp(48px, 14vw, 56px)',
+                                height: 'clamp(48px, 14vw, 56px)',
+                                borderRadius: '18px',
+                                background: 'rgba(212, 175, 55, 0.18)',
+                                color: PAGE_COLORS.accent,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                            }}
+                        >
+                            <AlertTriangle size={28} />
+                        </div>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: 'clamp(22px, 8vw, 42px)', lineHeight: 1.1, color: PAGE_COLORS.accent }}>
+                                {t('compatibility.title')}
+                            </h1>
+                            <p style={{ margin: '10px 0 0', fontSize: '15px', lineHeight: 1.65, color: PAGE_COLORS.muted }}>
+                                {t('compatibility.description')}
+                            </p>
+                        </div>
                     </div>
+
+                    <div
+                        style={{
+                            marginBottom: '18px',
+                            padding: '16px 18px',
+                            borderRadius: '18px',
+                            background: 'rgba(255, 255, 255, 0.72)',
+                            border: '1px solid rgba(200, 182, 158, 0.9)',
+                        }}
+                    >
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: PAGE_COLORS.accent, marginBottom: '8px' }}>
+                            {t('compatibility.reasonTitle')}
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: '20px', color: PAGE_COLORS.text, lineHeight: 1.7 }}>
+                            {report.reasons.map((reason) => (
+                                <li key={reason}>{t(reasonKeyMap[reason])}</li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div
+                        style={{
+                            marginBottom: '8px',
+                            padding: '16px 18px',
+                            borderRadius: '18px',
+                            background: 'rgba(74, 59, 42, 0.05)',
+                            border: '1px solid rgba(74, 59, 42, 0.1)',
+                        }}
+                    >
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: PAGE_COLORS.accent, marginBottom: '8px' }}>
+                            {t('compatibility.recommendationTitle')}
+                        </div>
+                        <div style={{ display: 'grid', gap: '8px', color: PAGE_COLORS.text, lineHeight: 1.7 }}>
+                            <div>{t('compatibility.recommendationChrome')}</div>
+                            <div>{t('compatibility.recommendationWebView')}</div>
+                            <div>{t('compatibility.recommendationRetry')}</div>
+                        </div>
+                    </div>
+
+                    <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: PAGE_COLORS.muted }}>
+                        {t('compatibility.note')}
+                    </p>
                 </div>
 
-                <div
-                    style={{
-                        marginBottom: '18px',
-                        padding: '16px 18px',
-                        borderRadius: '18px',
-                        background: 'rgba(255, 255, 255, 0.72)',
-                        border: '1px solid rgba(200, 182, 158, 0.9)',
-                    }}
-                >
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: PAGE_COLORS.accent, marginBottom: '8px' }}>
-                        {t('compatibility.reasonTitle')}
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: '20px', color: PAGE_COLORS.text, lineHeight: 1.7 }}>
-                        {report.reasons.map((reason) => (
-                            <li key={reason}>{t(reasonKeyMap[reason])}</li>
-                        ))}
-                    </ul>
-                </div>
+                <div style={actionsWrapperStyle}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                        {location.pathname !== '/' ? (
+                            <button type="button" style={secondaryButtonStyle} onClick={() => navigate('/')}>
+                                <ArrowLeft size={16} />
+                                {t('compatibility.backHome')}
+                            </button>
+                        ) : null}
 
-                <div
-                    style={{
-                        marginBottom: '22px',
-                        padding: '16px 18px',
-                        borderRadius: '18px',
-                        background: 'rgba(74, 59, 42, 0.05)',
-                        border: '1px solid rgba(74, 59, 42, 0.1)',
-                    }}
-                >
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: PAGE_COLORS.accent, marginBottom: '8px' }}>
-                        {t('compatibility.recommendationTitle')}
-                    </div>
-                    <div style={{ display: 'grid', gap: '8px', color: PAGE_COLORS.text, lineHeight: 1.7 }}>
-                        <div>{t('compatibility.recommendationChrome')}</div>
-                        <div>{t('compatibility.recommendationWebView')}</div>
-                        <div>{t('compatibility.recommendationRetry')}</div>
-                    </div>
-                </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    {location.pathname !== '/' ? (
-                        <button type="button" style={secondaryButtonStyle} onClick={() => navigate('/')}>
-                            <ArrowLeft size={16} />
-                            {t('compatibility.backHome')}
+                        <button type="button" style={primaryButtonStyle} onClick={onContinueAnyway}>
+                            {t('compatibility.continueAnyway')}
                         </button>
-                    ) : null}
 
-                    <button type="button" style={primaryButtonStyle} onClick={onContinueAnyway}>
-                        {t('compatibility.continueAnyway')}
-                    </button>
-
-                    <button type="button" style={ghostButtonStyle} onClick={onRetry}>
-                        <RefreshCcw size={16} />
-                        {t('compatibility.retry')}
-                    </button>
+                        <button type="button" style={ghostButtonStyle} onClick={onRetry}>
+                            <RefreshCcw size={16} />
+                            {t('compatibility.retry')}
+                        </button>
+                    </div>
                 </div>
-
-                <p style={{ margin: '18px 0 0', fontSize: '13px', lineHeight: 1.6, color: PAGE_COLORS.muted }}>
-                    {t('compatibility.note')}
-                </p>
             </section>
         </div>
     );

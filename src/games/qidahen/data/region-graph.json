@@ -63,14 +63,14 @@
       "id": "city-region-1",
       "name": "大同",
       "seed": {
-        "x": 188,
-        "y": 186
+        "x": 225,
+        "y": 373
       },
       "center": {
-        "x": 188,
-        "y": 186
+        "x": 225,
+        "y": 373
       },
-      "pixelCount": 142094
+      "pixelCount": 3923
     },
     {
       "id": "city-region-2",

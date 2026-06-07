@@ -8,6 +8,7 @@ set -euo pipefail
 #   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
 #   更新版本：  bash deploy-image.sh update [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
+#   回滚到上次部署：bash deploy-image.sh rollback-last
 #   初始化管理员：bash deploy-image.sh init-admin
 #   查看状态：  bash deploy-image.sh status
 #   查看日志：  bash deploy-image.sh logs [service]
@@ -43,6 +44,13 @@ GAME_CONTAINER_NAME="boardgame-game-server"
 MONGODB_CONTAINER_NAME="boardgame-mongodb"
 REDIS_CONTAINER_NAME="boardgame-redis"
 COMPOSE_PROJECT_NAME_EFFECTIVE="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')}"
+DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-.deploy-last-success.env}"
+DEPLOY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PUBLIC_WEB_URL="${PUBLIC_WEB_URL:-https://easyboardgame.top}"
+PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
+PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
+REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
+CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -253,6 +261,66 @@ snapshot_current_runtime_refs() {
   fi
 }
 
+write_deploy_state() {
+  local previous_web_ref="${1:-}"
+  local previous_game_ref="${2:-}"
+  local current_web_ref="${3:-}"
+  local current_game_ref="${4:-}"
+  local action="${5:-deploy}"
+  local updated_at
+
+  updated_at="$(date -Iseconds)"
+
+  cat > "$DEPLOY_STATE_FILE" <<EOF
+DEPLOY_STATE_UPDATED_AT=${updated_at}
+DEPLOY_STATE_ACTION=${action}
+DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF=${previous_web_ref}
+DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF=${previous_game_ref}
+DEPLOY_STATE_CURRENT_WEB_IMAGE_REF=${current_web_ref}
+DEPLOY_STATE_CURRENT_GAME_IMAGE_REF=${current_game_ref}
+EOF
+}
+
+record_successful_runtime_state() {
+  local action="${1:-deploy}"
+  local current_web_ref current_game_ref
+
+  current_web_ref=$(get_container_image_reference "$WEB_CONTAINER_NAME" || true)
+  current_game_ref=$(get_container_image_reference "$GAME_CONTAINER_NAME" || true)
+
+  if [ -z "$current_web_ref" ] || [ -z "$current_game_ref" ]; then
+    log "⚠️  无法记录成功部署状态：未获取到当前运行镜像引用"
+    return 1
+  fi
+
+  write_deploy_state \
+    "$PREVIOUS_WEB_IMAGE_REF" \
+    "$PREVIOUS_GAME_IMAGE_REF" \
+    "$current_web_ref" \
+    "$current_game_ref" \
+    "$action"
+
+  log "✅ 已记录成功部署状态到 ${DEPLOY_STATE_FILE}"
+  return 0
+}
+
+load_deploy_state() {
+  if [ ! -f "$DEPLOY_STATE_FILE" ]; then
+    die "未找到部署状态文件 ${DEPLOY_STATE_FILE}，无法回滚到上次部署"
+  fi
+
+  # shellcheck disable=SC1090
+  . "$DEPLOY_STATE_FILE"
+
+  if [ -z "${DEPLOY_STATE_CURRENT_WEB_IMAGE_REF:-}" ] || [ -z "${DEPLOY_STATE_CURRENT_GAME_IMAGE_REF:-}" ]; then
+    die "部署状态文件缺少当前镜像引用，无法回滚到上次部署"
+  fi
+
+  if [ -z "${DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF:-}" ] || [ -z "${DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF:-}" ]; then
+    die "部署状态文件中没有上次部署镜像引用，当前版本没有可回滚的上一版"
+  fi
+}
+
 container_exists() {
   docker container inspect "$1" >/dev/null 2>&1
 }
@@ -376,6 +444,182 @@ check_http_response() {
 
   log "❌ ${label} 请求失败（已重试 ${max_retries} 次）: ${url}"
   return 1
+}
+
+normalize_public_web_url() {
+  local url="${1:-}"
+  if [ -z "$url" ]; then
+    return 1
+  fi
+  printf '%s' "${url%/}"
+}
+
+extract_entry_assets_from_html() {
+  grep -o 'assets/[^"[:space:]]*' | sort -u
+}
+
+collect_entry_assets_from_url() {
+  local url="${1:-}"
+  if [ -z "$url" ]; then
+    return 1
+  fi
+  curl -fsSL --max-time 15 "$url" | extract_entry_assets_from_html
+}
+
+verify_public_entry_sync_once() {
+  if [ "${PUBLIC_WEB_URL:-off}" = "off" ]; then
+    log "已跳过公网入口一致性检查（PUBLIC_WEB_URL=off）"
+    return 0
+  fi
+
+  local normalized_public_url origin_assets public_assets
+  normalized_public_url="$(normalize_public_web_url "$PUBLIC_WEB_URL")" || {
+    log "❌ 无法解析 PUBLIC_WEB_URL：${PUBLIC_WEB_URL}"
+    return 1
+  }
+
+  origin_assets="$(collect_entry_assets_from_url "http://127.0.0.1/")" || {
+    log "❌ 无法读取源站首页入口资源列表"
+    return 1
+  }
+  public_assets="$(collect_entry_assets_from_url "${normalized_public_url}/")" || {
+    log "❌ 无法读取公网首页入口资源列表：${normalized_public_url}/"
+    return 1
+  }
+
+  if [ -z "$origin_assets" ] || [ -z "$public_assets" ]; then
+    log "❌ 入口资源列表为空，无法判定公网/源站是否一致"
+    log "  - origin: ${origin_assets:-<empty>}"
+    log "  - public: ${public_assets:-<empty>}"
+    return 1
+  fi
+
+  if [ "$origin_assets" != "$public_assets" ]; then
+    log "❌ 公网入口资源仍与源站不一致"
+    log "  - origin:"
+    while IFS= read -r line; do
+      [ -n "$line" ] && log "    ${line}"
+    done <<< "$origin_assets"
+    log "  - public:"
+    while IFS= read -r line; do
+      [ -n "$line" ] && log "    ${line}"
+    done <<< "$public_assets"
+    return 1
+  fi
+
+  log "✅ 公网入口资源已与源站一致"
+  return 0
+}
+
+verify_public_entry_sync_with_retry() {
+  local attempts="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
+  local delay_seconds="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
+  local attempt=1
+
+  while [ "$attempt" -le "$attempts" ]; do
+    if verify_public_entry_sync_once; then
+      return 0
+    fi
+
+    if [ "$attempt" -lt "$attempts" ]; then
+      log "⏳ 等待公网入口同步 (${attempt}/${attempts})，${delay_seconds}s 后重试"
+      sleep "$delay_seconds"
+    fi
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
+
+purge_cloudflare_cache_if_configured() {
+  local normalized_public_url mode purge_script
+  normalized_public_url="$(normalize_public_web_url "$PUBLIC_WEB_URL" 2>/dev/null || true)"
+  purge_script="${DEPLOY_SCRIPT_DIR}/purge-cloudflare-cache.sh"
+
+  if [ ! -x "$purge_script" ] && [ -f "$purge_script" ]; then
+    chmod +x "$purge_script" || true
+  fi
+
+  mode="${CLOUDFLARE_PURGE_MODE:-auto}"
+  if [ "$mode" = "auto" ]; then
+    if [ -n "${CLOUDFLARE_ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+      mode="everything"
+    else
+      mode="skip"
+    fi
+  fi
+
+  case "$mode" in
+    skip|off)
+      log "跳过 Cloudflare purge（CLOUDFLARE_PURGE_MODE=${mode}）"
+      return 0
+      ;;
+    everything)
+      ;;
+    files)
+      ;;
+    *)
+      log "❌ 未知 CLOUDFLARE_PURGE_MODE=${mode}"
+      return 1
+      ;;
+  esac
+
+  if [ -z "${CLOUDFLARE_ZONE_ID:-}" ] || [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    log "❌ 已要求 Cloudflare purge，但缺少 CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN"
+    return 1
+  fi
+
+  if [ ! -f "$purge_script" ]; then
+    log "❌ 缺少 purge 脚本：${purge_script}"
+    return 1
+  fi
+
+  if [ "$mode" = "everything" ]; then
+    log "执行 Cloudflare 全量 purge"
+    CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
+    CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
+      bash "$purge_script" everything
+    return $?
+  fi
+
+  if [ -z "$normalized_public_url" ]; then
+    log "❌ files 模式缺少有效 PUBLIC_WEB_URL"
+    return 1
+  fi
+
+  local -a files_to_purge=("${normalized_public_url}/" "${normalized_public_url}/index.html")
+  while IFS= read -r asset; do
+    [ -n "$asset" ] && files_to_purge+=("${normalized_public_url}/${asset}")
+  done < <(collect_entry_assets_from_url "http://127.0.0.1/" || true)
+
+  log "执行 Cloudflare 定向 purge，共 ${#files_to_purge[@]} 个 URL"
+  CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
+  CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
+    bash "$purge_script" files "${files_to_purge[@]}"
+}
+
+run_public_entry_sync_gate() {
+  if [ "${PUBLIC_WEB_URL:-off}" = "off" ]; then
+    log "已跳过公网入口一致性门禁（PUBLIC_WEB_URL=off）"
+    return 0
+  fi
+
+  if ! purge_cloudflare_cache_if_configured; then
+    log "❌ Cloudflare purge 失败，无法继续验证公网入口是否已切到新版本"
+    return 1
+  fi
+
+  if verify_public_entry_sync_with_retry; then
+    return 0
+  fi
+
+  if [ "${REQUIRE_PUBLIC_ENTRY_SYNC:-1}" = "1" ]; then
+    log "❌ 公网入口仍未与源站一致，拒绝把本次部署视为完成"
+    return 1
+  fi
+
+  log "⚠️ 公网入口仍未与源站一致，但 REQUIRE_PUBLIC_ENTRY_SYNC=${REQUIRE_PUBLIC_ENTRY_SYNC}，仅警告"
+  return 0
 }
 
 run_post_deploy_smoke() {
@@ -779,6 +1023,12 @@ deploy() {
   # 等待服务就绪后初始化管理员
   init_admin_if_configured
 
+  if ! run_public_entry_sync_gate; then
+    die "源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+  fi
+
+  record_successful_runtime_state "deploy" || true
+
   echo ""
   log "=========================================="
   log "  ✅ 部署完成"
@@ -800,6 +1050,7 @@ rollback() {
   fi
 
   ensure_compose_file
+  snapshot_current_runtime_refs
 
   log "回滚到版本 ${tag}"
 
@@ -815,7 +1066,51 @@ rollback() {
     die "手动回退后的 smoke 失败，请立即检查日志"
   fi
 
+  if ! run_public_entry_sync_gate; then
+    die "回退后的源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+  fi
+
+  record_successful_runtime_state "rollback-tag" || true
+
   log "回滚完成"
+  docker compose -f "$COMPOSE_FILE" ps
+}
+
+rollback_last() {
+  ensure_compose_file
+  load_deploy_state
+
+  log "回滚到上次成功部署版本"
+  log "  - 当前记录 web: ${DEPLOY_STATE_CURRENT_WEB_IMAGE_REF}"
+  log "  - 当前记录 game-server: ${DEPLOY_STATE_CURRENT_GAME_IMAGE_REF}"
+  log "  - 目标回滚 web: ${DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF}"
+  log "  - 目标回滚 game-server: ${DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF}"
+
+  set_compose_image_refs "$DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF" "$DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF"
+
+  log "拉取上次部署镜像（如本地缺失）"
+  docker compose -f "$COMPOSE_FILE" pull || true
+
+  log "重启服务"
+  docker compose -f "$COMPOSE_FILE" up -d
+
+  if ! run_post_deploy_smoke "manual-rollback-last"; then
+    die "回滚到上次部署后的 smoke 失败，请立即检查日志"
+  fi
+
+  if ! run_public_entry_sync_gate; then
+    die "回退后的源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+  fi
+
+  write_deploy_state \
+    "$DEPLOY_STATE_CURRENT_WEB_IMAGE_REF" \
+    "$DEPLOY_STATE_CURRENT_GAME_IMAGE_REF" \
+    "$DEPLOY_STATE_PREVIOUS_WEB_IMAGE_REF" \
+    "$DEPLOY_STATE_PREVIOUS_GAME_IMAGE_REF" \
+    "rollback-last"
+
+  log "✅ 已更新部署状态到 ${DEPLOY_STATE_FILE}"
+  log "回滚到上次部署完成"
   docker compose -f "$COMPOSE_FILE" ps
 }
 
@@ -840,6 +1135,9 @@ case "${1:-deploy}" in
   rollback)
     rollback "${2:-}"
     ;;
+  rollback-last)
+    rollback_last
+    ;;
   init-admin)
     init_admin
     ;;
@@ -850,7 +1148,7 @@ case "${1:-deploy}" in
     logs "${2:-}"
     ;;
   *)
-    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|init-admin|status|logs [service]]"
+    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|rollback-last|init-admin|status|logs [service]]"
     exit 1
     ;;
 esac

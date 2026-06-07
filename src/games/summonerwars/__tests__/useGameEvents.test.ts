@@ -510,7 +510,6 @@ describe('systemInteractionAdapter', () => {
           type: 'ice_ram_target',
           meta: {
             type: 'ice_ram_target',
-            sourceUnitId: 'interaction-source',
             structurePosition: { row: 2, col: 2 },
           },
           options: [],
@@ -550,7 +549,6 @@ describe('systemInteractionAdapter', () => {
       type: 'ice_ram_push',
       meta: {
         type: 'ice_ram_push',
-        sourceUnitId: 'interaction-source',
         structurePosition: { row: 2, col: 2 },
         targetPosition: { row: 2, col: 3 },
       },

@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { buildLocalizedImageSet } from '../../../core';
 import {
     getDevelopmentCardAtlasImagePath,
     getDevelopmentCardSpriteStyle,
@@ -8,6 +7,7 @@ import {
     getNobleSpriteStyle,
 } from '../sprites';
 import type { PreviewItem } from './shared';
+import { SpriteSurface } from './SpriteSurface';
 
 export function SpritePreview({
     preview,
@@ -27,19 +27,25 @@ export function SpritePreview({
             imagePath: getNobleAtlasImagePath(),
             style: getNobleSpriteStyle(preview.nobleId),
         };
-    const aspectClass = preview.kind === 'card' ? 'aspect-[0.7]' : 'aspect-square';
+    const aspectRatio = preview.kind === 'card' ? 0.7 : 1;
 
     if (!style) {
-        return <div className={`${aspectClass} w-full bg-white/5 ${className}`} />;
+        return (
+            <div
+                className={`w-full bg-white/5 ${className}`}
+                style={{ height: 0, paddingTop: `${100 / aspectRatio}%`, aspectRatio: `${aspectRatio} / 1` }}
+            />
+        );
     }
 
     return (
-        <div
-            className={`${aspectClass} w-full ${className}`}
-            style={{
-                backgroundImage: buildLocalizedImageSet(imagePath, effectiveLocale),
-                ...style,
-            }}
+        <SpriteSurface
+            imagePath={imagePath}
+            locale={effectiveLocale}
+            aspectRatio={aspectRatio}
+            spriteStyle={style}
+            className={className}
+            kind={preview.kind}
         />
     );
 }

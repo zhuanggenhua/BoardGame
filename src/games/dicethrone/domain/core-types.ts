@@ -6,7 +6,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { AiSeatController } from '../../../engine/ai/types';
 import type { CardPreviewRef } from '../../../core';
-import type { CharacterBadgeDef } from '../../../core/ui';
 import type { AbilityDef, AbilityEffect } from './combat';
 import type { ResourcePool } from './resourceSystem';
 import type { TokenDef, TokenState } from './tokenTypes';
@@ -61,7 +60,13 @@ export type DieFace =
     | 'spirit'
     | 'ninja_katana'
     | 'shuriken'
-    | 'mask';
+    | 'mask'
+    | 'sabre'
+    | 'banner'
+    | 'medal'
+    | 'cutlass'
+    | 'loot'
+    | 'skull';
 
 // ============================================================================
 // 角色编目
@@ -78,6 +83,8 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'samurai',
     'treant',
     'ninja',
+    'zhanshujia',
+    'cursed_pirate',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -87,7 +94,7 @@ export type TeamId = 'A' | 'B';
 export interface CharacterDefinition {
     id: SelectableCharacterId;
     nameKey: string;
-    badges?: CharacterBadgeDef[];
+    badges?: import('../../../core/ui').CharacterBadgeDef[];
 }
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
@@ -99,31 +106,24 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'paladin', nameKey: 'characters.paladin' },
     { id: 'gunslinger', nameKey: 'characters.gunslinger' },
     { id: 'samurai', nameKey: 'characters.samurai' },
-    {
-        id: 'treant',
-        nameKey: 'characters.treant',
-        badges: [
-            {
-                id: 'implementation_in_progress',
-                labelKey: 'common:status_tags.under_construction',
-                tone: 'warning',
-                variant: 'disabled-overlay',
-            },
-        ],
-    },
-    {
-        id: 'ninja',
-        nameKey: 'characters.ninja',
-        badges: [
-            {
-                id: 'implementation_in_progress',
-                labelKey: 'common:status_tags.under_construction',
-                tone: 'warning',
-                variant: 'disabled-overlay',
-            },
-        ],
-    },
+    { id: 'treant', nameKey: 'characters.treant' },
+    { id: 'ninja', nameKey: 'characters.ninja' },
+    { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
+    { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
 ];
+
+const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
+    DICETHRONE_CHARACTER_CATALOG.map((character) => [character.id, character.nameKey]),
+) as Record<SelectableCharacterId, string>;
+
+export function getDiceThroneCharacterNameKey(
+    characterId: CharacterId | SelectableCharacterId | null | undefined,
+): string | null {
+    if (!characterId || characterId === 'unselected') {
+        return null;
+    }
+    return DICETHRONE_CHARACTER_NAME_KEY_MAP[characterId] ?? null;
+}
 
 /**
  * 骰子实例
@@ -248,6 +248,8 @@ export interface PendingAttack {
     attackDiceValues?: number[];
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
+    /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
+    treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
     /**
      * Loaded 奖励骰的临时加成（由攻击修正卡在本次攻击内挂载）
      * 例：Wild West 在你花费 Loaded 时允许重掷一次，并在奖励骰收口后追加 +1。
@@ -272,7 +274,8 @@ export type CardInteractionType =
     | 'modifyDie'
     | 'selectPlayer'
     | 'selectStatus'
-    | 'selectTargetStatus';
+    | 'selectTargetStatus'
+    | 'selectHandCard';
 
 /** 待处理的卡牌交互 */
 export interface InteractionDescriptor {
@@ -282,6 +285,8 @@ export interface InteractionDescriptor {
     type: CardInteractionType;
     titleKey: string;
     selectCount: number;
+    /** 最少需要选择的数量；未设置时表示至少 1 个目标即可确认。 */
+    minSelectCount?: number;
     selected: string[];
     /** 为 true 时，重掷骰子不触发技能重选（用于保留已选攻击） */
     skipAbilityReselection?: boolean;
@@ -359,6 +364,8 @@ export interface DamageShield {
     sourceId?: string;
     /** 是否用于防止本次攻击的状态效果 */
     preventStatus?: boolean;
+    /** 百分比减伤（0-100），与固定值护盾互斥） */
+    reductionPercent?: number;
 }
 
 // ============================================================================
@@ -403,6 +410,15 @@ export interface PendingDamage {
     }>;
     /** 当前响应窗口内各 token 已累计消耗的数量 */
     tokenUsageTotals?: Record<string, number>;
+    /** 需要等响应窗口收口后再发出的附加伤害（如武士反击） */
+    deferredDamageEvents?: Array<{
+        targetId: PlayerId;
+        amount: number;
+        actualDamage: number;
+        sourceAbilityId?: string;
+        sourcePlayerId?: PlayerId;
+        sourceCommandType?: string;
+    }>;
 }
 
 /**
@@ -453,10 +469,8 @@ export interface PendingBonusDiceSettlement {
     rerollCostAmount: number;
     /** 已用重掷次数（无上限，消耗 Token 即可） */
     rerollCount: number;
-    /** 最近一次被重掷的奖励骰索引，仅用于 UI 限定重掷动画目标 */
+    /** 最近一次被重掷的奖励骰索引，用于记录本次结算的最后一次重掷目标 */
     lastRerolledDieIndex?: number;
-    /** 最近一次重掷动画序号，仅用于 UI 区分连续重掷 */
-    rerollAnimationKey?: number;
     /** 最大可重掷次数（不填表示无限制） */
     maxRerollCount?: number;
     /** 重掷特写文案 key（用于 UI） */
@@ -490,11 +504,18 @@ export interface PendingBonusDiceSettlement {
      * 例：Wild West（荒野西部）在 Loaded 奖励骰确定后再额外 +1。
      */
     postSettleBonusDamageAdds?: Array<{ amount: number; sourceCardId?: string }>;
+    /** 自定义奖励骰收口处理器 ID（用于非“点数总和即伤害”的特殊结算） */
+    customResolutionId?: string;
 }
 
 export interface HeroState {
     id: string;
     characterId: CharacterId;
+    /**
+     * 部分英雄存在双面玩家板。咒缚海盗运行时已接入 normal / cursed 两张底图，
+     * 当前已用于主棋盘选图、攻击特写裁切、能力集切换，以及“海盗的一生”等按面板分支的效果。
+     */
+    playerBoardFace?: 'normal' | 'cursed';
     /**
      * 选角阶段的"初始牌库顺序"（仅用于保证回放确定性）
      * - 由 `SELECT_CHARACTER` 产生的 `CHARACTER_SELECTED.initialDeckCardIds` 写入
@@ -571,6 +592,7 @@ export interface DiceThroneCore {
     /** Token 定义（包含状态效果和可消耗道具） */
     tokenDefinitions: TokenDef[];
     activatingAbilityId?: string;
+    currentChoiceSourceAbilityId?: string;
     lastEffectSourceByPlayerId?: Record<PlayerId, string | undefined>;
     lastSoldCardId?: string;
     /** 待处理的伤害（等待 Token 响应） */
@@ -628,6 +650,8 @@ export interface DiceThroneCore {
         attackerId: PlayerId;
         /** 原回合的活跃玩家（额外攻击结束后恢复） */
         originalActivePlayerId: PlayerId;
+        /** 是否已经真正进入过额外攻击的 offensiveRoll 阶段 */
+        phaseEntered?: boolean;
     };
     /**
      * 潜行获得回合追踪
@@ -649,6 +673,16 @@ export interface DiceThroneCore {
      * 额外攻击产生的 offensiveRoll 不覆盖该值。
      */
     offensiveRollAttemptsThisTurn?: number;
+    /**
+     * 本回合哪些玩家已在 offensiveRoll 发起过攻击。
+     * 用于咒缚海盗“对手未造成一次攻击则施加火药桶”的阶段末判定。
+     */
+    offensiveRollAttackMadeThisTurn?: Record<PlayerId, true>;
+    /**
+     * 树精树灵主动效果每回合每种限用一次。
+     * key: playerId -> tokenId -> true。
+     */
+    treantSpiritSpentThisTurn?: Record<PlayerId, Record<string, true>>;
 }
 
 // ============================================================================

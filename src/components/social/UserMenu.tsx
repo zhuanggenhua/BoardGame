@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { isBackofficeRole, useAuth } from '../../contexts/AuthContext';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, LogOut, History, MessageSquare, MousePointer2, Settings } from 'lucide-react';
@@ -11,6 +11,8 @@ import { AccountSettingsModal } from '../auth/AccountSettingsModal';
 import { CursorSettingsModal } from '../settings/CursorSettingsModal';
 import { NOTIFICATION_API_URL } from '../../config/server';
 import { useSocial } from '../../contexts/SocialContext';
+import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
+import { MyFeedbackModal } from './MyFeedbackModal';
 
 const NOTIFICATION_SEEN_KEY = 'notification_last_seen';
 const getNotificationSeenStorageKey = (userId?: string | null) => {
@@ -224,27 +226,30 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
         navigate('/admin');
     };
 
+    const handleOpenMyFeedback = () => {
+        setIsOpen(false);
+        openModal({
+            closeOnBackdrop: false,
+            closeOnEsc: true,
+            lockScroll: true,
+            render: ({ close }) => (
+                <MyFeedbackModal isOpen onClose={close} />
+            ),
+        });
+    };
+
     if (!user) return null;
+
+    const canAccessBackoffice = isBackofficeRole(user.role);
 
     return (
         <div className="relative flex h-8 items-center gap-1" ref={menuRef}>
-            {/* 通知入口 */}
-            <button
-                onClick={handleOpenNotifications}
-                className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
-                aria-label={t('social:menu.notifications')}
-            >
-                <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
-                <span className="underline-center" />
-                {hasBellBadge && (
-                    <span className="absolute right-0 top-0.5 h-2 w-2 rounded-full bg-red-500" />
-                )}
-            </button>
-
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="group relative flex h-8 items-center gap-2 cursor-pointer px-2 outline-none transition-colors"
+                data-testid="user-menu-trigger"
             >
+                <RewardPointsBadge points={user.feedbackPoints ?? 0} className="shrink-0" />
                 {user.avatar ? (
                     <img
                         src={user.avatar}
@@ -256,6 +261,20 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                         <span className="font-bold text-sm tracking-tight">{user.username}</span>
                         <span className="underline-center" />
                     </div>
+                )}
+            </button>
+
+            {/* 通知入口 */}
+            <button
+                onClick={handleOpenNotifications}
+                className="group relative inline-flex h-8 items-center pl-1 pr-3 text-parchment-base-text hover:text-parchment-brown transition-colors cursor-pointer"
+                aria-label={t('social:menu.notifications')}
+                data-testid="user-menu-notifications"
+            >
+                <span className="font-bold text-sm leading-none tracking-tight">{t('social:menu.notifications')}</span>
+                <span className="underline-center" />
+                {hasBellBadge && (
+                    <span className="absolute right-0 top-0.5 h-2 w-2 rounded-full bg-red-500" />
                 )}
             </button>
 
@@ -274,6 +293,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                     <button
                         onClick={handleOpenFriends}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-friends-chat"
                     >
                         <MessageSquare size={16} />
                         {t('social:menu.friendsAndChat')}
@@ -285,6 +305,7 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                     <button
                         onClick={handleOpenAccount}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-account-settings"
                     >
                         <Settings size={16} />
                         {t('auth:menu.accountSettings')}
@@ -299,12 +320,23 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
                         {t('auth:menu.setCursor')}
                     </button>
 
+                    {canAccessBackoffice ? (
+                        <button
+                            onClick={handleOpenAdmin}
+                            className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        >
+                            <LayoutDashboard size={16} />
+                            {t('auth:menu.adminDashboard')}
+                        </button>
+                    ) : null}
+
                     <button
-                        onClick={handleOpenAdmin}
+                        onClick={handleOpenMyFeedback}
                         className="w-full px-4 py-2.5 text-left cursor-pointer text-parchment-base-text font-bold text-xs hover:bg-parchment-base-bg rounded flex items-center gap-3 transition-colors"
+                        data-testid="user-menu-my-feedback"
                     >
-                        <LayoutDashboard size={16} />
-                        {t('auth:menu.adminDashboard')}
+                        <MessageSquare size={16} />
+                        {t('auth:menu.myFeedback')}
                     </button>
 
                     {/* 退出登录 */}

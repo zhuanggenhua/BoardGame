@@ -1,15 +1,32 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
     requireOnPlay,
+    resolveOnPlay,
     resolveSpecial,
     type AbilityContext,
 } from './abilityRegistry';
+import { getCardDef } from '../data/cards';
 import { reduce } from './reduce';
-import type { SmashUpCore, SmashUpEvent } from './types';
+import type { ActionCardDef, FusionCardDef, SmashUpCore, SmashUpEvent } from './types';
 
-function requirePlayedActionExecutor(defId: string) {
-    return resolveSpecial(defId)
-        ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+function getPlayedActionExecutor(defId: string) {
+    const def = getCardDef(defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!def) {
+        return requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+    }
+
+    const subtype = def.type === 'fusion' ? def.actionSubtype : def.subtype;
+
+    if (subtype === 'ongoing') {
+        return resolveOnPlay(defId) ?? null;
+    }
+
+    if (subtype === 'special') {
+        return resolveSpecial(defId)
+            ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
+    }
+
+    return requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
 }
 
 
@@ -34,11 +51,24 @@ export function appendResolvedActionAbility(params: {
     targetMinionUid?: string;
     handSizeAfterPlay?: number;
 }): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const executor = requirePlayedActionExecutor(params.defId);
+    const executor = getPlayedActionExecutor(params.defId);
+    if (!executor) {
+        return {
+            state: params.state,
+            events: params.events,
+        };
+    }
 
     let simCore = params.state.core;
     for (const evt of params.events) {
         simCore = reduce(simCore, evt);
+    }
+
+    if (!executor) {
+        return {
+            state: params.state,
+            events: params.events,
+        };
     }
 
     const abilityCtx: AbilityContext = {
@@ -51,7 +81,7 @@ export function appendResolvedActionAbility(params: {
         targetMinionUid: params.targetMinionUid,
         random: params.random,
         now: params.timestamp,
-        handSizeAfterPlay: params.handSizeAfterPlay,
+        handSizeAfterPlay: params.handSizeAfterPlay ?? (simCore.players[params.playerId]?.hand.length ?? 0),
     };
     const result = executor(abilityCtx);
     params.events.push(...result.events);

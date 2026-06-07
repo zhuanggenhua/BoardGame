@@ -23,8 +23,9 @@ import {
     getAbilitySlotLayoutForCharacter,
     getPlayerBoardAspectRatio,
 } from './abilitySlotLayout';
+import { getPendingBonusSettlementDice } from '../domain/rules';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
-import { getSlotAbilityId, getUpgradeCardPreviewRef } from './AbilityOverlays';
+import { getSlotAbilityId, getUpgradeCardPreviewRef } from './abilityOverlayHelpers';
 import { createScopedLogger } from '../../../lib/logger';
 
 const boardOverlaysLogger = createScopedLogger('DT_BOARD_OVERLAYS');
@@ -40,6 +41,8 @@ export interface BoardOverlaysProps {
     abilityLevels?: Record<string, number>;
     /** 当前视角玩家的角色 ID */
     viewCharacterId?: string;
+    /** 当前视角玩家的面板朝向 */
+    viewPlayerBoardFace?: HeroState['playerBoardFace'];
 
     players: Record<PlayerId, HeroState>;
     currentPlayerId: PlayerId;
@@ -62,6 +65,7 @@ export interface BoardOverlaysProps {
         bonusDice?: import('../domain/types').BonusDieInfo[];
         summaryEffectKey?: string;
         summaryEffectParams?: Record<string, string | number>;
+        presentationKey?: string | number;
         showTotal?: boolean;
         displayOnly?: boolean;
         show: boolean;
@@ -108,14 +112,15 @@ export interface BoardOverlaysProps {
 const MagnifyUpgradeOverlay: React.FC<{
     characterId: string;
     abilityLevels: Record<string, number>;
+    playerBoardFace?: HeroState['playerBoardFace'];
     locale: string;
-}> = ({ characterId, abilityLevels, locale }) => {
+}> = ({ characterId, abilityLevels, playerBoardFace, locale }) => {
     const slots = getAbilitySlotLayoutForCharacter(characterId);
     return (
         <div className="absolute inset-0 pointer-events-none">
             {slots.map((slot) => {
                 if (slot.id === 'ultimate') return null;
-                const baseAbilityId = getSlotAbilityId(characterId, slot.id);
+                const baseAbilityId = getSlotAbilityId(characterId, slot.id, playerBoardFace);
                 const level = baseAbilityId ? (abilityLevels[baseAbilityId] ?? 1) : 1;
                 if (!baseAbilityId || level <= 1) return null;
                 const previewRef = getUpgradeCardPreviewRef(characterId, baseAbilityId, level);
@@ -130,7 +135,7 @@ const MagnifyUpgradeOverlay: React.FC<{
                             <CardPreview
                                 previewRef={previewRef}
                                 locale={locale}
-                                className="h-full aspect-[0.61] rounded-lg"
+                                className="w-full h-full rounded-lg"
                             />
                         </div>
                     </div>
@@ -160,12 +165,13 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const isPlayerBoardPreview = Boolean(props.magnifiedImage?.includes('player-board'));
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(props.viewCharacterId);
+    const playerBoardPreviewWidth = `min(90vw, calc(90vh * ${playerBoardAspectRatio}))`;
     const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
     const magnifiedMultiCardWidth = 'min(28vw, 350px, calc(54.9vh - 2.44vw))';
     const magnifyContainerClassName = `
         group/modal
         ${isPlayerBoardPreview ? 'h-auto w-auto max-h-[90vh] max-w-[90vw]' : ''}
-        ${props.magnifiedCard ? 'aspect-[0.61] w-auto max-h-[90vh] max-w-[60vw]' : ''}
+        ${props.magnifiedCard ? 'w-auto max-h-[90vh] max-w-[60vw]' : ''}
         ${isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
         ${!isPlayerBoardPreview && !props.magnifiedCard && !isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
     `;
@@ -194,10 +200,12 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 {props.magnifiedCards.map((card) => (
                                     <CardPreview
                                         key={card.id}
-                                        className="aspect-[0.61] rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
+                                        className="rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
                                         style={{
                                             backgroundColor: '#0f172a',
                                             width: magnifiedMultiCardWidth,
+                                            height: `calc(${magnifiedMultiCardWidth} / 0.61)`,
+                                            aspectRatio: '0.61 / 1',
                                         }}
                                         previewRef={card.previewRef}
                                         locale={props.locale}
@@ -210,7 +218,8 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 style={{
                                     backgroundColor: '#0f172a',
                                     width: magnifiedCardWidth,
-                                    aspectRatio: '0.61',
+                                    height: `calc(${magnifiedCardWidth} / 0.61)`,
+                                    aspectRatio: '0.61 / 1',
                                 }}
                                 previewRef={props.magnifiedCard.previewRef}
                                 locale={props.locale}
@@ -218,12 +227,20 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         ) : (
                             <div
                                 className="relative"
-                                style={isPlayerBoardPreview ? { aspectRatio: String(playerBoardAspectRatio) } : undefined}
+                                style={isPlayerBoardPreview
+                                    ? {
+                                        width: playerBoardPreviewWidth,
+                                        height: `calc(${playerBoardPreviewWidth} / ${playerBoardAspectRatio})`,
+                                        aspectRatio: String(playerBoardAspectRatio),
+                                    }
+                                    : undefined}
                             >
                                 <OptimizedImage
                                     src={props.magnifiedImage ?? ''}
                                     locale={props.locale}
-                                    className="block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain"
+                                    className={isPlayerBoardPreview
+                                        ? 'block w-full h-full object-contain'
+                                        : 'block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain'}
                                     alt="预览图"
                                 />
                                 {/* 玩家面板放大时叠加升级卡预览 */}
@@ -231,6 +248,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                     <MagnifyUpgradeOverlay
                                         characterId={props.viewCharacterId}
                                         abilityLevels={props.abilityLevels}
+                                        playerBoardFace={props.viewPlayerBoardFace}
                                         locale={props.locale}
                                     />
                                 )}
@@ -250,7 +268,14 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         isVisible={shouldShowBonusDieOverlay}
                         onClose={props.onBonusDieClose}
                         locale={props.locale}
-                        bonusDice={props.pendingBonusDiceSettlement?.dice ?? props.bonusDie.bonusDice}
+                        bonusDice={props.pendingBonusDiceSettlement
+                            ? getPendingBonusSettlementDice(props.pendingBonusDiceSettlement)
+                            : props.bonusDie.bonusDice}
+                        presentationKey={
+                            props.pendingBonusDiceSettlement
+                                ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`
+                                : props.bonusDie.presentationKey
+                        }
                         canReroll={props.canRerollBonusDie}
                         rerollLimitReached={Boolean(
                             props.pendingBonusDiceSettlement &&
@@ -264,7 +289,11 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         rerollCostTokenId={props.pendingBonusDiceSettlement?.rerollCostTokenId}
                         displayOnly={props.pendingBonusDiceSettlement?.displayOnly ?? props.bonusDie.displayOnly}
                         lastRerolledDieIndex={props.pendingBonusDiceSettlement?.lastRerolledDieIndex}
-                        rerollAnimationKey={props.pendingBonusDiceSettlement?.rerollAnimationKey}
+                        rerollPresentationKey={
+                            props.pendingBonusDiceSettlement && props.pendingBonusDiceSettlement.rerollCount > 0
+                                ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`
+                                : undefined
+                        }
                         summaryEffectKey={props.pendingBonusDiceSettlement?.summaryEffectKey ?? props.bonusDie.summaryEffectKey}
                         summaryEffectParams={props.pendingBonusDiceSettlement?.summaryEffectParams ?? props.bonusDie.summaryEffectParams}
                         characterId={
@@ -273,7 +302,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 : props.bonusDie.characterId
                         }
                         forceAutoCloseDelay={props.tutorialSpotlightAutoCloseDelayMs}
-                        manualCloseOnly={props.bonusDieManualCloseOnly}
+                        manualCloseOnly={props.bonusDieManualCloseOnly && props.bonusDie.effectKey !== 'bonusDie.effect.samuraiBackStrikeDie'}
                     />
                 )}
 

@@ -1,4 +1,6 @@
-# Dice Throne AI 可见交互链审计（2026-04-12）
+# Dice Throne AI 可见交互链历史审计（2026-04-12）
+
+> 2026-06-06 当前有效口径：本文只覆盖 2026-04-12 那轮“AI 可见交互/响应窗口/阶段推进/撤回”链路的历史专项审计，不是当前 DiceThrone AI 全交互完成证明，也不是当前新英雄补审出口。阅读时必须把它当作一份局部链路审计文档，并结合后续修复与现行测试重新判断现状。
 
 ## 1. 审计范围
 - AI 可见交互入口：`sys.interaction.current`
@@ -125,3 +127,7 @@
 ## 8. 待改进
 - 若未来要把 `undo` 重新纳入 AI 合法动作，需要同步改 `buildPhaseActions()`、策略评分、回退过滤和测试断言，避免“合法动作表”和“评分表”脱节。
 - 若未来新增新的交互 kind，需要同步扩展 `buildInteractionActions()`、`resolveForceEndTurnForStalledAi()` 和 recovery fingerprint，不要让新交互掉进 emergency cancel。
+
+---
+
+**当前阅读说明**：本文只能证明“AI 可见交互链”当时被专项核对过，不能外推为所有隐藏交互、所有 watchdog 变体或当前 DiceThrone 整体 AI 审计都已收口。

@@ -1,5 +1,7 @@
 # Dice Throne 在线 AI off-turn defensiveRoll 卡死修复证据（2026-04-21）
 
+> 2026-06-06 当前有效口径：本文只对应“online AI 在 off-turn defensiveRoll 卡死”这一条历史专项修复证据，不是当前 DiceThrone 所有 online AI/watchdog/defensiveRoll 问题都已彻底收口的证明，也不是新英雄补审出口。阅读时只能把它当作单条链路修复记录。
+
 ## 关联反馈
 - 反馈 ID：`69c7845196012f55115c3be8`
 - 标题：`对战ai卡死`
@@ -32,3 +34,7 @@
 ## 结论
 - transport watchdog 现在能识别“**当前真人仍是 activePlayer，但另一个 AI seat 在防御阶段已有合法动作**”的场景，并改走 legal-action recovery，而不是继续空等。
 - online E2E 已证明真实房间里，流程可从 defensiveRoll 收口到 `main2`，用户不再卡死。
+
+---
+
+**当前阅读说明**：本文只能证明“online AI off-turn defensiveRoll 卡死”这条专项问题曾被修复，不能外推为当前所有 AI 防御阶段卡死、所有 watchdog recovery 场景或 DiceThrone 当前整体审计都已收口。

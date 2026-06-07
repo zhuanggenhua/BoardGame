@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities } from '../abilities';
-import { makeMatchState } from './helpers';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getSimpleChoicePrompt, respondToPromptOption, triggerBaseAbilityWithMS } from './helpers';
 import { filterProtectedMoveEvents } from '../domain/reducer';
 import type { SmashUpCore, MinionOnBase } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
@@ -59,10 +58,20 @@ describe('Wiki/FAQ: 基地能力归因中立（Deep Roots vs Infiltrate）', () 
                 } as any,
             ],
         });
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('base_mushroom_kingdom');
-        const iData = { continuationContext: { mushroomBaseIndex: 0 } } as any;
-        const res = handler(ms, '0', { minionUid: 't1', minionDefId: 'test_minion', fromBaseIndex: 1 }, iData, () => 0.5, 123);
+        const trigger = triggerBaseAbilityWithMS('base_mushroom_kingdom', 'onTurnStart', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_mushroom_kingdom',
+        } as any);
+        const prompt = getSimpleChoicePrompt(trigger.matchState!, 'base_mushroom_kingdom');
+        const res = respondToPromptOption(
+            trigger.matchState!,
+            option => option.value?.minionUid === 't1',
+            'Mushroom Kingdom target minion',
+        );
+        expect(prompt).toBeDefined();
+        expect(res.success, res.error).toBe(true);
         const moveEvents = res.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
         expect(moveEvents.length).toBe(1);
         // 保护过滤：如果仍把基地能力当成“玩家0造成”，deep_roots 会错误拦截
@@ -78,10 +87,20 @@ describe('Wiki/FAQ: 基地能力归因中立（Deep Roots vs Infiltrate）', () 
                 { defId: 'base_central_brain', minions: [target], ongoingActions: [] } as any,
             ],
         });
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('base_mushroom_kingdom');
-        const iData = { continuationContext: { mushroomBaseIndex: 0 } } as any;
-        const res = handler(ms, '0', { minionUid: 't1', minionDefId: 'test_minion', fromBaseIndex: 1 }, iData, () => 0.5, 123);
+        const trigger = triggerBaseAbilityWithMS('base_mushroom_kingdom', 'onTurnStart', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_mushroom_kingdom',
+        } as any);
+        const prompt = getSimpleChoicePrompt(trigger.matchState!, 'base_mushroom_kingdom');
+        const res = respondToPromptOption(
+            trigger.matchState!,
+            option => option.value?.minionUid === 't1',
+            'Mushroom Kingdom target minion',
+        );
+        expect(prompt).toBeDefined();
+        expect(res.success, res.error).toBe(true);
         const filtered = filterProtectedMoveEvents(res.events, core, '0');
         expect(filtered.some(e => e.type === SU_EVENTS.MINION_MOVED)).toBe(false);
     });

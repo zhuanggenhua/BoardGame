@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { test, expect } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { setChineseLocale } from '../helpers/common';
+import { hideSmashUpDebugPanelForEvidence } from '../helpers/smashup';
 import { DESKTOP_REFERENCE_VIEWPORT } from '../../src/shared/referenceViewports';
 
 async function saveEvidenceLocatorScreenshot(page: any, locator: any, testInfo: any, subdir: string, filename: string) {
@@ -133,6 +134,18 @@ async function clickCenter(locator: any, page: any) {
     const box = await locator.boundingBox();
     expect(box, '点击目标应该先可见').not.toBeNull();
     await locator.dispatchEvent('click');
+}
+
+async function expectCenterHitSelf(locator: any, label: string) {
+    await expect(locator).toBeVisible({ timeout: 10000 });
+    const hitSelf = await locator.evaluate((element: HTMLElement) => {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const target = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+        return !!target && (target === element || element.contains(target));
+    });
+    expect(hitSelf, `${label} 中心点命中目标应仍是自身`).toBe(true);
 }
 
 async function tapTouchCenter(locator: any, page: any) {
@@ -465,17 +478,24 @@ async function readBattlefieldGestureProbe(page: any) {
 }
 
 const INITIAL_BASE_IDS = ['base_the_jungle', 'base_dread_lookout', 'base_tsars_palace'] as const;
+const EXPECTED_ACTIVE_BASE_COUNT = 5;
 const REPLACEMENT_BASE_DECK = [
     'base_central_brain',
     'base_cave_of_shinies',
     'base_rhodes_plaza',
     'base_the_factory',
 ] as const;
-const EXPECTED_FINAL_BASE_IDS = ['base_cave_of_shinies', 'base_rhodes_plaza', 'base_central_brain'] as const;
+const EXPECTED_FINAL_BASE_IDS = [
+    'base_cave_of_shinies',
+    'base_rhodes_plaza',
+    'base_central_brain',
+    'base_the_homeworld',
+    'base_the_mothership',
+] as const;
 const EXPECTED_FINAL_VP = {
     '0': 7,
     '1': 4,
-    '2': 10,
+    '2': 8,
     '3': 10,
 } as const;
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 800, height: 450 } as const;
@@ -537,6 +557,14 @@ function buildFourPlayerMultiBaseScene() {
                     { uid: 'p1-b2-tiger-assassin', defId: 'ninja_tiger_assassin', owner: '1', controller: '1' },
                 ],
             },
+            {
+                defId: 'base_the_homeworld',
+                minions: [],
+            },
+            {
+                defId: 'base_the_mothership',
+                minions: [],
+            },
         ],
         extra: {
             core: {
@@ -578,11 +606,61 @@ async function getBaseOptions(game: any) {
     }));
 }
 
-async function selectBaseByDefId(game: any, baseDefId: string) {
-    const options = await getBaseOptions(game);
-    const option = options.find((entry: any) => entry.baseDefId === baseDefId);
-    expect(option, `未找到基地选项 ${baseDefId}`).toBeTruthy();
-    await game.selectOption(option!.id);
+async function getBaseLocatorByDefId(page: any, game: any, baseDefId: string) {
+    const state = await game.getState();
+    const baseIndex = state?.core?.bases?.findIndex((base: any) => base?.defId === baseDefId) ?? -1;
+    expect(baseIndex, `未在棋盘上找到基地 ${baseDefId}`).toBeGreaterThanOrEqual(0);
+    return page.locator(`[data-base-index="${baseIndex}"]`);
+}
+
+async function selectBoardBaseByDefId(page: any, game: any, baseDefId: string) {
+    const locator = await getBaseLocatorByDefId(page, game, baseDefId);
+    await expectCenterHitSelf(locator, `基地 ${baseDefId}`);
+    await locator.click();
+}
+
+async function dispatchAdvancePhaseAtTimestamp(page: any, game: any, timestamp: number) {
+    const playerId = await game.getCurrentPlayerId();
+    expect(playerId, '推进 scoreBases 延迟结算前应能读取当前玩家').toBeTruthy();
+
+    await page.evaluate(async ({ nextPlayerId, nextTimestamp }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        await harness.command.dispatch({
+            type: 'ADVANCE_PHASE',
+            playerId: nextPlayerId,
+            payload: {},
+            timestamp: nextTimestamp,
+        });
+    }, {
+        nextPlayerId: playerId,
+        nextTimestamp: timestamp,
+    });
+    await page.waitForTimeout(120);
+}
+
+async function drainScoreBasesDelayUntilPromptOrExit(page: any, game: any, timeout = 15000) {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+        const state = await game.getState();
+        const sourceId = state?.sys?.interaction?.current?.data?.sourceId;
+        if (sourceId === 'multi_base_scoring') {
+            return 'prompt';
+        }
+        if (state?.sys?.phase !== 'scoreBases') {
+            return 'exit';
+        }
+
+        const delayUntil = (state?.sys as Record<string, any> | undefined)?._smashupPostScoringBaseRevealDelayUntil;
+        if (typeof delayUntil === 'number') {
+            await dispatchAdvancePhaseAtTimestamp(page, game, Math.max(delayUntil + 1, Date.now() + 1));
+            continue;
+        }
+
+        await page.waitForTimeout(200);
+    }
+
+    throw new Error('等待多基地计分继续或退出超时');
 }
 
 function buildFourPlayerMobileScene() {
@@ -602,12 +680,14 @@ function buildFourPlayerMobileScene() {
                         talentUsed: false,
                         attachedActions: [
                             { uid: 'p0-b0-armor-stego-upgrade', defId: 'dino_tooth_and_claw_pod', ownerId: '0' },
+                            { uid: 'p0-b0-armor-stego-attached-talent', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
                         ],
                     },
                     ...scene.bases[0].minions.filter((minion) => minion.controller !== '0'),
                 ],
                 ongoingActions: [
                     { uid: 'p0-b0-base-ongoing', defId: 'zombie_overrun', ownerId: '0', talentUsed: false },
+                    { uid: 'p0-b0-base-ongoing-talent-mobile', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
                 ],
             },
             ...scene.bases.slice(1),
@@ -626,6 +706,43 @@ function buildFourPlayerMobileScene() {
                         ],
                     },
                 },
+            },
+        },
+    };
+}
+
+function buildFourPlayerMobileSceneWithTitan() {
+    const scene = buildFourPlayerMobileScene();
+
+    return {
+        ...scene,
+        extra: {
+            ...scene.extra,
+            core: {
+                ...scene.extra.core,
+                titans: [
+                    ...(scene.extra.core.titans ?? []),
+                    {
+                        uid: 't-mobile-layout-fort',
+                        defId: 'dinosaurs_fort_titanosaurus',
+                        faction: 'dinosaurs',
+                        ownerId: '0',
+                        controllerId: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'base', baseIndex: 0, enteredAt: scene.extra.core.turnNumber },
+                    },
+                    {
+                        uid: 't-mobile-layout-rail',
+                        defId: 'dinosaurs_fort_titanosaurus',
+                        faction: 'dinosaurs',
+                        ownerId: '0',
+                        controllerId: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'setaside' },
+                    },
+                ],
             },
         },
     };
@@ -893,8 +1010,8 @@ async function waitForSmashUpMainUiReady(page: any) {
     }).toBe(true);
 }
 
-test.describe('大杀四方四人局三基地同时计分', () => {
-    test('四人局三基地同时计分时，正确弹出多基地选择交互', async ({ page, game }, testInfo) => {
+test.describe('大杀四方四人局五基地布局与多基地计分', () => {
+    test('四人局五基地中三处同时到达断点时，正确弹出多基地选择交互', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await openFourPlayerScoreScene(page, game);
@@ -903,20 +1020,39 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expect(scoreBoard).toContainText('P1');
         await expect(scoreBoard).toContainText('P2');
         await expect(scoreBoard).toContainText('P3');
+        await expect(page.locator('[data-base-index]')).toHaveCount(EXPECTED_ACTIVE_BASE_COUNT);
 
         await game.advancePhase();
         await game.waitForInteraction('multi_base_scoring', 15000);
 
-        await expect(page.getByText('选择先记分的基地')).toBeVisible();
+        await expect(page.getByText(/选择先[计记]分的基地/)).toBeVisible();
 
         const baseOptions = await getBaseOptions(game);
         expect(baseOptions).toHaveLength(3);
         expect(baseOptions.map((option: any) => option.baseDefId).sort()).toEqual([...INITIAL_BASE_IDS].sort());
 
+        const selectableBases = await Promise.all(
+            baseOptions.map(async (option: any) => ({
+                baseDefId: option.baseDefId,
+                locator: await getBaseLocatorByDefId(page, game, option.baseDefId),
+            })),
+        );
+        for (const { baseDefId, locator } of selectableBases) {
+            await expectCenterHitSelf(locator, `可选基地 ${baseDefId}`);
+            await locator.click({ trial: true });
+        }
+
         await game.screenshot('01-four-player-multi-base-prompt', testInfo);
+        await saveEvidenceLocatorScreenshot(
+            page,
+            selectableBases[0].locator,
+            testInfo,
+            'smashup',
+            'smashup-four-player-multi-base-board-click-target.png',
+        );
     });
 
-    test('四人局三基地同时计分会按选择顺序依次结算并更新四名玩家VP', async ({ page, game }, testInfo) => {
+    test('四人局五基地中三处同时计分会按选择顺序依次结算并更新四名玩家VP', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await openFourPlayerScoreScene(page, game);
@@ -924,21 +1060,28 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await game.advancePhase();
         await game.waitForInteraction('multi_base_scoring', 15000);
 
-        await selectBaseByDefId(game, 'base_tsars_palace');
+        await selectBoardBaseByDefId(page, game, 'base_tsars_palace');
+
+        const vpGainFeedbacks = page.locator('[data-testid^="su-vp-gain-feedback-"]');
+        await expect(vpGainFeedbacks.first()).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => (await vpGainFeedbacks.allTextContents()).join(' '), {
+            timeout: 5000,
+            message: 'VP 获得动画应明确显示获得者与 VP 数量',
+        }).toMatch(/P[1-4].*(获得|gains).*\+\d+ VP/);
+        await game.screenshot('02a-vp-gain-feedback', testInfo);
 
         await expect.poll(async () => {
             return (await getBaseOptions(game)).map((option: any) => option.baseDefId).sort();
         }).toEqual(['base_dread_lookout', 'base_the_jungle']);
-        await expect(page.getByText('选择先记分的基地')).toBeVisible();
+        expect(await drainScoreBasesDelayUntilPromptOrExit(page, game)).toBe('prompt');
+        await expect(page.getByText(/选择先[计记]分的基地/)).toBeVisible();
 
         await game.screenshot('02-after-first-base-choice', testInfo);
 
-        await selectBaseByDefId(game, 'base_the_jungle');
-
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return state.sys?.interaction?.current ? 'active' : 'idle';
-        }, { timeout: 15000 }).toBe('idle');
+        await selectBoardBaseByDefId(page, game, 'base_the_jungle');
+        expect(await drainScoreBasesDelayUntilPromptOrExit(page, game)).toBe('exit');
+        await game.waitForNoInteraction(15000);
+        await game.waitForPhase('playCards', 15000);
 
         const finalState = await game.getState();
 
@@ -947,6 +1090,7 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         expect(finalState.core.players['1'].vp).toBe(EXPECTED_FINAL_VP['1']);
         expect(finalState.core.players['2'].vp).toBe(EXPECTED_FINAL_VP['2']);
         expect(finalState.core.players['3'].vp).toBe(EXPECTED_FINAL_VP['3']);
+        expect(finalState.core.bases).toHaveLength(EXPECTED_ACTIVE_BASE_COUNT);
         expect(finalState.core.bases.map((base: any) => base.defId)).toEqual([...EXPECTED_FINAL_BASE_IDS]);
         expect(finalState.core.baseDeck).toEqual(['base_the_factory']);
 
@@ -1093,7 +1237,7 @@ test.describe('大杀四方四人局三基地同时计分', () => {
             numPlayers: 4,
             skipInitialization: true,
         });
-        await game.setupScene(buildFourPlayerMobileScene());
+        await game.setupScene(buildFourPlayerMobileSceneWithTitan());
 
         await page.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -1105,24 +1249,32 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         }, { timeout: 10000, polling: 200 });
 
         const scoreBoard = page.locator('[data-tutorial-id="su-scoreboard"]');
+        const turnTracker = page.locator('[data-tutorial-id="su-turn-tracker"]');
+        const scoreboardPanel = page.locator('[data-testid="su-scoreboard-panel"]');
+        const scoreboardVisibilityToggle = page.locator('[data-testid="su-scoreboard-visibility-toggle"]');
         const handArea = page.locator('[data-testid="su-hand-area"]');
         const battlefieldViewport = page.locator('[data-testid="su-battlefield-viewport"]');
         const battlefieldZoomTarget = page.locator('[data-testid="su-battlefield-zoom-target"]');
         const deckStack = page.locator('[data-testid="su-deck-stack"]');
         const discardToggle = page.locator('[data-testid="su-discard-toggle"]');
+        const titanRail = page.locator('[data-testid="su-titan-rail"]');
         const endTurnButton = page.locator('[data-tutorial-id="su-end-turn-btn"]');
         const endTurnActionButton = page.locator('[data-testid="su-end-turn-action-button"]');
-        const endTurnVisibilityToggle = page.locator('[data-testid="su-end-turn-visibility-toggle"]');
         const endTurnHints = page.locator('[data-testid="su-end-turn-hints"]');
         const endTurnMinionQuota = page.locator('[data-testid="su-end-turn-minion-quota"]');
         const endTurnActionQuota = page.locator('[data-testid="su-end-turn-action-quota"]');
         const firstBase = page.locator('[data-base-index="0"]');
         const secondBase = page.locator('[data-base-index="1"]');
+        const fifthBase = page.locator('[data-base-index="4"]');
+        const baseSlots = page.locator('[data-base-index]');
         const handCard = page.locator('[data-card-uid="p0-mobile-hand-terraform"]').first();
         const inspectButton = page.locator('[data-testid="su-hand-card-inspect-p0-mobile-hand-terraform"]');
         const talentMinion = page.locator('[data-minion-uid="p0-b0-armor-stego"]');
+        const titanCard = page.locator('[data-testid="su-base-titan-t-mobile-layout-fort"]');
         const baseOngoingCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing"]');
+        const baseOngoingTalentCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing-talent-mobile"]');
         const attachedActionCard = page.locator('[data-attached-action-uid="p0-b0-armor-stego-upgrade"]');
+        const attachedActionTalentCard = page.locator('[data-attached-action-uid="p0-b0-armor-stego-attached-talent"]');
         const magnifyOverlay = page.locator('[data-testid="su-card-magnify-overlay"]');
         const exitFabButton = page.locator('[data-fab-id="exit"]').first();
         const exitFabVisual = page.locator('[data-fab-visual-id="exit"]').first();
@@ -1132,23 +1284,30 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         const exitFabTooltip = page.locator('[data-testid="fab-tooltip-exit"]');
 
         await expect(scoreBoard).toBeVisible({ timeout: 15000 });
+        await expect(turnTracker).toBeVisible({ timeout: 15000 });
+        await expect(scoreboardPanel).toBeVisible({ timeout: 15000 });
+        await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 15000 });
         await expect(handArea).toBeVisible({ timeout: 15000 });
         await expect(deckStack).toBeVisible({ timeout: 15000 });
         await expect(discardToggle).toBeVisible({ timeout: 15000 });
+        await expect(titanRail).toBeVisible({ timeout: 15000 });
         await expect(endTurnActionButton).toBeVisible({ timeout: 15000 });
-        await expect(endTurnVisibilityToggle).toBeVisible({ timeout: 15000 });
         await expect(endTurnHints).toBeVisible({ timeout: 15000 });
         await expect(endTurnMinionQuota).toBeVisible({ timeout: 15000 });
         await expect(endTurnActionQuota).toBeVisible({ timeout: 15000 });
         await expect(firstBase).toBeVisible({ timeout: 15000 });
         await expect(secondBase).toBeVisible({ timeout: 15000 });
+        await expect(fifthBase).toBeVisible({ timeout: 15000 });
+        await expect(baseSlots).toHaveCount(EXPECTED_ACTIVE_BASE_COUNT);
         await expect(battlefieldViewport).toBeVisible({ timeout: 15000 });
         await expect(handCard).toBeVisible({ timeout: 15000 });
         await expect(exitFabButton).toBeVisible({ timeout: 15000 });
         await expect(exitFabVisual).toBeVisible({ timeout: 15000 });
         await expect(inspectButton).toHaveCSS('opacity', '1');
         await expect(talentMinion).toBeVisible({ timeout: 15000 });
+        await expect(titanCard).toBeVisible({ timeout: 15000 });
         await expect(baseOngoingCard).toBeVisible({ timeout: 15000 });
+        await expect(baseOngoingTalentCard).toBeVisible({ timeout: 15000 });
         await expect(talentMinion).toHaveAttribute('data-attached-actions-visible', 'false');
 
         await waitForSmashUpMainUiReady(page);
@@ -1157,8 +1316,14 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         expect(viewport).not.toBeNull();
 
         await expectLocatorInsideViewport(scoreBoard, '记分板', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(turnTracker, '回合指示', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(scoreboardVisibilityToggle, '记分板隐藏按钮', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(firstBase, '第 1 个基地', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(titanCard, '第 1 个基地上的泰坦', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(fifthBase, '第 5 个基地', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(deckStack, '牌库', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(discardToggle, '弃牌堆', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(titanRail, '底部泰坦区', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(handCard, '手牌卡牌', viewport!.width, viewport!.height);
 
         await expectLocatorInsideViewport(endTurnButton, '结束回合按钮', viewport!.width, viewport!.height);
@@ -1166,10 +1331,6 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expectLocatorInsideViewport(endTurnMinionQuota, '随从额度提示', viewport!.width, viewport!.height);
         await expectLocatorInsideViewport(endTurnActionQuota, '战术额度提示', viewport!.width, viewport!.height);
 
-        await expectLocatorInsideViewport(endTurnVisibilityToggle, '缁撴潫鍥炲悎闅愯棌鎸夐挳', viewport!.width, viewport!.height);
-        await expectLocatorInsideViewport(endTurnHints, '缁撴潫鍥炲悎鎻愮ず瀹瑰櫒', viewport!.width, viewport!.height);
-        await expectLocatorInsideViewport(endTurnMinionQuota, '闅忎粠棰濆害鎻愮ず', viewport!.width, viewport!.height);
-        await expectLocatorInsideViewport(endTurnActionQuota, '鎴樻湳棰濆害鎻愮ず', viewport!.width, viewport!.height);
         const mobileLandscapeDocumentMetrics = await page.evaluate(() => ({
             viewportWidth: window.innerWidth,
             documentClientWidth: document.documentElement.clientWidth,
@@ -1193,7 +1354,18 @@ test.describe('大杀四方四人局三基地同时计分', () => {
 
         const handCardBox = await handCard.boundingBox();
         expect(handCardBox, '手牌卡牌应提供尺寸').not.toBeNull();
-        expect(handCardBox!.width, '移动端手牌宽度不应过小').toBeGreaterThan(48);
+        expect(handCardBox!.width, '移动端手牌宽度不应过小').toBeGreaterThan(70);
+
+        const firstBaseBox = await firstBase.boundingBox();
+        expect(firstBaseBox, '移动端基地应提供尺寸').not.toBeNull();
+        expect(firstBaseBox!.width, '移动端四人局基地不应被 vw + shell scale 二次缩得过小').toBeGreaterThan(76);
+        const baseTopValues = await baseSlots.evaluateAll((elements) => (
+            elements.map((element) => Math.round(element.getBoundingClientRect().top * 10) / 10)
+        ));
+        expect(
+            Math.max(...baseTopValues) - Math.min(...baseTopValues),
+            `所有基地卡顶部应统一对齐，当前 top=${baseTopValues.join(', ')}`,
+        ).toBeLessThanOrEqual(2);
 
         const endTurnActionButtonBox = await endTurnActionButton.boundingBox();
         expect(endTurnActionButtonBox).not.toBeNull();
@@ -1205,7 +1377,35 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         expect(exitFabBox!.width).toBeLessThanOrEqual(42);
         expect(exitFabBox!.height).toBeLessThanOrEqual(42);
 
+        await hideSmashUpDebugPanelForEvidence(page);
         await game.screenshot('04-mobile-landscape-layout', testInfo);
+
+        await scoreboardVisibilityToggle.click();
+        await expect(scoreboardPanel).toHaveCount(0);
+        await expect(turnTracker).toHaveCount(0);
+        await expect(handArea).toHaveCount(0);
+        await expect(deckStack).toBeVisible({ timeout: 5000 });
+        await expect(discardToggle).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(titanCard).toBeVisible({ timeout: 5000 });
+        await expect(endTurnActionButton).toHaveCount(0);
+        await expect(endTurnHints).toHaveCount(0);
+        await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
+        await expectLocatorInsideViewport(scoreboardVisibilityToggle, '隐藏后的记分板显示按钮', viewport!.width, viewport!.height);
+        const hiddenToggleBox = await scoreboardVisibilityToggle.boundingBox();
+        expect(hiddenToggleBox, '隐藏后的记分板显示按钮应提供尺寸').not.toBeNull();
+        expect(hiddenToggleBox!.x, '隐藏后的记分板显示按钮应保持在右上角').toBeGreaterThan(viewport!.width - 80);
+        await game.screenshot('04aa-mobile-scoreboard-hidden', testInfo);
+
+        await scoreboardVisibilityToggle.click();
+        await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
+        await expect(turnTracker).toBeVisible({ timeout: 5000 });
+        await expect(handArea).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
+        await expect(endTurnHints).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(260);
+        await game.screenshot('04ab-mobile-scoreboard-restored', testInfo);
 
         await expect(battlefieldViewport).toHaveAttribute('data-battlefield-zoom-enabled', 'true');
         await expect(battlefieldViewport).toHaveAttribute('data-battlefield-touch-mode', 'native-pan');
@@ -1261,16 +1461,9 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         ).toBeGreaterThan(8);
         await game.screenshot('04e-mobile-battlefield-panned', testInfo);
 
-        await endTurnVisibilityToggle.click();
-        await expect(endTurnActionButton).toHaveCount(0);
-        await expect(endTurnHints).toHaveCount(0);
-        await expect(endTurnVisibilityToggle).toBeVisible({ timeout: 5000 });
-        await game.screenshot('04b-mobile-end-turn-hidden', testInfo);
-
-        await endTurnVisibilityToggle.click();
-        await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
-        await expect(endTurnHints).toBeVisible({ timeout: 5000 });
-        await game.screenshot('04c-mobile-end-turn-restored', testInfo);
+        await panTouch(battlefieldViewport, page, { deltaX: 360, deltaY: 0 });
+        await expectLocatorInsideViewport(firstBase, '回到可操作位置后的第 1 个基地', viewport!.width, viewport!.height);
+        await expectLocatorInsideViewport(talentMinion, '回到可操作位置后的天赋随从', viewport!.width, viewport!.height);
 
         const exitFabBoxBeforeOpen = await exitFabVisual.boundingBox();
         expect(exitFabBoxBeforeOpen, 'exit FAB 打开前应提供尺寸').not.toBeNull();
@@ -1343,6 +1536,7 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expect(talentMinion).toHaveAttribute('data-attached-actions-visible', 'true');
         await expect(talentMinion).toHaveAttribute('data-activation-armed', 'true');
         await expect(attachedActionCard).toBeVisible({ timeout: 5000 });
+        await expect(attachedActionTalentCard).toBeVisible({ timeout: 5000 });
         const mobileTalentMinionBox = await talentMinion.boundingBox();
         const mobileAttachedActionBox = await attachedActionCard.boundingBox();
         expect(mobileTalentMinionBox, '移动端宿主随从应提供尺寸').not.toBeNull();
@@ -1369,9 +1563,35 @@ test.describe('大杀四方四人局三基地同时计分', () => {
 
         await game.screenshot('06-mobile-second-tap-uses-talent', testInfo);
 
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].ongoingActions.find((action: any) => action.uid === 'p0-b0-base-ongoing-talent-mobile')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+        await clickCenter(baseOngoingTalentCard, page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].ongoingActions.find((action: any) => action.uid === 'p0-b0-base-ongoing-talent-mobile')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(true);
+        await expect(magnifyOverlay).toHaveCount(0);
+        await game.screenshot('06a-mobile-base-ongoing-talent-single-tap-uses-talent', testInfo);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const host = state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-b0-armor-stego');
+            return host?.attachedActions?.find((action: any) => action.uid === 'p0-b0-armor-stego-attached-talent')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+        await clickCenter(attachedActionTalentCard, page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const host = state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-b0-armor-stego');
+            return host?.attachedActions?.find((action: any) => action.uid === 'p0-b0-armor-stego-attached-talent')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(true);
+        await expect(magnifyOverlay).toHaveCount(0);
+        await game.screenshot('06aa-mobile-attached-action-talent-single-tap-uses-talent', testInfo);
+
         await clickCenter(baseOngoingCard, page);
         await waitForMagnifyPreviewReady(page);
-        await game.screenshot('06a-mobile-base-ongoing-single-tap-magnify', testInfo);
+        await game.screenshot('06ab-mobile-base-ongoing-single-tap-magnify', testInfo);
         await closeMagnifyOverlay(page);
 
         await clickCenter(attachedActionCard, page);
@@ -1420,22 +1640,45 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         const desktopViewport = page.viewportSize();
         expect(desktopViewport).not.toBeNull();
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
-        await expect(endTurnVisibilityToggle).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
-        await expectLocatorInsideViewport(endTurnVisibilityToggle, 'PC 缁撴潫鍥炲悎闅愯棌鎸夐挳', desktopViewport!.width, desktopViewport!.height);
+        await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
+        await expect(turnTracker).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
+        await expectLocatorInsideViewport(scoreboardVisibilityToggle, 'PC 记分板隐藏按钮', desktopViewport!.width, desktopViewport!.height);
 
-        await endTurnVisibilityToggle.click();
+        await scoreboardVisibilityToggle.click();
         await expect(endTurnActionButton).toHaveCount(0);
         await expect(endTurnHints).toHaveCount(0);
-        await expect(endTurnVisibilityToggle).toBeVisible({ timeout: 5000 });
+        await expect(scoreboardPanel).toHaveCount(0);
+        await expect(turnTracker).toHaveCount(0);
+        await expect(handArea).toHaveCount(0);
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
 
-        await endTurnVisibilityToggle.click();
+        await scoreboardVisibilityToggle.click();
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
+        await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
+        await expect(turnTracker).toBeVisible({ timeout: 5000 });
+        await expect(handArea).toBeVisible({ timeout: 5000 });
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
         await game.screenshot('13-desktop-end-turn-restored', testInfo);
+
+        await scoreboardVisibilityToggle.click();
+        await expect(scoreboardPanel).toHaveCount(0);
+        await expect(turnTracker).toHaveCount(0);
+        await expect(endTurnActionButton).toHaveCount(0);
+        await expect(titanRail).toBeVisible({ timeout: 5000 });
+        await expect(scoreboardVisibilityToggle).toBeVisible({ timeout: 5000 });
+
+        await scoreboardVisibilityToggle.click();
+        await expect(scoreboardPanel).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(260);
+        await game.screenshot('13a-desktop-scoreboard-restored', testInfo);
     });
 
-    test('PC 基地 ongoing 天赋高亮时显示放大镜且力量徽章同层摇晃', async ({ page, game }, testInfo) => {
+    test('PC 基地 ongoing 天赋高亮时不显示放大镜且力量徽章同层摇晃', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await page.setViewportSize(DESKTOP_REFERENCE_VIEWPORT);
@@ -1458,22 +1701,13 @@ test.describe('大杀四方四人局三基地同时计分', () => {
 
         const ongoingCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing-talent"]');
         const ongoingCardShell = ongoingCard.locator('xpath=..');
-        const magnifyButton = page.getByTestId('su-base-ongoing-magnify-p0-b0-base-ongoing-talent');
         const powerBadge = page.getByTestId('su-base-ongoing-power-badge-p0-b0-base-ongoing-talent');
         const counterBadge = page.getByTestId('su-base-ongoing-power-counter-p0-b0-base-ongoing-talent');
 
         await expect(ongoingCard).toBeVisible({ timeout: 15000 });
         await expect(powerBadge).toBeVisible({ timeout: 15000 });
         await expect(counterBadge).toBeVisible({ timeout: 15000 });
-        await expect(magnifyButton).toHaveCSS('opacity', '0');
-
-        const ongoingCardBox = await ongoingCard.boundingBox();
-        expect(ongoingCardBox, '基地 ongoing 卡应提供悬停坐标').not.toBeNull();
-        await page.mouse.move(
-            (ongoingCardBox?.x ?? 0) + (ongoingCardBox?.width ?? 0) / 2,
-            (ongoingCardBox?.y ?? 0) + (ongoingCardBox?.height ?? 0) / 2,
-        );
-        await expect(magnifyButton).toHaveCSS('opacity', '1');
+        await expect(page.getByTestId('su-base-ongoing-magnify-p0-b0-base-ongoing-talent')).toHaveCount(0);
         await saveEvidenceLocatorScreenshot(
             page,
             ongoingCardShell,
@@ -1504,10 +1738,6 @@ test.describe('大杀四方四人局三基地同时计分', () => {
             Math.abs(secondOffset.dy - firstOffset.dy),
             `两个徽章纵向相对位移不应在摇晃时脱层（before=${firstOffset.dy}, after=${secondOffset.dy}）`,
         ).toBeLessThan(3);
-
-        await magnifyButton.click();
-        await waitForMagnifyPreviewReady(page);
-        await game.screenshot('13a-desktop-base-ongoing-talent-magnify-open', testInfo);
         await saveEvidenceLocatorScreenshot(
             page,
             ongoingCardShell,
@@ -1515,7 +1745,6 @@ test.describe('大杀四方四人局三基地同时计分', () => {
             'smashup',
             'smashup-desktop-base-ongoing-talent-highlight.png',
         );
-        await closeMagnifyOverlay(page);
     });
 
     test('移动端横屏 pinch 后仍可拖拽战场，避免 pan 锁死回归', async ({ page, game }, testInfo) => {
@@ -1880,7 +2109,7 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await clickCenter(monster, page);
         await expect(monster).toHaveAttribute('data-expanded', 'true');
         await expect(monster).toHaveAttribute('data-activation-armed', 'true');
-        await expect(page.getByText('再次点击发动')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/再次点击(?:发动|以激活)/)).toBeVisible({ timeout: 5000 });
 
         await clickCenter(monster, page);
 

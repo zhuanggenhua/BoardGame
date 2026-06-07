@@ -8,7 +8,7 @@
 
 import type { GameEvent, MatchState, SystemState } from '../../../engine/types';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
-import { createSimpleChoice, INTERACTION_EVENTS, queueInteraction, resolveInteraction } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_EVENTS, queueInteraction, resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSystem';
 import type {
     SmashUpCore,
@@ -29,8 +29,10 @@ import { reduce } from './reduce';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { getSmashUpReactionSession, resolveSmashUpReactionChoice } from './reactionSession';
 import {
+    getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents,
     getDeferredPostScoringEvents,
     isScoringSessionAwaitingDeferredResolution,
+    replaceDeferredPostScoringReplacementBase,
     updateScoringSession,
 } from './scoringSession';
 import { getCardDef } from '../data/cards';
@@ -115,6 +117,94 @@ function buildPreviewStateWithPendingDomainEvents(
     };
 }
 
+function emittedEventsAffectBaseStaticZones(events: readonly SmashUpEvent[]): boolean {
+    return events.some((event) => (
+        event.type === SU_EVENT_TYPES.ONGOING_ATTACHED
+        || event.type === SU_EVENT_TYPES.ONGOING_DETACHED
+        || event.type === SU_EVENT_TYPES.CARD_BURIED
+        || event.type === SU_EVENT_TYPES.BURIED_CARD_UNCOVERED
+        || event.type === SU_EVENT_TYPES.BURIED_CARD_RETURNED_TO_HAND
+        || event.type === SU_EVENT_TYPES.BURIED_CARDS_DISCARDED_WITH_BASE
+    ));
+}
+
+function getPureDeckReorderPlayerIds(events: readonly SmashUpEvent[]): string[] {
+    if (events.length === 0 || !events.every((event) => event.type === SU_EVENT_TYPES.DECK_REORDERED)) {
+        return [];
+    }
+
+    return Array.from(new Set(events
+        .map((event) => event.payload?.playerId)
+        .filter((playerId): playerId is string => typeof playerId === 'string')));
+}
+
+function getPromptResultTriggerQueue(
+    resultState: MatchState<SmashUpCore>,
+    emittedEvents: readonly SmashUpEvent[],
+): SmashUpCore['triggerQueue'] {
+    const consumedTriggerIds = new Set(emittedEvents
+        .filter((event) => event.type === SU_EVENT_TYPES.TRIGGER_CONSUMED)
+        .map((event) => (event.payload as { triggerId?: unknown } | undefined)?.triggerId)
+        .filter((triggerId): triggerId is string => typeof triggerId === 'string'));
+
+    if (consumedTriggerIds.size === 0) {
+        return resultState.core.triggerQueue;
+    }
+
+    const next = (resultState.core.triggerQueue ?? []).filter(
+        (trigger) => !consumedTriggerIds.has(trigger.id),
+    );
+    return next.length > 0 ? next : undefined;
+}
+
+function mergePromptResultCoreWithPreEventState(
+    resultState: MatchState<SmashUpCore>,
+    coreBeforeHandler: SmashUpCore,
+    emittedEvents: readonly SmashUpEvent[],
+): SmashUpCore {
+    const preserveBaseStaticZones = !emittedEventsAffectBaseStaticZones(emittedEvents);
+    const pureDeckReorderPlayerIds = getPureDeckReorderPlayerIds(emittedEvents);
+    const bases = preserveBaseStaticZones
+        ? coreBeforeHandler.bases.map((base, index) => {
+            const resultBase = resultState.core.bases[index];
+            if (!resultBase) return base;
+            return {
+                ...base,
+                ongoingActions: resultBase.ongoingActions,
+                buriedCards: resultBase.buriedCards,
+            };
+        })
+        : coreBeforeHandler.bases;
+    const players = pureDeckReorderPlayerIds.length > 0
+        ? Object.fromEntries(Object.entries(coreBeforeHandler.players).map(([playerId, player]) => {
+            if (!pureDeckReorderPlayerIds.includes(playerId)) {
+                return [playerId, player];
+            }
+
+            const resultPlayer = resultState.core.players[playerId];
+            if (!resultPlayer) {
+                return [playerId, player];
+            }
+
+            return [playerId, {
+                ...player,
+                hand: resultPlayer.hand,
+                deck: resultPlayer.deck,
+            }];
+        })) as typeof coreBeforeHandler.players
+        : coreBeforeHandler.players;
+
+    return {
+        ...coreBeforeHandler,
+        bases,
+        players,
+        // 交互处理器可能会先消费 triggerQueue，再把后续领域事件交给 pipeline 统一 reduce。
+        // 这里若沿用 handler 前的 triggerQueue，会把已选择的强制触发还原，导致同一“先结算”弹窗反复出现。
+        triggerQueue: getPromptResultTriggerQueue(resultState, emittedEvents),
+        timedPowerModifiers: resultState.core.timedPowerModifiers,
+    };
+}
+
 function materializeBodyShopDistribution(
     state: MatchState<SmashUpCore>,
     pending: BodyShopPendingDistribution,
@@ -183,12 +273,9 @@ function reconcilePendingBodyShopDistributions(
             return false;
         });
 
-        if (matchedSave) {
-            continue;
-        }
-
-        if (matchedDestroy) {
-            const timestamp = typeof matchedDestroy.timestamp === 'number' ? matchedDestroy.timestamp : fallbackTimestamp;
+        if (matchedDestroy || matchedSave) {
+            const matchedTimestamp = matchedDestroy?.timestamp ?? matchedSave?.timestamp;
+            const timestamp = typeof matchedTimestamp === 'number' ? matchedTimestamp : fallbackTimestamp;
             const result = materializeBodyShopDistribution(nextState, item, timestamp);
             nextState = result.state;
             emitted.push(...result.events);
@@ -206,20 +293,6 @@ function reconcilePendingBodyShopDistributions(
 
 // ============================================================================
 // SmashUp 事件处理系统
-// ============================================================================
-
-function isSameInteractionDataSnapshot(
-    currentData: unknown,
-    payloadData: unknown,
-): boolean {
-    if (currentData === payloadData) return true;
-    try {
-        return JSON.stringify(currentData) === JSON.stringify(payloadData);
-    } catch {
-        return false;
-    }
-}
-
 /**
  * 创建 SmashUp 事件处理系统
  * 
@@ -244,6 +317,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                         _processedDestroyEvents: undefined,
                         _processedPlayedEvents: undefined,
                         _processedTitanPositionEvents: undefined,
+                        _processedImmediateExtraEvents: undefined,
                     } as typeof state.sys,
                 },
             };
@@ -397,22 +471,38 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                             if (result) {
                                 // 记录 handler 前的交互快照，用于判断“当前交互是否需要弹出”
                                 const currentInteractionIdBefore = newState.sys.interaction?.current?.id;
-                                const currentInteractionDataBefore = newState.sys.interaction?.current?.data;
+                                const coreBeforeHandler = newState.core;
 
-                                let emittedEvents = [...result.events] as SmashUpEvent[];
+                                const emittedEvents = [...result.events] as SmashUpEvent[];
 
-                                newState = result.state;
+                                newState = payload.sourceId === 'smashup_reaction_choose'
+                                    ? emittedEvents.length === 0
+                                        ? result.state
+                                        : {
+                                            ...result.state,
+                                            core: mergePromptResultCoreWithPreEventState(result.state, coreBeforeHandler, emittedEvents),
+                                        }
+                                    : runtimeResult && emittedEvents.length > 0
+                                        ? {
+                                            ...result.state,
+                                            core: mergePromptResultCoreWithPreEventState(result.state, coreBeforeHandler, emittedEvents),
+                                        }
+                                        : result.state;
 
                                 const currentInteractionIdAfter = newState.sys.interaction?.current?.id;
                                 const shouldResolveCurrentInteraction = Boolean(currentInteractionIdBefore)
                                     && payload.interactionId === currentInteractionIdBefore
-                                    && isSameInteractionDataSnapshot(currentInteractionDataBefore, payload.interactionData)
                                     && currentInteractionIdAfter === currentInteractionIdBefore;
 
                                 // 当一次响应已被接收并产出后续链路时，需弹出当前交互，
                                 // 否则会出现“新交互入队但界面仍停留在旧交互”的卡死现象。
                                 if (shouldResolveCurrentInteraction) {
                                     newState = resolveInteraction(newState);
+                                }
+
+                                const replacementBaseDefId = getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents(emittedEvents);
+                                if (replacementBaseDefId) {
+                                    newState = replaceDeferredPostScoringReplacementBase(newState, replacementBaseDefId);
                                 }
 
                                 // 注意：afterEvents 轮产生的领域事件会在 pipeline.runAfterEventsRounds 中
@@ -479,12 +569,35 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                         }
 
                         if (payload.sourceId === 'giant_ant_drone_prevent_destroy') {
-                            const targetMinionUid = (payload.interactionData?.continuationContext as { targetMinionUid?: string } | undefined)?.targetMinionUid;
                             const selected = resolvedValue as { skip?: boolean } | undefined;
-                            if (targetMinionUid && !selected?.skip) {
-                                const pending = getPendingBodyShopDistributions(newState)
-                                    .filter((item) => item.targetMinionUid !== targetMinionUid);
-                                newState = setPendingBodyShopDistributions(newState, pending);
+                            if (!selected?.skip) {
+                                const pendingItems = getPendingBodyShopDistributions(newState);
+                                const remaining: BodyShopPendingDistribution[] = [];
+
+                                for (const item of pendingItems) {
+                                    const targetStillOnBoard = newState.core.bases.some((base) =>
+                                        base.minions.some((minion) => minion.uid === item.targetMinionUid),
+                                    );
+                                    if (!targetStillOnBoard) {
+                                        remaining.push(item);
+                                        continue;
+                                    }
+
+                                    const result = materializeBodyShopDistribution(
+                                        newState as MatchState<SmashUpCore>,
+                                        item,
+                                        eventTimestamp,
+                                    );
+                                    newState = result.state;
+                                    if (result.events.length > 0) {
+                                        nextEvents.push(...result.events as GameEvent[]);
+                                    }
+                                }
+
+                                newState = setPendingBodyShopDistributions(
+                                    newState as MatchState<SmashUpCore>,
+                                    remaining,
+                                );
                             }
                         }
                     }
@@ -515,12 +628,10 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                     eventTimestamp,
                                     { kind: 'pass' } as any,
                                 );
-                                newState = previewState === newState
-                                    ? resolved.state
-                                    : {
-                                        ...resolved.state,
-                                        core: newState.core,
-                                    };
+                                newState = {
+                                    ...resolved.state,
+                                    core: newState.core,
+                                };
                                 if (resolved.events.length > 0) {
                                     nextEvents.push(...(resolved.events as GameEvent[]));
                                 }
@@ -544,10 +655,13 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
 
             const hasPendingDomainEvents = nextEvents.length > 0;
 
-            if (!hasPendingDomainEvents && !newState.sys.interaction?.current) {
+            if (!hasPendingDomainEvents && !reactionChoiceResolved && !newState.sys.interaction?.current) {
                 const reactionQueueResult = maybeResolveReactionQueue(newState as MatchState<SmashUpCore>, random, latestTimestamp);
                 if (reactionQueueResult) {
-                    newState = reactionQueueResult.state;
+                    newState = {
+                        ...reactionQueueResult.state,
+                        core: newState.core,
+                    };
                     nextEvents.push(...reactionQueueResult.events as GameEvent[]);
                 }
             }

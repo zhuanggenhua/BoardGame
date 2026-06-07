@@ -577,6 +577,146 @@ describe('Feature: incremental-state-sync', () => {
       client.disconnect();
     });
 
+    it('manual resync on connected socket should emit sync immediately', () => {
+      const onDebugEvent = vi.fn();
+      const client = new GameTransportClient({
+        server: '',
+        matchID: 'test-match',
+        playerID: '0',
+        credentials: 'test-cred',
+        onDebugEvent,
+      });
+
+      client.connect();
+      mockSocket.simulateEvent('connect');
+      mockSocket.clearEmitted();
+
+      client.resync();
+
+      expect(mockSocket.findEmitted('sync')).toEqual([
+        {
+          event: 'sync',
+          args: ['test-match', '0', 'test-cred'],
+        },
+      ]);
+      expect(onDebugEvent).toHaveBeenCalledWith(expect.objectContaining({
+        stage: 'sync-requested',
+        reason: 'manual-resync',
+      }));
+
+      client.disconnect();
+    });
+
+    it('manual resync on disconnected socket should request reconnect instead of emitting sync', () => {
+      const onDebugEvent = vi.fn();
+      const client = new GameTransportClient({
+        server: '',
+        matchID: 'test-match',
+        playerID: '0',
+        credentials: 'test-cred',
+        onDebugEvent,
+      });
+
+      client.connect();
+      mockSocket.simulateEvent('connect');
+      mockSocket.clearEmitted();
+      mockSocket.connected = false;
+
+      client.resync();
+
+      expect(mockSocket.findEmitted('sync')).toEqual([]);
+      expect(mockSocket.connected).toBe(true);
+      expect(onDebugEvent).toHaveBeenCalledWith(expect.objectContaining({
+        stage: 'reconnect-requested',
+        reason: 'manual-resync-disconnected',
+      }));
+
+      client.disconnect();
+    });
+
+    it('applies compare-roll interaction patches on contestant baseline without forcing resync', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const compareRollBaseState = {
+        core: {
+          currentPlayer: '0',
+          padding: Array.from({ length: 160 }, (_value, index) => `pad-${index}`),
+        },
+        sys: {
+          phase: 'main',
+          turnNumber: 1,
+          interaction: {
+            current: {
+              id: 'compare-roll-visible-base',
+              kind: 'compare-roll-choice',
+              playerId: '0',
+              data: {
+                title: '对比掷骰',
+                sourceId: 'duel-base',
+                contestants: [
+                  { playerId: '0', label: 'P0', roll: 6 },
+                  { playerId: '1', label: 'P1', roll: 2 },
+                ],
+                options: [
+                  { id: 'resolve', label: '继续', value: { kind: 'confirm' } },
+                ],
+              },
+            },
+            queue: [],
+            isBlocked: true,
+          },
+        },
+      };
+      const compareRollNextState = {
+        core: {
+          currentPlayer: '0',
+          padding: Array.from({ length: 160 }, (_value, index) => `pad-${index}`),
+        },
+        sys: {
+          phase: 'main',
+          turnNumber: 1,
+          interaction: {
+            current: {
+              id: 'compare-roll-visible-next',
+              kind: 'compare-roll-choice',
+              playerId: '0',
+              data: {
+                title: '第二次对比掷骰',
+                sourceId: 'duel-next',
+                contestants: [
+                  { playerId: '0', label: 'P0', roll: 1 },
+                  { playerId: '1', label: 'P1', roll: 5 },
+                ],
+                options: [
+                  { id: 'resolve-next', label: '继续', value: { kind: 'confirm-next' } },
+                ],
+              },
+            },
+            queue: [],
+            isBlocked: true,
+          },
+        },
+      };
+
+      simulateSync(compareRollBaseState, [{ id: 0 }, { id: 1 }], 0);
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const diff = computeDiff(compareRollBaseState, compareRollNextState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path?.startsWith('/sys/interaction/current/'))).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 1, randomCursor: 0 }, [{ id: 0 }, { id: 1 }]);
+
+      expect(onStateUpdate).toHaveBeenCalledTimes(1);
+      expect(client.latestState).toEqual(compareRollNextState);
+      expect(mockSocket.findEmitted('sync').length).toBe(0);
+
+      client.disconnect();
+    });
+
     /**
      * 需求 8.2：batch:confirmed 返回全量状态
      *
@@ -871,6 +1011,312 @@ describe('Feature: incremental-state-sync', () => {
       expect(onStateUpdate).not.toHaveBeenCalled();
       expect(mockSocket.findEmitted('sync').length).toBeGreaterThan(0);
       expect(client.latestState).toEqual(renderFilteredState);
+
+      client.disconnect();
+    });
+
+    it('resyncs when render-only filtered state strips owner-only queued prompts from patch base', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const authoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [
+              {
+                id: 'owner-only-queued-a',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择要弃掉的手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
+                },
+              },
+            ],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      simulateSync(authoritativeState);
+      simulateUpdate(authoritativeState, { stateID: 1, randomCursor: 0 });
+
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const renderFilteredState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      client.updateLatestState(renderFilteredState);
+
+      const nextAuthoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [
+              {
+                id: 'owner-only-queued-a',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择要弃掉的手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
+                },
+              },
+              {
+                id: 'owner-only-queued-b',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择另一张手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } }],
+                },
+              },
+            ],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      const diff = computeDiff(authoritativeState, nextAuthoritativeState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/queue/1')).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 2, randomCursor: 0 });
+
+      expect(onStateUpdate).not.toHaveBeenCalled();
+      expect(mockSocket.findEmitted('sync').length).toBeGreaterThan(0);
+      expect(client.latestState).toEqual(renderFilteredState);
+
+      client.disconnect();
+    });
+
+    it('resyncs when render-only filtered state strips owner-only current prompt from patch base', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const authoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: {
+              id: 'owner-only-current-a',
+              kind: 'simple-choice',
+              playerId: '0',
+              data: {
+                title: '选择要弃掉的随从',
+                sourceId: 'super_spies_the_spy_who_ditched_me_discard',
+                targetType: 'minion',
+                options: [{ id: 'minion-a', label: '随从 A', value: { minionUid: 'minion-a' } }],
+              },
+            },
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      simulateSync(authoritativeState);
+      simulateUpdate(authoritativeState, { stateID: 1, randomCursor: 0 });
+
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const renderFilteredState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      client.updateLatestState(renderFilteredState);
+
+      const nextAuthoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: {
+              id: 'owner-only-current-b',
+              kind: 'simple-choice',
+              playerId: '0',
+              data: {
+                title: '继续选择要弃掉的随从',
+                sourceId: 'super_spies_the_spy_who_ditched_me_discard',
+                targetType: 'minion',
+                options: [{ id: 'minion-b', label: '随从 B', value: { minionUid: 'minion-b' } }],
+              },
+            },
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      const diff = computeDiff(authoritativeState, nextAuthoritativeState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/current/id')).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 2, randomCursor: 0 });
+
+      expect(onStateUpdate).not.toHaveBeenCalled();
+      expect(mockSocket.findEmitted('sync').length).toBeGreaterThan(0);
+      expect(client.latestState).toEqual(renderFilteredState);
+
+      client.disconnect();
+    });
+
+    it('applies authoritative isBlocked close patch when a hidden owner-only blocker is released', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const authoritativeBlockedState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: true,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      simulateSync(authoritativeBlockedState);
+      simulateUpdate(authoritativeBlockedState, { stateID: 1, randomCursor: 0 });
+
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const nextAuthoritativeState = {
+        core: { hp: 11 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 2 },
+        },
+      };
+      const diff = computeDiff(authoritativeBlockedState, nextAuthoritativeState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/isBlocked')).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 2, randomCursor: 0 });
+
+      expect(onStateUpdate).toHaveBeenCalledTimes(1);
+      expect(onStateUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          core: { hp: 11 },
+          sys: expect.objectContaining({
+            interaction: expect.objectContaining({
+              isBlocked: false,
+            }),
+            eventStream: expect.objectContaining({
+              nextId: 2,
+            }),
+          }),
+        }),
+        expect.any(Array),
+        { stateID: 2, randomCursor: 0 },
+      );
+      expect(mockSocket.findEmitted('sync')).toHaveLength(0);
+      expect(client.latestState).toEqual(nextAuthoritativeState);
+
+      client.disconnect();
+    });
+
+    it('applies authoritative hidden-blocked patch that removes a stale visible current prompt', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const visiblePromptState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: {
+              id: 'shared-visible-current-a',
+              kind: 'simple-choice',
+              playerId: '1',
+              data: {
+                title: '等待另一位玩家确认',
+                sourceId: 'shared-visible-step',
+                targetType: 'button',
+                options: [{ id: 'confirm', label: '确认', value: { confirm: true } }],
+              },
+            },
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      simulateSync(visiblePromptState);
+      simulateUpdate(visiblePromptState, { stateID: 1, randomCursor: 0 });
+
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const hiddenBlockedState = {
+        core: { hp: 11 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: true,
+          },
+          eventStream: { entries: [], nextId: 2 },
+        },
+      };
+      const diff = computeDiff(visiblePromptState, hiddenBlockedState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/current')).toBe(true);
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/isBlocked')).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 2, randomCursor: 0 });
+
+      expect(onStateUpdate).toHaveBeenCalledTimes(1);
+      expect(onStateUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          core: { hp: 11 },
+          sys: expect.objectContaining({
+            interaction: expect.objectContaining({
+              isBlocked: true,
+            }),
+            eventStream: expect.objectContaining({
+              nextId: 2,
+            }),
+          }),
+        }),
+        expect.any(Array),
+        { stateID: 2, randomCursor: 0 },
+      );
+      expect(mockSocket.findEmitted('sync')).toHaveLength(0);
+      expect(client.latestState).toEqual(hiddenBlockedState);
 
       client.disconnect();
     });

@@ -1,5 +1,7 @@
 # DiceThrone 枪手死亡之眼 II Atlas / 正常出牌 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留枪手 `死亡之眼 II` atlas 渲染与正常出牌链的对象级 `L3` 证据，不代表枪手整英雄或枪手/武士整批当前完成态。当前若要判断枪手对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 范围
 
 - 用例：`e2e/dicethrone/temp-dicethrone-ability-atlas-regression.e2e.ts`

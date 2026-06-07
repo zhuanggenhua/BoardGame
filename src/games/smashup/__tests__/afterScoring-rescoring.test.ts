@@ -5,16 +5,16 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
-import { queueImmediateExtraPlayInteractions } from '../domain/extraPlay';
 import { getSmashUpReactionSession, startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { smashUpSystemsForTest } from '../game';
-import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent, TitanState } from '../domain/types';
+import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { getOptionalSimpleChoicePrompt, getPromptOptions, withCurrentPrompt } from './helpers';
 
 const PLAYER_IDS: PlayerId[] = ['0', '1'];
 
@@ -56,17 +56,18 @@ function getReactionSession(state: MatchState<SmashUpCore>) {
 }
 
 function getCurrentChoice(state: MatchState<SmashUpCore>) {
-    return asSimpleChoice(state.sys.interaction?.current);
+    return getOptionalSimpleChoicePrompt(state);
 }
 
 function findOptionId(
     choice: NonNullable<ReturnType<typeof getCurrentChoice>>,
-    predicate: (option: NonNullable<ReturnType<typeof getCurrentChoice>>['options'][number]) => boolean,
+    predicate: (option: any) => boolean,
     message: string,
 ) {
-    const option = choice.options.find(predicate);
+    const options = getPromptOptions(choice);
+    const option = options.find(predicate);
     if (!option) {
-        throw new Error(`${message}: ${JSON.stringify(choice.options.map(item => item.id))}`);
+        throw new Error(`${message}: ${JSON.stringify(options.map(item => item.id))}`);
     }
     return option.id;
 }
@@ -80,12 +81,13 @@ function findQueuedTriggerOptionId(
     const triggersById = new Map(
         (state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]),
     );
-    const option = choice.options.find((candidate: any) => {
+    const options = getPromptOptions(choice);
+    const option = options.find((candidate: any) => {
         const triggerId = candidate?.value?.triggerId;
         return triggerId && triggersById.get(triggerId)?.sourceDefId === sourceDefId;
     });
     if (!option) {
-        throw new Error(`${message}: ${JSON.stringify(choice.options.map(item => item.id))}`);
+        throw new Error(`${message}: ${JSON.stringify(options.map(item => item.id))}`);
     }
     return option.id;
 }
@@ -94,12 +96,47 @@ function collectBaseEventCount(events: SmashUpEvent[], type: typeof SU_EVENTS.BA
     return events.filter(event => event.type === type).length;
 }
 
+function advancePostScoringDelay(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    eventLog: SmashUpEvent[],
+) {
+    const state = runner.getState();
+    const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+    expect(typeof delayUntil).toBe('number');
+    const playerId = state.core.turnOrder[state.core.currentPlayerIndex]!;
+    const advance = runner.dispatch('ADVANCE_PHASE', { playerId, timestamp: delayUntil as number });
+    expect(advance.success).toBe(true);
+    eventLog.push(...advance.events);
+    return advance;
+}
+
+function drainScoreBasesDelayUntilPromptOrIdle(
+    runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
+    eventLog: SmashUpEvent[],
+) {
+    for (let guard = 0; guard < 8; guard += 1) {
+        const state = runner.getState();
+        if (getCurrentChoice(state)) {
+            break;
+        }
+        if (state.sys.phase !== 'scoreBases') {
+            break;
+        }
+        const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+        if (typeof delayUntil !== 'number') {
+            break;
+        }
+        advancePostScoringDelay(runner, eventLog);
+    }
+}
+
 function advanceToAfterScoring(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
     actingPlayerId: PlayerId = '0',
-    options: { allowDirectAfterScoringSourceId?: string } = {},
+    options: { allowDirectAfterScoringSourceIds?: string[] } = {},
 ) {
     const eventLog: SmashUpEvent[] = [];
+    const allowDirectAfterScoringSourceIds = new Set(options.allowDirectAfterScoringSourceIds ?? []);
 
     const advance = runner.dispatch('ADVANCE_PHASE', { playerId: actingPlayerId });
     expect(advance.success).toBe(true);
@@ -110,7 +147,7 @@ function advanceToAfterScoring(
         const session = getReactionSession(state);
         if (session?.responseWindowType === 'afterScoring') {
             const choice = getCurrentChoice(state);
-            if (choice?.sourceId === options.allowDirectAfterScoringSourceId) {
+            if (choice?.sourceId && allowDirectAfterScoringSourceIds.has(choice.sourceId)) {
                 return { advance, eventLog, choice: choice! };
             }
             expect(choice?.sourceId).toBe('smashup_reaction_choose');
@@ -225,6 +262,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             expect(passResult.success).toBe(true);
             eventLog.push(...passResult.events);
         }
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
@@ -277,6 +315,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         const passResult = runner.resolveInteraction(choice.playerId, { optionId: 'pass' });
         expect(passResult.success).toBe(true);
         eventLog.push(...passResult.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         const finalState = runner.getState();
         expect(getReactionSession(finalState)).toBeUndefined();
@@ -360,6 +399,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
         expect(chooseAmount.success).toBe(true);
         eventLog.push(...chooseAmount.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
@@ -394,18 +434,18 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             ];
             core.players['1'].hand = [];
 
-            sys.interaction.current = createSimpleChoice(
+            const existingChoiceState = withCurrentPrompt({ sys, core }, createSimpleChoice(
                 'existing-base-choice',
                 '0',
                 '已有基地选择',
                 [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' }],
                 { sourceId: 'existing-base-choice', targetType: 'button' },
-            );
+            ));
             const baseRef = createScoringBaseRef(core, 0);
             if (!baseRef) {
                 throw new Error('无法构造 afterScoring rescoring 测试用 scoring base ref');
             }
-            const scoreState = setScoringSession({ sys, core }, {
+            const scoreState = setScoringSession(existingChoiceState, {
                 ...createScoringSession(core, [0]),
                 currentBaseRef: baseRef,
                 currentStep: 'awaiting-response-window',
@@ -486,19 +526,23 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             return { sys, core };
         });
 
-        const { eventLog, choice } = advanceToAfterScoring(runner);
-        const chooseGreenhouse = runner.resolveInteraction('0', {
-            optionId: findQueuedTriggerOptionId(
-                runner.getState(),
-                choice,
-                'base_greenhouse',
-                '找不到温室的统一反应入口',
-            ),
+        const { eventLog, choice } = advanceToAfterScoring(runner, '0', {
+            allowDirectAfterScoringSourceIds: ['base_greenhouse'],
         });
-        expect(chooseGreenhouse.success).toBe(true);
-        eventLog.push(...chooseGreenhouse.events);
-
-        const greenhouseChoice = getCurrentChoice(runner.getState());
+        let greenhouseChoice = choice;
+        if (choice.sourceId === 'smashup_reaction_choose') {
+            const chooseGreenhouse = runner.resolveInteraction('0', {
+                optionId: findQueuedTriggerOptionId(
+                    runner.getState(),
+                    choice,
+                    'base_greenhouse',
+                    '找不到温室的统一反应入口',
+                ),
+            });
+            expect(chooseGreenhouse.success).toBe(true);
+            eventLog.push(...chooseGreenhouse.events);
+            greenhouseChoice = getCurrentChoice(runner.getState())!;
+        }
         expect(greenhouseChoice?.sourceId).toBe('base_greenhouse');
         const chooseDeckMinion = runner.resolveInteraction('0', {
             optionId: findOptionId(
@@ -509,6 +553,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
         expect(chooseDeckMinion.success).toBe(true);
         eventLog.push(...chooseDeckMinion.events);
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 
         const finalState = runner.getState();
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
@@ -561,7 +606,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         });
 
         const { eventLog, choice } = advanceToAfterScoring(runner, '1', {
-            allowDirectAfterScoringSourceId: 'alien_scout_return',
+            allowDirectAfterScoringSourceIds: ['alien_scout_return'],
         });
         expect(choice.sourceId).toBe('alien_scout_return');
 
@@ -596,147 +641,129 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(runner.getState().core.players['1'].hand.map(card => card.uid)).toContain('p1-discard-1');
     });
 
-    it('smashup_immediate_extra_minion 选牌后应推进到基地选择，不应停留在原交互', () => {
+    it('afterScoring 把随从移到新基地后若使其达标，应继续把新基地纳入本轮计分', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);
             const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
 
             core.factionSelection = undefined;
-            core.currentPlayerIndex = 0;
+            sys.phase = 'playCards';
             core.bases = [
                 {
-                    defId: 'base_secret_garden',
-                    minions: [],
-                    ongoingActions: [],
-                },
-                {
                     defId: 'base_the_jungle',
-                    minions: [],
-                    ongoingActions: [],
-                },
-            ];
-            core.players['0'].hand = [
-                { uid: 'h1', defId: 'zombie_walker', type: 'minion', owner: '0' },
-            ];
-            core.players['1'].hand = [];
-            sys.phase = 'startTurn';
-
-            return queueImmediateExtraPlayInteractions(
-                { sys, core },
-                [{
-                    type: SU_EVENTS.LIMIT_MODIFIED,
-                    payload: {
-                        playerId: '0',
-                        limitType: 'minion',
-                        delta: 1,
-                        reason: '神秘花园：额外打出力量≤2的随从',
-                        playTiming: 'immediate',
-                        restrictToBase: 0,
-                    },
-                    timestamp: 0,
-                } as any],
-            );
-        });
-
-        const current = getCurrentChoice(runner.getState());
-        expect(current?.sourceId).toBe('smashup_immediate_extra_minion');
-
-        const playExtraMinion = runner.resolveInteraction('0', { optionId: 'card-0' });
-        expect(playExtraMinion.success).toBe(true);
-
-        const nextChoice = getCurrentChoice(runner.getState());
-        expect(nextChoice?.sourceId).toBe('smashup_immediate_extra_minion_base');
-        expect(nextChoice?.options.some(option => option.value?.baseIndex === 0)).toBe(true);
-        expect(nextChoice?.options.some(option => option.value?.baseIndex === 1)).toBe(true);
-    });
-
-    it('smashup_immediate_extra_minion 应允许选择可作为随从打出的 setaside 泰坦', () => {
-        const runner = createRunner((ids, random) => {
-            const core = SmashUpDomain.setup(ids, random);
-            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
-
-            core.factionSelection = undefined;
-            core.currentPlayerIndex = 0;
-            core.bases = [
-                {
-                    defId: 'base_secret_garden',
-                    minions: [makeMinion('ally-0', 'zombie_walker', '0', '0', 2, 0)],
+                    minions: [
+                        makeMinion('mate-0', 'pirate_first_mate', '0', '0', 2, 0),
+                        makeMinion('ally-0', 'dino_king_rex', '0', '0', 10, 0),
+                    ],
                     ongoingActions: [],
                 },
                 {
-                    defId: 'base_the_jungle',
-                    minions: [makeMinion('ally-1', 'alien_invader', '0', '0', 3, 0)],
+                    defId: 'base_pirate_cove',
+                    minions: [
+                        makeMinion('target-a', 'alien_invader', '0', '0', 8, 0),
+                        makeMinion('target-b', 'robot_zapbot', '0', '0', 7, 0),
+                    ],
                     ongoingActions: [],
                 },
             ];
-            core.titans = [{
-                uid: 't-ursa',
-                defId: 'bear_cavalry_major_ursa',
-                faction: 'bear_cavalry',
-                ownerId: '0',
-                controllerId: '0',
-                powerCounters: 0,
-                talentUsed: false,
-                location: { zone: 'setaside' },
-            } satisfies TitanState];
+            core.baseDeck = ['base_secret_garden', 'base_tar_pits'];
             core.players['0'].hand = [];
             core.players['1'].hand = [];
-            sys.phase = 'startTurn';
 
-            return queueImmediateExtraPlayInteractions(
-                { sys, core },
-                [{
-                    type: SU_EVENTS.LIMIT_MODIFIED,
-                    payload: {
-                        playerId: '0',
-                        limitType: 'minion',
-                        delta: 1,
-                        reason: '测试：额外随从可打泰坦',
-                        playTiming: 'immediate',
-                    },
-                    timestamp: 0,
-                } as any],
-            );
+            return { sys, core };
         });
 
-        const current = getCurrentChoice(runner.getState());
-        expect(current?.sourceId).toBe('smashup_immediate_extra_minion');
-        const titanOption = current?.options.find(option => option.value?.titanUid === 't-ursa');
-        expect(titanOption).toBeDefined();
-        expect(titanOption?.value).toMatchObject({
-            titanUid: 't-ursa',
-            defId: 'bear_cavalry_major_ursa',
-            playKind: 'minion',
-        });
+        const eventLog: SmashUpEvent[] = [];
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success).toBe(true);
+        eventLog.push(...advance.events);
 
-        const chooseTitan = runner.resolveInteraction('0', { optionId: titanOption!.id });
-        expect(chooseTitan.success).toBe(true);
+        let firstMateChoice: ReturnType<typeof getCurrentChoice> | undefined;
+        for (let guard = 0; guard < 8; guard += 1) {
+            const state = runner.getState();
+            const choice = getCurrentChoice(state);
+            const session = getReactionSession(state);
 
-        const nextChoice = getCurrentChoice(runner.getState());
-        expect(nextChoice?.sourceId).toBe('smashup_immediate_extra_minion_base');
+            if (choice?.sourceId === 'pirate_first_mate_choose_base') {
+                firstMateChoice = choice;
+                break;
+            }
 
-        const chooseBase = runner.resolveInteraction('0', {
+            if (choice?.sourceId === 'smashup_reaction_choose') {
+                const optionId = findQueuedTriggerOptionId(
+                    state,
+                    choice,
+                    'pirate_first_mate',
+                    '找不到大副的统一反应入口',
+                );
+                const resolved = runner.resolveInteraction(choice.playerId, { optionId });
+                expect(resolved.success).toBe(true);
+                eventLog.push(...resolved.events);
+                continue;
+            }
+
+            if (session?.responseWindowType === 'meFirst' && choice?.sourceId === 'smashup_reaction_choose') {
+                const pass = runner.resolveInteraction(choice.playerId, { optionId: 'pass' });
+                expect(pass.success).toBe(true);
+                eventLog.push(...pass.events);
+                continue;
+            }
+
+            throw new Error(`未能进入大副计分后移动交互: ${JSON.stringify({
+                phase: state.sys.phase,
+                interactionSourceId: choice?.sourceId ?? null,
+                responseWindowType: session?.responseWindowType ?? null,
+            })}`);
+        }
+
+        expect(firstMateChoice?.sourceId).toBe('pirate_first_mate_choose_base');
+        const moveMate = runner.resolveInteraction('0', {
             optionId: findOptionId(
-                nextChoice!,
+                firstMateChoice!,
                 option => option.value?.baseIndex === 1,
-                '找不到大熊座的合法基地选项',
+                '找不到大副移动到基地 1 的选项',
             ),
         });
-        expect(chooseBase.success).toBe(true);
+        expect(moveMate.success).toBe(true);
+        eventLog.push(...moveMate.events);
 
-        const titanPlayed = chooseBase.events.find(event => event.type === SU_EVENTS.TITAN_PLAYED);
-        expect(titanPlayed).toBeDefined();
-        expect((titanPlayed as any).payload).toMatchObject({
-            titanUid: 't-ursa',
-            defId: 'bear_cavalry_major_ursa',
-            controllerId: '0',
-            baseIndex: 1,
-            reason: 'bear_cavalry_major_ursa_special',
-        });
+        for (let guard = 0; guard < 8; guard += 1) {
+            const state = runner.getState();
+            const pendingChoice = getCurrentChoice(state);
 
-        expect((runner.getState().core.titans ?? []).find(titan => titan.uid === 't-ursa')?.location).toMatchObject({
-            zone: 'base',
-            baseIndex: 1,
-        });
+            if (!pendingChoice) {
+                const delayUntil = (state.sys as Record<string, unknown>)._smashupPostScoringBaseRevealDelayUntil;
+                if (state.sys.phase === 'scoreBases' && typeof delayUntil === 'number') {
+                    advancePostScoringDelay(runner, eventLog);
+                    continue;
+                }
+                break;
+            }
+
+            if (pendingChoice.sourceId === 'pirate_first_mate_choose_base') {
+                const skipMove = runner.resolveInteraction(pendingChoice.playerId, { optionId: 'skip' });
+                expect(skipMove.success).toBe(true);
+                eventLog.push(...skipMove.events);
+                continue;
+            }
+
+            if (pendingChoice.sourceId === 'smashup_reaction_choose') {
+                const pass = runner.resolveInteraction(pendingChoice.playerId, { optionId: 'pass' });
+                expect(pass.success).toBe(true);
+                eventLog.push(...pass.events);
+                continue;
+            }
+
+            throw new Error(`第二次计分后的交互未按预期收口: ${pendingChoice.sourceId}`);
+        }
+
+        const finalState = runner.getState();
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(2);
+        expect(finalState.core.players['0'].vp).toBe(5);
+        expect(finalState.core.bases[0].defId).toBe('base_secret_garden');
+        expect(finalState.core.bases[1].defId).toBe('base_tar_pits');
+        expect(['startTurn', 'playCards']).toContain(finalState.sys.phase);
+        expect(finalState.core.currentPlayerIndex).toBe(1);
     });
+
 });

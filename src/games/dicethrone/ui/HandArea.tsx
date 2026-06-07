@@ -7,8 +7,12 @@ import { buildLocalizedImageSet, UI_Z_INDEX } from '../../../core';
 import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../../engine/notifications';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
+import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { ASSETS } from './assets';
-import { getAbilitySlotId } from './abilitySlotMapping';
+import { getAbilitySlotIdForCharacter } from './abilitySlotMapping';
+
+const HAND_CARD_WIDTH = '12vw';
+const HAND_CARD_ASPECT_RATIO = 0.61;
 
 /** 飞出卡牌信息（成功使用后的动画） */
 type CardOffset = {
@@ -91,11 +95,85 @@ const LONG_PRESS_DURATION_MS = 420;
 const LONG_PRESS_MOVE_CANCEL_PX = 14;
 const LONG_PRESS_CLICK_BLOCK_MS = 450;
 
+const HandCardCostBadge = ({ cost, affordable }: { cost: number; affordable: boolean }) => {
+    const gradientId = React.useId();
+    const outerStroke = affordable ? '#c8fbff' : '#e2e8f0';
+    const highlightStroke = affordable ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.22)';
+    const topEdgeStroke = affordable ? 'rgba(255,255,255,0.58)' : 'rgba(255,255,255,0.42)';
+
+    return (
+        <div
+            data-testid="dt-hand-card-cost"
+            data-cost={cost}
+            data-affordable={affordable}
+            aria-label={`费用 ${cost} CP`}
+            className="absolute -left-[0.52vw] -top-[0.56vw] h-[2.18vw] w-[2.46vw] pointer-events-none"
+            style={{
+                filter: affordable
+                    ? 'drop-shadow(0 0 0.38vw rgba(45, 212, 191, 0.5)) drop-shadow(0 0.14vw 0.18vw rgba(0,0,0,0.72))'
+                    : 'drop-shadow(0 0.12vw 0.16vw rgba(0,0,0,0.66))',
+            }}
+        >
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 74 56" aria-hidden="true">
+                <defs>
+                    <linearGradient id={gradientId} x1="4" y1="28" x2="66" y2="28" gradientUnits="userSpaceOnUse">
+                        {affordable ? (
+                            <>
+                                <stop offset="0%" stopColor="#0d4450" />
+                                <stop offset="56%" stopColor="#0b8a88" />
+                                <stop offset="100%" stopColor="#29d3d8" />
+                            </>
+                        ) : (
+                            <>
+                                <stop offset="0%" stopColor="#3f4754" />
+                                <stop offset="56%" stopColor="#667181" />
+                                <stop offset="100%" stopColor="#9ba6b6" />
+                            </>
+                        )}
+                    </linearGradient>
+                </defs>
+                <path
+                    d="M13 6H38.5L66 28L38.5 50H13C8 50 4 46 4 41V15C4 10 8 6 13 6Z"
+                    fill={`url(#${gradientId})`}
+                    stroke={outerStroke}
+                    strokeWidth="3.6"
+                    strokeLinejoin="round"
+                />
+                <path
+                    d="M15.5 11H36.2L57.5 28L36.2 45H15.5C12.5 45 10 42.5 10 39.5V16.5C10 13.5 12.5 11 15.5 11Z"
+                    fill={affordable ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.09)'}
+                    stroke={highlightStroke}
+                    strokeWidth="1.2"
+                    strokeLinejoin="round"
+                />
+                <path
+                    d="M14.8 12.3H36.3L52.8 25.5"
+                    fill="none"
+                    stroke={topEdgeStroke}
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+            <span
+                className="absolute inset-0 flex items-center justify-center pr-[0.28vw] text-[1.18vw] font-black leading-none text-white"
+                style={{
+                    textShadow: affordable
+                        ? '0 0.1vw 0 #06242c, 0 0 0.28vw rgba(255,255,255,0.52)'
+                        : '0 0.1vw 0 #1f2937, 0 0 0.18vw rgba(255,255,255,0.22)',
+                }}
+            >
+                {cost}
+            </span>
+        </div>
+    );
+};
+
 export const HandArea = ({
     hand,
     locale,
     currentPhase,
-    playerCp: _playerCp = 0,
+    playerCp = 0,
     onPlayCard,
     onSellCard,
     onError,
@@ -111,6 +189,7 @@ export const HandArea = ({
     onDiscardCard,
     onMagnifyCard,
     respondableCardIds,
+    characterId,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -134,8 +213,10 @@ export const HandArea = ({
     onMagnifyCard?: (card: AbilityCard) => void;
     /** 响应窗口中可响应的卡牌 ID 集合（用于高亮） */
     respondableCardIds?: Set<string>;
+    characterId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
+    const isCoarsePointer = useCoarsePointer();
     const [draggingCardKey, setDraggingCardKey] = React.useState<string | null>(null);
     const dragOffsetRef = React.useRef({ x: 0, y: 0 });
     const draggingCardRef = React.useRef<HandCardEntry | null>(null);
@@ -301,6 +382,7 @@ export const HandArea = ({
 
     const totalCards = hand.length;
     const centerIndex = (totalCards - 1) / 2;
+    const handCardBottomOffset = isCoarsePointer ? '0vw' : '-2vw';
 
     const clearAnimationTimers = React.useCallback(() => {
         dealTimersRef.current.forEach(timerId => window.clearTimeout(timerId));
@@ -374,7 +456,7 @@ export const HandArea = ({
                 // 从卡牌效果中提取目标技能 ID
                 const replaceAction = card.effects?.find(e => e.action?.type === 'replaceAbility')?.action;
                 const targetAbilityId = replaceAction?.type === 'replaceAbility' ? replaceAction.targetAbilityId : undefined;
-                const slotId = targetAbilityId ? getAbilitySlotId(targetAbilityId) : null;
+                const slotId = targetAbilityId ? getAbilitySlotIdForCharacter(characterId, targetAbilityId) : null;
 
                 if (slotId) {
                     setFlyingOutCard(createFlyingOutCard({
@@ -407,7 +489,7 @@ export const HandArea = ({
             }
             clearPendingPlay();
         }
-    }, [clearPendingPlay, createFlyingOutCard, handKeys]);
+    }, [characterId, clearPendingPlay, createFlyingOutCard, handKeys]);
 
     // 监听引擎通知：处理卡牌回弹（错误显示由全局 EngineNotificationListener 处理）
     React.useEffect(() => {
@@ -646,27 +728,11 @@ export const HandArea = ({
         onPlayHintChange?.(true);
     }, [clearLongPressState, onPlayHintChange, onSellButtonChange]);
 
-    const queuePendingPlay = React.useCallback((entry: HandCardEntry, offset: CardOffset) => {
-        pendingPlayRef.current = {
-            cardKey: entry.key,
-            card: entry.card,
-            offset,
-            originalIndex: entry.index,
-        };
-        if (pendingPlayTimeoutRef.current) {
-            window.clearTimeout(pendingPlayTimeoutRef.current);
-        }
-        pendingPlayTimeoutRef.current = window.setTimeout(() => {
-            resetDragValues(entry.key, 'drag');
-            clearPendingPlay();
-        }, PENDING_PLAY_TIMEOUT);
-    }, [clearPendingPlay, resetDragValues]);
-
     const handleCardClick = React.useCallback((entry: HandCardEntry, options: {
-        canDrag: boolean;
         canClickDiscard: boolean;
+        canPreviewCard: boolean;
     }) => {
-        const { canDrag, canClickDiscard } = options;
+        const { canClickDiscard, canPreviewCard } = options;
         if (shouldBlockLongPressClick(entry.key)) return;
 
         const lastDragEnd = lastDragEndRef.current;
@@ -688,11 +754,10 @@ export const HandArea = ({
             return;
         }
 
-        if (canDrag && onPlayCard) {
-            queuePendingPlay(entry, { x: 0, y: 0 });
-            onPlayCard(entry.card);
+        if (canPreviewCard) {
+            onMagnifyCard?.(entry.card);
         }
-    }, [onDiscardCard, onPlayCard, queuePendingPlay, shouldBlockLongPressClick]);
+    }, [onDiscardCard, onMagnifyCard, shouldBlockLongPressClick]);
 
     React.useEffect(() => {
         const handlePointerEnd = (_event: PointerEvent) => {
@@ -735,7 +800,7 @@ export const HandArea = ({
             targetScale: flyingOutCard.targetScale,
             fadeOutAtTarget: flyingOutCard.targetType === 'abilitySlot',
         };
-    }, [flyingOutCard, hand.length]);
+    }, [centerIndex, flyingOutCard]);
 
     return (
         <div
@@ -770,10 +835,12 @@ export const HandArea = ({
                         // 弃牌模式下禁用拖拽，改用点击
                         const canDrag = canInteract && isFlipped && !isReturning && !isDiscardMode;
                         const canClickDiscard = isDiscardMode && isFlipped && !isReturning;
+                        const canPreviewCard = Boolean(onMagnifyCard) && isFlipped && !isReturning;
                         // 动画期间（dealing/returning）统一禁用 hover
                         const isHovered = hoveredCardKey === cardKey && (canDrag || canClickDiscard) && !isDragging && !isReturning && !isDealing;
                         const dragValues = dragValueMap.get(cardKey);
                         if (!dragValues) return null;
+                        const canAffordCard = playerCp >= card.cpCost;
                         // 正在弃牌的卡牌立即消失（飞出动画由 flyingOutCard 接管）
                         const isBeingDiscarded = discardingCardKey === cardKey;
                         const dealInitial = dealInitialOffsetMap.get(cardKey);
@@ -815,7 +882,7 @@ export const HandArea = ({
                                 onDragStart={() => handleCardDragStart(entry, canDrag, dragValues)}
                                 onDrag={(_, info) => canDrag && handleDrag(cardKey, info)}
                                 onDragEnd={() => canDrag && handleDragEnd(entry, 'drag')}
-                                onClick={() => handleCardClick(entry, { canDrag, canClickDiscard })}
+                                onClick={() => handleCardClick(entry, { canClickDiscard, canPreviewCard })}
                                 onHoverStart={() => {
                                     if ((canDrag || canClickDiscard) && !isDragging && !isReturning) {
                                         setHoveredCardKey(cardKey);
@@ -825,12 +892,15 @@ export const HandArea = ({
                                     setHoveredCardKey(prev => prev === cardKey ? null : prev);
                                 }}
                                 className={`
-                                    absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw]
+                                    absolute bottom-0 rounded-[0.8vw]
                                     ${canClickDiscard ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}
                                     pointer-events-auto origin-bottom-center bg-transparent overflow-visible
                                 `}
                                 style={{
-                                    bottom: '-2vw',
+                                    bottom: handCardBottomOffset,
+                                    width: HAND_CARD_WIDTH,
+                                    height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                    aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
                                     left: `calc(50% + ${offset * 7}vw - 6vw)`,
                                     x: dragValues.x,
                                     y: dragValues.y,
@@ -879,7 +949,7 @@ export const HandArea = ({
                                         >
                                             <div
                                                 data-card-face="front"
-                                                className="absolute inset-0 w-full h-full rounded-[0.8vw] overflow-hidden"
+                                                className="absolute inset-0 w-full h-full rounded-[0.8vw] overflow-visible"
                                                 style={{
                                                     transform: 'translateZ(0.1px)',
                                                     WebkitTransform: 'translateZ(0.1px)',
@@ -895,6 +965,7 @@ export const HandArea = ({
                                                         backgroundColor: '#1e293b',
                                                     }}
                                                 />
+                                                <HandCardCostBadge cost={card.cpCost} affordable={canAffordCard} />
                                             </div>
                                             <div
                                                 data-card-face="back"
@@ -922,9 +993,12 @@ export const HandArea = ({
                         <motion.div
                             key={`flying-${flyingOutMetrics.cardKey}`}
                             data-testid="hand-flying-card"
-                            className="absolute bottom-0 w-[12vw] aspect-[0.61] rounded-[0.8vw] pointer-events-none"
+                            className="absolute bottom-0 rounded-[0.8vw] pointer-events-none"
                             style={{
-                                bottom: '-2vw',
+                                bottom: handCardBottomOffset,
+                                width: HAND_CARD_WIDTH,
+                                height: `calc(${HAND_CARD_WIDTH} / ${HAND_CARD_ASPECT_RATIO})`,
+                                aspectRatio: `${HAND_CARD_ASPECT_RATIO} / 1`,
                                 left: `calc(50% + ${flyingOutMetrics.startIndexOffset * 7}vw - 6vw)`,
                                 zIndex: UI_Z_INDEX.overlayRaised,
                             }}

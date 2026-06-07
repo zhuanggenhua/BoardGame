@@ -40,8 +40,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
-        // 当前 Windows 环境下 forks worker 偶发启动超时，核心校验固定为单线程串行运行。
-        pool: 'threads',
+        // Windows 下大套件使用 forks 更稳，避免 threads worker 初始化失败连带打断 esbuild service。
+        pool: 'forks',
         fileParallelism: false,
         maxWorkers: 1,
         include: [

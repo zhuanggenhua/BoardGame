@@ -2020,6 +2020,70 @@ const assertMobileLandscapeControlsReachable = async (page: Page, label: string)
   }
 };
 
+const getSummonerWarsMobileFrameMetrics = async (page: Page) => (
+  page.evaluate(() => {
+    const readRect = (selector: string) => {
+      const node = document.querySelector(selector);
+      if (!(node instanceof HTMLElement)) {
+        return null;
+      }
+      const rect = node.getBoundingClientRect();
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      pageRect: readRect('[data-game-page][data-game-id="summonerwars"]'),
+      mapContainerRect: readRect('[data-testid="sw-map-container"]'),
+      handAreaRect: readRect('[data-testid="sw-hand-area"]'),
+      deckDrawRect: readRect('[data-testid="sw-deck-draw"]'),
+      deckDiscardRect: readRect('[data-testid="sw-deck-discard"]'),
+      endPhaseRect: readRect('[data-testid="sw-end-phase"]'),
+      trackerRect: readRect('[data-testid="sw-phase-tracker"]'),
+      playerEnergyRect: readRect('[data-testid="sw-energy-player"]'),
+    };
+  })
+);
+
+const assertMobileLandscapeFrameReachable = async (page: Page, label: string) => {
+  const metrics = await getSummonerWarsMobileFrameMetrics(page);
+  const assertRectInsideViewport = (
+    rect: typeof metrics.pageRect,
+    rectLabel: string,
+  ) => {
+    expect(rect, `[${label}] 缺少 ${rectLabel} 布局盒`).not.toBeNull();
+    expect(rect?.left ?? -9999, `[${label}] ${rectLabel} 左边越界`).toBeGreaterThanOrEqual(-1);
+    expect(rect?.top ?? -9999, `[${label}] ${rectLabel} 顶边越界`).toBeGreaterThanOrEqual(-1);
+    expect(rect?.right ?? 99999, `[${label}] ${rectLabel} 右边越界`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+    expect(rect?.bottom ?? 99999, `[${label}] ${rectLabel} 底边越界`).toBeLessThanOrEqual(metrics.viewportHeight + 1);
+    expect(rect?.width ?? 0, `[${label}] ${rectLabel} 宽度异常`).toBeGreaterThan(0);
+    expect(rect?.height ?? 0, `[${label}] ${rectLabel} 高度异常`).toBeGreaterThan(0);
+  };
+
+  assertRectInsideViewport(metrics.pageRect, 'page');
+  assertRectInsideViewport(metrics.mapContainerRect, 'map-container');
+  assertRectInsideViewport(metrics.handAreaRect, 'hand-area');
+  assertRectInsideViewport(metrics.deckDrawRect, 'deck-draw');
+  assertRectInsideViewport(metrics.deckDiscardRect, 'deck-discard');
+  assertRectInsideViewport(metrics.endPhaseRect, 'end-phase');
+  assertRectInsideViewport(metrics.trackerRect, 'phase-tracker');
+  assertRectInsideViewport(metrics.playerEnergyRect, 'player-energy');
+
+  await assertLocatorReceivesPointerEvents(
+    page.getByTestId('sw-deck-discard'),
+    page,
+    `${label}-deck-discard`,
+  );
+};
+
 const advancePhase = async (page: Page, fromPhase: string) => {
   const endPhaseButton = page.getByTestId('sw-end-phase');
   const clickEndPhase = async () => {
@@ -4874,6 +4938,7 @@ test.describe('SummonerWars', () => {
     await assertHandAreaVisible(hostPage, 'mobile-basic-flow-start');
     await assertReachableHandCards(hostPage, 'mobile-basic-flow-start', 4);
     await assertMobileLandscapeControlsReachable(hostPage, 'mobile-basic-flow-start');
+    await assertMobileLandscapeFrameReachable(hostPage, 'mobile-basic-flow-start');
 
     await hostPage.screenshot({
       path: getEvidenceScreenshotPath(testInfo, '40-mobile-basic-flow-start', {
@@ -5351,6 +5416,7 @@ test.describe('SummonerWars', () => {
     expect(phoneLayout.playerEnergyRect?.width ?? 0).toBeGreaterThan(0);
     expect(phoneLayout.playerEnergyRect?.height ?? 0).toBeGreaterThan(0);
     await assertMobileLandscapeControlsReachable(hostPage, 'phone-landscape-layout');
+    await assertMobileLandscapeFrameReachable(hostPage, 'phone-landscape-layout');
 
     await waitForSummonerWarsVisualStable(hostPage);
     await collapseFabMenuToMainButton(hostPage);

@@ -139,7 +139,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 | 框架 | 用途 |
 |------|------|
 | Vitest | 游戏领域层测试 + API 集成测试 |
-| Playwright | 端到端 UI 测试 |
+| Playwright | 浏览器级 E2E（默认状态注入；按需真实链路） |
 | GameTestRunner | 游戏领域层专用测试运行器（命令序列 → pipeline → 状态断言） |
 
 ### 引擎层审计工具（`src/engine/testing/`）
@@ -174,6 +174,39 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 ---
 
 ## 测试策略
+
+### 统一测试标准
+
+本项目测试统一遵循 TDD 行为 seam 原则：测试保护公开行为，不保护实现细节。修 bug 或重构时，如果测试需要大面积同步修改，必须先判断是否存在以下问题：
+
+- 测试直接读取内部系统状态而不是通过测试 helper 表达行为。
+- 测试断言项目自有模块的调用次数/调用顺序。
+- 同一测试在 `src/` 与镜像目录中重复维护。
+- 巨型测试文件继续承载无关行为簇。
+
+默认收敛方向：
+
+- 游戏规则与命令行为优先用 `GameTestRunner` / 游戏专用 `runCommand` / `executePipeline` helper。
+- 交互链优先使用游戏专用 prompt facade，不在用例中散落直读 `sys.interaction`。
+- 确实需要保留 low-level ability / interaction / runtime resolver 合同时，优先通过 `__tests__/helpers.ts` 里的显式 contract helper 进入，不在测试体里直接 `resolveAbility(...)` 或手摸 handler registry。
+- UI 交互只用 E2E 证明真实入口与可见结果。
+- 审计测试用于批量合同验证，不代替单个 bug 的最小行为回归。
+- 重构导致测试频繁跟改时，先补测试接口/行为端口，再改用例；测试文件不直接适配内部字段形状。
+
+### `e2e/src` Junction 口径
+
+- `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
+- `e2e/src/**` 是本地 Junction 兼容入口，不再作为 Git 跟踪内容，任何文件都不得通过该镜像路径入库。
+- 新增或重构游戏行为测试时，只在 `src/games/**/__tests__` 下建立或移动用例，不再同步第二份 `e2e/src/games` 镜像。
+- E2E 文件引用源码时，使用从当前文件到仓库根 `src/` 的真实相对路径；不要通过 `e2e/src` 旧镜像绕路。
+- 新增或迁出的游戏行为测试必须可运行，不得携带 `it.skip` / `test.skip` / `describe.skip`。旧 skipped 用例只有在补齐真实行为链路并跑绿后才允许迁入新的聚焦文件。
+
+### E2E 目录入口口径
+
+- 新增游戏 E2E 必须放在 `e2e/<gameId>/` 下；根级 `e2e/*.e2e.ts` 只保留跨游戏/共享入口或尚未迁移的历史债务。
+- 禁止继续为同一游戏维护“根级文件 + 子目录文件”双入口。清理重复入口时，应保留子目录规范文件，并用 Playwright `--list` 或目标用例验证发现规则没有被 `testIgnore` 误伤。
+- `e2e/<gameId>/legacy-root/` 是历史根级用例迁移目录，只用于保留根级独有覆盖；新增测试不得放入该目录。
+- 根级历史债务允许逐步收敛，但不得继续追加新场景；新增场景应进入对应游戏子目录并按行为簇命名。
 
 ### 测试覆盖要求
 
@@ -228,6 +261,22 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 - 正向测试：描述预期行为（`"成功创建用户"`）
 - 错误测试：标注错误码（`"无权限操作 - unauthorized"`）
+
+### 测试文件组织规范
+
+- 文件名必须表达测试对象和行为，例如 `audio/faction-audio-config.test.ts`、`prompts/alien-probe-choice.test.ts`、`abilities/cowboys-duel.test.ts`。
+- 新增游戏行为测试默认放在 `src/games/<gameId>/__tests__/` 下，按能力簇、交互簇、配置合同或页面行为建立子目录。
+- 禁止新增或继续扩写 `new*`、`misc`、`regression`、`feedback`、`fixes` 等泛名测试文件；遇到这类文件时，应先判断能否迁出本轮相关行为簇。
+- 同类覆盖只保留必要代表性路径：至少 1 条正向主路径，必要时 1 条负向/边界路径；重复数据面优先改成数据驱动或审计合同，不用多个近似用例堆在同一文件。
+- `e2e/src/games/**/__tests__` 不作为新增游戏行为测试目录；若本地 Junction 存在，也只能视为兼容入口，不得入库。
+- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁会阻止 `e2e/src/**` 镜像入库、新增根级游戏 E2E、新增泛名测试文件、临时/备份/测试输出文件入库，并阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`、`resolveAbility(...)`、`getInteractionHandler(...)`、`getAbilityRuntimePromptHandler(...)`，同时阻止新增测试调试日志 `console.log/warn/error/debug`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
+
+### 测试接口规范
+
+- 测试接口是测试可持续性的主要边界：实现重构可以改变内部模块、字段和 handler，但不应迫使业务测试逐个改断言。
+- 新增交互能力测试时，优先扩展对应游戏的 prompt facade；测试体只通过 facade 读取 prompt、选择候选和响应交互。
+- 禁止把“直接读内部字段更方便”当作默认理由。只有测试目标就是底层系统契约时，才允许直读内部字段，并应把测试放到对应系统测试文件中。
+- Smash Up 交互测试的默认端口包括 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`respondToPromptOptions`、`expectNoPrompt`、`getReactionPrompt` 与 `getReactionPromptOptionBySourceDefId`；缺少表达力时先补 helper，再改用例。
 
 ### 测试最佳实践
 
@@ -375,6 +424,8 @@ if (!result.success) {
 
 > **⚠️ 强制规定**：所有新的 E2E 测试必须使用 GameTestContext API。禁止使用旧的 helper 函数（`setupSmashUpOnlineMatch`、`readCoreState`、`applyCoreState` 等）。旧测试可以保留，但新测试必须用新框架。
 
+> **口径补充（强制）**：本项目默认把 `E2E / 端到端` 理解为**状态注入驱动的浏览器级验证**。也就是允许先用 `game.setupScene(...)` 构造场景，再验证 UI、交互和最终可见结果。只有用户明确要求“真实链路 / 从真实入口打出来”，或本轮需要证明房间创建、联机同步、`setupData -> runtime`、权限/座位/多端同步等跨入口合同时，才额外要求从真实玩法入口自然走到目标状态；这类用例与 evidence 必须显式标注 `真实链路`，并写清它额外证明了什么。
+
 **GameTestContext**（`e2e/framework/GameTestContext.ts`）：
 
 提供统一的测试 API，封装状态注入、游戏动作、断言等功能。
@@ -487,6 +538,7 @@ test('自定义派系', async ({ browser }, testInfo) => {
   });
   
   if (!setup) {
+    // 仅允许用于测试环境/房间初始化前置失败；不得用来跳过业务断言失败。
     test.skip();
     return;
   }
@@ -540,6 +592,7 @@ import { setupSmashUpOnlineMatch } from './helpers/smashup';
 test('test', async ({ browser }, testInfo) => {
   const setup = await setupSmashUpOnlineMatch(browser, testInfo.project.use.baseURL);
   if (!setup) {
+    // 仅允许用于测试环境/房间初始化前置失败；不得用来跳过业务断言失败。
     test.skip();
     return;
   }
@@ -1361,21 +1414,25 @@ npm run test:api
 7. 只要首张截图已经表现为“无有效截图”，就必须立刻在结论里写明“本轮没有拿到有效业务截图”，不能继续用这轮产物宣称“已看图确认正常”。
 8. 未亲自打开过的截图路径不得汇报给用户作为验收依据；如果只是文件存在、尚未看图，只能表述为“产物路径”，不能表述为“已核对截图”。
 9. **流程截图必须通链路**：凡是涉及“改投/重掷/分步确认/阶段推进”的交互，必须提供至少 **2 张**连续截图（触发前/触发后或改投前/改投后），证据文档里逐张写观察结论；**没有完整证据链不得宣告完成**。
-10. **奖励骰/骰子特写必须给成功路径证据链（强制）**：
+10. **状态切换/翻面/模式切换类用例必须覆盖起止态（强制）**：
+   - 至少提供 **初始状态截图 + 结束状态截图**；两张图都必须肉眼能证明对应状态已经在 UI 上成立，不能只靠服务端断言或文件名命名。
+   - 若流程中存在用户可见的中间交互（弹窗、特写、选择态、阶段提示、切换过渡后的稳定 UI），还必须补 **交互中截图**；没有这张图，不得把该链路写成“完整 E2E 已验证”。
+   - 若该流程没有独立可见的中间 UI，可省略中间态截图；但必须补足前态/后态的视觉断言或 DOM 断言，避免出现“后端状态已切换，但前态截图仍拍成旧面板/错面板”的无效证据。
+11. **奖励骰/骰子特写必须给成功路径证据链（强制）**：
    - 必须包含：**特写出现截图 + 执行关键操作后特写更新截图**（例如重掷后骰面/提示发生变化）。
    - 若交互需要关闭/确认/收口，还必须补 1 张**收口后**截图证明流程可继续推进（特写已关闭、pending 状态清空、阶段可继续）。
    - **禁止**只提供“失败提示/门禁 toast/不可用提示”的截图就宣告完成；失败截图只能作为否定路径补充证据。
-11. **攻击修正徽章属于“效果提示”，不是“结果证明”（强制）**：
+12. **攻击修正徽章属于“效果提示”，不是“结果证明”（强制）**：
    - 徽章出现只表示攻击修正已激活；伤害/加伤数值只能在实际生效时写入权威状态。
    - 若卡牌效果为“延迟结算/分段生效”，证据链必须同时证明：徽章可提前出现 + 数值不会在特写阶段提前变化。
-12. UI / 移动端适配 / 布局 / 动画 / 触屏交互类 E2E，必须额外逐项核对这些视觉项：
+13. UI / 移动端适配 / 布局 / 动画 / 触屏交互类 E2E，必须额外逐项核对这些视觉项：
    - 主棋盘或主内容区的纵向锚点是否正确，是否明显偏上/偏下。
    - 浮动按钮、结束回合区、顶部横幅、HUD 是否和主棋盘处于同一缩放体系，而不是肉眼看起来大小脱节。
    - 预留空间是否和真实控件高度一致，是否出现大块空带、挤压或控件悬空。
    - 移动端是否错误保留桌面 hover 入口、常驻放大按钮或其他假 hover 设计。
    - 关键区域是否被遮挡、裁切、出屏或互相覆盖。
-13. 上述视觉结论必须来自实际看图，不得用“locator 可见”“元素在视口内”“断言通过”替代。
-14. 若首张主状态截图已经能肉眼看出明显问题，禁止继续把该轮结果汇报为“已通过”；必须先按失败处理并回到修复。
+14. 上述视觉结论必须来自实际看图，不得用“locator 可见”“元素在视口内”“断言通过”替代。
+15. 若首张主状态截图已经能肉眼看出明显问题，禁止继续把该轮结果汇报为“已通过”；必须先按失败处理并回到修复。
 
 ### 外部 R2/CDN 资源缺失时的看图规则（补充）
 

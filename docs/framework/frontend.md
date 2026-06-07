@@ -43,9 +43,19 @@ src/
 │   ├── notifications.ts      # 事件/通知
 │   ├── pipeline.ts           # 执行管线
 │   └── types.ts              # 引擎类型
-├── games/                   # 具体游戏实现
+├── games/                   # 具体游戏实现与工具入口 manifest
+│   ├── archview/                    # 架构可视化工具入口
+│   ├── assetslicer/                 # 素材切片工具入口
+│   ├── audiobrowser/                # 音效浏览工具入口
+│   ├── cardia/                      # Cardia 实现
 │   ├── dicethrone/                  # DiceThrone 实现
+│   ├── fxpreview/                   # 特效预览工具入口
+│   ├── qidahen/                     # 七大恨实现
+│   ├── smashup/                     # Smash Up 实现
+│   ├── splendor/                    # 璀璨宝石实现
+│   ├── summonerwars/                # Summoner Wars 实现
 │   ├── tictactoe/                   # 井字棋实现
+│   ├── ugc-wrapper/                 # UGC 运行时包装
 │   ├── manifest.client.tsx          # 客户端清单入口
 │   ├── manifest.client.generated.tsx# 客户端清单（生成）
 │   ├── manifest.client.types.ts     # 客户端清单类型
@@ -56,10 +66,6 @@ src/
 │   ├── manifest.ts                  # 游戏元数据清单
 │   ├── manifest.types.ts            # 清单类型
 │   └── registry.ts                  # 实现注册与一致性校验
-├── tools/                   # 工具型模块 manifest/thumbnail
-│   ├── assetslicer/
-│   ├── audiobrowser/
-│   └── ...
 ├── components/              # 通用 UI 组件
 │   ├── auth/                 # 认证相关 UI
 │   ├── common/               # 通用组件

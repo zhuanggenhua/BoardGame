@@ -1,94 +1,191 @@
 import React from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getOptimizedImageUrls } from '../core/AssetLoader';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { getAllGames, getGameById } from '../config/games.config';
-import { LobbyDirectory } from '../components/home-v2/LobbyDirectory';
-import { GameDetails } from '../components/home-v2/GameDetails';
-import compiledHomeV2Scene from '../ui-scenes/home-v2/home-v2.compiled.json';
-import { CompiledSceneRenderer, HomeSceneRenderer, type HomeV2SceneState } from '../ui-scene/runtime';
-import type { UISceneCompiledArtifact } from '../ui-scene/types';
+import { AuthModal } from '../components/auth/AuthModal';
+import { LobbyDirectory, type HomeV2ContinueMatch, type LobbyCategory } from '../components/home-v2/LobbyDirectory';
+import { GameDetailsLeft, GameDetailsRight } from '../components/home-v2/GameDetails';
+import { FoldLinePageFlipStage } from '../components/home-v2/FoldLinePageFlipStage';
+import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
+import { HomeV2DangerConfirmModal } from '../components/common/overlays/HomeV2DangerConfirmModal';
+import {
+    claimSeat,
+    destroyMatch as destroyOwnedMatch,
+    getLatestStoredMatchCredentials,
+    getOwnerActiveMatch,
+    readStoredMatchCredentials,
+} from '../hooks/match/useMatchStatus';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { getGuestName, getOrCreateGuestId } from '../hooks/match/ownerIdentity';
+import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
+import { useLobbyStats } from '../hooks/useLobbyStats';
 
-const HOME_V2_BOOK_DESK = getOptimizedImageUrls('/assets/common/images/home-v2/book-desk/1.png').webp;
-const HOME_V2_COMPILED_SCENE = compiledHomeV2Scene as UISceneCompiledArtifact;
-const HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY = 9;
-const HOME_V2_OVERVIEW_RIGHT_PAGE_CAPACITY = 9;
-const HOME_V2_OVERVIEW_SPREAD_CAPACITY = HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY + HOME_V2_OVERVIEW_RIGHT_PAGE_CAPACITY;
+const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-catalog-wide/1.png`;
+const HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT = 520;
+const HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH = 1100;
+const HOME_V2_OVERVIEW_STAGE_WIDTH = 1864;
+const HOME_V2_OVERVIEW_STAGE_HEIGHT = 843;
+const HOME_V2_OVERVIEW_STAGE_ASPECT_RATIO = HOME_V2_OVERVIEW_STAGE_WIDTH / HOME_V2_OVERVIEW_STAGE_HEIGHT;
+const HOME_V2_STAGE_STANDARD_WIDTH = 1864;
+const HOME_V2_STAGE_STANDARD_HEIGHT = 843;
+const HOME_V2_STAGE_STANDARD_ASPECT_RATIO = HOME_V2_STAGE_STANDARD_WIDTH / HOME_V2_STAGE_STANDARD_HEIGHT;
+const HOME_V2_DETAIL_LEFT_RECT = { left: '10.80%', top: '9.35%', width: '37.20%', height: '77.60%' };
+const HOME_V2_DETAIL_RIGHT_RECT = { left: '51.40%', top: '9.35%', width: '38.80%', height: '77.60%' };
+const HOME_V2_FLIP_TO_DETAIL_RECT = { left: '50.55%', top: '6.40%', width: '37.10%', height: '84.80%' };
+const HOME_V2_FLIP_TO_OVERVIEW_RECT = { left: '11.95%', top: '6.40%', width: '37.10%', height: '84.80%' };
+const HOME_V2_CATEGORY_ORDER: LobbyCategory[] = ['all', 'card', 'dice', 'abstract', 'wargame', 'casual', 'tools'];
 
-type HomeV2TabId = 'lobby' | 'rooms' | 'leaderboard' | 'changelog' | 'about';
-type PendingHomeV2Transition = {
-    nextSceneState: 'overview' | 'detail';
-    nextSelectedGameId: string | null;
-    nextOverviewPageIndex?: number;
-};
+type HomeV2SceneState =
+    | 'overview'
+    | 'detail'
+    | 'flippingToDetail'
+    | 'flippingToOverview'
+    | 'flippingCategoryForward'
+    | 'flippingCategoryBackward';
 
-function HomeV2TabPlaceholder({ title, description }: { title: string; description: string }) {
-    return (
-        <div className="pointer-events-auto flex h-full w-full flex-col items-center justify-center px-[12%] text-center text-[#6a4a33]">
-            <div className="mb-[4%] text-[clamp(18px,1.8vw,24px)] font-bold tracking-[0.08em] text-[#5b3822]">
-                {title}
-            </div>
-            <div className="max-w-[82%] text-[clamp(11px,0.95vw,14px)] leading-[1.7] text-[#7a5d46]">
-                {description}
-            </div>
-        </div>
-    );
+function renderAbsoluteRect(rect: { left: string; top: string; width: string; height: string }): React.CSSProperties {
+    return {
+        position: 'absolute',
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+    };
 }
 
 export const HomeV2 = () => {
-    const [searchParams] = useSearchParams();
-    const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
-    const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
+    const { t } = useTranslation('lobby');
+    const navigate = useNavigate();
+    const { user, token } = useAuth();
+    const toast = useToast();
+    const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('overview');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
-    const [overviewPageIndex, setOverviewPageIndex] = React.useState(0);
-    const pendingTransitionRef = React.useRef<PendingHomeV2Transition | null>(null);
-    const debugRegions = searchParams.get('homeV2Debug') === '1';
+    const [pendingGameId, setPendingGameId] = React.useState<string | null>(null);
+    const [activeCategory, setActiveCategory] = React.useState<LobbyCategory>('all');
+    const [pendingCategory, setPendingCategory] = React.useState<LobbyCategory | null>(null);
+    const [authMode, setAuthMode] = React.useState<'login' | 'register' | 'reset'>('login');
+    const [authModalOpen, setAuthModalOpen] = React.useState(false);
+    const [matchStorageTick, setMatchStorageTick] = React.useState(0);
+    const [pendingDestroyMatch, setPendingDestroyMatch] = React.useState<HomeV2ContinueMatch | null>(null);
+    const [isDestroyingMatch, setIsDestroyingMatch] = React.useState(false);
+    const pendingGameIdRef = React.useRef<string | null>(null);
+    const [viewportSize, setViewportSize] = React.useState(() => ({
+        width: typeof window === 'undefined' ? 0 : window.innerWidth,
+        height: typeof window === 'undefined' ? 0 : window.innerHeight,
+    }));
+    const gamePopularityById = useGamePopularityRanking();
+    const { mostPopularGameId } = useLobbyStats();
+
+    React.useEffect(() => {
+        const syncViewport = () => {
+            setViewportSize({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+        syncViewport();
+        window.addEventListener('resize', syncViewport);
+        return () => window.removeEventListener('resize', syncViewport);
+    }, []);
+
+    const isPhoneLandscapeViewport = viewportSize.width > viewportSize.height
+        && viewportSize.height <= HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT
+        && viewportSize.width <= HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH;
     const overviewGames = React.useMemo(
-        () => getAllGames().filter((game) => game.enabled && game.type === 'game'),
+        () => getAllGames().filter((game) => game.enabled),
         [],
     );
-    const selectedGame = selectedGameId ? getGameById(selectedGameId) ?? null : null;
-    const isPageFlipping = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
-    const overviewPageCount = React.useMemo(
-        () => Math.max(1, Math.ceil(overviewGames.length / HOME_V2_OVERVIEW_SPREAD_CAPACITY)),
-        [overviewGames.length],
-    );
-    const currentOverviewStartIndex = overviewPageIndex * HOME_V2_OVERVIEW_SPREAD_CAPACITY;
-    const currentOverviewLeftGames = React.useMemo(
-        () => overviewGames.slice(currentOverviewStartIndex, currentOverviewStartIndex + HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY),
-        [currentOverviewStartIndex, overviewGames],
-    );
-    const currentOverviewRightGames = React.useMemo(
-        () => overviewGames.slice(
-            currentOverviewStartIndex + HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY,
-            currentOverviewStartIndex + HOME_V2_OVERVIEW_SPREAD_CAPACITY,
-        ),
-        [currentOverviewStartIndex, overviewGames],
-    );
+    const continueMatch = React.useMemo<HomeV2ContinueMatch | null>(() => {
+        void matchStorageTick;
+        const stored = getLatestStoredMatchCredentials();
+        const ownerActive = getOwnerActiveMatch();
+        const guestId = user?.id ? undefined : getOrCreateGuestId();
 
-    const commitPendingTransition = React.useCallback(() => {
-        const transition = pendingTransitionRef.current;
-        if (!transition) {
-            return;
+        const resolveGameLabel = (gameName?: string) => {
+            const game = gameName ? getGameById(gameName) : null;
+            return game ? game.titleKey ? t(game.titleKey) : game.id : (gameName || '未知游戏');
+        };
+
+        if (stored?.matchID && stored.gameName) {
+            return {
+                matchID: stored.matchID,
+                gameName: stored.gameName,
+                gameLabel: resolveGameLabel(stored.gameName),
+                playerID: stored.playerID,
+                playerLabel: stored.playerID ? `玩家 ${stored.playerID}` : undefined,
+                isHost: stored.playerID === '0',
+            };
         }
 
-        if (typeof transition.nextOverviewPageIndex === 'number') {
-            setOverviewPageIndex(transition.nextOverviewPageIndex);
+        if (ownerActive?.matchID && ownerActive.gameName && (!ownerActive.ownerKey || ownerActive.ownerKey === `guest:${guestId}` || ownerActive.ownerKey === `user:${user?.id}`)) {
+            return {
+                matchID: ownerActive.matchID,
+                gameName: ownerActive.gameName,
+                gameLabel: resolveGameLabel(ownerActive.gameName),
+                playerID: '0',
+                playerLabel: '玩家 0',
+                isHost: true,
+            };
         }
 
-        setSelectedGameId(transition.nextSelectedGameId);
-        setSceneState(transition.nextSceneState);
-        pendingTransitionRef.current = null;
-    }, []);
+        return null;
+    }, [matchStorageTick, t, user?.id]);
+    const isExactHomepageOverview = sceneState === 'overview';
+    const isOverviewDetailFlip = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
+    const isCategoryFlip = sceneState === 'flippingCategoryForward' || sceneState === 'flippingCategoryBackward';
+    const createStageLayout = React.useCallback((standardWidth: number, aspectRatio: number) => {
+        const viewportWidth = Math.max(0, viewportSize.width);
+        const viewportHeight = Math.max(0, viewportSize.height);
+        if (isPhoneLandscapeViewport && viewportWidth > 0) {
+            const width = viewportWidth * (aspectRatio > 2 ? 0.99 : 0.94);
+            const height = width / aspectRatio;
+            return {
+                width,
+                height,
+                scale: width > 0 ? width / standardWidth : 1,
+            };
+        }
+        const maxWidth = Math.max(0, viewportWidth - 16);
+        const maxHeight = Math.max(0, viewportHeight - 8);
+        let width = maxWidth;
+        let height = width / aspectRatio;
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * aspectRatio;
+        }
+
+        return {
+            width,
+            height,
+            scale: width > 0 ? width / standardWidth : 1,
+        };
+    }, [isPhoneLandscapeViewport, viewportSize.height, viewportSize.width]);
+    const overviewStageLayout = React.useMemo(
+        () => createStageLayout(HOME_V2_OVERVIEW_STAGE_WIDTH, HOME_V2_OVERVIEW_STAGE_ASPECT_RATIO),
+        [createStageLayout],
+    );
+    const detailStageLayout = React.useMemo(
+        () => createStageLayout(HOME_V2_STAGE_STANDARD_WIDTH, HOME_V2_STAGE_STANDARD_ASPECT_RATIO),
+        [createStageLayout],
+    );
+    const stagedDetailGameId = selectedGameId ?? (sceneState === 'flippingToDetail' ? pendingGameId : null);
+    const selectedGame = stagedDetailGameId ? getGameById(stagedDetailGameId) ?? null : null;
+    const isExactDetailView = sceneState === 'detail';
+    const isPageFlipping = sceneState === 'flippingToDetail'
+        || sceneState === 'flippingToOverview'
+        || sceneState === 'flippingCategoryForward'
+        || sceneState === 'flippingCategoryBackward';
 
     const handleGameOpen = React.useCallback((gameId: string) => {
         if (sceneState !== 'overview' || isPageFlipping) {
             return;
         }
 
-        pendingTransitionRef.current = {
-            nextSceneState: 'detail',
-            nextSelectedGameId: gameId,
-        };
+        pendingGameIdRef.current = gameId;
+        setPendingGameId(gameId);
         setSceneState('flippingToDetail');
     }, [isPageFlipping, sceneState]);
 
@@ -97,225 +194,325 @@ export const HomeV2 = () => {
             return;
         }
 
-        pendingTransitionRef.current = {
-            nextSceneState: 'overview',
-            nextSelectedGameId: null,
-        };
+        pendingGameIdRef.current = null;
+        setPendingGameId(null);
         setSceneState('flippingToOverview');
     }, [isPageFlipping, sceneState, selectedGameId]);
 
-    const handlePrevPage = React.useCallback(() => {
-        if (isPageFlipping) {
+    const handleOpenAuthModal = React.useCallback(() => {
+        if (sceneState !== 'overview' || isPageFlipping) {
             return;
         }
 
-        if (sceneState === 'detail') {
-            pendingTransitionRef.current = {
-                nextSceneState: 'overview',
-                nextSelectedGameId: null,
-            };
-            setSceneState('flippingToOverview');
+        setAuthMode('login');
+        setAuthModalOpen(true);
+    }, [isPageFlipping, sceneState]);
+
+    const handleCategoryChange = React.useCallback((nextCategory: LobbyCategory) => {
+        if (sceneState !== 'overview' || isPageFlipping || nextCategory === activeCategory) {
             return;
         }
 
-        if (sceneState !== 'overview' || overviewPageIndex <= 0) {
+        const currentIndex = HOME_V2_CATEGORY_ORDER.indexOf(activeCategory);
+        const nextIndex = HOME_V2_CATEGORY_ORDER.indexOf(nextCategory);
+        const isForward = nextIndex >= currentIndex;
+
+        setPendingCategory(nextCategory);
+        setSceneState(isForward ? 'flippingCategoryForward' : 'flippingCategoryBackward');
+    }, [activeCategory, isPageFlipping, sceneState]);
+
+    const handleContinueMatch = React.useCallback((match: HomeV2ContinueMatch) => {
+        if (!match.matchID || !match.gameName) return;
+        navigate(`/play/${match.gameName}/match/${match.matchID}?playerID=${match.playerID ?? '0'}`);
+    }, [navigate]);
+
+    const handleDestroyContinueMatch = React.useCallback(async () => {
+        if (!pendingDestroyMatch || isDestroyingMatch) {
             return;
         }
 
-        pendingTransitionRef.current = {
-            nextSceneState: 'overview',
-            nextSelectedGameId: null,
-            nextOverviewPageIndex: overviewPageIndex - 1,
-        };
-        setSceneState('flippingToOverview');
-    }, [isPageFlipping, overviewPageIndex, sceneState]);
+        const guestId = user?.id ? undefined : getOrCreateGuestId();
+        const guestName = getGuestName(t, guestId);
+        setIsDestroyingMatch(true);
+        try {
+            const storedCredentials = readStoredMatchCredentials(pendingDestroyMatch.matchID);
+            let destroyPlayerID = storedCredentials?.playerID ?? pendingDestroyMatch.playerID ?? '0';
+            let destroyCredentials = storedCredentials?.credentials ?? null;
 
-    const handleNextPage = React.useCallback(() => {
-        if (isPageFlipping) {
-            return;
-        }
+            if (!destroyCredentials || destroyPlayerID !== '0') {
+                const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                destroyPlayerID = '0';
+                destroyCredentials = claimResult.credentials;
+            }
 
-        if (sceneState === 'detail') {
-            if (!selectedGameId) {
+            let result = await destroyOwnedMatch(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, destroyPlayerID, destroyCredentials);
+            if (!result.success && result.error === 'forbidden') {
+                const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    token: token ?? undefined,
+                    guestId,
+                    playerName: user?.username ?? guestName,
+                });
+                if (!claimResult.success || !claimResult.credentials) {
+                    toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
+                    return;
+                }
+                result = await destroyOwnedMatch(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', claimResult.credentials);
+            }
+
+            if (!result.success) {
+                if (result.error === 'forbidden') {
+                    toast.error({ kind: 'i18n', key: 'error.destroyForbidden', ns: 'lobby' });
+                } else {
+                    toast.error({ kind: 'i18n', key: 'error.destroyNetwork', ns: 'lobby' });
+                }
                 return;
             }
 
-            const currentIndex = overviewGames.findIndex((game) => game.id === selectedGameId);
-            const nextGame = currentIndex >= 0 ? overviewGames[currentIndex + 1] : null;
-            if (!nextGame) {
-                return;
-            }
-
-            pendingTransitionRef.current = {
-                nextSceneState: 'detail',
-                nextSelectedGameId: nextGame.id,
-                nextOverviewPageIndex: Math.floor((currentIndex + 1) / HOME_V2_OVERVIEW_SPREAD_CAPACITY),
-            };
-            setSceneState('flippingToDetail');
-            return;
+            setPendingDestroyMatch(null);
+            setMatchStorageTick((tick) => tick + 1);
+        } finally {
+            setIsDestroyingMatch(false);
         }
+    }, [isDestroyingMatch, pendingDestroyMatch, t, toast, token, user?.id, user?.username]);
 
-        if (sceneState !== 'overview' || overviewPageIndex >= overviewPageCount - 1) {
-            return;
-        }
-
-        pendingTransitionRef.current = {
-            nextSceneState: 'overview',
-            nextSelectedGameId: null,
-            nextOverviewPageIndex: overviewPageIndex + 1,
+    React.useEffect(() => {
+        const refresh = () => setMatchStorageTick((tick) => tick + 1);
+        window.addEventListener('match-credentials-changed', refresh);
+        window.addEventListener('owner-active-match-changed', refresh);
+        window.addEventListener('storage', refresh);
+        return () => {
+            window.removeEventListener('match-credentials-changed', refresh);
+            window.removeEventListener('owner-active-match-changed', refresh);
+            window.removeEventListener('storage', refresh);
         };
-        setSceneState('flippingToDetail');
-    }, [isPageFlipping, overviewGames, overviewPageCount, overviewPageIndex, sceneState, selectedGameId]);
+    }, []);
 
-    const handleTabChange = React.useCallback((tabId: HomeV2TabId) => {
-        setActiveTab(tabId);
-        pendingTransitionRef.current = null;
-        setOverviewPageIndex(0);
-        if (sceneState === 'detail') {
-            setSelectedGameId(null);
-            setSceneState('overview');
-        }
-    }, [sceneState]);
-
-    const handleSceneEvent = React.useCallback((event: { eventId: string; payload?: unknown }) => {
-        if (event.eventId === 'page.flip.to-detail.complete' || event.eventId === 'page.flip.to-overview.complete') {
-            commitPendingTransition();
-            return;
-        }
-
-        if (event.eventId === 'navigation.tab-select') {
-            const payload = event.payload as { tabId?: HomeV2TabId } | undefined;
-            if (payload?.tabId) {
-                handleTabChange(payload.tabId);
-            }
-            return;
-        }
-
-        if (event.eventId === 'navigation.prev-page') {
-            handlePrevPage();
-            return;
-        }
-
-        if (event.eventId === 'navigation.next-page') {
-            handleNextPage();
-        }
-    }, [commitPendingTransition, handleNextPage, handlePrevPage, handleTabChange]);
-
-    const sceneContext = React.useMemo(() => ({
-        activeTab,
-        tabLabels: {
-            lobby: '大厅',
-            rooms: '房间',
-            leaderboard: '榜单',
-            changelog: '更新',
-            about: '关于',
-        },
-    }), [activeTab]);
-
-    const actionHandlers = React.useMemo<Record<string, () => void>>(() => ({
-        openLobbyTab: () => handleTabChange('lobby'),
-        openRoomsTab: () => handleTabChange('rooms'),
-        openLeaderboardTab: () => handleTabChange('leaderboard'),
-        openChangelogTab: () => handleTabChange('changelog'),
-        openAboutTab: () => handleTabChange('about'),
-    }), [handleTabChange]);
-
-    const sceneSlots = React.useMemo(() => {
-        const slots: Record<string, React.ReactNode> = {};
-
-        if (activeTab === 'lobby') {
-            slots.overview_left_page = (
-                <LobbyDirectory.Left
-                    games={currentOverviewLeftGames}
+    const renderOverviewStageForCategory = React.useCallback((
+        category: LobbyCategory,
+        onCategorySelect: (nextCategory: LobbyCategory) => void,
+        { includeTestId = true }: { includeTestId?: boolean } = {},
+    ) => (
+        <div
+            data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
+            className="relative overflow-visible"
+            style={{
+                width: overviewStageLayout.width,
+                height: overviewStageLayout.height,
+                ['--home-v2-stage-scale' as const]: overviewStageLayout.scale,
+            }}
+        >
+            <img
+                src={HOME_V2_OVERVIEW_BACKGROUND}
+                alt=""
+                className="absolute inset-0 h-full w-full object-contain"
+            />
+            <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
+                <LobbyDirectory.OverviewSpread
+                    games={overviewGames}
+                    popularityByGameId={gamePopularityById}
+                    mostPopularGameId={mostPopularGameId}
+                    activeCategory={category}
+                    onCategoryChange={onCategorySelect}
                     onGameClick={handleGameOpen}
+                    onAccountClick={handleOpenAuthModal}
+                    continueMatch={continueMatch}
+                    onContinueMatch={handleContinueMatch}
+                    onDestroyContinueMatch={(match) => setPendingDestroyMatch(match)}
                 />
-            );
-            slots.overview_right_page = (
-                <LobbyDirectory.Right
-                    games={currentOverviewRightGames}
-                    onGameClick={handleGameOpen}
+                <HomeVersionFooter
+                    align="left"
+                    compact
+                    positionMode="absolute"
+                    positionClassName="left-[10.8%] top-[75.6%]"
+                    theme="book"
                 />
-            );
-        } else if (activeTab === 'rooms') {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="房间目录"
-                    description="这里会接入按页签组织的房间列表和房间筛选。当前先保留书页容器与运行时交互链路。"
-                />
-            );
-        } else if (activeTab === 'leaderboard') {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="排行榜"
-                    description="这里会接入胜场排行、近期战绩和玩家概览。当前先保留书页布局与页签切换链路。"
-                />
-            );
-        } else if (activeTab === 'changelog') {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="更新日志"
-                    description="这里会接入按日期编排的版本日志与置顶公告。当前先保留书页版式与页签入口。"
-                />
-            );
-        } else {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="关于"
-                    description="这里会接入首页 V2 的项目说明、作者信息和入口说明。当前用于验证书签切换与内容占位。"
-                />
-            );
-        }
+            </div>
+        </div>
+    ), [continueMatch, gamePopularityById, handleContinueMatch, handleGameOpen, handleOpenAuthModal, overviewGames, overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
 
-        if (sceneState === 'detail') {
-            slots.detail_left_page = (
-                <GameDetails.Left
-                    game={selectedGame}
-                    onBack={handleBackToOverview}
-                />
-            );
-            slots.detail_right_page = <GameDetails.Right game={selectedGame} />;
-        }
+    const renderCurrentOverviewStage = React.useCallback(
+        ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(
+            activeCategory,
+            handleCategoryChange,
+            { includeTestId },
+        ),
+        [activeCategory, handleCategoryChange, renderOverviewStageForCategory],
+    );
 
-        return slots;
-    }, [activeTab, currentOverviewLeftGames, currentOverviewRightGames, handleBackToOverview, handleGameOpen, sceneState, selectedGame]);
+    const renderPendingOverviewStage = React.useCallback(
+        ({ includeTestId = true }: { includeTestId?: boolean } = {}) => renderOverviewStageForCategory(
+            pendingCategory ?? activeCategory,
+            () => undefined,
+            { includeTestId },
+        ),
+        [activeCategory, pendingCategory, renderOverviewStageForCategory],
+    );
+
+    const renderOverviewFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
+        <div
+            data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
+            className="relative overflow-visible"
+            style={{
+                width: overviewStageLayout.width,
+                height: overviewStageLayout.height,
+                ['--home-v2-stage-scale' as const]: overviewStageLayout.scale,
+            }}
+        >
+            <img
+                src={HOME_V2_OVERVIEW_BACKGROUND}
+                alt=""
+                className="absolute inset-0 h-full w-full object-contain"
+            />
+        </div>
+    ), [overviewStageLayout.height, overviewStageLayout.scale, overviewStageLayout.width]);
+
+    const renderDetailStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
+        <div
+            data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
+            className="relative overflow-visible"
+            style={{
+                width: detailStageLayout.width,
+                height: detailStageLayout.height,
+                ['--home-v2-stage-scale' as const]: detailStageLayout.scale,
+            }}
+        >
+            <img
+                src={HOME_V2_OVERVIEW_BACKGROUND}
+                alt=""
+                className="absolute inset-0 h-full w-full object-contain"
+            />
+            <div className="absolute inset-0 z-10">
+                <div style={renderAbsoluteRect(HOME_V2_DETAIL_LEFT_RECT)}>
+                    <GameDetailsLeft
+                        game={selectedGame}
+                        onBack={handleBackToOverview}
+                    />
+                </div>
+                <div style={renderAbsoluteRect(HOME_V2_DETAIL_RIGHT_RECT)}>
+                    <GameDetailsRight game={selectedGame} />
+                </div>
+            </div>
+        </div>
+    ), [detailStageLayout.height, detailStageLayout.scale, detailStageLayout.width, handleBackToOverview, selectedGame]);
+
+    const renderDetailFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
+        <div
+            data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
+            className="relative overflow-visible"
+            style={{
+                width: detailStageLayout.width,
+                height: detailStageLayout.height,
+                ['--home-v2-stage-scale' as const]: detailStageLayout.scale,
+            }}
+        >
+            <img
+                src={HOME_V2_OVERVIEW_BACKGROUND}
+                alt=""
+                className="absolute inset-0 h-full w-full object-fill"
+            />
+        </div>
+    ), [detailStageLayout.height, detailStageLayout.scale, detailStageLayout.width]);
+
+    const foldLineMode = sceneState === 'flippingCategoryForward'
+        ? 'flippingToDetail'
+        : sceneState === 'flippingCategoryBackward'
+            ? 'flippingToOverview'
+            : sceneState;
+    const foldLineRenderOverviewStage = sceneState === 'flippingCategoryBackward'
+        ? renderPendingOverviewStage
+        : renderCurrentOverviewStage;
+    const foldLineRenderDetailStage = sceneState === 'flippingCategoryForward'
+        ? renderPendingOverviewStage
+        : sceneState === 'flippingCategoryBackward'
+            ? renderCurrentOverviewStage
+            : renderDetailStage;
+    const foldLineRenderDetailFlipStage = isCategoryFlip ? renderOverviewFlipStage : renderDetailFlipStage;
+    const foldLineDetailStageSize = isCategoryFlip ? overviewStageLayout : detailStageLayout;
 
     return (
         <main
             data-testid="home-v2-root"
             data-bg-friendly-screen="true"
-            className="h-screen overflow-hidden bg-[linear-gradient(180deg,_#1f130d_0%,_#120b07_100%)]"
+            className="overflow-hidden bg-[linear-gradient(180deg,_#3a2b1f_0%,_#30241b_100%)]"
+            style={{ height: 'var(--runtime-viewport-height, 100vh)' }}
         >
             <div className="relative flex h-full items-center justify-center overflow-hidden">
-                <img
-                    src={HOME_V2_BOOK_DESK}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-90"
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,216,160,0.16)_0%,_rgba(0,0,0,0)_40%),linear-gradient(180deg,_rgba(20,11,7,0.2)_0%,_rgba(9,5,4,0.46)_100%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(92,70,48,0.28)_0%,_rgba(13,10,8,0.92)_68%,_rgba(10,8,7,1)_100%)]" />
                 <div className="relative flex h-full w-full items-center justify-center">
-                    <div
-                        data-testid="home-v2-shell-ready"
-                        className="relative h-[100%] max-w-full aspect-[896/720] overflow-visible"
-                    >
-                        <HomeSceneRenderer
-                            testId="home-v2-book-stage"
-                            debugRegions={debugRegions}
-                            sceneState={sceneState}
-                            sceneContext={sceneContext}
-                            onIntroOpenComplete={() => setSceneState('tabs')}
-                            onIntroTabsComplete={() => setSceneState('overview')}
-                            onSceneEvent={handleSceneEvent}
-                        >
-                            <CompiledSceneRenderer
-                                scene={HOME_V2_COMPILED_SCENE}
-                                activeState={sceneState}
-                                slots={sceneSlots}
-                                actionHandlers={actionHandlers}
-                            />
-                        </HomeSceneRenderer>
-                    </div>
+                    {isExactHomepageOverview || isExactDetailView || isOverviewDetailFlip || isCategoryFlip ? (
+                        <FoldLinePageFlipStage
+                            mode={isExactHomepageOverview ? 'overview' : isExactDetailView ? 'detail' : foldLineMode}
+                            testId="home-v2-fold-line-flip"
+                            renderOverviewStage={foldLineRenderOverviewStage}
+                            renderDetailStage={foldLineRenderDetailStage}
+                            renderOverviewFlipStage={renderOverviewFlipStage}
+                            renderDetailFlipStage={foldLineRenderDetailFlipStage}
+                            overviewStageSize={overviewStageLayout}
+                            detailStageSize={foldLineDetailStageSize}
+                            leftPageRect={HOME_V2_FLIP_TO_OVERVIEW_RECT}
+                            rightPageRect={HOME_V2_FLIP_TO_DETAIL_RECT}
+                            onFlipToDetailComplete={() => {
+                                if (sceneState === 'flippingCategoryForward') {
+                                    setActiveCategory(pendingCategory ?? activeCategory);
+                                    setPendingCategory(null);
+                                    setSceneState('overview');
+                                    return;
+                                }
+                                setSelectedGameId(pendingGameIdRef.current);
+                                setPendingGameId(null);
+                                setSceneState('detail');
+                            }}
+                            onFlipToOverviewComplete={() => {
+                                if (sceneState === 'flippingCategoryBackward') {
+                                    setActiveCategory(pendingCategory ?? activeCategory);
+                                    setPendingCategory(null);
+                                    setSceneState('overview');
+                                    return;
+                                }
+                                setSelectedGameId(null);
+                                setPendingGameId(null);
+                                setSceneState('overview');
+                            }}
+                        />
+                    ) : (
+                        null
+                    )}
                 </div>
             </div>
+            {authModalOpen ? (
+                <AuthModal
+                    isOpen
+                    onClose={() => setAuthModalOpen(false)}
+                    initialMode={authMode}
+                    onModeChange={setAuthMode}
+                    closeOnBackdrop
+                    visualStyle="home-v2"
+                />
+            ) : null}
+            <HomeV2DangerConfirmModal
+                open={Boolean(pendingDestroyMatch)}
+                title={t('confirm.destroy.title')}
+                description={t('homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
+                subject={pendingDestroyMatch ? `${pendingDestroyMatch.gameLabel} #${pendingDestroyMatch.matchID.slice(-4).toUpperCase()}` : ''}
+                cancelLabel={t('common:button.cancel')}
+                confirmLabel={t('actions.destroy')}
+                processingLabel={t('button.processing')}
+                isProcessing={isDestroyingMatch}
+                onCancel={() => setPendingDestroyMatch(null)}
+                onConfirm={() => void handleDestroyContinueMatch()}
+                panelTestId="home-v2-overview-destroy-room-panel"
+                surfaceTestId="home-v2-overview-destroy-room-surface"
+                confirmTestId="home-v2-overview-destroy-room-confirm"
+                cancelTestId="home-v2-overview-destroy-room-cancel"
+            />
         </main>
     );
 };

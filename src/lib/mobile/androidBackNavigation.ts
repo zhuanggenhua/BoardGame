@@ -56,6 +56,15 @@ export const resolveAndroidBackNavigationAction = ({
             : { type: 'blocked' };
     }
 
+    // App 壳内的对局页返回手势统一落到“返回大厅”语义，
+    // 不复用浏览器 history.back，避免返回到过期对局或中间页。
+    if (pathname.startsWith('/play/')) {
+        return {
+            type: 'fallback-route',
+            path: resolvePlayRouteFallbackLobbyPath(pathname),
+        };
+    }
+
     const backDepth = readAndroidBackNavigationDepth({ historyState, historyLength });
     if (backDepth > 0) {
         return { type: 'history-back' };

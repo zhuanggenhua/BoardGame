@@ -4,6 +4,7 @@ import {
     completeResolutionFrame,
     consumeResolutionFrameDeferredPayload,
     getResolutionFrameById,
+    setResolutionFrameDeferredPayload,
     upsertResolutionFrame,
 } from '../../../engine/systems/resolutionStack';
 import type {
@@ -32,6 +33,7 @@ export type SmashUpScoringStep =
     | 'resolving-base'
     | 'awaiting-interactions'
     | 'awaiting-response-window'
+    | 'awaiting-post-scoring-delay'
     | 'awaiting-post-reduce';
 
 export const SMASHUP_SCORE_BASES_FRAME_ID = 'smashup:score-bases';
@@ -216,6 +218,101 @@ export function getDeferredReplacementBaseDefId(
     return (replacementEvent?.payload as { newBaseDefId?: string } | undefined)?.newBaseDefId;
 }
 
+const DEFERRED_REPLACEMENT_BASE_DECK_REORDER_REASONS = new Set([
+    'base_the_nexus',
+    'time_travelers_time_is_fleeting',
+]);
+
+export function getDeferredReplacementBaseDefIdFromBaseDeckReorderEvents(
+    events: readonly SmashUpEvent[],
+): string | undefined {
+    const reordered = events.find((event) => {
+        if (event.type !== SU_EVENT_TYPES.BASE_DECK_REORDERED) return false;
+        const payload = event.payload as { reason?: string } | undefined;
+        return payload?.reason !== undefined && DEFERRED_REPLACEMENT_BASE_DECK_REORDER_REASONS.has(payload.reason);
+    });
+    const payload = reordered?.payload as { topDefIds?: unknown[] } | undefined;
+    const selectedBaseDefId = payload?.topDefIds?.[0];
+    return typeof selectedBaseDefId === 'string' ? selectedBaseDefId : undefined;
+}
+
+export function replaceDeferredPostScoringReplacementBase(
+    state: MatchState<SmashUpCore>,
+    newBaseDefId: string,
+): MatchState<SmashUpCore> {
+    const session = getScoringSession(state);
+    if (!session) {
+        return state;
+    }
+    const frame = getResolutionFrameById(state, session.frameId);
+    const deferredEvents = frame?.deferredEvents as SerializedPostScoringEvent[] | undefined;
+    if (!frame || !deferredEvents?.length) {
+        return state;
+    }
+
+    let changed = false;
+    const previousReplacementBaseDefIds = new Set<string>();
+    const selectedBaseAlreadyMovedToDeck = state.core.baseDeck.includes(newBaseDefId);
+    const nextDeferredEvents = deferredEvents.flatMap((event) => {
+        if (
+            selectedBaseAlreadyMovedToDeck
+            && event.type === SU_EVENT_TYPES.BASE_DECK_SHUFFLED
+            && (event.payload as { reason?: string } | undefined)?.reason === 'base_deck_empty_reshuffle_discard'
+        ) {
+            changed = true;
+            return [];
+        }
+        if (event.type !== SU_EVENT_TYPES.BASE_REPLACED) {
+            return [event];
+        }
+        const payload = event.payload as Record<string, unknown> | undefined;
+        if (typeof payload?.newBaseDefId === 'string') {
+            previousReplacementBaseDefIds.add(payload.newBaseDefId);
+        }
+        if (!payload || payload.newBaseDefId === newBaseDefId) {
+            return [event];
+        }
+        changed = true;
+        return [{
+            ...event,
+            payload: {
+                ...payload,
+                newBaseDefId,
+            },
+        }];
+    });
+    const deferredActions = frame.deferredActions as PendingPostScoringAction[] | undefined;
+    const nextDeferredActions = deferredActions?.map((action) => {
+        if (
+            action.kind !== 'moveMinionToReplacementBase'
+            && action.kind !== 'playMinionOnReplacementBase'
+            && action.kind !== 'playTitanOnReplacementBase'
+        ) {
+            return action;
+        }
+        if (!previousReplacementBaseDefIds.has(action.targetBaseDefId) || action.targetBaseDefId === newBaseDefId) {
+            return action;
+        }
+        changed = true;
+        return {
+            ...action,
+            targetBaseDefId: newBaseDefId,
+        };
+    });
+
+    if (!changed) {
+        return state;
+    }
+
+    return upsertResolutionFrame(state, {
+        ...frame,
+        deferredEvents: nextDeferredEvents,
+        deferredActions: nextDeferredActions,
+    }, {
+        setActive: state.sys.resolution?.activeFrameId === frame.id,
+    });
+}
+
 export function appendPendingPostScoringActions(
     state: MatchState<SmashUpCore>,
     actions: PendingPostScoringAction[] | undefined,
@@ -302,6 +399,26 @@ export function appendScoringFrameDeferredPayload(
     return appendResolutionFrameDeferredPayload(state, session.frameId, payload);
 }
 
+export function updateDeferredPostScoringEvents(
+    state: MatchState<SmashUpCore>,
+    updater: (events: SerializedPostScoringEvent[]) => SerializedPostScoringEvent[],
+): MatchState<SmashUpCore> {
+    const session = getScoringSession(state);
+    if (!session) {
+        return state;
+    }
+
+    const currentEvents = getDeferredPostScoringEvents(state) ?? [];
+    const nextEvents = updater(currentEvents);
+    if (nextEvents === currentEvents) {
+        return state;
+    }
+
+    return setResolutionFrameDeferredPayload(state, session.frameId, {
+        deferredEvents: nextEvents,
+    });
+}
+
 export function buildPendingPostScoringActionEvents(
     state: { core: SmashUpCore },
     actions: PendingPostScoringAction[] | undefined,
@@ -315,7 +432,7 @@ export function buildPendingPostScoringActionEvents(
     for (const action of actions) {
         if (action.kind === 'playMinionOnReplacementBase') {
             const player = state.core.players[action.playerId];
-            const cardStillInDeck = player?.deck.some(card =>
+            const cardStillInDeck = player?.deck.find(card =>
                 card.uid === action.cardUid
                 && card.defId === action.defId
                 && card.type === 'minion',
@@ -333,6 +450,7 @@ export function buildPendingPostScoringActionEvents(
                     baseDefId: action.targetBaseDefId,
                     power: action.power,
                     fromDeck: true,
+                    ownerId: action.ownerId ?? cardStillInDeck.owner,
                     consumesNormalLimit: false,
                 },
                 timestamp,

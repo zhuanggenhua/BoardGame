@@ -6,6 +6,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -129,7 +130,8 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
         ],
         { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
     ),
-    onResolve: ({ context, state, playerId, value, timestamp, random }) => {
+    onResolve: (args) => {
+        const { context, state, playerId, value, timestamp } = args;
         const choice = value as MinionChoice;
         if (choice.skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
@@ -139,7 +141,7 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
             baseIndex: choice.baseIndex,
         }, context.destroyerId ?? playerId, context.sourceId, timestamp);
         if (context.sourceId === 'sharks_torn_apart') {
-            events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         }
         return { events };
     },
@@ -466,6 +468,21 @@ function sharksDestroyedCounterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return [];
+    if (ctx.sourceCardUid) {
+        const sourceHammerhead = base.minions.find(minion =>
+            minion.uid === ctx.sourceCardUid && minion.defId === 'sharks_hammerhead');
+        if (sourceHammerhead) {
+            return [addPowerCounter(sourceHammerhead.uid, ctx.baseIndex, 1, 'sharks_hammerhead', ctx.now)];
+        }
+
+        const chumHost = base.minions.find(minion =>
+            minion.attachedActions.some(attached =>
+                attached.uid === ctx.sourceCardUid && attached.defId === 'sharks_chum'));
+        if (chumHost) {
+            return [addPowerCounter(chumHost.uid, ctx.baseIndex, 1, 'sharks_chum', ctx.now)];
+        }
+    }
+
     const events: SmashUpEvent[] = [];
     for (const minion of base.minions) {
         if (minion.defId === 'sharks_hammerhead') {
@@ -484,27 +501,46 @@ function sharksBloodInTheWaterTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined) return [];
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return [];
+    if (ctx.sourceCardUid) {
+        const source = base.ongoingActions.find(action =>
+            action.uid === ctx.sourceCardUid && action.defId === 'sharks_blood_in_the_water');
+        const sourceControllerId = source
+            ? (((source.metadata?.sourceControllerId as PlayerId | undefined) ?? source.ownerId) as PlayerId)
+            : undefined;
+        return source
+            ? [grantExtraMinion(sourceControllerId ?? source.ownerId, 'sharks_blood_in_the_water', ctx.now, ctx.baseIndex, {
+                powerMax: 3,
+                playTiming: 'immediate',
+            })]
+            : [];
+    }
     return base.ongoingActions
         .filter(action => action.defId === 'sharks_blood_in_the_water')
-        .map(action => grantExtraMinion(action.ownerId, 'sharks_blood_in_the_water', ctx.now, ctx.baseIndex, {
+        .map(action => grantExtraMinion(
+            ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) as PlayerId,
+            'sharks_blood_in_the_water',
+            ctx.now,
+            ctx.baseIndex,
+            {
             powerMax: 3,
             playTiming: 'immediate',
         }));
 }
 
 function sharksWeekOfSharksTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    const ownerWithWeek = new Set<PlayerId>();
+    const controllerWithWeek = new Set<PlayerId>();
     const events: SmashUpEvent[] = [];
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
         const base = ctx.state.bases[baseIndex];
         for (const action of base.ongoingActions) {
             if (action.defId !== 'sharks_week_of_sharks') continue;
-            if (action.ownerId !== ctx.playerId) continue;
-            if (ownerWithWeek.has(action.ownerId)) continue;
-            const hasMinionHere = base.minions.some(minion => minion.controller === action.ownerId);
+            const controllerId = action.metadata?.sourceControllerId ?? action.ownerId;
+            if (controllerId !== ctx.playerId) continue;
+            if (controllerWithWeek.has(controllerId)) continue;
+            const hasMinionHere = base.minions.some(minion => minion.controller === controllerId);
             if (!hasMinionHere) continue;
-            events.push(...buildStandardDrawEvents(ctx.state, action.ownerId, 1, ctx.random, ctx.now));
-            ownerWithWeek.add(action.ownerId);
+            events.push(...buildStandardDrawEvents(ctx.state, controllerId, 1, ctx.random, ctx.now));
+            controllerWithWeek.add(controllerId);
         }
     }
     return events;
@@ -610,6 +646,9 @@ const sharksCounterPromptProgram = createPromptProgram<SharksCounterPromptContex
 });
 
 export function registerSharksAbilities(): void {
+    const sourceIsDestroyer = (ctx: TriggerContext) =>
+        ctx.destroyerId !== undefined && ctx.sourceControllerId === ctx.destroyerId;
+
     registerAbilityProgram('sharks_megalodon', 'onPlay', { program: createEffectProgram(sharksMegalodon) });
     registerAbilityProgram('sharks_great_white', 'talent', { program: createEffectProgram(sharksGreatWhite) });
     registerSimpleAbility('sharks_torn_apart', 'onPlay', sharksTornApart);
@@ -632,10 +671,15 @@ export function registerSharksAbilities(): void {
         sourceScope: 'triggerBase',
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
-    registerTrigger('sharks_week_of_sharks', 'onTurnEnd', sharksWeekOfSharksTrigger, { effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('sharks_week_of_sharks', 'onTurnEnd', sharksWeekOfSharksTrigger, {
+        playerContext: 'sourceController',
+        effectContract: SHAYU_TRIGGER_CONTRACT,
+    });
     registerTrigger('sharks_mako', 'onMinionDestroyed', sharksMakoTrigger, {
         global: true,
         globalZones: ['hand'],
+        playerContext: 'sourceController',
+        canTrigger: sourceIsDestroyer,
         effectContract: SHAYU_TRIGGER_CONTRACT,
     });
     registerTrigger('sharks_megalodon', 'beforeScoring', sharksMegalodonBeforeScoring, {

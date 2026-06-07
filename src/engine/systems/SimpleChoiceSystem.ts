@@ -134,7 +134,7 @@ export function createSimpleChoiceSystem<TCore>(
 function handleSimpleChoiceRespond<TCore>(
     state: MatchState<TCore>,
     playerId: PlayerId,
-    payload: { optionId?: string; optionIds?: string[]; mergedValue?: unknown },
+    payload: { interactionId?: unknown; optionId?: string; optionIds?: string[]; mergedValue?: unknown },
     timestamp: number,
 ): HookResult<TCore> {
     const current = state.sys.interaction.current;
@@ -147,6 +147,9 @@ function handleSimpleChoiceRespond<TCore>(
     }
     if (current.kind !== 'simple-choice') {
         return { halt: true, error: '当前交互不是 simple-choice' };
+    }
+    if (typeof payload.interactionId === 'string' && payload.interactionId !== current.id) {
+        return { halt: true };
     }
 
     const data = current.data as SimpleChoiceData;

@@ -9,8 +9,10 @@ import type { DiceThroneEvent } from '../domain/types';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
 import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
+import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
 import { SAMURAI_CARDS } from '../heroes/samurai/cards';
+import { TREANT_CARDS } from '../heroes/treant/cards';
 import { reduce } from '../domain/reducer';
 import { createInitializedState, createQueuedRandom, fixedRandom } from './test-utils';
 
@@ -23,6 +25,9 @@ const wildWestCard = GUNSLINGER_CARDS.find(c => c.id === 'card-wild-west')!;
 const eatMyLeadCard = GUNSLINGER_CARDS.find(c => c.id === 'card-eat-my-lead')!;
 const righteousnessCard = SAMURAI_CARDS.find(c => c.id === 'card-righteousness')!;
 const zanshinCard = SAMURAI_CARDS.find(c => c.id === 'card-zanshin')!;
+const trampleCard = TREANT_CARDS.find(c => c.id === 'treant-card-trample')!;
+const soulfireCard = TREANT_CARDS.find(c => c.id === 'treant-card-soulfire')!;
+const shurikenCard = NINJA_CARDS.find(c => c.id === 'ninja-card-shuriken')!;
 
 type AttackModifierCase = {
     label: string;
@@ -39,6 +44,22 @@ const fourPlayerTargetLockedAttackModifierCases: AttackModifierCase[] = [
     { label: 'gunslinger: card-eat-my-lead', heroId: 'gunslinger', card: eatMyLeadCard },
     { label: 'samurai: card-righteousness', heroId: 'samurai', card: righteousnessCard },
     { label: 'samurai: card-zanshin', heroId: 'samurai', card: zanshinCard },
+    { label: 'treant: treant-card-trample', heroId: 'treant', card: trampleCard },
+];
+
+const allAttackModifierCases: AttackModifierCase[] = [
+    { label: 'barbarian: card-more-please', heroId: 'barbarian', card: morePleaseCard },
+    { label: 'pyromancer: card-red-hot', heroId: 'pyromancer', card: redHotCard },
+    { label: 'pyromancer: card-get-fired-up', heroId: 'pyromancer', card: getFiredUpCard },
+    { label: 'moon_elf: volley', heroId: 'moon_elf', card: volleyCard },
+    { label: 'moon_elf: watch-out', heroId: 'moon_elf', card: watchOutCard },
+    { label: 'gunslinger: card-wild-west', heroId: 'gunslinger', card: wildWestCard, tokens: { [TOKEN_IDS.LOADED]: 1 } },
+    { label: 'gunslinger: card-eat-my-lead', heroId: 'gunslinger', card: eatMyLeadCard },
+    { label: 'samurai: card-righteousness', heroId: 'samurai', card: righteousnessCard },
+    { label: 'samurai: card-zanshin', heroId: 'samurai', card: zanshinCard },
+    { label: 'treant: treant-card-trample', heroId: 'treant', card: trampleCard },
+    { label: 'treant: treant-card-soulfire', heroId: 'treant', card: soulfireCard },
+    { label: 'ninja: ninja-card-shuriken', heroId: 'ninja', card: shurikenCard },
 ];
 
 const makeRuleCheckCore = (overrides: Partial<DiceThroneCore> = {}): DiceThroneCore => ({
@@ -236,6 +257,43 @@ describe('红热攻击修正出牌边界', () => {
         expect((result as any).reason).toBe('attackModifierRequiresSelectedAttack');
     });
 
+    it.each(allAttackModifierCases)('没有当前攻击时攻击修正卡必须先选择技能: %s', ({ heroId, card, tokens }) => {
+        const result = checkPlayCard(makeRuleCheckCore({
+            players: {
+                '0': {
+                    heroId,
+                    health: 50,
+                    resources: { cp: 10 },
+                    hand: [card],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: tokens ?? {},
+                    abilityLevels: {},
+                    abilities: [],
+                    upgradeCardByAbilityId: {},
+                } as any,
+                '1': {
+                    heroId: 'barbarian',
+                    health: 50,
+                    resources: { cp: 10 },
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: {},
+                    abilityLevels: {},
+                    abilities: [],
+                    upgradeCardByAbilityId: {},
+                } as any,
+            } as any,
+            pendingAttack: null,
+        }), '0', card as any, 'offensiveRoll');
+
+        expect(result.ok).toBe(false);
+        expect((result as any).reason).toBe('attackModifierRequiresSelectedAttack');
+    });
+
     it('4 人模式未选定 defender 时，红热仍可先行打出', () => {
         const result = checkPlayCard(makeRuleCheckCore({
             players: {
@@ -318,6 +376,50 @@ describe('红热攻击修正出牌边界', () => {
                 attackDiceFaceCounts: {},
             } as any,
         }), '0', redHotCard, 'offensiveRoll');
+
+        expect(result.ok).toBe(true);
+    });
+
+    it.each(allAttackModifierCases)('已有当前攻击时攻击方可在 offensiveRoll 打出攻击修正卡: %s', ({ heroId, card, tokens }) => {
+        const result = checkPlayCard(makeRuleCheckCore({
+            players: {
+                '0': {
+                    heroId,
+                    health: 50,
+                    resources: { cp: 10 },
+                    hand: [card],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: tokens ?? {},
+                    abilityLevels: {},
+                    abilities: [],
+                    upgradeCardByAbilityId: {},
+                } as any,
+                '1': {
+                    heroId: 'barbarian',
+                    health: 50,
+                    resources: { cp: 10 },
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    statusEffects: {},
+                    tokens: {},
+                    abilityLevels: {},
+                    abilities: [],
+                    upgradeCardByAbilityId: {},
+                } as any,
+            } as any,
+            pendingAttack: {
+                attackerId: '0',
+                defenderId: '1',
+                isDefendable: true,
+                sourceAbilityId: 'attack-test',
+                damageResolved: false,
+                resolvedDamage: 0,
+                attackDiceFaceCounts: {},
+            } as any,
+        }), '0', card as any, 'offensiveRoll');
 
         expect(result.ok).toBe(true);
     });

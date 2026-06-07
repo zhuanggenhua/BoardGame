@@ -134,8 +134,8 @@ describe('Property 1: 结算面板内容完整性', () => {
                     const text = container.textContent ?? '';
 
                     // 双方角色名称
-                    expect(text).toContain(`hero.${char1}`);
-                    expect(text).toContain(`hero.${char2}`);
+                    expect(text).toContain(`characters.${char1}`);
+                    expect(text).toContain(`characters.${char2}`);
 
                     // 双方 HP 值
                     expect(text).toContain(`HP ${hp1}`);

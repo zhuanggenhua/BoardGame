@@ -17,6 +17,9 @@ import BonusDieSpotlightContent from './BonusDieSpotlightContent';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
+const SPOTLIGHT_CARD_WIDTH = '16vw';
+const SPOTLIGHT_CARD_ASPECT_RATIO = 0.61;
+
 /** 汇总文本组件（显示伤害加成等信息） */
 const SummaryText: React.FC<{
     effectKey: string;
@@ -60,6 +63,7 @@ export interface CardSpotlightItem {
         value: number;
         face?: DieFace;
         timestamp: number;
+        presentationKey?: string | number;
         effectKey?: string;
         effectParams?: Record<string, string | number>;
         /** 骰子所属角色（用于图集选择） */
@@ -148,8 +152,13 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                 <CardPreview
                     previewRef={currentItem.previewRef}
                     locale={locale}
-                    className="w-[16vw] aspect-[0.61] rounded-[0.6vw] shadow-2xl border-2 border-amber-500/60"
-                    style={{ boxShadow: '0 0 1.5vw 0.3vw rgba(251, 191, 36, 0.4)' }}
+                    className="rounded-[0.6vw] shadow-2xl border-2 border-amber-500/60"
+                    style={{
+                        width: SPOTLIGHT_CARD_WIDTH,
+                        height: `calc(${SPOTLIGHT_CARD_WIDTH} / ${SPOTLIGHT_CARD_ASPECT_RATIO})`,
+                        aspectRatio: `${SPOTLIGHT_CARD_ASPECT_RATIO} / 1`,
+                        boxShadow: '0 0 1.5vw 0.3vw rgba(251, 191, 36, 0.4)',
+                    }}
                 />
 
                 {/* 额外骰子（右）- 支持多颗骰子横向排列 */}
@@ -157,20 +166,26 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                     <div className="flex flex-col items-center gap-[1vw] relative z-[1]">
                         {/* 骰子行 */}
                         <div className="flex items-center gap-[1vw]" data-testid="card-spotlight-bonus-dice">
-                            {currentItem.bonusDice!.map((die, index) => (
-                                <div key={`${die.timestamp}-${index}`} data-testid="card-spotlight-die">
-                                    <BonusDieSpotlightContent
-                                        value={die.value}
-                                        face={die.face}
-                                        effectKey={die.effectKey}
-                                        effectParams={die.effectParams}
-                                        locale={locale}
-                                        size="10vw"
-                                        characterId={die.characterId}
-                                        compact={true}
-                                    />
-                                </div>
-                            ))}
+                            {currentItem.bonusDice!.map((die, index) => {
+                                const dieIdentityKey = typeof die.index === 'number'
+                                    ? `die-${die.index}`
+                                    : `die-pos-${index}`;
+                                return (
+                                    <div key={dieIdentityKey} data-testid="card-spotlight-die">
+                                        <BonusDieSpotlightContent
+                                            value={die.value}
+                                            face={die.face}
+                                            effectKey={die.effectKey}
+                                            effectParams={die.effectParams}
+                                            locale={locale}
+                                            size="10vw"
+                                            presentationKey={die.presentationKey}
+                                            characterId={die.characterId}
+                                            compact={true}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </div>
                         
                         {/* 汇总文本（如"2个弓面：伤害+2"） */}

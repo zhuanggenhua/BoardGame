@@ -10,6 +10,19 @@
  */
 
 import type { Page } from '@playwright/test';
+import { queueInteraction } from '../../src/engine/systems/InteractionSystem.ts';
+import { initAllAbilities } from '../../src/games/smashup/abilities/index.ts';
+import { createAbilityRuntimeSimpleChoice } from '../../src/games/smashup/domain/abilityRuntime.ts';
+import { collectTriggers } from '../../src/games/smashup/domain/ongoingEffects.ts';
+import {
+    advanceSmashUpReactionSession,
+    startSmashUpReactionSession,
+} from '../../src/games/smashup/domain/reactionSession.ts';
+import {
+    createScoringBaseRef,
+    createScoringSession,
+    setScoringSession,
+} from '../../src/games/smashup/domain/scoringSession.ts';
 import { test, expect } from '../framework';
 import { waitForTestHarness } from '../helpers/common';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
@@ -36,6 +49,12 @@ import {
 } from './smashup-helpers';
 
 const HOST_PLAYER_ID = '0';
+const FIXED_SMASHUP_RANDOM = {
+    random: () => 0.5,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T>(items: T[]) => [...items],
+};
 const MISKATONIC_BASE_LEGACY_TEXT = '在这个基地计分后，冠军可以搜寻他的手牌和弃牌堆中任意数量的疯狂卡，然后返回到疯狂卡牌库。';
 const MISKATONIC_BASE_POD_TEXT = '每回合一次，在你于此打出一个随从后，你可以抽两张疯狂卡，或从你的手牌弃置一张疯狂卡来额外打出一张战术。';
 const STEAMPUNK_TRICKSTER_PACKET_CORE = {
@@ -113,7 +132,24 @@ async function applySmashUpStatePatch(
 }
 
 function normalizeInjectedMatchState(matchId: string, state: any): any {
-    const next = structuredClone(state);
+    const stripFunctionsDeep = (value: any): any => {
+        if (typeof value === 'function') return undefined;
+        if (Array.isArray(value)) {
+            return value.map(item => stripFunctionsDeep(item));
+        }
+        if (!value || typeof value !== 'object') {
+            return value;
+        }
+
+        const result: Record<string, unknown> = {};
+        for (const [key, entry] of Object.entries(value)) {
+            if (typeof entry === 'function') continue;
+            result[key] = stripFunctionsDeep(entry);
+        }
+        return result;
+    };
+
+    const next = stripFunctionsDeep(state);
     const fallbackTurnOrder = Array.isArray(next.core?.turnOrder)
         ? [...next.core.turnOrder]
         : Object.keys(next.core?.players ?? {});
@@ -137,6 +173,38 @@ function normalizeInjectedMatchState(matchId: string, state: any): any {
         phase: typeof next.core?.phase === 'string' ? next.core.phase : next.sys.phase,
     };
     return next;
+}
+
+async function getClientInteractionSnapshot(page: Page) {
+    return page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        const options = Array.isArray(current?.data?.options) ? current.data.options : [];
+        return {
+            interactionId: current?.id ?? null,
+            sourceId: current?.data?.sourceId ?? null,
+            phase: state?.sys?.phase ?? null,
+            optionIds: options.map((option: any) => option?.id).filter((id: unknown) => typeof id === 'string'),
+        };
+    });
+}
+
+async function dispatchCurrentInteractionOption(page: Page, optionId: string) {
+    await page.evaluate((targetOptionId) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        const current = state?.sys?.interaction?.current;
+        if (!harness?.command?.dispatch || !current?.id) {
+            throw new Error('TestHarness command.dispatch or current interaction is unavailable');
+        }
+        harness.command.dispatch({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: {
+                interactionId: current.id,
+                optionId: targetOptionId,
+            },
+        });
+    }, optionId);
 }
 
 async function injectSteampunkTricksterPacketState(matchId: string, page: Page): Promise<void> {
@@ -781,6 +849,7 @@ function makeInjectedMinion(
     controller: string,
     owner: string,
     basePower: number,
+    overrides?: Record<string, unknown>,
 ) {
     return {
         uid,
@@ -794,7 +863,296 @@ function makeInjectedMinion(
         talentUsed: false,
         playedThisTurn: false,
         attachedActions: [],
+        ...(overrides ?? {}),
     };
+}
+
+function createKrakenReactionChooseState(baseState: any) {
+    initAllAbilities();
+
+    const core = {
+        ...(baseState?.core ?? {}),
+        players: {
+            ...(baseState?.core?.players ?? {}),
+            '0': {
+                ...(baseState?.core?.players?.['0'] ?? {}),
+                id: '0',
+                vp: 0,
+                hand: [],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['pirates', 'aliens'],
+                sameNameMinionDefId: null,
+            },
+            '1': {
+                ...(baseState?.core?.players?.['1'] ?? {}),
+                id: '1',
+                vp: 0,
+                hand: [],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['ninjas', 'robots'],
+                sameNameMinionDefId: null,
+            },
+        },
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        bases: [
+            {
+                defId: 'base_the_homeworld',
+                minions: [makeInjectedMinion('pirate-on-score', 'pirate_first_mate', '0', '0', 2)],
+                ongoingActions: [],
+            },
+            { defId: 'base_the_mothership', minions: [], ongoingActions: [] },
+        ],
+        titans: [{
+            uid: 't-kraken-setaside',
+            defId: 'pirates_the_kraken',
+            faction: 'pirates',
+            ownerId: '0',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            location: { zone: 'setaside' },
+        }],
+        enabledExpansions: ['titans'],
+        baseDeck: [],
+        baseDiscard: [],
+        turnNumber: 7,
+        nextUid: 700,
+        cardsPlayedThisTurn: 0,
+        powerCountersPlacedOnMinionsThisTurn: 0,
+        turnDestroyedMinions: [],
+        triggerQueue: [],
+    };
+
+    const frameId = 'kraken-after-scoring-frame';
+    let state = {
+        ...baseState,
+        core,
+        sys: {
+            ...baseState.sys,
+            phase: 'scoreBases',
+            currentPlayerIndex: 0,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            _waitForPostScoringReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            resolution: undefined,
+        },
+    };
+
+    const queued = collectTriggers(core, 'afterScoring', {
+        state: core,
+        matchState: state,
+        playerId: '0',
+        baseIndex: 0,
+        rankings: [{ playerId: '0', power: 10, vp: 3 }],
+        frameId,
+        sourceEventId: frameId,
+        random: FIXED_SMASHUP_RANDOM,
+        now: 75,
+    });
+    if (!queued) {
+        throw new Error('无法构造海怪克拉肯 afterScoring trigger');
+    }
+
+    const krakenTrigger = queued.payload.triggers.find((entry) => entry?.sourceDefId === 'pirates_the_kraken');
+    if (!krakenTrigger) {
+        throw new Error('无法找到海怪克拉肯 trigger');
+    }
+
+    state = {
+        ...state,
+        core: {
+            ...core,
+            triggerQueue: queued.payload.triggers,
+        },
+        sys: {
+            ...state.sys,
+            interaction: { current: undefined, queue: [] },
+        },
+    };
+
+    const baseRef = createScoringBaseRef(state.core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造海怪克拉肯计分基地引用');
+    }
+
+    state = setScoringSession(state, {
+        ...createScoringSession(state.core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    state = startSmashUpReactionSession(state, {
+        frameId,
+        frameKind: 'score-after',
+        phase: 'optional',
+        currentPlayerId: '0',
+        activePlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+
+    const interaction = createAbilityRuntimeSimpleChoice(
+        'kraken-reaction-pass-window',
+        '0',
+        'ui.reaction_choose_optional_title',
+        [
+            {
+                id: `trigger:${krakenTrigger.id}`,
+                label: '海怪克拉肯',
+                value: { kind: 'trigger', triggerId: krakenTrigger.id },
+                displayMode: 'button',
+            },
+            {
+                id: 'pass',
+                label: '让过',
+                value: { kind: 'pass' },
+                displayMode: 'button',
+            },
+        ],
+        {
+            sourceId: 'smashup_reaction_choose',
+            targetType: 'button',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+        },
+    );
+
+    return queueInteraction(state, interaction);
+}
+
+function createChampionsReactionDirectState(baseState: any) {
+    initAllAbilities();
+
+    const core = {
+        ...(baseState?.core ?? {}),
+        players: {
+            ...(baseState?.core?.players ?? {}),
+            '0': {
+                ...(baseState?.core?.players?.['0'] ?? {}),
+                id: '0',
+                vp: 0,
+                hand: [
+                    makeInjectedCard('champ-card', 'giant_ant_we_are_the_champions', 'action', HOST_PLAYER_ID),
+                ],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['giant_ants', 'vampires'],
+                sameNameMinionDefId: null,
+            },
+            '1': {
+                ...(baseState?.core?.players?.['1'] ?? {}),
+                id: '1',
+                vp: 0,
+                hand: [],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['pirates', 'ninjas'],
+                sameNameMinionDefId: null,
+            },
+        },
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        bases: [
+            {
+                defId: 'base_the_homeworld',
+                minions: [
+                    makeInjectedMinion('scoring-source', 'giant_ant_worker', '0', '0', 25, { powerCounters: 2 }),
+                    makeInjectedMinion('scoring-rival', 'ninja_shinobi', '1', '1', 5),
+                ],
+                ongoingActions: [],
+            },
+            {
+                defId: 'base_central_brain',
+                minions: [
+                    makeInjectedMinion('support-minion', 'giant_ant_soldier', '0', '0', 3),
+                ],
+                ongoingActions: [],
+            },
+            { defId: 'base_pirate_cove', minions: [], ongoingActions: [] },
+        ],
+        titans: [],
+        enabledExpansions: [],
+        baseDeck: [],
+        baseDiscard: [],
+        turnNumber: 7,
+        nextUid: 900,
+        cardsPlayedThisTurn: 0,
+        powerCountersPlacedOnMinionsThisTurn: 0,
+        turnDestroyedMinions: [],
+        triggerQueue: [],
+    };
+
+    const frameId = 'champions-after-scoring-frame';
+    let state = {
+        ...baseState,
+        core,
+        sys: {
+            ...baseState.sys,
+            phase: 'scoreBases',
+            currentPlayerIndex: 0,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            _waitForPostScoringReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            resolution: undefined,
+        },
+    };
+
+    const baseRef = createScoringBaseRef(state.core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造我们乃最强计分基地引用');
+    }
+
+    state = setScoringSession(state, {
+        ...createScoringSession(state.core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    state = startSmashUpReactionSession(state, {
+        frameId,
+        frameKind: 'score-after',
+        phase: 'optional',
+        currentPlayerId: '0',
+        activePlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+    const advanced = advanceSmashUpReactionSession(state, FIXED_SMASHUP_RANDOM, 75);
+    if (!advanced?.state.sys.interaction?.current) {
+        throw new Error('无法构造我们乃最强 afterScoring 响应窗口');
+    }
+    return advanced.state;
 }
 
 async function injectAlienInteractionState(
@@ -861,6 +1219,18 @@ async function injectAlienInteractionState(
             interaction: { current: undefined, queue: [] },
         },
     }));
+}
+
+async function injectKrakenReactionChooseState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => createKrakenReactionChooseState(state));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="su-rail-titan-t-kraken-setaside"]', { timeout: 5000 });
+}
+
+async function injectChampionsReactionDirectState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => createChampionsReactionDirectState(state));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+    await page.waitForSelector('[data-card-uid="champ-card"]', { timeout: 5000 });
 }
 
 async function injectCthulhuCorruptionState(matchId: string, page: Page): Promise<void> {
@@ -935,6 +1305,175 @@ async function injectCthulhuCorruptionState(matchId: string, page: Page): Promis
     }));
 }
 
+async function injectMinionHalfExpandedSelectionState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['ninjas', 'robots'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            phase: 'playCards',
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        makeInjectedMinion('half-expand-target-1', 'ninja_shinobi', '1', '1', 2),
+                        makeInjectedMinion('half-expand-target-2', 'pirate_first_mate', '1', '1', 2),
+                        makeInjectedMinion('half-expand-target-3', 'robot_microbot_alpha', '1', '1', 1),
+                    ],
+                    ongoingActions: [],
+                },
+                { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            titans: [],
+            enabledExpansions: [],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 900,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            interaction: {
+                current: {
+                    id: 'half-expanded-minion-select',
+                    kind: 'simple-choice',
+                    playerId: '0',
+                    data: {
+                        title: '半展开验收：选择随从',
+                        sourceId: 'half_expanded_minion_selection',
+                        targetType: 'minion',
+                        options: [
+                            {
+                                id: 'half-expand-target-1',
+                                label: '目标 1',
+                                value: { minionUid: 'half-expand-target-1', baseIndex: 0 },
+                            },
+                            {
+                                id: 'half-expand-target-2',
+                                label: '目标 2',
+                                value: { minionUid: 'half-expand-target-2', baseIndex: 0 },
+                            },
+                            {
+                                id: 'half-expand-target-3',
+                                label: '目标 3',
+                                value: { minionUid: 'half-expand-target-3', baseIndex: 0 },
+                            },
+                        ],
+                    },
+                },
+                queue: [],
+            },
+        },
+    }));
+}
+
+async function injectMinionStackComparisonBaseState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['ninjas', 'robots'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            phase: 'playCards',
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        makeInjectedMinion('half-expand-target-1', 'ninja_shinobi', '1', '1', 2),
+                        makeInjectedMinion('half-expand-target-2', 'pirate_first_mate', '1', '1', 2),
+                        makeInjectedMinion('half-expand-target-3', 'robot_microbot_alpha', '1', '1', 1),
+                    ],
+                    ongoingActions: [],
+                },
+                { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            titans: [],
+            enabledExpansions: [],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 1,
+            nextUid: 900,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            interaction: { current: undefined, queue: [] },
+        },
+    }));
+}
+
 function getInteractionSourceId(state: any): string | null {
     return state?.sys?.interaction?.current?.data?.sourceId ?? null;
 }
@@ -959,12 +1498,28 @@ async function waitForSelectableBase(page: Page, baseIndex: number, timeout = 50
             const nodes = [zone, ...Array.from(zone.querySelectorAll<HTMLElement>('*'))];
             return nodes.some((node) => {
                 const className = node.getAttribute('class') ?? '';
-                return className.includes('ring-green-300') || className.includes('ring-green-400');
+                return className.includes('ring-green-300')
+                    || className.includes('ring-green-400')
+                    || className.includes('ring-emerald-400');
             });
         },
         baseIndex,
         { timeout },
     );
+}
+
+async function isBaseSelectable(page: Page, baseIndex: number): Promise<boolean> {
+    return page.evaluate((targetIndex) => {
+        const zone = document.querySelector<HTMLElement>(`[data-testid="base-zone-${targetIndex}"]`);
+        if (!zone) return false;
+        const nodes = [zone, ...Array.from(zone.querySelectorAll<HTMLElement>('*'))];
+        return nodes.some((node) => {
+            const className = node.getAttribute('class') ?? '';
+            return className.includes('ring-green-300')
+                || className.includes('ring-green-400')
+                || className.includes('ring-emerald-400');
+        });
+    }, baseIndex);
 }
 
 async function waitForSelectableMinion(page: Page, minionUid: string, timeout = 5000): Promise<void> {
@@ -995,8 +1550,7 @@ async function clickBaseZone(page: Page, baseIndex: number): Promise<void> {
     await page.evaluate((targetIndex) => {
         const zone = document.querySelector<HTMLElement>(`[data-testid="base-zone-${targetIndex}"]`);
         if (!zone) return;
-        const selectable = zone.querySelector<HTMLElement>('[class*="ring-green-300"], [class*="ring-green-400"]');
-        (selectable ?? zone).click();
+        zone.click();
     }, baseIndex);
     await page.waitForTimeout(300);
 }
@@ -1025,6 +1579,65 @@ async function respondCurrentInteraction(
             payload: responsePayload,
         });
     }, payload);
+    await page.waitForTimeout(300);
+}
+
+async function closeCardSpotlightIfOpen(
+    page: Page,
+    options?: { waitForAppearanceMs?: number },
+): Promise<void> {
+    const spotlightQueue = page.getByTestId('card-spotlight-queue');
+    const spotlightContent = page.getByTestId('card-spotlight-content').first();
+    const closeButton = page.getByRole('button', { name: '关闭特写' }).first();
+    const waitForAppearanceMs = options?.waitForAppearanceMs ?? 2000;
+
+    const visible = await expect(spotlightQueue)
+        .toBeVisible({ timeout: waitForAppearanceMs })
+        .then(() => true)
+        .catch(async () => spotlightQueue.isVisible().catch(() => false));
+    if (!visible) return;
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (await closeButton.isVisible({ timeout: 300 }).catch(() => false)) {
+            await closeButton.click({ force: true });
+        } else if (await spotlightContent.isVisible({ timeout: 300 }).catch(() => false)) {
+            await spotlightContent.click({ force: true });
+        } else {
+            await spotlightQueue.click({ force: true });
+        }
+
+        const hidden = await spotlightQueue.isHidden({ timeout: 800 }).catch(() => false);
+        if (hidden) {
+            return;
+        }
+    }
+
+    await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
+}
+
+async function triggerHandCardClickForReaction(
+    page: Page,
+    cardUid: string,
+    options?: { expectBaseIndex?: number },
+): Promise<void> {
+    const card = page.locator(`[data-card-uid="${cardUid}"]`).first();
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await card.click({ force: true });
+    await page.waitForTimeout(300);
+
+    const expectBaseIndex = options?.expectBaseIndex;
+    if (typeof expectBaseIndex !== 'number') return;
+
+    const spotlightQueue = page.getByTestId('card-spotlight-queue');
+    const enteredExpectedUi = await expect.poll(async () => {
+        const baseSelectable = await isBaseSelectable(page, expectBaseIndex);
+        const spotlightVisible = await spotlightQueue.isVisible().catch(() => false);
+        return baseSelectable || spotlightVisible;
+    }, { timeout: 1200 }).toBeTruthy().then(() => true).catch(() => false);
+
+    if (enteredExpectedUi) return;
+
+    await card.dispatchEvent('click');
     await page.waitForTimeout(300);
 }
 
@@ -1090,7 +1703,11 @@ async function drainPostResolutionFlow(
 const ONLINE_SELECTION_MATCHES: any[] = [];
 
 async function createOnlineSelectionMatch(browser: any, testInfo: any) {
-    const setup = await setupOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined);
+    const setup = await setupOnlineMatch(
+        browser,
+        testInfo.project.use.baseURL as string | undefined,
+        { skipImageGate: true },
+    );
     if (!setup) return null;
 
     await completeFactionSelectionCustom(
@@ -1337,6 +1954,61 @@ test.describe('SmashUp Base/Minion Selection', () => {
             filename: 'smashup-cthulhu-corruption-resolved.png',
         });
         await page.screenshot({ path: corruptionResolvedShot, fullPage: false });
+    });
+
+    test('随从选择展示：同列多个候选应半展开且仍可点击底部随从', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+        const { hostPage: page, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+
+        await waitForTestHarness(page);
+        await injectMinionStackComparisonBaseState(matchId, page);
+
+        const normalStackShot = getEvidenceScreenshotPath(testInfo, 'normal-minion-selection-stack', {
+            filename: 'smashup-normal-minion-selection-stack.png',
+        });
+        await page.screenshot({ path: normalStackShot, fullPage: false });
+
+        await injectMinionHalfExpandedSelectionState(matchId, page);
+
+        await expect(page.getByText('半展开验收：选择随从')).toBeVisible({ timeout: 5000 });
+        await waitForSelectableMinion(page, 'half-expand-target-1');
+        await waitForSelectableMinion(page, 'half-expand-target-2');
+        await waitForSelectableMinion(page, 'half-expand-target-3');
+
+        const minionOffsets = await page.evaluate(() => {
+            const readOffset = (uid: string) => {
+                const node = document.querySelector<HTMLElement>(`[data-minion-uid="${uid}"]`);
+                return node?.style.marginTop ?? null;
+            };
+            return {
+                second: readOffset('half-expand-target-2'),
+                third: readOffset('half-expand-target-3'),
+            };
+        });
+        expect(minionOffsets.second).toBe('-3.8515vw');
+        expect(minionOffsets.third).toBe('-3.8515vw');
+
+        const halfExpandedShot = getEvidenceScreenshotPath(testInfo, 'half-expanded-minion-selection', {
+            filename: 'smashup-half-expanded-minion-selection.png',
+        });
+        await page.screenshot({ path: halfExpandedShot, fullPage: false });
+
+        await clickMinion(page, 'half-expand-target-3');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, page);
+            return state.sys?.interaction?.current ?? null;
+        }, { timeout: 5000 }).toBeNull();
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'half-expanded-minion-selection-resolved', {
+            filename: 'smashup-half-expanded-minion-selection-resolved.png',
+        });
+        await page.screenshot({ path: resolvedShot, fullPage: false });
     });
 
     test('基地选择：外星人入侵（第二步）- 不弹窗，直接点击基地', async ({ browser }, testInfo) => {
@@ -1876,23 +2548,211 @@ test.describe('SmashUp Base/Minion Selection', () => {
         await expect(brideTitan).toBeVisible({ timeout: 8000 });
         await expect(hostPage.getByTestId('su-rail-titan-badge-own-bride-titan')).toContainText(/可触发|React/);
         await expect(hostPage.getByText(/选择一个反应动作|Choose a reaction/)).toHaveCount(0);
-        await expect(hostPage.getByRole('button', { name: /让过|Pass/ })).toBeVisible();
+        const passButton = hostPage.getByTestId('su-titan-reaction-pass-button');
+        await expect(passButton).toBeVisible();
+        const clientBeforeClick = await getClientInteractionSnapshot(hostPage);
+        const serverBeforeClick = await getMatchState(matchId, hostPage);
+        const serverBeforeClickSnapshot = {
+            interactionId: serverBeforeClick?.sys?.interaction?.current?.id ?? null,
+            sourceId: serverBeforeClick?.sys?.interaction?.current?.data?.sourceId ?? null,
+            phase: serverBeforeClick?.sys?.phase ?? null,
+            optionIds: Array.isArray(serverBeforeClick?.sys?.interaction?.current?.data?.options)
+                ? serverBeforeClick.sys.interaction.current.data.options
+                    .map((option: any) => option?.id)
+                    .filter((id: unknown) => typeof id === 'string')
+                : [],
+        };
+        expect(clientBeforeClick).toEqual(serverBeforeClickSnapshot);
 
-        const titanWindowShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-titan-click-window', {
-            filename: 'smashup-mushroom-own-bride-titan-click-window.png',
+        const titanWindowShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-pass-window', {
+            filename: 'smashup-mushroom-own-bride-pass-window.png',
         });
         await hostPage.screenshot({ path: titanWindowShot, fullPage: false });
 
-        await brideTitan.click({ force: true });
+        await passButton.click({ force: true });
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
-            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
-        }, { timeout: 8000 }).toBe('titan_frankenstein_the_bride_start_choose_branch');
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                brideStillQueued: Array.isArray(state?.core?.triggerQueue)
+                    ? state.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'frankenstein_the_bride')
+                    : false,
+                phase: state?.sys?.phase ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: null,
+            brideStillQueued: false,
+            phase: 'playCards',
+        });
 
-        const brideBranchShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-branch-after-titan-click', {
-            filename: 'smashup-mushroom-own-bride-branch-after-titan-click.png',
+        const brideBranchShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-after-pass', {
+            filename: 'smashup-mushroom-own-bride-after-pass.png',
         });
         await hostPage.screenshot({ path: brideBranchShot, fullPage: false });
+    });
+
+    test('反馈复现：海怪克拉肯高亮反应面板点击让过后，应立即收口且不重开', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectKrakenReactionChooseState(matchId, hostPage);
+
+        await waitForInteractionSourceId(matchId, hostPage, 'smashup_reaction_choose', 8000);
+        await expect(hostPage.getByTestId('su-rail-titan-t-kraken-setaside')).toBeVisible({ timeout: 8000 });
+        const passButton = hostPage.getByTestId('su-titan-reaction-pass-button');
+        await expect(passButton).toBeVisible({ timeout: 8000 });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            const options = Array.isArray(state?.sys?.interaction?.current?.data?.options)
+                ? state.sys.interaction.current.data.options
+                : [];
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                optionIds: options.map((option: { id?: string }) => option?.id ?? null),
+                krakenStillQueued: Array.isArray(state?.core?.triggerQueue)
+                    ? state.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'pirates_the_kraken')
+                    : false,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: 'smashup_reaction_choose',
+            optionIds: expect.arrayContaining([
+                'pass',
+                expect.stringMatching(/^trigger:afterScoring:pirates_the_kraken:/),
+            ]),
+            krakenStillQueued: true,
+        });
+
+        const promptShot = getEvidenceScreenshotPath(testInfo, 'kraken-reaction-pass-window', {
+            filename: 'smashup-kraken-reaction-pass-window.png',
+        });
+        await hostPage.screenshot({ path: promptShot, fullPage: false });
+
+        await passButton.click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                krakenStillQueued: Array.isArray(state?.core?.triggerQueue)
+                    ? state.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'pirates_the_kraken')
+                    : false,
+                phase: state?.sys?.phase ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: null,
+            responseWindowOpen: false,
+            krakenStillQueued: false,
+            phase: 'scoreBases',
+        });
+
+        await hostPage.waitForTimeout(1200);
+        const settledState = await getMatchState(matchId, hostPage);
+        expect(settledState?.sys?.interaction?.current?.data?.sourceId ?? null).toBeNull();
+        expect(Boolean(settledState?.sys?.responseWindow?.current)).toBe(false);
+        expect(Array.isArray(settledState?.core?.triggerQueue)
+            ? settledState.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'pirates_the_kraken')
+            : false).toBe(false);
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'kraken-reaction-pass-resolved', {
+            filename: 'smashup-kraken-reaction-pass-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈回归：计分后响应应保持手牌承接，并显示 MeFirst 提示弹窗', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectChampionsReactionDirectState(matchId, hostPage);
+
+        await waitForInteractionSourceId(matchId, hostPage, 'smashup_reaction_choose', 8000);
+        await expect(hostPage.locator('[data-testid="prompt-overlay"]')).toHaveCount(0);
+        await expect(hostPage.locator('[data-testid="me-first-overlay"]')).toBeVisible();
+        await expect(hostPage.getByText('计分后响应')).toBeVisible();
+        await expect(hostPage.locator('[data-testid="me-first-pass-button"]')).toBeVisible();
+        await expect(hostPage.locator('[data-card-uid="champ-card"]')).toBeVisible();
+        const beforeClickShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-before-click', {
+            filename: 'smashup-champions-mefirst-before-click.png',
+        });
+        await hostPage.screenshot({ path: beforeClickShot, fullPage: false });
+
+        await triggerHandCardClickForReaction(hostPage, 'champ-card', { expectBaseIndex: 0 });
+        await waitForSelectableBase(hostPage, 0, 8000);
+        const baseSelectShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-base-highlight', {
+            filename: 'smashup-champions-mefirst-base-highlight.png',
+        });
+        await hostPage.screenshot({ path: baseSelectShot, fullPage: false });
+        await clickBaseZone(hostPage, 0);
+        await waitForInteractionSourceId(matchId, hostPage, 'giant_ant_we_are_the_champions_choose_source', 8000);
+
+        const chooseSourceShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-choose-source', {
+            filename: 'smashup-champions-mefirst-choose-source.png',
+        });
+        await hostPage.screenshot({ path: chooseSourceShot, fullPage: false });
+
+        await clickMinion(hostPage, 'scoring-source');
+        await waitForInteractionSourceId(matchId, hostPage, 'giant_ant_we_are_the_champions_choose_target', 8000);
+        await clickMinion(hostPage, 'support-minion');
+        await waitForInteractionSourceId(matchId, hostPage, 'giant_ant_we_are_the_champions_choose_amount', 8000);
+
+        const slider = hostPage.getByLabel('slider-choice');
+        await expect(slider).toBeVisible();
+        await slider.evaluate((element) => {
+            const input = element as HTMLInputElement;
+            input.value = '2';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        const chooseAmountShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-choose-amount', {
+            filename: 'smashup-champions-mefirst-choose-amount.png',
+        });
+        await hostPage.screenshot({ path: chooseAmountShot, fullPage: false });
+
+        await respondCurrentInteraction(hostPage, {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 2, value: 2 },
+        });
+        await drainPostResolutionFlow(matchId, hostPage, guestPage, 12000);
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            const supportMinion = state?.core?.bases?.[1]?.minions?.find((minion: any) => minion.uid === 'support-minion');
+            return {
+                interactionSourceId: getInteractionSourceId(state),
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                supportCounters: supportMinion?.powerCounters ?? 0,
+                stillInHand: state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'champ-card') ?? false,
+                inDiscard: state?.core?.players?.['0']?.discard?.some((card: any) => card.uid === 'champ-card') ?? false,
+            };
+        }, { timeout: 12000 }).toEqual({
+            interactionSourceId: null,
+            responseWindowOpen: false,
+            supportCounters: 2,
+            stillInHand: false,
+            inDiscard: true,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-resolved', {
+            filename: 'smashup-champions-mefirst-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });
 
     test('反馈复现：宗教圆环发动后，应允许把手牌中的同名本地人打到该基地', async ({ browser }, testInfo) => {

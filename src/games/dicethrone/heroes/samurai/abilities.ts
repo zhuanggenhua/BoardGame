@@ -1,4 +1,4 @@
-import { abilityText } from '../../../../engine/primitives/ability';
+import { abilityEffectText, abilityText } from '../../../../engine/primitives/ability';
 import type { AbilityDef, AbilityEffect, EffectTiming } from '../../domain/combat';
 import { SAMURAI_DICE_FACE_IDS, TOKEN_IDS } from '../../domain/ids';
 
@@ -52,19 +52,19 @@ const KATANA_SLICE: AbilityDef = {
         {
             id: 'katana-slice-3',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } },
-            effects: [damage(5, '造成 5 点伤害。')],
+            effects: [damage(5, abilityEffectText('katana-slice', 'damage5'))],
             priority: 1,
         },
         {
             id: 'katana-slice-4',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } },
-            effects: [damage(6, '造成 6 点伤害。')],
+            effects: [damage(6, abilityEffectText('katana-slice', 'damage6'))],
             priority: 2,
         },
         {
             id: 'katana-slice-5',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } },
-            effects: [damage(7, '造成 7 点伤害。')],
+            effects: [damage(7, abilityEffectText('katana-slice', 'damage7'))],
             priority: 3,
         },
     ],
@@ -81,8 +81,8 @@ export const KATANA_SLICE_2: AbilityDef = {
             id: 'katana-slice-2-3',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } },
             effects: [
-                custom('samurai-katana-slice-threshold-4', '若至少有 4 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(6, '造成 6 点伤害。'),
+                custom('samurai-katana-slice-threshold-4', abilityEffectText('katana-slice-2', 'inflictShameIfFourKind'), 'preDefense'),
+                damage(6, abilityEffectText('katana-slice-2', 'damage6')),
             ],
             priority: 1,
         },
@@ -90,8 +90,8 @@ export const KATANA_SLICE_2: AbilityDef = {
             id: 'katana-slice-2-4',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } },
             effects: [
-                custom('samurai-katana-slice-threshold-4', '若至少有 4 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(7, '造成 7 点伤害。'),
+                custom('samurai-katana-slice-threshold-4', abilityEffectText('katana-slice-2', 'inflictShameIfFourKind'), 'preDefense'),
+                damage(7, abilityEffectText('katana-slice-2', 'damage7')),
             ],
             priority: 2,
         },
@@ -99,8 +99,8 @@ export const KATANA_SLICE_2: AbilityDef = {
             id: 'katana-slice-2-5',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } },
             effects: [
-                custom('samurai-katana-slice-threshold-4', '若至少有 4 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(8, '造成 8 点伤害。'),
+                custom('samurai-katana-slice-threshold-4', abilityEffectText('katana-slice-2', 'inflictShameIfFourKind'), 'preDefense'),
+                damage(8, abilityEffectText('katana-slice-2', 'damage8')),
             ],
             priority: 3,
         },
@@ -118,8 +118,8 @@ export const KATANA_SLICE_3: AbilityDef = {
             id: 'katana-slice-3-3',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3 } },
             effects: [
-                custom('samurai-katana-slice-threshold-3', '若至少有 3 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(6, '造成 6 点伤害。'),
+                custom('samurai-katana-slice-threshold-3', abilityEffectText('katana-slice-3', 'inflictShameIfThreeKind'), 'preDefense'),
+                damage(6, abilityEffectText('katana-slice-3', 'damage6')),
             ],
             priority: 1,
         },
@@ -127,8 +127,8 @@ export const KATANA_SLICE_3: AbilityDef = {
             id: 'katana-slice-3-4',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 4 } },
             effects: [
-                custom('samurai-katana-slice-threshold-3', '若至少有 3 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(7, '造成 7 点伤害。'),
+                custom('samurai-katana-slice-threshold-3', abilityEffectText('katana-slice-3', 'inflictShameIfThreeKind'), 'preDefense'),
+                damage(7, abilityEffectText('katana-slice-3', 'damage7')),
             ],
             priority: 2,
         },
@@ -136,8 +136,8 @@ export const KATANA_SLICE_3: AbilityDef = {
             id: 'katana-slice-3-5',
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 5 } },
             effects: [
-                custom('samurai-katana-slice-threshold-3', '若至少有 3 颗骰子数字相同，则对手获得 1 层耻辱。', 'preDefense'),
-                damage(8, '造成 8 点伤害。'),
+                custom('samurai-katana-slice-threshold-3', abilityEffectText('katana-slice-3', 'inflictShameIfThreeKind'), 'preDefense'),
+                damage(8, abilityEffectText('katana-slice-3', 'damage8')),
             ],
             priority: 3,
         },
@@ -153,8 +153,8 @@ const WAKIZASHI: AbilityDef = {
     sfxKey: SAMURAI_SFX_LIGHT,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.RISING_SUN]: 2 } },
     effects: [
-        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。'),
-        damage(3, '造成 3 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('wakizashi', 'gainBackStrike')),
+        damage(3, abilityEffectText('wakizashi', 'damage3Unblockable'), { unblockable: true }),
     ],
 };
 
@@ -167,8 +167,8 @@ export const WAKIZASHI_2: AbilityDef = {
     sfxKey: SAMURAI_SFX_LIGHT,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.RISING_SUN]: 2 } },
     effects: [
-        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。'),
-        damage(4, '造成 4 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('wakizashi-2', 'gainBackStrike')),
+        damage(4, abilityEffectText('wakizashi-2', 'damage4Unblockable'), { unblockable: true }),
     ],
 };
 
@@ -181,9 +181,9 @@ export const WAKIZASHI_3: AbilityDef = {
     sfxKey: SAMURAI_SFX_LIGHT,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.RISING_SUN]: 2 } },
     effects: [
-        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。'),
-        grantToken('opponent', TOKEN_IDS.SHAME, 1, '对手获得 1 层耻辱。'),
-        damage(4, '造成 4 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('wakizashi-3', 'gainBackStrike')),
+        grantToken('opponent', TOKEN_IDS.SHAME, 1, abilityEffectText('wakizashi-3', 'inflictShame')),
+        damage(4, abilityEffectText('wakizashi-3', 'damage4Unblockable'), { unblockable: true }),
     ],
 };
 
@@ -197,14 +197,14 @@ const BUSHIDO: AbilityDef = {
             id: 'bushido-start-turn',
             trigger: { type: 'phaseStart', phase: 'upkeep' },
             effects: [
-                custom('samurai-bushido-start-turn', '若你是起始玩家，则游戏开始时获得 1 个荣誉指示物。', 'immediate'),
+                custom('samurai-bushido-start-turn', abilityEffectText('bushido', 'gainHonorIfStartingPlayer'), 'immediate'),
             ],
         },
         {
             id: 'bushido-end-turn',
             trigger: { type: 'phaseEnd', phase: 'discard' },
             effects: [
-                custom('samurai-bushido-end-turn', '若本回合进攻掷骰次数少于 3 次，则回合结束时获得 1 个荣誉指示物。', 'immediate'),
+                custom('samurai-bushido-end-turn', abilityEffectText('bushido', 'gainHonorIfFewerThanThreeRolls'), 'immediate'),
             ],
         },
     ],
@@ -218,8 +218,8 @@ const SOLEMNITY: AbilityDef = {
     sfxKey: SAMURAI_SFX_HEAVY,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.HELM]: 3 } },
     effects: [
-        grantToken('opponent', TOKEN_IDS.SHAME, 1, '对手获得 1 层耻辱。'),
-        damage(7, '造成 7 点伤害。'),
+        grantToken('opponent', TOKEN_IDS.SHAME, 1, abilityEffectText('solemnity', 'inflictShame')),
+        damage(7, abilityEffectText('solemnity', 'damage7')),
     ],
 };
 
@@ -236,7 +236,7 @@ export const SOLEMNITY_2: AbilityDef = {
             description: abilityText('solemnity-2-solemn', 'description'),
             trigger: { type: 'diceSet', faces: { [FACE.HELM]: 3 } },
             effects: [
-                grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。'),
+                grantToken('opponent', TOKEN_IDS.SHAME, 2, abilityEffectText('solemnity-2-solemn', 'inflictShame2')),
             ],
             priority: 0,
         },
@@ -246,8 +246,8 @@ export const SOLEMNITY_2: AbilityDef = {
             description: abilityText('solemnity-2-main', 'description'),
             trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 2, [FACE.HELM]: 3 } },
             effects: [
-                grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。'),
-                damage(8, '造成 8 点伤害。'),
+                grantToken('opponent', TOKEN_IDS.SHAME, 2, abilityEffectText('solemnity-2', 'inflictShame2')),
+                damage(8, abilityEffectText('solemnity-2', 'damage8')),
             ],
             priority: 1,
         },
@@ -262,8 +262,8 @@ const BUDO: AbilityDef = {
     sfxKey: SAMURAI_SFX_HEAVY,
     trigger: { type: 'smallStraight' },
     effects: [
-        grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-        damage(6, '造成 6 点伤害。'),
+        grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('budo', 'gainHonor')),
+        damage(6, abilityEffectText('budo', 'damage6')),
     ],
 };
 
@@ -275,8 +275,8 @@ export const BUDO_2: AbilityDef = {
     sfxKey: SAMURAI_SFX_HEAVY,
     trigger: { type: 'smallStraight' },
     effects: [
-        grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-        damage(8, '造成 8 点伤害。'),
+        grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('budo-2', 'gainHonor')),
+        damage(8, abilityEffectText('budo-2', 'damage8')),
     ],
 };
 
@@ -289,10 +289,10 @@ const SAMURAI_SLOT_06: AbilityDef = {
     sfxKey: SAMURAI_SFX_HEAVY,
     trigger: { type: 'diceSet', faces: { [FACE.RISING_SUN]: 4 } },
     effects: [
-        grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。'),
-        grantToken('opponent', TOKEN_IDS.SHAME, 1, '对手获得 1 层耻辱。'),
-        damage(5, '再造成 5 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('samurai-slot-06', 'gainHonor')),
+        grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('samurai-slot-06', 'gainBackStrike')),
+        grantToken('opponent', TOKEN_IDS.SHAME, 1, abilityEffectText('samurai-slot-06', 'inflictShame')),
+        damage(5, abilityEffectText('samurai-slot-06', 'damage5Unblockable'), { unblockable: true }),
     ],
 };
 
@@ -310,9 +310,9 @@ export const SAMURAI_SLOT_06_2: AbilityDef = {
             description: abilityText('samurai-slot-06-2-feather-blade-style', 'description'),
             trigger: { type: 'diceSet', faces: { [FACE.RISING_SUN]: 3 } },
             effects: [
-                grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-                grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。'),
-                damage(2, '再造成 2 点不可防御伤害。', { unblockable: true }),
+                grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('samurai-slot-06-2-feather-blade-style', 'gainHonor')),
+                grantToken('opponent', TOKEN_IDS.SHAME, 2, abilityEffectText('samurai-slot-06-2-feather-blade-style', 'inflictShame2')),
+                damage(2, abilityEffectText('samurai-slot-06-2-feather-blade-style', 'damage2Unblockable'), { unblockable: true }),
             ],
             tags: ['unblockable'],
             priority: 0,
@@ -323,10 +323,10 @@ export const SAMURAI_SLOT_06_2: AbilityDef = {
             description: abilityText('samurai-slot-06-2-main', 'description'),
             trigger: { type: 'diceSet', faces: { [FACE.RISING_SUN]: 4 } },
             effects: [
-                grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-                grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。'),
-                grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。'),
-                damage(7, '再造成 7 点不可防御伤害。', { unblockable: true }),
+                grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('samurai-slot-06-2-main', 'gainHonor')),
+                grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('samurai-slot-06-2-main', 'gainBackStrike')),
+                grantToken('opponent', TOKEN_IDS.SHAME, 2, abilityEffectText('samurai-slot-06-2-main', 'inflictShame2')),
+                damage(7, abilityEffectText('samurai-slot-06-2-main', 'damage7Unblockable'), { unblockable: true }),
             ],
             tags: ['unblockable'],
             priority: 1,
@@ -342,10 +342,10 @@ const MASAMUNE: AbilityDef = {
     sfxKey: SAMURAI_SFX_HEAVY,
     trigger: { type: 'largeStraight' },
     effects: [
-        damage(7, '造成 7 点伤害。'),
+        damage(7, abilityEffectText('masamune', 'damage7')),
         custom(
             'samurai-masamune',
-            '掷 5 颗骰子：每个武士刀造成 1 点伤害；每个头盔造成 1 层耻辱；每个旭日获得 1 个反击指示物。',
+            abilityEffectText('masamune', 'roll5'),
         ),
     ],
 };
@@ -363,10 +363,10 @@ export const MASAMUNE_2: AbilityDef = {
             description: abilityText('masamune-2-large-straight', 'description'),
             trigger: { type: 'largeStraight' },
             effects: [
-                damage(7, '造成 7 点伤害。'),
+                damage(7, abilityEffectText('masamune-2', 'damage7')),
                 custom(
                     'samurai-masamune',
-                    '掷 6 颗骰子：每个武士刀造成 1 点伤害；每个头盔造成 1 层耻辱；每个旭日获得 1 个反击指示物。',
+                    abilityEffectText('masamune-2', 'roll6'),
                     'withDamage',
                     { diceCount: 6 },
                 ),
@@ -379,7 +379,7 @@ export const MASAMUNE_2: AbilityDef = {
             description: abilityText('masamune-2-honor', 'description'),
             trigger: { type: 'allSymbolsPresent', symbols: [FACE.KATANA, FACE.HELM, FACE.RISING_SUN] },
             effects: [
-                grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, '获得 1 个反击指示物。', 'preDefense'),
+                grantToken('self', TOKEN_IDS.SAMURAI_RETRIBUTION, 1, abilityEffectText('masamune-2-honor', 'gainBackStrike'), 'preDefense'),
             ],
             priority: 1,
         },
@@ -396,7 +396,7 @@ const STAND_TALL: AbilityDef = {
     effects: [
         custom(
             'samurai-stand-tall',
-            '每个武士刀造成 1 点不可防御伤害；每个头盔抵抗 1 点伤害；每个旭日抵抗 2 点伤害；若没有头盔或旭日，则自己获得 1 层耻辱。',
+            abilityEffectText('stand-tall', 'resolveDefense'),
         ),
     ],
 };
@@ -411,7 +411,7 @@ export const STAND_TALL_2: AbilityDef = {
     effects: [
         custom(
             'samurai-stand-tall-2',
-            '每个武士刀造成 1 点不可防御伤害；每个头盔抵抗 1 点伤害；每个旭日抵抗 2 点伤害。',
+            abilityEffectText('stand-tall-2', 'resolveDefense'),
         ),
     ],
 };
@@ -425,9 +425,9 @@ const SAMURAI_ULTIMATE: AbilityDef = {
     sfxKey: SAMURAI_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.RISING_SUN]: 5 } },
     effects: [
-        grantToken('self', TOKEN_IDS.HONOR, 1, '获得 1 个荣誉指示物。'),
-        grantToken('opponent', TOKEN_IDS.SHAME, 2, '对手获得 2 层耻辱。'),
-        damage(13, '再造成 13 点不可防御伤害。', { unblockable: true }),
+        grantToken('self', TOKEN_IDS.HONOR, 1, abilityEffectText('samurai-ultimate', 'gainHonor')),
+        grantToken('opponent', TOKEN_IDS.SHAME, 2, abilityEffectText('samurai-ultimate', 'inflictShame2')),
+        damage(13, abilityEffectText('samurai-ultimate', 'damage13Unblockable'), { unblockable: true }),
     ],
 };
 

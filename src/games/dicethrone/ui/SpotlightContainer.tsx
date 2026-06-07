@@ -9,6 +9,8 @@ import React from 'react';
 import type { MotionProps } from 'framer-motion';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HudPortal, UI_Z_INDEX } from '../../../core';
+import { OverlayLayerProvider } from '../../../components/common/overlays/OverlayLayerContext';
+import { resolveOverlayTooltipZIndex } from '../../../components/common/overlays/overlayLayer';
 import { createScopedLogger } from '../../../lib/logger';
 
 const spotlightContainerLogger = createScopedLogger('DT_SPOTLIGHT_CONTAINER');
@@ -274,7 +276,9 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
                         onClose();
                     }}
                 >
-                    {children}
+                    <OverlayLayerProvider tooltipZIndex={resolveOverlayTooltipZIndex(zIndex)}>
+                        {children}
+                    </OverlayLayerProvider>
                 </motion.div>
             </motion.div>
         </AnimatePresence>

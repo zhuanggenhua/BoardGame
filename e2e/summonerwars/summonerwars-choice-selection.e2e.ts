@@ -22,7 +22,7 @@ import { test, expect } from '../framework';
 import type { BrowserContext, Page } from '@playwright/test';
 import { cloneState } from '../helpers/summonerwars';
 import { setChineseLocale } from '../helpers/common';
-import { COMMON_UNITS_FROST } from '../src/games/summonerwars/config/factions/frost';
+import { COMMON_UNITS_FROST } from '../../src/games/summonerwars/config/factions/frost';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;

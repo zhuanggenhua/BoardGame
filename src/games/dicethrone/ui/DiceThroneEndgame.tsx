@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { ContentSlotProps } from '../../../components/game/framework/widgets/EndgameOverlay';
 import type { RematchButtonProps } from '../../../components/game/framework/widgets/RematchActions';
 import type { HeroState } from '../domain/types';
+import { getDiceThroneCharacterNameKey } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { getPortraitStyle } from './assets';
@@ -137,7 +138,7 @@ function HeroPanel({ player, isWinner, isDraw, index, locale, t }: HeroPanelProp
     const hp = player.resources[RESOURCE_IDS.HP] ?? 0;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     const tokens = useMemo(() => getNonZeroTokens(player.tokens ?? {}), [player.tokens]);
-    const heroName = t(`hero.${player.characterId}`);
+    const heroName = t(getDiceThroneCharacterNameKey(player.characterId) ?? 'selection.notSelected');
 
     // 无障碍标注：描述英雄名称和关键数值
     const heroAriaLabel = t('endgame.ariaHero', { heroName, hp, cp });

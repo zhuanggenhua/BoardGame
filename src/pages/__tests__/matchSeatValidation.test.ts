@@ -4,14 +4,26 @@ import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-libr
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as matchApi from '../../services/matchApi';
-import { isMatchNotFoundError, leaveMatch, useMatchStatus, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
+import {
+    clearMatchCredentials,
+    isMatchNotFoundError,
+    leaveMatch,
+    persistMatchCredentials,
+    readStoredMatchCredentials,
+    useMatchStatus,
+    validateStoredMatchSeat,
+    type StoredMatchCredentials,
+} from '../../hooks/match/useMatchStatus';
 import {
     haveAiSeatCredentialsChanged,
     loadOnlineAiSeatState,
+    resolveOnlineAiSeatClaimOptions,
     resolveMissingOnlineAiSeatCredentialIds,
 } from '../onlineAiSeats';
+import { loadGameImplementation } from '../../games/registry';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
+import type { GameEngineConfig } from '../../engine/transport/server';
 import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView } from '../../engine/ai';
 import {
     buildAiProgressMarker,
@@ -36,19 +48,73 @@ import {
 } from '../onlineAiForceSkip';
 import {
     isTutorialRoutePath,
+    shouldShowOnlineGameErrorToast,
+} from '../matchRoomRuntime';
+import {
+    resolveOnlineManualSetupTakeoverPlayerId,
+    resolveManualSetupAttemptReleaseSource,
+    resolveManualSetupSelectionActionKindFromCommand,
+    resolveManualSetupSelectionId,
+    resolveManualSetupSelectionTakeoverPlayerId,
+    shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
+    shouldReleaseFactionSelectAttemptFromSharedState,
+    shouldReleaseManualSetupAttemptFromSharedState,
+    shouldTakeOverManualSetupSelection,
+} from '../matchManualSetup';
+import { resolveMissingMatchConfirmationSignal } from '../matchMissingConfirmation';
+import {
+    buildOnlineAiIdleSeatRecoveryKey,
+    buildOnlineAiSeamAwareAttemptMarkers,
+    buildOnlineAiSeamAwareProgressMarker,
+    buildOnlineAiSubmitBlockedRecoveryKey,
     resolveManualOnlineAiRecovery,
-    resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
-    shouldShowOnlineGameErrorToast,
+    shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
-} from '../MatchRoom';
+} from '../onlineAiRecovery';
+import {
+    releaseConfirmedOnlineAiAttempt,
+    resolveOnlineAiActivePlayerId,
+} from '../useOnlineAiSeatAutoDispatch';
+import { resolveMatchRoomRouteIdentity } from '../matchRouteIdentity';
+import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 import { resolveExitMatchErrorMessageKey } from '../../components/lobby/roomActions';
 
 type Player = { id: number; name?: string | null };
+
+vi.mock('../../games/registry', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../games/registry')>();
+    const { diceThroneGameRuntimeAdapter } = await import('../../games/dicethrone/runtimeAdapter');
+    const { smashUpGameRuntimeAdapter } = await import('../../games/smashup/runtimeAdapter');
+    const { summonerWarsGameRuntimeAdapter } = await import('../../games/summonerwars/runtimeAdapter');
+
+    return {
+        ...actual,
+        getGameImplementation: (gameId: string) => {
+            const implementation = actual.getGameImplementation(gameId);
+            if (gameId === 'dicethrone') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: diceThroneGameRuntimeAdapter }
+                    : { runtimeAdapter: diceThroneGameRuntimeAdapter };
+            }
+            if (gameId === 'smashup') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: smashUpGameRuntimeAdapter }
+                    : { runtimeAdapter: smashUpGameRuntimeAdapter };
+            }
+            if (gameId === 'summonerwars') {
+                return implementation
+                    ? { ...implementation, runtimeAdapter: summonerWarsGameRuntimeAdapter }
+                    : { runtimeAdapter: summonerWarsGameRuntimeAdapter };
+            }
+            return implementation;
+        },
+    };
+});
 
 const buildStored = (overrides?: Partial<StoredMatchCredentials>): StoredMatchCredentials => ({
     matchID: 'match-1',
@@ -110,6 +176,25 @@ const buildOnlineAiSeatState = (args?: {
         responseWindow: {},
     },
 }) as MatchState<unknown>;
+
+const createOnlineAiMarkerEngineConfig = (): Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> => ({
+    gameId: 'dicethrone',
+    onlineAiRecovery: {
+        resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }) => {
+            if (phase !== 'defensiveRoll') {
+                return fallbackPlayerId;
+            }
+            const pendingAttack = (state.core as {
+                pendingAttack?: {
+                    defenderId?: unknown;
+                };
+            } | undefined)?.pendingAttack;
+            return typeof pendingAttack?.defenderId === 'string'
+                ? pendingAttack.defenderId
+                : fallbackPlayerId;
+        },
+    },
+});
 
 describe('validateStoredMatchSeat', () => {
     it('缺失本地信息时不清理', () => {
@@ -248,6 +333,109 @@ describe('resolveMissingMatchConfirmationSignal', () => {
     });
 });
 
+describe('resolveMatchRoomRouteIdentity', () => {
+    it('有 stored seat 且 URL 缺失时，必须继续使用 seat 身份而不是误退 spectator/null playerID', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: '1',
+            shouldAutoJoin: false,
+            spectateParam: null,
+        });
+
+        expect(result.hasStoredSeat).toBe(true);
+        expect(result.isSpectatorRoute).toBe(false);
+        expect(result.effectivePlayerID).toBe('1');
+        expect(result.statusPlayerID).toBe('1');
+        expect(result.transportPlayerID).toBe('1');
+    });
+
+    it('即使显式带 spectate=1，只要本地仍有 stored seat，也不能把真实 seat 页压成 spectator', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: '0',
+            shouldAutoJoin: false,
+            spectateParam: '1',
+        });
+
+        expect(result.hasStoredSeat).toBe(true);
+        expect(result.isSpectatorRoute).toBe(false);
+        expect(result.effectivePlayerID).toBe('0');
+        expect(result.statusPlayerID).toBe('0');
+        expect(result.transportPlayerID).toBe('0');
+    });
+
+    it('只有无 URL、无 stored seat、且允许 spectate 路由时，才应退回 spectator/null playerID', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: null,
+            shouldAutoJoin: false,
+            spectateParam: null,
+        });
+
+        expect(result.hasStoredSeat).toBe(false);
+        expect(result.isSpectatorRoute).toBe(true);
+        expect(result.effectivePlayerID).toBeUndefined();
+        expect(result.statusPlayerID).toBeNull();
+        expect(result.transportPlayerID).toBeNull();
+    });
+});
+
+describe('match-credentials-changed lifecycle', () => {
+    afterEach(() => {
+        localStorage.clear();
+    });
+
+    it('persistMatchCredentials 会立刻写入 localStorage，并通知同页监听器刷新 stored seat', () => {
+        const handler = vi.fn();
+        window.addEventListener('match-credentials-changed', handler);
+
+        try {
+            persistMatchCredentials('match-1', {
+                matchID: 'match-1',
+                playerID: '0',
+                credentials: 'cred-0',
+                gameName: 'smashup',
+            });
+
+            expect(readStoredMatchCredentials('match-1')).toEqual(expect.objectContaining({
+                matchID: 'match-1',
+                playerID: '0',
+                credentials: 'cred-0',
+                gameName: 'smashup',
+            }));
+            expect(handler).toHaveBeenCalledTimes(1);
+        } finally {
+            window.removeEventListener('match-credentials-changed', handler);
+        }
+    });
+
+    it('clearMatchCredentials 会立刻清空 localStorage，并通知同页监听器避免页面继续沿用旧 seat', () => {
+        persistMatchCredentials('match-1', {
+            matchID: 'match-1',
+            playerID: '0',
+            credentials: 'cred-0',
+            gameName: 'smashup',
+        });
+        const handler = vi.fn();
+        window.addEventListener('match-credentials-changed', handler);
+
+        try {
+            clearMatchCredentials('match-1');
+
+            expect(readStoredMatchCredentials('match-1')).toBeNull();
+            expect(handler).toHaveBeenCalledTimes(1);
+        } finally {
+            window.removeEventListener('match-credentials-changed', handler);
+        }
+    });
+});
+
 describe('TutorialMatchRoomWithAudio', () => {
     it('切换教程路由时会强制重建 MatchRoom，避免残留旧教程状态', async () => {
         vi.resetModules();
@@ -266,7 +454,7 @@ describe('TutorialMatchRoomWithAudio', () => {
                         return () => {
                             lifecycle.push(`unmount:${location.pathname}`);
                         };
-                    }, []);
+                    }, [location.pathname]);
 
                     return React.createElement('div', { 'data-testid': 'tutorial-match-room-probe' }, location.pathname);
                 },
@@ -415,6 +603,36 @@ describe('resolveMatchSeatSwapContext', () => {
         expect(context?.cancelSeatSwapCommandType).toBeNull();
     });
 
+    it('大杀四方在线选派系阶段缺少 hostStarted 时，仍应解析共享换座上下文', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'smashup',
+            myPlayerId: '0',
+            state: {
+                sys: { phase: 'factionSelect' },
+                core: {
+                    turnOrder: ['0', '1', '2', '3'],
+                    currentPlayerIndex: 0,
+                    factionSelection: {
+                        playerSelections: {
+                            '0': [],
+                            '1': [],
+                            '2': [],
+                            '3': [],
+                        },
+                    },
+                    players: { '0': {}, '1': {}, '2': {}, '3': {} },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context).toMatchObject({
+            seatSwapMode: 'instant',
+            seatingOrder: ['0', '1', '2', '3'],
+            pendingSeatSwapRequest: null,
+            requestSeatSwapCommandType: 'su:swap_seat',
+        });
+    });
+
     it('不在可换座阶段时应返回 null', () => {
         const context = resolveMatchSeatSwapContext({
             gameId: 'dicethrone',
@@ -504,6 +722,27 @@ describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
         });
     });
 
+    it('response-loop hard-close 收口后若仍停留在 AI 流程，也应显示自动跳过提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'response-loop',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                },
+                sys: {
+                    phase: 'afterRollConfirmed',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+        });
+
+        expect(notice).toEqual({
+            tone: 'info',
+            title: 'AI 响应超时',
+            message: 'AI 已自动跳过。',
+        });
+    });
+
     it('真正的 active-turn 强制推进仍保留强制结束回合提示', () => {
         const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
             candidateReason: 'active-turn',
@@ -516,6 +755,27 @@ describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
             title: 'AI 强制结束回合',
             message: 'AI 已强制结束回合。',
         });
+    });
+
+    it('custom current-player seam 变化时，恢复完成提示应按 seam-aware current player 抑制人类回合 toast', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'response-window',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                    pendingAttack: {
+                        defenderId: '0',
+                    },
+                },
+                sys: {
+                    phase: 'defensiveRoll',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        });
+
+        expect(notice).toBeNull();
     });
 });
 
@@ -558,6 +818,51 @@ describe('resolveExitMatchErrorMessageKey', () => {
 });
 
 describe('onlineAiSeats', () => {
+    it('补领 guest 房间的 AI 凭据时，即使当前存在 token 也必须使用房间 ownerKey 的 guestId', () => {
+        const options = resolveOnlineAiSeatClaimOptions({
+            matchInfo: {
+                matchID: 'match-guest-owner',
+                gameName: 'smashup',
+                players: [{ id: 0, name: '房主' }],
+                setupData: {
+                    ownerKey: 'guest:2141',
+                    ownerType: 'guest',
+                    guestId: '2141',
+                },
+            },
+            token: 'stale-user-token',
+            guestId: '9999',
+            playerName: 'AI 2 号位',
+        });
+
+        expect(options).toEqual({
+            guestId: '2141',
+            playerName: 'AI 2 号位',
+        });
+    });
+
+    it('补领 user 房间的 AI 凭据时才使用 token', () => {
+        const options = resolveOnlineAiSeatClaimOptions({
+            matchInfo: {
+                matchID: 'match-user-owner',
+                gameName: 'smashup',
+                players: [{ id: 0, name: '房主' }],
+                setupData: {
+                    ownerKey: 'user:u-1',
+                    ownerType: 'user',
+                },
+            },
+            token: 'user-token',
+            guestId: '2141',
+            playerName: 'AI 2 号位',
+        });
+
+        expect(options).toEqual({
+            token: 'user-token',
+            playerName: 'AI 2 号位',
+        });
+    });
+
     it('未显式配置在线 AI 座位时，不得套用本地默认 AI', async () => {
         const claimMissingSeatCredential = vi.fn(async (playerId: string) => `reclaimed-${playerId}`);
 
@@ -833,6 +1138,12 @@ describe('onlineAiSeats', () => {
             } as MatchState<unknown>,
             seatControllers: onlineAiState.seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
         });
 
         expect(candidate?.reason).toBe('active-turn');
@@ -865,6 +1176,7 @@ describe('onlineAiSeats', () => {
             sharedState: {
                 core: {
                     activePlayerId: '1',
+                    hostStarted: false,
                     turnOrder: ['0', '1'],
                     currentPlayerIndex: 1,
                     factionSelection: {
@@ -890,6 +1202,12 @@ describe('onlineAiSeats', () => {
             } as MatchState<unknown>,
             seatControllers: onlineAiState.seatControllers,
             seatStates: {},
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    publicPregameLegalActionPhases: ['factionSelect'],
+                },
+            },
         });
 
         expect(candidate).toMatchObject({
@@ -1002,6 +1320,107 @@ describe('onlineAiSeats', () => {
             },
         });
         expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it('手动恢复遇到 compare-roll contestant 时，应把 blocked seat snapshot 交给 dispatch，而不是提前 force-end-turn', async () => {
+        await loadGameImplementation('dicethrone');
+
+        const resolveDispatchImpl = vi.fn().mockImplementation(async (dispatchArgs) => {
+            const resolved = dispatchArgs.visibleStateResolver?.('1');
+            expect(resolved).toMatchObject({
+                kind: 'online-ai-decision-view',
+                visibility: 'shared',
+                canDecide: true,
+                blockedReason: null,
+            });
+            if (!resolved || typeof resolved !== 'object' || !('visibleState' in resolved)) {
+                throw new Error('expected resolved online ai decision view');
+            }
+            const visibleState = resolved.visibleState as MatchState<unknown>;
+            expect(visibleState.sys?.interaction?.current).toMatchObject({
+                id: 'compare-roll-1',
+                kind: 'compare-roll-choice',
+                playerId: '0',
+            });
+            expect(visibleState.sys?.interaction?.isBlocked).toBe(true);
+            return {
+                kind: 'idle',
+                idleReason: 'no-action',
+            };
+        });
+
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: { gameId: 'dicethrone' },
+            matchId: 'match-manual-compare-roll-contestant',
+            sharedState: {
+                core: {
+                    currentPlayerId: '1',
+                },
+                sys: {
+                    phase: 'defensiveRoll',
+                    turnNumber: 9,
+                    eventStream: { nextId: 42, entries: [] },
+                    interaction: {
+                        current: {
+                            id: 'compare-roll-1',
+                            kind: 'compare-roll-choice',
+                            playerId: '0',
+                            data: {
+                                contestants: [
+                                    { playerId: '0', roll: 6, labelKey: 'compareRoll.gunslingerDuel.attacker' },
+                                    { playerId: '1', roll: 2, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                                ],
+                                options: [{ id: 'confirm', label: '确认' }],
+                            },
+                        },
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': {
+                    core: {
+                        currentPlayerId: '1',
+                    },
+                    sys: {
+                        phase: 'defensiveRoll',
+                        turnNumber: 9,
+                        eventStream: { nextId: 42, entries: [] },
+                        interaction: {
+                            current: {
+                                id: 'compare-roll-1',
+                                kind: 'compare-roll-choice',
+                                playerId: '0',
+                                data: {
+                                    contestants: [
+                                        { playerId: '0', roll: 6, labelKey: 'compareRoll.gunslingerDuel.attacker' },
+                                        { playerId: '1', roll: 2, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                                    ],
+                                    options: [{ id: 'confirm', label: '确认' }],
+                                },
+                            },
+                            queue: [],
+                            isBlocked: true,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                } as MatchState<unknown>,
+            },
+            resolveDispatchImpl,
+        });
+
+        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({ kind: 'unavailable' });
     });
 
     it('仅凭据有变化时才触发持久化', () => {
@@ -2197,6 +2616,802 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
+    it('custom current-player seam 变化时，confirmed staging 应按 seam-aware marker 判定', () => {
+        const latestState = buildOnlineAiSeatState({
+            nextId: 18,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const confirmedState = buildOnlineAiSeatState({
+            nextId: 18,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (latestState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (confirmedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: confirmedState,
+            latestSeatState: latestState,
+        })).toBe(false);
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: confirmedState,
+            latestSeatState: latestState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe(true);
+    });
+
+    it('staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state', () => {
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 10,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 11 });
+        const latestCaughtUpSeatState = buildOnlineAiSeatState({ nextId: 11 });
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: {},
+            seatLatestStates: { '1': latestCaughtUpSeatState },
+        })).toBe(latestCaughtUpSeatState);
+    });
+
+    it('latest seat state 已追平 confirmed override 时，不应继续沿用 override 阴影状态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 12 });
+        const latestCaughtUpSeatState = buildOnlineAiSeatState({ nextId: 12 });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: latestCaughtUpSeatState,
+        })).toBe(false);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': latestCaughtUpSeatState },
+        })).toBe(latestCaughtUpSeatState);
+    });
+
+    it('latest seat state 尚未追平 confirmed override 时，必须继续保留 override 作为桥接态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 14 });
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 13,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: staleSeatState,
+        })).toBe(true);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
+    });
+
+    it('custom current-player seam 变化时，latest seat state 不应误判为已追平 override', () => {
+        const overrideState = buildOnlineAiSeatState({
+            nextId: 22,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const latestSeatState = buildOnlineAiSeatState({
+            nextId: 22,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (overrideState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+        (latestSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: overrideState,
+            latestSeatState,
+        })).toBe(false);
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: overrideState,
+            latestSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe(true);
+    });
+
+    it('custom current-player seam 变化时，recovery marker 必须使用 seam-aware 语义', () => {
+        const previousState = buildOnlineAiSeatState({
+            nextId: 30,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextState = buildOnlineAiSeatState({
+            nextId: 30,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildAiProgressMarker(previousState)).toBe(buildAiProgressMarker(nextState));
+
+        expect(buildOnlineAiSeamAwareProgressMarker({
+            state: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiSeamAwareProgressMarker({
+            state: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，online-ai attempt marker 必须按 seam-aware snapshot 比较', () => {
+        const previousSharedState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextSharedState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const previousSeatState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextSeatState = buildOnlineAiSeatState({
+            nextId: 31,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousSharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextSharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+        (previousSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextSeatState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildAiProgressMarker(previousSharedState)).toBe(buildAiProgressMarker(nextSharedState));
+        expect(buildAiProgressMarker(previousSeatState)).toBe(buildAiProgressMarker(nextSeatState));
+
+        expect(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: previousSharedState,
+            seatState: previousSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toEqual({
+            sharedMarker: expect.any(String),
+            seatMarker: expect.any(String),
+        });
+        expect(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: previousSharedState,
+            seatState: previousSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toEqual(buildOnlineAiSeamAwareAttemptMarkers({
+            sharedState: nextSharedState,
+            seatState: nextSeatState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，idle / submit-blocked recovery key 必须按 seam-aware marker 去重', () => {
+        const previousState = buildOnlineAiSeatState({
+            nextId: 32,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        const nextState = buildOnlineAiSeatState({
+            nextId: 32,
+            phase: 'defensiveRoll',
+            currentPlayerId: '1',
+        });
+        (previousState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+        (nextState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: previousState,
+        })).toBe(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: nextState,
+        }));
+
+        expect(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiIdleSeatRecoveryKey({
+            playerId: '1',
+            authoritativeState: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+
+        expect(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: previousState,
+        })).toBe(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: nextState,
+        }));
+
+        expect(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: previousState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).not.toBe(buildOnlineAiSubmitBlockedRecoveryKey({
+            playerId: '1',
+            resolution: {
+                attemptKey: 'attempt-1',
+                action: { kind: 'advance-phase' },
+            },
+            authoritativeState: nextState,
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        }));
+    });
+
+    it('custom current-player seam 变化时，应按 seam-aware current player 识别 active ai seat', () => {
+        const sharedState = buildOnlineAiSeatState({
+            nextId: 33,
+            phase: 'defensiveRoll',
+            currentPlayerId: '0',
+        });
+        (sharedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+        expect(resolveOnlineAiActivePlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        })).toBeNull();
+
+        expect(resolveOnlineAiActivePlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            engineConfig: createOnlineAiMarkerEngineConfig(),
+        })).toBe('1');
+    });
+
+    it('custom current-player seam 变化时，manual setup bridge 应按 seam-aware current player 接管 AI 座位', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-game',
+            onlineAiRecovery: {
+                resolveCurrentPlayerId: ({ phase, fallbackPlayerId }) => (
+                    phase === 'factionSelect' ? '1' : fallbackPlayerId
+                ),
+            },
+        };
+        const sharedState = buildOnlineAiSeatState({
+            nextId: 34,
+            phase: 'factionSelect',
+            currentPlayerId: '0',
+        });
+
+        expect(resolveOnlineManualSetupTakeoverPlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human', manualFactionSelection: true },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+
+        expect(resolveOnlineManualSetupTakeoverPlayerId({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human', manualFactionSelection: true },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('1');
+    });
+
+    it('seat latest state 在重连后即使 nextId 更低，只要已明确关闭旧 owner-only prompt，也不应继续沿用 override 阴影状态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({
+            nextId: 14,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const postReconnectClosedSeatState = buildOnlineAiSeatState({
+            nextId: 1,
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: postReconnectClosedSeatState,
+        })).toBe(false);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': postReconnectClosedSeatState },
+        })).toBe(postReconnectClosedSeatState);
+    });
+
+    it('shared state 已记录 AI 选中的派系时，应立即释放 select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['robots'],
+                    playerSelections: {
+                        '0': [],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(true);
+    });
+
+    it('shared state 未吸收但 seat state 已写回该派系时，应允许释放 attempt 继续推进', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': [],
+                    },
+                    completedPlayers: [],
+                },
+                currentPlayerIndex: 1,
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+        const seatState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+                currentPlayerIndex: 2,
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState,
+            seatState,
+            playerId: '1',
+            actionKind: 'select-faction',
+            selectionId: 'robots',
+        })).toBe('seat');
+    });
+
+    it('shared 与 seat 都已吸收时，应优先标记为 shared release', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState,
+            seatState: sharedState,
+            playerId: '1',
+            actionKind: 'select-faction',
+            selectionId: 'robots',
+        })).toBe('shared');
+    });
+
+    it('SummonerWars 在线前置阶段：hostStarted=false 且 AI 还未选阵营时，应解析出要接管的 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'necromancer',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe('1');
+        expect(shouldTakeOverManualSetupSelection({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe(true);
+    });
+
+    it('SummonerWars 在线前置阶段：房主自己还没选阵营时，不应提前接管 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+    });
+
+    it('DiceThrone 在线前置阶段：房主自己还没选角色时，不应提前接管 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedCharacters: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+    });
+
+    it('DiceThrone 角色选择已写回 shared state 时，应释放 setup-select-character attempt', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedCharacters: {
+                    '0': 'monk',
+                    '1': 'samurai',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'samurai',
+        })).toBe(true);
+    });
+
+    it('SummonerWars 阵营选择已写回 shared state 时，应释放 setup-select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'necromancer',
+                    '1': 'paladin',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-faction',
+            selectionId: 'paladin',
+        })).toBe(true);
+    });
+
+    it('自定义前置选择状态未提供 override 时，shared fallback 不应误判 takeover 或 release', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState: {
+                ...sharedState,
+                core: {
+                    hostStarted: false,
+                    draftSetupSelections: {
+                        '0': 'cleric',
+                        '1': 'ranger',
+                    },
+                },
+            } as MatchState<unknown>,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+        })).toBe(false);
+    });
+
+    it('自定义前置选择状态提供 override 时，应按 adapter takeover 并释放 shared attempt', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-game',
+            onlineAiRecovery: {
+                resolveManualSetupSelectionTakeoverPlayerId: ({
+                    sharedState,
+                    currentPlayerId,
+                    seatControllers,
+                    hasManualDispatch,
+                }) => {
+                    if (!hasManualDispatch) {
+                        return null;
+                    }
+                    const selectedByPlayer = (sharedState.core as {
+                        draftSetupSelections?: Record<string, unknown>;
+                    } | undefined)?.draftSetupSelections;
+                    if (!selectedByPlayer || typeof selectedByPlayer !== 'object') {
+                        return undefined;
+                    }
+                    if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
+                        const currentSelection = selectedByPlayer[currentPlayerId];
+                        if (typeof currentSelection !== 'string' || currentSelection === 'unselected') {
+                            return null;
+                        }
+                    }
+                    return Object.entries(seatControllers).find(([playerId, controller]) => (
+                        controller?.type !== 'human'
+                        && controller?.manualFactionSelection === true
+                        && (
+                            typeof selectedByPlayer[playerId] !== 'string'
+                            || selectedByPlayer[playerId] === 'unselected'
+                        )
+                    ))?.[0] ?? null;
+                },
+                shouldReleaseManualSetupAttemptFromSharedState: ({
+                    sharedState,
+                    playerId,
+                    actionKind,
+                    selectionId,
+                }) => {
+                    if (actionKind !== 'setup-select-character') {
+                        return undefined;
+                    }
+                    const selectedByPlayer = (sharedState.core as {
+                        draftSetupSelections?: Record<string, unknown>;
+                    } | undefined)?.draftSetupSelections;
+                    if (!selectedByPlayer || typeof selectedByPlayer !== 'object') {
+                        return undefined;
+                    }
+                    return selectedByPlayer[playerId] === selectionId;
+                },
+            },
+        };
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+        const confirmedSharedState = {
+            core: {
+                hostStarted: false,
+                draftSetupSelections: {
+                    '0': 'cleric',
+                    '1': 'ranger',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('1');
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState: confirmedSharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+            engineConfig: manualSetupEngineConfig,
+        })).toBe(true);
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState: confirmedSharedState,
+            seatState: sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'ranger',
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('shared');
+    });
+
+    it('自定义前置选择命令未提供 override 时，shared fallback 不应误判 actionKind / selectionId', () => {
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'custom:select_draft',
+            payload: { draftId: 'ranger' },
+        })).toBeNull();
+
+        expect(resolveManualSetupSelectionId({
+            actionKind: 'setup-select-character',
+            payload: { draftId: 'ranger' },
+        })).toBeNull();
+    });
+
+    it('自定义前置选择命令提供 override 时，应按 adapter 解析 actionKind / selectionId', () => {
+        const manualSetupEngineConfig: Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'> = {
+            gameId: 'custom-manual-setup-command-game',
+            onlineAiRecovery: {
+                resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+                    type === 'custom:select_draft'
+                    && typeof (payload as { draftId?: unknown } | undefined)?.draftId === 'string'
+                        ? 'setup-select-character'
+                        : undefined
+                ),
+                resolveManualSetupSelectionId: ({ actionKind, payload }) => (
+                    actionKind === 'setup-select-character'
+                    && typeof (payload as { draftId?: unknown } | undefined)?.draftId === 'string'
+                        ? (payload as { draftId: string }).draftId
+                        : undefined
+                ),
+            },
+        };
+
+        expect(resolveManualSetupSelectionActionKindFromCommand({
+            type: 'custom:select_draft',
+            payload: { draftId: 'ranger' },
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('setup-select-character');
+
+        expect(resolveManualSetupSelectionId({
+            actionKind: 'setup-select-character',
+            payload: { draftId: 'ranger' },
+            engineConfig: manualSetupEngineConfig,
+        })).toBe('ranger');
+    });
+
+    it('shared state 未记录该派系且仍在 factionSelect 时，不应提前释放 select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['wizards'],
+                    playerSelections: {
+                        '0': ['wizards'],
+                        '1': [],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(false);
+    });
+
+    it('shared state 已离开 factionSelect 时，可视为 select-faction attempt 已被权威态吸收', () => {
+        const sharedState = {
+            core: {
+                factionSelection: undefined,
+            },
+            sys: {
+                phase: 'startTurn',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(true);
+    });
+
+    it('在线 AI 的前置选择动作在 seat 侧确认后，必须等待 shared state 吸收后再重试', () => {
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('select-faction')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('setup-select-faction')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('setup-select-character')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('advance-phase')).toBe(false);
+    });
+
     it('batch confirmed 只透传权威态，不直接回写 seat latestState', () => {
         const updateLatestState = vi.fn();
         const resync = vi.fn();
@@ -2414,6 +3629,162 @@ describe('submitOnlineAiResolution', () => {
         expect(unsubscribe).toHaveBeenCalledTimes(1);
     });
 
+    it('SmashUp factionSelect 同一玩家连续选派系时，单命令确认不应误判为 4 秒超时', async () => {
+        vi.useFakeTimers();
+        try {
+            const onConfirmed = vi.fn();
+            const onRejected = vi.fn();
+            const onWillResync = vi.fn();
+            const unsubscribe = vi.fn();
+            const sendBatch = vi.fn();
+            const sendCommand = vi.fn();
+            let stateListener: ((state: unknown) => void) | null = null;
+            const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+                stateListener = listener;
+                return unsubscribe;
+            });
+
+            const latestState = {
+                ...buildOnlineAiSeatState({
+                    nextId: 15,
+                    phase: 'factionSelect',
+                    currentPlayerId: '3',
+                }),
+                core: {
+                    currentPlayerId: '3',
+                    factionSelection: {
+                        takenFactions: ['aliens', 'pirates', 'robots'],
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['pirates'],
+                            '2': ['robots'],
+                            '3': [],
+                        },
+                    },
+                },
+            } as MatchState<unknown>;
+            const confirmedState = {
+                ...buildOnlineAiSeatState({
+                    nextId: 15,
+                    phase: 'factionSelect',
+                    currentPlayerId: '3',
+                }),
+                core: {
+                    currentPlayerId: '3',
+                    factionSelection: {
+                        takenFactions: ['aliens', 'pirates', 'robots', 'wizards'],
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['pirates'],
+                            '2': ['robots'],
+                            '3': ['wizards'],
+                        },
+                    },
+                },
+            } as MatchState<unknown>;
+
+            submitOnlineAiResolution({
+                client: {
+                    sendBatch,
+                    sendCommand,
+                    subscribeStateUpdate,
+                    latestState,
+                    updateLatestState: vi.fn(),
+                    resync: vi.fn(),
+                },
+                resolution: buildResolution({
+                    playerId: '3',
+                    attemptKey: 'attempt-faction-progress',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-wizards' } }],
+                }),
+                lastAiAttemptKeyRef: { current: null },
+                scheduleRetry: vi.fn(),
+                onConfirmed,
+                onRejected,
+                onWillResync,
+            });
+
+            stateListener?.(confirmedState);
+            expect(onConfirmed).toHaveBeenCalledWith(confirmedState);
+
+            await vi.advanceTimersByTimeAsync(4000);
+            expect(onRejected).not.toHaveBeenCalled();
+            expect(onWillResync).not.toHaveBeenCalled();
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('custom current-player seam 变化时，单命令确认应按 seam-aware marker 判定推进', async () => {
+        vi.useFakeTimers();
+        try {
+            const onConfirmed = vi.fn();
+            const onRejected = vi.fn();
+            const onWillResync = vi.fn();
+            const unsubscribe = vi.fn();
+            const sendBatch = vi.fn();
+            const sendCommand = vi.fn();
+            let stateListener: ((state: unknown) => void) | null = null;
+            const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+                stateListener = listener;
+                return unsubscribe;
+            });
+
+            const latestState = buildOnlineAiSeatState({
+                nextId: 16,
+                phase: 'defensiveRoll',
+                currentPlayerId: '1',
+            });
+            const confirmedState = buildOnlineAiSeatState({
+                nextId: 16,
+                phase: 'defensiveRoll',
+                currentPlayerId: '1',
+            });
+            (latestState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '0' };
+            (confirmedState.core as { pendingAttack?: unknown }).pendingAttack = { defenderId: '1' };
+
+            expect(buildAiProgressMarker(latestState)).toBe(buildAiProgressMarker(confirmedState));
+            expect(buildAiProgressMarker(latestState, {
+                engineConfig: createOnlineAiMarkerEngineConfig(),
+            })).not.toBe(buildAiProgressMarker(confirmedState, {
+                engineConfig: createOnlineAiMarkerEngineConfig(),
+            }));
+
+            submitOnlineAiResolution({
+                client: {
+                    sendBatch,
+                    sendCommand,
+                    subscribeStateUpdate,
+                    latestState,
+                    updateLatestState: vi.fn(),
+                    resync: vi.fn(),
+                },
+                resolution: buildResolution({
+                    playerId: '1',
+                    attemptKey: 'attempt-custom-current-player-progress',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'confirm' } }],
+                }),
+                lastAiAttemptKeyRef: { current: null },
+                scheduleRetry: vi.fn(),
+                engineConfig: createOnlineAiMarkerEngineConfig(),
+                onConfirmed,
+                onRejected,
+                onWillResync,
+            });
+
+            stateListener?.(confirmedState);
+            expect(onConfirmed).toHaveBeenCalledWith(confirmedState);
+
+            await vi.advanceTimersByTimeAsync(4000);
+            expect(onRejected).not.toHaveBeenCalled();
+            expect(onWillResync).not.toHaveBeenCalled();
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('单命令超时后会清空 attemptKey、安排重试，并允许 onWillResync 接管 resync', async () => {
         vi.useFakeTimers();
         try {
@@ -2594,7 +3965,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
         expect(candidate?.interactionId).toBe('hoverbot-hidden');
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'skip' },
+            payload: { interactionId: 'hoverbot-hidden', optionId: 'skip' },
         });
     });
 
@@ -2640,7 +4011,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'skip' },
+            payload: { interactionId: 'hoverbot-hidden', optionId: 'skip' },
         });
     });
     it('隐藏交互只剩 __emergency_skip__ 或 done 时，也应返回自动收口 resolution', () => {
@@ -2683,7 +4054,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(emergencyCandidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: '__emergency_skip__' },
+            payload: { interactionId: 'empty-hidden', optionId: '__emergency_skip__' },
         });
 
         const doneCandidate = resolveForceSkippableHiddenAiInteraction({
@@ -2725,7 +4096,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(doneCandidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'done' },
+            payload: { interactionId: 'done-hidden', optionId: 'done' },
         });
     });
 
@@ -2768,6 +4139,61 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
         });
 
         expect(candidate).toBeNull();
+    });
+
+    it('trigger-only hidden simple-choice 应按 engineConfig 自动选择首个 trigger', () => {
+        const candidate = resolveForceSkippableHiddenAiInteraction({
+            sharedState: {
+                core: {},
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: true,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': {
+                    core: {},
+                    sys: {
+                        interaction: {
+                            current: {
+                                id: 'trigger-hidden',
+                                playerId: '1',
+                                kind: 'simple-choice',
+                                data: {
+                                    sourceId: 'smashup_reaction_choose',
+                                    multi: { min: 1, max: 1 },
+                                    options: [
+                                        {
+                                            id: 'trigger-a',
+                                            label: '触发 A',
+                                            value: { kind: 'trigger', triggerId: 'afterScoring:a' },
+                                        },
+                                    ],
+                                },
+                            },
+                            queue: [],
+                        },
+                    },
+                } as MatchState<unknown>,
+            },
+            engineConfig: {
+                gameId: 'smashup',
+                onlineAiRecovery: {
+                    autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
+                },
+            },
+        });
+
+        expect(candidate?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'trigger-hidden', optionId: 'trigger-a' },
+        });
     });
 
     it('非阻塞态或不可跳过的交互时，不应返回强制跳过 resolution', () => {
@@ -2872,7 +4298,7 @@ describe('resolveForceEndTurnForStalledAi', () => {
         expect(candidate?.reason).toBe('hidden-interaction');
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+            { type: 'SYS_INTERACTION_RESPOND', payload: { interactionId: 'hidden-skip', optionId: 'skip' } },
         ]);
     });
 
@@ -2910,7 +4336,7 @@ describe('resolveForceEndTurnForStalledAi', () => {
         expect(candidate?.reason).toBe('visible-interaction');
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: 'visible-mandatory' } },
         ]);
     });
 
@@ -3226,6 +4652,73 @@ describe('本地 AI 无进展重试判定', () => {
             nextState,
         })).toBe(false);
     });
+
+    it('custom current-player seam 漂移时，本地 AI retry guard 不应误判为未推进', () => {
+        const engineConfig = {
+            gameId: 'custom-offturn-game',
+            onlineAiRecovery: {
+                resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }: {
+                    state: MatchState<unknown>;
+                    phase: string;
+                    fallbackPlayerId: string | null;
+                }) => {
+                    if (phase !== 'defensiveRoll') {
+                        return fallbackPlayerId;
+                    }
+                    const pendingAttack = (state.core as {
+                        pendingAttack?: {
+                            defenderId?: unknown;
+                        };
+                    } | undefined)?.pendingAttack;
+                    return typeof pendingAttack?.defenderId === 'string'
+                        ? pendingAttack.defenderId
+                        : fallbackPlayerId;
+                },
+            },
+        } as const;
+
+        const previousState = buildProgressState({
+            core: {
+                activePlayerId: '0',
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                },
+            },
+            sys: {
+                turnNumber: 1,
+                phase: 'defensiveRoll',
+                eventStream: { nextId: 5 },
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null },
+            },
+        });
+        const nextState = buildProgressState({
+            core: {
+                activePlayerId: '0',
+                pendingAttack: undefined,
+            },
+            sys: {
+                turnNumber: 1,
+                phase: 'main2',
+                eventStream: { nextId: 5 },
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null },
+            },
+        });
+
+        expect(buildAiProgressMarker(previousState, { engineConfig })).not.toBe(
+            buildAiProgressMarker(nextState, { engineConfig }),
+        );
+        expect(shouldRetryLocalAiAttemptAfterDispatch({
+            cancelled: false,
+            activeAttemptKey: 'attempt-1',
+            resolutionAttemptKey: 'attempt-1',
+            markerBeforeDispatch: buildAiProgressMarker(previousState, { engineConfig }),
+            nextState,
+            engineConfig,
+        })).toBe(false);
+    });
 });
 
 describe('AI attemptKey 预占位', () => {
@@ -3250,6 +4743,58 @@ describe('AI attemptKey 预占位', () => {
 
         releaseAiAttemptKeyIfMatches(ref, 'attempt-2');
         expect(ref.current).toBeNull();
+    });
+});
+
+describe('online-ai confirmed attempt release', () => {
+    it('shared state 已吸收 manual setup 结果时，不应因缺少 engineConfig 而在 release 阶段抛错', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+        const activeAiAttemptRef = {
+            current: {
+                attemptKey: 'attempt-release-1',
+                playerId: '1',
+                reservedAt: Date.now(),
+                sharedMarker: 'shared-marker',
+                seatMarker: null,
+                actionKind: 'select-faction',
+                pendingSelectionId: 'robots',
+            },
+        };
+        const aiSeatDecisionDebugRef = { current: {} as Record<string, Record<string, unknown>> };
+        const clearActiveAiAttemptIfMatches = vi.fn((attemptKey: string) => {
+            if (activeAiAttemptRef.current?.attemptKey === attemptKey) {
+                activeAiAttemptRef.current = null;
+            }
+        });
+
+        expect(() => releaseConfirmedOnlineAiAttempt({
+            engineConfig: { gameId: 'smashup' },
+            sharedState,
+            activeAiAttemptRef,
+            aiSeatDecisionDebugRef,
+            getEffectiveSeatState: () => sharedState,
+            getSeatClient: () => null,
+            requestSeatResync: vi.fn(),
+            clearActiveAiAttemptIfMatches,
+        })).not.toThrow();
+
+        expect(clearActiveAiAttemptIfMatches).toHaveBeenCalledWith('attempt-release-1');
+        expect(activeAiAttemptRef.current).toBeNull();
+        expect(aiSeatDecisionDebugRef.current['1']?.stage).toBe('shared-faction-select-confirmed');
     });
 });
 
@@ -3741,6 +5286,125 @@ describe('LocalGameProvider 视角与重置契约', () => {
         expect(setupSpy.mock.calls[0]?.[2]).toEqual(setupData);
         expect(setupSpy.mock.calls[1]?.[2]).toEqual(setupData);
     });
+
+    it('回归：四人手动代 AI 选派系进入第二轮时，P4 的第二个派系必须写回到 player 3', async () => {
+        const Probe = () => {
+            const { state, dispatch, playerId } = useGameClient<{
+                currentPlayerIndex: number;
+                factionSelection?: {
+                    playerSelections?: Record<string, string[]>;
+                };
+            }>();
+
+            return createElement(
+                'div',
+                null,
+                createElement('button', {
+                    'data-testid': 'local-manual-p4-dispatch',
+                    onClick: () => dispatch('su:select_faction', { factionId: 'tricksters' }),
+                }),
+                createElement(
+                    'div',
+                    { 'data-testid': 'local-manual-p4-probe' },
+                    JSON.stringify({
+                        playerId,
+                        currentPlayerIndex: state?.core.currentPlayerIndex ?? null,
+                        playerSelections: state?.core.factionSelection?.playerSelections ?? null,
+                    }),
+                ),
+            );
+        };
+
+        const engineConfig = {
+            gameId: '__test_smashup_local_manual_p4_second_pick__',
+            resolveLocalPregameControlledPlayerId: resolveSmashUpLocalPregameControlledPlayerId,
+            domain: {
+                gameId: '__test_smashup_local_manual_p4_second_pick__',
+                setup: () => ({
+                    turnOrder: ['0', '1', '2', '3'],
+                    currentPlayerIndex: 3,
+                    factionSelection: {
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['ninjas'],
+                            '2': ['robots'],
+                            '3': ['wizards'],
+                        },
+                    },
+                }),
+                validate: () => ({ valid: true }),
+                execute: (_state: MatchState<unknown>, command: { type: string; playerId?: string; payload?: { factionId?: string } }) => (
+                    command.type === 'su:select_faction' && command.playerId && command.payload?.factionId
+                        ? [{
+                            type: 'FACTION_SELECTED',
+                            payload: {
+                                playerId: command.playerId,
+                                factionId: command.payload.factionId,
+                            },
+                        } as const]
+                        : []
+                ),
+                reduce: (
+                    core: {
+                        currentPlayerIndex: number;
+                        factionSelection: {
+                            playerSelections: Record<string, string[]>;
+                        };
+                    },
+                    event: { type: string; payload?: { playerId?: string; factionId?: string } },
+                ) => {
+                    if (event.type !== 'FACTION_SELECTED' || !event.payload?.playerId || !event.payload?.factionId) {
+                        return core;
+                    }
+
+                    return {
+                        ...core,
+                        currentPlayerIndex: 2,
+                        factionSelection: {
+                            playerSelections: {
+                                ...core.factionSelection.playerSelections,
+                                [event.payload.playerId]: [
+                                    ...(core.factionSelection.playerSelections[event.payload.playerId] ?? []),
+                                    event.payload.factionId,
+                                ],
+                            },
+                        },
+                    };
+                },
+            },
+            systems: [],
+        } as const;
+
+        render(
+            createElement(
+                LocalGameProvider,
+                {
+                    config: engineConfig as never,
+                    numPlayers: 4,
+                    seed: 'smashup-local-manual-p4-second-pick',
+                    playerId: '0',
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'local-ai', manualFactionSelection: true },
+                        '2': { type: 'local-ai', manualFactionSelection: true },
+                        '3': { type: 'local-ai', manualFactionSelection: true },
+                    },
+                },
+                createElement(Probe),
+            ),
+        );
+
+        expect(screen.getByTestId('local-manual-p4-probe').textContent).toContain('"playerId":"3"');
+
+        await act(async () => {
+            screen.getByTestId('local-manual-p4-dispatch').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        const probe = screen.getByTestId('local-manual-p4-probe');
+        expect(probe.textContent).toContain('"playerId":"2"');
+        expect(probe.textContent).toContain('"currentPlayerIndex":2');
+        expect(probe.textContent).toContain('"3":["wizards","tricksters"]');
+    });
 });
 
 describe('useMatchStatus 竞态保护', () => {
@@ -4032,7 +5696,9 @@ describe('Home 活跃对局缺房确认', () => {
     it('宽限期确认成功后会重置确认标记，后续真正销毁时仍会再次确认并清理', async () => {
         const { rerender } = render(createElement(Home));
 
-        await screen.findByText('lobby:home.activeMatch.status');
+        await waitFor(() => {
+            expect(screen.getAllByText('lobby:home.activeMatch.status').length).toBeGreaterThan(0);
+        });
         expect(getMatchMock).toHaveBeenCalledTimes(1);
 
         lobbyPresenceState = {
@@ -4144,7 +5810,9 @@ describe('Home 活跃对局缺房确认', () => {
 
         const { rerender } = render(createElement(Home));
 
-        await screen.findByText('lobby:home.activeMatch.status');
+        await waitFor(() => {
+            expect(screen.getAllByText('lobby:home.activeMatch.status').length).toBeGreaterThan(0);
+        });
         expect(getMatchMock).toHaveBeenCalledTimes(1);
 
         lobbyPresenceState = {

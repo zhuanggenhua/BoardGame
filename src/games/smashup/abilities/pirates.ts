@@ -126,6 +126,8 @@ export function registerPirateAbilities(): void {
     // === ongoing 效果注册 ===
     // 海盗王：基地计分前移动到该基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
+        playerContext: 'sourceController',
+        canTrigger: canTriggerPirateKingBeforeScoring,
     });
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring, {
@@ -137,6 +139,12 @@ export function registerPirateAbilities(): void {
     registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, {
         phase: 'replacement',
     });
+}
+
+function canTriggerPirateKingBeforeScoring(ctx: TriggerContext): boolean {
+    return ctx.baseIndex !== undefined
+        && ctx.sourceBaseIndex !== undefined
+        && ctx.sourceBaseIndex !== ctx.baseIndex;
 }
 
 /** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随从*/
@@ -376,10 +384,16 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
 
 
     if (kings.length === 0) return [];
+    const preferredKingIndex = ctx.sourceCardUid
+        ? kings.findIndex(king => king.uid === ctx.sourceCardUid)
+        : -1;
+    const orderedKings = preferredKingIndex > 0
+        ? [kings[preferredKingIndex], ...kings.slice(0, preferredKingIndex), ...kings.slice(preferredKingIndex + 1)]
+        : kings;
 
     // 无 matchState 时回退自动移动
     if (!ctx.matchState) {
-        return kings.map(k => moveMinion(
+        return orderedKings.map(k => moveMinion(
             k.uid,
             k.defId,
             k.fromBaseIndex,
@@ -392,10 +406,10 @@ function pirateKingBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerR
     // 链式处理每个海盗王：创建确认交互（发送给各 king 的 controller）
     const result = executeAbilityProgram(
         pirateKingMovePromptProgram,
-        createPiratePromptContext(ctx.matchState, kings[0].controller, ctx.now, {
+        createPiratePromptContext(ctx.matchState, orderedKings[0].controller, ctx.now, {
             scoringBaseIndex,
-            current: kings[0],
-            remaining: kings.slice(1),
+            current: orderedKings[0],
+            remaining: orderedKings.slice(1),
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };
@@ -419,7 +433,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
         ? findMinionOnBases(ctx.state, mateUid)
         : undefined;
     const mate = locatedMate?.minion ?? snapshotMate;
-    const mateDefId = mate?.defId ?? ctx.triggerMinionDefId;
+    const mateDefId = mate?.defId ?? ctx.triggerMinionDefId ?? ctx.sourceDefId;
     const mateBaseIndex = locatedMate?.baseIndex ?? ctx.sourceBaseIndex;
     if (!mateUid || !mateDefId || mateBaseIndex === undefined) return [];
 
@@ -826,12 +840,27 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
         const base = state.core.bases[context.fromBase];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [];
+        let protectedSkipped = 0;
         for (const minion of base.minions) {
             if (minion.controller === context.playerId) continue;
             const def = getCardDef(minion.defId);
             if (def?.faction !== context.factionId) continue;
-            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect')) continue;
+            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect', {
+                sourceKind: 'action',
+            })) {
+                protectedSkipped += 1;
+                continue;
+            }
             events.push(moveMinion(minion.uid, minion.defId, context.fromBase, destBase, 'pirate_sea_dogs', timestamp));
+        }
+        if (protectedSkipped > 0) {
+            events.push(buildAbilityFeedback(
+                context.playerId,
+                events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
+                timestamp,
+                undefined,
+                'warning',
+            ));
         }
         return { events };
     },
@@ -1306,7 +1335,13 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
         const baseOptions = otherBases.map((b) => {
             const baseDef = getBaseDef(b.defId);
             const baseName = baseDef?.name ?? `基地 ${b.index + 1}`;
-            return { id: `base-${b.index}`, label: baseName, value: { baseIndex: b.index, baseDefId: b.defId }, _source: 'base' as const };
+            return {
+                id: `base-${b.index}`,
+                label: baseName,
+                value: { baseIndex: b.index, baseDefId: b.defId },
+                _source: 'base' as const,
+                displayMode: 'card' as const,
+            };
         });
         return createAbilityRuntimeSimpleChoice(
             `pirate_first_mate_choose_base_${context.mateUid}_${context.now}`,

@@ -11,7 +11,7 @@
 
 import { test, expect } from '@playwright/test';
 import { setupOnlineMatch, readCoreState, applyCoreStateDirect } from '../helpers/cardia';
-import { CARD_IDS } from '../src/games/cardia/domain/ids';
+import { CARD_IDS } from '../../src/games/cardia/domain/ids';
 
 test.describe('Cardia 自动推进修复验证 - 详细调试', () => {
     test('宫廷卫士能力交互 - 完整状态追踪', async ({ page }) => {

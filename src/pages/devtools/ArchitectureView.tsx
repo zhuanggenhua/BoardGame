@@ -6,6 +6,7 @@
  * 路由: /dev/arch
  */
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import {
   type ArchNode,
   NODES, EDGES, LAYER_BANDS, NODE_MAP,
@@ -134,6 +135,8 @@ type ViewMode = 'overview' | 'full' | 'sub-pipeline' | 'sub-systems' | 'sub-test
 // ============================================================================
 
 const ArchitectureView: React.FC = () => {
+  const viewport = useRuntimeViewport();
+  const isCompactViewport = viewport.width > 0 && viewport.width <= 900;
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<ArchNode | null>(null);
@@ -833,20 +836,36 @@ const ArchitectureView: React.FC = () => {
   // ========================================================================
   if (viewMode === 'story') {
     const steps = USER_STORY_STEPS;
-    const stepH = 80, stepW = 460, gap = 16;
-    const sx = 60, sy = 80;
-    const vw = sx + stepW + 120, vh = sy + steps.length * (stepH + gap) + 60;
+    const stepH = isCompactViewport ? 96 : 80;
+    const stepW = isCompactViewport ? 360 : 460;
+    const gap = isCompactViewport ? 12 : 16;
+    const sx = isCompactViewport ? 20 : 60;
+    const sy = isCompactViewport ? 56 : 80;
+    const showRelatedTags = !isCompactViewport;
+    const showWorkflowSummary = !isCompactViewport;
+    const vw = showRelatedTags ? sx + stepW + 120 : sx + stepW + 28;
+    const vh = sy + steps.length * (stepH + gap) + (isCompactViewport ? 44 : 60);
     const layerColorMap: Record<string, string> = { core: '#bc8cff', engine: '#f0883e', ui: '#58a6ff', server: '#8b949e' };
     const circled = '\u2460\u2461\u2462\u2463\u2464\u2465\u2466';
 
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
-        <div className="mb-3 flex items-center gap-3">
-          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-          <h1 className="text-lg font-bold text-white">📖 用户故事 — 创建新游戏的 6 个阶段</h1>
+        <div className={`mb-3 ${isCompactViewport ? 'flex flex-col items-start gap-2' : 'flex items-center gap-3'}`}>
+          <button
+            data-testid="arch-story-back-button"
+            className="inline-flex shrink-0 whitespace-nowrap text-sm text-slate-400 hover:text-white"
+            onClick={e => { e.stopPropagation(); setViewMode('overview'); }}
+          >
+            ← 返回
+          </button>
+          <h1 className={`${isCompactViewport ? 'text-base leading-tight' : 'text-lg'} font-bold text-white`}>📖 用户故事 — 创建新游戏的 6 个阶段</h1>
         </div>
         <p className="text-xs text-slate-500 mb-2">基于 create-new-game 技能，数据录入合并为一个阶段 · 每阶段独立可验证 · 点击任意位置返回</p>
-        <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`}>
+        <ZoomableSvg
+          viewBox={`0 0 ${vw} ${vh}`}
+          maxHeight={isCompactViewport ? 'none' : 'calc(100vh - 120px)'}
+          className={isCompactViewport ? 'w-full h-auto' : 'w-full'}
+        >
           <style>{`
             @keyframes archFadeIn { from { opacity:0 } }
             @keyframes archDraw { to { stroke-dashoffset: 0 } }
@@ -859,9 +878,11 @@ const ArchitectureView: React.FC = () => {
           </defs>
 
           {/* 标题装饰 */}
-          <text x={sx} y={sy - 30} fontSize={11} fontWeight={600} fill="#e3b341">
-            🎲 工作流: 骨架 → 数据录入(规则+实体+类型) → 领域内核 → 系统组装 → UI交互 → 收尾上线
-          </text>
+          {showWorkflowSummary && (
+            <text x={sx} y={sy - 30} fontSize={11} fontWeight={600} fill="#e3b341">
+              🎲 工作流: 骨架 → 数据录入(规则+实体+类型) → 领域内核 → 系统组装 → UI交互 → 收尾上线
+            </text>
+          )}
 
           {steps.map((step, i) => {
             const y = sy + i * (stepH + gap);
@@ -869,28 +890,34 @@ const ArchitectureView: React.FC = () => {
             return (
               <g key={i} style={{ animation: `archFadeIn 0.4s ease ${i * 0.1}s both` }}>
                 {/* 卡片 */}
-                <rect x={sx} y={y} width={stepW} height={stepH} rx={12}
+                <rect
+                  data-testid={`arch-story-step-${i}`}
+                  x={sx}
+                  y={y}
+                  width={stepW}
+                  height={stepH}
+                  rx={12}
                   fill="#161b22" stroke={lc} strokeWidth={1.5} strokeOpacity={0.6} />
                 {/* 左侧层色带 */}
                 <rect x={sx + 1} y={y + 10} width={4} height={stepH - 20} rx={2}
                   fill={lc} fillOpacity={0.7} />
                 {/* 序号 + emoji + 标题 */}
-                <text x={sx + 18} y={y + 24} fontSize={15} fill={lc}>{step.emoji}</text>
-                <text x={sx + 42} y={y + 24} fontSize={14} fontWeight={700} fill={lc}>
+                <text x={sx + 16} y={y + 28} fontSize={isCompactViewport ? 17 : 15} fill={lc}>{step.emoji}</text>
+                <text x={sx + (isCompactViewport ? 44 : 42)} y={y + 28} fontSize={isCompactViewport ? 15 : 14} fontWeight={700} fill={lc}>
                   {circled[i] ?? ''} {step.label}
                 </text>
                 {/* 层标签 */}
-                <rect x={sx + stepW - 70} y={y + 8} width={56} height={18} rx={4}
+                <rect x={sx + stepW - (isCompactViewport ? 74 : 70)} y={y + 8} width={isCompactViewport ? 60 : 56} height={18} rx={4}
                   fill={lc} fillOpacity={0.12} stroke={lc} strokeOpacity={0.25} strokeWidth={0.8} />
-                <text x={sx + stepW - 42} y={y + 20} textAnchor="middle" fontSize={8} fontWeight={600} fill={lc}>{step.layer}</text>
+                <text x={sx + stepW - (isCompactViewport ? 44 : 42)} y={y + 20} textAnchor="middle" fontSize={isCompactViewport ? 9 : 8} fontWeight={600} fill={lc}>{step.layer}</text>
                 {/* 描述 */}
-                <text x={sx + 18} y={y + 46} fontSize={10} fill="#8b949e">{step.desc}</text>
+                <text x={sx + 18} y={y + (isCompactViewport ? 52 : 46)} fontSize={isCompactViewport ? 11 : 10} fill="#8b949e">{step.desc}</text>
                 {/* 示例 */}
                 {step.example && (
-                  <text x={sx + 18} y={y + 64} fontSize={9} fill="#e3b341">🎲 {step.example}</text>
+                  <text x={sx + 18} y={y + (isCompactViewport ? 74 : 64)} fontSize={isCompactViewport ? 10 : 9} fill="#e3b341">🎲 {step.example}</text>
                 )}
                 {/* 关联组件 */}
-                {step.relatedIds.length > 0 && (() => {
+                {showRelatedTags && step.relatedIds.length > 0 && (() => {
                   const tagX = sx + stepW + 14;
                   return step.relatedIds.map((rid, ri) => {
                     const rn = NODE_MAP.get(rid);

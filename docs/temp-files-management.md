@@ -26,6 +26,8 @@
 - 一次性测试脚本（`test-*.mjs`）
 - 数据检查脚本（`check-*.mjs`）
 - 临时提取脚本（`_*.cjs`、`_*.mjs`）
+- 根目录临时写入/探针脚本（`temp-*.mjs`）
+- Python 临时探针脚本（`scripts/temp_*.py`）
 
 ### 5. 测试结果 → `test-results/`
 - 测试失败日志（`*-failures.txt`）
@@ -68,6 +70,8 @@ _*.cjs
 _*.mjs
 check-*.mjs
 test-*.mjs
+temp-*.mjs
+scripts/temp_*.py
 
 # 临时数据文件
 wiki-*.json
@@ -83,6 +87,7 @@ tmp_*.txt
 _vitest_*.log
 *-failures.txt
 *-output.txt
+test-out.txt
 ```
 
 ## 开发规范

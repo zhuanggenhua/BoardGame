@@ -25,6 +25,10 @@ export {
     areAllCriticalImagesCached,
     isImagePreloaded,
     getPreloadedImageElement,
+    getResolvedImageCacheUrl,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
+    markImageCandidateFailed,
     markImageLoaded,
     waitForCriticalImages,
     signalCriticalImagesReady,
@@ -49,3 +53,9 @@ export {
     getCriticalImageResolver,
     resolveCriticalImages,
 } from './CriticalImageResolverRegistry';
+export {
+    isDirectSpriteAsset,
+    resolveSpriteAssetUrls,
+    resolveSpriteAssetUrl,
+    buildSpriteBackgroundImage,
+} from './SpriteAssetResolver';

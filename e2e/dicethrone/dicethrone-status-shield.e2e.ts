@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
-import { STATUS_IDS } from '../src/games/dicethrone/domain/ids';
-import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
+import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 
 type PlayerPatch = {
     resources?: Record<string, number>;

@@ -105,10 +105,12 @@ cp .env.example .env
 npm run dev
 ```
 
+`npm run dev` 会先尝试拉起本地 `mongodb` 容器；如果当前 shell 没有显式配置 `MONGO_URI`，且检测到 `127.0.0.1:27017` 有可用本地 Mongo，则会自动注入开发默认值 `mongodb://127.0.0.1:27017/boardgame`。
+
 #### 方式二：无 Docker（纯内存模式，适合快速体验）
 
-无需安装 Docker 和 MongoDB，对局数据存在内存中，重启后丢失。
-该模式会自动跳过排行榜归档、UGC 动态注册等依赖 Mongo 的能力。
+无需安装 Docker 和 MongoDB。该模式会让游戏服退回纯内存存储，并跳过 API 启动；重启后数据会丢失。
+该模式会自动跳过排行榜归档、UGC 动态注册等依赖游戏服持久化存储的能力；认证、社交、管理后台等依赖 API 的能力在该模式下不可用。
 
 ```bash
 npm run dev:lite
@@ -116,16 +118,24 @@ npm run dev:lite
 
 启动后访问 http://localhost:5173 即可。
 
+### 给 AI 的起步提示词
+
+如果你完全不会编程，可以先把下面这段话直接复制给 AI：
+
+```text
+请先阅读 `https://github.com/zhuanggenhua/BoardGame` 这个仓库里的 `README.md`、`AGENTS.md` 和你认为必要的项目文档，然后一步一步告诉我怎样在本地启动这个项目并成功打开页面。
+```
+
 ### 环境变量
 
-开发环境只需复制 `.env.example` 即可运行，无需额外配置。核心变量：
+开发环境只需复制 `.env.example` 即可运行。核心变量：
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `VITE_DEV_PORT` | `5173` | 前端开发端口 |
 | `GAME_SERVER_PORT` | `18000` | 游戏服务端口 |
 | `API_SERVER_PORT` | `18001` | API 服务端口 |
-| `MONGO_URI` | `mongodb://localhost:27017/boardgame`（本地开发示例，必须显式配置） | 数据库连接 |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017/boardgame`（推荐显式配置；`npm run dev` 在检测到本地 Mongo 时可自动注入） | 数据库连接 |
 | `JWT_SECRET` | 开发默认值 | JWT 密钥（生产环境必须修改） |
 
 完整说明见 [.env.example](.env.example)。
@@ -134,7 +144,7 @@ npm run dev:lite
 
 项目内置了完整的 AI 辅助创建工作流，分 6 个阶段逐步完成（骨架 → 类型 → 领域逻辑 → 系统组装 → UI → 收尾）。
 
-使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.windsurf/skills/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
+使用支持 Skill 的 AI 编辑器（或者直接扔文档），调用 `.codex/skill/create-new-game` 技能即可开始，AI 会引导你完成全部流程……大概。
 
 数据录入使用的截图工具推荐pixpin
 
@@ -175,6 +185,9 @@ bash deploy.sh
 # 后续更新
 bash deploy.sh update
 
+# 手动回滚到上次成功部署版本
+bash deploy.sh rollback-last
+
 # 拉取慢时，先单独拉镜像再 update（避免 compose pull 并发抢带宽）
 docker pull ghcr.io/zhuanggenhua/boardgame-game:latest
 docker pull ghcr.io/zhuanggenhua/boardgame-web:latest
@@ -189,6 +202,7 @@ bash deploy.sh update
 
 ```bash
 npm run dev                # 启动完整开发环境
+npm run dev:lite           # 启动纯内存快速体验模式
 npm run build              # 构建前端
 npm run generate:manifests # 重新生成游戏清单
 npm run generate:locales   # 生成卡牌多语言文件
@@ -246,11 +260,13 @@ npm run test:e2e
 
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本仓库
+默认协作方式是 **先 clone 主仓库，再在本地开分支**。这样更适合多人和 AI 共同开发，也更不容易出现 fork 长期漂移、权限判断混乱、PR head 不可写等问题。只有在你**没有主仓库写权限**，或者明确需要账号/权限隔离时，才建议改走 fork 路线。
+
+1. Clone 主仓库：`git clone https://github.com/zhuanggenhua/BoardGame.git`
 2. 创建特性分支：`git checkout -b feature/amazing-feature`
-3. 提交更改：`git commit -m 'Add amazing feature'`
-4. 推送分支：`git push origin feature/amazing-feature`
-5. 提交 Pull Request
+3. 提交更改：`git commit -m "用中文准确描述改动"`
+4. 有主仓库写权限时直接推送：`git push origin feature/amazing-feature`
+5. 没有写权限时，再 fork 到自己账号，改推送到 fork 后提 Pull Request
 
 ## 📜 许可证
 

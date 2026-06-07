@@ -59,7 +59,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-training', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(17),
-        effects: [grantToken('self', TOKEN_IDS.NINJUTSU, 1, '获得 1 个忍术。')],
+        effects: [grantToken('self', TOKEN_IDS.NINJUTSU, 1, cardText('ninja-card-training', 'description'))],
     },
     {
         id: 'upgrade-blink-2',
@@ -70,7 +70,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-blink-2', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(18),
-        effects: [replaceAbility('blink', BLINK_2, 2, '升级瞬身至 II 级。')],
+        effects: [replaceAbility('blink', BLINK_2, 2, cardText('upgrade-blink-2', 'description'))],
     },
     {
         id: 'upgrade-going-forward-2',
@@ -81,7 +81,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-going-forward-2', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(19),
-        effects: [replaceAbility('going-forward', GOING_FORWARD_2, 2, '升级一往无前至 II 级。')],
+        effects: [replaceAbility('going-forward', GOING_FORWARD_2, 2, cardText('upgrade-going-forward-2', 'description'))],
     },
     {
         id: 'upgrade-slash-2',
@@ -92,7 +92,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-slash-2', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(20),
-        effects: [replaceAbility('slash', SLASH_2, 2, '升级斩击至 II 级。')],
+        effects: [replaceAbility('slash', SLASH_2, 2, cardText('upgrade-slash-2', 'description'))],
     },
     {
         id: 'upgrade-shadow-step-2',
@@ -103,7 +103,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-shadow-step-2', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(21),
-        effects: [replaceAbility('shadow-step', SHADOW_STEP_2, 2, '升级暗影步至 II 级。')],
+        effects: [replaceAbility('shadow-step', SHADOW_STEP_2, 2, cardText('upgrade-shadow-step-2', 'description'))],
     },
     {
         id: 'ninja-card-shuriken',
@@ -116,14 +116,16 @@ export const NINJA_CARDS: AbilityCard[] = [
         ...ninjaCardRef(22),
         isAttackModifier: true,
         effects: [{
-            description: '投掷 5 骰；每个忍刀令本次攻击 +1。',
+            description: cardText('ninja-card-shuriken', 'description'),
             action: {
                 type: 'rollDie',
                 target: 'self',
                 diceCount: 5,
+                resolutionMode: 'attackBonus',
+                attackBonusSourceCardId: 'ninja-card-shuriken',
                 conditionalEffects: [{ face: NINJA_DICE_FACE_IDS.KATANA, bonusDamage: 1 }],
             },
-            timing: 'withDamage',
+            timing: 'immediate',
         }],
     },
     {
@@ -142,7 +144,7 @@ export const NINJA_CARDS: AbilityCard[] = [
             },
         },
         effects: [{
-            description: '只能在被攻击后打出：按骰面减伤或获得烟雾弹。',
+            description: cardText('ninja-card-escape', 'description'),
             action: {
                 type: 'rollDie',
                 target: 'self',
@@ -165,20 +167,19 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-poison-dart', 'description'),
         sfxKey: NINJA_SFX_POISON,
         ...ninjaCardRef(24),
-        effects: [grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, '对手获得 2 个慢性中毒。')],
+        effects: [grantToken('opponent', TOKEN_IDS.DELAYED_POISON, 2, cardText('ninja-card-poison-dart', 'description'))],
     },
     {
         id: 'ninja-card-knife-fan',
         name: cardText('ninja-card-knife-fan', 'name'),
         type: 'action',
         cpCost: 2,
-        timing: 'roll',
+        timing: 'main',
         description: cardText('ninja-card-knife-fan', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(25),
-        isAttackModifier: true,
         effects: [{
-            description: '对目标造成 1 点不可防御伤害。',
+            description: cardText('ninja-card-knife-fan', 'description'),
             action: { type: 'damage', target: 'opponent', value: 1, unblockable: true, damageScope: 'direct' },
             timing: 'immediate',
         }],
@@ -192,7 +193,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-smoke-screen-2', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(26),
-        effects: [replaceAbility('smoke-screen', SMOKE_SCREEN_2, 2, '升级烟雾阵至 II 级。')],
+        effects: [replaceAbility('smoke-screen', SMOKE_SCREEN_2, 2, cardText('upgrade-smoke-screen-2', 'description'))],
     },
     {
         id: 'upgrade-shadow-fang-2',
@@ -203,7 +204,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-shadow-fang-2', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(27),
-        effects: [replaceAbility('shadow-fang', SHADOW_FANG_2, 2, '升级影牙至 II 级。')],
+        effects: [replaceAbility('shadow-fang', SHADOW_FANG_2, 2, cardText('upgrade-shadow-fang-2', 'description'))],
     },
     {
         id: 'upgrade-poison-blade-2',
@@ -214,7 +215,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-poison-blade-2', 'description'),
         sfxKey: NINJA_SFX_POISON,
         ...ninjaCardRef(28),
-        effects: [replaceAbility('poison-blade', POISON_BLADE_2, 2, '升级毒刃至 II 级。')],
+        effects: [replaceAbility('poison-blade', POISON_BLADE_2, 2, cardText('upgrade-poison-blade-2', 'description'))],
     },
     {
         id: 'upgrade-death-blossom-2',
@@ -225,7 +226,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('upgrade-death-blossom-2', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(29),
-        effects: [replaceAbility('death-blossom', DEATH_BLOSSOM_2, 2, '升级死亡盛放至 II 级。')],
+        effects: [replaceAbility('death-blossom', DEATH_BLOSSOM_2, 2, cardText('upgrade-death-blossom-2', 'description'))],
     },
     {
         id: 'ninja-card-vanish',
@@ -236,7 +237,7 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-vanish', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(35),
-        effects: [grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。')],
+        effects: [grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, cardText('ninja-card-vanish', 'description'))],
     },
     {
         id: 'ninja-card-dojo',
@@ -247,10 +248,27 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-dojo', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(36),
-        effects: [
-            grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-            grantToken('self', TOKEN_IDS.NINJUTSU, 2, '获得 2 个忍术。'),
-        ],
+        effects: [{
+            description: cardText('ninja-card-dojo', 'description'),
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 1,
+                conditionalEffects: [{
+                    face: NINJA_DICE_FACE_IDS.MASK,
+                    grantTokens: [
+                        { tokenId: TOKEN_IDS.SMOKE_BOMB, value: 1 },
+                        { tokenId: TOKEN_IDS.NINJUTSU, value: 2 },
+                    ],
+                    effectKey: 'bonusDie.effect.ninjaDojoMask',
+                }],
+                defaultEffect: {
+                    drawCard: 1,
+                    effectKey: 'bonusDie.effect.ninjaDojoOther',
+                },
+            },
+            timing: 'immediate',
+        }],
     },
     ...injectCommonCardPreviewRefs(
         COMMON_CARDS,

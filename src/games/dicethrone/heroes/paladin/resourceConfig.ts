@@ -13,7 +13,7 @@ export { RESOURCE_IDS } from '../../domain/resources';
 
 export const paladinCpDefinition: ResourceDefinition = {
     id: RESOURCE_IDS.CP,
-    name: 'Combat Points',
+    name: 'config.resources.cp.name',
     icon: '⚡',
     color: '#f59e0b',
     min: 0,
@@ -23,7 +23,7 @@ export const paladinCpDefinition: ResourceDefinition = {
 
 export const paladinHpDefinition: ResourceDefinition = {
     id: RESOURCE_IDS.HP,
-    name: 'Health Points',
+    name: 'config.resources.hp.name',
     icon: '❤️',
     color: '#ef4444',
     min: 0,

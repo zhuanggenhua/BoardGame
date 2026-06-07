@@ -1,6 +1,7 @@
 import type { GameManifestMobileDelivery } from '../../games/manifest.types';
 import { resolveAssetsBaseUrlFromEnv } from '../../core/AssetLoader';
 import { logMobileRuntime, logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
+import { getNativeMobileRuntimeDiagnostics } from '../../lib/mobile/mobileRuntime';
 import { fetchRemoteJsonThroughNativePlugin } from './nativeGamePackagePlugin';
 import type { ResolvedGamePackageManifest } from './types';
 
@@ -9,9 +10,14 @@ const metaEnv = (import.meta as { env?: Record<string, string | boolean | undefi
 const normalizeUrl = (value: string) => value.replace(/\/+$/, '');
 const REMOTE_MANIFEST_TIMEOUT_MS = 15000;
 
+const resolveDefaultMobilePackagePlatform = () => {
+    const diagnostics = getNativeMobileRuntimeDiagnostics();
+    return diagnostics.nativeIos ? 'ios' : 'android';
+};
+
 const REMOTE_MANIFEST_BASE_URL = typeof metaEnv.VITE_MOBILE_PACKAGE_MANIFEST_URL === 'string'
     ? normalizeUrl(metaEnv.VITE_MOBILE_PACKAGE_MANIFEST_URL)
-    : `${normalizeUrl(resolveAssetsBaseUrlFromEnv(metaEnv))}/mobile-packages/android`;
+    : `${normalizeUrl(resolveAssetsBaseUrlFromEnv(metaEnv))}/mobile-packages/${resolveDefaultMobilePackagePlatform()}`;
 
 export const hasRemoteGamePackageManifestEndpoint = Boolean(REMOTE_MANIFEST_BASE_URL);
 

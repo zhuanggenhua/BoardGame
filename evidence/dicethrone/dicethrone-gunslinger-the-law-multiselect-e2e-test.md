@@ -1,5 +1,7 @@
 # Dice Throne 枪手 The Law 多目标交互 E2E 证据
 
+> 2026-06-05 当前有效口径：本文只保留枪手升级变体 `The Law` 多目标交互链的对象级 `L3/L4` 证据，不代表枪手整英雄或枪手/武士整批当前完成态。当前若要判断枪手对象级残余、兄弟能力补审范围或整英雄口径，应以 `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`、`evidence/dicethrone/dicethrone-gunslinger-samurai-vs-legacy-audit-2026-04-06.md` 与 `src/games/dicethrone/rule/枪手录入核对.md` 为准。
+
 ## 范围
 
 - 目标：验证 `upgrade-deadeye-2` 的升级变体 **`the-law`** 对应的 `selectPlayer + selectCount = 2` 多目标交互链路，已经从 UI 到领域结算闭环。
@@ -13,6 +15,14 @@
 ```bash
 npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player The Law variant: upgraded Deadeye offers all target players in 2v2 and resolves on two selected targets"
 ```
+
+2026-05-17 追加复跑：
+
+```bash
+npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "should allow confirming after selecting only one target"
+```
+
+结果：`1 passed`。首次尝试在 `openTestGame` 等测试 harness 时命中“页面没有正常显示”的启动保护页，未进入业务断言；重试通过。
 
 ## Addendum（2026-04-12）：补齐“真实触发入口 + 多模式目标集合”证据（已修订旧结论）
 
@@ -34,6 +44,12 @@ npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Onlin
 ### 2) 3 人：多目标弹窗可选至多 2 名目标玩家并完成结算
 
 截图（成功路径连续证据链）：
+- `14` 只选 1 名目标（确认按钮 enabled）：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-selected.png`
+  - 肉眼观察：弹窗标题写“选择至多 2 名目标玩家”，P2/P3 两个目标都可见；只选 P2 后确认按钮可用，证明单选可确认。
+- `14` 单选确认后结算：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-resolved.png`
+  - 肉眼观察：弹窗关闭，P2 头像区可见赏金与击倒图标，P3 没有新增对应图标；配套断言确认 P2 `bounty=1/knockdown=1`、P3 保持 0。
 - `24` 已选 2 名目标（确认按钮 enabled）：
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-multi-target-interaction-after-selecting-the-upgraded-variant-in-3-player-scene\24-the-law-variant-3p-selected-targets.png`
 - `25` 确认后原子化结算（交互关闭）：

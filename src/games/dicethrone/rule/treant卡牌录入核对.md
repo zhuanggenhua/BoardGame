@@ -1,34 +1,46 @@
 # Dice Throne 树精卡牌录入核对
 
-> 运行时合同：`ability-cards-treant.atlas.json`，5x8 row-major，`previewRef.type='atlas'`。通用卡使用 `TREANT_NINJA_COMMON_ATLAS_INDEX`；`card-unexpected` 在 `slot-37`。状态等级同 `treant录入核对.md`。
+> 2026-05-30 重审范围：只回写**树精升级卡**。本文件现在只回答两件事：
+> 1. 升级卡图槽、`cardId`、`targetAbilityId` 是否对。
+> 2. 升级卡替换进去的 `newAbilityDef` 是否被错录。
 
-## 专属卡运行时接线
+主真相源：
 
-| slot | cardId | 中文 | 类型/费用/时机 | 原文/图文要点 | 结构化字段 | 证据层级 |
-|---:|---|---|---|---|---|---|
-| 17 | `treant-card-trample` | 践踏 | action / 1CP / roll | 攻击修正，投 5 骰；树枝加伤，树灵施加刺藤 | `rollDie diceCount=5`；branch `bonusDamage=1`；spirit grant opponent `thorn` | L1；刺藤后续 L2 |
-| 18 | `upgrade-tend-care-2` | 细心呵护 II | upgrade / 2CP / main | 升级细心呵护 | replace `tend-care` -> `TEND_CARE_2` | L1；木苗后续 L2 |
-| 19 | `upgrade-rooted-2` | 扎根 II | upgrade / 3CP / main | 升级扎根 | replace `rooted` -> `ROOTED_2`，防御骰 4 | L1 |
-| 20 | `treant-card-drink-deep` | 痛饮 | action / 1CP / main | 获得生命源泉 | grant self `life_sap=1` | L2：生命源泉消费已测 |
-| 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | upgrade / 2CP / main | 升级破碎之拳到 III | replace `shattering-fist` -> `SHATTERING_FIST_3` | L2：刺藤后续已测 |
-| 22 | `treant-card-harvest` | 丰收 | action / 0CP / main | 抽牌并养成 | draw 1；grant self `treant_seedling=1` | L2：幼种消费已测 |
-| 23 | `treant-card-cultivate` | 培育 | action / 3CP / main | 养成树灵 | grant self `treant_seedling=3` | L2：幼种消费已测 |
-| 24 | `treant-card-downpour` | 大雨倾盆 | action / 2CP / main | 治疗并养成 | heal 2；grant self `treant_seedling=1` | L2：幼种消费已测 |
-| 25 | `upgrade-nature-touch-2` | 自然之触 II | upgrade / 2CP / main | 升级自然之触 | replace `nature-touch` -> `NATURE_TOUCH_2` | L1 |
-| 26 | `treant-card-soulfire` | 魂火 | action / 1CP / roll | 攻击修正，投 3 骰按面结算 | branch +1 damage；leaf life_sap；spirit seedling | L2：life_sap/seedling 后续已测 |
-| 27 | `treant-card-mother-tree` | 母树 | action / 0CP / main | 投 1 骰；树灵养成，否则抽牌 | rollDie 1；spirit seedling 4；default draw 1 | L1 |
-| 28 | `upgrade-vengeful-vines-2` | 复仇枝蔓 II | upgrade / 2CP / main | 升级复仇枝蔓 | replace `vengeful-vines` -> `VENGEFUL_VINES_2` | L2：刺藤后续已测 |
-| 29 | `upgrade-wild-growth-2` | 野蛮生长 II | upgrade / 2CP / main | 升级野蛮生长 | replace `wild-growth` -> `WILD_GROWTH_2` | L1 |
-| 35 | `upgrade-shattering-fist-2` | 破碎之拳 II | upgrade / 1CP / main | 升级破碎之拳到 II | replace `shattering-fist` -> `SHATTERING_FIST_2` | L1 |
-| 36 | `treant-card-planting` | 种植 | action / 1CP / main | 养成树灵 | grant self `treant_seedling=4` | L2：幼种消费已测 |
+- `public/assets/i18n/zh-CN/dicethrone/images/treant/abilitycards.png`
+- `temp/treant-upgrade-crops/*.png`
 
-## 通用卡映射
+实现入口：
 
-- 共用 `COMMON_CARDS`，通过 `injectCommonCardPreviewRefs(COMMON_CARDS, DICETHRONE_CARD_ATLAS_IDS.TREANT, TREANT_NINJA_COMMON_ATLAS_INDEX)` 注入树精专属 atlas 索引。
-- 通用卡运行时图集状态为 L1；本轮机制重点不在通用卡重审。
+- `src/games/dicethrone/heroes/treant/cards.ts`
+- `src/games/dicethrone/heroes/treant/abilities.ts`
 
-## 当前结论
+## 2026-06-05 当前结论
 
-- 专属卡静态数据、i18n 与 atlas 接线达到 L1。
-- 由专属卡产生的新增 token 后续行为已通过代表性 L2 测试覆盖：幼种树灵、木苗树灵治疗+CP、木苗树灵额外 1CP 抽牌、生命源泉、刺藤、神性树灵防负面状态与造成伤害前 +3。
-- 真实入口卡牌 UI/机制 L3 仍待 E2E 截图链补齐。
+- 树精升级卡的**图槽、卡牌对象、`replaceAbility(targetAbilityId=基础技能ID)` 这一层仍然是对的**。
+- 截至 2026-06-04，`细心呵护 II / 培育`、`自然之触 II / 自然之怜`、`复仇枝蔓 II / 苦痛根系`、`野蛮生长 II / 乱花迷眼` 都已经补齐同卡双分支与对象级 direct closeout `L3`。
+- 截至 2026-06-05，`扎根 II`、`破碎之拳 II`、`破碎之拳 III` 也已经补到技能本体对象级 `L3`；其中 `扎根 II` 的防御收口态和 `破碎之拳 III` 的攻击快照条件判定，已继续补到关键 `L4` 子句。
+- 当前主问题不再是“升级卡接上了错误技能定义”，而是旧卡牌核对文档若不回写，会继续把后续审计误导成“这些升级技能还没实现”。
+
+## 升级卡矩阵
+
+| slot | cardId | 中文 | `targetAbilityId` | 当前 `newAbilityDef` 状态 | 结论 |
+|---:|---|---|---|---|---|
+| 18 | `upgrade-tend-care-2` | 细心呵护 II | `tend-care` | `TEND_CARE_2` 当前已按主路线 + `培育` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 19 | `upgrade-rooted-2` | 扎根 II | `rooted` | `ROOTED_2` 当前主路线与卡图一致；技能本体对象级真实防御入口 `L3` 已补齐，关键防御收口态 `L4` 也已锁定 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+| 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | `shattering-fist` | `SHATTERING_FIST_3` 当前主路线与卡图一致；技能本体对象级 `L3` 已补齐，关键“攻击快照 vs 当前活跃骰” `L4` 也已锁定 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+| 25 | `upgrade-nature-touch-2` | 自然之触 II | `nature-touch` | `NATURE_TOUCH_2` 当前已按主路线 + `自然之怜` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 28 | `upgrade-vengeful-vines-2` | 复仇枝蔓 II | `vengeful-vines` | `VENGEFUL_VINES_2` 当前已按主路线 + `苦痛根系` 双分支落地；对象级 direct closeout L3 已补齐，关键 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 29 | `upgrade-wild-growth-2` | 野蛮生长 II | `wild-growth` | `WILD_GROWTH_2` 当前已按主路线 + `乱花迷眼` 双分支落地；对象级 direct closeout L3 已补齐，关键 displayOnly 收口 L4 也已锁定，剩批次级治理与旧文档统一收口 | **升级卡接线正确；目标升级技能当前已对齐** |
+| 30 | `upgrade-shattering-fist-2` | 破碎之拳 II | `shattering-fist` | `SHATTERING_FIST_2` 当前主路线与卡图一致；技能本体对象级 direct closeout `L3` 已补齐 | **升级卡接线正确；目标升级技能当前已对齐，剩批次级治理与旧文档统一收口** |
+
+## 结构裁定
+
+- 下列升级卡都应该是“**一张升级卡 -> 一个基础技能 -> 升级后技能内部含多个 `variants`**”：
+  - `upgrade-tend-care-2`
+  - `upgrade-nature-touch-2`
+  - `upgrade-vengeful-vines-2`
+  - `upgrade-wild-growth-2`
+
+## 关联证据
+
+- 全量升级重审汇总：`evidence/dicethrone/dicethrone-treant-ninja-upgrade-reaudit-2026-05-30.md`

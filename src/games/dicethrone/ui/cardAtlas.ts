@@ -7,6 +7,8 @@ import { ASSETS } from './assets';
 import atlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-common.atlas.json';
 import treantAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-treant.atlas.json';
 import ninjaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-ninja.atlas.json';
+import zhanshujiaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-zhanshujia.atlas.json';
+import cursedPirateAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-cursed_pirate.atlas.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -39,12 +41,16 @@ const GUNSLINGER_CARD_ATLAS_CONFIG = applyGlobalOffset(COMMON_CARD_ATLAS_CONFIG,
 const SAMURAI_CARD_ATLAS_CONFIG = applyGlobalOffset(COMMON_CARD_ATLAS_CONFIG, SAMURAI_GLOBAL_SHIFT_X);
 const TREANT_CARD_ATLAS_CONFIG = parseAtlasConfig(treantAtlasConfigData, 'ability-cards-treant.atlas.json');
 const NINJA_CARD_ATLAS_CONFIG = parseAtlasConfig(ninjaAtlasConfigData, 'ability-cards-ninja.atlas.json');
+const ZHANSHUJIA_CARD_ATLAS_CONFIG = parseAtlasConfig(zhanshujiaAtlasConfigData, 'ability-cards-zhanshujia.atlas.json');
+const CURSED_PIRATE_CARD_ATLAS_CONFIG = parseAtlasConfig(cursedPirateAtlasConfigData, 'ability-cards-cursed_pirate.atlas.json');
 
 const getHeroAtlasConfig = (charId: string) => {
     if (charId === 'gunslinger') return GUNSLINGER_CARD_ATLAS_CONFIG;
     if (charId === 'samurai') return SAMURAI_CARD_ATLAS_CONFIG;
     if (charId === 'treant') return TREANT_CARD_ATLAS_CONFIG;
     if (charId === 'ninja') return NINJA_CARD_ATLAS_CONFIG;
+    if (charId === 'zhanshujia') return ZHANSHUJIA_CARD_ATLAS_CONFIG;
+    if (charId === 'cursed_pirate') return CURSED_PIRATE_CARD_ATLAS_CONFIG;
     return COMMON_CARD_ATLAS_CONFIG;
 };
 /**

@@ -13,6 +13,9 @@ import {
     collectManifestReferencesFromContent,
     collectStaticKeyReferencesFromContent,
     collectReferencesFromContent,
+    collectDiceThroneAbilityChoiceFaceLabelReferences,
+    collectDiceThroneRawContractWarningsFromContent,
+    collectMissingTranslations,
 } from '../../../scripts/verify/i18n-check';
 import {
     collectImplicitCandidateFiles,
@@ -85,6 +88,44 @@ describe('i18n 静态检查工具', () => {
             knownNamespaces: new Set(['common', 'lobby']),
         });
         expect(result.warnings.some((warning) => warning.type === 'dynamic-key')).toBe(true);
+    });
+
+    it('能解析 DiceThrone 英雄名 helper 返回的有限 key 集合', () => {
+        const content = `
+            import { useTranslation } from 'react-i18next';
+            import { getDiceThroneCharacterNameKey } from '../domain/core-types';
+            const { t } = useTranslation('game-dicethrone');
+            const selectedCharacterNameKey = getDiceThroneCharacterNameKey(selectedCharacters[pid]);
+            t(selectedCharacterNameKey);
+        `;
+        const result = collectReferencesFromContent(content, 'src/games/dicethrone/ui/DiceThroneHeroSelection.tsx', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.warnings).toEqual([]);
+        expect(result.references).toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'characters.monk', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'characters.barbarian', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'characters.pyromancer', namespaces: ['game-dicethrone'] }),
+        ]));
+    });
+
+    it('DiceThrone 继续使用 hero.* 旧前缀时会产生阻断告警', () => {
+        const content = `
+            import { useTranslation } from 'react-i18next';
+            const { t } = useTranslation('game-dicethrone');
+            t(\`hero.${'${player.characterId}'}\`);
+        `;
+        const result = collectReferencesFromContent(content, 'src/games/dicethrone/ui/OpponentHeader.tsx', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'deprecated-dicethrone-hero-key',
+            key: 'hero.*',
+        }));
     });
 
     it('i18n.exists 命名空间一致时可作为 t(variable) 的保护条件', () => {
@@ -255,6 +296,36 @@ describe('i18n 静态检查工具', () => {
         expect(result.warnings.some((warning) => warning.type === 'dynamic-key')).toBe(false);
     });
 
+    it('能从解构函数参数类型中反推成员表达式联合并展开具体 key', () => {
+        const content = `
+            import { useTranslation } from 'react-i18next';
+
+            type CharacterId = 'monk' | 'barbarian' | 'zhanshujia';
+            interface HeroState { characterId: CharacterId; }
+            interface HeroPanelProps { player: HeroState; }
+
+            function HeroPanel({ player }: HeroPanelProps) {
+                const { t } = useTranslation('game-dicethrone');
+                t(\`hero.${'${player.characterId}'}\`);
+                return null;
+            }
+        `;
+
+        const result = collectReferencesFromContent(content, 'src/games/dicethrone/ui/Demo.tsx', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.references).toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'hero.monk', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'hero.barbarian', namespaces: ['game-dicethrone'] }),
+            expect.objectContaining({ key: 'hero.zhanshujia', namespaces: ['game-dicethrone'] }),
+        ]));
+        expect(result.references).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'hero.*' }),
+        ]));
+    });
+
     it('summonerwars StatusBanners 能展开 abilityId 联合并覆盖 instead key', () => {
         const filePath = path.resolve('src/games/summonerwars/ui/StatusBanners.tsx');
         const content = fs.readFileSync(filePath, 'utf-8');
@@ -416,6 +487,7 @@ describe('i18n 静态检查工具', () => {
                         labelKey: 'games.smashup.setup.expansions.label',
                         options: [
                             { value: 'titans', labelKey: 'games.smashup.setup.expansions.titans' },
+                            { value: 'diy', labelKey: 'games.smashup.setup.expansions.diy' },
                         ],
                     },
                     teamMode: {
@@ -456,6 +528,10 @@ describe('i18n 静态检查工具', () => {
             }),
             expect.objectContaining({
                 key: 'setup.expansions.titans',
+                namespaces: ['game-smashup'],
+            }),
+            expect.objectContaining({
+                key: 'setup.expansions.diy',
                 namespaces: ['game-smashup'],
             }),
             expect.objectContaining({
@@ -533,7 +609,7 @@ describe('i18n 静态检查工具', () => {
         ]));
     });
 
-    it('忽略非翻译语义的 *Key 字段，例如 sfxKey/effectKey', () => {
+    it('忽略非翻译语义的 sfxKey，但保留像 effectKey 这样的业务 i18n key', () => {
         const content = `
             export const FX = {
                 sfxKey: 'magic.general.arcane.hit_001',
@@ -548,12 +624,178 @@ describe('i18n 静态检查工具', () => {
             new Set(['game-smashup']),
         );
 
-        expect(result).toEqual([
+        expect(result).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                key: 'bonusDie.effect.fire',
+                namespaces: ['game-smashup'],
+            }),
             expect.objectContaining({
                 key: 'choices.confirm',
                 namespaces: ['game-smashup'],
             }),
+        ]));
+        expect(result).toHaveLength(2);
+    });
+});
+
+describe('DiceThrone ability choice face label scan', () => {
+    it('从技能触发条件收集分支选择需要的动态骰面文案 key', () => {
+        const refs = collectDiceThroneAbilityChoiceFaceLabelReferences({
+            ninja: {
+                abilities: [
+                    {
+                        id: 'shadow-step',
+                        name: 'abilities.shadow-step.name',
+                        type: 'offensive',
+                        variants: [
+                            {
+                                id: 'shadow-step-2-main',
+                                trigger: { type: 'diceSet', faces: { mask: 4 } },
+                                effects: [],
+                            },
+                            {
+                                id: 'death-blossom',
+                                trigger: { type: 'diceSet', faces: { ninja_katana: 3, shuriken: 2 } },
+                                effects: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        expect(refs.map(ref => ref.key).sort()).toEqual([
+            'abilityChoice.faceLabel.mask',
+            'abilityChoice.faceLabel.ninja_katana',
+            'abilityChoice.faceLabel.shuriken',
         ]);
+    });
+
+    it('缺少动态骰面文案时会进入 i18n 缺失 key 报告', () => {
+        const refs = collectDiceThroneAbilityChoiceFaceLabelReferences({
+            ninja: {
+                abilities: [
+                    {
+                        id: 'shadow-step',
+                        name: 'abilities.shadow-step.name',
+                        type: 'offensive',
+                        variants: [
+                            {
+                                id: 'shadow-step-2-main',
+                                trigger: { type: 'diceSet', faces: { mask: 4 } },
+                                effects: [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+        const missing = collectMissingTranslations(
+            refs,
+            {
+                'zh-CN': {
+                    'game-dicethrone': {
+                        abilityChoice: { faceLabel: {} },
+                    },
+                },
+            },
+            ['zh-CN'],
+        );
+
+        expect(missing).toEqual([
+            expect.objectContaining({
+                namespaces: ['game-dicethrone'],
+                key: 'abilityChoice.faceLabel.mask',
+                languages: ['zh-CN'],
+            }),
+        ]);
+    });
+
+    it('mixed dotted-key locale 结构不会把已存在的 DiceThrone key 误报为缺失', () => {
+        const missing = collectMissingTranslations(
+            [{
+                key: 'bonusDie.effect.luckyRoll.result',
+                namespaces: ['game-dicethrone'],
+                file: 'demo.ts',
+                line: 1,
+                source: 'test',
+            }],
+            {
+                'zh-CN': {
+                    'game-dicethrone': {
+                        bonusDie: {
+                            effect: {
+                                'luckyRoll.result': '治疗{{healAmount}}',
+                            },
+                        },
+                    },
+                },
+                en: {
+                    'game-dicethrone': {
+                        bonusDie: {
+                            effect: {
+                                'luckyRoll.result': 'Heal {{healAmount}}',
+                            },
+                        },
+                    },
+                },
+            },
+            ['zh-CN', 'en'],
+        );
+
+        expect(missing).toEqual([]);
+    });
+});
+
+describe('DiceThrone raw contract audit', () => {
+    it('会抓出 helper 参数里的原始可见文案', () => {
+        const content = `
+            const demo = () => [
+                damage(5, '造成 5 点伤害。'),
+                custom('demo-action', '若投出 3 个相同数字，施加击倒。', 'preDefense'),
+                grantToken('self', TOKEN_IDS.BOUNTY, 1, '对手获得 1 个赏金。', 'preDefense'),
+            ];
+        `;
+
+        const warnings = collectDiceThroneRawContractWarningsFromContent(
+            content,
+            'D:/gongzuo/webgame/BoardGame/src/games/dicethrone/heroes/gunslinger/abilities.ts',
+        );
+
+        expect(warnings).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'raw-dicethrone-contract-text',
+                key: '造成 5 点伤害。',
+                source: 'damage.arg1',
+            }),
+            expect.objectContaining({
+                type: 'raw-dicethrone-contract-text',
+                key: '若投出 3 个相同数字，施加击倒。',
+                source: 'custom.arg1',
+            }),
+            expect.objectContaining({
+                type: 'raw-dicethrone-contract-text',
+                key: '对手获得 1 个赏金。',
+                source: 'grantToken.arg3',
+            }),
+        ]));
+    });
+
+    it('不会把已 key 化的 helper 参数误报为原始文案', () => {
+        const content = `
+            const demo = () => [
+                damage(5, abilityEffectText('slash', 'damage5')),
+                customEffect('demo-custom', 'opponent', abilityEffectText('slash', 'bonus')),
+                grantToken('self', TOKEN_IDS.BOUNTY, 1, abilityEffectText('slash', 'gainBounty')),
+            ];
+        `;
+
+        const warnings = collectDiceThroneRawContractWarningsFromContent(
+            content,
+            'D:/gongzuo/webgame/BoardGame/src/games/dicethrone/heroes/ninja/abilities.ts',
+        );
+
+        expect(warnings).toEqual([]);
     });
 });
 

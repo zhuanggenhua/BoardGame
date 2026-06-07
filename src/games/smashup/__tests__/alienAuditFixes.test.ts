@@ -22,7 +22,15 @@ import type { BaseInPlay, CardInstance, MinionOnBase, PlayerState, SmashUpCore, 
 import { ALIEN_ACTIONS } from '../data/factions/aliens';
 import { ALIEN_POD_ACTIONS } from '../data/factions/aliens_pod';
 import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion, buildDeck } from '../domain/utils';
-import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+  expectNoPrompt,
+  getFirstPrompt,
+  getPromptOption,
+  getPromptSourceId,
+  makeMatchState as makeMatchStateFromHelpers,
+  respondToPrompt,
+  withCurrentPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 
 function makeCard(uid: string, defId: string, type: 'minion' | 'action', owner: string): CardInstance {
@@ -99,11 +107,7 @@ function execPlayAction(
 }
 
 function respondInteraction(matchState: MatchState<SmashUpCore>, playerId: string, optionId: string) {
-  return runCommand(matchState, {
-    type: 'SYS_INTERACTION_RESPOND',
-    playerId,
-    payload: { optionId },
-  } as any, dummyRandom);
+  return respondToPrompt(matchState, optionId, playerId, dummyRandom);
 }
 
 beforeAll(() => {
@@ -184,7 +188,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
     const played = execPlayAction(state, '0', 'a1', 1, 'm2');
-    expect((played.matchState.sys as any).interaction?.current).toBeUndefined();
+    expectNoPrompt(played.matchState);
     const returned = played.events.find(event => event.type === SU_EVENTS.MINION_RETURNED);
     expect(returned).toBeDefined();
     expect((returned as any).payload).toMatchObject({
@@ -206,10 +210,9 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ])],
     });
     const played = execPlayAction(core, '0', 'a1');
-    const current = (played.matchState.sys as any).interaction?.current;
-    expect(current?.data?.sourceId).toBe('alien_crop_circles');
-    const baseOption = current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 0);
-    expect(baseOption).toBeDefined();
+    const current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(current)).toBe('alien_crop_circles');
+    const baseOption = getPromptOption(current, (entry: any) => entry.value?.baseIndex === 0, 'base 0 option');
     const result = respondInteraction(played.matchState, '0', baseOption.id);
 
     const returned = result.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
@@ -219,6 +222,35 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     const returnedUids = returned.map(e => (e as any).payload.minionUid);
     expect(returnedUids).toContain('m1');
     expect(returnedUids).toContain('m2');
+  });
+
+  it('alien_crop_circles: 目标基地只有受保护对手随从时给出友好提示', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('a1', 'alien_crop_circles', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
+      bases: [makeBase('base_old', [
+        makeMinion('m1', 'robot_zapbot', '1', 2, {
+          attachedActions: [{ uid: 'incorporeal-1', defId: 'ghost_incorporeal', ownerId: '1' }],
+        }),
+      ])],
+    });
+    const played = execPlayAction(core, '0', 'a1');
+    const current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(current)).toBe('alien_crop_circles');
+    const baseOption = getPromptOption(current, (entry: any) => entry.value?.baseIndex === 0, 'base 0 option');
+    const result = respondInteraction(played.matchState, '0', baseOption.id);
+
+    expect(result.events.some(e => e.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
+    expect(result.events).toContainEqual(expect.objectContaining({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: expect.objectContaining({
+        playerId: '0',
+        messageKey: 'feedback.all_protected',
+        tone: 'warning',
+      }),
+    }));
   });
 
   it('alien_terraform: 三步交互替换基地并仅能在新基地额外打随从', () => {
@@ -232,10 +264,9 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
 
     const played = execPlayAction(core, '0', 'tf1', 0);
-    const step1Current = (played.matchState.sys as any).interaction?.current;
-    expect(step1Current?.data?.sourceId).toBe('alien_terraform_choose_replacement');
-    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
-    expect(replacementOption).toBeDefined();
+    const step1Current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(step1Current)).toBe('alien_terraform_choose_replacement');
+    const replacementOption = getPromptOption(step1Current, (entry: any) => entry.value?.newBaseDefId === 'base_new', 'base_new replacement option');
 
     const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
     const replaced = step2.events.find(e => e.type === SU_EVENTS.BASE_REPLACED);
@@ -247,10 +278,9 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       keepCards: true,
     });
 
-    const step2Current = (step2.finalState.sys as any).interaction?.current;
-    expect(step2Current?.data?.sourceId).toBe('alien_terraform_play_minion');
-    const minionOption = step2Current?.data?.options?.find((entry: any) => entry.value?.cardUid === 'h1');
-    expect(minionOption).toBeDefined();
+    const step2Current = getFirstPrompt(step2.finalState);
+    expect(getPromptSourceId(step2Current)).toBe('alien_terraform_play_minion');
+    const minionOption = getPromptOption(step2Current, (entry: any) => entry.value?.cardUid === 'h1', 'h1 minion option');
 
     const step3 = respondInteraction(step2.finalState, '0', minionOption.id);
     const minionPlayed = step3.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
@@ -264,6 +294,42 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       limitType: 'minion',
       delta: 1,
       reason: 'alien_terraform',
+    });
+  });
+
+  it('alien_terraform: 第三步额外打出借来的手牌随从时应保留真实 owner', () => {
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('borrowed', 'alien_invader', 'minion', '1')] }),
+        '1': makePlayer('1'),
+      },
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
+    const minionOption = step2Current?.data?.options?.find((entry: any) => entry.value?.cardUid === 'borrowed');
+    expect(minionOption).toBeDefined();
+
+    const step3 = respondInteraction(step2.finalState, '0', minionOption.id);
+    const minionPlayed = step3.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
+    expect((minionPlayed as any)?.payload).toMatchObject({
+      playerId: '0',
+      cardUid: 'borrowed',
+      defId: 'alien_invader',
+      ownerId: '1',
+      baseIndex: 0,
+      reason: 'alien_terraform',
+    });
+    expect(step3.finalState.core.bases[0]?.minions.find(minion => minion.uid === 'borrowed')).toMatchObject({
+      controller: '0',
+      owner: '1',
     });
   });
 
@@ -289,13 +355,11 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
 
     const played = execPlayAction(core, '0', 'tf1', 0);
-    const step1Current = (played.matchState.sys as any).interaction?.current;
-    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
-    expect(replacementOption).toBeDefined();
+    const step1Current = getFirstPrompt(played.matchState);
+    const replacementOption = getPromptOption(step1Current, (entry: any) => entry.value?.newBaseDefId === 'base_new', 'base_new replacement option');
     const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
-    const step2Current = (step2.finalState.sys as any).interaction?.current;
-    const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 't1');
-    expect(titanOption).toBeDefined();
+    const step2Current = getFirstPrompt(step2.finalState);
+    const titanOption = getPromptOption(step2Current, (opt: any) => opt.value?.titanUid === 't1', 'titan option');
     expect(titanOption.value).toMatchObject({
       titanUid: 't1',
       defId: 'tricksters_big_funny_giant',
@@ -315,6 +379,56 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
   });
 
+  it('alien_terraform: 第三步应允许当前控制者打出 borrowed set-aside 泰坦', () => {
+    const borrowedTitan: TitanState = {
+      uid: 'borrowed-titan',
+      defId: 'tricksters_big_funny_giant',
+      faction: 'tricksters',
+      ownerId: '1',
+      controllerId: '0',
+      powerCounters: 0,
+      talentUsed: false,
+      location: { zone: 'setaside' },
+    };
+    const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '1': makePlayer('1'),
+      },
+      titans: [borrowedTitan],
+      bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
+      baseDeck: ['base_new', 'base_alt'],
+    });
+
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
+    const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 'borrowed-titan');
+    expect(titanOption).toBeDefined();
+
+    const step3 = respondInteraction(step2.finalState, '0', titanOption.id);
+    const titanPlayed = step3.events.find(e => e.type === SU_EVENTS.TITAN_PLAYED);
+    expect(titanPlayed).toBeDefined();
+    expect((titanPlayed as any).payload).toMatchObject({
+      titanUid: 'borrowed-titan',
+      defId: 'tricksters_big_funny_giant',
+      ownerId: '1',
+      controllerId: '0',
+      baseIndex: 0,
+      baseDefId: 'base_new',
+      reason: 'alien_terraform',
+    });
+    expect((step3.finalState.core.titans ?? []).find(titan => titan.uid === 'borrowed-titan')).toMatchObject({
+      ownerId: '1',
+      controllerId: '0',
+      location: { zone: 'base', baseIndex: 0 },
+    });
+  });
+
   it('alien_terraform: 第三步选择跳过时不产生额外随从事件', () => {
     const core = makeState({
       players: {
@@ -326,13 +440,11 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
 
     const played = execPlayAction(core, '0', 'tf1', 0);
-    const step1Current = (played.matchState.sys as any).interaction?.current;
-    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
-    expect(replacementOption).toBeDefined();
+    const step1Current = getFirstPrompt(played.matchState);
+    const replacementOption = getPromptOption(step1Current, (entry: any) => entry.value?.newBaseDefId === 'base_new', 'base_new replacement option');
     const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
-    const step2Current = (step2.finalState.sys as any).interaction?.current;
-    const skipOption = step2Current?.data?.options?.find((entry: any) => entry.value?.skip === true);
-    expect(skipOption).toBeDefined();
+    const step2Current = getFirstPrompt(step2.finalState);
+    const skipOption = getPromptOption(step2Current, (entry: any) => entry.value?.skip === true, 'skip option');
 
     const step3 = respondInteraction(step2.finalState, '0', skipOption.id);
     const domainEvents = step3.events.filter(event => !String(event.type).startsWith('SYS_'));
@@ -365,10 +477,9 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
     const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
-    const current = (played.matchState.sys as any).interaction?.current;
-    expect(current?.data?.sourceId).toBe('alien_invasion_choose_base');
-    const baseOption = current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
-    expect(baseOption).toBeDefined();
+    const current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(current)).toBe('alien_invasion_choose_base');
+    const baseOption = getPromptOption(current, (entry: any) => entry.value?.baseIndex === 1, 'base 1 option');
     const step2 = respondInteraction(played.matchState, '0', baseOption.id);
     const moved = step2.events.find(event => event.type === SU_EVENTS.MINION_MOVED);
     expect(moved).toBeDefined();
@@ -405,7 +516,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     );
 
     expect(result.success).toBe(true);
-    expect((result.finalState.sys.interaction?.current?.data as any)?.sourceId).toBe('alien_invasion_choose_base');
+    expect(getPromptSourceId(getFirstPrompt(result.finalState))).toBe('alien_invasion_choose_base');
   });
 
   it('alien_invasion: 第二步若目标已离开来源基地则不再移动', () => {
@@ -421,8 +532,8 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
 
     const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
-    const step1Current = (played.matchState.sys as any).interaction?.current;
-    expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
+    const step1Current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(step1Current)).toBe('alien_invasion_choose_base');
 
     const staleCore = makeState({
       ...core,
@@ -439,18 +550,8 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
 
-    const staleState: MatchState<SmashUpCore> = {
-      core: staleCore,
-      sys: {
-        ...played.matchState.sys,
-        interaction: {
-          ...((played.matchState.sys as any).interaction),
-          current: step1Current,
-        },
-      } as any,
-    };
-    const baseOption = step1Current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
-    expect(baseOption).toBeDefined();
+    const staleState = withCurrentPrompt({ core: staleCore, sys: played.matchState.sys } as MatchState<SmashUpCore>, step1Current);
+    const baseOption = getPromptOption(step1Current, (entry: any) => entry.value?.baseIndex === 1, 'base 1 option');
     const step2 = respondInteraction(staleState, '0', baseOption.id);
     const domainEvents = step2.events.filter(event => !String(event.type).startsWith('SYS_'));
     expect(domainEvents).toHaveLength(0);
@@ -469,26 +570,16 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     });
 
     const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
-    const step1Current = (played.matchState.sys as any).interaction?.current;
-    expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
+    const step1Current = getFirstPrompt(played.matchState);
+    expect(getPromptSourceId(step1Current)).toBe('alien_invasion_choose_base');
 
     const staleCore = makeState({
       ...core,
       bases: [makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)])],
     });
 
-    const staleState: MatchState<SmashUpCore> = {
-      core: staleCore,
-      sys: {
-        ...played.matchState.sys,
-        interaction: {
-          ...((played.matchState.sys as any).interaction),
-          current: step1Current,
-        },
-      } as any,
-    };
-    const baseOption = step1Current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
-    expect(baseOption).toBeDefined();
+    const staleState = withCurrentPrompt({ core: staleCore, sys: played.matchState.sys } as MatchState<SmashUpCore>, step1Current);
+    const baseOption = getPromptOption(step1Current, (entry: any) => entry.value?.baseIndex === 1, 'base 1 option');
     const step2 = respondInteraction(staleState, '0', baseOption.id);
 
     const domainEvents = step2.events.filter(event => !String(event.type).startsWith('SYS_'));

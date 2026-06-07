@@ -215,7 +215,25 @@ async function setupHeroScene(
 async function clickHandCard(page: Page, cardId: string): Promise<void> {
   const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
   await expect(handCard).toBeVisible({ timeout: 10000 });
-  await handCard.click();
+  const cardBox = await page.evaluate((nextCardId) => {
+    const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, cardId);
+  if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+    throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+  }
+
+  const startX = cardBox.x + (cardBox.width / 2);
+  const startY = cardBox.y + (cardBox.height * 0.78);
+  const endY = Math.max(24, startY - 240);
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX, endY, { steps: 12 });
+  await page.mouse.up();
+  await page.mouse.move(2, 2);
 }
 
 async function openFabPanel(page: Page, panelId: string): Promise<void> {
@@ -1604,6 +1622,39 @@ test.describe('DiceThrone hand card preview regression', () => {
 
     await waitForHandAnimationSettled(page);
     await page.screenshot({ path: join(evidenceDir, 'samurai-main-cards-end-to-end.png'), fullPage: true });
+  });
+
+  test('samurai 荣誉与耻辱主阶段手牌在接近上限时应 clamp 到 stackLimit', async ({ page, game }) => {
+    test.setTimeout(240000);
+    const evidenceDir = ensureEvidenceDir();
+
+    await test.step('武士荣耀在已有 1 层荣誉时再授予 2 层，最终应 clamp 到 2', async () => {
+      await setupHeroScene(page, game, 'samurai', ['card-samurai-honor'], {
+        opponentHeroId: 'monk',
+        player0Tokens: { honor: 1 },
+      });
+      await clickHandCard(page, 'card-samurai-honor');
+      const stateAfter = await waitForCardResolved(page, game, 'card-samurai-honor', 9, {
+        expectedHandIdsAfter: [],
+      });
+      expect(stateAfter.core.players['0'].tokens?.honor ?? 0).toBe(2);
+      await waitForHandAnimationSettled(page);
+      await page.screenshot({ path: join(evidenceDir, 'samurai-honor-clamp-after-play.png'), fullPage: true });
+    });
+
+    await test.step('武士耻辱牌在目标已有 1 层耻辱时再施加 2 层，最终应 clamp 到 2', async () => {
+      await setupHeroScene(page, game, 'samurai', ['card-you-should-be-ashamed'], {
+        opponentHeroId: 'monk',
+        player1Tokens: { shame: 1 },
+      });
+      await clickHandCard(page, 'card-you-should-be-ashamed');
+      const stateAfter = await waitForCardResolved(page, game, 'card-you-should-be-ashamed', 9, {
+        expectedHandIdsAfter: [],
+      });
+      expect(stateAfter.core.players['1'].tokens?.shame ?? 0).toBe(2);
+      await waitForHandAnimationSettled(page);
+      await page.screenshot({ path: join(evidenceDir, 'samurai-shame-clamp-after-play.png'), fullPage: true });
+    });
   });
 
   test('samurai 攻击修正牌应逐张可打出并挂到当前攻击链路', async ({ page, game }) => {

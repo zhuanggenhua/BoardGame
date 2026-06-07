@@ -24,6 +24,9 @@ export interface Room {
     ownerKey?: string;
     ownerType?: 'user' | 'guest';
     isLocked?: boolean;
+    publicSetupSummary?: {
+        enabledExpansions?: string[];
+    };
 }
 
 /** 带有计算属性的房间项（房间列表渲染用） */
@@ -51,11 +54,43 @@ export interface ActiveMatchInfo {
     isHost: boolean;
 }
 
+export type RoomLabelTranslator = (key: string, options?: Record<string, unknown>) => string;
+
 // ============================================================================
 // 工具函数
 // ============================================================================
 
 export const normalizeGameName = (name?: string) => (name || '').toLowerCase();
+
+export const resolveRoomExpansionLabel = (
+    t: RoomLabelTranslator,
+    gameName: string | undefined,
+    expansionId: string,
+): string => {
+    const normalizedGameName = gameName?.trim().toLowerCase();
+    if (normalizedGameName !== 'smashup') {
+        return expansionId;
+    }
+    if (expansionId === 'titans') {
+        return t('setup.expansions.titans', {
+            ns: 'game-smashup',
+            defaultValue: expansionId,
+        });
+    }
+    if (expansionId === 'diy') {
+        return t('setup.expansions.diy', {
+            ns: 'game-smashup',
+            defaultValue: expansionId,
+        });
+    }
+    if (expansionId === 'deckQuery') {
+        return t('setup.deckQuery.label', {
+            ns: 'game-smashup',
+            defaultValue: expansionId,
+        });
+    }
+    return expansionId;
+};
 
 export const shouldPromptExitActiveMatch = (activeMatchID: string | null, targetMatchID: string) => (
     !!activeMatchID && activeMatchID !== targetMatchID

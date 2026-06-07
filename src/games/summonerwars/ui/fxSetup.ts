@@ -44,6 +44,7 @@ export const SW_FX = {
 const CARD_ASPECT_RATIO = 1044 / 729;
 /** 卡牌在格子内的宽度比例（与 UnitCell 的 w-[85%] 一致） */
 const CARD_WIDTH_RATIO = 0.85;
+const CARD_PADDING_TOP = `${100 / CARD_ASPECT_RATIO}%`;
 
 // ============================================================================
 // 通用容器工具
@@ -185,7 +186,13 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
     },
       React.createElement('div', {
         className: 'relative',
-        style: { width: `${CARD_WIDTH_RATIO * 100}%`, aspectRatio: `${CARD_ASPECT_RATIO}`, maxHeight: '100%' },
+        style: {
+          width: `${CARD_WIDTH_RATIO * 100}%`,
+          height: 0,
+          paddingTop: CARD_PADDING_TOP,
+          aspectRatio: `${CARD_ASPECT_RATIO}`,
+          maxHeight: '100%',
+        },
       },
         React.createElement(ImpactContainer, {
           isActive: true,
@@ -256,7 +263,13 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   },
     React.createElement('div', {
       className: 'relative',
-      style: { width: `${CARD_WIDTH_RATIO * 100}%`, aspectRatio: `${CARD_ASPECT_RATIO}`, maxHeight: '100%' },
+      style: {
+        width: `${CARD_WIDTH_RATIO * 100}%`,
+        height: 0,
+        paddingTop: CARD_PADDING_TOP,
+        aspectRatio: `${CARD_ASPECT_RATIO}`,
+        maxHeight: '100%',
+      },
     },
       React.createElement(ImpactContainer, {
         isActive: true,

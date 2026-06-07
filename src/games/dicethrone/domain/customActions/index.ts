@@ -9,6 +9,8 @@ import { registerSamuraiCustomActions } from './samurai';
 import { registerShadowThiefCustomActions } from './shadow_thief';
 import { registerTreantCustomActions } from './treant';
 import { registerNinjaCustomActions } from './ninja';
+import { registerZhanshujiaCustomActions } from './zhanshujia';
+import { registerCursedPirateCustomActions } from './cursed_pirate';
 
 let initialized = false;
 
@@ -32,6 +34,8 @@ export function initializeCustomActions(): void {
     registerSamuraiCustomActions();
     registerTreantCustomActions();
     registerNinjaCustomActions();
+    registerZhanshujiaCustomActions();
+    registerCursedPirateCustomActions();
 
     initialized = true;
 }
@@ -47,3 +51,5 @@ export { registerGunslingerCustomActions } from './gunslinger';
 export { registerSamuraiCustomActions } from './samurai';
 export { registerTreantCustomActions } from './treant';
 export { registerNinjaCustomActions } from './ninja';
+export { registerZhanshujiaCustomActions } from './zhanshujia';
+export { registerCursedPirateCustomActions } from './cursed_pirate';

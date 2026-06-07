@@ -16,6 +16,7 @@ export interface PlayerMetadata {
     name?: string;
     credentials?: string;
     isConnected?: boolean;
+    ownerKey?: string;
 }
 
 /**
@@ -105,6 +106,19 @@ export interface FetchResult {
     metadata?: MatchMetadata;
 }
 
+export interface ClaimSeatMetadataInput {
+    playerID: string;
+    playerCredentials: string;
+    playerName?: string;
+    updatedAt?: number;
+}
+
+export interface ClaimSeatMetadataResult {
+    metadata?: MatchMetadata;
+    playerExists: boolean;
+    playerCredentials?: string;
+}
+
 // ============================================================================
 // 列表查询选项
 // ============================================================================
@@ -139,6 +153,9 @@ export interface MatchStorage {
 
     /** 更新对局元数据 */
     setMetadata(matchID: string, metadata: MatchMetadata): Promise<void>;
+
+    /** 原子/串行占座元数据更新，避免整份 metadata 覆盖并发 seat 写入 */
+    claimSeatMetadata(matchID: string, input: ClaimSeatMetadataInput): Promise<ClaimSeatMetadataResult>;
 
     /** 获取对局数据（按需获取字段） */
     fetch(matchID: string, opts: FetchOpts): Promise<FetchResult>;

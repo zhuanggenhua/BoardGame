@@ -239,6 +239,10 @@ function buildPlayCardActions(
     if (!player) {
         return actions;
     }
+
+    if (player.hasPlayed) {
+        return actions;
+    }
     
     // 枚举手牌中所有卡牌
     for (const card of player.hand) {
@@ -442,17 +446,20 @@ function buildInteractionActions(
  * @returns payload 对象
  */
 function buildSimpleChoicePayload(
+    interactionId: string | undefined,
     optionIds: string[],
     multi: { min?: number; max?: number } | undefined,
     mergedValue?: unknown,
 ): unknown {
     if (multi) {
         return { 
+            ...(interactionId ? { interactionId } : {}),
             optionIds, 
             ...(mergedValue && typeof mergedValue === 'object' ? mergedValue : {}) 
         };
     }
     return { 
+        ...(interactionId ? { interactionId } : {}),
         optionId: optionIds[0], 
         ...(mergedValue && typeof mergedValue === 'object' ? mergedValue : {}) 
     };
@@ -526,7 +533,7 @@ function buildSimpleChoiceActions(
             label: option.label ?? `选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: buildSimpleChoicePayload([option.id], data.multi, option.value),
+                payload: buildSimpleChoicePayload(interactionObj.id, [option.id], data.multi, option.value),
             }],
             metadata: {
                 interactionId: interactionObj.id,
@@ -959,6 +966,7 @@ const balancedLocalPolicy: LocalAiPolicy = createScoredLocalAiPolicy({
 export const cardiaAiRuntime: GameAiRuntime = {
     gameId: 'cardia',
     buildLegalActions: buildCardiaAiLegalActions,
+    defaultMinimumActionDelayMs: 1000,
     localPolicies: {
         baseline: baselineLocalPolicy,
         aggro: aggroLocalPolicy,

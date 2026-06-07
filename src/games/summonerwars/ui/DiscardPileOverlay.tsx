@@ -15,6 +15,9 @@ import { resolveCardAtlasId } from './cardAtlas';
 import { UI_Z_INDEX } from '../../../core';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
 
+const OVERLAY_CARD_WIDTH = 440;
+const OVERLAY_CARD_ASPECT_RATIO = 1044 / 729;
+
 /** 获取卡牌精灵图配置 */
 function getCardAtlasConfig(card: Card): { atlasId: string; frameIndex: number } {
   const spriteIndex = card.spriteIndex ?? 0;
@@ -102,7 +105,12 @@ export const DiscardPileOverlay: React.FC<DiscardPileOverlayProps> = ({
                     <CardSprite
                       atlasId={atlasId}
                       frameIndex={frameIndex}
-                      className="w-[440px] rounded-lg bg-slate-900"
+                      className="rounded-lg bg-slate-900"
+                      style={{
+                        width: `${OVERLAY_CARD_WIDTH}px`,
+                        height: `calc(${OVERLAY_CARD_WIDTH}px / ${OVERLAY_CARD_ASPECT_RATIO})`,
+                        aspectRatio: `${OVERLAY_CARD_ASPECT_RATIO} / 1`,
+                      }}
                     />
                   </div>
                   {/* 卡牌名称 */}

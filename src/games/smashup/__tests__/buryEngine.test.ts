@@ -3,11 +3,18 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMatchState, makePlayer, makeState, applyEvents } from './helpers';
+import {
+    applyEvents,
+    getPromptOption,
+    getSimpleChoicePrompt,
+    makeMatchState,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
-import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
+import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent, uncoverBuriedCard } from '../domain/bury';
 
 beforeAll(() => {
     clearRegistry();
@@ -73,16 +80,10 @@ describe('bury engine', () => {
         const ms0 = makeMatchState(core);
         const enter = runCommand(ms0, { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 1 } as any, defaultTestRandom);
         // onPhaseEnter(startTurn) should queue uncover interaction
-        const interaction = enter.finalState.sys.interaction.current;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const opt = (interaction as any).data.options.find((o: any) => o.value?.cardUid === 'b1');
-        expect(opt).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const opt = getPromptOption(interaction, option => option.value?.cardUid === 'b1', 'buried b1 option');
 
-        const res = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: opt.id } } as any,
-            defaultTestRandom,
-        );
+        const res = respondToPrompt(enter.finalState, opt.id, '0', defaultTestRandom);
         // buried card removed
         expect(res.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
         // minion now in play
@@ -122,16 +123,10 @@ describe('bury engine', () => {
             defaultTestRandom,
         );
 
-        const interaction = enter.finalState.sys.interaction.current as any;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'wl-buried');
-        expect(option).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'wl-buried', 'buried Water Lily option');
 
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 11 } as any,
-            defaultTestRandom,
-        );
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.success).toBe(true);
         const drawEvents = resolved.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
@@ -171,21 +166,88 @@ describe('bury engine', () => {
             defaultTestRandom,
         );
 
-        const interaction = enter.finalState.sys.interaction.current as any;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'curse-1');
-        expect(option).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'curse-1', 'buried Ancient Curse option');
 
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 21 } as any,
-            defaultTestRandom,
-        );
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
         expect(resolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'curse-1')).toBe(true);
+    });
+
+    it('bury.uncoverBuriedCard 翻开 fairies_enchantment 后响应 minus 时，应在 prompt state 上看到已附着的 ongoing 并写入 metadata', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    uid: 'ally-1',
+                    defId: 'robot_microbot_alpha',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                } as any],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'buried-enchantment',
+                    defId: 'fairies_enchantment',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'play',
+                }],
+            }],
+        });
+
+        const uncovered = uncoverBuriedCard({
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'buried-enchantment',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 301,
+            reason: 'test_uncover_fairies_enchantment_minus',
+        });
+
+        const prompt = getSimpleChoicePrompt(uncovered.state, 'fairies_enchantment');
+        expect(uncovered.state.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '0',
+            }),
+        ]));
+
+        const minusOption = getPromptOption(prompt, option => option.value?.branchId === 'minus', 'buried fairies enchantment minus option');
+        const resolved = respondToPrompt(uncovered.state, minusOption.id, '0', defaultTestRandom);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                ownerId: '0',
+                targetType: 'base',
+                targetBaseIndex: 0,
+                metadata: expect.objectContaining({ fairiesEnchantmentMode: 'minus' }),
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].ongoingActions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'buried-enchantment',
+                defId: 'fairies_enchantment',
+                metadata: expect.objectContaining({ fairiesEnchantmentMode: 'minus' }),
+            }),
+        ]));
     });
 
     it('base cleared discards buried cards to true owners without uncovering', () => {
@@ -247,13 +309,9 @@ describe('bury engine', () => {
         });
 
         const enter = runCommand(makeMatchState(core), { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 1 } as any, defaultTestRandom);
-        const interaction = enter.finalState.sys.interaction.current as any;
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'yk');
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id } } as any,
-            defaultTestRandom,
-        );
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'yk', 'buried You Can Take It With You option');
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.finalState.core.players['0'].hand).toHaveLength(3);
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'yk')).toBe(true);
@@ -302,6 +360,48 @@ describe('bury engine', () => {
         expect(next.bases[0].minions.some(minion => minion.uid === 'mummy-1')).toBe(false);
         expect(next.bases[0].buriedCards?.some(card => card.uid === 'mummy-1')).toBe(true);
         expect(next.players['1'].discard.some(card => card.uid === 'attach-1')).toBe(true);
+    });
+
+    it('从埋葬区翻出的随从不能在同一条结算链里立即重新埋葬自己', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    uid: 'uncovered-1',
+                    defId: 'skeletons_returned_one',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                    metadata: { playedFrom: 'buried' },
+                } as any],
+                ongoingActions: [],
+                buriedCards: [],
+            }],
+        });
+
+        const events = buildBuryCardEvents({
+            core,
+            playerId: '0',
+            cardUid: 'uncovered-1',
+            defId: 'skeletons_returned_one',
+            baseIndex: 0,
+            trueOwnerId: '0',
+            buriedFrom: 'play',
+            reason: 'immediate_rebury_probe',
+            random: defaultTestRandom,
+            now: 11,
+        });
+
+        expect(events).toEqual([]);
     });
 
     it('BURIED_CARD_RETURNED_TO_HAND 会把埋葬牌直接移回手牌而不翻开或进弃牌堆', () => {

@@ -4,7 +4,7 @@ import type { ActionLogSegment } from '../../../../engine/types';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { BreakdownTooltip } from '../../../common/overlays/BreakdownTooltip';
 import type { CardPreviewRef } from '../../../../core';
-import { buildSpriteBackgroundImage } from '../../../../games/dicethrone/ui/assets';
+import { buildSpriteBackgroundImage } from '../../../../core/SpriteAssetResolver';
 
 interface ActionLogSegmentsProps {
     segments: ActionLogSegment[];
@@ -13,6 +13,8 @@ interface ActionLogSegmentsProps {
     getCardPreviewRef?: (cardId: string) => CardPreviewRef | null;
     /** 卡牌预览最大尺寸（像素） */
     cardPreviewMaxDim?: number;
+    /** breakdown tooltip 层级，父级浮层需要抬高时传入 */
+    breakdownZIndex?: number;
 }
 
 /**
@@ -116,6 +118,7 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
     locale,
     getCardPreviewRef,
     cardPreviewMaxDim,
+    breakdownZIndex,
 }) => {
     if (!Array.isArray(segments) || segments.length === 0) {
         return null;
@@ -158,6 +161,7 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
                             key={index}
                             displayText={segment.displayText}
                             lines={segment.lines}
+                            zIndex={breakdownZIndex}
                         />
                     );
                 }

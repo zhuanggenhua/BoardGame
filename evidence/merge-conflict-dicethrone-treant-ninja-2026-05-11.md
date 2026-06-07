@@ -66,7 +66,7 @@
 - 本次额外发现的真实回归：
   - 合并阶段未发现新的业务回归；冲突集中在进度文档与派生 manifest。
 - 仅业务口径 / 规则变化：
-  - 新增 `.windsurf/skills/add-new-faction/`，把“新增派系/角色”沉淀为项目通用 workflow；同时补强 DiceThrone hero intake 文档的完成门禁。
+  - 新增 `add-new-faction` 通用 workflow（当前入口为 `.codex/skill/add-new-faction/SKILL.md`），把“新增派系/角色”沉淀为项目通用 workflow；同时补强 DiceThrone hero intake 文档的完成门禁。
 
 ## 6. 风险与验证
 

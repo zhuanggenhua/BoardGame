@@ -1,0 +1,320 @@
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import type { MatchState } from '../types';
+import type { EngineSystem } from '../systems/types';
+import { TestHarness, isTestEnvironment } from '../testing';
+import { refreshInteractionOptions } from '../systems/InteractionSystem';
+import type { MatchPlayerInfo } from './protocol';
+import type { GameEngineConfig } from './server';
+import { GameTransportClient } from './client';
+import type { LatencyOptimizationConfig } from './latency/types';
+import { createOptimisticEngine, filterPlayedEvents, type OptimisticEngine as OptimisticEngineType } from './latency/optimisticEngine';
+import {
+    shouldRecoverFromRejectedCommandError,
+    shouldForwardOnlineBatchRejectionToError as baseShouldForwardOnlineBatchRejectionToError,
+} from './aiAttemptGuard';
+import {
+    buildAiProgressMarker,
+    shouldSilentlyRetryOnlineAiBatchRejection,
+} from './onlineAiRecovery';
+import { normalizeReceivedStateForGame } from './stateNormalization';
+import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
+import { onAppVisible } from '../../lib/mobile/appVisibility';
+import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
+import type { GameClientContextValue } from './reactContext';
+
+export function useGameProviderRuntime(args: {
+    server: string;
+    matchId: string;
+    playerId: string | null;
+    credentials?: string;
+    onError?: (error: string) => void;
+    onConnectionChange?: (connected: boolean) => void;
+    onStateReady?: () => void;
+    engineConfig?: GameEngineConfig;
+    latencyConfig?: LatencyOptimizationConfig;
+}): {
+    rollbackSignal: EventStreamRollbackValue;
+    value: GameClientContextValue;
+} {
+    const {
+        server,
+        matchId,
+        playerId,
+        credentials,
+        onError,
+        onConnectionChange,
+        onStateReady,
+        engineConfig,
+        latencyConfig,
+    } = args;
+    const [state, setState] = useState<MatchState<unknown> | null>(null);
+    const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
+    const [isConnected, setIsConnected] = useState(false);
+    const clientRef = useRef<GameTransportClient | null>(null);
+    const optimisticEngineRef = useRef<OptimisticEngineType | null>(null);
+    const batcherRef = useRef<CommandBatcher | null>(null);
+    const batchSeqRef = useRef(0);
+    const lastConfirmedStateIDRef = useRef<number | null>(null);
+    const engineConfigRef = useRef(engineConfig);
+    const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
+        watermark: null,
+        seq: 0,
+        reconcileSeq: 0,
+    });
+    const onErrorRef = useRef(onError);
+    const onConnectionChangeRef = useRef(onConnectionChange);
+    const onStateReadyRef = useRef(onStateReady);
+    const hasReportedStateReadyRef = useRef(false);
+
+    const resetOptimisticProviderRuntime = useCallback((): boolean => {
+        if (!optimisticEngineRef.current) {
+            return false;
+        }
+        optimisticEngineRef.current.reset();
+        setRollbackSignal((prev) => ({
+            watermark: null,
+            seq: prev.seq + 1,
+            reconcileSeq: prev.reconcileSeq,
+        }));
+        return true;
+    }, []);
+
+    const requestProviderResync = useCallback(() => {
+        clientRef.current?.resync();
+    }, []);
+
+    const recoverFromRejectedCommand = useCallback((reason: string) => {
+        if (!shouldRecoverFromRejectedCommandError(reason)) {
+            return;
+        }
+        resetOptimisticProviderRuntime();
+        requestProviderResync();
+    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+
+    useEffect(() => {
+        onErrorRef.current = onError;
+    }, [onError]);
+
+    useEffect(() => {
+        onConnectionChangeRef.current = onConnectionChange;
+    }, [onConnectionChange]);
+
+    useEffect(() => {
+        onStateReadyRef.current = onStateReady;
+    }, [onStateReady]);
+
+    useEffect(() => {
+        engineConfigRef.current = engineConfig;
+    }, [engineConfig]);
+
+    useEffect(() => {
+        if (!latencyConfig?.optimistic?.enabled || !engineConfig) {
+            optimisticEngineRef.current = null;
+            return;
+        }
+        optimisticEngineRef.current = createOptimisticEngine({
+            pipelineConfig: {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems as EngineSystem<unknown>[],
+                systemsConfig: engineConfig.systemsConfig,
+            },
+            commandDeterminism: latencyConfig.optimistic.commandDeterminism ?? {},
+            commandAnimationMode: latencyConfig.optimistic.animationMode ?? {},
+            playerIds: [],
+        });
+    }, [engineConfig, latencyConfig]);
+
+    useEffect(() => {
+        if (!latencyConfig?.batching?.enabled) {
+            batcherRef.current = null;
+            return;
+        }
+        const batcher = createCommandBatcher({
+            windowMs: latencyConfig.batching.windowMs ?? 50,
+            maxBatchSize: latencyConfig.batching.maxBatchSize ?? 10,
+            immediateCommands: latencyConfig.batching.immediateCommands ?? [],
+            onFlush: (commands) => {
+                const client = clientRef.current;
+                if (!client) return;
+                if (commands.length === 1) {
+                    client.sendCommand(commands[0].type, commands[0].payload);
+                } else {
+                    const batchId = `b-${++batchSeqRef.current}`;
+                    client.sendBatch(batchId, commands, undefined, (reason) => {
+                        recoverFromRejectedCommand(reason);
+                        if (baseShouldForwardOnlineBatchRejectionToError(reason, shouldSilentlyRetryOnlineAiBatchRejection)) {
+                            onErrorRef.current?.(reason);
+                        }
+                    });
+                }
+            },
+        });
+        batcherRef.current = batcher;
+        return () => {
+            batcher.destroy();
+            batcherRef.current = null;
+        };
+    }, [latencyConfig, recoverFromRejectedCommand]);
+
+    useEffect(() => {
+        const client = new GameTransportClient({
+            server,
+            matchID: matchId,
+            playerID: playerId,
+            credentials,
+            onStateUpdate: (newState, players, meta, randomMeta) => {
+                const normalizedAuthoritativeState = normalizeReceivedStateForGame(
+                    engineConfigRef.current,
+                    newState as MatchState<unknown>,
+                );
+                if (!hasReportedStateReadyRef.current) {
+                    hasReportedStateReadyRef.current = true;
+                    onStateReadyRef.current?.();
+                }
+
+                if (meta?.stateID !== undefined && lastConfirmedStateIDRef.current !== null) {
+                    if (meta.stateID < lastConfirmedStateIDRef.current) {
+                        console.warn('[GameProvider] 忽略旧状态更新', {
+                            receivedStateID: meta.stateID,
+                            currentStateID: lastConfirmedStateIDRef.current,
+                            receivedTurnNumber: normalizedAuthoritativeState.core
+                                ? (normalizedAuthoritativeState.core as { turnNumber?: number }).turnNumber
+                                : undefined,
+                        });
+                        return;
+                    }
+                }
+
+                if (meta?.stateID !== undefined) {
+                    lastConfirmedStateIDRef.current = meta.stateID;
+                }
+
+                const engine = optimisticEngineRef.current;
+                let finalState: MatchState<unknown>;
+                if (engine) {
+                    if (players.length > 0) {
+                        engine.setPlayerIds(players.map((player) => String(player.id)));
+                    }
+                    if (randomMeta) {
+                        engine.syncRandom(randomMeta.seed, randomMeta.cursor);
+                    }
+                    const hadPendingBeforeReconcile = engine.hasPendingCommands();
+                    const result = engine.reconcile(normalizedAuthoritativeState, meta);
+
+                    if (result.didRollback && result.optimisticEventWatermark !== null) {
+                        setRollbackSignal((prev) => ({
+                            watermark: result.optimisticEventWatermark,
+                            seq: prev.seq + 1,
+                            reconcileSeq: prev.reconcileSeq,
+                        }));
+                        finalState = filterPlayedEvents(result.stateToRender, result.optimisticEventWatermark);
+                    } else if (!result.didRollback && hadPendingBeforeReconcile) {
+                        setRollbackSignal((prev) => ({
+                            watermark: null,
+                            seq: prev.seq,
+                            reconcileSeq: prev.reconcileSeq + 1,
+                        }));
+                        finalState = result.stateToRender;
+                    } else {
+                        finalState = result.stateToRender;
+                    }
+                } else {
+                    finalState = normalizedAuthoritativeState;
+                }
+
+                client.updateLatestState(normalizedAuthoritativeState);
+
+                const refreshedState = refreshInteractionOptions(finalState);
+                setState(refreshedState);
+                setMatchPlayers(players);
+            },
+            onConnectionChange: (connected) => {
+                setIsConnected(connected);
+                onConnectionChangeRef.current?.(connected);
+                if (connected) {
+                    resetOptimisticProviderRuntime();
+                }
+                if (!connected) {
+                    lastConfirmedStateIDRef.current = null;
+                }
+            },
+            onError: (error) => {
+                recoverFromRejectedCommand(error);
+                onErrorRef.current?.(error);
+            },
+        });
+
+        clientRef.current = client;
+        client.connect();
+
+        return () => {
+            hasReportedStateReadyRef.current = false;
+            client.disconnect();
+            clientRef.current = null;
+        };
+    }, [server, matchId, playerId, credentials, recoverFromRejectedCommand, resetOptimisticProviderRuntime]);
+
+    useEffect(() => {
+        return onAppVisible(() => {
+            const client = clientRef.current;
+            if (!client) return;
+            resetOptimisticProviderRuntime();
+            requestProviderResync();
+        });
+    }, [requestProviderResync, resetOptimisticProviderRuntime]);
+
+    const dispatch = useCallback((type: string, payload: unknown) => {
+        const engine = optimisticEngineRef.current;
+        if (engine) {
+            const result = engine.processCommand(type, payload, playerId ?? '0');
+            if (result.stateToRender) {
+                const refreshed = refreshInteractionOptions(result.stateToRender);
+                setState(refreshed);
+            }
+        }
+        const batcher = batcherRef.current;
+        if (batcher) {
+            batcher.enqueue(type, payload);
+        } else {
+            clientRef.current?.sendCommand(type, payload);
+        }
+    }, [playerId]);
+
+    useEffect(() => {
+        if (!isTestEnvironment()) return;
+
+        const harness = TestHarness.getInstance();
+        harness.state.register(
+            () => state,
+            () => {
+                throw new Error('[GameProvider] 联机模式下禁止通过客户端玩家视图注入状态，请改用服务端 /test 状态注入接口');
+            },
+        );
+
+        harness.command.register(async (command) => {
+            dispatch(command.type, command.payload);
+        });
+    }, [dispatch, state]);
+
+    const value = useMemo<GameClientContextValue>(() => ({
+        state,
+        dispatch,
+        playerId,
+        matchPlayers,
+        isConnected,
+        isMultiplayer: true,
+    }), [dispatch, isConnected, matchPlayers, playerId, state]);
+
+    return {
+        rollbackSignal,
+        value,
+    };
+}
+
+export { buildAiProgressMarker };

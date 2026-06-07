@@ -49,12 +49,10 @@ describe('SmashUp Interaction defId 审计', () => {
             visit(sourceFile);
         }
 
-        if (violations.length > 0) {
-            console.log('\n=== Interaction defId 缺失清单 ===\n');
-            violations.forEach(v => console.log(v));
-        }
-
-        expect(violations, '以下 Interaction 选项缺少 defId/minionDefId/baseDefId').toEqual([]);
+        expectNoViolations(
+            violations,
+            '以下 Interaction 选项缺少 defId/minionDefId/baseDefId',
+        );
     });
 
     it('所有 createSimpleChoice 的 value shorthand 字段都必须引用已定义变量', () => {
@@ -109,14 +107,21 @@ describe('SmashUp Interaction defId 审计', () => {
             visit(sourceFile);
         }
 
-        if (violations.length > 0) {
-            console.log('\n=== Interaction value shorthand 未定义变量清单 ===\n');
-            violations.forEach(v => console.log(v));
-        }
-
-        expect(violations, '以下 createSimpleChoice 选项 value shorthand 指向了未定义变量').toEqual([]);
+        expectNoViolations(
+            violations,
+            '以下 createSimpleChoice 选项 value shorthand 指向了未定义变量',
+        );
     });
 });
+
+function expectNoViolations(violations: string[], summary: string) {
+    if (violations.length === 0) {
+        expect(violations).toEqual([]);
+        return;
+    }
+
+    throw new Error(`${summary}\n\n${violations.join('\n')}`);
+}
 
 function checkOptionsArray(node: ts.Node, filePath: string, violations: string[]) {
     // 简化检查：只检查明显的 { cardUid: ..., value: { ... } } 模式
