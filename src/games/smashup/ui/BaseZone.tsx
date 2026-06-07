@@ -322,9 +322,10 @@ export const BaseZone: React.FC<{
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
-        const showOngoingInspectButton = showDesktopInspectButton
-            && !canUseOngoingTalent
-            && !isSelectableOngoing;
+        const showOngoingInspectButton = !isSelectableOngoing && (
+            showDesktopInspectButton
+            || (isCoarsePointer && isOngoingActivationArmed && !canUseOngoingTalent)
+        );
         const ongoingPowerContribution = getOngoingCardPowerContribution({
             ...base,
             ongoingActions: [oa],
@@ -351,11 +352,27 @@ export const BaseZone: React.FC<{
                             clearArmedActivation();
                             onOngoingSelect(oa.uid);
                         } else if (canUseOngoingTalent) {
-                            clearArmedActivation();
-                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
+                            if (isCoarsePointer) {
+                                armOrActivate(ongoingActivationKey, {
+                                    onActivate: () => {
+                                        dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
+                                    },
+                                });
+                            } else {
+                                clearArmedActivation();
+                                dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
+                            }
                         } else {
-                            clearArmedActivation();
-                            onViewAction(oa.defId);
+                            if (isCoarsePointer) {
+                                armOrActivate(ongoingActivationKey, {
+                                    onActivate: () => {
+                                        onViewAction(oa.defId);
+                                    },
+                                });
+                            } else {
+                                clearArmedActivation();
+                                onViewAction(oa.defId);
+                            }
                         }
                     }}
                     className={`relative aspect-[0.714] w-full cursor-pointer
