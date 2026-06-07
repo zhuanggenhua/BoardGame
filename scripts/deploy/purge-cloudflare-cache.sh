@@ -20,8 +20,13 @@ if [ -z "${CLOUDFLARE_ZONE_ID:-}" ]; then
   die "缺少 CLOUDFLARE_ZONE_ID"
 fi
 
-if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-  die "缺少 CLOUDFLARE_API_TOKEN"
+AUTH_MODE=""
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  AUTH_MODE="bearer"
+elif [ -n "${CLOUDFLARE_AUTH_EMAIL:-}" ] && [ -n "${CLOUDFLARE_GLOBAL_API_KEY:-}" ]; then
+  AUTH_MODE="global-key"
+else
+  die "缺少 Cloudflare 认证信息：请提供 CLOUDFLARE_API_TOKEN，或同时提供 CLOUDFLARE_AUTH_EMAIL + CLOUDFLARE_GLOBAL_API_KEY"
 fi
 
 MODE="${1:-everything}"
@@ -59,11 +64,24 @@ build_payload() {
 
 payload="$(build_payload "$@")"
 
+AUTH_ARGS=()
+case "$AUTH_MODE" in
+  bearer)
+    AUTH_ARGS=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+    ;;
+  global-key)
+    AUTH_ARGS=(-H "X-Auth-Email: ${CLOUDFLARE_AUTH_EMAIL}" -H "X-Auth-Key: ${CLOUDFLARE_GLOBAL_API_KEY}")
+    ;;
+  *)
+    die "未知认证模式：${AUTH_MODE}"
+    ;;
+esac
+
 response="$(
   curl -fsS \
     -X POST \
     "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
-    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    "${AUTH_ARGS[@]}" \
     -H "Content-Type: application/json" \
     --data "${payload}"
 )"
