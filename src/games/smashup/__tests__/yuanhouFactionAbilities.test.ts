@@ -485,7 +485,12 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(played.success).toBe(true);
         expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('shapeshifters_cellular_bonding_choose');
-        expect(getSimpleChoicePrompt(played.finalState, 'shapeshifters_cellular_bonding_choose')?.data?.targetType).toBe('ongoing');
+        expect(
+            findInteractionOption(
+                getSimpleChoicePrompt(played.finalState, 'shapeshifters_cellular_bonding_choose'),
+                candidate => candidate.value?.actionUid === 'evo-a',
+            )?.value?.cardUid,
+        ).toBe('evo-a');
 
         const resolved = resolveInteractionChain(played.finalState, prompt => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.actionUid === 'evo-a');
@@ -11294,7 +11299,12 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(played.success).toBe(true);
         expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_into_the_time_slip_choose');
-        expect(getSimpleChoicePrompt(played.finalState, 'time_travelers_into_the_time_slip_choose')?.data?.targetType).toBe('board');
+        expect(
+            findInteractionOption(
+                getSimpleChoicePrompt(played.finalState, 'time_travelers_into_the_time_slip_choose'),
+                candidate => candidate.value?.cardUid === 'minion-a',
+            )?.value?.minionUid,
+        ).toBe('minion-a');
 
         const resolved = resolveInteractionChain(played.finalState, prompt => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'stasis-a');
