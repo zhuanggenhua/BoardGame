@@ -52,7 +52,6 @@ const HAND_DRAWN_PERSISTED_SCREENSHOT = 'test-results/evidence-screenshots/_shar
 const HAND_DRAWN_REFERENCE_PERSISTED_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-hand-drawn-reference-persisted-current.png';
 const HAND_DRAWN_REFERENCE_CLEARED_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-hand-drawn-reference-cleared-current.png';
 const FORMAL_EMPTY_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-formal-empty-current.png';
-const TRACE_ASSIST_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-trace-assist-current.png';
 const TRACE_KIT_COLOR_LINE_DRAFT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-trace-kit-color-line-draft-current.png';
 const TRACE_KIT_REPAIRED_IMPORT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-trace-kit-repaired-import-current.png';
 const TRACE_BATCH_EXPORT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-batch-trace-export-current.png';
@@ -106,8 +105,21 @@ const MANUAL_EDGE_BOUNDARY_DRAW_SCREENSHOT = 'test-results/evidence-screenshots/
 const CLOSED_BOUNDARY_REGION_CITY_NAME_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-city-name-save-current.png';
 const CLOSED_BOUNDARY_ALL_PASSAGES_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-all-passages-edit-current.png';
 const EDGE_UI_BOUNDARY_REGION_GENERATED_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-edge-ui-boundary-generated-current.png';
+const DEFAULT_BOUNDARY_VISIBLE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-default-boundary-visible-current.png';
+const DATONG_REGENERATE_FORMAL_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-datong-regenerate-formal-current.png';
+const DATONG_REGENERATE_DETAIL_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-datong-regenerate-detail-current.png';
+const FORMAL_REGION_AUDIT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-formal-region-audit-current.png';
 const EDITED_PASSAGE_ID = 'jinzhou::song-jin';
 const WORKSPACE_ROOT = path.resolve(process.cwd(), 'temp/devtools/qidahen-region-mask-workspaces');
+const FORMAL_REGION_CONFIG = JSON.parse(
+    readFileSync(path.resolve(process.cwd(), 'src/games/qidahen/data/region-mask-regions.json'), 'utf8'),
+) as {
+    regions?: Array<{ id: string; name: string }>;
+};
+const FORMAL_REGION_NAME_BY_ID = new Map(
+    (FORMAL_REGION_CONFIG.regions ?? []).map((region) => [region.id, region.name]),
+);
+const DATONG_VISIBLE_ANCHOR = { x: 315, y: 606 } as const;
 const REGION_MASK_COLORS = {
     jinzhou: [214, 76, 58] as const,
     'song-jin': [228, 169, 58] as const,
@@ -145,9 +157,92 @@ const REAL_MAP_BOUNDARY_MATCH_COLORS = [
 const BG_CANVAS_TEST_ID = 'qidahen-bg-canvas';
 const BARRIER_CANVAS_TEST_ID = 'qidahen-barrier-canvas';
 
+type RegionMaskDebugSnapshot = {
+    workspaceKey: string;
+    isIsolatedWorkspace: boolean;
+    dataOutputDir: string;
+    persistedWorkspaceState: 'empty' | 'populated';
+    selectedRegionId: string | null;
+    selectedRegionName: string | null;
+    statusMessage: string;
+    graphNodeCount: number;
+    graphNodeIds: string[];
+    passageCount: number;
+    effectiveGeneratedRegionCount: number;
+    boundaryDraftPixelCount: number;
+    barrierPixelCount: number;
+    formalRegionSaveBlocked: boolean;
+    lastRegionGenerationWorkflow: 'boundary' | 'region-draft' | 'region-path-quick-start' | null;
+    lastRegionGenerationSummary: {
+        generated: number;
+        leaked: number;
+        skipped: number;
+        overlapOnly: number;
+    };
+    boundaryQuality: {
+        state: string;
+        label: string;
+        generatedCount: number;
+        formalRegionCount: number;
+        normalityState: string;
+        normalityLabel: string;
+        approvedCount: number;
+        requiredApprovalCount: number;
+    };
+};
+
+type RuntimePreviewDebugSnapshot = {
+    workspace: string;
+    loading: boolean;
+    error: string | null;
+    loadedAtLabel: string;
+    graphNodeCount: number;
+    graphNodeIds: string[];
+    graphEdgeCount: number;
+    graphEdgeIds: string[];
+    unresolvedNodeCount: number;
+    edgeById: Record<string, {
+        from: string;
+        to: string;
+        boundaryType: string;
+        boundaryLabel: string;
+        travelCost: number;
+        battleWidth: number;
+    }>;
+};
+
 const saveScreenshot = async (page: Page, targetPath: string) => {
     mkdirSync(path.dirname(targetPath), { recursive: true });
     await page.screenshot({ path: targetPath, fullPage: true });
+};
+
+const readRegionMaskDebugSnapshot = async (page: Page): Promise<RegionMaskDebugSnapshot> => (
+    page.evaluate(() => {
+        const snapshot = (window as Window & { __QIDAHEN_REGION_MASK_DEBUG__?: RegionMaskDebugSnapshot }).__QIDAHEN_REGION_MASK_DEBUG__;
+        if (!snapshot) {
+            throw new Error('missing window.__QIDAHEN_REGION_MASK_DEBUG__');
+        }
+        return snapshot;
+    })
+);
+
+const readRuntimePreviewDebugSnapshot = async (page: Page): Promise<RuntimePreviewDebugSnapshot> => (
+    page.evaluate(() => {
+        const snapshot = (window as Window & { __QIDAHEN_RUNTIME_PREVIEW_DEBUG__?: RuntimePreviewDebugSnapshot }).__QIDAHEN_RUNTIME_PREVIEW_DEBUG__;
+        if (!snapshot) {
+            throw new Error('missing window.__QIDAHEN_RUNTIME_PREVIEW_DEBUG__');
+        }
+        return snapshot;
+    })
+);
+
+const ensureAdvancedWorkbenchExpanded = async (page: Page) => {
+    const compactToggle = page.getByTestId('qidahen-toggle-advanced-workbench-compact');
+    if (await compactToggle.count() === 0) {
+        return;
+    }
+    await compactToggle.click();
+    await expect(page.getByTestId('qidahen-open-best-available-move-cost-ready-workspace')).toBeVisible();
 };
 
 const saveTestIdScreenshot = async (page: Page, testId: string, targetPath: string) => {
@@ -1994,9 +2089,9 @@ const findCurvedCanvasCandidatePairOutsideRects = async (
 );
 
 test.describe('七大恨区域制图工具', () => {
-    test('正式工作区为空时只给真实边界入口不展示假成果', async ({ page }) => {
+    test('正式工作区默认回读红线并可把大同重新匹配回独立区域', async ({ page }) => {
         const canonicalBefore = readCanonicalWorkspaceSnapshot();
-        test.info().setTimeout(300000);
+        test.info().setTimeout(180000);
         await page.setViewportSize({ width: 1600, height: 1000 });
         await page.setDefaultTimeout(120000);
         await page.setDefaultNavigationTimeout(120000);
@@ -2005,35 +2100,174 @@ test.describe('七大恨区域制图工具', () => {
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         await expect(page.getByText('正式工作区', { exact: true })).toBeVisible();
         await expect(page.getByText('src/games/qidahen/data', { exact: true })).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-workspace-guide')).toBeVisible();
-        await expect(page.getByText('先准备手修边界稿')).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-guide-normal-route')).toContainText('正常成果路线');
-        await expect(page.getByTestId('qidahen-empty-guide-normal-route')).toContainText('要正式边界成果，先手修边界，再生区域');
-        await expect(page.getByTestId('qidahen-empty-guide-normal-import-boundary')).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-guide-normal-direct-draw')).toBeVisible();
-        await expect(page.getByText('现成可用成果', { exact: true })).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-guide-open-best-available-boundary-workspace')).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-guide-open-best-available-move-cost-ready-workspace')).toBeVisible();
-        await expect(page.getByTestId('qidahen-empty-guide-hand-edit-toolbox')).toContainText('边界手修工具与描边包');
-        await expect(page.getByTestId('qidahen-empty-guide-prepare-hybrid-trace-kit')).toBeHidden();
-        await expect(page.getByTestId('qidahen-empty-guide-load-hybrid-boundary-draft')).toBeHidden();
-        await expect(page.getByTestId('qidahen-empty-guide-export-boundary-trace-kit')).toBeHidden();
-        await expect(page.getByTestId('qidahen-empty-guide-import-boundary')).toBeHidden();
-        await expect(page.getByTestId('qidahen-empty-guide-import-source')).toBeHidden();
-        await expect(page.getByTestId('qidahen-empty-guide-direct-draw')).toBeHidden();
-        await expect(page.getByTestId('qidahen-formal-empty-tool-panel-collapsed')).toBeVisible();
-        await expect(page.getByTestId('qidahen-formal-empty-open-barrier-workflow')).toBeVisible();
-        await expect(page.getByTestId('qidahen-formal-empty-expand-tool-panel')).toBeVisible();
-        await expect(page.getByTestId('qidahen-toggle-advanced-workbench')).toHaveCount(0);
-        await expect(page.getByText('高级诊断', { exact: true })).toHaveCount(0);
-        await expect.poll(async () => {
-            const match = /当前边界图像素：([\d,]+)/u.exec(await page.locator('aside').innerText());
-            return match ? Number(match[1].replace(/,/gu, '')) : -1;
-        }).toBe(0);
-        await expect.poll(async () => {
-            const match = /当前最终障碍像素：([\d,]+)/u.exec(await page.locator('aside').innerText());
-            return match ? Number(match[1].replace(/,/gu, '')) : -1;
-        }).toBe(0);
+        await expect(page.getByRole('button', { name: '隐藏红线', exact: true })).toBeVisible();
+        await expect
+            .poll(async () => countCanvasOpaquePixelsInRect(page, BARRIER_CANVAS_TEST_ID, {
+                left: 0,
+                top: 0,
+                right: MASK_WIDTH - 1,
+                bottom: MASK_HEIGHT - 1,
+            }), { timeout: 30000 })
+            .toBeGreaterThan(1000);
+        await saveScreenshot(page, DEFAULT_BOUNDARY_VISIBLE_SCREENSHOT);
+
+        await page.getByTestId('qidahen-primary-generate-regions-from-boundary').click();
+        await expect.poll(
+            async () => page.locator('aside').innerText(),
+            { timeout: 60000 },
+        ).toMatch(/已(?:按红线\/画布边缘生成|调试生成当前独立分区)/u);
+        await expect(page.getByTestId('qidahen-generated-region-name-city-region-1')).toHaveValue('大同', { timeout: 30000 });
+        const generatedRegions = await page.locator('[data-testid^="qidahen-generated-region-row-"]').evaluateAll((nodes) => nodes.map((node) => {
+            const id = (node.getAttribute('data-testid') ?? '').replace('qidahen-generated-region-row-', '');
+            const input = node.querySelector('input[data-testid^="qidahen-generated-region-name-"]') as HTMLInputElement | null;
+            return {
+                id,
+                name: input?.value.trim() ?? '',
+            };
+        }));
+        const missingFormalIds = Array.from(FORMAL_REGION_NAME_BY_ID.keys()).filter(
+            (id) => !generatedRegions.some((region) => region.id === id),
+        );
+        const statusMessage = await page.getByTestId('qidahen-compact-status-message').innerText();
+        expect(
+            { generatedCount: generatedRegions.length, missingFormalIds, statusMessage },
+        ).toEqual({
+            generatedCount: FORMAL_REGION_NAME_BY_ID.size,
+            missingFormalIds: [],
+            statusMessage: expect.any(String),
+        });
+        expect(
+            generatedRegions.filter((region) => !FORMAL_REGION_NAME_BY_ID.has(region.id)),
+        ).toEqual([]);
+        expect(generatedRegions.filter((region) => region.id.startsWith('generated-region-'))).toEqual([]);
+        expect(generatedRegions.filter((region) => region.name.length === 0)).toEqual([]);
+        expect(
+            generatedRegions.filter((region) => FORMAL_REGION_NAME_BY_ID.get(region.id) !== region.name),
+        ).toEqual([]);
+        expect(
+            generatedRegions.some((region) => region.id === 'city-region-1' && region.name === '大同'),
+        ).toBe(true);
+
+        const graphRows = await page.locator('[data-testid^="qidahen-generated-region-row-"]').evaluateAll((nodes) => nodes.map((node) => {
+            const id = (node.getAttribute('data-testid') ?? '').replace('qidahen-generated-region-row-', '');
+            const input = node.querySelector('input[data-testid^="qidahen-generated-region-name-"]') as HTMLInputElement | null;
+            const text = node.textContent ?? '';
+            const pointMatch = /点\s+(\d+),(\d+)\s+·/u.exec(text);
+            return {
+                id,
+                name: input?.value.trim() ?? '',
+                x: pointMatch ? Number(pointMatch[1]) : null,
+                y: pointMatch ? Number(pointMatch[2]) : null,
+            };
+        }));
+        expect(graphRows).toHaveLength(FORMAL_REGION_NAME_BY_ID.size);
+        for (const row of graphRows) {
+            expect(row.x).not.toBeNull();
+            expect(row.y).not.toBeNull();
+        }
+        const formalReadbackSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(formalReadbackSnapshot.workspaceKey).toBe('');
+        expect(formalReadbackSnapshot.isIsolatedWorkspace).toBe(false);
+        expect(formalReadbackSnapshot.persistedWorkspaceState).toBe('populated');
+        expect(formalReadbackSnapshot.graphNodeCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalReadbackSnapshot.graphNodeIds.slice().sort()).toEqual([...FORMAL_REGION_NAME_BY_ID.keys()].sort());
+        expect(formalReadbackSnapshot.passageCount).toBe(77);
+        expect(formalReadbackSnapshot.effectiveGeneratedRegionCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalReadbackSnapshot.formalRegionSaveBlocked).toBe(true);
+        expect(formalReadbackSnapshot.boundaryQuality.generatedCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalReadbackSnapshot.boundaryQuality.formalRegionCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalReadbackSnapshot.boundaryQuality.normalityState).toBe('needs-visual-review');
+
+        const datongRowText = await page.getByTestId('qidahen-generated-region-row-city-region-1').innerText();
+        const datongPointMatch = /点\s+(\d+),(\d+)\s+·/u.exec(datongRowText);
+        expect(datongPointMatch).not.toBeNull();
+        const datongPoint = {
+            x: Number(datongPointMatch?.[1] ?? 0),
+            y: Number(datongPointMatch?.[2] ?? 0),
+        };
+        expect(
+            Math.hypot(
+                datongPoint.x - DATONG_VISIBLE_ANCHOR.x,
+                datongPoint.y - DATONG_VISIBLE_ANCHOR.y,
+            ),
+        ).toBeLessThanOrEqual(96);
+
+        const canvasBox = await getRect(page.getByTestId('qidahen-region-canvas'));
+        await clickCanvasMapPoint(page, canvasBox, DATONG_VISIBLE_ANCHOR.x, DATONG_VISIBLE_ANCHOR.y);
+        await expect(page.locator('main')).toContainText('当前区域：大同');
+        await expect(page.locator('main')).toContainText('city-region-1');
+        await clickCanvasMapPoint(page, canvasBox, datongPoint.x, datongPoint.y);
+        await expect(page.locator('main')).toContainText('当前区域：大同');
+        await expect(page.locator('main')).toContainText('city-region-1');
+        for (const regionId of ['xian-xing', 'city-region-18']) {
+            const row = graphRows.find((item) => item.id === regionId);
+            expect(row).toBeDefined();
+            await clickCanvasMapPoint(page, canvasBox, row!.x!, row!.y!);
+            await expect(page.locator('main')).toContainText(`当前区域：${row!.name}`);
+            await expect(page.locator('main')).toContainText(row!.id);
+        }
+        const finalSelectionSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(finalSelectionSnapshot.selectedRegionId).toBe('city-region-18');
+        expect(finalSelectionSnapshot.selectedRegionName).toBe('平壤');
+
+        await saveScreenshot(page, DATONG_REGENERATE_FORMAL_SCREENSHOT);
+        await saveScreenshot(page, FORMAL_REGION_AUDIT_SCREENSHOT);
+        await saveCanvasMapClipScreenshot(page, canvasBox, DATONG_REGENERATE_DETAIL_SCREENSHOT, [
+            { x: 288, y: 612 },
+            { x: 261, y: 502 },
+            { x: 395, y: 535 },
+        ], 96);
+        expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
+    });
+
+    test('空工作区只给真实边界入口不展示假成果', async ({ page }) => {
+        const workspaceName = 'formal-empty-normal-route';
+        resetWorkspaceDir(workspaceName);
+        const canonicalBefore = readCanonicalWorkspaceSnapshot();
+        test.info().setTimeout(300000);
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setDefaultTimeout(120000);
+        await page.setDefaultNavigationTimeout(120000);
+        await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
+
+        await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expect(page).toHaveURL(new RegExp(`workspace=${workspaceName}`, 'u'));
+        await expect(page.getByText('临时隔离工作区', { exact: true })).toBeVisible();
+        await expect(page.getByText(`temp/devtools/qidahen-region-mask-workspaces/${workspaceName}`, { exact: true })).toBeVisible();
+        await expect(page.getByText('当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。')).toBeVisible();
+        await expect(page.getByText('当前区域/点', { exact: true })).toBeVisible();
+        await expect(page.locator('main')).toContainText('当前区域：锦州jinzhou');
+        await expect(page.getByRole('button', { name: '初始化红线', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '导入边界图', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '自动贴合轮廓', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '隐藏红线', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '生成区域', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '保存边界', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '保存区域', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: '保存连线', exact: true })).toBeVisible();
+        await expect(page.locator('aside')).toContainText('中心 0 / 自动连线 0');
+        await expect(page.locator('aside')).toContainText('中心 0 / 通路 0');
+        await expect(page.locator('aside')).toContainText('初始红线像素：0/最终红线/障碍：0');
+        await expect(page.locator('aside')).toContainText('手工补边：0/去噪：0');
+        await expect(page.locator('[data-testid^="qidahen-generated-region-row-"]')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-empty-workspace-guide')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-formal-empty-tool-panel-collapsed')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-formal-empty-open-barrier-workflow')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-formal-empty-expand-tool-panel')).toHaveCount(0);
+        const emptyWorkspaceSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(emptyWorkspaceSnapshot.workspaceKey).toBe(workspaceName);
+        expect(emptyWorkspaceSnapshot.isIsolatedWorkspace).toBe(true);
+        expect(emptyWorkspaceSnapshot.persistedWorkspaceState).toBe('empty');
+        expect(emptyWorkspaceSnapshot.selectedRegionId).toBe('jinzhou');
+        expect(emptyWorkspaceSnapshot.selectedRegionName).toBe('锦州');
+        expect(emptyWorkspaceSnapshot.graphNodeCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.passageCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.effectiveGeneratedRegionCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.boundaryDraftPixelCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.barrierPixelCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.formalRegionSaveBlocked).toBe(false);
+        expect(emptyWorkspaceSnapshot.boundaryQuality.generatedCount).toBe(0);
+        expect(emptyWorkspaceSnapshot.boundaryQuality.normalityState).toBe('not-ready');
         await expect.poll(async () => countCanvasOpaquePixelsInRect(
             page,
             'qidahen-mask-canvas',
@@ -2059,37 +2293,39 @@ test.describe('七大恨区域制图工具', () => {
             ).toBe(0);
         }
 
-        await page.getByTestId('qidahen-empty-guide-open-best-available-move-cost-ready-workspace').scrollIntoViewIfNeeded();
         await saveScreenshot(page, FORMAL_EMPTY_WORKSPACE_BEST_AVAILABLE_ENTRY_SCREENSHOT);
         await saveScreenshot(page, FORMAL_EMPTY_SCREENSHOT);
-
-        await page.getByTestId('qidahen-toggle-forbidden-ui-overlay').click();
-        await expect(page.getByTestId('qidahen-forbidden-ui-overlay')).toBeVisible();
-        await page.getByTestId('qidahen-focus-selected-seed-for-tracing').click();
-        await expect(page.locator('main')).toContainText('模式：边界修正');
-        await expect(page.getByTestId('qidahen-forbidden-ui-overlay')).toBeVisible();
-        await expect(page.getByTestId('qidahen-seed-status-overlay')).toBeVisible();
-        await expect(page.getByTestId('qidahen-seed-status-jinzhou')).toContainText('锦州 · 待描');
-        await saveScreenshot(page, TRACE_ASSIST_SCREENSHOT);
 
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
-    test('正式空白页可直接打开现成移动代价工作区', async ({ page }) => {
+    test('best-available 边界工作区可直接切到现成移动代价工作区', async ({ page }) => {
         const canonicalBefore = readCanonicalWorkspaceSnapshot();
         test.info().setTimeout(180000);
         await page.setViewportSize({ width: 1600, height: 1000 });
         await page.setDefaultTimeout(120000);
         await page.setDefaultNavigationTimeout(120000);
-        await page.goto('/dev/qidahen-region-mask', { waitUntil: 'domcontentloaded' });
+        await page.goto(getWorkspaceRoute('best-available-boundary-v3'), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('qidahen-empty-guide-open-best-available-move-cost-ready-workspace')).toBeVisible();
-        await page.getByTestId('qidahen-empty-guide-open-best-available-move-cost-ready-workspace').click();
+        await expect(page.getByText('临时隔离工作区', { exact: true })).toBeVisible();
+        await ensureAdvancedWorkbenchExpanded(page);
+        const beforeSwitchSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(beforeSwitchSnapshot.workspaceKey).toBe('best-available-boundary-v3');
+        expect(beforeSwitchSnapshot.isIsolatedWorkspace).toBe(true);
+        await page.getByTestId('qidahen-open-best-available-move-cost-ready-workspace').click();
         await expect(page).toHaveURL(/workspace=best-available-move-cost-ready/u);
         await expect(page.getByTestId('qidahen-region-truth-workflow-banner')).toContainText('区域粗稿 + 通路编辑（次路线）', { timeout: 30000 });
         await expect(page.locator('main')).toContainText('模式：通路编辑', { timeout: 30000 });
         await expect(page.locator('main')).toContainText('路径：4', { timeout: 30000 });
+        const bestAvailableWorkspaceSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(bestAvailableWorkspaceSnapshot.workspaceKey).toBe('best-available-move-cost-ready');
+        expect(bestAvailableWorkspaceSnapshot.isIsolatedWorkspace).toBe(true);
+        expect(bestAvailableWorkspaceSnapshot.persistedWorkspaceState).toBe('populated');
+        expect(bestAvailableWorkspaceSnapshot.graphNodeCount).toBe(5);
+        expect(bestAvailableWorkspaceSnapshot.passageCount).toBe(4);
+        expect(bestAvailableWorkspaceSnapshot.effectiveGeneratedRegionCount).toBe(5);
+        expect(bestAvailableWorkspaceSnapshot.boundaryQuality.generatedCount).toBe(5);
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
@@ -3233,6 +3469,21 @@ test.describe('七大恨区域制图工具', () => {
         await expect(page.getByTestId(`qidahen-runtime-preview-note-${EDITED_PASSAGE_ID}`)).toContainText('移动代价 4');
         await expect(page.getByTestId(`qidahen-runtime-preview-note-${EDITED_PASSAGE_ID}`)).toContainText('战场宽度 2');
         await expect(page.getByTestId('qidahen-runtime-preview-map')).toBeVisible();
+        const runtimePreviewSnapshot = await readRuntimePreviewDebugSnapshot(page);
+        expect(runtimePreviewSnapshot.workspace).toBe(workspaceName);
+        expect(runtimePreviewSnapshot.loading).toBe(false);
+        expect(runtimePreviewSnapshot.error).toBeNull();
+        expect(runtimePreviewSnapshot.graphNodeCount).toBe(5);
+        expect(runtimePreviewSnapshot.graphEdgeCount).toBe(4);
+        expect(runtimePreviewSnapshot.unresolvedNodeCount).toBe(0);
+        expect(runtimePreviewSnapshot.edgeById[EDITED_PASSAGE_ID]).toEqual({
+            from: 'jinzhou',
+            to: 'song-jin',
+            boundaryType: 'mountain',
+            boundaryLabel: '山脉',
+            travelCost: 4,
+            battleWidth: 2,
+        });
         await saveScreenshot(page, BEST_AVAILABLE_RUNTIME_PREVIEW_SCREENSHOT);
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
@@ -4217,7 +4468,6 @@ test.describe('七大恨区域制图工具', () => {
             'xian-xing',
             'shou-cheng',
         ]);
-        await page.getByTestId('qidahen-import-region-trace-zip').click();
         await page.getByTestId('qidahen-region-trace-zip-input').setInputFiles(completeZipPath);
         await expect(page.getByText(/已导入局部描边 ZIP：5 个区域/u)).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('qidahen-region-card-seed-status-jinzhou')).toContainText('独立');
@@ -4698,25 +4948,29 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('aside')).toContainText('正式工作区');
-        const completeZipPath = await createTransparentLocalRegionBoundaryZip([
-            'jinzhou',
-            'song-jin',
-            'shan-hai-guan',
-            'xian-xing',
-            'shou-cheng',
-        ]);
-        await page.getByTestId('qidahen-import-region-trace-zip').click();
-        await page.getByTestId('qidahen-region-trace-zip-input').setInputFiles(completeZipPath);
-        await expect(page.getByText(/已导入局部描边 ZIP：5 个区域/u)).toBeVisible({ timeout: 30000 });
-        await page.getByTestId('qidahen-generate-regions-from-boundary').click();
-        await expect(page.getByText(/已按当前边界生成初始区域/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('qidahen-boundary-quality-label')).toContainText('生成链路已跑通');
-        await expect(page.getByTestId('qidahen-boundary-normality-state')).toHaveText('suspicious');
-        await expect(page.getByTestId('qidahen-save-workspace')).toBeDisabled();
-        await expect(page.getByTestId('qidahen-save-workspace')).toContainText('正式成果待验收');
-        await expect(page.getByTestId('qidahen-formal-save-guard')).toContainText('不能保存 suspicious 的区域成果');
-        await expect(page.getByTestId('qidahen-formal-save-guard')).toContainText('临时工作区仍可保存进度');
-        await page.getByTestId('qidahen-formal-save-guard').scrollIntoViewIfNeeded();
+        await expect(page.getByText(/已自动读取 src\/games\/qidahen\/data 中的区域\/通路结果/u)).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('qidahen-passage-summary')).toContainText('中心 33 / 通路 77');
+        await expect(page.locator('[data-testid^="qidahen-generated-region-row-"]')).toHaveCount(33);
+        await expect(page.getByTestId('qidahen-generated-region-name-city-region-18')).toHaveValue('平壤');
+        await expect(page.getByTestId('qidahen-generated-region-name-city-region-29')).toHaveValue('汉城');
+        await expect(page.getByTestId('qidahen-primary-save-regions-only')).toBeDisabled();
+        await expect(page.getByTestId('qidahen-primary-formal-save-guard')).toContainText(/正式工作区不能保存 needs-visual-review 的区域成果/u);
+        await expect(page.getByTestId('qidahen-primary-formal-save-guard')).toContainText('临时工作区仍可保存进度');
+        const formalSaveGuardSnapshot = await readRegionMaskDebugSnapshot(page);
+        expect(formalSaveGuardSnapshot.workspaceKey).toBe('');
+        expect(formalSaveGuardSnapshot.isIsolatedWorkspace).toBe(false);
+        expect(formalSaveGuardSnapshot.persistedWorkspaceState).toBe('populated');
+        expect(formalSaveGuardSnapshot.graphNodeCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalSaveGuardSnapshot.graphNodeIds.slice().sort()).toEqual([...FORMAL_REGION_NAME_BY_ID.keys()].sort());
+        expect(formalSaveGuardSnapshot.passageCount).toBe(77);
+        expect(formalSaveGuardSnapshot.effectiveGeneratedRegionCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalSaveGuardSnapshot.formalRegionSaveBlocked).toBe(true);
+        expect(formalSaveGuardSnapshot.boundaryQuality.generatedCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalSaveGuardSnapshot.boundaryQuality.formalRegionCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        expect(formalSaveGuardSnapshot.boundaryQuality.normalityState).toBe('needs-visual-review');
+        expect(formalSaveGuardSnapshot.boundaryQuality.approvedCount).toBe(0);
+        expect(formalSaveGuardSnapshot.boundaryQuality.requiredApprovalCount).toBe(FORMAL_REGION_NAME_BY_ID.size);
+        await page.getByTestId('qidahen-primary-formal-save-guard').scrollIntoViewIfNeeded();
         await saveScreenshot(page, FORMAL_SAVE_GUARD_SCREENSHOT);
 
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);

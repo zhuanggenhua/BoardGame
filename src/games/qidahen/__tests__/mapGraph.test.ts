@@ -5,9 +5,12 @@ import {
     getQidahenBoundaryTypeMeta,
     getQidahenDirectedPassage,
     getQidahenDirectedPassageBetween,
+    QIDAHEN_MASK_REGION_BY_ID,
     QIDAHEN_MASK_REGION_DEFINITIONS,
     QIDAHEN_REGION_GRAPH_EDGES,
+    QIDAHEN_REGION_GRAPH_NODE_BY_ID,
     QIDAHEN_REGION_GRAPH_NODES,
+    QIDAHEN_RUNTIME_REGION_DEFINITIONS,
     normalizeQidahenPassageId,
     parseQidahenRegionGraph,
     qidahenRegionColorKey,
@@ -168,6 +171,48 @@ describe('七大恨区域图谱运行时解析', () => {
         ] as const) {
             expect(graphNameById.get(regionId)).toBe(expectedName);
             expect(maskNameById.get(regionId)).toBe(expectedName);
+        }
+    });
+
+    it('运行时区域定义与 formal persisted 区域/图谱节点保持一一对应', () => {
+        expect(QIDAHEN_RUNTIME_REGION_DEFINITIONS).toHaveLength(QIDAHEN_MASK_REGION_DEFINITIONS.length);
+        expect(QIDAHEN_RUNTIME_REGION_DEFINITIONS.map((region) => region.id).sort()).toEqual(
+            QIDAHEN_MASK_REGION_DEFINITIONS.map((region) => region.id).sort(),
+        );
+
+        for (const region of QIDAHEN_RUNTIME_REGION_DEFINITIONS) {
+            const persistedRegion = QIDAHEN_MASK_REGION_BY_ID.get(region.id);
+            const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(region.id);
+
+            expect(persistedRegion, `${region.id} 缺少 persisted region`).toBeDefined();
+            expect(graphNode, `${region.id} 缺少 graph node`).toBeDefined();
+            expect(region.name).toBe(persistedRegion?.name);
+            expect(graphNode?.name).toBe(persistedRegion?.name);
+            expect(region.seed).toEqual(persistedRegion?.seed ?? null);
+            expect(region.center).toEqual(graphNode?.center ?? graphNode?.seed ?? persistedRegion?.seed ?? null);
+            expect(region.pixelCount).toBe(graphNode?.pixelCount ?? 0);
+        }
+    });
+
+    it('运行时邻接/代价/边界类型与 formal directed passage 保持一致', () => {
+        for (const region of QIDAHEN_RUNTIME_REGION_DEFINITIONS) {
+            const persistedRegion = QIDAHEN_MASK_REGION_BY_ID.get(region.id);
+            const expectedAdjacentRegionIds = [...(persistedRegion?.links ?? [])]
+                .filter((adjacentRegionId) => QIDAHEN_MASK_REGION_BY_ID.has(adjacentRegionId))
+                .sort();
+
+            expect(region.adjacentRegionIds).toEqual(expectedAdjacentRegionIds);
+            expect(Object.keys(region.travelCostByRegionId).sort()).toEqual(expectedAdjacentRegionIds);
+            expect(Object.keys(region.movementCostByRegionId).sort()).toEqual(expectedAdjacentRegionIds);
+            expect(Object.keys(region.boundaryTypeByRegionId).sort()).toEqual(expectedAdjacentRegionIds);
+
+            for (const adjacentRegionId of expectedAdjacentRegionIds) {
+                const passage = getQidahenDirectedPassageBetween(region.id, adjacentRegionId);
+                expect(passage, `${region.id} -> ${adjacentRegionId} 缺少 directed passage`).not.toBeNull();
+                expect(region.travelCostByRegionId[adjacentRegionId]).toBe(passage?.travelCost);
+                expect(region.movementCostByRegionId[adjacentRegionId]).toBe(passage?.battleWidth);
+                expect(region.boundaryTypeByRegionId[adjacentRegionId]).toBe(passage?.boundaryType);
+            }
         }
     });
 

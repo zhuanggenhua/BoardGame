@@ -15,6 +15,7 @@ import {
     computeRegionCenters,
     closeBinaryMask,
     isMagicSelectionUsable,
+    matchGeneratedComponentsToRegionIndexes,
     maskContainsPoint,
     countMaskPixels,
     createRegionAssignments,
@@ -1585,5 +1586,68 @@ describe('qidahenRegionMaskToolUtils', () => {
         expect(isMagicSelectionUsable(10, 100, 0.2)).toBe(true);
         expect(isMagicSelectionUsable(90, 100, 0.2)).toBe(false);
         expect(isMagicSelectionUsable(0, 100, 0.2)).toBe(false);
+    });
+
+    it('matchGeneratedComponentsToRegionIndexes 会优先保留唯一手工锚点命中的正式区域', () => {
+        const matches = matchGeneratedComponentsToRegionIndexes({
+            regionCount: 3,
+            components: [
+                {
+                    componentIndex: 0,
+                    pixelCount: 900,
+                    overlapPixelsByRegionIndex: new Map([[0, 260]]),
+                },
+                {
+                    componentIndex: 1,
+                    pixelCount: 420,
+                    anchoredRegionIndexes: [0],
+                },
+            ],
+        });
+
+        expect(matches.get(1)).toMatchObject({
+            componentIndex: 1,
+            regionIndex: 0,
+            reason: 'anchor',
+            overlapPixels: 0,
+        });
+        expect(matches.get(0)).toBeUndefined();
+    });
+
+    it('matchGeneratedComponentsToRegionIndexes 会把剩余组件按最大重叠像素匹配回正式区域', () => {
+        const matches = matchGeneratedComponentsToRegionIndexes({
+            regionCount: 4,
+            components: [
+                {
+                    componentIndex: 0,
+                    pixelCount: 860,
+                    overlapPixelsByRegionIndex: new Map([
+                        [1, 320],
+                        [2, 120],
+                    ]),
+                },
+                {
+                    componentIndex: 1,
+                    pixelCount: 510,
+                    overlapPixelsByRegionIndex: new Map([
+                        [2, 280],
+                        [1, 90],
+                    ]),
+                },
+            ],
+        });
+
+        expect(matches.get(0)).toMatchObject({
+            componentIndex: 0,
+            regionIndex: 1,
+            reason: 'overlap',
+            overlapPixels: 320,
+        });
+        expect(matches.get(1)).toMatchObject({
+            componentIndex: 1,
+            regionIndex: 2,
+            reason: 'overlap',
+            overlapPixels: 280,
+        });
     });
 });

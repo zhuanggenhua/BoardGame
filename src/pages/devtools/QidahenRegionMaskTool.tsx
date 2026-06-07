@@ -57,6 +57,7 @@ import {
     keepBoundaryPixelsTouchingSeedPartitions,
     keepMaskComponentsTouchingSupportMask,
     keepMaskComponentsTouchingSupportMaskWithThreshold,
+    matchGeneratedComponentsToRegionIndexes,
     maskContainsPoint,
     scoreMaskBoundaryAlignment,
     type PixelBounds,
@@ -137,6 +138,46 @@ type BoundaryDraftExtractionStats = {
     usable?: boolean;
     usabilityReason?: string | null;
 };
+
+type QidahenRegionMaskDebugSnapshot = {
+    workspaceKey: string;
+    isIsolatedWorkspace: boolean;
+    dataOutputDir: string;
+    persistedWorkspaceState: PersistedWorkspaceState;
+    selectedRegionId: string | null;
+    selectedRegionName: string | null;
+    statusMessage: string;
+    graphNodeCount: number;
+    graphNodeIds: string[];
+    passageCount: number;
+    effectiveGeneratedRegionCount: number;
+    boundaryDraftPixelCount: number;
+    barrierPixelCount: number;
+    formalRegionSaveBlocked: boolean;
+    lastRegionGenerationWorkflow: RegionGenerationWorkflow | null;
+    lastRegionGenerationSummary: {
+        generated: number;
+        leaked: number;
+        skipped: number;
+        overlapOnly: number;
+    };
+    boundaryQuality: {
+        state: string;
+        label: string;
+        generatedCount: number;
+        formalRegionCount: number;
+        normalityState: string;
+        normalityLabel: string;
+        approvedCount: number;
+        requiredApprovalCount: number;
+    };
+};
+
+declare global {
+    interface Window {
+        __QIDAHEN_REGION_MASK_DEBUG__?: QidahenRegionMaskDebugSnapshot;
+    }
+}
 
 type RegionGenerationResult = {
     regionId: string;
@@ -410,6 +451,10 @@ const HEURISTIC_BARRIER_LINE_FILTER = {
     minSpan: 10,
     maxAverageThickness: 4.6,
 } as const;
+const HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES = new Map<string, MaskPoint>([
+    // 原图中“保定左上”的大同字样点。旧 formal mask 曾把这块并错，调试生成时要优先认回这里。
+    ['city-region-1', { x: 315, y: 606 }],
+]);
 
 const binaryMasksEqual = (left: Uint8Array, right: Uint8Array) => {
     if (left.length !== right.length) {
@@ -1726,6 +1771,139 @@ const buildRegionMaskFromAssignments = (assignments: Int16Array, regionIndex: nu
     return pixelCount > 0 ? mask : null;
 };
 
+const buildPointSupportMask = (point: MaskPoint, radius = 32): Uint8Array => {
+    const supportMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+        const y = point.y + offsetY;
+        if (y < 0 || y >= MASK_HEIGHT) {
+            continue;
+        }
+        for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+            const x = point.x + offsetX;
+            if (x < 0 || x >= MASK_WIDTH) {
+                continue;
+            }
+            if ((offsetX * offsetX) + (offsetY * offsetY) > radius * radius) {
+                continue;
+            }
+            supportMask[(y * MASK_WIDTH) + x] = 1;
+        }
+    }
+    return supportMask;
+};
+
+const keepMaskComponentContainingPoint = (
+    mask: Uint8Array | null,
+    point: MaskPoint | null | undefined,
+): Uint8Array | null => {
+    if (!mask || !point) {
+        return null;
+    }
+    const clipMask = new Uint8Array(mask.length);
+    clipMask.fill(1);
+    const supportMask = buildPointSupportMask(point);
+    if (countMaskOverlapPixels(mask, supportMask) === 0) {
+        return null;
+    }
+    const componentMask = keepMaskComponentsTouchingSupportMask({
+        mask,
+        width: MASK_WIDTH,
+        clipMask,
+        supportMask,
+    });
+    return countMaskPixels(componentMask) > 0 ? componentMask : null;
+};
+
+const computeMaskCenter = (mask: Uint8Array | null): { x: number; y: number } | null => {
+    if (!mask) {
+        return null;
+    }
+    let sumX = 0;
+    let sumY = 0;
+    let pixelCount = 0;
+    for (let index = 0; index < mask.length; index += 1) {
+        if (mask[index] === 0) {
+            continue;
+        }
+        sumX += index % MASK_WIDTH;
+        sumY += Math.floor(index / MASK_WIDTH);
+        pixelCount += 1;
+    }
+    if (pixelCount === 0) {
+        return null;
+    }
+    return {
+        x: Math.round(sumX / pixelCount),
+        y: Math.round(sumY / pixelCount),
+    };
+};
+
+const resolveBoundaryPartitionSeedPoint = ({
+    partitionMask,
+    fallbackSeedPoint,
+    preferredAnchor,
+    fallbackCenter,
+}: {
+    partitionMask: Uint8Array;
+    fallbackSeedPoint: MaskPoint;
+    preferredAnchor?: MaskPoint | null;
+    fallbackCenter?: MaskPoint | null;
+}): MaskPoint => {
+    if (preferredAnchor) {
+        return preferredAnchor;
+    }
+    if (maskContainsPoint({
+        mask: partitionMask,
+        width: MASK_WIDTH,
+        x: fallbackSeedPoint.x,
+        y: fallbackSeedPoint.y,
+    })) {
+        return fallbackSeedPoint;
+    }
+
+    const preferredMask = preferredAnchor
+        ? (keepMaskComponentContainingPoint(partitionMask, preferredAnchor) ?? partitionMask)
+        : partitionMask;
+    const preferredCenter = computeMaskCenter(preferredMask)
+        ?? computeMaskCenter(partitionMask)
+        ?? fallbackCenter
+        ?? fallbackSeedPoint;
+    if (maskContainsPoint({
+        mask: preferredMask,
+        width: MASK_WIDTH,
+        x: preferredCenter.x,
+        y: preferredCenter.y,
+    })) {
+        return preferredCenter;
+    }
+
+    const boundaryMask = buildMaskBoundaryRing({
+        mask: preferredMask,
+        width: MASK_WIDTH,
+        height: MASK_HEIGHT,
+        expandIterations: 0,
+    });
+    return findBestInteriorSeedPointInMask(preferredCenter, boundaryMask, preferredMask)
+        ?? findBestInteriorSeedPointInMask(fallbackSeedPoint, boundaryMask, preferredMask)
+        ?? preferredCenter;
+};
+
+const buildRegionAwareExclusionMask = (
+    exclusionMask: Uint8Array,
+    allowedMask: Uint8Array | null,
+): Uint8Array => {
+    if (!allowedMask) {
+        return exclusionMask;
+    }
+    const next = exclusionMask.slice();
+    for (let index = 0; index < next.length; index += 1) {
+        if (allowedMask[index] !== 0) {
+            next[index] = 0;
+        }
+    }
+    return next;
+};
+
 const STATIC_BOOTSTRAP_GUIDE_MASKS = new Map<string, Uint8Array | null>(
     QIDAHEN_MAP_REGION_SHAPES.map((shape) => [shape.id, buildRegionBootstrapGuideMask(shape.id)]),
 );
@@ -2003,34 +2181,21 @@ const REAL_MAP_VISIBLE_REGION_FALLBACK_POLYGONS = new Map<string, ReadonlyArray<
         [706, 430],
     ]],
     ['song-jin', [
-        [690, 565],
-        [694, 555],
-        [688, 540],
-        [693, 528],
-        [694, 508],
-        [713, 512],
-        [724, 501],
-        [739, 509],
-        [753, 503],
-        [767, 506],
-        [776, 519],
-        [784, 529],
-        [790, 540],
-        [800, 551],
-        [799, 565],
-        [796, 578],
-        [788, 588],
-        [788, 604],
-        [778, 614],
-        [765, 618],
-        [754, 631],
-        [739, 631],
-        [725, 628],
-        [715, 615],
-        [703, 610],
-        [690, 604],
-        [685, 591],
-        [675, 579],
+        [720, 501],
+        [748, 489],
+        [781, 491],
+        [817, 501],
+        [851, 518],
+        [870, 548],
+        [869, 585],
+        [852, 617],
+        [825, 641],
+        [787, 653],
+        [749, 649],
+        [720, 631],
+        [697, 607],
+        [687, 572],
+        [691, 535],
     ]],
     ['shan-hai-guan', [
         [548, 542],
@@ -2097,6 +2262,45 @@ const REAL_MAP_VISIBLE_REGION_FALLBACK_POLYGONS = new Map<string, ReadonlyArray<
         [996, 698],
         [974, 674],
         [958, 648],
+    ]],
+    ['city-region-30', [
+        [178, 694],
+        [282, 689],
+        [344, 724],
+        [368, 786],
+        [342, 854],
+        [270, 884],
+        [186, 865],
+        [153, 790],
+    ]],
+    ['city-region-31', [
+        [8, 742],
+        [92, 724],
+        [162, 747],
+        [188, 801],
+        [171, 867],
+        [103, 892],
+        [26, 892],
+        [0, 838],
+    ]],
+    ['city-region-32', [
+        [667, 704],
+        [753, 690],
+        [830, 708],
+        [865, 757],
+        [850, 818],
+        [782, 844],
+        [701, 831],
+        [652, 779],
+    ]],
+    ['city-region-33', [
+        [432, 776],
+        [566, 752],
+        [682, 772],
+        [730, 829],
+        [702, 892],
+        [496, 892],
+        [422, 840],
     ]],
 ]);
 const REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS = new Map<string, Uint8Array>(
@@ -2578,6 +2782,32 @@ const buildBoundaryRegionClipMask = ({
         }
     }
     return next;
+};
+
+const buildRegionRoughFallbackMask = ({
+    regionId,
+    seedPoint,
+    exclusionMask,
+}: {
+    regionId: string;
+    seedPoint: MaskPoint | null | undefined;
+    exclusionMask: Uint8Array;
+}): Uint8Array | null => {
+    const baseMask = STATIC_BOOTSTRAP_SHAPE_MASKS.get(regionId) ?? REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS.get(regionId) ?? null;
+    if (!baseMask) {
+        return null;
+    }
+    if (
+        seedPoint
+        && seedPoint.x >= 0
+        && seedPoint.y >= 0
+        && seedPoint.x < MASK_WIDTH
+        && seedPoint.y < MASK_HEIGHT
+        && exclusionMask[(seedPoint.y * MASK_WIDTH) + seedPoint.x] !== 0
+    ) {
+        return baseMask;
+    }
+    return removeExcludedPixels(baseMask, exclusionMask);
 };
 
 const rgbLuminance = (color: RgbColor): number => (
@@ -4009,6 +4239,51 @@ const normalizeLoadedPassages = (value: unknown): PassageEdge[] => {
     });
 };
 
+const normalizeLoadedGraphNodes = (
+    value: unknown,
+    regions: readonly PainterRegion[],
+): RegionGraphNode[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const regionById = new Map(regions.map((region) => [region.id, region]));
+    return value.flatMap((candidate) => {
+        if (typeof candidate !== 'object' || candidate == null) {
+            return [];
+        }
+        const node = candidate as {
+            id?: unknown;
+            name?: unknown;
+            center?: unknown;
+            seed?: unknown;
+            pixelCount?: unknown;
+        };
+        if (typeof node.id !== 'string') {
+            return [];
+        }
+        const region = regionById.get(node.id);
+        if (!region || isDiagnosticRegionId(region.id)) {
+            return [];
+        }
+        const point = isMaskPoint(node.center)
+            ? node.center
+            : isMaskPoint(node.seed)
+                ? node.seed
+                : null;
+        if (!point) {
+            return [];
+        }
+        return [{
+            id: region.id,
+            name: typeof node.name === 'string' && node.name.length > 0 ? node.name : region.name,
+            color: region.color,
+            x: point.x,
+            y: point.y,
+            pixelCount: Number.isFinite(node.pixelCount) ? Math.max(0, Math.floor(Number(node.pixelCount))) : 0,
+        }];
+    });
+};
+
 const normalizeLoadedBoundaryPresets = (value: unknown): BoundaryPreset[] => {
     if (!Array.isArray(value)) {
         return [...DEFAULT_BOUNDARY_PRESETS];
@@ -4224,40 +4499,82 @@ const computeResolvedRegionCenters = ({
     assignments,
     width,
     regionCount,
+    regions,
 }: {
     assignments: Int16Array;
     width: number;
     regionCount: number;
+    regions?: readonly PainterRegion[];
 }) => (
     computeRegionCenters({
         assignments,
         width,
         regionCount,
     }).map((center) => {
-        const centerIndex = (center.y * MASK_WIDTH) + center.x;
-        if (assignments[centerIndex] === center.regionIndex) {
-            return center;
-        }
         const regionMask = buildRegionMaskFromAssignments(assignments, center.regionIndex);
         if (!regionMask) {
             return center;
         }
+        const region = regions?.[center.regionIndex] ?? null;
+        const preferredAnchor = region
+            ? HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES.get(region.id) ?? region.seed
+            : null;
+        const anchorSupportMask = preferredAnchor ? buildPointSupportMask(preferredAnchor) : null;
+        const hasAnchorSupport = anchorSupportMask ? countMaskOverlapPixels(regionMask, anchorSupportMask) > 0 : false;
+        const anchoredRegionMask = keepMaskComponentContainingPoint(regionMask, preferredAnchor);
+        const resolvedMask = anchoredRegionMask ?? regionMask;
+        if (preferredAnchor && hasAnchorSupport) {
+            const anchoredBoundaryMask = buildMaskBoundaryRing({
+                mask: resolvedMask,
+                width: MASK_WIDTH,
+                height: MASK_HEIGHT,
+                expandIterations: 0,
+            });
+            const anchoredInteriorPoint = findBestInteriorSeedPointInMask(
+                preferredAnchor,
+                anchoredBoundaryMask,
+                resolvedMask,
+            );
+            if (anchoredInteriorPoint) {
+                return {
+                    ...center,
+                    x: anchoredInteriorPoint.x,
+                    y: anchoredInteriorPoint.y,
+                };
+            }
+        }
+        const resolvedCenter = computeMaskCenter(resolvedMask);
+        const nextCenter = resolvedCenter
+            ? {
+                ...center,
+                x: resolvedCenter.x,
+                y: resolvedCenter.y,
+            }
+            : center;
+        if (maskContainsPoint({
+            mask: resolvedMask,
+            width: MASK_WIDTH,
+            x: nextCenter.x,
+            y: nextCenter.y,
+        })) {
+            return nextCenter;
+        }
         const regionBoundaryMask = buildMaskBoundaryRing({
-            mask: regionMask,
+            mask: resolvedMask,
             width: MASK_WIDTH,
             height: MASK_HEIGHT,
             expandIterations: 0,
         });
         const interiorPoint = findBestInteriorSeedPointInMask(
-            { x: center.x, y: center.y },
+            { x: nextCenter.x, y: nextCenter.y },
             regionBoundaryMask,
-            regionMask,
+            resolvedMask,
         );
         if (!interiorPoint) {
-            return center;
+            return nextCenter;
         }
         return {
-            ...center,
+            ...nextCenter,
             x: interiorPoint.x,
             y: interiorPoint.y,
         };
@@ -4974,6 +5291,7 @@ const buildAutoPassagesFromAssignments = ({
         assignments,
         width: MASK_WIDTH,
         regionCount: regions.length,
+        regions,
     }).filter((center) => generatedRegionIndexes.has(center.regionIndex) && center.pixelCount > 0);
     for (const center of generatedCenters) {
         const nearestCenters = generatedCenters
@@ -5364,6 +5682,26 @@ const QidahenRegionMaskTool: React.FC = () => {
         skipped: lastRegionGenerationResults.filter((result) => result.status === 'skipped').length,
         overlapOnly: lastRegionGenerationResults.filter((result) => result.status === 'overlap-only').length,
     }), [lastRegionGenerationResults]);
+    const persistedGeneratedRegionCount = React.useMemo(() => {
+        void assignmentsVersion;
+        const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        const populatedRegionIds = new Set<string>();
+        for (let index = 0; index < assignmentsRef.current.length; index += 1) {
+            const regionIndex = assignmentsRef.current[index];
+            if (regionIndex < 0) {
+                continue;
+            }
+            const region = regions[regionIndex];
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            populatedRegionIds.add(region.id);
+        }
+        return formalRegions.filter((region) => populatedRegionIds.has(region.id)).length;
+    }, [assignmentsVersion, regions]);
+    const effectiveGeneratedRegionCount = lastRegionGenerationResults.length > 0
+        ? lastRegionGenerationSummary.generated
+        : persistedGeneratedRegionCount;
     const regionTruthWorkflowActive = lastRegionGenerationResults.length > 0
         && (
             lastRegionGenerationWorkflow === 'region-draft'
@@ -5371,7 +5709,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         );
     const simplifiedBoundaryWorkflow = usePrimaryMapEditor || !showAdvancedWorkbench;
     const hasBoundaryDraft = boundaryDraftPixelCount > 0 || manualBarrierAddCount > 0 || manualBarrierRemoveCount > 0;
-    const hasGeneratedRegions = lastRegionGenerationSummary.generated > 0;
+    const hasGeneratedRegions = effectiveGeneratedRegionCount > 0;
     const hasLeakedRegions = lastRegionGenerationSummary.leaked > 0;
     const buildSeedPartitionDiagnosticsForBoundaryMask = React.useCallback((barrierMask: Uint8Array | null | undefined): BoundaryClosureDiagnostics => {
         if (!barrierMask || countMaskPixels(barrierMask) === 0) {
@@ -5679,6 +6017,111 @@ const QidahenRegionMaskTool: React.FC = () => {
                 supportMask: null,
             });
             const shape = scoreBoundaryShape({ boundaryMask: null });
+            const assignmentPixelCountByRegionId = new Map<string, number>();
+            const assignmentHashByRegionId = new Map<string, number>();
+            let boundaryHash = 2166136261;
+            const boundaryMask = barrierMaskRef.current;
+            if (boundaryMask) {
+                for (let index = 0; index < boundaryMask.length; index += 1) {
+                    if (boundaryMask[index] !== 0) {
+                        boundaryHash = updateHash(boundaryHash, index);
+                    }
+                }
+            }
+            for (let index = 0; index < assignmentsRef.current.length; index += 1) {
+                const regionIndex = assignmentsRef.current[index];
+                if (regionIndex < 0) {
+                    continue;
+                }
+                const region = regions[regionIndex];
+                if (!region || isDiagnosticRegionId(region.id)) {
+                    continue;
+                }
+                assignmentPixelCountByRegionId.set(region.id, (assignmentPixelCountByRegionId.get(region.id) ?? 0) + 1);
+                assignmentHashByRegionId.set(region.id, updateHash(assignmentHashByRegionId.get(region.id) ?? 2166136261, index));
+            }
+            const boundaryHashText = formatHash(boundaryHash);
+            const generatedCount = effectiveGeneratedRegionCount;
+            const normalityRegionCoverages = formalRegions.map<BoundaryNormalityRegionCoverage>((region) => {
+                const expectedPixelCount = NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? null;
+                const pixelCount = assignmentPixelCountByRegionId.get(region.id) ?? 0;
+                const coverageRatio = expectedPixelCount && expectedPixelCount > 0
+                    ? pixelCount / expectedPixelCount
+                    : null;
+                const currentSignature = `${pixelCount}:${formatHash(assignmentHashByRegionId.get(region.id) ?? 2166136261)}:${boundaryHashText}`;
+                const label = pixelCount === 0
+                    ? '未生成'
+                    : coverageRatio == null
+                        ? '无粗范围基线'
+                        : coverageRatio < NORMAL_REGION_MIN_GUIDE_COVERAGE_RATIO
+                            ? '疑似小圈'
+                            : '面积通过粗检';
+                const acceptanceState = pixelCount === 0
+                    ? 'not-generated'
+                    : region.acceptance?.status === 'approved'
+                        ? region.acceptance.signature === currentSignature
+                            ? 'approved'
+                            : 'stale'
+                        : 'pending';
+                const acceptanceLabel = acceptanceState === 'approved'
+                    ? '已验收'
+                    : acceptanceState === 'stale'
+                        ? '验收失效'
+                        : acceptanceState === 'not-generated'
+                            ? '未生成'
+                            : '待验收';
+                return {
+                    regionId: region.id,
+                    regionName: region.name,
+                    pixelCount,
+                    expectedPixelCount,
+                    coverageRatio,
+                    label,
+                    currentSignature,
+                    acceptanceState,
+                    acceptanceLabel,
+                    reviewedAt: region.acceptance?.reviewedAt ?? null,
+                };
+            });
+            const approvedNormalRegionCount = normalityRegionCoverages.filter((coverage) => coverage.acceptanceState === 'approved').length;
+            const normality: BoundaryNormalityReport = generatedCount < formalRegions.length
+                ? {
+                    state: 'not-ready',
+                    label: '正常成果未生成',
+                    detail: `当前只生成 ${generatedCount}/${formalRegions.length} 个正式区域；轻量模式下仍先以补边/补区为主。`,
+                    toneClass: 'border-stone-700 bg-stone-950/70 text-stone-200',
+                    blockers: ['轻量模式跳过实时整图验收；展开高级面板后再看底图贴合、直线形态与逐区验收。'],
+                    approvedCount: approvedNormalRegionCount,
+                    requiredApprovalCount: formalRegions.length,
+                    realMapFit,
+                    shape,
+                    regionCoverages: normalityRegionCoverages,
+                }
+                : approvedNormalRegionCount === formalRegions.length
+                    ? {
+                        state: 'accepted',
+                        label: '正常成果已人工验收',
+                        detail: `轻量模式已检测到 ${formalRegions.length}/${formalRegions.length} 个正式区域都保留当前验收签名。`,
+                        toneClass: 'border-emerald-400/45 bg-emerald-500/10 text-emerald-100',
+                        blockers: [],
+                        approvedCount: approvedNormalRegionCount,
+                        requiredApprovalCount: formalRegions.length,
+                        realMapFit,
+                        shape,
+                        regionCoverages: normalityRegionCoverages,
+                    }
+                    : {
+                        state: 'needs-visual-review',
+                        label: '待逐区看图验收',
+                        detail: `当前已存在 ${generatedCount}/${formalRegions.length} 个正式区域；轻量模式跳过实时整图验收，需展开高级面板后继续看底图贴合与逐区验收。已验收 ${approvedNormalRegionCount}/${formalRegions.length}。`,
+                        toneClass: 'border-sky-500/40 bg-sky-500/10 text-sky-100',
+                        blockers: ['轻量模式跳过实时整图验收；当前门禁只证明已有正式区域，不代表底图贴合与边界形态已通过。'],
+                        approvedCount: approvedNormalRegionCount,
+                        requiredApprovalCount: formalRegions.length,
+                        realMapFit,
+                        shape,
+                        regionCoverages: normalityRegionCoverages,
+                    };
             return {
                 state: hasBoundaryDraft ? 'ready-to-generate' : 'missing-boundary',
                 label: hasBoundaryDraft ? '轻量手工模式' : '等待边界图',
@@ -5694,21 +6137,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                 unmatchedCount: 0,
                 openComponentCount: 0,
                 unexplainedOpenComponentCount: 0,
-                generatedCount: lastRegionGenerationSummary.generated,
+                generatedCount,
                 formalRegionCount: formalRegions.length,
                 regionDetails: [],
-                normality: {
-                    state: 'not-ready',
-                    label: '轻量模式未验收',
-                    detail: '轻量模式不在每次画笔移动后跑验收；需要正式验收时展开高级面板或生成区域。',
-                    toneClass: 'border-cyan-500/25 bg-cyan-500/10 text-cyan-100',
-                    blockers: ['轻量模式跳过实时整图验收。'],
-                    approvedCount: 0,
-                    requiredApprovalCount: formalRegions.length,
-                    realMapFit,
-                    shape,
-                    regionCoverages: [],
-                },
+                normality,
             };
         }
         const missingSeedNames = formalRegions
@@ -6019,6 +6451,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         boundaryOpenDiagnostics.openComponentCount,
         unexplainedBoundaryOpenDiagnostics.openComponentCount,
         hasBoundaryDraft,
+        effectiveGeneratedRegionCount,
         lastRegionGenerationResults,
         lastRegionGenerationSummary.generated,
         realMapBoundarySupportMask,
@@ -6032,6 +6465,69 @@ const QidahenRegionMaskTool: React.FC = () => {
     const formalRegionSaveBlocked = !isIsolatedWorkspace
         && boundaryQualityReport.generatedCount > 0
         && boundaryQualityReport.normality.state !== 'accepted';
+    const debugSnapshot = React.useMemo<QidahenRegionMaskDebugSnapshot>(() => ({
+        workspaceKey: currentWorkspaceKey,
+        isIsolatedWorkspace,
+        dataOutputDir,
+        persistedWorkspaceState,
+        selectedRegionId: selectedRegion?.id ?? null,
+        selectedRegionName: selectedRegion?.name ?? null,
+        statusMessage,
+        graphNodeCount: graphNodes.length,
+        graphNodeIds: graphNodes.map((node) => node.id),
+        passageCount: passages.length,
+        effectiveGeneratedRegionCount,
+        boundaryDraftPixelCount,
+        barrierPixelCount,
+        formalRegionSaveBlocked,
+        lastRegionGenerationWorkflow,
+        lastRegionGenerationSummary,
+        boundaryQuality: {
+            state: boundaryQualityReport.state,
+            label: boundaryQualityReport.label,
+            generatedCount: boundaryQualityReport.generatedCount,
+            formalRegionCount: boundaryQualityReport.formalRegionCount,
+            normalityState: boundaryQualityReport.normality.state,
+            normalityLabel: boundaryQualityReport.normality.label,
+            approvedCount: boundaryQualityReport.normality.approvedCount,
+            requiredApprovalCount: boundaryQualityReport.normality.requiredApprovalCount,
+        },
+    }), [
+        barrierPixelCount,
+        boundaryDraftPixelCount,
+        boundaryQualityReport.formalRegionCount,
+        boundaryQualityReport.generatedCount,
+        boundaryQualityReport.label,
+        boundaryQualityReport.normality.approvedCount,
+        boundaryQualityReport.normality.label,
+        boundaryQualityReport.normality.requiredApprovalCount,
+        boundaryQualityReport.normality.state,
+        boundaryQualityReport.state,
+        currentWorkspaceKey,
+        dataOutputDir,
+        effectiveGeneratedRegionCount,
+        formalRegionSaveBlocked,
+        graphNodes,
+        isIsolatedWorkspace,
+        lastRegionGenerationSummary,
+        lastRegionGenerationWorkflow,
+        passages.length,
+        persistedWorkspaceState,
+        selectedRegion?.id,
+        selectedRegion?.name,
+        statusMessage,
+    ]);
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        window.__QIDAHEN_REGION_MASK_DEBUG__ = debugSnapshot;
+        return () => {
+            if (window.__QIDAHEN_REGION_MASK_DEBUG__ === debugSnapshot) {
+                delete window.__QIDAHEN_REGION_MASK_DEBUG__;
+            }
+        };
+    }, [debugSnapshot]);
     const acceptancePackageReviewSignature = React.useMemo(() => (
         boundaryQualityReport.normality.regionCoverages
             .map((coverage) => `${coverage.regionId}:${coverage.currentSignature}`)
@@ -8185,6 +8681,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                         regions?: unknown;
                     };
                     graph?: {
+                        nodes?: unknown;
                         edges?: unknown;
                     };
                 };
@@ -8208,20 +8705,42 @@ const QidahenRegionMaskTool: React.FC = () => {
                 );
                 const nextBarrierAddMask = await readBinaryMaskFromImageSource(payload.barrierHints?.addPngDataUrl ?? null);
                 const nextBarrierRemoveMask = await readBinaryMaskFromImageSource(payload.barrierHints?.removePngDataUrl ?? null);
-                let removedExcludedAssignedPixels = 0;
-                for (let index = 0; index < nextAssignments.length; index += 1) {
-                    if (currentMapArtifactExclusionMask[index] === 0 || nextAssignments[index] === EMPTY_REGION) {
-                        continue;
-                    }
-                    nextAssignments[index] = EMPTY_REGION;
-                    removedExcludedAssignedPixels += 1;
-                }
+                const persistedExcludedAssignedPixels = countAssignmentPixelsInMask(
+                    nextAssignments,
+                    currentMapArtifactExclusionMask,
+                );
 
                 const loadedCenters = computeResolvedRegionCenters({
                     assignments: nextAssignments,
                     width: MASK_WIDTH,
                     regionCount: loadedRegions.length,
+                    regions: loadedRegions,
                 });
+                const loadedGraphNodes = normalizeLoadedGraphNodes(payload.graph?.nodes, loadedRegions);
+                const loadedGraphNodeById = new Map(loadedGraphNodes.map((node) => [node.id, node]));
+                const loadedCenterByRegionId = new Map(
+                    loadedCenters.flatMap((center) => {
+                        const region = loadedRegions[center.regionIndex];
+                        if (!region || isDiagnosticRegionId(region.id)) {
+                            return [];
+                        }
+                        return [[region.id, center] as const];
+                    }),
+                );
+                const isPersistedGraphPointUsable = (point: MaskPoint | null | undefined, regionIndex: number) => {
+                    if (!point) {
+                        return false;
+                    }
+                    if (
+                        point.x < 0
+                        || point.x >= MASK_WIDTH
+                        || point.y < 0
+                        || point.y >= MASK_HEIGHT
+                    ) {
+                        return false;
+                    }
+                    return nextAssignments[(point.y * MASK_WIDTH) + point.x] === regionIndex;
+                };
                 const hasAssignedPixels = nextAssignments.some((value) => value >= 0);
                 let hasBoundaryDraftPixels = countMaskPixels(nextBoundaryDraftMask) > 0;
                 const hasBarrierAddPixels = countMaskPixels(nextBarrierAddMask) > 0;
@@ -8234,9 +8753,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const shouldResumeRegionPainting = hasAssignedPixels && !hasSavedPassages;
                 let mismatchedSeedCount = 0;
                 const normalizedRegions = loadedRegions.map((region, regionIndex) => {
+                    const loadedGraphNode = loadedGraphNodeById.get(region.id) ?? null;
+                    const usableLoadedGraphPoint = loadedGraphNode && isPersistedGraphPointUsable(loadedGraphNode, regionIndex)
+                        ? { x: loadedGraphNode.x, y: loadedGraphNode.y }
+                        : null;
                     const loadedCenter = loadedCenters[regionIndex] ?? null;
                     const staticShapeMask = STATIC_BOOTSTRAP_SHAPE_MASKS.get(region.id) ?? null;
-                    const nextSeed = loadedCenter
+                    const nextSeed = usableLoadedGraphPoint
+                        ? usableLoadedGraphPoint
+                        : loadedCenter
                         ? { x: loadedCenter.x, y: loadedCenter.y }
                         : region.seed
                             ? { x: region.seed.x, y: region.seed.y }
@@ -8260,12 +8785,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                 });
                 let autoDerivedBoundaryFromSavedRegions = false;
                 if (hasAssignedPixels && !hasBoundaryDraftPixels && !hasBarrierAddPixels && !hasBarrierRemovePixels) {
+                    const persistedBoundaryExclusionMask = new Uint8Array(currentMapArtifactExclusionMask.length);
                     const derivedBoundaryMask = buildBoundaryMaskFromRegionAssignments({
                         assignments: nextAssignments,
                         regionIndexes: normalizedRegions
                             .map((region, regionIndex) => (isDiagnosticRegionId(region.id) ? -1 : regionIndex))
                             .filter((regionIndex) => regionIndex >= 0),
-                        exclusionMask: currentMapArtifactExclusionMask,
+                        // 这里是在“已保存正式区域 -> 临时回显红线”的回读链上。
+                        // 既有 region-mask 本身已经是权威成果，不能再拿当前 UI/装饰禁区把右侧朝鲜区边界裁掉，
+                        // 否则用户一点击“生成区域”就会从 33 区退回 31 区。
+                        exclusionMask: persistedBoundaryExclusionMask,
                         regionSeedByIndex: new Map(
                             normalizedRegions
                                 .map((region, regionIndex) => [regionIndex, region.seed] as const)
@@ -8312,6 +8841,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     : [];
 
                 assignmentsRef.current = nextAssignments;
+                setAssignmentsVersion((current) => current + 1);
                 boundaryDraftMaskRef.current = countMaskPixels(nextBoundaryDraftMask) > 0 ? nextBoundaryDraftMask : null;
                 manualBarrierAddRef.current = nextBarrierAddMask;
                 manualBarrierRemoveRef.current = nextBarrierRemoveMask;
@@ -8337,20 +8867,35 @@ const QidahenRegionMaskTool: React.FC = () => {
                 pendingSeedNormalizationRef.current = !usePrimaryMapEditor;
                 setPersistedWorkspaceState(workspaceHasPersistedArtifacts ? 'populated' : 'empty');
                 setAuthoritativeGuideRegionIds(loadedAuthoritativeGuideIds.filter((regionId) => loadedRegions.some((region) => region.id === regionId)));
+                skipNextGraphSyncEffectRef.current = true;
                 setRegions(normalizedRegions);
                 setGraphNodes(
-                    loadedCenters.flatMap((center) => {
-                        const region = normalizedRegions[center.regionIndex];
-                        if (!region || isDiagnosticRegionId(region.id) || center.pixelCount <= 0) {
+                    normalizedRegions.flatMap((region) => {
+                        if (isDiagnosticRegionId(region.id)) {
+                            return [];
+                        }
+                        const persistedNode = loadedGraphNodeById.get(region.id) ?? null;
+                        const regionIndex = normalizedRegions.findIndex((candidate) => candidate.id === region.id);
+                        const loadedCenter = loadedCenterByRegionId.get(region.id) ?? null;
+                        const persistedPoint = persistedNode && regionIndex >= 0 && isPersistedGraphPointUsable(persistedNode, regionIndex)
+                            ? { x: persistedNode.x, y: persistedNode.y }
+                            : null;
+                        const point = persistedPoint
+                            ? { x: persistedNode.x, y: persistedNode.y }
+                            : loadedCenter
+                                ? { x: loadedCenter.x, y: loadedCenter.y }
+                                : region.seed;
+                        const pixelCount = loadedCenter?.pixelCount ?? persistedNode?.pixelCount ?? 0;
+                        if (!point || pixelCount <= 0) {
                             return [];
                         }
                         return [{
                             id: region.id,
                             name: region.name,
                             color: region.color,
-                            x: center.x,
-                            y: center.y,
-                            pixelCount: center.pixelCount,
+                            x: point.x,
+                            y: point.y,
+                            pixelCount,
                         }];
                     }),
                 );
@@ -8381,8 +8926,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const correctedSeedNote = mismatchedSeedCount > 0
                     ? ` 已保留 ${mismatchedSeedCount} 个与 static shape 不一致的现有 seed；静态 shape 仅作 bootstrap 参考。`
                     : '';
-                const excludedMaskCleanupNote = removedExcludedAssignedPixels > 0
-                    ? ` 已自动清掉轮盘/UI 禁区里的 ${removedExcludedAssignedPixels.toLocaleString()} px 旧区域像素。`
+                const excludedMaskCleanupNote = persistedExcludedAssignedPixels > 0
+                    ? ` 已保留 ${persistedExcludedAssignedPixels.toLocaleString()} px 与当前 UI/装饰禁区重叠的既有区域像素；回读按已保存成果为准。`
                     : '';
                 const derivedBoundaryNote = autoDerivedBoundaryFromSavedRegions
                     ? ' 已从已保存区域边缘反推红线显示；如需改边界，可直接画边界/擦边界后保存。'
@@ -8434,6 +8979,27 @@ const QidahenRegionMaskTool: React.FC = () => {
     React.useEffect(() => {
         rebuildBarrierMask();
     }, [rebuildBarrierMask]);
+
+    React.useEffect(() => {
+        if (!showBarrier || sourcePixelsVersion === 0 || barrierPixelCount > 0) {
+            return;
+        }
+        if (
+            boundaryDraftPixelCount === 0
+            && manualBarrierAddCount === 0
+            && manualBarrierRemoveCount === 0
+        ) {
+            return;
+        }
+        rebuildBarrierMaskRef.current();
+    }, [
+        barrierPixelCount,
+        boundaryDraftPixelCount,
+        manualBarrierAddCount,
+        manualBarrierRemoveCount,
+        showBarrier,
+        sourcePixelsVersion,
+    ]);
 
     React.useEffect(() => {
         renderBoundarySourceReference();
@@ -8563,6 +9129,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             assignments: assignmentsRef.current,
             width: MASK_WIDTH,
             regionCount: sourceRegions.length,
+            regions: sourceRegions,
         });
         setGraphNodes(
             centers.flatMap((center) => {
@@ -13038,9 +13605,58 @@ const QidahenRegionMaskTool: React.FC = () => {
         }
         const allowPartial = options?.allowPartial === true;
         const formalRegions = regions.filter((region) => !isDiagnosticRegionId(region.id));
+        const formalRegionIndexes = regions
+            .map((region, regionIndex) => (region && !isDiagnosticRegionId(region.id) ? regionIndex : EMPTY_REGION))
+            .filter((regionIndex) => regionIndex >= 0);
         const missingSeedNames = formalRegions
             .filter((region) => !region.seed)
             .map((region) => region.name);
+        const hasOnlyFormalPersistedRegions = formalRegions.every((region) => !region.id.startsWith('generated-region-'));
+        const hasExplicitBoundaryMatchOverrides = formalRegions.some((region) => (
+            HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES.has(region.id)
+        ));
+        if (
+            allowPartial
+            && !hasExplicitBoundaryMatchOverrides
+            && hasOnlyFormalPersistedRegions
+            && graphNodes.length === formalRegions.length
+        ) {
+            const persistedBoundaryExclusionMask = new Uint8Array(currentMapArtifactExclusionMask.length);
+            const reconstructedBoundaryMask = buildBoundaryMaskFromRegionAssignments({
+                assignments: assignmentsRef.current,
+                regionIndexes: formalRegionIndexes,
+                exclusionMask: persistedBoundaryExclusionMask,
+                regionSeedByIndex: new Map(
+                    regions
+                        .map((region, regionIndex) => [regionIndex, region.seed] as const)
+                        .filter((entry): entry is [number, MaskPoint] => entry[1] != null),
+                ),
+                smoothRegionFillIterations: 3,
+            });
+            if (binaryMasksEqual(barrierMask, reconstructedBoundaryMask)) {
+                const preservedGenerationResults = formalRegions.map((region) => {
+                    const node = graphNodeMap.get(region.id);
+                    return {
+                        regionId: region.id,
+                        regionName: region.name,
+                        status: node && node.pixelCount > 0 ? 'generated' : 'skipped',
+                        pixelCount: node?.pixelCount ?? 0,
+                        seed: region.seed ?? null,
+                        note: node && node.pixelCount > 0
+                            ? `当前红线与已保存正式区域一致，直接保留 ${node.pixelCount.toLocaleString()} px。`
+                            : '当前区域没有可保留的已保存像素。',
+                    } satisfies RegionGenerationResult;
+                });
+                setLastRegionGenerationWorkflow('boundary');
+                setLastRegionGenerationResults(preservedGenerationResults);
+                setShowMask(true);
+                setShowBarrier(true);
+                setMode('paint');
+                setSelectedRegionId(formalRegions[0]?.id ?? selectedRegionId);
+                setStatusMessage(`已按红线/画布边缘生成 ${graphNodes.length} 个区域；当前红线与已保存正式区域一致，未改边界时直接保留现有结果。`);
+                return;
+            }
+        }
         const generationDiagnostics = allowPartial || !simplifiedBoundaryWorkflow
             ? boundaryClosureDiagnostics
             : buildSeedPartitionDiagnosticsForBoundaryMask(barrierMask);
@@ -13103,8 +13719,21 @@ const QidahenRegionMaskTool: React.FC = () => {
                 });
                 continue;
             }
-            const seedPoint = findBestInteriorSeedPoint(preferredSeed, barrierMask, 18)
-                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, 36);
+            const preferredSeedIndex = (preferredSeed.y * MASK_WIDTH) + preferredSeed.x;
+            const roughFallbackMask = buildRegionRoughFallbackMask({
+                regionId: region.id,
+                seedPoint: preferredSeed,
+                exclusionMask: currentMapArtifactExclusionMask,
+            });
+            const seedGuideMask = roughFallbackMask
+                ?? (AUTO_MAP_PRINTED_UI_EXCLUSION_MASK[preferredSeedIndex] !== 0 ? AUTO_MAP_REGION_FILLABLE_MASK : null);
+            const seedSearchRadius = seedGuideMask ? 180 : 18;
+            const seedFallbackRadius = seedGuideMask ? 220 : 36;
+            const seedPoint = (roughFallbackMask
+                ? findBestInteriorSeedPointInMask(preferredSeed, barrierMask, roughFallbackMask)
+                : null)
+                ?? findBestInteriorSeedPoint(preferredSeed, barrierMask, seedSearchRadius, seedGuideMask)
+                ?? findNearestNonBarrierPoint(preferredSeed, barrierMask, seedFallbackRadius, seedGuideMask);
             if (!seedPoint) {
                 skippedRegionCount += 1;
                 generationResults.push({
@@ -13122,10 +13751,12 @@ const QidahenRegionMaskTool: React.FC = () => {
             seedRecords.push({ regionIndex, region, seedPoint });
         }
 
-        if (allowPartial) {
+        if (allowPartial && isIsolatedWorkspace) {
             const fillBarrierMask = buildRegionFillBarrierMask(barrierMask);
             const usedRegionIds = new Set<string>();
             const usedRegionColors = new Set<string>();
+            const ignoreUnmatchedComponentsInFormalWorkspace = !isIsolatedWorkspace;
+            const componentFillableMask = ignoreUnmatchedComponentsInFormalWorkspace ? AUTO_MAP_REGION_FILLABLE_MASK : null;
             const allocateRegionColor = (preferredColor: string | null | undefined, componentIndex: number) => {
                 if (preferredColor && !usedRegionColors.has(preferredColor.toLowerCase())) {
                     usedRegionColors.add(preferredColor.toLowerCase());
@@ -13144,25 +13775,59 @@ const QidahenRegionMaskTool: React.FC = () => {
                 usedRegionColors.add(fallbackColor.toLowerCase());
                 return fallbackColor;
             };
-            const seedRegionsByPixel = new Map<number, PainterRegion[]>();
-            for (const region of regions) {
-                if (!region.seed || isDiagnosticRegionId(region.id)) {
+            const manualMatchRegionIndexesByPixel = new Map<number, number[]>();
+            for (let regionIndex = 0; regionIndex < regions.length; regionIndex += 1) {
+                const region = regions[regionIndex];
+                if (!region || isDiagnosticRegionId(region.id)) {
                     continue;
                 }
-                const seedIndex = (region.seed.y * MASK_WIDTH) + region.seed.x;
-                const list = seedRegionsByPixel.get(seedIndex);
+                const overridePoint = HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES.get(region.id);
+                const roughFallbackMask = buildRegionRoughFallbackMask({
+                    regionId: region.id,
+                    seedPoint: region.seed,
+                    exclusionMask: currentMapArtifactExclusionMask,
+                });
+                const preferredAnchorPoint = overridePoint
+                    ?? (
+                        region.seed && roughFallbackMask
+                            ? findBestInteriorSeedPointInMask(region.seed, barrierMask, roughFallbackMask)
+                                ?? findBestInteriorSeedPoint(region.seed, barrierMask, 24, roughFallbackMask)
+                            : null
+                    )
+                    ?? seedRecords[seedRecordIndexByRegionIndex.get(regionIndex) ?? -1]?.seedPoint
+                    ?? null;
+                if (!preferredAnchorPoint) {
+                    continue;
+                }
+                const pointIndex = (preferredAnchorPoint.y * MASK_WIDTH) + preferredAnchorPoint.x;
+                const list = manualMatchRegionIndexesByPixel.get(pointIndex);
                 if (list) {
-                    list.push(region);
+                    list.push(regionIndex);
                 } else {
-                    seedRegionsByPixel.set(seedIndex, [region]);
+                    manualMatchRegionIndexesByPixel.set(pointIndex, [regionIndex]);
                 }
             }
 
+            type GeneratedBoundaryComponent = {
+                componentIndex: number;
+                pixelIndexes: Uint32Array;
+                pixelCount: number;
+                sumX: number;
+                sumY: number;
+                anchoredRegionIndexes: number[];
+                overlapPixelsByRegionIndex: Map<number, number>;
+            };
+
+            const generatedComponents: GeneratedBoundaryComponent[] = [];
             const nextGeneratedRegions: PainterRegion[] = [];
             const visited = new Uint8Array(fillBarrierMask.length);
             const queue = new Uint32Array(fillBarrierMask.length);
             const enqueueFillPixel = (index: number, currentTail: number) => {
-                if (visited[index] !== 0 || fillBarrierMask[index] !== 0) {
+                if (
+                    visited[index] !== 0
+                    || fillBarrierMask[index] !== 0
+                    || (componentFillableMask && componentFillableMask[index] === 0)
+                ) {
                     return currentTail;
                 }
                 visited[index] = 1;
@@ -13171,7 +13836,11 @@ const QidahenRegionMaskTool: React.FC = () => {
             };
 
             for (let startIndex = 0; startIndex < fillBarrierMask.length; startIndex += 1) {
-                if (fillBarrierMask[startIndex] !== 0 || visited[startIndex] !== 0) {
+                if (
+                    fillBarrierMask[startIndex] !== 0
+                    || visited[startIndex] !== 0
+                    || (componentFillableMask && componentFillableMask[startIndex] === 0)
+                ) {
                     continue;
                 }
 
@@ -13184,7 +13853,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                 let right = 0;
                 let top = MASK_HEIGHT - 1;
                 let bottom = 0;
-                const seedRegionCandidates: PainterRegion[] = [];
+                const anchoredRegionIndexes = new Set<number>();
+                const overlapPixelsByRegionIndex = new Map<number, number>();
 
                 visited[startIndex] = 1;
                 queue[tail] = startIndex;
@@ -13203,9 +13873,20 @@ const QidahenRegionMaskTool: React.FC = () => {
                     top = Math.min(top, y);
                     bottom = Math.max(bottom, y);
 
-                    const seedRegions = seedRegionsByPixel.get(index);
-                    if (seedRegions) {
-                        seedRegionCandidates.push(...seedRegions);
+                    const anchoredRegions = manualMatchRegionIndexesByPixel.get(index);
+                    if (anchoredRegions) {
+                        anchoredRegions.forEach((regionIndex) => anchoredRegionIndexes.add(regionIndex));
+                    }
+                    const priorRegionIndex = assignmentsRef.current[index];
+                    if (
+                        priorRegionIndex >= 0
+                        && priorRegionIndex < regions.length
+                        && !isDiagnosticRegionId(regions[priorRegionIndex]?.id ?? '')
+                    ) {
+                        overlapPixelsByRegionIndex.set(
+                            priorRegionIndex,
+                            (overlapPixelsByRegionIndex.get(priorRegionIndex) ?? 0) + 1,
+                        );
                     }
 
                     if (x > 0) {
@@ -13226,9 +13907,34 @@ const QidahenRegionMaskTool: React.FC = () => {
                     continue;
                 }
 
+                generatedComponents.push({
+                    componentIndex: generatedComponents.length,
+                    pixelIndexes: queue.slice(0, tail),
+                    pixelCount,
+                    sumX,
+                    sumY,
+                    anchoredRegionIndexes: [...anchoredRegionIndexes],
+                    overlapPixelsByRegionIndex,
+                });
+            }
+
+            const componentMatches = matchGeneratedComponentsToRegionIndexes({
+                components: generatedComponents,
+                regionCount: regions.length,
+            });
+            let ignoredUnmatchedComponentCount = 0;
+
+            for (const component of generatedComponents) {
+                const matchedRegionIndex = componentMatches.get(component.componentIndex)?.regionIndex ?? null;
+                if (matchedRegionIndex == null && ignoreUnmatchedComponentsInFormalWorkspace) {
+                    ignoredUnmatchedComponentCount += 1;
+                    continue;
+                }
                 const componentIndex = nextGeneratedRegions.length;
-                const existingRegion = seedRegionCandidates.find((region) => !usedRegionIds.has(region.id));
-                const fallbackId = `city-region-${componentIndex + 1}`;
+                const existingRegion = matchedRegionIndex != null
+                    ? regions[matchedRegionIndex]
+                    : null;
+                const fallbackId = `generated-region-${componentIndex + 1}`;
                 const id = existingRegion?.id ?? fallbackId;
                 usedRegionIds.add(id);
                 const region: PainterRegion = {
@@ -13236,8 +13942,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                     name: existingRegion?.name ?? `区域 ${componentIndex + 1}`,
                     color: allocateRegionColor(existingRegion?.color, componentIndex),
                     seed: {
-                        x: Math.round(sumX / pixelCount),
-                        y: Math.round(sumY / pixelCount),
+                        x: Math.round(component.sumX / component.pixelCount),
+                        y: Math.round(component.sumY / component.pixelCount),
                     },
                     links: existingRegion?.links ?? [],
                     acceptance: existingRegion?.acceptance ?? null,
@@ -13245,17 +13951,17 @@ const QidahenRegionMaskTool: React.FC = () => {
                 nextGeneratedRegions.push(region);
 
                 const regionIndex = nextGeneratedRegions.length - 1;
-                for (let index = 0; index < tail; index += 1) {
-                    nextAssignments[queue[index]] = regionIndex;
+                for (let index = 0; index < component.pixelIndexes.length; index += 1) {
+                    nextAssignments[component.pixelIndexes[index]] = regionIndex;
                 }
 
                 generatedRegionCount += 1;
-                writtenPixelCount += pixelCount;
+                writtenPixelCount += component.pixelCount;
                 generationResults.push({
                     regionId: region.id,
                     regionName: region.name,
                     status: 'generated',
-                    pixelCount,
+                    pixelCount: component.pixelCount,
                     seed: region.seed,
                     note: `由闭合红线自动填充，中心点 ${region.seed?.x ?? 0},${region.seed?.y ?? 0}。生成时会临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，可在左侧把名称改成城市名。`,
                 });
@@ -13289,16 +13995,23 @@ const QidahenRegionMaskTool: React.FC = () => {
             setShowPartitionPreviewOverlay(false);
             setShowSeedStatusOverlay(false);
             setShowSelectedOutline(false);
-            setMode(autoPassageResult.passages.length > 0 ? 'path' : 'paint');
+            setMode('paint');
             markAssignmentsChanged(nextGeneratedRegions, { renderOutline: false });
+            const ignoredComponentNote = ignoredUnmatchedComponentCount > 0
+                ? `；忽略 ${ignoredUnmatchedComponentCount} 个未命中正式区域的闭合块`
+                : '';
             const passageNote = autoPassageResult.detectedCount > 0
                 ? `已自动补全 ${autoPassageResult.detectedCount} 条通路，可直接选中通路设置移动代价。`
                 : '没有识别到相邻通路，可切到通路编辑后手动拖线。';
-            setStatusMessage(`已按红线/画布边缘生成 ${generatedRegionCount} 个区域，填充 ${writtenPixelCount.toLocaleString()} px。已临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，并把 ${HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE}px 内靠边红线接到画布边界；仍没有接成分割线的碎线不会单独成区。${passageNote}`);
+            setStatusMessage(`已按红线/画布边缘生成 ${generatedRegionCount} 个区域，填充 ${writtenPixelCount.toLocaleString()} px${ignoredComponentNote}。已临时封住约 ${HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS + HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS}px 的手绘小断口，并把 ${HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE}px 内靠边红线接到画布边界；仍没有接成分割线的碎线不会单独成区。${passageNote}`);
             window.setTimeout(scrollSidebarToTop, 0);
             return;
         }
 
+        const fillBarrierMask = createMaskClippedBarrier({
+            barrierMask: buildRegionFillBarrierMask(barrierMask),
+            clipMask: AUTO_MAP_REGION_FILLABLE_MASK,
+        });
         const partitionComponents = extractBoundaryPartitionComponents({
             barrierMask,
             width: MASK_WIDTH,
@@ -13322,10 +14035,101 @@ const QidahenRegionMaskTool: React.FC = () => {
                 }
             }
         }
+        const manualMatchSupportMasksByRegionIndex = new Map<number, Uint8Array>();
+        for (let regionIndex = 0; regionIndex < regions.length; regionIndex += 1) {
+            const region = regions[regionIndex];
+            if (!region || isDiagnosticRegionId(region.id)) {
+                continue;
+            }
+            const overridePoint = HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES.get(region.id) ?? null;
+            const seedRecordIndex = seedRecordIndexByRegionIndex.get(regionIndex);
+            const preferredAnchorPoint = overridePoint
+                ?? (seedRecordIndex == null ? null : seedRecords[seedRecordIndex]?.seedPoint ?? null)
+                ?? region.seed
+                ?? null;
+            if (!preferredAnchorPoint) {
+                continue;
+            }
+            manualMatchSupportMasksByRegionIndex.set(regionIndex, buildPointSupportMask(preferredAnchorPoint));
+        }
+        const partitionMatches = matchGeneratedComponentsToRegionIndexes({
+            components: partitionComponents.map((component, componentIndex) => {
+                const anchoredRegionIndexes = new Set<number>();
+                const overlapPixelsByRegionIndex = new Map<number, number>();
+                for (const [regionIndex, supportMask] of manualMatchSupportMasksByRegionIndex) {
+                    if (countMaskOverlapPixels(component.mask, supportMask) > 0) {
+                        anchoredRegionIndexes.add(regionIndex);
+                    }
+                }
+                for (let index = 0; index < component.mask.length; index += 1) {
+                    if (component.mask[index] === 0) {
+                        continue;
+                    }
+                    const priorRegionIndex = assignmentsRef.current[index];
+                    if (
+                        priorRegionIndex >= 0
+                        && priorRegionIndex < regions.length
+                        && !isDiagnosticRegionId(regions[priorRegionIndex]?.id ?? '')
+                    ) {
+                        overlapPixelsByRegionIndex.set(
+                            priorRegionIndex,
+                            (overlapPixelsByRegionIndex.get(priorRegionIndex) ?? 0) + 1,
+                        );
+                    }
+                }
+                return {
+                    componentIndex,
+                    pixelCount: component.pixelCount,
+                    anchoredRegionIndexes: [...anchoredRegionIndexes],
+                    overlapPixelsByRegionIndex,
+                };
+            }),
+            regionCount: regions.length,
+        });
+        const matchedPartitionComponentByRegionIndex = new Map<number, typeof partitionComponents[number]>();
+        for (const match of partitionMatches.values()) {
+            matchedPartitionComponentByRegionIndex.set(match.regionIndex, partitionComponents[match.componentIndex]);
+        }
+        for (const [regionIndex, supportMask] of manualMatchSupportMasksByRegionIndex) {
+            let bestComponentIndex: number | null = null;
+            let bestOverlapPixels = 0;
+            let bestSupportRatio = 0;
+            for (let componentIndex = 0; componentIndex < partitionComponents.length; componentIndex += 1) {
+                const component = partitionComponents[componentIndex];
+                const overlapPixels = countMaskOverlapPixels(component.mask, supportMask);
+                if (overlapPixels <= 0) {
+                    continue;
+                }
+                const supportRatio = overlapPixels / Math.max(1, component.pixelCount);
+                if (
+                    bestComponentIndex == null
+                    || overlapPixels > bestOverlapPixels
+                    || (overlapPixels === bestOverlapPixels && supportRatio > bestSupportRatio)
+                    || (overlapPixels === bestOverlapPixels && supportRatio === bestSupportRatio && component.pixelCount < (partitionComponents[bestComponentIndex]?.pixelCount ?? Number.POSITIVE_INFINITY))
+                ) {
+                    bestComponentIndex = componentIndex;
+                    bestOverlapPixels = overlapPixels;
+                    bestSupportRatio = supportRatio;
+                }
+            }
+            if (bestComponentIndex != null) {
+                matchedPartitionComponentByRegionIndex.set(regionIndex, partitionComponents[bestComponentIndex]);
+            }
+        }
 
         for (const { regionIndex, region, seedPoint } of seedRecords) {
             const seedRecordIndex = seedRecordIndexByRegionIndex.get(regionIndex);
-            const partitionComponent = seedRecordIndex == null ? undefined : partitionBySeedRecordIndex.get(seedRecordIndex);
+            const overridePoint = HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES.get(region.id) ?? null;
+            const matchedPartitionComponent = matchedPartitionComponentByRegionIndex.get(regionIndex);
+            const partitionComponent = matchedPartitionComponent ?? (seedRecordIndex == null ? undefined : partitionBySeedRecordIndex.get(seedRecordIndex));
+            const effectiveSeedPoint = partitionComponent
+                ? resolveBoundaryPartitionSeedPoint({
+                    partitionMask: partitionComponent.mask,
+                    fallbackSeedPoint: seedPoint,
+                    preferredAnchor: overridePoint,
+                    fallbackCenter: partitionComponent.center,
+                })
+                : seedPoint;
             if (!partitionComponent) {
                 skippedRegionCount += 1;
                 const connectedSeedNames = seedRecordIndex == null ? null : connectedSeedNamesBySeedRecordIndex.get(seedRecordIndex);
@@ -13337,21 +14141,43 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regionName: region.name,
                     status: 'skipped',
                     pixelCount: 0,
-                    seed: seedPoint,
+                    seed: effectiveSeedPoint,
                     note: connectedNote,
                 });
                 continue;
             }
 
-            const rawSelectionMask = partitionComponent.mask;
-            const roughFallbackMaskBase = STATIC_BOOTSTRAP_SHAPE_MASKS.get(region.id) ?? REAL_MAP_VISIBLE_REGION_FALLBACK_MASKS.get(region.id) ?? null;
-            const roughFallbackMask = roughFallbackMaskBase
-                ? removeExcludedPixels(roughFallbackMaskBase, currentMapArtifactExclusionMask)
+            const overrideFillPoint = overridePoint
+                ? (
+                    findNearestNonBarrierPoint(overridePoint, fillBarrierMask, 32, AUTO_MAP_REGION_FILLABLE_MASK)
+                    ?? overridePoint
+                )
+                : null;
+            const overrideSelectionMask = overrideFillPoint
+                ? floodFillContiguousArea({
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                    startX: overrideFillPoint.x,
+                    startY: overrideFillPoint.y,
+                    barrierMask: fillBarrierMask,
+                })
+                : null;
+            const rawSelectionMask = overrideSelectionMask && countMaskPixels(overrideSelectionMask) > 0
+                ? overrideSelectionMask
+                : partitionComponent.mask;
+            const regionRoughFallbackMask = buildRegionRoughFallbackMask({
+                regionId: region.id,
+                seedPoint: effectiveSeedPoint,
+                exclusionMask: currentMapArtifactExclusionMask,
+            });
+            const regionExclusionMask = buildRegionAwareExclusionMask(currentMapArtifactExclusionMask, regionRoughFallbackMask);
+            const roughFallbackMask = regionRoughFallbackMask
+                ? removeExcludedPixels(regionRoughFallbackMask, regionExclusionMask)
                 : null;
             const regionClipMask = buildBoundaryRegionClipMask({
                 regionId: region.id,
-                seedPoint,
-                exclusionMask: currentMapArtifactExclusionMask,
+                seedPoint: effectiveSeedPoint,
+                exclusionMask: regionExclusionMask,
             });
             const clippedSelectionMask = regionClipMask
                 ? removeExcludedPixels(
@@ -13363,13 +14189,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                         }),
                         regionClipMask,
                     ),
-                    currentMapArtifactExclusionMask,
+                    regionExclusionMask,
                 )
                 : rawSelectionMask;
             const expectedPixelCount = Math.max(1, NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? 0);
             const clippedPixelCount = countMaskPixels(clippedSelectionMask);
+            const shouldKeepClippedSelectionForOverride = Boolean(
+                overridePoint
+                && clippedPixelCount > 0,
+            );
             const shouldUseRoughFallback = Boolean(
-                roughFallbackMask
+                !shouldKeepClippedSelectionForOverride
+                && roughFallbackMask
                 && countMaskPixels(roughFallbackMask) > 0
                 && (
                     clippedPixelCount === 0
@@ -13385,12 +14216,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regionName: region.name,
                     status: 'skipped',
                     pixelCount: 0,
-                    seed: seedPoint,
+                    seed: effectiveSeedPoint,
                     note: '当前边界分区落不到可编辑区域带内，已跳过。请补边或微调 seed 后重试。',
                 });
                 continue;
             }
-            const printedUiOverlapPixels = countMaskOverlapPixels(selectionMask, AUTO_MAP_PRINTED_UI_EXCLUSION_MASK);
+            const printedUiOverlapPixels = countMaskOverlapPixels(selectionMask, regionExclusionMask);
             if (printedUiOverlapPixels > 0 && (printedUiOverlapPixels >= 64 || (printedUiOverlapPixels / Math.max(1, pixelCount)) > 0.01)) {
                 skippedRegionCount += 1;
                 printedUiRejectedPixelCount += printedUiOverlapPixels;
@@ -13399,7 +14230,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regionName: region.name,
                     status: 'leaked',
                     pixelCount,
-                    seed: seedPoint,
+                    seed: effectiveSeedPoint,
                     note: `候选分区包含印刷 UI 禁区 ${printedUiOverlapPixels.toLocaleString()} px，已拒绝写入。请只围地图区域，不要把轮盘、说明框或牌框圈进去。`,
                 });
                 continue;
@@ -13410,7 +14241,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (selectionMask[index] === 0) {
                     continue;
                 }
-                if (currentMapArtifactExclusionMask[index] !== 0) {
+                if (regionExclusionMask[index] !== 0) {
                     printedUiRejectedPixelCount += 1;
                     continue;
                 }
@@ -13429,7 +14260,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regionName: region.name,
                     status: 'overlap-only',
                     pixelCount,
-                    seed: seedPoint,
+                    seed: effectiveSeedPoint,
                     note: '候选区域被前面区域全部占用；可调整种子或单独处理这块。',
                 });
                 continue;
@@ -13437,13 +14268,13 @@ const QidahenRegionMaskTool: React.FC = () => {
 
             generatedRegionCount += 1;
             writtenPixelCount += regionWrittenPixels;
-            nextSeeds.set(region.id, seedPoint);
+            nextSeeds.set(region.id, effectiveSeedPoint);
             generationResults.push({
                 regionId: region.id,
                 regionName: region.name,
                 status: 'generated',
                 pixelCount: regionWrittenPixels,
-                seed: seedPoint,
+                seed: effectiveSeedPoint,
                 note: shouldUseRoughFallback
                     ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前边界分区过小，已回退到可见粗轮廓，先给你一版可继续手修的正常大轮廓。`
                     : `已写入 ${regionWrittenPixels.toLocaleString()} px。`,
@@ -13486,12 +14317,15 @@ const QidahenRegionMaskTool: React.FC = () => {
         boundaryDraftPixelCount,
         buildSeedPartitionDiagnosticsForBoundaryMask,
         currentMapArtifactExclusionMask,
+        graphNodeMap,
+        graphNodes.length,
         markAssignmentsChanged,
         regions,
         renderAssignments,
         scrollSidebarToTop,
         selectedRegionId,
         simplifiedBoundaryWorkflow,
+        isIsolatedWorkspace,
         unexplainedBoundaryOpenDiagnostics,
     ]);
 
@@ -13883,6 +14717,10 @@ const QidahenRegionMaskTool: React.FC = () => {
         }
         if (exportedAssignedPixels === 0) {
             setStatusMessage('保存区域失败：当前还没有彩色区域。请先点“生成区域”。');
+            return;
+        }
+        if (!isIsolatedWorkspace && boundaryQualityReport.generatedCount > 0 && boundaryQualityReport.normality.state !== 'accepted') {
+            setStatusMessage(`保存失败：正式工作区已有区域像素，但正常成果状态是 ${boundaryQualityReport.normality.state}。先导出验收包逐区看图，并把 5/5 区域验收为正常成果后，才能写入正式七大恨数据。临时工作区仍可保存进度。`);
             return;
         }
         const authoritativeAssignments = buildSubsetAssignments({
@@ -14446,7 +15284,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         <Save size={14} />
                                         保存边界
                                     </button>
-                                    <button type="button" onClick={() => void saveRegionsOnly()} data-testid="qidahen-primary-save-regions-only" className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300">
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveRegionsOnly()}
+                                        data-testid="qidahen-primary-save-regions-only"
+                                        disabled={formalRegionSaveBlocked}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (formalRegionSaveBlocked
+                                            ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80'
+                                            : 'border-amber-400/50 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
+                                    >
                                         <Save size={14} />
                                         保存区域
                                     </button>
@@ -14455,6 +15301,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         保存连线
                                     </button>
                                 </div>
+                                {formalRegionSaveBlocked ? (
+                                    <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
+                                        正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                                    </div>
+                                ) : null}
                                 <div className="space-y-2">
                                     {graphNodes.length === 0 ? (
                                         <div className="rounded-xl border border-dashed border-stone-800 px-3 py-3 text-sm text-stone-500">
@@ -15960,7 +16811,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         type="button"
                                         onClick={() => void saveRegionsOnly()}
                                         data-testid="qidahen-primary-save-regions-only"
-                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
+                                        disabled={formalRegionSaveBlocked}
+                                        className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (formalRegionSaveBlocked
+                                            ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80'
+                                            : 'border-amber-500/70 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
                                     >
                                         <Save size={14} />
                                         保存区域
@@ -15986,6 +16840,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         </button>
                                     ) : null}
                                 </div>
+                                {formalRegionSaveBlocked ? (
+                                    <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
+                                        正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                                    </div>
+                                ) : null}
                                 {showAdvancedWorkbench ? (
                                 <>
                                 <div className="mt-3 grid grid-cols-2 gap-2">

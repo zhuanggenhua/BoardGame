@@ -63,6 +63,20 @@ export type BoundaryPartitionComponent = {
     seedIndexes: number[];
 };
 
+export type GeneratedComponentRegionMatchInput = {
+    componentIndex: number;
+    pixelCount: number;
+    anchoredRegionIndexes?: readonly number[];
+    overlapPixelsByRegionIndex?: ReadonlyMap<number, number> | ReadonlyArray<readonly [number, number]>;
+};
+
+export type GeneratedComponentRegionMatch = {
+    componentIndex: number;
+    regionIndex: number;
+    reason: 'anchor' | 'overlap';
+    overlapPixels: number;
+};
+
 export type OpenBoundaryComponentHint = {
     pixelCount: number;
     bounds: BinaryMaskBounds;
@@ -191,6 +205,144 @@ export const countMaskPixels = (mask: Uint8Array): number => {
         }
     }
     return count;
+};
+
+const normalizeOverlapEntries = (
+    overlapPixelsByRegionIndex: GeneratedComponentRegionMatchInput['overlapPixelsByRegionIndex'],
+    regionCount: number,
+): Array<readonly [number, number]> => {
+    if (!overlapPixelsByRegionIndex) {
+        return [];
+    }
+    const rawEntries = overlapPixelsByRegionIndex instanceof Map
+        ? Array.from(overlapPixelsByRegionIndex.entries())
+        : [...overlapPixelsByRegionIndex];
+    return rawEntries
+        .filter(([regionIndex, overlapPixels]) => (
+            Number.isInteger(regionIndex)
+            && regionIndex >= 0
+            && regionIndex < regionCount
+            && Number.isFinite(overlapPixels)
+            && overlapPixels > 0
+        ))
+        .map(([regionIndex, overlapPixels]) => [regionIndex, overlapPixels] as const);
+};
+
+export const matchGeneratedComponentsToRegionIndexes = ({
+    components,
+    regionCount,
+}: {
+    components: readonly GeneratedComponentRegionMatchInput[];
+    regionCount: number;
+}): Map<number, GeneratedComponentRegionMatch> => {
+    const matches = new Map<number, GeneratedComponentRegionMatch>();
+    if (regionCount <= 0 || components.length === 0) {
+        return matches;
+    }
+
+    const usedRegionIndexes = new Set<number>();
+    const uniqueAnchoredComponentsByRegionIndex = new Map<number, number[]>();
+
+    for (const component of components) {
+        const anchoredRegionIndexes = [...new Set(
+            (component.anchoredRegionIndexes ?? []).filter((regionIndex) => (
+                Number.isInteger(regionIndex)
+                && regionIndex >= 0
+                && regionIndex < regionCount
+            )),
+        )];
+        for (const regionIndex of anchoredRegionIndexes) {
+            const list = uniqueAnchoredComponentsByRegionIndex.get(regionIndex);
+            if (list) {
+                list.push(component.componentIndex);
+            } else {
+                uniqueAnchoredComponentsByRegionIndex.set(regionIndex, [component.componentIndex]);
+            }
+        }
+    }
+
+    const anchorCandidates: Array<GeneratedComponentRegionMatch & { pixelCount: number }> = [];
+    for (const component of components) {
+        const overlapEntries = normalizeOverlapEntries(component.overlapPixelsByRegionIndex, regionCount);
+        const overlapMap = new Map(overlapEntries);
+        const uniquelyAnchoredRegionIndexes = [...new Set(
+            (component.anchoredRegionIndexes ?? []).filter((regionIndex) => {
+                if (!Number.isInteger(regionIndex) || regionIndex < 0 || regionIndex >= regionCount) {
+                    return false;
+                }
+                const matchedComponents = uniqueAnchoredComponentsByRegionIndex.get(regionIndex);
+                return matchedComponents?.length === 1 && matchedComponents[0] === component.componentIndex;
+            }),
+        )];
+        if (uniquelyAnchoredRegionIndexes.length !== 1) {
+            continue;
+        }
+        const regionIndex = uniquelyAnchoredRegionIndexes[0];
+        anchorCandidates.push({
+            componentIndex: component.componentIndex,
+            regionIndex,
+            reason: 'anchor',
+            overlapPixels: overlapMap.get(regionIndex) ?? 0,
+            pixelCount: component.pixelCount,
+        });
+    }
+
+    anchorCandidates.sort((left, right) => (
+        (right.overlapPixels - left.overlapPixels)
+        || (right.pixelCount - left.pixelCount)
+        || (left.componentIndex - right.componentIndex)
+    ));
+
+    for (const candidate of anchorCandidates) {
+        if (matches.has(candidate.componentIndex) || usedRegionIndexes.has(candidate.regionIndex)) {
+            continue;
+        }
+        matches.set(candidate.componentIndex, {
+            componentIndex: candidate.componentIndex,
+            regionIndex: candidate.regionIndex,
+            reason: 'anchor',
+            overlapPixels: candidate.overlapPixels,
+        });
+        usedRegionIndexes.add(candidate.regionIndex);
+    }
+
+    const overlapCandidates: Array<GeneratedComponentRegionMatch & { pixelCount: number }> = [];
+    for (const component of components) {
+        if (matches.has(component.componentIndex)) {
+            continue;
+        }
+        for (const [regionIndex, overlapPixels] of normalizeOverlapEntries(component.overlapPixelsByRegionIndex, regionCount)) {
+            overlapCandidates.push({
+                componentIndex: component.componentIndex,
+                regionIndex,
+                reason: 'overlap',
+                overlapPixels,
+                pixelCount: component.pixelCount,
+            });
+        }
+    }
+
+    overlapCandidates.sort((left, right) => (
+        (right.overlapPixels - left.overlapPixels)
+        || (right.pixelCount - left.pixelCount)
+        || (left.componentIndex - right.componentIndex)
+        || (left.regionIndex - right.regionIndex)
+    ));
+
+    for (const candidate of overlapCandidates) {
+        if (matches.has(candidate.componentIndex) || usedRegionIndexes.has(candidate.regionIndex)) {
+            continue;
+        }
+        matches.set(candidate.componentIndex, {
+            componentIndex: candidate.componentIndex,
+            regionIndex: candidate.regionIndex,
+            reason: 'overlap',
+            overlapPixels: candidate.overlapPixels,
+        });
+        usedRegionIndexes.add(candidate.regionIndex);
+    }
+
+    return matches;
 };
 
 export const scoreMaskBoundaryAlignment = ({

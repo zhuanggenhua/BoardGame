@@ -60,6 +60,32 @@ type PreviewState = {
     loadedAtLabel: string;
 };
 
+type QidahenRuntimePreviewDebugSnapshot = {
+    workspace: string;
+    loading: boolean;
+    error: string | null;
+    loadedAtLabel: string;
+    graphNodeCount: number;
+    graphNodeIds: string[];
+    graphEdgeCount: number;
+    graphEdgeIds: string[];
+    unresolvedNodeCount: number;
+    edgeById: Record<string, {
+        from: string;
+        to: string;
+        boundaryType: string;
+        boundaryLabel: string;
+        travelCost: number;
+        battleWidth: number;
+    }>;
+};
+
+declare global {
+    interface Window {
+        __QIDAHEN_RUNTIME_PREVIEW_DEBUG__?: QidahenRuntimePreviewDebugSnapshot;
+    }
+}
+
 const QidahenRuntimePreview: React.FC = () => {
     const initialWorkspace = React.useMemo(() => {
         if (typeof window === 'undefined') {
@@ -149,6 +175,38 @@ const QidahenRuntimePreview: React.FC = () => {
     const nodeNameById = React.useMemo(() => (
         new Map((state.graph?.nodes ?? []).map((node) => [node.id, node.name]))
     ), [state.graph]);
+    const debugSnapshot = React.useMemo<QidahenRuntimePreviewDebugSnapshot>(() => ({
+        workspace,
+        loading: state.loading,
+        error: state.error,
+        loadedAtLabel: state.loadedAtLabel,
+        graphNodeCount: state.graph?.nodes.length ?? 0,
+        graphNodeIds: (state.graph?.nodes ?? []).map((node) => node.id),
+        graphEdgeCount: state.graph?.edges.length ?? 0,
+        graphEdgeIds: (state.graph?.edges ?? []).map((edge) => edge.id),
+        unresolvedNodeCount,
+        edgeById: Object.fromEntries(
+            (state.graph?.edges ?? []).map((edge) => [edge.id, {
+                from: edge.from,
+                to: edge.to,
+                boundaryType: edge.boundaryType,
+                boundaryLabel: edge.boundaryLabel,
+                travelCost: edge.travelCost,
+                battleWidth: edge.battleWidth,
+            }]),
+        ),
+    }), [state.error, state.graph, state.loadedAtLabel, state.loading, unresolvedNodeCount, workspace]);
+    React.useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        window.__QIDAHEN_RUNTIME_PREVIEW_DEBUG__ = debugSnapshot;
+        return () => {
+            if (window.__QIDAHEN_RUNTIME_PREVIEW_DEBUG__ === debugSnapshot) {
+                delete window.__QIDAHEN_RUNTIME_PREVIEW_DEBUG__;
+            }
+        };
+    }, [debugSnapshot]);
 
     const maskUrl = React.useMemo(() => (
         workspaceAssetUrl(workspace, 'region-mask.png', reloadNonce)
