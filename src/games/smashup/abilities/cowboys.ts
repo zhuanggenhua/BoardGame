@@ -53,6 +53,7 @@ type CowboysPromptContext = {
 type CowboysDuelPromptContext = CowboysPromptContext & {
     visibleSourceId: string;
     title: string;
+    titleKey?: string;
     friendlyMinionUid: string;
     sourceBaseIndex: number;
     casterPlayerId: PlayerId;
@@ -64,8 +65,10 @@ type CowboysDuelPromptContext = CowboysPromptContext & {
 type CowboysFriendlyDuelPromptContext = CowboysPromptContext & {
     visibleSourceId: string;
     title: string;
+    titleKey?: string;
     nextVisibleSourceId: string;
     nextTitle: string;
+    nextTitleKey?: string;
     duelSourceId: string;
     outcome: DuelOutcomeKind;
     destroyReason?: string;
@@ -261,6 +264,7 @@ function cowboysGunfighterOnPlay(ctx: AbilityContext): AbilityResult {
         createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             visibleSourceId: 'cowboys_gunfighter',
             title: '枪手：你可以令此随从与这里另一位玩家的一个随从决斗',
+            titleKey: 'ui.cowboys_gunfighter_duel_title',
             friendlyMinionUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
             casterPlayerId: ctx.playerId,
@@ -295,8 +299,10 @@ function cowboysHighNoonOnPlay(ctx: AbilityContext): AbilityResult {
         createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             visibleSourceId: 'cowboys_high_noon_friendly',
             title: '正午决斗：选择你的一个随从开始决斗',
+            titleKey: 'ui.cowboys_high_noon_friendly_title',
             nextVisibleSourceId: 'cowboys_high_noon_enemy',
             nextTitle: '正午决斗：选择要决斗的对手随从',
+            nextTitleKey: 'ui.cowboys_high_noon_enemy_title',
             duelSourceId: 'cowboys_high_noon',
             outcome: 'high_noon' as DuelOutcomeKind,
             destroyReason: 'cowboys_high_noon',
@@ -317,8 +323,10 @@ function cowboysRunEmOffOnPlay(ctx: AbilityContext): AbilityResult {
         createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             visibleSourceId: 'cowboys_run_em_off_friendly',
             title: '赶走他们：选择你的一个随从开始决斗',
+            titleKey: 'ui.cowboys_run_em_off_friendly_title',
             nextVisibleSourceId: 'cowboys_run_em_off_enemy',
             nextTitle: '赶走他们：选择要决斗的对手随从',
+            nextTitleKey: 'ui.cowboys_run_em_off_enemy_title',
             duelSourceId: 'cowboys_run_em_off',
             outcome: 'run_em_off' as DuelOutcomeKind,
             respectActionProtection: true,
@@ -474,6 +482,7 @@ function cowboysSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
         createCowboysPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
             visibleSourceId: 'cowboys_sheriff_before_scoring',
             title: '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
+            titleKey: 'ui.cowboys_sheriff_before_scoring_title',
             friendlyMinionUid: ctx.sourceCardUid,
             sourceBaseIndex: ctx.baseIndex,
             casterPlayerId: ctx.sourceControllerId,
@@ -502,6 +511,7 @@ function cowboysBaseSoSoCorralOnMinionPlayed(ctx: BaseAbilityContext): AbilityRe
         createCowboysPromptContext(ctx.matchState, minion.controller, ctx.now, {
             visibleSourceId: 'base_so_so_corral',
             title: '小镇：你可以令刚打出的随从与这里另一位玩家的一个随从决斗',
+            titleKey: 'ui.base_so_so_corral_duel_title',
             friendlyMinionUid: ctx.minionUid,
             sourceBaseIndex: ctx.baseIndex,
             casterPlayerId: minion.controller,
@@ -530,7 +540,7 @@ const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptCo
         context.playerId,
         context.title,
         [
-            createSkipOption('跳过（不决斗）'),
+            createSkipOption('跳过（不决斗）', 'ui.cowboys_skip_duel_option'),
             ...buildEnemyMinionOptions(
                 context.matchState.core,
                 context.sourceBaseIndex,
@@ -538,7 +548,7 @@ const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptCo
                 context.respectActionProtection ? { respectActionProtection: true } : undefined,
             ),
         ] as any[],
-        { sourceId: context.visibleSourceId, targetType: 'minion' },
+        { sourceId: context.visibleSourceId, targetType: 'minion', ...(context.titleKey ? { titleKey: context.titleKey } : {}) },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { skip?: boolean; minionUid?: string } | undefined;
@@ -576,7 +586,7 @@ const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuel
                 sourceDefId: context.duelSourceId,
             },
         ) as any[],
-        { sourceId: context.visibleSourceId, targetType: 'minion' },
+        { sourceId: context.visibleSourceId, targetType: 'minion', ...(context.titleKey ? { titleKey: context.titleKey } : {}) },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as FriendlyChoice | undefined;
@@ -586,6 +596,7 @@ const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuel
             context: createCowboysPromptContext(state, context.playerId, timestamp, {
                 visibleSourceId: context.nextVisibleSourceId,
                 title: context.nextTitle,
+                titleKey: context.nextTitleKey,
                 friendlyMinionUid: selected.minionUid,
                 sourceBaseIndex: selected.baseIndex,
                 casterPlayerId: context.playerId,
@@ -645,7 +656,7 @@ const cowboysQuickDrawPromptProgram = createPromptProgram<CowboysPromptContext, 
                 sourceDefId: 'cowboys_quick_draw',
             },
         ) as any[],
-        { sourceId: 'cowboys_quick_draw', targetType: 'minion' },
+        { sourceId: 'cowboys_quick_draw', targetType: 'minion', titleKey: 'ui.cowboys_quick_draw_title' },
     ),
     onResolve: ({ state, value, timestamp }) => {
         const selected = value as FriendlyChoice | undefined;
@@ -681,7 +692,7 @@ const cowboysDynamiteSurprisePromptProgram = createPromptProgram<CowboysDynamite
                 sourceDefId: context.defId,
                 effectType: 'destroy',
             }) as any[],
-            { sourceId: 'cowboys_dynamite_surprise', targetType: 'minion' },
+            { sourceId: 'cowboys_dynamite_surprise', targetType: 'minion', titleKey: 'ui.cowboys_dynamite_surprise_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -707,7 +718,7 @@ const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDyna
         context.playerId,
         '炸药惊喜：你可以打出这张牌，消灭其中一个力量 4 或以下的随从',
         [
-            createSkipOption('跳过（不打出）'),
+            createSkipOption('跳过（不打出）', 'ui.cowboys_skip_play_option'),
             ...buildActionMinionTargetOptions(
                 collectDynamiteSeenTargets(context.matchState.core, context.targetPlayerId),
                 {
@@ -717,7 +728,7 @@ const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDyna
                 },
             ),
         ] as any[],
-        { sourceId: 'cowboys_dynamite_surprise_seen', targetType: 'minion' },
+        { sourceId: 'cowboys_dynamite_surprise_seen', targetType: 'minion', titleKey: 'ui.cowboys_dynamite_surprise_seen_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string } | undefined;
@@ -777,6 +788,7 @@ const cowboysGoldSelectPromptProgram = createPromptProgram<GoldSelectPromptConte
             sourceId: 'cowboys_gold_in_them_thar_hills',
             targetType: 'generic',
             responseValidationMode: 'live',
+            titleKey: 'ui.cowboys_gold_select_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -810,6 +822,7 @@ const cowboysGoldOrderPromptProgram = createPromptProgram<GoldRuntimePromptConte
                 sourceId: 'cowboys_gold_in_them_thar_hills_order',
                 targetType: 'generic',
                 responseValidationMode: 'live',
+                titleKey: 'ui.cowboys_gold_order_title',
             },
         );
         (interaction.data as Record<string, unknown>).optionsGenerator = (
@@ -868,17 +881,19 @@ const cowboysGoldModePromptProgram = createPromptProgram<GoldRuntimePromptContex
             {
                 id: 'gold-keep',
                 label: '抓到手里',
+                labelKey: 'ui.cowboys_gold_keep_option',
                 value: { mode: 'hand' as const },
                 displayMode: 'button' as const,
             },
             {
                 id: 'gold-play',
                 label: '作为额外牌打出',
+                labelKey: 'ui.cowboys_gold_play_option',
                 value: { mode: 'play' as const },
                 displayMode: 'button' as const,
             },
         ],
-        { sourceId: 'cowboys_gold_in_them_thar_hills_mode', targetType: 'button' },
+        { sourceId: 'cowboys_gold_in_them_thar_hills_mode', targetType: 'button', titleKey: 'ui.cowboys_gold_mode_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as GoldModeChoice | undefined;
@@ -1037,7 +1052,7 @@ const cowboysGoldMinionBasePromptProgram = createPromptProgram<GoldRuntimePrompt
             context.playerId,
             '那山里有金子：选择这张额外随从要打到哪个基地',
             buildBaseTargetOptions(options, context.matchState.core),
-            { sourceId: 'cowboys_gold_in_them_thar_hills_minion_base', targetType: 'base' },
+            { sourceId: 'cowboys_gold_in_them_thar_hills_minion_base', targetType: 'base', titleKey: 'ui.cowboys_gold_minion_base_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1073,7 +1088,7 @@ const cowboysGoldActionBasePromptProgram = createPromptProgram<GoldRuntimePrompt
             context.playerId,
             '那山里有金子：选择这张额外行动的目标基地',
             buildBaseTargetOptions(options, context.matchState.core),
-            { sourceId: 'cowboys_gold_in_them_thar_hills_action_base', targetType: 'base' },
+            { sourceId: 'cowboys_gold_in_them_thar_hills_action_base', targetType: 'base', titleKey: 'ui.cowboys_gold_action_base_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1117,7 +1132,7 @@ const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimeProm
                 minionOptions,
                 { state: context.matchState.core, sourcePlayerId: context.playerId, sourceDefId: context.chosenCard.defId },
             ) as any[],
-            { sourceId: 'cowboys_gold_in_them_thar_hills_action_minion', targetType: 'minion' },
+            { sourceId: 'cowboys_gold_in_them_thar_hills_action_minion', targetType: 'minion', titleKey: 'ui.cowboys_gold_action_minion_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1142,7 +1157,7 @@ const cowboysStagecoachSourcePromptProgram = createPromptProgram<StagecoachSourc
         context.playerId,
         '驿站马车：选择要搬运卡牌的来源基地',
         buildBaseTargetOptions(collectStagecoachSourceBases(context.matchState.core, context.playerId), context.matchState.core),
-        { sourceId: 'cowboys_stagecoach_source', targetType: 'base' },
+        { sourceId: 'cowboys_stagecoach_source', targetType: 'base', titleKey: 'ui.cowboys_stagecoach_source_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
@@ -1186,6 +1201,7 @@ const cowboysStagecoachCardsPromptProgram = createPromptProgram<StagecoachCardsP
                 sourceId: 'cowboys_stagecoach_cards',
                 targetType: 'generic',
                 multi: { min: 1, max: Math.min(2, movableCards.length) },
+                titleKey: 'ui.cowboys_stagecoach_cards_title',
             },
         );
     },
@@ -1226,7 +1242,7 @@ const cowboysStagecoachDestinationPromptProgram = createPromptProgram<Stagecoach
             context.playerId,
             '驿站马车：选择目标基地',
             buildBaseTargetOptions(destinationBases, context.matchState.core),
-            { sourceId: 'cowboys_stagecoach_destination', targetType: 'base' },
+            { sourceId: 'cowboys_stagecoach_destination', targetType: 'base', titleKey: 'ui.cowboys_stagecoach_destination_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {

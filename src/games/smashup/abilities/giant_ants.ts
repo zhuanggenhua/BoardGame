@@ -416,6 +416,7 @@ const giantAntSoldierPromptProgram = createPromptProgram<GiantAntPromptContext &
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_soldier_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -461,6 +462,7 @@ const giantAntKillerQueenPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_killer_queen_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -493,10 +495,12 @@ function buildDronePreventDestroyOptions(
         }
     }
     return [
-        createSkipOption('不防止消灭') as PromptOption<DronePreventChoiceValue>,
+        createSkipOption('不防止消灭', 'ui.giant_ant_drone_prevent_destroy_skip_option') as PromptOption<DronePreventChoiceValue>,
         ...drones.map((drone, index) => ({
             id: `drone-${index}`,
             label: `移除雄蜂的1个指示物（基地 ${drone.baseIndex + 1}）来防止消灭`,
+            labelKey: 'ui.giant_ant_drone_prevent_destroy_option',
+            labelParams: { baseNumber: drone.baseIndex + 1 },
             value: {
                 droneUid: drone.uid,
                 droneBaseIndex: drone.baseIndex,
@@ -526,6 +530,7 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'snapshot',
+                titleKey: 'ui.giant_ant_drone_prevent_destroy_title',
             },
         );
         (interaction.data as Record<string, unknown>).optionsGenerator = (
@@ -608,6 +613,7 @@ const giantAntClaimThePrizePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
+                titleKey: 'ui.giant_ant_claim_the_prize_title',
             },
         );
     },
@@ -655,6 +661,7 @@ const giantAntHeadlongChooseBasePromptProgram = createPromptProgram<
             targetType: 'base',
             autoRefresh: 'base',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_headlong_choose_base_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -692,6 +699,7 @@ const giantAntHeadlongChooseMinionPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_headlong_choose_minion_title',
         },
     ),
     onResolve: ({ state, context, value }) => {
@@ -725,10 +733,18 @@ const giantAntUnderPressureChooseAmountPromptProgram = createPromptProgram<
             `giant_ant_under_pressure_choose_amount_${context.now}`,
             context.playerId,
             '承受压力：选择要转移的力量指示物数量',
-            [{ id: 'confirm-transfer', label: '确认转移', value: { amount: context.sourceCounterAmount, value: context.sourceCounterAmount }, displayMode: 'button' as const }],
+            [{
+                id: 'confirm-transfer',
+                label: '确认转移',
+                labelKey: 'ui.giant_ants_transfer_counters_confirm',
+                labelParams: { value: context.sourceCounterAmount },
+                value: { amount: context.sourceCounterAmount, value: context.sourceCounterAmount },
+                displayMode: 'button' as const,
+            }],
             {
                 sourceId: 'giant_ant_under_pressure_choose_amount',
                 targetType: 'button',
+                titleKey: 'ui.giant_ant_under_pressure_choose_amount_title',
             },
         );
         (interaction.data as Record<string, unknown>).slider = {
@@ -783,6 +799,7 @@ const giantAntUnderPressureChooseTargetPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_under_pressure_choose_target_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -847,6 +864,7 @@ const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<
                 targetType: 'minion',
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
+                titleKey: 'ui.giant_ant_under_pressure_choose_source_title',
             },
         );
     },
@@ -891,10 +909,18 @@ const giantAntWeAreTheChampionsChooseAmountPromptProgram = createPromptProgram<
             `giant_ant_we_are_the_champions_choose_amount_${context.now}`,
             context.playerId,
             '我们乃最强：选择要转移的力量指示物数量',
-            [{ id: 'confirm-transfer', label: '确认转移', value: { amount: context.sourceCounterAmount, value: context.sourceCounterAmount }, displayMode: 'button' as const }],
+            [{
+                id: 'confirm-transfer',
+                label: '确认转移',
+                labelKey: 'ui.giant_ants_transfer_counters_confirm',
+                labelParams: { value: context.sourceCounterAmount },
+                value: { amount: context.sourceCounterAmount, value: context.sourceCounterAmount },
+                displayMode: 'button' as const,
+            }],
             {
                 sourceId: 'giant_ant_we_are_the_champions_choose_amount',
                 targetType: 'button',
+                titleKey: 'ui.giant_ant_we_are_the_champions_choose_amount_title',
             },
         );
         (interaction.data as Record<string, unknown>).slider = {
@@ -951,6 +977,7 @@ const giantAntWeAreTheChampionsChooseTargetPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_we_are_the_champions_choose_target_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1021,6 +1048,7 @@ const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_we_are_the_champions_choose_source_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1078,6 +1106,7 @@ const giantAntWeAreTheChampionsChooseSnapshotSourcePromptProgram = createPromptP
         {
             sourceId: 'giant_ant_we_are_the_champions_choose_snapshot_source',
             targetType: 'generic',
+            titleKey: 'ui.giant_ant_we_are_the_champions_choose_snapshot_source_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1129,6 +1158,8 @@ const giantAntWhoWantsToLiveForeverPromptProgram = createPromptProgram<
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.giant_ant_who_wants_to_live_forever_title',
+                titleParams: { removedTotal: context.removedTotal },
             },
         );
         (interaction.data as Record<string, unknown>).optionsGenerator = (
@@ -1211,6 +1242,10 @@ const giantAntAKindOfMagicDistributePromptProgram = createPromptProgram<
                 autoResolveIfSingle: false,
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
+                titleKey: context.reason === 'giant_ant_a_kind_of_magic_pod'
+                    ? 'ui.giant_ant_a_kind_of_magic_pod_distribute_title'
+                    : 'ui.giant_ant_a_kind_of_magic_distribute_title',
+                titleParams: { remaining: context.remaining },
             },
         );
         (interaction.data as Record<string, unknown>).optionsGenerator = (
@@ -1301,6 +1336,7 @@ const giantAntWeWillRockYouPodPromptProgram = createPromptProgram<
             sourceId: 'giant_ant_we_will_rock_you_pod_choose_base',
             targetType: 'base',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_we_will_rock_you_pod_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1339,6 +1375,7 @@ const giantAntGimmeThePrizePodSecondPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_gimme_the_prize_pod_second_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1377,6 +1414,7 @@ const giantAntGimmeThePrizePodFirstPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_gimme_the_prize_pod_first_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1429,6 +1467,7 @@ const giantAntSoldierPodChooseTargetPromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_soldier_pod_choose_target_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1471,6 +1510,7 @@ const giantAntSoldierPodChooseSourcePromptProgram = createPromptProgram<
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_soldier_pod_choose_source_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1513,6 +1553,8 @@ const giantAntKillerQueenPodPromptProgram = createPromptProgram<
             .map((minion, index) => ({
                 id: `minion-${index}`,
                 label: `选择 ${getCardDef(minion.defId)?.name ?? minion.defId}（在该随从和杀手女皇上各放1个指示物）`,
+                labelKey: 'ui.giant_ant_killer_queen_pod_add_counters_option',
+                labelParams: { minionName: getCardDef(minion.defId)?.name ?? minion.defId },
                 value: {
                     action: 'add_counters',
                     minionUid: minion.uid,
@@ -1532,6 +1574,7 @@ const giantAntKillerQueenPodPromptProgram = createPromptProgram<
                 {
                     id: 'search_deck',
                     label: '从牌库顶翻牌直到找到力量≤1的随从并抽到手牌',
+                    labelKey: 'ui.giant_ant_killer_queen_pod_search_deck_option',
                     value: { action: 'search_deck' },
                     _source: 'static' as const,
                     displayMode: 'button' as const,
@@ -1543,6 +1586,7 @@ const giantAntKillerQueenPodPromptProgram = createPromptProgram<
                 targetType: 'button',
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
+                titleKey: 'ui.giant_ant_killer_queen_pod_title',
             },
         );
     },
@@ -1624,6 +1668,7 @@ const giantAntWhoWantsToLiveForeverPodSearchPromptProgram = createPromptProgram<
             sourceId: 'giant_ant_who_wants_to_live_forever_pod_search',
             targetType: 'generic',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_who_wants_to_live_forever_pod_search_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1675,6 +1720,7 @@ const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_who_wants_to_live_forever_pod_destroy_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1723,6 +1769,7 @@ const giantAntWorkerPodReplayPromptProgram = createPromptProgram<
             {
                 id: 'skip',
                 label: '跳过',
+                labelKey: 'ui.giant_ant_worker_pod_replay_skip_option',
                 value: { baseIndex: -1 },
                 displayMode: 'button' as const,
             },
@@ -1740,6 +1787,7 @@ const giantAntWorkerPodReplayPromptProgram = createPromptProgram<
             sourceId: 'giant_ant_worker_pod_replay',
             targetType: 'base',
             responseValidationMode: 'live',
+            titleKey: 'ui.giant_ant_worker_pod_replay_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
@@ -2072,12 +2120,17 @@ function buildWhoWantsToLiveForeverOptions(
         {
             id: 'confirm',
             label: removedTotal > 0 ? `确认并抽 ${removedTotal} 张牌` : '确认（不抽牌）',
+            labelKey: removedTotal > 0
+                ? 'ui.giant_ant_who_wants_to_live_forever_confirm_draw_option'
+                : 'ui.giant_ant_who_wants_to_live_forever_confirm_no_draw_option',
+            ...(removedTotal > 0 ? { labelParams: { removedTotal } } : {}),
             displayMode: 'button' as const,
             value: { skip: true, confirm: true },
         },
         {
             id: 'cancel',
             label: '取消并撤回此牌',
+            labelKey: 'ui.giant_ant_cancel_and_withdraw_option',
             displayMode: 'button' as const,
             value: { skip: true, cancel: true },
         },
@@ -2096,6 +2149,7 @@ function buildAKindOfMagicOptions(core: SmashUpCore, playerId: PlayerId): Prompt
         {
             id: 'cancel',
             label: '取消并撤回此牌',
+            labelKey: 'ui.giant_ant_cancel_and_withdraw_option',
             displayMode: 'button' as const,
             value: { skip: true, cancel: true },
         },

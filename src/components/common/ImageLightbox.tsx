@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UI_Z_INDEX } from '../../core';
@@ -13,7 +14,10 @@ interface ImageLightboxProps {
  * 通用图片灯箱组件 — 点击图片全屏预览，点击遮罩或按 Esc 关闭。
  * 用法：维护一个 `previewSrc` state，传入 src 即可。
  */
-export default function ImageLightbox({ src, alt = '预览', onClose }: ImageLightboxProps) {
+export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
+    const { t } = useTranslation('common');
+    const resolvedAlt = alt ?? t('imageLightbox.previewAlt');
+
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
     }, [onClose]);
@@ -44,7 +48,7 @@ export default function ImageLightbox({ src, alt = '预览', onClose }: ImageLig
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                        aria-label="关闭预览"
+                        aria-label={t('imageLightbox.closePreview')}
                     >
                         <X size={20} />
                     </button>
@@ -54,7 +58,7 @@ export default function ImageLightbox({ src, alt = '预览', onClose }: ImageLig
                         exit={{ scale: 0.9, opacity: 0 }}
                         transition={{ duration: 0.15 }}
                         src={src}
-                        alt={alt}
+                        alt={resolvedAlt}
                         className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl cursor-default"
                         onClick={(e) => e.stopPropagation()}
                     />

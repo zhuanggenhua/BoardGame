@@ -27,11 +27,14 @@
   "opponent": "对手",
   "you": "你",
   "waiting": "等待中...",
+  "empty": "空",
+  "noImage": "无图片",
   "phase": "阶段",
   "signets": "印戒",
   "hand": "手牌",
   "deck": "牌库",
   "discard": "弃牌堆",
+  "influence": "影响力",
   "played": "场上",
   "encounterSequence": "遭遇序列",
   "activateAbility": "激活能力",
@@ -83,6 +86,11 @@
     "offlineBanner": {
       "message": "{{name}} 已离线{{time}}"
     }
+  },
+  "imageAlt": {
+    "card": "卡牌",
+    "discardFallback": "弃牌堆回退卡图",
+    "cardBack": "牌背"
   },
   "abilities": {
     "mercenary_swordsman": {

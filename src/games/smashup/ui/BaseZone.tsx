@@ -452,7 +452,7 @@ export const BaseZone: React.FC<{
                             className={`absolute min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 ${ongoingPowerCounterSurfaceClass} ${ongoingAccessoryChromeClass} z-40 px-[0.08vw] ${
                                 ongoingPowerContribution > 0 ? 'top-[0.92vw] -left-[0.3vw]' : '-top-[0.3vw] -right-[0.3vw]'
                             }`}
-                            title={`+1${t('ui.power_counter', '力量指示物')} x${ongoingPowerCounters}`}
+                            title={`+1${t('ui.power_counter')} x${ongoingPowerCounters}`}
                         >
                             +{ongoingPowerCounters}
                         </div>
@@ -621,7 +621,7 @@ export const BaseZone: React.FC<{
                 {canUseTitanReaction && (
                     <div className="absolute bottom-[0.18vw] left-[0.12vw] right-[0.12vw] z-30 flex justify-center pointer-events-none">
                         <div className={`rounded ${getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-emerald-300', 'bg-emerald-300/95')} px-[0.28vw] py-[0.08vw] text-[0.42vw] font-black text-emerald-950 ${getAccessoryChromeClass(titanAccentHighlightActive, 'border border-white shadow-md')}`}>
-                            {t('ui.titan_reaction_available', { defaultValue: '可触发' })}
+                            {t('ui.titan_reaction_available')}
                         </div>
                     </div>
                 )}
@@ -636,7 +636,7 @@ export const BaseZone: React.FC<{
                                 dispatch(SU_COMMANDS.ACTIVATE_TITAN_ONGOING, { titanUid: titan.uid, baseIndex });
                             }}
                         >
-                            持续
+                            {t('ui.ongoing_short')}
                         </button>
                         <button
                             type="button"
@@ -647,7 +647,7 @@ export const BaseZone: React.FC<{
                                 dispatch(SU_COMMANDS.USE_TALENT, { titanUid: titan.uid, baseIndex });
                             }}
                         >
-                            天赋
+                            {t('ui.talent_short')}
                         </button>
                     </div>
                 )}
@@ -678,7 +678,7 @@ export const BaseZone: React.FC<{
                     <div
                         data-testid={`su-base-titan-power-counter-${titan.uid}`}
                         className={`absolute -top-[0.3vw] -right-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 ${titanPowerCounterSurfaceClass} ${titanAccessoryChromeClass} z-40 px-[0.08vw]`}
-                        title={`+1${t('ui.power_counter', '力量指示物')} x${titan.powerCounters}`}
+                        title={`+1${t('ui.power_counter')} x${titan.powerCounters}`}
                     >
                         +{titan.powerCounters}
                     </div>
@@ -864,7 +864,7 @@ export const BaseZone: React.FC<{
                             data-testid={`base-ability-badge-${baseIndex}`}
                             className="bg-amber-300/95 text-slate-900 text-[0.55vw] font-black px-[0.42vw] py-[0.08vw] rounded-sm shadow-md border border-white whitespace-nowrap"
                         >
-                            基地能力
+                            {t('ui.base_ability')}
                         </div>
                     </div>
                 )}
@@ -1540,7 +1540,7 @@ const MinionCard: React.FC<{
                         transition={{ duration: 1.15, repeat: Infinity, ease: 'easeInOut' }}
                     />
                     <div className="absolute left-1/2 top-[0.18vw] z-40 -translate-x-1/2 rounded-sm border border-amber-100 bg-amber-950/88 px-[0.34vw] py-[0.05vw] text-[0.42vw] font-black tracking-[0.04em] text-amber-100 shadow-[0_2px_6px_rgba(120,53,15,0.35)] pointer-events-none whitespace-nowrap">
-                        决斗中
+                        {t('ui.duel_badge')}
                     </div>
                 </>
             )}
@@ -1651,7 +1651,7 @@ const MinionCard: React.FC<{
                         data-testid={`su-minion-activation-hint-${minion.uid}`}
                         className={`absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 ${getAccessorySurfaceClass(hostAccentHighlightActive, 'bg-amber-400', 'bg-amber-500')} text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm ${getAccessoryChromeClass(hostAccentHighlightActive, 'border border-white shadow-sm')} z-20 whitespace-nowrap pointer-events-none`}
                     >
-                        {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                        {t('ui.tap_again_to_activate')}
                     </div>
                 )}
 

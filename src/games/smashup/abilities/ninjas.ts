@@ -441,7 +441,11 @@ const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePrompt
             context.playerId,
             '选择目标基地',
             buildBaseTargetOptions(candidates, context.matchState.core) as any[],
-            { sourceId: 'ninja_way_of_deception_choose_base', targetType: 'base' },
+            {
+                sourceId: 'ninja_way_of_deception_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.ninja_way_of_deception_choose_base_title',
+            },
         );
     },
     onResolve: ({ state, value, context, timestamp }) => {
@@ -562,7 +566,7 @@ const ninjaPlayFromHandPromptProgram = createPromptProgram<NinjaPlayFromHandProm
             context.playerId,
             context.title,
             options as any[],
-            { sourceId: context.sourceId, targetType: 'hand' },
+            { sourceId: context.sourceId, targetType: 'hand', titleKey: 'ui.ninja_disguise_choose_play_title' },
         );
     },
     onResolve: ({ value, context, timestamp }) => {
@@ -770,7 +774,12 @@ const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseCo
         context.playerId,
         '伪装：选择一个基地',
         buildBaseTargetOptions(context.eligibleBases, context.matchState.core),
-        { sourceId: 'ninja_disguise_choose_base', targetType: 'base', autoCancelOption: true },
+        {
+            sourceId: 'ninja_disguise_choose_base',
+            targetType: 'base',
+            autoCancelOption: true,
+            titleKey: 'ui.ninja_disguise_choose_base_title',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) {
@@ -894,7 +903,13 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
             context.playerId,
             choosingSecond ? '伪装：选择第二个要打出的手牌随从' : '伪装：选择要打出的手牌随从',
             handOptions,
-            { sourceId: context.sourceId, targetType: 'hand' },
+            {
+                sourceId: context.sourceId,
+                targetType: 'hand',
+                titleKey: choosingSecond
+                    ? 'ui.ninja_disguise_choose_second_play_title'
+                    : 'ui.ninja_disguise_choose_play_title',
+            },
         );
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => {

@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { EffectEntryMeta, EffectGroupDef, IconComponent } from './cards/shared';
 import { EFFECT_GROUP_DEFS } from './cards/shared';
 import { AudioManager } from '../../lib/audio/AudioManager';
@@ -40,7 +41,7 @@ function collectEntries(): EffectEntryMeta[] {
 
 interface EffectGroup {
   id: string;
-  label: string;
+  labelKey: string;
   icon: IconComponent;
   colorClass: string;
   entries: EffectEntryMeta[];
@@ -61,7 +62,7 @@ function buildGroups(entries: EffectEntryMeta[]): EffectGroup[] {
     .filter(def => grouped.has(def.id))
     .map(def => ({
       id: def.id,
-      label: def.label,
+      labelKey: def.labelKey,
       icon: def.icon,
       colorClass: def.colorClass,
       entries: grouped.get(def.id)!,
@@ -76,6 +77,7 @@ const EFFECT_GROUPS = buildGroups(ALL_ENTRIES);
 // ============================================================================
 
 const EffectPreview: React.FC = () => {
+  const { t } = useTranslation('lobby');
   const [activeEffectId, setActiveEffectId] = useState(ALL_ENTRIES[0]?.id ?? '');
   const [useRealCards, setUseRealCards] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -150,7 +152,7 @@ const EffectPreview: React.FC = () => {
       {isCompactViewport && isSidebarOpen && (
         <button
           type="button"
-          aria-label="关闭特效预览侧栏"
+          aria-label={t('devtools.effectPreview.page.close_sidebar_backdrop_aria')}
           data-testid="fx-preview-sidebar-backdrop"
           className="absolute inset-0 z-20 bg-black/45 backdrop-blur-[1px]"
           onClick={() => setIsSidebarOpen(false)}
@@ -160,12 +162,14 @@ const EffectPreview: React.FC = () => {
         <button
           type="button"
           data-testid="fx-preview-sidebar-toggle"
-          aria-label={isSidebarOpen ? '收起特效分类' : '展开特效分类'}
+          aria-label={isSidebarOpen
+            ? t('devtools.effectPreview.page.collapse_sidebar_aria')
+            : t('devtools.effectPreview.page.expand_sidebar_aria')}
           onClick={() => setIsSidebarOpen(prev => !prev)}
           className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/92 px-3 py-2 text-xs font-semibold text-slate-100 shadow-lg backdrop-blur"
         >
           <span className="text-sm leading-none">{isSidebarOpen ? '×' : '≡'}</span>
-          <span>分类</span>
+          <span>{t('devtools.effectPreview.page.sidebar_toggle_label')}</span>
         </button>
       ) : null}
       {/* 左侧：两级导航（分类 + 特效条目） */}
@@ -179,12 +183,14 @@ const EffectPreview: React.FC = () => {
       >
         <div className="p-3 pb-2 border-b border-slate-700/50">
           <div className="mb-1 flex items-center justify-between gap-2">
-            <a href="/" className="text-slate-400 hover:text-slate-200 text-xs block">← 返回首页</a>
+            <a href="/" className="text-slate-400 hover:text-slate-200 text-xs block">
+              {t('devtools.effectPreview.page.back_home')}
+            </a>
             {isCompactViewport ? (
               <button
                 type="button"
                 data-testid="fx-preview-sidebar-close"
-                aria-label="关闭特效分类"
+                aria-label={t('devtools.effectPreview.page.close_sidebar_aria')}
                 onClick={() => setIsSidebarOpen(false)}
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 text-slate-300 transition hover:border-slate-500 hover:text-white"
               >
@@ -193,13 +199,19 @@ const EffectPreview: React.FC = () => {
             ) : null}
           </div>
           <div className="flex items-center justify-between">
-            <h1 className="text-sm font-black text-slate-100">特效预览 <span className="text-[10px] font-normal text-slate-500">({totalCount})</span></h1>
+            <h1 className="text-sm font-black text-slate-100">
+              {t('devtools.effectPreview.page.title')} <span className="text-[10px] font-normal text-slate-500">({totalCount})</span>
+            </h1>
             <button
               onClick={toggleAll}
               className="cursor-pointer text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-              title={allCollapsed ? '全部展开' : '全部折叠'}
+              title={allCollapsed
+                ? t('devtools.effectPreview.page.expand_all')
+                : t('devtools.effectPreview.page.collapse_all')}
             >
-              {allCollapsed ? '▶ 展开' : '▼ 折叠'}
+              {allCollapsed
+                ? t('devtools.effectPreview.page.expand_all_short')
+                : t('devtools.effectPreview.page.collapse_all_short')}
             </button>
           </div>
         </div>
@@ -214,7 +226,7 @@ const EffectPreview: React.FC = () => {
                 >
                   <span className="text-[9px]">{isCollapsed ? '▶' : '▼'}</span>
                   <group.icon size={14} className={`shrink-0 ${group.colorClass}`} />
-                  {group.label}
+                  {t(group.labelKey)}
                   <span className="ml-auto text-[10px] font-normal">{group.entries.length}</span>
                 </button>
                 {!isCollapsed && group.entries.map(entry => (
@@ -233,7 +245,7 @@ const EffectPreview: React.FC = () => {
                     }`}
                   >
                     <entry.icon size={14} className={`shrink-0 ${entry.id === activeEffectId ? group.colorClass : ''}`} />
-                    <span className="truncate">{entry.label}</span>
+                    <span className="truncate">{t(entry.labelKey)}</span>
                   </button>
                 ))}
               </div>
@@ -250,7 +262,9 @@ const EffectPreview: React.FC = () => {
                 : 'bg-slate-700/40 text-slate-500 hover:bg-slate-700/60'
             }`}
           >
-            {useRealCards ? '实际卡图' : '占位区域'}
+            {useRealCards
+              ? t('devtools.effectPreview.page.use_real_cards')
+              : t('devtools.effectPreview.page.use_placeholder')}
           </button>
         </div>
       </nav>

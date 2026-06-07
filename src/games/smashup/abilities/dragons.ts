@@ -135,6 +135,7 @@ function buildBurnItDownOptions(context: BurnItDownPromptContext): PromptOption<
         options.push({
             id: 'deck-top',
             label: '基地牌库顶牌',
+            labelKey: 'ui.dragons_burn_it_down_deck_top_option',
             value: { source: 'deck' },
             displayMode: 'button',
         });
@@ -190,6 +191,7 @@ function buildFlankAttackSourceOptions(
         options.push({
             id: 'deck',
             label: '搜索牌库',
+            labelKey: 'ui.dragons_flank_attack_search_deck_option',
             value: { searchScope: 'deck' },
             displayMode: 'button',
         });
@@ -198,6 +200,7 @@ function buildFlankAttackSourceOptions(
         options.push({
             id: 'discard',
             label: '搜索弃牌堆',
+            labelKey: 'ui.dragons_flank_attack_search_discard_option',
             value: { searchScope: 'discard' },
             displayMode: 'button',
         });
@@ -206,6 +209,7 @@ function buildFlankAttackSourceOptions(
         options.push({
             id: 'both',
             label: '两处都搜',
+            labelKey: 'ui.dragons_flank_attack_search_both_option',
             value: { searchScope: 'both' },
             displayMode: 'button',
         });
@@ -402,7 +406,11 @@ const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, Sma
             sourceKind: 'minion',
             effectType: 'destroy',
         }),
-        { sourceId: 'dragons_wyvern', targetType: 'minion' },
+        {
+            sourceId: 'dragons_wyvern',
+            titleKey: 'ui.dragons_wyvern_destroy_title',
+            targetType: 'minion',
+        },
     ),
     onResolve: ({ state, context, value, playerId, timestamp }) => {
         const choice = value as MinionChoice;
@@ -434,6 +442,7 @@ const burnItDownPromptProgram = createPromptProgram<BurnItDownPromptContext, Sma
         buildBurnItDownOptions(context),
         {
             sourceId: 'dragons_burn_it_down',
+            titleKey: 'ui.dragons_burn_it_down_title',
             targetType: 'button',
             autoResolveIfSingle: false,
         },
@@ -466,6 +475,7 @@ const flankAttackChooseBasePromptProgram = createPromptProgram<FlankAttackPrompt
             buildFlankAttackBaseOptions(context.matchState, context.playerId, context.replayDefId ?? ''),
             {
                 sourceId: 'dragons_flank_attack_base',
+                titleKey: 'ui.dragons_flank_attack_base_title',
                 targetType: 'base',
                 responseValidationMode: 'live',
             },
@@ -537,6 +547,7 @@ const flankAttackChooseCardPromptProgram = createPromptProgram<FlankAttackPrompt
             buildFlankAttackCardOptions(context.matchState.core, context.playerId, context.searchScope ?? 'deck'),
             {
                 sourceId: 'dragons_flank_attack_card',
+                titleKey: 'ui.dragons_flank_attack_card_title',
                 targetType: 'generic',
                 responseValidationMode: 'live',
             },
@@ -630,6 +641,7 @@ const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackProm
         buildFlankAttackSourceOptions(context.matchState.core, context.playerId),
         {
             sourceId: 'dragons_flank_attack_source',
+            titleKey: 'ui.dragons_flank_attack_source_title',
             targetType: 'button',
         },
     ),
@@ -836,6 +848,7 @@ function dragonsDangerousGroundTrigger(ctx: TriggerContext): AbilityResult {
         buildDangerousGroundHandOptions(ctx.state, ctx.playerId),
         {
             sourceId: 'dragons_dangerous_ground',
+            titleKey: 'ui.dragons_dangerous_ground_title',
             targetType: 'hand',
             responseValidationMode: 'live',
         },

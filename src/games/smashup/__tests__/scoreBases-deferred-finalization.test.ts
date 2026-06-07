@@ -40,6 +40,7 @@ import {
     getSimpleChoicePrompt,
     withOnlyCurrentPrompt,
     withPromptHandlerData,
+    withPromptResolutionFrameId,
     withoutQueuedPrompts,
     withoutCurrentPrompt,
 } from './helpers';
@@ -1075,5 +1076,132 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         if (finalState.sys.phase === 'startTurn') {
             expect(getSimpleChoicePrompt(finalState, 'smashup_immediate_extra_minion')).toBeTruthy();
         }
+    });
+
+    it('scoreBases 延迟清场已进入 awaiting-post-scoring-delay 时，解决立即额外随从 prompt 不应误报 frame 所有权丢失', () => {
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems: smashUpSystemsForTest,
+            playerIds: ['0', '1'],
+            setup: (playerIds, _random) => {
+                const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
+                sys.phase = 'scoreBases';
+
+                let state = {
+                    core: makeCore({
+                        currentPlayerIndex: 1,
+                        turnNumber: 4,
+                        players: {
+                            '0': makePlayer('0'),
+                            '1': makePlayer('1', {
+                                hand: [makeCard('c75', 'robot_microbot_guard', 'minion', '1')],
+                                minionLimit: 3,
+                            }),
+                        },
+                        bases: [
+                            makeBase('base_the_homeworld', [
+                                makeMinion('c57', '1', 3, 'mega_troopers_green_trooper'),
+                            ]),
+                        ],
+                        baseDeck: ['base_juice_bar'],
+                    }),
+                    sys,
+                };
+
+                const currentBaseRef = createScoringBaseRef(state.core, 0)!;
+                state = setScoringSession(state, {
+                    ...createScoringSession(state.core, [0]),
+                    currentBaseRef,
+                    currentStep: 'awaiting-post-scoring-delay',
+                });
+                state = appendScoringFrameDeferredPayload(state, {
+                    deferredEvents: [
+                        {
+                            type: SU_EVENTS.BASE_CLEARED,
+                            payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
+                            timestamp: 0,
+                        },
+                        {
+                            type: SU_EVENTS.BASE_REPLACED,
+                            payload: {
+                                baseIndex: 0,
+                                oldBaseDefId: 'base_the_homeworld',
+                                newBaseDefId: 'base_juice_bar',
+                            },
+                            timestamp: 0,
+                        },
+                    ],
+                });
+
+                const prompt = withPromptResolutionFrameId(
+                    withPromptHandlerData(
+                        createSimpleChoice(
+                            'smashup_immediate_extra_12',
+                            '1',
+                            '立刻打出一个额外随从，或放弃这次机会',
+                            [
+                                {
+                                    id: 'card-0',
+                                    label: '微型机守护者 (力量 1)',
+                                    value: { cardUid: 'c75', defId: 'robot_microbot_guard' },
+                                    displayMode: 'card',
+                                },
+                                {
+                                    id: 'skip',
+                                    label: '放弃这次额外随从',
+                                    value: { skip: true },
+                                    displayMode: 'button',
+                                },
+                            ] as any[],
+                            {
+                                sourceId: 'smashup_immediate_extra_minion',
+                                targetType: 'hand',
+                                autoResolveIfSingle: false,
+                            },
+                        ),
+                        {
+                            runtimePrompt: {
+                                owner: 'smashup-ability-runtime',
+                                sourceId: 'smashup_immediate_extra_minion',
+                                continuationId: 'smashup-runtime:smashup_immediate_extra_minion:test',
+                                continuation: {
+                                    context: {
+                                        extra: {
+                                            playerId: '1',
+                                            limitType: 'minion',
+                                            delta: 1,
+                                            reason: 'mega_troopers_green_trooper',
+                                            playTiming: 'immediate',
+                                            restrictToBase: 0,
+                                        },
+                                    },
+                                    contextHasMatchState: true,
+                                },
+                            },
+                            deferredSnapshot: {
+                                extra: {
+                                    playerId: '1',
+                                    limitType: 'minion',
+                                    delta: 1,
+                                    reason: 'mega_troopers_green_trooper',
+                                    playTiming: 'immediate',
+                                    restrictToBase: 0,
+                                },
+                            },
+                        },
+                    ),
+                    'smashup:score-bases',
+                );
+                state = withOnlyCurrentPrompt(state, prompt);
+                return { core: state.core, sys: state.sys };
+            },
+        });
+
+        const resolved = runner.resolveInteraction('1', { optionId: 'skip' });
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.error).toBeUndefined();
+        expect(resolved.events.some(event => event.type === INTERACTION_EVENTS.RESOLVED)).toBe(true);
+        expect(runner.getState().sys.interaction.current).toBeUndefined();
     });
 });

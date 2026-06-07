@@ -227,7 +227,7 @@ function queueDuelCardPrompt(
         [
             ...buildDuelHandOptions(state, playerId),
             {
-                ...createSkipOption('跳过（不放决斗牌）'),
+                ...createSkipOption('跳过（不出决斗牌）', 'ui.duel_option_skip_duel_card'),
                 labelKey: 'ui.duel_option_skip_duel_card',
             },
         ] as any[],
@@ -282,7 +282,7 @@ function queueDeputyPrompt(
         [
             ...deputyOptions,
             {
-                ...createSkipOption('跳过（不弃 Deputy）'),
+                ...createSkipOption('跳过（不弃副警长）', 'ui.duel_option_skip_deputy'),
                 labelKey: 'ui.duel_option_skip_deputy',
             },
         ] as any[],

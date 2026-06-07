@@ -5,6 +5,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   BoardLayoutConfig,
   CellCoord,
@@ -67,6 +68,7 @@ export const BoardLayoutRenderer: React.FC<BoardLayoutRendererProps> = ({
   showStackPoints = true,
   children,
 }) => {
+  const { t } = useTranslation('game');
   const containerRef = useRef<HTMLDivElement>(null);
   const [_containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [hoveredCell, setHoveredCell] = useState<CellCoord | null>(null);
@@ -238,7 +240,7 @@ export const BoardLayoutRenderer: React.FC<BoardLayoutRendererProps> = ({
       {(backgroundImage || config.backgroundImage) && (
         <img
           src={backgroundImage || config.backgroundImage}
-          alt="棋盘背景"
+          alt={t('framework.board_layout.background_alt')}
           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
         />
       )}

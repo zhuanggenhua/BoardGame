@@ -239,17 +239,23 @@ const samuraiRoninPromptProgram = createPromptProgram<SamuraiRoninContext, Smash
             {
                 id: 'yes',
                 label: '放置一个指示物',
+                labelKey: 'ui.samurai_ronin_apply_option',
                 value: { apply: true },
                 displayMode: 'button' as const,
             },
             {
                 id: 'no',
                 label: '跳过',
+                labelKey: 'ui.skip',
                 value: { apply: false },
                 displayMode: 'button' as const,
             },
         ],
-        { sourceId: 'samurai_ronin', targetType: 'button' },
+        {
+            sourceId: 'samurai_ronin',
+            titleKey: 'ui.samurai_ronin_title',
+            targetType: 'button',
+        },
     ),
     onResolve: ({ context, value, timestamp }) => resolveSamuraiRoninPrompt(context, value, timestamp),
 });
@@ -264,17 +270,23 @@ const samuraiRoninPodPromptProgram = createPromptProgram<SamuraiRoninContext, Sm
             {
                 id: 'yes',
                 label: '放置两个指示物',
+                labelKey: 'ui.samurai_ronin_pod_apply_option',
                 value: { apply: true },
                 displayMode: 'button' as const,
             },
             {
                 id: 'no',
                 label: '跳过',
+                labelKey: 'ui.skip',
                 value: { apply: false },
                 displayMode: 'button' as const,
             },
         ],
-        { sourceId: 'samurai_ronin_pod', targetType: 'button' },
+        {
+            sourceId: 'samurai_ronin_pod',
+            titleKey: 'ui.samurai_ronin_pod_title',
+            targetType: 'button',
+        },
     ),
     onResolve: ({ context, value, timestamp }) => resolveSamuraiRoninPrompt(context, value, timestamp),
 });
@@ -322,16 +334,21 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
             context.playerId,
             '妖怪来袭！：你可以消灭一个自己的随从，以额外打出一个随从和一个行动',
             [
-                createSkipOption('跳过（不消灭随从）') as any,
+                createSkipOption('跳过（不消灭随从）', 'ui.samurai_yokai_attack_skip_option') as any,
                 ...buildMinionTargetOptions(
                     collectOwnMinions(context.matchState.core, context.playerId),
                     { state: context.matchState.core, sourcePlayerId: context.playerId },
                 ) as any[],
             ],
-            { sourceId: 'samurai_yokai_attack', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'samurai_yokai_attack',
+                titleKey: 'ui.samurai_yokai_attack_title',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
         ),
         (state) => [
-            createSkipOption('跳过（不消灭随从）') as any,
+            createSkipOption('跳过（不消灭随从）', 'ui.samurai_yokai_attack_skip_option') as any,
             ...buildMinionTargetOptions(
                 collectOwnMinions(state.core, context.playerId),
                 { state: state.core, sourcePlayerId: context.playerId },
@@ -492,7 +509,12 @@ const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootCont
             context.playerId,
             '荣誉决斗：选择一个有对手力量高于你的基地',
             buildBaseTargetOptions(collectHonorableCombatBases(context.matchState.core, context.playerId), context.matchState.core),
-            { sourceId: 'samurai_honorable_combat_base', targetType: 'base', responseValidationMode: 'live' },
+            {
+                sourceId: 'samurai_honorable_combat_base',
+                titleKey: 'ui.samurai_honorable_combat_base_title',
+                targetType: 'base',
+                responseValidationMode: 'live',
+            },
         ),
         (state) => buildBaseTargetOptions(collectHonorableCombatBases(state.core, context.playerId), state.core),
     ),
@@ -606,7 +628,12 @@ const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAn
                 collectOwnMinions(context.matchState.core, context.playerId),
                 { state: context.matchState.core, sourcePlayerId: context.playerId },
             ) as any[],
-            { sourceId: 'samurai_honor_the_ancestors', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'samurai_honor_the_ancestors',
+                titleKey: 'ui.samurai_honor_the_ancestors_title',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
         ),
         (state) => buildMinionTargetOptions(
             collectOwnMinions(state.core, context.playerId),

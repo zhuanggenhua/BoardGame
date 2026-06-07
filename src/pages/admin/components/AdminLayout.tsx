@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import {
     Activity,
     Bell,
@@ -21,36 +22,38 @@ import { AdminListPageSkeleton } from './AdminSkeletons';
 
 type NavItem = {
     icon: typeof LayoutDashboard;
-    label: string;
+    labelKey: string;
     path: string;
 };
 
 const DEVELOPER_NAV_ITEMS: NavItem[] = [
-    { icon: LayoutDashboard, label: '概览', path: '/admin' },
-    { icon: Gamepad2, label: '对局记录', path: '/admin/matches' },
-    { icon: ScrollText, label: '更新日志', path: '/admin/changelogs' },
-    { icon: MessageSquareWarning, label: '反馈管理', path: '/admin/feedback' },
+    { icon: LayoutDashboard, labelKey: 'admin.layout.nav.overview', path: '/admin' },
+    { icon: Gamepad2, labelKey: 'admin.layout.nav.matches', path: '/admin/matches' },
+    { icon: ScrollText, labelKey: 'admin.layout.nav.changelogs', path: '/admin/changelogs' },
+    { icon: MessageSquareWarning, labelKey: 'admin.layout.nav.feedback', path: '/admin/feedback' },
 ];
 
 const VIEWER_NAV_ITEMS: NavItem[] = [
-    { icon: LayoutDashboard, label: '概览', path: '/admin' },
-    { icon: Gamepad2, label: '对局记录', path: '/admin/matches' },
-    { icon: MessageSquareWarning, label: '反馈管理', path: '/admin/feedback' },
+    { icon: LayoutDashboard, labelKey: 'admin.layout.nav.overview', path: '/admin' },
+    { icon: Gamepad2, labelKey: 'admin.layout.nav.matches', path: '/admin/matches' },
+    { icon: MessageSquareWarning, labelKey: 'admin.layout.nav.feedback', path: '/admin/feedback' },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
-    { icon: LayoutDashboard, label: '概览', path: '/admin' },
-    { icon: Users, label: '用户管理', path: '/admin/users' },
-    { icon: ScrollText, label: '更新日志', path: '/admin/changelogs' },
-    { icon: Gamepad2, label: '对局记录', path: '/admin/matches' },
-    { icon: DoorOpen, label: '房间管理', path: '/admin/rooms' },
-    { icon: Heart, label: '赞助管理', path: '/admin/sponsors' },
-    { icon: MessageSquareWarning, label: '反馈管理', path: '/admin/feedback' },
-    { icon: Bell, label: '系统通知', path: '/admin/notifications' },
-    { icon: Activity, label: '系统健康', path: '/admin/health' },
+    { icon: LayoutDashboard, labelKey: 'admin.layout.nav.overview', path: '/admin' },
+    { icon: Users, labelKey: 'admin.layout.nav.users', path: '/admin/users' },
+    { icon: ScrollText, labelKey: 'admin.layout.nav.changelogs', path: '/admin/changelogs' },
+    { icon: Gamepad2, labelKey: 'admin.layout.nav.matches', path: '/admin/matches' },
+    { icon: DoorOpen, labelKey: 'admin.layout.nav.rooms', path: '/admin/rooms' },
+    { icon: Heart, labelKey: 'admin.layout.nav.sponsors', path: '/admin/sponsors' },
+    { icon: MessageSquareWarning, labelKey: 'admin.layout.nav.feedback', path: '/admin/feedback' },
+    { icon: Bell, labelKey: 'admin.layout.nav.notifications', path: '/admin/notifications' },
+    { icon: Activity, labelKey: 'admin.layout.nav.health', path: '/admin/health' },
 ];
 
 export default function AdminLayout() {
+    const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.layout.${key}`, options);
     const { user, logout } = useAuth();
     const location = useLocation();
     const { closeAll } = useModalStack();
@@ -63,12 +66,12 @@ export default function AdminLayout() {
     const isViewer = !user || user.role === 'user';
     const navItems = isDeveloper ? DEVELOPER_NAV_ITEMS : (isViewer ? VIEWER_NAV_ITEMS : ADMIN_NAV_ITEMS);
     const roleLabel = user?.role === 'admin'
-        ? '管理员'
+        ? t('admin.layout.role.admin')
         : user?.role === 'developer'
-            ? '开发者'
+            ? t('admin.layout.role.developer')
             : user?.role === 'user'
-                ? '普通用户'
-                : '游客';
+                ? t('admin.layout.role.user')
+                : t('admin.layout.role.guest');
 
     const isActive = (path: string) => {
         if (path === '/admin') return location.pathname === '/admin';
@@ -85,10 +88,14 @@ export default function AdminLayout() {
                         </div>
                         <div>
                             <h1 className="text-sm font-bold tracking-wide text-white">
-                                {isDeveloper ? 'CONTENT PANEL' : isViewer ? 'DATA PANEL' : 'ADMIN PANEL'}
+                                {isDeveloper
+                                    ? adminT('panel.title_developer')
+                                    : isViewer
+                                        ? adminT('panel.title_viewer')
+                                        : adminT('panel.title_admin')}
                             </h1>
                             <p className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
-                                {isDeveloper ? 'Creator Workspace' : isViewer ? 'Public Dashboard' : 'BoardGame Platform'}
+                                {isDeveloper ? adminT('panel.subtitle_developer') : isViewer ? adminT('panel.subtitle_viewer') : adminT('panel.subtitle_admin')}
                             </p>
                         </div>
                     </div>
@@ -96,7 +103,7 @@ export default function AdminLayout() {
 
                 <div className="custom-scrollbar flex-1 space-y-1 overflow-y-auto px-4 py-4">
                     <div className="px-4 pb-2">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Menu</p>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{adminT('menu')}</p>
                     </div>
                     {navItems.map((item) => {
                         const active = isActive(item.path);
@@ -124,7 +131,7 @@ export default function AdminLayout() {
                                         active ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'
                                     )}
                                 />
-                                <span className="relative z-10 font-medium">{item.label}</span>
+                                <span className="relative z-10 font-medium">{t(item.labelKey)}</span>
                                 {active && <ChevronRight size={16} className="relative z-10 ml-auto text-indigo-400 opacity-80" />}
                             </Link>
                         );
@@ -144,7 +151,7 @@ export default function AdminLayout() {
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-bold text-white">{user?.username ?? '游客'}</p>
+                                <p className="truncate text-sm font-bold text-white">{user?.username ?? t('admin.layout.role.guest')}</p>
                                 <p className="truncate text-xs text-zinc-500">{roleLabel}</p>
                             </div>
                         </div>
@@ -154,13 +161,13 @@ export default function AdminLayout() {
                                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-red-400/10 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:border-red-400/20 hover:bg-red-400/20"
                             >
                                 <LogOut size={14} />
-                                退出登录
+                                {adminT('logout')}
                             </button>
                         ) : null}
                     </div>
                     <div className="mt-4 text-center">
                         <Link to="/" className="text-xs text-zinc-600 transition-colors hover:text-indigo-400">
-                            返回主站首页 &rarr;
+                            {adminT('back_home')}
                         </Link>
                     </div>
                 </div>

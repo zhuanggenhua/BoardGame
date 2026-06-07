@@ -286,8 +286,8 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
         .map(id => playerNames?.[id] ?? `P${Number(id) + 1}`)
         .join(', ');
     const title = current.type === 'hand'
-        ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: '{{player}} 的手牌' })
-        : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: '{{player}} 的牌库顶' });
+        ? t('ui.reveal_hand_title', { player: targetLabel })
+        : t('ui.reveal_deck_top_title', { player: targetLabel });
 
     return (
         <AnimatePresence mode="wait">
@@ -378,16 +378,15 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
                         onClick={handleDismiss}
                         data-testid="reveal-dismiss-btn"
                     >
-                        {t('ui.close', { defaultValue: '关闭' })}
+                        {t('ui.close')}
                     </GameButton>
 
                     <div className="text-sm text-white/50 pointer-events-none">
                         {visibleQueue.length > 1
                             ? t('ui.reveal_queue_hint', {
                                 count: visibleQueue.length,
-                                defaultValue: '{{count}} 条展示待查看 · 关闭后继续',
                             })
-                            : t('ui.reveal_dismiss_hint', { defaultValue: '关闭后可继续操作' })}
+                            : t('ui.reveal_dismiss_hint')}
                     </div>
 
                     {/* 队列指示器 */}

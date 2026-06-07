@@ -172,10 +172,18 @@ const innsmouthRecruitmentPromptProgram = createPromptProgram<InnsmouthPromptCon
         Array.from({ length: context.maxDraw + 1 }, (_, index) => ({
             id: `draw-${index}`,
             label: index === 0 ? '不抽取' : `抽取 ${index} 张疯狂卡（获得 ${index} 个额外随从额度）`,
+            labelKey: index === 0
+                ? 'ui.innsmouth_recruitment_skip_draw_option'
+                : 'ui.innsmouth_recruitment_draw_option',
+            ...(index === 0 ? {} : { labelParams: { count: index } }),
             value: { count: index },
             displayMode: 'button' as const,
         })),
-        { sourceId: 'innsmouth_recruitment', targetType: 'button' },
+        {
+            sourceId: 'innsmouth_recruitment',
+            targetType: 'button',
+            titleKey: 'ui.innsmouth_recruitment_title',
+        },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const { count } = value as { count?: number };
@@ -291,7 +299,12 @@ const innsmouthReturnToTheSeaMinionPromptProgram = createPromptProgram<Innsmouth
             context.playerId,
             '选择要返回的随从',
             options,
-            { sourceId: 'innsmouth_return_to_the_sea', targetType: 'minion', multi: { min: 0, max: options.length } },
+            {
+                sourceId: 'innsmouth_return_to_the_sea',
+                targetType: 'minion',
+                multi: { min: 0, max: options.length },
+                titleKey: 'ui.innsmouth_return_to_the_sea_title',
+            },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -350,7 +363,11 @@ const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<Innsm
             context.playerId,
             '选择要返回手牌的同名随从',
             options,
-            { sourceId: 'innsmouth_return_to_the_sea_choose_name', targetType: 'generic' },
+            {
+                sourceId: 'innsmouth_return_to_the_sea_choose_name',
+                targetType: 'generic',
+                titleKey: 'ui.innsmouth_return_to_the_sea_choose_name_title',
+            },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -502,10 +519,26 @@ const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPr
         context.playerId,
         '是否额外抽2张牌+2张疯狂卡？',
         [
-            { id: 'yes', label: '是 - 额外抽2张牌+2张疯狂卡', value: { accept: true }, displayMode: 'button' as const },
-            { id: 'no', label: '否 - 不额外抽牌', value: { accept: false }, displayMode: 'button' as const },
+            {
+                id: 'yes',
+                label: '是 - 额外抽2张牌+2张疯狂卡',
+                labelKey: 'ui.innsmouth_mysteries_of_the_deep_yes_option',
+                value: { accept: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'no',
+                label: '否 - 不额外抽牌',
+                labelKey: 'ui.innsmouth_mysteries_of_the_deep_no_option',
+                value: { accept: false },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'innsmouth_mysteries_of_the_deep', targetType: 'button' },
+        {
+            sourceId: 'innsmouth_mysteries_of_the_deep',
+            targetType: 'button',
+            titleKey: 'ui.innsmouth_mysteries_of_the_deep_title',
+        },
     ),
     onResolve: (args) => {
         const { state, playerId, value, timestamp } = args;
@@ -591,7 +624,11 @@ const innsmouthSpreadingTheWordPromptProgram = createPromptProgram<InnsmouthProm
                 const count = player.hand.filter(card => card.type === 'minion' && card.defId === defId).length;
                 return { id: `name-${index}`, label: `${name}（手牌中有 ${count} 张）`, value: { defId } };
             }),
-            { sourceId: 'innsmouth_spreading_the_word', targetType: 'generic' },
+            {
+                sourceId: 'innsmouth_spreading_the_word',
+                targetType: 'generic',
+                titleKey: 'ui.innsmouth_spreading_the_word_title',
+            },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {

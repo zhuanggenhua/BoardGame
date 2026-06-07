@@ -897,10 +897,22 @@ const wizardNeophytePromptProgram = createPromptProgram<WizardNeophyteContext, S
         }
         const effectiveHandSize = getExternalActionEffectiveHandSize(context.matchState, context.playerId);
         const options: PromptOption<WizardActionChoiceValue>[] = [
-            { id: 'to_hand', label: '放入手牌', value: { action: 'to_hand' }, displayMode: 'button' },
+            {
+                id: 'to_hand',
+                label: '放入手牌',
+                labelKey: 'ui.wizard_neophyte_to_hand_option',
+                value: { action: 'to_hand' },
+                displayMode: 'button',
+            },
         ];
         if (canPlayExternalAction(context.matchState, context.playerId, topCard.defId, effectiveHandSize)) {
-            options.push({ id: 'play_extra', label: '作为额外行动打出', value: { action: 'play_extra' }, displayMode: 'button' });
+            options.push({
+                id: 'play_extra',
+                label: '作为额外行动打出',
+                labelKey: 'ui.wizard_neophyte_play_extra_option',
+                value: { action: 'play_extra' },
+                displayMode: 'button',
+            });
         }
         return attachContinuationData(
             createAbilityRuntimeSimpleChoice(
@@ -965,7 +977,12 @@ const wizardMassEnchantmentPromptProgram = createPromptProgram<WizardMassEnchant
                 context.playerId,
                 '选择一张行动卡作为额外行动打出',
                 buildWizardMassEnchantmentOptions(context.matchState.core, context.candidates),
-                { sourceId: 'wizard_mass_enchantment', targetType: 'generic', responseValidationMode: 'live' },
+                {
+                    sourceId: 'wizard_mass_enchantment',
+                    targetType: 'generic',
+                    responseValidationMode: 'live',
+                    titleKey: 'ui.wizard_mass_enchantment_title',
+                },
             ),
             { candidates: context.candidates },
         ),
@@ -1026,6 +1043,7 @@ const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext, S
                         sourceId: 'wizard_portal_pick',
                         targetType: 'hand',
                         multi: { min: 0, max: options.length },
+                        titleKey: 'ui.wizard_portal_pick_title',
                     },
                 ),
                 { allTopCards: context.topCards },
@@ -1154,7 +1172,13 @@ const wizardScryPromptProgram = createPromptProgram<WizardPromptContext, SmashUp
             context.playerId,
             '占卜：选择一张行动卡放入手牌',
             buildWizardScryOptions(context.matchState.core, context.playerId),
-            { sourceId: 'wizard_scry', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
+            {
+                sourceId: 'wizard_scry',
+                targetType: 'generic',
+                autoRefresh: 'deck',
+                responseValidationMode: 'live',
+                titleKey: 'ui.wizard_scry_title',
+            },
         ),
         (nextState) => buildWizardScryOptions(nextState.core, context.playerId),
     ),
@@ -1205,7 +1229,12 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
             context.playerId,
             '选择要牺牲的随从（抽取等量力量的牌）',
             buildWizardSacrificeOptions(context.matchState.core, context.playerId, context.sourceDefId),
-            { sourceId: 'wizard_sacrifice', targetType: 'minion', autoCancelOption: true },
+            {
+                sourceId: 'wizard_sacrifice',
+                targetType: 'minion',
+                autoCancelOption: true,
+                titleKey: 'ui.wizard_sacrifice_title',
+            },
         ),
         (nextState) => buildWizardSacrificeOptions(nextState.core, context.playerId, context.sourceDefId),
     ),

@@ -398,7 +398,7 @@ const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTa
         context.playerId,
         '迷人的人：你可以把另一个玩家一个力量 3 或以下的随从移到这里',
         [
-            createSkipOption('不移动别人的随从'),
+            createSkipOption('不移动别人的随从', 'ui.mermaids_charmer_target_skip_option'),
             ...buildMinionTargetOptions(
                 getMermaidsCharmerCandidates(context.matchState.core, context.playerId, context.targetBaseIndex),
                 {
@@ -409,7 +409,7 @@ const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTa
                 },
             ),
         ] as any[],
-        { sourceId: 'mermaids_charmer_target', targetType: 'minion' },
+        { sourceId: 'mermaids_charmer_target', targetType: 'minion', titleKey: 'ui.mermaids_charmer_target_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -436,10 +436,10 @@ const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMove
         context.playerId,
         '迷人的人：你可以先移动这个随从',
         [
-            createSkipOption('不移动这个随从'),
+            createSkipOption('不移动这个随从', 'ui.mermaids_charmer_move_skip_option'),
             ...buildBaseTargetOptions(getOtherBases(context.matchState.core, context.fromBaseIndex), context.matchState.core),
         ] as any[],
-        { sourceId: 'mermaids_charmer_move', targetType: 'base' },
+        { sourceId: 'mermaids_charmer_move', targetType: 'base', titleKey: 'ui.mermaids_charmer_move_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;
@@ -512,7 +512,7 @@ const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMer
                 effectType: 'move',
             },
         ) as any[],
-        { sourceId: 'mermaids_mermaid_queen_move', targetType: 'minion' },
+        { sourceId: 'mermaids_mermaid_queen_move', targetType: 'minion', titleKey: 'ui.mermaids_mermaid_queen_move_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -535,7 +535,7 @@ const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMer
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_mermaid_queen_control_${context.now}`,
         context.playerId,
-        '人鱼女王：选择这里一个力量 3 或以下的随从，直到回合结束获得其控制权',
+        'ui.mermaids_mermaid_queen_control_title',
         buildMinionTargetOptions(
             collectMinionsOnBase(
                 context.matchState.core,
@@ -550,7 +550,7 @@ const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMer
                 effectType: 'affect',
             },
         ) as any[],
-        { sourceId: 'mermaids_mermaid_queen_control', targetType: 'minion' },
+        { sourceId: 'mermaids_mermaid_queen_control', targetType: 'minion', titleKey: 'ui.mermaids_mermaid_queen_control_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -593,10 +593,10 @@ const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermai
         context.playerId,
         '人鱼女王：选择要执行的效果',
         [
-            { id: 'move', label: '把一个其他玩家的随从移到这里', value: { mode: 'move' }, displayMode: 'button' as const },
-            { id: 'control', label: '直到回合结束获得这里一个力量 3 或以下随从的控制权', value: { mode: 'control' }, displayMode: 'button' as const },
+            { id: 'move', label: '把一个其他玩家的随从移到这里', labelKey: 'ui.mermaids_mermaid_queen_mode_move_option', value: { mode: 'move' }, displayMode: 'button' as const },
+            { id: 'control', label: '直到回合结束获得这里一个力量 3 或以下随从的控制权', labelKey: 'ui.mermaids_mermaid_queen_mode_control_option', value: { mode: 'control' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'mermaids_mermaid_queen_mode', targetType: 'static' },
+        { sourceId: 'mermaids_mermaid_queen_mode', targetType: 'static', titleKey: 'ui.mermaids_mermaid_queen_mode_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as ModeChoice;
@@ -651,7 +651,7 @@ const mermaidsCaptiveAudiencePromptProgram = createPromptProgram<MermaidsCaptive
                 sourceDefId: 'mermaids_captive_audience',
             },
         ) as any[],
-        { sourceId: 'mermaids_captive_audience', targetType: 'minion' },
+        { sourceId: 'mermaids_captive_audience', targetType: 'minion', titleKey: 'ui.mermaids_captive_audience_title', titleParams: { bonusPower: context.bonusPower } },
     ),
     onResolve: ({ context, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -720,7 +720,7 @@ const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltima
         context.forcedPlayerId,
         '最后的歌声：选择一张力量 3 或以下的随从额外打出到目标基地',
         buildHandMinionOptions(context.matchState.core, context.forcedPlayerId, 3) as any[],
-        { sourceId: 'mermaids_ultimate_song_hand', targetType: 'hand' },
+        { sourceId: 'mermaids_ultimate_song_hand', targetType: 'hand', titleKey: 'ui.mermaids_ultimate_song_hand_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as HandMinionChoice;
@@ -768,7 +768,7 @@ const mermaidsUltimateSongBasePromptProgram = createPromptProgram<MermaidsPrompt
         context.playerId,
         '最后的歌声：选择目标基地',
         buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId), context.matchState.core) as any[],
-        { sourceId: 'mermaids_ultimate_song_base', targetType: 'base' },
+        { sourceId: 'mermaids_ultimate_song_base', targetType: 'base', titleKey: 'ui.mermaids_ultimate_song_base_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;
@@ -803,7 +803,7 @@ const mermaidsSirenSongTargetPromptProgram = createPromptProgram<MermaidsSirenSo
                 effectType: 'move',
             },
         ) as any[],
-        { sourceId: 'mermaids_siren_song_target', targetType: 'minion' },
+        { sourceId: 'mermaids_siren_song_target', targetType: 'minion', titleKey: 'ui.mermaids_siren_song_target_title', titleParams: { targetPlayerId: context.targetPlayerId } },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -841,7 +841,7 @@ const mermaidsSirenSongDestinationPromptProgram = createPromptProgram<MermaidsSi
         context.playerId,
         '塞壬的歌声：选择目标基地',
         buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId, context.fromBaseIndex), context.matchState.core) as any[],
-        { sourceId: 'mermaids_siren_song_destination', targetType: 'base' },
+        { sourceId: 'mermaids_siren_song_destination', targetType: 'base', titleKey: 'ui.mermaids_siren_song_destination_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;
@@ -875,7 +875,7 @@ const mermaidsSirenSongBasePromptProgram = createPromptProgram<MermaidsPromptCon
                 .filter(base => base.opponentMinionCount > 0 && base.destinationCount > 0),
             context.matchState.core,
         ) as any[],
-        { sourceId: 'mermaids_siren_song_base', targetType: 'base' },
+        { sourceId: 'mermaids_siren_song_base', targetType: 'base', titleKey: 'ui.mermaids_siren_song_base_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;
@@ -902,10 +902,10 @@ const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsChar
         context.playerId,
         '魅惑：你可以把它移动到另一个你有随从的基地',
         [
-            createSkipOption('不移动，直接完成'),
+            createSkipOption('不移动，直接完成', 'ui.mermaids_charmed_destination_skip_option'),
             ...buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId, context.fromBaseIndex), context.matchState.core),
         ] as any[],
-        { sourceId: 'mermaids_charmed_destination', targetType: 'base' },
+        { sourceId: 'mermaids_charmed_destination', targetType: 'base', titleKey: 'ui.mermaids_charmed_destination_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice;
@@ -949,7 +949,7 @@ const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext, 
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_charmed_${context.now}`,
         context.playerId,
-        '魅惑：选择一个力量 3 或以下的随从',
+        'ui.mermaids_charmed_title',
         buildMinionTargetOptions(
             collectMinions(context.matchState.core, (minion, baseIndex) => getMinionPower(context.matchState.core, minion, baseIndex) <= 3),
             {
@@ -959,7 +959,7 @@ const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext, 
                 effectType: 'affect',
             },
         ) as any[],
-        { sourceId: 'mermaids_charmed', targetType: 'minion' },
+        { sourceId: 'mermaids_charmed', targetType: 'minion', titleKey: 'ui.mermaids_charmed_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice;

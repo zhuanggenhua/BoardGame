@@ -386,6 +386,23 @@ export interface InteractionState {
     isBlocked?: boolean;
 }
 
+function sanitizeStoredPromptText(text: string | undefined, key: string | undefined): string {
+    if (typeof key === 'string' && key.trim()) {
+        return key;
+    }
+    return text ?? '';
+}
+
+function sanitizePromptOption<T>(option: PromptOption<T>): PromptOption<T> {
+    return {
+        ...option,
+        label: sanitizeStoredPromptText(option.label, option.labelKey),
+        ...(typeof option.disabledReasonKey === 'string' && option.disabledReasonKey.trim()
+            ? { disabledReason: option.disabledReasonKey }
+            : {}),
+    };
+}
+
 function isControlChoiceValue(value: unknown): boolean {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as {
@@ -622,7 +639,8 @@ export function createSimpleChoice<T>(
     if (config.autoCancelOption) {
         const cancelOption: PromptOption<T> = {
             id: '__cancel__',
-            label: '取消',
+            label: 'common:button.cancel',
+            labelKey: 'common:button.cancel',
             value: { __cancel__: true } as T,
         };
         finalOptions = [...options, cancelOption];
@@ -635,16 +653,17 @@ export function createSimpleChoice<T>(
         console.trace(); // 打印调用栈
     }
     finalOptions = ensureResolvableSimpleChoiceOptions(finalOptions, { multi: config.multi });
+    finalOptions = finalOptions.map((option) => sanitizePromptOption(option));
 
     return {
         id,
         kind: 'simple-choice',
         playerId,
         data: {
-            title,
+            title: sanitizeStoredPromptText(title, config.titleKey),
             titleKey: config.titleKey,
             titleParams: config.titleParams,
-            subtitle: config.subtitle,
+            subtitle: sanitizeStoredPromptText(config.subtitle, config.subtitleKey),
             subtitleKey: config.subtitleKey,
             subtitleParams: config.subtitleParams,
             options: finalOptions,
@@ -1020,7 +1039,8 @@ function refreshOptionsGeneric<T>(
 function buildEmergencySkipOption<T>(reason: UnsatisfiableSimpleChoiceReason): PromptOption<T> {
     return {
         id: '__emergency_skip__',
-        label: '跳过（当前无可执行选项）',
+        label: 'common:interaction.emergencySkip',
+        labelKey: 'common:interaction.emergencySkip',
         value: {
             __emergency_skip__: true,
             __emergency_skip_reason__: reason,

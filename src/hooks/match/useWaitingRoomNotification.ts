@@ -142,13 +142,13 @@ export function useWaitingRoomNotification({ enabled }: WaitingRoomNotificationO
 
         // 2 & 3. 标签页不可见时：标题变更 + 浏览器推送
         if (!isPageVisible()) {
-            const titleMessage = t('notification.playerJoinedTitle', '🎮 有玩家加入了房间');
+            const titleMessage = t('notification.playerJoinedTitle');
             setNotificationTitle(titleMessage);
 
-            const notifTitle = t('notification.playerJoinedTitle', '有玩家加入了房间');
+            const notifTitle = t('notification.playerJoinedTitle');
             const notifBody = playerName
-                ? t('notification.playerJoinedBody', { name: playerName, defaultValue: `${playerName} 加入了你的房间` })
-                : t('notification.playerJoinedBodyAnonymous', '对手已加入，准备开始游戏');
+                ? t('notification.playerJoinedBody', { name: playerName })
+                : t('notification.playerJoinedBodyAnonymous');
             sendBrowserNotification(notifTitle, notifBody);
         }
     }, [t]);

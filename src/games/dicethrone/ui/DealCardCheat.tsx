@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
 
 interface DealCardCheatProps {
@@ -12,6 +13,7 @@ interface DealCardCheatProps {
 }
 
 export const DealCardCheat: React.FC<DealCardCheatProps> = ({ players, onDealCard }) => {
+    const { t } = useTranslation('game-dicethrone');
     const [dealPlayer, setDealPlayer] = useState('0');
     const [deckIndex, setDeckIndex] = useState('0');
 
@@ -35,7 +37,7 @@ export const DealCardCheat: React.FC<DealCardCheatProps> = ({ players, onDealCar
     return (
         <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
             <h4 className="text-[10px] font-black text-green-600 uppercase tracking-widest">
-                🎴 发牌调试 (图集)
+                {t('debug.deal.section_title')}
             </h4>
             <div className="flex gap-2">
                 <select
@@ -54,11 +56,16 @@ export const DealCardCheat: React.FC<DealCardCheatProps> = ({ players, onDealCar
                     value={deckIndex}
                     onChange={(e) => setDeckIndex(e.target.value)}
                     className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-center text-gray-700"
-                    placeholder="图集索引"
+                    placeholder={t('debug.deal.index_placeholder')}
                 />
             </div>
             <div className="text-[9px] text-green-600">
-                牌库: {deckLength} 张 {cardAtIndex ? ` | 选中: ${cardAtIndex.id}` : ' | 牌库中不存在此索引'}
+                {t('debug.quickDeal.status', {
+                    count: deckLength,
+                    detail: cardAtIndex
+                        ? t('debug.quickDeal.selected', { id: cardAtIndex.id })
+                        : t('debug.quickDeal.missing'),
+                })}
             </div>
             <button
                 onClick={() => {
@@ -70,7 +77,7 @@ export const DealCardCheat: React.FC<DealCardCheatProps> = ({ players, onDealCar
                 disabled={!cardAtIndex}
                 className="w-full px-3 py-1.5 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                发指定牌
+                {t('debug.quickDeal.button')}
             </button>
         </div>
     );

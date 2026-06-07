@@ -6,6 +6,7 @@
  * 路由: /dev/arch
  */
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import {
   type ArchNode,
@@ -32,7 +33,40 @@ interface ZoomableSvgProps {
   children: React.ReactNode;
 }
 
+type ArchitectureViewTranslate = (key: string, options?: Record<string, unknown>) => string;
+
+const getArchitectureViewStoryLayerLabel = (t: ArchitectureViewTranslate, layer: string): string => {
+  switch (layer) {
+    case 'game':
+      return t('devtools.architectureView.story.layer_game');
+    case 'engine':
+      return t('devtools.architectureView.story.layer_engine');
+    case 'core':
+      return t('devtools.architectureView.story.layer_core');
+    case 'ui':
+      return t('devtools.architectureView.story.layer_ui');
+    case 'server':
+      return t('devtools.architectureView.story.layer_server');
+    default:
+      return layer;
+  }
+};
+
+const getArchitectureViewHookLabel = (t: ArchitectureViewTranslate, hook: string): string => {
+  switch (hook) {
+    case '前置':
+      return t('devtools.architectureView.systems.hook_before_short');
+    case '后置':
+      return t('devtools.architectureView.systems.hook_after_short');
+    case '前置+后置':
+      return t('devtools.architectureView.systems.hook_both_short');
+    default:
+      return hook;
+  }
+};
+
 function ZoomableSvg({ viewBox, maxHeight = 'calc(100vh - 120px)', className = 'w-full', children }: ZoomableSvgProps) {
+  const { t } = useTranslation('lobby');
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -92,17 +126,17 @@ function ZoomableSvg({ viewBox, maxHeight = 'calc(100vh - 120px)', className = '
         <button
           onClick={() => setScale(s => Math.min(5, s * 1.2))}
           style={{ width: 28, height: 28, borderRadius: 6, background: '#21262d', border: '1px solid #30363d', color: '#c9d1d9', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          title="放大"
+          title={t('devtools.architectureView.zoom.zoom_in')}
         >+</button>
         <button
           onClick={() => setScale(s => Math.max(0.3, s * 0.8))}
           style={{ width: 28, height: 28, borderRadius: 6, background: '#21262d', border: '1px solid #30363d', color: '#c9d1d9', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          title="缩小"
+          title={t('devtools.architectureView.zoom.zoom_out')}
         >−</button>
         <button
           onClick={resetZoom}
           style={{ height: 28, borderRadius: 6, background: '#21262d', border: '1px solid #30363d', color: '#8b949e', fontSize: 10, cursor: 'pointer', padding: '0 8px' }}
-          title="重置缩放"
+          title={t('devtools.architectureView.zoom.reset')}
         >{Math.round(scale * 100)}%</button>
       </div>
       <svg
@@ -135,6 +169,7 @@ type ViewMode = 'overview' | 'full' | 'sub-pipeline' | 'sub-systems' | 'sub-test
 // ============================================================================
 
 const ArchitectureView: React.FC = () => {
+  const { t } = useTranslation('lobby');
   const viewport = useRuntimeViewport();
   const isCompactViewport = viewport.width > 0 && viewport.width <= 900;
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
@@ -188,17 +223,17 @@ const ArchitectureView: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4">
         <div className="mb-3 flex items-center gap-3 flex-wrap">
-          <h1 className="text-lg font-bold text-white">🏗️ 架构全景 — 一次操作的完整旅程</h1>
-          <span className="text-xs text-slate-500">点击层卡片可展开 · 右侧虚线为跨层连接</span>
+          <h1 className="text-lg font-bold text-white">{t('devtools.architectureView.overview.title')}</h1>
+          <span className="text-xs text-slate-500">{t('devtools.architectureView.overview.subtitle')}</span>
           <div className="ml-auto flex gap-2">
             <button className="text-sm px-3 py-1 rounded bg-orange-900/40 text-orange-400 border border-orange-700/40 hover:bg-orange-900/60"
-              onClick={() => setViewMode('full')}>🗺️ 完整架构图</button>
+              onClick={() => setViewMode('full')}>{t('devtools.architectureView.overview.full_button')}</button>
             <button className="text-sm px-3 py-1 rounded bg-blue-900/40 text-blue-400 border border-blue-700/40 hover:bg-blue-900/60"
-              onClick={() => setViewMode('c4-context')}>🏛️ C4 全景</button>
+              onClick={() => setViewMode('c4-context')}>{t('devtools.architectureView.overview.c4_context_button')}</button>
             <button className="text-sm px-3 py-1 rounded bg-purple-900/40 text-purple-400 border border-purple-700/40 hover:bg-purple-900/60"
-              onClick={() => setViewMode('c4-container')}>📦 C4 容器</button>
+              onClick={() => setViewMode('c4-container')}>{t('devtools.architectureView.overview.c4_container_button')}</button>
             <button className="text-sm px-3 py-1 rounded bg-green-900/40 text-green-400 border border-green-700/40 hover:bg-green-900/60"
-              onClick={() => setViewMode('story')}>📖 用户故事</button>
+              onClick={() => setViewMode('story')}>{t('devtools.architectureView.overview.story_button')}</button>
           </div>
         </div>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`} maxHeight="calc(100vh - 80px)">
@@ -271,7 +306,9 @@ const ArchitectureView: React.FC = () => {
                 <text x={cardX + 44} y={y + 30} fontSize={15} fontWeight={700} fill={layer.color}>
                   {'①②③④⑤'[i]} {layer.label}
                 </text>
-                <text x={cardX + cardW - 14} y={y + 18} textAnchor="end" fontSize={8} fill={layer.color} opacity={0.5}>点击展开 →</text>
+                <text x={cardX + cardW - 14} y={y + 18} textAnchor="end" fontSize={8} fill={layer.color} opacity={0.5}>
+                  {t('devtools.architectureView.overview.click_expand')}
+                </text>
                 {/* 做什么 */}
                 <text x={cardX + 44} y={y + 50} fontSize={11} fill="#c9d1d9">{layer.whatItDoes}</text>
                 {/* 没有它会怎样 */}
@@ -329,7 +366,7 @@ const ArchitectureView: React.FC = () => {
           {/* ── 底部说明 ── */}
           <g style={{ animation: 'archFadeIn 0.5s ease 1s both' }}>
             <text x={cardX} y={vh - 14} fontSize={9} fill="#6e7681">
-              实线 = 逐层依赖（操作从上往下流过每一层） · 虚线 = 跨层连接（事件驱动/UI组件注入）
+              {t('devtools.architectureView.overview.legend')}
             </text>
           </g>
         </ZoomableSvg>
@@ -344,9 +381,9 @@ const ArchitectureView: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => { if (selectedNode) closePop(); else setViewMode('overview'); }}>
         <div className="mb-3 flex items-center gap-3">
-          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-          <h1 className="text-lg font-bold text-white">🗺️ 完整架构图 — 所有节点与层级</h1>
-          <span className="text-xs text-slate-500">点击节点查看详情 · 点击空白返回</span>
+          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+          <h1 className="text-lg font-bold text-white">{t('devtools.architectureView.full.title')}</h1>
+          <span className="text-xs text-slate-500">{t('devtools.architectureView.full.subtitle')}</span>
         </div>
         <ZoomableSvg viewBox={`0 0 ${SVG_W} ${SVG_H}`} maxHeight="calc(100vh - 80px)">
           <style>{`
@@ -471,7 +508,7 @@ const ArchitectureView: React.FC = () => {
 
             {selectedNode.details && (
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#58a6ff', marginBottom: 8 }}>📋 详细说明</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#58a6ff', marginBottom: 8 }}>{t('devtools.architectureView.popup.details')}</h4>
                 {selectedNode.details.map((d, i) => (
                   <p key={i} style={{ fontSize: 11, color: '#c9d1d9', marginBottom: 6, lineHeight: 1.5 }}>{d}</p>
                 ))}
@@ -480,7 +517,7 @@ const ArchitectureView: React.FC = () => {
 
             {selectedNode.iface && (
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#bc8cff', marginBottom: 8 }}>🔌 接口签名</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#bc8cff', marginBottom: 8 }}>{t('devtools.architectureView.popup.interface_signature')}</h4>
                 <pre style={{ fontSize: 10, color: '#c9d1d9', background: '#0d1117', padding: 10, borderRadius: 4, overflow: 'auto' }}>
                   {selectedNode.iface.join('\n')}
                 </pre>
@@ -489,7 +526,7 @@ const ArchitectureView: React.FC = () => {
 
             {selectedNode.dataFlow && (
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#3fb950', marginBottom: 8 }}>🔄 数据流向</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#3fb950', marginBottom: 8 }}>{t('devtools.architectureView.popup.data_flow')}</h4>
                 {selectedNode.dataFlow.map((d, i) => (
                   <p key={i} style={{ fontSize: 11, color: '#c9d1d9', marginBottom: 6, lineHeight: 1.5 }}>→ {d}</p>
                 ))}
@@ -498,7 +535,7 @@ const ArchitectureView: React.FC = () => {
 
             {selectedNode.realExample && (
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#f0883e', marginBottom: 8 }}>🎲 骰子王座案例</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#f0883e', marginBottom: 8 }}>{t('devtools.architectureView.popup.example')}</h4>
                 <pre style={{ fontSize: 10, color: '#c9d1d9', background: '#0d1117', padding: 10, borderRadius: 4, overflow: 'auto' }}>
                   {selectedNode.realExample.join('\n')}
                 </pre>
@@ -507,7 +544,9 @@ const ArchitectureView: React.FC = () => {
 
             {selectedDeps.upstream.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#58a6ff', marginBottom: 8 }}>⬆️ 上游依赖 ({selectedDeps.upstream.length})</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#58a6ff', marginBottom: 8 }}>
+                  {t('devtools.architectureView.popup.upstream', { count: selectedDeps.upstream.length })}
+                </h4>
                 {selectedDeps.upstream.map((e, i) => (
                   <div key={i} style={{ fontSize: 11, color: '#8b949e', marginBottom: 4 }}>
                     ← {e.node.label} {e.label && `(${e.label})`}
@@ -518,7 +557,9 @@ const ArchitectureView: React.FC = () => {
 
             {selectedDeps.downstream.length > 0 && (
               <div>
-                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#3fb950', marginBottom: 8 }}>⬇️ 下游消费 ({selectedDeps.downstream.length})</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 600, color: '#3fb950', marginBottom: 8 }}>
+                  {t('devtools.architectureView.popup.downstream', { count: selectedDeps.downstream.length })}
+                </h4>
                 {selectedDeps.downstream.map((e, i) => (
                   <div key={i} style={{ fontSize: 11, color: '#8b949e', marginBottom: 4 }}>
                     → {e.node.label} {e.label && `(${e.label})`}
@@ -542,9 +583,9 @@ const ArchitectureView: React.FC = () => {
     const sx = 80, sy = 70;
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
-        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-        <h2 className="text-lg font-bold text-white mb-2">⚡ 回合执行引擎 — 8 步管线</h2>
-        <p className="text-xs text-slate-500 mb-2">点击任意位置返回</p>
+        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+        <h2 className="text-lg font-bold text-white mb-2">{t('devtools.architectureView.pipeline.title')}</h2>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.common.click_anywhere_back')}</p>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`}>
           <style>{`
             @keyframes archFadeIn { from { opacity: 0 } }
@@ -558,7 +599,7 @@ const ArchitectureView: React.FC = () => {
               <path d="M2,2 L8,5 L2,8" fill="none" stroke="#f778ba" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </marker>
           </defs>
-          <text x={sx} y={sy - 24} fontSize={11} fontWeight={600} fill="#e3b341">📎 示例场景: 骰子王座 — 玩家A攻击玩家B</text>
+          <text x={sx} y={sy - 24} fontSize={11} fontWeight={600} fill="#e3b341">{t('devtools.architectureView.pipeline.example_scenario')}</text>
           {PIPELINE_STEPS.map((step, i) => {
             const x = sx, y = sy + i * (stepH + gap);
             return (
@@ -581,7 +622,7 @@ const ArchitectureView: React.FC = () => {
                   <g>
                     <line x1={x + stepW} y1={y + stepH / 2} x2={x + stepW + 20} y2={y + stepH / 2} stroke="#58a6ff" strokeWidth={1} strokeDasharray="4,3" />
                     <rect x={x + stepW + 22} y={y + 2} width={sysW} height={stepH - 4} rx={6} fill="#161b22" stroke="#58a6ff" strokeWidth={0.8} strokeOpacity={0.5} />
-                    <text x={x + stepW + 32} y={y + 18} fontSize={10} fontWeight={600} fill="#58a6ff">介入的系统</text>
+                    <text x={x + stepW + 32} y={y + 18} fontSize={10} fontWeight={600} fill="#58a6ff">{t('devtools.architectureView.pipeline.involved_systems')}</text>
                     {step.systems.map((s, si) => (
                       <text key={si} x={x + stepW + 32 + (si % 2) * 125} y={y + 34 + Math.floor(si / 2) * 13} fontSize={9} fill="#8b949e">{s}</text>
                     ))}
@@ -597,8 +638,8 @@ const ArchitectureView: React.FC = () => {
             return (
               <g style={{ animation: 'archFadeIn 0.6s ease 0.5s both' }}>
                 <path d={`M${sx},${haltFromY} C${hx},${haltFromY} ${hx},${haltToY} ${sx},${haltToY}`} fill="none" stroke="#f778ba" strokeWidth={1.5} strokeDasharray="6,4" markerEnd="url(#ph)" />
-                <text x={hx - 2} y={(haltFromY + haltToY) / 2 - 6} textAnchor="middle" fontSize={8} fill="#f778ba">halt: 拦截</text>
-                <text x={hx - 2} y={(haltFromY + haltToY) / 2 + 6} textAnchor="middle" fontSize={8} fill="#f778ba">跳过③④⑤</text>
+                <text x={hx - 2} y={(haltFromY + haltToY) / 2 - 6} textAnchor="middle" fontSize={8} fill="#f778ba">{t('devtools.architectureView.pipeline.halt_intercept')}</text>
+                <text x={hx - 2} y={(haltFromY + haltToY) / 2 + 6} textAnchor="middle" fontSize={8} fill="#f778ba">{t('devtools.architectureView.pipeline.halt_skip')}</text>
               </g>
             );
           })()}
@@ -626,23 +667,25 @@ const ArchitectureView: React.FC = () => {
         <text x={padX + 38} y={y + 25} fontSize={12} fontWeight={600} fill="#e6edf3">{item.name}</text>
         <text x={padX + 150} y={y + 25} fontSize={10} fill="#8b949e">{item.desc}</text>
         <rect x={padX + colW - 80} y={y + 10} width={68} height={20} rx={4} fill={hookColor(item.hook)} fillOpacity={0.15} />
-        <text x={padX + colW - 46} y={y + 24} textAnchor="middle" fontSize={9} fontWeight={600} fill={hookColor(item.hook)}>{item.hook}</text>
+        <text x={padX + colW - 46} y={y + 24} textAnchor="middle" fontSize={9} fontWeight={600} fill={hookColor(item.hook)}>
+          {getArchitectureViewHookLabel(t, item.hook)}
+        </text>
       </g>
     );
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
-        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-        <h2 className="text-lg font-bold text-white mb-2">🔌 系统插件 — 11 个系统</h2>
-        <p className="text-xs text-slate-500 mb-2">点击任意位置返回</p>
+        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+        <h2 className="text-lg font-bold text-white mb-2">{t('devtools.architectureView.systems.title')}</h2>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.common.click_anywhere_back')}</p>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`} maxHeight="calc(100vh - 100px)">
           <style>{`@keyframes archFadeIn { from { opacity: 0 } }`}</style>
-          <text x={padX} y={padY - 8} fontSize={12} fontWeight={700} fill="#3fb950">默认启用（8 个）— createBaseSystems() 自动包含</text>
+          <text x={padX} y={padY - 8} fontSize={12} fontWeight={700} fill="#3fb950">{t('devtools.architectureView.systems.defaults_title')}</text>
           {defaults.map((item, i) => renderRow(item, i, padY + i * (rowH + 4), false))}
           {(() => {
             const optY = padY + defaults.length * (rowH + 4) + 30;
             return (
               <>
-                <text x={padX} y={optY - 8} fontSize={12} fontWeight={700} fill="#8b949e">按需配置（3 个）— 游戏层显式创建</text>
+                <text x={padX} y={optY - 8} fontSize={12} fontWeight={700} fill="#8b949e">{t('devtools.architectureView.systems.optional_title')}</text>
                 {optional.map((item, i) => renderRow(item, i, optY + i * (rowH + 4), true))}
               </>
             );
@@ -651,13 +694,13 @@ const ArchitectureView: React.FC = () => {
             const legY = padY + (defaults.length + optional.length + 1) * (rowH + 4) + 40;
             return (
               <g>
-                <text x={padX} y={legY} fontSize={10} fill="#6e7681">钩子位置：</text>
+                <text x={padX} y={legY} fontSize={10} fill="#6e7681">{t('devtools.architectureView.systems.hook_position')}</text>
                 <rect x={padX + 60} y={legY - 11} width={10} height={10} rx={2} fill="#58a6ff" fillOpacity={0.3} />
-                <text x={padX + 74} y={legY} fontSize={9} fill="#58a6ff">前置（beforeCommand）</text>
+                <text x={padX + 74} y={legY} fontSize={9} fill="#58a6ff">{t('devtools.architectureView.systems.hook_before')}</text>
                 <rect x={padX + 210} y={legY - 11} width={10} height={10} rx={2} fill="#3fb950" fillOpacity={0.3} />
-                <text x={padX + 224} y={legY} fontSize={9} fill="#3fb950">后置（afterEvents）</text>
+                <text x={padX + 224} y={legY} fontSize={9} fill="#3fb950">{t('devtools.architectureView.systems.hook_after')}</text>
                 <rect x={padX + 350} y={legY - 11} width={10} height={10} rx={2} fill="#f0883e" fillOpacity={0.3} />
-                <text x={padX + 364} y={legY} fontSize={9} fill="#f0883e">前置+后置</text>
+                <text x={padX + 364} y={legY} fontSize={9} fill="#f0883e">{t('devtools.architectureView.systems.hook_both')}</text>
               </g>
             );
           })()}
@@ -722,9 +765,9 @@ const ArchitectureView: React.FC = () => {
 
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
-        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-        <h2 className="text-lg font-bold text-white mb-2">🧪 自动化测试 + AI 审计 — 五轨并列</h2>
-        <p className="text-xs text-slate-500 mb-2">命令驱动（最优先） · 实体完整性 · 交互完整性 · E2E截图 · AI逻辑审计 · 点击任意位置返回</p>
+        <button className="mb-3 text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+        <h2 className="text-lg font-bold text-white mb-2">{t('devtools.architectureView.testing.title')}</h2>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.testing.subtitle')}</p>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`}>
           <style>{`
             @keyframes archFadeIn { from { opacity: 0 } }
@@ -732,11 +775,11 @@ const ArchitectureView: React.FC = () => {
           `}</style>
 
           {/* 五列标题 */}
-          {renderTrackTitle(trackX(0), '🧪 命令驱动测试（首选）', vitestColor, 0)}
-          {renderTrackTitle(trackX(1), '🔗 实体链完整性', integrityColor, 0.05)}
-          {renderTrackTitle(trackX(2), '🎯 交互完整性', interactionColor, 0.1)}
-          {renderTrackTitle(trackX(3), '🌐 E2E 截图', e2eColor, 0.15)}
-          {renderTrackTitle(trackX(4), '🤖 AI 逻辑审计', aiColor, 0.2)}
+          {renderTrackTitle(trackX(0), t('devtools.architectureView.testing.track_vitest'), vitestColor, 0)}
+          {renderTrackTitle(trackX(1), t('devtools.architectureView.testing.track_integrity'), integrityColor, 0.05)}
+          {renderTrackTitle(trackX(2), t('devtools.architectureView.testing.track_interaction'), interactionColor, 0.1)}
+          {renderTrackTitle(trackX(3), t('devtools.architectureView.testing.track_e2e'), e2eColor, 0.15)}
+          {renderTrackTitle(trackX(4), t('devtools.architectureView.testing.track_ai'), aiColor, 0.2)}
 
           {/* 第1列: Vitest 步骤 */}
           {allVitest.map((step, i) => {
@@ -749,7 +792,7 @@ const ArchitectureView: React.FC = () => {
                     <line x1={trackX(0)} y1={y - gap / 2} x2={trackX(0) + stepW} y2={y - gap / 2}
                       stroke={vitestColor} strokeWidth={1} strokeDasharray="4,3" strokeOpacity={0.4} />
                     <text x={trackX(0) + stepW / 2} y={y - gap / 2 - 4} textAnchor="middle" fontSize={7} fill={vitestColor} opacity={0.6}>
-                      ── 代码修改后触发 ──
+                      {t('devtools.architectureView.testing.modified_boundary')}
                     </text>
                   </g>
                 )}
@@ -795,33 +838,33 @@ const ArchitectureView: React.FC = () => {
                 <rect x={sx - 4} y={bottomY} width={vw - sx * 2 + 8} height={146} rx={8}
                   fill="#161b22" stroke="#30363d" strokeWidth={1} />
                 <text x={sx + 10} y={bottomY + 18} fontSize={9} fill={vitestColor} fontWeight={600}>
-                  🧪 命令驱动（最优先）: 纯函数引擎 + 确定性管线 → 命令回放验证规则正确性
+                  {t('devtools.architectureView.testing.summary_vitest')}
                 </text>
                 <text x={sx + 10} y={bottomY + 36} fontSize={9} fill={integrityColor} fontWeight={600}>
-                  🔗 实体完整性: 注册表 + 引用链 + 触发路径 + 效果契约 → 确保数据定义无断链
+                  {t('devtools.architectureView.testing.summary_integrity')}
                 </text>
                 <text x={sx + 10} y={bottomY + 54} fontSize={9} fill={interactionColor} fontWeight={600}>
-                  🎯 交互完整性: Mode A(UI状态机payload) + Mode B(Handler注册链) → 确保交互链无断裂
+                  {t('devtools.architectureView.testing.summary_interaction')}
                 </text>
                 <text x={sx + 10} y={bottomY + 72} fontSize={9} fill={e2eColor} fontWeight={600}>
-                  🌐 E2E截图: 无头浏览器 + 像素对比 → 防止 UI 视觉回归
+                  {t('devtools.architectureView.testing.summary_e2e')}
                 </text>
                 <text x={sx + 10} y={bottomY + 90} fontSize={9} fill={aiColor} fontWeight={600}>
-                  🤖 AI逻辑审计: 八层追踪+语义一致性+元数据审计+角色反转+数据查询一致性+16条反模式
+                  {t('devtools.architectureView.testing.summary_ai')}
                 </text>
                 {/* Bug 覆盖率估算 */}
                 <line x1={sx + 6} y1={bottomY + 100} x2={vw - sx - 6} y2={bottomY + 100} stroke="#21262d" strokeWidth={1} />
                 <text x={sx + 10} y={bottomY + 116} fontSize={8} fill="#6e7681" fontWeight={600}>
-                  📊 Bug 覆盖率估算:
+                  {t('devtools.architectureView.testing.coverage_title')}
                 </text>
-                <text x={sx + 110} y={bottomY + 116} fontSize={8} fill={vitestColor}>命令驱动 ~35%</text>
-                <text x={sx + 240} y={bottomY + 116} fontSize={8} fill={integrityColor}>实体完整性 ~15%</text>
-                <text x={sx + 370} y={bottomY + 116} fontSize={8} fill={interactionColor}>交互完整性 ~10%</text>
-                <text x={sx + 500} y={bottomY + 116} fontSize={8} fill={e2eColor}>E2E截图 ~10%</text>
-                <text x={sx + 620} y={bottomY + 116} fontSize={8} fill={aiColor}>AI审计 ~25%</text>
-                <text x={sx + 740} y={bottomY + 116} fontSize={8} fill="#6e7681">其他 ~5%</text>
+                <text x={sx + 110} y={bottomY + 116} fontSize={8} fill={vitestColor}>{t('devtools.architectureView.testing.coverage_vitest')}</text>
+                <text x={sx + 240} y={bottomY + 116} fontSize={8} fill={integrityColor}>{t('devtools.architectureView.testing.coverage_integrity')}</text>
+                <text x={sx + 370} y={bottomY + 116} fontSize={8} fill={interactionColor}>{t('devtools.architectureView.testing.coverage_interaction')}</text>
+                <text x={sx + 500} y={bottomY + 116} fontSize={8} fill={e2eColor}>{t('devtools.architectureView.testing.coverage_e2e')}</text>
+                <text x={sx + 620} y={bottomY + 116} fontSize={8} fill={aiColor}>{t('devtools.architectureView.testing.coverage_ai')}</text>
+                <text x={sx + 740} y={bottomY + 116} fontSize={8} fill="#6e7681">{t('devtools.architectureView.testing.coverage_other')}</text>
                 <text x={sx + 10} y={bottomY + 134} fontSize={7} fill="#484f58">
-                  * 命令驱动覆盖规则逻辑/状态变更 · AI审计覆盖描述≠实现/查询绕过/交叉影响 · 其他含环境/并发/性能等难以自动化的问题
+                  {t('devtools.architectureView.testing.coverage_note')}
                 </text>
               </g>
             );
@@ -856,11 +899,11 @@ const ArchitectureView: React.FC = () => {
             className="inline-flex shrink-0 whitespace-nowrap text-sm text-slate-400 hover:text-white"
             onClick={e => { e.stopPropagation(); setViewMode('overview'); }}
           >
-            ← 返回
+            {t('devtools.architectureView.common.back')}
           </button>
-          <h1 className={`${isCompactViewport ? 'text-base leading-tight' : 'text-lg'} font-bold text-white`}>📖 用户故事 — 创建新游戏的 6 个阶段</h1>
+          <h1 className={`${isCompactViewport ? 'text-base leading-tight' : 'text-lg'} font-bold text-white`}>{t('devtools.architectureView.story.title')}</h1>
         </div>
-        <p className="text-xs text-slate-500 mb-2">基于 create-new-game 技能，数据录入合并为一个阶段 · 每阶段独立可验证 · 点击任意位置返回</p>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.story.subtitle')}</p>
         <ZoomableSvg
           viewBox={`0 0 ${vw} ${vh}`}
           maxHeight={isCompactViewport ? 'none' : 'calc(100vh - 120px)'}
@@ -880,7 +923,7 @@ const ArchitectureView: React.FC = () => {
           {/* 标题装饰 */}
           {showWorkflowSummary && (
             <text x={sx} y={sy - 30} fontSize={11} fontWeight={600} fill="#e3b341">
-              🎲 工作流: 骨架 → 数据录入(规则+实体+类型) → 领域内核 → 系统组装 → UI交互 → 收尾上线
+              {t('devtools.architectureView.story.workflow')}
             </text>
           )}
 
@@ -909,7 +952,9 @@ const ArchitectureView: React.FC = () => {
                 {/* 层标签 */}
                 <rect x={sx + stepW - (isCompactViewport ? 74 : 70)} y={y + 8} width={isCompactViewport ? 60 : 56} height={18} rx={4}
                   fill={lc} fillOpacity={0.12} stroke={lc} strokeOpacity={0.25} strokeWidth={0.8} />
-                <text x={sx + stepW - (isCompactViewport ? 44 : 42)} y={y + 20} textAnchor="middle" fontSize={isCompactViewport ? 9 : 8} fontWeight={600} fill={lc}>{step.layer}</text>
+                <text x={sx + stepW - (isCompactViewport ? 44 : 42)} y={y + 20} textAnchor="middle" fontSize={isCompactViewport ? 9 : 8} fontWeight={600} fill={lc}>
+                  {getArchitectureViewStoryLayerLabel(t, step.layer)}
+                </text>
                 {/* 描述 */}
                 <text x={sx + 18} y={y + (isCompactViewport ? 52 : 46)} fontSize={isCompactViewport ? 11 : 10} fill="#8b949e">{step.desc}</text>
                 {/* 示例 */}
@@ -953,7 +998,7 @@ const ArchitectureView: React.FC = () => {
             return (
               <g style={{ animation: 'archFadeIn 0.5s ease 0.9s both' }}>
                 <text x={sx} y={bottomY} fontSize={10} fill="#6e7681">
-                  💡 核心原则: 每阶段独立可验证·独立可提交 → 游戏只需回答4个问题 + 选用基础能力 → 引擎负责其余一切
+                  {t('devtools.architectureView.story.principle')}
                 </text>
               </g>
             );
@@ -985,12 +1030,12 @@ const ArchitectureView: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
         <div className="mb-3 flex items-center gap-3">
-          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-          <h1 className="text-lg font-bold text-white">🏛️ C4 Model — L1 System Context</h1>
+          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+          <h1 className="text-lg font-bold text-white">{t('devtools.architectureView.c4Context.title')}</h1>
           <button className="ml-auto text-sm px-3 py-1 rounded bg-purple-900/40 text-purple-400 border border-purple-700/40 hover:bg-purple-900/60"
-            onClick={e => { e.stopPropagation(); setViewMode('c4-container'); }}>📦 L2 容器视图 →</button>
+            onClick={e => { e.stopPropagation(); setViewMode('c4-container'); }}>{t('devtools.architectureView.c4Context.container_button')}</button>
         </div>
-        <p className="text-xs text-slate-500 mb-2">最高层视角：系统边界 · 外部依赖 · 用户交互 · 点击任意位置返回</p>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.c4Context.subtitle')}</p>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`}>
           <style>{`@keyframes archFadeIn { from { opacity: 0 } }`}</style>
           <defs>
@@ -1048,7 +1093,11 @@ const ArchitectureView: React.FC = () => {
                     <rect x={x + boxW - 68} y={y + 8} width={60} height={16} rx={3}
                       fill={ent.color + '18'} stroke={ent.color + '30'} strokeWidth={0.8} />
                     <text x={x + boxW - 38} y={y + 19} textAnchor="middle" fontSize={7} fill={ent.color} fontWeight={600}>
-                      {isExternal ? '外部系统' : ent.type === 'story' ? '用户故事' : '核心系统'}
+                      {isExternal
+                        ? t('devtools.architectureView.c4Context.type_external')
+                        : ent.type === 'story'
+                          ? t('devtools.architectureView.c4Context.type_story')
+                          : t('devtools.architectureView.c4Context.type_core')}
                     </text>
                     <text x={pos.x} y={y + 38} textAnchor="middle" fontSize={13} fontWeight={700} fill={ent.color}>{ent.label}</text>
                     <text x={pos.x} y={y + 56} textAnchor="middle" fontSize={9} fill="#8b949e">{ent.desc}</text>
@@ -1061,7 +1110,7 @@ const ArchitectureView: React.FC = () => {
           {/* 底部图例 */}
           <g style={{ animation: 'archFadeIn 0.5s ease 0.8s both' }}>
             <text x={30} y={vh - 20} fontSize={9} fill="#6e7681">
-              C4 Level 1 · System Context · 实线=核心系统 · 虚线=外部依赖
+              {t('devtools.architectureView.c4Context.legend')}
             </text>
           </g>
         </ZoomableSvg>
@@ -1078,7 +1127,11 @@ const ArchitectureView: React.FC = () => {
       game: '#3fb950', engine: '#f0883e', core: '#bc8cff', ui: '#58a6ff', server: '#8b949e',
     };
     const layerLabels: Record<string, string> = {
-      game: '🎮 游戏层', engine: '⚡ 引擎层', core: '💎 核心层', ui: '🖥️ UI层', server: '🖧 服务端层',
+      game: t('devtools.architectureView.c4Container.layer_game'),
+      engine: t('devtools.architectureView.c4Container.layer_engine'),
+      core: t('devtools.architectureView.c4Container.layer_core'),
+      ui: t('devtools.architectureView.c4Container.layer_ui'),
+      server: t('devtools.architectureView.c4Container.layer_server'),
     };
     const cLinks = CONTAINER_LINKS;
     const vw = 960, padX = 60, padY = 70;
@@ -1095,12 +1148,12 @@ const ArchitectureView: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => setViewMode('overview')}>
         <div className="mb-3 flex items-center gap-3">
-          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-          <h1 className="text-lg font-bold text-white">📦 C4 Model — L2 Container</h1>
+          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+          <h1 className="text-lg font-bold text-white">{t('devtools.architectureView.c4Container.title')}</h1>
           <button className="ml-auto text-sm px-3 py-1 rounded bg-blue-900/40 text-blue-400 border border-blue-700/40 hover:bg-blue-900/60"
-            onClick={e => { e.stopPropagation(); setViewMode('c4-context'); }}>← L1 全景视图</button>
+            onClick={e => { e.stopPropagation(); setViewMode('c4-context'); }}>{t('devtools.architectureView.c4Container.context_button')}</button>
         </div>
-        <p className="text-xs text-slate-500 mb-2">容器级视角：5 个核心层 · 层间依赖 · 数据/事件流向 · 点击任意位置返回</p>
+        <p className="text-xs text-slate-500 mb-2">{t('devtools.architectureView.c4Container.subtitle')}</p>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`}>
           <style>{`@keyframes archFadeIn { from { opacity: 0 } }`}</style>
           <defs>
@@ -1127,7 +1180,7 @@ const ArchitectureView: React.FC = () => {
                 </text>
                 <rect x={pos.cx - 28} y={pos.y + 36} width={56} height={16} rx={4}
                   fill={color + '15'} stroke={color + '30'} strokeWidth={0.8} />
-                <text x={pos.cx} y={pos.y + 47} textAnchor="middle" fontSize={7} fontWeight={600} fill={color}>Container</text>
+                <text x={pos.cx} y={pos.y + 47} textAnchor="middle" fontSize={7} fontWeight={600} fill={color}>{t('devtools.architectureView.c4Container.container_badge')}</text>
                 {summaryParts.map((part, pi) => (
                   <text key={pi} x={pos.x + 10} y={pos.y + 68 + pi * 16} fontSize={8.5} fill="#8b949e">
                     {part.length > 22 ? part.slice(0, 22) + '…' : part}
@@ -1164,7 +1217,7 @@ const ArchitectureView: React.FC = () => {
           {/* 底部图例 */}
           <g style={{ animation: 'archFadeIn 0.5s ease 0.9s both' }}>
             <text x={padX} y={vh - 30} fontSize={9} fill="#6e7681">
-              C4 Level 2 · Container · 实线=直接依赖 · 虚线=事件/UI驱动
+              {t('devtools.architectureView.c4Container.legend')}
             </text>
             <g>
               {layers.map((layerId, i) => (
@@ -1227,9 +1280,9 @@ const ArchitectureView: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0d1117] text-slate-200 p-4" onClick={() => { if (selectedNode) closePop(); else setViewMode('overview'); }}>
         <div className="mb-3 flex items-center gap-3">
-          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>← 返回</button>
-          <h1 className="text-lg font-bold text-white">{layerInfo?.emoji} {layerInfo?.label} — 组件详情</h1>
-          <span className="text-xs text-slate-500">{layerNodes.length} 个组件 · 点击查看接口和案例 · 点击空白返回</span>
+          <button className="text-sm text-slate-400 hover:text-white" onClick={e => { e.stopPropagation(); setViewMode('overview'); }}>{t('devtools.architectureView.common.back')}</button>
+          <h1 className="text-lg font-bold text-white">{layerInfo?.emoji} {layerInfo?.label} {t('devtools.architectureView.layerDetail.title_suffix')}</h1>
+          <span className="text-xs text-slate-500">{t('devtools.architectureView.layerDetail.subtitle', { count: layerNodes.length })}</span>
         </div>
         <ZoomableSvg viewBox={`0 0 ${vw} ${vh}`} maxHeight="calc(100vh - 80px)">
           <style>{`@keyframes archFadeIn { from { opacity: 0 } }`}</style>
@@ -1292,10 +1345,10 @@ const ArchitectureView: React.FC = () => {
                 <text x={x + 16} y={y + 22} fontSize={12} fontWeight={700} fill={node.color}>{node.label}</text>
                 <text x={x + 16} y={y + 40} fontSize={9} fill="#8b949e">{node.desc}</text>
                 {hasExpand && (
-                  <text x={x + nodeW - 10} y={y + 16} textAnchor="end" fontSize={8} fill={node.color} opacity={0.5}>→ 展开</text>
+                  <text x={x + nodeW - 10} y={y + 16} textAnchor="end" fontSize={8} fill={node.color} opacity={0.5}>{t('devtools.architectureView.layerDetail.expand')}</text>
                 )}
                 {hasDetail && !hasExpand && (
-                  <text x={x + nodeW - 10} y={y + 16} textAnchor="end" fontSize={8} fill={node.color} opacity={0.4}>点击详情</text>
+                  <text x={x + nodeW - 10} y={y + 16} textAnchor="end" fontSize={8} fill={node.color} opacity={0.4}>{t('devtools.architectureView.layerDetail.click_detail')}</text>
                 )}
               </g>
             );
@@ -1306,7 +1359,7 @@ const ArchitectureView: React.FC = () => {
             const extX = padX + nodeW + 60;
             return (
               <g style={{ animation: 'archFadeIn 0.5s ease 0.5s both' }}>
-                <text x={extX} y={padY - 12} fontSize={11} fontWeight={600} fill="#6e7681">跨层连接</text>
+                <text x={extX} y={padY - 12} fontSize={11} fontWeight={600} fill="#6e7681">{t('devtools.architectureView.layerDetail.cross_layer')}</text>
                 {externalEdges.map((edge, i) => {
                   const fn = NODE_MAP.get(edge.from);
                   const tn = NODE_MAP.get(edge.to);
@@ -1317,7 +1370,7 @@ const ArchitectureView: React.FC = () => {
                   return (
                     <g key={i}>
                       <text x={extX} y={y + 10} fontSize={9} fill={isOut ? '#3fb950' : '#58a6ff'}>
-                        {isOut ? '→ 出' : '← 入'}
+                        {isOut ? t('devtools.architectureView.layerDetail.direction_out') : t('devtools.architectureView.layerDetail.direction_in')}
                       </text>
                       <rect x={extX + 28} y={y - 2} width={otherNode.label.length * 8 + 16} height={18} rx={4}
                         fill={otherNode.color + '12'} stroke={otherNode.color + '30'} strokeWidth={0.8} />
@@ -1360,7 +1413,7 @@ const ArchitectureView: React.FC = () => {
                   cy += 12;
                   return (
                     <>
-                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>📋 接口定义</text>
+                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>{t('devtools.architectureView.layerDetail.interface_definition')}</text>
                       <rect x={popX + 14} y={cy + 4} width={popW - 28} height={popIface.length * 13 + 8} rx={4}
                         fill="#0d1117" stroke="#21262d" strokeWidth={0.8} />
                       {popIface.map((line, i) => (
@@ -1377,7 +1430,7 @@ const ArchitectureView: React.FC = () => {
                   cy += 12;
                   return (
                     <>
-                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>🔗 数据链路</text>
+                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>{t('devtools.architectureView.layerDetail.data_chain')}</text>
                       {popFlow.map((step, i) => (
                         <g key={`fl${i}`}>
                           <text x={popX + 22} y={(cy += 15, cy)} fill="#e3b341" fontSize={8} fontFamily="monospace">{i + 1}.</text>
@@ -1393,7 +1446,7 @@ const ArchitectureView: React.FC = () => {
                   cy += 12;
                   return (
                     <>
-                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>🎲 骰子王座案例</text>
+                      <text x={popX + 16} y={(cy += 12, cy)} fill={popNode.color} fontSize={9} fontWeight={700}>{t('devtools.architectureView.layerDetail.example')}</text>
                       <rect x={popX + 14} y={cy + 4} width={popW - 28} height={popExample.length * 13 + 8} rx={4}
                         fill="#0d1117" stroke="#e3b34130" strokeWidth={0.8} />
                       {popExample.map((line, i) => (

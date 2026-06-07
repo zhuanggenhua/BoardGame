@@ -42,6 +42,15 @@ if (typeof window !== 'undefined') {
 
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
 
+function getTestMatchRoomLoadingTitle(
+    t: (key: string, options?: Record<string, unknown>) => string,
+    gameTitle?: string,
+) {
+    return gameTitle
+        ? t('testMatchRoom.loading_with_game', { game: gameTitle })
+        : t('testMatchRoom.loading');
+}
+
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
     const [searchParams] = useSearchParams();
@@ -206,7 +215,7 @@ export const TestMatchRoom: React.FC = () => {
     if (!gameId || !gameConfig) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {'\u672a\u627e\u5230\u6e38\u620f\u914d\u7f6e'}
+                {t('testMatchRoom.missing_game_config')}
             </div>
         );
     }
@@ -226,13 +235,13 @@ export const TestMatchRoom: React.FC = () => {
     }
 
     if (loading) {
-        return <LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />;
+        return <LoadingScreen title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />;
     }
 
     if (!engineConfig || !WrappedBoard) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {'\u6e38\u620f\u52a0\u8f7d\u5931\u8d25'}
+                {t('testMatchRoom.game_load_failed')}
             </div>
         );
     }
@@ -240,8 +249,8 @@ export const TestMatchRoom: React.FC = () => {
     return (
         <>
             <SEO
-                title={`${gameConfig.title} - \u6d4b\u8bd5\u6a21\u5f0f`}
-                description={`${gameConfig.title} E2E \u6d4b\u8bd5\u6a21\u5f0f`}
+                title={t('testMatchRoom.seo_title', { game: gameConfig.title })}
+                description={t('testMatchRoom.seo_description', { game: gameConfig.title })}
                 noIndex
             />
             <div
@@ -267,11 +276,11 @@ export const TestMatchRoom: React.FC = () => {
                                         <GameHUD gameId={gameId} mode="test" />
                                         <BoardBridge
                                             board={WrappedBoard}
-                                            loading={<LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />}
+                                            loading={<LoadingScreen anchor="container" title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />}
                                         />
                                     </LocalGameProvider>
                                 ) : (
-                                    <LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />
+                                    <LoadingScreen anchor="container" title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />
                                 )}
                             </MobileBoardShell>
                         </GameCursorProvider>

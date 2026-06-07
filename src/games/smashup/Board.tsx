@@ -293,7 +293,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const challengedName = challenged ? resolveCardName(getCardDef(challenged.defId), t) ?? challenged.defId : t('ui.card_placeholder');
         return {
             title: `${challengerName} VS ${challengedName}`,
-            subtitle: t('ui.duel_in_progress', { defaultValue: '决斗进行中：依次处理平克顿加指示物、从手牌打出决斗牌、弃副警长加力量，最后再结算胜负' }),
+            subtitle: t('ui.duel_in_progress'),
         };
     }, [core, t]);
     const isWinner = winningPlayerIds.includes(rootPid);
@@ -853,16 +853,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (meta.sameNameRequired) {
             constraints.push(meta.requiredName
                 ? t('ui.base_limited_same_name_exact', {
-                    defaultValue: '仅同名：{{name}}',
                     name: meta.requiredName,
                 })
-                : t('ui.base_limited_same_name_generic', {
-                    defaultValue: '仅同名随从',
-                }));
+                : t('ui.base_limited_same_name_generic'));
         }
         if (meta.maxPowerCap !== undefined) {
             constraints.push(t('ui.minion_power_cap', {
-                defaultValue: '力量限制 ≤{{max}}',
                 max: meta.maxPowerCap,
             }));
         }
@@ -1468,9 +1464,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 ) {
                     return {
                         deployableBaseIndices: indices,
-                        deployBlockReason: t('ui.same_name_only', {
-                            defaultValue: '额外出牌只能打出同名随从',
-                        }),
+                        deployBlockReason: t('ui.same_name_only'),
                     };
                 }
             }
@@ -1530,12 +1524,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         deployableBaseIndices: indices,
                         deployBlockReason: meta.requiredName
                             ? t('ui.base_limited_same_name_block_exact', {
-                                defaultValue: '额外随从额度仅限将 {{name}} 打到 {{base}}',
                                 name: meta.requiredName,
                                 base: meta.baseName,
                             })
                             : t('ui.base_limited_same_name_block', {
-                                defaultValue: '额外随从额度仅限将同名随从打到 {{base}}',
                                 base: meta.baseName,
                             }),
                     };
@@ -1552,7 +1544,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     return {
                         deployableBaseIndices: indices,
                         deployBlockReason: t('ui.base_limited_power_cap_block', {
-                            defaultValue: '{{base}} 的额外随从额度仅限力量不高于 {{max}} 的随从',
                             base: meta.baseName,
                             max: meta.maxPowerCap ?? 0,
                         }),
@@ -1940,7 +1931,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 二次防御：行动额度检查（正常流程在 handleCardClick 已拦截）
         if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
             playDeniedSound();
-            toast(t('ui.action_limit_reached', { defaultValue: '本回合行动额度已用完' }));
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
@@ -1959,7 +1950,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 二次防御：行动额度检查
         if (myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
             playDeniedSound();
-            toast(t('ui.action_limit_reached', { defaultValue: '本回合行动额度已用完' }));
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
@@ -1992,7 +1983,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const validation = validateImmediateActionPlay(card);
         if (!validation.valid) {
             playDeniedSound();
-            toastCommandFeedback(validation.error || t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
+            toastCommandFeedback(validation.error || t('ui.no_valid_targets'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return false;
@@ -2007,7 +1998,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             && isActionLikeRespondableInWindow(cardDef, reactionWindow.windowType);
         if (!isSpecialAction && !isResponseWindowAction && myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
             playDeniedSound();
-            toast(t('ui.action_limit_reached', { defaultValue: '本回合战术额度已用完' }));
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return false;
@@ -2024,7 +2015,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             const { hasValidTargets, deployBlockReason } = getCardPlayTargetState(card, cardMode);
             if (!hasValidTargets) {
                 playDeniedSound();
-                toastCommandFeedback(deployBlockReason || t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
+                toastCommandFeedback(deployBlockReason || t('ui.no_valid_targets'));
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
                 return false;
@@ -2099,8 +2090,37 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // Me First! 基地选择模式：打出需要基地目标的 Special 卡
         if (meFirstPendingCard) {
             if (!meFirstEligibleBaseIndices.has(index)) {
-                toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                toast(t('ui.invalid_base_target'));
                 return;
+            }
+            const shouldShowImmediateNoTargetFeedback = (() => {
+                if (meFirstPendingCard.defId !== 'giant_ant_we_are_the_champions' && meFirstPendingCard.defId !== 'giant_ant_we_are_the_champions_pod') {
+                    return false;
+                }
+                const sourceCandidates = (core.bases[index]?.minions ?? []).filter(
+                    minion => minion.controller === rootPid && minion.powerCounters > 0,
+                );
+                if (sourceCandidates.length === 0) {
+                    return false;
+                }
+                const ownMinions = core.bases.flatMap(base => base.minions).filter(minion => minion.controller === rootPid);
+                return !sourceCandidates.some(source => ownMinions.some(target => target.uid !== source.uid));
+            })();
+            if (shouldShowImmediateNoTargetFeedback) {
+                toast(t('ui.no_valid_targets'));
+            }
+            if (currentPrompt?.sourceId === 'smashup_reaction_choose') {
+                const reactionOption = currentPrompt.options.find(opt => {
+                    const value = opt.value as { kind?: string; cardUid?: string; targetBaseIndex?: number } | undefined;
+                    return value?.kind === 'play_action'
+                        && value.cardUid === meFirstPendingCard.cardUid
+                        && value.targetBaseIndex === index;
+                });
+                if (reactionOption) {
+                    respondCurrentPrompt({ optionId: reactionOption.id });
+                    setMeFirstPendingCard(null);
+                    return;
+                }
             }
             dispatch(SU_COMMANDS.PLAY_ACTION, { cardUid: meFirstPendingCard.cardUid, targetBaseIndex: index });
             setMeFirstPendingCard(null);
@@ -2109,7 +2129,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 弃牌堆出牌模式：选中随从后点基地
         if (discardStripSelectedUid) {
             if (!discardStripAllowedBases.has(index)) {
-                toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                toast(t('ui.invalid_base_target'));
                 return;
             }
             const discardCard = discardStripCards.find(card => card.uid === discardStripSelectedUid);
@@ -2131,11 +2151,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 return;
             }
             if (discardCard.mode === 'activate_special_minion') {
-                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
+                toast(t('ui.select_minion_hint'));
                 return;
             }
             if (discardCard.mode === 'play_action_minion') {
-                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
+                toast(t('ui.select_minion_hint'));
                 return;
             }
             // 正常弃牌堆出牌模式
@@ -2145,7 +2165,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         if (activeSelectedSetAsideTitanUid && playerID) {
             if (!selectedTitanDeployableBaseIndices.has(index)) {
-                toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                toast(t('ui.invalid_base_target'));
                 return;
             }
             if (titanPromptBaseSelection?.titanUid === activeSelectedSetAsideTitanUid && currentPrompt) {
@@ -2165,7 +2185,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         // 基地选择交互模式：直接响应 interaction
         if (isBaseSelectPrompt && currentPrompt) {
             if (!selectableBaseIndices.has(index)) {
-                toast(t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                toast(t('ui.invalid_base_target'));
                 return;
             }
             const option = currentPrompt.options.find(
@@ -2187,7 +2207,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             if (selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') {
                 // 需要选择随从，点击基地无效
-                toast(t('ui.select_minion_hint', { defaultValue: '请选择一个随从' }));
+                toast(t('ui.select_minion_hint'));
                 return;
             }
             
@@ -2197,7 +2217,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 if (card && isMinionLikeRespondableInWindow(card.defId, 'meFirst')) {
                     // 检查是否还是当前响应者
                     if (playerID !== reactionWindow.activePlayerId) {
-                        toast(t('ui.wait_for_your_turn', { defaultValue: '等待你的响应回合' }));
+                        toast(t('ui.wait_for_your_turn'));
                         setSelectedCardUid(null);
                         setSelectedCardMode(null);
                         return;
@@ -2207,7 +2227,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             
             // 被限制的基地不可部署
             if (!deployableBaseIndices.has(index)) {
-                toastCommandFeedback(deployBlockReason || t('ui.invalid_base_target', { defaultValue: '该基地不可选择' }));
+                toastCommandFeedback(deployBlockReason || t('ui.invalid_base_target'));
                 return;
             }
             if (selectedCardMode === 'action') {
@@ -2273,7 +2293,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
-                toast(t('ui.card_not_in_options', { defaultValue: '该卡牌不在当前可选范围内' }));
+                toast(t('ui.card_not_in_options'));
             }
             return;
         }
@@ -2325,7 +2345,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (actionLikeNeedsResponseWindowBase(cardDef)) {
                 if (getResponseWindowPlayableBaseIndicesForMatchState(G, card.defId, windowType).length === 0) {
                     playDeniedSound();
-                    toast(t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
+                    toast(t('ui.no_valid_targets'));
                     return;
                 }
                 setMeFirstPendingCard({ cardUid: card.uid, defId: card.defId });
@@ -2340,7 +2360,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 const actionValidation = validateImmediateActionPlay(card);
                 if (!actionValidation.valid) {
                     playDeniedSound();
-                    toastCommandFeedback(actionValidation.error || t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
+                    toastCommandFeedback(actionValidation.error || t('ui.no_valid_targets'));
                     setSelectedCardUid(null);
                     setSelectedCardMode(null);
                     return;
@@ -2404,7 +2424,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             const cardDef = getCardDef(card.defId) as ActionCardDef | undefined;
             if (cardDef?.subtype !== 'special' && myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
                 playDeniedSound();
-                toast(t('ui.action_limit_reached', { defaultValue: '本回合战术额度已用完' }));
+                toast(t('ui.action_limit_reached'));
                 return;
             }
 
@@ -2425,7 +2445,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 const actionValidation = validateImmediateActionPlay(card);
                 if (!actionValidation.valid) {
                     playDeniedSound();
-                    toastCommandFeedback(actionValidation.error || t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
+                    toastCommandFeedback(actionValidation.error || t('ui.no_valid_targets'));
                     setSelectedCardUid(null);
                     setSelectedCardMode(null);
                     return;
@@ -2462,7 +2482,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
         if (phase === 'playCards' && def.actionSubtype !== 'special' && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
             playDeniedSound();
-            toast(t('ui.action_limit_reached', { defaultValue: '本回合战术额度已用完' }));
+            toast(t('ui.action_limit_reached'));
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             return;
@@ -2811,7 +2831,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 等待状态就绪
     if (!G || !core) {
-        return <LoadingScreen anchor="container" title={t('ui.loading', { defaultValue: '加载中...' })} />;
+        return <LoadingScreen anchor="container" title={t('ui.loading')} />;
     }
 
     // 防御性检查：HMR 或 client 重建时 core 可能不完整
@@ -2820,7 +2840,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             <UndoProvider value={{ G: (matchState ?? G) as MatchState<SmashUpCore>, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
                 <LoadingScreen
                     anchor="container"
-                    description={t('ui.loading', { defaultValue: '加载中...' })}
+                    description={t('ui.loading')}
                     className="bg-[#3e2723]"
                 />
             </UndoProvider>
@@ -3050,12 +3070,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     type="button"
                     data-testid="su-scoreboard-visibility-toggle"
                     aria-label={isNonEssentialUiHidden
-                        ? t('ui.show_nonessential_controls', { defaultValue: '显示手牌、结束回合、记分板和回合指示' })
-                        : t('ui.hide_nonessential_controls', { defaultValue: '隐藏手牌、结束回合、记分板和回合指示' })}
+                        ? t('ui.show_nonessential_controls')
+                        : t('ui.hide_nonessential_controls')}
                     onClick={() => setIsNonEssentialUiHidden(prev => !prev)}
                     className={`absolute right-2 top-2 z-50 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-9 w-9 text-sm' : 'h-10 w-10 text-base'}`}
                 >
-                    <span className="font-black leading-none">{isNonEssentialUiHidden ? '显' : '隐'}</span>
+                    <span className="font-black leading-none">
+                        {isNonEssentialUiHidden ? t('ui.show_nonessential_controls_short') : t('ui.hide_nonessential_controls_short')}
+                    </span>
                 </button>
 
                 {/* 对手视角指示器 */}
@@ -3072,13 +3094,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                                 </svg>
                                 <span className="font-black text-lg uppercase tracking-wider">
-                                    {t('ui.opponent_view', { defaultValue: '对手视角' })}
+                                    {t('ui.opponent_view')}
                                 </span>
                                 <button
                                     onClick={() => setViewedPlayerId(null)}
                                     className="ml-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-sm rounded transition-colors pointer-events-auto"
                                 >
-                                    {t('ui.back_to_self', { defaultValue: '返回' })}
+                                    {t('ui.back_to_self')}
                                 </button>
                             </div>
                         </motion.div>
@@ -3129,7 +3151,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                                     {G.sys.interaction?.isBlocked ? (
                                         <span className="text-xs font-bold text-amber-300 text-center leading-tight">
-                                            {t('ui.waiting_opponent', { defaultValue: '等待对方操作' })}
+                                            {t('ui.waiting_opponent')}
                                         </span>
                                     ) : t('ui.finish_turn').includes(' ') ? (
                                         <>
@@ -3172,7 +3194,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                         <svg className={endTurnQuotaIconClassName} viewBox="0 0 20 20">
                                                             <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                                                         </svg>
-                                                        <span>{t('ui.minion_short', { defaultValue: '随从' })}</span>
+                                                        <span>{t('ui.minion_short')}</span>
                                                         <span>{totalRemaining}</span>
                                                         {hasExtra && (
                                                             <svg className={endTurnQuotaExtraIconClassName} viewBox="0 0 20 20">
@@ -3184,7 +3206,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     <div className="absolute right-0 bottom-full mb-2 hidden group-hover/minion:block z-50 pointer-events-none">
                                                         <div className="bg-slate-900/95 backdrop-blur-sm text-white text-[11px] leading-tight rounded border border-slate-600 shadow-xl px-2 py-1.5 whitespace-nowrap space-y-0.5">
                                                             <div className="flex justify-between gap-3">
-                                                                <span className="text-slate-300">{t('ui.minion_global_quota', { defaultValue: '通用额度' })}</span>
+                                                                <span className="text-slate-300">{t('ui.minion_global_quota')}</span>
                                                                 <span className="font-bold">{globalRemaining}/{myPlayer.minionLimit}</span>
                                                             </div>
                                                             {Object.entries(baseQuota).map(([baseIdx, count]) => {
@@ -3196,11 +3218,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                                 );
                                                             })}
                                                             {myPlayer.extraMinionPowerMax !== undefined && (
-                                                                <div className="text-orange-300 border-t border-slate-700 pt-0.5">{t('ui.minion_power_cap', { defaultValue: '力量限制 ≤{{max}}', max: myPlayer.extraMinionPowerMax })}</div>
+                                                                <div className="text-orange-300 border-t border-slate-700 pt-0.5">{t('ui.minion_power_cap', { max: myPlayer.extraMinionPowerMax })}</div>
                                                             )}
                                                             {sameNameRemaining > 0 && (
                                                                 <div className="text-cyan-300 border-t border-slate-700 pt-0.5">
-                                                                    {t('ui.same_name_quota', { defaultValue: '同名额度 +{{count}}', count: sameNameRemaining })}
+                                                                    {t('ui.same_name_quota', { count: sameNameRemaining })}
                                                                     {myPlayer.sameNameMinionDefId && (() => {
                                                                         const def = getMinionDef(myPlayer.sameNameMinionDefId);
                                                                         const name = def ? t(`cards.${myPlayer.sameNameMinionDefId}.name`, { defaultValue: def.name }) : myPlayer.sameNameMinionDefId;
@@ -3227,7 +3249,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                         <svg className={endTurnQuotaIconClassName} viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                                                         </svg>
-                                                        <span>{t('ui.action_short', { defaultValue: '战术' })}</span>
+                                                        <span>{t('ui.action_short')}</span>
                                                         <span>{actionRemaining}</span>
                                                         {hasExtraAction && (
                                                             <svg className={endTurnQuotaExtraIconClassName} viewBox="0 0 20 20">
@@ -3239,11 +3261,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     <div className="absolute right-0 bottom-full mb-2 hidden group-hover/action:block z-50 pointer-events-none">
                                                         <div className="bg-slate-900/95 backdrop-blur-sm text-white text-[11px] leading-tight rounded border border-slate-600 shadow-xl px-2 py-1.5 whitespace-nowrap space-y-0.5">
                                                             <div className="flex justify-between gap-3">
-                                                                <span className="text-slate-300">{t('ui.action_global_quota', { defaultValue: '通用额度' })}</span>
+                                                                <span className="text-slate-300">{t('ui.action_global_quota')}</span>
                                                                 <span className="font-bold">{actionRemaining}/{myPlayer.actionLimit}</span>
                                                             </div>
                                                             {hasExtraAction && (
-                                                                <div className="text-amber-300">{t('ui.action_extra_hint', { defaultValue: '含额外行动额度 +{{extra}}', extra: myPlayer.actionLimit - 1 })}</div>
+                                                                <div className="text-amber-300">{t('ui.action_extra_hint', { extra: myPlayer.actionLimit - 1 })}</div>
                                                             )}
                                                         </div>
                                                         <div className="absolute right-3 top-full w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-slate-600" />
@@ -3284,7 +3306,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 >
                                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]" />
                                     <span className="text-lg font-black uppercase italic leading-none tracking-tighter">
-                                        {t('ui.continue', { defaultValue: '继续' })}
+                                        {t('ui.continue')}
                                     </span>
                                     <div className="absolute -inset-1 bg-white/5 blur-xl group-hover:bg-white/10 transition-colors" />
                                 </button>
@@ -3361,8 +3383,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     <>
                                         <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
                                             <span className="font-bold text-sm">
-                                                已选 {multiSelectedOptionIds.size}
-                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                                {multiMinionConstraints.max !== Infinity
+                                                    ? t('ui.selected_count_with_max', {
+                                                        count: multiSelectedOptionIds.size,
+                                                        max: multiMinionConstraints.max,
+                                                    })
+                                                    : t('ui.selected_count', { count: multiSelectedOptionIds.size })}
                                             </span>
                                         </div>
                                         <SmashUpGameButton
@@ -3371,7 +3397,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
                                             onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
-                                            确认选择
+                                            {t('ui.confirm_selection')}
                                         </SmashUpGameButton>
                                     </>
                                 )}
@@ -3411,8 +3437,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     <>
                                         <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
                                             <span className="font-bold text-sm">
-                                                已选 {multiSelectedOptionIds.size}
-                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                                {multiMinionConstraints.max !== Infinity
+                                                    ? t('ui.selected_count_with_max', {
+                                                        count: multiSelectedOptionIds.size,
+                                                        max: multiMinionConstraints.max,
+                                                    })
+                                                    : t('ui.selected_count', { count: multiSelectedOptionIds.size })}
                                             </span>
                                         </div>
                                         <SmashUpGameButton
@@ -3421,7 +3451,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
                                             onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
-                                            确认选择
+                                            {t('ui.confirm_selection')}
                                         </SmashUpGameButton>
                                     </>
                                 )}
@@ -3514,8 +3544,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     <>
                                         <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
                                             <span className="font-bold text-sm">
-                                                已选 {multiSelectedOptionIds.size}
-                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                                {multiMinionConstraints.max !== Infinity
+                                                    ? t('ui.selected_count_with_max', {
+                                                        count: multiSelectedOptionIds.size,
+                                                        max: multiMinionConstraints.max,
+                                                    })
+                                                    : t('ui.selected_count', { count: multiSelectedOptionIds.size })}
                                             </span>
                                         </div>
                                         <SmashUpGameButton
@@ -3524,7 +3558,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
                                             onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
-                                            确认选择
+                                            {t('ui.confirm_selection')}
                                         </SmashUpGameButton>
                                     </>
                                 )}
@@ -3564,8 +3598,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     <>
                                         <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
                                             <span className="font-bold text-sm">
-                                                已选 {multiSelectedOptionIds.size}
-                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                                {multiMinionConstraints.max !== Infinity
+                                                    ? t('ui.selected_count_with_max', {
+                                                        count: multiSelectedOptionIds.size,
+                                                        max: multiMinionConstraints.max,
+                                                    })
+                                                    : t('ui.selected_count', { count: multiSelectedOptionIds.size })}
                                             </span>
                                         </div>
                                         <SmashUpGameButton
@@ -3574,7 +3612,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
                                             onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
-                                            确认选择
+                                            {t('ui.confirm_selection')}
                                         </SmashUpGameButton>
                                     </>
                                 )}
@@ -3779,15 +3817,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             : handDragPreview.dropTarget?.kind === 'board'
                                                 ? 'ui.drag_release_to_board'
                                                 : 'ui.drag_release_to_base',
-                                        {
-                                            defaultValue: handDragPreview.dropTarget?.kind === 'minion'
-                                                ? '松手附着到该随从'
-                                                : handDragPreview.dropTarget?.kind === 'board'
-                                                    ? '松手打出该卡'
-                                                    : '松手打到该基地',
-                                        },
+                                        {},
                                     )
-                                    : t('ui.drag_no_target', { defaultValue: '拖到发光目标上' })}
+                                    : t('ui.drag_no_target')}
                             </div>
                         )}
                     </div>,
@@ -3852,10 +3884,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="font-black text-slate-900 text-lg mb-3">
-                                            {t('ui.fusion_choose_playas', { defaultValue: '选择打出方式' })}
+                                            {t('ui.fusion_choose_playas')}
                                         </div>
                                         <div className="text-slate-700 text-sm mb-4">
-                                            {t('ui.fusion_choose_playas_desc', { defaultValue: '融合卡可以作为随从或战术打出。请选择本次打出的类型。' })}
+                                            {t('ui.fusion_choose_playas_desc')}
                                         </div>
                                         <div className="flex gap-3">
                                             <SmashUpGameButton
@@ -3863,14 +3895,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                 className="flex-1"
                                                 onClick={() => confirmFusionPlayAs('minion')}
                                             >
-                                                {t('ui.play_as_minion', { defaultValue: '作为随从' })}
+                                                {t('ui.play_as_minion')}
                                             </SmashUpGameButton>
                                             <SmashUpGameButton
                                                 variant="secondary"
                                                 className="flex-1"
                                                 onClick={() => confirmFusionPlayAs('action')}
                                             >
-                                                {t('ui.play_as_action', { defaultValue: '作为战术' })}
+                                                {t('ui.play_as_action')}
                                             </SmashUpGameButton>
                                         </div>
                                     </motion.div>
@@ -3897,15 +3929,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 ? (() => {
                                     const selected = discardStripCards.find(card => card.uid === discardStripSelectedUid);
                                     if (selected?.mode === 'activate_special_base') {
-                                        return t('ui.click_base_to_activate_discard_special', { defaultValue: '点击基地发动这张牌' });
+                                        return t('ui.click_base_to_activate_discard_special');
                                     }
                                     if (selected?.mode === 'activate_special_minion') {
-                                        return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });
+                                        return t('ui.select_minion_hint');
                                     }
                                     if (selected?.mode === 'play_action_minion') {
-                                        return t('ui.select_minion_hint', { defaultValue: '请选择一个随从' });
+                                        return t('ui.select_minion_hint');
                                     }
-                                    return t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' });
+                                    return t('ui.click_base_to_deploy');
                                 })()
                                 : undefined}
                             onClosePanel={isDiscardMinionPrompt

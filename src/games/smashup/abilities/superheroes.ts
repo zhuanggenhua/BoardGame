@@ -312,6 +312,7 @@ const mindLadyPromptProgram = createPromptProgram<MindLadyPromptContext, SmashUp
             buildMindLadyTargetOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'superheroes_mind_lady',
+                titleKey: 'ui.superheroes_mind_lady_title',
                 targetType: 'minion',
                 autoRefresh: 'field',
                 responseValidationMode: 'live',
@@ -349,6 +350,7 @@ const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext,
             [createSkipOption(), ...buildSmallMinionDiscardOptions(context.matchState.core, context.playerId)],
             {
                 sourceId: 'superheroes_not_really_dead',
+                titleKey: 'ui.superheroes_not_really_dead_title',
                 targetType: 'generic',
                 multi: {
                     min: 0,
@@ -386,6 +388,7 @@ const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext, Sma
             [createSkipOption(), ...buildDiscardMinionOptions(context.matchState.core, context.playerId)],
             {
                 sourceId: 'superheroes_golden_age',
+                titleKey: 'ui.superheroes_golden_age_title',
                 targetType: 'generic',
                 multi: {
                     min: 0,
@@ -432,6 +435,7 @@ const sidekickPromptProgram = createPromptProgram<SuperheroesPromptContext, Smas
             buildSidekickBaseOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'superheroes_sidekick',
+                titleKey: 'ui.superheroes_sidekick_title',
                 targetType: 'base',
                 responseValidationMode: 'live',
             },
@@ -466,6 +470,7 @@ const mildManneredCitizenSearchPromptProgram = createPromptProgram<
             buildSuperheroesDeckSearchOptions(context.eligible),
             {
                 sourceId: 'superheroes_mild_mannered_citizen_search',
+                titleKey: 'ui.superheroes_mild_mannered_citizen_search_title',
                 targetType: 'generic',
                 autoRefresh: 'deck',
                 responseValidationMode: 'live',
@@ -619,11 +624,24 @@ const mildManneredCitizenPromptProgram = createPromptProgram<
         context.playerId,
         '温和市民：你可以消灭此随从。若如此，从牌库中选择一个力量 5 或以上的随从额外打到这里。',
         [
-            { id: 'destroy', label: '消灭并检索', value: { destroy: true }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { destroy: false }, displayMode: 'button' as const },
+            {
+                id: 'destroy',
+                label: '消灭并检索',
+                labelKey: 'ui.superheroes_mild_mannered_citizen_destroy_option',
+                value: { destroy: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'ui.skip',
+                value: { destroy: false },
+                displayMode: 'button' as const,
+            },
         ],
         {
             sourceId: 'superheroes_mild_mannered_citizen',
+            titleKey: 'ui.superheroes_mild_mannered_citizen_title',
             targetType: 'button',
         },
     ),
@@ -863,8 +881,20 @@ function superheroesTheBurstTrigger(ctx: TriggerContext): AbilityResult {
         promptPlayerId,
         `爆发：是否移动到「${targetBaseName}」？`,
         [
-            { id: 'move', label: '移动到该基地', value: { move: true }, displayMode: 'button' as const },
-            { id: 'stay', label: '留在原地', value: { move: false }, displayMode: 'button' as const },
+            {
+                id: 'move',
+                label: '移动到该基地',
+                labelKey: 'ui.move_there',
+                value: { move: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'stay',
+                label: '留在原地',
+                labelKey: 'ui.stay_here',
+                value: { move: false },
+                displayMode: 'button' as const,
+            },
         ],
         {
             sourceId: 'superheroes_the_burst',

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 
@@ -163,6 +164,7 @@ const readSnapshot = (): ViewportDebugSnapshot => {
 };
 
 export function ViewportDebugProbe() {
+    const { t } = useTranslation('lobby');
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: false });
     const enabled = new URLSearchParams(location.search).get('bgViewportDebug') === '1';
@@ -205,40 +207,52 @@ export function ViewportDebugProbe() {
         return null;
     }
 
+    const resolvePositionLabel = (position: string) => {
+        const key = `viewportDebug.position.${position}`;
+        const translated = t(key);
+        return translated === key ? position : translated;
+    };
+
+    const resolveOverflowXLabel = (overflowX: string) => {
+        const key = `viewportDebug.overflowX.${overflowX}`;
+        const translated = t(key);
+        return translated === key ? overflowX : translated;
+    };
+
     return (
         <div
             data-testid="viewport-debug-probe"
             className="fixed left-[max(0.5rem,env(safe-area-inset-left))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-[10001] max-w-[min(22rem,calc(100vw-1rem))] rounded-lg border border-amber-400/40 bg-black/88 px-3 py-2 text-[11px] leading-4 text-amber-100 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-sm"
         >
             <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="font-semibold tracking-[0.08em] text-amber-300">真机视口诊断</div>
+                <div className="font-semibold tracking-[0.08em] text-amber-300">{t('viewportDebug.title')}</div>
                 <button
                     type="button"
                     onClick={refresh}
                     className="rounded border border-amber-400/30 px-2 py-0.5 text-[10px] text-amber-200"
                 >
-                    刷新
+                    {t('viewportDebug.refresh')}
                 </button>
             </div>
 
             <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
-                <span className="text-amber-300/70">inner</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.inner')}</span>
                 <span>{snapshot.innerWidth} x {snapshot.innerHeight}</span>
-                <span className="text-amber-300/70">visual</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.visual')}</span>
                 <span>{snapshot.visualViewportWidth} x {snapshot.visualViewportHeight}</span>
-                <span className="text-amber-300/70">client</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.client')}</span>
                 <span>{snapshot.clientWidth} x {snapshot.clientHeight}</span>
-                <span className="text-amber-300/70">runtime</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.runtime')}</span>
                 <span>{Math.round(viewport.width)} x {Math.round(viewport.height)}</span>
-                <span className="text-amber-300/70">safeArea</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.safe_area')}</span>
                 <span>{viewport.safeArea.top}/{viewport.safeArea.right}/{viewport.safeArea.bottom}/{viewport.safeArea.left}</span>
-                <span className="text-amber-300/70">doc scroll</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.doc_scroll')}</span>
                 <span>{snapshot.scrollWidth} x {snapshot.scrollHeight}</span>
-                <span className="text-amber-300/70">body scroll</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.body_scroll')}</span>
                 <span>{snapshot.bodyScrollWidth} x {snapshot.bodyScrollHeight}</span>
-                <span className="text-amber-300/70">越界元素</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.overflow_elements')}</span>
                 <span>{snapshot.overflowElements.length}</span>
-                <span className="text-amber-300/70">横向容器</span>
+                <span className="text-amber-300/70">{t('viewportDebug.labels.horizontal_containers')}</span>
                 <span>{snapshot.horizontalScrollContainers.length}</span>
             </div>
 
@@ -252,7 +266,15 @@ export function ViewportDebugProbe() {
                                 {item.className ? `.${item.className}` : ''}
                             </div>
                             <div className="text-[10px] text-amber-100/75">
-                                {item.position} | L{item.left} R{item.right} T{item.top} B{item.bottom} | {item.width}x{item.height}
+                                {t('viewportDebug.overflowItemDetail', {
+                                    position: resolvePositionLabel(item.position),
+                                    left: item.left,
+                                    right: item.right,
+                                    top: item.top,
+                                    bottom: item.bottom,
+                                    width: item.width,
+                                    height: item.height,
+                                })}
                             </div>
                         </div>
                     ))}
@@ -269,7 +291,14 @@ export function ViewportDebugProbe() {
                                 {item.className ? `.${item.className}` : ''}
                             </div>
                             <div className="text-[10px] text-amber-100/75">
-                                overflow-x:{item.overflowX} | {item.clientWidth}/{item.scrollWidth} | L{item.left} R{item.right} B{item.bottom}
+                                {t('viewportDebug.scrollContainerDetail', {
+                                    overflowX: resolveOverflowXLabel(item.overflowX),
+                                    clientWidth: item.clientWidth,
+                                    scrollWidth: item.scrollWidth,
+                                    left: item.left,
+                                    right: item.right,
+                                    bottom: item.bottom,
+                                })}
                             </div>
                         </div>
                     ))}

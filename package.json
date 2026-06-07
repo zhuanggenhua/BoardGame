@@ -1,7 +1,7 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.5.8",
+  "version": "5.9.0",
   "androidVersionCode": 563,
   "type": "module",
   "engines": {
@@ -51,6 +51,7 @@
     "audio:verify": "node scripts/audio/verify-slim-registry.mjs",
     "atlas:scan": "node scripts/assets/atlas_grid_scan.js",
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
+    "i18n:check:update-baseline": "npx tsx scripts/verify/i18n-check.ts --write-warning-baseline",
     "check:all": "npm run typecheck && npm run lint",
     "test:structure": "node scripts/infra/testing-structure-guard.mjs",
     "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",

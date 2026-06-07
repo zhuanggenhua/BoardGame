@@ -85,6 +85,60 @@
     "attached": "附加",
     "click_to_magnify": "点击放大"
   },
+  "debug": {
+    "phase_labels": {
+      "factionSelect": "选阵营",
+      "summon": "召唤",
+      "move": "移动",
+      "build": "建造",
+      "attack": "攻击",
+      "magic": "魔力",
+      "draw": "抽牌"
+    },
+    "card_types": {
+      "unit": "单位",
+      "event": "事件",
+      "structure": "建筑"
+    },
+    "magic": {
+      "section_title": "魔力修改",
+      "player_option": "P{{player}} ({{magic}} 魔力)",
+      "set": "设置为",
+      "add": "+增加",
+      "subtract": "-减少",
+      "clear": "清零",
+      "full": "满魔力 (15)"
+    },
+    "phase": {
+      "section_title": "阶段切换",
+      "current": "当前阶段: ",
+      "switch": "切换"
+    },
+    "deal": {
+      "section_title": "发牌调试 (稳定卡牌)",
+      "description": "调试语义已拆分为两步: 优先从当前剩余牌库发牌；若该牌已离开牌库，则按稳定 cardId 直接补到手牌。",
+      "atlas_note": "图集索引现在只作速查展示，不再作为跨游戏稳定主键。",
+      "empty_pool": "当前没有可用于调试的完整卡池",
+      "status": "牌库剩余: {{deckCount}} 张 | 手牌: {{handCount}} 张",
+      "selected_card_status": "| 当前卡：{{name}} | 牌库 {{deckCount}} 手牌 {{handCount}} 弃牌 {{discardCount}} 已激活 {{activeCount}} 场上 {{boardCount}}",
+      "no_pool_for_player": "| 当前玩家没有可注入的完整卡池数据",
+      "collision_warning": "该 spriteIndex 在多个图集中复用，当前按钮仍会按稳定 cardId 处理，不会再把 atlasIndex 当唯一键。",
+      "prefer_deal": "🎴 优先从剩余牌库发到手牌",
+      "direct_add": "🪄 直接补到手牌"
+    },
+    "lookup": {
+      "section_title": "卡牌速查 (完整卡池)",
+      "description": "点击条目只会切换当前目标卡，真正提交以稳定 cardId 为准。",
+      "no_atlas": "无图集",
+      "deck_short": "deck {{count}}",
+      "hand_short": "hand {{count}}",
+      "discard_short": "弃牌 {{count}}"
+    },
+    "hand_preview": {
+      "section_title": "手牌预览 (P{{player}})",
+      "empty": "手牌为空"
+    }
+  },
   "phaseTracker": {
     "turn": "回合 {{count}}"
   },

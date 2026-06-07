@@ -956,17 +956,23 @@ export function processClydeDetachChoices(
                 {
                     id: 'return-to-hand',
                     label: '收入手牌',
+                    labelKey: 'ui.cyborg_apes_clyde_detach_return_option',
                     value: { returnToHand: true },
                     displayMode: 'button' as const,
                 },
                 {
                     id: 'discard',
                     label: '进入弃牌堆',
+                    labelKey: 'ui.cyborg_apes_clyde_detach_discard_option',
                     value: { returnToHand: false },
                     displayMode: 'button' as const,
                 },
             ],
-            { sourceId: 'cyborg_apes_clyde_2_0_detach', targetType: 'generic' },
+            {
+                sourceId: 'cyborg_apes_clyde_2_0_detach',
+                targetType: 'generic',
+                titleKey: 'ui.cyborg_apes_clyde_detach_title',
+            },
         );
         interaction.data.detached = {
             ...detached.payload,

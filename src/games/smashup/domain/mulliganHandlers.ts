@@ -18,10 +18,26 @@ export function maybeQueueStartingHandMulliganPrompt(
     playerId,
     '起手无随从：是否重抽一次？（只能重抽一次）',
     [
-      { id: 'keep', label: '保留手牌', value: { choice: 'keep' }, displayMode: 'button' as const },
-      { id: 'mulligan', label: '重抽一次', value: { choice: 'mulligan' }, displayMode: 'button' as const },
+      {
+        id: 'keep',
+        label: '保留手牌',
+        labelKey: 'ui.starting_hand_mulligan_keep_option',
+        value: { choice: 'keep' },
+        displayMode: 'button' as const,
+      },
+      {
+        id: 'mulligan',
+        label: '重抽一次',
+        labelKey: 'ui.starting_hand_mulligan_redraw_option',
+        value: { choice: 'mulligan' },
+        displayMode: 'button' as const,
+      },
     ],
-    { sourceId: STARTING_HAND_MULLIGAN_SOURCE_ID, targetType: 'generic' },
+    {
+      sourceId: STARTING_HAND_MULLIGAN_SOURCE_ID,
+      targetType: 'generic',
+      titleKey: 'ui.starting_hand_mulligan_title',
+    },
   );
   return queueInteraction(state, interaction);
 }

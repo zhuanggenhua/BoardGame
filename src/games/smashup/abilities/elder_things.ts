@@ -520,10 +520,10 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
             currentOpponent,
             '米-格：你可以抽一张疯狂卡，否则对方抽一张牌',
             [
-                { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
-                { id: 'decline', label: '拒绝（让对方抽一张牌）', value: { choice: 'decline' }, displayMode: 'button' as const },
+                { id: 'draw_madness', label: '抽一张疯狂卡', labelKey: 'ui.elder_thing_draw_madness_option', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+                { id: 'decline', label: '拒绝（让对方抽一张牌）', labelKey: 'ui.elder_thing_mi_go_decline_draw_option', value: { choice: 'decline' }, displayMode: 'button' as const },
             ],
-            { sourceId: 'elder_thing_mi_go', targetType: 'button' },
+            { sourceId: 'elder_thing_mi_go', targetType: 'button', titleKey: 'ui.elder_thing_mi_go_title' },
         );
     },
     onResolve: (args) => {
@@ -584,6 +584,7 @@ const elderThingBeginTheSummoningPromptProgram = createPromptProgram<ElderThingB
             buildDiscardMinionCardOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'elder_thing_begin_the_summoning',
+                titleKey: 'ui.elder_thing_begin_the_summoning_title',
                 targetType: 'generic',
                 autoRefresh: 'discard',
                 responseValidationMode: 'live',
@@ -700,7 +701,11 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
             opponentId,
             '你手中有疯狂卡，必须消灭一个自己的随从',
             buildUnfathomableGoalsTargetOptions(context.matchState.core, opponentId, context.playerId),
-            { sourceId: 'elder_thing_unfathomable_goals', targetType: 'minion' },
+            {
+                sourceId: 'elder_thing_unfathomable_goals',
+                targetType: 'minion',
+                titleKey: 'ui.elder_thing_unfathomable_goals_title',
+            },
         );
         return attachOptionsGenerator(
             interaction,
@@ -1041,13 +1046,13 @@ const elderThingMiGoPodCounterPromptProgram = createPromptProgram<ElderThingMiGo
             context.casterPlayerId,
             '米-格：你可以在一个随从上放置+1战斗力指示物',
             [
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
                 ...buildAllMinionAffectOptions(context.matchState.core, context.casterPlayerId),
             ],
-            { sourceId: 'elder_thing_mi_go_pod_counter', targetType: 'minion' },
+            { sourceId: 'elder_thing_mi_go_pod_counter', targetType: 'minion', titleKey: 'ui.elder_thing_mi_go_pod_counter_title' },
         );
         interaction.data.optionsGenerator = (state) => [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
             ...buildAllMinionAffectOptions(state.core as SmashUpCore, context.casterPlayerId),
         ];
         return interaction;
@@ -1069,10 +1074,10 @@ const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodProm
         context.opponents[context.opponentIdx],
         '米-格：你可以抽一张疯狂卡',
         [
-            { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
-            { id: 'no', label: '不抽', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'yes', label: '抽一张疯狂卡', labelKey: 'ui.elder_thing_draw_madness_option', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不抽', labelKey: 'ui.elder_thing_no_draw_option', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
         ],
-        { sourceId: 'elder_thing_mi_go_pod', targetType: 'button' },
+        { sourceId: 'elder_thing_mi_go_pod', targetType: 'button', titleKey: 'ui.elder_thing_mi_go_pod_title' },
     ),
     onResolve: (args) => {
         const { context, state, value, timestamp } = args;
@@ -1131,6 +1136,7 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
             buildElderThingDestroyPromptOptions(context.matchState.core, context.playerId, context.cardUid),
             {
                 sourceId: 'elder_thing_elder_thing_pod_destroy',
+                titleKey: 'ui.elder_thing_elder_thing_pod_destroy_title',
                 targetType: 'minion',
                 multi: { min: 2, max: 2 },
                 responseValidationMode: 'live',
@@ -1204,6 +1210,7 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                 {
                     id: 'destroy',
                     label: '消灭两个你的其他随从',
+                    labelKey: canDestroy ? 'ui.elder_thing_destroy_two_other_minions_option' : 'ui.elder_thing_destroy_two_other_minions_disabled_option',
                     value: { mode: 'destroy' },
                     displayMode: 'button' as const,
                     disabled: !canDestroy,
@@ -1211,6 +1218,7 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                 {
                     id: 'bottom',
                     label: '将本随从放到牌库底',
+                    labelKey: 'ui.elder_thing_put_this_minion_on_bottom_option',
                     value: { mode: 'bottom' },
                     displayMode: 'button' as const,
                 },
@@ -1218,6 +1226,7 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
             {
                 sourceId: 'elder_thing_elder_thing_pod_mode',
                 targetType: 'button',
+                titleKey: 'ui.elder_thing_elder_thing_pod_mode_title',
                 displayCard: { defId: 'elder_thing_elder_thing_pod', cardUid: context.cardUid },
             },
         );
@@ -1395,10 +1404,10 @@ const elderThingShoggothPodPromptProgram = createPromptProgram<ElderThingShoggot
             targetPlayerId,
             '修格斯：你可以抽一张疯狂卡',
             [
-                { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-                { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
+                { id: 'yes', label: '抽一张疯狂卡', labelKey: 'ui.elder_thing_draw_madness_option', value: { choice: 'yes' }, displayMode: 'button' as const },
+                { id: 'no', label: '不抽', labelKey: 'ui.elder_thing_no_draw_option', value: { choice: 'no' }, displayMode: 'button' as const },
             ],
-            { sourceId: 'elder_thing_shoggoth_pod', targetType: 'button' },
+            { sourceId: 'elder_thing_shoggoth_pod', targetType: 'button', titleKey: 'ui.elder_thing_shoggoth_pod_title' },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1494,6 +1503,7 @@ const elderThingBeginTheSummoningPodPromptProgram = createPromptProgram<ElderThi
             buildDiscardMinionCardOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'elder_thing_begin_the_summoning_pod',
+                titleKey: 'ui.elder_thing_begin_the_summoning_pod_title',
                 targetType: 'generic',
                 autoRefresh: 'discard',
                 responseValidationMode: 'live',
@@ -1662,6 +1672,7 @@ const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgra
             buildDiscardSmallMinionOptions(context.matchState.core, context.casterPlayerId),
             {
                 sourceId: 'elder_thing_spreading_horror_pod_choose_minion',
+                titleKey: 'ui.elder_thing_spreading_horror_pod_choose_minion_title',
                 targetType: 'generic',
                 autoRefresh: 'discard',
                 responseValidationMode: 'live',
@@ -1718,7 +1729,11 @@ const elderThingSpreadingHorrorPodChooseBasePromptProgram = createPromptProgram<
         context.casterPlayerId,
         '散播恐怖：选择要打出随从的基地（每次必须不同）',
         buildBaseTargetOptions(buildAvailableBaseOptions(context.matchState.core, context.usedBases), context.matchState.core),
-        { sourceId: 'elder_thing_spreading_horror_pod_choose_base', targetType: 'base' },
+        {
+            sourceId: 'elder_thing_spreading_horror_pod_choose_base',
+            titleKey: 'ui.elder_thing_spreading_horror_pod_choose_base_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex;
@@ -1760,10 +1775,10 @@ const elderThingSpreadingHorrorPodMayPlayPromptProgram = createPromptProgram<Eld
         context.casterPlayerId,
         '散播恐怖：你可以从弃牌堆打出一个战斗力≤3的随从',
         [
-            { id: 'yes', label: '打出一个随从', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
-            { id: 'no', label: '不打出', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'yes', label: '打出一个随从', labelKey: 'ui.elder_thing_play_minion_option', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不打出', labelKey: 'ui.elder_thing_do_not_play_minion_option', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
         ],
-        { sourceId: 'elder_thing_spreading_horror_pod_may_play', targetType: 'button' },
+        { sourceId: 'elder_thing_spreading_horror_pod_may_play', targetType: 'button', titleKey: 'ui.elder_thing_spreading_horror_pod_may_play_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = (value as PodYesNoChoiceValue | undefined)?.choice;
@@ -1826,10 +1841,10 @@ const elderThingSpreadingHorrorPodOpponentPromptProgram = createPromptProgram<El
         context.opponents[context.idx],
         '散播恐怖：你可以弃置两张非疯狂卡',
         [
-            { id: 'yes', label: '弃置两张非疯狂卡', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
-            { id: 'no', label: '不弃置', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'yes', label: '弃置两张非疯狂卡', labelKey: 'ui.elder_thing_discard_two_non_madness_option', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不弃置', labelKey: 'ui.elder_thing_do_not_discard_option', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
         ],
-        { sourceId: 'elder_thing_spreading_horror_pod_opponent', targetType: 'button' },
+        { sourceId: 'elder_thing_spreading_horror_pod_opponent', targetType: 'button', titleKey: 'ui.elder_thing_spreading_horror_pod_opponent_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const pid = context.opponents[context.idx];
@@ -1993,10 +2008,10 @@ const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderT
         context.playerId,
         '敦威治恐怖：抽两张疯狂卡，或者消灭该随从',
         [
-            { id: 'draw', label: '抽两张疯狂卡', value: { choice: 'draw' }, displayMode: 'button' as const },
-            { id: 'destroy', label: '消灭该随从', value: { choice: 'destroy' }, displayMode: 'button' as const },
+            { id: 'draw', label: '抽两张疯狂卡', labelKey: 'ui.elder_thing_draw_two_madness_option', value: { choice: 'draw' }, displayMode: 'button' as const },
+            { id: 'destroy', label: '消灭该随从', labelKey: 'ui.elder_thing_destroy_that_minion_option', value: { choice: 'destroy' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'elder_thing_dunwich_horror_pod_choice', targetType: 'button' },
+        { sourceId: 'elder_thing_dunwich_horror_pod_choice', targetType: 'button', titleKey: 'ui.elder_thing_dunwich_horror_pod_choice_title' },
     ),
     onResolve: ({ context, value, state, timestamp }) => {
         const choice = (value as { choice?: 'draw' | 'destroy' } | undefined)?.choice;
@@ -2069,6 +2084,7 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.elder_thing_destroy_second_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildElderThingDestroyPromptOptions(
@@ -2137,6 +2153,7 @@ const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlay
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.elder_thing_destroy_first_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildElderThingDestroyPromptOptions(
@@ -2201,6 +2218,7 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                 {
                     id: 'destroy',
                     label: candidateCount >= 2 ? '消灭两个己方其他随从' : '消灭两个己方其他随从（随从不足）',
+                    labelKey: candidateCount >= 2 ? 'ui.elder_thing_destroy_two_other_friendly_minions_option' : 'ui.elder_thing_destroy_two_other_friendly_minions_disabled_option',
                     value: { choice: 'destroy' },
                     displayMode: 'button' as const,
                     disabled: candidateCount < 2,
@@ -2208,6 +2226,7 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                 {
                     id: 'deckbottom',
                     label: '将本随从放到牌库底',
+                    labelKey: 'ui.elder_thing_put_this_minion_on_bottom_option',
                     value: { choice: 'deckbottom' },
                     displayMode: 'button' as const,
                 },
@@ -2216,6 +2235,7 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                 sourceId: 'elder_thing_elder_thing_choice',
                 targetType: 'button',
                 displayCard: { defId: context.elderThingDefId, cardUid: context.cardUid },
+                titleKey: 'ui.elder_thing_choice_title',
             },
         );
     },
@@ -2329,6 +2349,7 @@ const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingSho
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.elder_thing_shoggoth_destroy_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildShoggothDestroyPromptOptions(
@@ -2367,10 +2388,10 @@ const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPr
             targetPlayerId,
             '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭',
             [
-                { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
-                { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
+                { id: 'draw_madness', label: '抽一张疯狂卡', labelKey: 'ui.elder_thing_draw_madness_option', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+                { id: 'decline', label: '拒绝（被消灭一个随从）', labelKey: 'ui.elder_thing_shoggoth_decline_destroy_option', value: { choice: 'decline' }, displayMode: 'button' as const },
             ],
-            { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
+            { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button', titleKey: 'ui.elder_thing_shoggoth_opponent_title' },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
@@ -2572,7 +2593,11 @@ const elderThingPriceOfPowerPodChooseBasePromptProgram = createPromptProgram<Eld
             }),
             context.matchState.core,
         ),
-        { sourceId: 'elder_thing_the_price_of_power_pod_choose_base', targetType: 'base' },
+        {
+            sourceId: 'elder_thing_the_price_of_power_pod_choose_base',
+            titleKey: 'ui.elder_thing_the_price_of_power_pod_choose_base_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex;

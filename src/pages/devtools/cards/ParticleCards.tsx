@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Skull, Trophy, Wand2, Zap, RotateCw } from 'lucide-react';
 import { BurstParticles, BURST_PRESETS } from '../../../components/common/animations/BurstParticles';
 import { VictoryParticles } from '../../../components/common/animations/VictoryParticles';
@@ -25,16 +26,14 @@ import {
 // 标签映射
 // ============================================================================
 
-const BURST_LABELS: Record<string, string> = {
-  explosion: '爆炸', explosionStrong: '强力爆炸', summonGlow: '召唤光',
-  summonGlowStrong: '强力召唤', smoke: '烟尘', sparks: '火花', magicDust: '魔法尘',
-};
+const getBurstLabel = (t: (key: string) => string, name: string) => t(`devtools.effectPreview.particle.shared.labels.${name}`);
 
 // ============================================================================
 // 爆发粒子
 // ============================================================================
 
 export const BurstCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const timerRef = useRef<number>(0);
   const { stats, startMeasure } = usePerfCounter();
@@ -49,10 +48,10 @@ export const BurstCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
   }, [startMeasure]);
 
   return (
-    <EffectCard title="爆发粒子" icon={Sparkles} iconColor={iconColor} desc="Canvas 2D 粒子引擎" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.particle.burst.title')} icon={Sparkles} iconColor={iconColor} desc={t('devtools.effectPreview.particle.burst.description')} stats={stats}
       buttons={<>
         {Object.keys(BURST_PRESETS).map(name => (
-          <TriggerButton key={name} label={BURST_LABELS[name] ?? name} onClick={() => trigger(name)} color="bg-purple-700 hover:bg-purple-600" />
+          <TriggerButton key={name} label={getBurstLabel(t, name)} onClick={() => trigger(name)} color="bg-purple-700 hover:bg-purple-600" />
         ))}
       </>}
     >
@@ -62,7 +61,7 @@ export const BurstCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
             <CardSprite className="absolute inset-0 rounded" />
           </div>
         ) : (
-          <span className="text-[10px] text-slate-600">爆发区域</span>
+          <span className="text-[10px] text-slate-600">{t('devtools.effectPreview.particle.burst.preview')}</span>
         )}
       </div>
       {activePreset && (
@@ -87,6 +86,7 @@ export const BurstCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
 // ============================================================================
 
 export const ShatterCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [hidden, setHidden] = useState(false);
   const [intensity, setIntensity] = useState<'normal' | 'strong'>('normal');
   const { active, fire, reset, stats } = useEffectTrigger(2000);
@@ -101,10 +101,10 @@ export const ShatterCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   const spriteStyle = getSpriteAtlasStyle(0, CARDS_ATLAS);
 
   return (
-    <EffectCard title="碎裂消散" icon={Skull} iconColor={iconColor} desc="卡图四分五裂飞散 + 重力下坠（单位死亡/卡牌销毁）" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.particle.shatter.title')} icon={Skull} iconColor={iconColor} desc={t('devtools.effectPreview.particle.shatter.description')} stats={stats}
       buttons={<>
-        <TriggerButton label="普通死亡" onClick={() => trigger('normal')} color="bg-slate-600 hover:bg-slate-500" />
-        <TriggerButton label="强力击杀" onClick={() => trigger('strong')} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.shatter.buttons.normal')} onClick={() => trigger('normal')} color="bg-slate-600 hover:bg-slate-500" />
+        <TriggerButton label={t('devtools.effectPreview.particle.shatter.buttons.strong')} onClick={() => trigger('strong')} color="bg-red-700 hover:bg-red-600" />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center">
@@ -138,6 +138,7 @@ export const ShatterCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // ============================================================================
 
 export const VictoryCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [active, setActive] = useState(false);
   const timerRef = useRef<number>(0);
   const { stats, startMeasure } = usePerfCounter();
@@ -152,11 +153,11 @@ export const VictoryCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   }, [startMeasure]);
 
   return (
-    <EffectCard title="胜利彩带" icon={Trophy} iconColor={iconColor} desc="底部喷射彩色粒子" stats={stats}
-      buttons={<TriggerButton label="触发" onClick={trigger} color="bg-yellow-600 hover:bg-yellow-500" />}
+    <EffectCard title={t('devtools.effectPreview.particle.victory.title')} icon={Trophy} iconColor={iconColor} desc={t('devtools.effectPreview.particle.victory.description')} stats={stats}
+      buttons={<TriggerButton label={t('devtools.effectPreview.particle.victory.buttons.trigger')} onClick={trigger} color="bg-yellow-600 hover:bg-yellow-500" />}
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] text-slate-600">🎉</span>
+        <span className="text-[10px] text-slate-600">{t('devtools.effectPreview.particle.victory.preview')}</span>
       </div>
       <VictoryParticles active={active} />
     </EffectCard>
@@ -168,6 +169,7 @@ export const VictoryCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // ============================================================================
 
 export const SummonCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [isStrong, setIsStrong] = useState(false);
   const { active, fire, reset, stats } = useEffectTrigger(2000);
 
@@ -177,10 +179,10 @@ export const SummonCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
   }, [fire]);
 
   return (
-    <EffectCard title="召唤特效" icon={Wand2} iconColor={iconColor} desc="Canvas 2D 多阶段" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.particle.summon.title')} icon={Wand2} iconColor={iconColor} desc={t('devtools.effectPreview.particle.summon.description')} stats={stats}
       buttons={<>
-        <TriggerButton label="普通（蓝）" onClick={() => trigger(false)} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="强力（金）" onClick={() => trigger(true)} color="bg-yellow-600 hover:bg-yellow-500" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon.buttons.normal')} onClick={() => trigger(false)} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon.buttons.strong')} onClick={() => trigger(true)} color="bg-yellow-600 hover:bg-yellow-500" />
       </>}
     >
       <div className="absolute inset-0">
@@ -202,6 +204,7 @@ export const SummonCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
 // ============================================================================
 
 export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { stats, startMeasure } = usePerfCounter();
   const stopRef = useRef<(() => void) | null>(null);
   
@@ -242,16 +245,16 @@ export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 
   return (
     <EffectCard 
-      title="召唤混合特效（FX 系统）" 
+      title={t('devtools.effectPreview.particle.summon_shader.title')}
       icon={Zap} 
       iconColor={iconColor} 
-      desc="Shader + Canvas 2D 粒子 + 音效 + 震动（完整反馈预览）" 
+      desc={t('devtools.effectPreview.particle.summon_shader.description')}
       stats={stats}
       buttons={<>
-        <TriggerButton label="蓝" onClick={() => trigger(false, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="蓝强" onClick={() => trigger(true, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="金" onClick={() => trigger(false, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
-        <TriggerButton label="金强" onClick={() => trigger(true, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon_shader.buttons.blue')} onClick={() => trigger(false, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon_shader.buttons.blue_strong')} onClick={() => trigger(true, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon_shader.buttons.gold')} onClick={() => trigger(false, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
+        <TriggerButton label={t('devtools.effectPreview.particle.summon_shader.buttons.gold_strong')} onClick={() => trigger(true, 'gold')} color="bg-yellow-600 hover:bg-yellow-500" />
       </>}
     >
       {/* 震动容器 */}
@@ -271,6 +274,7 @@ export const SummonShaderCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // ============================================================================
 
 export const VortexCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [active, setActive] = useState(false);
   const [isStrong, setIsStrong] = useState(false);
   const [colorTheme, setColorTheme] = useState<'blue' | 'purple' | 'green'>('blue');
@@ -295,12 +299,12 @@ export const VortexCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
   }, []);
 
   return (
-    <EffectCard title="充能旋涡" icon={RotateCw} iconColor={iconColor} desc="WebGL Shader" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.particle.vortex.title')} icon={RotateCw} iconColor={iconColor} desc={t('devtools.effectPreview.particle.vortex.description')} stats={stats}
       buttons={<>
-        <TriggerButton label="蓝" onClick={() => trigger(false, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="蓝强" onClick={() => trigger(true, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="紫" onClick={() => trigger(false, 'purple')} color="bg-purple-700 hover:bg-purple-600" />
-        <TriggerButton label="绿" onClick={() => trigger(false, 'green')} color="bg-emerald-700 hover:bg-emerald-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.vortex.buttons.blue')} onClick={() => trigger(false, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.vortex.buttons.blue_strong')} onClick={() => trigger(true, 'blue')} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.vortex.buttons.purple')} onClick={() => trigger(false, 'purple')} color="bg-purple-700 hover:bg-purple-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.vortex.buttons.green')} onClick={() => trigger(false, 'green')} color="bg-emerald-700 hover:bg-emerald-600" />
       </>}
     >
       <div className="absolute inset-0 overflow-hidden rounded-lg">
@@ -327,6 +331,7 @@ export const VortexCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
 // ============================================================================
 
 export const CombatShockwaveCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { stats, startMeasure } = usePerfCounter();
   const stopRef = useRef<(() => void) | null>(null);
   
@@ -369,16 +374,16 @@ export const CombatShockwaveCard: React.FC<PreviewCardProps> = ({ iconColor }) =
 
   return (
     <EffectCard 
-      title="攻击气浪（FX 系统）" 
+      title={t('devtools.effectPreview.particle.combat_shockwave.title')}
       icon={Zap} 
       iconColor={iconColor} 
-      desc="受击反馈 + 震动（完整反馈预览）" 
+      desc={t('devtools.effectPreview.particle.combat_shockwave.description')}
       stats={stats}
       buttons={<>
-        <TriggerButton label="近战" onClick={() => trigger('melee', false)} color="bg-red-700 hover:bg-red-600" />
-        <TriggerButton label="近战强" onClick={() => trigger('melee', true)} color="bg-red-700 hover:bg-red-600" />
-        <TriggerButton label="远程" onClick={() => trigger('ranged', false)} color="bg-blue-700 hover:bg-blue-600" />
-        <TriggerButton label="远程强" onClick={() => trigger('ranged', true)} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.combat_shockwave.buttons.melee')} onClick={() => trigger('melee', false)} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.combat_shockwave.buttons.melee_strong')} onClick={() => trigger('melee', true)} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.combat_shockwave.buttons.ranged')} onClick={() => trigger('ranged', false)} color="bg-blue-700 hover:bg-blue-600" />
+        <TriggerButton label={t('devtools.effectPreview.particle.combat_shockwave.buttons.ranged_strong')} onClick={() => trigger('ranged', true)} color="bg-blue-700 hover:bg-blue-600" />
       </>}
     >
       <div className="absolute inset-0 overflow-hidden rounded-lg" style={shakeStyle}>
@@ -396,11 +401,11 @@ export const CombatShockwaveCard: React.FC<PreviewCardProps> = ({ iconColor }) =
 // ============================================================================
 
 export const meta: EffectEntryMeta[] = [
-  { id: 'burst', label: '爆发粒子', icon: Sparkles, component: BurstCard, group: 'particle', usageDesc: '召唤师战争·单位被消灭' },
-  { id: 'shatter', label: '碎裂消散', icon: Skull, component: ShatterCard, group: 'particle', usageDesc: '召唤师战争·单位/建筑死亡碎裂' },
-  { id: 'victory', label: '胜利彩带', icon: Trophy, component: VictoryCard, group: 'particle', usageDesc: '通用·对局胜利结算' },
-  { id: 'summon', label: '召唤特效', icon: Wand2, component: SummonCard, group: 'particle', usageDesc: '召唤师战争·召唤单位入场' },
-  { id: 'summonShader', label: '召唤混合特效', icon: Zap, component: SummonShaderCard, group: 'particle', usageDesc: '召唤师战争·召唤单位入场（Shader + 粒子混合版）' },
-  { id: 'vortex', label: '充能旋涡', icon: RotateCw, component: VortexCard, group: 'particle', usageDesc: '召唤师战争·单位充能' },
-  { id: 'combatShockwave', label: '攻击气浪', icon: Zap, component: CombatShockwaveCard, group: 'particle', usageDesc: '召唤师战争·攻击受击反馈（FX 系统完整反馈）' },
+  { id: 'burst', labelKey: 'devtools.effectPreview.entries.particle.burst.label', icon: Sparkles, component: BurstCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.burst.usage' },
+  { id: 'shatter', labelKey: 'devtools.effectPreview.entries.particle.shatter.label', icon: Skull, component: ShatterCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.shatter.usage' },
+  { id: 'victory', labelKey: 'devtools.effectPreview.entries.particle.victory.label', icon: Trophy, component: VictoryCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.victory.usage' },
+  { id: 'summon', labelKey: 'devtools.effectPreview.entries.particle.summon.label', icon: Wand2, component: SummonCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.summon.usage' },
+  { id: 'summonShader', labelKey: 'devtools.effectPreview.entries.particle.summonShader.label', icon: Zap, component: SummonShaderCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.summonShader.usage' },
+  { id: 'vortex', labelKey: 'devtools.effectPreview.entries.particle.vortex.label', icon: RotateCw, component: VortexCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.vortex.usage' },
+  { id: 'combatShockwave', labelKey: 'devtools.effectPreview.entries.particle.combatShockwave.label', icon: Zap, component: CombatShockwaveCard, group: 'particle', usageDescKey: 'devtools.effectPreview.entries.particle.combatShockwave.usage' },
 ];

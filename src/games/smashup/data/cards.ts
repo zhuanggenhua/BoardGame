@@ -1,5 +1,6 @@
 import type { CardDef, BaseCardDef, MinionCardDef, ActionCardDef, FusionCardDef, TitanCardDef } from '../domain/types';
 import { isSmashUpDiyFaction, SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { usesSeparateSmashUpBasePoolVariant } from '../domain/variantBindings';
 import { TITAN_CARD_DEFS } from './titans';
 
 import { PIRATE_CARDS } from './factions/pirates';
@@ -1619,13 +1620,6 @@ function getPublicBaseDefs(): BaseCardDef[] {
     return Array.from(_baseRegistry.values()).filter(base => !isPodVariantId(base.id));
 }
 
-const POD_BASE_POOL_VARIANT_FACTIONS = new Set<string>([
-    SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD,
-    SMASHUP_FACTION_IDS.COWBOYS_POD,
-    SMASHUP_FACTION_IDS.SAMURAI_POD,
-    SMASHUP_FACTION_IDS.VIKINGS_POD,
-]);
-
 /** 查找卡牌定义 */
 /** 根据所选派系获取基地定义 ID（同变体补充：POD 只补 POD，基础只补基础） */
 export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
@@ -1636,7 +1630,7 @@ export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions
     );
     const selectedExactFactions = new Set(selectedFactionIds);
     const selectedPodBasePoolVariants = new Set(
-        selectedFactionIds.filter(factionId => POD_BASE_POOL_VARIANT_FACTIONS.has(factionId)),
+        selectedFactionIds.filter(factionId => usesSeparateSmashUpBasePoolVariant(factionId)),
     );
     const matchedBases = getPublicBaseDefs().filter(base => {
         if (isSmashUpDiyFaction(base.faction) && !diyEnabled) {

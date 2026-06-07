@@ -108,12 +108,12 @@ export default function MatchesPage() {
             const res = await fetch(`${ADMIN_API_URL}/matches/${matchID}`, {
                 headers,
             });
-            if (!res.ok) throw new Error('获取详情失败');
+            if (!res.ok) throw new Error(t('admin.matchesPage.toast.detail_fetch_failed'));
             const data = await res.json();
             setDetailMatch(data);
         } catch (err) {
             console.error(err);
-            toastError('获取对局详情失败');
+            toastError(t('admin.matchesPage.toast.detail_fetch_failed'));
         } finally {
             setDetailLoading(false);
         }
@@ -135,7 +135,7 @@ export default function MatchesPage() {
             const res = await fetch(`${ADMIN_API_URL}/matches?${query}`, {
                 headers,
             });
-            if (!res.ok) throw new Error('Failed to fetch matches');
+            if (!res.ok) throw new Error(t('admin.matchesPage.toast.fetch_failed'));
             const data = await res.json();
             const items = data.items.map((m: Match) => ({ ...m, id: m.matchID }));
             setMatches(items);
@@ -143,29 +143,31 @@ export default function MatchesPage() {
             setTotalItems(data.total);
         } catch (err) {
             console.error(err);
-            toastError('获取对局列表失败');
+            toastError(t('admin.matchesPage.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
     };
 
     const resolveResultLabel = (match: Match) => {
-        if (!match.winnerID) return '平局';
+        if (!match.winnerID) return t('admin.matchesPage.results.draw');
         const winner = match.players.find((player) => player.id === match.winnerID);
-        return `${winner?.name || `玩家${match.winnerID}`} 胜`;
+        return t('admin.matchesPage.results.winner', {
+            name: winner?.name || t('admin.matchesPage.player_fallback', { id: match.winnerID }),
+        });
     };
 
     const formatDuration = (start: string, end: string) => {
         const startTime = new Date(start).getTime();
         const endTime = new Date(end).getTime();
-        if (Number.isNaN(startTime) || Number.isNaN(endTime)) return '耗时未知';
+        if (Number.isNaN(startTime) || Number.isNaN(endTime)) return t('admin.matchesPage.duration.unknown');
         const diffSeconds = Math.max(0, Math.round((endTime - startTime) / 1000));
         const hours = Math.floor(diffSeconds / 3600);
         const minutes = Math.floor((diffSeconds % 3600) / 60);
         const seconds = diffSeconds % 60;
-        if (hours > 0) return `耗时 ${hours}小时${minutes}分`;
-        if (minutes > 0) return `耗时 ${minutes}分${seconds}秒`;
-        return `耗时 ${seconds}秒`;
+        if (hours > 0) return t('admin.matchesPage.duration.hours_minutes', { hours, minutes });
+        if (minutes > 0) return t('admin.matchesPage.duration.minutes_seconds', { minutes, seconds });
+        return t('admin.matchesPage.duration.seconds', { seconds });
     };
 
     useEffect(() => {
@@ -191,10 +193,10 @@ export default function MatchesPage() {
 
     const handleDelete = async (matchID: string) => {
         if (!isAdmin) {
-            toastError('仅管理员可删除对局记录');
+            toastError(t('admin.matchesPage.toast.admin_only'));
             return;
         }
-        if (!confirm('确定要删除该对局记录吗？')) return;
+        if (!confirm(t('admin.matchesPage.confirm.delete'))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/matches/${matchID}`, {
                 method: 'DELETE',
@@ -202,23 +204,23 @@ export default function MatchesPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '删除失败');
+                throw new Error(payload?.error || t('admin.matchesPage.toast.delete_failed'));
             }
-            success('对局记录已删除');
+            success(t('admin.matchesPage.toast.delete_success'));
             fetchMatches();
         } catch (err) {
             console.error(err);
-            toastError(err instanceof Error ? err.message : '删除失败');
+            toastError(err instanceof Error ? err.message : t('admin.matchesPage.toast.delete_failed'));
         }
     };
 
     const handleBulkDelete = async () => {
         if (!isAdmin) {
-            toastError('仅管理员可删除对局记录');
+            toastError(t('admin.matchesPage.toast.admin_only'));
             return;
         }
         if (selectedIds.length === 0) return;
-        if (!confirm(`确定要删除选中的 ${selectedIds.length} 条对局记录吗？`)) return;
+        if (!confirm(t('admin.matchesPage.confirm.bulk_delete', { count: selectedIds.length }))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/matches/bulk-delete`, {
                 method: 'POST',
@@ -230,14 +232,14 @@ export default function MatchesPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '批量删除失败');
+                throw new Error(payload?.error || t('admin.matchesPage.toast.bulk_delete_failed'));
             }
-            success(`已删除 ${selectedIds.length} 条对局记录`);
+            success(t('admin.matchesPage.toast.bulk_delete_success', { count: selectedIds.length }));
             setSelectedIds([]);
             fetchMatches();
         } catch (err) {
             console.error(err);
-            toastError(err instanceof Error ? err.message : '批量删除失败');
+            toastError(err instanceof Error ? err.message : t('admin.matchesPage.toast.bulk_delete_failed'));
         }
     };
 
@@ -247,7 +249,7 @@ export default function MatchesPage() {
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    aria-label="选择全部对局"
+                    aria-label={t('admin.matchesPage.aria.select_all')}
                 />
             ),
             width: '48px',
@@ -258,7 +260,7 @@ export default function MatchesPage() {
                         type="checkbox"
                         checked={selectedIds.includes(m.matchID)}
                         onChange={() => toggleSelectOne(m.matchID)}
-                        aria-label={`选择对局 ${m.matchID}`}
+                        aria-label={t('admin.matchesPage.aria.select_match', { id: m.matchID })}
                     />
                 </div>
             )
@@ -267,12 +269,12 @@ export default function MatchesPage() {
     const columns: Column<Match>[] = [
         ...(isAdmin ? [selectionColumn] : []),
         {
-            header: 'ID',
+            header: t('admin.matchesPage.columns.id'),
             accessorKey: 'matchID',
             cell: (m) => <span className="font-mono text-xs text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">{m.matchID.substring(0, 8)}</span>
         },
         {
-            header: '游戏',
+            header: t('admin.matchesPage.columns.game'),
             accessorKey: 'gameName',
             cell: (m) => (
                 <div className="flex items-center gap-2">
@@ -289,7 +291,7 @@ export default function MatchesPage() {
             )
         },
         {
-            header: '玩家',
+            header: t('admin.matchesPage.columns.players'),
             cell: (m) => (
                 <div className="flex items-center gap-3">
                     {/* Fixed: Removed hover:space-x-1 to prevent layout jitter */}
@@ -301,7 +303,7 @@ export default function MatchesPage() {
                                     <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-zinc-100 text-xs font-bold text-zinc-400">
-                                        {(p.name || '?')[0]?.toUpperCase()}
+                                        {(p.name || t('admin.matchesPage.player_unknown'))[0]?.toUpperCase()}
                                     </div>
                                 )}
                             </div>
@@ -311,7 +313,7 @@ export default function MatchesPage() {
             )
         },
         {
-            header: '结果',
+            header: t('admin.matchesPage.columns.result'),
             align: 'center',
             cell: (m) => (
                 <div className="flex justify-center">
@@ -326,7 +328,7 @@ export default function MatchesPage() {
             )
         },
         {
-            header: '结束时间',
+            header: t('admin.matchesPage.columns.ended_at'),
             accessorKey: 'endedAt',
             align: 'right', // New alignment
             className: 'custom-date-col',
@@ -346,7 +348,7 @@ export default function MatchesPage() {
             )
         },
         {
-            header: '操作',
+            header: t('admin.matchesPage.columns.actions'),
             align: 'right', // New alignment
             cell: (m) => (
                 <div className="flex justify-end gap-3">
@@ -355,14 +357,14 @@ export default function MatchesPage() {
                             onClick={() => handleDelete(m.matchID)}
                             className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
                         >
-                            删除
+                            {t('admin.matchesPage.actions.delete')}
                         </button>
                     )}
                     <button
                         onClick={() => fetchMatchDetail(m.matchID)}
                         className="text-xs font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
                     >
-                        详情
+                        {t('admin.matchesPage.actions.detail')}
                     </button>
                 </div>
             )
@@ -373,13 +375,15 @@ export default function MatchesPage() {
         <div className="h-full flex flex-col p-8 w-full max-w-[1600px] mx-auto min-h-0 bg-zinc-50/50">
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 flex-none mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">对局记录</h1>
-                    <p className="text-sm text-zinc-500 mt-1">查看平台所有对局历史与状态</p>
+                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">
+                        {t('admin.matchesPage.title')}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mt-1">{t('admin.matchesPage.description')}</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <SearchInput
-                        placeholder="搜索对局ID或玩家..."
+                        placeholder={t('admin.matchesPage.search_placeholder')}
                         onSearch={(val) => { setSearch(val); setPage(1); }}
                         className="w-full sm:w-64"
                     />
@@ -387,8 +391,8 @@ export default function MatchesPage() {
                         value={gameFilter}
                         onChange={(val) => { setGameFilter(val); setPage(1); }}
                         options={gameOptions}
-                        placeholder="所有游戏"
-                        allOptionLabel="所有游戏"
+                        placeholder={t('admin.matchesPage.filters.all_games')}
+                        allOptionLabel={t('admin.matchesPage.filters.all_games')}
                         prefixIcon={<Filter size={14} />}
                         className="w-full sm:w-48"
                     />
@@ -398,7 +402,8 @@ export default function MatchesPage() {
                             disabled={selectedIds.length === 0}
                             className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            删除选中 {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
+                            {t('admin.matchesPage.actions.bulk_delete')}
+                            {selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
                         </button>
                     )}
                 </div>
@@ -457,13 +462,16 @@ function renderSegment(seg: ActionLogSegment, idx: number): React.ReactNode {
     }
 }
 
-function formatDurationText(seconds: number): string {
+function formatDurationText(
+    seconds: number,
+    t: (key: string, options?: Record<string, unknown>) => string
+): string {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
-    if (h > 0) return `${h}小时${m}分`;
-    if (m > 0) return `${m}分${s}秒`;
-    return `${s}秒`;
+    if (h > 0) return t('admin.matchesPage.duration.hours_minutes', { hours: h, minutes: m });
+    if (m > 0) return t('admin.matchesPage.duration.minutes_seconds', { minutes: m, seconds: s });
+    return t('admin.matchesPage.duration.seconds_only', { seconds: s });
 }
 
 // ── 对局详情弹窗 ──
@@ -479,9 +487,12 @@ function MatchDetailModal({
     loading: boolean;
     onClose: () => void;
 }) {
+    const { t } = useTranslation('lobby');
     const resolveResult = (playerId: string) => {
-        if (!detail.winnerID) return '平局';
-        return playerId === detail.winnerID ? '胜利' : '失败';
+        if (!detail.winnerID) return t('admin.matchesPage.results.draw');
+        return playerId === detail.winnerID
+            ? t('admin.matchesPage.results.win')
+            : t('admin.matchesPage.results.loss');
     };
 
     return (
@@ -493,7 +504,7 @@ function MatchDetailModal({
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0">
                     <div>
-                        <h3 className="text-lg font-bold text-zinc-900">对局详情</h3>
+                        <h3 className="text-lg font-bold text-zinc-900">{t('admin.matchesPage.detail.title')}</h3>
                         <p className="text-xs text-zinc-400 font-mono mt-0.5">{detail.matchID}</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
@@ -539,15 +550,17 @@ function MatchDetailModal({
                         {/* 基础信息 */}
                         <div className="grid grid-cols-3 gap-4 text-sm">
                             <div>
-                                <span className="text-zinc-400 text-xs">游戏</span>
+                                <span className="text-zinc-400 text-xs">{t('admin.matchesPage.detail.game')}</span>
                                 <p className="font-medium text-zinc-700 mt-0.5">{resolveGameName(detail.gameName)}</p>
                             </div>
                             <div>
-                                <span className="text-zinc-400 text-xs">耗时</span>
-                                <p className="font-medium text-zinc-700 mt-0.5">{formatDurationText(detail.duration)}</p>
+                                <span className="text-zinc-400 text-xs">{t('admin.matchesPage.detail.duration')}</span>
+                                <p className="font-medium text-zinc-700 mt-0.5">
+                                    {formatDurationText(detail.duration, t)}
+                                </p>
                             </div>
                             <div>
-                                <span className="text-zinc-400 text-xs">结束时间</span>
+                                <span className="text-zinc-400 text-xs">{t('admin.matchesPage.detail.ended_at')}</span>
                                 <p className="font-medium text-zinc-700 mt-0.5">
                                     {new Date(detail.endedAt).toLocaleString(undefined, {
                                         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -559,7 +572,9 @@ function MatchDetailModal({
 
                         {/* 玩家 */}
                         <div className="space-y-2">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">玩家</h4>
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                {t('admin.matchesPage.detail.players')}
+                            </h4>
                             <div className="grid grid-cols-2 gap-3">
                                 {detail.players.map((p, i) => (
                                     <div key={i} className={cn(
@@ -569,10 +584,12 @@ function MatchDetailModal({
                                             : "bg-zinc-50 border-zinc-200"
                                     )}>
                                         <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-500">
-                                            {(p.name || '?')[0]?.toUpperCase()}
+                                            {(p.name || t('admin.matchesPage.player_unknown'))[0]?.toUpperCase()}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-zinc-700 truncate">{p.name || `玩家${p.id}`}</p>
+                                            <p className="text-sm font-medium text-zinc-700 truncate">
+                                                {p.name || t('admin.matchesPage.player_fallback', { id: p.id })}
+                                            </p>
                                             <p className={cn(
                                                 "text-xs font-semibold",
                                                 p.id === detail.winnerID ? "text-emerald-600" : "text-zinc-400"
@@ -589,7 +606,7 @@ function MatchDetailModal({
                         <div className="space-y-2">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <ScrollText size={12} />
-                                操作日志
+                                {t('admin.matchesPage.detail.action_log')}
                                 {detail.actionLog && (
                                     <span className="text-zinc-300 font-normal">({detail.actionLog.length})</span>
                                 )}
@@ -611,7 +628,7 @@ function MatchDetailModal({
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-zinc-400 italic">暂无操作日志</p>
+                                <p className="text-sm text-zinc-400 italic">{t('admin.matchesPage.detail.no_logs')}</p>
                             )}
                         </div>
                     </div>

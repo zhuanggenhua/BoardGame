@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import type { CardInstance } from '../domain/core-types';
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose, interactive = true }) => {
+    const { t } = useTranslation('game-cardia');
     const { card, anchorRect } = target || {};
     const imagePath = card ? resolveCardiaCardImagePath(card) : undefined;
 
@@ -78,12 +80,12 @@ export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose, interacti
                         {imagePath ? (
                             <CardPreview
                                 previewRef={{ type: 'image', src: imagePath }}
-                                alt="Card"
+                                alt={t('imageAlt.card')}
                                 className="absolute inset-0 w-full h-full object-cover"
                             />
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center text-white text-xl">
-                                无图片
+                                {t('noImage')}
                             </div>
                         )}
                     </div>

@@ -239,6 +239,7 @@ function buildGhostHandOptions(
         {
             id: 'skip',
             label: options.skipLabel ?? '跳过',
+            labelKey: 'ui.skip',
             value: { skip: true },
             displayMode: 'button' as const,
         },
@@ -251,7 +252,15 @@ function buildGhostGhostOptionsFromState(
     playedCardUid: string,
 ): PromptOption<GhostCardChoiceValue | GhostSkipValue>[] {
     const player = core.players[playerId];
-    if (!player) return [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
+    if (!player) {
+        return [{
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        }];
+    }
     return buildGhostHandOptions(player.hand, playedCardUid, { includeSkip: true });
 }
 
@@ -299,7 +308,15 @@ function buildGhostSpiritDiscardOptions(
     playerId: PlayerId,
 ): PromptOption<GhostCardChoiceValue | GhostSkipValue>[] {
     const player = core.players[playerId];
-    if (!player) return [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
+    if (!player) {
+        return [{
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        }];
+    }
     return buildGhostHandOptions(player.hand, undefined, { includeSkip: true });
 }
 
@@ -339,6 +356,7 @@ function buildGhostDeadRisePlayOptions(
         {
             id: 'skip',
             label: '跳过',
+            labelKey: 'ui.skip',
             value: { skip: true },
             displayMode: 'button' as const,
         },
@@ -425,6 +443,7 @@ const ghostGhostPromptProgram = createPromptProgram<GhostGhostContext, SmashUpCo
             buildGhostGhostOptionsFromState(context.matchState.core, context.playerId, context.playedCardUid),
             {
                 sourceId: 'ghost_ghost',
+                titleKey: 'ui.ghost_ghost_title',
                 targetType: 'hand',
                 autoRefresh: 'hand',
                 responseValidationMode: 'live',
@@ -547,11 +566,24 @@ const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmCo
         context.playerId,
         '是否消灭该随从？（力量 0，无需弃牌）',
         [
-            { id: 'yes', label: '消灭', value: { confirm: true }, displayMode: 'button' as const },
-            { id: 'no', label: '跳过', value: { confirm: false }, displayMode: 'button' as const },
+            {
+                id: 'yes',
+                label: '消灭',
+                labelKey: 'ui.ghost_spirit_confirm_destroy_option',
+                value: { confirm: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'no',
+                label: '跳过',
+                labelKey: 'ui.ghost_spirit_confirm_skip_option',
+                value: { confirm: false },
+                displayMode: 'button' as const,
+            },
         ],
         {
             sourceId: 'ghost_spirit_confirm',
+            titleKey: 'ui.ghost_spirit_confirm_title',
             targetType: 'button',
         },
     ),
@@ -615,6 +647,7 @@ const ghostSpiritPromptProgram = createPromptProgram<GhostSpiritContext, SmashUp
             buildGhostSpiritTargetOptions(context.matchState.core, context.playerId, context.playedCardUid),
             {
                 sourceId: 'ghost_spirit',
+                titleKey: 'ui.ghost_spirit_title',
                 targetType: 'minion',
                 autoCancelOption: true,
                 responseValidationMode: 'live',
@@ -697,6 +730,7 @@ const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBa
         ),
         {
             sourceId: 'ghost_the_dead_rise_base',
+            titleKey: 'ui.ghost_the_dead_rise_base_title',
             targetType: 'base',
             responseValidationMode: 'live',
         },
@@ -835,6 +869,7 @@ const ghostTheDeadRiseDiscardPromptProgram = createPromptProgram<GhostTheDeadRis
             buildGhostHandOptions(context.matchState.core.players[context.playerId]?.hand ?? [], context.playedCardUid, { includeSkip: true }),
             {
                 sourceId: 'ghost_the_dead_rise_discard',
+                titleKey: 'ui.ghost_the_dead_rise_discard_title',
                 targetType: 'hand',
                 multi: { min: 0, max: context.maxDiscard },
                 autoRefresh: 'hand',
@@ -895,6 +930,7 @@ const ghostAcrossTheDividePromptProgram = createPromptProgram<GhostAcrossTheDivi
             buildGhostAcrossTheDivideOptions(context.groups),
             {
                 sourceId: 'ghost_across_the_divide',
+                titleKey: 'ui.ghost_across_the_divide_title',
                 targetType: 'generic',
                 autoCancelOption: true,
                 autoRefresh: 'discard',

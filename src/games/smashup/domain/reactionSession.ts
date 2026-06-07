@@ -194,7 +194,7 @@ function buildMirroredResponseWindow(
         resolutionFrameId: session.frameId,
         responderQueue,
         currentResponderIndex,
-        passedPlayers: [],
+        passedPlayers: responderQueue.filter(playerId => session.passedPlayerIds?.includes(playerId)),
     };
 }
 
@@ -255,6 +255,7 @@ export function startSmashUpReactionSession(
         activePlayerId: session.activePlayerId ?? currentPlayerId,
         currentPlayerId,
         consecutivePasses: session.consecutivePasses ?? 0,
+        passedPlayerIds: session.passedPlayerIds ?? [],
         sourceBaseIndex: session.sourceBaseIndex,
         responseWindowType: session.responseWindowType,
     });
@@ -471,6 +472,35 @@ function getMandatoryResolutionGroup(
 function nextClockwisePlayer(core: SmashUpCore, playerId: PlayerId): PlayerId {
     const order = getClockwiseOrder(core.turnOrder ?? [], playerId);
     return order.length > 1 ? order[1] : playerId;
+}
+
+function hasExplicitlyPassed(session: SmashUpReactionSession, playerId: PlayerId): boolean {
+    return session.passedPlayerIds?.includes(playerId) ?? false;
+}
+
+function markPlayerPassed(session: SmashUpReactionSession, playerId: PlayerId): SmashUpReactionSession {
+    if (hasExplicitlyPassed(session, playerId)) {
+        return session;
+    }
+    return {
+        ...session,
+        passedPlayerIds: [...(session.passedPlayerIds ?? []), playerId],
+    };
+}
+
+function getNextUnpassedResponder(
+    core: SmashUpCore,
+    session: SmashUpReactionSession,
+    fromPlayerId: PlayerId,
+): PlayerId | undefined {
+    const order = getClockwiseOrder(core.turnOrder ?? [], fromPlayerId);
+    for (let index = 1; index < order.length; index += 1) {
+        const candidate = order[index];
+        if (!hasExplicitlyPassed(session, candidate)) {
+            return candidate;
+        }
+    }
+    return hasExplicitlyPassed(session, fromPlayerId) ? undefined : fromPlayerId;
 }
 
 function buildProbeState(
@@ -1115,6 +1145,23 @@ function autoAdvanceOptionalWithoutChoices(
     const playerCount = currentState.core.turnOrder.length;
 
     while (true) {
+        if (hasExplicitlyPassed(currentSession, currentSession.activePlayerId)) {
+            const nextActivePlayerId = getNextUnpassedResponder(
+                currentState.core,
+                currentSession,
+                currentSession.activePlayerId,
+            );
+            if (!nextActivePlayerId) {
+                return completeReactionFrameAfterPass(currentState, currentSession.frameId, now).state;
+            }
+            currentSession = {
+                ...currentSession,
+                activePlayerId: nextActivePlayerId,
+            };
+            currentState = setSmashUpReactionSession(currentState, currentSession);
+            continue;
+        }
+
         const options = buildReactionOptions(currentState, currentSession, now);
         const nonPassOptions = options.filter(option => option.id !== 'pass');
         if (nonPassOptions.length > 0) {
@@ -1204,6 +1251,7 @@ export function advanceSmashUpReactionSession(
                 phase: 'optional',
                 activePlayerId: session.currentPlayerId,
                 consecutivePasses: 0,
+                passedPlayerIds: [],
             });
             session = getSmashUpReactionSession(currentState)!;
         }
@@ -1239,6 +1287,7 @@ export function advanceSmashUpReactionSession(
             phase: 'optional',
             activePlayerId: session.currentPlayerId,
             consecutivePasses: 0,
+            passedPlayerIds: [],
         });
         const continued = advanceSmashUpReactionSession(optionalState, random, now);
         return continued
@@ -1297,8 +1346,10 @@ export function resolveSmashUpReactionChoice(
     }
 
     if (liveValue.kind === 'pass') {
-        const nextPassCount = session.consecutivePasses + 1;
-        if (nextPassCount >= state.core.turnOrder.length) {
+        const passedSession = markPlayerPassed(session, session.activePlayerId);
+        const nextPassCount = passedSession.consecutivePasses + 1;
+        const nextActivePlayerId = getNextUnpassedResponder(state.core, passedSession, session.activePlayerId);
+        if (!nextActivePlayerId || nextPassCount >= state.core.turnOrder.length) {
             const completed = completeReactionFrameAfterPass(state, session.frameId, now);
             const resumed = continueSuspendedReactionIfNeeded(completed.state, random, now);
             return resumed
@@ -1306,8 +1357,8 @@ export function resolveSmashUpReactionChoice(
                 : completed;
         }
         const advancedState = setSmashUpReactionSession(resolveInteraction(state), {
-            ...session,
-            activePlayerId: nextClockwisePlayer(state.core, session.activePlayerId),
+            ...passedSession,
+            activePlayerId: nextActivePlayerId,
             consecutivePasses: nextPassCount,
         });
         const continued = advanceSmashUpReactionSession(advancedState, random, now);
@@ -1318,7 +1369,8 @@ export function resolveSmashUpReactionChoice(
         ? session
         : {
             ...session,
-            activePlayerId: nextClockwisePlayer(state.core, session.activePlayerId),
+            activePlayerId: getNextUnpassedResponder(state.core, session, session.activePlayerId)
+                ?? session.activePlayerId,
             consecutivePasses: 0,
         };
     const continuationSession = liveValue.kind === 'activate_special'

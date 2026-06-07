@@ -336,7 +336,7 @@ export const CursorSettingsModal = ({ isOpen, onClose, closeOnBackdrop }: Cursor
                             </div>
                         ) : (
                             <div className="flex h-full min-h-40 items-center justify-center text-xs font-bold text-parchment-light-text">
-                                {t('common:loading', { defaultValue: '加载中...' })}
+                                {t('common:loading')}
                             </div>
                         )}
                     </div>

@@ -105,7 +105,13 @@ function buildRecruitByForceOptions(
                 displayMode: 'card' as const,
             };
         }),
-        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        {
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
     ];
 }
 
@@ -126,7 +132,13 @@ function buildItBeginsAgainOptions(
             _source: 'discard' as const,
             displayMode: 'card' as const,
         })),
-        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        {
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
     ];
 }
 
@@ -173,7 +185,13 @@ function buildMadnessUnleashedOptions(
             _source: 'hand' as const,
             displayMode: 'card' as const,
         })),
-        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        {
+            id: 'skip',
+            label: '跳过',
+            labelKey: 'ui.skip',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
     ];
 }
 
@@ -316,6 +334,7 @@ const cthulhuRecruitByForcePromptProgram = createPromptProgram<CthulhuPromptCont
             options,
             {
                 sourceId: 'cthulhu_recruit_by_force',
+                titleKey: 'ui.cthulhu_recruit_by_force_title',
                 targetType: 'generic',
                 multi: { min: 0, max: Math.max(options.length - 1, 0) },
                 autoRefresh: 'discard',
@@ -381,6 +400,7 @@ const cthulhuItBeginsAgainPromptProgram = createPromptProgram<CthulhuItBeginsAga
             options,
             {
                 sourceId: 'cthulhu_it_begins_again',
+                titleKey: 'ui.cthulhu_it_begins_again_title',
                 targetType: 'generic',
                 multi: { min: 0, max: Math.max(options.length - 1, 0) },
                 autoRefresh: 'discard',
@@ -499,6 +519,7 @@ const cthulhuCorruptionPromptProgram = createPromptProgram<CthulhuPromptContext,
         buildCorruptionPromptOptions(context.matchState.core, context.playerId),
         {
             sourceId: 'cthulhu_corruption',
+            titleKey: 'ui.cthulhu_corruption_title',
             targetType: 'minion',
             autoRefresh: 'field',
             responseValidationMode: 'live',
@@ -565,6 +586,7 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
             options,
             {
                 sourceId: 'cthulhu_madness_unleashed',
+                titleKey: 'ui.cthulhu_madness_unleashed_title',
                 targetType: 'hand',
                 multi: { min: 0, max: Math.max(options.length - 1, 0) },
                 autoRefresh: 'hand',
@@ -738,6 +760,7 @@ function buildChosenPromptOptions(
         {
             id: 'yes',
             label: '是（抽疯狂牌，+2 力量）',
+            labelKey: 'ui.cthulhu_chosen_confirm_yes_option',
             value: {
                 activate: true,
                 uid: chosen.uid,
@@ -753,6 +776,7 @@ function buildChosenPromptOptions(
         {
             id: 'no',
             label: '否（不触发）',
+            labelKey: 'ui.cthulhu_chosen_confirm_no_option',
             value: { activate: false },
             displayMode: 'button' as const,
             baseDefId: core.bases[chosen.baseIndex]?.defId,
@@ -767,7 +791,11 @@ const cthulhuChosenConfirmPromptProgram = createPromptProgram<CthulhuChosenPromp
         context.chosen.controller,
         '天选之人：是否抽一张疯狂牌来获得 +2 力量？',
         buildChosenPromptOptions(context.matchState.core, context.chosen),
-        { sourceId: 'cthulhu_chosen_confirm', targetType: 'generic' },
+        {
+            sourceId: 'cthulhu_chosen_confirm',
+            titleKey: 'ui.cthulhu_chosen_confirm_title',
+            targetType: 'generic',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as {
@@ -936,11 +964,24 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
         context.playerId,
         '疯狂卡：选择一个效果',
         [
-            { id: 'draw', label: '抽两张卡', value: { action: 'draw' }, displayMode: 'button' as const },
-            { id: 'return', label: '消耗这张疯狂牌', value: { action: 'return' }, displayMode: 'button' as const },
+            {
+                id: 'draw',
+                label: '抽两张卡',
+                labelKey: 'ui.special_madness_draw_option',
+                value: { action: 'draw' },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'return',
+                label: '消耗这张疯狂牌',
+                labelKey: 'ui.special_madness_return_option',
+                value: { action: 'return' },
+                displayMode: 'button' as const,
+            },
         ],
         {
             sourceId: 'special_madness',
+            titleKey: 'ui.special_madness_title',
             targetType: 'button',
             displayCard: { defId: MADNESS_CARD_DEF_ID, cardUid: context.cardUid },
         },
@@ -979,6 +1020,7 @@ const cthulhuStarSpawnPromptProgram = createPromptProgram<StarSpawnPromptContext
         buildStarSpawnOptions(context.matchState.core, context.playerId, context.madnessUid),
         {
             sourceId: 'cthulhu_star_spawn',
+            titleKey: 'ui.cthulhu_star_spawn_title',
             targetType: 'generic',
             autoCancelOption: true,
         },
@@ -1025,6 +1067,7 @@ const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext, S
             buildServitorOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'cthulhu_servitor',
+                titleKey: 'ui.cthulhu_servitor_title',
                 targetType: 'generic',
                 autoRefresh: 'discard',
                 responseValidationMode: 'live',

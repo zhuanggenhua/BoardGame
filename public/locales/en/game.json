@@ -30,6 +30,36 @@
       "none": "No undo actions available."
     }
   },
+  "framework": {
+    "buff": {
+      "click_hint": "Click to inspect card details"
+    },
+    "board_layout": {
+      "background_alt": "Board background"
+    },
+    "character_selection": {
+      "player_board_alt": "Player board",
+      "tip_board_alt": "Tip board",
+      "preview_alt": "Preview image"
+    },
+    "player_panel": {
+      "region_aria_label": "{{player}} panel",
+      "resources_list_aria_label": "Resources",
+      "status_effects_list_aria_label": "Status effects"
+    },
+    "resource_tray": {
+      "list_aria_label": "Resource tray"
+    },
+    "hand_area": {
+      "list_aria_label": "Hand cards"
+    },
+    "phase_hud": {
+      "region_aria_label": "Phase HUD"
+    },
+    "phase_indicator": {
+      "list_aria_label": "Game phases"
+    }
+  },
   "hud": {
     "mode": {
       "local": "Single Device",

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useMobileGestures } from '../../hooks/ui/useMobileGestures';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
@@ -12,6 +13,7 @@ interface MobileGestureWrapperProps {
  * 仅在游戏页面且移动设备上启用双指缩放和拖拽平移
  */
 export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
+  const { t } = useTranslation('common');
   const location = useLocation();
   const isGamePage = location.pathname.startsWith('/play/');
   const isMobile = useMobileViewport();
@@ -48,7 +50,7 @@ export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
         <button
           onClick={reset}
           className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-[calc(env(safe-area-inset-right)+1rem)] z-[10000] bg-parchment-brown/95 text-parchment-cream px-4 py-2 rounded-lg shadow-lg border-2 border-parchment-gold/30 backdrop-blur-sm hover:bg-parchment-brown transition-colors font-serif text-sm flex items-center gap-2"
-          aria-label="重置视图"
+          aria-label={t('mobileGesture.resetView')}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
@@ -56,7 +58,7 @@ export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
             <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
             <path d="M3 21v-5h5" />
           </svg>
-          重置视图
+          {t('mobileGesture.resetView')}
         </button>
       )}
       
@@ -70,8 +72,8 @@ export function MobileGestureWrapper({ children }: MobileGestureWrapperProps) {
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <div>
-              <div>双指缩放</div>
-              <div>单指拖拽</div>
+              <div>{t('mobileGesture.pinchToZoom')}</div>
+              <div>{t('mobileGesture.singleFingerDrag')}</div>
             </div>
           </div>
         </div>

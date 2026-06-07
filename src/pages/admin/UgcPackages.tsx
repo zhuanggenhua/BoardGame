@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import DataTable, { type Column } from './components/DataTable';
 import { ADMIN_API_URL } from '../../config/server';
@@ -24,11 +25,6 @@ interface UgcPackageItem {
     updatedAt: string;
 }
 
-const STATUS_OPTIONS: Option[] = [
-    { label: '已发布', value: 'published', icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
-    { label: '草稿', value: 'draft', icon: <CircleSlash size={14} className="text-amber-500" /> },
-];
-
 const formatDate = (value?: string | null) => {
     if (!value) return '-';
     const date = new Date(value);
@@ -43,6 +39,7 @@ const formatDate = (value?: string | null) => {
 };
 
 export default function UgcPackagesPage() {
+    const { t } = useTranslation('lobby');
     const { token } = useAuth();
     const { success, error } = useToast();
     const [packages, setPackages] = useState<UgcPackageItem[]>([]);
@@ -53,6 +50,11 @@ export default function UgcPackagesPage() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+
+    const statusOptions: Option[] = [
+        { label: t('admin.ugcPackagesPage.status.published'), value: 'published', icon: <CheckCircle2 size={14} className="text-emerald-500" /> },
+        { label: t('admin.ugcPackagesPage.status.draft'), value: 'draft', icon: <CircleSlash size={14} className="text-amber-500" /> },
+    ];
 
     const fetchPackages = async () => {
         if (!token) {
@@ -75,7 +77,7 @@ export default function UgcPackagesPage() {
             const res = await fetch(`${ADMIN_API_URL}/ugc/packages?${query}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed to fetch ugc packages');
+            if (!res.ok) throw new Error(t('admin.ugcPackagesPage.toast.fetch_failed'));
             const data = await res.json();
             const items = data.items.map((pkg: UgcPackageItem) => ({
                 ...pkg,
@@ -86,7 +88,7 @@ export default function UgcPackagesPage() {
             setTotalItems(data.total);
         } catch (err) {
             console.error(err);
-            error('获取 UGC 包列表失败');
+            error(t('admin.ugcPackagesPage.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
@@ -99,7 +101,7 @@ export default function UgcPackagesPage() {
 
     const handleUnpublish = async (pkg: UgcPackageItem) => {
         if (pkg.status !== 'published') return;
-        if (!confirm(`确定要下架 UGC 包 “${pkg.name}” 吗？`)) return;
+        if (!confirm(t('admin.ugcPackagesPage.confirm.unpublish', { name: pkg.name }))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/ugc/packages/${pkg.packageId}/unpublish`, {
                 method: 'POST',
@@ -107,18 +109,18 @@ export default function UgcPackagesPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '下架失败');
+                throw new Error(payload?.error || t('admin.ugcPackagesPage.toast.unpublish_failed'));
             }
-            success('已下架该 UGC 包');
+            success(t('admin.ugcPackagesPage.toast.unpublish_success'));
             fetchPackages();
         } catch (err) {
             console.error(err);
-            error(err instanceof Error ? err.message : '下架失败');
+            error(err instanceof Error ? err.message : t('admin.ugcPackagesPage.toast.unpublish_failed'));
         }
     };
 
     const handleDelete = async (pkg: UgcPackageItem) => {
-        if (!confirm(`确定要删除 UGC 包 “${pkg.name}” 吗？删除后无法恢复。`)) return;
+        if (!confirm(t('admin.ugcPackagesPage.confirm.delete', { name: pkg.name }))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/ugc/packages/${pkg.packageId}`, {
                 method: 'DELETE',
@@ -126,19 +128,19 @@ export default function UgcPackagesPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '删除失败');
+                throw new Error(payload?.error || t('admin.ugcPackagesPage.toast.delete_failed'));
             }
-            success('UGC 包已删除');
+            success(t('admin.ugcPackagesPage.toast.delete_success'));
             fetchPackages();
         } catch (err) {
             console.error(err);
-            error(err instanceof Error ? err.message : '删除失败');
+            error(err instanceof Error ? err.message : t('admin.ugcPackagesPage.toast.delete_failed'));
         }
     };
 
     const columns: Column<UgcPackageItem>[] = [
         {
-            header: '包信息',
+            header: t('admin.ugcPackagesPage.columns.package_info'),
             cell: (pkg) => (
                 <div className="space-y-1">
                     <div className="font-semibold text-zinc-900">{pkg.name}</div>
@@ -155,7 +157,7 @@ export default function UgcPackagesPage() {
             ),
         },
         {
-            header: '作者',
+            header: t('admin.ugcPackagesPage.columns.owner'),
             cell: (pkg) => (
                 <div className="text-xs text-zinc-500">
                     <div className="flex items-center gap-2 text-zinc-700">
@@ -175,7 +177,7 @@ export default function UgcPackagesPage() {
             ),
         },
         {
-            header: '状态',
+            header: t('admin.ugcPackagesPage.columns.status'),
             cell: (pkg) => (
                 <span
                     className={cn(
@@ -186,12 +188,12 @@ export default function UgcPackagesPage() {
                     )}
                 >
                     {pkg.status === 'published' ? <CheckCircle2 size={12} /> : <CircleSlash size={12} />}
-                    {pkg.status === 'published' ? '已发布' : '草稿'}
+                    {pkg.status === 'published' ? t('admin.ugcPackagesPage.status.published') : t('admin.ugcPackagesPage.status.draft')}
                 </span>
             ),
         },
         {
-            header: '发布时间',
+            header: t('admin.ugcPackagesPage.columns.published_at'),
             cell: (pkg) => (
                 <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-mono">
                     <Calendar size={12} className="opacity-70" />
@@ -200,7 +202,7 @@ export default function UgcPackagesPage() {
             ),
         },
         {
-            header: '更新时间',
+            header: t('admin.ugcPackagesPage.columns.updated_at'),
             cell: (pkg) => (
                 <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-mono">
                     <Calendar size={12} className="opacity-70" />
@@ -209,7 +211,7 @@ export default function UgcPackagesPage() {
             ),
         },
         {
-            header: '操作',
+            header: t('admin.ugcPackagesPage.columns.actions'),
             className: 'text-right',
             cell: (pkg) => (
                 <div className="flex justify-end gap-3">
@@ -218,13 +220,13 @@ export default function UgcPackagesPage() {
                         disabled={pkg.status !== 'published'}
                         className="text-xs font-medium text-amber-600 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        下架
+                        {t('admin.ugcPackagesPage.actions.unpublish')}
                     </button>
                     <button
                         onClick={() => handleDelete(pkg)}
                         className="text-xs font-medium text-red-500 hover:text-red-600"
                     >
-                        删除
+                        {t('admin.ugcPackagesPage.actions.delete')}
                     </button>
                 </div>
             ),
@@ -235,13 +237,15 @@ export default function UgcPackagesPage() {
         <div className="h-full flex flex-col p-8 w-full max-w-[1600px] mx-auto min-h-0 bg-zinc-50/50">
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 flex-none mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">UGC 管理</h1>
-                    <p className="text-sm text-zinc-500 mt-1">查看并管理所有 UGC 包（下架/删除）</p>
+                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">
+                        {t('admin.ugcPackagesPage.title')}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mt-1">{t('admin.ugcPackagesPage.description')}</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <SearchInput
-                        placeholder="搜索包ID/名称/作者..."
+                        placeholder={t('admin.ugcPackagesPage.search_placeholder')}
                         onSearch={(val) => {
                             setSearch(val);
                             setPage(1);
@@ -254,9 +258,9 @@ export default function UgcPackagesPage() {
                             setStatusFilter(val);
                             setPage(1);
                         }}
-                        options={STATUS_OPTIONS}
-                        placeholder="全部状态"
-                        allOptionLabel="全部状态"
+                        options={statusOptions}
+                        placeholder={t('admin.ugcPackagesPage.filters.all_status')}
+                        allOptionLabel={t('admin.ugcPackagesPage.filters.all_status')}
                         prefixIcon={<Package size={14} />}
                         className="w-full sm:w-40"
                     />
@@ -266,7 +270,7 @@ export default function UgcPackagesPage() {
                             setOwnerFilter(event.target.value);
                             setPage(1);
                         }}
-                        placeholder="作者ID"
+                        placeholder={t('admin.ugcPackagesPage.owner_placeholder')}
                         className="w-full sm:w-40 bg-white border border-zinc-200 text-zinc-900 text-sm rounded-xl px-3 py-2 transition-all duration-200 placeholder:text-zinc-400/80 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-indigo-300 shadow-sm"
                     />
                 </div>

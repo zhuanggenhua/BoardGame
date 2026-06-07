@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import type { GameManifestEntry } from '../../games/manifest';
@@ -153,46 +154,47 @@ const renderBannerVisual = (bannerKind: GameMobileBannerKind) => {
     );
 };
 
-const getBannerMessage = (bannerKind: GameMobileBannerKind) => {
+const getBannerMessageKey = (bannerKind: GameMobileBannerKind) => {
     switch (bannerKind) {
         case 'rotate-to-landscape':
-            return '建议旋转至横屏以获得更佳体验';
+            return 'mobileOrientation.banner.rotateToLandscape';
         case 'rotate-to-portrait':
-            return '建议切换为竖屏以获得更佳体验';
+            return 'mobileOrientation.banner.rotateToPortrait';
         case 'tablet-only':
-            return '该游戏当前优先支持平板或 PC 端';
+            return 'mobileOrientation.banner.tabletOnly';
         case 'not-supported':
-            return '该游戏暂未完成手机适配，建议使用 PC 端';
+            return 'mobileOrientation.banner.notSupported';
     }
 };
 
-const getGateTitle = (bannerKind: GameMobileBannerKind) => {
+const getGateTitleKey = (bannerKind: GameMobileBannerKind) => {
     switch (bannerKind) {
         case 'rotate-to-landscape':
-            return '请切换到横屏继续';
+            return 'mobileOrientation.gateTitle.rotateToLandscape';
         case 'rotate-to-portrait':
-            return '请切换到竖屏继续';
+            return 'mobileOrientation.gateTitle.rotateToPortrait';
         case 'tablet-only':
-            return '请改用平板或 PC 继续';
+            return 'mobileOrientation.gateTitle.tabletOnly';
         case 'not-supported':
-            return '当前手机端暂不支持该游戏';
+            return 'mobileOrientation.gateTitle.notSupported';
     }
 };
 
-const getGateDescription = (bannerKind: GameMobileBannerKind) => {
+const getGateDescriptionKey = (bannerKind: GameMobileBannerKind) => {
     switch (bannerKind) {
         case 'rotate-to-landscape':
-            return '当前游戏按横屏主界面设计，切换方向后再进入对局。';
+            return 'mobileOrientation.gateDescription.rotateToLandscape';
         case 'rotate-to-portrait':
-            return '当前游戏按竖屏主界面设计，切换方向后再继续对局。';
+            return 'mobileOrientation.gateDescription.rotateToPortrait';
         case 'tablet-only':
-            return '当前画面需要更大的可视区域，建议改用平板或 PC。';
+            return 'mobileOrientation.gateDescription.tabletOnly';
         case 'not-supported':
-            return '该游戏尚未完成手机端适配，建议使用 PC 或等待后续补齐。';
+            return 'mobileOrientation.gateDescription.notSupported';
     }
 };
 
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
+    const { t } = useTranslation('common');
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
@@ -393,10 +395,10 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
                         </div>
                         <div className="space-y-2">
                             <h1 className="text-2xl font-semibold tracking-normal text-white">
-                                {getGateTitle(bannerKind)}
+                                {t(getGateTitleKey(bannerKind))}
                             </h1>
                             <p className="text-sm leading-6 text-white/72">
-                                {getGateDescription(bannerKind)}
+                                {t(getGateDescriptionKey(bannerKind))}
                             </p>
                         </div>
                     </div>
@@ -414,12 +416,12 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
                     <div className="flex items-center justify-between gap-3 max-w-4xl mx-auto">
                         <div className="flex items-center gap-3 text-sm font-serif">
                             {renderBannerVisual(activeBannerKind)}
-                            <span>{getBannerMessage(activeBannerKind)}</span>
+                            <span>{t(getBannerMessageKey(activeBannerKind))}</span>
                         </div>
                         <button
                             onClick={() => setDismissedBannerKey(bannerKey)}
                             className="flex-shrink-0 p-1 hover:bg-parchment-gold/20 rounded transition-colors"
-                            aria-label="关闭提示"
+                            aria-label={t('mobileOrientation.closeHint')}
                         >
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                 <line x1="18" y1="6" x2="6" y2="18" />

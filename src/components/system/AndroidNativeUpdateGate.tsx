@@ -19,19 +19,19 @@ const resolveTitle = (
 
     switch (state.phase) {
         case 'checking':
-            return t('nativeUpdate.title.checking', { defaultValue: '正在检查应用更新' });
+            return t('nativeUpdate.title.checking');
         case 'downloading':
-            return t('nativeUpdate.title.downloading', { defaultValue: '正在下载更新' });
+            return t('nativeUpdate.title.downloading');
         case 'verifying':
-            return t('nativeUpdate.title.verifying', { defaultValue: '正在校验更新' });
+            return t('nativeUpdate.title.verifying');
         case 'permission-required':
-            return t('nativeUpdate.title.permission', { defaultValue: '需要允许安装' });
+            return t('nativeUpdate.title.permission');
         case 'installing':
-            return t('nativeUpdate.title.installing', { defaultValue: '正在安装更新' });
+            return t('nativeUpdate.title.installing');
         case 'error':
-            return t('nativeUpdate.title.error', { defaultValue: '更新失败' });
+            return t('nativeUpdate.title.error');
         default:
-            return t('nativeUpdate.title.default', { defaultValue: '正在更新应用' });
+            return t('nativeUpdate.title.default');
     }
 };
 
@@ -45,19 +45,19 @@ const resolveDescription = (
 
     switch (state.phase) {
         case 'checking':
-            return t('nativeUpdate.description.checking', { defaultValue: '正在检查并准备新版本，请稍候。' });
+            return t('nativeUpdate.description.checking');
         case 'downloading':
-            return t('nativeUpdate.description.downloading', { defaultValue: '正在下载更新包，完成后会进入安装。' });
+            return t('nativeUpdate.description.downloading');
         case 'verifying':
-            return t('nativeUpdate.description.verifying', { defaultValue: '正在校验下载内容，请稍候。' });
+            return t('nativeUpdate.description.verifying');
         case 'permission-required':
-            return t('nativeUpdate.description.permission', { defaultValue: '需要允许安装未知来源应用后才能继续。' });
+            return t('nativeUpdate.description.permission');
         case 'installing':
-            return t('nativeUpdate.description.installing', { defaultValue: '正在拉起系统安装器，请稍候。' });
+            return t('nativeUpdate.description.installing');
         case 'error':
-            return t('nativeUpdate.description.error', { defaultValue: '安装包下载或校验失败，请重试。' });
+            return t('nativeUpdate.description.error');
         default:
-            return t('nativeUpdate.description.default', { defaultValue: '正在准备更新，请稍候。' });
+            return t('nativeUpdate.description.default');
     }
 };
 
@@ -100,7 +100,7 @@ export const AndroidNativeUpdateGate = ({
                     </div>
 
                     <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-200/70">
-                        {t('nativeUpdate.eyebrow', { defaultValue: '应用更新' })}
+                        {t('nativeUpdate.eyebrow')}
                     </p>
                     <h2 className="mt-2 text-[1.45rem] font-bold leading-tight text-sky-50">
                         {title}
@@ -112,7 +112,7 @@ export const AndroidNativeUpdateGate = ({
                     {state.version && (
                         <div className="mt-5 rounded-2xl border border-sky-200/12 bg-black/20 px-4 py-3 text-left text-xs text-sky-100/70">
                             <div className="flex items-center justify-between gap-3">
-                                <span>{t('nativeUpdate.bundleVersion', { defaultValue: '目标版本' })}</span>
+                                <span>{t('nativeUpdate.bundleVersion')}</span>
                                 <span className="font-medium text-sky-50">{state.version}</span>
                             </div>
                         </div>
@@ -121,11 +121,11 @@ export const AndroidNativeUpdateGate = ({
                     {showProgress && (
                         <div className="mt-5">
                             <div className="mb-2 flex items-center justify-between gap-3 text-xs text-sky-100/70">
-                                <span>{t('nativeUpdate.progressLabel', { defaultValue: '下载进度' })}</span>
+                                <span>{t('nativeUpdate.progressLabel')}</span>
                                 <span>
                                     {hasMeasuredProgress
-                                        ? t('nativeUpdate.progressPercent', { percent: progressPercent, defaultValue: `${progressPercent}%` })
-                                        : t('nativeUpdate.progressPending', { defaultValue: '准备中' })}
+                                        ? t('nativeUpdate.progressPercent', { percent: progressPercent })
+                                        : t('nativeUpdate.progressPending')}
                                 </span>
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -140,7 +140,7 @@ export const AndroidNativeUpdateGate = ({
                             </div>
                             {!hasMeasuredProgress && (
                                 <p className="mt-2 text-left text-[11px] leading-5 text-sky-100/55">
-                                    {t('nativeUpdate.progressHint', { defaultValue: '等待原生返回下载进度。' })}
+                                    {t('nativeUpdate.progressHint')}
                                 </p>
                             )}
                         </div>
@@ -159,14 +159,14 @@ export const AndroidNativeUpdateGate = ({
                                 onClick={onOpenSettings}
                                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-sky-200/20 bg-sky-50/10 px-5 py-2.5 text-sm font-semibold text-sky-50 transition-colors hover:bg-sky-50/16"
                             >
-                                {t('nativeUpdate.openSettings', { defaultValue: '打开安装权限设置' })}
+                                {t('nativeUpdate.openSettings')}
                             </button>
                             <button
                                 type="button"
                                 onClick={onContinueInstall}
                                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-sky-200/20 bg-sky-500/20 px-5 py-2.5 text-sm font-semibold text-sky-50 transition-colors hover:bg-sky-500/30"
                             >
-                                {t('nativeUpdate.continueInstall', { defaultValue: '继续安装' })}
+                                {t('nativeUpdate.continueInstall')}
                             </button>
                         </div>
                     )}
@@ -178,7 +178,7 @@ export const AndroidNativeUpdateGate = ({
                                 onClick={onRetry}
                                 className="inline-flex min-h-11 items-center justify-center rounded-full border border-sky-200/20 bg-sky-50/10 px-5 py-2.5 text-sm font-semibold text-sky-50 transition-colors hover:bg-sky-50/16"
                             >
-                                {t('nativeUpdate.retryAction', { defaultValue: '重新检查' })}
+                                {t('nativeUpdate.retryAction')}
                             </button>
                         </div>
                     )}

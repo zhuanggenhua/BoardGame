@@ -30,6 +30,36 @@
       "none": "暂无可撤回操作。"
     }
   },
+  "framework": {
+    "buff": {
+      "click_hint": "点击可查看卡牌详情"
+    },
+    "board_layout": {
+      "background_alt": "棋盘背景"
+    },
+    "character_selection": {
+      "player_board_alt": "玩家面板",
+      "tip_board_alt": "提示板",
+      "preview_alt": "预览图"
+    },
+    "player_panel": {
+      "region_aria_label": "{{player}} 面板",
+      "resources_list_aria_label": "资源列表",
+      "status_effects_list_aria_label": "状态效果列表"
+    },
+    "resource_tray": {
+      "list_aria_label": "资源托盘"
+    },
+    "hand_area": {
+      "list_aria_label": "手牌列表"
+    },
+    "phase_hud": {
+      "region_aria_label": "阶段提示"
+    },
+    "phase_indicator": {
+      "list_aria_label": "游戏阶段"
+    }
+  },
   "hud": {
     "mode": {
       "local": "单机模式",
@@ -84,7 +114,7 @@
       "backToLobbyHint": "彻底离开房间",
       "social": "好友",
       "feedback": "反馈",
-      "downloadApp": "下载 App",
+      "downloadApp": "下载应用",
       "checkUpdate": "检查更新",
       "checkingUpdate": "更新中",
       "about": "关于",
@@ -103,7 +133,7 @@
     },
     "about": {
       "title": "易桌游",
-      "githubTitle": "GitHub",
+      "githubTitle": "代码仓库",
       "githubSubtitle": "查看源码并参与贡献",
       "qqTitle": "QQ群",
       "qqSubtitle": "加入社区：",
@@ -140,11 +170,11 @@
       "success": "反馈已提交，感谢支持！",
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",
-        "apiDisabled": "当前 dev:lite 轻量模式未启动 API 服务，反馈提交已禁用；草稿会保留在本机。",
+        "apiDisabled": "当前轻量开发模式未启动后端服务，反馈提交已禁用；草稿会保留在本机。",
         "submitFailed": "提交失败，请稍后再试"
       },
       "type": {
-        "bug": "Bug",
+        "bug": "问题",
         "suggestion": "建议",
         "other": "其他"
       },
@@ -183,8 +213,8 @@
       "exitFailed": "退出全屏失败，请检查浏览器权限或系统状态。"
     },
     "download": {
-      "missingLink": "下载入口未配置，请先配置原生更新 manifest 或 APK 直链。",
-      "resolveFailed": "未能获取最新 App 下载地址，请稍后重试。"
+      "missingLink": "下载入口未配置，请先配置原生更新清单或安装包直链。",
+      "resolveFailed": "未能获取最新应用下载地址，请稍后重试。"
     },
     "toggle": {
       "collapse": "收起菜单",
@@ -201,25 +231,25 @@
       "approve": "同意换位",
       "reject": "拒绝换位",
       "cancel": "取消换位申请",
-      "aiBadge": "AI",
+      "aiBadge": "智能",
       "seatNumber": "座位 {{seat}}"
     },
     "ai": {
-      "forceEndPhase": "强制结束 AI 阶段",
-      "forceEndPhaseHint": "用于 AI 卡死时强制推进当前阶段。",
+      "forceEndPhase": "强制结束智能阶段",
+      "forceEndPhaseHint": "用于智能托管卡死时强制推进当前阶段。",
       "forceEndPhaseConfirm": "确认强制结束",
       "forceDismissPopup": "强制结束回合",
       "forceDismissPopupHint": "用于计分响应、前台交互或遮挡层卡死时，强制关闭当前阻塞并持续推进，直到当前回合结束。",
       "forceDismissPopupConfirm": "确认强制结束回合",
       "forceDismissPopupUnavailable": "当前没有可强制结束的卡死回合。",
       "forceDismissPopupSubmitting": "正在强制结束当前回合…",
-      "forceEndPhaseUnavailable": "当前没有可强制结束的 AI 阶段。",
-      "forceEndPhaseNotReady": "AI 控制未就绪，请稍后再试。",
-      "forceEndPhaseSeatOffline": "AI 座位未连接，无法执行。",
+      "forceEndPhaseUnavailable": "当前没有可强制结束的智能阶段。",
+      "forceEndPhaseNotReady": "智能控制未就绪，请稍后再试。",
+      "forceEndPhaseSeatOffline": "智能座位未连接，无法执行。",
       "forceEndPhaseSubmitting": "正在提交强制结束请求…",
-      "forceEndPhaseSuccess": "AI 已强制结束回合。",
-      "forceEndPhaseTitle": "AI 强制结束回合",
-      "forceEndPhaseFailed": "AI 强制结束失败（{{reason}}）"
+      "forceEndPhaseSuccess": "智能已强制结束回合。",
+      "forceEndPhaseTitle": "智能强制结束回合",
+      "forceEndPhaseFailed": "智能强制结束失败（{{reason}}）"
     },
     "smashup": {
       "title": "大杀四方",
@@ -303,7 +333,7 @@
     "saved": "已保存",
     "savedWithPath": "已保存：{{path}}",
     "saveFailed": "保存失败",
-    "exportFileName": "layout.config.json",
+    "exportFileName": "布局配置.json",
     "import": "导入",
     "export": "导出",
     "finishTrack": "完成轨道（{{count}}点）",
@@ -319,10 +349,10 @@
     "grid": {
       "rows": "行数",
       "cols": "列数",
-      "gapX": "X间距",
-      "gapY": "Y间距",
-      "offsetX": "X偏移",
-      "offsetY": "Y偏移",
+      "gapX": "横向间距",
+      "gapY": "纵向间距",
+      "offsetX": "横向偏移",
+      "offsetY": "纵向偏移",
       "width": "宽度",
       "height": "高度",
       "create": "创建网格"
@@ -376,7 +406,7 @@
       "empty": "暂无可用动作"
     },
     "placeholders": {
-      "moveArgs": "参数 (JSON/String)...",
+      "moveArgs": "参数（结构化数据/文本）...",
       "commandName": "命令名称"
     },
     "events": {
@@ -387,28 +417,28 @@
       "phase": "阶段",
       "turn": "回合",
       "activePlayer": "当前玩家",
-      "gameState": "游戏状态 (G)",
+      "gameState": "游戏状态",
       "copy": "复制",
       "copied": "已复制",
       "assign": "赋值",
       "cancelAssign": "取消",
-      "pastePlaceholder": "粘贴游戏状态 JSON...",
+      "pastePlaceholder": "粘贴游戏状态结构化数据...",
       "pasteFromClipboard": "从剪贴板粘贴",
       "apply": "应用状态",
       "errorUnsupported": "此游戏不支持状态赋值",
-      "errorInvalidJson": "JSON 格式错误"
+      "errorInvalidJson": "结构化数据格式错误"
     },
     "ai": {
-      "section": "AI",
+      "section": "智能",
       "supportTitle": "支持能力",
       "seatControllers": "座位控制器",
       "none": "当前没有配置座位控制器",
       "human": "真人",
-      "local": "本地 AI",
-      "remote": "远程 AI",
+      "local": "本地智能",
+      "remote": "远程智能",
       "difficulty": "难度：{{value}}",
       "policy": "策略：{{value}}",
-      "provider": "Provider：{{value}}",
+      "provider": "提供方：{{value}}",
       "modes": {
         "local": "本地对战",
         "online": "联机对战"

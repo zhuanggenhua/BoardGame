@@ -237,7 +237,7 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
         context.playerId,
         '选择要移动到的基地',
         buildBaseTargetOptions(context.destinationBases, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base' },
+        { sourceId: context.sourceId, targetType: 'base', titleKey: 'ui.sharks_move_destination_title' },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -336,7 +336,7 @@ const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContex
             sourceKind: 'action',
             effectType: 'move',
         }),
-        { sourceId: 'sharks_air_jaws', targetType: 'minion' },
+        { sourceId: 'sharks_air_jaws', targetType: 'minion', titleKey: 'ui.sharks_air_jaws_title' },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;
@@ -443,7 +443,7 @@ const sharksDangerousWatersPromptProgram = createPromptProgram<SharksDangerousWa
             sourceKind: 'action',
             effectType: 'buff',
         }),
-        { sourceId: 'sharks_dangerous_waters', targetType: 'minion' },
+        { sourceId: 'sharks_dangerous_waters', targetType: 'minion', titleKey: 'ui.sharks_dangerous_waters_title' },
     ),
     onResolve: ({ value, timestamp }) => {
         const choice = value as MinionChoice;

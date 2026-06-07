@@ -496,37 +496,37 @@ describe('派系选择系统', () => {
             ]);
         });
 
-        it('POD factions reuse their original base pool', () => {
+        it('POD factions return their POD base pool variants', () => {
             const baseIds = getBaseDefIdsForFactions([
                 SMASHUP_FACTION_IDS.WIZARDS_POD,
                 SMASHUP_FACTION_IDS.GHOSTS_POD,
             ]);
 
             expect(baseIds).toEqual(expect.arrayContaining([
-                'base_great_library',
-                'base_wizard_academy',
-                'base_dread_lookout',
-                'base_haunted_house_al9000',
+                'base_great_library_pod',
+                'base_wizard_academy_pod',
+                'base_dread_lookout_pod',
+                'base_haunted_house_al9000_pod',
             ]));
             expect(baseIds).not.toContain('base_the_homeworld');
         });
 
-        it('保留 POD 派系专属的基地池覆盖', () => {
+        it('POD 克苏鲁扩展派系返回 POD 基地 id', () => {
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD]).sort()).toEqual([
-                'base_mountains_of_madness',
-                'base_rlyeh',
+                'base_mountains_of_madness_pod',
+                'base_rlyeh_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.ELDER_THINGS_POD]).sort()).toEqual([
-                'base_antarctic_base',
-                'base_plateau_of_leng',
+                'base_antarctic_base_pod',
+                'base_plateau_of_leng_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.INNSMOUTH_POD]).sort()).toEqual([
-                'base_innsmouth_base',
-                'base_ritual_site',
+                'base_innsmouth_base_pod',
+                'base_ritual_site_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD]).sort()).toEqual([
-                'base_miskatonic_university_base',
-                'base_the_asylum',
+                'base_miskatonic_university_base_pod',
+                'base_the_asylum_pod',
             ]);
         });
 

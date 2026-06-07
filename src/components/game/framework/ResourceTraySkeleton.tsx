@@ -5,6 +5,7 @@
  */
 
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ResourceTraySkeletonProps } from './types';
 import { useInteractionGuard } from './InteractionGuard';
 
@@ -46,6 +47,7 @@ export const ResourceTraySkeleton = memo(function ResourceTraySkeleton<TItem>({
     layout = 'row',
     gridColumns,
 }: ResourceTraySkeletonProps<TItem>) {
+    const { t } = useTranslation('game');
     const guard = useInteractionGuard();
     const handleClick = useCallback(
         (itemId: string | number) => {
@@ -85,7 +87,7 @@ export const ResourceTraySkeleton = memo(function ResourceTraySkeleton<TItem>({
             data-can-interact={canInteract}
             style={layoutStyles}
             role="list"
-            aria-label="Resource tray"
+            aria-label={t('framework.resource_tray.list_aria_label')}
         >
             {items.map((item, index) => {
                 const itemId = getItemId(item, index);

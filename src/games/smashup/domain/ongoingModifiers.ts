@@ -14,6 +14,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
+import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 
 // ============================================================================
 // 类型定义
@@ -689,6 +690,9 @@ export function registerPodPowerModifierAliases(): void {
     const powerModsToAdd: ModifierEntry[] = [];
     for (const entry of modifierRegistry) {
         if (!entry.sourceDefId.endsWith('_pod')) {
+            if (!shouldGenerateSmashUpPodAlias('powerModifier', entry.sourceDefId)) {
+                continue;
+            }
             const podId = entry.sourceDefId + '_pod';
             // 检查是否已经手动注册了 POD 版本
             if (!modifierRegistry.some(e => e.sourceDefId === podId)) {
@@ -713,6 +717,9 @@ export function registerPodPowerModifierAliases(): void {
     for (const entry of breakpointModifierRegistry) {
         if (!entry.sourceDefId.endsWith('_pod')) {
             const baseDefId = entry.sourceDefId;
+            if (!shouldGenerateSmashUpPodAlias('powerModifier', baseDefId)) {
+                continue;
+            }
             const podId = `${baseDefId}_pod`;
             if (!breakpointModifierRegistry.some(e => e.sourceDefId === podId)) {
                 if (!shouldAutoCreatePodAlias(entry.podStrategy)) {
@@ -748,6 +755,9 @@ export function registerPodPowerModifierAliases(): void {
     for (const [defId, entry] of basePowerModifiers.entries()) {
         if (!defId.endsWith('_pod')) {
             const baseDefId = defId;
+            if (!shouldGenerateSmashUpPodAlias('powerModifier', baseDefId)) {
+                continue;
+            }
             const podId = `${baseDefId}_pod`;
             if (!basePowerModifiers.has(podId)) {
                 if (!shouldAutoCreatePodAlias(entry.podStrategy)) {

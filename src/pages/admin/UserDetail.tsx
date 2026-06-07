@@ -67,6 +67,7 @@ interface MatchTableItem {
 
 export default function UserDetailPage() {
     const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.userDetail.${key}`, options);
     const { id } = useParams();
     const navigate = useNavigate();
     const { token } = useAuth();
@@ -103,7 +104,7 @@ export default function UserDetailPage() {
                 userId: id,
                 error: err,
             });
-            toastError('获取详情失败');
+            toastError(adminT('toast.fetch_failed'));
             navigate('/admin/users');
         } finally {
             setLoading(false);
@@ -118,17 +119,17 @@ export default function UserDetailPage() {
     const handleBanToggle = async () => {
         if (!user) return;
         if (user.role === 'admin') {
-            toastError('不能封禁管理员账号');
+            toastError(adminT('toast.cannot_ban_admin'));
             return;
         }
-        if (!confirm(`确定要${user.banned ? '解封' : '封禁'}该用户吗？`)) return;
+        if (!confirm(adminT(user.banned ? 'confirm.unban' : 'confirm.ban'))) return;
 
         try {
             const isBanning = !user.banned;
             const action = isBanning ? 'ban' : 'unban';
-            const reason = isBanning ? (prompt('请输入封禁原因') ?? '').trim() : '';
+            const reason = isBanning ? (prompt(adminT('prompt.ban_reason')) ?? '').trim() : '';
             if (isBanning && !reason) {
-                toastError('封禁原因不能为空');
+                toastError(adminT('toast.ban_reason_required'));
                 return;
             }
             const res = await fetch(`${ADMIN_API_URL}/users/${user.id}/${action}`, {
@@ -141,7 +142,7 @@ export default function UserDetailPage() {
             });
 
             if (!res.ok) throw new Error('Action failed');
-            success('操作成功');
+            success(adminT('toast.action_success'));
             await fetchUser();
         } catch (err) {
             logger.error('[AdminUserDetail] 更新封禁状态失败', {
@@ -149,17 +150,17 @@ export default function UserDetailPage() {
                 action: user.banned ? 'unban' : 'ban',
                 error: err,
             });
-            toastError('操作失败');
+            toastError(adminT('toast.action_failed'));
         }
     };
 
     const handleDelete = async () => {
         if (!user) return;
         if (user.role === 'admin') {
-            toastError('不能删除管理员账号');
+            toastError(adminT('toast.cannot_delete_admin'));
             return;
         }
-        if (!confirm('确定要删除该用户吗？删除后无法恢复。')) return;
+        if (!confirm(adminT('confirm.delete'))) return;
 
         try {
             const res = await fetch(`${ADMIN_API_URL}/users/${user.id}`, {
@@ -167,31 +168,31 @@ export default function UserDetailPage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Delete failed');
-            success('用户已删除');
+            success(adminT('toast.delete_success'));
             navigate('/admin/users');
         } catch (err) {
             logger.error('[AdminUserDetail] 删除用户失败', {
                 userId: user.id,
                 error: err,
             });
-            toastError('删除失败');
+            toastError(adminT('toast.delete_failed'));
         }
     };
 
-    const handleSendMessage = () => toastError('这是演示功能，尚未实装');
+    const handleSendMessage = () => toastError(adminT('toast.message_demo'));
 
     const tableData: MatchTableItem[] = recentMatches.map((m) => ({
         id: m.matchID,
         matchID: m.matchID,
         gameName: m.gameName,
         result: m.result || 'draw',
-        opponent: m.opponent || '未知对手',
+        opponent: m.opponent || adminT('table.unknown_opponent'),
         endedAt: m.endedAt,
     }));
 
     const columns: Column<MatchTableItem>[] = [
         {
-            header: '结果',
+            header: adminT('table.result'),
             accessorKey: 'result',
             width: '80px',
             align: 'center',
@@ -208,14 +209,14 @@ export default function UserDetailPage() {
                                 isDraw ? 'border-zinc-200 bg-zinc-100 text-zinc-600' :
                                     'border-red-100 bg-red-50 text-red-600'
                         )}>
-                            {isWin ? '胜利' : isDraw ? '平局' : '失败'}
+                            {isWin ? adminT('table.result_win') : isDraw ? adminT('table.result_draw') : adminT('table.result_loss')}
                         </span>
                     </div>
                 );
             },
         },
         {
-            header: '游戏',
+            header: adminT('table.game'),
             accessorKey: 'gameName',
             className: 'pl-4',
             cell: (m) => (
@@ -231,7 +232,7 @@ export default function UserDetailPage() {
             ),
         },
         {
-            header: '对手',
+            header: adminT('table.opponent'),
             accessorKey: 'opponent',
             cell: (m) => (
                 <div className="flex items-center gap-2">
@@ -245,7 +246,7 @@ export default function UserDetailPage() {
             ),
         },
         {
-            header: '时间',
+            header: adminT('table.time'),
             accessorKey: 'endedAt',
             align: 'right',
             className: 'custom-date-col',
@@ -268,7 +269,7 @@ export default function UserDetailPage() {
                     <button
                         onClick={() => navigate('/admin/users')}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-                        title="返回用户列表"
+                        title={adminT('title.back_to_users')}
                     >
                         <ArrowLeft size={18} />
                     </button>
@@ -291,24 +292,24 @@ export default function UserDetailPage() {
                                 <h1 className="truncate text-lg font-bold text-zinc-900">{user.username}</h1>
                                 {user.role === 'admin' && (
                                     <span className="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                                        ADMIN
+                                        {adminT('badge.admin')}
                                     </span>
                                 )}
                                 {user.role === 'developer' && (
                                     <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                                        DEVELOPER
+                                        {adminT('badge.developer')}
                                     </span>
                                 )}
                                 {user.banned && (
                                     <span className="rounded border border-red-100 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
-                                        已封禁
+                                        {adminT('badge.banned')}
                                     </span>
                                 )}
                             </div>
                             <div className="mt-0.5 flex items-center gap-3 font-mono text-xs text-zinc-500">
                                 <span>ID: {user.id}</span>
                                 <span className="hidden sm:inline">|</span>
-                                <span className="hidden max-w-[200px] truncate sm:inline">{user.email || '未绑定邮箱'}</span>
+                                <span className="hidden max-w-[200px] truncate sm:inline">{user.email || adminT('field.email_unbound')}</span>
                             </div>
                         </div>
                     </div>
@@ -318,7 +319,7 @@ export default function UserDetailPage() {
                             onClick={handleSendMessage}
                             className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900"
                         >
-                            <MessageSquare size={14} /> <span className="hidden sm:inline">发消息</span>
+                            <MessageSquare size={14} /> <span className="hidden sm:inline">{adminT('action.send_message')}</span>
                         </button>
                         <button
                             onClick={handleBanToggle}
@@ -331,16 +332,16 @@ export default function UserDetailPage() {
                                         ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                                         : 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100'
                             )}
-                            title={user.role === 'admin' ? '不能封禁管理员' : user.banned ? '解封' : '封禁'}
+                            title={user.role === 'admin' ? adminT('tooltip.cannot_ban_admin') : user.banned ? adminT('action.unban') : adminT('action.ban')}
                         >
                             {user.banned ? <CheckCircle size={14} /> : <Ban size={14} />}
-                            <span className="hidden sm:inline">{user.banned ? '解封' : '封禁'}</span>
+                            <span className="hidden sm:inline">{user.banned ? adminT('action.unban') : adminT('action.ban')}</span>
                         </button>
                         <button
                             onClick={handleDelete}
                             disabled={user.role === 'admin'}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-zinc-400 transition-all hover:border-red-100 hover:bg-red-50 hover:text-red-500"
-                            title="删除用户"
+                            title={adminT('action.delete')}
                         >
                             <Trash2 size={15} />
                         </button>
@@ -353,14 +354,14 @@ export default function UserDetailPage() {
                     <div className="flex flex-col gap-6 lg:col-span-4">
                         <div className="shrink-0 rounded-xl border border-zinc-200/60 bg-white p-5 shadow-sm">
                             <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-                                <Activity size={14} /> 活跃数据
+                                <Activity size={14} /> {adminT('stats.section_title')}
                             </h3>
                             {stats ? (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50/50 p-3">
                                         <div className="flex items-center gap-2 text-zinc-600">
                                             <Gamepad2 size={16} />
-                                            <span className="text-sm font-medium">总场次</span>
+                                            <span className="text-sm font-medium">{adminT('stats.total_matches')}</span>
                                         </div>
                                         <span className="tabular-nums text-xl font-bold text-zinc-900">{stats.totalMatches}</span>
                                     </div>
@@ -368,32 +369,32 @@ export default function UserDetailPage() {
                                         <div className="rounded-lg border border-emerald-100/50 bg-emerald-50/50 p-3">
                                             <div className="mb-1 flex items-center gap-1.5 text-emerald-600">
                                                 <Trophy size={14} />
-                                                <span className="text-xs font-bold">胜场</span>
+                                                <span className="text-xs font-bold">{adminT('stats.wins')}</span>
                                             </div>
                                             <span className="tabular-nums text-2xl font-bold text-emerald-700">{stats.wins}</span>
                                         </div>
                                         <div className="rounded-lg border border-indigo-100/50 bg-indigo-50/50 p-3">
                                             <div className="mb-1 flex items-center gap-1.5 text-indigo-600">
                                                 <Swords size={14} />
-                                                <span className="text-xs font-bold">胜率</span>
+                                                <span className="text-xs font-bold">{adminT('stats.win_rate')}</span>
                                             </div>
                                             <span className="tabular-nums text-2xl font-bold text-indigo-700">{Math.round(stats.winRate)}%</span>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="py-8 text-center text-sm text-zinc-400">暂无数据</div>
+                                <div className="py-8 text-center text-sm text-zinc-400">{adminT('stats.empty')}</div>
                             )}
                         </div>
 
                         <div className="shrink-0 rounded-xl border border-zinc-200/60 bg-white p-5 shadow-sm">
                             <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-                                <ShieldAlert size={14} /> 账户信息
+                                <ShieldAlert size={14} /> {adminT('account.section_title')}
                             </h3>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between border-b border-dashed border-zinc-100 py-1 text-sm">
                                     <span className="flex items-center gap-2 text-zinc-500">
-                                        <Shield size={14} /> 角色
+                                        <Shield size={14} /> {adminT('account.role')}
                                     </span>
                                     <span className={cn(
                                         'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold',
@@ -404,30 +405,30 @@ export default function UserDetailPage() {
                                                 : 'border-zinc-200 bg-zinc-100 text-zinc-600'
                                     )}>
                                         {user.role === 'admin'
-                                            ? '管理员'
+                                            ? adminT('role.admin')
                                             : user.role === 'developer'
                                                 ? developerScopeLabel
-                                                    ? `开发者（${developerScopeLabel}）`
-                                                    : '开发者'
-                                                : '普通用户'}
+                                                    ? adminT('role.developer_scoped', { scope: developerScopeLabel })
+                                                    : adminT('role.developer')
+                                                : adminT('role.user')}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between border-b border-dashed border-zinc-100 py-1 text-sm">
                                     <span className="flex items-center gap-2 text-zinc-500">
-                                        <Calendar size={14} /> 注册时间
+                                        <Calendar size={14} /> {adminT('account.created_at')}
                                     </span>
                                     <span className="font-mono text-zinc-700">{new Date(user.createdAt).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex items-center justify-between border-b border-dashed border-zinc-100 py-1 text-sm">
                                     <span className="flex items-center gap-2 text-zinc-500">
-                                        <Clock size={14} /> 最后活跃
+                                        <Clock size={14} /> {adminT('account.last_online')}
                                     </span>
-                                    <span className="font-mono text-zinc-700">{user.lastOnline ? new Date(user.lastOnline).toLocaleDateString() : '从未'}</span>
+                                    <span className="font-mono text-zinc-700">{user.lastOnline ? new Date(user.lastOnline).toLocaleDateString() : adminT('account.never_online')}</span>
                                 </div>
                                 {user.banned && (
                                     <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-xs">
-                                        <p className="mb-1 font-bold text-red-800">封禁详情</p>
-                                        <p className="mb-1 text-red-600">原因: {user.bannedReason || '未说明'}</p>
+                                        <p className="mb-1 font-bold text-red-800">{adminT('ban.section_title')}</p>
+                                        <p className="mb-1 text-red-600">{adminT('ban.reason', { reason: user.bannedReason || adminT('ban.unspecified') })}</p>
                                         <p className="font-mono text-[10px] text-red-500/80">{user.bannedAt && new Date(user.bannedAt).toLocaleString()}</p>
                                     </div>
                                 )}
@@ -442,14 +443,14 @@ export default function UserDetailPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-amber-600">
-                                            开发者角色
+                                            {adminT('developer.section_title')}
                                         </h3>
                                         <p className="mt-2 text-xs leading-5 text-zinc-500">
-                                            该用户只能管理这里列出的游戏更新日志；如需修改，请回到用户管理列表使用“角色设置”。
+                                            {adminT('developer.description')}
                                         </p>
                                         <div className="mt-3">
                                             <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                                当前范围：{developerScopeLabel ?? '待分配'}
+                                                {adminT('developer.scope', { scope: developerScopeLabel ?? adminT('developer.unassigned') })}
                                             </span>
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-2">
@@ -463,7 +464,7 @@ export default function UserDetailPage() {
                                                     </span>
                                                 ))
                                             ) : (
-                                                <span className="text-xs text-zinc-400">暂未分配可管理游戏</span>
+                                                <span className="text-xs text-zinc-400">{adminT('developer.empty_games')}</span>
                                             )}
                                         </div>
                                     </div>
@@ -476,10 +477,10 @@ export default function UserDetailPage() {
                         <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 bg-zinc-50/30 p-4">
                             <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
                                 <Gamepad2 size={16} className="text-indigo-500" />
-                                近期对局记录
+                                {adminT('matches.section_title')}
                             </h3>
                             <span className="rounded border border-zinc-100 bg-white px-2 py-1 text-[10px] font-medium text-zinc-400">
-                                共 {recentMatches.length} 条
+                                {adminT('matches.count', { count: recentMatches.length })}
                             </span>
                         </div>
 

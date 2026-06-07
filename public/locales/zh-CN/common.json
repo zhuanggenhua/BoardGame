@@ -5,6 +5,9 @@
     "close": "关闭",
     "processing": "处理中"
   },
+  "interaction": {
+    "emergencySkip": "跳过（当前无可执行选项）"
+  },
   "category": {
     "all": "全部游戏",
     "card": "卡牌",
@@ -44,13 +47,13 @@
   },
   "socketCompatibility": {
     "title": "实时连接看起来不稳定",
-    "description": "当前网络可能不支持仅 WebSocket 的连接。你可以开启兼容模式来提高连接稳定性，但响应速度可能略慢。",
+    "description": "当前网络可能不支持仅使用长连接的实时连接方式。你可以开启兼容模式来提高连接稳定性，但响应速度可能略慢。",
     "enable": "开启兼容模式",
     "enabledTitle": "已开启兼容模式",
-    "enabledDescription": "实时连接已允许 polling 回退。如果网络恢复正常，你可以关闭兼容模式以恢复更快响应。",
+    "enabledDescription": "实时连接已允许轮询回退。如果网络恢复正常，你可以关闭兼容模式以恢复更快响应。",
     "disable": "关闭兼容模式",
     "disabledTitle": "已关闭兼容模式",
-    "disabledDescription": "已恢复为仅 WebSocket 模式，正在重新连接。"
+    "disabledDescription": "已恢复为仅长连接模式，正在重新连接。"
   },
   "rematch": {
     "playAgain": "再来一局",
@@ -76,15 +79,63 @@
   "loading": "加载中",
   "unknownUser": "未知用户",
   "unknownError": "发生未知错误",
+  "imageLightbox": {
+    "previewAlt": "预览",
+    "closePreview": "关闭预览"
+  },
+  "mobileGesture": {
+    "resetView": "重置视图",
+    "pinchToZoom": "双指缩放",
+    "singleFingerDrag": "单指拖拽"
+  },
+  "mobileOrientation": {
+    "closeHint": "关闭提示",
+    "banner": {
+      "rotateToLandscape": "建议旋转至横屏以获得更佳体验",
+      "rotateToPortrait": "建议切换为竖屏以获得更佳体验",
+      "tabletOnly": "该游戏当前优先支持平板或电脑端",
+      "notSupported": "该游戏暂未完成手机适配，建议使用电脑端"
+    },
+    "gateTitle": {
+      "rotateToLandscape": "请切换到横屏继续",
+      "rotateToPortrait": "请切换到竖屏继续",
+      "tabletOnly": "请改用平板或电脑继续",
+      "notSupported": "当前手机端暂不支持该游戏"
+    },
+    "gateDescription": {
+      "rotateToLandscape": "当前游戏按横屏主界面设计，切换方向后再进入对局。",
+      "rotateToPortrait": "当前游戏按竖屏主界面设计，切换方向后再继续对局。",
+      "tabletOnly": "当前画面需要更大的可视区域，建议改用平板或电脑。",
+      "notSupported": "该游戏尚未完成手机端适配，建议使用电脑或等待后续补齐。"
+    }
+  },
+  "passwordField": {
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码"
+  },
+  "errorBoundary": {
+    "title": "页面出了点问题",
+    "description": "当前页面渲染失败了，请先刷新重试；如果反复出现，再返回大厅。",
+    "reload": "刷新页面",
+    "backHome": "返回大厅"
+  },
+  "cardSpotlightQueue": {
+    "dismiss": "关闭后继续",
+    "queue": "{{count}} 张待查看 · 关闭后继续",
+    "closeSpotlight": "关闭特写"
+  },
+  "tutorialSelectionGate": {
+    "loading": "教程初始化中"
+  },
   "notFound": {
     "seoTitle": "404 - 页面未找到",
     "seoDescription": "你访问的页面不存在。",
     "headline": "迷失在地图之外",
-    "headlineSub": "Lost off the edge of the map",
+    "headlineSub": "迷失在地图边界之外",
     "description": "您所寻找的页面似乎已被移除，或者从未存在于这个版图之上。",
-    "descriptionSub": "The hex you are looking for has been removed or never existed.",
+    "descriptionSub": "你要寻找的六边格已被移除，或从未存在过。",
     "backHome": "返回大厅",
-    "footer": "BordGame System"
+    "footer": "桌游系统"
   },
   "maintenance": {
     "seoTitle": "系统维护",
@@ -98,24 +149,24 @@
   },
   "compatibility": {
     "seoTitle": "浏览器兼容性不足",
-    "seoDescription": "当前浏览器缺少页面所需的现代样式能力，建议切换到最新版 Chrome 或更新系统 WebView 后重试。",
+    "seoDescription": "当前浏览器缺少页面所需的现代样式能力，建议切换到最新版谷歌浏览器或更新系统网页视图后重试。",
     "badge": "兼容性提醒",
     "currentBrowser": "当前识别到的浏览器：{{browser}}",
-    "requiredVersions": "经验上 Chrome 88+、Edge 88+、Android WebView 88+、Safari 14+、Firefox 78+ 更稳定；更低版本若关键能力齐全也会继续放行。",
+    "requiredVersions": "经验上新版谷歌浏览器、微软浏览器、安卓系统网页视图、苹果浏览器与火狐浏览器更稳定；更低版本若关键能力齐全也会继续放行。",
     "title": "当前浏览器兼容性不足",
     "description": "检测到当前环境缺少项目当前没有降级兜底的关键能力。继续进入后很可能出现白屏、布局失真或核心交互失效，因此这里才会拦截；如果页面本身还能正常运行，就不会因为版本号较低而单独阻止你进入。",
     "reasonTitle": "检测到的缺失能力",
-    "reasonRuntimeCore": "当前浏览器缺少基础运行能力（如 Promise、fetch、URLSearchParams 等），应用主流程无法保证正常工作。",
-    "reasonResizeObserver": "当前环境缺少 ResizeObserver，游戏棋盘和关键布局无法稳定计算尺寸，进入对局后很容易错位或不可用。",
+    "reasonRuntimeCore": "当前浏览器缺少基础运行能力（例如异步处理、网络请求或地址参数处理等），应用主流程无法保证正常工作。",
+    "reasonResizeObserver": "当前环境缺少尺寸观察能力，游戏棋盘和关键布局无法稳定计算尺寸，进入对局后很容易错位或不可用。",
     "recommendationTitle": "建议处理方式",
-    "recommendationChrome": "优先使用最新版 Chrome、Edge 或系统更新后的浏览器重新打开当前页面。",
-    "recommendationWebView": "如果你是在 App 内打开网页，请先更新 Android System WebView 或让 App 改为外部浏览器打开。",
+    "recommendationChrome": "优先使用最新版谷歌浏览器、微软浏览器或系统更新后的浏览器重新打开当前页面。",
+    "recommendationWebView": "如果你是在应用内打开网页，请先更新安卓系统网页视图，或让应用改为外部浏览器打开。",
     "recommendationRetry": "更新浏览器或系统组件后，回到这里点“重新检测”。",
     "continueAnyway": "继续访问（可能异常）",
     "retry": "重新检测",
     "backHome": "返回首页",
     "note": "继续访问只会临时跳过提醒，不会修复兼容问题。",
-    "contextWebView": "检测到应用内 WebView",
+    "contextWebView": "检测到应用内网页视图",
     "contextBrowser": "检测到旧版浏览器内核"
   },
   "game_names": {
@@ -144,6 +195,93 @@
       "title": "召唤师战争",
       "description": "召唤师战争是一款快速紧凑的2人游戏。玩家扮演召唤者，通过控制神秘召唤石力量来领导他们的种族征服Itharia这个饱受战争创伤的星球。",
       "players": "2人"
+    }
+  },
+  "qidahenBoard": {
+    "factions": {
+      "ming": "大明",
+      "mongol": "蒙古",
+      "jin": "后金"
+    },
+    "header": {
+      "match": "对局：{{game}}",
+      "room": "房间号：{{roomId}}",
+      "action_order": "行动顺序",
+      "reset_view": "重置视角",
+      "focus": "聚焦"
+    },
+    "panels": {
+      "current_year": "当前年度",
+      "action_wheel": "行动轮盘",
+      "faction_status": "势力状态",
+      "pending": "待处理",
+      "battle": "战斗",
+      "action_log": "行动记录"
+    },
+    "factionSummary": {
+      "hand": "手牌 {{count}}/{{limit}}",
+      "troops": "兵力",
+      "grain": "粮草",
+      "land_tax": "土气"
+    },
+    "region": {
+      "select_aria": "选择{{name}}"
+    },
+    "actionWheel": {
+      "current": "当前：{{action}}",
+      "center_line1": "行动",
+      "center_line2": "轮盘",
+      "items": {
+        "recruit": "征兵",
+        "diplomacy": "外交",
+        "tax": "征收",
+        "mobilize": "调度",
+        "drill": "演练",
+        "feint": "迂逃",
+        "strategy": "计策",
+        "intrigue": "间谋"
+      }
+    },
+    "mapCostEditor": {
+      "title": "区域移动代价编辑",
+      "source_hint": "源区域：{{name}}，点击地图区域可建立/选中边。",
+      "unselected": "未选择",
+      "adjacent_title": "相邻区域与移动代价",
+      "movement_cost_aria": "{{name}} 移动代价",
+      "delete": "删除",
+      "no_edges": "当前源区域还没有移动边。",
+      "add_or_update": "新增/更新边",
+      "bidirectional": "默认双向",
+      "update_prefix": "更新 ",
+      "connect_prefix": "连接 ",
+      "export_json": "导出 JSON",
+      "copied": "已复制",
+      "copy": "复制"
+    },
+    "map": {
+      "main_alt": "七大恨主地图",
+      "movement_costs": "移动代价：",
+      "unmarked": "未标注",
+      "view_region_details": "查看区域详情",
+      "hint": "拖拽地图 · 滚轮/双指缩放 · 点击区域"
+    },
+    "battle": {
+      "title": "{{region}} 之战",
+      "attacker_label": "攻方：",
+      "defender_separator": "守方：",
+      "phase": "战场：{{phase}}"
+    },
+    "hand": {
+      "title": "手牌",
+      "card_back_alt": "牌背",
+      "triggered_action": "已触行动：{{action}}",
+      "spent_action_points": "消耗行动点：{{points}}"
+    },
+    "actions": {
+      "confirm": "确认",
+      "cancel": "取消",
+      "end_line1": "结束",
+      "end_line2": "行动"
     }
   }
 }

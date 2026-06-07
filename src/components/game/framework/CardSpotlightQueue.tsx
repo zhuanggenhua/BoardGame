@@ -10,6 +10,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UI_Z_INDEX } from '../../../core';
 import type { SpotlightItem } from './hooks/useCardSpotlightQueue';
@@ -42,10 +43,13 @@ function CardSpotlightQueueInner<TData = unknown>({
     onDismiss,
     renderCard,
     indicatorPosition = 'bottom',
-    dismissLabel = '关闭后继续',
-    queueLabel = '{count} 张待查看 · 关闭后继续',
+    dismissLabel,
+    queueLabel,
 }: CardSpotlightQueueProps<TData>) {
+    const { t } = useTranslation('common');
     const current = queue[0];
+    const resolvedDismissLabel = dismissLabel ?? t('cardSpotlightQueue.dismiss');
+    const resolvedQueueLabel = queueLabel ?? t('cardSpotlightQueue.queue', { count: queue.length });
 
     const handleDismiss = useCallback(() => {
         if (current) {
@@ -71,7 +75,7 @@ function CardSpotlightQueueInner<TData = unknown>({
                 {/* 半透明背景 */}
                 <button
                     type="button"
-                    aria-label="关闭特写"
+                    aria-label={t('cardSpotlightQueue.closeSpotlight')}
                     className="absolute inset-0 bg-black/20"
                     onClick={handleDismiss}
                 />
@@ -119,8 +123,8 @@ function CardSpotlightQueueInner<TData = unknown>({
                     transition={{ delay: 0.5 }}
                 >
                     {queue.length > 1
-                        ? queueLabel.replace('{count}', String(queue.length))
-                        : dismissLabel}
+                        ? resolvedQueueLabel
+                        : resolvedDismissLabel}
                 </motion.div>
             </motion.div>
         </AnimatePresence>

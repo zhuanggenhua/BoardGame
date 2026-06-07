@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bomb, Swords, Aperture, Hammer, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ShakeContainer, useShake } from '../../../components/common/animations/ShakeContainer';
@@ -21,19 +22,15 @@ import {
 // 标签映射
 // ============================================================================
 
-const SLASH_LABELS: Record<string, string> = {
-  light: '轻击', normal: '普通', heavy: '重击', critical: '暴击', ice: '冰霜', holy: '神圣',
-};
-
-const RIFT_LABELS: Record<string, string> = {
-  light: '轻击', normal: '普通', heavy: '重击', critical: '暴击', ice: '冰霜', holy: '神圣', void: '虚空',
-};
+const getSlashLabel = (t: (key: string) => string, name: string) => t(`devtools.effectPreview.impact.shared.labels.${name}`);
+const getRiftLabel = (t: (key: string) => string, name: string) => t(`devtools.effectPreview.impact.shared.labels.${name}`);
 
 // ============================================================================
 // 震动 + 钝帧
 // ============================================================================
 
 export const ShakeHitStopCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { isShaking, triggerShake } = useShake(500);
   const [lightActive, setLightActive] = useState(false);
   const [heavyActive, setHeavyActive] = useState(false);
@@ -45,31 +42,31 @@ export const ShakeHitStopCard: React.FC<PreviewCardProps> = ({ useRealCards = tr
   }, []);
 
   return (
-    <EffectCard title="震动 + 钝帧" icon={Bomb} iconColor={iconColor} desc="震动 + 帧冻结（rAF 暂停，冻在当前偏移）"
+    <EffectCard title={t('devtools.effectPreview.impact.shake_hit_stop.title')} icon={Bomb} iconColor={iconColor} desc={t('devtools.effectPreview.impact.shake_hit_stop.description')}
       buttons={<>
-        <TriggerButton label="纯震动" onClick={triggerShake} />
-        <TriggerButton label="震动+钝帧·轻" onClick={() => triggerImpact(setLightActive)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="震动+钝帧·重" onClick={() => triggerImpact(setHeavyActive)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="震动+钝帧·暴击" onClick={() => triggerImpact(setCritActive)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.shake_hit_stop.buttons.shake_only')} onClick={triggerShake} />
+        <TriggerButton label={t('devtools.effectPreview.impact.shake_hit_stop.buttons.light')} onClick={() => triggerImpact(setLightActive)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.shake_hit_stop.buttons.heavy')} onClick={() => triggerImpact(setHeavyActive)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.shake_hit_stop.buttons.critical')} onClick={() => triggerImpact(setCritActive)} color="bg-rose-700 hover:bg-rose-600" />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center gap-2 p-1">
         <ShakeContainer isShaking={isShaking} className="relative w-36 h-24 rounded flex items-center justify-center border border-slate-600/50">
           {useRealCards ? <CardSprite className="absolute inset-0 rounded" /> : <div className="absolute inset-0 bg-slate-700 rounded" />}
-          <span className="relative text-[10px] text-slate-300 z-10">纯震动</span>
+          <span className="relative text-[10px] text-slate-300 z-10">{t('devtools.effectPreview.impact.shake_hit_stop.preview.shake_only')}</span>
         </ShakeContainer>
         <div className="flex gap-1">
           <ImpactContainer isActive={lightActive} damage={1} effects={{ shake: true, hitStop: true }} hitStopConfig={HIT_STOP_PRESETS.light} onComplete={() => setLightActive(false)} className="relative w-16 h-12 rounded flex items-center justify-center border border-red-700/40">
             {useRealCards ? <CardSprite className="absolute inset-0 rounded opacity-60" /> : <div className="absolute inset-0 bg-red-900/50 rounded" />}
-            <span className="relative text-[10px] text-red-300 z-10">轻</span>
+            <span className="relative text-[10px] text-red-300 z-10">{t('devtools.effectPreview.impact.shake_hit_stop.preview.light')}</span>
           </ImpactContainer>
           <ImpactContainer isActive={heavyActive} damage={5} effects={{ shake: true, hitStop: true }} hitStopConfig={HIT_STOP_PRESETS.heavy} onComplete={() => setHeavyActive(false)} className="relative w-16 h-12 rounded flex items-center justify-center border border-red-700/40">
             {useRealCards ? <CardSprite className="absolute inset-0 rounded opacity-60" /> : <div className="absolute inset-0 bg-red-900/50 rounded" />}
-            <span className="relative text-[10px] text-red-300 z-10">重</span>
+            <span className="relative text-[10px] text-red-300 z-10">{t('devtools.effectPreview.impact.shake_hit_stop.preview.heavy')}</span>
           </ImpactContainer>
           <ImpactContainer isActive={critActive} damage={10} effects={{ shake: true, hitStop: true }} hitStopConfig={HIT_STOP_PRESETS.critical} onComplete={() => setCritActive(false)} className="relative w-16 h-12 rounded flex items-center justify-center border border-red-700/40">
             {useRealCards ? <CardSprite className="absolute inset-0 rounded opacity-60" /> : <div className="absolute inset-0 bg-red-900/50 rounded" />}
-            <span className="relative text-[10px] text-red-300 z-10">暴击</span>
+            <span className="relative text-[10px] text-red-300 z-10">{t('devtools.effectPreview.impact.shake_hit_stop.preview.critical')}</span>
           </ImpactContainer>
         </div>
       </div>
@@ -82,6 +79,7 @@ export const ShakeHitStopCard: React.FC<PreviewCardProps> = ({ useRealCards = tr
 // ============================================================================
 
 export const SlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { isActive, triggerSlash } = useSlashEffect();
   const [currentPreset, setCurrentPreset] = useState('normal');
   const { stats, startMeasure } = usePerfCounter();
@@ -94,10 +92,10 @@ export const SlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
   }, [triggerSlash, startMeasure]);
 
   return (
-    <EffectCard title="弧形刀光" icon={Swords} iconColor={iconColor} desc="Canvas 弧形刀光 + 火花" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.impact.slash.title')} icon={Swords} iconColor={iconColor} desc={t('devtools.effectPreview.impact.slash.description')} stats={stats}
       buttons={<>
         {Object.keys(SLASH_PRESETS).map(name => (
-          <TriggerButton key={name} label={SLASH_LABELS[name] ?? name} onClick={() => fire(name)} color="bg-orange-700 hover:bg-orange-600" />
+          <TriggerButton key={name} label={getSlashLabel(t, name)} onClick={() => fire(name)} color="bg-orange-700 hover:bg-orange-600" />
         ))}
       </>}
     >
@@ -107,7 +105,7 @@ export const SlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
             <CardSprite className="absolute inset-0 rounded" />
           </div>
         ) : (
-          <span className="text-[10px] text-slate-600">受击区域</span>
+          <span className="text-[10px] text-slate-600">{t('devtools.effectPreview.impact.slash.preview')}</span>
         )}
       </div>
       <SlashEffect isActive={isActive} {...(SLASH_PRESETS[currentPreset as keyof typeof SLASH_PRESETS] ?? SLASH_PRESETS.normal)} />
@@ -120,6 +118,7 @@ export const SlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ico
 // ============================================================================
 
 export const RiftSlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { isActive, triggerRift } = useRiftSlash();
   const [currentPreset, setCurrentPreset] = useState('normal');
   const { stats, startMeasure } = usePerfCounter();
@@ -132,10 +131,10 @@ export const RiftSlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true,
   }, [triggerRift, startMeasure]);
 
   return (
-    <EffectCard title="次元裂隙" icon={Aperture} iconColor={iconColor} desc="Canvas 直线斜切 + 火花" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.impact.rift.title')} icon={Aperture} iconColor={iconColor} desc={t('devtools.effectPreview.impact.rift.description')} stats={stats}
       buttons={<>
         {Object.keys(RIFT_PRESETS).map(name => (
-          <TriggerButton key={name} label={RIFT_LABELS[name] ?? name} onClick={() => fire(name)} color="bg-violet-700 hover:bg-violet-600" />
+          <TriggerButton key={name} label={getRiftLabel(t, name)} onClick={() => fire(name)} color="bg-violet-700 hover:bg-violet-600" />
         ))}
       </>}
     >
@@ -145,7 +144,7 @@ export const RiftSlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true,
             <CardSprite className="absolute inset-0 rounded" />
           </div>
         ) : (
-          <span className="text-[10px] text-slate-600">受击区域</span>
+          <span className="text-[10px] text-slate-600">{t('devtools.effectPreview.impact.rift.preview')}</span>
         )}
       </div>
       <RiftSlash isActive={isActive} {...(RIFT_PRESETS[currentPreset as keyof typeof RIFT_PRESETS] ?? RIFT_PRESETS.normal)} />
@@ -158,6 +157,7 @@ export const RiftSlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true,
 // ============================================================================
 
 export const ImpactCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [damage, setDamage] = useState(5);
   const { stats, startMeasure } = usePerfCounter();
   const [useShakeEff, setUseShakeEff] = useState(true);
@@ -185,20 +185,20 @@ export const ImpactCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
   const isStrong = damage >= 6;
 
   return (
-    <EffectCard title="打击感组合" icon={Hammer} iconColor={iconColor} desc="震动+钝帧+DamageFlash" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.impact.combo.title')} icon={Hammer} iconColor={iconColor} desc={t('devtools.effectPreview.impact.combo.description')} stats={stats}
       buttons={<>
-        <TriggerButton label="轻击 (2)" onClick={() => trigger(2)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="普通 (5)" onClick={() => trigger(5)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="重击 (8)" onClick={() => trigger(8)} color="bg-rose-700 hover:bg-rose-600" />
-        <TriggerButton label="暴击 (12)" onClick={() => trigger(12)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.combo.buttons.light')} onClick={() => trigger(2)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.combo.buttons.normal')} onClick={() => trigger(5)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.combo.buttons.heavy')} onClick={() => trigger(8)} color="bg-rose-700 hover:bg-rose-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.combo.buttons.critical')} onClick={() => trigger(12)} color="bg-rose-700 hover:bg-rose-600" />
         <div className="flex flex-wrap gap-1">
-          <ToggleChip label="震动" active={useShakeEff} onClick={() => setUseShakeEff(v => !v)} />
-          <ToggleChip label="钝帧" active={useHitStopEff} onClick={() => setUseHitStopEff(v => !v)} />
-          <ToggleChip label="弧刀" active={slashType === 'arc'} onClick={() => setSlashType(v => v === 'arc' ? 'none' : 'arc')} />
-          <ToggleChip label="裂隙" active={slashType === 'rift'} onClick={() => setSlashType(v => v === 'rift' ? 'none' : 'rift')} />
-          <ToggleChip label="白闪" active={useWhiteFlash} onClick={() => setUseWhiteFlash(v => !v)} />
-          <ToggleChip label="红脉冲" active={useRedPulse} onClick={() => setUseRedPulse(v => !v)} />
-          <ToggleChip label="数字" active={showDmgNumber} onClick={() => setShowDmgNumber(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.shake')} active={useShakeEff} onClick={() => setUseShakeEff(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.hit_stop')} active={useHitStopEff} onClick={() => setUseHitStopEff(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.arc_slash')} active={slashType === 'arc'} onClick={() => setSlashType(v => v === 'arc' ? 'none' : 'arc')} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.rift')} active={slashType === 'rift'} onClick={() => setSlashType(v => v === 'rift' ? 'none' : 'rift')} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.white_flash')} active={useWhiteFlash} onClick={() => setUseWhiteFlash(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.red_pulse')} active={useRedPulse} onClick={() => setUseRedPulse(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.impact.combo.toggles.number')} active={showDmgNumber} onClick={() => setShowDmgNumber(v => !v)} />
         </div>
       </>}
     >
@@ -231,6 +231,7 @@ export const ImpactCard: React.FC<PreviewCardProps> = ({ useRealCards = true, ic
 // ============================================================================
 
 export const DamageFlashCard: React.FC<PreviewCardProps> = ({ useRealCards = true, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [damage, setDamage] = useState(3);
   const [intensity, setIntensity] = useState<'normal' | 'strong'>('normal');
   const { active, fire, reset, stats } = useEffectTrigger(1000);
@@ -242,12 +243,12 @@ export const DamageFlashCard: React.FC<PreviewCardProps> = ({ useRealCards = tru
   }, [fire]);
 
   return (
-    <EffectCard title="受伤反馈" icon={Droplets} iconColor={iconColor} desc="ImpactContainer(震动) + DamageFlash(斜切+红脉冲+数字)" stats={stats}
+    <EffectCard title={t('devtools.effectPreview.impact.damage_flash.title')} icon={Droplets} iconColor={iconColor} desc={t('devtools.effectPreview.impact.damage_flash.description')} stats={stats}
       buttons={<>
-        <TriggerButton label="轻伤 (1)" onClick={() => trigger(1, 'normal')} color="bg-red-700 hover:bg-red-600" />
-        <TriggerButton label="中伤 (3)" onClick={() => trigger(3, 'normal')} color="bg-red-700 hover:bg-red-600" />
-        <TriggerButton label="重伤 (5)" onClick={() => trigger(5, 'strong')} color="bg-red-700 hover:bg-red-600" />
-        <TriggerButton label="致命 (10)" onClick={() => trigger(10, 'strong')} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.damage_flash.buttons.light')} onClick={() => trigger(1, 'normal')} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.damage_flash.buttons.medium')} onClick={() => trigger(3, 'normal')} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.damage_flash.buttons.heavy')} onClick={() => trigger(5, 'strong')} color="bg-red-700 hover:bg-red-600" />
+        <TriggerButton label={t('devtools.effectPreview.impact.damage_flash.buttons.fatal')} onClick={() => trigger(10, 'strong')} color="bg-red-700 hover:bg-red-600" />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center" style={{ overflow: 'visible' }}>
@@ -271,9 +272,9 @@ export const DamageFlashCard: React.FC<PreviewCardProps> = ({ useRealCards = tru
 // ============================================================================
 
 export const meta: EffectEntryMeta[] = [
-  { id: 'shake', label: '震动+钝帧', icon: Bomb, component: ShakeHitStopCard, group: 'impact', usageDesc: '骰铸王座·受击震动 / 召唤师战争·棋格受击' },
-  { id: 'slash', label: '弧形刀光', icon: Swords, component: SlashCard, group: 'impact', usageDesc: '暂未接入业务' },
-  { id: 'rift', label: '次元裂隙', icon: Aperture, component: RiftSlashCard, group: 'impact', usageDesc: '受伤反馈·斜切视觉（DamageFlash 内部）' },
-  { id: 'impactCombo', label: '打击感组合', icon: Hammer, component: ImpactCard, group: 'impact', usageDesc: '测试台·自由组合各效果' },
-  { id: 'dmgflash', label: '受伤反馈', icon: Droplets, component: DamageFlashCard, group: 'impact', usageDesc: '召唤师战争·伤害反馈覆盖层' },
+  { id: 'shake', labelKey: 'devtools.effectPreview.entries.impact.shake.label', icon: Bomb, component: ShakeHitStopCard, group: 'impact', usageDescKey: 'devtools.effectPreview.entries.impact.shake.usage' },
+  { id: 'slash', labelKey: 'devtools.effectPreview.entries.impact.slash.label', icon: Swords, component: SlashCard, group: 'impact', usageDescKey: 'devtools.effectPreview.entries.impact.slash.usage' },
+  { id: 'rift', labelKey: 'devtools.effectPreview.entries.impact.rift.label', icon: Aperture, component: RiftSlashCard, group: 'impact', usageDescKey: 'devtools.effectPreview.entries.impact.rift.usage' },
+  { id: 'impactCombo', labelKey: 'devtools.effectPreview.entries.impact.impactCombo.label', icon: Hammer, component: ImpactCard, group: 'impact', usageDescKey: 'devtools.effectPreview.entries.impact.impactCombo.usage' },
+  { id: 'dmgflash', labelKey: 'devtools.effectPreview.entries.impact.dmgflash.label', icon: Droplets, component: DamageFlashCard, group: 'impact', usageDescKey: 'devtools.effectPreview.entries.impact.dmgflash.usage' },
 ];

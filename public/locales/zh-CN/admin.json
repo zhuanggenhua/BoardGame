@@ -29,7 +29,7 @@
       "closed": "已关闭"
     },
     "type": {
-      "bug": "Bug",
+      "bug": "问题",
       "suggestion": "建议",
       "other": "其他"
     },
@@ -39,12 +39,12 @@
     },
       "source": {
         "feedbackModal": "反馈弹窗",
-        "onlineAiWatchdog": "在线 AI Watchdog",
+        "onlineAiWatchdog": "在线智能看门狗",
         "clientAutoReport": "客户端自动反馈",
         "clientRuntimeGuard": "客户端运行时守卫",
         "clientWindowError": "窗口错误捕获",
-        "clientUnhandledRejection": "未处理 Promise 拒绝",
-        "reactErrorBoundary": "React 错误边界",
+        "clientUnhandledRejection": "未处理异步拒绝",
+        "reactErrorBoundary": "界面渲染错误边界",
         "boardRenderError": "对局渲染错误边界",
         "homeModalErrorBoundary": "首页弹窗错误边界",
         "globalErrorCapture": "全局错误捕获",
@@ -68,7 +68,7 @@
       "origin": "来源",
       "time": "时间",
       "selectItem": "选择反馈 {{id}}",
-      "id": "ID: {{id}}"
+      "id": "编号：{{id}}"
     },
     "anonymous": "匿名用户",
     "messages": {
@@ -112,6 +112,13 @@
       "rewardPoints": "奖励积分",
       "autoReportKind": "自动上报类型",
       "incidentKey": "事件键",
+      "occurrenceCount": "聚合次数",
+      "firstOccurredAt": "首次出现",
+      "lastOccurredAt": "最近出现",
+      "latestIncidentKey": "最新事件键",
+      "errorContext": "错误上下文",
+      "recentAction": "最近动作",
+      "activeElement": "当前焦点",
       "expand": "展开",
       "collapse": "收起"
     },
@@ -119,11 +126,11 @@
       "title": "操作日志"
     },
     "aiSummary": {
-      "title": "AI 诊断包"
+      "title": "智能诊断包"
     },
     "stateSnapshot": {
-      "title": "状态快照（JSON）",
-      "copy": "复制 JSON",
+      "title": "状态快照（结构化数据）",
+      "copy": "复制结构化数据",
       "copied": "已复制"
     },
     "time": {

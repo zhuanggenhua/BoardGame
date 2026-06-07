@@ -305,6 +305,9 @@ function buildFairiesEnchantmentPromptOptions(
         .map(branchId => ({
             id: branchId,
             label: branchId === 'plus' ? '所有随从 +1 力量' : '所有随从 -1 力量',
+            labelKey: branchId === 'plus'
+                ? 'ui.fairies_enchantment_plus_option'
+                : 'ui.fairies_enchantment_minus_option',
             value: { branchId },
             displayMode: 'button' as const,
         }));
@@ -521,6 +524,7 @@ function applyEventsToMatchState(
 function createTransferSelfAbilityProgram(
     sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
     title: string,
+    titleKey: string,
     reason: 'fairies_ladybug' | 'fairies_leaf_armor',
 ) {
     const promptProgram = createPromptProgram<FairiesTransferPromptContext, SmashUpCore, SmashUpEvent>({
@@ -534,7 +538,12 @@ function createTransferSelfAbilityProgram(
                 sourcePlayerId: context.playerId,
                 effectType: 'affect',
             }),
-            { sourceId, targetType: 'minion', autoResolveIfSingle: false },
+            {
+                sourceId,
+                titleKey,
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+            },
         ),
         onResolve: ({ context, state, value, timestamp }) => {
             const selected = value as MinionChoice;
@@ -596,6 +605,7 @@ const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaRetu
         buildTitaniaReturnOptions(context.matchState.core, context.playerId),
         {
             sourceId: 'fairies_titania_return_minion',
+            titleKey: 'ui.fairies_titania_return_title',
             targetType: 'minion',
             autoResolveIfSingle: false,
         },
@@ -629,7 +639,12 @@ const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerProm
         context.playerId,
         'Glymmer：选择另一个随从直到你的下回合开始时 -4 力量',
         buildGlymmerTargetOptions(context.matchState.core, context.sourceCardUid, context.playerId),
-        { sourceId: 'fairies_glymmer_target', targetType: 'minion', autoResolveIfSingle: false },
+        {
+            sourceId: 'fairies_glymmer_target',
+            titleKey: 'ui.fairies_glymmer_target_title',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -654,12 +669,29 @@ const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptCont
         context.playerId,
         'Glymmer：选择另一个随从直到你的下回合开始时 -4 力量，或让本随从直到你的下回合开始时 +1 力量',
         [
-            { id: 'self', label: '本随从直到你的下回合开始时 +1 力量', value: { choice: 'self_bonus' }, displayMode: 'button' as const },
+            {
+                id: 'self',
+                label: '本随从直到你的下回合开始时 +1 力量',
+                labelKey: 'ui.fairies_glymmer_self_bonus_option',
+                value: { choice: 'self_bonus' },
+                displayMode: 'button' as const,
+            },
             ...(buildGlymmerTargetOptions(context.matchState.core, context.sourceCardUid, context.playerId).length > 0
-                ? [{ id: 'target-other', label: '选择另一个随从直到你的下回合开始时 -4 力量', value: { choice: 'target_other' }, displayMode: 'button' as const }]
+                ? [{
+                    id: 'target-other',
+                    label: '选择另一个随从直到你的下回合开始时 -4 力量',
+                    labelKey: 'ui.fairies_glymmer_target_other_option',
+                    value: { choice: 'target_other' },
+                    displayMode: 'button' as const,
+                }]
                 : []),
         ],
-        { sourceId: 'fairies_glymmer', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'fairies_glymmer',
+            titleKey: 'ui.fairies_glymmer_title',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, value, timestamp, playerId }) => {
         const selected = value as ButtonChoice;
@@ -706,7 +738,12 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
                 displayMode: 'card' as const,
             })),
         ],
-        { sourceId: 'fairies_tinx', targetType: 'ongoing', autoResolveIfSingle: false },
+        {
+            sourceId: 'fairies_tinx',
+            titleKey: 'ui.fairies_tinx_title',
+            targetType: 'ongoing',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as { skip?: boolean; cardUid?: string };
@@ -843,6 +880,7 @@ const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlay
         })),
         {
             sourceId: 'fairies_playful_tricks_destroy',
+            titleKey: 'ui.fairies_playful_tricks_destroy_title',
             targetType: 'ongoing',
             multi: { min: 0, max: Math.min(2, context.options.length) },
             autoResolveIfSingle: false,
@@ -892,6 +930,7 @@ const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesP
         ),
         {
             sourceId: 'fairies_playful_tricks_spirit_base',
+            titleKey: 'ui.fairies_playful_tricks_spirit_base_title',
             targetType: 'base',
             autoResolveIfSingle: false,
         },
@@ -1062,12 +1101,14 @@ const fairiesTinxProgram = createEffectProgram<AbilityContext, SmashUpCore, Smas
 const fairiesLadybugProgram = createTransferSelfAbilityProgram(
     'fairies_ladybug',
     'Ladybug：选择另一个随从来转移这张牌',
+    'ui.fairies_ladybug_title',
     'fairies_ladybug',
 );
 
 const fairiesLeafArmorProgram = createTransferSelfAbilityProgram(
     'fairies_leaf_armor',
     '叶之甲：选择另一个随从来转移这张牌',
+    'ui.fairies_leaf_armor_title',
     'fairies_leaf_armor',
 );
 

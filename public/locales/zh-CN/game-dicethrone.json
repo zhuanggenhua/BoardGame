@@ -577,13 +577,14 @@
     "defenderDesc": "你可以花费标记来减少伤害，或尝试完全闪避。",
     "originalDamage": "原始伤害",
     "currentDamage": "当前伤害",
+    "critRequirementDetail": "当前伤害 {{damage}}，需要 >= 5",
     "damage": "伤害",
     "available": "可用",
     "taijiBoostHint": "花费太极来提高伤害",
     "taijiReduceHint": "花费太极来减少伤害",
     "useTaiji": "使用太极",
-    "boostHint": "花费 Token 来提高伤害",
-    "reduceHint": "花费 Token 来减少伤害",
+    "boostHint": "花费标记来提高伤害",
+    "reduceHint": "花费标记来减少伤害",
     "useToken": "使用",
     "evasiveHint": "花费闪避尝试完全躲避",
     "evasiveDesc": "花费 1 个闪避并掷 1 骰；成功则本次伤害变为 0。",
@@ -973,15 +974,15 @@
     "unsupported_character": "不支持的角色",
     "invalid_die_value": "骰子值无效（需在 1-6 之间）",
     "no_pending_damage": "当前没有待结算的伤害",
-    "unknown_token": "未知的 Token 类型",
-    "no_token": "Token 数量不足",
+    "unknown_token": "未知的标记类型",
+    "no_token": "标记数量不足",
     "invalid_amount": "无效的数量",
     "no_status": "目标没有该状态效果",
     "no_knockdown": "目标没有击倒状态",
     "not_enough_cp": "CP 不足",
     "no_pending_bonus_dice": "当前没有待结算的奖励骰",
     "bonus_reroll_limit_reached": "已达到奖励骰重掷次数上限",
-    "not_enough_token": "Token 数量不足以支付费用",
+    "not_enough_token": "标记数量不足以支付费用",
     "invalid_die_index": "无效的骰子索引",
     "player_is_dazed": "玩家处于恍惚状态",
     "player_is_stunned": "玩家处于眩晕状态，无法出牌",
@@ -999,7 +1000,7 @@
     "invalid_status": "无效的状态效果",
     "invalid_interaction_type": "无效的交互类型",
     "interaction_id_mismatch": "交互 ID 不匹配",
-    "invalid_token_timing": "Token 使用时机不正确",
+    "invalid_token_timing": "标记使用时机不正确",
     "passive_not_found": "被动技能不存在",
     "action_not_found": "动作不存在",
     "target_die_required": "需要指定目标骰子",
@@ -1010,6 +1011,8 @@
     "endDefense": "结束防御",
     "nextPhase": "下一阶段",
     "closePreview": "关闭预览 ✕",
+    "magnify": "查看大图",
+    "inspectDiscardPile": "查看弃牌堆",
     "undoSell": "撤回售出",
     "play": "打出",
     "upgrade": "升级",
@@ -1027,7 +1030,11 @@
   },
   "layout": {
     "exitEdit": "🧱 退出布局编辑",
-    "enterEdit": "📐 开启布局编辑 (Drag/Resize)"
+    "enterEdit": "📐 开启布局编辑（拖拽/缩放）",
+    "passiveTag": "被动",
+    "currentLayout": "当前角色布局配置：{{version}} ({{width}}×{{height}})",
+    "saving": "保存中…",
+    "saveLayout": "保存 {{version}} 布局配置"
   },
   "status": {
     "loadingGameState": "加载游戏状态... (玩家 {{playerId}})"
@@ -3223,7 +3230,7 @@
     },
     "war-monger": {
       "name": "战争贩子",
-      "description": "1 军刀 + 3 旗帜：获得 1 战术优势并投 1 骰；军刀造成 5 点伤害，旗帜获得 4 战术优势，勋章抽 1 张牌；结算后立即进入额外进攻投掷阶段。",
+      "description": "1 军刀 + 3 旗帜：获得 1 战术优势并投 1 骰；军刀造成 5 点伤害，旗帜获得 4 战术优势，勋章抽 1 张牌并立即进入额外进攻投掷阶段。",
       "effects": {
         "gainTa1": "获得 1 战术优势。",
         "bonusRoll": "投 1 骰：军刀造成 5；旗帜获得 4 战术优势；勋章抽 1。",
@@ -4675,6 +4682,90 @@
     "transferShort": "转移状态",
     "transfer": "消耗 4 战术优势转移 1 个状态效果"
   }
+  },
+  "debug": {
+    "testingTools": "测试工具",
+    "resource": {
+      "section_title": "资源修改",
+      "set": "设置为",
+      "add": "+增加",
+      "subtract": "-减少"
+    },
+    "dice": {
+      "section_title": "骰子调整",
+      "die_label": "D{{index}}",
+      "apply": "✓ 应用骰子值",
+      "all_ones": "全1",
+      "all_sixes": "全6",
+      "large_straight_1_5": "大顺 1-5",
+      "large_straight_2_6": "大顺 2-6",
+      "small_straight_1_4": "小顺 1-4"
+    },
+    "token": {
+      "section_title": "标记调整",
+      "lotus": "莲花 🪷",
+      "set_amount": "设置标记数量"
+    },
+    "deal": {
+      "section_title": "发牌调试（图集索引）",
+      "index_placeholder": "图集索引",
+      "no_character": "未选角色",
+      "reversed_common_hint": "当前角色 {{hero}} 使用反向通用牌区：0-17 = 通用牌，18-31 = 专属牌。若怕记错，优先点下方“牌库索引速查”里的候选行精确发牌。",
+      "legacy_common_hint": "当前角色 {{hero}} 使用老角色默认顺序：前半段多为专属牌，15-32 = 通用牌。",
+      "deck_remaining": "牌库剩余：{{count}} 张",
+      "deck_hit": "| 牌库中存在：{{name}}",
+      "deck_multi_hit": "| 该索引命中 {{count}} 张牌，请按下方候选卡精确发牌",
+      "pool_single_hit": "| 当前不在剩余牌库，可直接补到手牌：{{name}}（手牌 {{handCount}} 张，弃牌堆 {{discardCount}} 张）",
+      "pool_multi_hit": "| 当前不在剩余牌库，但角色全卡池命中 {{count}} 张牌，请按下方候选卡精确补牌",
+      "pool_missing": "| 当前角色全卡池不存在该索引",
+      "button_deal_from_deck": "🎴 从剩余牌库发到手牌",
+      "button_choose_deck_candidate": "🎴 发指定牌（图集索引）",
+      "button_add_from_pool": "🪄 直接补到手牌",
+      "button_choose_pool_candidate": "🪄 精确补牌",
+      "button_default": "🎴 发指定牌（图集索引）",
+      "deck_slot": "deck#{{index}}"
+    },
+    "quickDeal": {
+      "status": "牌库: {{count}} 张 {{detail}}",
+      "selected": "| 选中: {{id}}",
+      "missing": "| 牌库中不存在此索引",
+      "button": "发指定牌"
+    },
+    "card_pool": {
+      "section_title": "角色全卡池速查（{{player}}）",
+      "description": "点击任意条目都会优先从剩余牌库发牌；如果该牌当前已经在手牌或弃牌堆，会直接再补 1 张到手牌。",
+      "empty_character": "当前角色未选定",
+      "empty_group": "当前角色这一分区没有配置卡牌",
+      "deck_index_short": "#{{index}}"
+    },
+    "hand_preview": {
+      "section_title": "手牌预览（{{player}}）",
+      "empty": "手牌为空"
+    },
+    "deck_section": {
+      "unknown": "未知",
+      "common": "通用",
+      "hero": "专属",
+      "common_0_17_title": "通用牌区 0-17",
+      "common_0_17_desc": "点击任意条目都会优先从剩余牌库发牌；若该牌已离开牌库，则直接补到手牌。",
+      "hero_18_31_title": "专属牌区 18-31",
+      "hero_18_31_desc": "18 以后才是当前角色专属牌，手牌 / 弃牌堆里的同名牌也可以直接补。",
+      "hero_title": "专属牌区",
+      "hero_desc": "老角色前半段多为专属牌，点击即可优先发牌，不在牌库时会自动补牌。",
+      "common_15_32_title": "通用牌区 15-32",
+      "common_15_32_desc": "老角色通用牌区按正向排列；手牌 / 弃牌堆中的同名牌不会再导致“发不了牌”。"
+    },
+    "card_type": {
+      "upgrade": "升级",
+      "action": "行动"
+    },
+    "short": {
+      "add_to_hand": "补牌",
+      "in_hand_and_discard": "手牌 {{handCount}} / 弃牌 {{discardCount}}",
+      "in_deck": "✓ 牌库中",
+      "can_add_with_counts": "+ 可补（手 {{handCount}} / 弃 {{discardCount}}）",
+      "can_add": "+ 可补"
+    }
   },
   "cardSpotlight": {
     "playerPlayed": "{{player}} 打出了卡牌",

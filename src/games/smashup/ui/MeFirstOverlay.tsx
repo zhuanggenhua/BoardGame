@@ -131,7 +131,7 @@ export const MeFirstOverlay: React.FC<{
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'
-        ? t('ui.after_scoring_title', { defaultValue: '计分后响应' })
+        ? t('ui.after_scoring_title')
         : t('ui.me_first_title');
 
     if (!isMyResponse) {
@@ -154,7 +154,6 @@ export const MeFirstOverlay: React.FC<{
                     <p className="text-sm font-bold text-slate-700 text-center" data-testid="me-first-status">
                         {t('ui.me_first_waiting', {
                             player: currentResponderName,
-                            defaultValue: '正在等待 {{player}} 响应...',
                         })}
                     </p>
                 </motion.div>
@@ -190,11 +189,11 @@ export const MeFirstOverlay: React.FC<{
                     {/* 提示：从手牌中选择可响应的卡牌或让过 */}
                     {hasRespondableCards ? (
                         <p className="text-xs text-center text-amber-700/80 font-medium">
-                            {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择可响应的卡牌打出' })}
+                            {t('ui.me_first_select_from_hand')}
                         </p>
                     ) : (
                         <p className="text-xs text-center text-slate-600 font-medium">
-                            {t('ui.me_first_no_special', { defaultValue: '你没有可在当前窗口打出的卡牌' })}
+                            {t('ui.me_first_no_special')}
                         </p>
                     )}
 

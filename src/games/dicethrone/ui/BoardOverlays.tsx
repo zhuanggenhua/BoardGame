@@ -241,7 +241,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                     className={isPlayerBoardPreview
                                         ? 'block w-full h-full object-contain'
                                         : 'block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain'}
-                                    alt="预览图"
+                                    alt={t('imageAlt.magnifiedView')}
                                 />
                                 {/* 玩家面板放大时叠加升级卡预览 */}
                                 {isPlayerBoardPreview && props.viewCharacterId && props.abilityLevels && (

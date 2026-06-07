@@ -223,6 +223,7 @@ function queueActionCounterPrompt(
             {
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             },
@@ -242,6 +243,7 @@ function queueActionCounterPrompt(
             return [{
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             }];
@@ -251,6 +253,7 @@ function queueActionCounterPrompt(
             return [{
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             }];
@@ -269,6 +272,7 @@ function queueActionCounterPrompt(
             {
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             },
@@ -289,6 +293,7 @@ function queueActionCounterContinuePrompt(
         [{
             id: 'continue',
             label: '继续',
+            labelKey: 'ui.continue',
             value: { continue: true },
             displayMode: 'button',
         }],
@@ -296,6 +301,7 @@ function queueActionCounterContinuePrompt(
             sourceId: ACTION_COUNTER_CONTINUE_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: true,
+            titleKey: 'ui.action_counter_continue_title',
         },
     );
     interaction.data.continuationContext = { stack };
@@ -327,6 +333,7 @@ function queueWilBasePrompt(
             targetType: 'base',
             autoResolveIfSingle: false,
             displayCard: { defId, cardUid },
+            titleKey: 'ui.action_counter_wil_base_title',
         },
     );
     interaction.data.continuationContext = {

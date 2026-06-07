@@ -252,6 +252,7 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - `该反馈本体：当前树已恢复` 或 `证据不足 / 未证实`
 - `本轮额外改动：补了 xxx 诊断能力，方便下次同类反馈直接注入`
 
+
 ### 2.4 批量修复前先检查“最近是否已经顺手修过”
 
 很多开放反馈会落在“代码其实已经修了，但状态还没回写”的阶段；批量开工前必须先做一次最近更新核对，避免重复修同一个问题。
@@ -280,6 +281,37 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - 不看最近更新就机械重修整批反馈
 - 明明已有修复证据，却再次让多个子 agent 改同一批文件
 - 看到“像是修过”就直接改 `resolved`，但不补验证与证据
+
+### 2.5 SmashUp 计分响应类反馈的专项门禁（BoardGame 项目专用）
+
+当反馈属于 SmashUp 的 `scoreBases / Me First / afterScoring / smashup_reaction_choose` 链路，且用户描述里出现“让过又出现”“计分后卡死”“以前是手牌承接”“中间弹窗/提示层”“没有可选目标”“同一基地重复触发”时，必须额外执行下面这组门禁：
+
+1. **先锁定是不是同一基地同一响应帧**
+   - 至少同时说明：`基地索引/基地对象`、`reaction frameId`、`当前响应玩家`、`当前 sourceId`
+   - 必须分清到底是：
+     - 同一个 `afterScoring` 帧被重复续链
+     - 还是 `Me First` 结束后又进入 `afterScoring`
+   - 这两种链路在结论里不得混称成“又弹了一次让过”
+
+2. **先锁定交互载体，不得把提示壳当成交互对象**
+   - 必须先确认真正承接点击的是手牌、基地、随从还是系统 interaction
+   - `MeFirst` / 顶部横幅 / 中间提示层默认只当提示 UI；未证实前不得把它们当作真正的点击承载层
+
+3. **修复后必须同时补两层回归**
+   - 一条最窄源码测试：锁 `pass` 粘性、同一 `frameId` 的续链、或无目标自动收口等真实根因
+   - 一条真实 E2E：必须回到用户原始链路位点，产出截图并看图确认
+
+4. **E2E 断言必须直接命中“不会再卡 / 不会再重开 / 不会再二次让过”**
+   - 不得只断言 `phase` 最终离开 `scoreBases`
+   - 至少还要覆盖：
+     - `interactionSourceId`
+     - `responseWindow.current`
+     - 当前玩家是否被重新拉回
+     - 原始卡牌是否仍在手/是否已进弃牌堆（按场景选）
+
+5. **看图结论必须落回用户语言**
+   - 例如“0 号位让过后，1 号位出完牌，0 号位没有再被拉回让过”
+   - 禁止只写“interaction 已清空 / window closed”，不翻译成用户能直接判断的现象结论
 
 ### 3. 只并行不冲突的代表项
 

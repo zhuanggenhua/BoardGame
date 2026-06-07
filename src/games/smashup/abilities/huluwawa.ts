@@ -96,6 +96,8 @@ type HuluwawaPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
 };
 
 type HuluwawaSelectMinionContext = HuluwawaPromptContext & {
@@ -352,6 +354,7 @@ function buildErwaReorderOptions(cards: CardInstance[]): PromptOption<ErwaReorde
         return [{
             id: 'no-remaining',
             label: '无剩余牌需要放回',
+            labelKey: 'ui.huluwawa_er_wa_reorder_no_remaining_option',
             value: { topUids: [], bottomUids: [] },
             displayMode: 'button' as const,
         }];
@@ -503,6 +506,7 @@ function huluwawaWuWaTalent(ctx: AbilityContext): AbilityResult {
     const result = executeAbilityProgram(huluwawaMoveToSourceBaseProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceDefId: ctx.defId,
         title: '五娃：选择一个力量 3 或更小的仆从移动到这里',
+        titleKey: 'ui.huluwawa_wu_wa_title',
         targets,
         targetBaseIndex: ctx.baseIndex,
         reason: 'huluwawa_wu_wa',
@@ -548,6 +552,7 @@ function huluwawaQiWaTalent(ctx: AbilityContext): AbilityResult {
     const result = executeAbilityProgram(huluwawaSearchCardProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceDefId: ctx.defId,
         title: '七娃：从牌库中选择一张行动牌放入手牌',
+        titleKey: 'ui.huluwawa_qi_wa_title',
         options,
         reason: 'huluwawa_qi_wa',
     }));
@@ -600,6 +605,7 @@ function huluwawaJadeRuyi(ctx: AbilityContext): AbilityResult {
     const result = executeAbilityProgram(huluwawaSearchCardProgram, createHuluwawaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceDefId: ctx.defId,
         title: '玉如意：从牌库和/或弃牌堆中选择一张牌放入手牌',
+        titleKey: 'ui.huluwawa_jade_ruyi_title',
         options,
         reason: 'huluwawa_jade_ruyi',
         grantExtraActionAfter: true,
@@ -758,10 +764,10 @@ function huluwawaLiuWaBeforeScoring(ctx: TriggerContext): TriggerResult | SmashU
         ctx.sourceControllerId ?? ctx.playerId,
         '六娃：你可以取消自己的天赋效果',
         [
-            { id: 'cancel', label: '取消效果', value: { cancel: true }, displayMode: 'button' as const },
-            createSkipOption('保留效果'),
+            { id: 'cancel', label: '取消效果', labelKey: 'ui.huluwawa_liu_wa_cancel_option', value: { cancel: true }, displayMode: 'button' as const },
+            createSkipOption('保留效果', 'ui.huluwawa_liu_wa_keep_option'),
         ],
-        { sourceId: 'huluwawa_liu_wa_before_scoring', targetType: 'button' },
+        { sourceId: 'huluwawa_liu_wa_before_scoring', targetType: 'button', titleKey: 'ui.huluwawa_liu_wa_before_scoring_title' },
     );
     return {
         events: [],
@@ -863,7 +869,7 @@ function huluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): TriggerResult 
         ctx.playerId,
         '葫芦小金刚：你可以令你的另一个仆从发动相同的主动能力',
         [
-            createSkipOption('不复制'),
+            createSkipOption('不复制', 'ui.huluwawa_little_king_kong_skip_copy_option'),
             ...candidates.map((target, index) => ({
                 id: `copy-talent-${index}`,
                 label: target.label,
@@ -878,7 +884,7 @@ function huluwawaLittleKingKongOnTalentUsed(ctx: TriggerContext): TriggerResult 
                 displayMode: 'card' as const,
             })),
         ],
-        { sourceId: 'huluwawa_little_king_kong_copy_talent', targetType: 'minion' },
+        { sourceId: 'huluwawa_little_king_kong_copy_talent', targetType: 'minion', titleKey: 'ui.huluwawa_little_king_kong_copy_talent_title' },
     );
 
     return {
@@ -902,7 +908,7 @@ const huluwawaDestroyForCounterProgram = createPromptProgram<
         `huluwawa_si_wa_${huluwawaPromptCounter++}`,
         context.playerId,
         '四娃：你可以摧毁这里一个力量 3 或更小的仆从，为四娃放置 1 个 +1 力量指示物',
-        [createSkipOption('跳过'), ...buildMinionTargetOptions(context.targets, {
+        [createSkipOption('跳过', 'ui.skip'), ...buildMinionTargetOptions(context.targets, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceDefId,
@@ -912,6 +918,7 @@ const huluwawaDestroyForCounterProgram = createPromptProgram<
             sourceId: 'huluwawa_si_wa',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.huluwawa_si_wa_title',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -962,6 +969,8 @@ const huluwawaMoveToSourceBaseProgram = createPromptProgram<
             sourceId: 'huluwawa_move_to_source',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: context.titleKey,
+            titleParams: context.titleParams,
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1005,6 +1014,8 @@ const huluwawaSearchCardProgram = createPromptProgram<
             sourceId: 'huluwawa_search_card',
             targetType: 'generic',
             autoResolveIfSingle: false,
+            titleKey: context.titleKey,
+            titleParams: context.titleParams,
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
@@ -1058,13 +1069,13 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
         '妖精哪里逃：选择摧毁一个力量 3 或更小的仆从，或移动一个仆从',
         [
             ...(context.destroyTargets.length > 0
-                ? [{ id: 'destroy', label: '摧毁力量 3 或更小的仆从', value: { choice: 'destroy' }, displayMode: 'button' as const }]
+                ? [{ id: 'destroy', label: '摧毁力量 3 或更小的仆从', labelKey: 'ui.huluwawa_where_do_you_think_destroy_option', value: { choice: 'destroy' }, displayMode: 'button' as const }]
                 : []),
             ...(context.moveTargets.length > 0
-                ? [{ id: 'move', label: '移动一个仆从', value: { choice: 'move' }, displayMode: 'button' as const }]
+                ? [{ id: 'move', label: '移动一个仆从', labelKey: 'ui.huluwawa_where_do_you_think_move_option', value: { choice: 'move' }, displayMode: 'button' as const }]
                 : []),
         ],
-        { sourceId: 'huluwawa_where_do_you_think', targetType: 'button' },
+        { sourceId: 'huluwawa_where_do_you_think', targetType: 'button', titleKey: 'ui.huluwawa_where_do_you_think_title' },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const selected = value as ButtonChoice | undefined;
@@ -1078,6 +1089,7 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
                     playerId,
                     now: timestamp,
                     title: '妖精哪里逃：选择要摧毁的仆从',
+                    titleKey: 'ui.huluwawa_where_do_you_think_destroy_title',
                     targets: context.destroyTargets,
                     reason: 'huluwawa_where_do_you_think_destroy',
                 },
@@ -1094,6 +1106,7 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
                     playerId,
                     now: timestamp,
                     title: '妖精哪里逃：选择要移动的仆从',
+                    titleKey: 'ui.huluwawa_where_do_you_think_move_title',
                     targets: context.moveTargets,
                     reason: 'huluwawa_where_do_you_think_move',
                 },
@@ -1120,7 +1133,7 @@ const huluwawaDestroyAnyProgram = createPromptProgram<
             sourceDefId: context.sourceDefId,
             effectType: 'destroy',
         }),
-        { sourceId: 'huluwawa_destroy_any', targetType: 'minion' },
+        { sourceId: 'huluwawa_destroy_any', targetType: 'minion', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -1157,7 +1170,7 @@ const huluwawaMoveAnyPickProgram = createPromptProgram<
             sourceDefId: context.sourceDefId,
             effectType: 'move',
         }),
-        { sourceId: 'huluwawa_move_any_pick', targetType: 'minion' },
+        { sourceId: 'huluwawa_move_any_pick', targetType: 'minion', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -1175,6 +1188,7 @@ const huluwawaMoveAnyPickProgram = createPromptProgram<
                 now: timestamp,
                 sourceDefId: context.sourceDefId,
                 title: '妖精哪里逃：选择要移动到的基地',
+                titleKey: 'ui.huluwawa_where_do_you_think_move_base_title',
                 bases,
                 reason: context.reason,
                 minionUid: selected.minionUid,
@@ -1197,7 +1211,7 @@ const huluwawaMoveAnyBaseProgram = createPromptProgram<
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
-        { sourceId: 'huluwawa_move_any_base', targetType: 'base' },
+        { sourceId: 'huluwawa_move_any_base', targetType: 'base', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice | undefined;
@@ -1239,7 +1253,7 @@ const huluwawaPangolinProgram = createPromptProgram<
             sourceDefId: context.sourceDefId,
             effectType: 'move',
         }),
-        { sourceId: 'huluwawa_pangolin', targetType: 'minion' },
+        { sourceId: 'huluwawa_pangolin', targetType: 'minion', titleKey: 'ui.huluwawa_pangolin_title' },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -1275,6 +1289,7 @@ const huluwawaPangolinProgram = createPromptProgram<
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
                 title: '穿山甲：选择要移动到的基地',
+                titleKey: 'ui.huluwawa_pangolin_choose_base_title',
             },
             nextProgram: huluwawaMoveAnyBaseProgram,
         };
@@ -1299,11 +1314,12 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             `huluwawa_er_wa_${huluwawaPromptCounter++}`,
             context.playerId,
             '二娃：展示牌库顶三张牌。你可以额外打出其中一张。',
-            [createSkipOption('不打出，按原顺序放回牌库顶') as PromptOption<CardChoice>, ...topCards],
+            [createSkipOption('不打出，按原顺序放回牌库顶', 'ui.huluwawa_er_wa_skip_play_option') as PromptOption<CardChoice>, ...topCards],
             {
                 sourceId: 'huluwawa_er_wa',
                 targetType: 'generic',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.huluwawa_er_wa_title',
             },
         );
     },
@@ -1343,6 +1359,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     remainingCards,
                     prefixEvents: [],
                     title: '二娃：选择该随从额外打出的基地',
+                    titleKey: 'ui.huluwawa_er_wa_extra_minion_base_title',
                     bases,
                 },
                 nextProgram: huluwawaExtraMinionBaseProgram,
@@ -1376,6 +1393,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     remainingCards,
                     prefixEvents: [],
                     title: '二娃：选择该行动额外打出的目标随从',
+                    titleKey: 'ui.huluwawa_er_wa_extra_action_minion_title',
                     targets,
                 },
                 nextProgram: huluwawaExtraActionMinionProgram,
@@ -1401,6 +1419,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
                     remainingCards,
                     prefixEvents: [],
                     title: '二娃：选择该行动额外打出的目标基地',
+                    titleKey: 'ui.huluwawa_er_wa_extra_action_base_title',
                     bases,
                 },
                 nextProgram: huluwawaExtraActionBaseProgram,
@@ -1430,6 +1449,7 @@ const huluwawaErWaReorderProgram = createPromptProgram<
             sourceId: 'huluwawa_er_wa_reorder',
             targetType: 'generic',
             autoResolveIfSingle: context.remainingCards.length === 0,
+            titleKey: 'ui.huluwawa_er_wa_reorder_title',
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
@@ -1489,7 +1509,7 @@ const huluwawaExtraMinionBaseProgram = createPromptProgram<
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
-        { sourceId: 'huluwawa_extra_minion_base', targetType: 'base' },
+        { sourceId: 'huluwawa_extra_minion_base', targetType: 'base', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice | undefined;
@@ -1526,7 +1546,7 @@ const huluwawaExtraActionBaseProgram = createPromptProgram<
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
-        { sourceId: 'huluwawa_extra_action_base', targetType: 'base' },
+        { sourceId: 'huluwawa_extra_action_base', targetType: 'base', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as BaseChoice | undefined;
@@ -1568,7 +1588,7 @@ const huluwawaExtraActionMinionProgram = createPromptProgram<
             sourceDefId: context.sourceDefId,
             effectType: 'attach_action',
         }),
-        { sourceId: 'huluwawa_extra_action_minion', targetType: 'minion' },
+        { sourceId: 'huluwawa_extra_action_minion', targetType: 'minion', titleKey: context.titleKey, titleParams: context.titleParams },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -1607,13 +1627,13 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
         '紫金宝葫芦：选择移动力量 3 或更小的仆从到这里，或将弃牌堆中的一张行动牌置于牌库底',
         [
             ...(context.moveTargets.length > 0
-                ? [{ id: 'move', label: '移动一个力量 3 或更小的仆从到这里', value: { choice: 'move' }, displayMode: 'button' as const }]
+                ? [{ id: 'move', label: '移动一个力量 3 或更小的仆从到这里', labelKey: 'ui.huluwawa_purple_gold_gourd_move_option', value: { choice: 'move' }, displayMode: 'button' as const }]
                 : []),
             ...(context.discardActions.length > 0
-                ? [{ id: 'bottom', label: '将弃牌堆中的一张行动牌置于牌库底', value: { choice: 'bottom' }, displayMode: 'button' as const }]
+                ? [{ id: 'bottom', label: '将弃牌堆中的一张行动牌置于牌库底', labelKey: 'ui.huluwawa_purple_gold_gourd_bottom_option', value: { choice: 'bottom' }, displayMode: 'button' as const }]
                 : []),
         ],
-        { sourceId: 'huluwawa_purple_gold_gourd', targetType: 'button' },
+        { sourceId: 'huluwawa_purple_gold_gourd', targetType: 'button', titleKey: 'ui.huluwawa_purple_gold_gourd_title' },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const selected = value as ButtonChoice | undefined;
@@ -1628,6 +1648,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
                     now: timestamp,
                     sourceDefId: context.sourceDefId,
                     title: '紫金宝葫芦：选择要移动的仆从',
+                    titleKey: 'ui.huluwawa_purple_gold_gourd_move_title',
                     targets: context.moveTargets,
                     targetBaseIndex: context.targetBaseIndex,
                     reason: 'huluwawa_purple_gold_gourd_move',
@@ -1648,7 +1669,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
                 context.playerId,
                 '紫金宝葫芦：选择一张行动牌置于牌库底',
                 actionOptions,
-                { sourceId: 'huluwawa_purple_gold_gourd_bottom', targetType: 'generic' },
+                { sourceId: 'huluwawa_purple_gold_gourd_bottom', targetType: 'generic', titleKey: 'ui.huluwawa_purple_gold_gourd_bottom_title' },
             );
             return {
                 matchState: queueOrSetCurrentInteraction(state, interaction),
@@ -1679,7 +1700,7 @@ const huluwawaOneAtATimeTargetProgram = createPromptProgram<
             sourceDefId: context.sourceDefId,
             effectType: 'return',
         }),
-        { sourceId: 'huluwawa_one_at_a_time_target', targetType: 'minion' },
+        { sourceId: 'huluwawa_one_at_a_time_target', targetType: 'minion', titleKey: 'ui.huluwawa_one_at_a_time_target_title' },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -1733,7 +1754,7 @@ const huluwawaOneAtATimePlayProgram = createPromptProgram<
         context.returnedToPlayerId,
         '一个一个来：你可以立即打出一张不同名字的仆从到这里',
         [
-            createSkipOption('不打出'),
+            createSkipOption('不打出', 'ui.huluwawa_one_at_a_time_skip_play_option'),
             ...context.handCandidates.map((card, index) => ({
                 id: `hand-${index}`,
                 label: getCardDef(card.defId)?.name ?? card.defId,
@@ -1742,7 +1763,7 @@ const huluwawaOneAtATimePlayProgram = createPromptProgram<
                 displayMode: 'card' as const,
             })),
         ],
-        { sourceId: 'huluwawa_one_at_a_time_play', targetType: 'hand' },
+        { sourceId: 'huluwawa_one_at_a_time_play', targetType: 'hand', titleKey: 'ui.huluwawa_one_at_a_time_play_title' },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const selected = value as CardChoice | undefined;
@@ -2086,7 +2107,7 @@ export function registerHuluwawaAbilities(): void {
             ctx.playerId,
             '七彩莲蓬：你可以额外打出一个相同印刷力量的仆从到这里',
             [
-                createSkipOption('不打出'),
+                createSkipOption('不打出', 'ui.base_seven_colored_lotus_skip_play_option'),
                 ...candidates.map((card, index) => ({
                     id: `same-power-${index}`,
                     label: getCardDef(card.defId)?.name ?? card.defId,
@@ -2095,7 +2116,7 @@ export function registerHuluwawaAbilities(): void {
                     displayMode: 'card' as const,
                 })),
             ],
-            { sourceId: 'base_seven_colored_lotus', targetType: 'hand' },
+            { sourceId: 'base_seven_colored_lotus', targetType: 'hand', titleKey: 'ui.base_seven_colored_lotus_title' },
         );
         return {
             events: [],

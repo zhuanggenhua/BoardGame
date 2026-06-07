@@ -3,6 +3,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Sun, Waves } from 'lucide-react';
 import { FloatingTextLayer, useFloatingText } from '../../../components/common/animations/FloatingText';
 import { PulseGlow } from '../../../components/common/animations/PulseGlow';
@@ -18,6 +19,7 @@ import {
 // ============================================================================
 
 export const FloatingTextCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { texts, pushText, removeText } = useFloatingText();
   const containerRef = useRef<HTMLDivElement>(null);
   const { stats, startMeasure } = usePerfCounter();
@@ -32,7 +34,12 @@ export const FloatingTextCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   }, [pushText, startMeasure]);
 
   return (
-    <EffectCard title="飘字" icon={MessageCircle} iconColor={iconColor} desc="弹出 → 弹性缩回 → 上浮淡出" stats={stats}
+    <EffectCard
+      title={t('devtools.effectPreview.ui.floating.title')}
+      icon={MessageCircle}
+      iconColor={iconColor}
+      desc={t('devtools.effectPreview.ui.floating.description')}
+      stats={stats}
       buttons={<>
         <TriggerButton label="-1" onClick={() => trigger('damage', 1)} color="bg-red-700 hover:bg-red-600" />
         <TriggerButton label="-5" onClick={() => trigger('damage', 5)} color="bg-red-700 hover:bg-red-600" />
@@ -43,7 +50,7 @@ export const FloatingTextCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
     >
       <div ref={containerRef} className="absolute inset-0" />
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] text-slate-600">飘字区域</span>
+        <span className="text-[10px] text-slate-600">{t('devtools.effectPreview.ui.floating.preview')}</span>
       </div>
       <FloatingTextLayer texts={texts} onComplete={removeText} />
     </EffectCard>
@@ -55,6 +62,7 @@ export const FloatingTextCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // ============================================================================
 
 export const PulseGlowCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [isGlowing, setIsGlowing] = React.useState(false);
   const [loop, setLoop] = React.useState(false);
   const [effect, setEffect] = React.useState<'glow' | 'ripple'>('glow');
@@ -67,12 +75,16 @@ export const PulseGlowCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   }, []);
 
   return (
-    <EffectCard title="脉冲发光" icon={Sun} iconColor={iconColor} desc="发光/涟漪，单次或循环"
+    <EffectCard
+      title={t('devtools.effectPreview.ui.pulse_glow.title')}
+      icon={Sun}
+      iconColor={iconColor}
+      desc={t('devtools.effectPreview.ui.pulse_glow.description')}
       buttons={<>
-        <TriggerButton label="发光" onClick={() => { setEffect('glow'); triggerOnce(); }} color="bg-amber-700 hover:bg-amber-600" />
-        <TriggerButton label="发光·循环" onClick={() => { setEffect('glow'); setLoop(true); setIsGlowing(true); }} color="bg-amber-700 hover:bg-amber-600" />
-        <TriggerButton label="涟漪" onClick={() => { setEffect('ripple'); triggerOnce(); }} color="bg-teal-700 hover:bg-teal-600" />
-        <TriggerButton label="停止" onClick={() => { setIsGlowing(false); setLoop(false); }} color="bg-slate-600 hover:bg-slate-500" />
+        <TriggerButton label={t('devtools.effectPreview.ui.pulse_glow.buttons.glow')} onClick={() => { setEffect('glow'); triggerOnce(); }} color="bg-amber-700 hover:bg-amber-600" />
+        <TriggerButton label={t('devtools.effectPreview.ui.pulse_glow.buttons.glow_loop')} onClick={() => { setEffect('glow'); setLoop(true); setIsGlowing(true); }} color="bg-amber-700 hover:bg-amber-600" />
+        <TriggerButton label={t('devtools.effectPreview.ui.pulse_glow.buttons.ripple')} onClick={() => { setEffect('ripple'); triggerOnce(); }} color="bg-teal-700 hover:bg-teal-600" />
+        <TriggerButton label={t('devtools.effectPreview.ui.pulse_glow.buttons.stop')} onClick={() => { setIsGlowing(false); setLoop(false); }} color="bg-slate-600 hover:bg-slate-500" />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center">
@@ -92,14 +104,31 @@ export const PulseGlowCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // ============================================================================
 
 export const AbilityReadyCard: React.FC<PreviewCardProps> = ({ useRealCards, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [visible, setVisible] = useState(true);
   const [showGreenRing, setShowGreenRing] = useState(true);
 
   return (
-    <EffectCard title="技能就绪波纹" icon={Waves} iconColor={iconColor} desc="召唤师战争·可激活技能的单位边框青色波纹"
+    <EffectCard
+      title={t('devtools.effectPreview.ui.ability_ready.title')}
+      icon={Waves}
+      iconColor={iconColor}
+      desc={t('devtools.effectPreview.ui.ability_ready.description')}
       buttons={<>
-        <TriggerButton label={visible ? '隐藏波纹' : '显示波纹'} onClick={() => setVisible(v => !v)} color="bg-cyan-700 hover:bg-cyan-600" />
-        <TriggerButton label={showGreenRing ? '隐藏绿框' : '显示绿框'} onClick={() => setShowGreenRing(v => !v)} color="bg-green-700 hover:bg-green-600" />
+        <TriggerButton
+          label={visible
+            ? t('devtools.effectPreview.ui.ability_ready.buttons.hide_ripple')
+            : t('devtools.effectPreview.ui.ability_ready.buttons.show_ripple')}
+          onClick={() => setVisible(v => !v)}
+          color="bg-cyan-700 hover:bg-cyan-600"
+        />
+        <TriggerButton
+          label={showGreenRing
+            ? t('devtools.effectPreview.ui.ability_ready.buttons.hide_ring')
+            : t('devtools.effectPreview.ui.ability_ready.buttons.show_ring')}
+          onClick={() => setShowGreenRing(v => !v)}
+          color="bg-green-700 hover:bg-green-600"
+        />
       </>}
     >
       <div className="absolute inset-0 flex items-center justify-center">
@@ -109,7 +138,7 @@ export const AbilityReadyCard: React.FC<PreviewCardProps> = ({ useRealCards, ico
             <CardSprite className="w-full h-full rounded-lg" />
           ) : (
             <div className="w-full h-full rounded-lg bg-slate-700/60 border border-slate-600/40 flex items-center justify-center">
-              <span className="text-[10px] text-slate-500">单位卡</span>
+              <span className="text-[10px] text-slate-500">{t('devtools.effectPreview.ui.ability_ready.preview')}</span>
             </div>
           )}
           {visible && <AbilityReadyIndicator />}
@@ -124,7 +153,28 @@ export const AbilityReadyCard: React.FC<PreviewCardProps> = ({ useRealCards, ico
 // ============================================================================
 
 export const meta: EffectEntryMeta[] = [
-  { id: 'floating', label: '飘字', icon: MessageCircle, component: FloatingTextCard, group: 'ui', usageDesc: '暂未接入业务' },
-  { id: 'pulseglow', label: '脉冲发光', icon: Sun, component: PulseGlowCard, group: 'ui', usageDesc: '骰铸王座·技能高亮 / 悬浮球菜单' },
-  { id: 'abilityready', label: '技能就绪波纹', icon: Waves, component: AbilityReadyCard, group: 'ui', usageDesc: '召唤师战争·可激活技能单位青色波纹' },
+  {
+    id: 'floating',
+    labelKey: 'devtools.effectPreview.entries.ui.floating.label',
+    icon: MessageCircle,
+    component: FloatingTextCard,
+    group: 'ui',
+    usageDescKey: 'devtools.effectPreview.entries.ui.floating.usage',
+  },
+  {
+    id: 'pulseglow',
+    labelKey: 'devtools.effectPreview.entries.ui.pulseglow.label',
+    icon: Sun,
+    component: PulseGlowCard,
+    group: 'ui',
+    usageDescKey: 'devtools.effectPreview.entries.ui.pulseglow.usage',
+  },
+  {
+    id: 'abilityready',
+    labelKey: 'devtools.effectPreview.entries.ui.abilityready.label',
+    icon: Waves,
+    component: AbilityReadyCard,
+    group: 'ui',
+    usageDescKey: 'devtools.effectPreview.entries.ui.abilityready.usage',
+  },
 ];

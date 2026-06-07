@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils';
 import { FEEDBACK_API_URL as API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST } from '../../games/manifest.generated';
+import { buildFeedbackClientContext } from '../../lib/feedback/clientFeedbackContext';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
@@ -345,24 +346,15 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
             }
 
             const lastErrorContext = getLastErrorContext();
-            const route = `${location.pathname}${location.search}${location.hash}`;
             const fallbackMode = (typeof window !== 'undefined'
                 ? ((window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__)
                 : undefined);
-            const clientContext = {
-                route: route || undefined,
+            const clientContext = buildFeedbackClientContext({
                 mode: runtimeContext?.mode ?? (fallbackMode as 'online' | 'local' | 'tutorial' | undefined),
                 matchId: runtimeContext?.matchId,
                 playerId: runtimeContext?.playerId ?? undefined,
                 gameId: (runtimeContext?.gameId ?? gameName) || undefined,
-                appVersion: import.meta.env.VITE_APP_VERSION || import.meta.env.MODE || undefined,
-                userAgent: (typeof navigator !== 'undefined' ? navigator.userAgent : undefined),
-                viewport: (typeof window !== 'undefined')
-                    ? { width: window.innerWidth, height: window.innerHeight }
-                    : undefined,
-                language: (typeof navigator !== 'undefined' ? navigator.language : undefined),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
-            };
+            });
 
             const errorContext = lastErrorContext
                 ? {
@@ -370,6 +362,8 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                     name: lastErrorContext.name,
                     stack: lastErrorContext.stack,
                     source: lastErrorContext.source,
+                    jsStack: lastErrorContext.jsStack,
+                    componentStack: lastErrorContext.componentStack,
                 }
                 : undefined;
 

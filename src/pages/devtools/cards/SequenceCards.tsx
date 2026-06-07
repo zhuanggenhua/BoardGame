@@ -6,6 +6,7 @@
  */
 
 import React, { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ListOrdered } from 'lucide-react';
 import { useFxBus, FxLayer } from '../../../engine/fx';
 import { diceThroneFxRegistry, DT_FX } from '../../../games/dicethrone/ui/fxSetup';
@@ -27,6 +28,7 @@ const PROTECT_META = TOKEN_META[TOKEN_IDS.PROTECT] || { icon: '🛡️', color: 
 // ============================================================================
 
 export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   /** buff 区 DOM 引用（模拟游戏中的 refs.selfBuff / refs.opponentBuff） */
   const buffRef = useRef<HTMLDivElement>(null);
   /** HP 区 DOM 引用（模拟游戏中的 refs.opponentHp） */
@@ -54,7 +56,7 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
    * 参数模式与 useAnimationEffects 中 token 移除 + DAMAGE_DEALT 一致
    */
   const fireTokenThenDamage = useCallback(() => {
-    setStepLog(['▶ Token 移除 → 伤害']);
+    setStepLog([t('devtools.effectPreview.sequence.logs.token_then_damage')]);
     const steps: FxSequenceStep[] = [
       {
         // 与 useAnimationEffects token 移除动画一致：原地消散
@@ -80,13 +82,13 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
       },
     ];
     fxBus.pushSequence(steps);
-  }, [fxBus, getCenter]);
+  }, [fxBus, getCenter, t]);
 
   /**
    * 序列：治疗 → 状态获得 → 伤害（三步）
    */
   const fireTripleSequence = useCallback(() => {
-    setStepLog(['▶ 治疗 → 状态 → 伤害']);
+    setStepLog([t('devtools.effectPreview.sequence.logs.heal_then_status_then_damage')]);
     const steps: FxSequenceStep[] = [
       {
         cue: DT_FX.HEAL,
@@ -121,11 +123,11 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
       },
     ];
     fxBus.pushSequence(steps);
-  }, [fxBus, getCenter]);
+  }, [fxBus, getCenter, t]);
 
   /** 并行对比：同时 push，无序列 */
   const fireParallel = useCallback(() => {
-    setStepLog(['▶ 并行（无序列）']);
+    setStepLog([t('devtools.effectPreview.sequence.logs.parallel')]);
     fxBus.push(DT_FX.TOKEN, {}, {
       content: FM_META.icon ?? '🔥',
       color: 'from-slate-400 to-slate-600',
@@ -137,18 +139,18 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
       startPos: getCenter(buffRef),
       endPos: getCenter(hpRef),
     });
-  }, [fxBus, getCenter]);
+  }, [fxBus, getCenter, t]);
 
   return (
     <EffectCard
-      title="序列特效 (pushSequence)"
+      title={t('devtools.effectPreview.sequence.title')}
       icon={ListOrdered}
       iconColor={iconColor}
-      desc="有序编排 vs 并行播放对比"
+      desc={t('devtools.effectPreview.sequence.description')}
       buttons={<>
-        <TriggerButton label="Token→伤害（序列）" onClick={fireTokenThenDamage} color="bg-orange-700 hover:bg-orange-600" />
-        <TriggerButton label="治疗→状态→伤害" onClick={fireTripleSequence} color="bg-indigo-700 hover:bg-indigo-600" />
-        <TriggerButton label="并行对比" onClick={fireParallel} color="bg-slate-600 hover:bg-slate-500" />
+        <TriggerButton label={t('devtools.effectPreview.sequence.buttons.token_then_damage')} onClick={fireTokenThenDamage} color="bg-orange-700 hover:bg-orange-600" />
+        <TriggerButton label={t('devtools.effectPreview.sequence.buttons.heal_then_status_then_damage')} onClick={fireTripleSequence} color="bg-indigo-700 hover:bg-indigo-600" />
+        <TriggerButton label={t('devtools.effectPreview.sequence.buttons.parallel')} onClick={fireParallel} color="bg-slate-600 hover:bg-slate-500" />
       </>}
     >
       <div ref={containerRef} className="absolute inset-0">
@@ -159,7 +161,9 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
         >
           {FM_META.icon}×3 {PROTECT_META.icon}×1
         </div>
-        <div className="absolute left-[30%] top-[62%] -translate-x-1/2 text-[9px] text-slate-600">Buff 区</div>
+        <div className="absolute left-[30%] top-[62%] -translate-x-1/2 text-[9px] text-slate-600">
+          {t('devtools.effectPreview.sequence.preview.buff_zone')}
+        </div>
 
         <div
           ref={hpRef}
@@ -167,7 +171,9 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
         >
           ❤️ 42
         </div>
-        <div className="absolute left-[70%] top-[62%] -translate-x-1/2 text-[9px] text-slate-600">HP 区</div>
+        <div className="absolute left-[70%] top-[62%] -translate-x-1/2 text-[9px] text-slate-600">
+          {t('devtools.effectPreview.sequence.preview.hp_zone')}
+        </div>
 
         {/* 步骤日志 */}
         <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-0.5 pointer-events-none">
@@ -189,10 +195,10 @@ export const SequenceCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 export const meta: EffectEntryMeta[] = [
   {
     id: 'sequence',
-    label: '序列特效',
+    labelKey: 'devtools.effectPreview.entries.sequence.sequence.label',
     icon: ListOrdered,
     component: SequenceCard,
     group: 'ui',
-    usageDesc: 'FxBus.pushSequence 有序编排预览',
+    usageDescKey: 'devtools.effectPreview.entries.sequence.sequence.usage',
   },
 ];

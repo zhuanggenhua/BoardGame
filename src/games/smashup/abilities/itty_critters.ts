@@ -278,7 +278,11 @@ const temporaryMinionBasePromptProgram = createPromptProgram<TemporaryMinionBase
         context.playerId,
         '选择额外随从打出的基地',
         buildBaseTargetOptions(context.destinations, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base' },
+        {
+            sourceId: context.sourceId,
+            titleKey: 'ui.itty_critters_temporary_minion_base_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -302,7 +306,12 @@ const baseExtraMinionPromptProgram = createPromptProgram<BaseExtraMinionContext,
             displayMode: 'card' as const,
             _source: 'hand' as const,
         })),
-        { sourceId: 'base_critter_combat_club', targetType: 'hand', autoResolveIfSingle: false },
+        {
+            sourceId: 'base_critter_combat_club',
+            titleKey: 'ui.itty_critters_critter_combat_club_title',
+            targetType: 'hand',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as CardChoice;
@@ -323,9 +332,20 @@ const ittyCityPromptProgram = createPromptProgram<IttyCityContext, SmashUpCore, 
         '小城市：你可以随机将弃牌堆一个随从洗入牌库',
         [
             createSkipOption(),
-            { id: 'shuffle', label: '随机洗回一个随从', value: { choice: 'shuffle' }, displayMode: 'button' as const },
+            {
+                id: 'shuffle',
+                label: '随机洗回一个随从',
+                labelKey: 'ui.itty_critters_itty_city_shuffle_option',
+                value: { choice: 'shuffle' },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'base_itty_city', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'base_itty_city',
+            titleKey: 'ui.itty_critters_itty_city_title',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         const choice = value as ButtonChoice<'shuffle'>;
@@ -402,6 +422,7 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
             ...(context.rainboroc ? [{
                 id: 'rainboroc',
                 label: '打出 Rainboroc 到这里',
+                labelKey: 'ui.itty_critters_evolution_rainboroc_option',
                 value: { choice: 'rainboroc', titanUid: context.rainboroc.uid, defId: context.rainboroc.defId },
                 displayMode: 'card' as const,
             }] : []),
@@ -412,7 +433,12 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
                 displayMode: 'card' as const,
             })),
         ],
-        { sourceId: 'itty_critters_evolution', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'itty_critters_evolution',
+            titleKey: 'ui.itty_critters_evolution_title',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as EvolutionChoice;
@@ -577,7 +603,11 @@ const tadpourDestinationProgram = createPromptProgram<MoveDestinationContext, Sm
         context.playerId,
         'Tadpour：选择移动目标基地',
         buildBaseTargetOptions(context.destinations, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base' },
+        {
+            sourceId: context.sourceId,
+            titleKey: 'ui.itty_critters_tadpour_dest_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -604,9 +634,20 @@ const flooffairyPromptProgram = createPromptProgram<DrawChoiceContext, SmashUpCo
         'Flooffairy：你可以抽一张牌',
         [
             createSkipOption(),
-            { id: 'draw', label: '抽一张牌', value: { choice: 'draw' }, displayMode: 'button' as const },
+            {
+                id: 'draw',
+                label: '抽一张牌',
+                labelKey: 'ui.itty_critters_flooffairy_draw_option',
+                value: { choice: 'draw' },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'itty_critters_flooffairy', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'itty_critters_flooffairy',
+            titleKey: 'ui.itty_critters_flooffairy_title',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: (args) => {
         const choice = args.value as ButtonChoice<'draw'>;
@@ -631,7 +672,12 @@ const leafarooPromptProgram = createPromptProgram<LeafarooContext, SmashUpCore, 
                 _source: 'discard' as const,
             })),
         ],
-        { sourceId: 'itty_critters_leafaroo', targetType: 'discard', autoResolveIfSingle: false },
+        {
+            sourceId: 'itty_critters_leafaroo',
+            titleKey: 'ui.itty_critters_leafaroo_title',
+            targetType: 'discard',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const choice = value as CardChoice;
@@ -662,7 +708,11 @@ const superEffectivePromptProgram = createPromptProgram<SuperEffectiveContext, S
             value: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'itty_critters_super_effective', targetType: 'ongoing' },
+        {
+            sourceId: 'itty_critters_super_effective',
+            titleKey: 'ui.itty_critters_super_effective_title',
+            targetType: 'ongoing',
+        },
     ),
     onResolve: ({ value, timestamp }) => {
         const choice = value as CardChoice;

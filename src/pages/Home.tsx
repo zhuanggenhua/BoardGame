@@ -75,6 +75,9 @@ class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProps, Home
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('[Home] 游戏详情弹窗渲染失败，已回退到首页', error, errorInfo);
+        const jsStack = error.stack;
+        const componentStack = errorInfo.componentStack ?? undefined;
+        const stack = [jsStack ?? '', componentStack ?? ''].filter(Boolean).join('\n');
         const signature = `home-modal-error-boundary:${error.name}:${error.message}`;
         void reportClientAutoFeedbackOnce(signature, {
             content: `[auto][home-modal-error-boundary] ${error.message || 'Home modal render error'}`,
@@ -85,7 +88,9 @@ class HomeModalErrorBoundary extends Component<HomeModalErrorBoundaryProps, Home
             errorName: error.name || 'Error',
             errorMessage: error.message || 'Home modal render error',
             errorSource: 'home.modal_error_boundary',
-            stack: [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n'),
+            stack,
+            jsStack,
+            componentStack,
         });
         this.props.onError();
     }
@@ -1036,7 +1041,7 @@ export const Home = () => {
                     <div className="flex items-center justify-center gap-3 md:gap-4 mb-2">
                         <img
                             src={versionedPublicFileUrl('/logos/logo_1_grid.svg')}
-                            alt="logo"
+                            alt={t('home.logoAlt')}
                             className="w-8 md:w-10 opacity-90"
                         />
                         <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[0.1em] text-parchment-base-text leading-none pt-1">

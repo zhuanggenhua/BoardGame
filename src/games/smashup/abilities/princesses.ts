@@ -828,14 +828,22 @@ const princessesWoodlandHelpersPromptProgram = createPromptProgram<
         context.playerId,
         `丛林帮手：你可以将 ${context.cardName} 放到牌库底而不是留在弃牌堆`,
         [
-            { id: 'move-bottom', label: '放到牌库底', value: { choice: 'move_to_bottom' }, displayMode: 'button' as const },
-            createSkipOption('留在弃牌堆'),
+            {
+                id: 'move-bottom',
+                label: '放到牌库底',
+                labelKey: 'ui.princesses_woodland_helpers_move_bottom_option',
+                value: { choice: 'move_to_bottom' },
+                displayMode: 'button' as const,
+            },
+            createSkipOption('留在弃牌堆', 'ui.princesses_woodland_helpers_leave_discard_option'),
         ],
         {
             sourceId: 'princesses_woodland_helpers',
             targetType: 'button',
             displayCard: { defId: context.defId, cardUid: context.cardUid },
             autoResolveIfSingle: false,
+            titleKey: 'ui.princesses_woodland_helpers_title',
+            titleParams: { cardName: context.cardName },
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -970,6 +978,7 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
             sourceId: 'princesses_fairy_godmother_target',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.princesses_fairy_godmother_target_title',
         },
     ),
     onResolve: ({ state, value, timestamp }) => {
@@ -1003,13 +1012,26 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
         context.playerId,
         '妖精奶奶：抽一张牌，或者让一个仆从获得 +2 力量直到回合结束',
         [
-            { id: 'draw', label: '抽一张牌', value: { choice: 'draw' }, displayMode: 'button' as const },
-            { id: 'buff', label: '给予 +2 力量', value: { choice: 'buff' }, displayMode: 'button' as const },
+            {
+                id: 'draw',
+                label: '抽一张牌',
+                labelKey: 'ui.princesses_fairy_godmother_draw_option',
+                value: { choice: 'draw' },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'buff',
+                label: '给予 +2 力量',
+                labelKey: 'ui.princesses_fairy_godmother_buff_option',
+                value: { choice: 'buff' },
+                displayMode: 'button' as const,
+            },
         ],
         {
             sourceId: 'princesses_fairy_godmother',
             targetType: 'button',
             autoResolveIfSingle: false,
+            titleKey: 'ui.princesses_fairy_godmother_title',
         },
     ),
     onResolve: (args) => {

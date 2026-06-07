@@ -182,50 +182,37 @@ function triggerWarMongerExtraOffensiveRoll({
     } as ExtraAttackTriggeredEvent];
 }
 
-function applyBindIfThreeOfAKind({
-    targetId,
-    sourceAbilityId,
-    state,
-    timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
-    if (getMaxDuplicateValueCount(getActiveDice(state)) < 3) return [];
+type WarMongerRollConfig = {
+    sabreDamage: number;
+    bannerTokenGain: number;
+    sabreEffectKey: string;
+    bannerEffectKey: string;
+    medalEffectKey: string;
+    otherEffectKey?: string;
+};
 
-    const currentStacks = state.players[targetId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
-    const maxStacks = getTokenStackLimit(state, targetId, STATUS_IDS.BIND);
-    const newTotal = Math.min(currentStacks + 1, maxStacks);
-    return [{
-        type: 'STATUS_APPLIED',
-        payload: {
-            targetId,
-            statusId: STATUS_IDS.BIND,
-            stacks: Math.max(0, newTotal - currentStacks),
-            newTotal,
-            sourceAbilityId,
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
+function resolveWarMongerRollByConfig(
+    {
+        attackerId,
+        targetId,
+        sourceAbilityId,
+        state,
         timestamp,
-    } as StatusAppliedEvent];
-}
-
-function resolveWarMonger2Roll({
-    attackerId,
-    targetId,
-    sourceAbilityId,
-    state,
-    timestamp,
-    random,
-}: CustomActionContext): DiceThroneEvent[] {
+        random,
+    }: CustomActionContext,
+    config: WarMongerRollConfig,
+): DiceThroneEvent[] {
     if (!random) return [];
 
     const value = random.d(6);
     const face = getPlayerDieFace(state, attackerId, value) ?? '';
     const effectKey = face === ZHANSHUJIA_DICE_FACE_IDS.SABRE
-        ? 'bonusDie.effect.zhanshujiaWarMonger2Sabre'
+        ? config.sabreEffectKey
         : face === ZHANSHUJIA_DICE_FACE_IDS.BANNER
-            ? 'bonusDie.effect.zhanshujiaWarMonger2Banner'
+            ? config.bannerEffectKey
             : face === ZHANSHUJIA_DICE_FACE_IDS.MEDAL
-                ? 'bonusDie.effect.zhanshujiaWarMonger2Medal'
-                : 'bonusDie.effect.zhanshujiaWarMonger2Other';
+                ? config.medalEffectKey
+                : config.otherEffectKey ?? '';
     const events: DiceThroneEvent[] = [{
         type: 'BONUS_DIE_ROLLED',
         payload: {
@@ -241,7 +228,7 @@ function resolveWarMonger2Roll({
 
     if (face === ZHANSHUJIA_DICE_FACE_IDS.SABRE) {
         const target = state.players[targetId];
-        const amount = 6;
+        const amount = config.sabreDamage;
         events.push({
             type: 'DAMAGE_DEALT',
             payload: {
@@ -256,7 +243,7 @@ function resolveWarMonger2Roll({
     } else if (face === ZHANSHUJIA_DICE_FACE_IDS.BANNER) {
         const currentAmount = state.players[attackerId]?.tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0;
         const maxStacks = getTokenStackLimit(state, attackerId, TOKEN_IDS.TACTICAL_ADVANTAGE);
-        const newTotal = Math.min(currentAmount + 3, maxStacks);
+        const newTotal = Math.min(currentAmount + config.bannerTokenGain, maxStacks);
         events.push({
             type: 'TOKEN_GRANTED',
             payload: {
@@ -292,6 +279,52 @@ function resolveWarMonger2Roll({
 
     events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, targetId, [{ index: 0, value, face, effectKey }], timestamp));
     return events;
+}
+
+function resolveWarMongerRoll(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveWarMongerRollByConfig(ctx, {
+        sabreDamage: 5,
+        bannerTokenGain: 4,
+        sabreEffectKey: 'bonusDie.effect.zhanshujiaWarMongerSabre',
+        bannerEffectKey: 'bonusDie.effect.zhanshujiaWarMongerBanner',
+        medalEffectKey: 'bonusDie.effect.zhanshujiaWarMongerMedal',
+    });
+}
+
+function applyBindIfThreeOfAKind({
+    targetId,
+    sourceAbilityId,
+    state,
+    timestamp,
+}: CustomActionContext): DiceThroneEvent[] {
+    if (getMaxDuplicateValueCount(getActiveDice(state)) < 3) return [];
+
+    const currentStacks = state.players[targetId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+    const maxStacks = getTokenStackLimit(state, targetId, STATUS_IDS.BIND);
+    const newTotal = Math.min(currentStacks + 1, maxStacks);
+    return [{
+        type: 'STATUS_APPLIED',
+        payload: {
+            targetId,
+            statusId: STATUS_IDS.BIND,
+            stacks: Math.max(0, newTotal - currentStacks),
+            newTotal,
+            sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as StatusAppliedEvent];
+}
+
+function resolveWarMonger2Roll(ctx: CustomActionContext): DiceThroneEvent[] {
+    return resolveWarMongerRollByConfig(ctx, {
+        sabreDamage: 6,
+        bannerTokenGain: 3,
+        sabreEffectKey: 'bonusDie.effect.zhanshujiaWarMonger2Sabre',
+        bannerEffectKey: 'bonusDie.effect.zhanshujiaWarMonger2Banner',
+        medalEffectKey: 'bonusDie.effect.zhanshujiaWarMonger2Medal',
+        otherEffectKey: 'bonusDie.effect.zhanshujiaWarMonger2Other',
+    });
 }
 
 function resolveWarRoomRoll({
@@ -535,6 +568,9 @@ export function registerZhanshujiaCustomActions(): void {
     });
     registerCustomActionHandler('zhanshujia-war-monger-extra-offensive-roll', triggerWarMongerExtraOffensiveRoll, {
         categories: ['other'],
+    });
+    registerCustomActionHandler('zhanshujia-war-monger-roll', resolveWarMongerRoll, {
+        categories: ['damage', 'token', 'card', 'other'],
     });
     registerCustomActionHandler('zhanshujia-war-monger-2-roll', resolveWarMonger2Roll, {
         categories: ['damage', 'token', 'card', 'other'],

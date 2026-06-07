@@ -15,7 +15,10 @@ import {
     collectReferencesFromContent,
     collectDiceThroneAbilityChoiceFaceLabelReferences,
     collectDiceThroneRawContractWarningsFromContent,
+    collectZhCnLocaleEnglishWarnings,
     collectMissingTranslations,
+    createWarningBaselineId,
+    partitionWarningsAgainstBaseline,
 } from '../../../scripts/verify/i18n-check';
 import {
     collectImplicitCandidateFiles,
@@ -368,12 +371,12 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
-    it('createSimpleChoice 直接使用英文标题时，即使写了 titleKey 也会产生告警', () => {
+    it('createSimpleChoice 直接使用可见标题且未写 titleKey 时会产生告警；写了 titleKey 则放行', () => {
         const content = `
             createSimpleChoice(
                 'choice-1',
                 playerId,
-                'The Bride: choose the first effect',
+                '新娘：选择第一个效果',
                 options,
                 { sourceId: 'demo', targetType: 'generic' },
             );
@@ -381,7 +384,7 @@ describe('i18n 静态检查工具', () => {
             createSimpleChoice(
                 'choice-2',
                 playerId,
-                'The Bride: choose the second effect',
+                '新娘：选择第二个效果',
                 options,
                 { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.titan_the_bride_start_second_effect_title' },
             );
@@ -393,25 +396,55 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
-            key: 'The Bride: choose the first effect',
-            detail: expect.stringContaining('请补 titleKey'),
+            key: '新娘：选择第一个效果',
+            detail: expect.stringContaining('请改成 titleKey'),
         }));
-        expect(result.warnings).toContainEqual(expect.objectContaining({
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
-            key: 'The Bride: choose the second effect',
-            detail: expect.stringContaining('即使已写 titleKey'),
+            key: '新娘：选择第二个效果',
         }));
     });
 
-    it('createSimpleChoice 内联英文 label 缺少 labelKey 时会产生告警', () => {
+    it('会拦截 helper 透传到 createSimpleChoice 的可见标题；补 titleKey 参数后放行', () => {
+        const content = `
+            function buildPrompt(interactionId, playerId, title, titleKey) {
+                return createSimpleChoice(
+                    interactionId,
+                    playerId,
+                    title,
+                    options,
+                    { sourceId: 'demo', targetType: 'generic', titleKey },
+                );
+            }
+
+            buildPrompt('choice-1', playerId, '墓园：挖掘这里一张你的埋葬牌');
+            buildPrompt('choice-2', playerId, '墓园：挖掘这里一张你的埋葬牌', 'ui.skeletons_graveyard_title');
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common', 'game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-title',
+            key: '墓园：挖掘这里一张你的埋葬牌',
+            source: 'buildPrompt.title',
+        }));
+        expect(result.warnings.filter((warning) => (
+            warning.type === 'raw-simple-choice-title'
+            && warning.source === 'buildPrompt.title'
+        ))).toHaveLength(1);
+    });
+
+    it('createSimpleChoice 内联可见 label 缺少 labelKey 时会产生告警', () => {
         const content = `
             createSimpleChoice(
                 'choice-1',
                 playerId,
-                'Choose a branch',
+                '选择一个分支',
                 [
-                    { id: 'raw', label: 'Draw 2 cards', value: { draw: true }, displayMode: 'button' },
-                    { id: 'keyed', label: 'Place a +1 counter', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' },
+                    { id: 'raw', label: '抽两张牌', value: { draw: true }, displayMode: 'button' },
+                    { id: 'keyed', label: '放置一个 +1 指示物', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' },
                 ],
                 { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.demo_title' },
             );
@@ -423,19 +456,19 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-option-label',
-            key: 'Draw 2 cards',
+            key: '抽两张牌',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-option-label',
-            key: 'Place a +1 counter',
+            key: '放置一个 +1 指示物',
         }));
     });
 
-    it('PromptOption 变量中的英文 label 缺少 labelKey 时会产生告警', () => {
+    it('PromptOption 变量中的可见 label 缺少 labelKey 时会产生告警', () => {
         const content = `
             const options = [
-                { id: 'raw', label: 'Place it on Ancient Lord', value: { mode: 'store' }, displayMode: 'button' },
-                { id: 'keyed', label: 'Draw 2 cards', labelKey: 'ui.draw_two_cards', value: { draw: true }, displayMode: 'button' },
+                { id: 'raw', label: '放到鲜血领主上', value: { mode: 'store' }, displayMode: 'button' },
+                { id: 'keyed', label: '抽 2 张牌', labelKey: 'ui.draw_two_cards', value: { draw: true }, displayMode: 'button' },
                 { label: 'Debug only', value: 1 },
             ];
         `;
@@ -446,11 +479,11 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
-            key: 'Place it on Ancient Lord',
+            key: '放到鲜血领主上',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
-            key: 'Draw 2 cards',
+            key: '抽 2 张牌',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
@@ -458,10 +491,11 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
-    it('createSkipOption 直接使用英文 label 时会产生告警', () => {
+    it('createSkipOption 直接使用可见 label 时会产生告警', () => {
         const content = `
-            const options = [createSkipOption('Skip this effect')];
-            const zhOptions = [createSkipOption('跳过')];
+            const options = [createSkipOption('跳过这次效果')];
+            const keyedOptions = [createSkipOption('ui.skip')];
+            const keyedFallbackOptions = [createSkipOption('跳过这次效果', 'ui.skip_effect')];
         `;
         const result = collectReferencesFromContent(content, 'demo.ts', {
             defaultNamespace: 'common',
@@ -470,12 +504,30 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-create-skip-label',
-            key: 'Skip this effect',
+            key: '跳过这次效果',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-create-skip-label',
-            key: '跳过',
+            key: 'ui.skip',
         }));
+        expect(result.warnings.filter((warning) => (
+            warning.type === 'raw-create-skip-label'
+            && warning.key === '跳过这次效果'
+        ))).toHaveLength(1);
+    });
+
+    it('不会把注释里的示例 label / createSkipOption 当成真实 UI 文案告警', () => {
+        const content = `
+            // { id: '__cancel__', label: '取消', value: { __cancel__: true } }
+            /* createSkipOption('跳过这次效果') */
+            const options = [{ id: 'keyed', label: 'ui.skip', labelKey: 'ui.skip', value: { ok: true }, displayMode: 'button' }];
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common']),
+        });
+
+        expect(result.warnings).toEqual([]);
     });
 
     it('会拦截伪 *Key 字段里的可见文案，但放过 key 模板', () => {
@@ -721,6 +773,67 @@ describe('i18n 静态检查工具', () => {
             }),
         ]));
         expect(result).toHaveLength(2);
+    });
+
+    it('warning baseline 只放过已登记旧债，新增告警仍会留下', () => {
+        const legacyWarning = {
+            type: 'raw-prompt-option-label',
+            key: '放到鲜血领主上',
+            file: 'src/games/smashup/abilities/demo.ts',
+            line: 12,
+            source: 'PromptOption.label',
+            detail: 'legacy',
+        } as const;
+        const newWarning = {
+            type: 'raw-simple-choice-title',
+            key: '选择一个分支',
+            file: 'src/games/smashup/abilities/demo.ts',
+            line: 24,
+            source: 'createSimpleChoice.title',
+            detail: 'new',
+        } as const;
+
+        const baselineIds = new Set([createWarningBaselineId(legacyWarning)]);
+        const result = partitionWarningsAgainstBaseline([legacyWarning, newWarning], baselineIds);
+
+        expect(result.legacyWarnings).toEqual([legacyWarning]);
+        expect(result.newWarnings).toEqual([newWarning]);
+    });
+
+    it('会识别中文语言包中的纯英文或中英混写可见文案', () => {
+        const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'temp-i18n-check-'));
+        const filePath = path.join(tempDir, 'common.json');
+        fs.writeFileSync(filePath, JSON.stringify({
+            notFound: {
+                headlineSub: 'Lost off the edge of the map',
+                reload: '刷新页面 Reload',
+            },
+            allowlisted: {
+                shortcut: 'Ctrl+V',
+            },
+        }, null, 2));
+
+        const warnings = collectZhCnLocaleEnglishWarnings(tempDir);
+
+        expect(warnings).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.headlineSub',
+                key: 'Lost off the edge of the map',
+            }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.reload',
+                key: '刷新页面 Reload',
+            }),
+        ]));
+        expect(warnings).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                key: 'Ctrl+V',
+            }),
+        ]));
+
+        fs.rmSync(tempDir, { recursive: true, force: true });
     });
 });
 

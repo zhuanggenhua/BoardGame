@@ -850,6 +850,29 @@ describe('AI legal actions', () => {
         });
     });
 
+    it('移除全部状态交互不会误移除诅咒金币这类不可移除状态', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 2;
+        state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 1;
+
+        const interaction: InteractionDescriptor = {
+            id: 'remove-all-status-but-keep-cursed-coin',
+            playerId: '1',
+            sourceCardId: 'card-what-status',
+            type: 'selectPlayer',
+            titleKey: 'interaction.selectPlayerToRemoveAllStatus',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['0'],
+            requiresTargetWithStatus: true,
+        };
+        injectPendingInteraction(state, interaction);
+
+        const next = execCmd(state, cmd('RESOLVE_INTERACTION', '1', { selectedPlayerIds: ['0'] }));
+        expect(next.core.players['0'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+        expect(next.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
+    });
+
     it('dt:card-interaction 的 selectStatus 交互应生成 REMOVE_STATUS 动作', () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.players['1'].statusEffects.poison = 1;

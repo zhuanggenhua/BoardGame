@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import type { QidahenCommandMap, QidahenCore, QidahenFactionId, QidahenRegionSummary } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
@@ -22,16 +23,25 @@ const factionTone: Record<QidahenFactionId | 'neutral', string> = {
     neutral: '#c4a365',
 };
 
-const factionName: Record<QidahenFactionId, string> = {
-    ming: '大明',
-    mongol: '蒙古',
-    jin: '后金',
-};
-
 const factionText: Record<QidahenFactionId, string> = {
     ming: 'text-[#ff7869]',
     mongol: 'text-[#d8aa64]',
     jin: 'text-[#82b8df]',
+};
+
+type CommonTranslate = (key: string, options?: Record<string, unknown>) => string;
+
+const getFactionName = (t: CommonTranslate, factionId: QidahenFactionId): string => {
+    switch (factionId) {
+        case 'ming':
+            return t('qidahenBoard.factions.ming');
+        case 'mongol':
+            return t('qidahenBoard.factions.mongol');
+        case 'jin':
+            return t('qidahenBoard.factions.jin');
+        default:
+            return factionId;
+    }
 };
 
 const Panel: React.FC<{
@@ -216,16 +226,18 @@ const QidahenMapViewport: React.FC<{
 
 const FactionSummary: React.FC<{
     faction: QidahenCore['factions'][QidahenFactionId];
-}> = ({ faction }) => (
-    <div className="border-b border-[#4e3a24]/70 px-3 py-2.5 last:border-b-0">
+}> = ({ faction }) => {
+    const { t } = useTranslation('common');
+    return (
+        <div className="border-b border-[#4e3a24]/70 px-3 py-2.5 last:border-b-0">
         <div className={`${faction.colorClass} -mx-3 -mt-2.5 mb-2 flex items-center justify-between px-3 py-1.5 text-[#f7e7bd]`}>
             <span className="text-[18px] font-black tracking-[0.12em]">{faction.name}</span>
-            <span className="text-[11px] opacity-80">手牌 {faction.handCount}/{faction.handLimit}</span>
+            <span className="text-[11px] opacity-80">{t('qidahenBoard.factionSummary.hand', { count: faction.handCount, limit: faction.handLimit })}</span>
         </div>
         <div className="grid grid-cols-3 gap-2 text-[12px] text-[#d7c39a]">
-            <span>兵力 <b className="text-[#f4dfab]">{faction.troops}</b></span>
-            <span>粮草 <b className="text-[#f4dfab]">{faction.grain}</b></span>
-            <span>土气 <b className="text-[#f4dfab]">{faction.landTax}</b></span>
+            <span>{t('qidahenBoard.factionSummary.troops')} <b className="text-[#f4dfab]">{faction.troops}</b></span>
+            <span>{t('qidahenBoard.factionSummary.grain')} <b className="text-[#f4dfab]">{faction.grain}</b></span>
+            <span>{t('qidahenBoard.factionSummary.land_tax')} <b className="text-[#f4dfab]">{faction.landTax}</b></span>
         </div>
         <div className="mt-2 flex items-center gap-1.5">
             {Array.from({ length: 3 }, (_, index) => (
@@ -235,15 +247,18 @@ const FactionSummary: React.FC<{
                 />
             ))}
         </div>
-    </div>
-);
+        </div>
+    );
+};
 
 const RegionMarker: React.FC<{
     region: QidahenRegionSummary;
     selected: boolean;
     onSelect: (regionId: string) => void;
-}> = ({ region, selected, onSelect }) => (
-    <button
+}> = ({ region, selected, onSelect }) => {
+    const { t } = useTranslation('common');
+    return (
+        <button
         type="button"
         className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
         style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%` }}
@@ -251,7 +266,7 @@ const RegionMarker: React.FC<{
             event.stopPropagation();
             onSelect(region.id);
         }}
-        aria-label={`选择${region.name}`}
+        aria-label={t('qidahenBoard.region.select_aria', { name: region.name })}
     >
         <span
             className={`relative grid min-h-9 min-w-9 place-items-center rounded-sm border-2 px-2 text-[13px] font-black text-[#f4e2ad] shadow-[0_5px_12px_rgba(0,0,0,0.38)] transition ${selected ? 'scale-110 border-[#f2c064] bg-[#5a2a18]' : 'border-black/60 bg-[#2a2117]/88'}`}
@@ -262,15 +277,26 @@ const RegionMarker: React.FC<{
             </span>
             {region.name}
         </span>
-    </button>
-);
+        </button>
+    );
+};
 
 const ActionWheelMini: React.FC<{ current: string }> = ({ current }) => {
-    const items = ['征兵', '外交', '征收', '调度', '演练', '迂逃', '计策', '间谋'];
+    const { t } = useTranslation('common');
+    const items = [
+        t('qidahenBoard.actionWheel.items.recruit'),
+        t('qidahenBoard.actionWheel.items.diplomacy'),
+        t('qidahenBoard.actionWheel.items.tax'),
+        t('qidahenBoard.actionWheel.items.mobilize'),
+        t('qidahenBoard.actionWheel.items.drill'),
+        t('qidahenBoard.actionWheel.items.feint'),
+        t('qidahenBoard.actionWheel.items.strategy'),
+        t('qidahenBoard.actionWheel.items.intrigue'),
+    ];
     return (
         <div className="relative mx-auto grid h-48 w-48 place-items-center rounded-full border-2 border-[#a98045] bg-[#2a2117] shadow-inner">
             <div className="grid h-20 w-20 place-items-center rounded-full border border-[#d2a95b] bg-[#5a3a1d] text-center text-[15px] font-black leading-tight text-[#f7df9f]">
-                行动<br />轮盘
+                {t('qidahenBoard.actionWheel.center_line1')}<br />{t('qidahenBoard.actionWheel.center_line2')}
             </div>
             {items.map((item, index) => {
                 const angle = (index / items.length) * Math.PI * 2 - Math.PI / 2;
@@ -340,6 +366,7 @@ const QidahenMapCostEditor: React.FC<{
     selectedRegionId: string;
     onSelectRegion: (regionId: string) => void;
 }> = ({ selectedRegionId, onSelectRegion }) => {
+    const { t } = useTranslation('common');
     const regions = QIDAHEN_MAP_REGION_DATA.regions;
     const regionById = React.useMemo(() => new Map(regions.map((region) => [region.id, region])), [regions]);
     const [sourceRegionId, setSourceRegionId] = React.useState(selectedRegionId);
@@ -482,8 +509,12 @@ const QidahenMapCostEditor: React.FC<{
                 data-testid="qidahen-map-cost-editor"
             >
                 <div className="border-b border-[#6d5433] bg-[#421b13] px-3 py-2">
-                    <div className="text-[13px] font-black tracking-[0.18em] text-[#ffe2ad]">区域移动代价编辑</div>
-                    <div className="mt-1 text-[11px] text-[#d9bd85]">源区域：{selectedSource?.name ?? '未选择'}，点击地图区域可建立/选中边。</div>
+                    <div className="text-[13px] font-black tracking-[0.18em] text-[#ffe2ad]">{t('qidahenBoard.mapCostEditor.title')}</div>
+                    <div className="mt-1 text-[11px] text-[#d9bd85]">
+                        {t('qidahenBoard.mapCostEditor.source_hint', {
+                            name: selectedSource?.name ?? t('qidahenBoard.mapCostEditor.unselected'),
+                        })}
+                    </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-3">
                     <div className="grid grid-cols-3 gap-1.5">
@@ -504,7 +535,7 @@ const QidahenMapCostEditor: React.FC<{
                     </div>
 
                     <div className="mt-3 border border-[#4a3824] bg-black/24 p-2">
-                        <div className="mb-2 text-[12px] font-bold text-[#f0c989]">相邻区域与移动代价</div>
+                        <div className="mb-2 text-[12px] font-bold text-[#f0c989]">{t('qidahenBoard.mapCostEditor.adjacent_title')}</div>
                         {outgoingEdges.length > 0 ? (
                             <div className="space-y-2">
                                 {outgoingEdges.map((edge) => {
@@ -523,7 +554,7 @@ const QidahenMapCostEditor: React.FC<{
                                                 min={1}
                                                 max={9}
                                                 value={edge.cost}
-                                                aria-label={`${otherRegion?.name ?? otherRegionId} 移动代价`}
+                                                aria-label={t('qidahenBoard.mapCostEditor.movement_cost_aria', { name: otherRegion?.name ?? otherRegionId })}
                                                 onChange={(event) => upsertEdge(edge.fromRegionId, edge.toRegionId, Number(event.target.value))}
                                             />
                                             <button
@@ -532,21 +563,21 @@ const QidahenMapCostEditor: React.FC<{
                                                 data-testid={`qidahen-map-cost-edge-delete-${edge.id}`}
                                                 onClick={() => removeEdge(edge.id)}
                                             >
-                                                删除
+                                                {t('qidahenBoard.mapCostEditor.delete')}
                                             </button>
                                         </div>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <div className="text-[12px] text-[#9f875e]">当前源区域还没有移动边。</div>
+                            <div className="text-[12px] text-[#9f875e]">{t('qidahenBoard.mapCostEditor.no_edges')}</div>
                         )}
                     </div>
 
                     <div className="mt-3 border border-[#4a3824] bg-black/24 p-2">
                         <div className="mb-2 flex items-center justify-between">
-                            <span className="text-[12px] font-bold text-[#f0c989]">新增/更新边</span>
-                            <span className="text-[11px] text-[#9f875e]">默认双向</span>
+                            <span className="text-[12px] font-bold text-[#f0c989]">{t('qidahenBoard.mapCostEditor.add_or_update')}</span>
+                            <span className="text-[11px] text-[#9f875e]">{t('qidahenBoard.mapCostEditor.bidirectional')}</span>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                             {regions.filter((region) => region.id !== sourceRegionId).map((region) => {
@@ -562,7 +593,7 @@ const QidahenMapCostEditor: React.FC<{
                                             upsertEdge(sourceRegionId, region.id, exists ? edges.find((edge) => edge.id === edgeId)?.cost ?? 1 : 1);
                                         }}
                                     >
-                                        {exists ? '更新 ' : '连接 '}{region.name}
+                                        {exists ? t('qidahenBoard.mapCostEditor.update_prefix') : t('qidahenBoard.mapCostEditor.connect_prefix')}{region.name}
                                     </button>
                                 );
                             })}
@@ -571,13 +602,13 @@ const QidahenMapCostEditor: React.FC<{
 
                     <div className="mt-3">
                         <div className="mb-2 flex items-center justify-between">
-                            <span className="text-[12px] font-bold text-[#f0c989]">导出 JSON</span>
+                            <span className="text-[12px] font-bold text-[#f0c989]">{t('qidahenBoard.mapCostEditor.export_json')}</span>
                             <button
                                 type="button"
                                 className="border border-[#8f6a3b] bg-[#2c2115] px-2 py-1 text-[12px] font-bold text-[#f2d392]"
                                 onClick={handleCopy}
                             >
-                                {copied ? '已复制' : '复制'}
+                                {copied ? t('qidahenBoard.mapCostEditor.copied') : t('qidahenBoard.mapCostEditor.copy')}
                             </button>
                         </div>
                         <textarea
@@ -594,6 +625,7 @@ const QidahenMapCostEditor: React.FC<{
 };
 
 export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
+    const { t } = useTranslation('common');
     const core = G.core;
     const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId) ?? core.regions[0];
     const mapCostEditorEnabled = React.useMemo(() => {
@@ -618,36 +650,36 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
             <div className="relative z-10 grid h-full min-h-0 grid-cols-[234px_minmax(0,1fr)_276px] grid-rows-[38px_minmax(0,1fr)_172px] gap-1.5 p-1.5 max-[1100px]:grid-cols-[minmax(0,1fr)] max-[1100px]:grid-rows-[34px_minmax(0,1fr)_176px]">
                 <div className="col-span-3 flex items-center justify-between border border-[#6d5433]/70 bg-[#0e0c08]/92 px-3 text-[13px] text-[#d9c59a] max-[1100px]:col-span-1">
                     <div className="flex min-w-0 items-center gap-4">
-                        <span>对局：七大恨</span>
-                        <span>房间号：73218</span>
+                        <span>{t('qidahenBoard.header.match', { game: t('games.qidahen.title') })}</span>
+                        <span>{t('qidahenBoard.header.room', { roomId: '73218' })}</span>
                         <span>{core.turnLabel}</span>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                        <span className="hidden text-[#f1d493] sm:inline">行动顺序</span>
+                        <span className="hidden text-[#f1d493] sm:inline">{t('qidahenBoard.header.action_order')}</span>
                         {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
                             <span key={id} className={`rounded-full px-3 py-1 text-xs font-bold text-white ${core.factions[id].colorClass}`}>
-                                {factionName[id]}
+                                {getFactionName(t, id)}
                             </span>
                         ))}
-                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">重置视角</span>
-                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">聚焦</span>
+                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">{t('qidahenBoard.header.reset_view')}</span>
+                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">{t('qidahenBoard.header.focus')}</span>
                     </div>
                 </div>
 
                 <aside className="min-h-0 overflow-hidden max-[1100px]:hidden">
-                    <Panel title="当前年度">
+                    <Panel title={t('qidahenBoard.panels.current_year')}>
                         <div className="px-4 py-4 text-center">
                             <div className="text-2xl font-black tracking-[0.2em] text-[#f5dfad]">{core.currentYear.split(' ')[0]}</div>
                             <div className="mt-1 text-[22px] font-bold text-[#f5dfad]">{core.currentYear.split(' ')[1]}</div>
                         </div>
                     </Panel>
-                    <Panel title="行动轮盘" className="mt-1.5">
+                    <Panel title={t('qidahenBoard.panels.action_wheel')} className="mt-1.5">
                         <div className="p-3">
-                            <div className="mb-2 text-center text-xs text-[#c9aa78]">当前：{core.actionWheelPosition}</div>
+                            <div className="mb-2 text-center text-xs text-[#c9aa78]">{t('qidahenBoard.actionWheel.current', { action: core.actionWheelPosition })}</div>
                             <ActionWheelMini current={core.actionWheelPosition} />
                         </div>
                     </Panel>
-                    <Panel title="势力状态" className="mt-1.5">
+                    <Panel title={t('qidahenBoard.panels.faction_status')} className="mt-1.5">
                         {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
                             <FactionSummary key={id} faction={core.factions[id]} />
                         ))}
@@ -659,7 +691,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                         <div className="relative w-[1265px]">
                             <img
                                 src={boardImage}
-                                alt="七大恨主地图"
+                                alt={t('qidahenBoard.map.main_alt')}
                                 className="block w-[1265px] max-w-none select-none"
                                 draggable={false}
                             />
@@ -686,12 +718,12 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                                         <div className="text-[16px] font-black text-[#f3d18f]">{selectedRegion.name}</div>
                                         <div className="mt-1 text-[12px] leading-5 text-[#d5c098]">{selectedRegion.note}</div>
                                         <div className="mt-1 text-[11px] leading-4 text-[#bfa875]">
-                                            移动代价：{Object.entries(selectedRegion.movementCostByRegionId)
+                                            {t('qidahenBoard.map.movement_costs')}{Object.entries(selectedRegion.movementCostByRegionId)
                                                 .map(([regionId, cost]) => `${core.regions.find((item) => item.id === regionId)?.name ?? regionId} ${cost}`)
-                                                .join(' / ') || '未标注'}
+                                                .join(' / ') || t('qidahenBoard.map.unmarked')}
                                         </div>
                                         <button className="mt-2 rounded border border-[#9d3f32] bg-[#64251e] px-2 py-1 text-[12px] text-[#ffe0ad]">
-                                            查看区域详情
+                                            {t('qidahenBoard.map.view_region_details')}
                                         </button>
                                     </div>
                                 ) : null}
@@ -699,12 +731,12 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                         </div>
                     </QidahenMapViewport>
                     <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-[#7d613b] bg-[#13100c]/92 px-3 py-2 text-xs text-[#d8bd83]">
-                        拖拽地图 · 滚轮/双指缩放 · 点击区域
+                        {t('qidahenBoard.map.hint')}
                     </div>
                 </main>
 
                 <aside className="min-h-0 overflow-hidden max-[1100px]:hidden">
-                    <Panel title="待处理">
+                    <Panel title={t('qidahenBoard.panels.pending')}>
                         <div className="space-y-2 p-2">
                             {core.pendingEffects.map((effect) => (
                                 <div key={effect.id} className="border border-[#40311f] bg-[#221b13] px-3 py-2">
@@ -718,29 +750,29 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                         </div>
                     </Panel>
 
-                    <Panel title="战斗" className="mt-1.5">
+                    <Panel title={t('qidahenBoard.panels.battle')} className="mt-1.5">
                         <div className="p-3 text-center">
-                            <div className="text-lg font-black text-[#f0d59a]">{core.battlePreview.regionName} 之战</div>
+                            <div className="text-lg font-black text-[#f0d59a]">{t('qidahenBoard.battle.title', { region: core.battlePreview.regionName })}</div>
                             <div className="mt-1 text-xs text-[#c9aa78]">
-                                攻方：<span className={factionText[core.battlePreview.attacker]}>{factionName[core.battlePreview.attacker]}</span>
-                                <span className="mx-2">守方：</span>
-                                <span className={factionText[core.battlePreview.defender]}>{factionName[core.battlePreview.defender]}</span>
+                                {t('qidahenBoard.battle.attacker_label')}<span className={factionText[core.battlePreview.attacker]}>{getFactionName(t, core.battlePreview.attacker)}</span>
+                                <span className="mx-2">{t('qidahenBoard.battle.defender_separator')}</span>
+                                <span className={factionText[core.battlePreview.defender]}>{getFactionName(t, core.battlePreview.defender)}</span>
                             </div>
                             <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                                 <div className="text-2xl font-black text-[#d95845]">{core.battlePreview.attackerStrength}</div>
                                 <div className="text-[#e5c178]">⚔</div>
                                 <div className="text-2xl font-black text-[#d1a35d]">{core.battlePreview.defenderStrength}</div>
                             </div>
-                            <div className="mt-3 rounded border border-[#64452b] bg-black/30 px-2 py-1 text-xs text-[#dbc28e]">战场：{core.battlePreview.phase}</div>
+                            <div className="mt-3 rounded border border-[#64452b] bg-black/30 px-2 py-1 text-xs text-[#dbc28e]">{t('qidahenBoard.battle.phase', { phase: core.battlePreview.phase })}</div>
                         </div>
                     </Panel>
 
-                    <Panel title="行动记录" className="mt-1.5 flex max-h-[calc(100%-246px)] min-h-0 flex-col">
+                    <Panel title={t('qidahenBoard.panels.action_log')} className="mt-1.5 flex max-h-[calc(100%-246px)] min-h-0 flex-col">
                         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
                             {core.actionLog.map((entry) => (
                                 <div key={entry.id} className="border-b border-[#3b2d1d] pb-2 text-[12px] leading-5 text-[#cdb78b]">
-                                    <span className={`${factionText[entry.faction]} font-bold`}>{factionName[entry.faction]}</span>
-                                    <span className="ml-1">{entry.text.replace(factionName[entry.faction], '')}</span>
+                                    <span className={`${factionText[entry.faction]} font-bold`}>{getFactionName(t, entry.faction)}</span>
+                                    <span className="ml-1">{entry.text.replace(getFactionName(t, entry.faction), '')}</span>
                                 </div>
                             ))}
                         </div>
@@ -749,7 +781,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
 
                 <section className="col-span-2 min-h-0 border border-[#6d5433]/70 bg-[#110e09]/94 max-[1100px]:col-span-1">
                     <div className="grid h-full grid-cols-[160px_minmax(0,1fr)_330px] gap-2 p-2 max-[1100px]:grid-cols-[minmax(0,1fr)_280px] max-[1100px]:gap-1.5 max-[1100px]:p-1.5 max-[760px]:grid-cols-[minmax(0,1fr)]">
-                        <div className="grid place-items-center border border-[#3f3122] bg-[#17120d] text-2xl font-black tracking-[0.28em] text-[#b99458] max-[1100px]:hidden">手牌</div>
+                        <div className="grid place-items-center border border-[#3f3122] bg-[#17120d] text-2xl font-black tracking-[0.28em] text-[#b99458] max-[1100px]:hidden">{t('qidahenBoard.hand.title')}</div>
                         <div className="min-w-0 overflow-x-auto">
                             <div className="flex h-full min-w-max items-center gap-2">
                                 {core.handCards.map((card) => (
@@ -764,25 +796,25 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                                     </button>
                                 ))}
                                 <div className="h-[142px] w-[92px] shrink-0 overflow-hidden border border-[#6d5433] bg-[#18120c]">
-                                    <img src={cardBackImage} alt="牌背" className="h-full w-full object-cover opacity-80" draggable={false} />
+                                    <img src={cardBackImage} alt={t('qidahenBoard.hand.card_back_alt')} className="h-full w-full object-cover opacity-80" draggable={false} />
                                 </div>
                             </div>
                         </div>
                         <div className="border border-[#3f3122] bg-[#17120d] p-3 max-[1100px]:p-2 max-[760px]:hidden">
                             <div className="mb-2 hidden border-b border-[#3b2d1d] pb-2 max-[1100px]:mb-1 max-[1100px]:pb-1 min-[1101px]:hidden">
-                                <div className="mb-1 text-[11px] font-bold tracking-[0.14em] text-[#f0c989] max-[1100px]:mb-0.5 max-[1100px]:text-[10px]">行动记录</div>
+                                <div className="mb-1 text-[11px] font-bold tracking-[0.14em] text-[#f0c989] max-[1100px]:mb-0.5 max-[1100px]:text-[10px]">{t('qidahenBoard.panels.action_log')}</div>
                                 {core.actionLog.slice(0, 2).map((entry) => (
                                     <div key={entry.id} className="truncate text-[11px] leading-4 text-[#cdb78b] max-[1100px]:text-[10px] max-[1100px]:leading-3.5">
-                                        <span className={`${factionText[entry.faction]} font-bold`}>{factionName[entry.faction]}</span>
-                                        <span className="ml-1">{entry.text.replace(factionName[entry.faction], '')}</span>
+                                        <span className={`${factionText[entry.faction]} font-bold`}>{getFactionName(t, entry.faction)}</span>
+                                        <span className="ml-1">{entry.text.replace(getFactionName(t, entry.faction), '')}</span>
                                     </div>
                                 ))}
                             </div>
-                            <div className="text-xs text-[#c9aa78] max-[1100px]:text-[10px]">已触行动：调兵遣将</div>
-                            <div className="mt-2 text-sm text-[#f0d59a] max-[1100px]:mt-1 max-[1100px]:text-[12px]">消耗行动点：◆ ◆</div>
+                            <div className="text-xs text-[#c9aa78] max-[1100px]:text-[10px]">{t('qidahenBoard.hand.triggered_action', { action: '调兵遣将' })}</div>
+                            <div className="mt-2 text-sm text-[#f0d59a] max-[1100px]:mt-1 max-[1100px]:text-[12px]">{t('qidahenBoard.hand.spent_action_points', { points: '◆ ◆' })}</div>
                             <div className="mt-4 flex gap-2 max-[1100px]:mt-2 max-[1100px]:gap-1.5">
-                                <button type="button" className="flex-1 border border-[#ad4938] bg-[#7a2f25] px-4 py-3 text-lg font-black text-[#ffe1ae] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base" onClick={confirmPreviewAction}>确认</button>
-                                <button type="button" className="flex-1 border border-[#5d4a31] bg-[#20180f] px-4 py-3 text-lg font-black text-[#d4bd8b] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base">取消</button>
+                                <button type="button" className="flex-1 border border-[#ad4938] bg-[#7a2f25] px-4 py-3 text-lg font-black text-[#ffe1ae] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base" onClick={confirmPreviewAction}>{t('qidahenBoard.actions.confirm')}</button>
+                                <button type="button" className="flex-1 border border-[#5d4a31] bg-[#20180f] px-4 py-3 text-lg font-black text-[#d4bd8b] max-[1100px]:px-3 max-[1100px]:py-2 max-[1100px]:text-base">{t('qidahenBoard.actions.cancel')}</button>
                             </div>
                         </div>
                     </div>
@@ -790,7 +822,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
 
                 <section className="min-h-0 border border-[#6d5433]/70 bg-[#120f0a]/94 p-3 max-[1100px]:hidden">
                     <button type="button" className="grid h-full w-full place-items-center rounded-full border-2 border-[#8a632f] bg-[#23160d] text-3xl font-black tracking-[0.18em] text-[#d2a35b] shadow-inner" onClick={confirmPreviewAction}>
-                        结束<br />行动
+                        {t('qidahenBoard.actions.end_line1')}<br />{t('qidahenBoard.actions.end_line2')}
                     </button>
                 </section>
             </div>

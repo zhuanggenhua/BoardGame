@@ -477,7 +477,7 @@ export const DiceActions = ({
                 ) : (
                     <>
                         <div className={`truncate flex-1 text-center font-black ${actionTokens.rollTextClassName}`}>
-                            {isRolling ? t('dice.rolling', '投掷中...') : t('dice.roll_action', '投掷')}
+                            {isRolling ? t('dice.rolling') : t('dice.roll_action')}
                         </div>
                         {!isRolling && renderRollDots()}
                     </>
@@ -498,7 +498,7 @@ export const DiceActions = ({
             >
                 {isInteractionMode
                     ? t('common.confirm')
-                    : (rollConfirmed ? t('dice.confirmed', '已确认') : t('dice.confirm', '确认'))}
+                    : (rollConfirmed ? t('dice.confirmed') : t('dice.confirm'))}
             </GameButton>
         </div>
     );

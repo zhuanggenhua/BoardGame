@@ -2,7 +2,7 @@
   "home": {
     "title": "易桌游",
     "subtitle": "桌游教程、联机与原型制作平台",
-    "logoAlt": "桌游平台 Logo",
+    "logoAlt": "易桌游标志",
     "gameDetailsLoadingEyebrow": "正在准备",
     "gameDetailsLoadingTitle": "游戏详情",
     "gameDetailsLoadingDescription": "内容马上出现，请稍候。",
@@ -38,6 +38,13 @@
     },
     "catalog": {
       "allGames": "全部游戏",
+      "hotAria": "热门",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "continueMatchAria": "继续对局 {{game}}",
+      "continueMatchLabel": "继续对局 · {{game}}{{code}}",
+      "noContinueMatch": "暂无可继续对局",
+      "destroyCurrentRoom": "销毁当前房间",
       "accountSettings": "账号与设置",
       "playerNickname": "玩家昵称",
       "help": "筛选"
@@ -118,7 +125,9 @@
     },
     "reviews": {
       "error": "加载评价失败，请稍后重试",
-      "empty": "暂无评论"
+      "empty": "暂无评论",
+      "recommend": "推荐",
+      "not_recommend": "不推荐"
     },
     "detailTabs": {
       "updates": "更新",
@@ -143,6 +152,11 @@
       "players": "人数",
       "status": "状态",
       "action": "操作"
+    },
+    "authoring": {
+      "resize_left_drawer_aria": "调整左侧抽屉宽度",
+      "resize_right_drawer_aria": "调整属性抽屉宽度",
+      "resize_source_drawer_aria": "调整源码抽屉高度"
     }
   },
   "password": {
@@ -192,6 +206,43 @@
   },
   "button": {
     "processing": "处理中..."
+  },
+  "mascot": {
+    "container_label": "易桌游看板娘",
+    "button_label": "点击看板娘",
+    "image_alt": "易桌游看板娘"
+  },
+  "viewportDebug": {
+    "title": "真机视口诊断",
+    "refresh": "刷新",
+    "overflowItemDetail": "{{position}}｜左{{left}} 右{{right}} 上{{top}} 下{{bottom}}｜{{width}}x{{height}}",
+    "scrollContainerDetail": "横向溢出：{{overflowX}}｜{{clientWidth}}/{{scrollWidth}}｜左{{left}} 右{{right}} 下{{bottom}}",
+    "labels": {
+      "inner": "内层视口",
+      "visual": "可视视口",
+      "client": "客户端视口",
+      "runtime": "运行时视口",
+      "safe_area": "安全区域",
+      "doc_scroll": "文档滚动",
+      "body_scroll": "页面滚动",
+      "overflow_elements": "越界元素",
+      "horizontal_containers": "横向容器"
+    },
+    "position": {
+      "static": "静态",
+      "relative": "相对定位",
+      "absolute": "绝对定位",
+      "fixed": "固定定位",
+      "sticky": "粘性定位"
+    },
+    "overflowX": {
+      "auto": "自动",
+      "scroll": "滚动",
+      "overlay": "覆盖滚动",
+      "hidden": "隐藏",
+      "visible": "可见",
+      "clip": "裁切"
+    }
   },
   "activeMatch": {
     "notice": "您当前正在进行一场对局",
@@ -307,6 +358,30 @@
     "guest": "游客{{id}}"
   },
   "ota": {
+    "footer": {
+      "currentVersionTitle": "当前版本 {{version}}",
+      "clickToCollapse": "点击收起完整版本号",
+      "clickToExpand": "点击展开完整版本号",
+      "currentBundleTitle": "当前资源包 {{version}}",
+      "currentAppShellTitle": "App 壳版本 {{version}}",
+      "latestOtaTitle": "最新 OTA {{version}}",
+      "statusDisabled": "状态：当前测试壳已禁用 OTA，请改用正式版 App",
+      "statusCheckingAndApplying": "状态：正在检查并应用 OTA 更新",
+      "statusMismatchUpdateNow": "状态：当前 Bundle 与最新 OTA 不一致，点击立即更新",
+      "statusCheckNow": "状态：点击立即检查 OTA 更新",
+      "bundleLabel": "资源包 {{version}}",
+      "appLabel": "App {{version}}",
+      "latestLabel": "最新版本 {{version}}",
+      "disabledLabel": "当前测试壳已禁用 OTA",
+      "updatingNow": "正在立即更新",
+      "mismatchUpdateNow": "OTA 未对齐，点击立即更新",
+      "checkingNow": "正在检查更新",
+      "checkNow": "点击检查更新",
+      "ariaVersion": "当前版本 {{version}}",
+      "ariaBundleAndApp": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}",
+      "ariaBundleAndAppMismatch": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}，最新 OTA {{latestVersion}}，版本未对齐",
+      "ariaBundleAndAppDisabled": "当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}，当前测试壳已禁用 OTA"
+    },
     "forceUpdate": {
       "eyebrow": "更新中",
       "checkingTitle": "正在准备更新",
@@ -356,7 +431,10 @@
     "progressHint": "正在获取下载进度，请稍候。",
     "openSettings": "打开安装权限设置",
     "continueInstall": "继续安装",
-    "retryAction": "重新检查"
+    "retryAction": "重新检查",
+    "toast": {
+      "upToDate": "当前已经是最新版本。"
+    }
   },
   "gameDetails": {
     "description": "经典策略游戏。连成3个符号即可获胜。"
@@ -542,6 +620,1429 @@
       "dashboard": "管理后台"
     }
   },
+  "testMatchRoom": {
+    "missing_game_config": "未找到游戏配置",
+    "loading": "正在加载...",
+    "loading_with_game": "正在加载 {{game}}...",
+    "game_load_failed": "游戏加载失败",
+    "seo_title": "{{game}} - 测试模式",
+    "seo_description": "{{game}} E2E 测试模式"
+  },
+  "smashUp4PLayoutTest": {
+    "title": "大杀四方布局测试",
+    "player_count": "{{count}}人局",
+    "back": "返回",
+    "ongoing": "持续",
+    "base_label": "基地 {{id}}",
+    "hand_area_placeholder": "手牌区域占位 ({{height}}px)",
+    "metrics": {
+      "base_gap": "基地间距",
+      "base_width": "基地宽度",
+      "minion_width": "随从宽度",
+      "hand_height": "手牌高度",
+      "base_count": "基地数量"
+    }
+  },
+  "admin": {
+    "shared": {
+      "no_data": "暂无数据",
+      "total_items": "共 {{count}} 条"
+    },
+    "layout": {
+      "nav": {
+        "overview": "概览",
+        "matches": "对局记录",
+        "changelogs": "更新日志",
+        "feedback": "反馈管理",
+        "users": "用户管理",
+        "rooms": "房间管理",
+        "sponsors": "赞助管理",
+        "notifications": "系统通知",
+        "health": "系统健康"
+      },
+      "role": {
+        "admin": "管理员",
+        "developer": "开发者",
+        "user": "普通用户",
+        "guest": "游客"
+      },
+      "panel": {
+        "title_developer": "内容面板",
+        "title_viewer": "数据面板",
+        "title_admin": "管理面板",
+        "subtitle_developer": "内容创作工作台",
+        "subtitle_viewer": "公共数据看板",
+        "subtitle_admin": "易桌游平台"
+      },
+      "menu": "菜单",
+      "logout": "退出登录",
+      "back_home": "返回主站首页 →"
+    },
+    "dashboard": {
+      "common": {
+        "no_data": "暂无数据"
+      },
+      "home": {
+        "title": "概览",
+        "description": "欢迎回来，这里是您的平台运营状态概览。",
+        "more_sources": "更多数据源接入中..."
+      },
+      "overview": {
+        "total_users": "总用户数",
+        "active_users_24h": "24h 活跃用户",
+        "total_matches": "总对局数",
+        "banned_users": "被封禁用户"
+      },
+      "toast": {
+        "stats_failed": "获取统计数据失败",
+        "trend_failed": "获取趋势数据失败"
+      },
+      "user_composition": {
+        "title": "用户构成",
+        "description": "活跃用户 vs 沉默用户 vs 封禁用户",
+        "active": "活跃用户",
+        "inactive": "沉默用户",
+        "banned": "封禁用户",
+        "total": "总计"
+      },
+      "activity_tier": {
+        "title": "活跃度分层",
+        "description": "基于最后活跃时间的用户分层",
+        "tooltip_value": "{{count}} 人（{{percent}}%）",
+        "total_users": "总用户"
+      },
+      "game_popularity": {
+        "title": "游戏热度排行",
+        "description": "按游戏总时长排名",
+        "total_duration": "总时长",
+        "total_matches": "总局数"
+      },
+      "global_trend": {
+        "title": "活跃趋势",
+        "description": "近 7 天用户活跃度与对局数",
+        "date_label": "日期 {{date}}",
+        "active_users": "活跃用户",
+        "matches": "对局数"
+      },
+      "retention": {
+        "title": "用户留存",
+        "description": "各周期注册用户的回访率（基于近一周注册用户样本）",
+        "tooltip_value": "{{percent}}（{{retained}}/{{total}} 人）",
+        "tooltip_label": "留存率"
+      }
+    },
+    "roleModal": {
+      "eyebrow": "角色设置",
+      "title": "用户后台角色",
+      "description": "管理员拥有完整后台权限；开发者可查看反馈，并管理被分配游戏的更新日志。",
+      "close_aria": "关闭角色设置",
+      "current_role": "当前：{{role}}",
+      "locked_warning": "不能修改自己的后台角色，避免误把唯一管理员降权。",
+      "role_section_title": "角色",
+      "roles": {
+        "user": {
+          "label": "普通用户",
+          "hint": "无后台权限"
+        },
+        "developer": {
+          "label": "开发者",
+          "hint": "可查看反馈并管理所选游戏更新日志"
+        },
+        "admin": {
+          "label": "管理员",
+          "hint": "完整后台权限"
+        }
+      },
+      "games": {
+        "title": "可管理游戏",
+        "description": "可多选。开发者只能管理这里勾选游戏的更新日志，但可查看全部反馈。",
+        "selected_count": "已选 {{count}} 个",
+        "required": "开发者至少需要分配一个游戏。"
+      },
+      "cancel": "取消",
+      "saving": "保存中...",
+      "save": "保存角色"
+    },
+    "systemHealth": {
+      "title": "系统健康监控",
+      "description": "实时查看平台房间、玩家在线状态与后台核心指标",
+      "socket": {
+        "label": "大厅连接",
+        "connected": "已连接",
+        "disconnected": "已断开",
+        "online": "在线",
+        "offline": "离线"
+      },
+      "realtime_players": {
+        "title": "实时在线玩家",
+        "summary": "总入座 {{totalPlayers}} 人，分布在 {{activeRooms}} 个实时房间中"
+      },
+      "today_matches": {
+        "title": "今日对局数",
+        "total": "总对局：{{count}}"
+      },
+      "active_rooms": {
+        "title": "实时房间（含游客）"
+      },
+      "room_distribution": {
+        "title": "实时房间分布（含游客）",
+        "empty": "暂无活跃房间",
+        "group_room_count": "{{count}} 个实时房间",
+        "group_online": "{{connected}}/{{total}} 在线",
+        "room_online": "{{connected}}/{{total}} 在线",
+        "empty_seats": "暂无玩家入座"
+      },
+      "overview": {
+        "title": "平台数据概览",
+        "total_users": "总注册用户",
+        "persisted_rooms": "持久化房间",
+        "banned_users": "封禁用户"
+      },
+      "footer": "系统健康监控 v1.2.0 · 最近更新：{{time}}"
+    },
+    "userDetail": {
+      "title": {
+        "back_to_users": "返回用户列表"
+      },
+      "badge": {
+        "banned": "已封禁",
+        "admin": "管理员",
+        "developer": "开发者"
+      },
+      "field": {
+        "email_unbound": "未绑定邮箱"
+      },
+      "action": {
+        "send_message": "发消息",
+        "ban": "封禁",
+        "unban": "解封",
+        "delete": "删除用户"
+      },
+      "tooltip": {
+        "cannot_ban_admin": "不能封禁管理员"
+      },
+      "stats": {
+        "section_title": "活跃数据",
+        "total_matches": "总场次",
+        "wins": "胜场",
+        "win_rate": "胜率",
+        "empty": "暂无数据"
+      },
+      "account": {
+        "section_title": "账户信息",
+        "role": "角色",
+        "created_at": "注册时间",
+        "last_online": "最后活跃",
+        "never_online": "从未"
+      },
+      "role": {
+        "admin": "管理员",
+        "developer_scoped": "开发者（{{scope}}）",
+        "developer": "开发者",
+        "user": "普通用户"
+      },
+      "ban": {
+        "section_title": "封禁详情",
+        "reason": "原因: {{reason}}",
+        "unspecified": "未说明"
+      },
+      "developer": {
+        "section_title": "开发者角色",
+        "description": "该用户只能管理这里列出的游戏更新日志；如需修改，请回到用户管理列表使用“角色设置”。",
+        "scope": "当前范围：{{scope}}",
+        "unassigned": "待分配",
+        "empty_games": "暂未分配可管理游戏"
+      },
+      "matches": {
+        "section_title": "近期对局记录",
+        "count": "共 {{count}} 条"
+      },
+      "table": {
+        "unknown_opponent": "未知对手",
+        "result": "结果",
+        "result_win": "胜利",
+        "result_draw": "平局",
+        "result_loss": "失败",
+        "game": "游戏",
+        "opponent": "对手",
+        "time": "时间"
+      },
+      "confirm": {
+        "ban": "确定要封禁该用户吗？",
+        "unban": "确定要解封该用户吗？",
+        "delete": "确定要删除该用户吗？删除后无法恢复。"
+      },
+      "prompt": {
+        "ban_reason": "请输入封禁原因"
+      },
+      "toast": {
+        "fetch_failed": "获取详情失败",
+        "cannot_ban_admin": "不能封禁管理员账号",
+        "ban_reason_required": "封禁原因不能为空",
+        "action_success": "操作成功",
+        "action_failed": "操作失败",
+        "cannot_delete_admin": "不能删除管理员账号",
+        "delete_success": "用户已删除",
+        "delete_failed": "删除失败",
+        "message_demo": "这是演示功能，尚未实装"
+      }
+    },
+    "usersPage": {
+      "title": "用户管理",
+      "description": "管理平台用户及其后台角色状态",
+      "search_placeholder": "搜索用户名或邮箱...",
+      "roles": {
+        "admin": "管理员",
+        "developer": "开发者",
+        "user": "普通用户"
+      },
+      "status": {
+        "normal": "正常",
+        "banned": "已封禁"
+      },
+      "online": {
+        "online": "在线",
+        "offline": "离线"
+      },
+      "aria": {
+        "select_all": "选择全部用户",
+        "select_user": "选择用户 {{username}}"
+      },
+      "columns": {
+        "user": "用户",
+        "role": "角色",
+        "status": "状态",
+        "created_at": "注册时间",
+        "actions": "操作"
+      },
+      "actions": {
+        "view_detail": "查看详情",
+        "role_settings": "角色设置",
+        "ban": "封禁",
+        "unban": "解封",
+        "delete": "删除",
+        "cannot_delete_admin": "不能删除管理员",
+        "bulk_delete": "删除选中"
+      },
+      "filters": {
+        "all_roles": "所有角色",
+        "all_status": "所有状态"
+      },
+      "confirm": {
+        "ban": "确定要封禁该用户吗？",
+        "unban": "确定要解封该用户吗？",
+        "delete": "确定要删除该用户吗？删除后无法恢复。",
+        "bulk_delete": "确定要删除选中的 {{count}} 位用户吗？"
+      },
+      "prompt": {
+        "ban_reason": "请输入封禁原因"
+      },
+      "toast": {
+        "fetch_failed": "获取用户列表失败",
+        "ban_reason_required": "封禁原因不能为空",
+        "action_success": "操作成功",
+        "action_failed": "操作失败",
+        "cannot_delete_admin": "不能删除管理员账号",
+        "delete_success": "用户已删除",
+        "delete_failed": "删除失败",
+        "bulk_delete_failed": "批量删除失败",
+        "bulk_delete_success": "已删除 {{deleted}} 位用户{{skippedText}}",
+        "bulk_delete_skipped": "，跳过 {{skipped}} 位",
+        "role_saved_admin": "已设为管理员",
+        "role_saved_developer": "已设为开发者，可管理 {{count}} 个游戏",
+        "role_saved_user": "已设为普通用户",
+        "role_update_failed": "更新角色失败",
+        "role_save_failed": "保存角色设置失败"
+      }
+    },
+    "gameChangelogs": {
+      "title": "更新日志",
+      "description": "按游戏发布版本说明，只对已发布内容开放前台可见。",
+      "filters": {
+        "all_games": "全部可管理游戏"
+      },
+      "actions": {
+        "create": "新建更新日志",
+        "cancel": "取消",
+        "submitting": "提交中...",
+        "save": "保存修改",
+        "create_entry": "创建日志",
+        "publish": "发布",
+        "unpublish": "撤回发布",
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "form": {
+        "create_title": "新建更新日志",
+        "edit_title": "编辑更新日志",
+        "scope_hint": "开发者只能操作自己被分配到的游戏。",
+        "game_label": "目标游戏",
+        "version_label": "版本号",
+        "version_placeholder": "例如 1.2.0",
+        "title_label": "标题",
+        "title_placeholder": "例如 平衡性调整",
+        "content_label": "内容",
+        "content_placeholder": "填写会展示在前台排行榜右侧的更新说明",
+        "pinned": "置顶显示",
+        "publish_now": "立即发布",
+        "publish_hint": "未勾选“立即发布”的日志会保存为草稿，只在后台列表可见，不会出现在前台详情页的“更新”页签。"
+      },
+      "empty": {
+        "no_manageable_games": "当前没有可管理的游戏",
+        "no_items": "暂无更新日志"
+      },
+      "status": {
+        "published": "已发布",
+        "draft": "草稿",
+        "pinned": "置顶",
+        "latest_time": "最近时间：{{time}}"
+      },
+      "confirm": {
+        "delete": "确定删除这条更新日志吗？删除后无法恢复。"
+      },
+      "toast": {
+        "fetch_failed": "获取更新日志失败",
+        "update_failed": "更新更新日志失败",
+        "create_failed": "创建更新日志失败",
+        "update_success": "更新日志已保存",
+        "create_success": "更新日志已创建",
+        "save_failed": "保存更新日志失败",
+        "delete_failed": "删除更新日志失败",
+        "delete_success": "更新日志已删除",
+        "toggle_publish_failed": "切换发布状态失败",
+        "unpublish_success": "已撤回发布",
+        "publish_success": "已发布更新日志"
+      }
+    },
+    "notificationsPage": {
+      "title": "系统通知",
+      "description": "管理面向所有用户的系统公告",
+      "empty": "暂无通知",
+      "form": {
+        "create_title": "新建通知",
+        "edit_title": "编辑通知",
+        "title_label": "标题",
+        "title_placeholder": "通知标题",
+        "content_label": "内容",
+        "content_placeholder": "通知内容...",
+        "expires_at": "过期时间（可选）",
+        "pinned": "置顶显示",
+        "publish_now": "立即发布"
+      },
+      "actions": {
+        "create": "发布通知",
+        "publish": "发布",
+        "unpublish": "取消发布",
+        "save": "保存",
+        "edit": "编辑",
+        "delete": "删除",
+        "cancel": "取消",
+        "submitting": "提交中..."
+      },
+      "status": {
+        "pinned": "置顶",
+        "draft": "草稿",
+        "expired": "已过期",
+        "expires_at": "过期：{{time}}"
+      },
+      "toast": {
+        "fetch_failed": "获取通知列表失败",
+        "action_failed": "操作失败",
+        "create_success": "通知已创建",
+        "update_success": "通知已更新",
+        "delete_success": "已删除",
+        "delete_failed": "删除失败"
+      }
+    },
+    "sponsorsPage": {
+      "title": "赞助管理",
+      "description": "维护关于弹窗的赞助滚动列表。",
+      "search_placeholder": "搜索赞助者",
+      "form": {
+        "name_label": "赞助者姓名",
+        "name_placeholder": "请输入昵称",
+        "amount_label": "赞助金额",
+        "amount_placeholder": "金额（元）",
+        "pin_checkbox": "设为置顶"
+      },
+      "columns": {
+        "name": "赞助者",
+        "amount": "金额",
+        "pin": "置顶",
+        "created_at": "创建时间",
+        "actions": "操作"
+      },
+      "status": {
+        "pinned": "置顶",
+        "normal": "普通"
+      },
+      "actions": {
+        "refresh": "刷新",
+        "pin": "置顶",
+        "unpin": "取消置顶",
+        "delete": "删除",
+        "create": "添加赞助",
+        "submitting": "提交中..."
+      },
+      "confirm": {
+        "delete": "确定要删除赞助记录“{{name}}”吗？"
+      },
+      "toast": {
+        "fetch_failed": "获取赞助列表失败",
+        "invalid_form": "请填写赞助者姓名与正确金额",
+        "create_failed": "创建失败",
+        "create_success": "赞助信息已添加",
+        "update_failed": "更新失败",
+        "pin_success": "已设为置顶",
+        "unpin_success": "已取消置顶",
+        "delete_failed": "删除失败",
+        "delete_success": "赞助记录已删除"
+      }
+    },
+    "roomsPage": {
+      "title": "房间管理",
+      "description": "查看房间在线状态、持续时间，并支持按条件清理",
+      "unknown": "未知",
+      "unnamed_room": "未命名房间",
+      "guest_prefix": "游客#",
+      "search_placeholder": "搜索房间 ID 或房间名...",
+      "aria": {
+        "select_all": "选择全部房间",
+        "select_room": "选择房间 {{id}}"
+      },
+      "owner_type": {
+        "guest": "游客",
+        "user": "用户"
+      },
+      "columns": {
+        "room": "房间",
+        "game": "游戏",
+        "owner": "房主",
+        "status": "状态",
+        "players": "玩家在线状态",
+        "duration": "持续时间",
+        "updated_at": "最近更新",
+        "actions": "操作"
+      },
+      "status": {
+        "locked": "有密码",
+        "public": "公开"
+      },
+      "players": {
+        "online_count": "{{connected}}/{{total}} 在线",
+        "empty": "暂无玩家入座"
+      },
+      "player_labels": {
+        "seat_number": "座位 {{seat}}",
+        "seat_id": "座位 {{seat}}"
+      },
+      "online": {
+        "online": "在线",
+        "offline": "离线"
+      },
+      "duration": {
+        "started_at": "开始于 {{time}}"
+      },
+      "actions": {
+        "delete": "删除",
+        "bulk_delete": "删除选中"
+      },
+      "filters": {
+        "all_games": "所有游戏"
+      },
+      "bulk": {
+        "filtered_count": "当前筛选的 {{count}} 个房间",
+        "selected_count": "选中的 {{count}} 个房间",
+        "total_count": "共 {{count}}",
+        "all_filtered_selected": "已全选当前筛选结果（{{count}} 条）。如需取消，请点击表头的全选框。"
+      },
+      "confirm": {
+        "delete": "确定要删除该房间吗？",
+        "bulk_delete": "确定要删除{{label}}吗？"
+      },
+      "toast": {
+        "fetch_failed": "获取房间列表失败",
+        "delete_failed": "删除失败",
+        "delete_success": "房间已删除",
+        "bulk_delete_failed": "批量删除失败",
+        "bulk_delete_success": "已删除{{label}}"
+      }
+    },
+    "ugcPackagesPage": {
+      "title": "UGC 管理",
+      "description": "查看并管理所有 UGC 包（下架/删除）",
+      "search_placeholder": "搜索包ID/名称/作者...",
+      "owner_placeholder": "作者ID",
+      "columns": {
+        "package_info": "包信息",
+        "owner": "作者",
+        "status": "状态",
+        "published_at": "发布时间",
+        "updated_at": "更新时间",
+        "actions": "操作"
+      },
+      "status": {
+        "published": "已发布",
+        "draft": "草稿"
+      },
+      "filters": {
+        "all_status": "全部状态"
+      },
+      "actions": {
+        "unpublish": "下架",
+        "delete": "删除"
+      },
+      "confirm": {
+        "unpublish": "确定要下架 UGC 包“{{name}}”吗？",
+        "delete": "确定要删除 UGC 包“{{name}}”吗？删除后无法恢复。"
+      },
+      "toast": {
+        "fetch_failed": "获取 UGC 包列表失败",
+        "unpublish_failed": "下架失败",
+        "unpublish_success": "已下架该 UGC 包",
+        "delete_failed": "删除失败",
+        "delete_success": "UGC 包已删除"
+      }
+    },
+    "matchesPage": {
+      "title": "对局记录",
+      "description": "查看平台所有对局历史与状态",
+      "search_placeholder": "搜索对局ID或玩家...",
+      "player_unknown": "?",
+      "player_fallback": "玩家{{id}}",
+      "filters": {
+        "all_games": "所有游戏"
+      },
+      "aria": {
+        "select_all": "选择全部对局",
+        "select_match": "选择对局 {{id}}"
+      },
+      "columns": {
+        "id": "ID",
+        "game": "游戏",
+        "players": "玩家",
+        "result": "结果",
+        "ended_at": "结束时间",
+        "actions": "操作"
+      },
+      "actions": {
+        "delete": "删除",
+        "detail": "详情",
+        "bulk_delete": "删除选中"
+      },
+      "results": {
+        "draw": "平局",
+        "winner": "{{name}} 胜",
+        "win": "胜利",
+        "loss": "失败"
+      },
+      "duration": {
+        "unknown": "耗时未知",
+        "hours_minutes": "耗时 {{hours}}小时{{minutes}}分",
+        "minutes_seconds": "耗时 {{minutes}}分{{seconds}}秒",
+        "seconds": "耗时 {{seconds}}秒",
+        "seconds_only": "{{seconds}}秒"
+      },
+      "detail": {
+        "title": "对局详情",
+        "game": "游戏",
+        "duration": "耗时",
+        "ended_at": "结束时间",
+        "players": "玩家",
+        "action_log": "操作日志",
+        "no_logs": "暂无操作日志"
+      },
+      "confirm": {
+        "delete": "确定要删除该对局记录吗？",
+        "bulk_delete": "确定要删除选中的 {{count}} 条对局记录吗？"
+      },
+      "toast": {
+        "fetch_failed": "获取对局列表失败",
+        "detail_fetch_failed": "获取对局详情失败",
+        "admin_only": "仅管理员可删除对局记录",
+        "delete_failed": "删除失败",
+        "delete_success": "对局记录已删除",
+        "bulk_delete_failed": "批量删除失败",
+        "bulk_delete_success": "已删除 {{count}} 条对局记录"
+      }
+    }
+  },
+  "devtools": {
+    "assetSlicer": {
+      "default_image_name": "图片",
+      "close_sidebar_aria": "关闭素材切片机侧栏",
+      "back_home": "← 返回主页",
+      "splendor_mapping": "璀璨宝石映射",
+      "title": "素材切片机",
+      "subtitle": "创意工坊",
+      "shortcut": {
+        "paste": "Ctrl+V"
+      },
+      "image_alt": {
+        "source": "源图片"
+      },
+      "upload_cta_line_1": "更换图片 (Ctrl+V)",
+      "upload_cta_line_2": "或拖入此处",
+      "shape": {
+        "square": "矩形",
+        "circle": "圆形"
+      },
+      "crop_size_title": "裁切尺寸 (宽 x 高)",
+      "crop_size_label": "裁剪尺寸",
+      "quick_slice_title": "快裁模式：松开鼠标立即裁剪",
+      "quick_slice": "快裁",
+      "unlock_ratio": "解除锁定",
+      "lock_ratio": "锁定比例",
+      "shrink": "缩减",
+      "enlarge": "增大",
+      "viewport": "视角: {{value}}%",
+      "reset": "重置",
+      "hint": {
+        "paste_clipboard": "粘贴剪贴板图片",
+        "right_drag": "右键拖拽",
+        "pan_canvas": "平移画布",
+        "ctrl_wheel": "Ctrl+滚轮",
+        "zoom_crop": "缩放裁切框"
+      },
+      "extracted_count": "已提取 ({{count}})",
+      "export_sprite_sheet": "导出精灵图",
+      "empty": {
+        "no_image": "无图片",
+        "upload_prompt": "更换图片 (Ctrl+V) / 拖入图片"
+      },
+      "overlay": {
+        "release_extract": "释放提取",
+        "release_lock": "释放锁定",
+        "quick_slice_mode": "快裁模式",
+        "drag_select_mode": "滑选模式"
+      },
+      "status": {
+        "viewport": "视角",
+        "panning": "平移中",
+        "drag_hint": "右键/Alt 拖拽"
+      }
+    },
+    "audioBrowser": {
+      "title": "音效浏览器",
+      "loading": "加载中...",
+      "group_labels": {
+        "ambient": "环境音",
+        "bgm": "背景音乐",
+        "card": "卡牌",
+        "coins": "金币",
+        "combat": "战斗",
+        "cyberpunk": "赛博朋克",
+        "dice": "骰子",
+        "fantasy": "奇幻",
+        "magic": "魔法",
+        "misc": "其他",
+        "monster": "怪物",
+        "puzzle": "解谜",
+        "status": "状态效果",
+        "steampunk": "蒸汽朋克",
+        "stinger": "过场音效",
+        "system": "系统",
+        "token": "标记物",
+        "ui": "界面"
+      },
+      "sub_labels": {
+        "general": "通用",
+        "ethereal": "空灵",
+        "fantasy": "奇幻",
+        "funk": "放克",
+        "fire": "火焰",
+        "ice": "冰霜",
+        "water": "水流",
+        "wind": "风",
+        "lightning": "闪电",
+        "poison": "毒素",
+        "dark": "暗黑",
+        "rock": "岩石",
+        "earth": "大地",
+        "attack": "攻击",
+        "impact": "冲击",
+        "footstep": "脚步",
+        "shout": "呼喊",
+        "celebrate": "庆祝",
+        "handling": "操作",
+        "fx": "特效",
+        "loops": "循环",
+        "movement": "移动",
+        "death": "死亡",
+        "growl": "低吼",
+        "breath": "呼吸",
+        "click": "点击",
+        "shooting": "射击"
+      },
+      "sidebar": {
+        "title": "分类",
+        "all": "全部"
+      },
+      "table": {
+        "name": "名称",
+        "type": "类型",
+        "preview": "试听",
+        "limit_notice": "显示前 300 条，共 {{count}} 条匹配",
+        "empty": "无匹配结果"
+      },
+      "types": {
+        "sfx": "音效",
+        "bgm": "音乐"
+      },
+      "history": {
+        "title": "历史播放",
+        "clear": "清空",
+        "empty_line_1": "播放音效后",
+        "empty_line_2": "此处会记录历史",
+        "bgm_short": "乐",
+        "sfx_short": "效",
+        "replay": "重新播放"
+      },
+      "summary": {
+        "total_count": "({{count}} 条)",
+        "results_count": "{{count}} 条结果"
+      },
+      "error": {
+        "title": "加载音频注册表失败",
+        "retry": "重试"
+      },
+      "filters": {
+        "search_placeholder": "搜索键名 / 文件名...",
+        "type_all": "全部"
+      },
+      "actions": {
+        "stop_bgm": "停止背景音乐",
+        "cancel_preload": "取消预加载",
+        "cancel_preload_progress": "取消 ({{loaded}}/{{total}})",
+        "preload_title": "预加载当前搜索结果中的所有音效，消除首次播放延迟",
+        "preload_all": "预加载全部"
+      },
+      "logs": {
+        "phrase_map_loaded": "短语映射表加载成功，{{count}} 条",
+        "phrase_map_failed": "短语映射表加载失败，改用原文",
+        "registry_failed": "加载音频注册表失败"
+      }
+    },
+    "architectureView": {
+      "common": {
+        "back": "← 返回",
+        "click_anywhere_back": "点击任意位置返回"
+      },
+      "zoom": {
+        "zoom_in": "放大",
+        "zoom_out": "缩小",
+        "reset": "重置缩放"
+      },
+      "overview": {
+        "title": "🏗️ 架构全景 — 一次操作的完整旅程",
+        "subtitle": "点击层卡片可展开 · 右侧虚线为跨层连接",
+        "full_button": "🗺️ 完整架构图",
+        "c4_context_button": "🏛️ C4 全景",
+        "c4_container_button": "📦 C4 容器",
+        "story_button": "📖 用户故事",
+        "click_expand": "点击展开 →",
+        "legend": "实线 = 逐层依赖（操作从上往下流过每一层） · 虚线 = 跨层连接（事件驱动/UI组件注入）"
+      },
+      "full": {
+        "title": "🗺️ 完整架构图 — 所有节点与层级",
+        "subtitle": "点击节点查看详情 · 点击空白返回"
+      },
+      "popup": {
+        "details": "📋 详细说明",
+        "interface_signature": "🔌 接口签名",
+        "data_flow": "🔄 数据流向",
+        "example": "🎲 骰子王座案例",
+        "upstream": "⬆️ 上游依赖 ({{count}})",
+        "downstream": "⬇️ 下游消费 ({{count}})"
+      },
+      "pipeline": {
+        "title": "⚡ 回合执行引擎 — 8 步管线",
+        "example_scenario": "📎 示例场景: 骰子王座 — 玩家A攻击玩家B",
+        "involved_systems": "介入的系统",
+        "halt_intercept": "halt: 拦截",
+        "halt_skip": "跳过③④⑤"
+      },
+      "systems": {
+        "title": "🔌 系统插件 — 11 个系统",
+        "defaults_title": "默认启用（8 个）— createBaseSystems() 自动包含",
+        "optional_title": "按需配置（3 个）— 游戏层显式创建",
+        "hook_position": "钩子位置：",
+        "hook_before": "前置（beforeCommand）",
+        "hook_after": "后置（afterEvents）",
+        "hook_both": "前置+后置",
+        "hook_before_short": "前置",
+        "hook_after_short": "后置",
+        "hook_both_short": "前后"
+      },
+      "testing": {
+        "title": "🧪 自动化测试 + AI 审计 — 五轨并列",
+        "subtitle": "命令驱动（最优先） · 实体完整性 · 交互完整性 · E2E截图 · AI逻辑审计 · 点击任意位置返回",
+        "track_vitest": "🧪 命令驱动测试（首选）",
+        "track_integrity": "🔗 实体链完整性",
+        "track_interaction": "🎯 交互完整性",
+        "track_e2e": "🌐 E2E 截图",
+        "track_ai": "🤖 AI 逻辑审计",
+        "modified_boundary": "── 代码修改后触发 ──",
+        "summary_vitest": "🧪 命令驱动（最优先）: 纯函数引擎 + 确定性管线 → 命令回放验证规则正确性",
+        "summary_integrity": "🔗 实体完整性: 注册表 + 引用链 + 触发路径 + 效果契约 → 确保数据定义无断链",
+        "summary_interaction": "🎯 交互完整性: Mode A(UI状态机payload) + Mode B(Handler注册链) → 确保交互链无断裂",
+        "summary_e2e": "🌐 E2E截图: 无头浏览器 + 像素对比 → 防止 UI 视觉回归",
+        "summary_ai": "🤖 AI逻辑审计: 八层追踪+语义一致性+元数据审计+角色反转+数据查询一致性+16条反模式",
+        "coverage_title": "📊 Bug 覆盖率估算:",
+        "coverage_vitest": "命令驱动 ~35%",
+        "coverage_integrity": "实体完整性 ~15%",
+        "coverage_interaction": "交互完整性 ~10%",
+        "coverage_e2e": "E2E截图 ~10%",
+        "coverage_ai": "AI审计 ~25%",
+        "coverage_other": "其他 ~5%",
+        "coverage_note": "* 命令驱动覆盖规则逻辑/状态变更 · AI审计覆盖描述≠实现/查询绕过/交叉影响 · 其他含环境/并发/性能等难以自动化的问题"
+      },
+      "story": {
+        "title": "📖 用户故事 — 创建新游戏的 6 个阶段",
+        "subtitle": "基于 create-new-game 技能，数据录入合并为一个阶段 · 每阶段独立可验证 · 点击任意位置返回",
+        "workflow": "🎲 工作流: 骨架 → 数据录入(规则+实体+类型) → 领域内核 → 系统组装 → UI交互 → 收尾上线",
+        "principle": "💡 核心原则: 每阶段独立可验证·独立可提交 → 游戏只需回答4个问题 + 选用基础能力 → 引擎负责其余一切",
+        "layer_game": "游戏层",
+        "layer_engine": "引擎层",
+        "layer_core": "核心层",
+        "layer_ui": "UI层",
+        "layer_server": "服务端层"
+      },
+      "c4Context": {
+        "title": "🏛️ C4 模型 — L1 系统上下文",
+        "container_button": "📦 L2 容器视图 →",
+        "subtitle": "最高层视角：系统边界 · 外部依赖 · 用户交互 · 点击任意位置返回",
+        "type_external": "外部系统",
+        "type_story": "用户故事",
+        "type_core": "核心系统",
+        "legend": "C4 第 1 层 · 系统上下文 · 实线=核心系统 · 虚线=外部依赖"
+      },
+      "c4Container": {
+        "title": "📦 C4 模型 — L2 容器视图",
+        "context_button": "← L1 全景视图",
+        "subtitle": "容器级视角：5 个核心层 · 层间依赖 · 数据/事件流向 · 点击任意位置返回",
+        "container_badge": "容器",
+        "legend": "C4 第 2 层 · 容器视图 · 实线=直接依赖 · 虚线=事件/UI驱动",
+        "layer_game": "🎮 游戏层",
+        "layer_engine": "⚡ 引擎层",
+        "layer_core": "💎 核心层",
+        "layer_ui": "🖥️ UI层",
+        "layer_server": "🖧 服务端层"
+      },
+      "layerDetail": {
+        "title_suffix": "— 组件详情",
+        "subtitle": "{{count}} 个组件 · 点击查看接口和案例 · 点击空白返回",
+        "expand": "→ 展开",
+        "click_detail": "点击详情",
+        "cross_layer": "跨层连接",
+        "direction_out": "→ 出",
+        "direction_in": "← 入",
+        "interface_definition": "📋 接口定义",
+        "data_chain": "🔗 数据链路",
+        "example": "🎲 骰子王座案例"
+      }
+    },
+    "splendorSpriteMappingTool": {
+      "title": "璀璨宝石映射校对",
+      "description": "在同一页中同时查看雪碧图格子与对应的数据模型，校对发展卡与贵族的映射关系。",
+      "atlases": {
+        "tier1": "一级发展卡",
+        "tier2": "二级发展卡",
+        "tier3": "三级发展卡",
+        "nobles": "贵族"
+      },
+      "colors": {
+        "white": "白",
+        "blue": "蓝",
+        "green": "绿",
+        "red": "红",
+        "black": "黑"
+      },
+      "sections": {
+        "atlases": "图集",
+        "current_frame": "当前格子",
+        "validation": "校验",
+        "export": "导出",
+        "model_list": "模型列表"
+      },
+      "actions": {
+        "back_to_slicer": "切回切片模式",
+        "clear_frame": "清空此格",
+        "restore_atlas": "恢复当前图集",
+        "copy_export": "复制配置",
+        "copied": "已复制",
+        "restore_all": "恢复全部仓库配置",
+        "clear_local_draft": "清空本地草稿"
+      },
+      "status": {
+        "unmapped": "未映射"
+      },
+      "current_frame": {
+        "index": "第 {{index}} 格",
+        "binding": "当前绑定：",
+        "current_atlas": "当前图集："
+      },
+      "validation": {
+        "unmapped_frames": "未映射格子",
+        "duplicate_models": "重复映射模型",
+        "missing_models": "缺失模型",
+        "unknown_ids": "未知 ID",
+        "success": "当前图集映射在结构上完整，可继续做人眼校对或导出回填。",
+        "details": {
+          "unmapped": "未映射格子：{{values}}",
+          "duplicate": "重复模型：{{values}}",
+          "missing": "缺失模型：{{values}}",
+          "unknown": "未知 ID：{{values}}"
+        }
+      },
+      "model_list": {
+        "frame_index": "第 {{index}} 格",
+        "unassigned": "未分配"
+      }
+    },
+    "effectPreview": {
+      "shared": {
+        "perf_avg": "均",
+        "perf_peak": "峰",
+        "avg_frame_time_title": "全程平均帧时间",
+        "peak_frame_time_title": "全程最高帧时间"
+      },
+      "groups": {
+        "particle": "粒子类",
+        "impact": "打击类",
+        "projectile": "投射类",
+        "gameplay": "玩法类",
+        "ui": "UI 类",
+        "loading": "加载类"
+      },
+      "page": {
+        "close_sidebar_backdrop_aria": "关闭特效预览侧栏",
+        "collapse_sidebar_aria": "收起特效分类",
+        "expand_sidebar_aria": "展开特效分类",
+        "sidebar_toggle_label": "分类",
+        "back_home": "← 返回首页",
+        "close_sidebar_aria": "关闭特效分类",
+        "title": "特效预览",
+        "expand_all": "全部展开",
+        "collapse_all": "全部折叠",
+        "expand_all_short": "▶ 展开",
+        "collapse_all_short": "▼ 折叠",
+        "use_real_cards": "实际卡图",
+        "use_placeholder": "占位区域"
+      },
+      "impact": {
+        "shared": {
+          "labels": {
+            "light": "轻击",
+            "normal": "普通",
+            "heavy": "重击",
+            "critical": "暴击",
+            "ice": "冰霜",
+            "holy": "神圣",
+            "void": "虚空"
+          }
+        },
+        "shake_hit_stop": {
+          "title": "震动 + 钝帧",
+          "description": "震动 + 帧冻结（rAF 暂停，冻在当前偏移）",
+          "buttons": {
+            "shake_only": "纯震动",
+            "light": "震动+钝帧·轻",
+            "heavy": "震动+钝帧·重",
+            "critical": "震动+钝帧·暴击"
+          },
+          "preview": {
+            "shake_only": "纯震动",
+            "light": "轻",
+            "heavy": "重",
+            "critical": "暴击"
+          }
+        },
+        "slash": {
+          "title": "弧形刀光",
+          "description": "画布弧形刀光 + 火花",
+          "preview": "受击区域"
+        },
+        "rift": {
+          "title": "次元裂隙",
+          "description": "画布直线斜切 + 火花",
+          "preview": "受击区域"
+        },
+        "combo": {
+          "title": "打击感组合",
+          "description": "震动 + 钝帧 + 受伤闪光",
+          "buttons": {
+            "light": "轻击 (2)",
+            "normal": "普通 (5)",
+            "heavy": "重击 (8)",
+            "critical": "暴击 (12)"
+          },
+          "toggles": {
+            "shake": "震动",
+            "hit_stop": "钝帧",
+            "arc_slash": "弧刀",
+            "rift": "裂隙",
+            "white_flash": "白闪",
+            "red_pulse": "红脉冲",
+            "number": "数字"
+          }
+        },
+        "damage_flash": {
+          "title": "受伤反馈",
+          "description": "震动容器 + 受伤闪光（斜切 + 红脉冲 + 数字）",
+          "buttons": {
+            "light": "轻伤 (1)",
+            "medium": "中伤 (3)",
+            "heavy": "重伤 (5)",
+            "fatal": "致命 (10)"
+          }
+        }
+      },
+      "particle": {
+        "shared": {
+          "labels": {
+            "explosion": "爆炸",
+            "explosionStrong": "强力爆炸",
+            "summonGlow": "召唤光",
+            "summonGlowStrong": "强力召唤",
+            "smoke": "烟尘",
+            "sparks": "火花",
+            "magicDust": "魔法尘"
+          }
+        },
+        "burst": {
+          "title": "爆发粒子",
+          "description": "2D 画布粒子引擎",
+          "preview": "爆发区域"
+        },
+        "shatter": {
+          "title": "碎裂消散",
+          "description": "卡图四分五裂飞散 + 重力下坠（单位死亡/卡牌销毁）",
+          "buttons": {
+            "normal": "普通死亡",
+            "strong": "强力击杀"
+          }
+        },
+        "victory": {
+          "title": "胜利彩带",
+          "description": "底部喷射彩色粒子",
+          "buttons": {
+            "trigger": "触发"
+          },
+          "preview": "胜利特效"
+        },
+        "summon": {
+          "title": "召唤特效",
+          "description": "2D 画布多阶段特效",
+          "buttons": {
+            "normal": "普通（蓝）",
+            "strong": "强力（金）"
+          }
+        },
+        "summon_shader": {
+          "title": "召唤混合特效（FX 系统）",
+          "description": "着色器 + 2D 画布粒子 + 音效 + 震动（完整反馈预览）",
+          "buttons": {
+            "blue": "蓝",
+            "blue_strong": "蓝强",
+            "gold": "金",
+            "gold_strong": "金强"
+          }
+        },
+        "vortex": {
+          "title": "充能旋涡",
+          "description": "图形着色器特效",
+          "buttons": {
+            "blue": "蓝",
+            "blue_strong": "蓝强",
+            "purple": "紫",
+            "green": "绿"
+          }
+        },
+        "combat_shockwave": {
+          "title": "攻击气浪（FX 系统）",
+          "description": "受击反馈 + 震动（完整反馈预览）",
+          "buttons": {
+            "melee": "近战",
+            "melee_strong": "近战强",
+            "ranged": "远程",
+            "ranged_strong": "远程强"
+          }
+        }
+      },
+      "projectile": {
+        "flying": {
+          "title": "飞行特效",
+          "description": "恒定速度 800px/s，粒子尾迹",
+          "buttons": {
+            "damage_1": "伤害 x1",
+            "damage_5": "伤害 x5",
+            "damage_10": "伤害 x10",
+            "heal_3": "治疗 x3",
+            "buff": "增益"
+          },
+          "preview": {
+            "start": "起",
+            "end": "终"
+          }
+        },
+        "cone_blast": {
+          "title": "锥形气浪",
+          "description": "光球投射 + 粒子尾迹 + 命中爆发",
+          "buttons": {
+            "normal": "普通",
+            "strong": "强力"
+          },
+          "preview": {
+            "source": "源",
+            "target": "目"
+          }
+        }
+      },
+      "ui": {
+        "floating": {
+          "title": "飘字",
+          "description": "弹出 → 弹性缩回 → 上浮淡出",
+          "preview": "飘字区域"
+        },
+        "pulse_glow": {
+          "title": "脉冲发光",
+          "description": "发光/涟漪，单次或循环",
+          "buttons": {
+            "glow": "发光",
+            "glow_loop": "发光·循环",
+            "ripple": "涟漪",
+            "stop": "停止"
+          }
+        },
+        "ability_ready": {
+          "title": "技能就绪波纹",
+          "description": "召唤师战争·可激活技能的单位边框青色波纹",
+          "buttons": {
+            "hide_ripple": "隐藏波纹",
+            "show_ripple": "显示波纹",
+            "hide_ring": "隐藏绿框",
+            "show_ring": "显示绿框"
+          },
+          "preview": "单位卡"
+        }
+      },
+      "loading": {
+        "shared": {
+          "start": "启动",
+          "stop": "停止"
+        },
+        "arcane_qualified": {
+          "title": "合格奥术法阵",
+          "description": "【过审】复合叠加版本（粒子流）"
+        },
+        "arcane_grandmaster": {
+          "title": "宗师奥术法阵",
+          "description": "【候补】在过审版基础上大幅加强"
+        },
+        "magic_cards": {
+          "title": "魔术飞牌",
+          "description": "【候补】魔术师天女散花式飞牌"
+        },
+        "orrery": {
+          "title": "专业太阳系仪",
+          "description": "写实：太阳系模拟（八大行星）"
+        },
+        "grand_clock": {
+          "title": "宗师时钟",
+          "description": "极致机械感：精密咬合齿轮组"
+        }
+      },
+      "gameplay": {
+        "shared": {
+          "breakpoint": "突破点: {{value}}"
+        },
+        "base_capture": {
+          "title": "基地占领",
+          "description": "旧基地碎裂 → 能量汇聚 → 新基地出现",
+          "buttons": {
+            "trigger": "触发占领",
+            "reset": "重置"
+          },
+          "toggles": {
+            "particles": "粒子",
+            "glow": "光晕"
+          },
+          "preview": {
+            "old_base": "罗兹 9 号",
+            "new_base": "中央指挥部"
+          }
+        },
+        "ability_triggered": {
+          "title": "触发器激活",
+          "description": "⚡ 持续效果/被动能力触发时的卡牌动画",
+          "scenes": {
+            "trickster_leprechaun": {
+              "label": "矮妖",
+              "description": "持续：消灭力量比自己低的随从"
+            },
+            "trickster_flame_trap": {
+              "label": "火焰陷阱",
+              "description": "持续：消灭进入基地的力量≤2随从"
+            },
+            "ninja_assassination": {
+              "label": "暗杀",
+              "description": "消灭力量≤3的随从"
+            },
+            "bear_cavalry_high_ground": {
+              "label": "制高点",
+              "description": "持续：你的随从+1力量"
+            }
+          },
+          "preview": {
+            "trigger_badge": "触发",
+            "base_title": "蘑菇王国 · 突破点 20",
+            "minions": {
+              "brownie": "棕仙",
+              "gnome": "侏儒",
+              "imp": "小鬼"
+            },
+            "minions_hint": "模拟基地上的随从",
+            "idle_hint": "点击卡牌名触发预览"
+          }
+        }
+      },
+      "sequence": {
+        "title": "序列特效（顺序播放）",
+        "description": "有序编排 vs 并行播放对比",
+        "buttons": {
+          "token_then_damage": "标记移除→伤害（序列）",
+          "heal_then_status_then_damage": "治疗→状态→伤害",
+          "parallel": "并行对比"
+        },
+        "logs": {
+          "token_then_damage": "▶ Token 移除 → 伤害",
+          "heal_then_status_then_damage": "▶ 治疗 → 状态 → 伤害",
+          "parallel": "▶ 并行（无序列）"
+        },
+        "preview": {
+          "buff_zone": "Buff 区",
+          "hp_zone": "HP 区"
+        }
+      },
+      "entries": {
+        "impact": {
+          "shake": {
+            "label": "震动+钝帧",
+            "usage": "骰铸王座·受击震动 / 召唤师战争·棋格受击"
+          },
+          "slash": {
+            "label": "弧形刀光",
+            "usage": "暂未接入业务"
+          },
+          "rift": {
+            "label": "次元裂隙",
+            "usage": "受伤反馈·斜切视觉（DamageFlash 内部）"
+          },
+          "impactCombo": {
+            "label": "打击感组合",
+            "usage": "测试台·自由组合各效果"
+          },
+          "dmgflash": {
+            "label": "受伤反馈",
+            "usage": "召唤师战争·伤害反馈覆盖层"
+          }
+        },
+        "particle": {
+          "burst": {
+            "label": "爆发粒子",
+            "usage": "召唤师战争·单位被消灭"
+          },
+          "shatter": {
+            "label": "碎裂消散",
+            "usage": "召唤师战争·单位/建筑死亡碎裂"
+          },
+          "victory": {
+            "label": "胜利彩带",
+            "usage": "通用·对局胜利结算"
+          },
+          "summon": {
+            "label": "召唤特效",
+            "usage": "召唤师战争·召唤单位入场"
+          },
+          "summonShader": {
+            "label": "召唤混合特效",
+            "usage": "召唤师战争·召唤单位入场（Shader + 粒子混合版）"
+          },
+          "vortex": {
+            "label": "充能旋涡",
+            "usage": "召唤师战争·单位充能"
+          },
+          "combatShockwave": {
+            "label": "攻击气浪",
+            "usage": "召唤师战争·攻击受击反馈（FX 系统完整反馈）"
+          }
+        },
+        "projectile": {
+          "flying": {
+            "label": "飞行特效",
+            "usage": "骰铸王座·伤害/治疗/增益飞行数字"
+          },
+          "coneblast": {
+            "label": "锥形气浪",
+            "usage": "召唤师战争·远程攻击投射"
+          }
+        },
+        "ui": {
+          "floating": {
+            "label": "飘字",
+            "usage": "暂未接入业务"
+          },
+          "pulseglow": {
+            "label": "脉冲发光",
+            "usage": "骰铸王座·技能高亮 / 悬浮球菜单"
+          },
+          "abilityready": {
+            "label": "技能就绪波纹",
+            "usage": "召唤师战争·可激活技能单位青色波纹"
+          }
+        },
+        "loading": {
+          "arcane_qualified": {
+            "label": "过审法阵",
+            "usage": "加载动画·已过审复合粒子方案"
+          },
+          "arcane_grandmaster": {
+            "label": "究极法阵",
+            "usage": "加载动画·强化候补方案"
+          },
+          "magic_cards": {
+            "label": "魔术飞牌",
+            "usage": "加载动画·飞牌候补方案"
+          },
+          "solar_system": {
+            "label": "太阳系 Pro",
+            "usage": "加载动画·写实行星仪方案"
+          },
+          "grand_clock": {
+            "label": "机械神域",
+            "usage": "加载动画·机械钟表方案"
+          }
+        },
+        "gameplay": {
+          "baseCapture": {
+            "label": "基地占领",
+            "usage": "大杀四方·基地被占领后的替换动画"
+          },
+          "abilityTriggered": {
+            "label": "触发器激活",
+            "usage": "大杀四方·持续效果/被动能力触发时的 ⚡ 动画"
+          }
+        },
+        "sequence": {
+          "sequence": {
+            "label": "序列特效",
+            "usage": "特效总线顺序播放预览"
+          }
+        }
+      }
+    }
+  },
   "error": {
     "createRoomFailed": "创建房间失败",
     "createRoomNetwork": "无法连接游戏服务，请确认服务已启动，并检查跨域/代理设置。",
@@ -601,7 +2102,7 @@
     "policyId": "策略 ID",
     "policyPlaceholder": "留空则使用默认策略",
     "providerId": "提供方 ID",
-    "providerPlaceholder": "留空则使用 astrbot",
+    "providerPlaceholder": "留空则使用默认提供方",
     "quickStart": "默认快速开始：1 号位为真人，2 号位在支持时自动使用该游戏的本地 AI。",
     "startLocal": "开始本地对战"
   },
@@ -661,7 +2162,7 @@
     "heartbeatStale": "心跳检测到版本落后，刷新大厅: {{version}} 当前 {{current}}",
     "heartbeatOk": "心跳正常，版本 {{version}}",
     "subscriberError": "订阅者回调错误: {{message}}",
-    "subscribeMissingGameId": "subscribe 失败：缺少 gameId",
+    "subscribeMissingGameId": "订阅失败：缺少游戏 ID",
     "noSubscribers": "无订阅者，取消大厅订阅"
   },
   "notification": {

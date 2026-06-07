@@ -427,6 +427,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(player.statusEffects[STATUS_IDS.CURSED_COIN]).toBe(3);
     });
 
+    it('战术家真实开局自带 2 个战术优势', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+    });
+
     it('咒缚海盗咒缚被动在自己维持阶段受到 4 点不可防止伤害', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         setPlayerBoardFace(state, '0', 'cursed');
@@ -1065,7 +1070,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             value: 1,
             sourceId: 'countermeasures',
         });
-        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(3);
     });
 
     it('战术家专属升级牌替换对应基础技能并记录等级', () => {
@@ -1125,7 +1130,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(eventsOfType(events, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(2);
         expect(next.players['0'].damageShields?.[0]).toMatchObject({ value: 1, sourceId: 'countermeasures' });
-        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(4);
     });
 
     it('战术家升级后的军刀突刺 II 提升伤害并在三同值时施加紧缚', () => {
@@ -1249,7 +1254,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             { random: fixedRandom },
         );
 
-        expect(applyEvents(state.core, preDefenseEvents).players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(applyEvents(state.core, preDefenseEvents).players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(4);
         expect(eventsOfType(damageEvents, 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
             targetId: '1',
             amount: 2,
@@ -1306,9 +1311,52 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         );
         const next = applyEvents(state.core, events);
 
-        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(4);
         expect(next.players['0'].hand.length).toBe(handBefore + 1);
         expect(eventsOfType(events, 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
+            attackerId: '0',
+            targetId: '1',
+            sourceStatusId: 'war-monger',
+        });
+    });
+
+    it('基础战争贩子只有勋章分支才触发额外进攻投掷阶段', () => {
+        const sabreState = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        const sabreEvents = resolveEffectsToEvents(
+            getAbilityEffects(sabreState.core, '0', 'war-monger'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'war-monger',
+                state: sabreState.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        expect(eventsOfType(sabreEvents, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(5);
+        expect(eventsOfType(sabreEvents, 'EXTRA_ATTACK_TRIGGERED')).toHaveLength(0);
+
+        const medalState = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        const handBefore = medalState.core.players['0'].hand.length;
+        const medalEvents = resolveEffectsToEvents(
+            getAbilityEffects(medalState.core, '0', 'war-monger'),
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'war-monger',
+                state: medalState.core,
+                damageDealt: 0,
+                timestamp: 100,
+            },
+            { random: createQueuedRandom([6]) },
+        );
+        const medalNext = applyEvents(medalState.core, medalEvents);
+        expect(eventsOfType(medalEvents, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(medalNext.players['0'].hand.length).toBe(handBefore + 1);
+        expect(eventsOfType(medalEvents, 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
             attackerId: '0',
             targetId: '1',
             sourceStatusId: 'war-monger',
@@ -1346,7 +1394,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         const promptState = afterEvents.state as MatchState<DiceThroneCore>;
         const interaction = getCardInteractionPrompt(promptState, 'carpet-bombing-2-main');
 
-        expect(promptState.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(2);
+        expect(promptState.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(4);
         expect(interaction).toMatchObject({
             type: 'selectPlayer',
             sourceCardId: 'carpet-bombing-2-main',
@@ -1445,7 +1493,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             face: 'banner',
             effectKey: 'bonusDie.effect.zhanshujiaWarRoom',
         });
-        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(3);
+        expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(5);
     });
 
     it('战术家战略防御选择任意玩家获得守护', () => {
@@ -1689,7 +1737,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(result.state.core.players['3'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
     });
 
-    it('战争贩子在攻击收口后触发额外进攻投掷阶段', () => {
+    it('基础战争贩子在未触发勋章分支时，攻击收口后不会强制进入额外进攻投掷阶段', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.core.pendingAttack = {
             attackerId: '0',
@@ -1710,11 +1758,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(Array.isArray(result)).toBe(false);
         const resolved = result as Exclude<typeof result, DiceThroneEvent[] | void>;
-        expect(resolved?.overrideNextPhase).toBe('offensiveRoll');
-        const extraAttack = eventsOfType((resolved?.events ?? []) as DiceThroneEvent[], 'EXTRA_ATTACK_TRIGGERED')[0];
-        expect(extraAttack?.payload.attackerId).toBe('0');
-        expect(extraAttack?.payload.targetId).toBe('1');
-        expect(extraAttack?.payload.sourceStatusId).toBe('war-monger');
+        expect(resolved?.overrideNextPhase).toBe('main2');
+        expect(eventsOfType((resolved?.events ?? []) as DiceThroneEvent[], 'EXTRA_ATTACK_TRIGGERED')).toHaveLength(0);
     });
 
     it('战争贩子 II 勋章分支在防御阶段收口后会进入额外进攻投掷阶段', () => {

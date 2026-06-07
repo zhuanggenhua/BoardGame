@@ -236,6 +236,7 @@ describe('龙派系可复用实现批', () => {
         expect(result.success).toBe(true);
         const played = result.finalState.core.bases[0].minions.find((minion) => minion.uid === 'p1-minion');
         expect(played?.tempPowerModifier).toBe(-1);
+        expect(played?.powerCounters ?? 0).toBe(0);
         expect(played && getEffectivePower(result.finalState.core, played, 0)).toBe(1);
     });
 
@@ -278,6 +279,7 @@ describe('龙派系可复用实现批', () => {
         const movedMinion = finalCore.bases[0].minions.find((minion) => minion.uid === 'move-1');
 
         expect(movedMinion?.tempPowerModifier).toBe(-1);
+        expect(movedMinion?.powerCounters ?? 0).toBe(0);
         expect(movedMinion && getEffectivePower(finalCore, movedMinion, 0)).toBe(1);
     });
 

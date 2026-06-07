@@ -291,7 +291,7 @@ const HandCard: React.FC<{
         <div
           role="button"
           tabIndex={0}
-          aria-label="放大卡牌"
+          aria-label={t('actions.magnify')}
           onClick={handleMagnifyClick}
           onKeyDown={handleMagnifyKeyDown}
           data-testid="sw-hand-card-magnify"

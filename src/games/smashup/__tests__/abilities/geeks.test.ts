@@ -458,7 +458,9 @@ describe('极客派系隐藏实现批', () => {
         expect(afterPlay.finalState.core.players['0'].discard.map((card) => card.uid)).toEqual(['loop-1', 'justice-1']);
 
         const returnPrompt = getSimpleChoicePrompt(afterPlay.finalState, 'geeks_non_infinite_loop_return');
-        expect(getPromptTitle(returnPrompt)).toContain('收入手牌');
+        expect(getPromptTitle(returnPrompt)).toBe('ui.geeks_non_infinite_loop_return_title');
+        expect(returnPrompt.titleKey).toBe('ui.geeks_non_infinite_loop_return_title');
+        expect(returnPrompt.titleParams).toEqual(expect.objectContaining({ actionName: expect.any(String) }));
 
         const returned = respondToPrompt(afterPlay.finalState, 'return', '0', fixedRandom as any);
         expect(returned.finalState.core.players['0'].hand.map((card) => card.uid)).toEqual(['justice-1']);

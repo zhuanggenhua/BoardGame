@@ -27,11 +27,14 @@
   "opponent": "Opponent",
   "you": "You",
   "waiting": "Waiting...",
+  "empty": "Empty",
+  "noImage": "No Image",
   "phase": "Phase",
   "signets": "Signets",
   "hand": "Hand",
   "deck": "Deck",
   "discard": "Discard",
+  "influence": "Influence",
   "played": "Played",
   "encounterSequence": "Encounter Sequence",
   "activateAbility": "Activate Ability",
@@ -82,6 +85,11 @@
     "offlineBanner": {
       "message": "{{name}} is offline{{time}}"
     }
+  },
+  "imageAlt": {
+    "card": "Card",
+    "discardFallback": "Discard fallback card art",
+    "cardBack": "Card back"
   },
   
   "abilities": {

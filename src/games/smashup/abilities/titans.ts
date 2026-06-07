@@ -568,6 +568,7 @@ function buildCreampuffActionTargetOptions(
             ? [{
                 id: 'play',
                 label: '直接打出',
+                labelKey: 'ui.titan_creampuff_man_play_direct_option',
                 value: { cardUid: card.uid, defId: card.defId },
                 displayMode: 'button' as const,
             }]
@@ -694,10 +695,20 @@ function kaijuGorgodzollaOnActionPlayed(ctx: TriggerContext): TriggerResult | Sm
         titanControllerId,
         '哥佐拉：你可以抽 1 张牌',
         [
-            { id: 'draw', label: '抽 1 张牌', value: { draw: true }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            {
+                id: 'draw',
+                label: '抽 1 张牌',
+                labelKey: 'ui.titan_gorgodzolla_draw_option',
+                value: { draw: true },
+                displayMode: 'button' as const,
+            },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_kaiju_gorgodzolla_draw', targetType: 'button' },
+        {
+            sourceId: 'titan_kaiju_gorgodzolla_draw',
+            targetType: 'button',
+            titleKey: 'ui.titan_gorgodzolla_draw_title',
+        },
     );
     (interaction.data as {
         continuationContext?: { titanUid?: string; titanBaseIndex?: number };
@@ -1384,7 +1395,11 @@ function ghostsCreampuffManTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '奶油泡芙美人：弃 1 张牌',
         discardOptions,
-        { sourceId: 'titan_ghosts_creampuff_man_discard', targetType: 'hand' },
+        {
+            sourceId: 'titan_ghosts_creampuff_man_discard',
+            targetType: 'hand',
+            titleKey: 'ui.titan_creampuff_man_discard_title',
+        },
     );
     (interaction.data as { optionsGenerator?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) => {
         const nextPlayer = nextState.core.players[ctx.playerId];
@@ -1581,6 +1596,7 @@ function queueTimeBoxPlayInteraction(
     titan: TitanState,
     now: number,
     prompt: string,
+    promptKey: string,
 ) {
     if (!matchState) return undefined;
     const baseOptions = buildBaseTargetOptions(
@@ -1598,9 +1614,9 @@ function queueTimeBoxPlayInteraction(
         prompt,
         [
             ...baseOptions,
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_time_travelers_time_box_play', targetType: 'base', autoResolveIfSingle: false },
+        { sourceId: 'titan_time_travelers_time_box_play', targetType: 'base', autoResolveIfSingle: false, titleKey: promptKey },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1718,6 +1734,7 @@ function buildTimeBoxCounterProgress(ctx: TriggerContext, reason: string): Trigg
             titan,
             ctx.now,
             '时间盒子：是否移除全部计数器并打出到一个基地？',
+            'ui.time_travelers_time_box_play_title',
         );
         return nextMatchState ? { events, matchState: nextMatchState } : { events };
     }
@@ -1812,9 +1829,14 @@ function queueHelicoprionPlayInteraction(
         '旋齿鲨：是否移除全部计数器并打出到一个基地？',
         [
             ...baseOptions,
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_sharks_helicoprion_play', targetType: 'base', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_sharks_helicoprion_play',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_helicoprion_play_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1983,11 +2005,21 @@ function sharksHelicoprionOnMinionDestroyedReward(ctx: TriggerContext): TriggerR
                 displayMode: 'card' as const,
             })),
             ...(canDraw
-                ? [{ id: 'draw', label: '抽 1 张牌', value: { action: 'draw' }, displayMode: 'button' as const }]
+                ? [{
+                    id: 'draw',
+                    label: '抽 1 张牌',
+                    labelKey: 'ui.titan_helicoprion_reward_draw_option',
+                    value: { action: 'draw' },
+                    displayMode: 'button' as const,
+                }]
                 : []),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_sharks_helicoprion_reward', targetType: 'generic' },
+        {
+            sourceId: 'titan_sharks_helicoprion_reward',
+            targetType: 'generic',
+            titleKey: 'ui.titan_helicoprion_reward_title',
+        },
     );
 
     return {
@@ -2051,9 +2083,14 @@ function tornadosCategory5OnMinionMoved(ctx: TriggerContext): TriggerResult | Sm
         '五级风暴：选择要进场的基地',
         [
             ...baseOptions,
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_tornados_category_5_play', targetType: 'base', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_tornados_category_5_play',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_category_5_play_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2288,9 +2325,13 @@ function sphinxAfterScoring(ctx: {
                     value: choice,
                     displayMode: 'card' as const,
                 })),
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                createSkipOption(),
             ],
-            { sourceId: 'titan_sphinx_after_scoring', targetType: 'generic' },
+            {
+                sourceId: 'titan_sphinx_after_scoring',
+                targetType: 'generic',
+                titleKey: 'ui.titan_sphinx_after_scoring_title',
+            },
         );
         nextMatchState = queueInteraction(nextMatchState, interaction);
     }
@@ -2322,7 +2363,11 @@ function sphinxTalent(ctx: AbilityContext): AbilityResult {
             _source: 'hand' as const,
             displayMode: 'card' as const,
         })),
-        { sourceId: 'titan_sphinx_talent', targetType: 'hand' },
+        {
+            sourceId: 'titan_sphinx_talent',
+            targetType: 'hand',
+            titleKey: 'ui.titan_sphinx_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2397,7 +2442,11 @@ function superSpiesMoonZeroThreeTalent(ctx: AbilityContext): AbilityResult {
                 effectIntent: 'inspect',
             },
         ),
-        { sourceId: 'titan_super_spies_moon_zero_three_choose_player', targetType: 'player' },
+        {
+            sourceId: 'titan_super_spies_moon_zero_three_choose_player',
+            targetType: 'player',
+            titleKey: 'ui.titan_moon_zero_three_choose_player_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2426,9 +2475,14 @@ function penguinsEmperorPenguinOnTurnStart(ctx: TriggerContext) {
         '企鹅帝皇：选择要进场的基地',
         [
             ...baseOptions,
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_penguins_emperor_penguin_play', targetType: 'base', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_penguins_emperor_penguin_play',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_emperor_penguin_play_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2542,9 +2596,14 @@ function changerbotsMergaconOnTurnStart(ctx: TriggerContext) {
         '合体机器人：选择要进场的基地',
         [
             ...baseOptions,
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_changerbots_mergacon_play', targetType: 'base', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_changerbots_mergacon_play',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_mergacon_play_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2645,17 +2704,23 @@ function cthulhuTitanTalent(ctx: AbilityContext): AbilityResult {
             {
                 id: 'draw',
                 label: '抽一张疯狂卡',
+                labelKey: 'ui.titan_cthulhu_talent_draw_madness_option',
                 value: { choice: 'draw' },
                 displayMode: 'button' as const,
             },
             {
                 id: 'give',
                 label: '给另一位玩家一张疯狂卡',
+                labelKey: 'ui.titan_cthulhu_talent_give_madness_option',
                 value: { choice: 'give' },
                 displayMode: 'button' as const,
             },
         ],
-        { sourceId: 'titan_cthulhu_cthulhu_titan_talent_choice', targetType: 'button' },
+        {
+            sourceId: 'titan_cthulhu_cthulhu_titan_talent_choice',
+            targetType: 'button',
+            titleKey: 'ui.titan_cthulhu_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2807,7 +2872,11 @@ function werewolvesGreatWolfSpiritTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '巨狼之灵：选择一个你的随从获得 +1 战力直到回合结束',
         buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId, effectType: 'buff' }),
-        { sourceId: 'titan_werewolves_great_wolf_spirit_talent', targetType: 'minion' },
+        {
+            sourceId: 'titan_werewolves_great_wolf_spirit_talent',
+            targetType: 'minion',
+            titleKey: 'ui.titan_great_wolf_spirit_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2855,9 +2924,14 @@ function werewolvesGreatWolfSpiritOnTurnStart(ctx: TriggerContext): TriggerResul
         '巨狼之灵：你可以将此泰坦移动到一个你战力高于任何其他玩家的基地',
         [
             ...buildBaseTargetOptions(baseOptions, ctx.state),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ],
-        { sourceId: 'titan_werewolves_great_wolf_spirit_move', targetType: 'base', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_werewolves_great_wolf_spirit_move',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_great_wolf_spirit_move_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3026,7 +3100,13 @@ function trickstersBigFunnyGiantPodOnTurnEnd(ctx: TriggerContext): TriggerResult
             titan.controllerId,
             'ui.titan_tricksters_big_funny_giant_pod_counter_title',
             [
-                { id: 'add', label: '放置 +1 指示物', value: { add: true }, displayMode: 'button' as const },
+                {
+                    id: 'add',
+                    label: '放置 +1 指示物',
+                    labelKey: 'ui.titan_big_funny_giant_pod_add_counter_option',
+                    value: { add: true },
+                    displayMode: 'button' as const,
+                },
                 { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
             ],
             {
@@ -3080,7 +3160,11 @@ function trickstersBigFunnyGiantOnMinionPlayed(ctx: AbilityContext): AbilityResu
             displayMode: 'card' as const,
             _source: 'hand' as const,
         })),
-        { sourceId: 'titan_tricksters_big_funny_giant_discard_to_play', targetType: 'hand' },
+        {
+            sourceId: 'titan_tricksters_big_funny_giant_discard_to_play',
+            targetType: 'hand',
+            titleKey: 'ui.titan_big_funny_giant_discard_title',
+        },
     );
 
     return {
@@ -3111,7 +3195,11 @@ function trickstersBigFunnyGiantTalent(ctx: AbilityContext): AbilityResult {
             sourceDefId: titan.defId,
             effectType: 'destroy',
         }),
-        { sourceId: 'titan_tricksters_big_funny_giant_choose_minion', targetType: 'minion' },
+        {
+            sourceId: 'titan_tricksters_big_funny_giant_choose_minion',
+            targetType: 'minion',
+            titleKey: 'ui.titan_big_funny_giant_choose_minion_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3318,7 +3406,11 @@ function ittyCrittersRainborocTalent(ctx: AbilityContext): AbilityResult {
             displayMode: 'card' as const,
             _source: 'discard' as const,
         })),
-        { sourceId: 'titan_itty_critters_rainboroc_choose_discard', targetType: 'discard' },
+        {
+            sourceId: 'titan_itty_critters_rainboroc_choose_discard',
+            targetType: 'discard',
+            titleKey: 'ui.titan_rainboroc_choose_discard_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3349,10 +3441,20 @@ function piratesTheKrakenAfterScoring(ctx: {
             titan.controllerId,
             '海怪克拉肯：是否将其打出到替换的基地？',
             [
-                { id: 'play', label: '打出海怪克拉肯', value: { play: true }, displayMode: 'button' as const },
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                {
+                    id: 'play',
+                    label: '打出海怪克拉肯',
+                    labelKey: 'ui.titan_kraken_play_replacement_option',
+                    value: { play: true },
+                    displayMode: 'button' as const,
+                },
+                createSkipOption(),
             ],
-            { sourceId: 'titan_pirates_the_kraken_play_replacement', targetType: 'button' },
+            {
+                sourceId: 'titan_pirates_the_kraken_play_replacement',
+                targetType: 'button',
+                titleKey: 'ui.titan_kraken_play_replacement_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: titan.uid,
@@ -3477,7 +3579,11 @@ function giantAntsDeathOnSixLegsSpecial(ctx: AbilityContext): AbilityResult {
             _source: 'hand' as const,
             displayMode: 'card' as const,
         })),
-        { sourceId: 'titan_giant_ants_death_on_six_legs_special', targetType: 'hand' },
+        {
+            sourceId: 'titan_giant_ants_death_on_six_legs_special',
+            targetType: 'hand',
+            titleKey: 'ui.titan_death_on_six_legs_special_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3540,6 +3646,7 @@ function bearCavalryMajorUrsaTalent(ctx: AbilityContext): AbilityResult {
             sourceId: 'titan_bear_cavalry_major_ursa_choose_destination',
             targetType: 'base',
             autoResolveIfSingle: false,
+            titleKey: 'ui.titan_major_ursa_choose_destination_title',
         },
     );
     (moveInteraction.data as { continuationContext?: unknown }).continuationContext = {
@@ -3588,12 +3695,13 @@ function bearCavalryMajorUrsaOnTitanMoved(ctx: TriggerContext): TriggerResult | 
                 sourceDefId: titan.defId,
                 effectType: 'move',
             }),
-            { id: 'skip', label: '跳过', value: 'skip' as const, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: 'skip' as const, displayMode: 'button' as const },
         ],
         {
             sourceId: 'titan_bear_cavalry_major_ursa_choose_minion',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.titan_major_ursa_choose_enemy_minion_title',
         },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
@@ -3671,7 +3779,11 @@ function vampireAncientLordTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '鲜血领主：选择本基地一个已有 +1 力量标记的己方随从',
         buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId, effectType: 'affect' }),
-        { sourceId: 'titan_vampires_ancient_lord_talent', targetType: 'minion' },
+        {
+            sourceId: 'titan_vampires_ancient_lord_talent',
+            targetType: 'minion',
+            titleKey: 'ui.titan_ancient_lord_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4084,6 +4196,7 @@ export function queueFortTitanosaurusOngoingChoice(
     options.push({
         id: 'titan-only',
         label: '只给此泰坦放置',
+        labelKey: 'ui.titan_fort_titanosaurus_titan_only_option',
         value: { mode: 'titan' as const },
         displayMode: 'button' as const,
     });
@@ -4093,7 +4206,11 @@ export function queueFortTitanosaurusOngoingChoice(
         playerId,
         'Fort Titanosaurus：选择要放置 +1 战力标记的位置',
         options,
-        { sourceId: 'titan_dinosaurs_fort_titanosaurus_ongoing', targetType: 'generic' },
+        {
+            sourceId: 'titan_dinosaurs_fort_titanosaurus_ongoing',
+            targetType: 'generic',
+            titleKey: 'ui.titan_fort_titanosaurus_ongoing_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4206,7 +4323,11 @@ function invisibleNinjaOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUp
             { id: 'destroy', label: '消灭它并获得额外随从机会', labelKey: 'ui.destroy_titan_and_gain_extra_minion_play', value: { destroyTitan: true }, displayMode: 'button' as const },
             { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_ninjas_invisible_ninja_start_turn', targetType: 'generic' },
+        {
+            sourceId: 'titan_ninjas_invisible_ninja_start_turn',
+            targetType: 'generic',
+            titleKey: 'ui.titan_invisible_ninja_start_turn_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4234,7 +4355,11 @@ function invisibleNinjaSpecial(ctx: AbilityContext): AbilityResult {
             _source: 'hand' as const,
             displayMode: 'card' as const,
         })),
-        { sourceId: 'titan_ninjas_invisible_ninja_special', targetType: 'hand' },
+        {
+            sourceId: 'titan_ninjas_invisible_ninja_special',
+            targetType: 'hand',
+            titleKey: 'ui.titan_invisible_ninja_special_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4296,7 +4421,11 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
             value: { cardUid: card.uid, defId: card.defId },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'titan_ninjas_invisible_ninja_ongoing', targetType: 'generic' },
+        {
+            sourceId: 'titan_ninjas_invisible_ninja_ongoing',
+            targetType: 'generic',
+            titleKey: 'ui.titan_invisible_ninja_ongoing_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4379,6 +4508,7 @@ function queueKillerKudzuRecycleInteraction(
             multi: { min: 0, max: Math.min(2, options.length) },
             autoRefresh: 'discard',
             responseValidationMode: 'live',
+            titleKey: 'ui.titan_killer_kudzu_recycle_title',
         },
     );
     return queueInteraction(matchState, interaction);
@@ -4448,7 +4578,13 @@ function killerKudzuTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'Killer Kudzu：选择要从弃牌堆打出的随从',
         candidates,
-        { sourceId: 'titan_killer_plants_killer_kudzu_talent', targetType: 'generic', autoRefresh: 'discard', responseValidationMode: 'live' },
+        {
+            sourceId: 'titan_killer_plants_killer_kudzu_talent',
+            targetType: 'generic',
+            autoRefresh: 'discard',
+            responseValidationMode: 'live',
+            titleKey: 'ui.titan_killer_kudzu_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -4544,8 +4680,7 @@ function buildTheBrideStartBranchOptions(
     }
     if (usedKinds.length === 0) {
         options.push({
-            ...createSkipOption('跳过（本回合不让 The Bride 进场）'),
-            labelKey: 'ui.titan_the_bride_skip_start',
+            ...createSkipOption('跳过（本回合不让 The Bride 进场）', 'ui.titan_the_bride_skip_start'),
         });
     }
     return options;
@@ -5873,7 +6008,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'The Bride：选择效果目标',
             options,
-            { sourceId: 'titan_frankenstein_the_bride_start_choose_target', targetType: 'generic' },
+            {
+                sourceId: 'titan_frankenstein_the_bride_start_choose_target',
+                targetType: 'generic',
+                titleKey: 'ui.titan_the_bride_start_target_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown; optionsGenerator?: unknown }).continuationContext = {
             ...continuation,
@@ -6462,7 +6601,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             '硕大圆石：选择要消灭的随从',
             buildMinionTargetOptions(destroyTargets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }),
-            { sourceId: 'titan_explorers_very_large_boulder_destroy', targetType: 'minion' },
+            {
+                sourceId: 'titan_explorers_very_large_boulder_destroy',
+                targetType: 'minion',
+                titleKey: 'ui.titan_very_large_boulder_destroy_title',
+            },
         );
         (interaction.data as {
             continuationContext?: {
@@ -7511,7 +7654,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             '大熊座：选择要将该随从移动到的基地',
             buildBaseTargetOptions(baseOptions, state.core),
-            { sourceId: 'titan_bear_cavalry_major_ursa_choose_base', targetType: 'base' },
+            {
+                sourceId: 'titan_bear_cavalry_major_ursa_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.titan_major_ursa_choose_base_for_minion_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: continuation.titanUid,
@@ -7600,7 +7747,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             '奶油泡芙美人：选择要从弃牌堆额外打出的标准战术',
             actionOptions,
-            { sourceId: 'titan_ghosts_creampuff_man_play', targetType: 'generic' },
+            {
+                sourceId: 'titan_ghosts_creampuff_man_play',
+                targetType: 'generic',
+                titleKey: 'ui.titan_creampuff_man_play_title',
+            },
         );
         (interaction.data as { optionsGenerator?: unknown; continuationContext?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) =>
             buildCreampuffActionOptions(nextState, playerId);
@@ -7650,6 +7801,7 @@ export function registerTitanInteractionHandlers(): void {
                     sourceId: 'titan_ghosts_creampuff_man_action_target',
                     targetType: targetMode,
                     responseValidationMode: 'live',
+                    titleKey: 'ui.titan_creampuff_man_action_target_title',
                 },
             );
             (interaction.data as { optionsGenerator?: unknown; continuationContext?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) => {
@@ -8132,7 +8284,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             '滑稽巨人：选择要移动到的基地',
             buildBaseTargetOptions(baseOptions, state.core),
-            { sourceId: 'titan_tricksters_big_funny_giant_choose_base', targetType: 'base' },
+            {
+                sourceId: 'titan_tricksters_big_funny_giant_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.titan_big_funny_giant_choose_base_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: liveContext.titanUid ?? continuation.titanUid,

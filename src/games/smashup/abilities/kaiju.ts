@@ -200,7 +200,7 @@ function kaijuPickUpABus(ctx: AbilityContext): AbilityResult {
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.cardUid },
         })),
-        { sourceId: 'kaiju_pick_up_a_bus', targetType: 'generic' },
+        { sourceId: 'kaiju_pick_up_a_bus', targetType: 'generic', titleKey: 'ui.kaiju_pick_up_a_bus_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -341,6 +341,7 @@ function kaijuJohnny(ctx: AbilityContext): AbilityResult {
             sourceId: 'kaiju_johnny',
             targetType: 'ongoing',
             autoResolveIfSingle: false,
+            titleKey: 'ui.kaiju_johnny_title',
         },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
@@ -387,7 +388,11 @@ function theySayHesGotToGo(ctx: AbilityContext): AbilityResult {
             label: entry.label,
             value: { titanUid: entry.titan.uid, defId: entry.titan.defId, fromBaseIndex: entry.baseIndex },
         })),
-        { sourceId: 'kaiju_they_say_hes_got_to_go_choose_titan', targetType: 'generic' },
+        {
+            sourceId: 'kaiju_they_say_hes_got_to_go_choose_titan',
+            targetType: 'generic',
+            titleKey: 'ui.kaiju_they_say_hes_got_to_go_choose_titan_title',
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -424,7 +429,7 @@ function queueTitanDestinationPrompt(
         ctx.playerId,
         '他们说它该走了：选择目标基地',
         buildBaseTargetOptions(destinations, ctx.state),
-        { sourceId, targetType: 'base' },
+        { sourceId, targetType: 'base', titleKey: 'ui.kaiju_choose_destination_base_title' },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -450,7 +455,7 @@ function thereGoesTokyo(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '东京毁灭：选择 Gorgodzolla 要移动到的基地',
         buildBaseTargetOptions(destinations, ctx.state),
-        { sourceId, targetType: 'base' },
+        { sourceId, targetType: 'base', titleKey: 'ui.kaiju_there_goes_tokyo_choose_base_title' },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,

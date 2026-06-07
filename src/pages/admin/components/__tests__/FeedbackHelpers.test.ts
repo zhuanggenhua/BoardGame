@@ -35,6 +35,32 @@ const feedbackItem = {
         gameId: 'smashup',
         matchId: 'match-1',
         playerId: '0',
+        activeElement: {
+            tagName: 'button',
+            testId: 'confirm-play',
+            text: '确认出牌',
+        },
+        lastUserAction: {
+            type: 'click',
+            at: '2026-06-07T08:00:00.000Z',
+        },
+        lastRouteChange: {
+            from: '/play/smashup/match/match-1?step=draw',
+            to: '/play/smashup/match/match-1?step=confirm',
+            trigger: 'pushState' as const,
+            at: '2026-06-07T08:00:01.000Z',
+        },
+        pageFlags: {
+            isGamePage: true,
+            hasModalOpen: true,
+            gameId: 'smashup',
+        },
+    },
+    errorContext: {
+        name: 'TypeError',
+        message: 'Cannot read properties of undefined',
+        jsStack: 'TypeError: Cannot read properties of undefined\n    at CardPanel (CardPanel.tsx:12:3)',
+        componentStack: '\n    at CardPanel\n    at MatchRoomWithAudio',
     },
 };
 
@@ -49,5 +75,9 @@ describe('buildFeedbackAiDiagnosticPacket', () => {
         expect(packet).toContain('0=steampunks_pod');
         expect(packet).toContain('1=ghosts');
         expect(packet).toContain('已占用 steampunks_pod, ghosts, aliens, robots');
+        expect(packet).toContain('- activeElement: button[testid=confirm-play] (text=确认出牌)');
+        expect(packet).toContain('- lastUserAction: click, at=2026-06-07T08:00:00.000Z');
+        expect(packet).toContain('### JS 堆栈');
+        expect(packet).toContain('### React 组件栈');
     });
 });

@@ -22,14 +22,53 @@ describe('clientAutoReport', () => {
     afterEach(() => {
         vi.unstubAllEnvs();
         vi.unstubAllGlobals();
-        delete (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
-        delete (window as Window & { __BG_LAST_ERROR_CONTEXT__?: unknown }).__BG_LAST_ERROR_CONTEXT__;
+        const host = window as Window & {
+            __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean;
+            __BG_LAST_ERROR_CONTEXT__?: unknown;
+            __BG_LAST_USER_ACTION__?: unknown;
+            __BG_LAST_ROUTE_CHANGE__?: unknown;
+            __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
+            __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
+            __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
+        };
+        delete host.__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
+        delete host.__BG_LAST_ERROR_CONTEXT__;
+        delete host.__BG_LAST_USER_ACTION__;
+        delete host.__BG_LAST_ROUTE_CHANGE__;
+        delete host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__;
+        if (host.__BG_HISTORY_PUSH_STATE_ORIGINAL__) {
+            window.history.pushState = host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
+            delete host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
+        }
+        if (host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__) {
+            window.history.replaceState = host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__;
+            delete host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__;
+        }
+        document.documentElement.removeAttribute('data-game-page');
+        document.documentElement.removeAttribute('data-game-id');
+        document.documentElement.removeAttribute('data-mobile-layout-preset');
+        document.documentElement.removeAttribute('data-mobile-profile');
+        document.body.innerHTML = '';
     });
 
     it('会自动上报并写入最近错误上下文', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { installClientDiagnosticCapture } = await import('../feedback/clientFeedbackContext');
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
         const { getLastErrorContext } = await import('../feedback/errorContext');
+        installClientDiagnosticCapture();
+
+        document.documentElement.setAttribute('data-game-page', 'true');
+        document.documentElement.setAttribute('data-game-id', 'smashup');
+        document.documentElement.setAttribute('data-mobile-layout-preset', 'board-shell');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = '确认出牌';
+        button.setAttribute('data-testid', 'confirm-play');
+        document.body.appendChild(button);
+        button.focus();
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        window.history.pushState({}, '', '/play/smashup/match/match-1?seat=0&step=confirm');
 
         await reportClientAutoFeedbackOnce('smashup-runtime-state-normalized:bases[0].ongoingActions:null', {
             content: '[auto][smashup-runtime-guard] test anomaly',
@@ -61,6 +100,22 @@ describe('clientAutoReport', () => {
                 gameId: 'smashup',
                 matchId: 'match-1',
                 playerId: '0',
+                activeElement: {
+                    tagName: 'button',
+                    testId: 'confirm-play',
+                },
+                lastUserAction: {
+                    type: 'click',
+                },
+                lastRouteChange: {
+                    to: '/play/smashup/match/match-1?seat=0&step=confirm',
+                    trigger: 'pushState',
+                },
+                pageFlags: {
+                    isGamePage: true,
+                    gameId: 'smashup',
+                    mobileLayoutPreset: 'board-shell',
+                },
             },
             errorContext: {
                 name: 'SmashUpRuntimeStateNormalized',
@@ -88,6 +143,32 @@ describe('clientAutoReport', () => {
         expect(body.source).toBe('react-error-boundary');
         expect(body.contactInfo).toBe('auto:react-error-boundary');
         expect(body.clientContext?.gameId).toBe('smashup');
+    });
+
+    it('React 类错误会把 JS 堆栈和组件栈分开附带', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('react-boundary-stack-split', {
+            content: '[auto][react.error_boundary] render failed',
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Cannot read properties of undefined',
+            errorSource: 'react.error_boundary',
+            jsStack: 'TypeError: Cannot read properties of undefined\n    at CardPanel (CardPanel.tsx:12:3)',
+            componentStack: '\n    at CardPanel\n    at MatchRoomWithAudio',
+        });
+
+        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        expect(body.errorContext).toMatchObject({
+            jsStack: expect.stringContaining('CardPanel'),
+            componentStack: expect.stringContaining('MatchRoomWithAudio'),
+        });
+        expect(body.errorContext.stack).toContain('CardPanel');
+        expect(body.errorContext.stack).toContain('MatchRoomWithAudio');
     });
 
     it('同一签名在去重窗口内只会上报一次', async () => {

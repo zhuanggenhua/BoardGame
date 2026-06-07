@@ -299,7 +299,11 @@ const hadesPromptProgram = createPromptProgram<HadesContext, SmashUpCore, SmashU
         context.playerId,
         '哈迪斯的恩惠：选择一张弃牌堆行动卡返回手牌',
         context.cards.map((card, index) => ({ id: `card-${index}`, label: card.label, value: card, displayMode: 'card' as const })),
-        { sourceId: 'mythic_greeks_favor_of_hades', targetType: 'generic' },
+        {
+            sourceId: 'mythic_greeks_favor_of_hades',
+            targetType: 'generic',
+            titleKey: 'ui.mythic_greeks_favor_of_hades_title',
+        },
     ),
     onResolve: ({ playerId, value, timestamp }) => {
         const choice = value as { cardUid?: string };
@@ -375,7 +379,11 @@ const dionysusMinionPromptProgram = createPromptProgram<DionysusMinionContext, S
             sourceKind: 'action',
             effectType: 'buff',
         }),
-        { sourceId: 'mythic_greeks_favor_of_dionysus_minion', targetType: 'minion' },
+        {
+            sourceId: 'mythic_greeks_favor_of_dionysus_minion',
+            targetType: 'minion',
+            titleKey: 'ui.mythic_greeks_favor_of_dionysus_minion_title',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as MinionChoice;
@@ -406,10 +414,21 @@ const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUp
         context.playerId,
         '狄俄尼索斯的恩惠：是否将此卡放到牌库顶？',
         [
-            createSkipOption('放入弃牌堆'),
-            { id: 'deck-top', label: '放到牌库顶', value: { choice: 'deck-top' }, displayMode: 'button' as const },
+            createSkipOption('放入弃牌堆', 'ui.mythic_greeks_favor_of_dionysus_top_discard_option'),
+            {
+                id: 'deck-top',
+                label: '放到牌库顶',
+                labelKey: 'ui.mythic_greeks_favor_of_dionysus_top_deck_top_option',
+                value: { choice: 'deck-top' },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'mythic_greeks_favor_of_dionysus_top', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'mythic_greeks_favor_of_dionysus_top',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.mythic_greeks_favor_of_dionysus_top_title',
+        },
     ),
     onResolve: ({ context, value, timestamp }) => {
         const choice = value as { choice?: string; skip?: boolean };
@@ -504,10 +523,15 @@ const athenaPickPromptProgram = createPromptProgram<AthenaPickContext, SmashUpCo
             context.playerId,
             '雅典娜的恩惠：你可以选择其中一张行动牌加入手牌',
             [
-                createSkipOption('不加入手牌'),
+                createSkipOption('不加入手牌', 'ui.mythic_greeks_favor_of_athena_pick_skip_option'),
                 ...buildAthenaCardOptions(actionCards),
             ],
-            { sourceId: 'mythic_greeks_favor_of_athena_pick', targetType: 'generic', autoResolveIfSingle: false },
+            {
+                sourceId: 'mythic_greeks_favor_of_athena_pick',
+                targetType: 'generic',
+                autoResolveIfSingle: false,
+                titleKey: 'ui.mythic_greeks_favor_of_athena_pick_title',
+            },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -617,6 +641,7 @@ const poseidonPromptProgram = createPromptProgram<PoseidonContext, SmashUpCore, 
             targetType: 'generic',
             multi: { min: 0, max: Math.min(3, context.cards.length) },
             autoResolveIfSingle: false,
+            titleKey: 'ui.mythic_greeks_favor_of_poseidon_title',
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {

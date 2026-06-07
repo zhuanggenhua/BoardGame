@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CircleCheckBig, Star, WandSparkles, Globe, Clock } from 'lucide-react';
 import {
   LoadingArcaneAether,
@@ -24,6 +25,7 @@ const LoadingVariantCard: React.FC<{
   component: React.FC<{ className?: string }>;
   iconColor?: string;
 }> = ({ title, icon, desc, component: Comp, iconColor }) => {
+  const { t } = useTranslation('lobby');
   const { stats, startMeasure } = usePerfCounter();
   const [active, setActive] = useState(false);
 
@@ -42,7 +44,7 @@ const LoadingVariantCard: React.FC<{
       renderH="180px"
       buttons={
         <TriggerButton
-          label={active ? '停止' : '启动'}
+          label={active ? t('devtools.effectPreview.loading.shared.stop') : t('devtools.effectPreview.loading.shared.start')}
           onClick={() => setActive(prev => !prev)}
           color={active ? 'bg-slate-700' : 'bg-emerald-700'}
         />
@@ -63,20 +65,35 @@ const LoadingVariantCard: React.FC<{
 // 各加载动画实例
 // ============================================================================
 
-export const ArcaneQualifiedCard: React.FC<PreviewCardProps> = (props) => <LoadingVariantCard title="Qualified Arcane" icon={CircleCheckBig} desc="【过审】复合叠加版本（粒子流）" component={LoadingArcaneAether} {...props} />;
-export const ArcaneGrandmasterCard: React.FC<PreviewCardProps> = (props) => <LoadingVariantCard title="Arcane Grandmaster" icon={Star} desc="【候补】在过审版基础上大幅加强" component={LoadingArcaneGrandmaster} {...props} />;
-export const MagicCardsCard: React.FC<PreviewCardProps> = (props) => <LoadingVariantCard title="Magic Cards" icon={WandSparkles} desc="【候补】魔术师天女散花式飞牌" component={LoadingMagicTrickCards} {...props} />;
-export const OrreryCard: React.FC<PreviewCardProps> = (props) => <LoadingVariantCard title="Solar System Pro" icon={Globe} desc="写实：太阳系模拟（八大行星）" component={LoadingCelestialOrrery} {...props} />;
-export const GrandClockCard: React.FC<PreviewCardProps> = (props) => <LoadingVariantCard title="Grandmaster Clock" icon={Clock} desc="极致机械感：精密咬合齿轮组" component={LoadingSteampunkClock} {...props} />;
+export const ArcaneQualifiedCard: React.FC<PreviewCardProps> = (props) => {
+  const { t } = useTranslation('lobby');
+  return <LoadingVariantCard title={t('devtools.effectPreview.loading.arcane_qualified.title')} icon={CircleCheckBig} desc={t('devtools.effectPreview.loading.arcane_qualified.description')} component={LoadingArcaneAether} {...props} />;
+};
+export const ArcaneGrandmasterCard: React.FC<PreviewCardProps> = (props) => {
+  const { t } = useTranslation('lobby');
+  return <LoadingVariantCard title={t('devtools.effectPreview.loading.arcane_grandmaster.title')} icon={Star} desc={t('devtools.effectPreview.loading.arcane_grandmaster.description')} component={LoadingArcaneGrandmaster} {...props} />;
+};
+export const MagicCardsCard: React.FC<PreviewCardProps> = (props) => {
+  const { t } = useTranslation('lobby');
+  return <LoadingVariantCard title={t('devtools.effectPreview.loading.magic_cards.title')} icon={WandSparkles} desc={t('devtools.effectPreview.loading.magic_cards.description')} component={LoadingMagicTrickCards} {...props} />;
+};
+export const OrreryCard: React.FC<PreviewCardProps> = (props) => {
+  const { t } = useTranslation('lobby');
+  return <LoadingVariantCard title={t('devtools.effectPreview.loading.orrery.title')} icon={Globe} desc={t('devtools.effectPreview.loading.orrery.description')} component={LoadingCelestialOrrery} {...props} />;
+};
+export const GrandClockCard: React.FC<PreviewCardProps> = (props) => {
+  const { t } = useTranslation('lobby');
+  return <LoadingVariantCard title={t('devtools.effectPreview.loading.grand_clock.title')} icon={Clock} desc={t('devtools.effectPreview.loading.grand_clock.description')} component={LoadingSteampunkClock} {...props} />;
+};
 
 // ============================================================================
 // 自动注册元数据
 // ============================================================================
 
 export const meta: EffectEntryMeta[] = [
-  { id: 'arcane_qualified', label: '过审法阵', icon: CircleCheckBig, component: ArcaneQualifiedCard, group: 'loading' },
-  { id: 'arcane_grandmaster', label: '究极法阵', icon: Star, component: ArcaneGrandmasterCard, group: 'loading' },
-  { id: 'magic_cards', label: '魔术飞牌', icon: WandSparkles, component: MagicCardsCard, group: 'loading' },
-  { id: 'solar_system', label: '太阳系 Pro', icon: Globe, component: OrreryCard, group: 'loading' },
-  { id: 'grand_clock', label: '机械神域', icon: Clock, component: GrandClockCard, group: 'loading' },
+  { id: 'arcane_qualified', labelKey: 'devtools.effectPreview.entries.loading.arcane_qualified.label', icon: CircleCheckBig, component: ArcaneQualifiedCard, group: 'loading', usageDescKey: 'devtools.effectPreview.entries.loading.arcane_qualified.usage' },
+  { id: 'arcane_grandmaster', labelKey: 'devtools.effectPreview.entries.loading.arcane_grandmaster.label', icon: Star, component: ArcaneGrandmasterCard, group: 'loading', usageDescKey: 'devtools.effectPreview.entries.loading.arcane_grandmaster.usage' },
+  { id: 'magic_cards', labelKey: 'devtools.effectPreview.entries.loading.magic_cards.label', icon: WandSparkles, component: MagicCardsCard, group: 'loading', usageDescKey: 'devtools.effectPreview.entries.loading.magic_cards.usage' },
+  { id: 'solar_system', labelKey: 'devtools.effectPreview.entries.loading.solar_system.label', icon: Globe, component: OrreryCard, group: 'loading', usageDescKey: 'devtools.effectPreview.entries.loading.solar_system.usage' },
+  { id: 'grand_clock', labelKey: 'devtools.effectPreview.entries.loading.grand_clock.label', icon: Clock, component: GrandClockCard, group: 'loading', usageDescKey: 'devtools.effectPreview.entries.loading.grand_clock.usage' },
 ];

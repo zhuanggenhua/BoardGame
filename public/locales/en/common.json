@@ -5,6 +5,9 @@
     "close": "Close",
     "processing": "Processing"
   },
+  "interaction": {
+    "emergencySkip": "Skip (no available action)"
+  },
   "category": {
     "all": "All Games",
     "card": "Card",
@@ -76,6 +79,54 @@
   "loading": "Loading",
   "unknownUser": "Unknown User",
   "unknownError": "An unknown error occurred",
+  "imageLightbox": {
+    "previewAlt": "Preview",
+    "closePreview": "Close preview"
+  },
+  "mobileGesture": {
+    "resetView": "Reset view",
+    "pinchToZoom": "Pinch to zoom",
+    "singleFingerDrag": "Drag with one finger"
+  },
+  "mobileOrientation": {
+    "closeHint": "Dismiss hint",
+    "banner": {
+      "rotateToLandscape": "Rotate to landscape for a better experience",
+      "rotateToPortrait": "Switch to portrait for a better experience",
+      "tabletOnly": "This game currently works best on tablet or PC",
+      "notSupported": "This game is not ready for phone screens yet; please use a PC"
+    },
+    "gateTitle": {
+      "rotateToLandscape": "Switch to landscape to continue",
+      "rotateToPortrait": "Switch to portrait to continue",
+      "tabletOnly": "Please continue on tablet or PC",
+      "notSupported": "This game is not currently supported on phones"
+    },
+    "gateDescription": {
+      "rotateToLandscape": "This game is designed around a landscape main view. Rotate the device before entering the match.",
+      "rotateToPortrait": "This game is designed around a portrait main view. Rotate the device before continuing the match.",
+      "tabletOnly": "This screen needs a larger viewing area, so tablet or PC is recommended.",
+      "notSupported": "Phone support for this game is not finished yet. Please use a PC or wait for a later update."
+    }
+  },
+  "passwordField": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "errorBoundary": {
+    "title": "This page hit an error",
+    "description": "The current page failed to render. Try refreshing first, and if it keeps happening, go back to the lobby.",
+    "reload": "Refresh page",
+    "backHome": "Back to lobby"
+  },
+  "cardSpotlightQueue": {
+    "dismiss": "Close to continue",
+    "queue": "{{count}} cards waiting · close to continue",
+    "closeSpotlight": "Close spotlight"
+  },
+  "tutorialSelectionGate": {
+    "loading": "Initializing tutorial"
+  },
   "notFound": {
     "seoTitle": "404 - Page Not Found",
     "seoDescription": "The page you are looking for does not exist.",
@@ -144,6 +195,93 @@
       "title": "Summoner Wars",
       "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",
       "players": "2 Players"
+    }
+  },
+  "qidahenBoard": {
+    "factions": {
+      "ming": "Ming",
+      "mongol": "Mongol",
+      "jin": "Later Jin"
+    },
+    "header": {
+      "match": "Match: {{game}}",
+      "room": "Room: {{roomId}}",
+      "action_order": "Action Order",
+      "reset_view": "Reset View",
+      "focus": "Focus"
+    },
+    "panels": {
+      "current_year": "Current Year",
+      "action_wheel": "Action Wheel",
+      "faction_status": "Faction Status",
+      "pending": "Pending",
+      "battle": "Battle",
+      "action_log": "Action Log"
+    },
+    "factionSummary": {
+      "hand": "Hand {{count}}/{{limit}}",
+      "troops": "Troops",
+      "grain": "Grain",
+      "land_tax": "Land Tax"
+    },
+    "region": {
+      "select_aria": "Select {{name}}"
+    },
+    "actionWheel": {
+      "current": "Current: {{action}}",
+      "center_line1": "Action",
+      "center_line2": "Wheel",
+      "items": {
+        "recruit": "Recruit",
+        "diplomacy": "Diplomacy",
+        "tax": "Tax",
+        "mobilize": "Mobilize",
+        "drill": "Drill",
+        "feint": "Feint",
+        "strategy": "Strategy",
+        "intrigue": "Intrigue"
+      }
+    },
+    "mapCostEditor": {
+      "title": "Region Movement Cost Editor",
+      "source_hint": "Source region: {{name}}. Click a region on the map to create or select an edge.",
+      "unselected": "Unselected",
+      "adjacent_title": "Adjacent Regions and Movement Costs",
+      "movement_cost_aria": "{{name}} movement cost",
+      "delete": "Delete",
+      "no_edges": "The current source region has no movement edges yet.",
+      "add_or_update": "Add / Update Edges",
+      "bidirectional": "Bidirectional by default",
+      "update_prefix": "Update ",
+      "connect_prefix": "Connect ",
+      "export_json": "Export JSON",
+      "copied": "Copied",
+      "copy": "Copy"
+    },
+    "map": {
+      "main_alt": "Seven Hatreds main map",
+      "movement_costs": "Movement costs: ",
+      "unmarked": "Unmarked",
+      "view_region_details": "View Region Details",
+      "hint": "Drag the map · Scroll / pinch to zoom · Click a region"
+    },
+    "battle": {
+      "title": "Battle of {{region}}",
+      "attacker_label": "Attacker: ",
+      "defender_separator": "Defender:",
+      "phase": "Battlefield: {{phase}}"
+    },
+    "hand": {
+      "title": "Hand",
+      "card_back_alt": "Card Back",
+      "triggered_action": "Triggered action: {{action}}",
+      "spent_action_points": "Spent action points: {{points}}"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "end_line1": "End",
+      "end_line2": "Action"
     }
   }
 }

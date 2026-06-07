@@ -302,7 +302,7 @@ export const CenterBoard = ({
                         style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                         data-testid="player-board-magnify-button"
                         data-board-magnify-ignore="true"
-                        aria-label="查看大图"
+                        aria-label={t('actions.magnify')}
                     >
                         <span className={overlayButtonVisualClassName}>
                             <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">
@@ -358,7 +358,7 @@ export const CenterBoard = ({
                                 style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                                 data-testid="tip-board-magnify-button"
                                 data-board-magnify-ignore="true"
-                                aria-label="查看大图"
+                                aria-label={t('actions.magnify')}
                             >
                                 <span className={overlayButtonVisualClassName}>
                                     <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">

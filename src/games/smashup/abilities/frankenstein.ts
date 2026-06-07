@@ -213,6 +213,7 @@ function buildAngryMobCardOptions(
         {
             id: 'stop',
             label: '完成放牌',
+            labelKey: 'ui.frankenstein_angry_mob_finish_option',
             value: { stop: true },
             displayMode: 'button' as const,
         },
@@ -241,6 +242,10 @@ function buildBlitzedRemoveOptions(
         {
             id: 'done',
             label: removedTotal > 0 ? `完成移除（已移除 ${removedTotal} 个，消灭力量≤${removedTotal} 的随从）` : '跳过（不移除）',
+            labelKey: removedTotal > 0
+                ? 'ui.frankenstein_blitzed_finish_removed_option'
+                : 'ui.frankenstein_blitzed_skip_remove_option',
+            ...(removedTotal > 0 ? { labelParams: { removedTotal } } : {}),
             displayMode: 'button' as const,
             value: { done: true },
         },
@@ -327,7 +332,12 @@ const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptC
             context.playerId,
             '选择一个你的随从放置+1力量指示物',
             buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
-            { sourceId: 'frankenstein_lab_assistant', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'frankenstein_lab_assistant',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_counter_target_title',
+            },
         );
         interaction.data.optionsGenerator = (state) =>
             buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
@@ -346,7 +356,12 @@ const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptCon
             context.playerId,
             '选择一个你的随从放置+1力量指示物',
             buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
-            { sourceId: 'frankenstein_herr_doktor', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'frankenstein_herr_doktor',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_counter_target_title',
+            },
         );
         interaction.data.optionsGenerator = (state) =>
             buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
@@ -365,7 +380,12 @@ const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, 
             context.playerId,
             '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
             buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
-            { sourceId: 'frankenstein_igor', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'frankenstein_igor',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_igor_counter_target_title',
+            },
         );
         interaction.data.optionsGenerator = (state) =>
             buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
@@ -389,6 +409,7 @@ const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMob
                 targetType: 'hand',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_angry_mob_choose_card_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -443,7 +464,12 @@ const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPrompt
             context.playerId,
             '选择一个你的随从（每放一张手牌到牌库底就放一个+1力量指示物）',
             buildCounterTargetOptions(context.matchState.core, context.playerId),
-            { sourceId: 'frankenstein_angry_mob', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'frankenstein_angry_mob',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_angry_mob_target_title',
+            },
         );
         interaction.data.optionsGenerator = (state) =>
             buildCounterTargetOptions(state.core as SmashUpCore, context.playerId);
@@ -524,7 +550,12 @@ const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPrompt
             context.playerId,
             '选择你要消灭的随从（其力量数的+1指示物将分配到其他随从）',
             buildCounterTargetOptions(context.matchState.core, context.playerId),
-            { sourceId: 'frankenstein_body_shop', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'frankenstein_body_shop',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.frankenstein_body_shop_target_title',
+            },
         );
         interaction.data.optionsGenerator = (state) =>
             buildCounterTargetOptions(state.core as SmashUpCore, context.playerId);

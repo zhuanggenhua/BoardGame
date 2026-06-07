@@ -34,7 +34,7 @@ export const ReviewItem = ({ review, isMine, onDelete }: ReviewItemProps) => {
                         </div>
                     )}
                     <span className="font-bold text-parchment-base-text text-xs tracking-tight">
-                        {review.user?.username || t('common.unknownUser', '未知用户')}
+                        {review.user?.username || t('common.unknownUser')}
                     </span>
                 </div>
 

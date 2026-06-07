@@ -246,7 +246,7 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                                 {isEditing && (
                                     <>
                                         <div className="absolute -top-3 left-0 bg-black/80 text-[8px] text-white px-1 rounded whitespace-nowrap pointer-events-none">
-                                            {slotLabel} (被动) {slot.x.toFixed(2)}% {slot.y.toFixed(2)}% ({slot.w.toFixed(2)}×{slot.h.toFixed(2)})
+                                            {slotLabel} ({t('layout.passiveTag')}) {slot.x.toFixed(2)}% {slot.y.toFixed(2)}% ({slot.w.toFixed(2)}×{slot.h.toFixed(2)})
                                         </div>
                                         <div
                                             onMouseDown={(e) => handleMouseDown(e, slot.id, 'resize')}

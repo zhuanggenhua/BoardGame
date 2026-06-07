@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '../../../lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export interface Column<T> {
     header: ReactNode;
@@ -32,6 +33,8 @@ export default function DataTable<T extends { id: string | number }>({
     pagination,
     className
 }: DataTableProps<T>) {
+    const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.shared.${key}`, options);
     return (
         <div className={cn("bg-white rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 flex flex-col overflow-hidden", className)}>
             <div className="flex-1 overflow-auto relative w-full h-full min-h-0">
@@ -79,7 +82,7 @@ export default function DataTable<T extends { id: string | number }>({
                                         <div className="w-12 h-12 bg-zinc-50 rounded-full flex items-center justify-center mb-2">
                                             <span className="text-2xl font-sans text-zinc-300">∅</span>
                                         </div>
-                                        <p>暂无数据</p>
+                                        <p>{adminT('no_data')}</p>
                                     </div>
                                 </td>
                             </tr>
@@ -116,7 +119,7 @@ export default function DataTable<T extends { id: string | number }>({
             {pagination && (
                 <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30 flex-none z-20 relative">
                     <div className="text-xs font-medium text-zinc-400">
-                        Total {pagination.totalItems || 0} items
+                        {adminT('total_items', { count: pagination.totalItems || 0 })}
                     </div>
                     <div className="flex items-center gap-2">
                         <button

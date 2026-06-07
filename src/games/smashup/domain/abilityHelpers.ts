@@ -70,6 +70,7 @@ import { drawCards } from './utils';
  * 用于"你可以"类可选效果，提供统一的跳过选项格式。
  * 
  * @param label 按钮文本，默认"跳过"
+ * @param labelKey 可选的 i18n key；传入后状态里会优先保存 key，避免把原始文案带到 UI / 日志
  * @returns 标准格式的 skip 选项（{ skip: true } + displayMode: 'button'）
  * 
  * @example
@@ -83,13 +84,20 @@ import { drawCards } from './utils';
  *     createSkipOption('跳过（不消灭随从）'),  // 自定义文本
  *     ...minionOptions
  * ];
+ *
+ * const options3 = [
+ *     createSkipOption('跳过（不消灭随从）', 'ui.skip_destroy_minion'),
+ *     ...minionOptions
+ * ];
  * ```
  */
-export function createSkipOption(label: string = '跳过'): EnginePromptOption<{ skip: true }> {
+export function createSkipOption(label: string = '跳过', labelKey?: string): EnginePromptOption<{ skip: true }> {
     return {
         id: 'skip',
         label,
-        ...(label === '跳过' ? { labelKey: 'ui.skip' } : {}),
+        ...((typeof labelKey === 'string' && labelKey.trim())
+            ? { labelKey }
+            : (label === '跳过' ? { labelKey: 'ui.skip' } : {})),
         value: { skip: true },
         displayMode: 'button',
         _ai: OPTIONAL_SKIP_AI_HINT,

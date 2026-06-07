@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useTranslation } from 'react-i18next';
 import SplendorSpriteMappingTool from './SplendorSpriteMappingTool';
 
 // 辅助函数：合并类名
@@ -85,6 +86,8 @@ interface Transform {
 }
 
 export const AssetSlicer = () => {
+    const { t } = useTranslation('lobby');
+    const assetT = (key: string, options?: Record<string, unknown>) => t(`devtools.assetSlicer.${key}`, options);
     const [searchParams, setSearchParams] = useSearchParams();
     const [toolMode, setToolMode] = useState<'slicer' | 'splendorMapping'>(() =>
         searchParams.get('mode') === 'splendor-mapping' ? 'splendorMapping' : 'slicer',
@@ -128,7 +131,7 @@ export const AssetSlicer = () => {
 
     // 基础状态
     const [sourceImage, setSourceImage] = useState<string | null>(null);
-    const [imageName, setImageName] = useState<string>('图片');
+    const [imageName, setImageName] = useState<string>(assetT('default_image_name'));
     const [cropSize, setCropSize] = useState<CropSize>({ width: 64, height: 64 }); // 默认尺寸
     const [isSizeLocked, setIsSizeLocked] = useState(false); // 默认不锁定
     const [isQuickSlice, setIsQuickSlice] = useState(false); // 快裁模式
@@ -756,7 +759,7 @@ export const AssetSlicer = () => {
             {isCompactViewport && isSidebarOpen && (
                 <button
                     type="button"
-                    aria-label="关闭素材切片机侧栏"
+                    aria-label={assetT('close_sidebar_aria')}
                     data-testid="asset-slicer-sidebar-backdrop"
                     className="absolute inset-0 z-10 bg-black/45 backdrop-blur-[1px]"
                     onClick={() => setIsSidebarOpen(false)}
@@ -779,20 +782,20 @@ export const AssetSlicer = () => {
                 <div className="p-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur shrink-0">
                     <div className="flex items-center justify-between mb-1">
                         <Link to="/" className="text-[10px] text-gray-500 hover:text-teal-400 font-bold flex items-center gap-1 transition-colors uppercase tracking-wider">
-                            ← 返回主页
+                            {assetT('back_home')}
                         </Link>
                         <button
                             type="button"
                             onClick={() => setToolMode('splendorMapping')}
                             className="rounded-full border border-gray-700 px-3 py-1 text-[11px] text-gray-300 transition hover:border-amber-400 hover:text-amber-200"
                         >
-                            Splendor 映射
+                            {assetT('splendor_mapping')}
                         </button>
                     </div>
                     <h1 className="text-2xl font-black bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent truncate cursor-pointer" onClick={resetView}>
-                        素材切片机
+                        {assetT('title')}
                     </h1>
-                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Creative Workshop</p>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">{assetT('subtitle')}</p>
                 </div>
 
                 <div
@@ -811,7 +814,7 @@ export const AssetSlicer = () => {
                         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                         <div className="flex flex-col items-center gap-3 text-gray-500 group-hover:text-gray-300 transition-colors">
                             <UploadIcon />
-                            <span className="text-xs font-bold leading-tight">更换图片 (Ctrl+V)<br />或拖入此处</span>
+                            <span className="text-xs font-bold leading-tight">{assetT('upload_cta_line_1')}<br />{assetT('upload_cta_line_2')}</span>
                         </div>
                     </div>
 
@@ -823,7 +826,7 @@ export const AssetSlicer = () => {
                                     onClick={() => setShape('square')}
                                     className={cn("flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all", shape === 'square' ? "bg-teal-500 text-white shadow-lg" : "text-gray-400 hover:text-white")}
                                 >
-                                    <SquareIcon /> 矩形
+                                    <SquareIcon /> {assetT('shape.square')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -834,7 +837,7 @@ export const AssetSlicer = () => {
                                     }}
                                     className={cn("flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all", shape === 'circle' ? "bg-teal-500 text-white shadow-lg" : "text-gray-400 hover:text-white")}
                                 >
-                                    <CircleIcon /> 圆形
+                                    <CircleIcon /> {assetT('shape.circle')}
                                 </button>
                             </div>
 
@@ -842,10 +845,10 @@ export const AssetSlicer = () => {
 
                             <div>
                                 <div className="flex justify-between items-end mb-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">裁切尺寸 (宽 x 高)</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">{assetT('crop_size_title')}</label>
                                 </div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-gray-500 text-xs font-medium">裁剪尺寸</span>
+                                    <span className="text-gray-500 text-xs font-medium">{assetT('crop_size_label')}</span>
                                     <button
                                         onClick={() => setIsQuickSlice(!isQuickSlice)}
                                         className={cn(
@@ -854,10 +857,10 @@ export const AssetSlicer = () => {
                                                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
                                                 : "bg-gray-800 border-gray-700 text-gray-500 hover:text-gray-400"
                                         )}
-                                        title="快裁模式：松开鼠标立即裁剪"
+                                        title={assetT('quick_slice_title')}
                                     >
                                         <LightningIcon />
-                                        <span>快裁</span>
+                                        <span>{assetT('quick_slice')}</span>
                                     </button>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -889,7 +892,7 @@ export const AssetSlicer = () => {
                                             "p-1.5 rounded-md transition-all active:scale-95",
                                             isSizeLocked ? "bg-teal-500/10 text-teal-400" : "bg-gray-800 text-gray-500 hover:text-gray-300"
                                         )}
-                                        title={isSizeLocked ? "解除锁定" : "锁定比例"}
+                                        title={isSizeLocked ? assetT('unlock_ratio') : assetT('lock_ratio')}
                                         disabled={shape === 'circle'}
                                     >
                                         {isSizeLocked ? <LockIcon /> : <UnlockIcon />}
@@ -917,29 +920,29 @@ export const AssetSlicer = () => {
                                     </div>
                                 </div>
                                 <div className="flex justify-between mt-2">
-                                    <button onClick={() => updateSize(4)} className="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700 font-mono">缩减 [</button>
-                                    <button onClick={() => updateSize(-4)} className="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700 font-mono">增大 ]</button>
+                                    <button onClick={() => updateSize(4)} className="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700 font-mono">{assetT('shrink')} [</button>
+                                    <button onClick={() => updateSize(-4)} className="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded border border-gray-700 font-mono">{assetT('enlarge')} ]</button>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between border-t border-gray-800 pt-4">
-                                <span className="text-[10px] font-black text-gray-500 uppercase">视角: {(transform.scale * 100).toFixed(0)}%</span>
-                                <button onClick={resetView} className="text-[10px] flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-gray-300 transition-colors"><ResetIcon /> 重置</button>
+                                <span className="text-[10px] font-black text-gray-500 uppercase">{assetT('viewport', { value: (transform.scale * 100).toFixed(0) })}</span>
+                                <button onClick={resetView} className="text-[10px] flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded text-gray-300 transition-colors"><ResetIcon /> {assetT('reset')}</button>
                             </div>
 
                             <div className="bg-teal-500/5 border border-teal-500/20 rounded-xl p-4 space-y-3">
                                 <ul className="text-[11px] text-teal-200/60 space-y-2 list-none">
                                     <li className="flex gap-2">
-                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">Ctrl+V</kbd>
-                                        <span>粘贴剪贴板图片</span>
+                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">{assetT('shortcut.paste')}</kbd>
+                                        <span>{assetT('hint.paste_clipboard')}</span>
                                     </li>
                                     <li className="flex gap-2">
-                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">右键拖拽</kbd>
-                                        <span>平移画布</span>
+                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">{assetT('hint.right_drag')}</kbd>
+                                        <span>{assetT('hint.pan_canvas')}</span>
                                     </li>
                                     <li className="flex gap-2">
-                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">Ctrl+滚轮</kbd>
-                                        <span>缩放裁切框</span>
+                                        <kbd className="px-1 bg-gray-800 border border-gray-700 rounded text-teal-400 text-[9px] h-fit">{assetT('hint.ctrl_wheel')}</kbd>
+                                        <span>{assetT('hint.zoom_crop')}</span>
                                     </li>
                                 </ul>
                             </div>
@@ -949,8 +952,8 @@ export const AssetSlicer = () => {
                     {extractedAssets.length > 0 && (
                         <div className="pt-6 border-t border-gray-800">
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">已提取 ({extractedAssets.length})</h3>
-                                <button onClick={exportSpriteSheet} className="text-[10px] flex items-center gap-1.5 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1.5 rounded-lg text-purple-400 font-bold transition-all border border-purple-500/20"><GridIcon /> 导出精灵图</button>
+                                <h3 className="text-xs font-black text-gray-300 uppercase tracking-widest">{assetT('extracted_count', { count: extractedAssets.length })}</h3>
+                                <button onClick={exportSpriteSheet} className="text-[10px] flex items-center gap-1.5 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1.5 rounded-lg text-purple-400 font-bold transition-all border border-purple-500/20"><GridIcon /> {assetT('export_sprite_sheet')}</button>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <AnimatePresence>
@@ -1005,8 +1008,8 @@ export const AssetSlicer = () => {
                         )}
                     >
                         <UploadIcon />
-                        <h2 className="mt-6 text-2xl font-black text-gray-300">无图片</h2>
-                        <p className="mt-3 text-sm text-center leading-relaxed text-gray-600">更换图片 (Ctrl+V) / 拖入图片</p>
+                        <h2 className="mt-6 text-2xl font-black text-gray-300">{assetT('empty.no_image')}</h2>
+                        <p className="mt-3 text-sm text-center leading-relaxed text-gray-600">{assetT('empty.upload_prompt')}</p>
                     </div>
                 ) : (
                     <div className="w-full h-full flex items-center justify-center pointer-events-none">
@@ -1014,7 +1017,7 @@ export const AssetSlicer = () => {
                             <img 
                                 ref={imageRef} 
                                 src={sourceImage} 
-                                alt="Source" 
+                                alt={assetT('image_alt.source')}
                                 className={cn(
                                     "max-w-none shadow-[0_0_100px_rgba(0,0,0,0.8)] ring-1 ring-gray-700/50 select-none", 
                                     (isAltPressed || isPanning) ? "cursor-grab" : isHoveringImage ? "cursor-none" : "cursor-default"
@@ -1048,10 +1051,10 @@ export const AssetSlicer = () => {
                         {isDrawing ? (
                             <div className="absolute -top-6 left-0 flex items-center gap-1.5">
                                 <div className={cn("text-white px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-tighter", isQuickSlice ? "bg-amber-500" : "bg-teal-500")}>
-                                    {isQuickSlice ? "释放提取" : "释放锁定"}
+                                    {isQuickSlice ? assetT('overlay.release_extract') : assetT('overlay.release_lock')}
                                 </div>
                                 <div className="text-[10px] text-white/50 font-mono">
-                                    {isQuickSlice ? "快裁模式" : "滑选模式"}
+                                    {isQuickSlice ? assetT('overlay.quick_slice_mode') : assetT('overlay.drag_select_mode')}
                                 </div>
                             </div>
                         ) : (
@@ -1070,9 +1073,9 @@ export const AssetSlicer = () => {
                             isCompactViewport ? "bottom-4 right-4 gap-2 px-3 py-1.5" : "bottom-6 right-6 gap-4 px-4 py-2"
                         )}
                     >
-                        <div className="flex items-center gap-1.5"><span className="font-mono text-teal-400 font-bold">{(transform.scale * 100).toFixed(0)}%</span><span>视角</span></div>
+                        <div className="flex items-center gap-1.5"><span className="font-mono text-teal-400 font-bold">{(transform.scale * 100).toFixed(0)}%</span><span>{assetT('status.viewport')}</span></div>
                         <div className="w-px h-3 bg-gray-700" />
-                        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", (isAltPressed || isPanning) ? "bg-blue-500 animate-pulse" : "bg-gray-700")} /><span>{isPanning ? "平移中" : "右键/Alt 拖拽"}</span></div>
+                        <div className="flex items-center gap-1.5"><span className={cn("w-1.5 h-1.5 rounded-full", (isAltPressed || isPanning) ? "bg-blue-500 animate-pulse" : "bg-gray-700")} /><span>{isPanning ? assetT('status.panning') : assetT('status.drag_hint')}</span></div>
                     </div>
                 )}
             </div>

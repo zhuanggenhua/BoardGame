@@ -112,6 +112,13 @@
       "rewardPoints": "Reward points",
       "autoReportKind": "Auto report kind",
       "incidentKey": "Incident key",
+      "occurrenceCount": "Occurrences",
+      "firstOccurredAt": "First seen",
+      "lastOccurredAt": "Last seen",
+      "latestIncidentKey": "Latest incident",
+      "errorContext": "Error context",
+      "recentAction": "Recent action",
+      "activeElement": "Current focus",
       "expand": "Expand",
       "collapse": "Collapse"
     },
