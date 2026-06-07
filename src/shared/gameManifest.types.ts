@@ -63,6 +63,7 @@ export interface GameManifestEntry {
     id: string;
     type: GameManifestType;
     enabled: boolean;
+    listed?: boolean;
     titleKey: string;
     descriptionKey: string;
     authorName?: string;
