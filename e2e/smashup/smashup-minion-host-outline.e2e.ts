@@ -181,6 +181,8 @@ test.describe('大杀四方宿主随从描边取证', () => {
         await expect(powerBadge).toBeVisible({ timeout: 5000 });
         await expect(attachedBadgeFace).toBeVisible({ timeout: 5000 });
 
+        await game.screenshot('00-host-pre-hover-scale-follow-board', testInfo);
+
         const beforeMetrics = await Promise.all([
             minionFrame.boundingBox(),
             powerBadge.boundingBox(),
@@ -214,7 +216,7 @@ test.describe('大杀四方宿主随从描边取证', () => {
         expect((afterPowerBadgeBox?.width ?? 0)).toBeGreaterThan((beforePowerBadgeBox?.width ?? 0) * 1.05);
         expect((afterAttachedBadgeBox?.width ?? 0)).toBeGreaterThan((beforeAttachedBadgeBox?.width ?? 0) * 1.05);
 
-        await game.screenshot('00-host-hover-scale-follow-board', testInfo);
+        await game.screenshot('01-host-hover-scale-follow-board', testInfo);
     });
 
     test('宿主随从已选中时只有卡面描边，内部角标与附着预览不复用高亮', async ({ page, game }, testInfo) => {

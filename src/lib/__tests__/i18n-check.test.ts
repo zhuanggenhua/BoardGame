@@ -541,6 +541,27 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
+    it('t(variable) 且提供 defaultValue 时，不把统一翻译 helper 误报为 dynamic-key', () => {
+        const content = `
+            function resolveSliderText(t, key, fallback) {
+                if (!key) return fallback;
+                return t(key, {
+                    defaultValue: fallback,
+                    count: 1,
+                });
+            }
+        `;
+        const result = collectReferencesFromContent(content, 'demo.tsx', {
+            defaultNamespace: 'game-smashup',
+            knownNamespaces: new Set(['game-smashup']),
+        });
+
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'dynamic-key',
+            key: 'key',
+        }));
+    });
+
     it('识别 manifest 中的 setupOptions 与基础展示 key', () => {
         const content = `
             const entry = {

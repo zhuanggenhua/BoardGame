@@ -1408,6 +1408,9 @@ export const collectReferencesFromContent = (
             const identifier = match[1];
             const line = getLineNumber(content, match.index);
             const source = `${aliasName}(${identifier})`;
+            const callEnd = findCallEnd(content, match.index + match[0].length);
+            const snippet = content.slice(match.index, callEnd);
+            const hasDefaultValueFallback = /\bdefaultValue\s*:/.test(snippet);
 
             const contextStart = Math.max(0, match.index - 300);
             const context = content.slice(contextStart, match.index + 300);
@@ -1431,8 +1434,6 @@ export const collectReferencesFromContent = (
             const resolved = resolveIdentifierKeys(content, filePath, identifier, match.index, knownNamespaces);
 
             if (resolved.patterns && resolved.patterns.length > 0) {
-                const callEnd = findCallEnd(content, match.index + match[0].length);
-                const snippet = content.slice(match.index, callEnd);
                 const overrideNamespaces = findNsOverride(snippet);
 
                 for (const pattern of resolved.patterns) {
@@ -1446,6 +1447,9 @@ export const collectReferencesFromContent = (
             }
 
             if (resolved.dynamic || resolved.keys.length === 0) {
+                if (hasDefaultValueFallback) {
+                    continue;
+                }
                 addWarning({ 
                     type: 'dynamic-key', 
                     key: identifier, 
@@ -1458,8 +1462,6 @@ export const collectReferencesFromContent = (
             }
             
             // 解析成功，检查所有可能的 key
-            const callEnd = findCallEnd(content, match.index + match[0].length);
-            const snippet = content.slice(match.index, callEnd);
             const overrideNamespaces = findNsOverride(snippet);
             
             for (const keyValue of resolved.keys) {

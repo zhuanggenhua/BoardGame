@@ -106,8 +106,11 @@ type MermaidsMermaidQueenTargetPromptContext = MermaidsPromptContext & { targetB
 type MermaidsCaptiveAudiencePromptContext = MermaidsPromptContext & CaptiveAudienceContinuation & { baseIndex: number };
 type MermaidsOngoingMovePromptContext = MermaidsPromptContext & OngoingMoveContinuation & {
     title: string;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
     allowSkip?: boolean;
     skipLabel?: string;
+    skipLabelKey?: string;
 };
 type MermaidsUltimateSongHandPromptContext = MermaidsPromptContext & UltimateSongContinuation;
 type MermaidsSirenSongDestinationPromptContext = MermaidsPromptContext & SirenSongDestinationContinuation;
@@ -674,7 +677,10 @@ const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMove
         context.playerId,
         context.title,
         [
-            ...(context.allowSkip ? [createSkipOption(context.skipLabel ?? '跳过')] : []),
+            ...(context.allowSkip ? [{
+                ...createSkipOption(context.skipLabel ?? '跳过'),
+                ...(context.skipLabelKey ? { labelKey: context.skipLabelKey } : {}),
+            }] : []),
             ...buildBaseTargetOptions(getOtherBases(context.matchState.core, context.fromBaseIndex), context.matchState.core),
         ] as any[],
         {
@@ -682,6 +688,8 @@ const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMove
                 ? 'mermaids_shipwreck_cove_after_scoring'
                 : 'mermaids_becalmed_shores',
             targetType: 'base',
+            titleKey: context.titleKey,
+            titleParams: context.titleParams,
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1185,8 +1193,9 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
             fromBaseIndex: ctx.sourceBaseIndex,
             reason: 'mermaids_shipwreck_cove',
             title: '沉船湾：你可以把这张牌移到另一个基地',
+            titleKey: 'ui.mermaids_shipwreck_cove_move_title',
             allowSkip: true,
-            skipLabel: '不移动沉船湾',
+            skipLabelKey: 'ui.mermaids_shipwreck_cove_skip_move',
         }) satisfies MermaidsOngoingMovePromptContext,
     );
 }

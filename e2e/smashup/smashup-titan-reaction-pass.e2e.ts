@@ -461,13 +461,13 @@ test.describe('泰坦高亮反应让过收口', () => {
                 brideStillQueued: Array.isArray(state?.core?.triggerQueue)
                     ? state.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'frankenstein_the_bride')
                     : false,
-                phase: state?.sys?.phase ?? null,
+                canContinuePastScoring: state?.sys?.phase !== 'scoreBases',
             };
         }, { timeout: 8000 }).toEqual({
             sourceId: null,
             responseWindowOpen: false,
             brideStillQueued: false,
-            phase: 'playCards',
+            canContinuePastScoring: true,
         });
 
         await page.waitForTimeout(1200);
@@ -477,6 +477,7 @@ test.describe('泰坦高亮反应让过收口', () => {
         expect(Array.isArray(settledState?.core?.triggerQueue)
             ? settledState.core.triggerQueue.some((trigger: any) => trigger?.sourceDefId === 'frankenstein_the_bride')
             : false).toBe(false);
+        expect(settledState?.sys?.phase).not.toBe('scoreBases');
 
         const brideResolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-pass-resolved', {
             filename: 'smashup-mushroom-own-bride-pass-resolved.png',

@@ -145,6 +145,8 @@
     "giant_ants_transfer_counters_confirm": "确认转移 {{value}} 个力量指示物",
     "giant_ants_under_pressure_value_label": "承受压力：{{value}} / {{max}}",
     "giant_ants_we_are_the_champions_value_label": "我们乃最强：{{value}} / {{max}}",
+    "mermaids_shipwreck_cove_move_title": "沉船湾：你可以把这张牌移到另一个基地",
+    "mermaids_shipwreck_cove_skip_move": "不移动沉船湾",
     "titan_hill_that_strolls_choose_player_title": "移动的山：选择要交出控制权的玩家",
     "titan_tricksters_big_funny_giant_pod_counter_title": "搞怪巨人：要在该泰坦上放置 1 个 +1 力量指示物吗？",
     "titan_major_ursa_choose_base_title": "大熊少校：选择要移动到的基地",
