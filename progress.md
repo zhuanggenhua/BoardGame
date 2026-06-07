@@ -1519,8 +1519,8 @@
   - `src/games/splendor/ai.ts` 与 `e2e/src/games/splendor/ai.ts`：未开局或游戏结束时不生成 Splendor AI legal actions。
 - 规范修正：
   - `AGENTS.md`：补充“部署/复发观察不得卡反馈状态”。
-  - `.windsurf/skills/feedback-closeout/SKILL.md`：补充 `resolved` 不以生产部署或未来复发观察为前置。
-  - `.windsurf/skills/feedback-closeout/references/feedback-open-api.md`：补充状态含义。
+  - `.codex/skill/feedback-closeout/SKILL.md`：补充 `resolved` 不以生产部署或未来复发观察为前置。
+  - `.codex/skill/feedback-closeout/references/feedback-open-api.md`：补充状态含义。
 - 生产状态回写：
   - `6a05e66129cd213e03bfd82f` 已于 `2026-05-15T15:38:58.914Z` 从 `open` 回写为 `resolved`。
   - 回写后 `open/in_progress` 只剩 `smashup|feedback-modal|in_progress = 1`。
@@ -1571,8 +1571,8 @@
   - `openspec/AGENTS.md`
   - `D:/codex-home/skills/task-completion-guard/SKILL.md`
   - `C:/Users/zhuagenbao/.codex/skills/planning-with-files/SKILL.md`
-  - `.windsurf/skills/game-audit-workflow/SKILL.md`
-  - `.windsurf/skills/add-new-faction/SKILL.md`
+  - `.codex/skill/game-audit-workflow/SKILL.md`
+  - `.codex/skill/add-new-faction/SKILL.md`
   - `docs/ai-rules/testing-audit.md`
   - `docs/ai-rules/engine-systems.md`
   - `docs/testing-best-practices.md`
@@ -1591,7 +1591,7 @@
   - `AGENTS.md`
   - `openspec/AGENTS.md`
   - `C:\Users\zhuagenbao\.codex\skills\planning-with-files\SKILL.md`
-  - `.windsurf/skills/create-new-game/SKILL.md`
+  - `.codex/skill/create-new-game/SKILL.md`
   - `docs/ai-rules/asset-pipeline.md`
   - `docs/ai-rules/data-entry.md`
   - `docs/temp-files-management.md`
@@ -1612,14 +1612,14 @@
   - `task_plan.md`
   - `findings.md`
   - `progress.md`
-  - `.windsurf/skills/create-new-game/SKILL.md`
+  - `.codex/skill/create-new-game/SKILL.md`
   - `src/games/qidahen/rule/七大恨素材接入清单.md`
   - `evidence/qidahen/qidahen-feasibility-2026-05-11.md`
 - 错误记录：
   - PowerShell 不支持 Bash heredoc：`python - <<'PY'` 失败；后续改用 PowerShell 原生命令。
   - 一次远端 HEAD 抽查命令因空管道解析失败；修正为先收集 `$rows` 再格式化输出。
 - 收口：
-  - `$env:PYTHONUTF8='1'; python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .windsurf\skills\create-new-game` -> `Skill is valid!`
+  - `$env:PYTHONUTF8='1'; python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .codex\skill\create-new-game` -> `Skill is valid!`
   - 已复核本轮相关 git status；仓库仍有大量无关历史脏改，本轮未处理。
 
 ---
@@ -1653,7 +1653,7 @@
 - **Worktree:** `D:\gongzuo\webgame\BoardGame\.worktrees\dicethrone-treant-ninja`
 - 已读取：
   - `AGENTS.md`
-  - `.windsurf/skills/data-entry-workflow/SKILL.md`
+  - `.codex/skill/data-entry-workflow/SKILL.md`
   - `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`
   - `docs/ai-rules/data-entry.md`
   - `docs/ai-rules/asset-pipeline.md`
@@ -2453,7 +2453,7 @@
   - Next: 回写审计文档中的最新门禁与资源状态，保证证据链完整。
 
 - **[2026-04-24 22:16:00] Action**: 强化通用数据录入与 SmashUp 实施 workflow
-  - Result: 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则（S0→S4 持续推进，continue 默认推进下一批执行）。
+  - Result: 已更新 `.codex/skill/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则（S0→S4 持续推进，continue 默认推进下一批执行）。
   - Next: 继续执行三派系审计/实施批次，保持“不中途收口”节奏。
 
 - **[2026-04-24 22:24:00] Action**: 回写两条 SmashUp 反馈审计文档的当日复核补记
@@ -2809,7 +2809,7 @@
 
 - **[2026-04-29 10:08:00] Action**: 回写项目内长期任务 / 派系重审 workflow 门禁
   - Result:
-    - 更新 `.windsurf/skills/data-entry-workflow/SKILL.md`：
+    - 更新 `.codex/skill/data-entry-workflow/SKILL.md`：
       - 新增“批量派系重审附加门禁”
       - 强制“当前批次未清空不得停”
       - 强制 `defId` 真值预检
@@ -2943,7 +2943,7 @@
   - `npm run typecheck`：passed
 
 ## 2026-05-05 23:35 人类反馈优先续跑
-- 已把“人类反馈 > 系统自动反馈”回写到 `.windsurf/skills/feedback-closeout/SKILL.md` 和 `task_plan.md`，后续默认先处理 `feedback-modal` 人工单。
+- 已把“人类反馈 > 系统自动反馈”回写到 `.codex/skill/feedback-closeout/SKILL.md` 和 `task_plan.md`，后续默认先处理 `feedback-modal` 人工单。
 - `69f96a734590ce09779a7205`：
   - 复核结论未变：并列计分本地已修。
   - 定向验证通过：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --maxWorkers 1 --testNamePattern "scoreOneBase 在并列第一时给并列玩家第二位分|scoreOneBase 在并列第二时给并列玩家第三位分"` -> `2 passed`。
@@ -3114,7 +3114,7 @@
 
 ## 2026-05-07 00:24 反馈回写口径更新
 - 已按用户最新要求回写项目内规范：
-  - `.windsurf/skills/feedback-closeout/SKILL.md`
+  - `.codex/skill/feedback-closeout/SKILL.md`
 - 新强制口径：
   - 只要某条反馈已经满足“修复 + 验证 + 证据”，默认必须立刻执行远端正式状态回写；
   - 不再把“先停在本地 resolved，等后面再统一回写”当成默认流程；
@@ -3322,7 +3322,7 @@
 ## 2026-05-10 重来启动
 
 - 已按用户要求确认：新增派系/新增角色是项目通用 skill 范畴，不应只改长期任务 skill。
-- `.windsurf/skills/add-new-faction/SKILL.md` 已存在并通过 quick_validate（需设置 `PYTHONUTF8=1` 避免 Windows GBK 读取中文失败）。
+- `.codex/skill/add-new-faction/SKILL.md` 已存在并通过 quick_validate（需设置 `PYTHONUTF8=1` 避免 Windows GBK 读取中文失败）。
 - 已把 `task_plan.md` 旧完成口径降级为历史误收口，新增 Restart Contract 与 treant/ninja 真实批次矩阵。
 - 当前任务继续执行，不允许在机制/E2E/审计全部重新核销前收口。
 
@@ -3518,8 +3518,8 @@
 
 - 已确认这次漏审的本质是通用审计规范不够强：对象级矩阵没有强制逐句/子句核销，导致主效果通过后掩盖第二句“替代行动打出”和 Jason 子触发。
 - 已更新通用规范：`docs/ai-rules/testing-audit.md` 新增“规则文本逐句/子句覆盖”“漏审默认先归因到审计方法”“一句话多效果不得合并验收”。
-- 已更新项目通用新增派系 workflow：`.windsurf/skills/add-new-faction/SKILL.md` 要求每个对象建立 `C1/C2/C3...` 子句表，任一子句缺证据不得填 `passed`。
-- 已更新 SmashUp 专项 workflow：`.windsurf/skills/smashup-faction-addition/SKILL.md` 要求逐卡/逐基地列规则子句表，并以子句最低层级决定对象状态。
+- 已更新项目通用新增派系 workflow：`.codex/skill/add-new-faction/SKILL.md` 要求每个对象建立 `C1/C2/C3...` 子句表，任一子句缺证据不得填 `passed`。
+- 已更新 SmashUp 专项 workflow：`.codex/skill/smashup-faction-addition/SKILL.md` 要求逐卡/逐基地列规则子句表，并以子句最低层级决定对象状态。
 - 已回写旧 shayu evidence：`smashup-shayu-comprehensive-audit-coverage-2026-05-12.md` 与 `smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 标明 Argonaut 旧对象级 pass 不完整。
 
 ## 2026-05-16 01:25 +08 TDD 行为 seam 迁移收口

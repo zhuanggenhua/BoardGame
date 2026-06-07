@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { sortGamesForLobbyDirectory } from './lobbyDirectorySorting';
+import { UserMenu } from '../social/UserMenu';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -280,7 +281,7 @@ export const OverviewSpread = ({
     onDestroyContinueMatch,
 }: OverviewSpreadProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [catalogPageIndex, setCatalogPageIndex] = React.useState(0);
     const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
     const languageMenuRef = React.useRef<HTMLDivElement>(null);
@@ -412,31 +413,39 @@ export const OverviewSpread = ({
                 }}
             />
 
-            <button
-                type="button"
-                data-testid="home-v2-account-entry"
-                aria-label={playerLabel}
-                title={playerLabel}
-                className="absolute flex items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
-                style={{
-                    ...asAbsoluteStyle(ACCOUNT_RECT),
-                    gap: scaled(6),
-                }}
-                onClick={onAccountClick}
+            <div
+                className="absolute"
+                style={asAbsoluteStyle(ACCOUNT_RECT)}
             >
-                <User aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
-                <span
-                    className="truncate"
-                    style={{
-                        maxWidth: scaled(102),
-                        fontSize: scaled(16),
-                        fontWeight: 700,
-                    }}
-                >
-                    {playerLabel}
-                </span>
-                <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
-            </button>
+                {user ? (
+                    <UserMenu onLogout={logout} variant="book" triggerTestId="home-v2-account-entry" />
+                ) : (
+                    <button
+                        type="button"
+                        data-testid="home-v2-account-entry"
+                        aria-label={playerLabel}
+                        title={playerLabel}
+                        className="flex h-full w-full items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                        style={{
+                            gap: scaled(6),
+                        }}
+                        onClick={onAccountClick}
+                    >
+                        <User aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
+                        <span
+                            className="truncate"
+                            style={{
+                                maxWidth: scaled(102),
+                                fontSize: scaled(16),
+                                fontWeight: 700,
+                            }}
+                        >
+                            {playerLabel}
+                        </span>
+                        <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
+                    </button>
+                )}
+            </div>
 
             <div
                 className="pointer-events-none absolute bg-[rgba(98,65,33,0.45)]"

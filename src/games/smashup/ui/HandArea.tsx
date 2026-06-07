@@ -332,32 +332,6 @@ const HandCard: React.FC<HandCardProps> = ({
                         : (!isDisabled ? 'hover:ring-2 hover:ring-green-200/85 hover:shadow-xl' : '')
                     : ''}
             `}>
-                {/* Detail View Button (Magnifying Glass) - Appears on hover, inside card top-right */}
-                {!isOpponentView && (
-                    <button
-                        data-testid={`su-hand-card-inspect-${card.uid}`}
-                        className={`absolute flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${(showTouchInspectButton || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-                        style={{
-                            top: inspectButtonInset,
-                            right: inspectButtonInset,
-                            width: inspectButtonSize,
-                            height: inspectButtonSize,
-                        }}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onViewDetail?.();
-                        }}
-                    >
-                        <svg
-                            className="fill-current"
-                            style={{ width: inspectIconSize, height: inspectIconSize }}
-                            viewBox="0 0 20 20"
-                        >
-                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                        </svg>
-                    </button>
-                )}
-
                 {/* Card Asset Preview */}
                 <div className="w-full h-full rounded-md overflow-hidden bg-[#f3f0e8] border border-slate-400/50 shadow-inner relative">
                     <CardPreview
@@ -373,6 +347,30 @@ const HandCard: React.FC<HandCardProps> = ({
                 </div>
 
             </div>
+            {!isOpponentView && (
+                <button
+                    data-testid={`su-hand-card-inspect-${card.uid}`}
+                    className={`absolute flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${(showTouchInspectButton || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    style={{
+                        top: inspectButtonInset,
+                        right: inspectButtonInset,
+                        width: inspectButtonSize,
+                        height: inspectButtonSize,
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetail?.();
+                    }}
+                >
+                    <svg
+                        className="fill-current"
+                        style={{ width: inspectIconSize, height: inspectIconSize }}
+                        viewBox="0 0 20 20"
+                    >
+                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    </svg>
+                </button>
+            )}
         </motion.div>
     );
 };

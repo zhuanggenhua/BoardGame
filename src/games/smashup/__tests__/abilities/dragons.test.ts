@@ -481,6 +481,7 @@ describe('龙派系可复用实现批', () => {
 
         expect(played.success).toBe(true);
         const scopePrompt = getSimpleChoicePrompt(played.finalState, 'dragons_flank_attack_source');
+        expect(scopePrompt.targetType).toBe('button');
         const bothOption = getPromptOption(
             scopePrompt,
             (option) => option.value?.searchScope === 'both',
@@ -754,6 +755,7 @@ describe('龙派系可复用实现批', () => {
 
         expect(played.success).toBe(true);
         const prompt = getSimpleChoicePrompt(played.finalState, 'dragons_burn_it_down');
+        expect(prompt.targetType).toBe('button');
         const discardOption = getPromptOption(
             prompt,
             (option) => option.value?.source === 'discard' && option.value?.baseDefId === 'base_central_brain',

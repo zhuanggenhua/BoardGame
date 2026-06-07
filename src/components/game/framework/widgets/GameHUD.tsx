@@ -1143,6 +1143,7 @@ export const GameHUD = ({
                     ? t('hud.ai.forceEndPhase')
                     : t('hud.ai.forceDismissPopup'),
             color: canForceEndAiPhase ? 'text-amber-400' : 'text-rose-300',
+            mobilePanelVariant: canForceEndAiPhase ? 'sheet' : undefined,
             content: ({ closePanel }) => (
                 <div className="space-y-3">
                     {canForceEndAiPhase && (

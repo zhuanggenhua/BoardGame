@@ -434,7 +434,7 @@ const burnItDownPromptProgram = createPromptProgram<BurnItDownPromptContext, Sma
         buildBurnItDownOptions(context),
         {
             sourceId: 'dragons_burn_it_down',
-            targetType: 'generic',
+            targetType: 'button',
             autoResolveIfSingle: false,
         },
     ),
@@ -630,7 +630,7 @@ const flankAttackChooseSourcePromptProgram = createPromptProgram<FlankAttackProm
         buildFlankAttackSourceOptions(context.matchState.core, context.playerId),
         {
             sourceId: 'dragons_flank_attack_source',
-            targetType: 'generic',
+            targetType: 'button',
         },
     ),
     onResolve: ({ context, value }) => {

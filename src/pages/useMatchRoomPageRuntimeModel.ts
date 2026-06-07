@@ -246,6 +246,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         showForceEndAiPhase: seatRuntime.showForceEndAiPhase,
         isLoading: exitFlow.isLeaving,
         seatControllers: seatRuntime.seatControllers,
+        engineConfig: seatRuntime.engineConfig,
     };
 }
 

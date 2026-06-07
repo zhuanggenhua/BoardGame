@@ -199,6 +199,8 @@ describe('Mega Troopers 代表性玩法行为', () => {
             payload: { cardUid: 'crystal' },
             timestamp: 30,
         }, FIXED_RANDOM);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'mega_troopers_lightning_crystal');
+        expect(prompt.targetType).toBe('ongoing');
         const destroy = respondToPromptOption(
             play.finalState,
             option => option.value?.cardUid === 'attached-action',

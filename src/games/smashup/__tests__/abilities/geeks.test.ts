@@ -781,6 +781,7 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const actionPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_rules_lawyer_action');
+        expect(actionPrompt.targetType).toBe('ongoing');
         const movedAction = actionPrompt.options.find((option: any) => option.value?.cardUid === 'lands-1');
         expect(movedAction).toBeTruthy();
 
@@ -822,6 +823,7 @@ describe('极客派系隐藏实现批', () => {
         });
 
         const actionPrompt = getSimpleChoicePrompt(played.finalState, 'geeks_rules_lawyer_action');
+        expect(actionPrompt.targetType).toBe('ongoing');
         const movedAction = actionPrompt.options.find((option: any) => option.value?.cardUid === 'expand-1');
         expect(movedAction).toBeTruthy();
 

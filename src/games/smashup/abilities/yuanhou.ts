@@ -523,8 +523,8 @@ function shapeshiftersCellularBonding(ctx: AbilityContext): AbilityResult {
             `shapeshifters_cellular_bonding_choose_${ctx.now}`,
             ctx.playerId,
             '细胞结合：选择要复制能力的附着行动',
-            candidates.map(action => buildAttachedActionPromptOption(action, { actionUid: action.uid })),
-            { sourceId: 'shapeshifters_cellular_bonding_choose', targetType: 'generic' },
+            candidates.map(action => buildAttachedActionPromptOption(action, { actionUid: action.uid, cardUid: action.uid })),
+            { sourceId: 'shapeshifters_cellular_bonding_choose', targetType: 'ongoing' },
         );
         interaction.data.hostMinionUid = host.minion.uid;
         interaction.data.hostBaseIndex = host.baseIndex;
@@ -1399,10 +1399,12 @@ function timeTravelersIntoTheTimeSlip(ctx: AbilityContext): AbilityResult {
         inPlay.map(card => ({
             id: card.cardUid,
             label: card.label,
-            value: { cardUid: card.cardUid },
+            value: card.type === 'minion'
+                ? { cardUid: card.cardUid, minionUid: card.cardUid }
+                : { cardUid: card.cardUid },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'time_travelers_into_the_time_slip_choose', targetType: 'generic' },
+        { sourceId: 'time_travelers_into_the_time_slip_choose', targetType: 'board' },
     );
     interaction.data.allowedCardUids = inPlay.map(card => card.cardUid);
     return {
@@ -1800,7 +1802,7 @@ function basePrimatePark(ctx: BaseAbilityContext): AbilityResult {
         })),
         {
             sourceId: 'base_primate_park_return',
-            targetType: 'generic',
+            targetType: 'ongoing',
             multi: { min: 0, max: attachedActions.length },
             responseValidationMode: 'live',
         },

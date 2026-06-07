@@ -210,7 +210,7 @@ function lightningCrystal(ctx: AbilityContext): AbilityResult {
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.cardUid },
         })),
-        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'generic' },
+        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'ongoing' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }

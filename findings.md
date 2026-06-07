@@ -390,7 +390,7 @@
 
 ## Skill 优化
 
-- 已补强 `.windsurf/skills/create-new-game/SKILL.md`：新增“规则 PDF 转 Markdown 与可行性评估”前置阶段。
+- 已补强 `.codex/skill/create-new-game/SKILL.md`：新增“规则 PDF 转 Markdown 与可行性评估”前置阶段。
 - 新门禁要求 PDF→MD、素材盘点、压缩/manifest/远端检查、可行性分析完成后，才进入正式游戏骨架阶段。
 
 ---
@@ -1606,7 +1606,7 @@
   - `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/wangling_base.webp`
 
 ## 2026-04-24 Workflow 强化补记（通用 + SmashUp）
-- 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md`：
+- 已更新 `.codex/skill/data-entry-workflow/SKILL.md`：
   - 新增“长期任务连续执行模式”强制门禁（S0→S4 连续推进，不得中间收口）；
   - 明确 `continue` 的默认语义是“推进下一批执行”，不是重复汇报。
 - 已更新 `docs/games/smashup/workflows/smashup-faction-implementation.md`：
@@ -2017,7 +2017,7 @@
   1. 批量派系重审时，没有把“当前批次未清空不得停”写成项目内硬门禁；
   2. E2E 场景真值与 `reaction session` 审计维度还没被现有 workflow 明确提升到强制级。
 - 已回写到项目内 skill / workflow：
-  - `.windsurf/skills/data-entry-workflow/SKILL.md`
+  - `.codex/skill/data-entry-workflow/SKILL.md`
   - `docs/games/smashup/workflows/smashup-faction-implementation.md`
   - `docs/ai-rules/testing-audit.md`
 - 新增的强制点：
@@ -2385,8 +2385,8 @@
 - 新增通用不变量：凡文案包含“你可以 / 可以选择 / 至多 / 任意数量 / may / up to / any number”，成功路径与拒绝路径是两个独立验收项；合法候选存在时必须证明 skip/空选后权威状态不变。
 - 已固化位置：
   - `docs/ai-rules/testing-audit.md`
-  - `.windsurf/skills/add-new-faction/SKILL.md`
-  - `.windsurf/skills/smashup-faction-addition/SKILL.md`
+  - `.codex/skill/add-new-faction/SKILL.md`
+  - `.codex/skill/smashup-faction-addition/SKILL.md`
   - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`
 - 后续同类审计禁止只写“能移动/能消灭/能拿牌”，必须同时写“能不做且状态不变”或明确说明该效果是强制效果。
 
@@ -2412,7 +2412,7 @@
 - 本次 Argonaut 漏审代表的根因不是单卡特例，而是通用审计方法缺口：旧矩阵按“对象级 pass”核销，没有强制把真相源文本逐句/逐子句拆开验证。
 - 影响边界是所有游戏：任何卡牌、技能、Token、状态、按钮、装备、基地、角色能力只要一段描述里包含多个语义，就可能被主效果测试掩盖掉第二句/例外/替代入口/额外触发。
 - 已固化不变量：规则文本必须拆成 `C1/C2/C3...` 子句；每个子句都要映射到实现入口、共享消费点、状态写入/消耗点和证据。任一子句缺证据，整对象不得写 `passed`。
-- 已更新落点：`docs/ai-rules/testing-audit.md`、`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/smashup-faction-addition/SKILL.md`，并回写 shayu 旧 evidence 失效结论。
+- 已更新落点：`docs/ai-rules/testing-audit.md`、`.codex/skill/add-new-faction/SKILL.md`、`.codex/skill/smashup-faction-addition/SKILL.md`，并回写 shayu 旧 evidence 失效结论。
 
 ## 2026-05-16 TDD 行为 seam 发现
 

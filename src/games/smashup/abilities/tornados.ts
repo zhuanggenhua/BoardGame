@@ -404,7 +404,7 @@ const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, Smash
         context.playerId,
         '扯走：选择要转移的持续行动卡',
         context.actions.map((action, index) => ({ id: `action-${index}`, label: action.label, value: action, displayMode: 'card' as const })),
-        { sourceId: 'tornados_ripped_off', targetType: 'generic' },
+        { sourceId: 'tornados_ripped_off', targetType: 'ongoing' },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as CardChoice & { targetType?: 'base' | 'minion'; baseIndex?: number; minionUid?: string };

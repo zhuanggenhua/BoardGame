@@ -706,7 +706,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
                 displayMode: 'card' as const,
             })),
         ],
-        { sourceId: 'fairies_tinx', targetType: 'generic', autoResolveIfSingle: false },
+        { sourceId: 'fairies_tinx', targetType: 'ongoing', autoResolveIfSingle: false },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as { skip?: boolean; cardUid?: string };
@@ -843,7 +843,7 @@ const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlay
         })),
         {
             sourceId: 'fairies_playful_tricks_destroy',
-            targetType: 'generic',
+            targetType: 'ongoing',
             multi: { min: 0, max: Math.min(2, context.options.length) },
             autoResolveIfSingle: false,
         },

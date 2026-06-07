@@ -10,6 +10,7 @@ import { SMASHUP_CARD_BACK } from '../domain/ids';
 import { getCardDef, getTitanDef, resolveCardName } from '../data/cards';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
+import { getAccessoryChromeClass, getAccessorySurfaceClass } from './accessoryHighlight';
 
 const CARD_ASPECT_RATIO = 0.714;
 const DECK_DISCARD_LAYER_Z_INDEX = UI_Z_INDEX.hud + 1;
@@ -269,6 +270,8 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     const isSelected = selectedTitanUid === titan.uid;
                     const isReactionTitan = !!reactionTitanUids?.has(titan.uid);
                     const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
+                    const hostAccentHighlightActive = isSelected || isActivatable;
+                    const hostAccessoryChromeClass = getAccessoryChromeClass(hostAccentHighlightActive, 'border border-white shadow-md');
                     const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
                     const timeBoxCounterLabel = getTimeBoxCounterLabel(titan);
                     return (
@@ -308,15 +311,17 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                     title={titanName}
                                 />
                                 {timeBoxCounterLabel && (
-                                    <div className="absolute -top-1 left-1/2 z-20 flex -translate-x-1/2 justify-center pointer-events-none">
+                                    <div className="absolute inset-x-0 -top-1 z-20 flex justify-center pointer-events-none">
                                         <div
                                             data-testid={`su-rail-titan-timebox-counter-${titan.uid}`}
-                                            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-white bg-sky-300/95 px-1.5 py-[1px] font-black leading-none text-sky-950 shadow-md"
+                                            className={`flex items-center gap-1 whitespace-nowrap rounded-full ${hostAccessoryChromeClass} ${getAccessorySurfaceClass(hostAccentHighlightActive, 'bg-sky-300', 'bg-sky-300/95')} px-1.5 py-[1px] font-black leading-none text-sky-950`}
                                             style={{ fontSize: titanAbilityBadgeFontSize }}
                                             title={`时间盒子计数：${timeBoxCounterLabel}`}
                                         >
-                                            <Hourglass aria-hidden className="block shrink-0" size="1em" strokeWidth={3} />
-                                            <span className="block tabular-nums">{timeBoxCounterLabel}</span>
+                                            <span className="flex h-[1em] w-[1em] shrink-0 items-center justify-center">
+                                                <Hourglass aria-hidden className="block h-full w-full" strokeWidth={3} />
+                                            </span>
+                                            <span className="flex items-center justify-center leading-none tabular-nums">{timeBoxCounterLabel}</span>
                                         </div>
                                     </div>
                                 )}
@@ -324,7 +329,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                     <div className="absolute bottom-1 inset-x-0 z-20 flex justify-center px-1 pointer-events-none">
                                         <div
                                             data-testid={`su-rail-titan-badge-${titan.uid}`}
-                                            className="whitespace-nowrap rounded-sm border border-white bg-amber-300/95 px-1.5 py-[1px] font-black leading-none text-slate-900 shadow-md"
+                                            className={`whitespace-nowrap rounded-sm ${hostAccessoryChromeClass} ${getAccessorySurfaceClass(hostAccentHighlightActive, 'bg-amber-300', 'bg-amber-300/95')} px-1.5 py-[1px] font-black leading-none text-slate-900`}
                                             style={{ fontSize: titanAbilityBadgeFontSize }}
                                         >
                                             {isReactionTitan
@@ -332,9 +337,6 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                                 : t('ui.titan_play_available', { defaultValue: '可打出' })}
                                         </div>
                                     </div>
-                                )}
-                                {isSelected && (
-                                    <div className="absolute inset-0 border-2 border-purple-400 pointer-events-none" />
                                 )}
                             </button>
                             {showTitanInspectButton && (

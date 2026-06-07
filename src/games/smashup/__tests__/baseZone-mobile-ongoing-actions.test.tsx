@@ -452,8 +452,8 @@ describe('BaseZone 移动端 ongoing 交互', () => {
 
         const firstMinion = document.querySelector('[data-minion-uid="m1"]') as HTMLElement | null;
         expect(firstMinion).not.toBeNull();
-        const firstFrame = firstMinion?.querySelector('div');
-        const secondFrame = secondMinion?.querySelector('div');
+        const firstFrame = document.querySelector('[data-testid="su-minion-frame-m1"]');
+        const secondFrame = document.querySelector('[data-testid="su-minion-frame-m2"]');
         expect(firstFrame?.className).toContain('border-green-400');
         expect(secondFrame?.className).not.toContain('border-green-400');
         fireEvent.click(firstMinion as Element);

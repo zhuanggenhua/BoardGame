@@ -77,8 +77,8 @@ type BearCavalryHighGroundPromptContext = BearCavalryPromptContext & {
 };
 
 type BearNecessitiesValue =
-    | { type: 'minion'; uid: string; defId: string; baseIndex: number; owner: string }
-    | { type: 'action'; uid: string; defId: string; ownerId: string };
+    | { type: 'minion'; uid: string; minionUid: string; defId: string; baseIndex: number; owner: string }
+    | { type: 'action'; uid: string; cardUid: string; defId: string; ownerId: string; baseIndex: number };
 
 function createBearCavalryPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: MatchState<any>,
@@ -185,7 +185,7 @@ export function registerBearCavalryAbilities(): void {
 
 function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId: PlayerId) {
     const minionTargets: Array<{ uid: string; defId: string; baseIndex: number; owner: string; label: string }> = [];
-    const actionTargets: Array<{ uid: string; defId: string; ownerId: string; label: string }> = [];
+    const actionTargets: Array<{ uid: string; defId: string; ownerId: string; baseIndex: number; label: string }> = [];
 
     for (let i = 0; i < state.bases.length; i++) {
         const base = state.bases[i];
@@ -205,14 +205,6 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
                     label: `[随从] ${name} (力量 ${power}) @ ${baseName}`,
                 });
             }
-            for (const a of m.attachedActions) {
-                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
-                if (attachedControllerId !== playerId) {
-                    const def = getCardDef(a.defId);
-                    const name = def?.name ?? a.defId;
-                    actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
-                }
-            }
         }
 
         for (const o of base.ongoingActions) {
@@ -220,7 +212,7 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
             if (ongoingControllerId !== playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
-                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
+                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, baseIndex: i, label: `[行动] ${name} @ ${baseName}` });
             }
         }
     }
@@ -408,8 +400,8 @@ const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryP
             id: `target-${index}`,
             label: target.label,
             value: ('owner' in target
-                ? { type: 'minion' as const, uid: target.uid, defId: target.defId, baseIndex: target.baseIndex, owner: target.owner }
-                : { type: 'action' as const, uid: target.uid, defId: target.defId, ownerId: target.ownerId }) as BearNecessitiesValue,
+                ? { type: 'minion' as const, uid: target.uid, minionUid: target.uid, defId: target.defId, baseIndex: target.baseIndex, owner: target.owner }
+                : { type: 'action' as const, uid: target.uid, cardUid: target.uid, defId: target.defId, ownerId: target.ownerId, baseIndex: target.baseIndex }) as BearNecessitiesValue,
             displayMode: 'card' as const,
         }));
         return createAbilityRuntimeSimpleChoice(
@@ -417,32 +409,32 @@ const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryP
             context.playerId,
             '选择要消灭的随从或行动卡',
             options as any[],
-            { sourceId: 'bear_cavalry_bear_necessities', targetType: 'generic' },
+            { sourceId: 'bear_cavalry_bear_necessities', targetType: 'board' },
         );
     },
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ state, value, timestamp, playerId }) => {
         const selected = value as BearNecessitiesValue | undefined;
         if (!selected) return { events: [] };
         if (selected.type === 'minion') {
+            const selectedMinionUid = selected.minionUid ?? selected.uid;
             return {
                 events: buildValidatedDestroyEvents(state.core, {
-                    minionUid: selected.uid,
+                    minionUid: selectedMinionUid,
                     minionDefId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
+                    destroyerId: playerId,
                     reason: 'bear_cavalry_bear_necessities',
                     now: timestamp,
                 }),
             };
         }
-        const actionStillOnBoard = state.core.bases.some(base =>
-            base.ongoingActions.some(action => action.uid === selected.uid)
-            || base.minions.some(minion => minion.attachedActions.some(action => action.uid === selected.uid))
-        );
+        const selectedCardUid = selected.cardUid ?? selected.uid;
+        const actionStillOnBoard = state.core.bases[selected.baseIndex]?.ongoingActions.some(action => action.uid === selectedCardUid) ?? false;
         if (!actionStillOnBoard) return { events: [] };
         return {
             events: [{
                 type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: selected.uid, defId: selected.defId, ownerId: selected.ownerId, reason: 'bear_cavalry_bear_necessities' },
+                payload: { cardUid: selectedCardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'bear_cavalry_bear_necessities' },
                 timestamp,
             } as OngoingDetachedEvent],
         };
@@ -529,7 +521,11 @@ function bearHugProcessNext(
             buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
             { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion' },
         );
-        (interaction.data as any).continuationContext = { opponents, opponentIdx: idx };
+        (interaction.data as any).continuationContext = {
+            opponents,
+            opponentIdx: idx,
+            destroyerId: ctx.playerId,
+        };
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
     return { events };
@@ -1251,7 +1247,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         }
     }
     // 收集所有可消灭的对手行动卡
-    const actionTargets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
+    const actionTargets: { uid: string; defId: string; ownerId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         const baseDef = getBaseDef(base.defId);
@@ -1261,17 +1257,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
             if (ongoingControllerId !== ctx.playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
-                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
-            }
-        }
-        for (const m of base.minions) {
-            for (const a of m.attachedActions) {
-                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
-                if (attachedControllerId !== ctx.playerId) {
-                    const def = getCardDef(a.defId);
-                    const name = def?.name ?? a.defId;
-                    actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
-                }
+                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, baseIndex: i, label: `[行动] ${name} @ ${baseName}` });
             }
         }
     }
@@ -1384,10 +1370,25 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'bear_cavalry_bear_hug', timestamp)];
+        const ctx = (iData as any)?.continuationContext as {
+            opponents: string[];
+            opponentIdx: number;
+            destroyerId?: PlayerId;
+        } | undefined;
+        const destroyerId = ctx?.destroyerId ?? playerId;
+        const events: SmashUpEvent[] = [
+            destroyMinion(
+                target.uid,
+                target.defId,
+                baseIndex,
+                target.owner,
+                destroyerId,
+                'bear_cavalry_bear_hug',
+                timestamp,
+            ),
+        ];
 
         // 链式处理下一个对手
-        const ctx = (iData as any)?.continuationContext as { opponents: string[]; opponentIdx: number } | undefined;
         if (!ctx) return { state, events };
         const nextIdx = ctx.opponentIdx + 1;
         if (nextIdx >= ctx.opponents.length) return { state, events };
@@ -1407,7 +1408,15 @@ export function registerBearCavalryInteractionHandlers(): void {
             const weakest = minions.filter(m => m.power === minPower);
             if (weakest.length <= 1) {
                 if (weakest.length === 1) {
-                    events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, playerId, 'bear_cavalry_bear_hug', timestamp));
+                    events.push(destroyMinion(
+                        weakest[0].uid,
+                        weakest[0].defId,
+                        weakest[0].baseIndex,
+                        weakest[0].owner,
+                        destroyerId,
+                        'bear_cavalry_bear_hug',
+                        timestamp,
+                    ));
                 }
                 continue;
             }
@@ -1425,7 +1434,11 @@ export function registerBearCavalryInteractionHandlers(): void {
                 buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: opId }),
                 { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion' }
             );
-            (interaction.data as any).continuationContext = { opponents: ctx.opponents, opponentIdx: i };
+            (interaction.data as any).continuationContext = {
+                opponents: ctx.opponents,
+                opponentIdx: i,
+                destroyerId,
+            };
             return { state: queueInteraction(state, interaction), events };
         }
 

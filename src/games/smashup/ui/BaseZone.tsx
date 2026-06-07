@@ -26,6 +26,7 @@ import {
 import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 import { matchesDefId } from '../domain/utils';
+import { getAccessoryChromeClass, getAccessorySurfaceClass } from './accessoryHighlight';
 
 const USED_STATE_CLASS = 'border-slate-400 ring-2 ring-slate-300/80 shadow-[0_0_12px_rgba(148,163,184,0.32)]';
 const CARD_ASPECT_RATIO = 0.714;
@@ -117,6 +118,8 @@ export const BaseZone: React.FC<{
     isDimmed?: boolean;
     /** 交互驱动的持续行动卡选择：只有这些 UID 的行动卡可被选中 */
     selectableOngoingUids?: Set<string>;
+    /** 多选持续行动模式：已选中的行动卡 UID 集合 */
+    multiSelectedOngoingUids?: Set<string>;
     isMyTurn: boolean;
     myPlayerId: string | null;
     dispatch: (type: string, payload?: unknown) => void;
@@ -137,7 +140,7 @@ export const BaseZone: React.FC<{
     onResolveTitanReaction?: (titanUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -320,8 +323,17 @@ export const BaseZone: React.FC<{
         const ongoingActivationKey = `ongoing-${oa.uid}`;
         const isOngoingActivationArmed = isActivationArmed(ongoingActivationKey);
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
+        const isMultiSelectedOngoing = !!multiSelectedOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
+        const ongoingAccentHighlightActive =
+            isMultiSelectedOngoing ||
+            isSelectableOngoing ||
+            isOngoingActivationArmed ||
+            canUseOngoingTalent ||
+            showUsedOngoingState;
+        const ongoingAccessoryChromeClass = getAccessoryChromeClass(ongoingAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
+        const ongoingPowerCounterSurfaceClass = getAccessorySurfaceClass(ongoingAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
         const showOngoingInspectButton = !isSelectableOngoing && (
             showDesktopInspectButton
             || (isCoarsePointer && isOngoingActivationArmed && !canUseOngoingTalent)
@@ -394,6 +406,8 @@ export const BaseZone: React.FC<{
                         className={`relative h-full w-full bg-white rounded-[0.15vw] shadow-lg border-[0.12vw] ${
                             isDimmedOngoing
                                 ? 'cursor-not-allowed'
+                                : isMultiSelectedOngoing
+                                ? 'border-green-400 ring-4 ring-green-400 shadow-[0_0_18px_rgba(74,222,128,0.72),0_0_36px_rgba(74,222,128,0.34)]'
                                 : isSelectableOngoing
                                 ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52)]'
                                 : isOngoingActivationArmed
@@ -426,7 +440,7 @@ export const BaseZone: React.FC<{
                     {ongoingPowerContribution > 0 && (
                         <div
                             data-testid={`su-base-ongoing-power-badge-${oa.uid}`}
-                            className="absolute -top-[0.3vw] -left-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-white bg-green-600 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw]"
+                            className={`absolute -top-[0.3vw] -left-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-white bg-green-600 ${ongoingAccessoryChromeClass} z-40 px-[0.08vw]`}
                             title={`力量增加 +${ongoingPowerContribution}`}
                         >
                             +{ongoingPowerContribution}
@@ -435,7 +449,7 @@ export const BaseZone: React.FC<{
                     {ongoingPowerCounters > 0 && (
                         <div
                             data-testid={`su-base-ongoing-power-counter-${oa.uid}`}
-                            className={`absolute min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw] ${
+                            className={`absolute min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 ${ongoingPowerCounterSurfaceClass} ${ongoingAccessoryChromeClass} z-40 px-[0.08vw] ${
                                 ongoingPowerContribution > 0 ? 'top-[0.92vw] -left-[0.3vw]' : '-top-[0.3vw] -right-[0.3vw]'
                             }`}
                             title={`+1${t('ui.power_counter', '力量指示物')} x${ongoingPowerCounters}`}
@@ -444,7 +458,13 @@ export const BaseZone: React.FC<{
                         </div>
                     )}
                     {hasOngoingTalent && oa.talentUsed && (
-                        <UsedStateBadge label={t('ui.talent_used')} compact insetClassName="left-[0.12vw] right-[0.12vw]" />
+                        <UsedStateBadge
+                            label={t('ui.talent_used')}
+                            compact
+                            insetClassName="left-[0.12vw] right-[0.12vw]"
+                            muteStroke={ongoingAccentHighlightActive}
+                            testId={`su-base-ongoing-used-badge-${oa.uid}`}
+                        />
                     )}
                 </motion.div>
                 {showOngoingInspectButton && (
@@ -495,6 +515,10 @@ export const BaseZone: React.FC<{
         const titanActivationKey = `titan-${titan.uid}`;
         const isTitanActivationArmed = isActivationArmed(titanActivationKey);
         const showUsedTitanState = titan.talentUsed && !canActivateTitan;
+        const titanAccentHighlightActive = isTitanActivationArmed || canActivateTitan || showUsedTitanState;
+        const titanAccessoryChromeClass = getAccessoryChromeClass(titanAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
+        const titanTimeboxSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-sky-300', 'bg-gradient-to-br from-cyan-200 to-sky-400');
+        const titanPowerCounterSurfaceClass = getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
         const titanFrameClassName = `relative aspect-[0.714] w-full cursor-pointer rounded-[0.18vw] border-[0.12vw] bg-white shadow-lg origin-bottom transition-[transform,box-shadow,filter,opacity] duration-200 ${
             isCoarsePointer ? '' : 'hover:scale-110 hover:-translate-y-[0.12vw]'
         } ${
@@ -596,7 +620,7 @@ export const BaseZone: React.FC<{
                 )}
                 {canUseTitanReaction && (
                     <div className="absolute bottom-[0.18vw] left-[0.12vw] right-[0.12vw] z-30 flex justify-center pointer-events-none">
-                        <div className="rounded bg-emerald-300/95 px-[0.28vw] py-[0.08vw] text-[0.42vw] font-black text-emerald-950 shadow border border-white">
+                        <div className={`rounded ${getAccessorySurfaceClass(titanAccentHighlightActive, 'bg-emerald-300', 'bg-emerald-300/95')} px-[0.28vw] py-[0.08vw] text-[0.42vw] font-black text-emerald-950 ${getAccessoryChromeClass(titanAccentHighlightActive, 'border border-white shadow-md')}`}>
                             {t('ui.titan_reaction_available', { defaultValue: '可触发' })}
                         </div>
                     </div>
@@ -628,21 +652,32 @@ export const BaseZone: React.FC<{
                     </div>
                 )}
                 {titan.talentUsed && (
-                    <UsedStateBadge label={t('ui.talent_used')} compact insetClassName="left-[0.12vw] right-[0.12vw]" />
+                    <UsedStateBadge
+                        label={t('ui.talent_used')}
+                        compact
+                        insetClassName="left-[0.12vw] right-[0.12vw]"
+                        muteStroke={titanAccentHighlightActive}
+                        testId={`su-base-titan-used-badge-${titan.uid}`}
+                    />
                 )}
                 {timeBoxCounterLabel && (
-                    <div
-                        data-testid={`su-base-titan-timebox-counter-${titan.uid}`}
-                        className="absolute -top-[0.38vw] left-1/2 -translate-x-1/2 min-w-[1.55vw] h-[1vw] rounded-full flex items-center justify-center gap-[0.1vw] text-[0.42vw] font-black leading-none text-sky-950 bg-gradient-to-br from-cyan-200 to-sky-400 shadow-md border-[0.1vw] border-white z-40 px-[0.18vw]"
-                        title={`时间盒子计数：${timeBoxCounterLabel}`}
-                    >
-                        <Hourglass aria-hidden className="block h-[0.52vw] w-[0.52vw] shrink-0 stroke-[3]" />
-                        <span className="block tabular-nums">{timeBoxCounterLabel}</span>
+                    <div className="absolute inset-x-0 -top-[0.38vw] z-40 flex justify-center pointer-events-none">
+                        <div
+                            data-testid={`su-base-titan-timebox-counter-${titan.uid}`}
+                            className={`min-w-[1.55vw] h-[1vw] rounded-full flex items-center justify-center gap-[0.1vw] text-[0.42vw] font-black leading-none text-sky-950 ${titanTimeboxSurfaceClass} ${titanAccessoryChromeClass} px-[0.18vw]`}
+                            title={`时间盒子计数：${timeBoxCounterLabel}`}
+                        >
+                            <span className="flex h-[0.52vw] w-[0.52vw] shrink-0 items-center justify-center">
+                                <Hourglass aria-hidden className="block h-full w-full stroke-[3]" />
+                            </span>
+                            <span className="flex items-center justify-center leading-none tabular-nums">{timeBoxCounterLabel}</span>
+                        </div>
                     </div>
                 )}
                 {titan.powerCounters > 0 && (
                     <div
-                        className="absolute -top-[0.3vw] -right-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw]"
+                        data-testid={`su-base-titan-power-counter-${titan.uid}`}
+                        className={`absolute -top-[0.3vw] -right-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 ${titanPowerCounterSurfaceClass} ${titanAccessoryChromeClass} z-40 px-[0.08vw]`}
                         title={`+1${t('ui.power_counter', '力量指示物')} x${titan.powerCounters}`}
                     >
                         +{titan.powerCounters}
@@ -1069,6 +1104,7 @@ export const BaseZone: React.FC<{
                                             onView={() => onViewMinion(m.defId, { overlayDefId: getMinionBottomOverlayDefId(m) })}
                                             onViewAction={onViewAction}
                                             selectableOngoingUids={selectableOngoingUids}
+                                            multiSelectedOngoingUids={multiSelectedOngoingUids}
                                             onOngoingSelect={onOngoingSelect}
                                             usableMinionTalentUids={usableMinionTalentUids}
                                             usableSpecialMinionUids={usableSpecialMinionUids}
@@ -1141,14 +1177,16 @@ export const BaseZone: React.FC<{
 // ============================================================================
 
 /** 附着行动卡角标（纯视觉提示，不含交互） */
-const AttachedBadge: React.FC<{ count: number }> = ({ count }) => (
+const AttachedBadge: React.FC<{ count: number; muteStroke?: boolean }> = ({ count, muteStroke = false }) => (
     <div
         className="absolute -top-[8%] -right-[8%] w-[24%] pointer-events-none z-30"
         style={{ height: 0, paddingTop: '24%' }}
         data-testid="smashup-attached-badge-shell"
     >
-        <div className="absolute inset-0 rounded-full bg-purple-600 border-2 border-white shadow-md
-            flex items-center justify-center">
+        <div
+            data-testid="smashup-attached-badge-face"
+            className={`absolute inset-0 rounded-full bg-purple-600 ${getAccessoryChromeClass(muteStroke, 'border-2 border-white shadow-md')} flex items-center justify-center`}
+        >
             <Paperclip className="h-[58%] w-[58%] text-white" strokeWidth={3} />
         </div>
         {count > 1 && (
@@ -1157,8 +1195,10 @@ const AttachedBadge: React.FC<{ count: number }> = ({ count }) => (
                 style={{ height: 0, paddingTop: '46%' }}
                 data-testid="smashup-attached-badge-count-shell"
             >
-                <span className="absolute inset-0 rounded-full
-                    bg-amber-400 text-[clamp(5px,0.3vw,8px)] font-black text-slate-900 flex items-center justify-center border border-white">
+                <span
+                    data-testid="smashup-attached-badge-count-face"
+                    className={`absolute inset-0 rounded-full bg-amber-400 text-[clamp(5px,0.3vw,8px)] font-black text-slate-900 flex items-center justify-center ${getAccessoryChromeClass(muteStroke, 'border border-white')}`}
+                >
                     {count}
                 </span>
             </div>
@@ -1166,14 +1206,17 @@ const AttachedBadge: React.FC<{ count: number }> = ({ count }) => (
     </div>
 );
 
-const UsedStateBadge: React.FC<{ label: string; compact?: boolean; insetClassName?: string }> = ({
+const UsedStateBadge: React.FC<{ label: string; compact?: boolean; insetClassName?: string; muteStroke?: boolean; testId?: string }> = ({
     label,
     compact = false,
     insetClassName = 'inset-x-0',
+    muteStroke = false,
+    testId,
 }) => (
     <div className={`absolute pointer-events-none z-40 flex justify-center ${insetClassName} ${compact ? 'bottom-[4%]' : 'bottom-[4.2%]'}`}>
         <div
-            className={`whitespace-nowrap rounded-full border border-white/90 bg-slate-700/96 text-white shadow-[0_2px_8px_rgba(15,23,42,0.45)] ${
+            data-testid={testId}
+            className={`whitespace-nowrap rounded-full ${getAccessoryChromeClass(muteStroke, 'border border-white/90 shadow-[0_2px_8px_rgba(15,23,42,0.45)]')} ${getAccessorySurfaceClass(muteStroke, 'bg-slate-700', 'bg-slate-700/96')} text-white ${
                 compact
                     ? 'min-w-[34%] px-[10%] py-[3%] text-[clamp(9px,0.5vw,12px)] font-black leading-none text-center'
                     : 'min-w-[38%] px-[12%] py-[4%] text-[clamp(10px,0.58vw,14px)] font-black leading-none text-center'
@@ -1208,6 +1251,8 @@ const MinionCard: React.FC<{
     onViewAction: (defId: string) => void;
     /** 交互驱动的持续行动卡选择：只有这些 UID 的行动卡可被选中 */
     selectableOngoingUids?: Set<string>;
+    /** 多选持续行动模式：已选中的行动卡 UID 集合 */
+    multiSelectedOngoingUids?: Set<string>;
     onOngoingSelect?: (ongoingUid: string) => void;
     usableMinionTalentUids?: Set<string>;
     usableSpecialMinionUids?: Set<string>;
@@ -1227,7 +1272,7 @@ const MinionCard: React.FC<{
     isCoarsePointer: boolean;
     /** 该随从是否是本次状态变更中新进入基地的实体 */
     shouldAnimateEntry?: boolean;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
     const { t } = useTranslation('game-smashup');
     // 兼容融合卡：Wolf Pact 这类作为随从打出时仍使用融合卡定义的图与文案
     const minionDef = getMinionDef(minion.defId);
@@ -1402,6 +1447,14 @@ const MinionCard: React.FC<{
     }, [isSelectableMinion, onMinionSelect, clearArmedActivation, isCoarsePointer, canActivate, canUseTalent, canActivateSpecial, dispatch, minion.uid, baseIndex, shouldBlockMinionClick, armOrActivate, onToggleExpanded, onExpandMinion, hasAttachedActions, minionActivationKey, onView]);
 
     const showUsedMinionState = hasTalent && minion.talentUsed && !canActivate;
+    const hostAccentHighlightActive =
+        isMultiSelected ||
+        isSelectableMinion ||
+        isExpanded ||
+        canActivate ||
+        showUsedMinionState;
+    const hostAccessoryChromeClass = getAccessoryChromeClass(hostAccentHighlightActive, 'border border-white shadow-md');
+    const hostPowerCounterSurfaceClass = getAccessorySurfaceClass(hostAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
     const minionContainerClassName = `relative aspect-[0.714] group ${isAttachedOverlayVisible ? '!z-[1300]' : 'hover:!z-[999]'} ${
         isSelectableMinion
             ? 'cursor-pointer -translate-y-[0.16vw] scale-[1.04]'
@@ -1493,26 +1546,42 @@ const MinionCard: React.FC<{
                 </>
             )}
             <motion.div
-                className={minionFrameClassName}
+                className="relative w-full h-full"
                 animate={rotationAnimate}
                 transition={rotationTransition}
             >
-                <div className="w-full h-full bg-slate-100 relative">
-                    <div className="w-full h-full overflow-hidden">
-                        <CardPreview
-                            previewRef={genericDef?.previewRef
-                                ? {
-                                    type: 'renderer',
-                                    rendererId: 'smashup-card-renderer',
-                                    payload: { defId: minion.defId, cardUid: minion.uid, overlayDefId: bottomOverlayDefId },
-                                }
-                                : undefined}
-                            className="w-full h-full"
-                            title={minionTitle}
-                        />
-                    </div>
+                <div
+                    data-testid={`su-minion-frame-${minion.uid}`}
+                    className={minionFrameClassName}
+                >
+                    <div className="w-full h-full bg-slate-100 relative">
+                        <div className="w-full h-full overflow-hidden">
+                            <CardPreview
+                                previewRef={genericDef?.previewRef
+                                    ? {
+                                        type: 'renderer',
+                                        rendererId: 'smashup-card-renderer',
+                                        payload: { defId: minion.defId, cardUid: minion.uid, overlayDefId: bottomOverlayDefId },
+                                    }
+                                    : undefined}
+                                className="w-full h-full"
+                                title={minionTitle}
+                            />
+                        </div>
 
-                {/* 多选已选中勾选标记 */}
+                        {/* 天赋/特殊能力可用时的发光叠层 */}
+                        {canActivate && (
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none z-20 rounded-[0.1vw]"
+                                animate={{ opacity: [0.15, 0.35, 0.15] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)' }}
+                            />
+                        )}
+                    </div>
+                </div>
+
+                {/* 角标/按钮层与卡面高亮层拆开：仍随卡整体变形，但不参与描边 */}
                 {isMultiSelected && (
                     <div className="absolute top-[0.15vw] left-[0.15vw] w-[1.4vw] h-[1.4vw] bg-green-500 rounded-full flex items-center justify-center shadow-lg border-[0.1vw] border-white z-30">
                         <svg className="w-[0.8vw] h-[0.8vw] text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -1521,78 +1590,74 @@ const MinionCard: React.FC<{
                     </div>
                 )}
 
-                {/* 天赋/特殊能力可用时的发光叠层 */}
-                {canActivate && (
+                {showDesktopInspectButton && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onView(); }}
+                        className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
+                    >
+                        <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                )}
+
+                {(() => {
+                    if (effectivePower === minion.basePower) return null;
+                    const badge = getMinionPowerBadgePresentation(core, minion, baseIndex, effectivePower);
+                    const parts = [`基础: ${badge.breakdown.basePower}`];
+                    if (badge.breakdown.powerCounters !== 0) parts.push(`力量指示物: ${badge.breakdown.powerCounters > 0 ? '+' : ''}${badge.breakdown.powerCounters}`);
+                    if (badge.breakdown.permanentModifier !== 0) parts.push(`永久修正: ${badge.breakdown.permanentModifier > 0 ? '+' : ''}${badge.breakdown.permanentModifier}`);
+                    if (badge.breakdown.tempModifier !== 0) parts.push(`临时: ${badge.breakdown.tempModifier > 0 ? '+' : ''}${badge.breakdown.tempModifier}`);
+                    if (badge.breakdown.ongoingDetails.length > 0) {
+                        for (const d of badge.breakdown.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
+                    }
+                    parts.push(`= ${badge.breakdown.finalPower}`);
+                    return (
+                        <div
+                            data-testid={`su-minion-power-badge-${minion.uid}`}
+                            className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white ${hostAccessoryChromeClass} px-[0.15vw] z-30 ${badge.badgeToneClass}`}
+                            title={parts.join('\n')}
+                        >
+                            {badge.badgeLabel}
+                        </div>
+                    );
+                })()}
+
+                {(minion.powerCounters ?? 0) > 0 && (
                     <motion.div
-                        className="absolute inset-0 pointer-events-none z-20 rounded-[0.1vw]"
-                        animate={{ opacity: [0.15, 0.35, 0.15] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)' }}
+                        className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 ${hostPowerCounterSurfaceClass} ${hostAccessoryChromeClass} px-[0.1vw] z-30 ${
+                            (effectivePower !== minion.basePower) ? 'top-[1vw]' : '-top-[0.4vw]'
+                        }`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                        title={`+1力量指示物 ×${minion.powerCounters}`}
+                    >
+                        +{minion.powerCounters}
+                    </motion.div>
+                )}
+
+                {hasTalent && minion.talentUsed && !canUseTalent && (
+                    <UsedStateBadge
+                        label={t('ui.talent_used')}
+                        insetClassName="left-[0.2vw] right-[0.2vw]"
+                        muteStroke={hostAccentHighlightActive}
+                        testId={`su-minion-used-badge-${minion.uid}`}
                     />
                 )}
-                    {/* 放大镜按钮 - 必须挂在随从变形层内，避免 hover/rotate 后像“脱卡” */}
-                    {showDesktopInspectButton && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onView(); }}
-                            className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
-                        >
-                            <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-                    )}
 
-                    {/* 力量增幅徽章 - 增益绿色/减益红色（左上角），仅有变化时显示 */}
-                    {(() => {
-                        if (effectivePower === minion.basePower) return null;
-                        const badge = getMinionPowerBadgePresentation(core, minion, baseIndex, effectivePower);
-                        const parts = [`基础: ${badge.breakdown.basePower}`];
-                        if (badge.breakdown.powerCounters !== 0) parts.push(`力量指示物: ${badge.breakdown.powerCounters > 0 ? '+' : ''}${badge.breakdown.powerCounters}`);
-                        if (badge.breakdown.permanentModifier !== 0) parts.push(`永久修正: ${badge.breakdown.permanentModifier > 0 ? '+' : ''}${badge.breakdown.permanentModifier}`);
-                        if (badge.breakdown.tempModifier !== 0) parts.push(`临时: ${badge.breakdown.tempModifier > 0 ? '+' : ''}${badge.breakdown.tempModifier}`);
-                        if (badge.breakdown.ongoingDetails.length > 0) {
-                            for (const d of badge.breakdown.ongoingDetails) parts.push(`${d.sourceName}: ${d.value > 0 ? '+' : ''}${d.value}`);
-                        }
-                        parts.push(`= ${badge.breakdown.finalPower}`);
-                        return (
-                            <div
-                                data-testid={`su-minion-power-badge-${minion.uid}`}
-                                className={`absolute -top-[0.4vw] -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.7vw] font-black text-white shadow-sm border border-white px-[0.15vw] z-30 ${badge.badgeToneClass}`}
-                                title={parts.join('\n')}
-                            >
-                                {badge.badgeLabel}
-                            </div>
-                        );
-                    })()}
+                {showTouchActivationHint && (
+                    <div
+                        data-testid={`su-minion-activation-hint-${minion.uid}`}
+                        className={`absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 ${getAccessorySurfaceClass(hostAccentHighlightActive, 'bg-amber-400', 'bg-amber-500')} text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm ${getAccessoryChromeClass(hostAccentHighlightActive, 'border border-white shadow-sm')} z-20 whitespace-nowrap pointer-events-none`}
+                    >
+                        {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
+                    </div>
+                )}
 
-                    {/* +1力量指示物徽章（左侧，力量增幅下方） */}
-                    {(minion.powerCounters ?? 0) > 0 && (
-                        <motion.div
-                            className={`absolute -left-[0.4vw] min-w-[1.2vw] h-[1.2vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white px-[0.1vw] z-30 ${
-                                (effectivePower !== minion.basePower) ? 'top-[1vw]' : '-top-[0.4vw]'
-                            }`}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                            title={`+1力量指示物 ×${minion.powerCounters}`}
-                        >
-                            +{minion.powerCounters}
-                        </motion.div>
-                    )}
-
-                    {/* 天赋已使用标记 */}
-                    {hasTalent && minion.talentUsed && !canUseTalent && (
-                        <UsedStateBadge label={t('ui.talent_used')} insetClassName="left-[0.2vw] right-[0.2vw]" />
-                    )}
-
-                    {showTouchActivationHint && (
-                        <div className="absolute -bottom-[0.3vw] left-1/2 -translate-x-1/2 bg-amber-500 text-slate-900 text-[0.45vw] font-bold px-[0.35vw] py-[0.05vw] rounded-sm shadow-sm border border-white z-20 whitespace-nowrap pointer-events-none">
-                            {t('ui.tap_again_to_activate', { defaultValue: '再次点击发动' })}
-                        </div>
-                    )}
-                    {hasAttachedActions && <AttachedBadge count={minion.attachedActions.length} />}
-
-                </div>
+                {hasAttachedActions && (
+                    <AttachedBadge count={minion.attachedActions.length} muteStroke={hostAccentHighlightActive} />
+                )}
             </motion.div>
             {/* 附着行动的 hover 层恢复到旧的外层容器，避免跟随宿主变形后 hover 提前丢失 */}
             {hasAttachedActions && (
@@ -1622,6 +1687,7 @@ const MinionCard: React.FC<{
                             const actionText = resolveCardText(actionDef, t);
                             const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
                             const isSelectableAA = !!selectableOngoingUids?.has(aa.uid);
+                            const isMultiSelectedAA = !!multiSelectedOngoingUids?.has(aa.uid);
                             const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
                             const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
                             const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
@@ -1652,6 +1718,8 @@ const MinionCard: React.FC<{
                                         hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
                                         border-[0.08vw] ${isDimmedAA
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
+                                            : isMultiSelectedAA
+                                            ? 'border-green-400 ring-4 ring-green-400 shadow-[0_0_14px_rgba(74,222,128,0.72),0_0_26px_rgba(74,222,128,0.34)]'
                                             : isSelectableAA
                                             ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_10px_rgba(74,222,128,0.55)]'
                                             : isAttachedActivationArmed
@@ -1660,7 +1728,7 @@ const MinionCard: React.FC<{
                                             ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]'
                                             : showUsedAttachedState
                                             ? USED_STATE_CLASS
-                                            : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
+                                            : 'border-slate-200 shadow-[0_6px_18px_rgba(15,23,42,0.16)]'
                                         }`}
                                     style={{
                                         width: layoutInlineSize(3, layout),

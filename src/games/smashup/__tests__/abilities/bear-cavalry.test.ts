@@ -27,6 +27,7 @@ import {
     getPromptOptions,
     getPromptsBySourceId,
     getSimpleChoicePrompt,
+    getPromptTargetType,
     makeBase,
     makeMatchState,
     makeMinion,
@@ -1271,7 +1272,7 @@ describe('bear_cavalry_bear_hug 行为', () => {
         const destroyEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvent).toEqual(
             expect.objectContaining({
-                payload: expect.objectContaining({ minionUid: 'm1', destroyerId: '1' }),
+                payload: expect.objectContaining({ minionUid: 'm1', destroyerId: '0' }),
             }),
         );
         expect(respondResult.finalState.core.bases[0].minions.some(minion => minion.uid === 'm1')).toBe(false);
@@ -1355,6 +1356,55 @@ describe('bear_cavalry_bear_hug 行为', () => {
         const destroyedUids = destroyEvents.map(event => (event as any).payload.minionUid);
         expect(destroyEvents).toHaveLength(2);
         expect(destroyedUids).toEqual(expect.arrayContaining(['m1', 'm2']));
+    });
+
+    it('荣誉之地平局分支仍应把 1VP 记给打出黑熊擒抱的玩家', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    vp: 0,
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1', { vp: 0 }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_field_of_honor',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 2, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_hug');
+        const respondResult = respondToPrompt(
+            playResult.finalState,
+            getPromptOption(prompt, option => option?.value?.minionUid === 'm1', 'bear hug target option for m1').id,
+            '1',
+            dummyRandom,
+        );
+
+        const vpEvents = respondResult.events.filter(event => event.type === SU_EVENTS.VP_AWARDED);
+        expect(vpEvents).toHaveLength(1);
+        expect(vpEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({ playerId: '0', amount: 1 }),
+            }),
+        );
+        expect(respondResult.finalState.core.players['0'].vp).toBe(1);
+        expect(respondResult.finalState.core.players['1'].vp).toBe(0);
     });
 
     it('对手无随从时不产生消灭事件', () => {
@@ -1599,5 +1649,165 @@ describe('bear_cavalry_commission 额外随从交互', () => {
         expect(playedEvent?.payload).toEqual(expect.objectContaining({ cardUid: 'borrowed-minion', ownerId: '1', baseIndex: 1 }));
         expect(minion).toEqual(expect.objectContaining({ uid: 'borrowed-minion', controller: '0', owner: '1' }));
         expect(getPromptsBySourceId(resolved.finalState, 'bear_cavalry_commission_move_minion')).toHaveLength(0);
+    });
+});
+
+describe('bear_cavalry_bear_necessities 行为', () => {
+    it('混合场上目标时应走棋盘直点，并排除附着在随从上的行动卡', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_necessities', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '1', 3, {
+                            attachedActions: [{ uid: 'attached-a1', defId: 'cyborg_apes_shielding', ownerId: '1' } as any],
+                        }),
+                    ],
+                    ongoingActions: [{ uid: 'base-a1', defId: 'time_travelers_stasis_field', ownerId: '1' } as any],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+        expect(getPromptTargetType(prompt)).toBe('board');
+
+        const optionValues = getPromptOptions(prompt).map(option => option?.value);
+        expect(optionValues).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ type: 'minion', uid: 'm1', baseIndex: 0 }),
+                expect.objectContaining({ type: 'action', uid: 'base-a1', baseIndex: 0 }),
+            ]),
+        );
+        expect(optionValues).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ uid: 'attached-a1' }),
+            ]),
+        );
+    });
+
+    it('可通过棋盘目标选择消灭基地上的行动卡', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_necessities', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    ongoingActions: [{ uid: 'base-a1', defId: 'time_travelers_stasis_field', ownerId: '1' } as any],
+                }),
+                makeBase({
+                    defId: 'b2',
+                    minions: [makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+        const respondResult = respondToPrompt(
+            playResult.finalState,
+            getPromptOption(
+                prompt,
+                option => option?.value?.type === 'action' && option?.value?.uid === 'base-a1',
+                'bear necessities target option for base ongoing action',
+            ).id,
+            '0',
+            dummyRandom,
+        );
+
+        expect(respondResult.events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: expect.objectContaining({ cardUid: 'base-a1', defId: 'time_travelers_stasis_field', ownerId: '1' }),
+                }),
+            ]),
+        );
+        expect(respondResult.finalState.core.bases[0].ongoingActions).toEqual([]);
+    });
+
+    it('荣誉之地在多目标选择后仍应把 1VP 记给打出黑熊口粮的玩家', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    vp: 0,
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_necessities', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1', { vp: 0 }),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_field_of_honor',
+                    minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })],
+                }),
+                makeBase({
+                    defId: 'b2',
+                    minions: [makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_necessities');
+        const respondResult = respondToPrompt(
+            playResult.finalState,
+            getPromptOption(
+                prompt,
+                option => option?.value?.type === 'minion' && option?.value?.uid === 'm1',
+                'bear necessities target option for m1',
+            ).id,
+            '0',
+            dummyRandom,
+        );
+
+        const destroyEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED) as any;
+        expect(destroyEvent?.payload?.destroyerId).toBe('0');
+
+        const vpEvents = respondResult.events.filter(event => event.type === SU_EVENTS.VP_AWARDED);
+        expect(vpEvents).toHaveLength(1);
+        expect(vpEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({ playerId: '0', amount: 1 }),
+            }),
+        );
+        expect(respondResult.finalState.core.players['0'].vp).toBe(1);
+        expect(respondResult.finalState.core.players['1'].vp).toBe(0);
     });
 });

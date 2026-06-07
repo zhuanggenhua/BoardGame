@@ -10,7 +10,7 @@
 ## What Changes
 
 - 新增 `smashup-faction-batch-workflow` 能力，定义 Smash Up 新派系批量任务的两段式流程：`intake → implementation`。
-- 保留 `.windsurf/skills/data-entry-workflow/SKILL.md` 作为统一入口，不新增独立 Smash Up skill；改为让它在“仅 intake”和“intake + 玩法实施”之间做显式分流。
+- 保留 `.codex/skill/data-entry-workflow/SKILL.md` 作为统一入口，不新增独立 Smash Up skill；改为让它在“仅 intake”和“intake + 玩法实施”之间做显式分流。
 - 新增 `Mermaids / Skeletons / World Champs` 的 atlas、faction/card/base 静态数据、locale、UI metadata 与正式玩法实现。
 - 把 `World Champs` 明确建模为“混源 one-of deck”，要求逐张裁定是复用已有实现、复制并改名，还是全新实现。
 - 为本轮三派系补齐 Vitest / E2E / evidence，并把 intake 合同、workflow 改造与实现证据一并留档。
@@ -21,7 +21,7 @@
   - 新增 `smashup-faction-batch-workflow`
   - 新增 `smashup-10th-anniversary-factions`
 - Affected code / docs:
-  - `.windsurf/skills/data-entry-workflow/SKILL.md`
+  - `.codex/skill/data-entry-workflow/SKILL.md`
   - `docs/games/smashup/workflows/smashup-faction-intake.md`
   - `docs/games/smashup/workflows/smashup-faction-implementation.md`（新增）
   - `src/games/smashup/domain/{ids,atlasCatalog}.ts`

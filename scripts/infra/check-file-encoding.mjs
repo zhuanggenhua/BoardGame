@@ -74,6 +74,9 @@ const CHANGED_FILE_ROOTS = [
 ];
 
 const CHANGED_FILE_IGNORED_PREFIXES = [
+    '.agent/',
+    '.codex/',
+    '.devin/',
     '.kiro/',
     '.windsurf/',
     'evidence/',

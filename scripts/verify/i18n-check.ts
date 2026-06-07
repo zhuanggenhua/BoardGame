@@ -63,6 +63,8 @@ const ALLOWED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const IGNORED_DIRS = new Set([
     '.git',
     '.agent',
+    '.codex',
+    '.devin',
     '.windsurf',
     '.claude',
     'node_modules',

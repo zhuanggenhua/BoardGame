@@ -71,4 +71,43 @@ describe('SmashUp DeckDiscardZone focused titan prompt', () => {
         expect(screen.queryByTestId('su-discard-toggle')).not.toBeInTheDocument();
         expect(screen.queryByText('泰坦')).not.toBeInTheDocument();
     });
+
+    it('泰坦 rail 宿主高亮时，时间盒子和提示条不应复用宿主描边', () => {
+        render(
+            <DeckDiscardZone
+                deckCount={3}
+                discard={[]}
+                isMyTurn
+                setAsideTitans={[
+                    {
+                        uid: 'time-box-1',
+                        defId: 'time_travelers_time_box',
+                        faction: 'time_travelers',
+                        ownerId: '0',
+                        controllerId: '0',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'setaside' },
+                        metadata: { timeBoxCounters: 4 },
+                    } as any,
+                ]}
+                activatableTitanUids={new Set(['time-box-1'])}
+                reactionTitanUids={new Set(['time-box-1'])}
+                selectedTitanUid="time-box-1"
+                onSelectTitan={vi.fn()}
+                onViewTitan={vi.fn()}
+                dispatch={vi.fn()}
+                playerID="0"
+                playerNames={{ '0': 'Host' }}
+                focusedTitanPrompt
+            />,
+        );
+
+        expect(screen.getByTestId('su-rail-titan-timebox-counter-time-box-1').className).toContain('border-0');
+        expect(screen.getByTestId('su-rail-titan-timebox-counter-time-box-1').className).toContain('shadow-none');
+        expect(screen.getByTestId('su-rail-titan-timebox-counter-time-box-1').className).toContain('bg-sky-300');
+        expect(screen.getByTestId('su-rail-titan-badge-time-box-1').className).toContain('border-0');
+        expect(screen.getByTestId('su-rail-titan-badge-time-box-1').className).toContain('shadow-none');
+        expect(screen.getByTestId('su-rail-titan-badge-time-box-1').className).toContain('bg-amber-300');
+    });
 });

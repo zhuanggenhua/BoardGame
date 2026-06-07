@@ -1233,6 +1233,39 @@ async function injectChampionsReactionDirectState(matchId: string, page: Page): 
     await page.waitForSelector('[data-card-uid="champ-card"]', { timeout: 5000 });
 }
 
+async function injectChampionsReactionDeadlockState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => {
+        const seeded = createChampionsReactionDirectState(state);
+        return {
+            ...seeded,
+            core: {
+                ...seeded.core,
+                players: {
+                    ...seeded.core.players,
+                    '0': {
+                        ...seeded.core.players['0'],
+                        hand: [],
+                    },
+                },
+            },
+            sys: {
+                ...seeded.sys,
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        ...(seeded.sys?.responseWindow?.current ?? {}),
+                        id: 'forced-end-turn-deadlock-window',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                        pendingInteractionId: undefined,
+                    },
+                },
+            },
+        };
+    });
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
 async function injectCthulhuCorruptionState(matchId: string, page: Page): Promise<void> {
     await applySmashUpStatePatch(matchId, page, (state) => ({
         ...state,
@@ -1660,6 +1693,18 @@ async function dispatchHarnessCommand(
         commandPlayerId: playerId,
     });
     await page.waitForTimeout(300);
+}
+
+async function openForceActionsPanel(page: Page): Promise<void> {
+    const mainFabButton = page.locator('[data-fab-id="chat"]');
+    await expect(mainFabButton).toBeVisible({ timeout: 10000 });
+    await mainFabButton.click();
+
+    const forceActionsButton = page.locator('[data-fab-id="force-actions"]');
+    await expect(forceActionsButton).toBeVisible({ timeout: 5000 });
+    await forceActionsButton.click();
+
+    await expect(page.getByTestId('fab-panel-force-actions')).toBeVisible({ timeout: 5000 });
 }
 
 async function drainPostResolutionFlow(
@@ -2751,6 +2796,65 @@ test.describe('SmashUp Base/Minion Selection', () => {
 
         const resolvedShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-resolved', {
             filename: 'smashup-champions-mefirst-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈回归：计分后响应卡死且无可让过时，强制结束回合应直接收口到下一玩家', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectChampionsReactionDeadlockState(matchId, hostPage);
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            phase: 'scoreBases',
+            interactionSourceId: null,
+            responseWindowId: 'forced-end-turn-deadlock-window',
+            currentPlayerIndex: 0,
+        });
+
+        await openForceActionsPanel(hostPage);
+        const forceEndTurnButton = hostPage.getByTestId('hud-force-dismiss-popup');
+        await expect(forceEndTurnButton).toContainText('强制结束回合');
+        const stuckShot = getEvidenceScreenshotPath(testInfo, 'scorebases-force-end-turn-stuck', {
+            filename: 'smashup-scorebases-force-end-turn-stuck.png',
+        });
+        await hostPage.screenshot({ path: stuckShot, fullPage: false });
+
+        await forceEndTurnButton.click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state?.sys?.phase ?? null,
+                currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+            };
+        }, { timeout: 12000 }).toEqual({
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            responseWindowOpen: false,
+            interactionSourceId: null,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'scorebases-force-end-turn-resolved', {
+            filename: 'smashup-scorebases-force-end-turn-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });

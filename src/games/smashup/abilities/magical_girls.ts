@@ -67,6 +67,8 @@ type QPointCardChoice = {
     ownerId: PlayerId;
     baseIndex: number;
     label: string;
+    minionUid?: string;
+    cardUid?: string;
 };
 
 type QPointContext = {
@@ -356,7 +358,7 @@ function purgeTheDemon(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '净化恶魔：摧毁一张行动牌，或移除一张卡上的所有力量指示物',
         options,
-        { sourceId: 'magical_girls_purge_the_demon', targetType: 'generic' },
+        { sourceId: 'magical_girls_purge_the_demon', targetType: 'board' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -598,6 +600,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
                 ownerId: minion.owner,
                 baseIndex,
                 label: `${cardLabel(minion.defId)}（随从）`,
+                minionUid: minion.uid,
             });
         }
         minion.attachedActions.forEach((action) => {
@@ -609,6 +612,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
                 ownerId: action.ownerId,
                 baseIndex,
                 label: `${cardLabel(action.defId)}（附着行动）`,
+                cardUid: action.uid,
             });
         });
     });
@@ -621,6 +625,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
             ownerId: action.ownerId,
             baseIndex,
             label: `${cardLabel(action.defId)}（基地行动）`,
+            cardUid: action.uid,
         });
     });
     return choices;
@@ -642,7 +647,7 @@ function queueQPointPrompt(matchState: MatchState<SmashUpCore>, context: QPointC
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.uid },
         })),
-        { sourceId: 'base_q_point', targetType: 'generic' },
+        { sourceId: 'base_q_point', targetType: 'board' },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = context;
     return queueInteraction(matchState, interaction);

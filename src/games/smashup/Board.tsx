@@ -887,24 +887,47 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }));
     }, [isMinionSelectPrompt, currentPrompt, resolvePromptOptionLabel]);
 
+    // 持续行动卡选择交互检测：targetType === 'ongoing'
+    const isOngoingSelectPrompt = useMemo(() => {
+        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
+        const data = currentInteraction?.data as Record<string, unknown> | undefined;
+        return data?.targetType === 'ongoing';
+    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
+
+    const isBoardSelectPrompt = useMemo(() => {
+        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
+        const data = currentInteraction?.data as Record<string, unknown> | undefined;
+        return data?.targetType === 'board';
+    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
+
     // 多选随从模式检测
     const isMultiMinionSelect = useMemo(() => {
         return isMinionSelectPrompt && !!currentPrompt?.multi;
     }, [isMinionSelectPrompt, currentPrompt]);
+
+    const isMultiOngoingSelect = useMemo(() => {
+        return isOngoingSelectPrompt && !!currentPrompt?.multi;
+    }, [isOngoingSelectPrompt, currentPrompt]);
+
+    const isMultiBoardSelect = useMemo(() => {
+        return isBoardSelectPrompt && !!currentPrompt?.multi;
+    }, [isBoardSelectPrompt, currentPrompt]);
 
     // 多选随从模式：已选中的 optionId 集合
     const [multiSelectedOptionIds, setMultiSelectedOptionIds] = useState<Set<string>>(new Set());
 
     // 多选随从模式：约束
     const multiMinionConstraints = useMemo(() => {
-        if (!isMultiMinionSelect || !currentPrompt?.multi) return { min: 0, max: Infinity };
+        if (!isMultiMinionSelect && !isMultiOngoingSelect && !isMultiBoardSelect || !currentPrompt?.multi) {
+            return { min: 0, max: Infinity };
+        }
         const multi = currentPrompt.multi as { min?: number; max?: number };
         return { min: multi.min ?? 0, max: multi.max ?? Infinity };
-    }, [isMultiMinionSelect, currentPrompt]);
+    }, [isMultiMinionSelect, isMultiOngoingSelect, isMultiBoardSelect, currentPrompt]);
 
     // 多选随从已选中的 UID 集合（用于 BaseZone 高亮已选随从）
     const multiSelectedMinionUids = useMemo<Set<string>>(() => {
-        if (!isMultiMinionSelect) return new Set();
+        if (!currentPrompt?.multi) return new Set();
         const uids = new Set<string>();
         for (const optId of multiSelectedOptionIds) {
             const opt = currentPrompt?.options.find(o => o.id === optId);
@@ -912,7 +935,18 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (val?.minionUid) uids.add(val.minionUid);
         }
         return uids;
-    }, [isMultiMinionSelect, multiSelectedOptionIds, currentPrompt]);
+    }, [multiSelectedOptionIds, currentPrompt]);
+
+    const multiSelectedOngoingUids = useMemo<Set<string>>(() => {
+        if (!currentPrompt?.multi) return new Set();
+        const uids = new Set<string>();
+        for (const optId of multiSelectedOptionIds) {
+            const opt = currentPrompt?.options.find(o => o.id === optId);
+            const val = opt?.value as { cardUid?: string } | undefined;
+            if (val?.cardUid) uids.add(val.cardUid);
+        }
+        return uids;
+    }, [multiSelectedOptionIds, currentPrompt]);
 
     const multiSelectedBuriedCardUids = useMemo<Set<string>>(() => {
         if (!isMultiBuriedSelect) return new Set();
@@ -924,13 +958,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return uids;
     }, [isMultiBuriedSelect, multiSelectedOptionIds, currentPrompt]);
-
-    // 持续行动卡选择交互检测：targetType === 'ongoing'
-    const isOngoingSelectPrompt = useMemo(() => {
-        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
-        const data = currentInteraction?.data as Record<string, unknown> | undefined;
-        return data?.targetType === 'ongoing';
-    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
 
     // 可选持续行动卡 UID 集合（高亮候选行动卡）
     const selectableOngoingUids = useMemo<Set<string>>(() => {
@@ -944,6 +971,28 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return uids;
     }, [isOngoingSelectPrompt, currentPrompt]);
 
+    const boardSelectableMinionUids = useMemo<Set<string>>(() => {
+        if (!isBoardSelectPrompt || !currentPrompt) return new Set();
+        const uids = new Set<string>();
+        for (const opt of currentPrompt.options) {
+            const val = opt.value as { minionUid?: string; skip?: boolean } | undefined;
+            if (val?.skip === true) continue;
+            if (val?.minionUid) uids.add(val.minionUid);
+        }
+        return uids;
+    }, [isBoardSelectPrompt, currentPrompt]);
+
+    const boardSelectableOngoingUids = useMemo<Set<string>>(() => {
+        if (!isBoardSelectPrompt || !currentPrompt) return new Set();
+        const uids = new Set<string>();
+        for (const opt of currentPrompt.options) {
+            const val = opt.value as { cardUid?: string; skip?: boolean } | undefined;
+            if (val?.skip === true) continue;
+            if (val?.cardUid) uids.add(val.cardUid);
+        }
+        return uids;
+    }, [isBoardSelectPrompt, currentPrompt]);
+
     // 持续行动卡选择中的非行动卡选项（如"跳过"），需要作为浮动按钮显示
     const ongoingSelectExtraOptions = useMemo(() => {
         if (!isOngoingSelectPrompt || !currentPrompt) return [];
@@ -956,6 +1005,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return true;
         });
     }, [isOngoingSelectPrompt, currentPrompt]);
+
+    const boardSelectExtraOptions = useMemo(() => {
+        if (!isBoardSelectPrompt || !currentPrompt) return [];
+        return currentPrompt.options.filter(opt => {
+            const val = opt.value as Record<string, unknown> | undefined;
+            if (!val) return true;
+            if (typeof val.minionUid === 'string') return false;
+            if (typeof val.cardUid === 'string') return false;
+            return true;
+        }).map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt),
+        }));
+    }, [isBoardSelectPrompt, currentPrompt, resolvePromptOptionLabel]);
 
     // 响应窗口状态判断（meFirst 或 afterScoring）
     const reactionWindow = useMemo(() => getSmashUpReactionWindowPresentation(G), [G]);
@@ -975,9 +1038,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
+        else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isTitanReactionPrompt) raw = 'ui.titan_reaction_click_prompt';
         return raw ? resolveI18nKeys(raw, t) : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
         let raw = '';
@@ -986,8 +1050,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
+        else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         return raw ? resolveI18nKeys(raw, t) : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
     const isDiscardMinionPrompt = useMemo(() => {
@@ -999,7 +1064,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
             return 'board';
         }
         return 'overlay';
@@ -1012,6 +1077,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         isTitanReactionPrompt,
         isMinionSelectPrompt,
         isOngoingSelectPrompt,
+        isBoardSelectPrompt,
         isCurrentPromptForPlayer,
         titanPromptBaseSelection,
     ]);
@@ -2420,15 +2486,16 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     /** 随从点击回调：ongoing-minion 模式下附着行动卡到随从，或交互驱动的随从选择 */
     const handleMinionSelect = useCallback((minionUid: string, baseIndex: number) => {
         // 交互驱动的随从选择
-        if (isMinionSelectPrompt && currentPrompt) {
-            if (!selectableMinionUids.has(minionUid)) return;
+        if ((isMinionSelectPrompt || isBoardSelectPrompt) && currentPrompt) {
+            const promptSelectableMinionUids = isBoardSelectPrompt ? boardSelectableMinionUids : selectableMinionUids;
+            if (!promptSelectableMinionUids.has(minionUid)) return;
             const option = currentPrompt.options.find(
                 opt => !opt.disabled && (opt.value as { minionUid?: string })?.minionUid === minionUid
             );
             if (!option) return;
 
             // 多选模式：toggle 选中状态
-            if (isMultiMinionSelect) {
+            if (isMultiMinionSelect || isMultiBoardSelect) {
                 setMultiSelectedOptionIds(prev => {
                     const next = new Set(prev);
                     if (next.has(option.id)) {
@@ -2481,21 +2548,34 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 setDiscardStripSelectedUid(null);
             }
         }
-    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isMultiMinionSelect, multiMinionConstraints, selectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed]);
+    }, [selectedCardUid, selectedCardMode, handlePlayOngoingToMinion, isMinionSelectPrompt, isBoardSelectPrompt, isMultiMinionSelect, isMultiBoardSelect, multiMinionConstraints, selectableMinionUids, boardSelectableMinionUids, currentPrompt, dispatch, ongoingMinionTargetUids, discardStripSelectedUid, discardStripCards, discardStripAllowedMinionUids, isTutorialCommandAllowed]);
 
     /** 持续行动卡点击回调：交互驱动的行动卡选择 */
     const handleOngoingSelect = useCallback((ongoingUid: string) => {
-        if (!isOngoingSelectPrompt || !currentPrompt) return;
-        if (!selectableOngoingUids.has(ongoingUid)) return;
+        if ((!isOngoingSelectPrompt && !isBoardSelectPrompt) || !currentPrompt) return;
+        const promptSelectableOngoingUids = isBoardSelectPrompt ? boardSelectableOngoingUids : selectableOngoingUids;
+        if (!promptSelectableOngoingUids.has(ongoingUid)) return;
         const option = currentPrompt.options.find(
             opt => (opt.value as { cardUid?: string })?.cardUid === ongoingUid
         );
         if (option) {
+            if (isMultiOngoingSelect || isMultiBoardSelect) {
+                setMultiSelectedOptionIds(prev => {
+                    const next = new Set(prev);
+                    if (next.has(option.id)) {
+                        next.delete(option.id);
+                    } else if (next.size < multiMinionConstraints.max) {
+                        next.add(option.id);
+                    }
+                    return next;
+                });
+                return;
+            }
             setSelectedCardUid(null);
             setSelectedCardMode(null);
             respondCurrentPrompt({ optionId: option.id });
         }
-    }, [currentPrompt, dispatch, isOngoingSelectPrompt, selectableOngoingUids, setSelectedCardMode, setSelectedCardUid]);
+    }, [currentPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isMultiOngoingSelect, isMultiBoardSelect, selectableOngoingUids, boardSelectableOngoingUids, multiMinionConstraints.max, setSelectedCardMode, setSelectedCardUid]);
 
     const handleViewCardDetail = useCallback((card: CardInstance) => {
         const nextTarget = { defId: card.defId, type: card.type === 'minion' ? 'minion' : 'action' } as const;
@@ -3215,7 +3295,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 交互选择提示横幅（基地/随从/手牌选择） --- */}
                 <AnimatePresence>
-                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isTitanReactionPrompt) && (
+                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
                         <motion.div
                             initial={{ y: -20, opacity: 0, scale: 0.95 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -3421,7 +3501,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 持续行动卡选择浮动操作栏（跳过按钮） --- */}
                 <AnimatePresence>
-                    {isOngoingSelectPrompt && ongoingSelectExtraOptions.length > 0 && (
+                    {isOngoingSelectPrompt && (isMultiOngoingSelect || ongoingSelectExtraOptions.length > 0) && (
                         <motion.div
                             initial={{ y: 40, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -3430,12 +3510,86 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             style={floatingHintStyle}
                         >
                             <div className="flex gap-3 pointer-events-auto">
+                                {isMultiOngoingSelect && (
+                                    <>
+                                        <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
+                                            <span className="font-bold text-sm">
+                                                已选 {multiSelectedOptionIds.size}
+                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                            </span>
+                                        </div>
+                                        <SmashUpGameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
+                                        >
+                                            确认选择
+                                        </SmashUpGameButton>
+                                    </>
+                                )}
                                 {ongoingSelectExtraOptions.map(opt => (
                                     <SmashUpGameButton
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
+                                        onClick={() => {
+                                            if (isMultiOngoingSelect) {
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
+                                            } else {
+                                                respondCurrentPrompt({ optionId: opt.id });
+                                            }
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </SmashUpGameButton>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* --- 棋盘混合选择浮动操作栏（多选确认 + 跳过按钮） --- */}
+                <AnimatePresence>
+                    {isBoardSelectPrompt && ((isMultiBoardSelect && (boardSelectableMinionUids.size > 0 || boardSelectableOngoingUids.size > 0)) || boardSelectExtraOptions.length > 0) && (
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            className={floatingHintClassName}
+                            style={floatingHintStyle}
+                        >
+                            <div className="flex gap-3 items-center pointer-events-auto">
+                                {isMultiBoardSelect && (
+                                    <>
+                                        <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
+                                            <span className="font-bold text-sm">
+                                                已选 {multiSelectedOptionIds.size}
+                                                {multiMinionConstraints.max !== Infinity && ` / ${multiMinionConstraints.max}`}
+                                            </span>
+                                        </div>
+                                        <SmashUpGameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
+                                        >
+                                            确认选择
+                                        </SmashUpGameButton>
+                                    </>
+                                )}
+                                {boardSelectExtraOptions.map(opt => (
+                                    <SmashUpGameButton
+                                        key={opt.id}
+                                        variant="secondary"
+                                        size="md"
+                                        onClick={() => {
+                                            if (isMultiBoardSelect) {
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
+                                            } else {
+                                                respondCurrentPrompt({ optionId: opt.id });
+                                            }
+                                        }}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3490,14 +3644,17 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         || (!!activeSelectedSetAsideTitanUid && selectedTitanDeployableBaseIndices.has(idx))
                                         || (!!handDragPreview && draggedCardMode !== 'action' && dragDeployableBaseIndices.has(idx))
                                     }
-                                    isMinionSelectMode={!isOngoingSelectPrompt && (
+                                    isMinionSelectMode={!(isOngoingSelectPrompt && !isBoardSelectPrompt) && (
                                         ((selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') && ongoingMinionTargetUids.size > 0)
                                         || (discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0)
                                         || (isMinionSelectPrompt && selectableMinionUids.size > 0)
+                                        || (isBoardSelectPrompt && boardSelectableMinionUids.size > 0)
                                         || (!!handDragPreview && (draggedCardMode === 'ongoing-minion' || draggedCardMode === 'action-minion') && dragOngoingMinionTargetUids.size > 0)
                                     )}
                                     selectableMinionUids={
-                                        isMinionSelectPrompt
+                                        isBoardSelectPrompt
+                                            ? boardSelectableMinionUids
+                                            : isMinionSelectPrompt
                                             ? selectableMinionUids
                                             : discardStripSelectedUid != null && discardStripAllowedMinionUids.size > 0
                                                 ? discardStripAllowedMinionUids
@@ -3507,7 +3664,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     ? dragOngoingMinionTargetUids
                                                     : undefined
                                     }
-                                    multiSelectedMinionUids={isMultiMinionSelect ? multiSelectedMinionUids : undefined}
+                                    multiSelectedMinionUids={isMultiMinionSelect || isMultiBoardSelect ? multiSelectedMinionUids : undefined}
                                     duelParticipantMinionUids={activeDuelParticipantUids.size > 0 ? activeDuelParticipantUids : undefined}
                                     isBuriedSelectMode={isBuriedSelectPrompt}
                                     selectableBuriedCardUids={isBuriedSelectPrompt ? selectableBuriedCardUids : undefined}
@@ -3528,7 +3685,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     onMinionSelect={handleMinionSelect}
                                     onOngoingSelect={handleOngoingSelect}
                                     onBuriedCardSelect={handleBuriedCardSelect}
-                                    selectableOngoingUids={isOngoingSelectPrompt ? selectableOngoingUids : undefined}
+                                    selectableOngoingUids={isBoardSelectPrompt ? boardSelectableOngoingUids : isOngoingSelectPrompt ? selectableOngoingUids : undefined}
+                                    multiSelectedOngoingUids={isMultiOngoingSelect || isMultiBoardSelect ? multiSelectedOngoingUids : undefined}
                                     onViewMinion={(defId, options) => setViewingCard({ defId, type: 'minion', overlayDefId: options?.overlayDefId })}
                                     onViewAction={handleViewAction}
                                     onViewBase={(defId) => setViewingCard({ defId, type: 'base' })}
@@ -3838,6 +3996,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         && !isBuriedSelectPrompt
                         && !isMinionSelectPrompt
                         && !isOngoingSelectPrompt
+                        && !isBoardSelectPrompt
                         && !isDiscardMinionPrompt
                         && !isTitanReactionPrompt
                         && !titanPromptBaseSelection;

@@ -339,7 +339,7 @@ function kaijuJohnny(ctx: AbilityContext): AbilityResult {
         ],
         {
             sourceId: 'kaiju_johnny',
-            targetType: 'generic',
+            targetType: 'ongoing',
             autoResolveIfSingle: false,
         },
     );

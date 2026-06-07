@@ -1,0 +1,5 @@
+{
+  "badgeText": "2480",
+  "entryText": "2480\n书友甲",
+  "badgeHtml": "<span class=\"inline-flex items-center gap-1 rounded-full border font-semibold text-amber-900 shrink-0 border-amber-400/75 bg-amber-50/92 px-1.5 py-0.5 text-[10px] shadow-[0_1px_0_rgba(120,53,15,0.06)]\" data-testid=\"reward-points-badge\"><svg viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" class=\"h-[1em] w-[1em] shrink-0 text-amber-500\"><path d=\"M12 1.75l2.05 8.2L22.25 12l-8.2 2.05L12 22.25l-2.05-8.2L1.75 12l8.2-2.05L12 1.75z\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"1.15\" stroke-linejoin=\"round\"></path><path d=\"M12 5.55l0.92 5.53 5.98 0.92-5.98 0.92L12 18.45l-0.92-5.53-5.53-0.92 5.53-0.92L12 5.55z\" fill=\"#fff7d6\" opacity=\"0.92\"></path></svg><span class=\"tabular-nums text-[10px]\">2480</span></span>"
+}

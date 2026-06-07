@@ -46,7 +46,7 @@
 
 ## Goal
 
-遵循 `.windsurf/skills/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`，把 DiceThrone 新英雄战术家（`zhanshujia`）与咒缚海盗（`cursed_pirate`，素材目录 `cursed`）从本地素材接入到可验证的角色数据、资源链、规则文档、机制实现、审计 evidence 与真实入口 E2E。若遇到必须人工裁定的图面/规则不确定项，立即停止 goal 并汇报阻塞点。
+遵循 `.codex/skill/add-new-faction/SKILL.md` 与 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`，把 DiceThrone 新英雄战术家（`zhanshujia`）与咒缚海盗（`cursed_pirate`，素材目录 `cursed`）从本地素材接入到可验证的角色数据、资源链、规则文档、机制实现、审计 evidence 与真实入口 E2E。若遇到必须人工裁定的图面/规则不确定项，立即停止 goal 并汇报阻塞点。
 
 ## Constraints
 
@@ -613,8 +613,8 @@
 
 | 项 | 状态 | 证据 |
 |---|---|---|
-| 项目通用 skill `.windsurf/skills/add-new-faction/SKILL.md` | passed | `PYTHONUTF8=1 python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .windsurf\skills\add-new-faction` -> `Skill is valid!` |
-| `data-entry-workflow` 路由到通用新增派系 skill | passed | `.windsurf/skills/data-entry-workflow/SKILL.md` 已包含“通用新增派系 / 新增角色 / 新增英雄”路由 |
+| 项目通用 skill `.codex/skill/add-new-faction/SKILL.md` | passed | `PYTHONUTF8=1 python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .codex\skill\add-new-faction` -> `Skill is valid!` |
+| `data-entry-workflow` 路由到通用新增派系 skill | passed | `.codex/skill/data-entry-workflow/SKILL.md` 已包含“通用新增派系 / 新增角色 / 新增英雄”路由 |
 | DiceThrone hero intake 门禁补强 | passed | `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 已增加禁止提前收口、批次矩阵、L0-L4 与资源/E2E/审计门禁 |
 
 ### Treant / Ninja 重审批次矩阵（当前真状态）
@@ -1037,7 +1037,7 @@
 - [x] 2026-04-24 再次复跑并同步最新口径：`newFactionAbilities = 168 passed / 1 skipped`、4 审计套件全绿、`smashup.e2e.ts = 3 passed`、横幅截图时间更新为 `2026-04-24 09:08`
 - [x] 2026-04-24 追加静态覆盖复核：`registerAbility` 对照 `newFactionAbilities.test.ts`，三派系总计 `40` 条能力、缺口 `0`
 - [x] 2026-04-24 复跑 OpenSpec + R2 回查：`openspec validate add-smashup-oops-faction-gameplay` 通过，`wangling.webp / wangling_base.webp` HEAD 均为 `200`
-- [x] 2026-04-24 强化通用工作流：更新 `.windsurf/skills/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则
+- [x] 2026-04-24 强化通用工作流：更新 `.codex/skill/data-entry-workflow/SKILL.md` 与 `docs/games/smashup/workflows/smashup-faction-implementation.md`，新增“长期任务连续执行”强制规则
 - [x] 2026-04-24 同步两条 watchdog 反馈审计文档复核补记（`69db57c`、`69daa51e`），与主线 E2E `3 passed` 口径对齐
 - [x] 2026-04-24 同步 Android 内置 SmashUp locale：删除 `faction_implementation_in_progress_hint`，并复跑 `assets:upload`（上传 `0` / 跳过 `530` / 失败 `0`）
 - [x] 2026-04-25 完成两条 watchdog 反馈定向 E2E 复测：`69db57c` 1 条、`69daa51e` 2 条，均通过并回写证据截图路径
@@ -1052,7 +1052,7 @@
 - [x] 2026-04-29 补《塞壬的歌声 / 他们出来了》L3：把 `Mermaids` 的“来源基地过滤 + 逐段移动”与 `Skeletons` 的“选基地后多张挖掘”补到浏览器级真实入口，并显式修掉一次 E2E 场景误用不存在 card def 的低级错误
 - [x] 2026-04-29 补《墓园》L3：把 `Skeletons` 的“场上持续牌天赋 -> 挖掘 -> 可选 +1 指示物”从 L2 扩到浏览器级真实入口，并同步回写累计对象证据口径
 - [x] 2026-04-29 补《骸骨之王》L3：把 `Skeletons` 的“场上 minion 天赋 -> 挖掘这里任意埋葬牌 -> 先经 reaction session 再进 +1 后续交互”从 L2 扩到浏览器级真实入口，并同步回写累计对象证据口径
-- [x] 2026-04-29 回写长期任务 / 派系重审 workflow 门禁：把“批量派系重审批次清单”“E2E 场景 defId 预检”“L0-L4 分层验收”“reaction session 抽样门禁”补进 `.windsurf/skills/data-entry-workflow/SKILL.md`、`docs/games/smashup/workflows/smashup-faction-implementation.md`、`docs/ai-rules/testing-audit.md`
+- [x] 2026-04-29 回写长期任务 / 派系重审 workflow 门禁：把“批量派系重审批次清单”“E2E 场景 defId 预检”“L0-L4 分层验收”“reaction session 抽样门禁”补进 `.codex/skill/data-entry-workflow/SKILL.md`、`docs/games/smashup/workflows/smashup-faction-implementation.md`、`docs/ai-rules/testing-audit.md`
 - [x] 2026-04-30 收口《墓地爆发》L3，并修复 `scoreBases` 交互事件在 reduce 前被提前计分的时序缺口；定向 E2E `1 passed`，回归 Vitest `2 passed`
 - [x] 2026-04-30 补《塞壬 / 诱惑者 / 无人岛》L3，并修复 `BaseZone` 分数徽章绕过 `getPlayerEffectivePowerOnBase(...)` 的 UI 口径缺口；3 条定向 E2E、`ongoingModifiers` 聚焦回归 `6 passed`、`typecheck` 全绿
 - [x] 2026-04-30 补《武士 陈》正路径 L3，并收口 `World Champs` 最后一个对象级冻结点；定向 E2E `1 passed`，聚焦 Vitest `2 passed`
@@ -1123,7 +1123,7 @@
 > 按“人类反馈优先”新口径，先收敛 SmashUp 剩余 3 条人工反馈：并列计分、熊泰坦额外随从、多人观战异常。
 
 ### Phase
-- [x] 把 `人类反馈 > 系统自动反馈` 回写到 `.windsurf/skills/feedback-closeout/SKILL.md` 与本计划
+- [x] 把 `人类反馈 > 系统自动反馈` 回写到 `.codex/skill/feedback-closeout/SKILL.md` 与本计划
 - [x] `69f96a734590ce09779a7205` 并列计分：确认本地已修并复跑定向回归
 - [x] `69f9623c4590ce09779a715f` 熊的泰坦不能用额外随从打出：完成共享修复与回归
 - [x] `69f961ca4590ce09779a715a` 多人观战有 bug 看不了其他人：完成多视角修复、真实 E2E 与收口截图

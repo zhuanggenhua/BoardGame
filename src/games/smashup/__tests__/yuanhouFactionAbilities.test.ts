@@ -484,6 +484,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(played.success).toBe(true);
         expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('shapeshifters_cellular_bonding_choose');
+        expect(played.finalState.sys.interaction.current?.data?.targetType).toBe('ongoing');
 
         const resolved = resolveInteractionChain(played.finalState, prompt => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.actionUid === 'evo-a');
@@ -11292,6 +11293,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         expect(played.success).toBe(true);
         expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_into_the_time_slip_choose');
+        expect(played.finalState.sys.interaction.current?.data?.targetType).toBe('board');
 
         const resolved = resolveInteractionChain(played.finalState, prompt => {
             const option = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'stasis-a');
@@ -11363,6 +11365,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         const prompt = played.finalState.sys.interaction.current;
+        expect(prompt?.data?.targetType).toBe('board');
+        expect(findInteractionOption(prompt!, candidate => candidate.value?.cardUid === 'host-a').value?.minionUid).toBe('host-a');
         const resolved = resolveInteractionChain(played.finalState, currentPrompt => {
             const option = findInteractionOption(currentPrompt, candidate => candidate.value?.cardUid === 'attached-a');
             return { optionId: option.id };
@@ -12383,6 +12387,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
 
         const prompt = result.matchState?.sys.interaction.current;
         expect(prompt?.data?.sourceId).toBe('base_primate_park_return');
+        expect(prompt?.data?.targetType).toBe('ongoing');
         expect(findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'action-a')).toBeTruthy();
         expect(findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'action-b')).toBeTruthy();
         expect(findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'action-c')).toBeUndefined();
@@ -12458,6 +12463,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         });
         const prompt = result.matchState?.sys.interaction.current;
         expect(prompt?.data?.sourceId).toBe('base_primate_park_return');
+        expect(prompt?.data?.targetType).toBe('ongoing');
 
         const forgedState = {
             ...result.matchState!,

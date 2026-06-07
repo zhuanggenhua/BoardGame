@@ -82,4 +82,22 @@ describe('SmashUp HandArea discard layout', () => {
         expect(normalCard?.className).not.toContain('ring-2 ring-green-500/35');
         expect(normalCard?.className).not.toContain('opacity-40 grayscale');
     });
+
+    it('手牌放大镜应挂在卡牌外层，不参与卡面描边层', async () => {
+        const view = renderHandArea();
+
+        await waitFor(() => {
+            expect(view.container.querySelectorAll('[data-card-uid]')).toHaveLength(12);
+        });
+
+        const cardWrapper = view.container.querySelector<HTMLElement>('[data-card-uid="hand-card-0"]');
+        const cardFrame = cardWrapper?.querySelector<HTMLElement>(':scope > div');
+        const inspectButton = view.container.querySelector<HTMLElement>('[data-testid="su-hand-card-inspect-hand-card-0"]');
+
+        expect(cardWrapper).toBeTruthy();
+        expect(cardFrame).toBeTruthy();
+        expect(inspectButton).toBeTruthy();
+        expect(cardWrapper?.contains(inspectButton ?? null)).toBe(true);
+        expect(cardFrame?.contains(inspectButton ?? null)).toBe(false);
+    });
 });

@@ -202,6 +202,62 @@ describe('龙卷风代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'cyclone')).toBe(true);
     });
 
+    it('扯走的第一段应以 ongoing 直点混合高亮基地持续与附着行动卡', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('ripped', 'tornados_ripped_off', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase({
+                    defId: 'base_trailer_park',
+                    minions: [
+                        makeMinion('host-a', 'sharks_mako', '0', 2, {
+                            attachedActions: [{ uid: 'attached-action', defId: 'fairies_enchantment', ownerId: '0', talentUsed: false }],
+                        }),
+                    ],
+                    ongoingActions: [{ uid: 'base-action', defId: 'kaiju_stomp', ownerId: '0' }],
+                }),
+                makeBase('base_tornado_alley', [makeMinion('target-minion', 'ghosts_spectre', '1', 2)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'ripped' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(play.finalState, 'tornados_ripped_off');
+        expect(prompt.targetType).toBe('ongoing');
+        expect(getPromptOptions(prompt).some(option => option.value?.cardUid === 'base-action')).toBe(true);
+        expect(getPromptOptions(prompt).some(option => option.value?.cardUid === 'attached-action')).toBe(true);
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                return chooseOptionBySource(
+                    prompt,
+                    'tornados_ripped_off',
+                    option => option.value?.cardUid === 'attached-action',
+                );
+            }
+            return chooseOptionBySource(
+                prompt,
+                'tornados_ripped_off_target_minion',
+                option => option.value?.minionUid === 'target-minion',
+            );
+        });
+
+        const movedTarget = resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'target-minion');
+        expect(movedTarget?.attachedActions.some(action => action.uid === 'attached-action')).toBe(true);
+    });
+
     it('旋风出场可将力量≤3随从从本基地移出或从其他基地移入', () => {
         const pullCore = {
             players: {

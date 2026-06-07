@@ -431,6 +431,8 @@ describe('Kaiju 代表性玩法行为', () => {
             payload: { cardUid: 'johnny', baseIndex: 1 },
             timestamp: 51,
         }, FIXED_RANDOM);
+        const johnnyPrompt = getSimpleChoicePrompt(playJohnny.finalState, 'kaiju_johnny');
+        expect(johnnyPrompt.targetType).toBe('ongoing');
 
         const chooseAction = respondToPromptOption(
             playJohnny.finalState,

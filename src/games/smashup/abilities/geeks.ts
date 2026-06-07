@@ -2205,7 +2205,7 @@ const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyer
         })),
         {
             sourceId: 'geeks_rules_lawyer_action',
-            targetType: 'generic',
+            targetType: 'ongoing',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
         },
