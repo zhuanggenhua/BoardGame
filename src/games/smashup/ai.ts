@@ -725,6 +725,10 @@ const evaluateSmashUpAssignments = (args: {
 
         const baseIndex = getProjectedBaseIndex(action);
         if (baseIndex === null) continue;
+        const talentSimulation = action.kind === 'use-talent'
+            ? simulateSmashUpTalentAction({ context: args.context, action })
+            : null;
+        if (action.kind === 'use-talent' && (talentSimulation?.positionDelta ?? 0) <= 0) continue;
         const basePotential = evaluateBasePotential(state, playerId, baseIndex);
         if (!basePotential) continue;
 
@@ -735,7 +739,7 @@ const evaluateSmashUpAssignments = (args: {
             ? action.metadata.projectedMargin
             : null;
         const scoringEligible = action.metadata?.scoringEligible === true || action.metadata?.scoringBase === true;
-        const intent = buildSmashUpAssignmentIntent({
+        let intent = buildSmashUpAssignmentIntent({
             action,
             mode: assignmentMode,
             basePotential,
@@ -744,6 +748,19 @@ const evaluateSmashUpAssignments = (args: {
             scoringEligible,
         });
         if (!intent) continue;
+        if (action.kind === 'use-talent' && talentSimulation) {
+            intent = {
+                ...intent,
+                score: clampSmashUpAssignmentScore(Math.min(
+                    intent.score,
+                    Math.max(18, Math.min(80, talentSimulation.positionDelta * 2.2)),
+                )),
+                metadata: {
+                    ...(intent.metadata ?? {}),
+                    talentSimulation,
+                },
+            };
+        }
 
         const assignments = groupedAssignments.get(sourceId) ?? [];
         assignments.push({
@@ -1042,6 +1059,16 @@ function simulateSmashUpTalentAction(args: {
     return result;
 }
 
+const shouldHoldPhaseForSmashUpAction = (
+    context: AiDecisionContext,
+    action: AiLegalAction,
+): boolean => {
+    if (action.kind === 'response-pass' || action.kind === 'discard-to-limit') return false;
+    if (action.kind !== 'use-talent') return true;
+    const talentSimulation = simulateSmashUpTalentAction({ context, action });
+    return (talentSimulation?.positionDelta ?? 0) > 0;
+};
+
 const projectSmashUpAction = (args: {
     context: AiDecisionContext;
     action: AiLegalAction;
@@ -1251,6 +1278,7 @@ const projectSmashUpAction = (args: {
     if (args.action.kind === 'advance-phase') {
         const bestAlternativeUrgency = args.context.legalActions
             .filter((candidate) => candidate.actionId !== args.action.actionId)
+            .filter((candidate) => shouldHoldPhaseForSmashUpAction(args.context, candidate))
             .reduce((best, candidate) => Math.max(best, estimateImmediateActionUrgency(candidate)), 0);
 
         return {
@@ -2602,9 +2630,7 @@ const advancePhaseScorer: LocalAiActionScorer = {
     score(context, action) {
         if (action.kind !== 'advance-phase') return null;
         const hasPlayableTempoAction = context.legalActions.some((candidate) => {
-            return candidate.actionId !== action.actionId
-                && candidate.kind !== 'response-pass'
-                && candidate.kind !== 'discard-to-limit';
+            return candidate.actionId !== action.actionId && shouldHoldPhaseForSmashUpAction(context, candidate);
         });
 
         return {
