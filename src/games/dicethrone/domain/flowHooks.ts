@@ -1191,7 +1191,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                             attackerId,
                             chooserPlayerId: choiceOwnerId,
                             sourceAbilityId: targetingCore.pendingAttack.sourceAbilityId ?? 'targeting-roll',
-                            titleKey: targetingValue === 5 ? '由对手决定谁承受本次攻击' : '选择本次攻击目标',
+                            titleKey: targetingValue === 5
+                                ? 'interaction.targetingRollOpponentDecidesTarget'
+                                : 'interaction.targetingRollSelectTarget',
                             targetRollValue: targetingValue,
                             allowedCommands: targetingValue === 6 ? ['PLAY_CARD'] : undefined,
                             options: getTargetingRollChoiceOptions(targetingCore, attackerId)

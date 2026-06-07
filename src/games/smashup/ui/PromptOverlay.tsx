@@ -204,9 +204,12 @@ interface PromptSliderConfig {
     defaultValue: number;
     confirmOptionId?: string;
     confirmLabel?: string;
+    confirmLabelKey?: string;
     valueLabel?: string;
+    valueLabelKey?: string;
     skipOptionId?: string;
     skipLabel?: string;
+    skipLabelKey?: string;
 }
 
 function parseSliderConfig(prompt: unknown): PromptSliderConfig | undefined {
@@ -229,9 +232,12 @@ function parseSliderConfig(prompt: unknown): PromptSliderConfig | undefined {
         defaultValue: Number.isFinite(defaultValue) ? defaultValue : max,
         confirmOptionId: typeof slider.confirmOptionId === 'string' ? slider.confirmOptionId : undefined,
         confirmLabel: typeof slider.confirmLabel === 'string' ? slider.confirmLabel : undefined,
+        confirmLabelKey: typeof slider.confirmLabelKey === 'string' ? slider.confirmLabelKey : undefined,
         valueLabel: typeof slider.valueLabel === 'string' ? slider.valueLabel : undefined,
+        valueLabelKey: typeof slider.valueLabelKey === 'string' ? slider.valueLabelKey : undefined,
         skipOptionId: typeof slider.skipOptionId === 'string' ? slider.skipOptionId : undefined,
         skipLabel: typeof slider.skipLabel === 'string' ? slider.skipLabel : undefined,
+        skipLabelKey: typeof slider.skipLabelKey === 'string' ? slider.skipLabelKey : undefined,
     };
 }
 
@@ -240,6 +246,26 @@ function formatSliderText(template: string | undefined, value: number, max: numb
     return template
         .replace(/\{\{\s*value\s*\}\}/g, String(value))
         .replace(/\{\{\s*max\s*\}\}/g, String(max));
+}
+
+function resolveSliderText(
+    t: (key: string, opts?: any) => string,
+    key: string | undefined,
+    template: string | undefined,
+    value: number,
+    max: number,
+    fallback: string,
+): string {
+    const formattedFallback = formatSliderText(template, value, max, fallback);
+    if (!key) {
+        return formattedFallback;
+    }
+    return t(key, {
+        value,
+        max,
+        count: value,
+        defaultValue: formattedFallback,
+    });
 }
 
 const DECK_REORDER_SOURCE_IDS = new Set([
@@ -771,19 +797,30 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     }
 
     if (sliderConfig) {
-        const confirmLabel = formatSliderText(
+        const confirmLabel = resolveSliderText(
+            t,
+            sliderConfig.confirmLabelKey,
             sliderConfig.confirmLabel,
             sliderValue,
             sliderConfig.max,
             `确认转移 ${sliderValue}`,
         );
-        const valueLabel = formatSliderText(
+        const valueLabel = resolveSliderText(
+            t,
+            sliderConfig.valueLabelKey,
             sliderConfig.valueLabel,
             sliderValue,
             sliderConfig.max,
             `当前数量：${sliderValue} / ${sliderConfig.max}`,
         );
-        const skipLabel = sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' });
+        const skipLabel = sliderConfig.skipLabelKey
+            ? t(sliderConfig.skipLabelKey, {
+                value: sliderValue,
+                max: sliderConfig.max,
+                count: sliderValue,
+                defaultValue: sliderConfig.skipLabel ?? sliderSkipOption?.label ?? '跳过',
+            })
+            : (sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' }));
 
         return (
             <motion.div

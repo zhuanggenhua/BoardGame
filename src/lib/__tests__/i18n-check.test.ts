@@ -478,6 +478,69 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
+    it('会拦截伪 *Key 字段里的可见文案，但放过 key 模板', () => {
+        const content = `
+            const config = {
+                titleKey: '选择攻击目标',
+                labelKey: condition ? '令2号玩家获得烟雾弹' : 'choices.ninjaSmokeScreen.option',
+                nameKey: \`tokens.${'${def.id}'}.name\`,
+            };
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: '选择攻击目标',
+            source: 'titleKey',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: '令2号玩家获得烟雾弹',
+            source: 'labelKey',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: 'tokens.${def.id}.name',
+        }));
+    });
+
+    it('会拦截 slider 直接写可见文案的标签字段', () => {
+        const content = `
+            const prompt = {
+                confirmLabel: '确认转移 2 个力量指示物',
+                valueLabel: condition ? '承受压力：2 / 3' : 'ui.giant_ants_under_pressure_value_label',
+                skipLabel: '跳过这次转移',
+            };
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'game-smashup',
+            knownNamespaces: new Set(['game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '确认转移 2 个力量指示物',
+            source: 'confirmLabel',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '承受压力：2 / 3',
+            source: 'valueLabel',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '跳过这次转移',
+            source: 'skipLabel',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: 'ui.giant_ants_under_pressure_value_label',
+        }));
+    });
+
     it('识别 manifest 中的 setupOptions 与基础展示 key', () => {
         const content = `
             const entry = {

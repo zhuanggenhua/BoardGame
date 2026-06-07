@@ -737,8 +737,8 @@ const giantAntUnderPressureChooseAmountPromptProgram = createPromptProgram<
             step: 1,
             defaultValue: context.sourceCounterAmount,
             confirmOptionId: 'confirm-transfer',
-            confirmLabel: '确认转移 {{value}} 个力量指示物',
-            valueLabel: '承受压力：{{value}} / {{max}}',
+            confirmLabelKey: 'ui.giant_ants_transfer_counters_confirm',
+            valueLabelKey: 'ui.giant_ants_under_pressure_value_label',
         };
         return interaction;
     },
@@ -903,8 +903,8 @@ const giantAntWeAreTheChampionsChooseAmountPromptProgram = createPromptProgram<
             step: 1,
             defaultValue: context.sourceCounterAmount,
             confirmOptionId: 'confirm-transfer',
-            confirmLabel: '确认转移 {{value}} 个力量指示物',
-            valueLabel: '我们乃最强：{{value}} / {{max}}',
+            confirmLabelKey: 'ui.giant_ants_transfer_counters_confirm',
+            valueLabelKey: 'ui.giant_ants_we_are_the_champions_value_label',
         };
         return interaction;
     },

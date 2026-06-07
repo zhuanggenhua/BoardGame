@@ -164,6 +164,59 @@ async function injectMinionSelectionPrompt(page: Page): Promise<void> {
 }
 
 test.describe('大杀四方宿主随从描边取证', () => {
+    test('随从 hover 放大时，力量标记与附着角标应跟随宿主一起缩放', async ({ page, game }, testInfo) => {
+        test.setTimeout(120000);
+
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await game.openTestGame('smashup', FOUR_PLAYER_TEST_QUERY, 45000);
+        await game.setupScene(buildHostOutlineScene());
+        await hideSmashUpDebugPanelForEvidence(page);
+
+        const hostMinion = page.locator('[data-minion-uid="badge-host"]');
+        const minionFrame = page.locator('[data-testid="su-minion-frame-badge-host"]');
+        const powerBadge = page.locator('[data-testid="su-minion-power-badge-badge-host"]');
+        const attachedBadgeFace = page.locator('[data-testid="smashup-attached-badge-face"]');
+
+        await expect(hostMinion).toBeVisible({ timeout: 15000 });
+        await expect(powerBadge).toBeVisible({ timeout: 5000 });
+        await expect(attachedBadgeFace).toBeVisible({ timeout: 5000 });
+
+        const beforeMetrics = await Promise.all([
+            minionFrame.boundingBox(),
+            powerBadge.boundingBox(),
+            attachedBadgeFace.boundingBox(),
+        ]);
+        const [beforeFrameBox, beforePowerBadgeBox, beforeAttachedBadgeBox] = beforeMetrics;
+        expect(beforeFrameBox, 'hover 前未拿到宿主卡面边界').not.toBeNull();
+        expect(beforePowerBadgeBox, 'hover 前未拿到力量标记边界').not.toBeNull();
+        expect(beforeAttachedBadgeBox, 'hover 前未拿到附着角标边界').not.toBeNull();
+
+        await hostMinion.hover();
+
+        await expect
+            .poll(async () => {
+                const box = await minionFrame.boundingBox();
+                return box?.width ?? 0;
+            }, { timeout: 5000 })
+            .toBeGreaterThan((beforeFrameBox?.width ?? 0) * 1.05);
+
+        const afterMetrics = await Promise.all([
+            minionFrame.boundingBox(),
+            powerBadge.boundingBox(),
+            attachedBadgeFace.boundingBox(),
+        ]);
+        const [afterFrameBox, afterPowerBadgeBox, afterAttachedBadgeBox] = afterMetrics;
+        expect(afterFrameBox, 'hover 后未拿到宿主卡面边界').not.toBeNull();
+        expect(afterPowerBadgeBox, 'hover 后未拿到力量标记边界').not.toBeNull();
+        expect(afterAttachedBadgeBox, 'hover 后未拿到附着角标边界').not.toBeNull();
+
+        expect((afterFrameBox?.width ?? 0)).toBeGreaterThan((beforeFrameBox?.width ?? 0) * 1.05);
+        expect((afterPowerBadgeBox?.width ?? 0)).toBeGreaterThan((beforePowerBadgeBox?.width ?? 0) * 1.05);
+        expect((afterAttachedBadgeBox?.width ?? 0)).toBeGreaterThan((beforeAttachedBadgeBox?.width ?? 0) * 1.05);
+
+        await game.screenshot('00-host-hover-scale-follow-board', testInfo);
+    });
+
     test('宿主随从已选中时只有卡面描边，内部角标与附着预览不复用高亮', async ({ page, game }, testInfo) => {
         test.setTimeout(120000);
 

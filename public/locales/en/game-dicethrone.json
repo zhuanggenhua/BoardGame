@@ -1150,6 +1150,13 @@
       "poison": "+2 damage and apply Delayed Poison",
       "undefendable": "+2 damage and make the attack undefendable"
     },
+    "ninjaSmokeScreen": {
+      "title": "Choose Smoke Screen II target(s)",
+      "option": "Give Smoke Bomb and 3 Ninjutsu to Player {{ally}}; apply Delayed Poison to Player {{opponent}}",
+      "kujiKiriTitle": "Choose Kuji Kiri target(s)",
+      "kujiKiriSameTarget": "Deal 4 true damage twice to Player {{opponent}}",
+      "kujiKiriSplitTargets": "Deal 4 true damage to Player {{firstOpponent}} and Player {{secondOpponent}}"
+    },
     "treantWildGrowth": {
       "title": "Wild Growth: choose Spirits and Life Sap",
       "none": "Do not remove Spirits",
@@ -1310,8 +1317,11 @@
     "selectStatusToRemove": "Select a status effect to remove",
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
-      "selectPlayerForConsecrate": "Select a player to consecrate",
-      "gunslingerTheLaw": "Select up to 2 target players",
+    "selectPlayerForConsecrate": "Select a player to consecrate",
+    "gunslingerTheLaw": "Select up to 2 target players",
+    "targetingRollSelectTarget": "Select this attack's target",
+    "targetingRollOpponentDecidesTarget": "The opponent decides who takes this attack",
+    "targetingRollPlayerOption": "Player {{playerNumber}}",
       "selectHandCardToDiscard": "Select 1 card from your hand to discard",
       "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",

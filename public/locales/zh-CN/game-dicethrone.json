@@ -1184,6 +1184,13 @@
       "poison": "伤害 +2，并施加慢性中毒",
       "undefendable": "伤害 +2，并使攻击不可防御"
     },
+    "ninjaSmokeScreen": {
+      "title": "选择烟雾阵 II 的目标",
+      "option": "令{{ally}}号玩家获得烟雾弹与3忍术；对{{opponent}}号玩家施加慢性中毒",
+      "kujiKiriTitle": "选择九字切的目标",
+      "kujiKiriSameTarget": "对{{opponent}}号玩家造成两次 4 点真实伤害",
+      "kujiKiriSplitTargets": "对{{firstOpponent}}号与{{secondOpponent}}号玩家各造成 4 点真实伤害"
+    },
     "treantWildGrowth": {
       "title": "野蛮生长：选择树灵与生命源泉",
       "none": "不移除树灵",
@@ -1344,8 +1351,11 @@
     "selectStatusToRemove": "选择要移除的状态效果",
     "selectPlayerToRemoveAllStatus": "选择要移除所有状态的玩家",
     "selectPlayerForRetribution": "选择获得神罚的玩家",
-      "selectPlayerForConsecrate": "选择获得祝圣的玩家",
-      "gunslingerTheLaw": "选择至多 2 名目标玩家",
+    "selectPlayerForConsecrate": "选择获得祝圣的玩家",
+    "gunslingerTheLaw": "选择至多 2 名目标玩家",
+    "targetingRollSelectTarget": "选择本次攻击目标",
+    "targetingRollOpponentDecidesTarget": "由对手决定谁承受本次攻击",
+    "targetingRollPlayerOption": "玩家 {{playerNumber}}",
       "selectHandCardToDiscard": "选择 1 张手牌弃置",
       "selectStatusToTransfer": "选择要转移的状态效果",
     "hint_copy_step1": "选择要复制的源骰子",

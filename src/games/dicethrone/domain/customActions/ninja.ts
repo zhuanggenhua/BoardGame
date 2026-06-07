@@ -382,7 +382,11 @@ function handleSmokeScreen2(ctx: CustomActionContext): DiceThroneEvent[] {
     const options = playerIds.flatMap((playerId, playerIndex) => opponentIds.map((opponentId, opponentIndex) => ({
         value: encodePlayerOpponentChoice(playerIndex, opponentIndex),
         customId: NINJA_SMOKE_SCREEN_2_CHOICE_ID,
-        labelKey: `令${Number(playerId) + 1}号玩家获得烟雾弹与3忍术；对${Number(opponentId) + 1}号玩家施加慢性中毒`,
+        labelKey: 'choices.ninjaSmokeScreen.option',
+        labelParams: {
+            ally: Number(playerId) + 1,
+            opponent: Number(opponentId) + 1,
+        },
     })));
 
     return [{
@@ -390,7 +394,7 @@ function handleSmokeScreen2(ctx: CustomActionContext): DiceThroneEvent[] {
         payload: {
             playerId: ctx.attackerId,
             sourceAbilityId: ctx.sourceAbilityId,
-            titleKey: '选择烟雾阵 II 的目标',
+            titleKey: 'choices.ninjaSmokeScreen.title',
             options,
         },
         sourceCommandType: 'ABILITY_EFFECT',
@@ -413,8 +417,14 @@ function handleSmokeScreenKujiKiri(ctx: CustomActionContext): DiceThroneEvent[] 
                 value: encodeOpponentPairChoice(firstIndex, secondIndex),
                 customId: NINJA_SMOKE_SCREEN_KUJI_KIRI_CHOICE_ID,
                 labelKey: firstIndex === secondIndex
-                    ? `对${Number(firstOpponentId) + 1}号玩家造成两次 4 点真实伤害`
-                    : `对${Number(firstOpponentId) + 1}号与${Number(secondOpponentId) + 1}号玩家各造成 4 点真实伤害`,
+                    ? 'choices.ninjaSmokeScreen.kujiKiriSameTarget'
+                    : 'choices.ninjaSmokeScreen.kujiKiriSplitTargets',
+                labelParams: firstIndex === secondIndex
+                    ? { opponent: Number(firstOpponentId) + 1 }
+                    : {
+                        firstOpponent: Number(firstOpponentId) + 1,
+                        secondOpponent: Number(secondOpponentId) + 1,
+                    },
             });
         }
     }
@@ -424,7 +434,7 @@ function handleSmokeScreenKujiKiri(ctx: CustomActionContext): DiceThroneEvent[] 
         payload: {
             playerId: ctx.attackerId,
             sourceAbilityId: ctx.sourceAbilityId,
-            titleKey: '选择九字切的目标',
+            titleKey: 'choices.ninjaSmokeScreen.kujiKiriTitle',
             options,
         },
         sourceCommandType: 'ABILITY_EFFECT',

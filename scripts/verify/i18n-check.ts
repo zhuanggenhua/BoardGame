@@ -37,6 +37,8 @@ type I18nWarning = {
         | 'raw-simple-choice-option-label'
         | 'raw-prompt-option-label'
         | 'raw-create-skip-label'
+        | 'raw-i18n-key-property'
+        | 'raw-slider-label'
         | 'raw-dicethrone-contract-text';
     key: string;
     file: string;
@@ -89,6 +91,26 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => (
 
 const isAsciiOnly = (value: string): boolean => (
     Array.from(value).every((char) => char.charCodeAt(0) <= 0x7f)
+);
+
+const looksLikeI18nKey = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    if (/\s/.test(trimmed)) return false;
+    if (!isAsciiOnly(trimmed)) return false;
+    return /[.:]/.test(trimmed);
+};
+
+const looksLikeI18nKeyPattern = (value: string): boolean => {
+    const normalized = value.trim().replace(/\$\{[^}]+\}/g, 'placeholder');
+    if (!normalized) return false;
+    if (/\s/.test(normalized)) return false;
+    if (!isAsciiOnly(normalized)) return false;
+    return /[.:]/.test(normalized);
+};
+
+const isI18nPropertyName = (propertyName: string): boolean => (
+    /(?:^|[A-Z])(title|label|description|players|name|message|hint|effect|text)Key$/.test(propertyName)
 );
 
 export const parseNamespaceLiteral = (value: string): string[] => {
@@ -1728,6 +1750,91 @@ export const collectReferencesFromContent = (
         });
     }
 
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const isSliderVisibleLabelProperty = (propertyName: string): boolean => (
+        propertyName === 'confirmLabel' || propertyName === 'valueLabel' || propertyName === 'skipLabel'
+    );
+    const getPropertyNameText = (name: ts.PropertyName): string | null => {
+        if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+            return name.text;
+        }
+        return null;
+    };
+    const getLiteralInfo = (node: ts.Expression): { value: string; dynamic: boolean } | null => {
+        if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+            return { value: node.text.trim(), dynamic: false };
+        }
+        if (ts.isTemplateExpression(node)) {
+            const raw = node.getText(sourceFile);
+            return { value: raw.slice(1, -1).trim(), dynamic: true };
+        }
+        return null;
+    };
+    const collectLiteralCandidates = (node: ts.Expression): Array<{ node: ts.Expression; value: string; dynamic: boolean }> => {
+        const direct = getLiteralInfo(node);
+        if (direct) {
+            return [{ node, value: direct.value, dynamic: direct.dynamic }];
+        }
+        if (ts.isConditionalExpression(node)) {
+            return [...collectLiteralCandidates(node.whenTrue), ...collectLiteralCandidates(node.whenFalse)];
+        }
+        if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node) || ts.isTypeAssertionExpression(node)) {
+            return collectLiteralCandidates(node.expression);
+        }
+        if (
+            ts.isBinaryExpression(node)
+            && (node.operatorToken.kind === ts.SyntaxKind.BarBarToken || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+        ) {
+            return collectLiteralCandidates(node.right);
+        }
+        return [];
+    };
+    const visitedLiteralWarnings = new Set<string>();
+    const visitPropertyWarnings = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node)) {
+            const propertyName = getPropertyNameText(node.name);
+            if (propertyName) {
+                for (const literal of collectLiteralCandidates(node.initializer)) {
+                    if (!literal.value) {
+                        continue;
+                    }
+                    const warningKey = `${propertyName}:${literal.node.getStart(sourceFile)}`;
+                    if (visitedLiteralWarnings.has(warningKey)) {
+                        continue;
+                    }
+
+                    if (isI18nPropertyName(propertyName) && !looksLikeI18nKeyPattern(literal.value)) {
+                        visitedLiteralWarnings.add(warningKey);
+                        addWarning({
+                            type: 'raw-i18n-key-property',
+                            key: literal.value,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: propertyName,
+                            detail: `${propertyName} 应该存放翻译 key，但当前直接写了可见文案或非 key 字符串`,
+                        });
+                        continue;
+                    }
+
+                    if (isSliderVisibleLabelProperty(propertyName) && !looksLikeI18nKeyPattern(literal.value)) {
+                        visitedLiteralWarnings.add(warningKey);
+                        addWarning({
+                            type: 'raw-slider-label',
+                            key: literal.value,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: propertyName,
+                            detail: `${propertyName} 直接使用了可见文案，请优先改成对应的 *LabelKey 并走 locales`,
+                        });
+                    }
+                }
+            }
+        }
+
+        ts.forEachChild(node, visitPropertyWarnings);
+    };
+    visitPropertyWarnings(sourceFile);
+
     // 检测本文件内 fail-helper('error_code') 调用并注册 error.<code> 引用
     const validationFailHelperNames = detectValidationFailHelperNames(content);
     for (const helperName of validationFailHelperNames) {
@@ -1788,18 +1895,6 @@ const getGameIdFromPath = (filePath: string): string | null => {
     const match = normalized.match(/\/src\/games\/([^/]+)\//);
     return match?.[1] ?? null;
 };
-
-const looksLikeI18nKey = (value: string): boolean => {
-    const trimmed = value.trim();
-    if (!trimmed) return false;
-    if (/\s/.test(trimmed)) return false;
-    if (!isAsciiOnly(trimmed)) return false;
-    return /[.:]/.test(trimmed);
-};
-
-const isI18nPropertyName = (propertyName: string): boolean => (
-    /(?:^|[A-Z])(title|label|description|players|name|message|hint|effect)Key$/.test(propertyName)
-);
 
 const inferStaticNamespacesForFile = (
     content: string,
@@ -2626,6 +2721,8 @@ const main = () => {
     const blockingWarningTypes = new Set<I18nWarning['type']>([
         'deprecated-dicethrone-hero-key',
         'raw-validation-error',
+        'raw-i18n-key-property',
+        'raw-slider-label',
         'raw-dicethrone-contract-text',
     ]);
     const blockingWarnings = dedupedWarnings.filter((warning) => blockingWarningTypes.has(warning.type));
