@@ -477,6 +477,8 @@ const HEURISTIC_BARRIER_LINE_FILTER = {
 const HAND_DRAWN_BOUNDARY_GENERATION_MATCH_POINT_OVERRIDES = new Map<string, MaskPoint>([
     // 原图中“保定左上”的大同字样点。旧 formal mask 曾把这块并错，调试生成时要优先认回这里。
     ['city-region-1', { x: 315, y: 606 }],
+    // 喀喇沁部旧保存成果曾把颜色/seed 落到锦州闭合区；formal 生成时必须固定认回这块独立闭合区本身。
+    ['city-region-21', { x: 250, y: 505 }],
 ]);
 
 const binaryMasksEqual = (left: Uint8Array, right: Uint8Array) => {
