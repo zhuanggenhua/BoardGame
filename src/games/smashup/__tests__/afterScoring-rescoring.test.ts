@@ -275,7 +275,7 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(finalState.core.bases[1].minions.find(minion => minion.uid === 'm3')?.powerCounters).toBe(7);
     });
 
-    it('afterScoring 通过统一反应入口打出我们乃最强后若没有合法接收目标，应给出无目标反馈并自动收口而不是卡死', () => {
+    it('afterScoring 通过统一反应入口打出我们乃最强后若没有合法接收目标，应直接反馈并自动收口而不是卡死', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);
             const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
@@ -310,27 +310,16 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         const playResult = runner.resolveInteraction('0', { optionId: playOptionId });
         expect(playResult.success).toBe(true);
         eventLog.push(...playResult.events);
-
-        const sourceChoice = getCurrentChoice(runner.getState());
-        expect(sourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
-        const chooseSource = runner.resolveInteraction(
-            '0',
-            {
-                optionId: findOptionId(
-                    sourceChoice!,
-                    option => option.value?.minionUid === 'm1',
-                    '找不到力量来源随从',
-                ),
-            },
-        );
-        expect(chooseSource.success).toBe(true);
-        eventLog.push(...chooseSource.events);
         expect(
-            chooseSource.events.some(
+            playResult.events.some(
                 event => event.type === SU_EVENTS.ABILITY_FEEDBACK
-                    && (event as { payload?: { feedbackKey?: string } }).payload?.feedbackKey === 'feedback.no_valid_targets',
+                    && (
+                        (event as { payload?: { feedbackKey?: string; messageKey?: string } }).payload?.feedbackKey === 'feedback.no_valid_targets'
+                        || (event as { payload?: { feedbackKey?: string; messageKey?: string } }).payload?.messageKey === 'feedback.no_valid_targets'
+                    ),
             ),
         ).toBe(true);
+        expect(getCurrentChoice(runner.getState())).toBeUndefined();
 
         drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
 

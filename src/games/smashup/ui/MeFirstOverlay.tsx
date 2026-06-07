@@ -2,7 +2,7 @@
  * 大杀四方 (Smash Up) - Me First! 响应窗口覆盖层
  */
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
@@ -99,7 +99,7 @@ export const MeFirstOverlay: React.FC<{
         }) as { id?: unknown } | undefined;
         return typeof option?.id === 'string' ? option.id : undefined;
     })();
-    const handlePass = useCallback(() => {
+    const handlePass = () => {
         onSelectCard(null);
         if (interactionSourceId === 'smashup_reaction_choose' && currentInteraction?.id && reactionPassOptionId) {
             dispatch(INTERACTION_COMMANDS.RESPOND, {
@@ -109,7 +109,7 @@ export const MeFirstOverlay: React.FC<{
             return;
         }
         dispatch('RESPONSE_PASS');
-    }, [currentInteraction?.id, dispatch, interactionSourceId, onSelectCard, reactionPassOptionId]);
+    };
     const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 

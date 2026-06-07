@@ -302,6 +302,54 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
     });
 
+    it('统一响应交互只剩紧急跳过时，中间让过按钮也应收口当前交互', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                {
+                                    id: '__emergency_skip__',
+                                    label: '跳过（当前无可执行选项）',
+                                    value: { __emergency_skip__: true, __emergency_skip_reason__: 'empty-options' },
+                                },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        });
+        const dispatch = vi.fn();
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={dispatch}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('me-first-pass-button'));
+
+        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: 'reaction-choose',
+            optionId: '__emergency_skip__',
+        });
+        expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
+    });
+
     it('hides when response window is locked by another hidden interaction', () => {
         const state = createState({
             sys: {
