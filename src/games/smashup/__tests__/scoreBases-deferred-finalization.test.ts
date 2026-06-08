@@ -1202,6 +1202,6 @@ describe('scoreBases 延迟清场 / 最终化', () => {
         expect(resolved.success).toBe(true);
         expect(resolved.error).toBeUndefined();
         expect(resolved.events.some(event => event.type === INTERACTION_EVENTS.RESOLVED)).toBe(true);
-        expect(runner.getState().sys.interaction.current).toBeUndefined();
+        expectNoPrompt(runner.getState());
     });
 });
