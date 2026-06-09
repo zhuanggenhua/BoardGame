@@ -414,7 +414,7 @@ function coordination(ctx: AbilityContext): AbilityResult {
         },
         {
             id: 'walking-castle',
-            label: '打出 Walking Castle 泰坦',
+            label: '打出移动城堡泰坦',
             labelKey: 'ui.magical_girls_coordination_walk_castle_option',
             value: { choice: 'walking_castle', titanUid: titan.uid },
             displayMode: 'button' as const,
@@ -423,7 +423,7 @@ function coordination(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `magical_girls_coordination_${ctx.now}`,
         ctx.playerId,
-        '和谐：额外打出一个随从，或打出 Walking Castle',
+        '和谐：额外打出一个随从，或打出移动城堡',
         options,
         {
             sourceId: 'magical_girls_coordination',
@@ -955,7 +955,7 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         const interaction = createSimpleChoice(
             `magical_girls_coordination_base_${timestamp}`,
             playerId,
-            '和谐：选择 Walking Castle 要进入的基地',
+            '和谐：选择移动城堡要进入的基地',
             buildBaseTargetOptions(eligibleBases, state.core),
             {
                 sourceId: 'magical_girls_coordination_base',

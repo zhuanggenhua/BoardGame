@@ -230,6 +230,27 @@ describe('井字棋 AI', () => {
         })).toEqual([]);
     });
 
+    it('存在全局阻塞交互时不应继续生成落子动作', () => {
+        const state = createAiTestState({
+            cells: [null, null, null, null, null, null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+        state.sys.interaction.current = {
+            id: 'tutorial-choice',
+            playerId: '1',
+            kind: 'simple-choice',
+            data: { options: [{ id: 'ok' }] },
+        } as any;
+
+        const actions = buildTicTacToeAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toEqual([]);
+    });
+
     it('本地 AI runner 应优先选择制胜格子', async () => {
         const state = createAiTestState({
             cells: ['0', '0', null, '1', '1', null, null, null, null],

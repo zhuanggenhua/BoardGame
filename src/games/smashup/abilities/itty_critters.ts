@@ -421,7 +421,7 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
         [
             ...(context.rainboroc ? [{
                 id: 'rainboroc',
-                label: '打出 Rainboroc 到这里',
+                label: '打出彩虹鸟到这里',
                 labelKey: 'ui.itty_critters_evolution_rainboroc_option',
                 value: { choice: 'rainboroc', titanUid: context.rainboroc.uid, defId: context.rainboroc.defId },
                 displayMode: 'card' as const,

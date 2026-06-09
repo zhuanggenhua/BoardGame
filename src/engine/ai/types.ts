@@ -1,4 +1,5 @@
 import type { MatchState, PlayerId } from '../types';
+import type { AiDecisionDescriptor, AiInteractionSupportDeclaration } from './decisionSemantics';
 
 export type AiRelationToActor = 'self' | 'ally' | 'enemy' | 'neutral';
 
@@ -99,6 +100,8 @@ export interface AiInteractionSnapshot {
     playerId?: string;
     options: AiInteractionOptionSnapshot[];
     multi?: unknown;
+    ai?: AiInteractionSupportDeclaration;
+    aiDecisions?: AiDecisionDescriptor[];
 }
 
 export interface AiResponseWindowSnapshot {

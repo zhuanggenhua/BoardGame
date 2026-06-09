@@ -16,6 +16,7 @@ import type {
     GameEvent,
 } from '../types';
 import type { AiHint } from '../ai/types';
+import type { AiInteractionSupportDeclaration } from '../ai/decisionSemantics';
 import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
@@ -240,6 +241,8 @@ export interface InteractionDescriptor<TData = unknown> {
     playerId: PlayerId;
     /** 所属 resolution frame（可选；未提供时由 queueInteraction 绑定当前 active frame） */
     resolutionFrameId?: string;
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。UI 不应依赖此字段渲染。 */
+    ai?: AiInteractionSupportDeclaration;
     data: TData;
 }
 
@@ -313,6 +316,8 @@ export interface SimpleChoiceData<T = unknown> {
      * 仅对当前交互所属玩家生效。
      */
     allowedCommands?: string[];
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。 */
+    ai?: AiInteractionSupportDeclaration;
 }
 
 /**
@@ -615,6 +620,8 @@ export interface SimpleChoiceConfig {
      * 仅对当前交互所属玩家生效。
      */
     allowedCommands?: string[];
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。 */
+    ai?: AiInteractionSupportDeclaration;
 }
 
 /**
@@ -659,6 +666,7 @@ export function createSimpleChoice<T>(
         id,
         kind: 'simple-choice',
         playerId,
+        ...(config.ai ? { ai: config.ai } : {}),
         data: {
             title: sanitizeStoredPromptText(title, config.titleKey),
             titleKey: config.titleKey,
@@ -678,6 +686,7 @@ export function createSimpleChoice<T>(
             responseValidationMode: config.responseValidationMode ?? (config.revalidateOnRespond ? 'live' : undefined),
             revalidateOnRespond: config.revalidateOnRespond,
             allowedCommands: config.allowedCommands,
+            ai: config.ai,
         } as any,
     };
 }

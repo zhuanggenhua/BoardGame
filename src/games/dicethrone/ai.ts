@@ -1,6 +1,7 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
     buildDeterministicAiNoise,
+    buildSelectPlayerDecisionActions,
     createAiLegalActionId,
     createProfileAwareActionScorer,
     getAiActionStrategyTags,
@@ -22,6 +23,7 @@ import type {
     AiStrategyProfile,
     AiEffectIntent,
     AiHint,
+    AiSelectPlayerDecisionDescriptor,
     GameAiRuntime,
     LocalAiActionScorer,
 } from '../../engine/ai';
@@ -554,33 +556,6 @@ const getBestDiceTargetPlan = (
     })[0] ?? null;
 };
 
-const buildPlayerSelectionCombos = (
-    playerIds: PlayerId[],
-    selectCount: number,
-): PlayerId[][] => {
-    if (playerIds.length === 0) return [];
-
-    const normalizedCount = Math.max(1, Math.min(selectCount, playerIds.length));
-    const combinations: PlayerId[][] = [];
-    const current: PlayerId[] = [];
-
-    const dfs = (startIndex: number) => {
-        if (current.length === normalizedCount) {
-            combinations.push([...current]);
-            return;
-        }
-
-        for (let i = startIndex; i < playerIds.length; i += 1) {
-            current.push(playerIds[i]);
-            dfs(i + 1);
-            current.pop();
-        }
-    };
-
-    dfs(0);
-    return combinations;
-};
-
 const isRemovableStatusId = (state: DiceThroneState, statusId: string): boolean => {
     const def = state.core.tokenDefinitions.find((definition) => definition.id === statusId);
     return def?.passiveTrigger?.removable ?? true;
@@ -614,15 +589,6 @@ const getSelectableStatusIds = (state: DiceThroneState, playerId: PlayerId): str
 const isFriendlyTarget = (state: DiceThroneState, actingPlayerId: PlayerId, targetPlayerId: PlayerId): boolean => {
     return actingPlayerId === targetPlayerId
         || areTeammates(state.core, actingPlayerId, targetPlayerId);
-};
-
-const getRelationToActor = (
-    state: DiceThroneState,
-    actingPlayerId: PlayerId,
-    targetPlayerId: PlayerId,
-): AiHint['relationToActor'] => {
-    if (actingPlayerId === targetPlayerId) return 'self';
-    return areTeammates(state.core, actingPlayerId, targetPlayerId) ? 'ally' : 'enemy';
 };
 
 const getCardInteractionById = (
@@ -769,6 +735,163 @@ const parseTargetPlayerIdFromCustomId = (customId: string | undefined): PlayerId
     return targetPlayerId ? targetPlayerId : null;
 };
 
+const buildPlayerTargetHint = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    targetPlayerId: PlayerId,
+    args: {
+        effectIntent: AiEffectIntent;
+        estimatedSwing?: number;
+        tags: string[];
+    },
+): AiHint => {
+    const relationToActor: AiHint['relationToActor'] = actingPlayerId === targetPlayerId
+        ? 'self'
+        : areTeammates(state.core, actingPlayerId, targetPlayerId)
+            ? 'ally'
+            : 'enemy';
+
+    return buildTargetAiHint({
+        actorPlayerId: actingPlayerId,
+        targetPlayerId,
+        relationToActor,
+        targetKind: 'player',
+        effectIntent: args.effectIntent,
+        ...(typeof args.estimatedSwing === 'number' ? { estimatedSwing: args.estimatedSwing } : {}),
+        tags: args.tags,
+    });
+};
+
+const buildSelectPlayerDecisionFromInteraction = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+): AiSelectPlayerDecisionDescriptor | null => {
+    if (current.kind === 'dt:defender-choice') {
+        const data = current.data as {
+            options?: Array<{ playerId?: PlayerId; customId?: string; disabled?: boolean }>;
+            targetRollValue?: number;
+        };
+        return {
+            kind: 'select-player',
+            interactionId: current.id,
+            actorPlayerId: playerId,
+            sourceId: current.sourceId,
+            selection: { min: 1, max: 1 },
+            metadata: {
+                targetRollValue: data.targetRollValue,
+            },
+            candidates: (data.options ?? [])
+                .filter((option) => option.disabled !== true)
+                .map((option, index) => {
+                    const defenderId = parseTargetPlayerIdFromCustomId(option.customId) ?? option.playerId ?? null;
+                    if (!defenderId) return null;
+                    return {
+                        id: `defender:${defenderId}:${index}`,
+                        playerId: defenderId,
+                        actionKeyParts: ['select-defender-target', defenderId, index],
+                        label: `选择受击者 ${defenderId}`,
+                        aiHints: [buildPlayerTargetHint(state, playerId, defenderId, {
+                            effectIntent: 'debuff',
+                            tags: ['choice:select-target', 'defender-selection'],
+                        })],
+                        metadata: {
+                            interactionId: current.id,
+                            defenderId,
+                            targetRollValue: data.targetRollValue,
+                        },
+                    };
+                })
+                .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null),
+        };
+    }
+
+    if (current.kind === 'dt:card-interaction') {
+        const data = current.data as CardInteractionData;
+        if (data.type !== 'selectPlayer') {
+            return null;
+        }
+
+        const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
+            .filter((targetId) => !!state.core.players[targetId])
+            .filter((targetId) => !data.requiresTargetWithStatus || playerHasStatusOrToken(state, targetId));
+        const selectCount = Math.max(1, Math.min(data.selectCount ?? 1, targetPlayerIds.length));
+        return {
+            kind: 'select-player',
+            interactionId: current.id,
+            actorPlayerId: playerId,
+            sourceId: current.sourceId,
+            selection: { min: selectCount, max: selectCount },
+            candidates: targetPlayerIds.map((targetPlayerId) => ({
+                id: targetPlayerId,
+                playerId: targetPlayerId,
+                actionKeyParts: [targetPlayerId],
+                label: targetPlayerId,
+                metadata: {
+                    interactionId: current.id,
+                    targetPlayerId,
+                },
+            })),
+        };
+    }
+
+    return null;
+};
+
+const buildSelectPlayerInteractionActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+): AiLegalAction[] | null => {
+    const decision = buildSelectPlayerDecisionFromInteraction(state, playerId, current);
+    if (!decision) return null;
+
+    if (current.kind === 'dt:defender-choice') {
+        return buildSelectPlayerDecisionActions({
+            descriptor: decision,
+            defaultActionKind: 'interaction-choice',
+            emptyAction: (descriptor) => buildEmergencyInteractionCancelAction(descriptor.interactionId, 'empty-options'),
+            buildCommands: (selection) => {
+                const defenderId = selection[0]?.playerId;
+                return defenderId
+                    ? [{ type: 'SELECT_DEFENDER_TARGET', payload: { defenderId } }]
+                    : [];
+            },
+            buildMetadata: (selection, descriptor) => ({
+                interactionId: descriptor.interactionId,
+                defenderId: selection[0]?.playerId,
+                targetRollValue: descriptor.metadata?.targetRollValue,
+            }),
+        });
+    }
+
+    if (current.kind === 'dt:card-interaction') {
+        const data = current.data as CardInteractionData;
+        return buildSelectPlayerDecisionActions({
+            descriptor: decision,
+            emptyAction: (descriptor) => buildEmergencyInteractionCancelAction(descriptor.interactionId, 'empty-options'),
+            buildCommands: (selection) => [{
+                type: 'RESOLVE_INTERACTION',
+                payload: { selectedPlayerIds: selection.map((candidate) => candidate.playerId) },
+            }],
+            buildActionKeyParts: (selection) => ['select-player', ...selection.map((candidate) => candidate.playerId)],
+            buildLabel: (selection) => `选择玩家 ${selection.map((candidate) => candidate.playerId).join(', ')}`,
+            buildAiHints: (selection) => buildSelectPlayerActionAiHints(
+                state,
+                playerId,
+                selection.map((candidate) => candidate.playerId),
+                data,
+            ),
+            buildMetadata: (selection, descriptor) => ({
+                interactionId: descriptor.interactionId,
+                selectedPlayerIds: selection.map((candidate) => candidate.playerId),
+            }),
+        });
+    }
+
+    return null;
+};
+
 const isBenefitChoiceCustomId = (customId: string | undefined): boolean => {
     if (!customId) return false;
     return customId.startsWith('use-')
@@ -801,11 +924,7 @@ const buildChoiceOptionAiHints = (
 
     const targetPlayerId = parseTargetPlayerIdFromCustomId(customId);
     if (targetPlayerId) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: playerId,
-            targetPlayerId,
-            relationToActor: getRelationToActor(state, playerId, targetPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, playerId, targetPlayerId, {
             effectIntent: 'debuff',
             tags: ['choice:select-target'],
         }));
@@ -818,11 +937,7 @@ const buildChoiceOptionAiHints = (
         : 'apply';
     const effectIntent = getEffectIntentForCategory(category, effectMode);
     if (effectId && effectIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: playerId,
-            targetPlayerId: playerId,
-            relationToActor: getRelationToActor(state, playerId, playerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, playerId, playerId, {
             effectIntent,
             tags: [
                 'choice:effect',
@@ -854,11 +969,7 @@ const buildSelectPlayerActionAiHints = (
             const category = getEffectCategory(state, config.tokenId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
-            hints.push(buildTargetAiHint({
-                actorPlayerId: actingPlayerId,
-                targetPlayerId,
-                relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                targetKind: 'player',
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                 effectIntent,
                 estimatedSwing: getGrantedEffectValue(
                     state,
@@ -875,11 +986,7 @@ const buildSelectPlayerActionAiHints = (
             const category = getEffectCategory(state, config.statusId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
-            hints.push(buildTargetAiHint({
-                actorPlayerId: actingPlayerId,
-                targetPlayerId,
-                relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                targetKind: 'player',
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                 effectIntent,
                 estimatedSwing: getGrantedEffectValue(
                     state,
@@ -895,11 +1002,7 @@ const buildSelectPlayerActionAiHints = (
         if (tokenConfigs.length === 0 && statusConfigs.length === 0 && interaction.requiresTargetWithStatus === true) {
             const swing = scoreRemoveAllStatusesTarget(state, actingPlayerId, targetPlayerId);
             if (swing !== 0) {
-                hints.push(buildTargetAiHint({
-                    actorPlayerId: actingPlayerId,
-                    targetPlayerId,
-                    relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                    targetKind: 'player',
+                hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                     effectIntent: 'affect',
                     estimatedSwing: swing,
                     tags: ['remove-status:all'],
@@ -920,11 +1023,7 @@ const buildRemoveStatusAiHints = (
     const category = getEffectCategory(state, statusId);
     const effectIntent = getEffectIntentForCategory(category, 'remove');
     if (!effectIntent) return [];
-    return [buildTargetAiHint({
-        actorPlayerId: actingPlayerId,
-        targetPlayerId,
-        relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-        targetKind: 'player',
+    return [buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
         effectIntent,
         estimatedSwing: scoreRemoveSingleStatusTarget(state, actingPlayerId, targetPlayerId, statusId),
         tags: [`remove-status:${statusId}`],
@@ -944,11 +1043,7 @@ const buildTransferStatusAiHints = (
     const hints: AiHint[] = [];
 
     if (removeIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: actingPlayerId,
-            targetPlayerId: fromPlayerId,
-            relationToActor: getRelationToActor(state, actingPlayerId, fromPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, actingPlayerId, fromPlayerId, {
             effectIntent: removeIntent,
             estimatedSwing: scoreRemoveSingleStatusTarget(state, actingPlayerId, fromPlayerId, statusId),
             tags: [`transfer-remove:${statusId}`],
@@ -956,11 +1051,7 @@ const buildTransferStatusAiHints = (
     }
 
     if (applyIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: actingPlayerId,
-            targetPlayerId: toPlayerId,
-            relationToActor: getRelationToActor(state, actingPlayerId, toPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, actingPlayerId, toPlayerId, {
             effectIntent: applyIntent,
             estimatedSwing: getGrantedEffectValue(state, actingPlayerId, toPlayerId, statusId, 1),
             tags: [`transfer-apply:${statusId}`],
@@ -992,7 +1083,13 @@ const buildInteractionActions = (
     playerId: PlayerId,
 ): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
-    if (!current || current.playerId !== playerId) return null;
+    if (!current) return null;
+    if (current.playerId !== playerId) return [];
+
+    const selectPlayerActions = buildSelectPlayerInteractionActions(state, playerId, current);
+    if (selectPlayerActions) {
+        return selectPlayerActions;
+    }
 
     if (current.kind === 'simple-choice') {
         const data = current.data as {
@@ -1144,34 +1241,6 @@ const buildInteractionActions = (
     if (current.kind === 'dt:card-interaction') {
         const data = current.data as CardInteractionData;
 
-        if (data.type === 'selectPlayer') {
-            const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
-                .filter((targetId) => !!state.core.players[targetId])
-                .filter((targetId) => !data.requiresTargetWithStatus || playerHasStatusOrToken(state, targetId));
-            const selections = buildPlayerSelectionCombos(targetPlayerIds, data.selectCount ?? 1);
-
-            const actions = selections.map((selectedPlayerIds, index) => {
-                const aiHints = buildSelectPlayerActionAiHints(state, playerId, selectedPlayerIds, data);
-                return {
-                    actionId: createAiLegalActionId('interaction', current.id, 'select-player', index),
-                    kind: 'interaction-select-player',
-                    label: `选择玩家 ${selectedPlayerIds.join(', ')}`,
-                    commands: [{
-                        type: 'RESOLVE_INTERACTION',
-                        payload: { selectedPlayerIds },
-                    }],
-                    ...(aiHints.length > 0 ? { aiHints } : {}),
-                    metadata: {
-                        interactionId: current.id,
-                        selectedPlayerIds,
-                    },
-                };
-            });
-            return actions.length > 0
-                ? actions
-                : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
-        }
-
         if (data.type === 'selectHandCard') {
             const player = state.core.players[playerId];
             const selectedCardId = player?.hand[0]?.id;
@@ -1300,11 +1369,11 @@ const buildInteractionActions = (
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
         }
 
-        return [];
+        return [buildEmergencyInteractionCancelAction(current.id, 'no-legal-actions')];
     }
 
     if (current.kind !== 'multistep-choice') {
-        return null;
+        return [buildEmergencyInteractionCancelAction(current.id, 'unsupported-interaction-kind')];
     }
 
     const data = current.data as DiceInteractionData;
@@ -1402,7 +1471,7 @@ const buildInteractionActions = (
                 : mode === 'adjust'
                     ? enumeratePerItemValueAssignments(selection, (die) =>
                         [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
-                : [selection.map((die) => {
+                : [selection.map((_die) => {
                     return targetValue;
                 })];
 

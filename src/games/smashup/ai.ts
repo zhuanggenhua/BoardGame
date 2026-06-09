@@ -1,5 +1,6 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
+    buildAiOwnedBlockingInteractionFallbackActions,
     buildDeterministicAiNoise,
     createAiLegalActionId,
     createActionKindScorer,
@@ -78,6 +79,7 @@ import {
 
 type SmashUpState = MatchState<SmashUpCore>;
 type SmashUpResolvedCardDef = NonNullable<ReturnType<typeof getCardDef>>;
+const SMASHUP_AI_INTERACTION_ADAPTER_KINDS = ['simple-choice'];
 type BasePowerOverride = { baseIndex: number; playerId: PlayerId; delta: number };
 type SmashUpProjectedBaseDelta = { baseIndex: number; playerId?: PlayerId; powerDelta?: number; breakpointDelta?: number };
 type SmashUpProjectedPlayerDelta = {
@@ -1382,8 +1384,16 @@ const enumerateInteractionOptionPermutations = <T extends { id: string }>(
 
 const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
-    if (!current || current.playerId !== playerId) return null;
-    if (current.kind !== 'simple-choice') return null;
+    if (!current) return null;
+    if (current.playerId !== playerId) return [];
+    if (current.kind !== 'simple-choice') {
+        return buildAiOwnedBlockingInteractionFallbackActions({
+            playerId,
+            state: state as MatchState<unknown>,
+            legalActions: [],
+            adapterInteractionKinds: SMASHUP_AI_INTERACTION_ADAPTER_KINDS,
+        });
+    }
 
     const data = current.data as {
         options?: SmashUpInteractionOption[];
@@ -1432,7 +1442,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: '取消交互（无可用选项）',
                 commands: [{
                     type: 'SYS_INTERACTION_CANCEL',
-                    payload: {},
+                    payload: { interactionId: current.id, reason: 'empty-options' },
                 }],
                 aiHints: [OPTIONAL_SKIP_AI_HINT],
                 metadata: {
@@ -1475,7 +1485,14 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 },
             };
         }));
-        return actions;
+        return actions.length > 0
+            ? actions
+            : buildAiOwnedBlockingInteractionFallbackActions({
+                playerId,
+                state: state as MatchState<unknown>,
+                legalActions: actions,
+                adapterInteractionKinds: SMASHUP_AI_INTERACTION_ADAPTER_KINDS,
+            });
     }
 
     actions.push(...options.map((option, index) => {

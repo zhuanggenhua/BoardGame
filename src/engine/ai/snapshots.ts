@@ -1,4 +1,5 @@
 import type { MatchState } from '../types';
+import type { AiInteractionSupportDeclaration } from './decisionSemantics';
 import type { AiHint, AiInteractionSnapshot, AiResponseWindowSnapshot } from './types';
 
 const toJsonSafe = <T>(value: T): T => {
@@ -13,8 +14,10 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         kind?: unknown;
         sourceId?: unknown;
         playerId?: unknown;
+        ai?: unknown;
         data?: {
             sourceId?: unknown;
+            ai?: unknown;
             options?: Array<{
                 id?: unknown;
                 label?: unknown;
@@ -31,6 +34,16 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
     if (!current || typeof current.id !== 'string' || typeof current.kind !== 'string') {
         return null;
     }
+
+    const rawAi = current.ai && typeof current.ai === 'object'
+        ? current.ai
+        : current.data?.ai && typeof current.data.ai === 'object'
+            ? current.data.ai
+            : undefined;
+    const ai = rawAi ? toJsonSafe(rawAi as AiInteractionSupportDeclaration) : undefined;
+    const aiDecisions = Array.isArray(ai?.decisions)
+        ? ai.decisions
+        : undefined;
 
     const options = Array.isArray(current.data?.options)
         ? current.data.options
@@ -61,6 +74,8 @@ export function extractAiInteractionSnapshot(viewState: unknown): AiInteractionS
         ...(typeof current.playerId === 'string' ? { playerId: current.playerId } : {}),
         options,
         ...(current.data?.multi !== undefined ? { multi: toJsonSafe(current.data.multi) } : {}),
+        ...(ai ? { ai } : {}),
+        ...(aiDecisions ? { aiDecisions } : {}),
     };
 }
 

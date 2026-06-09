@@ -22,4 +22,60 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         expect(actions.some((action) => action.kind === 'play-upgrade-card')).toBe(false);
         expect(actions.some((action) => action.kind === 'sell-card')).toBe(false);
     });
+
+    it('当前有其他玩家交互时不应生成主阶段候选', () => {
+        const state = createSetupWithHand(
+            ['card-palm-strike', 'card-thrust-punch-2'],
+            { playerId: '0', cp: 5 },
+        )(['0', '1'], fixedRandom);
+
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main1';
+        state.sys.interaction.current = {
+            id: 'dt-other-player-choice',
+            playerId: '1',
+            kind: 'simple-choice',
+            data: { options: [{ id: 'ok', label: '确认' }] },
+        } as any;
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toEqual([]);
+    });
+
+    it('未知阻塞交互属于 AI 时应紧急取消而不是继续走主阶段', () => {
+        const state = createSetupWithHand(
+            ['card-palm-strike', 'card-thrust-punch-2'],
+            { playerId: '0', cp: 5 },
+        )(['0', '1'], fixedRandom);
+
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main1';
+        state.sys.interaction.current = {
+            id: 'dt-future-choice',
+            playerId: '0',
+            kind: 'dt:future-choice',
+            data: { sourceId: 'future-choice' },
+        } as any;
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toHaveLength(1);
+        expect(actions[0]).toMatchObject({
+            kind: 'interaction-cancel',
+            commands: [{
+                type: 'SYS_INTERACTION_CANCEL',
+                payload: {
+                    interactionId: 'dt-future-choice',
+                    reason: 'unsupported-interaction-kind',
+                },
+            }],
+        });
+    });
 });

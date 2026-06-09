@@ -902,7 +902,7 @@ describe('InteractionSystem', () => {
         ]));
     });
 
-    it('buildTargetAiHint 会以 target/actor 推导 relation，而不是接受外部覆盖', () => {
+    it('buildTargetAiHint 在已知关系时会保留外部显式 relation', () => {
         const hint = buildTargetAiHint({
             actorPlayerId: '0',
             targetPlayerId: '2',
@@ -911,9 +911,9 @@ describe('InteractionSystem', () => {
             targetKind: 'player',
         });
 
-        expect(hint.relationToActor).toBe('enemy');
+        expect(hint.relationToActor).toBe('ally');
         expect(hint.tags).toEqual(expect.arrayContaining([
-            'relation:enemy',
+            'relation:ally',
             'intent:buff',
         ]));
     });

@@ -1,6 +1,7 @@
 import { FLOW_COMMANDS } from '../../engine';
 import type { Command, MatchState, PlayerId as EnginePlayerId } from '../../engine/types';
 import {
+    buildAiOwnedBlockingInteractionFallbackActions,
     buildDeterministicAiNoise,
     createAiLegalActionId,
     createActionKindScorer,
@@ -63,6 +64,7 @@ import { FACTION_CATALOG } from './config/factions';
 
 type PlayerId = SummonerWarsPlayerId;
 type SummonerWarsState = MatchState<SummonerWarsCore>;
+const SUMMONER_WARS_AI_INTERACTION_ADAPTER_KINDS = ['simple-choice', 'multistep-choice'];
 type SetupPhase = 'setup';
 type SummonerWarsTurnPhase = SetupPhase | GamePhase;
 type SummonerWarsStrategyTag =
@@ -1526,7 +1528,12 @@ const buildInteractionActions = (
         ];
     }
 
-    return [];
+    return buildAiOwnedBlockingInteractionFallbackActions({
+        playerId,
+        state: state as MatchState<unknown>,
+        legalActions: [],
+        adapterInteractionKinds: SUMMONER_WARS_AI_INTERACTION_ADAPTER_KINDS,
+    });
 };
 
 const buildSetupActions = (

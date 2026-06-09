@@ -15,6 +15,7 @@ import type {
     LocalAiActionScorer,
 } from '../../engine/ai';
 import {
+    buildAiOwnedBlockingInteractionFallbackActions,
     createAiLegalActionId,
     createScoredLocalAiPolicy,
     withAiActionStrategyTags,
@@ -144,6 +145,8 @@ const STRATEGY_PROFILES: Record<string, CardiaStrategyProfile> = {
     },
 };
 
+const CARDIA_AI_INTERACTION_ADAPTER_KINDS = ['simple-choice'];
+
 /**
  * 构建合法动作
  */
@@ -152,76 +155,30 @@ function buildCardiaAiLegalActions(args: BuildGameAiLegalActionsArgs): AiLegalAc
     
     try {
         const core = state.core as CardiaCore;
-        
-        // KIRO DEBUG: Log interaction state
-        console.log('[Cardia AI] buildCardiaAiLegalActions called:', {
-            playerId,
-            phase: core.phase,
-            hasInteraction: !!state.sys.interaction?.current,
-            interactionDetails: state.sys.interaction?.current ? {
-                id: (state.sys.interaction.current as any).id,
-                kind: (state.sys.interaction.current as any).kind,
-                playerId: (state.sys.interaction.current as any).playerId,
-                optionsCount: (state.sys.interaction.current as any).data?.options?.length,
-            } : null,
-        });
-        
-        // 1. 检查交互（优先级最高）
         const interactionActions = buildInteractionActions(state as MatchState<CardiaCore>, playerId);
-        
-        // KIRO DEBUG: Log interaction actions result
-        console.log('[Cardia AI] buildInteractionActions result:', {
-            playerId,
-            hasInteractionActions: !!interactionActions,
-            interactionActionsCount: interactionActions?.length ?? 0,
-            interactionActionKinds: interactionActions?.map(a => a.kind) ?? [],
-        });
-        
-        if (interactionActions && interactionActions.length > 0) {
-            console.log('[Cardia AI] Returning interaction actions:', {
-                playerId,
-                count: interactionActions.length,
-                actionIds: interactionActions.map(a => a.actionId),
-            });
+        if (interactionActions !== null) {
             return interactionActions;
         }
-        
-        // 2. 根据阶段生成动作
-        console.log('[Cardia AI] No interaction actions, generating phase-based actions:', {
-            playerId,
-            phase: core.phase,
-        });
-        
+
         switch (core.phase) {
             case 'play':
                 return buildPlayCardActions(core, playerId);
-            case 'ability': {
-                const abilityActions = buildAbilityActions(core, playerId);
-                console.log('[Cardia AI] Generated ability actions:', {
-                    playerId,
-                    count: abilityActions.length,
-                    actionKinds: abilityActions.map(a => a.kind),
-                    actionIds: abilityActions.map(a => a.actionId),
-                });
-                return abilityActions;
-            }
+            case 'ability':
+                return buildAbilityActions(core, playerId);
             case 'end':
                 return buildEndTurnActions(core, playerId);
             default:
                 return [];
         }
     } catch (error) {
-        // 错误处理：记录错误日志并返回空数组
-        console.error('[Cardia AI] 动作生成失败:', {
-            error,
+        const fallbackActions = buildAiOwnedBlockingInteractionFallbackActions({
             playerId,
-            phase: (state.core as CardiaCore).phase,
-            stateSnapshot: {
-                phase: (state.core as CardiaCore).phase,
-                currentPlayer: (state.core as CardiaCore).currentPlayer,
-                hasInteraction: !!state.sys.interaction?.current,
-            },
+            state: state as MatchState<unknown>,
+            legalActions: [],
+            adapterInteractionKinds: CARDIA_AI_INTERACTION_ADAPTER_KINDS,
         });
+        if (fallbackActions.length > 0) return fallbackActions;
+        void error;
         return [];
     }
 }
@@ -379,60 +336,28 @@ function buildInteractionActions(
     playerId: PlayerId,
 ): AiLegalAction[] | null {
     const current = state.sys.interaction?.current;
-    
-    // KIRO DEBUG: Log interaction check
-    console.log('[Cardia AI] buildInteractionActions called:', {
-        playerId,
-        hasCurrent: !!current,
-        currentPlayerId: current ? (current as any).playerId : null,
-        currentKind: current ? (current as any).kind : null,
-        playerIdMatch: current ? (current as any).playerId === playerId : false,
-    });
-    
-    // KIRO DEBUG: Log full interaction object separately to avoid truncation
-    if (current) {
-        console.log('[Cardia AI] Full interaction object:', JSON.stringify(current, null, 2));
-    }
-    
-    if (!current || current.playerId !== playerId) {
-        console.log('[Cardia AI] No interaction or playerId mismatch:', {
-            playerId,
-            hasCurrent: !!current,
-            currentPlayerId: current ? (current as any).playerId : null,
-            reason: !current ? 'no_current' : 'playerId_mismatch',
-        });
-        return null;
-    }
-    
-    // 根据交互类型生成动作
-    console.log('[Cardia AI] Processing interaction kind:', {
-        playerId,
-        kind: current.kind,
-    });
-    
+    if (!current) return null;
+    if (current.playerId !== playerId) return [];
+
     switch (current.kind) {
         case 'simple-choice': {
             const actions = buildSimpleChoiceActions(state, current);
-            console.log('[Cardia AI] buildSimpleChoiceActions result:', {
-                playerId,
-                actionsCount: actions.length,
-                actionIds: actions.map(a => a.actionId),
-            });
-            return actions;
+            return actions.length > 0
+                ? actions
+                : buildAiOwnedBlockingInteractionFallbackActions({
+                    playerId,
+                    state: state as MatchState<unknown>,
+                    legalActions: actions,
+                    adapterInteractionKinds: CARDIA_AI_INTERACTION_ADAPTER_KINDS,
+                });
         }
-        // TODO: 实现其他交互类型
-        // case 'cardia:choose-card':
-        //     return buildChooseCardActions(state, current);
-        // case 'cardia:choose-faction':
-        //     return buildChooseFactionActions(state, current);
-        // case 'cardia:choose-modifier':
-        //     return buildChooseModifierActions(state, current);
         default:
-            console.log('[Cardia AI] Unknown interaction kind:', {
+            return buildAiOwnedBlockingInteractionFallbackActions({
                 playerId,
-                kind: current.kind,
+                state: state as MatchState<unknown>,
+                legalActions: [],
+                adapterInteractionKinds: CARDIA_AI_INTERACTION_ADAPTER_KINDS,
             });
-            return [];
     }
 }
 
@@ -489,15 +414,7 @@ function buildSimpleChoiceActions(
     };
     
     const data = interactionObj.data ?? {};
-    
-    // KIRO DEBUG: Log options structure
-    console.log('[Cardia AI] buildSimpleChoiceActions - options structure:', {
-        hasOptions: !!data.options,
-        optionsCount: data.options?.length ?? 0,
-        optionsRaw: data.options,
-        optionsSample: data.options?.[0],
-    });
-    
+
     const availableOptions = (data.options ?? []).filter((option): option is { 
         id: string; 
         label?: string;
@@ -505,26 +422,9 @@ function buildSimpleChoiceActions(
     } => {
         const hasId = typeof option.id === 'string';
         const notDisabled = option.disabled !== true;
-        const result = hasId && notDisabled;
-        
-        // KIRO DEBUG: Log filtering decision
-        if (!result) {
-            console.log('[Cardia AI] buildSimpleChoiceActions - option filtered out:', {
-                option,
-                hasId,
-                notDisabled,
-            });
-        }
-        
-        return result;
+        return hasId && notDisabled;
     });
-    
-    // KIRO DEBUG: Log available options after filtering
-    console.log('[Cardia AI] buildSimpleChoiceActions - after filtering:', {
-        availableOptionsCount: availableOptions.length,
-        availableOptions: availableOptions.map(o => ({ id: o.id, label: o.label, value: o.value })),
-    });
-    
+
     // 单选模式
     if (!data.multi) {
         return availableOptions.map((option, index) => ({

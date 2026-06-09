@@ -1040,7 +1040,7 @@ const miskatonicItJustMightWorkPodPromptProgram = createPromptProgram<Miskatonic
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_it_just_might_work_pod_${context.now}`,
         context.playerId,
-        '...It Just Might Work：选择要弃置的疯狂卡数量（至多2张）',
+        '...没准能行：选择要弃置的疯狂卡数量（至多2张）',
         Array.from({ length: context.maxDiscard + 1 }, (_, index) => ({
             id: `discard-${index}`,
             label: index === 0 ? '不弃置' : `弃置${index}张疯狂卡（每张使你场上的随从+1战斗力直到回合结束）`,

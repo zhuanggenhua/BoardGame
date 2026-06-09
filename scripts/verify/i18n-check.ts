@@ -110,22 +110,48 @@ const IGNORED_DIRS = new Set([
 ]);
 
 const ZH_CN_LOCALE_DIR = path.join(LOCALES_DIR, 'zh-CN');
-const LOCALE_ENGLISH_EXACT_ALLOWLIST = new Set([
+const LOCALE_VISIBLE_TECHNICAL_TERMS = new Set([
     'AI',
     'API',
     'APP',
+    'Android',
+    'afterEvents',
+    'Bug',
     'BGM',
+    'beforeCommand',
+    'Bundle',
+    'Buff',
     'C4',
+    'CORS',
     'CP',
     'Ctrl+V',
+    'CLI',
+    'CSV',
+    'CPU',
+    'CSS',
+    'create-new-game',
+    'createBaseSystems',
+    'BattleHUDPanel',
+    'BattleLogOverlay',
+    'DamageFlash',
+    'Duel',
     'DIY',
     'E2E',
+    'FM',
     'FX',
     'GIF',
+    'GPU',
+    'GUID',
+    'Handler',
+    'HTML',
     'HP',
+    'HTTP',
+    'HTTPS',
     'ID',
+    'Itharia',
     'JSON',
     'JPG',
+    'JWT',
     'L1',
     'L2',
     'L3',
@@ -136,17 +162,62 @@ const LOCALE_ENGLISH_EXACT_ALLOWLIST = new Set([
     'P2',
     'P3',
     'PNG',
+    'MongoDB',
+    'Mode',
+    'Node.js',
+    'OAuth',
+    'OAuth2',
+    'OTA',
+    'Pro',
+    'QQ',
+    'rAF',
+    'halt',
+    'i18n',
+    'payload',
+    'SDK',
     'SFX',
+    'Server',
+    'Shader',
+    'SQL',
+    'atlasIndex',
+    'cardId',
+    'frameIndex',
+    'game-room-debug-panel',
+    'room-debug-panel',
+    'roomDebugState',
+    'spriteIds',
+    'spriteIndex',
+    'Token',
     'UGC',
     'UI',
     'URL',
     'URLs',
+    'UUID',
     'UX',
     'VP',
+    'WebView',
     'WebP',
+    'XML',
     'XO',
+    'YAML',
     '2v2',
+    'App',
+    'gameId',
 ]);
+
+// 放行常见技术缩写、专有名词和结构化标识，避免继续靠逐条补词维持门禁。
+const LOCALE_VISIBLE_TECHNICAL_TOKEN_PATTERNS = [
+    /^\d+v\d+$/i,
+    /^\d+x$/i,
+    /^[vV]?\d+(?:\.\d+)+$/,
+    /^[xX]\d+$/,
+    // 常见内部标识：matchId / policyId / providerId / bundleVersion / choiceHandler / syncPayload
+    /^[a-z][A-Za-z0-9]*(?:Id|Ids|Index|Key|Keys|Mode|State|Handler|Payload|Version)$/,
+    // 常见内部类名/组件名：ReplayOverlay / BattleHUDPanel / DamageFlash
+    /^[A-Z][A-Za-z0-9]*(?:Panel|Overlay|View|Flash|Shader|HUD|System|Systems)$/,
+    // 常见路由/面板 slug：create-new-game / room-debug-panel / game-room-debug-panel
+    /^[a-z0-9]+(?:-[a-z0-9]+){2,}$/,
+];
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -484,7 +555,8 @@ const normalizeLocaleAuditValue = (value: string): string => value
     .replace(/\[[^\]]+\]/g, ' ')
     .replace(/[“”"'`]/g, ' ')
     .replace(/[()[\]{}<>]/g, ' ')
-    .replace(/[|｜·•,:：;；，。！？!?\-–—_/\\+=~*]+/g, ' ')
+    // 保留 kebab-case、语义化版本号和快捷键/公式里的 +，避免 create-new-game / v1.2.0 / Ctrl+V 被拆散。
+    .replace(/[|｜·•,:：;；，。！？!?–—_/\\=~*]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -495,9 +567,9 @@ const normalizeLocaleAuditToken = (token: string): string => (
 const isAllowedLocaleEnglishToken = (token: string): boolean => {
     const normalized = normalizeLocaleAuditToken(token);
     if (!normalized) return true;
-    return LOCALE_ENGLISH_EXACT_ALLOWLIST.has(normalized)
-        || LOCALE_ENGLISH_EXACT_ALLOWLIST.has(normalized.toUpperCase())
-        || /^[A-Z0-9]{1,4}$/.test(normalized);
+    return LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized)
+        || LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized.toUpperCase())
+        || LOCALE_VISIBLE_TECHNICAL_TOKEN_PATTERNS.some((pattern) => pattern.test(normalized));
 };
 
 const getEnglishSequences = (value: string): string[] => (
@@ -518,6 +590,9 @@ const isSuspiciousEnglishSequence = (sequence: string): boolean => {
         .filter(Boolean)
         .filter((token) => !isAllowedLocaleEnglishToken(token));
     if (tokens.length === 0) return false;
+    if (tokens.length === 1 && /^[A-Z]{4,}$/.test(tokens[0])) {
+        return true;
+    }
 
     const longTokens = tokens.filter((token) => token.length >= 4);
     if (longTokens.length === 0) return false;
@@ -534,7 +609,7 @@ const isSuspiciousEnglishOnlyLocaleValue = (value: string): boolean => {
     if (!normalized || containsCjk(normalized) || !containsAsciiLetters(normalized)) {
         return false;
     }
-    if (LOCALE_ENGLISH_EXACT_ALLOWLIST.has(normalized) || LOCALE_ENGLISH_EXACT_ALLOWLIST.has(normalized.toUpperCase())) {
+    if (LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized) || LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized.toUpperCase())) {
         return false;
     }
 
@@ -552,10 +627,8 @@ const isSuspiciousMixedLocaleValue = (value: string): boolean => {
         return false;
     }
 
-    return getEnglishSequences(normalized).some((sequence) => (
-        isSuspiciousEnglishSequence(sequence)
-        && (normalized.startsWith(sequence) || normalized.endsWith(sequence))
-    ));
+    // 中文文案里的非术语英文残留，无论出现在句首、句中还是句尾，都应当阻断。
+    return getEnglishSequences(normalized).some((sequence) => isSuspiciousEnglishSequence(sequence));
 };
 
 const looksLikeRawJsxVisibleText = (value: string): boolean => {
@@ -3485,7 +3558,8 @@ const collectSuspiciousLocaleEntries = (
 ): LocaleAuditEntry[] => {
     if (typeof value === 'string') {
         const joinedKeyPath = keyPath.join('.');
-        const shouldWarn = isSuspiciousEnglishOnlyLocaleValue(value) || isSuspiciousMixedLocaleValue(value);
+        const shouldWarn = isSuspiciousEnglishOnlyLocaleValue(value)
+            || isSuspiciousMixedLocaleValue(value);
         if (!shouldWarn) {
             return [];
         }

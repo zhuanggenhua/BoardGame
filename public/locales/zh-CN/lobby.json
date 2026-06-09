@@ -74,7 +74,7 @@
           "summary": "召唤强大的生物，展开史诗对战。"
         },
         "tictactoe": {
-          "summary": "经典的 XO 游戏，简单却充满乐趣。"
+          "summary": "经典井字棋，简单却充满乐趣。"
         }
       }
     },
@@ -194,7 +194,7 @@
     "spectate": "观战",
     "localPlay": "单机模式",
     "singleDevice": "单机模式",
-    "playAi": "对战AI",
+    "playAi": "对战 AI",
     "tutorial": "教程模式",
     "createRoom": "创建房间",
     "backToDirectory": "返回目录",
@@ -205,7 +205,7 @@
     "rejoinRoom": "重新加入"
   },
   "button": {
-    "processing": "处理中..."
+    "processing": "处理中…"
   },
   "mascot": {
     "container_label": "易桌游看板娘",
@@ -215,7 +215,7 @@
   "viewportDebug": {
     "title": "真机视口诊断",
     "refresh": "刷新",
-    "overflowItemDetail": "{{position}}｜左{{left}} 右{{right}} 上{{top}} 下{{bottom}}｜{{width}}x{{height}}",
+    "overflowItemDetail": "{{position}}｜左{{left}} 右{{right}} 上{{top}} 下{{bottom}}｜{{width}}×{{height}}",
     "scrollContainerDetail": "横向溢出：{{overflowX}}｜{{clientWidth}}/{{scrollWidth}}｜左{{left}} 右{{right}} 下{{bottom}}",
     "labels": {
       "inner": "内层视口",
@@ -246,11 +246,11 @@
   },
   "activeMatch": {
     "notice": "您当前正在进行一场对局",
-    "return": "返回当前对局 (#{{id}})"
+    "return": "返回当前对局（#{{id}}）"
   },
   "rooms": {
     "title": "游戏房间",
-    "loading": "正在加载房间...",
+    "loading": "正在加载房间…",
     "empty": "暂无活跃房间",
     "matchTitle": "对局 #{{id}}",
     "mine": "我的",
@@ -274,7 +274,7 @@
     "changelogCompact": "更新"
   },
   "leaderboard": {
-    "loading": "加载中...",
+    "loading": "加载中…",
     "title": "胜场排行",
     "empty": "暂无数据",
     "record": "{{wins}} 胜 / {{matches}} 局",
@@ -283,7 +283,7 @@
   },
   "changelog": {
     "title": "最近更新",
-    "loading": "加载更新日志中...",
+    "loading": "加载更新日志中…",
     "error": "更新日志加载失败",
     "pinned": "置顶"
   },
@@ -307,7 +307,7 @@
     "installedCompletedBadge": "已完成",
     "installedVersionBadge": "已完成 · {{version}}",
     "installAction": "安装游戏包",
-    "homeV2UpdateAppShort": "更新App",
+    "homeV2UpdateAppShort": "更新 App",
     "homeV2DownloadingShort": "下载中",
     "homeV2RetryShort": "重试",
     "homeV2InstalledShort": "已就绪",
@@ -437,38 +437,38 @@
     }
   },
   "gameDetails": {
-    "description": "经典策略游戏。连成3个符号即可获胜。"
+    "description": "经典策略游戏。连成 3 个符号即可获胜。"
   },
   "games": {
     "tictactoe": {
       "title": "井字棋",
-      "description": "经典的X和O游戏。挑战AI或与朋友对战。",
-      "players": "2人游戏"
+      "description": "经典的井字棋游戏。挑战 AI 或与朋友对战。",
+      "players": "2 人游戏"
     },
     "dicethrone": {
       "title": "王权骰铸",
-      "description": "这是一款快节奏易上手的游戏，从众多英雄之中精心挑选你认为最不同凡响的一位。投掷你英雄专属的5颗骰子,从而攻击对手、激活能力。累积战斗点数，用它们购买效果繁多的卡牌,例如升级英雄,施展法术,直接操控(你的,你队友的或者你对手的）骰子",
-      "players": "2人"
+      "description": "这是一款快节奏且易上手的游戏。从众多英雄之中，挑选一位你最中意的角色。投掷你英雄专属的 5 颗骰子来攻击对手、激活能力。累积战斗点数，并用它们购买效果各异的卡牌，例如升级英雄、施展法术，或直接操控你、队友或对手的骰子。",
+      "players": "2 人"
     },
     "cardia": {
       "title": "卡迪亚",
       "description": "四大派系争夺印戒与统治权。打出卡牌、触发能力，在一场场遭遇中智胜对手。",
-      "players": "2人"
+      "players": "2 人"
     },
     "qidahen": {
       "title": "七大恨",
       "description": "三势力非对称历史策略游戏。使用手牌资源与行动轮盘争夺东北亚区域控制，并在复杂战斗流程中取得政治霸权。",
-      "players": "3人"
+      "players": "3 人"
     },
     "fantasyrealms": {
       "title": "幻想国度",
       "description": "2-6 人奇幻卡牌组合游戏。围绕 7 张手牌与公开弃牌堆做取舍，通过套牌联动冲高终局分数。",
-      "players": "2-6人"
+      "players": "2-6 人"
     },
     "smashup": {
       "title": "大杀四方",
       "description": "2-4 人阵营混搭卡牌对战。选择两个派系组成牌组，围绕基地展开争夺，率先到达胜利分数即可获胜。不同派系组合会带来截然不同的战术节奏。",
-      "players": "2-4人"
+      "players": "2-4 人"
     },
     "assetslicer": {
       "title": "素材切片机",
@@ -493,12 +493,12 @@
     "summonerwars": {
       "title": "召唤师战争",
       "description": "一款战术卡牌游戏，在网格战场上指挥你的阵营战士。召唤单位、施放法术，摧毁敌方召唤师即可获胜。",
-      "players": "2人"
+      "players": "2 人"
     },
     "splendor": {
       "title": "璀璨宝石",
       "description": "已完成基础版核心规则、主界面与教学引导的璀璨宝石实现。主打公开信息、宝石经营、永久折扣与贵族竞速。",
-      "players": "2-4人",
+      "players": "2-4 人",
       "setup": {
         "startingPlayerId": {
           "label": "先手钻石持有者",
@@ -510,7 +510,7 @@
       }
     },
     "ugc": {
-      "players": "2人"
+      "players": "2 人"
     }
   },
   "matchRoom": {
@@ -530,29 +530,29 @@
       "title": "自动退出提醒",
       "confirm": "立即返回"
     },
-    "redirecting": "即将自动返回大厅...",
+    "redirecting": "即将自动返回大厅…",
     "returnHome": "立即返回首页",
     "noTutorial": "暂无该游戏教程",
     "noClient": "未找到游戏客户端",
     "noGame": "未找到游戏",
     "tutorialTitle": "正在学习 {{game}}",
     "matchTitle": "正在对局 {{game}}",
-    "loadingResources": "正在加载对局资源...",
-    "preparingMatch": "正在准备对局...",
-    "creatingRoom": "正在创建房间并进入对局...",
+    "loadingResources": "正在加载对局资源…",
+    "preparingMatch": "正在准备对局…",
+    "creatingRoom": "正在创建房间并进入对局…",
     "namespaceLoadFailed": "游戏文案加载失败",
     "namespaceLoadFailedDesc": "未能加载当前游戏的 i18n 资源，请重试；如果问题持续出现，请提交反馈。",
     "clientLoadFailed": "游戏客户端加载失败",
     "clientLoadFailedDesc": "未能加载当前游戏的客户端代码或资源，请重试；如果问题持续出现，请提交反馈。",
-    "joiningRoom": "正在加入房间...",
-    "connectingRoom": "正在连接房间...",
+    "joiningRoom": "正在加入房间…",
+    "connectingRoom": "正在连接房间…",
     "loadingProgress": {
       "step": "{{current}}/{{total}}",
-      "preparingRoom": "准备房间...",
-      "joiningRoom": "校验房间席位...",
-      "loadingGameModule": "加载游戏模块...",
-      "connecting": "连接服务器...",
-      "syncing": "同步游戏状态...",
+      "preparingRoom": "准备房间…",
+      "joiningRoom": "校验房间席位…",
+      "loadingGameModule": "加载游戏模块…",
+      "connecting": "连接服务器…",
+      "syncing": "同步游戏状态…",
       "loadingAssets": "加载素材 {{loaded}}/{{total}}"
     },
     "title": {
@@ -568,7 +568,7 @@
     },
     "connectionTimeout": {
       "title": "连接超时",
-      "description": "无法连接到游戏服务器，请检查网络或服务状态",
+      "description": "无法连接到游戏服务器，请检查网络或服务状态。",
       "retry": "重试",
       "backToLobby": "返回大厅"
     },
@@ -602,11 +602,11 @@
     },
     "ugc": {
       "loading": "UGC 运行态加载中…",
-      "loadFailed": "UGC 运行态加载失败: {{error}}",
+      "loadFailed": "UGC 运行态加载失败：{{error}}",
       "loadFailedShort": "UGC 运行态加载失败"
     },
     "sandbox": {
-      "initializing": "正在初始化沙盒..."
+      "initializing": "正在初始化沙盒…"
     },
     "devTools": {
       "assetSlicer": "素材切片机",
@@ -622,8 +622,8 @@
   },
   "testMatchRoom": {
     "missing_game_config": "未找到游戏配置",
-    "loading": "正在加载...",
-    "loading_with_game": "正在加载 {{game}}...",
+    "loading": "正在加载…",
+    "loading_with_game": "正在加载 {{game}}…",
     "game_load_failed": "游戏加载失败",
     "seo_title": "{{game}} - 测试模式",
     "seo_description": "{{game}} E2E 测试模式"
@@ -634,7 +634,7 @@
     "back": "返回",
     "ongoing": "持续",
     "base_label": "基地 {{id}}",
-    "hand_area_placeholder": "手牌区域占位 ({{height}}px)",
+    "hand_area_placeholder": "手牌区域占位（{{height}} 像素）",
     "metrics": {
       "base_gap": "基地间距",
       "base_width": "基地宽度",
@@ -685,11 +685,11 @@
       "home": {
         "title": "概览",
         "description": "欢迎回来，这里是您的平台运营状态概览。",
-        "more_sources": "更多数据源接入中..."
+        "more_sources": "更多数据源接入中…"
       },
       "overview": {
         "total_users": "总用户数",
-        "active_users_24h": "24h 活跃用户",
+        "active_users_24h": "24 小时活跃用户",
         "total_matches": "总对局数",
         "banned_users": "被封禁用户"
       },
@@ -699,7 +699,7 @@
       },
       "user_composition": {
         "title": "用户构成",
-        "description": "活跃用户 vs 沉默用户 vs 封禁用户",
+        "description": "活跃用户、沉默用户与封禁用户对比",
         "active": "活跃用户",
         "inactive": "沉默用户",
         "banned": "封禁用户",
@@ -760,12 +760,12 @@
         "required": "开发者至少需要分配一个游戏。"
       },
       "cancel": "取消",
-      "saving": "保存中...",
+      "saving": "保存中…",
       "save": "保存角色"
     },
     "systemHealth": {
       "title": "系统健康监控",
-      "description": "实时查看平台房间、玩家在线状态与后台核心指标",
+      "description": "实时查看平台房间、玩家在线状态与后台核心指标。",
       "socket": {
         "label": "大厅连接",
         "connected": "已连接",
@@ -843,7 +843,7 @@
       },
       "ban": {
         "section_title": "封禁详情",
-        "reason": "原因: {{reason}}",
+        "reason": "原因：{{reason}}",
         "unspecified": "未说明"
       },
       "developer": {
@@ -889,8 +889,8 @@
     },
     "usersPage": {
       "title": "用户管理",
-      "description": "管理平台用户及其后台角色状态",
-      "search_placeholder": "搜索用户名或邮箱...",
+      "description": "管理平台用户及其后台角色状态。",
+      "search_placeholder": "搜索用户名或邮箱…",
       "roles": {
         "admin": "管理员",
         "developer": "开发者",
@@ -964,7 +964,7 @@
       "actions": {
         "create": "新建更新日志",
         "cancel": "取消",
-        "submitting": "提交中...",
+        "submitting": "提交中…",
         "save": "保存修改",
         "create_entry": "创建日志",
         "publish": "发布",
@@ -1016,7 +1016,7 @@
     },
     "notificationsPage": {
       "title": "系统通知",
-      "description": "管理面向所有用户的系统公告",
+      "description": "管理面向所有用户的系统公告。",
       "empty": "暂无通知",
       "form": {
         "create_title": "新建通知",
@@ -1024,7 +1024,7 @@
         "title_label": "标题",
         "title_placeholder": "通知标题",
         "content_label": "内容",
-        "content_placeholder": "通知内容...",
+        "content_placeholder": "通知内容…",
         "expires_at": "过期时间（可选）",
         "pinned": "置顶显示",
         "publish_now": "立即发布"
@@ -1037,7 +1037,7 @@
         "edit": "编辑",
         "delete": "删除",
         "cancel": "取消",
-        "submitting": "提交中..."
+        "submitting": "提交中…"
       },
       "status": {
         "pinned": "置顶",
@@ -1082,7 +1082,7 @@
         "unpin": "取消置顶",
         "delete": "删除",
         "create": "添加赞助",
-        "submitting": "提交中..."
+        "submitting": "提交中…"
       },
       "confirm": {
         "delete": "确定要删除赞助记录“{{name}}”吗？"
@@ -1101,11 +1101,11 @@
     },
     "roomsPage": {
       "title": "房间管理",
-      "description": "查看房间在线状态、持续时间，并支持按条件清理",
+      "description": "查看房间在线状态、持续时间，并支持按条件清理。",
       "unknown": "未知",
       "unnamed_room": "未命名房间",
       "guest_prefix": "游客#",
-      "search_placeholder": "搜索房间 ID 或房间名...",
+      "search_placeholder": "搜索房间 ID 或房间名…",
       "aria": {
         "select_all": "选择全部房间",
         "select_room": "选择房间 {{id}}"
@@ -1170,9 +1170,9 @@
     },
     "ugcPackagesPage": {
       "title": "UGC 管理",
-      "description": "查看并管理所有 UGC 包（下架/删除）",
-      "search_placeholder": "搜索包ID/名称/作者...",
-      "owner_placeholder": "作者ID",
+      "description": "查看并管理所有 UGC 包（下架/删除）。",
+      "search_placeholder": "搜索包 ID/名称/作者…",
+      "owner_placeholder": "作者 ID",
       "columns": {
         "package_info": "包信息",
         "owner": "作者",
@@ -1206,8 +1206,8 @@
     },
     "matchesPage": {
       "title": "对局记录",
-      "description": "查看平台所有对局历史与状态",
-      "search_placeholder": "搜索对局ID或玩家...",
+      "description": "查看平台所有对局历史与状态。",
+      "search_placeholder": "搜索对局 ID 或玩家…",
       "player_unknown": "?",
       "player_fallback": "玩家{{id}}",
       "filters": {
@@ -1287,7 +1287,7 @@
         "square": "矩形",
         "circle": "圆形"
       },
-      "crop_size_title": "裁切尺寸 (宽 x 高)",
+      "crop_size_title": "裁切尺寸（宽 × 高）",
       "crop_size_label": "裁剪尺寸",
       "quick_slice_title": "快裁模式：松开鼠标立即裁剪",
       "quick_slice": "快裁",
@@ -1295,7 +1295,7 @@
       "lock_ratio": "锁定比例",
       "shrink": "缩减",
       "enlarge": "增大",
-      "viewport": "视角: {{value}}%",
+      "viewport": "视角：{{value}}%",
       "reset": "重置",
       "hint": {
         "paste_clipboard": "粘贴剪贴板图片",
@@ -1304,7 +1304,7 @@
         "ctrl_wheel": "Ctrl+滚轮",
         "zoom_crop": "缩放裁切框"
       },
-      "extracted_count": "已提取 ({{count}})",
+      "extracted_count": "已提取（{{count}}）",
       "export_sprite_sheet": "导出精灵图",
       "empty": {
         "no_image": "无图片",
@@ -1324,7 +1324,7 @@
     },
     "audioBrowser": {
       "title": "音效浏览器",
-      "loading": "加载中...",
+      "loading": "加载中…",
       "group_labels": {
         "ambient": "环境音",
         "bgm": "背景音乐",
@@ -1399,7 +1399,7 @@
         "replay": "重新播放"
       },
       "summary": {
-        "total_count": "({{count}} 条)",
+        "total_count": "（{{count}} 条）",
         "results_count": "{{count}} 条结果"
       },
       "error": {
@@ -1407,13 +1407,13 @@
         "retry": "重试"
       },
       "filters": {
-        "search_placeholder": "搜索键名 / 文件名...",
+        "search_placeholder": "搜索键名 / 文件名…",
         "type_all": "全部"
       },
       "actions": {
         "stop_bgm": "停止背景音乐",
         "cancel_preload": "取消预加载",
-        "cancel_preload_progress": "取消 ({{loaded}}/{{total}})",
+        "cancel_preload_progress": "取消（{{loaded}}/{{total}}）",
         "preload_title": "预加载当前搜索结果中的所有音效，消除首次播放延迟",
         "preload_all": "预加载全部"
       },
@@ -1452,14 +1452,14 @@
         "interface_signature": "🔌 接口签名",
         "data_flow": "🔄 数据流向",
         "example": "🎲 骰子王座案例",
-        "upstream": "⬆️ 上游依赖 ({{count}})",
-        "downstream": "⬇️ 下游消费 ({{count}})"
+        "upstream": "⬆️ 上游依赖（{{count}}）",
+        "downstream": "⬇️ 下游消费（{{count}}）"
       },
       "pipeline": {
         "title": "⚡ 回合执行引擎 — 8 步管线",
-        "example_scenario": "📎 示例场景: 骰子王座 — 玩家A攻击玩家B",
+        "example_scenario": "📎 示例场景：骰子王座 — 玩家 A 攻击玩家 B",
         "involved_systems": "介入的系统",
-        "halt_intercept": "halt: 拦截",
+        "halt_intercept": "halt：拦截",
         "halt_skip": "跳过③④⑤"
       },
       "systems": {
@@ -1476,32 +1476,32 @@
       },
       "testing": {
         "title": "🧪 自动化测试 + AI 审计 — 五轨并列",
-        "subtitle": "命令驱动（最优先） · 实体完整性 · 交互完整性 · E2E截图 · AI逻辑审计 · 点击任意位置返回",
+        "subtitle": "命令驱动（最优先） · 实体完整性 · 交互完整性 · E2E 截图 · AI 逻辑审计 · 点击任意位置返回",
         "track_vitest": "🧪 命令驱动测试（首选）",
         "track_integrity": "🔗 实体链完整性",
         "track_interaction": "🎯 交互完整性",
         "track_e2e": "🌐 E2E 截图",
         "track_ai": "🤖 AI 逻辑审计",
         "modified_boundary": "── 代码修改后触发 ──",
-        "summary_vitest": "🧪 命令驱动（最优先）: 纯函数引擎 + 确定性管线 → 命令回放验证规则正确性",
-        "summary_integrity": "🔗 实体完整性: 注册表 + 引用链 + 触发路径 + 效果契约 → 确保数据定义无断链",
-        "summary_interaction": "🎯 交互完整性: Mode A(UI状态机payload) + Mode B(Handler注册链) → 确保交互链无断裂",
-        "summary_e2e": "🌐 E2E截图: 无头浏览器 + 像素对比 → 防止 UI 视觉回归",
-        "summary_ai": "🤖 AI逻辑审计: 八层追踪+语义一致性+元数据审计+角色反转+数据查询一致性+16条反模式",
-        "coverage_title": "📊 Bug 覆盖率估算:",
+        "summary_vitest": "🧪 命令驱动（最优先）：纯函数引擎 + 确定性管线 → 命令回放验证规则正确性",
+        "summary_integrity": "🔗 实体完整性：注册表 + 引用链 + 触发路径 + 效果契约 → 确保数据定义无断链",
+        "summary_interaction": "🎯 交互完整性：Mode A(UI状态机payload) + Mode B(Handler注册链) → 确保交互链无断裂",
+        "summary_e2e": "🌐 E2E 截图：无头浏览器 + 像素对比 → 防止 UI 视觉回归",
+        "summary_ai": "🤖 AI 逻辑审计：八层追踪+语义一致性+元数据审计+角色反转+数据查询一致性+16条反模式",
+        "coverage_title": "📊 Bug 覆盖率估算：",
         "coverage_vitest": "命令驱动 ~35%",
         "coverage_integrity": "实体完整性 ~15%",
         "coverage_interaction": "交互完整性 ~10%",
-        "coverage_e2e": "E2E截图 ~10%",
-        "coverage_ai": "AI审计 ~25%",
+        "coverage_e2e": "E2E 截图 ~10%",
+        "coverage_ai": "AI 审计 ~25%",
         "coverage_other": "其他 ~5%",
-        "coverage_note": "* 命令驱动覆盖规则逻辑/状态变更 · AI审计覆盖描述≠实现/查询绕过/交叉影响 · 其他含环境/并发/性能等难以自动化的问题"
+        "coverage_note": "* 命令驱动覆盖规则逻辑/状态变更 · AI 审计覆盖描述≠实现/查询绕过/交叉影响 · 其他含环境/并发/性能等难以自动化的问题"
       },
       "story": {
         "title": "📖 用户故事 — 创建新游戏的 6 个阶段",
         "subtitle": "基于 create-new-game 技能，数据录入合并为一个阶段 · 每阶段独立可验证 · 点击任意位置返回",
-        "workflow": "🎲 工作流: 骨架 → 数据录入(规则+实体+类型) → 领域内核 → 系统组装 → UI交互 → 收尾上线",
-        "principle": "💡 核心原则: 每阶段独立可验证·独立可提交 → 游戏只需回答4个问题 + 选用基础能力 → 引擎负责其余一切",
+        "workflow": "🎲 工作流：骨架 → 数据录入（规则+实体+类型） → 领域内核 → 系统组装 → UI 交互 → 收尾上线",
+        "principle": "💡 核心原则：每阶段独立可验证·独立可提交 → 游戏只需回答4个问题 + 选用基础能力 → 引擎负责其余一切",
         "layer_game": "游戏层",
         "layer_engine": "引擎层",
         "layer_core": "核心层",
@@ -1672,10 +1672,10 @@
           "title": "打击感组合",
           "description": "震动 + 钝帧 + 受伤闪光",
           "buttons": {
-            "light": "轻击 (2)",
-            "normal": "普通 (5)",
-            "heavy": "重击 (8)",
-            "critical": "暴击 (12)"
+            "light": "轻击（2）",
+            "normal": "普通（5）",
+            "heavy": "重击（8）",
+            "critical": "暴击（12）"
           },
           "toggles": {
             "shake": "震动",
@@ -1691,10 +1691,10 @@
           "title": "受伤反馈",
           "description": "震动容器 + 受伤闪光（斜切 + 红脉冲 + 数字）",
           "buttons": {
-            "light": "轻伤 (1)",
-            "medium": "中伤 (3)",
-            "heavy": "重伤 (5)",
-            "fatal": "致命 (10)"
+            "light": "轻伤（1）",
+            "medium": "中伤（3）",
+            "heavy": "重伤（5）",
+            "fatal": "致命（10）"
           }
         }
       },
@@ -1855,7 +1855,7 @@
       },
       "gameplay": {
         "shared": {
-          "breakpoint": "突破点: {{value}}"
+          "breakpoint": "突破点：{{value}}"
         },
         "base_capture": {
           "title": "基地占领",
@@ -1883,15 +1883,15 @@
             },
             "trickster_flame_trap": {
               "label": "火焰陷阱",
-              "description": "持续：消灭进入基地的力量≤2随从"
+              "description": "持续：消灭进入基地的力量 ≤ 2 的随从"
             },
             "ninja_assassination": {
               "label": "暗杀",
-              "description": "消灭力量≤3的随从"
+              "description": "消灭力量 ≤ 3 的随从"
             },
             "bear_cavalry_high_ground": {
               "label": "制高点",
-              "description": "持续：你的随从+1力量"
+              "description": "持续：你的随从 +1 力量"
             }
           },
           "preview": {
@@ -1911,7 +1911,7 @@
         "title": "序列特效（顺序播放）",
         "description": "有序编排 vs 并行播放对比",
         "buttons": {
-          "token_then_damage": "标记移除→伤害（序列）",
+          "token_then_damage": "Token 移除→伤害（序列）",
           "heal_then_status_then_damage": "治疗→状态→伤害",
           "parallel": "并行对比"
         },
@@ -2145,23 +2145,23 @@
     "confirm": "确认创建"
   },
   "socket": {
-    "invalidGameId": "非法 gameId，已忽略订阅: {{value}}",
+    "invalidGameId": "非法 gameId，已忽略订阅：{{value}}",
     "alreadyConnected": "已连接，跳过重复连接",
-    "connecting": "正在连接到大厅服务器...",
+    "connecting": "正在连接到大厅服务器…",
     "connected": "✅ 连接成功",
-    "disconnected": "❌ 断开连接: {{reason}}",
-    "connectError": "连接错误: {{message}}",
-    "ignoreSnapshot": "忽略过期大厅快照: {{version}}",
-    "snapshotReceived": "收到大厅更新: {{count}} 个房间，版本 {{version}}",
-    "ignoreMatchCreated": "忽略过期房间创建事件: {{version}} {{matchId}}",
-    "matchCreated": "新房间创建: {{matchId}}，版本 {{version}}",
-    "ignoreMatchUpdated": "忽略过期房间更新事件: {{version}} {{matchId}}",
-    "matchUpdated": "房间更新: {{matchId}}，版本 {{version}}",
-    "ignoreMatchEnded": "忽略过期房间结束事件: {{version}} {{matchId}}",
-    "matchEnded": "房间结束: {{matchId}}，版本 {{version}}",
-    "heartbeatStale": "心跳检测到版本落后，刷新大厅: {{version}} 当前 {{current}}",
+    "disconnected": "❌ 断开连接：{{reason}}",
+    "connectError": "连接错误：{{message}}",
+    "ignoreSnapshot": "忽略过期大厅快照：{{version}}",
+    "snapshotReceived": "收到大厅更新：{{count}} 个房间，版本 {{version}}",
+    "ignoreMatchCreated": "忽略过期房间创建事件：{{version}} {{matchId}}",
+    "matchCreated": "新房间创建：{{matchId}}，版本 {{version}}",
+    "ignoreMatchUpdated": "忽略过期房间更新事件：{{version}} {{matchId}}",
+    "matchUpdated": "房间更新：{{matchId}}，版本 {{version}}",
+    "ignoreMatchEnded": "忽略过期房间结束事件：{{version}} {{matchId}}",
+    "matchEnded": "房间结束：{{matchId}}，版本 {{version}}",
+    "heartbeatStale": "心跳检测到版本落后，刷新大厅：{{version}} 当前 {{current}}",
     "heartbeatOk": "心跳正常，版本 {{version}}",
-    "subscriberError": "订阅者回调错误: {{message}}",
+    "subscriberError": "订阅者回调错误：{{message}}",
     "subscribeMissingGameId": "订阅失败：缺少游戏 ID",
     "noSubscribers": "无订阅者，取消大厅订阅"
   },
@@ -2172,7 +2172,7 @@
   },
   "tutorial": {
     "steps": {
-      "setup": "正在准备教学场景..."
+      "setup": "正在准备教学场景…"
     }
   }
 }

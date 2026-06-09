@@ -17,7 +17,7 @@
       "expand": "展开撤回",
       "collapse": "收起撤回",
       "title": "撤回操作",
-      "waiting": "等待对方批准...",
+      "waiting": "等待对方批准…",
       "cancel": "取消申请",
       "opponentRequest": "对方请求撤回",
       "reviewHint": "对方想要撤回上一步操作，是否同意？",
@@ -72,11 +72,11 @@
       "classic": "经典"
     },
     "copyRoomId": "复制房间 ID",
-    "roomId": "ID: {{id}}",
+    "roomId": "ID：{{id}}",
     "status": {
       "self": "本人",
       "connected": "已连接",
-      "waiting": "等待中...",
+      "waiting": "等待中…",
       "player": "玩家{{id}}",
       "playerShort": "P{{id}}",
       "playerUnknown": "玩家",
@@ -91,7 +91,7 @@
     },
     "offlineBanner": {
       "message": "{{name}} 已离线 {{time}}",
-      "waitingOpponent": "等待对手加入...",
+      "waitingOpponent": "等待对手加入…",
       "seconds": "{{count}}秒",
       "minutes": "{{count}}分钟"
     },
@@ -142,12 +142,12 @@
       "qrPlaceholder": "二维码",
       "wechatLabel": "微信",
       "alipayLabel": "支付宝",
-      "sponsorLoading": "赞助名单加载中...",
+      "sponsorLoading": "赞助名单加载中…",
       "sponsorError": "赞助名单加载失败",
       "sponsorEmpty": "暂无赞助记录",
       "qqCopied": "QQ群号已复制",
       "copyFailed": "复制失败，请手动复制",
-      "loadMore": "加载更多..."
+      "loadMore": "加载更多…"
     },
     "feedback": {
       "title": "反馈",
@@ -157,7 +157,7 @@
       "typeLabel": "类型",
       "severityLabel": "优先级",
       "contentLabel": "描述",
-      "contentPlaceholder": "请描述问题或建议...\n支持粘贴截图 (Ctrl+V)",
+      "contentPlaceholder": "请描述问题或建议…\n支持粘贴截图 (Ctrl+V)",
       "pasteHint": "支持截图粘贴",
       "imageAlt": "反馈截图",
       "deleteImage": "删除图片",
@@ -189,9 +189,9 @@
       "empty": "暂无行为日志"
     },
     "chat": {
-      "placeholder": "输入消息...",
+      "placeholder": "输入消息…",
       "readonlyPlaceholder": "观战模式不可发言",
-      "empty": "暂无消息...",
+      "empty": "暂无消息…",
       "unknownPlayer": "未知玩家",
       "preview": "{{name}}：{{message}}",
       "maxLength": "最多{{count}}字",
@@ -231,25 +231,25 @@
       "approve": "同意换位",
       "reject": "拒绝换位",
       "cancel": "取消换位申请",
-      "aiBadge": "智能",
+      "aiBadge": "AI",
       "seatNumber": "座位 {{seat}}"
     },
     "ai": {
-      "forceEndPhase": "强制结束智能阶段",
-      "forceEndPhaseHint": "用于智能托管卡死时强制推进当前阶段。",
+      "forceEndPhase": "强制结束 AI 阶段",
+      "forceEndPhaseHint": "用于 AI 托管卡死时强制推进当前阶段。",
       "forceEndPhaseConfirm": "确认强制结束",
       "forceDismissPopup": "强制结束回合",
       "forceDismissPopupHint": "用于计分响应、前台交互或遮挡层卡死时，强制关闭当前阻塞并持续推进，直到当前回合结束。",
       "forceDismissPopupConfirm": "确认强制结束回合",
       "forceDismissPopupUnavailable": "当前没有可强制结束的卡死回合。",
       "forceDismissPopupSubmitting": "正在强制结束当前回合…",
-      "forceEndPhaseUnavailable": "当前没有可强制结束的智能阶段。",
-      "forceEndPhaseNotReady": "智能控制未就绪，请稍后再试。",
-      "forceEndPhaseSeatOffline": "智能座位未连接，无法执行。",
+      "forceEndPhaseUnavailable": "当前没有可强制结束的 AI 阶段。",
+      "forceEndPhaseNotReady": "AI 控制未就绪，请稍后再试。",
+      "forceEndPhaseSeatOffline": "AI 座位未连接，无法执行。",
       "forceEndPhaseSubmitting": "正在提交强制结束请求…",
-      "forceEndPhaseSuccess": "智能已强制结束回合。",
-      "forceEndPhaseTitle": "智能强制结束回合",
-      "forceEndPhaseFailed": "智能强制结束失败（{{reason}}）"
+      "forceEndPhaseSuccess": "AI 已强制结束回合。",
+      "forceEndPhaseTitle": "AI 强制结束回合",
+      "forceEndPhaseFailed": "AI 强制结束失败（{{reason}}）"
     },
     "smashup": {
       "title": "大杀四方",
@@ -390,7 +390,7 @@
       "SYS_CHEAT_SET_PHASE": "设置阶段",
       "SYS_CHEAT_SET_DICE": "设置骰子"
     },
-    "viewLabel": "视角:",
+    "viewLabel": "视角：",
     "spectator": "旁观",
     "tabs": {
       "actions": "🎮 指令",
@@ -406,7 +406,7 @@
       "empty": "暂无可用动作"
     },
     "placeholders": {
-      "moveArgs": "参数（结构化数据/文本）...",
+      "moveArgs": "参数（结构化数据/文本）…",
       "commandName": "命令名称"
     },
     "events": {
@@ -422,20 +422,20 @@
       "copied": "已复制",
       "assign": "赋值",
       "cancelAssign": "取消",
-      "pastePlaceholder": "粘贴游戏状态结构化数据...",
+      "pastePlaceholder": "粘贴游戏状态结构化数据…",
       "pasteFromClipboard": "从剪贴板粘贴",
       "apply": "应用状态",
       "errorUnsupported": "此游戏不支持状态赋值",
       "errorInvalidJson": "结构化数据格式错误"
     },
     "ai": {
-      "section": "智能",
+      "section": "AI",
       "supportTitle": "支持能力",
       "seatControllers": "座位控制器",
       "none": "当前没有配置座位控制器",
       "human": "真人",
-      "local": "本地智能",
-      "remote": "远程智能",
+      "local": "本地 AI",
+      "remote": "远程 AI",
       "difficulty": "难度：{{value}}",
       "policy": "策略：{{value}}",
       "provider": "提供方：{{value}}",
@@ -447,7 +447,7 @@
     "reset": {
       "button": "🔄 重置游戏",
       "newRoom": "🆕 创建新房间",
-      "creating": "创建中...",
+      "creating": "创建中…",
       "linkCopied": "新房间链接已复制到剪贴板，请发送给对手！",
       "shareLinkManually": "请复制以下链接发送给对手：",
       "hintTitle": "💡 提示",

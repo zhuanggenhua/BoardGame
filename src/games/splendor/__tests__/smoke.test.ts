@@ -1977,6 +1977,23 @@ describe('splendor smoke', () => {
         expect(actions).toEqual([]);
     });
 
+    test('AI 存在全局阻塞交互时不应继续生成普通行动', () => {
+        const state = createAiState({
+            hostStarted: true,
+            currentPlayer: '0',
+        });
+        state.sys.interaction.current = {
+            id: 'splendor-future-choice',
+            playerId: '1',
+            kind: 'simple-choice',
+            data: { options: [{ id: 'ok' }] },
+        } as any;
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+
+        expect(actions).toEqual([]);
+    });
+
     test('discard scorer 会把仅存在于 reserved 中的目标颜色算进弃牌偏好', () => {
         const discardScorer = splendorScorers.find((scorer) => scorer.id === 'discard');
         expect(discardScorer).toBeTruthy();

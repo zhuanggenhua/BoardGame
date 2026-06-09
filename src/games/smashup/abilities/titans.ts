@@ -880,7 +880,7 @@ function queueWalkingCastleChooseBaseInteraction(
     const interaction = createSimpleChoice(
         `titan_magical_girls_walking_castle_choose_base_${now}`,
         playerId,
-        '行走城堡：选择要移动到的基地',
+        '移动城堡：选择要移动到的基地',
         buildBaseTargetOptions(baseOptions, state),
         {
             sourceId: 'titan_magical_girls_walking_castle_choose_base',
@@ -911,7 +911,7 @@ function queueWalkingCastleChooseMinionsInteraction(
     const interaction = createSimpleChoice(
         `titan_magical_girls_walking_castle_choose_minions_${now}`,
         playerId,
-        '行走城堡：选择最多 3 个你的随从随之移动',
+        '移动城堡：选择最多 3 个你的随从随之移动',
         buildMinionTargetOptions(ownedMinions, { state, sourcePlayerId: playerId, effectType: 'move' }),
         {
             sourceId: 'titan_magical_girls_walking_castle_choose_minions',

@@ -768,6 +768,100 @@ describe('Cardia AI - 动作生成', () => {
                 }],
             });
         });
+
+        it('未知交互属于 AI 时应生成紧急取消动作，而不是继续走阶段动作', () => {
+            const state = {
+                core: {
+                    phase: 'play',
+                    currentPlayerId: '0',
+                    players: {},
+                    playerOrder: ['0', '1'],
+                },
+                sys: {
+                    interaction: {
+                        current: {
+                            id: 'cardia-custom-blocker',
+                            playerId: '0',
+                            kind: 'cardia:future-choice',
+                            data: { sourceId: 'future-choice' },
+                        },
+                        queue: [],
+                    },
+                },
+            } as unknown as MatchState<CardiaCore>;
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toHaveLength(1);
+            expect(actions[0]).toMatchObject({
+                kind: 'interaction-cancel',
+                commands: [{
+                    type: INTERACTION_COMMANDS.CANCEL,
+                    payload: {
+                        interactionId: 'cardia-custom-blocker',
+                        reason: 'missing-support',
+                    },
+                }],
+            });
+        });
+
+        it('交互属于其他玩家时不应继续生成当前 AI 的阶段动作', () => {
+            const state = {
+                core: {
+                    phase: 'play',
+                    currentPlayerId: '0',
+                    players: {
+                        '0': {
+                            id: '0',
+                            hand: [{
+                                uid: 'card-1',
+                                defId: 'card-def-1',
+                                ownerId: '0',
+                                baseInfluence: 10,
+                                faction: 'military',
+                                abilityIds: [],
+                                difficulty: 1,
+                                modifiers: createModifierStack(),
+                                tags: createTagContainer(),
+                                signets: 0,
+                                ongoingMarkers: [],
+                            }],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: false,
+                            cardRevealed: false,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                },
+                sys: {
+                    interaction: {
+                        current: {
+                            id: 'cardia-other-player-choice',
+                            playerId: '1',
+                            kind: 'simple-choice',
+                            data: {
+                                options: [{ id: 'ok', label: '确认' }],
+                            },
+                        },
+                        queue: [],
+                    },
+                },
+            } as unknown as MatchState<CardiaCore>;
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toEqual([]);
+        });
     });
 
     describe('结束阶段', () => {

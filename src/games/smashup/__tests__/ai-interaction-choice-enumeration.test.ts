@@ -333,4 +333,69 @@ describe('Smash Up AI 交互候选枚举', () => {
             optionId: 'opt-a',
         });
     });
+
+    it('未知阻塞交互属于 AI 时应生成带 interactionId 的紧急取消动作', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'smashup-custom-blocker',
+                        playerId: '0',
+                        kind: 'smashup:future-choice',
+                        data: { sourceId: 'future-choice' },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        expect(legalActions).toHaveLength(1);
+        expect(legalActions[0]).toMatchObject({
+            kind: 'interaction-cancel',
+            commands: [{
+                type: 'SYS_INTERACTION_CANCEL',
+                payload: {
+                    interactionId: 'smashup-custom-blocker',
+                    reason: 'missing-support',
+                },
+            }],
+        });
+    });
+
+    it('交互属于其他玩家时不应继续生成当前 AI 的阶段动作', () => {
+        const state = makeAiState({
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'smashup-other-player-choice',
+                        playerId: '1',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'other-player-choice',
+                            options: [{ id: 'ok', label: '确认' }],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        });
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        expect(legalActions).toEqual([]);
+    });
 });

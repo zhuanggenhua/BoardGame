@@ -18,6 +18,7 @@
 | **开发前端 / 新增游戏** (引擎/组件) | `docs/framework/frontend.md` | 系统复用 (Ability/Status)、动画组件、解耦规范 |
 | **开发后端 / 数据库** (NestJS/Mongo) | `docs/framework/backend.md` | 模块划分、Socket 网关、存储适配器 |
 | **接口调用 / 联调** (REST/WS) | `docs/api/README.md` | 认证方式、分页约定、实时通信事件 |
+| **处理系统反馈 / watchdog 自动反馈** | `docs/ai-rules/engine-systems.md` § 在线 AI 决策视图与 watchdog / 系统反馈闭环 | 先判断 feedback 是否足够定位；能定位就修业务；不能定位先补 reason/fingerprint/stateSnapshot/失败命令；业务无 bug 时改 feedback 链本身 |
 | **使用 Undo / Fab 功能** | `docs/components/UndoFab.md` | UndoFab 组件的 Props 要求与环境依赖 |
 | **新增/修改游戏光标主题** (cursor/光标/鼠标样式) | `docs/ai-rules/global-systems.md` § 光标主题系统 | 自注册流程、形态规范（grabbing 必须握拳）、共享样式模板、设置弹窗交互逻辑 |
 | **新增作弊/调试指令** | `docs/debug-tool-refactor.md` | 游戏专属调试配置的解耦注入方式 |

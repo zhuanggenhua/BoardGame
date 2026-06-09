@@ -807,9 +807,69 @@ describe('i18n 静态检查工具', () => {
             notFound: {
                 headlineSub: 'Lost off the edge of the map',
                 reload: '刷新页面 Reload',
+                middleEnglish: '点击 Submit 按钮继续',
+                allCapsEnglish: '点击 PLAY 按钮继续',
             },
-            allowlisted: {
-                shortcut: 'Ctrl+V',
+            allowedTerms: {
+                aiSupport: 'AI 支持',
+                androidApp: '请在 Android App 内重试',
+                shortcut: '支持截图粘贴 (Ctrl+V)',
+                buffZone: 'Buff 区',
+                duel: '当前 1v1 对局中按唯一对手结算',
+                duelLabel: '对决（Duel）防御阶段不能手动掷骰',
+                damageFlash: '受伤反馈·斜切视觉（DamageFlash 内部）',
+                functionName: 'createBaseSystems() 自动包含',
+                hookName: '前置（beforeCommand）',
+                i18nTerm: '未能加载当前游戏的 i18n 资源，请重试',
+                bugTerm: 'Bug 覆盖率估算:',
+                modePayload: '交互完整性：Mode A(UI状态机payload) + Mode B(Handler注册链)',
+                teamMode: '当前为 2v2 站位',
+                multiplier: '获得2x[火魂]层火焰精通',
+                multiplierPrefix: '伤害 x5',
+                properNoun: 'DIY 模式',
+                pascalCaseInternal: '挂到 BattleLogOverlay 里查看',
+                pascalCaseAcronymInternal: '挂到 BattleHUDPanel 里查看',
+                camelCaseInternal: '读取 roomDebugState 完成恢复',
+                camelCaseIds: '按 spriteIds 和 frameIndex 做映射',
+                kebabCaseInternal: '切到 room-debug-panel 查看详情',
+                kebabCaseRoute: '切到 game-room-debug-panel 查看详情',
+                fmMode: 'FM 模式',
+                qqGroup: '加入 QQ 群',
+                shaderFx: '召唤单位入场（Shader + 粒子混合版）',
+                playerShort: 'P1 先手',
+                teamMode3v3: '当前为 3v3 站位',
+                multiplierX10: '伤害 x10',
+                bundle: '请重新下载 Bundle',
+                exportJson: '导出 JSON',
+                ugcTitle: 'UGC 管理',
+                c4Model: '🏛️ C4 模型 — L1 系统上下文',
+                otaBundle: '当前 Bundle 与最新 OTA 不一致',
+                policyId: '策略 ID',
+                providerId: '提供方 ID',
+                gameIdError: '非法 gameId，已忽略订阅',
+                cpGain: '获得2CP',
+                vpGain: '获得 1 VP',
+                debugIds: '按稳定 cardId 处理，不把 atlasIndex 当唯一键',
+                futureId: '按 matchId 过滤最新快照',
+                futureVersion: '当前 bundleVersion 与 appVersion 不一致',
+                futureHandler: '统一交给 choiceHandler 处理',
+                futurePayload: '调试 syncPayload 是否缺字段',
+                futureOverlay: '挂到 ReplayOverlay 里查看',
+                futureSlug: '切到 create-room-debug-panel 查看详情',
+                sdkGuide: '打开 SDK 文档',
+                nodeJsServer: '连接 Node.js 服务',
+                oauthLogin: '切换 OAuth 登录',
+                semver: '系统健康监控 v1.2.0',
+                worldName: '征服 Itharia 的战场',
+                webviewCompat: '通常是 WebView 兼容性或启动阶段资源初始化卡住了',
+                corsConfig: '请使用本地代理或检查 CORS 配置',
+                mongoServer: '请确认后端容器（MongoDB/Server）已启动',
+                imageFormats: '仅支持 JPG、PNG、WebP、GIF，最大 5MB',
+                appShell: '当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}',
+                podLabel: '浪人（POD）',
+                romanDeck: 'II 牌组（进阶）',
+                teamLabel: 'A 队 vs B 队',
+                mathFormula: '小顺子：造成 6+X 伤害',
             },
         }, null, 2));
 
@@ -826,10 +886,195 @@ describe('i18n 静态检查工具', () => {
                 source: 'zh-CN:common.notFound.reload',
                 key: '刷新页面 Reload',
             }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.middleEnglish',
+                key: '点击 Submit 按钮继续',
+            }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.allCapsEnglish',
+                key: '点击 PLAY 按钮继续',
+            }),
         ]));
+
         expect(warnings).not.toEqual(expect.arrayContaining([
             expect.objectContaining({
-                key: 'Ctrl+V',
+                source: 'zh-CN:common.allowedTerms.aiSupport',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.androidApp',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.buffZone',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.duelLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.damageFlash',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.functionName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.hookName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.i18nTerm',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.bugTerm',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.modePayload',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.shortcut',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.duel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamMode',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplier',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplierPrefix',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.properNoun',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.pascalCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.pascalCaseAcronymInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.camelCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.camelCaseIds',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.kebabCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.kebabCaseRoute',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.fmMode',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.qqGroup',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.shaderFx',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.playerShort',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamMode3v3',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplierX10',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.bundle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.exportJson',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.ugcTitle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.c4Model',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.otaBundle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.policyId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.providerId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.gameIdError',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.cpGain',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.vpGain',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.debugIds',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureVersion',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureHandler',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futurePayload',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureOverlay',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureSlug',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.sdkGuide',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.nodeJsServer',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.oauthLogin',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.semver',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.worldName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.webviewCompat',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.corsConfig',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.mongoServer',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.imageFormats',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.appShell',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.podLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.romanDeck',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.mathFormula',
             }),
         ]));
 

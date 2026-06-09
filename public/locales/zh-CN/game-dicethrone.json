@@ -13,22 +13,22 @@
     "income": {
       "label": "2. 收入阶段",
       "desc": [
-        "获得1CP",
+        "获得 1 CP",
         "抽一张卡牌"
       ]
     },
     "main1": {
-      "label": "3. 主要阶段(1)",
+      "label": "3. 主要阶段（1）",
       "desc": [
         "打出能力升级卡",
         "打出主要阶段行动卡",
-        "出售卡牌(每张1CP)"
+        "出售卡牌（每张 1 CP）"
       ]
     },
     "offensiveRoll": {
       "label": "4. 掷骰攻击阶段",
       "desc": [
-        "最多掷骰3次来启动一个技能"
+        "最多掷骰 3 次来启动一个技能"
       ]
     },
     "defensiveRoll": {
@@ -38,23 +38,23 @@
       ]
     },
     "main2": {
-      "label": "6. 主要阶段(2)",
+      "label": "6. 主要阶段（2）",
       "desc": [
-        "跟主要阶段(1)相同"
+        "跟主要阶段（1）相同"
       ]
     },
     "discard": {
       "label": "7. 弃牌阶段",
       "desc": [
-        "出售超过6张牌以上的卡牌"
+        "出售超出 6 张上限的手牌"
       ]
     }
   },
   "tutorial": {
     "steps": {
-      "setup": "正在准备教程...",
+      "setup": "正在准备教程…",
       "intro": "欢迎来到《王权骰铸》双人教程。你的目标是把对手体力降到 0，同时保证自己不先归零。",
-      "stats": "左侧是你的资源面板：体力(起始50)、CP(起始2，上限15)。多数治疗最高不超过起始体力+10。",
+      "stats": "左侧是你的资源面板：体力（起始 50）、CP（起始 2，上限 15）。多数治疗最高不超过起始体力 + 10。",
       "phases": "回合顺序在这里：维持→收入→主要1→进攻掷骰→防御掷骰→主要2→弃牌。先手首回合跳过收入。",
       "playerBoard": "这是你的玩家面板：技能槽与技能等级都在这里，满足骰面条件后可选择发动技能。",
       "tipBoard": "右侧是提示板，展示本英雄的技能说明与骰面需求，可展开/收起查看。",
@@ -63,21 +63,21 @@
       "confirmButton": "确认骰面后才能选择技能。若想再改骰面，就不要点确认。",
       "abilities": "技能区会高亮你当前可发动的技能。选择一个进攻技能即可进入伤害与防御结算。",
       "hand": "下方是手牌：主要阶段可打出行动卡或升级卡，也能出售换 CP。",
-      "discard": "弃牌堆在右侧。把手牌拖到弃牌堆即可出售（每张+1 CP）。",
-      "statusTokens": "状态效果与标记显示在这里。闪避/太极/净化可在合适时机消耗；击倒可在进攻前花费 2CP 移除。",
+      "discard": "弃牌堆在右侧。把手牌拖到弃牌堆即可出售（每张 +1 CP）。",
+      "statusTokens": "状态效果与标记显示在这里。闪避/太极/净化可在合适时机消耗；击倒可在进攻前花费 2 CP 移除。",
       "advance": "推进阶段用右侧“下一阶段”按钮；先进入掷骰阶段，再进行投掷。",
       "resolveAttack": "选择进攻技能后，点击“结算攻击”进入伤害结算并可能触发防御阶段。",
       "purifyUse": "你获得了净化标记！点击左侧净化标记打开净化面板，选择击倒并点击“确认”移除它。",
       "innerPeace": "手牌中有“静心！”——打出它可获得 2 太极标记。",
-      "playSix": "手牌中有“玩得六啊！”——在进攻掷骰阶段使用它将一颗骰子改为 6。",
-      "meditation2": "手牌中有“清修 II”——将它拖到“清修”技能槽上完成升级。",
+      "playSix": "手牌中有“来个六！”——在进攻掷骰阶段使用它将一颗骰子改为 6。",
+      "meditation2": "手牌中有“冥想 II”——将它拖到“冥想”技能槽上完成升级。",
       "finish": "以上就是双人模式基础流程。尝试发动技能、出牌并击败对手吧！",
       "opponentDefense": "对手正在进行防御掷骰。防御方自动选择防御技能并掷骰结算。",
       "sellCardIntro": "现在你可以**卖牌换取 CP**！将手牌**拖拽到右侧弃牌堆**即可卖掉，获得 **1 CP**。弃牌是随时可以的，不限阶段。试试卖掉一张牌吧！",
       "aiTurn": "对手回合进行中……",
       "knockdownExplain": "对手打出了\"掌击\"，让你陷入了击倒状态！击倒会在攻击掷骰前强制跳过，但可以用净化移除。",
       "enlightenmentPlay": "打出手牌中的\"顿悟\"来投掷 1 颗骰子。投出莲花面可获得太极、闪避和净化标记。",
-      "main2Intro": "攻击结算完毕，现在进入第二主要阶段。你可以在这里打出行动卡或升级卡，和主要阶段(1)相同。",
+      "main2Intro": "攻击结算完毕，现在进入第二主要阶段。你可以在这里打出行动卡或升级卡，和主要阶段（1）相同。",
       "aiTurnIntro": "你的操作完成了，接下来轮到对手回合。观察对手如何打牌和攻击。",
       "undoSellIntro": "刚才卖掉的牌还可以撤回！点击右侧弃牌堆即可撤回最近一张弃牌。如果不小心卖错了牌，记得及时撤回。",
       "undoSell": "点击右侧弃牌堆，撤回刚才卖掉的牌。"
@@ -87,15 +87,15 @@
     "knockdown": {
       "name": "击倒",
       "description": [
-        "攻击掷骰阶段前可花费2CP移除此标记",
+        "攻击掷骰阶段前可花费 2 CP 移除此标记",
         "若不移除，必须跳过该阶段并移除此标记"
       ],
-      "clickToRemove": "点击花费 2CP 移除"
+      "clickToRemove": "点击花费 2 CP 移除"
     },
     "burn": {
       "name": "燃烧",
       "description": [
-        "持续效果，不可叠加。拥有此标记的玩家在每个维持阶段受到2点伤害。"
+        "持续效果，不可叠加。拥有此标记的玩家在每个维持阶段受到 2 点伤害。"
       ]
     },
     "stun": {
@@ -119,13 +119,13 @@
     "poison": {
       "name": "毒液",
       "description": [
-        "在每个自己的维持阶段受到n点伤害（n=毒液层数），持续效果"
+        "在自己的每个维持阶段，受到等同于毒液层数的伤害。"
       ]
     },
     "blinded": {
       "name": "致盲",
       "description": [
-        "攻击掷骰阶段结算时掷1骰，1-2则攻击无效，然后移除此标记"
+        "攻击掷骰阶段结算时掷 1 骰；若结果为 1-2，则本次攻击无效，然后移除此标记"
       ]
     },
     "entangle": {
@@ -137,13 +137,13 @@
     "targeted": {
       "name": "锁定",
       "description": [
-        "受到的伤害+2。持续效果"
+        "受到的伤害 +2。持续效果。"
       ]
     },
     "bind": {
       "name": "紧缚",
       "description": [
-        "每次额外投掷尝试花费 1CP；进攻投掷阶段结束移除。"
+        "每次额外投掷尝试花费 1 CP；进攻投掷阶段结束后移除。"
       ]
     },
     "cursed_coin": {
@@ -174,37 +174,37 @@
   },
   "confirmRemoveKnockdown": {
     "title": "确认移除击倒？",
-    "description": "花费 2CP 移除击倒状态，允许你在本回合正常进行攻击掷骰阶段。",
-    "confirm": "花费 2CP 移除",
+    "description": "花费 2 CP 移除击倒状态，允许你在本回合正常进行攻击掷骰阶段。",
+    "confirm": "花费 2 CP 移除",
     "cancel": "取消"
   },
   "tokens": {
     "taiji": {
       "name": "太极",
       "description": [
-        "任意时点可花费1个太极，减少1点将要承受的伤害",
-        "攻击指定目标前可花费1个太极使伤害+1",
+        "任意时点可花费 1 个太极，减少 1 点将要承受的伤害",
+        "攻击指定目标前可花费 1 个太极，使伤害 +1",
         "本回合获得的太极不可用于本回合增强伤害"
       ]
     },
     "evasive": {
       "name": "闪避",
       "description": [
-        "受到伤害时可花费1个闪避并掷1骰",
-        "结果为1-2则伤害降为0（其他效果仍生效）",
+        "受到伤害时可花费 1 个闪避并掷 1 骰",
+        "若结果为 1-2，则伤害降为 0（其他效果仍生效）",
         "同一次攻击可花费多个闪避重复尝试"
       ]
     },
     "purify": {
       "name": "净化",
       "description": [
-        "任意时点可花费1个净化，移除自己1个负面效果标记"
+        "任意时点可花费 1 个净化，移除自己 1 个负面效果标记"
       ]
     },
     "fire_mastery": {
       "name": "火焰精通",
       "description": [
-        "拥有此种标记的玩家必须在他的每个维持阶段进行“冷却”（即移除1个火焰精通标记）。"
+        "拥有此标记的玩家必须在其每个维持阶段进行“冷却”（即移除 1 个火焰精通标记）。"
       ]
     },
     "sneak": {
@@ -217,14 +217,14 @@
     "sneak_attack": {
       "name": "伏击",
       "description": [
-        "在某次攻击掷骰阶段结束时，可花费此标记掷骰1🎲，将掷骰结果加至本次攻击的伤害",
+        "在某次攻击掷骰阶段结束时，可花费此标记掷 1 颗🎲，将掷骰结果加到本次攻击的伤害上",
         "不可用于增强溅射伤害"
       ]
     },
     "crit": {
       "name": "暴击",
       "description": [
-        "攻击伤害≥5时可消耗此标记，+4伤害。不能用于溅射伤害。不叠加。"
+        "攻击伤害 ≥ 5 时可消耗此标记，使伤害 +4。不能用于溅射伤害，不叠加。"
       ]
     },
     "accuracy": {
@@ -254,13 +254,13 @@
     "blessing_of_divinity": {
       "name": "神圣祝福",
       "description": [
-        "生命值降到0时，移除此标记并将生命值回到1。此标记无法被任何方式移除、转移、偷取。不叠加。"
+        "生命值降到 0 时，移除此标记并将生命值回到 1。此标记无法被任何方式移除、转移或偷取，不叠加。"
       ]
     },
     "loaded": {
       "name": "装填",
       "description": [
-        "攻击掷骰阶段结束时可消耗1个装填并掷1颗骰子。",
+        "攻击掷骰阶段结束时可消耗 1 个装填并掷 1 颗骰子。",
         "将骰值的一半向上取整，作为本次攻击的额外伤害。"
       ]
     },
@@ -274,8 +274,8 @@
     "bounty": {
       "name": "赏金",
       "description": [
-        "持有赏金的玩家受到攻击伤害时，伤害+1。",
-        "攻击者额外获得1 CP。",
+        "持有赏金的玩家受到攻击伤害时，伤害 +1。",
+        "攻击者额外获得 1 CP。",
         "赏金不会自动移除。"
       ]
     },
@@ -310,7 +310,7 @@
     "treant_sapling": {
       "name": "木苗树灵",
       "description": [
-        "上限 2。主要阶段可花费 1 个治疗 1 并获得 1CP；或额外支付 1CP 抽 1 张牌。每回合每种树灵仅限花费 1 次。"
+        "上限 2。主要阶段可花费 1 个来治疗 1 并获得 1 CP；或额外支付 1 CP 抽 1 张牌。每回合每种树灵仅限花费 1 次。"
       ]
     },
     "treant_divine": {
@@ -352,7 +352,7 @@
     "tactical_advantage": {
       "name": "战术优势",
       "description": [
-        "上限 5。可花费 1 个获得 1CP 或重掷 1 骰；花费 3 个抽 1 或对 1 名对手施加锁定；花费 4 个令 1 名玩家获得守护或转移 1 个状态。"
+        "上限 5。可花费 1 个来获得 1 CP 或重掷 1 骰；花费 3 个可抽 1 张牌或对 1 名对手施加锁定；花费 4 个可令 1 名玩家获得守护或转移 1 个状态。"
       ]
     }
   },
@@ -410,9 +410,9 @@
     "statusAppliedDelta": "（+{{stacks}}，当前 {{total}}）",
     "statusRemoved": "对玩家{{targetPlayerId}}移除状态 {{statusLabel}}",
     "statusRemovedDelta": "（-{{stacks}}）",
-    "tokenGranted": "为玩家{{targetPlayerId}}获得 {{tokenLabel}} x{{amount}}",
+    "tokenGranted": "为玩家{{targetPlayerId}}获得 {{tokenLabel}} ×{{amount}}",
     "tokenTotal": "（当前 {{total}}）",
-    "tokenConsumed": "消耗 {{tokenLabel}} x{{amount}}",
+    "tokenConsumed": "消耗 {{tokenLabel}} ×{{amount}}",
     "tokenRemaining": "（剩余 {{total}}）",
     "tokenUsed": "使用 {{tokenLabel}}（{{effectLabel}}）",
     "tokenModifier": "（调整 {{amount}}）",
@@ -440,7 +440,7 @@
     "damageShieldPercent": "以【{{source}}】获得 {{percent}}% 伤害减免护盾",
     "damageShieldPercentPlain": "获得 {{percent}}% 伤害减免护盾",
     "usePurify": "使用净化移除 {{statusLabel}}",
-    "payToRemoveKnockdown": "花费 2CP 移除击倒",
+    "payToRemoveKnockdown": "花费 2 CP 移除击倒",
     "usePassiveAbility": "使用被动能力：{{abilityName}}",
     "confirmRoll": "确认投掷：",
     "confirmRollWithAbility": "确认投掷（{{abilityName}}）：",
@@ -469,9 +469,9 @@
     "discardPile": "弃牌堆",
     "viewingOpponent": "正在观察对手",
     "opponent": "对手",
-    "healthLabel": "血量: {{value}}",
-    "energyLabel": "能量: {{value}}",
-    "shieldLabel": "护盾: {{value}}",
+    "healthLabel": "血量：{{value}}",
+    "energyLabel": "能量：{{value}}",
+    "shieldLabel": "护盾：{{value}}",
     "autoResponseEnabled": "手动响应已启用",
     "autoResponseDisabled": "自动跳过已启用",
     "autoResponse": "自动跳过",
@@ -503,13 +503,27 @@
   },
   "config": {
     "dice": {
-      "barbarian": { "name": "狂战士骰子" },
-      "pyromancer": { "name": "烈火术士骰子" },
-      "monk": { "name": "僧侣骰子" },
-      "moonElf": { "name": "月精灵骰子" },
-      "paladin": { "name": "圣骑士骰子" },
-      "gunslinger": { "name": "枪手骰子" },
-      "samurai": { "name": "武士骰子" },
+      "barbarian": {
+        "name": "狂战士骰子"
+      },
+      "pyromancer": {
+        "name": "烈火术士骰子"
+      },
+      "monk": {
+        "name": "僧侣骰子"
+      },
+      "moonElf": {
+        "name": "月精灵骰子"
+      },
+      "paladin": {
+        "name": "圣骑士骰子"
+      },
+      "gunslinger": {
+        "name": "枪手骰子"
+      },
+      "samurai": {
+        "name": "武士骰子"
+      },
       "shadowThief": {
         "name": "暗影刺客骰子",
         "face": {
@@ -519,28 +533,38 @@
           "shadow": "暗影面"
         }
       },
-      "treant": { "name": "树精骰子" },
-      "ninja": { "name": "忍者骰子" },
-      "zhanshujia": { "name": "战术家骰子" }
+      "treant": {
+        "name": "树精骰子"
+      },
+      "ninja": {
+        "name": "忍者骰子"
+      },
+      "zhanshujia": {
+        "name": "战术家骰子"
+      }
     },
     "resources": {
-      "cp": { "name": "CP" },
-      "hp": { "name": "生命值" }
+      "cp": {
+        "name": "CP"
+      },
+      "hp": {
+        "name": "生命值"
+      }
     }
   },
   "selection": {
     "title": "选择你的英雄",
     "selectHero": "选择英雄",
-    "choosing": "选择中...",
+    "choosing": "选择中…",
     "startGame": "开始游戏",
-    "waiting": "等待中...",
+    "waiting": "等待中…",
     "waitingAll": "等待全员就绪",
-    "waitingForHost": "等待房主开始...",
+    "waitingForHost": "等待房主开始…",
     "notSelected": "未选择",
     "pressStart": "开始游戏",
     "ready": "准备",
     "cancelReady": "取消准备",
-    "readyWaiting": "等待其他玩家...",
+    "readyWaiting": "等待其他玩家…",
     "readyProgress": "准备进度",
     "you": "你",
     "targetOptionDisabled": "不可选",
@@ -577,7 +601,7 @@
     "defenderDesc": "你可以花费标记来减少伤害，或尝试完全闪避。",
     "originalDamage": "原始伤害",
     "currentDamage": "当前伤害",
-    "critRequirementDetail": "当前伤害 {{damage}}，需要 >= 5",
+    "critRequirementDetail": "当前伤害 {{damage}}，至少需要 5 点",
     "damage": "伤害",
     "available": "可用",
     "taijiBoostHint": "花费太极来提高伤害",
@@ -598,9 +622,9 @@
     "skip": "跳过",
     "preview": {
       "critBoost": "+4 伤害",
-      "critRequires": "需要伤害 >= 5",
+      "critRequires": "需要伤害至少为 5",
       "damageBoost": "+{{amount}} 伤害",
-      "damageHalved": "伤害减半 (-{{amount}})",
+      "damageHalved": "伤害减半（-{{amount}}）",
       "damageReduce": "{{amount}} 伤害",
       "damageReflect": "反弹 {{amount}} 伤害给对手",
       "undefendable": "使攻击不可防御",
@@ -620,7 +644,7 @@
     "previewContinue": "继续"
   },
   "response": {
-    "waitingOpponent": "等待对手响应...",
+    "waitingOpponent": "等待对手响应…",
     "yourTurn": "可以响应",
     "pass": "跳过"
   },
@@ -636,17 +660,17 @@
     "label": "+{{damage}} 伤害"
   },
   "dice": {
-    "waitingOpponent": "对方正在思考中...",
+    "waitingOpponent": "对方正在思考中…",
     "locked": "已锁定",
-    "rolling": "投掷中...",
-    "roll": "投掷 ({{current}}/{{total}})",
+    "rolling": "投掷中…",
+    "roll": "投掷（{{current}}/{{total}}）",
     "roll_action": "投掷",
     "reroll": "重投",
     "rerollSelected": "已选",
     "confirm": "确认",
     "confirmed": "已确认",
     "bonusRoll": "额外投掷",
-    "bonusRolled": "额外掷骰: {{value}} ({{face}})",
+    "bonusRolled": "额外掷骰：{{value}}（{{face}}）",
     "face": {
       "fist": "拳",
       "palm": "掌",
@@ -696,10 +720,10 @@
       "backStrikeAtLimit": "反击已达上限，未额外获得"
     },
     "effect": {
-      "fist": "拳: 伤害 +2",
-      "palm": "掌: 伤害 +3",
-      "taiji": "太极: 获得 2 个太极标记",
-      "lotus": "莲花: 选择获得闪避或净化",
+      "fist": "拳：伤害 +2",
+      "palm": "掌：伤害 +3",
+      "taiji": "太极：获得 2 个太极标记",
+      "lotus": "莲花：选择获得闪避或净化",
       "gainCp": "获得 {{cp}} CP",
       "powderKeg": {
         "1": "火药桶：爆炸",
@@ -709,7 +733,7 @@
         "5": "火药桶：无事发生",
         "6": "火药桶：可转交"
       },
-      "enlightenmentLotus": "莲花！获得 2太极 + 闪避 + 净化",
+      "enlightenmentLotus": "莲花！获得 2 太极 + 闪避 + 净化",
       "enlightenmentOther": "抽 1 张牌",
       "ninjaGoingForward": "一往无前：本骰计入总伤害",
       "ninjaGoingForwardReroll": "一往无前：已重掷该骰",
@@ -717,8 +741,8 @@
       "ninjaGoingForwardBleed": "刀尖舔血：造成 {{damage}} 点真实伤害",
       "thunderStrikeDie": "本骰点数 {{value}} 计入最终伤害",
       "thunderStrikeReroll": "重掷：{{value}}（计入总和伤害）",
-      "thunderStrike2Die": "雷击投掷：{{value}}（总和伤害；总和≥12 施加倒地）",
-      "thunderStrike2Reroll": "重掷：{{value}}（总和≥12 施加倒地）",
+      "thunderStrike2Die": "雷击投掷：{{value}}（总和伤害；总和≥12 施加击倒）",
+      "thunderStrike2Reroll": "重掷：{{value}}（总和≥12 施加击倒）",
       "gunslingerLoadedDie": "装填投掷：{{value}}（本次伤害 +{{bonusDamage}}）",
       "gunslingerLoadedReroll": "装填重掷：{{value}}（本次伤害 +{{bonusDamage}}）",
       "gunslingerHighNoonBullet": "子弹：造成 2 点不可防御伤害",
@@ -733,11 +757,11 @@
       "energeticStrength": "星！治疗 2 并施加脑震荡",
       "energeticOther": "抽 1 张牌",
       "luckyRoll": "本骰结果计入最终治疗",
-      "luckyRoll.result": "{{heartCount}}个心面：治疗{{healAmount}}",
+      "luckyRoll.result": "{{heartCount}} 个心面：治疗 {{healAmount}}",
       "luckyRoll.heartContribution": "心：最终治疗 +2",
       "luckyRoll.otherContribution": "非心面：最终治疗不增加",
       "morePleaseRoll": "本骰结果计入最终伤害",
-      "morePleaseRoll.result": "{{swordCount}}个剑面：伤害+{{damage}}，并施加脑震荡",
+      "morePleaseRoll.result": "{{swordCount}} 个剑面：伤害 +{{damage}}，并施加脑震荡",
       "morePleaseRoll.swordContribution": "剑：最终伤害 +1",
       "morePleaseRoll.otherContribution": "非剑面：最终伤害不增加",
       "holyLight": "圣光术",
@@ -759,19 +783,19 @@
       "absolution.helm": "头盔：格挡 3 点伤害",
       "absolution.heart": "心：格挡 5 点伤害",
       "absolution.pray": "祈祷：格挡 2 点伤害并获得 2 CP",
-      "pyrohotstreak2.1": "2点伤害",
-      "pyrohotstreak2.2": "2点伤害",
-      "pyrohotstreak2.3": "2点伤害",
-      "pyrohotstreak2.4": "3点伤害",
-      "pyrohotstreak2.5": "4点伤害",
-      "pyrohotstreak2.6": "5点伤害+灼烧!",
+      "pyrohotstreak2.1": "2 点伤害",
+      "pyrohotstreak2.2": "2 点伤害",
+      "pyrohotstreak2.3": "2 点伤害",
+      "pyrohotstreak2.4": "3 点伤害",
+      "pyrohotstreak2.5": "4 点伤害",
+      "pyrohotstreak2.6": "5 点伤害 + 灼烧！",
       "magmaArmor.1": "烈焰!",
       "magmaArmor.2": "烈焰!",
       "magmaArmor.3": "烈焰!",
       "magmaArmor.4": "熔岩",
       "magmaArmor.5": "焚魂!",
       "magmaArmor.6": "陨石!",
-      "infernalEmbrace.fire": "火：获得 2 个火焰精通",
+      "infernalEmbrace.fire": "火：获得 2 层火焰精通",
       "infernalEmbrace.1": "抽 1 张牌",
       "infernalEmbrace.2": "抽 1 张牌",
       "infernalEmbrace.3": "抽 1 张牌",
@@ -779,61 +803,46 @@
       "infernalEmbrace.5": "抽 1 张牌",
       "infernalEmbrace.6": "烈焰精通满额!",
       "pyroBlast2Die": "按本骰面结算实际效果",
-      "pyroBlast2Reroll": "重投：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
+      "pyroBlast2Reroll": "重投：{{value}}（烈焰 = 3 伤害 / 熔岩 = 灼烧 / 焚魂 = +2 烈焰精通 / 流星 = 击倒）",
       "pyroBlast3Die": "按本骰面结算实际效果",
-      "pyroBlast3Reroll": "重投：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
-      "shadowDamage": "暗影之舞：{{value}} → 造成{{damage}}伤害",
+      "pyroBlast3Reroll": "重投：{{value}}（烈焰 = 3 伤害 / 熔岩 = 灼烧 / 焚魂 = +2 烈焰精通 / 流星 = 击倒）",
+      "shadowDamage": "暗影之舞：{{value}} → 造成 {{damage}} 点伤害",
       "default": "额外投掷",
-      "oneWithShadowsHit": "暗影! 伏击+2CP",
+      "oneWithShadowsHit": "暗影！伏击 +2 CP",
       "oneWithShadowsMiss": "抽 1 张牌",
       "sneakAttack": "偷袭：掷骰值加入本次伤害",
       "explodingArrow": "爆裂箭投掷：{{value}}",
       "moonShadowStrike": "月影袭人投掷：{{value}}",
       "moonShadowStrike.moon": "月🌙：施加致盲、缠绕、锁定",
-      "moonShadowStrike.other": "抽1张牌",
+      "moonShadowStrike.other": "抽 1 张牌",
       "volley": "本骰结果计入最终加伤",
-      "volley.result": "{{bowCount}}个弓面：伤害+{{bonusDamage}}，并施加缠绕",
+      "volley.result": "{{bowCount}} 个弓面：伤害 +{{bonusDamage}}，并施加缠绕",
       "volley.bowContribution": "弓🏹：本次伤害 +1",
       "volley.otherContribution": "未命中弓面：本次伤害不增加",
-      "explodingArrow.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲",
-      "explodingArrow2.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲",
-      "explodingArrow3.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲与缠绕",
+      "explodingArrow.result": "{{bowCount}} 弓 {{footCount}} 足 {{moonCount}} 月：3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}} 伤害；对手失去 {{moonCount}} CP；施加致盲",
+      "explodingArrow2.result": "{{bowCount}} 弓 {{footCount}} 足 {{moonCount}} 月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} 伤害；对手失去 {{moonCount}} CP；施加致盲",
+      "explodingArrow3.result": "{{bowCount}} 弓 {{footCount}} 足 {{moonCount}} 月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} 伤害；对手失去 {{moonCount}} CP；施加致盲与缠绕",
       "watchOut": "未触发额外效果",
-      "watchOut.bow": "弓🏹：伤害+2",
+      "watchOut.bow": "弓🏹：伤害 +2",
       "watchOut.foot": "足🦶：施加缠绕",
       "watchOut.moon": "月🌙：施加致盲",
       "watchOut.none": "未触发额外效果",
       "blinded": "致盲判定",
       "blinded.miss": "攻击失败！",
       "blinded.hit": "攻击成功",
-      "sword": "剑: 伤害 +2",
-      "helm": "头盔: 伤害 +1",
-      "heart": "心: 治疗 2",
-      "pray": "祈祷: 获得 1 CP",
-      "fire": "烈焰: 伤害 +3",
-      "magma": "熔岩: 施加灼烧",
-      "fiery_soul": "焚魂: 获得 2 烈焰精通",
-      "meteor": "陨石: 施加击倒",
-      "holyLight2.sword": "剑: 获得 1 暴击",
-      "holyLight2.helm": "头盔: 获得 1 守护",
-      "holyLight2.heart": "心: 抽 1 张牌",
-      "holyLight2.pray": "祈祷: 获得 2 CP",
-      "divineFavor.sword": "剑: 抽 2 张牌",
-      "divineFavor.helm": "头盔: 治疗 3",
-      "divineFavor.heart": "心: 治疗 4",
-      "divineFavor.pray": "祈祷: 获得 3 CP",
-      "absolution.sword": "剑: 伤害 +3",
-      "absolution.helm": "头盔: 护盾 3",
-      "absolution.heart": "心: 护盾 5",
-      "absolution.pray": "祈祷: 护盾 2 + 2 CP",
-      "godsGrace.pray": "祈祷: 获得 4 CP",
-      "infernalEmbrace.fire": "烈焰: 获得 2 烈焰精通",
-      "samuraiBackStrikeDie": "反击投掷：{{value}}（对原攻击者造成{{damage}}伤害）",
+      "sword": "剑：伤害 +2",
+      "helm": "头盔：伤害 +1",
+      "heart": "心：治疗 2",
+      "pray": "祈祷：获得 1 CP",
+      "fire": "烈焰：伤害 +3",
+      "magma": "熔岩：施加灼烧",
+      "fiery_soul": "焚魂：获得 2 烈焰精通",
+      "meteor": "陨石：施加击倒",
+      "samuraiBackStrikeDie": "反击投掷：{{value}}（对原攻击者造成 {{damage}} 点伤害）",
       "samuraiRighteousnessKatana": "武士刀：+2 伤害",
       "samuraiRighteousnessHelm": "头盔：使对手获得 2 层耻辱",
       "samuraiRighteousnessRisingSun": "旭日：获得 1 个反击指示物",
       "samuraiMasamune.result": "{{katanaCount}} 个武士刀：+{{katanaCount}} 伤害；{{shameCount}} 个头盔：施加 {{shameCount}} 层耻辱；{{retributionCount}} 个旭日：获得 {{retributionCount}} 个反击（若已达堆叠上限则多余部分无效）",
-      "godsGrace.other": "抽 1 张牌",
       "totalDamageContribution": "本骰点数 {{value}} 计入最终伤害",
       "totalDamageContributionThreshold": "本骰点数 {{value}} 计入最终伤害；总和达阈值会触发额外效果",
       "treantLifeSap": "生命源泉：掷出 {{value}}，将治疗 {{heal}}。",
@@ -858,15 +867,15 @@
         "result": "魂火：{{branchCount}} 树枝 / {{leafCount}} 树叶 / {{spiritCount}} 树灵"
       },
       "treantMotherTree": {
-        "branch": "母树：非树灵，抽 1",
-        "leaf": "母树：非树灵，抽 1",
+        "branch": "母树：非树灵，抽 1 张牌",
+        "leaf": "母树：非树灵，抽 1 张牌",
         "spirit": "母树：树灵，养成 4 树灵",
-        "other": "母树：非树灵，抽 1"
+        "other": "母树：非树灵，抽 1 张牌"
       },
       "ninjaNinjutsu": "忍术：掷出 {{value}}。",
       "ninjaNinjutsuResult": "忍术使本次攻击伤害 +{{bonusDamage}}。",
       "ninjaDojoMask": "道场：面具，获得烟雾弹和 2 忍术",
-      "ninjaDojoOther": "道场：否则抽 1",
+      "ninjaDojoOther": "道场：否则抽 1 张牌",
       "zhanshujiaWarMongerSabre": "战争贩子：军刀造成 5 点伤害",
       "zhanshujiaWarMongerBanner": "战争贩子：旗帜获得 4 战术优势",
       "zhanshujiaWarMongerMedal": "战争贩子：勋章抽 1 张牌",
@@ -910,7 +919,7 @@
     "closeSpotlight": "关闭特写",
     "confirmDamage": "确认伤害",
     "continue": "继续",
-    "knockdownTrigger": "倒地!"
+    "knockdownTrigger": "击倒!"
   },
   "error": {
     "confirmRoll": "请先确认投掷结果",
@@ -1032,12 +1041,12 @@
     "exitEdit": "🧱 退出布局编辑",
     "enterEdit": "📐 开启布局编辑（拖拽/缩放）",
     "passiveTag": "被动",
-    "currentLayout": "当前角色布局配置：{{version}} ({{width}}×{{height}})",
+    "currentLayout": "当前角色布局配置：{{version}}（{{width}}×{{height}}）",
     "saving": "保存中…",
     "saveLayout": "保存 {{version}} 布局配置"
   },
   "status": {
-    "loadingGameState": "加载游戏状态... (玩家 {{playerId}})"
+    "loadingGameState": "加载游戏状态…（玩家 {{playerId}}）"
   },
   "confirmSkip": {
     "title": "确认结束攻击掷骰？",
@@ -1116,12 +1125,12 @@
     "evasiveOrPurify": "请选择获得的状态效果",
     "evasiveOrPurifyToken": "请选择获得的道具",
     "lotusPalmUnblockable": {
-      "title": "是否花费2个太极标记令此次攻击不可防御？",
-      "pay2": "花费2太极：不可防御",
+      "title": "是否花费 2 个太极标记令此次攻击不可防御？",
+      "pay2": "花费 2 太极：不可防御",
       "skip": "不花费"
     },
     "pyroSpendCpForFM": {
-      "title": "花费CP获得火焰专精（每1CP=1火焰专精）",
+      "title": "花费 CP 获得火焰专精（每 1 CP = 1 点火焰专精）",
       "confirm": "确认花费",
       "confirmSpend": "花费 {{count}} CP",
       "sliderHint": "花费 {{value}} CP → 获得 {{value}} 火焰专精",
@@ -1137,55 +1146,55 @@
       "accept": "获得诅咒金币",
       "decline": "不获得"
     },
-      "cursedPirateCurseCard": {
-        "title": "诅咒卡牌：选择结算效果",
-        "draw1": "抽 1 张牌",
-        "damage2Draw2": "受到 2 点伤害并抽 2 张牌",
-        "damage4Draw3": "受到 4 点伤害并抽 3 张牌"
-      },
-      "cursedPirateRansomDie": {
-        "title": "赎金：选择一颗对手骰子",
-        "choose": "骰子 {{die}}（当前 {{value}}）"
-      },
-      "cursedPirateRansomResolve": {
-        "title": "赎金：是否支付 2CP？",
-        "pay": "支付 2CP 给对手",
-        "reroll": "不支付，重掷骰子 {{die}}（当前 {{value}}）"
-      },
-      "cursedPirateCrowsNestView": {
-        "title": "瞭望台：查看手牌",
-        "confirm": "已查看 {{player}} 的手牌：{{cards}}"
-      },
-      "mercilessCursePowderKeg": {
-        "title": "选择至多两名对手获得火药桶",
-        "apply": "施加给 {{targets}}",
-        "skip": "不施加火药桶"
-      },
-      "cursedPirateGoFish": {
-        "title": "选择至多三名对手获得火药桶",
-        "apply": "施加给 {{targets}}",
-        "skip": "不施加火药桶"
-      },
-      "cursedPirateSip": {
-        "title": "啜呼：选择是否改为投骰",
-        "acceptPowderKeg": "获得火药桶",
-        "rollInstead": "不获得火药桶，改为投 1 骰"
-      },
-      "cursedPirateHumanWalkThePlank": {
-        "title": "走跳板：选择结算方式",
-        "stealCp": "偷取 1CP",
-        "discardCard": "令对手选择弃掉 1 张牌"
-      },
-      "cursedPirateHumanRemoveCoins": {
-        "title": "惊魂动魄：你可以移除任意数量的诅咒金币",
-        "keep": "不移除",
-        "remove": "移除 {{count}} 个诅咒金币"
-      },
-      "powderKegTransfer": {
-        "title": "火药桶：选择转交目标",
-        "give": "转交给 {{target}}"
-      },
-      "critOrAccuracy": "选择获得暴击或精准标记",
+    "cursedPirateCurseCard": {
+      "title": "诅咒卡牌：选择结算效果",
+      "draw1": "抽 1 张牌",
+      "damage2Draw2": "受到 2 点伤害并抽 2 张牌",
+      "damage4Draw3": "受到 4 点伤害并抽 3 张牌"
+    },
+    "cursedPirateRansomDie": {
+      "title": "赎金：选择一颗对手骰子",
+      "choose": "骰子 {{die}}（当前 {{value}}）"
+    },
+    "cursedPirateRansomResolve": {
+      "title": "赎金：是否支付 2 CP？",
+      "pay": "支付 2 CP 给对手",
+      "reroll": "不支付，重掷骰子 {{die}}（当前 {{value}}）"
+    },
+    "cursedPirateCrowsNestView": {
+      "title": "瞭望台：查看手牌",
+      "confirm": "已查看 {{player}} 的手牌：{{cards}}"
+    },
+    "mercilessCursePowderKeg": {
+      "title": "选择至多两名对手获得火药桶",
+      "apply": "施加给 {{targets}}",
+      "skip": "不施加火药桶"
+    },
+    "cursedPirateGoFish": {
+      "title": "选择至多三名对手获得火药桶",
+      "apply": "施加给 {{targets}}",
+      "skip": "不施加火药桶"
+    },
+    "cursedPirateSip": {
+      "title": "啜呼：选择是否改为投骰",
+      "acceptPowderKeg": "获得火药桶",
+      "rollInstead": "不获得火药桶，改为投 1 骰"
+    },
+    "cursedPirateHumanWalkThePlank": {
+      "title": "走跳板：选择结算方式",
+      "stealCp": "偷取 1 CP",
+      "discardCard": "令对手选择弃掉 1 张牌"
+    },
+    "cursedPirateHumanRemoveCoins": {
+      "title": "惊魂动魄：你可以移除任意数量的诅咒金币",
+      "keep": "不移除",
+      "remove": "移除 {{count}} 个诅咒金币"
+    },
+    "powderKegTransfer": {
+      "title": "火药桶：选择转交目标",
+      "give": "转交给 {{target}}"
+    },
+    "critOrAccuracy": "选择获得暴击或精准标记",
     "ninjaNinjutsu": {
       "title": "忍术 6 点效果",
       "poison": "伤害 +2，并施加慢性中毒",
@@ -1334,7 +1343,7 @@
     "enemy": "敌方"
   },
   "interaction": {
-    "waitingOpponent": "等待对手操作...",
+    "waitingOpponent": "等待对手操作…",
     "selectDie": "选择{{count}}颗骰子",
     "modifyDie": "修改骰子数值",
     "selectStatus": "选择要移除的状态",
@@ -1345,16 +1354,16 @@
     "noStatus": "没有状态效果",
     "rerollDie": "选择要重掷的骰子",
     "adjustDie": "调整骰子数值",
-    "setDieTo6": "选择要设为6的骰子",
+    "setDieTo6": "选择要设为 6 的骰子",
     "copyDie": "选择要复制的骰子",
     "setDieAny": "选择要修改的骰子",
     "selectDieToModify": "选择要修改的骰子",
     "selectDieToCopy": "选择要复制的两颗骰子",
     "selectDieToChange": "选择要改变的骰子",
-    "selectDiceToChange": "选择要2颗要改变的骰子",
+    "selectDiceToChange": "选择要改变的 2 颗骰子",
     "selectDieToAdjust": "选择要调整的骰子",
     "selectOpponentDieToReroll": "选择对手要重掷的骰子",
-    "selectDiceToReroll": "选择要重掷的骰子（至多2颗）",
+    "selectDiceToReroll": "选择要重掷的骰子（至多 2 颗）",
     "selectStatusToRemove": "选择要移除的状态效果",
     "selectPlayerToRemoveAllStatus": "选择要移除所有状态的玩家",
     "selectPlayerForRetribution": "选择获得神罚的玩家",
@@ -1363,17 +1372,17 @@
     "targetingRollSelectTarget": "选择本次攻击目标",
     "targetingRollOpponentDecidesTarget": "由对手决定谁承受本次攻击",
     "targetingRollPlayerOption": "玩家 {{playerNumber}}",
-      "selectHandCardToDiscard": "选择 1 张手牌弃置",
-      "selectStatusToTransfer": "选择要转移的状态效果",
+    "selectHandCardToDiscard": "选择 1 张手牌弃置",
+    "selectStatusToTransfer": "选择要转移的状态效果",
     "hint_copy_step1": "选择要复制的源骰子",
     "hint_copy_step2": "选择要设为{{value}}的目标骰子",
     "hint_done": "完成",
     "hint_set": "选择要设为{{value}}的骰子",
     "hint_adjust": "选择要调整的骰子",
     "hint_any": "选择要修改的骰子",
-    "hint_select": "选择骰子 ({{current}}/{{max}})",
-    "hint_select_ally": "选择队友的骰子 ({{current}}/{{max}})",
-    "hint_select_opponent": "选择对手的骰子 ({{current}}/{{max}})"
+    "hint_select": "选择骰子（{{current}}/{{max}}）",
+    "hint_select_ally": "选择队友的骰子（{{current}}/{{max}}）",
+    "hint_select_opponent": "选择对手的骰子（{{current}}/{{max}}）"
   },
   "abilitySlots": {
     "fist": "拳术",
@@ -1383,7 +1392,7 @@
     "combo": "太极连环掌",
     "lightning": "雷霆万钧",
     "calm": "心如止水",
-    "meditate": "冒想",
+    "meditate": "冥想",
     "ultimate": "超越！",
     "dagger": "匕首打击",
     "pickpocket": "抢夺",
@@ -1398,299 +1407,299 @@
   "abilities": {
     "fist-technique": {
       "name": "拳术",
-      "description": "基础拳法攻击，根据拳面数量造成不同伤害"
+      "description": "基础拳法攻击，根据拳面数量造成不同伤害。"
     },
     "fist-technique-3": {
       "name": "拳术 III",
-      "description": "3/4/5拳触发：造成7/8/9伤害，若至少有4个相同数字则施加击倒",
+      "description": "3/4/5 拳触发：造成 7/8/9 点伤害；若至少有 4 个相同数字，则施加击倒。",
       "effects": {
-        "damage4": "造成4点伤害",
-        "knockdownIfFourKind": "若至少有4个相同数字，则施加击倒"
+        "damage4": "造成 4 点伤害",
+        "knockdownIfFourKind": "若至少有 4 个相同数字，则施加击倒"
       }
     },
     "fist-technique-4": {
       "effects": {
-        "damage6": "造成6点伤害"
+        "damage6": "造成 6 点伤害"
       }
     },
     "fist-technique-5": {
       "effects": {
-        "damage8": "造成8点伤害"
+        "damage8": "造成 8 点伤害"
       }
     },
     "fist-technique-2": {
       "name": "拳术 II",
-      "description": "升级拳法攻击，造成更高伤害"
+      "description": "升级拳法攻击，造成更高伤害。"
     },
     "fist-technique-2-3": {
       "effects": {
-        "damage7": "造成7点伤害"
+        "damage7": "造成 7 点伤害"
       }
     },
     "fist-technique-2-4": {
       "effects": {
-        "damage8": "造成8点伤害"
+        "damage8": "造成 8 点伤害"
       }
     },
     "fist-technique-2-5": {
       "effects": {
-        "damage9": "造成9点伤害"
+        "damage9": "造成 9 点伤害"
       }
     },
     "fist-technique-3-3": {
       "effects": {
-        "damage7": "造成7点伤害"
+        "damage7": "造成 7 点伤害"
       }
     },
     "fist-technique-3-4": {
       "effects": {
-        "damage8": "造成8点伤害",
-        "inflictKnockdown": "施加1个击倒标记"
+        "damage8": "造成 8 点伤害",
+        "inflictKnockdown": "施加 1 个击倒标记"
       }
     },
     "fist-technique-3-5": {
       "effects": {
-        "damage9": "造成9点伤害",
-        "inflictKnockdown": "施加1个击倒标记"
+        "damage9": "造成 9 点伤害",
+        "inflictKnockdown": "施加 1 个击倒标记"
       }
     },
     "zen-forget": {
       "name": "物我两忘",
-      "description": "超然物外的境界，获得大量太极标记",
+      "description": "超然物外的境界，获得大量太极标记。",
       "effects": {
-        "gainTaiji5": "获得5个太极标记",
+        "gainTaiji5": "获得 5 个太极标记",
         "gainChoice": "获得闪避或净化（你选择）"
       }
     },
     "zen-forget-2": {
       "name": "物我两忘 II",
-      "description": "3太极触发：获得6气，获得闪避和净化",
+      "description": "3 太极触发：获得 6 气，并获得闪避和净化。",
       "effects": {
-        "gainTaiji6": "获得6个太极标记",
-        "gainEvasive": "获得1个闪避标记",
-        "gainPurify": "获得1个净化标记"
+        "gainTaiji6": "获得 6 个太极标记",
+        "gainEvasive": "获得 1 个闪避标记",
+        "gainPurify": "获得 1 个净化标记"
       }
     },
     "zen-forget-2-3": {
       "name": "物我两忘 II",
-      "description": "3太极触发：获得6气，获得闪避和净化"
+      "description": "3 太极触发：获得 6 气，并获得闪避和净化。"
     },
     "zen-forget-2-zen-combat": {
       "name": "禅武合一",
-      "description": "2拳+2太极触发：造成6伤害，命中获得2气",
+      "description": "2 拳 + 2 太极触发：造成 6 点伤害，命中后获得 2 气。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "gainTaiji2": "获得2个太极标记"
+        "damage6": "造成 6 点伤害",
+        "gainTaiji2": "获得 2 个太极标记"
       }
     },
     "fireball": {
       "name": "火球",
-      "description": "造成4/6/8伤害，获得1火焰精通",
+      "description": "造成 4/6/8 点伤害，并获得 1 层火焰精通。",
       "effects": {
-        "gainFM1": "获得1层火焰精通"
+        "gainFM1": "获得 1 层火焰精通"
       }
     },
     "fireball-3": {
-      "name": "火球术 (3火)",
+      "name": "火球术（3火）",
       "effects": {
-        "damage4": "造成4点伤害"
+        "damage4": "造成 4 点伤害"
       }
     },
     "fireball-4": {
-      "name": "火球术 (4火)",
+      "name": "火球术（4火）",
       "effects": {
-        "damage6": "造成6点伤害"
+        "damage6": "造成 6 点伤害"
       }
     },
     "fireball-5": {
-      "name": "火球术 (5火)",
+      "name": "火球术（5火）",
       "effects": {
-        "damage8": "造成8点伤害"
+        "damage8": "造成 8 点伤害"
       }
     },
     "soul-burn": {
       "name": "灵魂燃烧",
-      "description": "获得2x[火魂]层火焰精通，并对目标玩家造成1x[火魂]点伤害",
+      "description": "获得 2x[火魂] 层火焰精通，并对目标玩家造成 1x[火魂] 点伤害。",
       "effects": {
-        "fm": "获得2层火焰精通",
+        "fm": "获得 2 层火焰精通",
         "damage": "对目标玩家造成等同于火魂骰面数量的伤害"
       }
     },
     "fiery-combo": {
       "name": "火热连击",
-      "description": "获得2层火焰精通，造成5伤害，每有1层火焰精通+1伤害。",
+      "description": "获得 2 层火焰精通，造成 5 点伤害；每有 1 层火焰精通，便额外造成 1 点伤害。",
       "effects": {
-        "gainFM2": "获得2层火焰精通",
-        "main": "造成5点基础伤害。若拥有火焰精通，每层火焰精通额外造成1点伤害。"
+        "gainFM2": "获得 2 层火焰精通",
+        "main": "造成 5 点基础伤害。若拥有火焰精通，每层火焰精通额外造成 1 点伤害。"
       }
     },
     "meteor": {
       "name": "陨石",
-      "description": "造成眩晕，获得2个火焰精通。然后每有1个火焰精通造成1不可防御伤害。另外对所有对手造成2伤害。",
+      "description": "施加眩晕，并获得 2 层火焰精通。然后每有 1 层火焰精通，便造成 1 点不可防御伤害。另外对所有对手造成 2 点伤害。",
       "effects": {
-        "inflictStun": "造成眩晕",
-        "gainFM2": "获得2火焰精通",
-        "unblockable": "每拥有1个火焰精通造成1点不可防御伤害",
-        "collateral": "另外对所有对手造成2点伤害"
+        "inflictStun": "施加眩晕",
+        "gainFM2": "获得 2 层火焰精通",
+        "unblockable": "每拥有 1 层火焰精通，便造成 1 点不可防御伤害",
+        "collateral": "另外对所有对手造成 2 点伤害"
       }
     },
     "pyro-blast": {
-      "name": "高温爆破",
-      "description": "造成6伤害并掷骰1颗：[火]+3伤害，[熔岩]施加燃烧，[火魂]+2精通，[陨石]施加击倒。",
+      "name": "炎爆术",
+      "description": "造成 6 点伤害并掷 1 颗骰子：[火] +3 伤害，[熔岩]施加燃烧，[火魂] +2 精通，[陨石]施加击倒。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "bonusRoll": "投掷1颗骰子：\n- 火：额外造成3点伤害\n- 熔岩：造成燃烧\n- 火魂：获得2火焰精通\n- 陨石：造成击倒"
+        "damage6": "造成 6 点伤害",
+        "bonusRoll": "投掷 1 颗骰子：\n- 火：额外造成 3 点伤害\n- 熔岩：施加燃烧\n- 火魂：获得 2 层火焰精通\n- 陨石：施加击倒"
       }
     },
     "burn-down": {
       "name": "烧毁",
-      "description": "获得1火焰精通。激活烧毁：移除最多4个火焰精通，每移除1个造成3点不可防御伤害。",
+      "description": "获得 1 层火焰精通。激活烧毁：移除最多 4 层火焰精通；每移除 1 层，便造成 3 点不可防御伤害。",
       "effects": {
-        "gainFM1": "获得1火焰精通",
-        "main": "激活烧毁：移除最多4火焰精通。每移除1个造成3点不可防御伤害"
+        "gainFM1": "获得 1 层火焰精通",
+        "main": "激活烧毁：移除最多 4 层火焰精通。每移除 1 层，便造成 3 点不可防御伤害"
       }
     },
     "ignite": {
       "name": "点燃",
-      "description": "获得2层火焰精通，然后造成4伤害，每一层火焰精通伤害+2。",
+      "description": "获得 2 层火焰精通，然后造成 4 点伤害；每有 1 层火焰精通，便额外造成 2 点伤害。",
       "effects": {
-        "gainFM2": "获得2层火焰精通",
-        "main": "造成4点基础伤害。若拥有火焰精通，每层火焰精通额外造成2点伤害。"
+        "gainFM2": "获得 2 层火焰精通",
+        "main": "造成 4 点基础伤害。若拥有火焰精通，每层火焰精通额外造成 2 点伤害。"
       }
     },
     "magma-armor": {
       "name": "熔岩护甲",
-      "description": "防御阶段：1x[火]造成1伤害，1x[火魂]获得1精通",
+      "description": "防御阶段：每有 1 个[火]便造成 1 点伤害；每有 1 个[火魂]便获得 1 精通。",
       "effects": {
-        "main": "防御技能：每掷出1个“火”，对攻击者反向造成1点不可防御伤害。每掷出1个“火魂”，获得1层火焰精通。"
+        "main": "防御技能：每掷出 1 个“火”，便对攻击者反向造成 1 点不可防御伤害。每掷出 1 个“火魂”，便获得 1 层火焰精通。"
       }
     },
     "ultimate-inferno": {
       "name": "炼狱灼烧",
-      "description": "造成击倒和燃烧，获得3火焰精通，造成12点伤害。另外其他所有对手造成2点伤害。",
+      "description": "施加击倒和燃烧，获得 3 层火焰精通，造成 12 点伤害，并对其他所有对手各造成 2 点伤害。",
       "effects": {
-        "inflictKnockdown": "施加1个击倒标记",
-        "inflictBurn": "施加1个燃烧标记",
-        "gainFM3": "获得3层火焰精通",
-        "damage12": "造成12点伤害",
-        "collateral": "对所有对手造成2点附带伤害"
+        "inflictKnockdown": "施加 1 个击倒标记",
+        "inflictBurn": "施加 1 个燃烧标记",
+        "gainFM3": "获得 3 层火焰精通",
+        "damage12": "造成 12 点伤害",
+        "collateral": "对所有对手各造成 2 点附带伤害"
       }
     },
     "harmony": {
       "name": "天人合一",
-      "description": "顺应天地，攻守兼备",
+      "description": "顺应天地，攻守兼备。",
       "effects": {
-        "damage5": "造成5点伤害",
-        "gainTaiji2": "然后获得2个太极标记"
+        "damage5": "造成 5 点伤害",
+        "gainTaiji2": "然后获得 2 个太极标记"
       }
     },
     "harmony-2": {
       "name": "天人合一 II",
-      "description": "小顺子触发：造成6伤害，然后获得3气",
+      "description": "小顺子触发：造成 6 点伤害，然后获得 3 气。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "gainTaiji3": "然后获得3个太极标记"
+        "damage6": "造成 6 点伤害",
+        "gainTaiji3": "然后获得 3 个太极标记"
       }
     },
     "lotus-palm": {
       "name": "莲花掌",
-      "description": "莲花绽放，太极圆满",
+      "description": "莲花绽放，太极圆满。",
       "effects": {
-        "damage5": "造成5点伤害",
-        "taijiCapMax": "太极标记堆叠上限+1，并立即获得最大数量的太极标记",
-        "unblockable": "你可以花费2个太极标记令此次攻击不可防御"
+        "damage5": "造成 5 点伤害",
+        "taijiCapMax": "太极标记堆叠上限 +1，并立即获得最大数量的太极标记",
+        "unblockable": "你可以花费 2 个太极标记令此次攻击不可防御"
       }
     },
     "lotus-palm-2": {
       "name": "莲花掌 II",
-      "description": "4莲花触发：造成6不可防御伤害，获得6气。莲花之道（3莲花触发）：造成2不可防御伤害，获得闪避和2气。"
+      "description": "4 莲花触发：造成 6 点不可防御伤害，并获得 6 气。莲花之道（3 莲花触发）：造成 2 点不可防御伤害，并获得闪避和 2 气。"
     },
     "lotus-palm-2-3": {
       "effects": {
-        "damage2": "造成2点不可防御伤害",
-        "gainEvasive": "获得1个闪避标记",
-        "gainTaiji2": "获得2个太极标记"
+        "damage2": "造成 2 点不可防御伤害",
+        "gainEvasive": "获得 1 个闪避标记",
+        "gainTaiji2": "获得 2 个太极标记"
       }
     },
     "lotus-palm-2-4": {
       "effects": {
-        "damage6": "造成6点不可防御伤害",
-        "taijiCapMax": "获得6个太极标记"
+        "damage6": "造成 6 点不可防御伤害",
+        "taijiCapMax": "获得 6 个太极标记"
       }
     },
     "lotus-palm-2-5": {
       "effects": {
-        "damage10": "造成10点不可防御伤害",
-        "taijiCapMax": "获得6个太极标记"
+        "damage10": "造成 10 点不可防御伤害",
+        "taijiCapMax": "获得 6 个太极标记"
       }
     },
     "taiji-combo": {
       "name": "太极连环掌",
-      "description": "连绵不绝的掌法，根据骰面触发额外效果",
+      "description": "连绵不绝的掌法，根据骰面触发额外效果。",
       "effects": {
         "rollDie": "投掷 1 骰：拳 +2 伤害；掌 +3 伤害；太极获得 2 个太极标记；莲花选择获得闪避或净化",
-        "damage6": "造成6点伤害",
-        "inflictStun": "施加1个击倒标记",
-        "bonusFist": "若本次掷骰含拳：伤害+2",
-        "bonusPalm": "若本次掷骰含掌：伤害+3",
-        "gainTaiji2": "若本次掷骰含太极：获得2个太极标记",
+        "damage6": "造成 6 点伤害",
+        "inflictStun": "施加 1 个眩晕标记",
+        "bonusFist": "若本次掷骰含拳：伤害 +2",
+        "bonusPalm": "若本次掷骰含掌：伤害 +3",
+        "gainTaiji2": "若本次掷骰含太极：获得 2 个太极标记",
         "gainChoice": "若本次掷骰含莲花：获得闪避或净化（你选择）"
       }
     },
     "taiji-combo-2": {
       "name": "太极连环掌 II",
-      "description": "造成5伤害并投掷2骰，根据骰面触发效果",
+      "description": "造成 5 点伤害并投掷 2 骰，根据骰面触发效果。",
       "effects": {
-        "rollDie": "投掷2骰",
-        "damage5": "造成5点伤害"
+        "rollDie": "投掷 2 骰",
+        "damage5": "造成 5 点伤害"
       }
     },
     "thunder-strike": {
       "name": "雷霆万钧",
-      "description": "以雷霆之势发动攻击",
+      "description": "以雷霆之势发动攻击。",
       "effects": {
-        "roll3Damage": "掷3颗骰子，造成其点数总和的伤害（平均约10点）",
-        "rerollOne": "可花费2个太极标记重掷其中1颗骰子"
+        "roll3Damage": "掷 3 颗骰子，造成等同于点数总和的伤害（平均约 10 点）",
+        "rerollOne": "可花费 2 个太极标记重掷其中 1 颗骰子"
       }
     },
     "thunder-strike-2": {
       "name": "雷霆万钧 II",
-      "description": "投掷3骰，造成总和伤害，>=12施加倒地",
+      "description": "投掷 3 骰，造成等同于总和的伤害；若总和至少为 12，则施加击倒。",
       "effects": {
-        "roll3Damage": "投掷3骰，造成总和伤害，>=12施加倒地",
-        "rerollOne": "可花费1个气重掷其中一颗"
+        "roll3Damage": "投掷 3 骰，造成等同于总和的伤害；若总和至少为 12，则施加击倒",
+        "rerollOne": "可花费 1 个气重掷其中一颗"
       }
     },
     "calm-water": {
       "name": "心如止水",
-      "description": "心境澄澈，攻守俱佳",
+      "description": "心境澄澈，攻守俱佳。",
       "effects": {
-        "damage7": "造成7点伤害",
-        "gainTaiji2": "然后获得2个太极标记",
-        "gainEvasive": "获得1个闪避标记"
+        "damage7": "造成 7 点伤害",
+        "gainTaiji2": "然后获得 2 个太极标记",
+        "gainEvasive": "获得 1 个闪避标记"
       }
     },
     "calm-water-2": {
       "name": "止禅拳法 II",
-      "description": "大顺子触发：造成7伤害，获得3气+闪避，施加击倒",
+      "description": "大顺子触发：造成 7 点伤害，获得 3 气和闪避，并施加击倒。",
       "effects": {
-        "damage7": "造成7点伤害",
-        "gainTaiji3": "然后获得3个太极标记",
-        "gainEvasive": "获得1个闪避标记",
-        "inflictKnockdown": "施加1个击倒标记"
+        "damage7": "造成 7 点伤害",
+        "gainTaiji3": "然后获得 3 个太极标记",
+        "gainEvasive": "获得 1 个闪避标记",
+        "inflictKnockdown": "施加 1 个击倒标记"
       }
     },
     "calm-water-2-large-straight": {
       "name": "止禅拳法 II",
-      "description": "大顺子触发：造成7伤害，获得3气+闪避，施加击倒"
+      "description": "大顺子触发：造成 7 点伤害，获得 3 气和闪避，并施加击倒。"
     },
     "calm-water-2-way-of-monk": {
       "name": "武僧之路",
-      "description": "拳掌太极莲花各1触发：获得2闪避，造成3不可防御伤害"
+      "description": "拳、掌、太极、莲花各 1 触发：获得 2 个闪避，并造成 3 点不可防御伤害。"
     },
     "meditation": {
-      "name": "冒想",
-      "description": "防御时的冒想状态",
+      "name": "冥想",
+      "description": "防御时的冥想状态。",
       "effects": {
         "taijiByResult": "获得太极标记=结果中太极面的数量",
         "damageByFist": "造成伤害=结果中拳面的数量"
@@ -1700,832 +1709,828 @@
       "name": "超越！",
       "description": "终极招式！一旦启动，对手无法干扰。",
       "effects": {
-        "damage10": "造成10点终极伤害",
+        "damage10": "造成 10 点终极伤害",
         "inflictKnockdown": "对对手施加击倒",
-        "gainEvasive": "获得1个闪避标记",
-        "gainPurify": "获得1个净化标记",
-        "taijiCapMax": "太极标记堆叠上限+1，并立即获得最大数量的太极标记"
+        "gainEvasive": "获得 1 个闪避标记",
+        "gainPurify": "获得 1 个净化标记",
+        "taijiCapMax": "太极标记堆叠上限 +1，并立即获得最大数量的太极标记"
       }
     },
     "slap": {
       "name": "拍击",
-      "description": "基础挥砍攻击，根据剑面数量造成不同伤害",
+      "description": "基础挥砍攻击，根据剑面数量造成不同伤害。",
       "effects": {
-        "damage4": "造成4点伤害",
-        "damage6": "造成6点伤害",
-        "damage8": "造成8点伤害"
+        "damage4": "造成 4 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage8": "造成 8 点伤害"
       }
     },
     "all-out-strike": {
       "name": "全力一击",
-      "description": "2剑+2星触发：造成4点不可防御伤害",
+      "description": "2 剑 + 2 星触发：造成 4 点不可防御伤害。",
       "effects": {
-        "damage4Unblockable": "造成4点不可防御伤害"
+        "damage4Unblockable": "造成 4 点不可防御伤害"
       }
     },
     "powerful-strike": {
       "name": "神力重击",
-      "description": "小顺子触发：造成9点伤害",
+      "description": "小顺子触发：造成 9 点伤害。",
       "effects": {
-        "damage9": "造成9点伤害"
+        "damage9": "造成 9 点伤害"
       }
     },
     "violent-assault": {
       "name": "暴力猛击",
-      "description": "4星触发：施加眩晕，然后造成5点不可防御伤害",
+      "description": "4 星触发：施加眩晕，然后造成 5 点不可防御伤害。",
       "effects": {
-        "inflictDaze": "施加1个眩晕标记",
-        "damage5Unblockable": "造成5点不可防御伤害"
+        "inflictDaze": "施加 1 个眩晕标记",
+        "damage5Unblockable": "造成 5 点不可防御伤害"
       }
     },
     "steadfast": {
       "name": "坚韧不拔",
-      "description": "根据心面数量恢复生命值",
+      "description": "根据心面数量恢复生命值。",
       "effects": {
-        "heal4": "恢复4点生命值",
-        "heal5": "恢复5点生命值",
-        "heal6": "恢复6点生命值"
+        "heal4": "恢复 4 点生命值",
+        "heal5": "恢复 5 点生命值",
+        "heal6": "恢复 6 点生命值"
       }
     },
     "suppress": {
       "name": "压制",
-      "description": "2剑+2星触发：投掷3骰，造成其点数总和的伤害；若总数>14，施加脑震荡",
+      "description": "2 剑 + 2 星触发：投掷 3 骰，造成等同于点数总和的伤害；若总数 > 14，则施加脑震荡。",
       "effects": {
-        "roll3Damage": "投掷3颗骰子，造成其点数总和的伤害；若总数>14，施加脑震荡",
-        "rollDice": "投掷3颗骰子，造成其点数总和的伤害",
-        "concussionThreshold": "如果总数大于14，施加1个脑震荡标记"
+        "roll3Damage": "投掷 3 颗骰子，造成等同于点数总和的伤害；若总数 > 14，则施加脑震荡",
+        "rollDice": "投掷 3 颗骰子，造成等同于点数总和的伤害",
+        "concussionThreshold": "如果总数大于 14，则施加 1 个脑震荡标记"
       }
     },
     "reckless-strike": {
       "name": "鲁莽一击",
-      "description": "大顺子触发：造成15点伤害并对自己造成4点伤害",
+      "description": "大顺子触发：造成 15 点伤害，并对自己造成 4 点伤害。",
       "effects": {
-        "damage15": "造成15点伤害",
-        "selfDamage4": "对自己造成4点伤害（仅在成功造成伤害时生效）"
+        "damage15": "造成 15 点伤害",
+        "selfDamage4": "对自己造成 4 点伤害（仅在成功造成伤害时生效）"
       }
     },
     "rage": {
       "name": "狂怒",
-      "description": "终极技能：5个力量面触发，施加眩晕并造成15点伤害",
+      "description": "终极技能：5 个力量面触发，施加眩晕并造成 15 点伤害。",
       "effects": {
         "inflictDaze": "施加眩晕",
-        "damage15": "造成15点伤害"
+        "damage15": "造成 15 点伤害"
       }
     },
     "rage-2": {
       "name": "狂怒 II",
-      "description": "升级版终极技能：5个力量面触发，施加眩晕并造成20点伤害",
+      "description": "升级版终极技能：5 个力量面触发，施加眩晕并造成 20 点伤害。",
       "effects": {
         "inflictDaze": "施加眩晕",
-        "damage20": "造成20点伤害"
+        "damage20": "造成 20 点伤害"
       }
     },
     "thick-skin": {
       "name": "厚皮",
-      "description": "防御阶段触发：恢复 2 × 心面数量 的生命值",
+      "description": "防御阶段触发：恢复 2 × 心面数量的生命值。",
       "effects": {
         "healByHearts": "恢复 2 × ❤ 数量的生命值"
       }
     },
     "thick-skin-2": {
       "name": "皮糙肉厚 II",
-      "description": "升级版防御：投掷4骰，恢复 2 × ❤ 生命；若有2个❤，可防止1个即将受到的状态效果",
+      "description": "升级版防御：投掷 4 骰，恢复 2 × ❤ 生命；若有 2 个❤，可防止 1 个即将受到的状态效果。",
       "effects": {
         "healByHearts": "恢复 2 × ❤ 数量的生命值",
-        "healAndPrevent": "恢复 2 × ❤ 生命，若投出2心，防止1个状态"
+        "healAndPrevent": "恢复 2 × ❤ 生命；若投出 2 个心，则防止 1 个状态"
       }
     },
     "reckless-strike-2": {
       "name": "悍然不顾 II",
-      "description": "升级版大顺子：造成20点伤害，自身受到5点反伤",
+      "description": "升级版大顺子：造成 20 点伤害，自身受到 5 点反伤。",
       "effects": {
-        "damage20": "造成20点伤害",
-        "selfDamage5": "对自己造成5点伤害（仅在成功造成伤害时生效）"
+        "damage20": "造成 20 点伤害",
+        "selfDamage5": "对自己造成 5 点伤害（仅在成功造成伤害时生效）"
       }
     },
     "suppress-2": {
       "name": "力大无穷 II",
-      "description": "升级版技能：包含力大无穷与战吼两个变体",
+      "description": "升级版技能：包含力大无穷与战吼两个变体。",
       "effects": {
-        "rollDice": "投掷3颗骰子，造成其点数总和的伤害",
-        "concussionThreshold": "如果总数大于9，施加1个脑震荡标记"
+        "rollDice": "投掷 3 颗骰子，造成等同于点数总和的伤害",
+        "concussionThreshold": "如果总数大于 9，则施加 1 个脑震荡标记"
       }
     },
     "suppress-2-battle-cry": {
       "name": "战吼",
-      "description": "2剑+2心触发：恢复2血，造成2不可防御伤害",
+      "description": "2 剑 + 2 心触发：恢复 2 点生命值，并造成 2 点不可防御伤害。",
       "effects": {
-        "heal2": "恢复2点生命值",
-        "damage2Unblockable": "造成2点不可防御伤害"
+        "heal2": "恢复 2 点生命值",
+        "damage2Unblockable": "造成 2 点不可防御伤害"
       }
     },
     "suppress-2-mighty": {
       "name": "力大无穷 II",
-      "description": "3剑+2星触发：投掷3骰造成总和伤害，>9施加脑震荡",
+      "description": "3 剑 + 2 星触发：投掷 3 骰，造成等同于总和的伤害；若总和 > 9，则施加脑震荡。",
       "effects": {
-        "roll3Damage": "投掷3颗骰子，造成其点数总和的伤害；若总数>9，施加脑震荡"
+        "roll3Damage": "投掷 3 颗骰子，造成等同于点数总和的伤害；若总数 > 9，则施加脑震荡"
       }
     },
     "steadfast-2": {
       "name": "百折不挠 II",
-      "description": "3/4/5心触发：恢复5/6/7生命，移除1个自身状态效果",
+      "description": "3/4/5 心触发：恢复 5/6/7 点生命，并移除 1 个自身状态效果。",
       "effects": {
-        "removeStatus": "移除1个自身的状态效果标记",
-        "heal5": "恢复5点生命值",
-        "heal6": "恢复6点生命值",
-        "heal7": "恢复7点生命值"
+        "removeStatus": "移除 1 个自身的状态效果标记",
+        "heal5": "恢复 5 点生命值",
+        "heal6": "恢复 6 点生命值",
+        "heal7": "恢复 7 点生命值"
       }
     },
     "slap-2": {
       "name": "重击 II",
-      "description": "3/4/5剑触发：造成5/7/9伤害。若至少有4个相同数字，本次攻击改为不可防御",
+      "description": "3/4/5 剑触发：造成 5/7/9 点伤害。若至少有 4 个相同数字，则本次攻击改为不可防御。",
       "effects": {
-        "damage5": "造成5点伤害",
-        "damage7Unblockable": "造成7点伤害",
-        "damage9Unblockable": "造成9点伤害",
-        "unblockableIfFourKind": "若至少有4个相同数字，本次攻击不可防御"
+        "damage5": "造成 5 点伤害",
+        "damage7Unblockable": "造成 7 点伤害",
+        "damage9Unblockable": "造成 9 点伤害",
+        "unblockableIfFourKind": "若至少有 4 个相同数字，本次攻击不可防御"
       }
     },
     "slap-3": {
       "name": "重击 III",
-      "description": "3/4/5剑触发：造成6/8/10伤害。若至少有4个相同数字，本次攻击改为不可防御",
+      "description": "3/4/5 剑触发：造成 6/8/10 点伤害。若至少有 4 个相同数字，则本次攻击改为不可防御。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "damage8Unblockable": "造成8点伤害",
-        "damage10Unblockable": "造成10点伤害",
-        "unblockableIfFourKind": "若至少有4个相同数字，本次攻击不可防御"
+        "damage6": "造成 6 点伤害",
+        "damage8Unblockable": "造成 8 点伤害",
+        "damage10Unblockable": "造成 10 点伤害",
+        "unblockableIfFourKind": "若至少有 4 个相同数字，本次攻击不可防御"
       }
     },
     "all-out-strike-2": {
       "name": "坚毅重击 II",
-      "description": "2剑+2星触发：造成5点不可防御伤害",
+      "description": "2 剑 + 2 星触发：造成 5 点不可防御伤害。",
       "effects": {
-        "damage5Unblockable": "造成5点不可防御伤害"
+        "damage5Unblockable": "造成 5 点不可防御伤害"
       }
     },
     "all-out-strike-3": {
       "name": "坚毅重击 III",
-      "description": "2剑+2星触发：造成6点不可防御伤害",
+      "description": "2 剑 + 2 星触发：造成 6 点不可防御伤害。",
       "effects": {
-        "damage6Unblockable": "造成6点不可防御伤害"
+        "damage6Unblockable": "造成 6 点不可防御伤害"
       }
     },
     "powerful-strike-2": {
       "name": "神力重击 II",
-      "description": "小顺子触发：造成8点不可防御伤害",
+      "description": "小顺子触发：造成 8 点不可防御伤害。",
       "effects": {
-        "damage8Unblockable": "造成8点不可防御伤害"
+        "damage8Unblockable": "造成 8 点不可防御伤害"
       }
     },
     "violent-assault-2": {
       "name": "撼地重击 II",
-      "description": "包含撼地重击与粉碎重击两个变体",
+      "description": "包含撼地重击与粉碎重击两个变体。",
       "effects": {
-        "inflictDaze": "施加1个眩晕标记",
-        "damage7Unblockable": "造成7点不可防御伤害"
+        "inflictDaze": "施加 1 个眩晕标记",
+        "damage7Unblockable": "造成 7 点不可防御伤害"
       }
     },
     "violent-assault-2-crush": {
       "name": "粉碎重击",
-      "description": "5星触发：施加脑震荡，造成2不可防御伤害",
+      "description": "5 星触发：施加脑震荡，并造成 2 点不可防御伤害。",
       "effects": {
-        "inflictConcussion": "施加1个脑震荡标记",
-        "damage2Unblockable": "造成2点不可防御伤害"
+        "inflictConcussion": "施加 1 个脑震荡标记",
+        "damage2Unblockable": "造成 2 点不可防御伤害"
       }
     },
     "violent-assault-2-shake": {
       "name": "撼地重击",
-      "description": "4星触发：施加眩晕，造成7不可防御伤害",
+      "description": "4 星触发：施加眩晕，并造成 7 点不可防御伤害。",
       "effects": {
-        "inflictDaze": "施加1个眩晕标记",
-        "damage7Unblockable": "造成7点不可防御伤害"
+        "inflictDaze": "施加 1 个眩晕标记",
+        "damage7Unblockable": "造成 7 点不可防御伤害"
       }
     },
     "fireball-2": {
       "name": "火球 II",
-      "description": "造成4/6/8伤害，获得2火焰精通",
+      "description": "造成 4/6/8 点伤害，并获得 2 层火焰精通。",
       "effects": {
-        "gainFM2": "获得2层火焰精通"
+        "gainFM2": "获得 2 层火焰精通"
       }
     },
     "fireball-2-3": {
-      "name": "火球术 II (3火)",
+      "name": "火球术 II（3火）",
       "effects": {
-        "damage4": "造成4点伤害"
+        "damage4": "造成 4 点伤害"
       }
     },
     "fireball-2-4": {
-      "name": "火球术 II (4火)",
+      "name": "火球术 II（4火）",
       "effects": {
-        "damage6": "造成6点伤害"
+        "damage6": "造成 6 点伤害"
       }
     },
     "fireball-2-5": {
-      "name": "火球术 II (5火)",
+      "name": "火球术 II（5火）",
       "effects": {
-        "damage8": "造成8点伤害"
+        "damage8": "造成 8 点伤害"
       }
     },
     "soul-burn-2": {
-      "name": "燃烧之灵 II",
-      "description": "2火魂: 获得2×[火魂数]FM，造成[火魂数]伤害。3火魂额外施加灼烧。炙热之魂(2岩浆+2火魂): FM上限+1，获得5FM，施加倒地。",
+      "name": "灵魂燃烧 II",
+      "description": "2 火魂：获得 2×[火魂数] FM，并造成 [火魂数] 伤害。3 火魂额外施加灼烧。炙热之魂（2 岩浆 + 2 火魂）：FM 上限 +1，获得 5 FM，并施加击倒。",
       "effects": {
-        "fm": "获得2×火魂骰面数量的火焰精通",
+        "fm": "获得 2×火魂骰面数量的火焰精通",
         "damage": "对目标玩家造成等同于火魂骰面数量的伤害"
       }
     },
     "soul-burn-3": {
-      "name": "燃烧之灵 (3火魂)",
+      "name": "灵魂燃烧（3 火魂）",
       "effects": {
-        "fm": "获得2×火魂骰面数量的火焰精通",
-        "inflictBurn": "施加1个燃烧标记",
+        "fm": "获得 2×火魂骰面数量的火焰精通",
+        "inflictBurn": "施加 1 个燃烧标记",
         "damage": "对目标玩家造成等同于火魂骰面数量的伤害"
       }
     },
     "blazing-soul": {
       "name": "炙热之魂",
-      "description": "2岩浆+2火魂触发：精通上限+1，获得5精通，施加倒地",
+      "description": "2 岩浆 + 2 火魂触发：精通上限 +1，获得 5 精通，并施加击倒。",
       "effects": {
-        "increaseLimit": "火焰精通堆叠上限提升1",
-        "gainFM5": "获得5层火焰精通",
-        "inflictKnockdown": "施加倒地"
+        "increaseLimit": "火焰精通堆叠上限提升 1",
+        "gainFM5": "获得 5 层火焰精通",
+        "inflictKnockdown": "施加击倒"
       }
     },
     "fiery-combo-2": {
-      "name": "炽热波纹 II",
-      "description": "小顺子: 获得2精通，造成6+X伤害。2火+2爆发: 获得2精通，施加燃烧，造成6伤害。",
+      "name": "火热连击 II",
+      "description": "小顺子：获得 2 精通，造成 6+X 伤害。2 火 + 2 爆发：获得 2 精通，施加燃烧，并造成 6 点伤害。",
       "effects": {
-        "gainFM2": "获得2层火焰精通",
-        "main": "造成6点基础伤害。若拥有火焰精通，每层火焰精通额外造成1点伤害。"
+        "gainFM2": "获得 2 层火焰精通",
+        "main": "造成 6 点基础伤害。若拥有火焰精通，每层火焰精通额外造成 1 点伤害。"
       }
     },
     "incinerate": {
       "name": "焚灭",
-      "description": "2火+2爆发触发：获得2精通，施加燃烧，造成6伤害",
+      "description": "2 火 + 2 爆发触发：获得 2 精通，施加燃烧，并造成 6 点伤害。",
       "effects": {
-        "gainFM2": "获得2层火焰精通",
-        "inflictBurn": "施加1个燃烧标记",
-        "damage6": "造成6点伤害"
+        "gainFM2": "获得 2 层火焰精通",
+        "inflictBurn": "施加 1 个燃烧标记",
+        "damage6": "造成 6 点伤害"
       }
     },
     "meteor-2": {
-      "name": "流星火雨 II",
-      "description": "3x[陨石]: 击倒，燃烧，眩晕。4x[陨石]: 获得2精通，眩晕，X不可防御伤害，3附带伤害。",
+      "name": "陨石 II",
+      "description": "3x[陨石]：击倒、燃烧、眩晕。4x[陨石]：获得 2 精通、眩晕、X 不可防御伤害，以及 3 点附带伤害。",
       "effects": {
-        "gainFM2": "获得2火焰精通",
-        "inflictStun": "施加1个眩晕标记",
-        "unblockable": "每拥有1个火焰精通造成1点不可防御伤害",
-        "collateral": "对所有对手造成3点附带伤害"
+        "gainFM2": "获得 2 层火焰精通",
+        "inflictStun": "施加 1 个眩晕标记",
+        "unblockable": "每拥有 1 层火焰精通，便造成 1 点不可防御伤害",
+        "collateral": "对所有对手造成 3 点附带伤害"
       }
     },
     "meteor-shower": {
-      "name": "流星雨 (3陨石)",
-      "description": "3陨石触发：施加击倒、燃烧、眩晕",
+      "name": "流星雨（3陨石）",
+      "description": "3 陨石触发：施加击倒、燃烧、眩晕。",
       "effects": {
-        "inflictKnockdown": "施加1个击倒标记",
-        "inflictBurn": "施加1个燃烧标记",
-        "inflictStun": "施加1个眩晕标记"
+        "inflictKnockdown": "施加 1 个击倒标记",
+        "inflictBurn": "施加 1 个燃烧标记",
+        "inflictStun": "施加 1 个眩晕标记"
       }
     },
     "pyro-blast-2": {
       "name": "炎爆术 II",
-      "description": "造成6伤害并掷2骰：[火]+3伤害，[熔岩]燃烧，[火魂]+2精通，[陨石]击倒。",
+      "description": "造成 6 点伤害并掷 2 骰：[火] +3 伤害，[熔岩]燃烧，[火魂] +2 精通，[陨石]击倒。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "bonusRoll": "投掷2颗骰子：\n- 火：额外造成3点伤害\n- 熔岩：造成燃烧\n- 火魂：获得2火焰精通\n- 陨石：造成击倒"
+        "damage6": "造成 6 点伤害",
+        "bonusRoll": "投掷 2 颗骰子：\n- 火：额外造成 3 点伤害\n- 熔岩：施加燃烧\n- 火魂：获得 2 层火焰精通\n- 陨石：施加击倒"
       }
     },
     "pyro-blast-3": {
       "name": "炎爆术 III",
-      "description": "造成6伤害并掷2骰（可重掷1个）：[火]+3伤害，[熔岩]燃烧，[火魂]+2精通，[陨石]击倒。",
+      "description": "造成 6 点伤害并掷 2 骰（可重掷 1 颗）：[火] +3 伤害，[熔岩]燃烧，[火魂] +2 精通，[陨石]击倒。",
       "effects": {
-        "damage6": "造成6点伤害",
-        "bonusRoll": "投掷2颗骰子（可选重掷1个）：\n- 火：额外造成3点伤害\n- 熔岩：造成燃烧\n- 火魂：获得2火焰精通\n- 陨石：造成击倒"
+        "damage6": "造成 6 点伤害",
+        "bonusRoll": "投掷 2 颗骰子（可选重掷 1 颗）：\n- 火：额外造成 3 点伤害\n- 熔岩：施加燃烧\n- 火魂：获得 2 层火焰精通\n- 陨石：施加击倒"
       }
     },
     "burn-down-2": {
-      "name": "燃烧殆尽 II",
-      "description": "获得1精通。激活烧毁：移除任意数量精通，每移除1精通造成4不可防御伤害。",
+      "name": "烧毁 II",
+      "description": "获得 1 精通。激活烧毁：移除任意数量精通；每移除 1 精通，便造成 4 点不可防御伤害。",
       "effects": {
-        "main": "激活烧毁：移除任意数量火焰精通。每移除1个造成4点不可防御伤害"
+        "main": "激活烧毁：移除任意数量火焰精通。每移除 1 层，便造成 4 点不可防御伤害"
       }
     },
     "ignite-2": {
-      "name": "引燃 II",
-      "description": "获得2精通，施加燃烧，造成5+2x精通伤害。",
+      "name": "点燃 II",
+      "description": "获得 2 精通，施加燃烧，并造成 5 + 2x精通 点伤害。",
       "effects": {
-        "gainFM2": "获得2层火焰精通",
-        "inflictBurn": "施加1个燃烧标记",
-        "main": "造成5点基础伤害。若拥有火焰精通，每层火焰精通额外造成2点伤害。"
+        "gainFM2": "获得 2 层火焰精通",
+        "inflictBurn": "施加 1 个燃烧标记",
+        "main": "造成 5 点基础伤害。若拥有火焰精通，每层火焰精通额外造成 2 点伤害。"
       }
     },
     "magma-armor-2": {
-      "name": "熔火铠甲 II",
-      "description": "防御：1x[火]造成1不可防御伤害，1x[火魂]获得1精通",
+      "name": "熔岩护甲 II",
+      "description": "防御：每有 1 个[火]便造成 1 点不可防御伤害；每有 1 个[火魂]便获得 1 精通。",
       "effects": {
-        "main": "防御技能 (5骰)：每掷出1个“火”，获得1火焰精通并造成1伤害。如果有火+火魂，施加燃烧。"
+        "main": "防御技能（5 骰）：每掷出 1 个“火”，便获得 1 层火焰精通并造成 1 点伤害。如果有火+火魂，则施加燃烧。"
       }
     },
     "magma-armor-3": {
-      "name": "熔火铠甲 III",
-      "description": "防御：1x[火]造成2不可防御伤害，1x[火魂]获得1精通",
+      "name": "熔岩护甲 III",
+      "description": "防御：每有 1 个[火]便造成 2 点不可防御伤害；每有 1 个[火魂]便获得 1 精通。",
       "effects": {
-        "main": "防御技能 (5骰)：每掷出1个“火”获得1精通并造成1伤害。每掷出1个“火魂”获得1精通并造成1伤害。如果有火+火魂，施加燃烧。"
+        "main": "防御技能（5 骰）：每掷出 1 个“火”便获得 1 精通并造成 1 点伤害。每掷出 1 个“火魂”便获得 1 精通并造成 1 点伤害。如果有火+火魂，则施加燃烧。"
       }
     },
     "dagger-strike": {
       "name": "匕首打击",
-      "description": "基础匕首攻击，根据匕首面数量造成不同伤害",
+      "description": "基础匕首攻击，根据匕首面数量造成不同伤害。",
       "effects": {
-        "damage4": "造成4点伤害",
-        "damage6": "造成6点伤害",
-        "damage8": "造成8点伤害"
+        "damage4": "造成 4 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage8": "造成 8 点伤害"
       }
     },
     "pickpocket": {
       "name": "抢夺",
-      "description": "小顺子触发：获得3CP，造成一半CP的伤害",
+      "description": "小顺子触发：获得 3 CP，造成等同于一半 CP 的伤害。",
       "effects": {
-        "gainCp3": "获得3CP"
+        "gainCp3": "获得 3 CP"
       }
     },
     "steal": {
       "name": "偷窃",
-      "description": "根据背包面数量获得CP，若有暗影面则从对手偷取"
+      "description": "根据背包面数量获得 CP；若有暗影面，则从对手处偷取。"
     },
     "kidney-shot": {
       "name": "肾击",
-      "description": "大顺子触发：获得4CP，造成等同CP的伤害",
+      "description": "大顺子触发：获得 4 CP，造成等同于 CP 的伤害。",
       "effects": {
-        "gainCp4": "获得4CP"
+        "gainCp4": "获得 4 CP"
       }
     },
     "shadow-dance": {
       "name": "暗影之舞",
-      "description": "3暗影触发：投掷1骰造成一半伤害，获得潜行和伏击",
+      "description": "3 暗影触发：投掷 1 骰，造成一半伤害，并获得潜行和伏击。",
       "effects": {
-        "gainSneak": "获得1个潜行标记",
-        "gainSneakAttack": "获得1个伏击标记"
+        "gainSneak": "获得 1 个潜行标记",
+        "gainSneakAttack": "获得 1 个伏击标记"
       }
     },
     "cornucopia": {
       "name": "聚宝盆",
-      "description": "2卡牌触发：抽1×卡牌面张牌，若有暗影面则丢弃对手1张牌（随机）"
+      "description": "2 卡牌触发：每有 1 个卡牌面便抽 1 张牌；若有暗影面，则随机弃掉对手 1 张牌。"
     },
     "shadow-shank": {
       "name": "暗影穿刺",
-      "description": "终极技能！5暗影触发：获得3CP，造成CP+5伤害，移除负面效果，获得潜行",
+      "description": "终极技能！5 暗影触发：获得 3 CP，造成 CP + 5 伤害，移除负面效果，并获得潜行。",
       "effects": {
-        "gainCp3": "获得3CP",
-        "gainSneak": "获得1个潜行标记"
+        "gainCp3": "获得 3 CP",
+        "gainSneak": "获得 1 个潜行标记"
       }
     },
     "shadow-defense": {
       "name": "暗影守护",
-      "description": "防御阶段：根据骰面结果进行防御结算"
+      "description": "防御阶段：根据骰面结果进行防御结算。"
     },
     "dagger-strike-2": {
       "name": "匕首打击 II",
-      "description": "升级匕首攻击：额外获得1CP，每有卡牌面抽1牌"
+      "description": "升级匕首攻击：额外获得 1 CP；每有一个卡牌面，便抽 1 张牌。"
     },
     "pickpocket-2": {
       "name": "抢夺 II",
-      "description": "小顺子触发：获得4CP，造成一半CP的伤害（向上取整）",
+      "description": "小顺子触发：获得 4 CP，造成等同于一半 CP 的伤害（向上取整）。",
       "effects": {
-        "gainCp4": "获得4CP"
+        "gainCp4": "获得 4 CP"
       }
     },
     "kidney-shot-2": {
       "name": "肾击 II",
-      "description": "大顺子触发：获得4CP，造成等同CP的伤害",
+      "description": "大顺子触发：获得 4 CP，造成等同于 CP 的伤害。",
       "effects": {
-        "gainCp4": "获得4CP"
+        "gainCp4": "获得 4 CP"
       }
     },
     "shadow-assault": {
       "name": "暗影突袭",
-      "description": "2匕首+2暗影触发：造成一半CP伤害，施加中毒"
+      "description": "2 匕首 + 2 暗影触发：造成一半 CP 的伤害，并施加中毒。"
     },
     "piercing-attack": {
       "name": "穿刺攻击",
-      "description": "匕首+背包+卡牌+暗影各1触发：获得1CP、伏击、抽1牌、施加中毒"
-    },
-    "shadow-dance-2": {
-      "name": "暗影之舞 II",
-      "description": "3暗影触发：投掷1骰造成一半真实伤害（向上取整），获得潜行和伏击，抽1牌"
-    },
-    "steal-2": {
-      "name": "偷窃 II",
-      "description": "升级偷窃：获得更多CP，若有暗影面则从对手偷取"
-    },
-    "cornucopia-2": {
-      "name": "聚宝盆 II",
-      "description": "2卡牌触发：每有卡牌面抽1，有暗影面弃1，有背包面得1CP"
-    },
-    "shadow-defense-2": {
-      "name": "暗影守护 II",
-      "description": "防御阶段（5骰）：升级版防御结算"
-    },
-    "fearless-riposte": {
-      "name": "恐惧反击",
-      "description": "防御阶段（5骰）：造成匕首数伤害，若有匕首+暗影则造成毒液"
-    },
-    "fearless-riposte-2": {
-      "name": "后发制人 II",
-      "description": "防御阶段（5骰）：造成2×匕首数伤害，若有匕首+暗影则造成毒液"
-    },
-    "piercing-attack": {
-      "name": "穿刺攻击",
-      "description": "匕首+背包+卡牌+暗影各1触发：获得1CP、伏击、抽1牌、施加中毒",
+      "description": "匕首 + 背包 + 卡牌 + 暗影各 1 触发：获得 1 CP、伏击、抽 1 张牌，并施加中毒。",
       "effects": {
         "draw1": "抽 1 张牌",
         "poison": "施加中毒"
       }
     },
+    "shadow-dance-2": {
+      "name": "暗影之舞 II",
+      "description": "3 暗影触发：投掷 1 骰，造成一半真实伤害（向上取整），获得潜行和伏击，并抽 1 张牌。"
+    },
+    "steal-2": {
+      "name": "偷窃 II",
+      "description": "升级偷窃：获得更多 CP；若有暗影面，则从对手处偷取。"
+    },
+    "cornucopia-2": {
+      "name": "聚宝盆 II",
+      "description": "2 卡牌触发：每有一个卡牌面便抽 1 张牌；若有暗影面，则弃 1 张牌；若有背包面，则获得 1 CP。"
+    },
+    "shadow-defense-2": {
+      "name": "暗影守护 II",
+      "description": "防御阶段（5 骰）：升级版防御结算。"
+    },
+    "fearless-riposte": {
+      "name": "恐惧反击",
+      "description": "防御阶段（5 骰）：按匕首数量造成伤害；若同时有匕首和暗影，则施加毒液。"
+    },
+    "fearless-riposte-2": {
+      "name": "后发制人 II",
+      "description": "防御阶段（5 骰）：按匕首数量的 2 倍造成伤害；若同时有匕首和暗影，则施加毒液。"
+    },
     "righteous-combat": {
       "name": "正义战法",
-      "description": "3剑+1盔触发：造成5伤害，投掷2骰获得额外效果",
+      "description": "3 剑 + 1 盔触发：造成 5 点伤害，并投掷 2 骰获得额外效果。",
       "effects": {
-        "damage5": "造成5点伤害",
-        "roll2": "投掷2骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+        "damage5": "造成 5 点伤害",
+        "roll2": "投掷 2 骰：剑 +2 伤害，盔 +1 伤害，心治疗 2，祈祷 +1 CP。"
       }
     },
     "righteous-combat-2": {
       "name": "正义战法 II",
-      "description": "3剑+2盔：造成5点伤害，然后投掷3骰结算额外效果",
+      "description": "3 剑 + 2 盔触发：造成 5 点伤害，然后投掷 3 骰结算额外效果。",
       "effects": {
-        "heal2": "恢复2点生命值",
-        "damage2Unblockable": "造成2点不可防御伤害",
-        "damage5": "造成5点伤害",
-        "roll3": "投掷3骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+        "heal2": "恢复 2 点生命值",
+        "damage2Unblockable": "造成 2 点不可防御伤害",
+        "damage5": "造成 5 点伤害",
+        "roll3": "投掷 3 骰：剑 +2 伤害，盔 +1 伤害，心治疗 2，祈祷 +1 CP。"
       }
     },
     "righteous-combat-3": {
       "name": "正义战法 III",
-      "description": "包含执着与正义战法两个变体（升级版）",
+      "description": "包含执着与正义战法两个变体（升级版）。",
       "effects": {
-        "heal2": "恢复2点生命值",
-        "damage2Unblockable": "造成2点不可防御伤害",
-        "damage6": "造成6点伤害",
-        "roll3": "投掷3骰：剑+2伤害，盔+1伤害，心治疗2，祈祷+1CP"
+        "heal2": "恢复 2 点生命值",
+        "damage2Unblockable": "造成 2 点不可防御伤害",
+        "damage6": "造成 6 点伤害",
+        "roll3": "投掷 3 骰：剑 +2 伤害，盔 +1 伤害，心治疗 2，祈祷 +1 CP。"
       }
     },
     "blessing-of-might": {
       "name": "力量祝福",
-      "description": "3剑+1祈祷触发：造成3不可防御伤害，获得暴击和精准各1",
+      "description": "3 剑 + 1 祈祷触发：造成 3 点不可防御伤害，并各获得 1 个暴击和精准标记。",
       "effects": {
-        "damage3": "造成3点不可防御伤害",
-        "gainCrit": "获得1个暴击标记",
-        "gainAccuracy": "获得1个精准标记"
+        "damage3": "造成 3 点不可防御伤害",
+        "gainCrit": "获得 1 个暴击标记",
+        "gainAccuracy": "获得 1 个精准标记"
       }
     },
     "blessing-of-might-2": {
       "name": "力量祝福 II",
-      "description": "包含进攻姿态与神力信徒两个变体",
+      "description": "包含进攻姿态与神力信徒两个变体。",
       "effects": {
-        "damage2Unblockable": "造成2点不可防御伤害",
-        "choice": "选择获得1个暴击或1个精准标记",
-        "damage4Unblockable": "造成4点不可防御伤害",
-        "gainCrit": "获得1个暴击标记",
-        "gainAccuracy": "获得1个精准标记"
+        "damage2Unblockable": "造成 2 点不可防御伤害",
+        "choice": "选择获得 1 个暴击或 1 个精准标记",
+        "damage4Unblockable": "造成 4 点不可防御伤害",
+        "gainCrit": "获得 1 个暴击标记",
+        "gainAccuracy": "获得 1 个精准标记"
       }
     },
     "holy-strike": {
       "name": "神圣攻击",
-      "description": "小顺子/大顺子触发：治疗并造成伤害",
+      "description": "小顺子/大顺子触发：治疗并造成伤害。",
       "effects": {
-        "heal1": "恢复1点生命值",
-        "damage5": "造成5点伤害",
-        "heal2": "恢复2点生命值",
-        "damage8": "造成8点伤害"
+        "heal1": "恢复 1 点生命值",
+        "damage5": "造成 5 点伤害",
+        "heal2": "恢复 2 点生命值",
+        "damage8": "造成 8 点伤害"
       }
     },
     "holy-strike-large": {
-      "name": "神圣攻击 (大顺子)",
-      "description": "大顺子触发：恢复2血，造成8伤害",
+      "name": "神圣攻击（大顺子）",
+      "description": "大顺子触发：恢复 2 点生命值，并造成 8 点伤害。",
       "effects": {
-        "heal2": "恢复2点生命值",
-        "damage8": "造成8点伤害"
+        "heal2": "恢复 2 点生命值",
+        "damage8": "造成 8 点伤害"
       }
     },
     "holy-strike-small": {
-      "name": "神圣攻击 (小顺子)",
-      "description": "小顺子触发：恢复1血，造成5伤害"
+      "name": "神圣攻击（小顺子）",
+      "description": "小顺子触发：恢复 1 点生命值，并造成 5 点伤害。"
     },
     "holy-strike-2": {
       "name": "神圣攻击 II",
-      "description": "小顺子/大顺子触发：治疗并造成更高伤害",
+      "description": "小顺子/大顺子触发：治疗并造成更高伤害。",
       "effects": {
-        "heal1": "恢复1点生命值",
-        "damage7": "造成7点伤害",
-        "heal2": "恢复2点生命值",
-        "damage9": "造成9点伤害"
+        "heal1": "恢复 1 点生命值",
+        "damage7": "造成 7 点伤害",
+        "heal2": "恢复 2 点生命值",
+        "damage9": "造成 9 点伤害"
       }
     },
     "holy-strike-2-small": {
-      "name": "神圣攻击 II (小顺子)",
-      "description": "小顺子触发：恢复1血，造成7伤害"
+      "name": "神圣攻击 II（小顺子）",
+      "description": "小顺子触发：恢复 1 点生命值，并造成 7 点伤害。"
     },
     "holy-strike-2-large": {
-      "name": "神圣攻击 II (大顺子)",
-      "description": "大顺子触发：恢复2血，造成9伤害"
+      "name": "神圣攻击 II（大顺子）",
+      "description": "大顺子触发：恢复 2 点生命值，并造成 9 点伤害。"
     },
     "holy-light": {
       "name": "圣光",
-      "description": "2心触发：恢复1×❤面数量血量，投掷1骰获得额外效果",
+      "description": "2 心触发：恢复等同于 ❤ 面数量的生命值，并投掷 1 骰获得额外效果。",
       "effects": {
-        "healByHearts": "恢复 1×❤面数量 的生命值",
-        "rollEffect": "投掷1骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
+        "healByHearts": "恢复 1×❤ 面数量的生命值",
+        "rollEffect": "投掷 1 骰：剑→暴击，盔→守护，心→抽牌，祈祷→2 CP"
       }
     },
     "holy-light-2": {
       "name": "圣光 II",
-      "description": "2心触发：恢复1×❤面数量血量，投掷3骰获得额外效果",
+      "description": "2 心触发：恢复等同于 ❤ 面数量的生命值，并投掷 3 骰获得额外效果。",
       "effects": {
-        "healByHearts": "恢复 1×❤面数量 的生命值",
-        "roll3": "投掷3骰：剑→暴击，盔→守护，心→抽牌，祈祷→2CP"
+        "healByHearts": "恢复 1×❤ 面数量的生命值",
+        "roll3": "投掷 3 骰：剑→暴击，盔→守护，心→抽牌，祈祷→2 CP"
       }
     },
     "vengeance": {
       "name": "复仇",
-      "description": "3盔+1祈祷触发：获得神罚，获得2CP",
+      "description": "3 盔 + 1 祈祷触发：获得神罚，并获得 2 CP。",
       "effects": {
-        "gainRetribution": "获得1个神罚标记",
-        "gain2CP": "获得2CP"
+        "gainRetribution": "获得 1 个神罚标记",
+        "gain2CP": "获得 2 CP"
       }
     },
     "vengeance-2": {
       "name": "复仇 II",
-      "description": "包含复仇与反击两个变体",
+      "description": "包含复仇与反击两个变体。",
       "effects": {
-        "gainRetribution": "获得1个神罚标记",
-        "heal1": "恢复1点生命值",
-        "damage3Unblockable": "造成3点不可防御伤害",
-        "gainRetributionToAny": "1名玩家获得1个神罚标记",
-        "gain4CP": "获得4CP"
+        "gainRetribution": "获得 1 个神罚标记",
+        "heal1": "恢复 1 点生命值",
+        "damage3Unblockable": "造成 3 点不可防御伤害",
+        "gainRetributionToAny": "1 名玩家获得 1 个神罚标记",
+        "gain4CP": "获得 4 CP"
       }
     },
     "vengeance-2-mix": {
       "name": "反击",
-      "description": "剑盔心祈祷各1触发：恢复1血，造成3不可防御伤害，获得神罚"
+      "description": "剑、盔、心、祈祷各 1 触发：恢复 1 点生命值，造成 3 点不可防御伤害，并获得神罚。"
     },
     "vengeance-2-main": {
       "name": "复仇 II",
-      "description": "3盔+1祈祷触发：1名玩家获得神罚，获得4CP"
+      "description": "3 盔 + 1 祈祷触发：令 1 名玩家获得神罚，并获得 4 CP。"
     },
     "righteous-prayer": {
       "name": "正义祷告",
-      "description": "4祈祷触发：造成8伤害，获得暴击，获得2CP",
+      "description": "4 祈祷触发：造成 8 点伤害，获得暴击，并获得 2 CP。",
       "effects": {
-        "damage8": "造成8点伤害",
-        "gainCrit": "获得1个暴击标记",
-        "gain2CP": "获得2CP"
+        "damage8": "造成 8 点伤害",
+        "gainCrit": "获得 1 个暴击标记",
+        "gain2CP": "获得 2 CP"
       }
     },
     "righteous-prayer-2": {
       "name": "正义祷告 II",
-      "description": "包含繁盛与正义祷告两个变体",
+      "description": "包含繁盛与正义祷告两个变体。",
       "effects": {
-        "gain4CP": "获得4CP",
-        "damage8Unblockable": "造成8点不可防御伤害",
-        "gainCrit": "获得1个暴击标记",
-        "gain2CP": "获得2CP"
+        "gain4CP": "获得 4 CP",
+        "damage8Unblockable": "造成 8 点不可防御伤害",
+        "gainCrit": "获得 1 个暴击标记",
+        "gain2CP": "获得 2 CP"
       }
     },
     "holy-defense": {
       "name": "神圣防御",
-      "description": "防御阶段（3骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP",
+      "description": "防御阶段（3 骰）：剑→反伤，盔→防 1，心→防 2，祈祷→获得 1 CP。",
       "effects": {
-        "effect": "投掷3骰：剑→对攻击者造成1不可防御伤害，盔→防止1伤害，心→防止2伤害，祈祷→1CP"
+        "effect": "投掷 3 骰：剑→对攻击者造成 1 点不可防御伤害，盔→防止 1 点伤害，心→防止 2 点伤害，祈祷→获得 1 CP"
       }
     },
     "holy-defense-2": {
       "name": "神圣防御 II",
-      "description": "防御阶段（4骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP",
+      "description": "防御阶段（4 骰）：剑→反伤，盔→防 1，心→防 2，祈祷→获得 1 CP。",
       "effects": {
-        "effect": "投掷4骰：剑→对攻击者造成1不可防御伤害，盔→防止1伤害，心→防止2伤害，祈祷→1CP"
+        "effect": "投掷 4 骰：剑→对攻击者造成 1 点不可防御伤害，盔→防止 1 点伤害，心→防止 2 点伤害，祈祷→获得 1 CP"
       }
     },
     "holy-defense-3": {
       "name": "神圣防御 III",
-      "description": "防御阶段（4骰）：剑→反伤，盔→防1，心→防2，祈祷→1CP；2盔+1祈祷→守护",
+      "description": "防御阶段（4 骰）：剑→反伤，盔→防 1，心→防 2，祈祷→获得 1 CP；2 盔 + 1 祈祷→守护。",
       "effects": {
-        "effect": "投掷4骰：剑→反伤，盔→防1，心→防2，祈祷→1CP；若2盔+1祈祷→获得守护"
+        "effect": "投掷 4 骰：剑→反伤，盔→防 1，心→防 2，祈祷→获得 1 CP；若 2 盔 + 1 祈祷→获得守护"
       }
     },
     "unyielding-faith": {
       "name": "坚毅信念",
-      "description": "5祈祷触发：治疗5，造成10不可防御伤害，获得神圣祝福",
+      "description": "5 祈祷触发：恢复 5 点生命值，造成 10 点不可防御伤害，并获得神圣祝福。",
       "effects": {
-        "heal5": "恢复5点生命值",
-        "damage10": "造成10点不可防御伤害",
-        "gainBlessing": "获得1个神圣祝福标记"
+        "heal5": "恢复 5 点生命值",
+        "damage10": "造成 10 点不可防御伤害",
+        "gainBlessing": "获得 1 个神圣祝福标记"
       }
     },
     "longbow": {
       "name": "长弓",
-      "description": "基础弓箭攻击，根据弓面数量造成不同伤害"
+      "description": "基础弓箭攻击，根据弓面数量造成不同伤害。"
     },
     "longbow-3": {
       "name": "长弓 III",
-      "description": "3/4/5弓触发：造成5/7/9伤害，3个及以上相同数字施加缠绕",
+      "description": "3/4/5 弓触发：造成 5/7/9 点伤害；若有 3 个及以上相同数字，则施加缠绕。",
       "effects": {
-        "damage3": "造成3点伤害",
-        "damage5": "造成5点伤害",
-        "damage7": "造成7点伤害",
-        "damage9": "造成9点伤害",
+        "damage3": "造成 3 点伤害",
+        "damage5": "造成 5 点伤害",
+        "damage7": "造成 7 点伤害",
+        "damage9": "造成 9 点伤害",
         "bonusEntangle3Kind": "若投出 3 个及以上相同数字，施加缠绕"
       }
     },
     "longbow-4": {
       "effects": {
-        "damage5": "造成5点伤害"
+        "damage5": "造成 5 点伤害"
       }
     },
     "longbow-5": {
       "effects": {
-        "damage7": "造成7点伤害"
+        "damage7": "造成 7 点伤害"
       }
     },
     "longbow-2": {
       "name": "长弓 II",
-      "description": "3/4/5弓触发：造成4/6/8伤害，4个及以上相同数字施加缠绕",
+      "description": "3/4/5 弓触发：造成 4/6/8 点伤害；若有 4 个及以上相同数字，则施加缠绕。",
       "effects": {
-        "damage4": "造成4点伤害",
-        "damage6": "造成6点伤害",
-        "damage8": "造成8点伤害",
+        "damage4": "造成 4 点伤害",
+        "damage6": "造成 6 点伤害",
+        "damage8": "造成 8 点伤害",
         "bonusEntangle4Kind": "若投出 4 个及以上相同数字，施加缠绕"
       }
     },
     "covert-fire": {
       "name": "隐秘射击",
-      "description": "3弓+2月触发：施加锁定，然后造成4伤害",
+      "description": "3 弓 + 2 月触发：施加锁定，然后造成 4 点伤害。",
       "effects": {
-        "inflictTargeted": "施加1个锁定标记",
-        "damage4": "造成4点伤害"
+        "inflictTargeted": "施加 1 个锁定标记",
+        "damage4": "造成 4 点伤害"
       }
     },
     "covert-fire-2": {
       "name": "赐死射击 II",
-      "description": "包含赐死射击与专注两个变体"
+      "description": "包含赐死射击与专注两个变体。"
     },
     "deadeye-shot": {
       "name": "赐死射击",
-      "description": "3弓+2月触发：施加锁定，造成6伤害",
+      "description": "3 弓 + 2 月触发：施加锁定，并造成 6 点伤害。",
       "effects": {
-        "inflictTargeted": "施加1个锁定标记",
-        "damage6": "造成6点伤害"
+        "inflictTargeted": "施加 1 个锁定标记",
+        "damage6": "造成 6 点伤害"
       }
     },
     "focus": {
       "name": "专注",
-      "description": "2弓+1月触发：施加锁定和缠绕",
+      "description": "2 弓 + 1 月触发：施加锁定和缠绕。",
       "effects": {
-        "inflictTargeted": "施加1个锁定标记",
-        "inflictEntangle": "施加1个缠绕标记"
+        "inflictTargeted": "施加 1 个锁定标记",
+        "inflictEntangle": "施加 1 个缠绕标记"
       }
     },
     "covering-fire": {
       "name": "掩护射击",
-      "description": "2弓+3足触发：获得闪避，造成7伤害",
+      "description": "2 弓 + 3 足触发：获得闪避，并造成 7 点伤害。",
       "effects": {
-        "gainEvasive": "获得1个闪避标记",
-        "damage7": "造成7点伤害"
+        "gainEvasive": "获得 1 个闪避标记",
+        "damage7": "造成 7 点伤害"
       }
     },
     "covering-fire-2": {
       "name": "隐蔽射击 II",
-      "description": "包含掩护射击与消音追踪两个变体",
+      "description": "包含掩护射击与消音追踪两个变体。",
       "effects": {
-        "gainEvasive": "获得1个闪避标记",
-        "damage9": "造成9点伤害"
+        "gainEvasive": "获得 1 个闪避标记",
+        "damage9": "造成 9 点伤害"
       }
     },
     "silencing-trace": {
       "name": "消音追踪",
-      "description": "3足触发：获得闪避，造成2不可防御伤害",
+      "description": "3 足触发：获得闪避，并造成 2 点不可防御伤害。",
       "effects": {
-        "gainEvasive": "获得1个闪避标记",
+        "gainEvasive": "获得 1 个闪避标记",
         "damage2Unblockable": "造成 2 点不可防御伤害"
       }
     },
     "exploding-arrow": {
       "name": "爆裂箭",
-      "description": "1弓+3月触发：掷骰5骰，造成 3 + 2×弓 + 1×足 伤害，另外对手丢失 1×月 CP，造成致盲",
+      "description": "1 弓 + 3 月触发：掷 5 颗骰子，造成 3 + 2×弓 + 1×足 的伤害；另外令对手失去 1×月 CP，并施加致盲。",
       "effects": {
-        "rollAndResolve": "掷骰5骰并结算效果"
+        "rollAndResolve": "掷 5 颗骰子并结算效果"
       }
     },
     "exploding-arrow-2": {
       "name": "爆炸射击 II",
-      "description": "1弓+3月触发：掷骰5骰，造成 3 + 1×弓 + 2×足 伤害，对手失去 1×月 CP，施加致盲"
+      "description": "1 弓 + 3 月触发：掷 5 颗骰子，造成 3 + 1×弓 + 2×足 的伤害，对手失去 1×月 CP，并施加致盲。"
     },
     "exploding-arrow-3": {
       "name": "爆炸射击 III",
-      "description": "1弓+3月触发：掷骰5骰，造成 3 + 1×弓 + 2×足 伤害，对手失去 1×月 CP，施加致盲和缠绕"
+      "description": "1 弓 + 3 月触发：掷 5 颗骰子，造成 3 + 1×弓 + 2×足 的伤害，对手失去 1×月 CP，并施加致盲和缠绕。"
     },
     "entangling-shot": {
       "name": "缠绕射击",
-      "description": "小顺子触发：施加缠绕，造成7伤害",
+      "description": "小顺子触发：施加缠绕，并造成 7 点伤害。",
       "effects": {
-        "inflictEntangle": "施加1个缠绕标记",
-        "damage7": "造成7点伤害"
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "damage7": "造成 7 点伤害"
       }
     },
     "entangling-shot-2": {
       "name": "缠绕射击 II",
-      "description": "小顺子触发：施加缠绕，造成9伤害",
+      "description": "小顺子触发：施加缠绕，并造成 9 点伤害。",
       "effects": {
-        "inflictEntangle": "施加1个缠绕标记",
-        "damage9": "造成9点伤害"
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "damage9": "造成 9 点伤害"
       }
     },
     "eclipse": {
       "name": "星蚀",
-      "description": "4月触发：施加锁定、缠绕、致盲，造成7伤害",
+      "description": "4 月触发：施加锁定、缠绕、致盲，并造成 7 点伤害。",
       "effects": {
-        "inflictTargeted": "施加1个锁定标记",
-        "inflictEntangle": "施加1个缠绕标记",
-        "inflictBlinded": "施加1个致盲标记",
-        "damage7": "造成7点伤害"
+        "inflictTargeted": "施加 1 个锁定标记",
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "inflictBlinded": "施加 1 个致盲标记",
+        "damage7": "造成 7 点伤害"
       }
     },
     "eclipse-2": {
       "name": "星蚀 II",
-      "description": "包含星蚀与暗月两个变体",
+      "description": "包含星蚀与暗月两个变体。",
       "effects": {
-        "inflictBlinded": "施加1个致盲标记",
-        "inflictEntangle": "施加1个缠绕标记",
-        "inflictTargeted": "施加1个锁定标记",
-        "damage9": "造成9点伤害"
+        "inflictBlinded": "施加 1 个致盲标记",
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "inflictTargeted": "施加 1 个锁定标记",
+        "damage9": "造成 9 点伤害"
       }
     },
     "dark-moon": {
       "name": "暗月",
-      "description": "3月触发：获得闪避，施加致盲、缠绕、锁定",
+      "description": "3 月触发：获得闪避，并施加致盲、缠绕、锁定。",
       "effects": {
-        "gainEvasive": "获得1个闪避标记",
-        "inflictBlinded": "施加1个致盲标记",
-        "inflictEntangle": "施加1个缠绕标记",
-        "inflictTargeted": "施加1个锁定标记"
+        "gainEvasive": "获得 1 个闪避标记",
+        "inflictBlinded": "施加 1 个致盲标记",
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "inflictTargeted": "施加 1 个锁定标记"
       }
     },
     "blinding-shot": {
       "name": "致盲射击",
-      "description": "大顺子触发：施加致盲，获得闪避，造成8伤害",
+      "description": "大顺子触发：施加致盲，获得闪避，并造成 8 点伤害。",
       "effects": {
-        "inflictBlinded": "施加1个致盲标记",
-        "gainEvasive": "获得1个闪避标记",
-        "damage8": "造成8点伤害"
+        "inflictBlinded": "施加 1 个致盲标记",
+        "gainEvasive": "获得 1 个闪避标记",
+        "damage8": "造成 8 点伤害"
       }
     },
     "blinding-shot-2": {
       "name": "致盲射击 II",
-      "description": "包含致盲射击与月之祝福两个变体",
+      "description": "包含致盲射击与月之祝福两个变体。",
       "effects": {
-        "inflictBlinded": "施加1个致盲标记",
-        "gainEvasive": "获得1个闪避标记",
-        "damage10": "造成10点伤害"
+        "inflictBlinded": "施加 1 个致盲标记",
+        "gainEvasive": "获得 1 个闪避标记",
+        "damage10": "造成 10 点伤害"
       }
     },
     "moons-blessing": {
       "name": "月之祝福",
-      "description": "1弓+2足+1月触发：获得3闪避，施加缠绕",
+      "description": "1 弓 + 2 足 + 1 月触发：获得 3 个闪避，并施加缠绕。",
       "effects": {
-        "gainEvasive3": "获得3个闪避标记",
-        "inflictEntangle": "施加1个缠绕标记"
+        "gainEvasive3": "获得 3 个闪避标记",
+        "inflictEntangle": "施加 1 个缠绕标记"
       }
     },
     "lunar-eclipse": {
       "name": "月蚀终焉",
-      "description": "终极技能！5月触发：获得闪避，施加致盲、缠绕、锁定，造成13伤害",
+      "description": "终极技能！5 月触发：获得闪避，施加致盲、缠绕、锁定，并造成 13 点伤害。",
       "effects": {
-        "gainEvasive": "获得1个闪避标记",
-        "inflictBlinded": "施加1个致盲标记",
-        "inflictEntangle": "施加1个缠绕标记",
-        "inflictTargeted": "施加1个锁定标记",
-        "damage13": "造成13点伤害"
+        "gainEvasive": "获得 1 个闪避标记",
+        "inflictBlinded": "施加 1 个致盲标记",
+        "inflictEntangle": "施加 1 个缠绕标记",
+        "inflictTargeted": "施加 1 个锁定标记",
+        "damage13": "造成 13 点伤害"
       }
     },
     "elusive-step": {
       "name": "打不到我",
-      "description": "防御阶段（5骰）：若足面≥2，抵挡一半伤害（向上取整）；每有2个弓面，造成1伤害",
+      "description": "防御阶段（5 骰）：若足面 ≥2，则抵挡一半伤害（向上取整）；每有 2 个弓面，便造成 1 点伤害。",
       "effects": {
         "resolveDefense": "防御结算"
       }
     },
     "elusive-step-2": {
       "name": "打不到我 II",
-      "description": "防御阶段（5骰）：若足面≥2，防止一半伤害（向上取整）；每有2个弓面，造成1伤害",
+      "description": "防御阶段（5 骰）：若足面 ≥2，则防止一半伤害（向上取整）；每有 2 个弓面，便造成 1 点伤害。",
       "effects": {
         "resolveDefense": "防御结算"
       }
     },
     "meditation-3": {
-      "name": "清修 III",
-      "description": "防御掷骰阶段，投掷5颗骰子。根据结果获得太极标记，并可能获得闪避或净化标记。每有[拳]造成3点伤害。",
+      "name": "冥想 III",
+      "description": "防御掷骰阶段，投掷 5 颗骰子。根据结果获得太极标记，并可能获得闪避或净化标记。每有 [拳]，便造成 3 点伤害。",
       "taijiByResult": "根据结果获得太极标记",
-      "damageByFist": "每有[拳]造成3点伤害"
+      "damageByFist": "每有 [拳]，便造成 3 点伤害"
     },
     "revolver": {
       "name": "左轮手枪",
@@ -2632,7 +2637,7 @@
       "name": "死亡之眼",
       "description": "施加击倒，并造成 6 点不可防御伤害。",
       "effects": {
-        "inflictKnockdown": "对手获得击倒。",
+        "inflictKnockdown": "对手获得 1 个击倒标记。",
         "damage6Unblockable": "造成 6 点不可防御伤害。"
       }
     },
@@ -2645,14 +2650,14 @@
       "description": "3 个准星：获得 1 个闪避；至多 2 位目标玩家获得赏金与击倒。",
       "effects": {
         "gainEvasive": "获得 1 个闪避。",
-        "chooseUpToTwoTargetsGainBountyKnockdown": "选择至多 2 位目标玩家。每名目标玩家获得 1 个赏金并受到 1 层击倒。"
+        "chooseUpToTwoTargetsGainBountyKnockdown": "选择至多 2 位目标玩家。每名目标玩家获得 1 个赏金和 1 个击倒标记。"
       }
     },
     "deadeye-2-main": {
       "name": "死亡之眼 II",
       "description": "4 个准星：施加击倒，并造成 8 点不可防御伤害。",
       "effects": {
-        "inflictKnockdown": "对手获得击倒。",
+        "inflictKnockdown": "对手获得 1 个击倒标记。",
         "damage8Unblockable": "造成 8 点不可防御伤害。"
       }
     },
@@ -2673,7 +2678,7 @@
       "description": "2 个冲刺 + 1 个准星：获得 1 个闪避，施加击倒，并造成 1 点不可防御伤害。",
       "effects": {
         "gainEvasive": "获得 1 个闪避。",
-        "inflictKnockdown": "对手获得击倒。",
+        "inflictKnockdown": "对手获得 1 个击倒标记。",
         "damage1Unblockable": "造成 1 点不可防御伤害。"
       }
     },
@@ -2705,7 +2710,7 @@
       "effects": {
         "gainEvasive": "获得 1 个闪避。",
         "inflictBounty": "对手获得 1 个赏金。",
-        "inflictKnockdown": "对手获得击倒。",
+        "inflictKnockdown": "对手获得 1 个击倒标记。",
         "damage10Unblockable": "造成 10 点不可防御伤害。"
       }
     },
@@ -2930,7 +2935,7 @@
     },
     "tend-care": {
       "name": "细心呵护",
-      "description": "抽 1，养成 3 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。",
+      "description": "抽 1 张牌，养成 3 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。",
       "effects": {
         "draw1": "抽 1 张牌。",
         "cultivate3ChooseLifeSapAndThorn": "养成 3 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。"
@@ -2938,7 +2943,7 @@
     },
     "tend-care-2": {
       "name": "细心呵护 II",
-      "description": "2 树叶 + 2 树灵：抽 1，养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。培育（2 树枝 + 2 树灵）：养成 6 树灵。",
+      "description": "2 树叶 + 2 树灵：抽 1 张牌，养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。培育（2 树枝 + 2 树灵）：养成 6 树灵。",
       "effects": {
         "draw1": "抽 1 张牌。",
         "cultivate4ChooseLifeSapAndThorn": "养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。",
@@ -2972,7 +2977,7 @@
     },
     "nature-touch-2": {
       "name": "自然之触 II",
-      "description": "4 个树灵：养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 个树灵 +1 伤害。自然之怜（3 个树灵）：治疗 1；获得 1 CP；抽 1；养成 1 树灵。",
+      "description": "4 个树灵：养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 个树灵 +1 伤害。自然之怜（3 个树灵）：治疗 1；获得 1 CP；抽 1 张牌；养成 1 树灵。",
       "effects": {
         "cultivate2ThenBonusDamage": "养成 2 树灵，并按养成后的树灵数量增加伤害。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
@@ -3012,14 +3017,14 @@
     },
     "rooted": {
       "name": "扎根",
-      "description": "防御掷 3 骰；防止 1×树枝 + 1×树灵 伤害。若投出两树叶，养成 1 树灵；若投出两树灵，1 名玩家获得生命源泉。",
+      "description": "防御掷 3 骰；防止 1×树枝 + 1×树灵的伤害。若投出两个树叶，则养成 1 树灵；若投出两个树灵，则 1 名玩家获得生命源泉。",
       "effects": {
         "resolveDefense": "防御掷骰：树枝与树灵防止伤害；双树叶养成；双树灵选择玩家获得生命源泉。"
       }
     },
     "rooted-2": {
       "name": "扎根 II",
-      "description": "防御掷 4 骰；防止 1×树枝 + 1×树灵 伤害。若投出两树叶，养成 1 树灵；若投出两树灵，1 名玩家获得生命源泉。",
+      "description": "防御掷 4 骰；防止 1×树枝 + 1×树灵的伤害。若投出两个树叶，则养成 1 树灵；若投出两个树灵，则 1 名玩家获得生命源泉。",
       "effects": {
         "resolveDefense": "防御掷 4 骰：树枝与树灵防止伤害；双树叶养成；双树灵选择玩家获得生命源泉。"
       }
@@ -3233,16 +3238,16 @@
       "description": "1 军刀 + 3 旗帜：获得 1 战术优势并投 1 骰；军刀造成 5 点伤害，旗帜获得 4 战术优势，勋章抽 1 张牌并立即进入额外进攻投掷阶段。",
       "effects": {
         "gainTa1": "获得 1 战术优势。",
-        "bonusRoll": "投 1 骰：军刀造成 5；旗帜获得 4 战术优势；勋章抽 1。",
+        "bonusRoll": "投 1 骰：军刀造成 5 点伤害；旗帜获得 4 战术优势；勋章抽 1 张牌。",
         "extraOffensiveRoll": "立即进入额外进攻投掷阶段。"
       }
     },
     "war-monger-2": {
       "name": "战争贩子 II",
-      "description": "1 军刀 + 3 旗帜：获得 2 战术优势并投 1 骰；军刀造成 6，旗帜获得 3 战术优势，勋章抽 1 并立即进入额外进攻投掷阶段。",
+      "description": "1 军刀 + 3 旗帜：获得 2 战术优势并投 1 骰；军刀造成 6，旗帜获得 3 战术优势，勋章抽 1 张牌并立即进入额外进攻投掷阶段。",
       "effects": {
         "gainTa2": "获得 2 战术优势。",
-        "bonusRoll": "投 1 骰：军刀造成 6；旗帜获得 3 战术优势；勋章抽 1 并立即进入额外进攻投掷阶段。"
+        "bonusRoll": "投 1 骰：军刀造成 6；旗帜获得 3 战术优势；勋章抽 1 张牌并立即进入额外进攻投掷阶段。"
       }
     },
     "drum-movement": {
@@ -3351,7 +3356,7 @@
     },
     "card-zhanshujia-gain-the-upper-hand": {
       "effects": {
-        "roll": "投掷 1 骰：若为勋章，获得 4 战术优势；否则抽 1。"
+        "roll": "投掷 1 骰：若为勋章，获得 4 战术优势；否则抽 1 张牌。"
       }
     },
     "card-zhanshujia-ambush": {
@@ -3439,7 +3444,7 @@
       "name": "死亡印记",
       "description": "3 战利品：投 4 骰，弯刀造成不可防御伤害，战利品抽牌，骷髅施加诅咒金币。",
       "effects": {
-        "gain2Cp": "获得 2CP。",
+        "gain2Cp": "获得 2 CP。",
         "roll4": "投 4 骰；弯刀造成不可防御伤害，战利品抽牌，骷髅施加诅咒金币。"
       }
     },
@@ -3453,9 +3458,9 @@
     },
     "deep-sea-dive": {
       "name": "深海潜行",
-      "description": "1 弯刀 + 2 战利品 + 1 骷髅：偷取 1CP，对手弃 1 张牌，施加凋零，然后造成 8 点伤害。",
+      "description": "1 弯刀 + 2 战利品 + 1 骷髅：偷取 1 CP，对手弃 1 张牌，施加凋零，然后造成 8 点伤害。",
       "effects": {
-        "steal1Cp": "偷取 1CP。",
+        "steal1Cp": "偷取 1 CP。",
         "opponentDiscard1": "对手选择并弃 1 张手牌。",
         "inflictWither": "对手获得凋零。",
         "damage8": "造成 8 点伤害。"
@@ -3493,9 +3498,9 @@
     },
     "still-wet-behind-ears": {
       "name": "你还嫩了点",
-      "description": "防御掷 5 骰：每个弯刀造成 1 点伤害；每个战利品获得 1CP；每个骷髅防止 2 点伤害；若投出弯刀和骷髅，施加诅咒金币。",
+      "description": "防御掷 5 骰：每个弯刀造成 1 点伤害；每个战利品获得 1 CP；每个骷髅防止 2 点伤害；若投出弯刀和骷髅，施加诅咒金币。",
       "effects": {
-        "defense5": "防御掷 5 骰：每个弯刀造成 1 伤害；每个战利品获得 1CP；每个骷髅防止 2 伤害；若投出弯刀和骷髅，施加诅咒金币。"
+        "defense5": "防御掷 5 骰：每个弯刀造成 1 点伤害；每个战利品获得 1 CP；每个骷髅防止 2 点伤害；若投出弯刀和骷髅，施加诅咒金币。"
       }
     },
     "merciless-curse": {
@@ -3521,9 +3526,9 @@
     },
     "make-your-mark": {
       "name": "做好标记",
-      "description": "获得 1CP，然后投掷 3 颗骰子：每个弯刀造成 2 点不可防御伤害；每个战利品抽 1 张牌；每个骷髅获得 1 个诅咒金币。",
+      "description": "获得 1 CP，然后投掷 3 颗骰子：每个弯刀造成 2 点不可防御伤害；每个战利品抽 1 张牌；每个骷髅获得 1 个诅咒金币。",
       "effects": {
-        "gain1Cp": "获得 1CP。",
+        "gain1Cp": "获得 1 CP。",
         "roll3": "投掷 3 颗骰子：弯刀造成 2 点不可防御伤害；战利品抽 1 张牌；骷髅获得 1 个诅咒金币。"
       }
     },
@@ -3536,9 +3541,9 @@
     },
     "walk-the-plank": {
       "name": "走跳板",
-      "description": "选择以下其一：偷取 1CP，或对手选择弃掉自己的 1 张牌，然后造成 7 点伤害。",
+      "description": "选择以下其一：偷取 1 CP，或令对手选择弃掉自己的 1 张牌，然后造成 7 点伤害。",
       "effects": {
-        "choice": "选择偷取 1CP，或令对手弃掉 1 张牌。",
+        "choice": "选择偷取 1 CP，或令对手弃掉 1 张牌。",
         "damage7": "造成 7 点伤害。"
       }
     },
@@ -3569,7 +3574,7 @@
     },
     "human-still-wet-behind-ears": {
       "name": "你还嫩了点",
-      "description": "防御投掷 4 颗骰子：每个弯刀造成 1 点伤害；每个战利品获得 1CP；每个骷髅防止 2 点伤害；若投出 2 个弯刀和 1 个骷髅，则获得 1 个诅咒金币。",
+      "description": "防御投掷 4 颗骰子：每个弯刀造成 1 点伤害；每个战利品获得 1 CP；每个骷髅防止 2 点伤害；若投出 2 个弯刀和 1 个骷髅，则获得 1 个诅咒金币。",
       "effects": {
         "defense4": "防御掷 4 颗骰子：弯刀反击、战利品得 CP、骷髅防伤，且 2 弯刀 + 1 骷髅时获得诅咒金币。"
       }
@@ -3582,46 +3587,46 @@
         "coinChoiceThenContinue": "获得 2 个诅咒金币；选择完成后继续施加休战和火药桶。"
       }
     },
-      "card-turning-up-the-heat": {
-        "effects": {
-          "gainFM1": "获得 1 个火焰精通",
-          "spendCP": "你可以花费任意数量的 CP；每花费 1 CP，获得 1 个火焰精通"
-        }
-      },
-      "card-infernal-embrace": {
-        "effects": {
-          "roll": "投掷 1 骰：火获得 2 个火焰精通；否则抽 1 张牌"
-        }
-      },
-      "card-fan-the-flames": {
-        "effects": {
-          "increaseLimit": "你的火焰精通上限 +1",
-          "gainFM2": "获得 2 个火焰精通"
-        }
-      },
-      "card-red-hot": {
-        "effects": {
-          "dmgPerFM": "本回合中，每拥有 1 个火焰精通，你的伤害 +1"
-        }
-      },
+    "card-turning-up-the-heat": {
+      "effects": {
+        "gainFM1": "获得 1 层火焰精通",
+        "spendCP": "你可以花费任意数量的 CP；每花费 1 CP，获得 1 层火焰精通"
+      }
+    },
+    "card-infernal-embrace": {
+      "effects": {
+        "roll": "投掷 1 骰：若为火，则获得 2 层火焰精通；否则抽 1 张牌。"
+      }
+    },
+    "card-fan-the-flames": {
+      "effects": {
+        "increaseLimit": "你的火焰精通上限 +1",
+        "gainFM2": "获得 2 层火焰精通"
+      }
+    },
+    "card-red-hot": {
+      "effects": {
+        "dmgPerFM": "本回合中，每拥有 1 层火焰精通，你的伤害 +1。"
+      }
+    },
     "card-get-fired-up": {
       "effects": {
-        "roll": "投掷 1 骰：火 +3 伤害；熔岩施加燃烧；火魂获得 2 个火焰精通；陨石施加击倒"
+        "roll": "投掷 1 骰：若为火，则伤害 +3；若为熔岩，则施加燃烧；若为火魂，则获得 2 层火焰精通；若为陨石，则施加击倒。"
       }
     },
     "card-cursed-pirate-weigh-anchor": {
       "effects": {
-        "roll": "投掷 1 骰：若为骷髅，对一名对手施加休战；否则抽 1。"
+        "roll": "投掷 1 骰：若为骷髅，对一名对手施加休战；否则抽 1 张牌。"
       }
     },
     "card-cursed-pirate-curse-card": {
       "effects": {
-        "choice": "选择抽 1，或受 2/4 伤害并抽 2/3。"
+        "choice": "选择抽 1 张牌，或受 2/4 点伤害并抽 2/3 张牌。"
       }
     },
     "card-cursed-pirate-batten-down": {
       "effects": {
-        "discardHandDraw4": "弃掉所有手牌，然后抽 4。"
+        "discardHandDraw4": "弃掉所有手牌，然后抽 4 张牌。"
       }
     },
     "card-cursed-pirate-shark-bait": {
@@ -3636,7 +3641,7 @@
     },
     "card-cursed-pirate-ransom": {
       "effects": {
-        "chooseDieOrPay2": "选择对手一颗骰子；除非其支付 2CP，否则重掷该骰子。"
+        "chooseDieOrPay2": "选择对手的一颗骰子；除非其支付 2 CP，否则重掷该骰子。"
       }
     },
     "card-cursed-pirate-bluster": {
@@ -3652,7 +3657,7 @@
     },
     "card-cursed-pirate-pillage": {
       "effects": {
-        "steal1Cp": "从一名对手处偷取 1CP。"
+        "steal1Cp": "从一名对手处偷取 1 CP。"
       }
     },
     "card-cursed-pirate-parley": {
@@ -3662,12 +3667,12 @@
     },
     "card-cursed-pirate-crows-nest": {
       "effects": {
-        "roll": "选择一名对手并投 1 骰：弯刀查看其手牌；战利品由其自选弃 1；骷髅随机弃 1。"
+        "roll": "选择一名对手并投 1 骰：弯刀查看其手牌；战利品由其自选弃 1 张牌；骷髅随机弃 1 张牌。"
       }
     },
     "card-cursed-pirate-hefty": {
       "effects": {
-        "roll2": "投 2 骰；若投出战利品，抽 2 并获得 2CP。"
+        "roll2": "投 2 骰；若投出战利品，则抽 2 张牌并获得 2 CP。"
       }
     },
     "card-cursed-pirate-pirates-life": {
@@ -3694,53 +3699,53 @@
   "cards": {
     "card-energetic": {
       "name": "精力充沛！",
-      "description": "投掷1骰：如果投出星，治疗2并对1名对手施加脑震荡。否则抽取1张牌。"
+      "description": "投掷 1 骰：如果投出星，则治疗 2 并对 1 名对手施加脑震荡；否则抽 1 张牌。"
     },
     "card-lucky": {
       "name": "大吉大利！",
-      "description": "投掷3骰：治疗 1 + 2×❤。"
+      "description": "投掷 3 骰：治疗 1 + 2×❤。"
     },
     "card-more-please": {
       "name": "再来点儿！",
-      "description": "投掷5骰：每有1个剑增加1伤害。施加脑震荡。"
+      "description": "投掷 5 骰：每有 1 个剑便增加 1 点伤害，并施加脑震荡。"
     },
     "card-dizzy": {
       "name": "头晕目眩！",
-      "description": "如果已对对手造成至少8点伤害，则对其施加脑震荡。"
+      "description": "如果已对对手造成至少 8 点伤害，则对其施加脑震荡。"
     },
     "card-head-blow": {
       "name": "当头棒喝！",
-      "description": "对1名对手施加脑震荡。"
+      "description": "对 1 名对手施加脑震荡。"
     },
     "card-enlightenment": {
       "name": "顿悟！",
-      "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
+      "description": "投掷 1 骰：如果投出莲花，则获得 2 气、闪避和净化；否则抽 1 张牌。"
     },
     "card-inner-peace": {
       "name": "静心！",
-      "description": "获得2气。"
+      "description": "获得 2 气。"
     },
     "card-deep-thought": {
       "name": "沉思！",
-      "description": "获得5气。"
+      "description": "获得 5 气。"
     },
     "card-buddha-light": {
       "name": "佛光普照！",
-      "description": "获得1气、闪避和净化；对1名对手施加倒地。"
+      "description": "获得 1 气、闪避和净化；对 1 名对手施加眩晕。"
     },
     "card-palm-strike": {
       "name": "掌击！",
-      "description": "对1名对手施加倒地。"
+      "description": "对 1 名对手施加眩晕。"
     },
     "card-meditation-3": {
-      "name": "清修 III",
-      "description": "防御投掷5骰。获得1×太极数量的气，造成1×拳数量的伤害。如果投出太极+莲花，获得闪避 -或- 净化。"
+      "name": "冥想 III",
+      "description": "防御投掷 5 骰。获得 1×太极数量的气，造成 1×拳数量的伤害。如果投出太极 + 莲花，则获得闪避或净化。"
     },
     "card-play-six": {
-      "name": "玩得六啊！",
-      "description": "将你1颗骰子的数值改至6。",
+      "name": "来个六！",
+      "description": "将你 1 颗骰子的数值改至 6。",
       "effects": {
-        "modifyDieTo6": "将1颗骰子改为6"
+        "modifyDieTo6": "将 1 颗骰子改为 6"
       }
     },
     "upgrade-revolver-2": {
@@ -3800,336 +3805,336 @@
       "description": "额外掷 5 颗骰子。每个子弹令本次攻击伤害 +1；若加值大于 4，再施加击倒。"
     },
     "card-meditation-2": {
-      "name": "清修 II",
-      "description": "防御投掷5骰。获得1×气数值的气，造成1×拳伤害。"
+      "name": "冥想 II",
+      "description": "防御投掷 5 骰。获得 1×气数值的气，造成 1×拳伤害。"
     },
     "card-zen-fist-2": {
       "name": "止禅拳法 II",
-      "description": "大顺子触发：造成7伤害，然后获得闪避和3气，施加击倒。武僧之路（拳掌太极莲花触发）：获得2闪避，造成3不可防御伤害。"
+      "description": "大顺子触发：造成 7 点伤害，然后获得闪避和 3 气，并施加眩晕。武僧之路（拳掌太极莲花触发）：获得 2 闪避，并造成 3 点不可防御伤害。"
     },
     "card-storm-assault-2": {
       "name": "风暴突袭 II",
-      "description": "投掷3骰，造成等同于投掷结果总和的伤害。你可以花费1个气以重掷以上三颗中的任何一颗骰子。如果投掷结果大于等于12，则施加倒地。"
+      "description": "投掷 3 骰，造成等同于投掷结果总和的伤害。你可以花费 1 个气来重掷其中任意一颗骰子。若投掷结果大于等于 12，则施加眩晕。"
     },
     "card-combo-punch-2": {
       "name": "连段冲拳 II",
-      "description": "造成5伤害并投掷2骰。增加2×拳伤害，增加3×掌伤害。获得2×太极的气。每投出1个莲花，获得闪避 -或- 净化。"
+      "description": "造成 5 点伤害并投掷 2 骰。每个拳面增加 2×伤害，每个掌面增加 3×伤害。获得 2×太极数量的气。每投出 1 个莲花，便获得闪避或净化。"
     },
     "card-lotus-bloom-2": {
       "name": "花开贝佛 II",
-      "description": "4莲花触发：造成6不可防御伤害，然后气的堆叠上限提升1，并获得6气。莲花之道（3莲花触发）：造成2不可防御伤害，然后获得闪避和2气。"
+      "description": "4 莲花触发：造成 6 点不可防御伤害，然后将气的堆叠上限提升 1，并获得 6 气。莲花之道（3 莲花触发）：造成 2 点不可防御伤害，然后获得闪避和 2 气。"
     },
     "card-mahayana-2": {
       "name": "大乘拳法 II",
-      "description": "小顺子触发：造成6伤害，然后获得3气。"
+      "description": "小顺子触发：造成 6 点伤害，然后获得 3 气。"
     },
     "card-thrust-punch-2": {
       "name": "冲拳 II",
-      "description": "拳拳造成7伤害 / 拳拳掌造成8伤害 / 拳拳掌掌造成9伤害。"
+      "description": "拳拳造成 7 点伤害 / 拳拳掌造成 8 点伤害 / 拳拳掌掌造成 9 点伤害。"
     },
     "card-thrust-punch-3": {
       "name": "冲拳 III",
-      "description": "3/4/5拳触发：造成7/8/9伤害，若至少有4个相同数字则施加击倒。"
+      "description": "3/4/5 拳触发：造成 7/8/9 点伤害；若至少有 4 个相同数字，则施加击倒。"
     },
     "card-contemplation-2": {
       "name": "冥想 II",
-      "description": "3太极触发：获得6气，获得闪避和净化。禅武归一（2拳+2太极触发）：造成6伤害，然后获得2气。"
+      "description": "3 太极触发：获得 6 气，并获得闪避和净化。禅武归一（2 拳 + 2 太极触发）：造成 6 点伤害，然后获得 2 气。"
     },
     "card-zhanshujia-gain-the-upper-hand": {
       "name": "占得上风！",
-      "description": "投掷1骰：如果投出勋章，获得4战术优势。否则抽取1张牌。"
+      "description": "投掷 1 骰：如果投出勋章，则获得 4 战术优势；否则抽 1 张牌。"
     },
     "card-zhanshujia-ambush": {
       "name": "埋伏！",
-      "description": "获得2战术优势。"
+      "description": "获得 2 战术优势。"
     },
     "card-zhanshujia-disengage": {
       "name": "脱战！",
-      "description": "只能在被攻击后打出。投掷1骰：如果投出军刀，造成2伤害；如果投出旗帜，防止3伤害；如果投出勋章，获得守护。"
+      "description": "只能在被攻击后打出。投掷 1 骰：如果投出军刀，则造成 2 点伤害；如果投出旗帜，则防止 3 点伤害；如果投出勋章，则获得守护。"
     },
     "card-zhanshujia-tactical-retreat": {
-      "name": "伴装撤退！",
-      "description": "只能在被攻击后打出。对攻击你的对手施加紧缚。防止3即将受到的伤害。"
+      "name": "战术撤退！",
+      "description": "只能在被攻击后打出。对攻击你的对手施加紧缚，并防止 3 点即将受到的伤害。"
     },
     "card-zhanshujia-war-room": {
       "name": "作战室！",
-      "description": "投掷1骰：获得投掷数值1/2的战术优势（向上取整）。"
+      "description": "投掷 1 骰：获得等同于投掷数值 1/2 的战术优势（向上取整）。"
     },
     "card-zhanshujia-strategic-defense": {
       "name": "战略防御！",
-      "description": "选择1名玩家获得守护。"
+      "description": "选择 1 名玩家获得守护。"
     },
     "upgrade-zhanshujia-countermeasures-3": {
       "name": "反制措施 III",
-      "description": "防御投掷5骰。每投出1组军刀军刀，造成2伤害。防止1×旗帜伤害。获得1×勋章战术优势。"
+      "description": "防御投掷 5 骰。每投出 1 组军刀军刀，造成 2 点伤害。防止 1×旗帜伤害。获得 1×勋章战术优势。"
     },
     "upgrade-zhanshujia-countermeasures-2": {
       "name": "反制措施 II",
-      "description": "防御投掷5骰。每投出1组军刀军刀，造成1伤害。防止1×旗帜伤害。获得1×勋章战术优势。"
+      "description": "防御投掷 5 骰。每投出 1 组军刀军刀，造成 1 点伤害。防止 1×旗帜伤害。获得 1×勋章战术优势。"
     },
     "upgrade-zhanshujia-strategic-shift-2": {
       "name": "战略转移 II",
-      "description": "4勋章：获得5战术优势，施加紧缚，然后造成5不可防御伤害。前期侦察（3勋章）：获得5战术优势。"
+      "description": "4 勋章：获得 5 战术优势，施加紧缚，然后造成 5 点不可防御伤害。前期侦察（3 勋章）：获得 5 战术优势。"
     },
     "upgrade-zhanshujia-expand-battlefield-2": {
       "name": "开拓战场 II",
-      "description": "大顺子：获得3战术优势，施加紧缚，然后造成9伤害。全面封锁（军刀+2旗帜+勋章）：抽取2张，对一名对手施加紧缚。"
+      "description": "大顺子：获得 3 战术优势，施加紧缚，然后造成 9 点伤害。全面封锁（军刀 + 2 旗帜 + 勋章）：抽 2 张牌，并对一名对手施加紧缚。"
     },
     "upgrade-zhanshujia-flanking-2": {
       "name": "包夹侧翼 II",
-      "description": "小顺子：获得2战术优势，然后造成6伤害。"
+      "description": "小顺子：获得 2 战术优势，然后造成 6 点伤害。"
     },
     "upgrade-zhanshujia-drum-movement-2": {
       "name": "摇鼓运动 II",
-      "description": "3军刀+2勋章：获得战术优势，施加紧缚，然后造成7伤害。间接接敌（3军刀+旗帜）：获得2战术优势，然后造成2不可防御伤害。"
+      "description": "3 军刀 + 2 勋章：获得战术优势，施加紧缚，然后造成 7 点伤害。间接接敌（3 军刀 + 旗帜）：获得 2 战术优势，然后造成 2 点不可防御伤害。"
     },
     "upgrade-zhanshujia-carpet-bombing-2": {
       "name": "地毯式轰炸 II",
-      "description": "2军刀+2勋章：获得2战术优势，然后对2名不同的对手造成2附属伤害。制定战略（4旗帜）：获得3战术优势，抽取2张卡牌。"
+      "description": "2 军刀 + 2 勋章：获得 2 战术优势，然后对 2 名不同的对手造成 2 点附属伤害。制定战略（4 旗帜）：获得 3 战术优势，并抽 2 张牌。"
     },
     "upgrade-zhanshujia-war-monger-2": {
       "name": "战争贩子 II",
-      "description": "1军刀+3旗帜：获得2战术优势并投掷1骰。若投出军刀，造成6伤害；若投出旗帜，获得3战术优势；若投出勋章，抽取1，然后立即再进行一个额外的进攻投掷阶段。"
+      "description": "1 军刀 + 3 旗帜：获得 2 战术优势并投掷 1 骰。若投出军刀，则造成 6 点伤害；若投出旗帜，则获得 3 战术优势；若投出勋章，则抽 1 张牌，然后立即再进行一个额外的进攻投掷阶段。"
     },
     "upgrade-zhanshujia-sabre-thrust-2": {
       "name": "军刀突刺 II",
-      "description": "3/4/5军刀分别造成5/6/7伤害。如果投出3个相同数字，施加紧缚。"
+      "description": "3/4/5 军刀分别造成 5/6/7 点伤害。若投出 3 个相同数字，则施加紧缚。"
     },
     "card-cursed-pirate-weigh-anchor": {
       "name": "起锚！",
-      "description": "投掷1骰：如果投出骷髅，对一名对手施加休战。否则抽取1张牌。",
+      "description": "投掷 1 骰：如果投出骷髅，则对一名对手施加休战；否则抽 1 张牌。",
       "effects": {
-        "roll": "投掷 1 骰：如果投出骷髅，对一名对手施加休战；否则抽 1 张牌"
+        "roll": "投掷 1 骰：如果投出骷髅，则对一名对手施加休战；否则抽 1 张牌。"
       }
     },
     "card-cursed-pirate-curse-card": {
       "name": "诅咒卡牌！",
-      "description": "选择以下其一：抽取1；或受到2伤害并抽取2；或受到4伤害并抽取3。",
+      "description": "选择以下其一：抽 1 张牌；或受到 2 点伤害并抽 2 张牌；或受到 4 点伤害并抽 3 张牌。",
       "effects": {
-        "choice": "选择其一：抽 1；或受到 2 点伤害并抽 2；或受到 4 点伤害并抽 3"
+        "choice": "选择其一：抽 1 张牌；或受到 2 点伤害并抽 2 张牌；或受到 4 点伤害并抽 3 张牌。"
       }
     },
     "card-cursed-pirate-batten-down": {
       "name": "封舱！",
-      "description": "弃掉你的所有手牌。然后抽取4张牌。",
+      "description": "弃掉你的所有手牌，然后抽 4 张牌。",
       "effects": {
-        "discardHandDraw4": "弃掉所有手牌，然后抽 4 张牌"
+        "discardHandDraw4": "弃掉所有手牌，然后抽 4 张牌。"
       }
     },
     "card-cursed-pirate-shark-bait": {
       "name": "鲨鱼饵！",
-      "description": "攻击修正：增加2至你的攻击伤害。",
+      "description": "攻击修正：使你的攻击伤害 +2。",
       "effects": {
-        "attackDamagePlus2": "攻击伤害 +2"
+        "attackDamagePlus2": "攻击伤害 +2。"
       }
     },
     "card-cursed-pirate-flay": {
       "name": "抽筋剥皮！",
-      "description": "攻击修正：投掷5骰。增加1×弯刀至总伤害中。如果至少有3伤害被加总，则施加火药桶。",
+      "description": "攻击修正：投掷 5 骰。将 1×弯刀加入总伤害中。如果至少增加了 3 点伤害，则施加火药桶。",
       "effects": {
-        "roll5": "投掷 5 骰；增加 1×弯刀至总伤害；如果至少有 3 点伤害被加总，则施加火药桶"
+        "roll5": "投掷 5 骰；增加 1×弯刀至总伤害；如果至少有 3 点伤害被加总，则施加火药桶。"
       }
     },
     "card-cursed-pirate-ransom": {
       "name": "赎金！",
-      "description": "选择你对手的一颗骰子。除非他/她支付你2CP，否则重掷该骰子。",
+      "description": "选择对手的一颗骰子。除非其支付你 2 CP，否则重掷该骰子。",
       "effects": {
-        "chooseDieOrPay2": "选择对手的一颗骰子；除非支付 2CP，否则重掷该骰子"
+        "chooseDieOrPay2": "选择对手的一颗骰子；除非其支付 2 CP，否则重掷该骰子。"
       }
     },
     "card-cursed-pirate-bluster": {
       "name": "虚张声势！",
-      "description": "投掷1骰：如果投出弯刀，对一名对手造成2伤害；如果投出战利品，抽取2；如果投出骷髅，对一名对手施加火药桶。",
+      "description": "投掷 1 骰：如果投出弯刀，则对一名对手造成 2 点伤害；如果投出战利品，则抽 2 张牌；如果投出骷髅，则对一名对手施加火药桶。",
       "effects": {
-        "roll": "投掷 1 骰：弯刀造成 2 点伤害；战利品抽 2；骷髅对一名对手施加火药桶"
+        "roll": "投掷 1 骰：弯刀造成 2 点伤害；战利品抽 2 张牌；骷髅对一名对手施加火药桶。"
       }
     },
     "card-cursed-pirate-scurvy": {
       "name": "坏血病！",
-      "description": "受到1伤害。然后对一名对手施加凋零。",
+      "description": "受到 1 点伤害，然后对一名对手施加凋零。",
       "effects": {
-        "selfDamage1": "受到 1 点伤害",
-        "inflictWither": "对一名对手施加凋零"
+        "selfDamage1": "受到 1 点伤害。",
+        "inflictWither": "对一名对手施加凋零。"
       }
     },
     "card-cursed-pirate-pillage": {
       "name": "强取豪夺！",
-      "description": "从一名对手处偷取1CP。",
+      "description": "从一名对手处偷取 1 CP。",
       "effects": {
-        "steal1Cp": "从一名对手处偷取 1CP"
+        "steal1Cp": "从一名对手处偷取 1 CP。"
       }
     },
     "card-cursed-pirate-parley": {
       "name": "停战协议！",
       "description": "对一名对手施加休战。",
       "effects": {
-        "inflictParley": "对一名对手施加休战"
+        "inflictParley": "对一名对手施加休战。"
       }
     },
     "card-cursed-pirate-crows-nest": {
       "name": "瞭望台！",
-      "description": "选择一名对手并投掷1骰：如果投出弯刀，检查其手牌；如果投出战利品，他/她选择弃掉自己的1张牌；如果投出骷髅，他/她随机弃掉自己的1张牌。",
+      "description": "选择一名对手并投掷 1 骰：如果投出弯刀，则查看其手牌；如果投出战利品，则由其选择弃掉自己的 1 张牌；如果投出骷髅，则由其随机弃掉自己的 1 张牌。",
       "effects": {
-        "roll": "选择一名对手并投掷 1 骰：弯刀检查其手牌；战利品令其选择弃 1；骷髅令其随机弃 1"
+        "roll": "选择一名对手并投掷 1 骰：弯刀查看其手牌；战利品令其选择弃 1 张牌；骷髅令其随机弃 1 张牌。"
       }
     },
     "card-cursed-pirate-hefty": {
       "name": "干票大的！",
-      "description": "投掷2骰：如果投出战利品，抽取2并获得2CP。",
+      "description": "投掷 2 骰：如果投出战利品，则抽 2 张牌并获得 2 CP。",
       "effects": {
-        "roll2": "投掷 2 骰：如果投出战利品，抽 2 并获得 2CP"
+        "roll2": "投掷 2 骰：如果投出战利品，则抽 2 张牌并获得 2 CP。"
       }
     },
     "card-cursed-pirate-pirates-life": {
       "name": "海盗的一生！",
-      "description": "获得1诅咒金币。但如果你的面板处于“咒缚”面，则转而治疗3。",
+      "description": "获得 1 个诅咒金币。但如果你的面板处于“咒缚”面，则改为治疗 3。",
       "effects": {
-        "faceDependent": "获得 1 个诅咒金币；若面板处于咒缚面则改为治疗 3"
+        "faceDependent": "获得 1 个诅咒金币；若面板处于咒缚面则改为治疗 3。"
       }
     },
     "card-cursed-pirate-go-fish": {
       "name": "送你们去喂鱼！",
-      "description": "对至多3名不同的对手施加火药桶。",
+      "description": "对至多 3 名不同的对手施加火药桶。",
       "effects": {
-        "powderKegTargets": "对至多 3 名不同对手施加火药桶"
+        "powderKegTargets": "对至多 3 名不同的对手施加火药桶。"
       }
     },
     "card-cursed-pirate-give-me-some": {
       "name": "给我点上！",
       "description": "对一名对手施加火药桶。",
       "effects": {
-        "inflictPowderKeg": "对一名对手施加火药桶"
+        "inflictPowderKeg": "对一名对手施加火药桶。"
       }
     },
     "card-cursed-pirate-sip": {
       "name": "啜呼！",
-      "description": "对一名对手施加火药桶。该对手也可以选择不获得这个火药桶，而是投掷1骰：如果投出1-2，无事发生。如果投出3-6，他/她被施加火药桶和凋零。",
+      "description": "对一名对手施加火药桶。该对手也可以选择不获得这个火药桶，而是投掷 1 骰：如果投出 1-2，则无事发生；如果投出 3-6，则其获得火药桶和凋零。",
       "effects": {
         "choice": "对一名对手施加火药桶；对手也可以选择不获得它，而是投 1 骰"
       }
     },
     "card-just-this": {
       "name": "就这？",
-      "description": "1名玩家可以在其防御投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "description": "1 名玩家可以在其防御投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
       "effects": {
-        "rerollUpTo5Dice": "重投至5颗骰子"
+        "rerollUpTo5Dice": "重投至多 5 颗骰子"
       }
     },
     "card-give-hand": {
       "name": "抬一手！",
-      "description": "选择对手的1颗骰子，强制他重掷该骰子。",
+      "description": "选择对手的 1 颗骰子，强制其重掷该骰子。",
       "effects": {
-        "forceOpponentReroll1Die": "强制对手重投1颗骰子"
+        "forceOpponentReroll1Die": "强制对手重投 1 颗骰子"
       }
     },
     "card-i-can-again": {
       "name": "我又行了！",
-      "description": "1名玩家可以在其进攻投掷阶段，对至多5颗骰子进行1次额外的投掷尝试。",
+      "description": "1 名玩家可以在其进攻投掷阶段，对至多 5 颗骰子进行 1 次额外的投掷尝试。",
       "effects": {
-        "rerollUpTo5Dice": "重掷至多5颗骰子"
+        "rerollUpTo5Dice": "重掷至多 5 颗骰子"
       }
     },
     "card-me-too": {
       "name": "俺也一样！",
-      "description": "将你1颗骰子的数值变为和你另一颗骰子的数值一样（同一阶段使用且目的相同）。",
+      "description": "将你 1 颗骰子的数值变为和另一颗骰子的数值一样（同一阶段使用且目的相同）。",
       "effects": {
-        "copyOneDieValue": "将1颗骰子改为另1颗的值"
+        "copyOneDieValue": "将 1 颗骰子改为另 1 颗的值"
       }
     },
     "card-surprise": {
       "name": "惊不惊喜？！",
-      "description": "改变任意1颗骰子的数值。",
+      "description": "改变任意 1 颗骰子的数值。",
       "effects": {
-        "modifyAny1Die": "改变任意1颗骰子的数值"
+        "modifyAny1Die": "改变任意 1 颗骰子的数值"
       }
     },
     "card-worthy-of-me": {
       "name": "不愧是我！",
-      "description": "你或1名队友可以重掷至多2颗骰子（可以是同一颗骰子重掷2次或两颗骰子各重掷1次）。",
+      "description": "你或 1 名队友可以重掷至多 2 颗骰子（可以是同一颗骰子重掷 2 次，或两颗骰子各重掷 1 次）。",
       "effects": {
-        "rerollUpTo2Dice": "重掷至多2颗骰子"
+        "rerollUpTo2Dice": "重掷至多 2 颗骰子"
       }
     },
     "card-unexpected": {
       "name": "意不意外？！",
-      "description": "改变任意2颗骰子的数值。",
+      "description": "改变任意 2 颗骰子的数值。",
       "effects": {
-        "modifyAny2Dice": "改变任意2颗骰子的数值"
+        "modifyAny2Dice": "改变任意 2 颗骰子的数值"
       }
     },
     "card-next-time": {
       "name": "这次不算！",
-      "description": "一名玩家防止6点即将受到的伤害。",
+      "description": "一名玩家防止即将受到的 6 点伤害。",
       "effects": {
-        "prevent6Damage": "防止6伤害"
+        "prevent6Damage": "防止 6 点伤害"
       }
     },
     "card-boss-generous": {
       "name": "老板大气！",
-      "description": "获得2CP。",
+      "description": "获得 2 CP。",
       "effects": {
-        "gain2CP": "获得2CP"
+        "gain2CP": "获得 2 CP"
       }
     },
     "card-flick": {
       "name": "弹一手！",
-      "description": "增加或减少任意1颗骰子的数值1点（数值1无法再减少，数值6无法再增加）。",
+      "description": "增加或减少任意 1 颗骰子的数值 1 点（数值 1 无法再减少，数值 6 无法再增加）。",
       "effects": {
-        "adjust1DieBy1": "增加或减少1骰子数值"
+        "adjust1DieBy1": "增加或减少 1 颗骰子的数值"
       }
     },
     "card-bye-bye": {
       "name": "拜拜了您内！",
-      "description": "从1名玩家身上移除1个状态效果。",
+      "description": "从 1 名玩家身上移除 1 个状态效果。",
       "effects": {
-        "remove1Status": "移除1状态效果"
+        "remove1Status": "移除 1 个状态效果"
       }
     },
     "card-double": {
       "name": "加倍！",
-      "description": "抽取2张牌。",
+      "description": "抽 2 张牌。",
       "effects": {
-        "draw2Cards": "抽取2张牌"
+        "draw2Cards": "抽 2 张牌"
       }
     },
     "card-super-double": {
       "name": "超级加倍！",
-      "description": "抽取3张牌。",
+      "description": "抽 3 张牌。",
       "effects": {
-        "draw3Cards": "抽取3张牌"
+        "draw3Cards": "抽 3 张牌"
       }
     },
     "card-get-away": {
       "name": "起开！",
-      "description": "从1名玩家身上移除1个状态效果。",
+      "description": "从 1 名玩家身上移除 1 个状态效果。",
       "effects": {
-        "remove1StatusFromAPlayer": "移出1名玩家身上1个状态"
+        "remove1StatusFromAPlayer": "移除 1 名玩家身上的 1 个状态"
       }
     },
     "card-one-throw-fortune": {
       "name": "一掷千金！",
-      "description": "投掷1骰：获得½数值的CP（向上取整）。",
+      "description": "投掷 1 骰：获得等同于投掷数值 1/2 的 CP（向上取整）。",
       "effects": {
-        "roll1DieGainCP": "投掷1骰获得CP"
+        "roll1DieGainCP": "投掷 1 骰获得 CP"
       }
     },
     "card-what-status": {
       "name": "状什么态？",
-      "description": "移除1名玩家的所有状态效果。",
+      "description": "移除 1 名玩家的所有状态效果。",
       "effects": {
-        "removeAllStatusesFrom1Player": "移除1名玩家所有状态"
+        "removeAllStatusesFrom1Player": "移除 1 名玩家的所有状态"
       }
     },
     "card-transfer-status": {
       "name": "乾坤大挪移！",
-      "description": "将1名玩家身上的1个状态效果转移至另1名玩家。",
+      "description": "将 1 名玩家身上的 1 个状态效果转移至另一名玩家。",
       "effects": {
         "transferStatuses": "转移状态"
       }
     },
     "fist-technique": {
       "name": "顿悟！",
-      "description": "投掷1骰：如果投出莲花，获得2气、闪避和净化；否则抽取1张牌。"
+      "description": "投掷 1 骰：如果投出莲花，则获得 2 气、闪避和净化；否则抽 1 张牌。"
     },
     "actions": {
       "play": "打出",
@@ -4183,51 +4188,51 @@
     },
     "card-flame-barrier": {
       "name": "火焰护盾",
-      "description": "立即获得2层火焰精通。"
+      "description": "立即获得 2 层火焰精通。"
     },
     "card-turning-up-the-heat": {
       "name": "急剧升温！",
-      "description": "获得1火焰精通。然后你可以花费任意数量的CP，每花费1CP获得1火焰精通。",
+      "description": "获得 1 层火焰精通。然后你可以花费任意数量的 CP；每花费 1 CP，获得 1 层火焰精通。",
       "effects": {
-        "gainFM1": "获得 1 个火焰精通",
-        "spendCP": "你可以花费任意数量的 CP；每花费 1 CP，获得 1 个火焰精通"
+        "gainFM1": "获得 1 层火焰精通",
+        "spendCP": "你可以花费任意数量的 CP；每花费 1 CP，获得 1 层火焰精通"
       }
     },
     "card-infernal-embrace": {
-      "name": "炼狱拥怀！",
-      "description": "投掷1骰：\n陨石: 获得火焰精通至上限\n否则: 抽取1张牌",
+      "name": "炼狱之拥！",
+      "description": "投掷 1 骰：\n陨石：获得火焰精通至上限。\n否则：抽 1 张牌。",
       "effects": {
-        "roll": "投掷 1 骰：火获得 2 个火焰精通；否则抽 1 张牌"
+        "roll": "投掷 1 骰：火获得 2 层火焰精通；否则抽 1 张牌"
       }
     },
     "card-fan-the-flames": {
-      "name": "火焰张天！",
-      "description": "你的火焰精通堆叠上限+1。获得2火焰精通。",
+      "name": "添柴加火！",
+      "description": "你的火焰精通堆叠上限 +1。获得 2 层火焰精通。",
       "effects": {
         "increaseLimit": "你的火焰精通上限 +1",
-        "gainFM2": "获得 2 个火焰精通"
+        "gainFM2": "获得 2 层火焰精通"
       }
     },
     "card-red-hot": {
-      "name": "红热！",
-      "description": "本回合中，每拥有1个火焰精通，你的伤害+1。",
+      "name": "炽热！",
+      "description": "本回合中，每拥有 1 层火焰精通，你的伤害 +1。",
       "effects": {
-        "dmgPerFM": "本回合中，每拥有 1 个火焰精通，你的伤害 +1"
+        "dmgPerFM": "本回合中，每拥有 1 层火焰精通，你的伤害 +1"
       }
     },
     "card-get-fired-up": {
-      "name": "火之高兴！",
-      "description": "投掷1骰：\n火：伤害+3\n熔岩：施加燃烧\n火魂：获得2火焰精通\n陨石：施加击倒",
+      "name": "燃起来！",
+      "description": "投掷 1 骰：\n火：伤害 +3。\n熔岩：施加燃烧。\n火魂：获得 2 层火焰精通。\n陨石：施加击倒。",
       "effects": {
-        "roll": "投掷 1 骰：火 +3 伤害；熔岩施加燃烧；火魂获得 2 个火焰精通；陨石施加击倒"
+        "roll": "投掷 1 骰：火 +3 伤害；熔岩施加燃烧；火魂获得 2 层火焰精通；陨石施加击倒"
       }
     },
     "card-magma-armor-2": {
-      "name": "熔火铠甲 II",
+      "name": "熔岩护甲 II",
       "description": "升级熔岩护甲至 II 级。"
     },
     "card-magma-armor-3": {
-      "name": "熔火铠甲 III",
+      "name": "熔岩护甲 III",
       "description": "升级熔岩护甲至 III 级。"
     },
     "card-fireball-2": {
@@ -4235,31 +4240,31 @@
       "description": "升级火球至 II 级。"
     },
     "card-burning-soul-2": {
-      "name": "燃烧之灵 II",
-      "description": "升级灵魂燃烧至 II 级。包含4x火魂的超级变体。"
+      "name": "灵魂燃烧 II",
+      "description": "升级灵魂燃烧至 II 级。包含 4x 火魂的超级变体。"
     },
     "card-hot-streak-2": {
-      "name": "炽热波纹 II",
+      "name": "火热连击 II",
       "description": "升级火热连击至 II 级。"
     },
     "card-meteor-2": {
-      "name": "流星火雨 II",
+      "name": "陨石 II",
       "description": "升级陨石至 II 级。"
     },
     "card-pyro-blast-2": {
       "name": "炎爆术 II",
-      "description": "升级高温爆破至 II 级。"
+      "description": "升级炎爆术至 II 级。"
     },
     "card-pyro-blast-3": {
       "name": "炎爆术 III",
-      "description": "升级高温爆破至 III 级。"
+      "description": "升级炎爆术至 III 级。"
     },
     "card-burn-down-2": {
-      "name": "燃烧殆尽 II",
+      "name": "烧毁 II",
       "description": "升级烧毁至 II 级。"
     },
     "card-ignite-2": {
-      "name": "引燃 II",
+      "name": "点燃 II",
       "description": "升级点燃至 II 级。"
     },
     "upgrade-pickpocket-2": {
@@ -4280,11 +4285,11 @@
     },
     "action-into-the-shadows": {
       "name": "遁入阴影！",
-      "description": "获得1个暗影标记。"
+      "description": "获得 1 个暗影标记。"
     },
     "action-one-with-shadows": {
       "name": "与影共生！",
-      "description": "投掷1骰：若为暗影，获得伏击+2CP；否则抽1张牌。"
+      "description": "投掷 1 骰：若为暗影，则获得伏击 + 2 CP；否则抽 1 张牌。"
     },
     "upgrade-fearless-riposte-2": {
       "name": "后发制人 II",
@@ -4300,11 +4305,11 @@
     },
     "action-card-trick": {
       "name": "卡牌戏法！",
-      "description": "对手弃1牌。抽1牌（若有潜行则抽2牌）。"
+      "description": "对手弃 1 张牌。抽 1 张牌（若有潜行，则改为抽 2 张牌）。"
     },
     "action-shadow-manipulation": {
       "name": "暗影操控！",
-      "description": "改变任意1颗骰子的数值。若拥有暗影，转而改变任意2颗骰子的数值。"
+      "description": "改变任意 1 颗骰子的数值。若拥有暗影，则改为改变任意 2 颗骰子的数值。"
     },
     "upgrade-dagger-strike-2": {
       "name": "匕首突刺 II",
@@ -4323,28 +4328,28 @@
       "description": "升级卡牌大师至 II 级。"
     },
     "action-sneaky-sneaky": {
-      "name": "鬼鬼崇崇！",
+      "name": "鬼鬼祟祟！",
       "description": "获得隐匿攻击🗡。"
     },
     "action-shadow-coins": {
       "name": "暗影币！",
-      "description": "获得2CP。如果拥有暗影🌑，转而获得3CP。"
+      "description": "获得 2 CP。若拥有暗影🌑，则改为获得 3 CP。"
     },
     "moon-shadow-strike": {
       "name": "月影袭人！",
-      "description": "投掷1骰：如果投出月🌙，对对手施加致盲、缠绕和锁定。否则抽取1张牌。"
+      "description": "投掷 1 骰：如果投出月🌙，则对对手施加致盲、缠绕和锁定；否则抽 1 张牌。"
     },
     "dodge": {
       "name": "闪躲！",
-      "description": "1名玩家获得闪避。"
+      "description": "1 名玩家获得闪避。"
     },
     "volley": {
       "name": "万箭齐发！",
-      "description": "攻击修正。投掷5骰：增加弓🏹数量的伤害。施加缠绕。"
+      "description": "攻击修正。投掷 5 骰：增加等同于弓🏹数量的伤害，并施加缠绕。"
     },
     "watch-out": {
       "name": "看箭！",
-      "description": "攻击修正。投掷1骰：弓🏹→增加2伤害；足🦶→施加缠绕；月🌙→施加致盲。"
+      "description": "攻击修正。投掷 1 骰：弓🏹→增加 2 点伤害；足🦶→施加缠绕；月🌙→施加致盲。"
     },
     "moonlight-magic": {
       "name": "月光魔法！",
@@ -4392,23 +4397,23 @@
     },
     "card-might": {
       "name": "神力！",
-      "description": "获得1个暴击标记。"
+      "description": "获得 1 个暴击标记。"
     },
     "card-consecrate": {
       "name": "神圣祝圣！",
-      "description": "获得守护、神罚、暴击和精准各1个。"
+      "description": "获得守护、神罚、暴击和精准各 1 个。"
     },
     "card-divine-favor": {
       "name": "神恩！",
-      "description": "投掷1骰：剑→抽2牌；头盔→治愈3；心→治愈4；祈祷→获得3CP。"
+      "description": "投掷 1 骰：剑→抽 2 张牌；头盔→治疗 3；心→治疗 4；祈祷→获得 3 CP。"
     },
     "card-absolution": {
       "name": "赦免！",
-      "description": "投掷1骰防御：剑→对攻击者造成1不可防御伤害；头盔→防止1伤害；心→防止2伤害；祈祷→获得1CP。"
+      "description": "投掷 1 骰进行防御：剑→对攻击者造成 1 点不可防御伤害；头盔→防止 1 点伤害；心→防止 2 点伤害；祈祷→获得 1 CP。"
     },
     "card-gods-grace": {
       "name": "神佑！",
-      "description": "投掷1骰：祈祷→获得4CP；否则抽1牌。"
+      "description": "投掷 1 骰：若为祈祷，则获得 4 CP；否则抽 1 张牌。"
     },
     "card-holy-defense-3": {
       "name": "神圣防御 III",
@@ -4448,7 +4453,7 @@
     },
     "card-tithes-2": {
       "name": "教会税 II",
-      "description": "升级教皇税：抽牌消耗降为2CP，进攻阶段激活含🙏技能时获得1CP。"
+      "description": "升级教皇税：抽牌消耗降为 2 CP，且在进攻阶段激活含 🙏 的技能时获得 1 CP。"
     },
     "upgrade-katana-slice-2": {
       "name": "太刀斩 II",
@@ -4508,11 +4513,11 @@
     },
     "treant-card-trample": {
       "name": "践踏！",
-      "description": "投掷 5 骰；每个树枝使本次攻击 +1。若本卡至少增加 3 点伤害，则施加刺藤。"
+      "description": "投掷 5 骰；每个树枝使本次攻击 +1。若本次攻击至少额外增加 3 点伤害，则施加刺藤。"
     },
     "upgrade-tend-care-2": {
       "name": "细心呵护 II",
-      "description": "升级细心呵护：2 树叶 + 2 树灵时抽 1，养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。培育（2 树枝 + 2 树灵）：养成 6 树灵。"
+      "description": "升级细心呵护：2 树叶 + 2 树灵时抽 1 张牌，养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。培育（2 树枝 + 2 树灵）：养成 6 树灵。"
     },
     "upgrade-rooted-2": {
       "name": "扎根 II",
@@ -4540,7 +4545,7 @@
     },
     "upgrade-nature-touch-2": {
       "name": "自然之触 II",
-      "description": "升级自然之触：4 树灵时养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 个树灵 +1 伤害。自然之怜（3 树灵）：治疗 1；获得 1 CP；抽 1；养成 1 树灵。"
+      "description": "升级自然之触：4 树灵时养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 个树灵 +1 伤害。自然之怜（3 树灵）：治疗 1；获得 1 CP；抽 1 张牌；养成 1 树灵。"
     },
     "treant-card-soulfire": {
       "name": "魂火！",
@@ -4548,7 +4553,7 @@
     },
     "treant-card-mother-tree": {
       "name": "母树！",
-      "description": "投掷 1 骰；若投出树灵，养成 4 树灵。否则抽 1。"
+      "description": "投掷 1 骰；若投出树灵，养成 4 树灵。否则抽 1 张牌。"
     },
     "upgrade-vengeful-vines-2": {
       "name": "复仇枝蔓 II",
@@ -4624,24 +4629,24 @@
     },
     "ninja-card-dojo": {
       "name": "道场！",
-      "description": "投掷 1 骰；如果掷出面具，获得烟雾弹和 2 忍术。否则抽 1。"
+      "description": "投掷 1 骰；如果掷出面具，则获得烟雾弹和 2 忍术。否则抽 1 张牌。"
     }
   },
   "passive": {
     "tithes": {
       "name": "教皇税",
-      "reroll": "花费1CP重掷1颗你的骰子",
-      "draw": "花费3CP抽1张牌"
+      "reroll": "花费 1 CP 重掷你的一颗骰子",
+      "draw": "花费 3 CP 抽 1 张牌"
     },
     "tithes-2": {
       "name": "教皇税 II",
-      "reroll": "花费1CP重掷1颗你的骰子",
-      "draw": "花费2CP抽1张牌"
+      "reroll": "花费 1 CP 重掷你的一颗骰子",
+      "draw": "花费 2 CP 抽 1 张牌"
     },
     "useButton": "使用",
     "rerollDie": "选择要重掷的骰子",
-    "drawCard": "抽1张牌",
-    "cpCost": "{{cost}}CP",
+    "drawCard": "抽 1 张牌",
+    "cpCost": "{{cost}} CP",
     "action": {
       "reroll": "重掷",
       "draw": "抽牌",
@@ -4650,38 +4655,38 @@
       "free": "免费"
     },
     "selectDieHint": "点击骰子重掷",
-  "treantSeedling": {
-    "name": "幼种树灵",
-    "rerollShort": "重掷",
-    "reroll": "消耗幼种树灵重掷"
-  },
-  "treantSapling": {
-    "name": "木苗树灵",
-    "healCpShort": "治疗+CP",
-    "healCp": "治疗1并获得1CP",
-    "drawShort": "抽牌",
-    "draw": "消耗木苗和1CP抽1张牌"
-  },
-  "treantLifeSap": {
-    "name": "生命源泉",
-    "rollHealShort": "治疗",
-    "rollHeal": "掷骰治疗半值"
-  },
-  "zhanshujiaTacticalAdvantage": {
-    "name": "战术优势",
-    "cpShort": "+1CP",
-    "cp": "消耗 1 战术优势获得 1CP",
-    "rerollShort": "重掷",
-    "reroll": "消耗 1 战术优势重掷 1 颗骰子",
-    "drawShort": "抽牌",
-    "draw": "消耗 3 战术优势抽 1 张牌",
-    "targetedShort": "锁定",
-    "targeted": "消耗 3 战术优势对对手施加 1 个锁定",
-    "protectShort": "守护",
-    "protect": "消耗 4 战术优势获得 1 个守护",
-    "transferShort": "转移状态",
-    "transfer": "消耗 4 战术优势转移 1 个状态效果"
-  }
+    "treantSeedling": {
+      "name": "幼种树灵",
+      "rerollShort": "重掷",
+      "reroll": "消耗幼种树灵重掷"
+    },
+    "treantSapling": {
+      "name": "木苗树灵",
+      "healCpShort": "治疗+CP",
+      "healCp": "治疗 1 并获得 1 CP",
+      "drawShort": "抽牌",
+      "draw": "消耗木苗和 1 CP 抽 1 张牌"
+    },
+    "treantLifeSap": {
+      "name": "生命源泉",
+      "rollHealShort": "治疗",
+      "rollHeal": "掷骰治疗半值"
+    },
+    "zhanshujiaTacticalAdvantage": {
+      "name": "战术优势",
+      "cpShort": "+1 CP",
+      "cp": "消耗 1 战术优势获得 1 CP",
+      "rerollShort": "重掷",
+      "reroll": "消耗 1 战术优势重掷 1 颗骰子",
+      "drawShort": "抽牌",
+      "draw": "消耗 3 战术优势抽 1 张牌",
+      "targetedShort": "锁定",
+      "targeted": "消耗 3 战术优势对对手施加 1 个锁定",
+      "protectShort": "守护",
+      "protect": "消耗 4 战术优势获得 1 个守护",
+      "transferShort": "转移状态",
+      "transfer": "消耗 4 战术优势转移 1 个状态效果"
+    }
   },
   "debug": {
     "testingTools": "测试工具",
@@ -4695,8 +4700,8 @@
       "section_title": "骰子调整",
       "die_label": "D{{index}}",
       "apply": "✓ 应用骰子值",
-      "all_ones": "全1",
-      "all_sixes": "全6",
+      "all_ones": "全 1",
+      "all_sixes": "全 6",
       "large_straight_1_5": "大顺 1-5",
       "large_straight_2_6": "大顺 2-6",
       "small_straight_1_4": "小顺 1-4"
@@ -4723,11 +4728,11 @@
       "button_add_from_pool": "🪄 直接补到手牌",
       "button_choose_pool_candidate": "🪄 精确补牌",
       "button_default": "🎴 发指定牌（图集索引）",
-      "deck_slot": "deck#{{index}}"
+      "deck_slot": "牌库 #{{index}}"
     },
     "quickDeal": {
-      "status": "牌库: {{count}} 张 {{detail}}",
-      "selected": "| 选中: {{id}}",
+      "status": "牌库：{{count}} 张 {{detail}}",
+      "selected": "| 选中：{{id}}",
       "missing": "| 牌库中不存在此索引",
       "button": "发指定牌"
     },
@@ -4772,8 +4777,8 @@
     "confirm": "确认"
   },
   "compareRoll": {
-    "confirming": "确认中...",
-    "waitingForOwnerChoice": "等待对方选择...",
+    "confirming": "确认中…",
+    "waitingForOwnerChoice": "等待对方选择…",
     "rolled": "掷出 {{value}}",
     "gunslingerDuel": {
       "title": "对决比骰",
