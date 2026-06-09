@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { buildAiDecisionContext, registerRemoteAiProvider, resolveNextLocalAiAction, withAiActionStrategyTags } from '../../../engine/ai';
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions, diceThroneAiRuntime } from '../ai';
@@ -1931,8 +1932,10 @@ describe('AI legal actions', () => {
         }
 
         expect(state.sys.phase).toBe('targetingRoll');
-        expect(state.sys.interaction.current?.kind).toBe('dt:defender-choice');
-        expect(state.sys.interaction.current?.playerId).toBe('3');
+        expect(getCurrentInteractionSummary(state)).toMatchObject({
+            kind: 'dt:defender-choice',
+            playerId: '3',
+        });
 
         const legalActions = buildDiceThroneAiLegalActions({
             playerId: '3',
@@ -2011,8 +2014,10 @@ describe('AI legal actions', () => {
         }
 
         expect(state.sys.phase).toBe('targetingRoll');
-        expect(state.sys.interaction.current?.kind).toBe('dt:defender-choice');
-        expect(state.sys.interaction.current?.playerId).toBe('0');
+        expect(getCurrentInteractionSummary(state)).toMatchObject({
+            kind: 'dt:defender-choice',
+            playerId: '0',
+        });
 
         const legalActions = buildDiceThroneAiLegalActions({
             playerId: '0',

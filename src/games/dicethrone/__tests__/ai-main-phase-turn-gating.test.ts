@@ -1,4 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import {
+    injectRawBlockingInteraction,
+    injectSimpleChoiceBlockingInteraction,
+} from '../../../engine/testing/interactionTestFacade';
 
 import { buildDiceThroneAiLegalActions } from '../ai';
 import { createSetupWithHand, fixedRandom } from './test-utils';
@@ -31,12 +36,11 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         state.core.activePlayerId = '0';
         state.sys.phase = 'main1';
-        state.sys.interaction.current = {
+        injectSimpleChoiceBlockingInteraction(state, {
             id: 'dt-other-player-choice',
             playerId: '1',
-            kind: 'simple-choice',
-            data: { options: [{ id: 'ok', label: '确认' }] },
-        } as any;
+            sourceId: 'other-player-choice',
+        });
 
         const actions = buildDiceThroneAiLegalActions({
             playerId: '0',
@@ -54,12 +58,12 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         state.core.activePlayerId = '0';
         state.sys.phase = 'main1';
-        state.sys.interaction.current = {
+        injectRawBlockingInteraction(state, {
             id: 'dt-future-choice',
             playerId: '0',
             kind: 'dt:future-choice',
-            data: { sourceId: 'future-choice' },
-        } as any;
+            sourceId: 'future-choice',
+        });
 
         const actions = buildDiceThroneAiLegalActions({
             playerId: '0',
@@ -70,7 +74,7 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         expect(actions[0]).toMatchObject({
             kind: 'interaction-cancel',
             commands: [{
-                type: 'SYS_INTERACTION_CANCEL',
+                type: INTERACTION_COMMANDS.CANCEL,
                 payload: {
                     interactionId: 'dt-future-choice',
                     reason: 'unsupported-interaction-kind',

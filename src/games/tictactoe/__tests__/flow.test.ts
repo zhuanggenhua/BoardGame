@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { buildTicTacToeAiLegalActions } from '../ai';
 import { engineConfig } from '../game';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { injectSimpleChoiceBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import {
     registerRemoteAiProvider,
     resolveNextLocalAiAction,
@@ -236,12 +237,11 @@ describe('井字棋 AI', () => {
             currentPlayer: '0',
             playerIds: ['0', '1'],
         });
-        state.sys.interaction.current = {
+        injectSimpleChoiceBlockingInteraction(state, {
             id: 'tutorial-choice',
             playerId: '1',
-            kind: 'simple-choice',
-            data: { options: [{ id: 'ok' }] },
-        } as any;
+            sourceId: 'tutorial-choice',
+        });
 
         const actions = buildTicTacToeAiLegalActions({
             playerId: '0',

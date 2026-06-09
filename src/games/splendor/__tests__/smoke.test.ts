@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { injectSimpleChoiceBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import { SplendorDomain } from '../domain';
 import type { SplendorCommand, SplendorCore, TokenColor } from '../domain';
 import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, calculateDiscounts, calculateEffectiveCost, computeGameResult, createPlayerState, getBankForPlayerCount } from '../domain/rules';
@@ -1982,12 +1983,11 @@ describe('splendor smoke', () => {
             hostStarted: true,
             currentPlayer: '0',
         });
-        state.sys.interaction.current = {
+        injectSimpleChoiceBlockingInteraction(state, {
             id: 'splendor-future-choice',
             playerId: '1',
-            kind: 'simple-choice',
-            data: { options: [{ id: 'ok' }] },
-        } as any;
+            sourceId: 'splendor-future-choice',
+        });
 
         const actions = buildSplendorAiLegalActions({ playerId: '0', state });
 
