@@ -918,6 +918,24 @@ describe('InteractionSystem', () => {
         ]));
     });
 
+    it('buildTargetAiHint 支持通过游戏侧 relationResolver 复用队伍关系', () => {
+        const hint = buildTargetAiHint({
+            actorPlayerId: '0',
+            targetPlayerId: '2',
+            relationResolver: ({ actorPlayerId, targetPlayerId }) => (
+                actorPlayerId === '0' && targetPlayerId === '2' ? 'ally' : 'enemy'
+            ),
+            effectIntent: 'buff',
+            targetKind: 'player',
+        });
+
+        expect(hint.relationToActor).toBe('ally');
+        expect(hint.tags).toEqual(expect.arrayContaining([
+            'relation:ally',
+            'intent:buff',
+        ]));
+    });
+
     it('inspect 语义评分会优先侦察敌方而不是己方', () => {
         const enemyHint = buildTargetAiHint({
             actorPlayerId: '0',

@@ -2438,6 +2438,7 @@ function superSpiesMoonZeroThreeTalent(ctx: AbilityContext): AbilityResult {
                 displayMode: 'button' as const,
             })),
             {
+                state: ctx.state,
                 sourcePlayerId: ctx.playerId,
                 effectIntent: 'inspect',
             },

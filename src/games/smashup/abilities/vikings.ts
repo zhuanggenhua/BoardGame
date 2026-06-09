@@ -493,7 +493,7 @@ const vikingsShieldMaidenPromptProgram = createPromptProgram<VikingPromptContext
                         || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
                 ),
-                { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
             ),
         ] as any[],
         { sourceId: 'vikings_shield_maiden', targetType: 'generic', titleKey: 'ui.vikings_shield_maiden_title' },
@@ -620,7 +620,7 @@ const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, Sma
         '掠夺：选择另一位玩家，随机拿走其一张手牌',
         buildPlayerOptions(
             getOtherPlayers(context.matchState.core, context.playerId).filter(pid => (context.matchState.core.players[pid]?.hand.length ?? 0) > 0),
-            { sourcePlayerId: context.playerId, effectIntent: 'debuff' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'debuff' },
         ),
         { sourceId: 'vikings_pillage', targetType: 'generic', titleKey: 'ui.vikings_pillage_title' },
     ),
@@ -704,7 +704,7 @@ const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptC
                     || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                     || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
             ),
-            { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
         ),
         { sourceId: 'vikings_cast_the_runes_player', targetType: 'generic', titleKey: 'ui.vikings_cast_the_runes_player_title' },
     ),
@@ -873,7 +873,7 @@ const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptC
             getOtherPlayers(context.matchState.core, context.playerId).filter(
                 pid => (context.matchState.core.players[pid]?.deck.length ?? 0) > 0 || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
             ),
-            { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
         ),
         { sourceId: 'vikings_raiding_party_player', targetType: 'generic', titleKey: 'ui.vikings_raiding_party_player_title' },
     ),
@@ -971,7 +971,7 @@ const vikingsBaseDrakkarPromptProgram = createPromptProgram<VikingPromptContext,
                         || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
                 ),
-                { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
             ),
         ] as any[],
         { sourceId: 'base_drakkar', targetType: 'generic', titleKey: 'ui.base_drakkar_title' },
@@ -1079,7 +1079,11 @@ function buildHandCardOptions(cards: CardInstance[]) {
 
 function buildPlayerOptions(
     playerIds: PlayerId[],
-    context: { sourcePlayerId: PlayerId; effectIntent?: 'buff' | 'debuff' | 'inspect' | 'resource' },
+    context: {
+        state?: SmashUpCore;
+        sourcePlayerId: PlayerId;
+        effectIntent?: 'buff' | 'debuff' | 'inspect' | 'resource';
+    },
 ) {
     return buildPlayerTargetOptions(
         playerIds.map((targetPlayerId, index) => ({

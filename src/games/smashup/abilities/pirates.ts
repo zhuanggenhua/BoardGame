@@ -609,7 +609,11 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
                     value: { baseIndex: context.baseIndex },
                     displayMode: 'button' as const,
                 })),
-                { sourcePlayerId: context.playerId, effectIntent: 'destroy' },
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectIntent: 'destroy',
+                },
             ),
             { sourceId: 'pirate_broadside_choose_player', targetType: 'player', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_player_title' },
         );

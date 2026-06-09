@@ -251,6 +251,7 @@ function createAlienProbeProgramContext(ctx: AbilityContext): AlienProbePromptCo
             targetPlayerId: pid,
         })),
         {
+            state: ctx.state,
             sourcePlayerId: ctx.playerId,
             effectIntent: 'inspect',
         },
@@ -1486,6 +1487,7 @@ const alienProbeChooseTargetPromptProgram = createPromptProgram<
                     targetPlayerId: pid,
                 })),
             {
+                state: context.matchState.core,
                 sourcePlayerId: context.playerId,
                 effectIntent: 'inspect',
             },

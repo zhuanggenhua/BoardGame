@@ -1,4 +1,5 @@
 import type { PlayerId } from '../../../engine/types';
+import type { AiRelationToActor } from '../../../engine/ai';
 import type { SmashUpCore, SmashUpTeamId, SmashUpTeamMode } from './types';
 import { TEAM_VP_TO_WIN_2V2, VP_TO_WIN } from './types';
 export { readSmashUpTeamMode } from '../roomSetup';
@@ -67,6 +68,27 @@ export function getSmashUpTeamIdForPlayer(
     }
 
     return undefined;
+}
+
+export function getSmashUpRelationToPlayer(
+    core: Pick<SmashUpCore, 'seatOrder' | 'players' | 'turnOrder' | 'teamMode'>,
+    actorPlayerId: PlayerId | undefined,
+    targetPlayerId: PlayerId | undefined,
+): AiRelationToActor | undefined {
+    if (!actorPlayerId || !targetPlayerId) {
+        return undefined;
+    }
+    if (actorPlayerId === targetPlayerId) {
+        return 'self';
+    }
+
+    const actorTeamId = getSmashUpTeamIdForPlayer(core, actorPlayerId);
+    const targetTeamId = getSmashUpTeamIdForPlayer(core, targetPlayerId);
+    if (actorTeamId && targetTeamId && actorTeamId === targetTeamId) {
+        return 'ally';
+    }
+
+    return 'enemy';
 }
 
 export function getSmashUpTeamMembers(

@@ -745,16 +745,18 @@ const buildPlayerTargetHint = (
         tags: string[];
     },
 ): AiHint => {
-    const relationToActor: AiHint['relationToActor'] = actingPlayerId === targetPlayerId
-        ? 'self'
-        : areTeammates(state.core, actingPlayerId, targetPlayerId)
-            ? 'ally'
-            : 'enemy';
-
     return buildTargetAiHint({
         actorPlayerId: actingPlayerId,
         targetPlayerId,
-        relationToActor,
+        relationResolver: ({ actorPlayerId, targetPlayerId }) => {
+            if (!actorPlayerId || !targetPlayerId) {
+                return undefined;
+            }
+            if (actorPlayerId === targetPlayerId) {
+                return 'self';
+            }
+            return areTeammates(state.core, actorPlayerId, targetPlayerId) ? 'ally' : 'enemy';
+        },
         targetKind: 'player',
         effectIntent: args.effectIntent,
         ...(typeof args.estimatedSwing === 'number' ? { estimatedSwing: args.estimatedSwing } : {}),

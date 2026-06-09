@@ -2677,6 +2677,84 @@ describe('smashup', () => {
         }
     });
 
+    it('Smash Up 2v2 玩家目标交互会把队友标成 ally、把敌队标成 enemy', async () => {
+        const buildTeamStateWithPlayerTargetInteraction = (effectIntent: 'buff' | 'debuff') => {
+            const core = makeState({
+                currentPlayerIndex: 0,
+                teamMode: '2v2',
+                seatOrder: ['0', '1', '2', '3'],
+                turnOrder: ['0', '1', '2', '3'],
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1'),
+                    '2': makePlayer('2'),
+                    '3': makePlayer('3'),
+                },
+                bases: [makeBase('base_the_mothership')],
+            });
+            const stateForAi = makeMatchState(core);
+
+            const options = buildPlayerTargetOptions(
+                [
+                    { id: 'ally', label: '队友', targetPlayerId: '2', displayMode: 'button' as const },
+                    { id: 'enemy', label: '敌人', targetPlayerId: '1', displayMode: 'button' as const },
+                ],
+                {
+                    state: core,
+                    sourcePlayerId: '0',
+                    effectIntent,
+                },
+            );
+
+            expect(options.find((option) => option.value.targetPlayerId === '2')?._ai?.relationToActor).toBe('ally');
+            expect(options.find((option) => option.value.targetPlayerId === '1')?._ai?.relationToActor).toBe('enemy');
+
+            const interaction = createSimpleChoice(
+                `smashup-ai-team-player-target-${effectIntent}`,
+                '0',
+                effectIntent === 'buff' ? '选择获得增益的队友' : '选择承受减益的敌人',
+                options,
+                {
+                    sourceId: `smashup_ai_team_player_target_${effectIntent}`,
+                    targetType: 'player',
+                },
+            );
+            stateForAi.sys.interaction = {
+                ...stateForAi.sys.interaction,
+                current: interaction,
+                queue: [],
+            };
+            return stateForAi;
+        };
+
+        for (const effectIntent of ['buff', 'debuff'] as const) {
+            const stateForAi = buildTeamStateWithPlayerTargetInteraction(effectIntent);
+            const legalActions = buildSmashUpAiLegalActions({
+                playerId: '0',
+                state: stateForAi,
+            });
+            const decision = await smashUpAiRuntime.localPolicies!.baseline.decide({
+                gameId: 'smashup',
+                matchId: `test-smashup-ai-team-player-target-${effectIntent}`,
+                playerId: '0',
+                visibleState: stateForAi,
+                interaction: null,
+                responseWindow: null,
+                legalActions,
+                rulesVersion: null,
+                decisionBudgetMs: 250,
+                difficulty: resolveAiDifficultyProfile('expert'),
+                source: 'local',
+            });
+            const chosenAction = legalActions.find((action) => action.actionId === decision?.actionId);
+
+            expect(chosenAction?.kind).toBe('interaction-choice');
+            expect((chosenAction?.metadata?.optionValue as { targetPlayerId?: string } | undefined)?.targetPlayerId).toBe(
+                effectIntent === 'buff' ? '2' : '1',
+            );
+        }
+    });
+
     it('Smash Up baseline AI 在 pirate_broadside 两步链里会先选基地，再优先点敌方目标', async () => {
         const core = makeState({
             currentPlayerIndex: 0,

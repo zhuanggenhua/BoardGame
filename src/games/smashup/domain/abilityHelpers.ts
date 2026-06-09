@@ -16,6 +16,7 @@ import type {
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
+import { getSmashUpRelationToPlayer } from './teamMode';
 import { isMinionProtected, isMinionProtectedNonConsumable, type ProtectionType } from './ongoingEffects';
 import { collectBaseAbilityTriggers } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
@@ -1622,6 +1623,7 @@ function inferMinionEffectIntent(
 }
 
 function buildMinionTargetAiHint(args: {
+    state: Pick<SmashUpCore, 'seatOrder' | 'players' | 'turnOrder' | 'teamMode'>;
     minion: MinionOnBase;
     sourcePlayerId: PlayerId;
     effectType?: MinionTargetEffectType;
@@ -1634,6 +1636,11 @@ function buildMinionTargetAiHint(args: {
         targetKind: 'minion',
         targetOwnerId: args.minion.owner,
         targetControllerId: args.minion.controller,
+        relationResolver: ({ actorPlayerId, targetPlayerId }) => getSmashUpRelationToPlayer(
+            args.state,
+            actorPlayerId as PlayerId | undefined,
+            targetPlayerId as PlayerId | undefined,
+        ),
     });
 }
 
@@ -1648,11 +1655,20 @@ export function buildPlayerTargetOptions<TExtraValue extends Record<string, unkn
         forcedTargetPolicy?: AiHint['forcedTargetPolicy'];
     }>,
     context: {
+        state?: Pick<SmashUpCore, 'seatOrder' | 'players' | 'turnOrder' | 'teamMode'>;
         sourcePlayerId: PlayerId;
         effectIntent?: AiEffectIntent;
         derivedFrom?: AiHint['derivedFrom'];
     },
 ): EnginePromptOption<{ targetPlayerId: PlayerId } & TExtraValue>[] {
+    const relationResolver = context.state
+        ? ({ actorPlayerId, targetPlayerId }: { actorPlayerId?: string; targetPlayerId?: string }) => getSmashUpRelationToPlayer(
+            context.state,
+            actorPlayerId as PlayerId | undefined,
+            targetPlayerId as PlayerId | undefined,
+        )
+        : undefined;
+
     return candidates.map((candidate, index) => ({
         id: candidate.id ?? `player-${index}`,
         label: candidate.label,
@@ -1669,6 +1685,7 @@ export function buildPlayerTargetOptions<TExtraValue extends Record<string, unkn
             priorityHint: candidate.priorityHint,
             forcedTargetPolicy: candidate.forcedTargetPolicy,
             derivedFrom: context.derivedFrom ?? 'inferred',
+            ...(relationResolver ? { relationResolver } : {}),
         }),
     }));
 }
@@ -1778,6 +1795,7 @@ export function buildMinionTargetOptions(
             },
             _source: 'field' as const,
             _ai: buildMinionTargetAiHint({
+                state,
                 minion,
                 sourcePlayerId,
                 effectType,
