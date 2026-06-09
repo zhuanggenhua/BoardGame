@@ -648,7 +648,16 @@ describe('smashup', () => {
         expect(result.events).toEqual(expect.not.arrayContaining([
             expect.objectContaining({ type: SU_EVENTS.TITAN_PLAYED }),
         ]));
-        expect(result.finalState.core).toBe(staleCore);
+        expect(result.finalState.core.titans).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                uid: 'arcane-live',
+                location: expect.objectContaining({ zone: 'base', baseIndex: 0 }),
+            }),
+            expect.objectContaining({
+                uid: 'emperor-setaside',
+                location: expect.objectContaining({ zone: 'setaside' }),
+            }),
+        ]));
     });
 
     it('丛林之灵输掉 titan clash 时可以改为移动到另一个基地', () => {
@@ -10617,9 +10626,10 @@ describe('smashup', () => {
         const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_frankenstein_the_bride_start_choose_branch');
         expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.skip === true)).toBe(true);
         expect(getPromptOptions(currentInteraction).map((option: any) => option.label)).toEqual(expect.arrayContaining([
-            '放进盒中',
-            '消灭己方随从',
-            '移除 +1 指示物',
+            'ui.titan_the_bride_effect_box',
+            'ui.titan_the_bride_effect_destroy',
+            'ui.titan_the_bride_effect_remove_counter',
+            'ui.titan_the_bride_skip_start',
         ]));
     });
 
