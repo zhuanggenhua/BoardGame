@@ -25,9 +25,10 @@ export function injectSimpleChoiceBlockingInteraction<TCore>(
             args.id,
             args.playerId,
             args.title ?? '阻塞交互',
-            (args.options ?? [{ id: 'ok', label: '确认', value: {} }]).map((option) => ({
+            (args.options ?? [{ id: 'ok', label: '确认', labelKey: 'common:button.confirm', value: {} }]).map((option) => ({
                 id: option.id,
                 label: option.label ?? option.id,
+                labelKey: 'common:button.confirm',
                 value: option.value ?? {},
             })),
             args.sourceId ? { sourceId: args.sourceId } : undefined,
