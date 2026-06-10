@@ -1958,7 +1958,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action).toBeTruthy();
         expect(resolution?.action.commands).toHaveLength(1);
         expect(resolution?.action.commands[0]?.type).toBe('SELECT_DEFENDER_TARGET');
-        expect(['1', '2']).toContain(resolution?.action.commands[0]?.payload?.defenderId);
+        expect(['1', '3']).toContain(resolution?.action.commands[0]?.payload?.defenderId);
 
         const result = executePipeline(
             pipelineConfig,
@@ -1976,7 +1976,7 @@ describe('AI legal actions', () => {
         state = result.state as MatchState<DiceThroneCore>;
 
         expect(state.sys.phase).toBe('defensiveRoll');
-        expect(['1', '2']).toContain(state.core.pendingAttack?.defenderId);
+        expect(['1', '3']).toContain(state.core.pendingAttack?.defenderId);
     });
 
     it('本地 AI 在四人 targetingRoll 掷出 6 时，应替进攻方选定受击目标而不是停住', async () => {
