@@ -9,7 +9,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { getAllCardDefs, getAllBaseDefs, getCardDef, getFactionCards, resolveCardName, resolveCardText } from '../data/cards';
 import { resolveI18nKeys, resolveI18nParams, resolvePromptText } from '../ui/PromptOverlay';
-import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 
 describe('SmashUp 卡牌 i18n 完整性', () => {
   const zhCN = JSON.parse(
@@ -202,6 +202,30 @@ describe('SmashUp 卡牌 i18n 完整性', () => {
     expect(en.cards.dino_armor_stego_pod.abilityText).not.toBe(en.cards.dino_armor_stego.abilityText);
     expect(en.cards.dino_tooth_and_claw_pod.effectText).not.toBe(en.cards.dino_tooth_and_claw.effectText);
     expect(en.cards.ninja_infiltrate_pod.effectText).not.toBe(en.cards.ninja_infiltrate.effectText);
+  });
+
+  it('Pretty Pretty 的猫咪与小马卡组按实际卡图索引注册', () => {
+    const kittyCards = getFactionCards(SMASHUP_FACTION_IDS.KITTY_CATS);
+    const horseCards = getFactionCards(SMASHUP_FACTION_IDS.MYTHIC_HORSES);
+
+    expect(kittyCards.reduce((total, card) => total + card.count, 0)).toBe(20);
+    expect(horseCards.reduce((total, card) => total + card.count, 0)).toBe(20);
+
+    expect(getCardDef('kitty_cats_can_has_cheeseburger')?.previewRef).toEqual({
+      type: 'atlas',
+      atlasId: SMASHUP_ATLAS_IDS.CARDS8,
+      index: 11,
+    });
+    expect(getCardDef('mythic_horses_teaching_power')?.previewRef).toEqual({
+      type: 'atlas',
+      atlasId: SMASHUP_ATLAS_IDS.CARDS8,
+      index: 12,
+    });
+    expect(getCardDef('mythic_horses_rainbow')?.previewRef).toEqual({
+      type: 'atlas',
+      atlasId: SMASHUP_ATLAS_IDS.CARDS8,
+      index: 23,
+    });
   });
 
   it('resolveI18nKeys 能解析反应队列中的卡名和时机 key', () => {

@@ -57,6 +57,8 @@ import { SKELETONS_CARDS } from './factions/skeletons';
 import { WORLD_CHAMPS_CARDS } from './factions/world_champs';
 import { FAIRIES_CARDS } from './factions/fairies';
 import { HULUWAWA_CARDS } from './factions/huluwawa';
+import { KITTY_CATS_CARDS } from './factions/kitty_cats';
+import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
@@ -192,6 +194,8 @@ registerCards(SKELETONS_CARDS);
 registerCards(WORLD_CHAMPS_CARDS);
 registerCards(FAIRIES_CARDS);
 registerCards(HULUWAWA_CARDS);
+registerCards(KITTY_CATS_CARDS);
+registerCards(MYTHIC_HORSES_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(TORNADOS_CARDS);
@@ -461,7 +465,7 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
         nameEn: 'Cat Fanciers’ Alley',
         breakpoint: 18,
         vpAwards: [3, 2, 1],
-        faction: 'kitty_cats',
+        faction: SMASHUP_FACTION_IDS.KITTY_CATS,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE3, index: 0 },
     },
     {
@@ -470,7 +474,7 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
         nameEn: 'House of Nine Lives',
         breakpoint: 20,
         vpAwards: [4, 2, 1],
-        faction: 'kitty_cats',
+        faction: SMASHUP_FACTION_IDS.KITTY_CATS,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE3, index: 1 },
     },
     // Fairies
@@ -519,7 +523,7 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
         nameEn: 'Land of Balance',
         breakpoint: 25,
         vpAwards: [5, 3, 2],
-        faction: 'mythic_horses',
+        faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE3, index: 6 },
     },
     {
@@ -528,7 +532,7 @@ export const BASE_CARDS_PRETTY_PRETTY: BaseCardDef[] = [
         nameEn: 'Pony Paradise',
         breakpoint: 18,
         vpAwards: [3, 2, 1],
-        faction: 'mythic_horses',
+        faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE3, index: 7 },
     },
 ];
