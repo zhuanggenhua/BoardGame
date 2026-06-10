@@ -33,6 +33,7 @@ import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
 import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
+import { HomeEntry } from './pages/HomeEntry';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
@@ -40,7 +41,6 @@ const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 const MatchRoom = React.lazy(() => import('./pages/MatchRoomWithAudio'));
 const LocalMatchRoom = React.lazy(() => import('./pages/LocalMatchRoomWithAudio'));
 const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'));
-const LazyHomeEntry = React.lazy(() => import('./pages/HomeEntry').then(m => ({ default: m.HomeEntry })));
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
@@ -174,11 +174,7 @@ const AppContent = () => {
                   <Routes>
                     <Route
                       path="/"
-                      element={(
-                        <React.Suspense fallback={null}>
-                          <LazyHomeEntry />
-                        </React.Suspense>
-                      )}
+                      element={<HomeEntry />}
                     />
                     <Route
                       path="/play/:gameId/match/:matchId"

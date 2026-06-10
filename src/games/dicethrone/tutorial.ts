@@ -83,9 +83,9 @@ export const DiceThroneTutorial: TutorialManifest = {
             requireAction: false,
             showMask: true,
             aiActions: [
-                { commandType: 'SELECT_CHARACTER', payload: { characterId: 'monk', initialDeckCardIds: TUTORIAL_INITIAL_DECK } },
+                { commandType: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'monk', initialDeckCardIds: TUTORIAL_INITIAL_DECK } },
                 { commandType: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: 'monk', initialDeckCardIds: AI_TUTORIAL_DECK } },
-                { commandType: 'HOST_START_GAME', payload: {} },
+                { commandType: 'HOST_START_GAME', playerId: '0', payload: {} },
             ],
             advanceOnEvents: [
                 { type: 'HOST_STARTED' },

@@ -1289,34 +1289,39 @@ function registerTricksterOngoingEffects(): void {
     // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随从
     registerTrigger('trickster_leprechaun', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
-        // 找到 leprechaun 所在基地
-        for (let i = 0; i < trigCtx.state.bases.length; i++) {
-            const base = trigCtx.state.bases[i];
-            // 只在同基地触?
-            if (i !== trigCtx.baseIndex) continue;
-            const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
-            if (!triggerMinion) continue;
-            const trigPower = getMinionPower(trigCtx.state, triggerMinion, i);
-            for (const leprechaun of base.minions.filter(m => matchesDefId(m.defId, 'trickster_leprechaun'))) {
-                // 只对其他玩家触发
-                if (leprechaun.controller === trigCtx.playerId) continue;
-                // 检查打出的随从力量是否低于 leprechaun
-                const lepPower = getMinionPower(trigCtx.state, leprechaun, i);
-                if (trigPower < lepPower) {
-                    return [{
-                        type: SU_EVENTS.MINION_DESTROYED,
-                        payload: {
-                            minionUid: trigCtx.triggerMinionUid,
-                            minionDefId: trigCtx.triggerMinionDefId,
-                            fromBaseIndex: i,
-                            ownerId: triggerMinion.owner,
-                            controllerId: triggerMinion.controller,
-                            destroyerId: leprechaun.controller,
-                            reason: 'trickster_leprechaun',
-                        },
-                        timestamp: trigCtx.now,
-                    }];
-                }
+        const baseIndex = trigCtx.baseIndex;
+        const base = trigCtx.state.bases[baseIndex];
+        if (!base) return [];
+
+        // queued runtime 若已指明 sourceCardUid，必须只结算该实例，不能回退到基地扫描顺序里的第一只基础版 Leprechaun。
+        const leprechauns = trigCtx.sourceCardUid
+            ? base.minions.filter(m => m.uid === trigCtx.sourceCardUid && matchesDefId(m.defId, 'trickster_leprechaun'))
+            : base.minions.filter(m => matchesDefId(m.defId, 'trickster_leprechaun'));
+        if (leprechauns.length === 0) return [];
+
+        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
+        if (!triggerMinion) return [];
+        const triggerPower = getMinionPower(trigCtx.state, triggerMinion, baseIndex);
+
+        for (const leprechaun of leprechauns) {
+            // 只对其他玩家触发
+            if (leprechaun.controller === trigCtx.playerId) continue;
+            // 检查打出的随从力量是否低于 leprechaun
+            const leprechaunPower = getMinionPower(trigCtx.state, leprechaun, baseIndex);
+            if (triggerPower < leprechaunPower) {
+                return [{
+                    type: SU_EVENTS.MINION_DESTROYED,
+                    payload: {
+                        minionUid: trigCtx.triggerMinionUid,
+                        minionDefId: trigCtx.triggerMinionDefId,
+                        fromBaseIndex: baseIndex,
+                        ownerId: triggerMinion.owner,
+                        controllerId: triggerMinion.controller,
+                        destroyerId: leprechaun.controller,
+                        reason: 'trickster_leprechaun',
+                    },
+                    timestamp: trigCtx.now,
+                }];
             }
         }
         return [];
