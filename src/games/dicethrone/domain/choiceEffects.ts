@@ -4,6 +4,7 @@
 
 import type { DiceThroneCore } from './types';
 import { TOKEN_IDS } from './ids';
+import { updatePendingAttackSettlementStage } from './utils';
 
 /**
  * Choice Effect 处理器上下文
@@ -61,7 +62,7 @@ export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceT
         }
         return {
             pendingAttack: {
-                ...context.state.pendingAttack,
+                ...updatePendingAttackSettlementStage(context.state.pendingAttack, 'preDamage')!,
                 defenderId,
                 targetingSelectionPending: false,
                 targetingSelectionResolved: true,
@@ -101,7 +102,7 @@ registerChoiceEffectHandler('use-crit', ({ state, playerId }) => {
             },
         },
         pendingAttack: {
-            ...state.pendingAttack,
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + 4,
             offensiveRollEndTokenResolved: true,
         },
@@ -128,7 +129,7 @@ registerChoiceEffectHandler('use-accuracy', ({ state, playerId }) => {
             },
         },
         pendingAttack: {
-            ...state.pendingAttack,
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             isDefendable: false,
             offensiveRollEndTokenResolved: true,
         },
@@ -154,7 +155,7 @@ registerChoiceEffectHandler('use-loaded', ({ state, playerId }) => {
             },
         },
         pendingAttack: {
-            ...state.pendingAttack,
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             offensiveRollEndTokenResolved: true,
         },
     };
@@ -169,7 +170,7 @@ registerChoiceEffectHandler('skip', ({ state }) => {
     // 标记 Token 选择已完成
     return {
         pendingAttack: {
-            ...state.pendingAttack,
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
             offensiveRollEndTokenResolved: true,
         },
     };

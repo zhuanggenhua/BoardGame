@@ -9,6 +9,7 @@ import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS } from './ids';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
+import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -186,6 +187,9 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     if (isCurrentAttackDamage && parleyStacks > 0) {
         return {
             ...state,
+            pendingAttack: state.pendingAttack
+                ? updatePendingAttackSettlementStage(state.pendingAttack, 'postDamagePending')
+                : state.pendingAttack,
             lastEffectSourceByPlayerId: sourceAbilityId
                 ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
                 : state.lastEffectSourceByPlayerId,
@@ -275,10 +279,10 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     let pendingAttack = state.pendingAttack;
     // 统一累计“本次攻击对防御方造成的净掉血”，作为 lastResolvedAttackDamage 的单一来源。
     if (pendingAttack && targetId === pendingAttack.defenderId) {
-        pendingAttack = {
+        pendingAttack = updatePendingAttackSettlementStage({
             ...pendingAttack,
             resolvedDamage: (pendingAttack.resolvedDamage ?? 0) + netHpLoss,
-        };
+        }, 'postDamagePending')!;
     }
 
     const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, hpAfter);
@@ -369,6 +373,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
         pendingAttack: {
             attackerId,
             defenderId,
+            settlementStage: defenderId === undefined ? 'targeting' : 'preDamage',
             isDefendable,
             sourceAbilityId,
             isUltimate,
@@ -511,7 +516,17 @@ export const handleAttackMadeUndefendable = (
     state: DiceThroneCore
 ): DiceThroneCore => {
     if (!state.pendingAttack) return state;
-    return { ...state, pendingAttack: { ...state.pendingAttack, isDefendable: false } };
+    const currentStage = getPendingAttackSettlementStage(state.pendingAttack);
+    const nextStage = currentStage === 'postDamagePending' || currentStage === 'readyToResolve'
+        ? currentStage
+        : 'preDamage';
+    return {
+        ...state,
+        pendingAttack: updatePendingAttackSettlementStage(
+            { ...state.pendingAttack, isDefendable: false },
+            nextStage,
+        ),
+    };
 };
 
 /**
@@ -739,7 +754,10 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
     state
 ) => {
     const pendingAttack = state.pendingAttack
-        ? { ...state.pendingAttack, damageResolved: true }
+        ? updatePendingAttackSettlementStage(
+            { ...state.pendingAttack, damageResolved: true },
+            'postDamagePending',
+        )
         : state.pendingAttack;
 
     return { ...state, pendingDamage: undefined, pendingAttack };

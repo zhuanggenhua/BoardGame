@@ -284,12 +284,18 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
  * params:
  * - sourceDefId: string — 触发源卡牌 defId
  * - position: { left: number; top: number } | undefined — 屏幕坐标（可选）
+ * - targetDefId: string | undefined — 被影响的目标卡牌 defId（可选）
+ * - effectLabel: string | undefined — 影响文案（如“消灭”）
+ * - highlightTone: 'info' | 'danger' | undefined — 提示色调
  */
 /** 持续效果/触发器激活渲染器（导出供特效预览使用） */
 export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
   const sourceDefId = event.params?.sourceDefId as string | undefined;
   const position = event.params?.position as { left: number; top: number } | undefined;
+  const targetDefId = event.params?.targetDefId as string | undefined;
+  const effectLabel = event.params?.effectLabel as string | undefined;
+  const highlightTone = event.params?.highlightTone as 'info' | 'danger' | undefined;
   const shouldRender = !!sourceDefId;
 
   const impactFired = useRef(false);
@@ -317,9 +323,12 @@ export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onC
   const t = i18next.getFixedT(null, 'game-smashup');
   const def = getCardDef(sourceDefId);
   const resolvedName = resolveCardName(def, t) || sourceDefId;
+  const targetDef = targetDefId ? getCardDef(targetDefId) : undefined;
+  const resolvedTargetName = targetDefId ? (resolveCardName(targetDef, t) || targetDefId) : undefined;
 
   // 默认位置：屏幕中上方
   const pos = position ?? { left: window.innerWidth / 2, top: window.innerHeight * 0.25 };
+  const isDangerTone = highlightTone === 'danger';
 
   return React.createElement(motion.div, {
     className: 'fixed pointer-events-none select-none flex flex-col items-center gap-1',
@@ -329,6 +338,7 @@ export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onC
       transform: 'translate(-50%, -50%)',
       zIndex: UI_Z_INDEX.overlayRaised,
     },
+    'data-testid': 'smashup-triggered-fx',
     initial: { opacity: 0, scale: 0.3, y: 10 },
     animate: { opacity: [0, 1, 1, 0], scale: [0.3, 1.1, 1, 0.8], y: [10, 0, 0, -40] },
     transition: { duration: 1.5, times: [0, 0.15, 0.6, 1], ease: 'easeOut' },
@@ -371,6 +381,20 @@ export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onC
         className: 'text-[0.7vw] font-bold text-amber-400 bg-amber-800/60 px-1.5 py-0.5 rounded',
       }, t('ui.triggered')),
     ),
+    resolvedTargetName && effectLabel
+      ? React.createElement(motion.div, {
+        className: `rounded-md px-3 py-1 text-[0.82vw] font-black shadow-lg border whitespace-nowrap ${
+          isDangerTone
+            ? 'bg-red-950/92 text-red-100 border-red-500/60'
+            : 'bg-sky-950/92 text-sky-100 border-sky-400/60'
+        }`,
+        style: { fontFamily: "'Caveat', 'Comic Sans MS', cursive" },
+        initial: { opacity: 0, y: 6, scale: 0.86 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { delay: 0.2, duration: 0.28, ease: [0.34, 1.56, 0.64, 1] },
+        'data-testid': 'smashup-triggered-fx-effect',
+      }, `${effectLabel} ${resolvedTargetName}`)
+      : null,
   );
 };
 

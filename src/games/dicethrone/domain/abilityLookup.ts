@@ -136,6 +136,19 @@ function hasEffectDamage(effects: AbilityEffect[]): boolean {
 }
 
 function effectNeedsSingleOpponentTarget(action: EffectAction): boolean {
+    if (action.type === 'rollDie') {
+        const branches = [
+            ...(action.conditionalEffects ?? []),
+            ...(action.defaultEffect ? [action.defaultEffect] : []),
+        ];
+        return branches.some((branch) => (
+            (typeof branch.unblockableDamage === 'number' && branch.unblockableDamage > 0)
+            || branch.grantStatus?.target === 'opponent'
+            || branch.grantToken?.target === 'opponent'
+            || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false)
+        ));
+    }
+
     if (action.target === 'opponent') {
         return true;
     }

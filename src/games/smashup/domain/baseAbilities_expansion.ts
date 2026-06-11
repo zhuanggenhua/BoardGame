@@ -54,6 +54,7 @@ import {
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
 } from './branchingChoice';
+import { reduce } from './reduce';
 import { executeAbilityProgram } from './abilityRuntime';
 import {
     createEffectDslProgram,

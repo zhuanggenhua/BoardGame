@@ -46,7 +46,13 @@ import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { buildDrawEvents } from './deckEvents';
 import { reduce } from './reducer';
-import { getGameMode, applyEvents, getPendingAttackExpectedDamage } from './utils';
+import {
+    getGameMode,
+    applyEvents,
+    getPendingAttackExpectedDamage,
+    buildPendingAttackResolvedEvent,
+    getPendingAttackSettlementStage,
+} from './utils';
 import { resolveEffectsToEvents } from './effects';
 import type { ResponseWindowOpenedEvent } from './events';
 import { createDamageCalculation } from '../../../engine/primitives';
@@ -602,6 +608,19 @@ function resolvePostAttackFollowUp(
     return { events, overrideNextPhase: 'main2' };
 }
 
+function appendPendingAttackResolvedEvent(
+    pendingAttack: DiceThroneCore['pendingAttack'],
+    events: GameEvent[],
+    commandType: string,
+    timestamp: number,
+): boolean {
+    if (!pendingAttack?.defenderId) {
+        return false;
+    }
+    events.push(buildPendingAttackResolvedEvent(pendingAttack, commandType, timestamp));
+    return true;
+}
+
 function resolveCursedPirateNoAttackPowderKegEvents(
     core: DiceThroneCore,
     commandType: string,
@@ -917,12 +936,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             }
 
             if (core.pendingAttack) {
-                if (pendingAttackNeedsTargetingRoll(core) && !core.pendingAttack.damageResolved && !core.pendingAttack.bonusDiceResolved) {
+                const pendingAttackStage = getPendingAttackSettlementStage(core.pendingAttack);
+                if (pendingAttackNeedsTargetingRoll(core) && pendingAttackStage === 'targeting') {
                     return { events, overrideNextPhase: 'targetingRoll' };
                 }
 
                 // 伤害已通过 Token 响应结算（autoContinue 重入），只执行 postDamage 效果
-                if (core.pendingAttack.damageResolved) {
+                if (pendingAttackStage === 'postDamagePending') {
                     // 闪避修正：完全闪避时 resolvedDamage 为 0，但攻击仍视为命中
                     // 将 resolvedDamage 设为基础伤害让 onHit 效果正确触发
                     const coreForPostDamage = getCoreForPostDamageAfterEvasion(core);
@@ -944,25 +964,18 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
+                    if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
+                        return { events, halt: true };
+                    }
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
-                // 奖励骰已通过 BONUS_DICE_SETTLED 结算（autoContinue 重入），
-                // 伤害已由 SKIP_BONUS_DICE_REROLL 的 DAMAGE_DEALT 事件应用，
-                // 只需生成 ATTACK_RESOLVED 并推进到 main2
-                if (core.pendingAttack.bonusDiceResolved) {
-                    if (!core.pendingAttack.defenderId) {
+                // 奖励骰收口、或 postDamage/withDamage 内挂起的后续选择已完成时，
+                // 主伤害都已落地；这里只需生成 ATTACK_RESOLVED 并推进到 main2。
+                if (pendingAttackStage === 'readyToResolve') {
+                    if (!appendPendingAttackResolvedEvent(core.pendingAttack, events, command.type, timestamp)) {
                         return { events, halt: true };
                     }
-                    const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = core.pendingAttack;
-                    const totalDamage = core.pendingAttack.resolvedDamage ?? 0;
-                    events.push({
-                        type: 'ATTACK_RESOLVED',
-                        payload: { attackerId, defenderId, sourceAbilityId, defenseAbilityId, totalDamage },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as AttackResolvedEvent);
-
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
@@ -1045,6 +1058,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
+                    if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
+                        return { events, halt: true };
+                    }
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
@@ -1147,7 +1163,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 targetingCore = applyEvents(targetingCore, [localResolvedEvent], reduce);
             }
 
-            if (autoDefenderId) {
+            if (autoDefenderId && !targetingCore.pendingAttack.defenderId) {
                 const targetResolvedEvent: DiceThroneEvent = {
                     type: 'DEFENDER_SELECTION_RESOLVED',
                     payload: {
@@ -1285,7 +1301,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return { events, halt: true };
             }
 
-            if (pendingAttack.damageResolved) {
+            const pendingAttackStage = getPendingAttackSettlementStage(pendingAttack);
+
+            if (pendingAttackStage === 'postDamagePending') {
                 const coreForPostDamage = getCoreForPostDamageAfterEvasion(targetingCore);
                 const isFullyEvaded = coreForPostDamage !== targetingCore;
                 const postDamageEvents = resolvePostDamageEffects(coreForPostDamage, random, timestamp);
@@ -1302,19 +1320,16 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
+                if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
+                    return { events, halt: true };
+                }
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
-            if (pendingAttack.bonusDiceResolved) {
-                const { attackerId: resolvedAttackerId, defenderId, sourceAbilityId, defenseAbilityId } = pendingAttack;
-                const totalDamage = pendingAttack.resolvedDamage ?? 0;
-                events.push({
-                    type: 'ATTACK_RESOLVED',
-                    payload: { attackerId: resolvedAttackerId, defenderId, sourceAbilityId, defenseAbilityId, totalDamage },
-                    sourceCommandType: command.type,
-                    timestamp,
-                } as AttackResolvedEvent);
-
+            if (pendingAttackStage === 'readyToResolve') {
+                if (!appendPendingAttackResolvedEvent(pendingAttack, events, command.type, timestamp)) {
+                    return { events, halt: true };
+                }
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
@@ -1383,6 +1398,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
+                if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
+                    return { events, halt: true };
+                }
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
@@ -1437,8 +1455,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
         // ========== defensiveRoll 阶段退出 ==========
         if (from === 'defensiveRoll') {
             if (core.pendingAttack) {
+                const pendingAttackStage = getPendingAttackSettlementStage(core.pendingAttack);
                 // 如果伤害已通过 Token 响应结算，只执行 postDamage 效果
-                if (core.pendingAttack.damageResolved) {
+                if (pendingAttackStage === 'postDamagePending') {
                     // 闪避修正：完全闪避时 resolvedDamage 为 0，但攻击仍视为命中
                     // 将 resolvedDamage 设为基础伤害让 onHit 效果正确触发
                     const coreForPostDamage = getCoreForPostDamageAfterEvasion(core);
@@ -1460,25 +1479,18 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
+                    if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
+                        return { events, halt: true };
+                    }
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
-                // 奖励骰已通过 BONUS_DICE_SETTLED 结算（autoContinue 重入），
-                // 伤害已由 SKIP_BONUS_DICE_REROLL 的 DAMAGE_DEALT 事件应用，
-                // 只需生成 ATTACK_RESOLVED 并推进到 main2
-                if (core.pendingAttack.bonusDiceResolved) {
-                    if (!core.pendingAttack.defenderId) {
+                // 奖励骰收口、或 postDamage/withDamage 内挂起的后续选择已完成时，
+                // 主伤害都已落地；这里只需生成 ATTACK_RESOLVED 并推进到 main2。
+                if (pendingAttackStage === 'readyToResolve') {
+                    if (!appendPendingAttackResolvedEvent(core.pendingAttack, events, command.type, timestamp)) {
                         return { events, halt: true };
                     }
-                    const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = core.pendingAttack;
-                    const totalDamage = core.pendingAttack.resolvedDamage ?? 0;
-                    events.push({
-                        type: 'ATTACK_RESOLVED',
-                        payload: { attackerId, defenderId, sourceAbilityId, defenseAbilityId, totalDamage },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as AttackResolvedEvent);
-
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
                 
@@ -1686,6 +1698,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && core.pendingAttack !== undefined
                 && core.pendingAttack.targetingSelectionPending === true;
 
+            const pendingAttackFollowUpChoice = hasSysInteractionResolved
+                && core.pendingAttack !== null
+                && core.pendingAttack !== undefined
+                && typeof core.pendingAttack.sourceAbilityId === 'string'
+                && core.pendingAttack.sourceAbilityId.length > 0
+                && core.currentChoiceSourceAbilityId === core.pendingAttack.sourceAbilityId;
+
             const pendingTreantDivinePreventDebuffChoice = hasSysInteractionResolved
                 && phase === 'offensiveRoll'
                 && resolvedTreantDivinePreventDebuffChoice
@@ -1698,7 +1717,16 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 || hasTokenResponseClosed;
             if (!shouldAttemptAutoContinue) return undefined;
             
-            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !hasPendingBonusDice && !pendingOffensiveTokenChoice && !pendingTargetingChoice && !pendingTreantDivinePreventDebuffChoice) {
+            if (
+                !hasActiveInteraction
+                && !hasActiveResponseWindow
+                && !hasPendingDamage
+                && !hasPendingBonusDice
+                && !pendingOffensiveTokenChoice
+                && !pendingTargetingChoice
+                && !pendingAttackFollowUpChoice
+                && !pendingTreantDivinePreventDebuffChoice
+            ) {
                 // autoContinue 的 playerId 必须与 getCurrentPlayerId 返回值一致，
                 // 否则 FlowSystem.afterEvents 中的 player_mismatch 校验会拒绝推进。
                 // defensiveRoll 阶段由防御方（getRollerId）推进，offensiveRoll 由进攻方推进。

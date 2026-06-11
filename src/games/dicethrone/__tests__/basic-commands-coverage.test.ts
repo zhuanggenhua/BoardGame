@@ -3546,6 +3546,45 @@ describe('AI legal actions', () => {
         ).toBe(true);
     });
 
+    it('本地 AI 在紧缚且 0CP 无法继续重投时，不应继续锁骰循环', async () => {
+        const state = createHeroMatchup('zhanshujia', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 2;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].statusEffects[STATUS_IDS.BIND] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        state.core.dice = [
+            { id: 0, value: 6, symbol: 'medal', isKept: false },
+            { id: 1, value: 3, symbol: 'sabre', isKept: false },
+            { id: 2, value: 3, symbol: 'sabre', isKept: false },
+            { id: 3, value: 3, symbol: 'sabre', isKept: true },
+            { id: 4, value: 6, symbol: 'medal', isKept: false },
+        ];
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'toggle-die-lock')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'roll-dice')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'confirm-roll')).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-bind-zero-cp-confirm',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('confirm-roll');
+    });
+
     it('远程 AI 在可见大动作决策点应调用 provider', async () => {
         const providerId = 'test-remote-major-visible';
         const decide = vi.fn(async (context) => {

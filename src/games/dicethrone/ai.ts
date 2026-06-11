@@ -167,6 +167,17 @@ const isCommandValid = (state: DiceThroneState, playerId: PlayerId, type: string
     return result.valid;
 };
 
+const isOffensiveRollRerollBlockedByBindCp = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): boolean => {
+    if (phase !== 'offensiveRoll') return false;
+    const bindStacks = state.core.players[playerId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+    const currentCp = state.core.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+    return bindStacks > 0 && state.core.rollCount > 0 && currentCp < 1;
+};
+
 const appendAction = (
     actions: AiLegalAction[],
     state: DiceThroneState,
@@ -1886,6 +1897,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
     const actions: AiLegalAction[] = [];
     const player = state.core.players[playerId];
     if (!player) return actions;
+    const rerollBlockedByBindCp = isOffensiveRollRerollBlockedByBindCp(state, playerId, phase);
 
     if (phase === 'discard') {
         // 规则口径（Rulepop）：弃牌阶段应"卖牌得 CP"而非纯弃牌。
@@ -1923,6 +1935,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
         (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll')
         && state.core.rollCount < state.core.rollLimit
         && !state.core.rollConfirmed
+        && !rerollBlockedByBindCp
     ) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('roll', 'dice'),
@@ -1947,7 +1960,11 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
 
     if (phase === 'offensiveRoll' || phase === 'defensiveRoll') {
         const offensiveAttackAlreadyInitiated = phase === 'offensiveRoll' && Boolean(state.core.pendingAttack);
-        if (phase === 'offensiveRoll' && state.core.rollCount > 0 && !state.core.rollConfirmed) {
+        if (phase === 'offensiveRoll'
+            && state.core.rollCount > 0
+            && !state.core.rollConfirmed
+            && !rerollBlockedByBindCp
+        ) {
             for (const die of getActiveDice(state.core)) {
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('toggle-die-lock', die.id, die.isKept ? 'unlock' : 'lock'),
@@ -2864,6 +2881,7 @@ const dicePlanScorer: LocalAiActionScorer = {
             const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
             return shouldKeep !== die.isKept;
         }).length;
+        const rerollBlockedByBindCp = isOffensiveRollRerollBlockedByBindCp(state, context.playerId, phase);
 
         if (action.kind === 'toggle-die-lock') {
             const dieId = typeof action.metadata?.dieId === 'number' ? action.metadata.dieId : null;
@@ -2871,6 +2889,12 @@ const dicePlanScorer: LocalAiActionScorer = {
             if (!die) return null;
             const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
             if (shouldKeep === die.isKept) return null;
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: -240,
+                    reason: '紧缚且 CP 不足，已经不能继续重投，锁骰调整没有收益',
+                };
+            }
 
             return {
                 score: shouldKeep ? 175 : 135,
@@ -2885,6 +2909,12 @@ const dicePlanScorer: LocalAiActionScorer = {
                 return {
                     score: 45,
                     reason: '先拿到第一手骰面，再决定锁骰与重投路线',
+                };
+            }
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: -220,
+                    reason: '紧缚要求额外消耗 CP，但当前 CP 不足，不能继续重投',
                 };
             }
             if (pendingToggleCount > 0) {
@@ -2912,6 +2942,12 @@ const dicePlanScorer: LocalAiActionScorer = {
         }
 
         if (action.kind === 'confirm-roll') {
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: 160,
+                    reason: '紧缚且 CP 不足，无法继续重投，应直接确认当前骰面',
+                };
+            }
             if (pendingToggleCount > 0) {
                 return {
                     score: -180,
@@ -4264,6 +4300,28 @@ function shouldUseRemoteDecisionForDiceThrone(context: AiDecisionContext): boole
     return context.legalActions.some((action) => REMOTE_VISIBLE_MAJOR_ACTION_KINDS.has(action.kind));
 }
 
+function refineDiceThroneAiAction(args: {
+    context: AiDecisionContext;
+    proposedAction: AiLegalAction;
+}): AiLegalAction {
+    const phase = getContextPhase(args.context);
+    if (
+        (args.proposedAction.kind === 'toggle-die-lock' || args.proposedAction.kind === 'roll-dice')
+        && isOffensiveRollRerollBlockedByBindCp(
+            args.context.visibleState as DiceThroneState,
+            args.context.playerId,
+            phase,
+        )
+    ) {
+        const confirmRollAction = args.context.legalActions.find((action) => action.kind === 'confirm-roll');
+        if (confirmRollAction) {
+            return confirmRollAction;
+        }
+    }
+
+    return args.proposedAction;
+}
+
 export const diceThroneAiRuntime: GameAiRuntime = {
     gameId: 'dicethrone',
     buildLegalActions: buildDiceThroneAiLegalActions,
@@ -4284,5 +4342,11 @@ export const diceThroneAiRuntime: GameAiRuntime = {
         baseline: defaultLocalPolicy,
     },
     defaultLocalPolicyId: 'baseline',
+    refineAiAction({ context, proposedAction }) {
+        return refineDiceThroneAiAction({
+            context,
+            proposedAction,
+        });
+    },
     shouldUseRemoteDecision: shouldUseRemoteDecisionForDiceThrone,
 };

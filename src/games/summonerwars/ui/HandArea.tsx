@@ -141,6 +141,7 @@ const HandCard: React.FC<{
   isSelected: boolean;
   canAfford: boolean;
   canPlay: boolean;
+  magnifyAriaLabel: string;
   onClick?: () => void;
   onMagnify?: () => void;
   onPointerDown?: React.PointerEventHandler<HTMLDivElement>;
@@ -157,6 +158,7 @@ const HandCard: React.FC<{
   isSelected,
   canAfford,
   canPlay,
+  magnifyAriaLabel,
   onClick,
   onMagnify,
   onPointerDown,
@@ -291,7 +293,7 @@ const HandCard: React.FC<{
         <div
           role="button"
           tabIndex={0}
-          aria-label={t('actions.magnify')}
+          aria-label={magnifyAriaLabel}
           onClick={handleMagnifyClick}
           onKeyDown={handleMagnifyKeyDown}
           data-testid="sw-hand-card-magnify"
@@ -582,6 +584,7 @@ export const HandArea: React.FC<HandAreaProps> = ({
                   isSelected={isSelected}
                   canAfford={canAfford}
                   canPlay={canPlay}
+                  magnifyAriaLabel={t('actions.magnify')}
                   onClick={() => handleCardClick(card.id)}
                   onMagnify={() => onMagnifyCard?.(card)}
                   onPointerDown={(event) => handleTouchLongPressStart(event, card.id, card)}

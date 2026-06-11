@@ -31,7 +31,12 @@ export function applyEvents<TState, TEvent>(
 // 伤害计算辅助
 // ============================================================================
 
-import type { DiceThroneCore, PendingAttack } from './types';
+import type {
+    AttackResolvedEvent,
+    DiceThroneCore,
+    PendingAttack,
+    PendingAttackSettlementStage,
+} from './types';
 import { getPlayerAbilityBaseDamage } from './abilityLookup';
 
 /**
@@ -61,6 +66,64 @@ export function getPendingAttackExpectedDamage(
     }
 
     return baseDamage + (bonusDamage ?? 0);
+}
+
+export function getPendingAttackSettlementStage(
+    pendingAttack: PendingAttack | null | undefined,
+): PendingAttackSettlementStage | undefined {
+    if (!pendingAttack) return undefined;
+    if (pendingAttack.settlementStage) return pendingAttack.settlementStage;
+
+    if (pendingAttack.postDamageFollowUpResolved || pendingAttack.bonusDiceResolved) {
+        return 'readyToResolve';
+    }
+    if (pendingAttack.damageResolved) {
+        return 'postDamagePending';
+    }
+    if (
+        pendingAttack.targetingSelectionPending === true
+        || (pendingAttack.defenderId === undefined && pendingAttack.targetingSelectionResolved !== true)
+    ) {
+        return 'targeting';
+    }
+    return 'preDamage';
+}
+
+export function isPendingAttackInStage(
+    pendingAttack: PendingAttack | null | undefined,
+    stage: PendingAttackSettlementStage,
+): boolean {
+    return getPendingAttackSettlementStage(pendingAttack) === stage;
+}
+
+export function updatePendingAttackSettlementStage(
+    pendingAttack: PendingAttack | null | undefined,
+    stage: PendingAttackSettlementStage,
+): PendingAttack | null | undefined {
+    if (!pendingAttack) return pendingAttack;
+    return {
+        ...pendingAttack,
+        settlementStage: stage,
+    };
+}
+
+export function buildPendingAttackResolvedEvent(
+    pendingAttack: PendingAttack,
+    sourceCommandType: string,
+    timestamp: number,
+): AttackResolvedEvent {
+    return {
+        type: 'ATTACK_RESOLVED',
+        payload: {
+            attackerId: pendingAttack.attackerId,
+            defenderId: pendingAttack.defenderId,
+            sourceAbilityId: pendingAttack.sourceAbilityId,
+            defenseAbilityId: pendingAttack.defenseAbilityId,
+            totalDamage: pendingAttack.resolvedDamage ?? 0,
+        },
+        sourceCommandType,
+        timestamp,
+    };
 }
 
 // ============================================================================

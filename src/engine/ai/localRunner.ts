@@ -120,6 +120,30 @@ function shouldUseRemoteDecision(args: {
     }
 }
 
+function refineAiAction(args: {
+    runtime: ReturnType<typeof getGameAiRuntime>;
+    context: ReturnType<typeof buildAiDecisionContext>;
+    proposedAction: AiLegalAction | null;
+    source: 'local-policy' | 'local-fallback' | 'remote-ai' | 'remote-ai-fallback';
+}): AiLegalAction | null {
+    if (!args.proposedAction) return null;
+    const refiner = args.runtime?.refineAiAction;
+    if (!refiner) {
+        return args.proposedAction;
+    }
+
+    try {
+        const refinedAction = refiner({
+            context: args.context,
+            proposedAction: args.proposedAction,
+            source: args.source,
+        });
+        return refinedAction === undefined ? args.proposedAction : refinedAction;
+    } catch {
+        return args.proposedAction;
+    }
+}
+
 function buildAttemptKey(args: {
     state: MatchState<unknown>;
     playerId: string;
@@ -564,13 +588,23 @@ export async function resolveNextAiDispatch(
             let action: AiLegalAction | null = null;
             try {
                 const decision = await policy.decide(context);
-                action = resolveAiActionDecision(context, decision);
+                action = refineAiAction({
+                    runtime,
+                    context,
+                    proposedAction: resolveAiActionDecision(context, decision),
+                    source: 'local-policy',
+                });
             } catch {
                 action = null;
             }
 
             if (!action) {
-                action = context.legalActions[0] ?? null;
+                action = refineAiAction({
+                    runtime,
+                    context,
+                    proposedAction: context.legalActions[0] ?? null,
+                    source: 'local-fallback',
+                });
             }
             if (!action) continue;
 
@@ -590,10 +624,15 @@ export async function resolveNextAiDispatch(
             context,
             seatController,
         })) {
-            const action = await resolveRemoteFallbackAction({
-                runtimeGameId: args.engineConfig.gameId,
-                seatController,
+            const action = refineAiAction({
+                runtime,
                 context,
+                proposedAction: await resolveRemoteFallbackAction({
+                    runtimeGameId: args.engineConfig.gameId,
+                    seatController,
+                    context,
+                }),
+                source: 'remote-ai-fallback',
             });
             if (!action) continue;
 
@@ -613,13 +652,19 @@ export async function resolveNextAiDispatch(
             seatController,
             context,
         });
-        if (!remoteResolution.action) continue;
+        const remoteAction = refineAiAction({
+            runtime,
+            context,
+            proposedAction: remoteResolution.action,
+            source: remoteResolution.usedFallback ? 'remote-ai-fallback' : 'remote-ai',
+        });
+        if (!remoteAction) continue;
 
         return {
             kind: 'action',
             resolution: {
                 playerId,
-                action: remoteResolution.action,
+                action: remoteAction,
                 attemptKey,
                 source: remoteResolution.usedFallback ? 'remote-ai-fallback' : 'remote-ai',
             },

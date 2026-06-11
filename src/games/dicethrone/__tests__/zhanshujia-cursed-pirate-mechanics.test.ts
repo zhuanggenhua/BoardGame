@@ -13,7 +13,7 @@ import { createPendingDamage, finalizeTokenResponse } from '../domain/tokenRespo
 import { RESOURCE_IDS } from '../domain/resources';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../domain/ids';
 import type { CharacterId, DiceThroneCommand, DiceThroneCore, DiceThroneEvent, TurnPhase } from '../domain/types';
-import { getCharacterAbilitiesForFace, initHeroState } from '../domain/characters';
+import { createCharacterDice, getCharacterAbilitiesForFace, initHeroState } from '../domain/characters';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
@@ -323,6 +323,25 @@ const requestPowderKegTransferChoice = () => {
         events: phaseEvents,
         state: afterEvents.state as MatchState<DiceThroneCore>,
     };
+};
+
+const setupFourPlayerHumanAstonishingState = () => {
+    const state = createFourPlayerCursedPirateState();
+    setPlayerBoardFace(state, '0', 'normal');
+    state.sys.phase = 'offensiveRoll';
+    state.core.activePlayerId = '0';
+    state.core.rollCount = 1;
+    state.core.rollLimit = 3;
+    state.core.rollDiceCount = 5;
+    state.core.rollConfirmed = true;
+    state.core.dice = createCharacterDice('cursed_pirate');
+    state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+    state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+    state.core.players['2'].resources[RESOURCE_IDS.CP] = 5;
+    state.core.players['3'].resources[RESOURCE_IDS.CP] = 5;
+    state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 3;
+    setCursedPirateDiceValues(state, [1, 4, 6, 6, 6]);
+    return state;
 };
 
 describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
@@ -2941,6 +2960,45 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(accepted.state.core.players['3'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
     });
 
+    it('human 面做好标记在多人局会先进入索敌阶段，不会在索敌前先打到自己', () => {
+        const state = createFourPlayerCursedPirateState();
+        setPlayerBoardFace(state, '0', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = createCharacterDice('cursed_pirate');
+        setCursedPirateDiceValues(state, [4, 4, 4, 1, 2]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'make-your-mark' }),
+            fixedRandom,
+            ['0', '1', '2', '3'],
+        );
+        expect(selected.success).toBe(true);
+        const selfHpBefore = selected.state.core.players['0'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1', '2', '3'],
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('targetingRoll');
+        expect(advanced.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(selfHpBefore);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            sourceAbilityId: 'make-your-mark',
+            defenderId: undefined,
+        });
+    });
+
     it('human 面惊魂动魄可移除任意数量的诅咒金币', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core = applyEvents(state.core, [{
@@ -3029,6 +3087,136 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(resolved.state.core.pendingAttack).toBeNull();
         expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 7);
+    });
+
+    it.each([
+        {
+            name: '目标骰 1/2 自动锁左敌时',
+            targetingRoll: 2,
+            chooserPlayerId: undefined,
+            chosenDefenderId: '3',
+            expectedDamagedSeat: '3',
+        },
+        {
+            name: '目标骰 3/4 自动锁右敌时',
+            targetingRoll: 4,
+            chooserPlayerId: undefined,
+            chosenDefenderId: '1',
+            expectedDamagedSeat: '1',
+        },
+        {
+            name: '目标骰 5 由防守队选右敌时',
+            targetingRoll: 5,
+            chooserPlayerId: '3',
+            chosenDefenderId: '1',
+            expectedDamagedSeat: '1',
+        },
+        {
+            name: '目标骰 6 由进攻方选左敌时',
+            targetingRoll: 6,
+            chooserPlayerId: '0',
+            chosenDefenderId: '3',
+            expectedDamagedSeat: '3',
+        },
+    ])('human 面惊魂动魄在多人局 $name 只会结算 1 次 7 点攻击伤害', ({
+        targetingRoll,
+        chooserPlayerId,
+        chosenDefenderId,
+        expectedDamagedSeat,
+    }) => {
+        const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+        const state = setupFourPlayerHumanAstonishingState();
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'astonishing' }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+
+        const enteredTargeting = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(enteredTargeting.success).toBe(true);
+        expect(enteredTargeting.state.sys.phase).toBe('targetingRoll');
+
+        const targetingRandom = createQueuedRandom([targetingRoll]);
+        const rolled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            enteredTargeting.state,
+            command('ROLL_DICE', '0'),
+            targetingRandom,
+            playerIds,
+        );
+        expect(rolled.success).toBe(true);
+
+        const confirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            rolled.state,
+            command('CONFIRM_ROLL', '0'),
+            targetingRandom,
+            playerIds,
+        );
+        expect(confirmed.success).toBe(true);
+
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            confirmed.state,
+            command('ADVANCE_PHASE', '0'),
+            targetingRandom,
+            playerIds,
+        );
+        expect(advanced.success).toBe(true);
+
+        let postTargeting = advanced;
+        if (chooserPlayerId) {
+            expect(advanced.state.sys.interaction.current?.kind).toBe('dt:defender-choice');
+            expect(advanced.state.sys.interaction.current?.playerId).toBe(chooserPlayerId);
+            postTargeting = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                advanced.state,
+                command('SELECT_DEFENDER_TARGET', chooserPlayerId, { defenderId: chosenDefenderId }),
+                fixedRandom,
+                playerIds,
+            );
+            expect(postTargeting.success).toBe(true);
+        } else {
+            expect(advanced.state.core.pendingAttack?.defenderId).toBe(chosenDefenderId);
+        }
+
+        const damageEvents = eventsOfType(postTargeting.events, 'DAMAGE_DEALT');
+        expect(damageEvents).toHaveLength(1);
+        expect(damageEvents[0]?.payload).toMatchObject({
+            targetId: expectedDamagedSeat,
+            amount: 7,
+            actualDamage: 7,
+            sourceAbilityId: 'astonishing',
+        });
+
+        expect(postTargeting.state.core.teamHealth).toEqual({ A: 50, B: 43 });
+        expect(postTargeting.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
+        expect(postTargeting.state.core.players['3'].resources[RESOURCE_IDS.HP]).toBe(43);
+        expect(postTargeting.state.core.currentChoiceSourceAbilityId).toBe('astonishing');
+
+        const prompt = getSimpleChoicePrompt(postTargeting.state, 'astonishing');
+        const removeTwo = prompt.options[2];
+        expect(removeTwo).toBeDefined();
+
+        const resolved = respondToPrompt(postTargeting.state, removeTwo!.id, '0', fixedRandom, playerIds);
+        expect(resolved.success).toBe(true);
+        expect(eventsOfType(resolved.events, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(1);
+        expect(resolved.state.core.teamHealth).toEqual({ A: 50, B: 43 });
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(43);
+        expect(resolved.state.core.players['3'].resources[RESOURCE_IDS.HP]).toBe(43);
     });
 
     it('human 面无情劫掠会造成伤害、自得 2 个诅咒金币并施加休战和火药桶', () => {

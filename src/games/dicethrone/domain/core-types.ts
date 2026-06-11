@@ -213,9 +213,20 @@ export interface AbilityCard {
     isAttackModifier?: boolean;
 }
 
+export type PendingAttackSettlementStage =
+    | 'targeting'
+    | 'preDamage'
+    | 'postDamagePending'
+    | 'readyToResolve';
+
 export interface PendingAttack {
     attackerId: PlayerId;
     defenderId?: PlayerId;
+    /**
+     * 共享攻击结算的单一阶段真相源。
+     * 旧布尔位保留为兼容迁移字段，但共享 flow 应优先依据该阶段推进。
+     */
+    settlementStage?: PendingAttackSettlementStage;
     /** 2v2 目标掷骰 5/6 分支等待玩家确认目标时为 true */
     targetingSelectionPending?: boolean;
     targetingSelectionResolved?: boolean;
@@ -260,6 +271,11 @@ export interface PendingAttack {
     };
     /** 奖励骰是否已通过 BONUS_DICE_SETTLED 结算（避免 autoContinue 重入时重复执行 resolveAttack） */
     bonusDiceResolved?: boolean;
+    /**
+     * 主伤害已在攻击中途落地，且 postDamage/withDamage 内挂起的后续选择也已完成。
+     * 后续只需要生成 ATTACK_RESOLVED 收口，不应再次重放整段攻击或二次造成伤害。
+     */
+    postDamageFollowUpResolved?: boolean;
 }
 
 // ============================================================================

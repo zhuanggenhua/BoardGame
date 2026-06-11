@@ -17,7 +17,7 @@ import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
-import { removeCard } from './utils';
+import { removeCard, updatePendingAttackSettlementStage } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
@@ -233,7 +233,7 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     const isAttackBonusSettlement = state.pendingBonusDiceSettlement?.resolutionMode === 'attackBonus';
     // 仅“独立伤害型”奖励骰才标记 bonusDiceResolved。
     const pendingAttack = !isDisplayOnly && !isAttackBonusSettlement && state.pendingAttack
-        ? { ...state.pendingAttack, bonusDiceResolved: true }
+        ? updatePendingAttackSettlementStage({ ...state.pendingAttack, bonusDiceResolved: true }, 'readyToResolve')
         : state.pendingAttack;
     return { ...state, pendingBonusDiceSettlement: undefined, pendingAttack };
 };
@@ -531,6 +531,7 @@ const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { 
         ...state,
         pendingAttack: {
             ...state.pendingAttack,
+            settlementStage: 'targeting',
             targetingSelectionPending: true,
             targetingSelectionResolved: false,
         },
@@ -552,6 +553,7 @@ const handleDefenderSelectionResolved: EventHandler<Extract<DiceThroneEvent, { t
         pendingAttack: {
             ...state.pendingAttack,
             defenderId: event.payload.defenderId,
+            settlementStage: 'preDamage',
             targetingSelectionPending: false,
             targetingSelectionResolved: true,
         },
@@ -620,11 +622,21 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         }
     }
 
+    const tokenActiveUseTiming = tokenId
+        ? state.tokenDefinitions.find(def => def.id === tokenId)?.activeUse?.timing
+        : undefined;
+    const isOffensiveRollEndChoice = tokenId
+        && (
+            tokenActiveUseTiming === 'onOffensiveRollEnd'
+            || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+        );
+
     if (
         sourceAbilityId
         && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
+        && isOffensiveRollEndChoice
     ) {
         resultState = {
             ...resultState,
