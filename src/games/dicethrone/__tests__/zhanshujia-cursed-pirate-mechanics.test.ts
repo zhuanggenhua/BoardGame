@@ -26,6 +26,7 @@ import {
     createRunner,
     fixedRandom,
     getCardInteractionPrompt,
+    getDefenderChoicePrompt,
     getSimpleChoicePrompt,
     respondToPrompt,
     testSystems,
@@ -3176,8 +3177,9 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         let postTargeting = advanced;
         if (chooserPlayerId) {
-            expect(advanced.state.sys.interaction.current?.kind).toBe('dt:defender-choice');
-            expect(advanced.state.sys.interaction.current?.playerId).toBe(chooserPlayerId);
+            const defenderPrompt = getDefenderChoicePrompt(advanced.state, 'astonishing');
+            expect(defenderPrompt.playerId).toBe(chooserPlayerId);
+            expect(defenderPrompt.options.some(option => option.playerId === chosenDefenderId)).toBe(true);
             postTargeting = executePipeline(
                 { domain: DiceThroneDomain, systems: testSystems },
                 advanced.state,
