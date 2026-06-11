@@ -34,6 +34,7 @@ import { isNativeMobileRuntime } from './lib/mobile/mobileRuntime';
 import { HOME_V2_PREVIEW_PATH } from './lib/homeV2Routing';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 import { HomeEntry } from './pages/HomeEntry';
+import { GlobalHUD } from './components/system/GlobalHUD';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
@@ -44,7 +45,6 @@ const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'))
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
-const LazyGlobalHUD = React.lazy(() => import('./components/system/GlobalHUD').then(m => ({ default: m.GlobalHUD })));
 const LazyModalStackRoot = React.lazy(() => import('./components/system/ModalStackRoot').then(m => ({ default: m.ModalStackRoot })));
 const LazyToastViewport = React.lazy(() => import('./components/system/ToastViewport').then(m => ({ default: m.ToastViewport })));
 
@@ -109,11 +109,7 @@ const AppRouteChrome = ({
       <TextEntryAutoScrollAgent />
       <MobileTextEntryProxyLayer />
       <ViewportDebugProbe />
-      {!isPlayRoute ? (
-        <React.Suspense fallback={null}>
-          <LazyGlobalHUD />
-        </React.Suspense>
-      ) : null}
+      {!isPlayRoute ? <GlobalHUD /> : null}
       <React.Suspense fallback={null}>
         <LazyModalStackRoot />
       </React.Suspense>

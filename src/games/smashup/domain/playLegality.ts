@@ -7,9 +7,14 @@ import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
     actionLikePlayTargetMinionController,
+    canUseBaseLimitedMinionQuota,
+    canUseSameNameMinionQuota,
     getActionLikeResponseWindowTiming,
+    getMaxRemainingBaseLimitedPowerQuota,
+    getMaxRemainingGlobalPowerLimitedQuota,
     isCardMinionLike,
     mustUseBaseLimitedMinionQuota,
+    mustUseGlobalPowerLimitedMinionQuota,
 } from './utils';
 
 function isCurrentTurnPlayer(core: SmashUpCore, playerId: string): boolean {
@@ -36,6 +41,45 @@ export function getActionPlayRestrictionError(core: SmashUpCore, playerId: strin
     return null;
 }
 
+export function validateConsumableMinionQuota(
+    core: SmashUpCore,
+    playerId: string,
+    baseIndex: number,
+    cardDefId: string,
+    basePower: number,
+): ValidationResult {
+    const player = core.players[playerId];
+    if (!player) return { valid: false, error: '玩家不存在' };
+
+    const globalQuotaRemaining = player.minionLimit - player.minionsPlayed;
+    if (globalQuotaRemaining > 0) {
+        if (mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) {
+            const maxAllowedPower = getMaxRemainingGlobalPowerLimitedQuota(player);
+            if (maxAllowedPower !== undefined && basePower > maxAllowedPower) {
+                return { valid: false, error: `额外出牌只能打出力量≤${maxAllowedPower}的随从` };
+            }
+        }
+        return { valid: true };
+    }
+
+    if (canUseSameNameMinionQuota(player, cardDefId)) {
+        return { valid: true };
+    }
+
+    if (mustUseBaseLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) {
+        if (!canUseBaseLimitedMinionQuota(core, player, baseIndex, cardDefId, basePower)) {
+            const maxAllowedPower = getMaxRemainingBaseLimitedPowerQuota(player, baseIndex);
+            if (maxAllowedPower !== undefined && basePower > maxAllowedPower) {
+                return { valid: false, error: `额外出牌只能打出力量≤${maxAllowedPower}的随从` };
+            }
+            return { valid: false, error: '该基地禁止打出该随从' };
+        }
+        return { valid: true };
+    }
+
+    return { valid: false, error: '本回合随从额度已用完' };
+}
+
 export function validateDiscardMinionPlaySemantics(
     core: SmashUpCore,
     playerId: string,
@@ -53,16 +97,23 @@ export function validateDiscardMinionPlaySemantics(
         return { valid: false, error: '无效的基地索引' };
     }
 
-    if (consumesNormalLimit && player.minionsPlayed >= player.minionLimit) {
-        return { valid: false, error: '本回合随从额度已用完' };
-    }
-
     const discardCard = player.discard.find(card => card.uid === cardUid);
     if (!discardCard || !isCardMinionLike(discardCard)) {
         return { valid: false, error: '弃牌堆中没有该随从' };
     }
 
     const basePower = getMinionLikePower(discardCard.defId) ?? 0;
+    if (consumesNormalLimit) {
+        const quotaValidation = validateConsumableMinionQuota(
+            core,
+            playerId,
+            baseIndex,
+            discardCard.defId,
+            basePower,
+        );
+        if (!quotaValidation.valid) return quotaValidation;
+    }
+
     const usesBaseLimitedMinionQuota = consumesNormalLimit
         && mustUseBaseLimitedMinionQuota(core, player, baseIndex, discardCard.defId, basePower);
 

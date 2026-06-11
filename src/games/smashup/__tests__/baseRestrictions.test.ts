@@ -17,6 +17,7 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry, isOperationRestricted } from '../domain/ongoingEffects';
 import { validate } from '../domain/commands';
+import { validateDiscardMinionPlaySemantics } from '../domain/playLegality';
 import type { SmashUpCore, PlayerState, BaseInPlay, CardInstance } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
@@ -165,6 +166,40 @@ describe('base_the_homeworld: 母星力量限制（全局）', () => {
             payload: { cardUid: 'h1', baseIndex: 1 },
         } as any);  
         expect(r2.valid).toBe(true);
+    });
+
+    it('公共弃牌堆出牌校验：消耗额度时同样遵守 extraMinionPowerMax', () => {
+        const state = makeState({
+            bases: [makeBase('base_the_homeworld')],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                    extraMinionPowerMax: 2,
+                    extraMinionPowerCaps: [2],
+                    discard: [
+                        makeCard('d-big', 'alien_invader', 'minion'),
+                        makeCard('d-small', 'dino_war_raptor', 'minion'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const rejected = validateDiscardMinionPlaySemantics(state, '0', {
+            cardUid: 'd-big',
+            baseIndex: 0,
+            consumesNormalLimit: true,
+        });
+        expect(rejected.valid).toBe(false);
+        expect(rejected.error).toContain('力量≤2');
+
+        const allowed = validateDiscardMinionPlaySemantics(state, '0', {
+            cardUid: 'd-small',
+            baseIndex: 0,
+            consumesNormalLimit: true,
+        });
+        expect(allowed.valid).toBe(true);
     });
 
     it('validate：兵蚁 Soldier POD 作为额外随从时应按印刷战斗力1通过', () => {

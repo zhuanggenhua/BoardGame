@@ -787,6 +787,41 @@ describe('僵尸派系能力', () => {
         expect(nonOngoing.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
     });
 
+    it('zombie_theyre_coming_to_get_you: 母星授予力量≤2的额外随从额度时，不得从弃牌堆打出高战力随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('disc-big', 'alien_invader', 'minion', '0'),
+                        makeCard('disc-small', 'zombie_walker', 'minion', '0'),
+                    ],
+                    minionsPlayed: 1,
+                    minionLimit: 2,
+                    extraMinionPowerMax: 2,
+                    extraMinionPowerCaps: [2],
+                    factions: ['zombies', 'aliens'] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [{ uid: 'ongoing1', defId: 'zombie_theyre_coming_to_get_you', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const rejected = execPlayMinionFromDiscard(state, '0', 'disc-big', 0);
+        expect(rejected.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        expect(rejected.matchState.core.players['0'].discard.some(card => card.uid === 'disc-big')).toBe(true);
+
+        const allowed = execPlayMinionFromDiscard(state, '0', 'disc-small', 0);
+        expect(allowed.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(true);
+        expect(allowed.matchState.core.players['0'].discard.some(card => card.uid === 'disc-small')).toBe(false);
+        expect(allowed.matchState.core.bases[0].minions.some(minion => minion.uid === 'disc-small')).toBe(true);
+    });
+
     it('borrowed ongoing 附着基地时，控制者也应能通过 PLAY_MINION fromDiscard 打到该基地', () => {
         const state = makeState({
             players: {
