@@ -12,6 +12,8 @@ import {
     getActionLikeResponseWindowTiming,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
+    getRemainingGlobalPowerLimitedMinionQuotas,
+    getRemainingUnrestrictedGlobalMinionQuota,
     isCardMinionLike,
     mustUseBaseLimitedMinionQuota,
     mustUseGlobalPowerLimitedMinionQuota,
@@ -112,6 +114,18 @@ export function validateDiscardMinionPlaySemantics(
             basePower,
         );
         if (!quotaValidation.valid) return quotaValidation;
+
+        const remainingRestrictedGlobalCaps = getRemainingGlobalPowerLimitedMinionQuotas(player);
+        const unrestrictedGlobalQuotaRemaining = getRemainingUnrestrictedGlobalMinionQuota(player);
+        const maxRestrictedGlobalPower = getMaxRemainingGlobalPowerLimitedQuota(player);
+        if (
+            remainingRestrictedGlobalCaps.length > 0
+            && unrestrictedGlobalQuotaRemaining > 0
+            && maxRestrictedGlobalPower !== undefined
+            && basePower > maxRestrictedGlobalPower
+        ) {
+            return { valid: false, error: `额外出牌只能打出力量≤${maxRestrictedGlobalPower}的随从` };
+        }
     }
 
     const usesBaseLimitedMinionQuota = consumesNormalLimit

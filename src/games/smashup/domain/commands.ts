@@ -24,7 +24,11 @@ import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
 import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility } from './baseAbilities';
-import { getActionPlayRestrictionError, validateActionPlaySemantics, validateConsumableMinionQuota } from './playLegality';
+import {
+    getActionPlayRestrictionError,
+    validateActionPlaySemantics,
+    validateDiscardMinionPlaySemantics,
+} from './playLegality';
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { hasCardActivatableAbility } from './activationMetadata';
@@ -400,16 +404,12 @@ export function validate(
                     return { valid: false, error: '弃牌堆中没有该随从' };
                 }
                 const basePower = getMinionLikePower(discardCard.defId) ?? 0;
-                if (discardCheck.consumesNormalLimit) {
-                    const quotaValidation = validateConsumableMinionQuota(
-                        core,
-                        command.playerId,
-                        baseIndex,
-                        discardCard.defId,
-                        basePower,
-                    );
-                    if (!quotaValidation.valid) return quotaValidation;
-                }
+                const discardSemantics = validateDiscardMinionPlaySemantics(core, command.playerId, {
+                    cardUid: discardCard.uid,
+                    baseIndex,
+                    consumesNormalLimit: discardCheck.consumesNormalLimit,
+                });
+                if (!discardSemantics.valid) return discardSemantics;
                 const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
                     && isExtraMinionPlayAttempt(
                         core,
