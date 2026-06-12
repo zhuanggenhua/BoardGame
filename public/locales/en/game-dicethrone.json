@@ -290,8 +290,8 @@
     "shame": {
       "name": "Shame",
       "description": [
-        "When you calculate attack damage, you may spend Shame by stacks.",
-        "Each 1 spent reduces that attack's damage by 1."
+        "When calculating attack damage, remove Shame by stacks.",
+        "Each 1 removed reduces that attack's damage by 1."
       ]
     },
     "samurai_retribution": {

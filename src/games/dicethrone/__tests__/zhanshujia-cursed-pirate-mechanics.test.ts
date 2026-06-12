@@ -1955,6 +1955,34 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType(resolveEvents, 'CARD_DISCARDED')[0]?.payload.playerId).toBe('1');
     });
 
+    it('灵魂突刺在 3 个相同骰值但未造成伤害时不施加火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.core.rollDiceCount = 5;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: index < 3 ? 2 : index + 1,
+        }));
+
+        const events = resolveEffectsToEvents(
+            getAbilityVariantEffects(state.core, '0', 'soul-stab', 'soul-stab-3'),
+            'postDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'soul-stab-3',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 120,
+            },
+            { random: fixedRandom },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'STATUS_APPLIED')).toHaveLength(0);
+        expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBeUndefined();
+    });
+
     it('深海潜行真实进攻 pipeline 在偷取 CP 与施加凋零后保留对手弃牌交互', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         setPlayerBoardFace(state, '0', 'cursed');
@@ -2597,6 +2625,29 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         });
         expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
         expect(nextState.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面弯刀突刺在 4 个相同数字但未造成伤害时不施加火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        setCursedPirateDiceValues(state, [1, 1, 1, 1, 4]);
+
+        const { events, state: nextState } = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityVariantEffects(state.core, '0', 'cutlass-stab', 'cutlass-stab-4'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'cutlass-stab', damageDealt: 0 },
+        );
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'STATUS_APPLIED')).toHaveLength(0);
+        expect(next.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBeUndefined();
+        expect(nextState.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBeUndefined();
     });
 
     it('human 面做好标记会结算 CP、奖励骰伤害、抽牌和诅咒金币选择', () => {

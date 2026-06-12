@@ -18,6 +18,7 @@ import {
     testSystems,
     createQueuedRandom,
     createNoResponseSetup,
+    createRunner,
     assertState,
     cmd,
     createSetupWithHand,
@@ -3219,6 +3220,43 @@ describe('AI legal actions', () => {
         expect(state.core.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
         expect(state.core.dice[0].value).toBe(changedValue);
         expect(state.core.rollConfirmed).toBe(false);
+    });
+
+    it('确认骰面后若被对手改骰且仍有剩余投掷次数，应允许继续重投', () => {
+        const random = createQueuedRandom([3, 3, 3, 3, 3, 4, 4, 4, 4, 4]);
+        const runner = createRunner(random, true);
+
+        const afterModify = runner.run({
+            name: 'afterRollConfirmed 对手改骰后应撤销已确认',
+            setup: createSetupWithHand(['card-flick'], {
+                playerId: '1',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
+                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 4 }),
+                cmd('SYS_INTERACTION_CONFIRM', '1'),
+            ],
+        });
+
+        expect(afterModify.finalState.core.rollLimit).toBe(3);
+        expect(afterModify.finalState.core.rollCount).toBe(1);
+        expect(afterModify.finalState.core.rollConfirmed).toBe(false);
+
+        runner.setState(afterModify.finalState);
+        const rerollAttempt = runner.dispatch('ROLL_DICE', { playerId: '0' });
+
+        expect(rerollAttempt.success).toBe(true);
+        expect(rerollAttempt.finalState.core.rollCount).toBe(2);
+        expect(rerollAttempt.finalState.core.rollConfirmed).toBe(false);
     });
 
     it('不同难度会影响搜索行为，专家玩法噪声保持为 0', async () => {

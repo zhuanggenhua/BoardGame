@@ -770,15 +770,15 @@ const handleResponseWindowClosed: EventHandler<Extract<DiceThroneEvent, { type: 
  * 处理骰子修改事件
  * 
  * 设计原则：
- * - 如果修改骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
- * - 这样对手有机会响应新的骰面
- * - 如果是对手改我的骰，不需要重新确认（我只能接受结果）
+ * - 只要当前投掷池的骰面真实发生变化，就重置 rollConfirmed=false
+ * - 这样投掷方若仍有剩余投掷次数，可以继续重投并重新确认
+ * - 响应窗口是否已处理由 afterRollConfirmed 的序号/签名去重负责，不再复用 rollConfirmed 表达
  */
 const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODIFIED' }>> = (
     state,
     event
 ) => {
-    const { dieId, newValue, playerId } = event.payload;
+    const { dieId, newValue } = event.payload;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -786,8 +786,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
         return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
     });
 
-    const rollerId = getRollerId(state);
-    const rollConfirmed = (playerId === rollerId && state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
     return { ...state, dice: newDice, rollConfirmed };
 };
@@ -796,14 +795,14 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
  * 处理骰子重掷事件
  * 
  * 设计原则（同 handleDieModified）：
- * - 如果重掷骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
- * - 这样对手有机会响应新的骰面
+ * - 只要当前投掷池的骰面真实发生变化，就重置 rollConfirmed=false
+ * - 这样投掷方若仍有剩余投掷次数，可以继续重投并重新确认
  */
 const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_REROLLED' }>> = (
     state,
     event
 ) => {
-    const { dieId, newValue, playerId } = event.payload;
+    const { dieId, newValue } = event.payload;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -811,8 +810,7 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
         return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
     });
 
-    const rollerId = getRollerId(state);
-    const rollConfirmed = (playerId === rollerId && state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
     return { ...state, dice: newDice, rollConfirmed };
 };

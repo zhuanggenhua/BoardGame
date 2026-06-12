@@ -82,6 +82,16 @@
 - 新增测试接口要放在对应游戏的 `__tests__/helpers.ts` 或更聚焦的 helper 文件中；测试用例只表达“选择某张牌 / 某玩家 / 某基地 / 某模式”，不表达 InteractionSystem 如何存储这些选项。
 - 示例：Smash Up 交互测试优先使用 `getSimpleChoicePrompt`、`getPromptOption`、`getPromptOptions`、`respondToPrompt`、`respondToPromptOptions`、`cancelPrompt`，而不是在测试体中散落 `prompt.data.options.find(...)` 或手写系统交互命令。
 
+### 0.7 测试便利不得擅自新增产品入口
+
+- 当用户目标是“让我能测”“给我一条可重复测试路径”“AI/联机/教程要方便验证”时，默认优先复用**现有正式产品入口**、既有配置项或既有房间流程，例如 `创建房间 -> 开启 AI`、既有 debug/test helper、既有 query 合同、既有测试模式按钮。
+- 不得把“测试不方便”“建房步骤多”“想更快到达场景”直接升级成新增首页按钮、详情页捷径、房间外独立入口、额外导航项或新的产品流。
+- 只有两种情况允许新增可见入口：
+  - 用户当轮明确要求新增该入口，并接受它成为产品功能；
+  - 现有正式入口根本无法表达该能力，且已经给出证据说明为什么既有入口、配置项、测试 helper 都不足以承接。
+- 若为了验证需要更快到达目标状态，优先顺序固定为：`既有正式入口` → `测试模式/状态注入/代表态` → `项目已存在的调试入口`；不得跳过这三层直接做新入口。
+- 验收时必须明确区分“为了测试补了验证手段”与“产品新增了用户可见入口”。如果变更会改变首页、详情、房间、导航、常驻按钮或用户操作漏斗，就不再属于纯测试辅助，必须先获得用户确认。
+
 ### 0.2.1 runtime callback seam 门禁
 
 - 只要实现经过 `prompt -> onResolve -> helper`、`reaction choose -> resolver`、`branching choice -> handler`、`custom action -> resolve` 这类分段 callback seam，测试最少要覆盖一条“入口触发 + resolve 结算 + 最终 reduce 状态”的完整链，不能只测 prompt 创建或 options 生成。

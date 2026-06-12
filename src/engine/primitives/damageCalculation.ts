@@ -313,16 +313,22 @@ export class DamageCalculation {
 
     const coreState = this.getCoreState();
     const sourcePlayer = coreState?.players?.[source.playerId];
-    if (!sourcePlayer?.statusEffects) return;
+    if (!sourcePlayer) return;
 
     const tokenDefs = coreState?.tokenDefinitions || [];
-    Object.entries(sourcePlayer.statusEffects).forEach(([statusId, stacks]) => {
-      if (typeof stacks !== 'number' || stacks <= 0) return;
+    const timestamp = this.config.timestamp || Date.now();
+    for (const def of tokenDefs) {
+      if (def.passiveTrigger?.timing !== 'onDamageDealt') continue;
 
-      const statusDef = tokenDefs.find((t: any) => t.id === statusId);
-      if (statusDef?.passiveTrigger?.timing !== 'onDamageDealt') return;
+      const statusStacks = sourcePlayer.statusEffects?.[def.id] ?? 0;
+      const tokenStacks = sourcePlayer.tokens?.[def.id] ?? 0;
+      const stacks = def.category === 'debuff'
+        ? Math.max(statusStacks, tokenStacks)
+        : tokenStacks;
 
-      const scope = statusDef.passiveTrigger.damageTriggerScope ?? 'anyDamage';
+      if (typeof stacks !== 'number' || stacks <= 0) continue;
+
+      const scope = def.passiveTrigger.damageTriggerScope ?? 'anyDamage';
       if (scope === 'opponentAttackDamage') {
         const pendingAttack = coreState?.pendingAttack;
         if (pendingAttack) {
@@ -330,25 +336,56 @@ export class DamageCalculation {
             pendingAttack.attackerId !== source.playerId
             || pendingAttack.defenderId !== target.playerId
           ) {
-            return;
+            continue;
           }
         }
       }
 
-      for (const action of statusDef.passiveTrigger.actions || []) {
+      for (const action of def.passiveTrigger.actions || []) {
         if (action.type !== 'modifyStat' || typeof action.value !== 'number') continue;
         const value = action.value * stacks;
         if (value === 0) continue;
         this.modifierStack = addModifier(this.modifierStack, {
-          id: `source-status-${statusId}-passive`,
+          id: `source-status-${def.id}-passive`,
           type: 'flat',
           value,
           priority: 18,
-          source: statusId,
-          description: `Status: ${statusDef.name || statusId}`,
+          source: def.id,
+          description: `Status: ${def.name || def.id}`,
         });
       }
-    });
+
+      if (!def.passiveTrigger.consumeOnTrigger) continue;
+
+      if (statusStacks >= tokenStacks && statusStacks > 0) {
+        this.collectedSideEffects.push({
+          type: 'STATUS_REMOVED',
+          payload: {
+            targetId: source.playerId,
+            statusId: def.id,
+            stacks: Math.min(statusStacks, stacks),
+          },
+          sourceCommandType: 'ABILITY_EFFECT',
+          timestamp,
+        } as GameEvent);
+        continue;
+      }
+
+      if (tokenStacks > 0) {
+        const removedAmount = Math.min(tokenStacks, stacks);
+        this.collectedSideEffects.push({
+          type: 'TOKEN_CONSUMED',
+          payload: {
+            playerId: source.playerId,
+            tokenId: def.id,
+            amount: removedAmount,
+            newTotal: Math.max(0, tokenStacks - removedAmount),
+          },
+          sourceCommandType: 'ABILITY_EFFECT',
+          timestamp,
+        } as GameEvent);
+      }
+    }
   }
   
   /**

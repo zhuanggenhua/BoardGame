@@ -1,5 +1,5 @@
 import type { Command, GameEvent, PlayerId } from '../../../engine/types';
-import type { FantasyRealmsFocusInsight, FantasyRealmsScoreLine, TableCard } from '../foundation';
+import type { FantasyRealmsScoreLine, TableCard } from '../foundation';
 
 export type FantasyRealmsTurnStage = 'draw' | 'discard';
 
@@ -20,7 +20,7 @@ export interface FantasyRealmsCore {
     discardPile: TableCard[];
     players: Record<PlayerId, FantasyRealmsPlayerState>;
     focusCardId: string | null;
-    focusInsight: FantasyRealmsFocusInsight;
+    hiddenFocusCard?: boolean;
 }
 
 export interface SetFocusCardCommand extends Command<'SET_FOCUS_CARD'> {

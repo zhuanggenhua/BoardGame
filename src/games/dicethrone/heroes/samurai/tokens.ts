@@ -2,9 +2,6 @@ import type { TokenDef } from '../../domain/tokenTypes';
 import { DICETHRONE_STATUS_ATLAS_IDS, TOKEN_IDS } from '../../domain/ids';
 
 const tokenText = (id: string, field: 'name' | 'description') => `tokens.${id}.${field}`;
-// 真相源（tip.webp）明确标注：耻辱堆叠限制为 2，因此允许一次性消耗的数量上限也应同步收紧，
-// 避免“UI 可选 >2”与“运行时永远不可达”的契约漂移。
-const SHAME_CONSUME_AMOUNTS = [1, 2] as const;
 
 export const SAMURAI_TOKEN_SFX_HONOR = 'magic.general.simple_magic_sound_fx_pack_vol.light.heavenly_flame';
 export const SAMURAI_TOKEN_SFX_SHAME = 'fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.pot_explosion';
@@ -45,14 +42,11 @@ export const SAMURAI_TOKENS: TokenDef[] = [
         // 真相源：tip.webp（堆叠限制 2）
         stackLimit: 2,
         category: 'debuff',
-        activeUse: {
-            timing: ['beforeDamageDealt'],
-            consumeAmount: 1,
-            allowedConsumeAmounts: SHAME_CONSUME_AMOUNTS,
-            effect: {
-                type: 'modifyDamageDealt',
-                value: -1,
-            },
+        passiveTrigger: {
+            timing: 'onDamageDealt',
+            removable: true,
+            consumeOnTrigger: true,
+            actions: [{ type: 'modifyStat', target: 'self', value: -1 }],
         },
         frameId: 'shame',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.SAMURAI,

@@ -17,10 +17,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import {
     fixedRandom,
     createRunner,
     createNoResponseSetupWithEmptyHand,
+    createHeroMatchup,
     cmd,
     advanceTo,
 } from './test-utils';
@@ -1294,13 +1296,13 @@ describe('Token 响应窗口判定', () => {
         expect(responseType).toBe('attackerBoost');
     });
 
-    it('攻击方有 shame Token 时也应打开 attackerBoost（负面 token 一样可响应）', () => {
+    it('攻击方有 shame Token 时不应打开 attackerBoost（耻辱应被动减伤）', () => {
         const baseSetup = createNoResponseSetupWithEmptyHand();
         const state = baseSetup(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SHAME] = 1;
 
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
-        expect(responseType).toBe('attackerBoost');
+        expect(responseType).toBeNull();
     });
 
     it('防御方有 samurai_retribution Token 时应打开 defenderMitigation', () => {
@@ -1765,5 +1767,51 @@ describe('武士荣誉 (Honor) Token', () => {
 
         expect(validation.valid).toBe(false);
         expect(validation.error).toBe('invalid_token_timing');
+    });
+});
+
+describe('武士耻辱 (Shame) Token', () => {
+    it('攻击伤害应被动减伤并自动移除，不应影响直接伤害', () => {
+        const state = createHeroMatchup('samurai', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SHAME] = 2;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+        } as any;
+
+        const attackDamage = createDamageCalculation({
+            baseDamage: 6,
+            source: { playerId: '0', abilityId: 'test-attack' },
+            target: { playerId: '1' },
+            state: state.core,
+            damageScope: 'attack',
+            timestamp: 100,
+        }).resolve();
+        expect(attackDamage.finalDamage).toBe(4);
+        expect(attackDamage.sideEffectEvents).toHaveLength(1);
+        expect(attackDamage.sideEffectEvents[0]).toMatchObject({
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.SHAME,
+                amount: 2,
+                newTotal: 0,
+            },
+        });
+
+        const afterAttack = applyEvents(state.core, attackDamage.sideEffectEvents as any, reduce as any);
+        expect(afterAttack.players['0'].tokens[TOKEN_IDS.SHAME] ?? 0).toBe(0);
+
+        const directDamage = createDamageCalculation({
+            baseDamage: 6,
+            source: { playerId: '0', abilityId: 'test-direct' },
+            target: { playerId: '1' },
+            state: state.core,
+            damageScope: 'direct',
+            timestamp: 101,
+        }).resolve();
+        expect(directDamage.finalDamage).toBe(6);
+        expect(directDamage.sideEffectEvents).toHaveLength(0);
     });
 });

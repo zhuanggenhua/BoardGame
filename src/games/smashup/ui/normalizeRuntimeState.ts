@@ -31,10 +31,47 @@ export function normalizeSmashUpMatchStateForUi<TState extends { core?: SmashUpC
         return state;
     }
 
+    const phase = typeof (state.sys as { phase?: unknown } | undefined)?.phase === 'string'
+        ? (state.sys as { phase?: string }).phase
+        : undefined;
+
     return {
         ...state,
-        core: normalized.core,
+        core: ensureFactionSelectionState(normalized.core, phase),
     };
+}
+
+function ensureFactionSelectionState(
+    core: SmashUpCore,
+    phase: string | undefined,
+): SmashUpCore {
+    if (phase !== 'factionSelect' || core.factionSelection || isFactionDraftReadyToStart(core)) {
+        return core;
+    }
+
+    const playerSelections = Object.fromEntries(
+        core.turnOrder.map((playerId) => [playerId, []]),
+    ) as NonNullable<SmashUpCore['factionSelection']>['playerSelections'];
+
+    return {
+        ...core,
+        factionSelection: {
+            takenFactions: [],
+            playerSelections,
+            completedPlayers: [],
+        },
+    };
+}
+
+function isFactionDraftReadyToStart(core: SmashUpCore): boolean {
+    return core.turnOrder.length > 0 && core.turnOrder.every((playerId) => {
+        const player = core.players[playerId];
+        return Boolean(
+            player
+            && player.factions.length === 2
+            && (player.hand.length > 0 || player.deck.length > 0),
+        );
+    });
 }
 
 function pushArrayAnomaly(

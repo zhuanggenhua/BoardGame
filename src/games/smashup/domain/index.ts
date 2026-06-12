@@ -2000,6 +2000,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         const core = state.core;
         const pid = getCurrentPlayerId(core);
         const phase = state.sys.phase as GamePhase;
+        const isFactionDraftReadyToStart = core.turnOrder.length > 0 && core.turnOrder.every((playerId) => {
+            const player = core.players[playerId];
+            return Boolean(
+                player
+                && player.factions.length === 2
+                && (player.hand.length > 0 || player.deck.length > 0),
+            );
+        });
         const justResolvedSmashUpReactionChoice = events.some((event) => {
             if (event.type !== 'SYS_INTERACTION_RESOLVED' && event.type !== 'SYS_INTERACTION_CANCELLED') {
                 return false;
@@ -2007,10 +2015,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             const payload = event.payload as { sourceId?: unknown } | undefined;
             return payload?.sourceId === 'smashup_reaction_choose';
         });
-
-        if (phase === 'factionSelect' && !core.factionSelection) {
-            return { autoContinue: true, playerId: pid };
-        }
 
         if (state.sys.interaction?.current) {
             return undefined;
@@ -2023,9 +2027,8 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
         // factionSelect 鑷姩鎺ㄨ繘 check
         if (phase === 'factionSelect') {
-
             if (!core.factionSelection) {
-                return { autoContinue: true, playerId: pid };
+                return isFactionDraftReadyToStart ? { autoContinue: true, playerId: pid } : undefined;
             }
         }
 

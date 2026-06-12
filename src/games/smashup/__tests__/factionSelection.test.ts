@@ -8,6 +8,7 @@
 
 import { describe, expect, it, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import type { MatchState } from '../../../engine/types';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
@@ -124,6 +125,51 @@ describe('派系选择系统', () => {
             expect(result.steps[0]?.success).toBe(true);
             expect(result.steps[1]?.success).toBe(true);
             expect(result.steps[2]?.success).toBe(true);
+        });
+
+        it('选种族记录缺失时会重建空选种族状态，并阻止自动推进到开局', () => {
+            const runner = createRunner();
+            const initial = runner.run({
+                name: '初始选种族状态',
+                commands: [],
+            }).finalState;
+
+            const corruptedState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: {
+                    ...initial.sys,
+                    phase: 'factionSelect',
+                },
+                core: {
+                    ...initial.core,
+                    factionSelection: undefined,
+                },
+            };
+
+            const normalized = SmashUpDomain.normalizeRuntimeState(corruptedState);
+            expect(normalized.core.factionSelection).toEqual({
+                takenFactions: [],
+                playerSelections: {
+                    '0': [],
+                    '1': [],
+                },
+                completedPlayers: [],
+            });
+
+            expect(
+                smashUpFlowHooks.onAutoContinueCheck({
+                    state: normalized,
+                    events: [],
+                }),
+            ).toBeUndefined();
+
+            expect(
+                SmashUpDomain.validate(normalized, {
+                    type: SU_COMMANDS.SELECT_FACTION,
+                    playerId: '0',
+                    payload: { factionId: SMASHUP_FACTION_IDS.ALIENS },
+                }).valid,
+            ).toBe(true);
         });
 
         it('非当前玩家不能选择', () => {

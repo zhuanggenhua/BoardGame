@@ -2,6 +2,7 @@
   "fallback": {
     "currentPlayer": "当前玩家",
     "viewer": "你",
+    "spectator": "旁观者",
     "unknownPlayer": "未知玩家"
   },
   "card": {
@@ -14,53 +15,28 @@
   },
   "turn": {
     "panelTitle": "回合",
-    "roundChip": "第 {{turn}} 回合 · {{player}}",
+    "roundChip": "第 {{turn}} 回合",
     "reviewChip": "终局复盘",
     "compact": {
       "draw": "摸牌",
-      "discard": "弃牌",
-      "waiting": "等待",
-      "review": "复盘"
+      "discard": "弃牌"
     },
     "drawDeck": {
       "one": "从牌库摸 1 张",
       "twoThenDiscardOne": "从牌库摸 2 张并弃 1 张"
     },
-    "primaryAction": {
-      "discardRequired": "先弃 1 张手牌",
-      "waiting": "等待当前玩家操作",
-      "reviewOnly": "终局复盘中"
-    },
     "primaryActionShort": {
-      "drawOne": "摸1",
-      "twoThenDiscardOne": "摸2弃1",
-      "discardRequired": "弃1",
-      "waiting": "等待",
-      "reviewOnly": "复盘"
+      "discardRequired": "弃一张牌"
     },
     "short": {
       "round": "R{{turn}}"
     },
-    "statusBanner": {
-      "drawSelf": "当前没有公开弃牌，只能先从牌库摸牌。",
-      "takeDiscardSelf": "现在是抓牌阶段。公开弃牌堆可直接拿取，拿完后再回到手牌区完成弃牌。",
-      "discardSelf": "现在必须从你的手牌中弃 1 张，回合才会继续。",
-      "waiting": "当前轮到 {{player}} 操作，先等待对方完成本回合。",
-      "gameOver": "对局已结束，当前牌桌只保留结算与复盘信息。"
+    "live": {
+      "selfTurn": "你的回合"
     },
-    "observerNote": "你当前正在等待。这里仍可查看自己的手牌与公开弃牌，其他玩家的隐藏手牌不会在此展开。",
-    "stageSummary": {
-      "gameOver": "终局已揭示全部官方总分与最终排名",
-      "duel": {
-        "discard": "请从你的手牌中弃 1 张",
-        "fullHand": "已满 7 张：本回合执行抽 1 弃 1",
-        "opening": "未满 7 张：可拿 1 张弃牌，或摸 2 弃 1"
-      },
-      "multiplayer": {
-        "discard": "请从你的手牌中弃 1 张",
-        "emptyDiscard": "基础版首回合：弃牌堆为空，只能从牌库摸 1 张",
-        "standard": "基础版：从牌库或弃牌堆拿 1 张，再弃 1 张"
-      }
+    "statusBanner": {
+      "discardSelf": "确认弃牌",
+      "waiting": "等待 {{player}}"
     }
   },
   "score": {
@@ -69,11 +45,9 @@
     "totalLabel": "官方总分",
     "hiddenLabel": "终局揭示",
     "hiddenValue": "??",
-    "hiddenReasonLive": "多人局进行中：这里只公开你的官方总分，其他玩家分数会在终局统一揭示。",
     "handCount": "手牌 {{count}} 张",
     "badges": {
       "you": "你",
-      "current": "当前行动",
       "winner": "胜者"
     },
     "labels": {
@@ -84,34 +58,13 @@
   },
   "zone": {
     "discard": {
-      "ariaLabel": "公开弃牌堆",
       "title": "公开弃牌堆",
-      "hint": "双人变体中可直接拿 1 张",
-      "hintAvailable": "当前可直接拿 1 张公开弃牌。",
-      "hintDiscardStage": "当前正在弃牌，公开弃牌堆会在本次弃牌后更新。",
-      "hintLocked": "先决定是否从牌库摸牌；本阶段也可改拿公开弃牌。",
-      "hintEmpty": "当前没有公开弃牌可拿，只能从牌库摸牌。",
-      "hintWaiting": "当前不是你的行动阶段，先观察公开弃牌变化。",
-      "hintReview": "终局后可在这里回看全部公开弃牌。",
-      "emptyDrawFirst": "当前还没有任何公开弃牌。先从牌库摸牌，弃掉的第一张牌会从这里开始累积。",
-      "emptyDiscardStage": "当前还没有公开弃牌记录；你弃掉的这张牌会立刻出现在这里。",
-      "emptyWaiting": "上一位玩家还没有留下公开弃牌，这里暂时为空。",
-      "emptyReview": "本局没有形成公开弃牌记录。",
       "emptyCompact": "暂无公开弃牌"
     },
     "hand": {
       "ariaLabel": "手牌区",
       "title": "{{player}}的手牌",
-      "hint": "手牌上限 7 张，空槽位持续保留",
-      "hintDefault": "手牌上限 7 张，空槽位持续保留",
-      "hintDiscard": "当前必须从手牌中弃 1 张。",
-      "hintInspect": "先完成摸牌或拿弃牌，再回到这里决定要弃的手牌。",
-      "hintWaiting": "当前不是你的行动阶段，只能查看自己的手牌。",
-      "hintReview": "终局后可在这里复盘你的整手牌。",
-      "emptyDraw": "当前手牌为空。先执行摸牌或拿弃牌，这里会立即显示你本回合要处理的手牌。",
-      "emptyDiscard": "当前没有可弃的手牌，先确认摸牌结果后再返回这里。",
-      "emptyWaiting": "当前轮到其他玩家行动，所以你的手牌区暂时为空或未在此视角展示。",
-      "emptyReview": "终局后若该玩家没有保留手牌，这里会保持空槽。",
+      "titleSpectator": "隐藏手牌区",
       "emptyCompact": "暂无手牌"
     }
   },
@@ -119,7 +72,10 @@
     "takeDiscardAria": "拿取弃牌 {{name}}",
     "inspectDiscardAria": "查看弃牌 {{name}}",
     "discardHandAria": "弃置手牌 {{name}}",
-    "inspectHandAria": "查看手牌 {{name}}"
+    "inspectHandAria": "查看手牌 {{name}}",
+    "confirmTake": "确认选择",
+    "confirmDiscard": "确认弃置",
+    "selected": "已选"
   },
   "focus": {
     "panelTitle": "当前焦点",
@@ -133,52 +89,17 @@
         "handKeep": "当前保留",
         "handNeutral": "暂作观察",
         "reviewCard": "公开牌复盘"
-      },
-      "descriptions": {
-        "discardTakeNow": "若现在拿走 {{name}}，你的官方总分会来到 {{nextScore}}（净变化 {{delta}}）。",
-        "discardSwapBest": "若现在拿走 {{name}} 并改弃 {{candidate}}，你的官方总分会来到 {{nextScore}}（净变化 {{delta}}）。",
-        "discardNoViewerHand": "{{name}} 当前已公开，但这个视角下没有可用于推演的手牌。",
-        "handDiscardNow": "若现在弃掉 {{name}}，你的官方总分会变为 {{nextScore}}（净变化 {{delta}}）。",
-        "reviewCard": "{{name}} 当前以 {{suit}} 线参与复盘；更适合结合终局牌桌去看它最后到底撑起了哪段分数。"
-      },
-      "tips": {
-        "discardTakeDirectPrimary": "当前可以直接把它补进手牌，不必先拆掉现有组合。",
-        "discardTakeDirectSecondary": "如果净变化不高，优先对照下一轮公开弃牌再决定是否长期保留。",
-        "discardSwapPrimary": "当前最佳换出候选：{{candidate}}。",
-        "discardSwapSecondary": "如果你正准备收口当前组合，这张公开牌已经值得优先拿。",
-        "discardNoGainPrimary": "按当前手牌推演，它还换不出更高总分。",
-        "discardNoGainSecondary": "先继续观察后续摸牌或下一张公开弃牌。",
-        "handDropPrimary": "这张牌当前正在拖低你的总分，进入弃牌阶段时可优先考虑它。",
-        "handDropSecondary": "如果下一张公开弃牌还能补强现有花色线，这个弃牌位会更值。",
-        "handKeepPrimary": "这张牌当前确实在抬高你的总分。",
-        "handKeepSecondary": "除非为了更大联动腾位，否则不要把它当作优先弃牌。",
-        "handNeutralPrimary": "这张牌当前更像占位牌，暂时没有明显净收益。",
-        "handNeutralSecondary": "先看后续摸牌或公开弃牌是否能把它带进有效组合。",
-        "reviewPrimary": "优先对照最终排名、公开弃牌堆和整手牌，确认这张牌最后锁住的是哪段分数。",
-        "reviewSecondary": "终局复盘里，这里更适合作为回看组合结构的定位点，而不是下一步行动提示。"
       }
     },
-    "hiddenKicker": "当前焦点",
     "hiddenName": "焦点暂不可见",
-    "hiddenDescription": "当前焦点不在公开区域，所以这里不会展开牌名、效果或估值。等它进入公开区域或终局复盘后，再显示详细牌面。",
-    "hiddenDelta": "--",
-    "hiddenTipPrimary": "继续观察公开弃牌堆、当前行动玩家，以及你自己的手牌变化。",
-    "hiddenTipSecondary": "一旦当前焦点进入公开区域，这里会自动切回真实牌面。",
-    "reviewKicker": "终局复盘焦点",
-    "reviewDescription": "终局复盘中：这张牌已经按最终牌桌完成计分。现在更适合结合公开弃牌、最终排名和你自己的整手牌，回看它对总分的真实贡献。",
-    "reviewDelta": "--",
-    "reviewTipPrimary": "优先对照最终排名、公开弃牌堆和整手牌，确认这张牌实际带来的加分或减分。",
-    "reviewTipSecondary": "终局阶段不再提供下一步决策提示，这里只保留复盘视角。"
+    "hiddenDelta": "--"
   },
   "progress": {
     "panelTitle": "结束进度",
     "duelThreshold": "双人弃牌阈值",
     "standardThreshold": "基础版弃牌阈值",
-    "duelStatus": "{{handsFilled}} / {{playerCount}} 名玩家已满 7 张手牌。当前已按双人变体与官方计分实时结算。",
-    "standardStatus": "当前为 {{playerCount}} 人基础版：所有玩家起手 7 张，回合固定抽 1 弃 1，弃牌堆达到 10 张时按官方计分结算。",
-    "gameOverReview": "终局已揭示全部官方总分、胜者与最终排名；当前牌桌仅保留复盘信息。",
     "gameOverDraw": "当前对局已进入正式平局结算。",
-    "gameOverWinner": "当前对局已结束，胜者：{{winner}}。",
+    "gameOverWinner": "当前对局已结束，由 {{winner}} 获胜。",
     "finalStandings": "最终排名",
     "drawBadge": "平局",
     "rank": "第 {{rank}} 名"

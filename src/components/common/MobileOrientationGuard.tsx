@@ -167,32 +167,6 @@ const getBannerMessageKey = (bannerKind: GameMobileBannerKind) => {
     }
 };
 
-const getGateTitleKey = (bannerKind: GameMobileBannerKind) => {
-    switch (bannerKind) {
-        case 'rotate-to-landscape':
-            return 'mobileOrientation.gateTitle.rotateToLandscape';
-        case 'rotate-to-portrait':
-            return 'mobileOrientation.gateTitle.rotateToPortrait';
-        case 'tablet-only':
-            return 'mobileOrientation.gateTitle.tabletOnly';
-        case 'not-supported':
-            return 'mobileOrientation.gateTitle.notSupported';
-    }
-};
-
-const getGateDescriptionKey = (bannerKind: GameMobileBannerKind) => {
-    switch (bannerKind) {
-        case 'rotate-to-landscape':
-            return 'mobileOrientation.gateDescription.rotateToLandscape';
-        case 'rotate-to-portrait':
-            return 'mobileOrientation.gateDescription.rotateToPortrait';
-        case 'tablet-only':
-            return 'mobileOrientation.gateDescription.tabletOnly';
-        case 'not-supported':
-            return 'mobileOrientation.gateDescription.notSupported';
-    }
-};
-
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
     const { t } = useTranslation('common');
     const location = useLocation();
@@ -230,15 +204,9 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
         : null;
     const bannerKind = homeBannerKind ?? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
     const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
-    const shouldRenderGameOrientationGate = Boolean(
-        !nativeAppShell
-        && gameId
-        && bannerKind
-        && (bannerKind === 'rotate-to-landscape' || bannerKind === 'rotate-to-portrait'),
-    );
     const shouldSuppressBannerInAppShell = nativeAppShell && (Boolean(gameId) || isHomeRoute);
     const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
-        ? (shouldRenderGameOrientationGate ? null : bannerKind)
+        ? bannerKind
         : null;
 
     useEffect(() => {
@@ -312,7 +280,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             return;
         }
 
-        const offsetValue = activeBannerKind && !shouldRenderGameOrientationGate
+        const offsetValue = activeBannerKind
             ? 'calc(env(safe-area-inset-top) + 3.75rem)'
             : '0px';
         const rootStyle = document.documentElement.style;
@@ -325,7 +293,7 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             rootStyle.setProperty('--mobile-orientation-banner-offset', '0px');
             bodyStyle?.setProperty('--mobile-orientation-banner-offset', '0px');
         };
-    }, [activeBannerKind, shouldRenderGameOrientationGate]);
+    }, [activeBannerKind]);
 
     useEffect(() => {
         if (!nativeAppShell || !targetOrientation) return;
@@ -378,34 +346,9 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
 
     return (
         <>
-            {shouldRenderGameOrientationGate && bannerKind ? (
-                <div
-                    data-testid="mobile-orientation-game-gate"
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black text-white"
-                    style={{
-                        paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)',
-                        paddingRight: 'calc(env(safe-area-inset-right) + 1.5rem)',
-                        paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)',
-                        paddingLeft: 'calc(env(safe-area-inset-left) + 1.5rem)',
-                    }}
-                >
-                    <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-[28px] border border-white/12 bg-white/8 px-6 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                        <div className="flex items-center gap-3 text-parchment-gold">
-                            {renderBannerVisual(bannerKind)}
-                        </div>
-                        <div className="space-y-2">
-                            <h1 className="text-2xl font-semibold tracking-normal text-white">
-                                {t(getGateTitleKey(bannerKind))}
-                            </h1>
-                            <p className="text-sm leading-6 text-white/72">
-                                {t(getGateDescriptionKey(bannerKind))}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
             {activeBannerKind ? (
                 <div
+                    data-testid={gameId ? 'mobile-orientation-game-banner' : 'mobile-orientation-home-banner'}
                     className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream pb-3 z-[9999] shadow-lg border-b-2 border-parchment-gold/30"
                     style={{
                         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',

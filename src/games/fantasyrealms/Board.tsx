@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import {
     EMPTY_FOCUS_INSIGHT,
-    FANTASY_REALMS_DISCARD_END_THRESHOLD,
     FANTASY_REALMS_HAND_CARD_SLOTS,
-    HAND_CARDS,
+    getFantasyRealmsDiscardEndThreshold,
+    getFantasyRealmsCardDisplayName,
+    getFantasyRealmsCardRuleText,
     type TableCard,
 } from './foundation';
 import {
@@ -32,11 +33,50 @@ type FocusDisplayState = {
     source: 'discard' | 'viewer-hand' | 'other-visible-hand' | 'fallback';
 };
 
-function shouldUseStackedViewport(width: number, _height: number): boolean {
-    return width <= 1180;
+type VisibleFocusInsight = {
+    kicker: string;
+    estimatedDelta: number;
+};
+
+type PendingLiveSelection = {
+    source: 'discard' | 'hand';
+    cardId: string;
+} | null;
+
+type LiveMotionCueType = 'draw-to-hand' | 'discard-to-hand' | 'hand-to-river';
+
+type LiveMotionCue = {
+    type: LiveMotionCueType;
+    key: number;
+    cardIds: string[];
+} | null;
+
+type LiveMotionSnapshot = {
+    viewerPlayerId: string | null;
+    currentPlayer: string;
+    stage: FantasyRealmsCore['stage'];
+    handIds: string[];
+    discardIds: string[];
+    drawPileCount: number;
+    isGameOver: boolean;
+};
+
+type LiveMotionWindow = Window & {
+    __FR_LIVE_MOTION_LAST_SNAPSHOT__?: LiveMotionSnapshot;
+};
+
+const LIVE_RIVER_CARD_WIDTH = 190;
+const LIVE_RIVER_PREFERRED_GAP = 108;
+const LIVE_RIVER_MIN_GAP = 16;
+const LIVE_RIVER_MAX_ROW_WIDTH = 1220;
+const LIVE_RIVER_ROW_TOP = 8;
+const LIVE_RIVER_ROW_OFFSET = 202;
+
+function shouldUseCompactLandscapeTableViewport(width: number, height: number): boolean {
+    return width > height && width <= 1180;
 }
 
-function shouldUseCompactLandscapeViewport(width: number, height: number): boolean {
+function shouldUseTightCompactLandscapeViewport(width: number, height: number): boolean {
     return width > height && width <= 900 && height <= 520;
 }
 
@@ -72,7 +112,6 @@ function createFallbackCore(): FantasyRealmsCore {
             },
         },
         focusCardId: null,
-        focusInsight: { ...EMPTY_FOCUS_INSIGHT, tips: [...EMPTY_FOCUS_INSIGHT.tips] },
     };
 }
 
@@ -110,22 +149,83 @@ function buildCardSlots(cards: TableCard[], slotCount: number, prefix: string): 
     return slots;
 }
 
+function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties[] {
+    if (cardCount <= 0) return [];
+
+    const topRowCount = cardCount <= 5 ? cardCount : Math.ceil(cardCount / 2);
+    const bottomRowCount = cardCount <= 5 ? 0 : Math.floor(cardCount / 2);
+    const styles: React.CSSProperties[] = [];
+
+    const pushRow = (rowCount: number, rowIndex: number) => {
+        if (rowCount <= 0) return;
+
+        const availableGap = rowCount <= 1
+            ? 0
+            : Math.floor((LIVE_RIVER_MAX_ROW_WIDTH - (rowCount * LIVE_RIVER_CARD_WIDTH)) / (rowCount - 1));
+        const gap = rowCount <= 1
+            ? 0
+            : Math.max(LIVE_RIVER_MIN_GAP, Math.min(LIVE_RIVER_PREFERRED_GAP, availableGap));
+        const rowWidth = (rowCount * LIVE_RIVER_CARD_WIDTH) + ((rowCount - 1) * gap);
+        const startOffset = -(rowWidth / 2);
+
+        for (let index = 0; index < rowCount; index += 1) {
+            const left = Math.round(startOffset + (index * (LIVE_RIVER_CARD_WIDTH + gap)));
+            styles.push({
+                left: `calc(50% + ${left}px)`,
+                top: `${LIVE_RIVER_ROW_TOP + (rowIndex * LIVE_RIVER_ROW_OFFSET)}px`,
+            });
+        }
+    };
+
+    pushRow(topRowCount, 0);
+    pushRow(bottomRowCount, 1);
+    return styles;
+}
+
+function buildMinimalLiveHandCardStyles(cardCount: number, slotCount: number): React.CSSProperties[] {
+    if (cardCount <= 0 || slotCount <= 0) return [];
+    const startColumn = Math.max(1, Math.floor((slotCount - cardCount) / 2) + 1);
+    return Array.from({ length: cardCount }, (_, index) => ({
+        gridColumn: `${startColumn + index}`,
+    }));
+}
+
+function getAddedIds(nextIds: string[], previousIds: string[]): string[] {
+    const previousIdSet = new Set(previousIds);
+    return nextIds.filter((id) => !previousIdSet.has(id));
+}
+
+function createLiveMotionSnapshot(
+    core: FantasyRealmsCore,
+    viewerPlayerId: string | null,
+    handCards: TableCard[],
+    discardCards: TableCard[],
+    isGameOver: boolean,
+): LiveMotionSnapshot {
+    return {
+        viewerPlayerId,
+        currentPlayer: core.currentPlayer,
+        stage: core.stage,
+        handIds: handCards.map((card) => card.id),
+        discardIds: discardCards.map((card) => card.id),
+        drawPileCount: core.drawPile.length,
+        isGameOver,
+    };
+}
+
 function localizeScoreBreakdownLabel(label: string, t: Translator): string {
     return SCORE_LABEL_KEY_BY_LABEL[label] ? t(SCORE_LABEL_KEY_BY_LABEL[label]) : label;
 }
 
-function formatSignedDelta(value: number): string {
-    return value >= 0 ? `+${value}` : String(value);
-}
-
-function renderFallbackCard(card: TableCard, t: Translator) {
+function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
+    const displayName = getFantasyRealmsCardDisplayName(card);
     return (
         <article
             className="fr-card"
             data-testid="fantasyrealms-card"
             data-card-renderer="fallback"
             aria-label={t('card.ariaLabel', {
-                name: card.name,
+                name: displayName,
                 suit: card.suit,
                 score: card.score,
             })}
@@ -133,8 +233,8 @@ function renderFallbackCard(card: TableCard, t: Translator) {
             <div aria-hidden="true" className="fr-card-sheen" />
             <div className={`fr-card-suit ${card.toneClass}`}>{card.suit}</div>
             <div className="fr-card-body">
-                <div className="fr-card-name">{card.name}</div>
-                <div className="fr-card-text">{card.text}</div>
+                <div className="fr-card-name">{displayName}</div>
+                <div className="fr-card-text">{getFantasyRealmsCardRuleText(card, locale)}</div>
                 <div className="fr-card-score">
                     <span>{t('card.baseScore')}</span>
                     <strong>{card.score}</strong>
@@ -146,8 +246,9 @@ function renderFallbackCard(card: TableCard, t: Translator) {
 
 function renderCard(card: TableCard, t: Translator, locale?: string) {
     const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, locale);
+    const displayName = getFantasyRealmsCardDisplayName(card);
     if (!atlasStyle) {
-        return renderFallbackCard(card, t);
+        return renderFallbackCard(card, t, locale);
     }
 
     return (
@@ -157,7 +258,7 @@ function renderCard(card: TableCard, t: Translator, locale?: string) {
             data-card-renderer="atlas"
             data-atlas-card-id={card.id}
             aria-label={t('card.ariaLabel', {
-                name: card.name,
+                name: displayName,
                 suit: card.suit,
                 score: card.score,
             })}
@@ -170,10 +271,13 @@ function renderCard(card: TableCard, t: Translator, locale?: string) {
 
 function resolveFocusDisplayState(
     core: FantasyRealmsCore,
-    viewerPlayerId: string,
+    viewerPlayerId: string | null,
     viewerPlayer: FantasyRealmsPlayerState | undefined,
     isGameOver: boolean,
 ): FocusDisplayState {
+    if (!isGameOver && core.hiddenFocusCard) {
+        return { hiddenByOtherPlayer: true, source: 'fallback' };
+    }
     const discardCard = core.discardPile.find((card) => card.id === core.focusCardId);
     if (discardCard) {
         return { card: discardCard, hiddenByOtherPlayer: false, source: 'discard' };
@@ -198,7 +302,7 @@ function resolveFocusDisplayState(
         }
     }
     return {
-        card: core.discardPile[core.discardPile.length - 1] ?? viewerPlayer?.hand[0] ?? core.players[viewerPlayerId]?.hand[0],
+        card: core.discardPile[core.discardPile.length - 1] ?? viewerPlayer?.hand[0],
         hiddenByOtherPlayer: false,
         source: 'fallback',
     };
@@ -209,7 +313,14 @@ function buildDiscardFocusInsight(
     viewerPlayer: FantasyRealmsPlayerState | undefined,
     focusCard: TableCard,
     t: Translator,
-) {
+): VisibleFocusInsight {
+    if (!viewerPlayer) {
+        return {
+            kicker: t('focus.dynamic.kickers.discardProbe'),
+            estimatedDelta: 0,
+        };
+    }
+
     const hand = viewerPlayer?.hand ?? [];
     const currentScore = viewerPlayer?.score ?? evaluateFantasyRealmsScore(hand, core.discardPile).totalScore;
     const nextDiscardWithoutFocus = core.discardPile
@@ -224,21 +335,7 @@ function buildDiscardFocusInsight(
 
         return {
             kicker: positive ? t('focus.dynamic.kickers.discardUpgrade') : t('focus.dynamic.kickers.discardProbe'),
-            description: t('focus.dynamic.descriptions.discardTakeNow', {
-                name: focusCard.name,
-                nextScore,
-                delta: formatSignedDelta(delta),
-            }),
             estimatedDelta: delta,
-            tips: positive
-                ? [
-                    t('focus.dynamic.tips.discardTakeDirectPrimary'),
-                    t('focus.dynamic.tips.discardTakeDirectSecondary'),
-                ]
-                : [
-                    t('focus.dynamic.tips.discardNoGainPrimary'),
-                    t('focus.dynamic.tips.discardNoGainSecondary'),
-                ],
         };
     }
 
@@ -264,34 +361,14 @@ function buildDiscardFocusInsight(
     if (!bestSwap) {
         return {
             kicker: t('focus.dynamic.kickers.discardProbe'),
-            description: t('focus.dynamic.descriptions.discardNoViewerHand', { name: focusCard.name }),
             estimatedDelta: 0,
-            tips: [
-                t('focus.dynamic.tips.discardNoGainPrimary'),
-                t('focus.dynamic.tips.discardNoGainSecondary'),
-            ],
         };
     }
 
     const positive = bestSwap.delta > 0;
     return {
         kicker: positive ? t('focus.dynamic.kickers.discardUpgrade') : t('focus.dynamic.kickers.discardProbe'),
-        description: t('focus.dynamic.descriptions.discardSwapBest', {
-            name: focusCard.name,
-            candidate: bestSwap.candidate.name,
-            nextScore: bestSwap.nextScore,
-            delta: formatSignedDelta(bestSwap.delta),
-        }),
         estimatedDelta: bestSwap.delta,
-        tips: positive
-            ? [
-                t('focus.dynamic.tips.discardSwapPrimary', { candidate: bestSwap.candidate.name }),
-                t('focus.dynamic.tips.discardSwapSecondary'),
-            ]
-            : [
-                t('focus.dynamic.tips.discardNoGainPrimary'),
-                t('focus.dynamic.tips.discardNoGainSecondary'),
-            ],
     };
 }
 
@@ -300,7 +377,7 @@ function buildHandFocusInsight(
     viewerPlayer: FantasyRealmsPlayerState | undefined,
     focusCard: TableCard,
     t: Translator,
-) {
+): VisibleFocusInsight {
     const hand = viewerPlayer?.hand ?? [];
     const currentScore = viewerPlayer?.score ?? evaluateFantasyRealmsScore(hand, core.discardPile).totalScore;
     const nextHand = hand.filter((card) => card.id !== focusCard.id).map((card) => ({ ...card }));
@@ -311,47 +388,20 @@ function buildHandFocusInsight(
     if (delta > 0) {
         return {
             kicker: t('focus.dynamic.kickers.handDiscard'),
-            description: t('focus.dynamic.descriptions.handDiscardNow', {
-                name: focusCard.name,
-                nextScore,
-                delta: formatSignedDelta(delta),
-            }),
             estimatedDelta: delta,
-            tips: [
-                t('focus.dynamic.tips.handDropPrimary'),
-                t('focus.dynamic.tips.handDropSecondary'),
-            ],
         };
     }
 
     if (delta < 0) {
         return {
             kicker: t('focus.dynamic.kickers.handKeep'),
-            description: t('focus.dynamic.descriptions.handDiscardNow', {
-                name: focusCard.name,
-                nextScore,
-                delta: formatSignedDelta(delta),
-            }),
             estimatedDelta: delta,
-            tips: [
-                t('focus.dynamic.tips.handKeepPrimary'),
-                t('focus.dynamic.tips.handKeepSecondary'),
-            ],
         };
     }
 
     return {
         kicker: t('focus.dynamic.kickers.handNeutral'),
-        description: t('focus.dynamic.descriptions.handDiscardNow', {
-            name: focusCard.name,
-            nextScore,
-            delta: formatSignedDelta(delta),
-        }),
         estimatedDelta: delta,
-        tips: [
-            t('focus.dynamic.tips.handNeutralPrimary'),
-            t('focus.dynamic.tips.handNeutralSecondary'),
-        ],
     };
 }
 
@@ -360,9 +410,12 @@ function buildBoardFocusInsight(
     viewerPlayer: FantasyRealmsPlayerState | undefined,
     focusDisplay: FocusDisplayState,
     t: Translator,
-) {
+): VisibleFocusInsight {
     if (!focusDisplay.card) {
-        return { ...EMPTY_FOCUS_INSIGHT, tips: [...EMPTY_FOCUS_INSIGHT.tips] };
+        return {
+            kicker: EMPTY_FOCUS_INSIGHT.kicker,
+            estimatedDelta: EMPTY_FOCUS_INSIGHT.estimatedDelta,
+        };
     }
     if (focusDisplay.source === 'discard') {
         return buildDiscardFocusInsight(core, viewerPlayer, focusDisplay.card, t);
@@ -372,15 +425,7 @@ function buildBoardFocusInsight(
     }
     return {
         kicker: t('focus.dynamic.kickers.reviewCard'),
-        description: t('focus.dynamic.descriptions.reviewCard', {
-            name: focusDisplay.card.name,
-            suit: focusDisplay.card.suit,
-        }),
         estimatedDelta: 0,
-        tips: [
-            t('focus.dynamic.tips.reviewPrimary'),
-            t('focus.dynamic.tips.reviewSecondary'),
-        ],
     };
 }
 
@@ -395,174 +440,19 @@ function getDrawDeckLabel(core: FantasyRealmsCore, t: Translator): string {
     return getCurrentPlayerHandCount(core) >= 7 ? t('turn.drawDeck.one') : t('turn.drawDeck.twoThenDiscardOne');
 }
 
-function getPrimaryActionLabel(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string,
-    t: Translator,
-    isGameOver: boolean,
-): string {
-    if (isGameOver) {
-        return t('turn.primaryAction.reviewOnly');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('turn.primaryAction.waiting');
-    }
-    if (core.stage === 'discard') {
-        return t('turn.primaryAction.discardRequired');
-    }
-    return getDrawDeckLabel(core, t);
-}
-
-function getPrimaryActionShortLabel(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string,
-    t: Translator,
-    isGameOver: boolean,
-): string {
-    if (isGameOver) {
-        return t('turn.primaryActionShort.reviewOnly');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('turn.primaryActionShort.waiting');
-    }
-    if (core.stage === 'discard') {
-        return t('turn.primaryActionShort.discardRequired');
-    }
-    if (!isDuelVariant(core)) {
-        return t('turn.primaryActionShort.drawOne');
-    }
-    return getCurrentPlayerHandCount(core) >= 7
-        ? t('turn.primaryActionShort.drawOne')
-        : t('turn.primaryActionShort.twoThenDiscardOne');
-}
-
-function getStageSummary(core: FantasyRealmsCore, t: Translator, isGameOver: boolean): string {
-    if (isGameOver) {
-        return t('turn.stageSummary.gameOver');
-    }
-    if (!isDuelVariant(core)) {
-        if (core.stage === 'discard') {
-            return t('turn.stageSummary.multiplayer.discard');
-        }
-        if (core.discardPile.length === 0) {
-            return t('turn.stageSummary.multiplayer.emptyDiscard');
-        }
-        return t('turn.stageSummary.multiplayer.standard');
-    }
-
-    const handCount = getCurrentPlayerHandCount(core);
-    if (core.stage === 'discard') {
-        return t('turn.stageSummary.duel.discard');
-    }
-    if (handCount >= 7) {
-        return t('turn.stageSummary.duel.fullHand');
-    }
-    return t('turn.stageSummary.duel.opening');
-}
-
 function getStageBannerText(
     core: FantasyRealmsCore,
-    viewerPlayerId: string,
+    viewerPlayerId: string | null,
     currentPlayerName: string,
     t: Translator,
-    isGameOver: boolean,
 ): string {
-    if (isGameOver) {
-        return t('turn.statusBanner.gameOver');
-    }
     if (viewerPlayerId !== core.currentPlayer) {
         return t('turn.statusBanner.waiting', { player: currentPlayerName });
     }
     if (core.stage === 'discard') {
         return t('turn.statusBanner.discardSelf');
     }
-    if (core.discardPile.length > 0) {
-        return t('turn.statusBanner.takeDiscardSelf');
-    }
-    return t('turn.statusBanner.drawSelf');
-}
-
-function getDiscardZoneHint(
-    core: FantasyRealmsCore,
-    canTakeDiscard: boolean,
-    viewerPlayerId: string,
-    isGameOver: boolean,
-    t: Translator,
-): string {
-    if (isGameOver) {
-        return t('zone.discard.hintReview');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('zone.discard.hintWaiting');
-    }
-    if (core.stage === 'discard') {
-        return t('zone.discard.hintDiscardStage');
-    }
-    if (canTakeDiscard) {
-        return t('zone.discard.hintAvailable');
-    }
-    if (core.discardPile.length === 0) {
-        return t('zone.discard.hintEmpty');
-    }
-    return t('zone.discard.hintLocked');
-}
-
-function getHandZoneHint(
-    core: FantasyRealmsCore,
-    canDiscard: boolean,
-    viewerPlayerId: string,
-    isGameOver: boolean,
-    t: Translator,
-): string {
-    if (isGameOver) {
-        return t('zone.hand.hintReview');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('zone.hand.hintWaiting');
-    }
-    if (canDiscard) {
-        return t('zone.hand.hintDiscard');
-    }
-    if (core.stage === 'draw') {
-        return t('zone.hand.hintInspect');
-    }
-    return t('zone.hand.hintDefault');
-}
-
-function getDiscardEmptyMessage(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string,
-    isGameOver: boolean,
-    t: Translator,
-): string {
-    if (isGameOver) {
-        return t('zone.discard.emptyReview');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('zone.discard.emptyWaiting');
-    }
-    if (core.stage === 'discard') {
-        return t('zone.discard.emptyDiscardStage');
-    }
-    return t('zone.discard.emptyDrawFirst');
-}
-
-function getHandEmptyMessage(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string,
-    isGameOver: boolean,
-    t: Translator,
-): string {
-    if (isGameOver) {
-        return t('zone.hand.emptyReview');
-    }
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('zone.hand.emptyWaiting');
-    }
-    if (core.stage === 'discard') {
-        return t('zone.hand.emptyDiscard');
-    }
-    return t('zone.hand.emptyDraw');
+    return t('turn.live.selfTurn');
 }
 
 function getPlayerDisplayName(
@@ -581,21 +471,37 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
     const { t, i18n } = useTranslation('game-fantasyrealms');
     const locale = i18n.language || 'zh-CN';
     const core = React.useMemo(() => (isFantasyRealmsCore(G?.core) ? G.core : createFallbackCore()), [G]);
-    const [isStackedViewport, setIsStackedViewport] = React.useState(() => (
-        typeof window !== 'undefined' ? shouldUseStackedViewport(window.innerWidth, window.innerHeight) : false
+    const [isCompactLandscapeTableViewport, setIsCompactLandscapeTableViewport] = React.useState(() => (
+        typeof window !== 'undefined'
+            ? shouldUseCompactLandscapeTableViewport(window.innerWidth, window.innerHeight)
+            : false
     ));
-    const [isCompactLandscapeViewport, setIsCompactLandscapeViewport] = React.useState(() => (
-        typeof window !== 'undefined' ? shouldUseCompactLandscapeViewport(window.innerWidth, window.innerHeight) : false
+    const [isTightCompactLandscapeViewport, setIsTightCompactLandscapeViewport] = React.useState(() => (
+        typeof window !== 'undefined'
+            ? shouldUseTightCompactLandscapeViewport(window.innerWidth, window.innerHeight)
+            : false
     ));
+    const [pendingLiveSelection, setPendingLiveSelection] = React.useState<PendingLiveSelection>(null);
+    const [liveMotionCue, setLiveMotionCue] = React.useState<LiveMotionCue>(null);
+    const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
+    const liveMotionSequenceRef = React.useRef(0);
 
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
         if (typeof window === 'undefined') return undefined;
         const handleResize = () => {
-            const nextIsStackedViewport = shouldUseStackedViewport(window.innerWidth, window.innerHeight);
-            const nextIsCompactLandscapeViewport = shouldUseCompactLandscapeViewport(window.innerWidth, window.innerHeight);
-            setIsStackedViewport((previous) => (previous === nextIsStackedViewport ? previous : nextIsStackedViewport));
-            setIsCompactLandscapeViewport((previous) => (
-                previous === nextIsCompactLandscapeViewport ? previous : nextIsCompactLandscapeViewport
+            const nextIsCompactLandscapeTableViewport = shouldUseCompactLandscapeTableViewport(
+                window.innerWidth,
+                window.innerHeight,
+            );
+            const nextIsTightCompactLandscapeViewport = shouldUseTightCompactLandscapeViewport(
+                window.innerWidth,
+                window.innerHeight,
+            );
+            setIsCompactLandscapeTableViewport((previous) => (
+                previous === nextIsCompactLandscapeTableViewport ? previous : nextIsCompactLandscapeTableViewport
+            ));
+            setIsTightCompactLandscapeViewport((previous) => (
+                previous === nextIsTightCompactLandscapeViewport ? previous : nextIsTightCompactLandscapeViewport
             ));
         };
         handleResize();
@@ -603,13 +509,16 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const viewerPlayerId = playerID ?? core.currentPlayer;
-    const viewerPlayer = core.players[viewerPlayerId] ?? core.players[core.currentPlayer] ?? Object.values(core.players)[0];
+    const isSpectatorView = playerID == null;
+    const viewerPlayerId = isSpectatorView ? null : playerID;
+    const viewerPlayer = viewerPlayerId ? core.players[viewerPlayerId] : undefined;
+    const viewerHandCards = React.useMemo(() => viewerPlayer?.hand ?? [], [viewerPlayer?.hand]);
     const gameOver = G?.sys?.gameover as { winner?: string; draw?: boolean; scores?: Record<string, number>; winners?: string[] } | undefined;
     const isGameOver = Boolean(gameOver);
+    const handSlotCount = Math.max(FANTASY_REALMS_HAND_CARD_SLOTS, viewerHandCards.length);
     const handCardSlots = React.useMemo(
-        () => buildCardSlots(viewerPlayer?.hand ?? HAND_CARDS, FANTASY_REALMS_HAND_CARD_SLOTS, 'hand'),
-        [viewerPlayer?.hand],
+        () => buildCardSlots(viewerHandCards, handSlotCount, 'hand'),
+        [handSlotCount, viewerHandCards],
     );
     const focusDisplay = React.useMemo(
         () => resolveFocusDisplayState(core, viewerPlayerId, viewerPlayer, isGameOver),
@@ -620,23 +529,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         () => buildBoardFocusInsight(core, viewerPlayer, focusDisplay, t),
         [core, focusDisplay, t, viewerPlayer],
     );
-    const focusKicker = focusDisplay.hiddenByOtherPlayer
-        ? t('focus.hiddenKicker')
-        : (isGameOver ? t('focus.reviewKicker') : focusInsight.kicker);
+    const focusKicker = focusInsight.kicker;
     const focusName = focusDisplay.hiddenByOtherPlayer
         ? t('focus.hiddenName')
-        : (visibleFocusCard?.name ?? t('focus.setupPhase'));
-    const focusDescription = focusDisplay.hiddenByOtherPlayer
-        ? t('focus.hiddenDescription')
-        : (isGameOver ? t('focus.reviewDescription') : focusInsight.description);
+        : (getFantasyRealmsCardDisplayName(visibleFocusCard) || t('focus.setupPhase'));
     const focusEstimatedDelta = focusDisplay.hiddenByOtherPlayer
         ? t('focus.hiddenDelta')
         : (isGameOver
-            ? t('focus.reviewDelta')
+            ? t('focus.hiddenDelta')
             : (focusInsight.estimatedDelta >= 0 ? `+${focusInsight.estimatedDelta}` : String(focusInsight.estimatedDelta)));
-    const focusTips = focusDisplay.hiddenByOtherPlayer
-        ? [t('focus.hiddenTipPrimary'), t('focus.hiddenTipSecondary')]
-        : (isGameOver ? [t('focus.reviewTipPrimary'), t('focus.reviewTipSecondary')] : focusInsight.tips);
     const deckBackStyle = React.useMemo(() => getFantasyRealmsCardBackStyle(locale), [locale]);
     const focusFaceStyle = React.useMemo(
         () => (visibleFocusCard ? getFantasyRealmsCardFaceStyle(visibleFocusCard.id, locale) : null),
@@ -652,21 +553,27 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         return t('fallback.currentPlayer');
     }, [core.currentPlayer, core.players, matchData, t]);
     const viewerPlayerName = (() => {
+        if (isSpectatorView) return t('fallback.spectator');
         const matchPlayer = matchData.find((player) => String(player.id) === String(viewerPlayerId));
         if (matchPlayer?.name) return matchPlayer.name;
         if (viewerPlayer?.name) return viewerPlayer.name;
         return t('fallback.viewer');
     })();
-    const isMyTurn = viewerPlayerId === core.currentPlayer;
+    const isMyTurn = !isSpectatorView && viewerPlayerId === core.currentPlayer;
     const canDrawFromDeck = isMyTurn && !isGameOver && core.stage === 'draw' && core.drawPile.length > 0;
     const canTakeDiscard = isMyTurn && !isGameOver && core.stage === 'draw' && core.discardPile.length > 0;
     const canDiscard = isMyTurn && !isGameOver && core.stage === 'discard';
-    const isLiveMultiplayer = !isGameOver && core.playerIds.length > 2;
-    const useCompactDesktopEmptyDiscard = !isStackedViewport && !isGameOver && discardCards.length === 0;
     const useDenseScorePanel = core.playerIds.length >= 5;
-    const discardThreshold = isDuelVariant(core) ? FANTASY_REALMS_DISCARD_END_THRESHOLD : 10;
+    const discardThreshold = getFantasyRealmsDiscardEndThreshold(core.playerIds.length);
     const discardProgress = Math.min(core.discardPile.length / discardThreshold, 1);
-    const handsFilled = core.playerIds.filter((id) => (core.players[id]?.hand.length ?? 0) >= 7).length;
+    const pendingDiscardSelectionId = pendingLiveSelection?.source === 'discard' ? pendingLiveSelection.cardId : null;
+    const pendingHandSelectionId = pendingLiveSelection?.source === 'hand' ? pendingLiveSelection.cardId : null;
+    const selectedDiscardCard = pendingDiscardSelectionId
+        ? discardCards.find((card) => card.id === pendingDiscardSelectionId) ?? null
+        : null;
+    const selectedHandCard = pendingHandSelectionId
+        ? viewerHandCards.find((card) => card.id === pendingHandSelectionId) ?? null
+        : null;
     const winnerName = gameOver?.winner
         ? getPlayerDisplayName(gameOver.winner, core, matchData, t)
         : null;
@@ -681,11 +588,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         name: getPlayerDisplayName(id, core, matchData, t),
         handCount: core.players[id]?.hand.length ?? 0,
         score: core.players[id]?.score ?? 0,
-        scoreVisible: isGameOver || id === viewerPlayerId,
+        scoreVisible: isGameOver || (!isSpectatorView && id === viewerPlayerId),
         isCurrent: !isGameOver && id === core.currentPlayer,
-        isViewer: id === viewerPlayerId,
+        isViewer: !isSpectatorView && id === viewerPlayerId,
         isWinner: winnerIds.has(id),
-    })), [core, isGameOver, matchData, t, viewerPlayerId, winnerIds]);
+    })), [core, isGameOver, isSpectatorView, matchData, t, viewerPlayerId, winnerIds]);
     const liveScoreOwner = React.useMemo(
         () => playerSummaries.find((player) => player.isViewer)
             ?? playerSummaries.find((player) => player.isCurrent)
@@ -693,11 +600,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             ?? null,
         [playerSummaries],
     );
-    const liveScoreRank = React.useMemo(() => {
-        if (!liveScoreOwner) return null;
-        const higherScores = playerSummaries.filter((player) => player.score > liveScoreOwner.score).length;
-        return higherScores + 1;
-    }, [liveScoreOwner, playerSummaries]);
+    const canRevealViewerLiveScore = !isSpectatorView && Boolean(viewerPlayer);
     const finalStandings = React.useMemo(() => {
         if (!isGameOver) return [];
         return core.playerIds
@@ -710,100 +613,239 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             .sort((left, right) => right.score - left.score);
     }, [core, gameOver?.scores, isGameOver, matchData, t, winnerIds]);
     const stageBannerText = React.useMemo(
-        () => getStageBannerText(core, viewerPlayerId, currentPlayerName, t, isGameOver),
-        [core, currentPlayerName, isGameOver, t, viewerPlayerId],
+        () => getStageBannerText(core, viewerPlayerId, currentPlayerName, t),
+        [core, currentPlayerName, t, viewerPlayerId],
     );
-    const primaryActionLabel = React.useMemo(
-        () => getPrimaryActionLabel(core, viewerPlayerId, t, isGameOver),
-        [core, isGameOver, t, viewerPlayerId],
-    );
-    const primaryActionShortLabel = React.useMemo(
-        () => getPrimaryActionShortLabel(core, viewerPlayerId, t, isGameOver),
-        [core, isGameOver, t, viewerPlayerId],
-    );
-    const isMinimalDesktop = !isStackedViewport;
-    const isMinimalLiveDesktop = isMinimalDesktop && !isGameOver;
-    const discardZoneHint = React.useMemo(
-        () => getDiscardZoneHint(core, canTakeDiscard, viewerPlayerId, isGameOver, t),
-        [canTakeDiscard, core, isGameOver, t, viewerPlayerId],
-    );
-    const handZoneHint = React.useMemo(
-        () => getHandZoneHint(core, canDiscard, viewerPlayerId, isGameOver, t),
-        [canDiscard, core, isGameOver, t, viewerPlayerId],
-    );
-    const discardEmptyMessage = React.useMemo(
-        () => getDiscardEmptyMessage(core, viewerPlayerId, isGameOver, t),
-        [core, isGameOver, t, viewerPlayerId],
-    );
-    const handEmptyMessage = React.useMemo(
-        () => getHandEmptyMessage(core, viewerPlayerId, isGameOver, t),
-        [core, isGameOver, t, viewerPlayerId],
-    );
+    const shouldShowFocusKicker = !isGameOver && !focusDisplay.hiddenByOtherPlayer;
+    const isMinimalLiveDesktop = true;
+    const handRowOverflowStyle = React.useMemo<React.CSSProperties | undefined>(() => {
+        if (handSlotCount <= FANTASY_REALMS_HAND_CARD_SLOTS) {
+            return undefined;
+        }
+        return {
+            gridTemplateColumns: isMinimalLiveDesktop
+                ? `repeat(${handSlotCount}, minmax(0, 1fr))`
+                : `repeat(${handSlotCount}, minmax(88px, 1fr))`,
+        };
+    }, [handSlotCount, isMinimalLiveDesktop]);
     const compactTurnStateLabel = React.useMemo(() => {
-        if (isGameOver) return t('turn.compact.review');
-        if (!isMyTurn) return t('turn.compact.waiting');
+        if (!isMyTurn) return null;
         if (core.stage === 'discard') return t('turn.compact.discard');
         return t('turn.compact.draw');
-    }, [core.stage, isGameOver, isMyTurn, t]);
+    }, [core.stage, isMyTurn, t]);
+    const viewerHandIdsSignature = viewerHandCards.map((card) => card.id).join('|');
+    const discardIdsSignature = discardCards.map((card) => card.id).join('|');
+
+    React.useEffect(() => {
+        const nextSnapshot = createLiveMotionSnapshot(core, viewerPlayerId, viewerHandCards, discardCards, isGameOver);
+        const previousSnapshot = liveMotionSnapshotRef.current
+            ?? (typeof window !== 'undefined'
+                ? (window as LiveMotionWindow).__FR_LIVE_MOTION_LAST_SNAPSHOT__ ?? null
+                : null);
+        liveMotionSnapshotRef.current = nextSnapshot;
+        if (typeof window !== 'undefined') {
+            (window as LiveMotionWindow).__FR_LIVE_MOTION_LAST_SNAPSHOT__ = nextSnapshot;
+        }
+
+        if (!previousSnapshot || !isMinimalLiveDesktop || isSpectatorView || isGameOver) {
+            return undefined;
+        }
+
+        const handCountDelta = nextSnapshot.handIds.length - previousSnapshot.handIds.length;
+        const discardCountDelta = nextSnapshot.discardIds.length - previousSnapshot.discardIds.length;
+        const discardIdsChanged = nextSnapshot.discardIds.join('|') !== previousSnapshot.discardIds.join('|');
+        const drawCountDelta = nextSnapshot.drawPileCount - previousSnapshot.drawPileCount;
+        let nextCueType: LiveMotionCueType | null = null;
+        let nextCueCardIds: string[] = [];
+
+        if (
+            previousSnapshot.currentPlayer === viewerPlayerId
+            && nextSnapshot.currentPlayer === viewerPlayerId
+            && previousSnapshot.stage === 'draw'
+            && nextSnapshot.stage === 'discard'
+            && handCountDelta > 0
+        ) {
+            nextCueType = drawCountDelta < 0 ? 'draw-to-hand' : 'discard-to-hand';
+            nextCueCardIds = getAddedIds(nextSnapshot.handIds, previousSnapshot.handIds);
+        } else if (
+            previousSnapshot.currentPlayer === previousSnapshot.viewerPlayerId
+            && previousSnapshot.stage === 'discard'
+            && nextSnapshot.stage === 'draw'
+            && (discardCountDelta > 0 || discardIdsChanged)
+        ) {
+            nextCueType = 'hand-to-river';
+            nextCueCardIds = getAddedIds(nextSnapshot.discardIds, previousSnapshot.discardIds);
+        }
+
+        if (!nextCueType || nextCueCardIds.length === 0) {
+            return undefined;
+        }
+
+        liveMotionSequenceRef.current += 1;
+        const nextKey = liveMotionSequenceRef.current;
+        setLiveMotionCue({ type: nextCueType, key: nextKey, cardIds: nextCueCardIds });
+
+        return undefined;
+    }, [
+        core.currentPlayer,
+        core.drawPile.length,
+        core.stage,
+        discardIdsSignature,
+        isGameOver,
+        isMinimalLiveDesktop,
+        isSpectatorView,
+        viewerHandIdsSignature,
+        viewerPlayerId,
+    ]);
+
+    React.useEffect(() => {
+        if (!liveMotionCue) return undefined;
+
+        const cueKey = liveMotionCue.key;
+        const clearTimer = window.setTimeout(() => {
+            setLiveMotionCue((current) => (current?.key === cueKey ? null : current));
+        }, 1350);
+
+        return () => window.clearTimeout(clearTimer);
+    }, [liveMotionCue]);
 
     const handleDrawFromDeck = React.useCallback(() => {
         dispatch('DRAW_FROM_DECK', {});
     }, [dispatch]);
 
+    React.useEffect(() => {
+        if (!isMinimalLiveDesktop || !isMyTurn) {
+            setPendingLiveSelection(null);
+            return;
+        }
+
+        if (pendingLiveSelection?.source === 'discard') {
+            if (!canTakeDiscard || !selectedDiscardCard) {
+                setPendingLiveSelection(null);
+            }
+            return;
+        }
+
+        if (pendingLiveSelection?.source === 'hand' && (!canDiscard || !selectedHandCard)) {
+            setPendingLiveSelection(null);
+        }
+    }, [
+        canDiscard,
+        canTakeDiscard,
+        isMinimalLiveDesktop,
+        isMyTurn,
+        pendingLiveSelection,
+        selectedDiscardCard,
+        selectedHandCard,
+    ]);
+
     const handleFocusCard = React.useCallback((cardId: string) => {
         dispatch('SET_FOCUS_CARD', { cardId });
     }, [dispatch]);
 
+    const togglePendingLiveSelection = React.useCallback((source: 'discard' | 'hand', cardId: string) => {
+        setPendingLiveSelection((previous) => (
+            previous?.source === source && previous.cardId === cardId
+                ? null
+                : { source, cardId }
+        ));
+    }, []);
+
     const handleDiscardPileClick = React.useCallback((cardId: string) => {
+        if (isMinimalLiveDesktop && canTakeDiscard) {
+            handleFocusCard(cardId);
+            togglePendingLiveSelection('discard', cardId);
+            return;
+        }
         if (canTakeDiscard) {
             dispatch('TAKE_FROM_DISCARD', { cardId });
             return;
         }
         handleFocusCard(cardId);
-    }, [canTakeDiscard, dispatch, handleFocusCard]);
+    }, [canTakeDiscard, dispatch, handleFocusCard, isMinimalLiveDesktop, togglePendingLiveSelection]);
 
     const handleHandCardClick = React.useCallback((cardId: string) => {
+        if (isMinimalLiveDesktop && canDiscard) {
+            handleFocusCard(cardId);
+            togglePendingLiveSelection('hand', cardId);
+            return;
+        }
         if (canDiscard) {
             dispatch('DISCARD_CARD', { cardId });
             return;
         }
         handleFocusCard(cardId);
-    }, [canDiscard, dispatch, handleFocusCard]);
+    }, [canDiscard, dispatch, handleFocusCard, isMinimalLiveDesktop, togglePendingLiveSelection]);
 
-    const turnPanelBody = (
+    const handleLivePrimaryAction = React.useCallback(() => {
+        if (canDiscard) {
+            if (!selectedHandCard) return;
+            dispatch('DISCARD_CARD', { cardId: selectedHandCard.id });
+            setPendingLiveSelection(null);
+            return;
+        }
+
+        if (selectedDiscardCard) {
+            dispatch('TAKE_FROM_DISCARD', { cardId: selectedDiscardCard.id });
+            setPendingLiveSelection(null);
+            return;
+        }
+
+    }, [canDiscard, dispatch, selectedDiscardCard, selectedHandCard]);
+
+    const handleDeckStackClick = React.useCallback(() => {
+        if (!canDrawFromDeck || !isMyTurn) return;
+        setPendingLiveSelection(null);
+        dispatch('DRAW_FROM_DECK', {});
+    }, [canDrawFromDeck, dispatch, isMyTurn]);
+
+    const livePrimaryActionLabel = React.useMemo(() => {
+        if (canDiscard) {
+            return selectedHandCard ? t('actions.confirmDiscard') : t('turn.primaryActionShort.discardRequired');
+        }
+        return t('actions.confirmTake');
+    }, [canDiscard, selectedHandCard, t]);
+    const minimalLiveRiverCardStyles = React.useMemo(
+        () => buildMinimalLiveRiverCardStyles(discardCards.length),
+        [discardCards.length],
+    );
+    const minimalLiveHandCardStyles = React.useMemo(
+        () => buildMinimalLiveHandCardStyles(viewerHandCards.length, handSlotCount),
+        [handSlotCount, viewerHandCards.length],
+    );
+
+    const isLivePrimaryActionDisabled = React.useMemo(() => {
+        if (canDiscard) return !selectedHandCard;
+        return false;
+    }, [canDiscard, selectedHandCard]);
+
+    const turnPanelBody = isGameOver ? (
         <div className="fr-panel-body fr-chip-list">
-            <div className="fr-chip">
-                {isGameOver ? t('turn.reviewChip') : t('turn.roundChip', { turn: core.turn, player: currentPlayerName })}
-            </div>
-            {isMinimalDesktop ? (
-                <div className="fr-chip fr-chip--muted">{compactTurnStateLabel}</div>
-            ) : (
-                <>
-                    <div
-                        className={`fr-stage-banner${core.stage === 'discard' ? ' fr-stage-banner--discard' : ''}`}
-                        aria-live="polite"
-                    >
-                        {stageBannerText}
-                    </div>
-                    {!isMyTurn && !isGameOver ? (
-                        <div className="fr-observer-note">{t('turn.observerNote')}</div>
-                    ) : null}
-                    <div className="fr-chip">{getStageSummary(core, t, isGameOver)}</div>
-                </>
-            )}
-            <button
-                type="button"
-                className={`fr-chip${canDrawFromDeck ? ' fr-chip--actionable' : ''}`}
-                onClick={handleDrawFromDeck}
-                disabled={!canDrawFromDeck}
+            <div className="fr-chip">{t('turn.reviewChip')}</div>
+        </div>
+    ) : (
+        <div className="fr-panel-body fr-chip-list">
+            <div className="fr-chip">{t('turn.roundChip', { turn: core.turn })}</div>
+            <div
+                className={`fr-stage-banner${core.stage === 'discard' ? ' fr-stage-banner--discard' : ''}`}
+                aria-live="polite"
             >
-                {primaryActionLabel}
-            </button>
+                {stageBannerText}
+            </div>
+            {canDrawFromDeck ? (
+                <button
+                    type="button"
+                    className="fr-chip fr-chip--actionable"
+                    onClick={handleDrawFromDeck}
+                >
+                    {getDrawDeckLabel(core, t)}
+                </button>
+            ) : null}
         </div>
     );
 
     const turnPanelSection = (
-        <section className={`fr-panel${isStackedViewport ? ' fr-stacked-turn-panel' : ' fr-panel--turn-corner'}`}>
+        <section className="fr-panel fr-compact-turn-panel">
             <div className="fr-panel-header">{t('turn.panelTitle')}</div>
             {turnPanelBody}
         </section>
@@ -813,7 +855,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         <section className="fr-panel fr-panel--deck-corner">
             <div className="fr-panel-header">{t('deck.panelTitle')}</div>
             <div className="fr-panel-body">
-                <div className={`fr-stack fr-stack--deck${isStackedViewport ? ' fr-stack--deck-compact' : ''}`}>
+                <div className={`fr-stack fr-stack--deck${isCompactLandscapeTableViewport ? ' fr-stack--deck-compact' : ''}`}>
                     <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
                     <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
                     <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
@@ -827,7 +869,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
     );
 
     const scorePanelSection = (
-        <section className={`fr-panel${!isStackedViewport ? ' fr-panel--score-rail' : ''}`}>
+        <section className="fr-panel">
             <div className="fr-panel-header">{t('score.panelTitle')}</div>
             <div className={`fr-panel-body fr-score-summary${useDenseScorePanel ? ' fr-score-summary--dense' : ''}`}>
                 <div className={`fr-score-table${useDenseScorePanel ? ' fr-score-table--dense' : ''}`} aria-label={t('score.tableTitle')}>
@@ -840,7 +882,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                                 <div className={`fr-score-row-name${useDenseScorePanel ? ' fr-score-row-name--dense' : ''}`}>
                                     <span>{player.name}</span>
                                     {player.isViewer ? <i className="fr-score-badge">{t('score.badges.you')}</i> : null}
-                                    {player.isCurrent ? <i className="fr-score-badge">{t('score.badges.current')}</i> : null}
                                     {player.isWinner ? <i className="fr-score-badge">{t('score.badges.winner')}</i> : null}
                                 </div>
                                 <div className={`fr-score-row-meta${useDenseScorePanel ? ' fr-score-row-meta--dense' : ''}`}>
@@ -863,11 +904,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         </div>
                     ))}
                 </div>
-                <div className={`fr-score-summary-value${useDenseScorePanel ? ' fr-score-summary-value--dense' : ''}`}>
-                    <strong>{viewerPlayer?.score ?? 0}</strong>
-                    <span>{t('score.totalLabel')}</span>
-                </div>
-                {!isMinimalDesktop ? (
+                {canRevealViewerLiveScore ? (
                     <div className={`fr-score-list${useDenseScorePanel ? ' fr-score-list--dense' : ''}`}>
                         {(viewerPlayer?.scoreBreakdown ?? []).map((line) => (
                             <span key={line.label}>
@@ -877,34 +914,31 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         ))}
                     </div>
                 ) : null}
-                {!isMinimalDesktop && isLiveMultiplayer ? (
-                    <div className="fr-score-note">{t('score.hiddenReasonLive')}</div>
-                ) : null}
             </div>
         </section>
     );
 
     const discardZoneSection = (
         <section
-            className={`fr-zone${useCompactDesktopEmptyDiscard ? ' fr-zone--compact-empty-discard' : ''}${!isStackedViewport ? ' fr-zone--discard-river' : ''}`}
-            aria-label={t('zone.discard.ariaLabel')}
+            className="fr-zone"
+            aria-label={t('zone.discard.title')}
         >
             <div className="fr-zone-header">
                 <div className="fr-zone-title">{t('zone.discard.title')}</div>
                 <div className={`fr-zone-hint${canTakeDiscard ? ' fr-zone-hint--active' : ''}`}>
-                    {isMinimalDesktop ? `${discardCards.length}/${discardThreshold}` : discardZoneHint}
+                    {`${discardCards.length}/${discardThreshold}`}
                 </div>
             </div>
             <div
-                className={`fr-discard-row${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}${!isStackedViewport && discardCards.length > 0 ? ' fr-discard-row--table-river' : ''}`}
+                className={`fr-discard-row${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}`}
                 data-testid="fantasyrealms-discard-row"
             >
                 {discardCards.length === 0 ? (
                     <div
-                        className={`fr-zone-empty${useCompactDesktopEmptyDiscard ? ' fr-zone-empty--compact-discard' : ''}`}
+                        className="fr-zone-empty"
                         data-testid="fantasyrealms-discard-empty"
                     >
-                        {isMinimalDesktop ? t('zone.discard.emptyCompact') : discardEmptyMessage}
+                        {t('zone.discard.emptyCompact')}
                     </div>
                 ) : discardCards.map((card) => (
                     <button
@@ -914,8 +948,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         onClick={() => handleDiscardPileClick(card.id)}
                         data-action-state={canTakeDiscard ? 'take' : 'inspect'}
                         aria-label={canTakeDiscard
-                            ? t('actions.takeDiscardAria', { name: card.name })
-                            : t('actions.inspectDiscardAria', { name: card.name })}
+                            ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
+                            : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
                     >
                         {renderCard(card, t, locale)}
                     </button>
@@ -925,18 +959,23 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
     );
 
     const handZoneSection = (
-        <section className={`fr-zone${!isStackedViewport ? ' fr-zone--hand-band' : ''}`} aria-label={t('zone.hand.ariaLabel')}>
+        <section className="fr-zone" aria-label={t('zone.hand.ariaLabel')}>
             <div className="fr-zone-header">
-                <div className="fr-zone-title">{t('zone.hand.title', { player: viewerPlayerName })}</div>
-                <div className={`fr-zone-hint${canDiscard ? ' fr-zone-hint--active' : ''}`}>
-                    {isMinimalDesktop ? `${viewerPlayer?.hand.length ?? 0}/${FANTASY_REALMS_HAND_CARD_SLOTS}` : handZoneHint}
+                <div className="fr-zone-title">
+                    {isSpectatorView && !isGameOver ? t('zone.hand.titleSpectator') : t('zone.hand.title', { player: viewerPlayerName })}
                 </div>
+                {isSpectatorView && !isGameOver ? null : (
+                    <div className={`fr-zone-hint${canDiscard ? ' fr-zone-hint--active' : ''}`}>
+                        {`${viewerHandCards.length}/${FANTASY_REALMS_HAND_CARD_SLOTS}`}
+                    </div>
+                )}
             </div>
             <div className="fr-card-row-wrap">
                 <div
-                    className={`fr-card-row${!isStackedViewport ? ' fr-card-row--table-band' : ''}`}
+                    className="fr-card-row"
                     data-testid="fantasyrealms-hand-row"
-                    data-slot-count={FANTASY_REALMS_HAND_CARD_SLOTS}
+                    data-slot-count={handSlotCount}
+                    style={handRowOverflowStyle}
                 >
                     {handCardSlots.map((slot) => slot.card ? (
                         <button
@@ -946,8 +985,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                             onClick={() => handleHandCardClick(slot.card!.id)}
                             data-action-state={canDiscard ? 'discard' : 'inspect'}
                             aria-label={canDiscard
-                                ? t('actions.discardHandAria', { name: slot.card.name })
-                                : t('actions.inspectHandAria', { name: slot.card.name })}
+                                ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })
+                                : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })}
                         >
                             {renderCard(slot.card, t, locale)}
                         </button>
@@ -960,60 +999,51 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         />
                     ))}
                 </div>
-                {(viewerPlayer?.hand.length ?? 0) === 0 ? (
+                {viewerHandCards.length === 0 ? (
                     <div className="fr-card-row-note" data-testid="fantasyrealms-hand-empty-note">
-                        {isMinimalDesktop ? t('zone.hand.emptyCompact') : handEmptyMessage}
+                        {t('zone.hand.emptyCompact')}
                     </div>
                 ) : null}
             </div>
         </section>
     );
 
+    const focusSpotlightSection = (
+        <div className="fr-focus-spotlight">
+            <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}`}>
+                <div
+                    className="fr-card fr-card--atlas fr-card--focus-preview"
+                    data-testid="fantasyrealms-focus-preview"
+                    data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
+                    data-atlas-card-id={visibleFocusCard?.id ?? ''}
+                    aria-label={focusName}
+                    style={focusPreviewStyle}
+                >
+                    <div aria-hidden="true" className="fr-card-sheen" />
+                </div>
+            </div>
+            <article className="fr-focus-card">
+                {shouldShowFocusKicker ? <div className="fr-focus-kicker">{focusKicker}</div> : null}
+                <div className="fr-focus-name">{focusName}</div>
+                <div className="fr-focus-score">
+                    <span>{t('focus.estimatedDelta')}</span>
+                    <strong>{focusEstimatedDelta}</strong>
+                </div>
+            </article>
+        </div>
+    );
+
     const focusPanelSection = (
-        <section className={`fr-panel${!isStackedViewport ? ' fr-panel--focus-note' : ''}`}>
+        <section className="fr-panel">
             <div className="fr-panel-header">{t('focus.panelTitle')}</div>
             <div className="fr-panel-body fr-focus-panel">
-                <div className="fr-focus-spotlight">
-                    <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}`}>
-                        <div
-                            className="fr-card fr-card--atlas fr-card--focus-preview"
-                            data-testid="fantasyrealms-focus-preview"
-                            data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
-                            data-atlas-card-id={visibleFocusCard?.id ?? ''}
-                            aria-label={focusName}
-                            style={focusPreviewStyle}
-                        >
-                            <div aria-hidden="true" className="fr-card-sheen" />
-                        </div>
-                    </div>
-                    <article className="fr-focus-card">
-                        {!isMinimalDesktop ? <div className="fr-focus-kicker">{focusKicker}</div> : null}
-                        <div className="fr-focus-name">{focusName}</div>
-                        {!isMinimalDesktop ? (
-                            <div className="fr-focus-text">
-                                {focusDescription}
-                            </div>
-                        ) : null}
-                        <div className="fr-focus-score">
-                            <span>{t('focus.estimatedDelta')}</span>
-                            <strong>{focusEstimatedDelta}</strong>
-                        </div>
-                    </article>
-                </div>
-
-                {!isMinimalDesktop ? (
-                    <div className="fr-combo-list">
-                        {focusTips.map((tip) => (
-                            <div key={tip} className="fr-combo-item">{tip}</div>
-                        ))}
-                    </div>
-                ) : null}
+                {focusSpotlightSection}
             </div>
         </section>
     );
 
     const progressPanelSection = (
-        <section className={`fr-panel${!isStackedViewport ? ' fr-panel--progress-note' : ''}`}>
+        <section className="fr-panel">
             <div className="fr-panel-header">{t('progress.panelTitle')}</div>
             <div className="fr-panel-body fr-focus-panel">
                 <div className="fr-progress-head">
@@ -1023,24 +1053,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 <div className="fr-progress-track">
                     <div className="fr-progress-fill" style={{ width: `${discardProgress * 100}%` }} />
                 </div>
-                {!isMinimalDesktop ? (
-                    <div className="fr-footer-text">
-                        {isGameOver
-                            ? t('progress.gameOverReview')
-                            : (isDuelVariant(core)
-                                ? t('progress.duelStatus', { handsFilled, playerCount: core.playerIds.length })
-                                : t('progress.standardStatus', { playerCount: core.playerIds.length }))}
-                    </div>
-                ) : null}
                 {isGameOver ? (
                     <div className="fr-endgame-summary">
-                        {!isMinimalDesktop ? (
-                            <div className="fr-combo-item">
-                                {gameOver?.draw
-                                    ? t('progress.gameOverDraw')
-                                    : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
-                            </div>
-                        ) : null}
+                        <div className="fr-combo-item">
+                            {gameOver?.draw
+                                ? t('progress.gameOverDraw')
+                                : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
+                        </div>
                         <div className="fr-endgame-title">
                             <span>{t('progress.finalStandings')}</span>
                             {gameOver?.draw ? <i className="fr-score-badge">{t('progress.drawBadge')}</i> : null}
@@ -1063,105 +1082,237 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         </section>
     );
 
-    const minimalLiveTopbarSection = (
+    const minimalLiveTopbarSection = !isGameOver ? (
         <div className="fr-live-topbar" data-testid="fantasyrealms-live-topbar">
-            <div className="fr-live-status-strip" data-testid="fantasyrealms-live-status-strip">
-                <div className="fr-live-deck" aria-label={t('deck.panelTitle')}>
-                    <div className="fr-live-deck-stack">
-                        <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
-                        <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
-                        <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
-                    </div>
+            <button
+                type="button"
+                className={`fr-live-deck${canDrawFromDeck ? ' fr-live-deck--enabled' : ''}`}
+                data-testid="fantasyrealms-live-deck"
+                aria-label={getDrawDeckLabel(core, t)}
+                onClick={handleDeckStackClick}
+                disabled={!canDrawFromDeck}
+            >
+                <div className="fr-live-deck-stack">
+                    <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
                     <strong className="fr-live-deck-count">{core.drawPile.length}</strong>
                 </div>
-                <div className="fr-live-turn-strip" aria-label={t('turn.panelTitle')}>
-                    <span className="fr-live-turn-round">{t('turn.short.round', { turn: core.turn })}</span>
-                    <span className="fr-live-turn-player">{currentPlayerName}</span>
+            </button>
+            <div className="fr-live-status-strip" data-testid="fantasyrealms-live-status-strip">
+                <div className={`fr-live-chip fr-live-chip--turn${isMyTurn ? ' fr-live-chip--turn-active' : ''}`}>
+                    {isMyTurn ? t('turn.live.selfTurn') : currentPlayerName}
                 </div>
-                <div className="fr-live-progress-chip" aria-label={t('progress.panelTitle')}>
+                <div className="fr-live-chip fr-live-chip--round">
+                    {t('turn.short.round', { turn: core.turn })}
+                </div>
+                <div className="fr-live-chip fr-live-chip--progress" aria-label={t('progress.panelTitle')}>
                     {discardCards.length}/{discardThreshold}
                 </div>
-                <button
-                    type="button"
-                    className={`fr-live-action${canDrawFromDeck ? ' fr-live-action--enabled' : ''}`}
-                    onClick={handleDrawFromDeck}
-                    disabled={!canDrawFromDeck}
-                >
-                    {primaryActionShortLabel}
-                </button>
+                {compactTurnStateLabel ? (
+                    <div className="fr-live-chip fr-live-chip--cue">
+                        {compactTurnStateLabel}
+                    </div>
+                ) : null}
             </div>
             <div className="fr-live-score-strip" aria-label={t('score.tableTitle')} data-testid="fantasyrealms-live-score-strip">
-                <div className="fr-live-score-band">
-                    <div className="fr-live-score-band-kicker">{t('score.panelTitle')} / {t('progress.rank', { rank: liveScoreRank ?? 1 })}</div>
+                <div className="fr-live-score-band" data-testid="fantasyrealms-live-score-band">
+                    <div className="fr-live-score-band-kicker">
+                        {t('score.panelTitle')}
+                    </div>
                     <div className="fr-live-score-band-main">
                         <strong className="fr-live-score-band-total">
                             {liveScoreOwner?.scoreVisible ? liveScoreOwner.score : t('score.hiddenValue')}
                         </strong>
-                        <span className="fr-live-score-band-rank">{t('progress.rank', { rank: liveScoreRank ?? 1 })}</span>
+                        {!liveScoreOwner?.scoreVisible ? (
+                            <span>
+                                {t('score.hiddenLabel')}
+                            </span>
+                        ) : null}
                     </div>
                 </div>
             </div>
         </div>
-    );
+    ) : null;
+
+    const shouldShowMinimalLiveAction = isMyTurn
+        && !isGameOver
+        && (Boolean(selectedHandCard) || Boolean(selectedDiscardCard));
+
+    const minimalLiveActionZoneSection = shouldShowMinimalLiveAction ? (
+        <div
+            className="fr-live-action-zone"
+            data-anchor="bottom-right"
+            data-testid="fantasyrealms-live-action-zone"
+        >
+            <button
+                type="button"
+                className={`fr-live-action-button${isLivePrimaryActionDisabled ? '' : ' fr-live-action-button--enabled'}`}
+                onClick={handleLivePrimaryAction}
+                disabled={isLivePrimaryActionDisabled}
+                data-testid="fantasyrealms-live-action-button"
+            >
+                <span className="fr-live-action-button-label">{livePrimaryActionLabel}</span>
+            </button>
+        </div>
+    ) : null;
 
     const minimalLiveDiscardZoneSection = (
-        <section className="fr-live-river" aria-label={t('zone.discard.ariaLabel')} data-testid="fantasyrealms-live-river">
+        <section
+            className={`fr-live-river${liveMotionCue?.type === 'hand-to-river' ? ' fr-live-river--motion-receive' : ''}`}
+            aria-label={t('zone.discard.title')}
+            data-motion={liveMotionCue?.type === 'hand-to-river' ? 'hand-to-river' : 'idle'}
+            data-testid="fantasyrealms-live-river"
+        >
             <div
                 className={`fr-discard-row fr-discard-row--live-river${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}${discardCards.length > 0 ? ' fr-discard-row--table-river' : ''}`}
                 data-testid="fantasyrealms-discard-row"
             >
                 {discardCards.length === 0 ? (
-                    <div className="fr-zone-empty fr-zone-empty--silent" data-testid="fantasyrealms-discard-empty" aria-hidden="true" />
-                ) : discardCards.map((card) => (
+                    <div className="fr-live-river-empty-mat" data-testid="fantasyrealms-discard-empty" aria-hidden="true">
+                        <div className="fr-live-river-empty-card fr-live-river-empty-card--left" style={deckBackStyle} />
+                        <div className="fr-live-river-empty-card fr-live-river-empty-card--center" style={deckBackStyle} />
+                        <div className="fr-live-river-empty-card fr-live-river-empty-card--right" style={deckBackStyle} />
+                    </div>
+                ) : discardCards.map((card, index) => (
                     <button
                         key={card.id}
                         type="button"
-                        className={`fr-card-button fr-card-button--live-river${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTakeDiscard ? ' fr-card-button--actionable' : ''}`}
+                        className={`fr-card-button fr-card-button--live-river${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTakeDiscard ? ' fr-card-button--actionable' : ''}${pendingDiscardSelectionId === card.id ? ' fr-card-button--armed' : ''}${liveMotionCue?.type === 'hand-to-river' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-river-receive' : ''}`}
                         onClick={() => handleDiscardPileClick(card.id)}
+                        style={minimalLiveRiverCardStyles[index]}
                         data-action-state={canTakeDiscard ? 'take' : 'inspect'}
                         aria-label={canTakeDiscard
-                            ? t('actions.takeDiscardAria', { name: card.name })
-                            : t('actions.inspectDiscardAria', { name: card.name })}
+                            ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
+                            : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
                     >
                         {renderCard(card, t, locale)}
+                        {pendingDiscardSelectionId === card.id ? (
+                            <span className="fr-live-card-state" aria-hidden="true">{t('actions.selected')}</span>
+                        ) : null}
                     </button>
                 ))}
             </div>
         </section>
     );
 
+    const minimalLiveFocusDockSection = !isGameOver && !isCompactLandscapeTableViewport ? (
+        <aside className="fr-live-focus-dock" data-testid="fantasyrealms-live-focus-dock">
+            <section className="fr-panel">
+                <div className="fr-panel-body fr-focus-panel">
+                    {focusSpotlightSection}
+                </div>
+            </section>
+        </aside>
+    ) : null;
+
     const minimalLiveHandZoneSection = (
-        <section className="fr-live-handband" aria-label={t('zone.hand.ariaLabel')} data-testid="fantasyrealms-live-handband">
+        <section
+            className={`fr-live-handband${liveMotionCue?.type === 'draw-to-hand' ? ' fr-live-handband--motion-draw' : ''}${liveMotionCue?.type === 'discard-to-hand' ? ' fr-live-handband--motion-take' : ''}`}
+            aria-label={t('zone.hand.ariaLabel')}
+            data-motion={liveMotionCue?.type === 'draw-to-hand' || liveMotionCue?.type === 'discard-to-hand' ? liveMotionCue.type : 'idle'}
+            data-testid="fantasyrealms-live-handband"
+        >
             <div className="fr-card-row-wrap">
                 <div
                     className="fr-card-row fr-card-row--table-band"
                     data-testid="fantasyrealms-hand-row"
-                    data-slot-count={FANTASY_REALMS_HAND_CARD_SLOTS}
+                    data-slot-count={handSlotCount}
+                    data-visible-count={viewerHandCards.length}
+                    style={handRowOverflowStyle}
                 >
-                    {handCardSlots.map((slot) => slot.card ? (
+                    {viewerHandCards.map((card, index) => (
                         <button
-                            key={slot.key}
+                            key={`live-hand-${card.id}`}
                             type="button"
-                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === slot.card!.id ? ' fr-card-button--selected' : ''}${canDiscard ? ' fr-card-button--actionable' : ''}`}
-                            onClick={() => handleHandCardClick(slot.card!.id)}
+                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canDiscard ? ' fr-card-button--actionable' : ''}${pendingHandSelectionId === card.id ? ' fr-card-button--armed' : ''}${liveMotionCue?.type === 'draw-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-draw' : ''}${liveMotionCue?.type === 'discard-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-take' : ''}`}
+                            onClick={() => handleHandCardClick(card.id)}
+                            style={minimalLiveHandCardStyles[index]}
                             data-action-state={canDiscard ? 'discard' : 'inspect'}
                             aria-label={canDiscard
-                                ? t('actions.discardHandAria', { name: slot.card.name })
-                                : t('actions.inspectHandAria', { name: slot.card.name })}
+                                ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(card) })
+                                : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(card) })}
                         >
-                            {renderCard(slot.card, t, locale)}
+                            {renderCard(card, t, locale)}
+                            {pendingHandSelectionId === card.id ? (
+                                <span className="fr-live-card-state" aria-hidden="true">{t('actions.selected')}</span>
+                            ) : null}
                         </button>
-                    ) : (
-                        <div
-                            key={slot.key}
-                            className="fr-card-slot fr-card-slot--live-hand"
-                            data-testid="fantasyrealms-card-slot-empty"
-                            aria-hidden="true"
-                        />
                     ))}
                 </div>
             </div>
         </section>
+    );
+
+    const minimalLiveEndgameSection = isGameOver ? (
+        <section className="fr-live-endgame" data-testid="fantasyrealms-live-endgame">
+            <div className="fr-live-endgame-header">{t('turn.reviewChip')}</div>
+            <div className="fr-live-endgame-grid">
+                <section className="fr-live-endgame-focus-block" aria-label={t('focus.panelTitle')}>
+                    <div className="fr-live-endgame-section-title">{t('focus.panelTitle')}</div>
+                    <div className="fr-focus-spotlight">
+                        <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}`}>
+                            <div
+                                className="fr-card fr-card--atlas fr-card--focus-preview"
+                                data-testid="fantasyrealms-focus-preview"
+                                data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
+                                data-atlas-card-id={visibleFocusCard?.id ?? ''}
+                                aria-label={focusName}
+                                style={focusPreviewStyle}
+                            >
+                                <div aria-hidden="true" className="fr-card-sheen" />
+                            </div>
+                        </div>
+                        <article className="fr-focus-card">
+                            <div className="fr-focus-name">{focusName}</div>
+                            <div className="fr-focus-score">
+                                <span>{t('focus.estimatedDelta')}</span>
+                                <strong>{focusEstimatedDelta}</strong>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+                <section className="fr-live-endgame-summary-block">
+                    <div className="fr-live-endgame-section-title">
+                        <span>{t('progress.finalStandings')}</span>
+                        {gameOver?.draw ? <i className="fr-score-badge">{t('progress.drawBadge')}</i> : null}
+                    </div>
+                    <div className="fr-endgame-summary">
+                        <div className="fr-combo-item">
+                            {gameOver?.draw
+                                ? t('progress.gameOverDraw')
+                                : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
+                        </div>
+                        <div className="fr-endgame-list" aria-label={t('progress.finalStandings')}>
+                            {finalStandings.map((player, index) => (
+                                <div key={player.id} className="fr-endgame-row">
+                                    <div className="fr-endgame-rank">{t('progress.rank', { rank: index + 1 })}</div>
+                                    <div className="fr-endgame-name">
+                                        <span>{player.name}</span>
+                                        {player.isWinner ? <i className="fr-score-badge">{t('score.badges.winner')}</i> : null}
+                                    </div>
+                                    <div className="fr-endgame-score">{player.score}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    ) : null;
+
+    const liveTableSection = (
+        <div
+            className={`fr-live-table${isGameOver ? ' fr-live-table--gameover' : ''}`}
+            data-testid="fantasyrealms-live-table"
+        >
+            {minimalLiveTopbarSection}
+            {minimalLiveDiscardZoneSection}
+            {minimalLiveFocusDockSection}
+            {minimalLiveHandZoneSection}
+            {minimalLiveActionZoneSection}
+            {minimalLiveEndgameSection}
+        </div>
     );
 
     return (
@@ -1170,12 +1321,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-root {
                     min-height: 100%;
                     overflow-y: auto;
-                    padding: 16px;
+                    padding: 14px;
                     color: #f2ead7;
                     font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
                     background:
-                        radial-gradient(circle at 50% -10%, rgba(54, 88, 69, 0.22), transparent 32%),
-                        radial-gradient(circle at 50% 110%, rgba(9, 14, 12, 0.92), rgba(9, 14, 12, 1) 62%);
+                        radial-gradient(circle at 4% 74%, rgba(255, 188, 84, 0.22), transparent 10%),
+                        radial-gradient(circle at 95% 24%, rgba(219, 146, 53, 0.18), transparent 13%),
+                        linear-gradient(90deg, rgba(5, 8, 7, 0.72), transparent 18%, transparent 82%, rgba(5, 8, 7, 0.72)),
+                        repeating-linear-gradient(90deg, rgba(255, 213, 137, 0.034) 0 1px, transparent 1px 20px),
+                        linear-gradient(90deg, #100b08, #5b3419 50%, #100a07);
                 }
                 .fr-board {
                     width: min(1440px, 100%);
@@ -1203,11 +1357,49 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     pointer-events: none;
                 }
                 .fr-board--minimal-live {
-                    width: calc(100vw - 32px);
+                    width: calc(100vw - 28px);
                     max-width: none;
-                    min-height: calc(100vh - 32px);
-                    padding: 22px 30px 26px;
+                    height: calc(100vh - 28px);
+                    min-height: 0;
+                    box-sizing: border-box;
+                    padding: 20px 30px 24px;
                     border-radius: 24px;
+                    background:
+                        radial-gradient(circle at 4% 78%, rgba(255, 178, 70, 0.26), transparent 11%),
+                        radial-gradient(circle at 96% 18%, rgba(221, 146, 53, 0.22), transparent 13%),
+                        radial-gradient(ellipse at 50% -6%, rgba(178, 103, 43, 0.5), transparent 34%),
+                        radial-gradient(ellipse at 50% 106%, rgba(10, 4, 2, 0.64), transparent 34%),
+                        repeating-linear-gradient(90deg, rgba(255, 225, 165, 0.052) 0 1px, transparent 1px 18px),
+                        linear-gradient(90deg, #0d0805, #6a3d1d 18%, #3b210f 50%, #6a3d1d 82%, #0d0805);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 223, 156, 0.12),
+                        inset 0 0 0 10px rgba(19, 10, 5, 0.34),
+                        inset 0 0 78px rgba(0, 0, 0, 0.58),
+                        0 22px 52px rgba(0, 0, 0, 0.5);
+                }
+                .fr-board--minimal-live::before {
+                    content: "";
+                    position: absolute;
+                    inset: 22px 32px 26px;
+                    border-radius: 20px;
+                    background:
+                        radial-gradient(ellipse at 50% 16%, rgba(152, 214, 174, 0.22), transparent 34%),
+                        radial-gradient(ellipse at 50% 74%, rgba(0, 10, 8, 0.46), transparent 54%),
+                        radial-gradient(circle at 9% 87%, rgba(236, 157, 61, 0.1), transparent 18%),
+                        radial-gradient(circle at 93% 12%, rgba(236, 157, 61, 0.08), transparent 18%),
+                        linear-gradient(90deg, rgba(255, 240, 190, 0.08), transparent 8%, transparent 92%, rgba(0, 0, 0, 0.28)),
+                        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 12px),
+                        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.028) 0 1px, transparent 1px 6px),
+                        linear-gradient(180deg, #16483b, #0d332b 56%, #08241f);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(238, 196, 108, 0.28),
+                        inset 0 0 0 3px rgba(2, 15, 12, 0.42),
+                        inset 0 0 0 14px rgba(10, 40, 33, 0.28),
+                        inset 0 44px 96px rgba(255, 246, 210, 0.035),
+                        inset 0 -96px 150px rgba(0, 0, 0, 0.34);
+                    mix-blend-mode: normal;
+                    opacity: 1;
+                    pointer-events: none;
                 }
                 .fr-board::after {
                     content: "";
@@ -1217,166 +1409,25 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         inset 0 0 120px rgba(8, 12, 10, 0.46);
                     pointer-events: none;
                 }
-                .fr-table-layout,
-                .fr-table-top-left,
-                .fr-table-top-right,
-                .fr-table-center,
-                .fr-table-bottom,
-                .fr-table-dock {
-                    min-width: 0;
+                .fr-board--minimal-live::after {
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 221, 151, 0.12),
+                        inset 0 0 120px rgba(0, 0, 0, 0.5);
                 }
-                .fr-table-layout {
-                    display: grid;
-                    grid-template-columns: 240px minmax(0, 1fr);
-                    grid-template-rows: auto auto auto;
-                    grid-template-areas:
-                        "topLeft topRight"
-                        "center center"
-                        "bottom bottom";
-                    column-gap: 18px;
-                    row-gap: 16px;
-                    position: relative;
-                    z-index: 1;
-                    align-items: start;
-                    padding-right: 318px;
-                }
-                .fr-board--minimal-live .fr-table-layout {
-                    grid-template-columns: 240px minmax(0, 1fr) 300px;
-                    grid-template-areas:
-                        "topLeft . topRight"
-                        "center center center"
-                        "bottom bottom bottom";
-                    padding-right: 0;
-                }
-                .fr-table-top-left {
-                    grid-area: topLeft;
-                    display: grid;
-                    gap: 12px;
-                    align-self: start;
-                }
-                .fr-table-top-right {
-                    grid-area: topRight;
-                    align-self: start;
-                    justify-self: end;
-                    width: 300px;
-                }
-                .fr-table-center {
-                    grid-area: center;
-                    min-height: 0;
-                }
-                .fr-table-dock {
-                    display: grid;
-                    gap: 14px;
-                    position: absolute;
-                    right: 0;
-                    top: 238px;
-                    width: 300px;
-                }
-                .fr-board--minimal-live .fr-table-dock {
-                    display: none;
-                }
-                .fr-table-bottom {
-                    grid-area: bottom;
-                }
-                .fr-panel--turn-corner,
                 .fr-panel--deck-corner {
                     align-self: start;
-                }
-                .fr-board--minimal-live .fr-panel--turn-corner,
-                .fr-board--minimal-live .fr-panel--deck-corner,
-                .fr-board--minimal-live .fr-panel--score-rail {
-                    border: none;
-                    background: transparent;
-                }
-                .fr-board--minimal-live .fr-table-top-left {
-                    gap: 10px;
-                }
-                .fr-board--minimal-live .fr-panel--turn-corner .fr-panel-header,
-                .fr-board--minimal-live .fr-panel--deck-corner .fr-panel-header,
-                .fr-board--minimal-live .fr-panel--score-rail .fr-panel-header {
-                    padding-top: 0;
-                    padding-left: 0;
-                    padding-right: 0;
-                    font-size: 10px;
-                    letter-spacing: 0.08em;
-                    color: rgba(242, 234, 215, 0.62);
-                }
-                .fr-board--minimal-live .fr-panel--turn-corner .fr-panel-body,
-                .fr-board--minimal-live .fr-panel--deck-corner .fr-panel-body,
-                .fr-board--minimal-live .fr-panel--score-rail .fr-panel-body {
-                    padding-left: 0;
-                    padding-right: 0;
-                    padding-bottom: 0;
-                }
-                .fr-board--minimal-live .fr-panel--turn-corner .fr-panel-body,
-                .fr-board--minimal-live .fr-panel--score-rail .fr-panel-body {
-                    padding-top: 4px;
-                }
-                .fr-board--minimal-live .fr-panel--deck-corner .fr-panel-body {
-                    padding-top: 6px;
-                }
-                .fr-board--minimal-live .fr-panel--turn-corner .fr-chip {
-                    background: rgba(24, 36, 29, 0.52);
-                    border-color: rgba(255, 255, 255, 0.08);
-                }
-                .fr-board--minimal-live .fr-panel--score-rail {
-                    width: 284px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-summary {
-                    gap: 6px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-table {
-                    gap: 4px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row {
-                    padding: 4px 0;
-                    gap: 8px;
-                    border-radius: 0;
-                    background: transparent;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row:last-child {
-                    border-bottom: none;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-main {
-                    gap: 2px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-name,
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-meta {
-                    gap: 4px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-name {
-                    font-size: 13px;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-meta {
-                    color: rgba(242, 234, 215, 0.56);
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-total {
-                    min-width: 52px;
-                    align-items: flex-end;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-total strong {
-                    font-size: 18px;
-                    line-height: 1;
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-row-total span {
-                    font-size: 10px;
-                    color: rgba(242, 234, 215, 0.54);
-                }
-                .fr-board--minimal-live .fr-panel--score-rail .fr-score-summary-value {
-                    margin-top: 2px;
-                    padding: 8px 0 0;
-                    border-top: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 0;
-                    background: transparent;
                 }
                 .fr-live-table {
                     position: relative;
                     display: grid;
-                    grid-template-rows: 104px minmax(500px, 1fr) 310px;
-                    gap: 14px;
-                    height: calc(100vh - 80px);
-                    min-height: 968px;
+                    grid-template-rows: 98px minmax(340px, 0.9fr) 292px;
+                    gap: 8px;
+                    align-content: end;
+                    height: 100%;
+                    min-height: 0;
+                }
+                .fr-live-table--gameover {
+                    grid-template-rows: minmax(0, 1fr) 292px auto;
                 }
                 .fr-live-table::before {
                     display: none;
@@ -1387,172 +1438,266 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-topbar {
                     position: relative;
                     z-index: 1;
-                    min-height: 104px;
-                    padding: 0 316px 0 0;
+                    min-height: 96px;
+                }
+                .fr-live-topbar::before {
+                    display: none;
+                }
+                .fr-live-topbar::after {
+                    display: none;
                 }
                 .fr-live-status-strip {
-                    display: flex;
+                    position: absolute;
+                    left: 50%;
+                    top: 18px;
+                    transform: translateX(-50%);
+                    display: inline-flex;
                     align-items: center;
-                    gap: 20px;
+                    gap: 12px;
                     min-width: 0;
+                    isolation: isolate;
+                }
+                .fr-live-status-strip::before {
+                    content: "";
+                    position: absolute;
+                    inset: -10px -22px;
+                    border-radius: 18px;
+                    background:
+                        radial-gradient(ellipse at 50% 0%, rgba(255, 226, 152, 0.16), transparent 44%),
+                        linear-gradient(180deg, rgba(56, 36, 22, 0.98), rgba(10, 11, 10, 0.98));
+                    box-shadow:
+                        0 20px 28px rgba(0, 0, 0, 0.34),
+                        inset 0 0 0 1px rgba(240, 190, 92, 0.28),
+                        inset 0 0 0 4px rgba(17, 12, 9, 0.38),
+                        inset 0 2px 0 rgba(255, 241, 199, 0.08);
+                    z-index: -1;
+                    pointer-events: none;
                 }
                 .fr-live-deck {
+                    position: absolute;
+                    left: 0;
+                    top: 2px;
                     display: inline-flex;
-                    align-items: flex-end;
-                    gap: 10px;
+                    align-items: center;
+                    gap: 12px;
                     min-width: 0;
+                    padding: 0;
+                    border: 0;
+                    background: transparent;
+                    cursor: default;
+                }
+                .fr-live-deck::before {
+                    content: "";
+                    position: absolute;
+                    left: -10px;
+                    top: -8px;
+                    width: 114px;
+                    height: 128px;
+                    border-radius: 16px;
+                    background:
+                        radial-gradient(ellipse at 42% 20%, rgba(255, 220, 142, 0.12), transparent 36%),
+                        linear-gradient(180deg, rgba(58, 36, 20, 0.5), rgba(10, 10, 9, 0.08));
+                    box-shadow:
+                        0 24px 34px rgba(0, 0, 0, 0.42),
+                        inset 0 0 0 1px rgba(255, 226, 164, 0.1);
+                    pointer-events: none;
+                }
+                .fr-live-deck::after {
+                    content: "";
+                    position: absolute;
+                    left: 5px;
+                    top: 9px;
+                    width: 76px;
+                    height: 104px;
+                    border-radius: 14px;
+                    box-shadow:
+                        8px 8px 0 rgba(52, 25, 13, 0.42),
+                        13px 13px 0 rgba(12, 8, 6, 0.34);
+                    pointer-events: none;
+                }
+                .fr-live-deck--enabled {
+                    cursor: pointer;
                 }
                 .fr-live-deck-stack {
                     position: relative;
-                    width: 78px;
-                    height: 106px;
-                    border-radius: 12px;
+                    z-index: 1;
+                    width: 76px;
+                    height: 104px;
+                    border-radius: 14px;
                     flex: 0 0 auto;
-                    filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.28));
+                    filter:
+                        drop-shadow(0 20px 26px rgba(0, 0, 0, 0.34))
+                        drop-shadow(0 3px 0 rgba(255, 226, 168, 0.08));
+                    transition: transform 140ms ease;
                 }
                 .fr-live-deck-stack .fr-stack-card {
                     inset: 0;
                 }
                 .fr-live-deck-count {
-                    margin-bottom: 8px;
-                    font-size: 36px;
-                    line-height: 1;
-                    color: #f2ead7;
-                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
-                }
-                .fr-live-turn-strip {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 12px;
-                    min-width: 0;
-                    color: rgba(242, 234, 215, 0.92);
-                }
-                .fr-live-turn-round {
+                    position: relative;
+                    z-index: 1;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    min-height: 30px;
+                    min-width: 50px;
+                    height: 40px;
                     padding: 0 12px;
-                    border-radius: 999px;
-                    border: 1px solid rgba(170, 137, 70, 0.28);
-                    background: rgba(17, 27, 22, 0.34);
-                    font-size: 11px;
-                    font-weight: 700;
-                    letter-spacing: 0.08em;
-                    color: rgba(242, 234, 215, 0.76);
-                    text-transform: uppercase;
+                    font-size: 34px;
+                    line-height: 1;
+                    color: #ffe1a0;
+                    border-radius: 14px;
+                    border: 1px solid rgba(235, 190, 96, 0.72);
+                    background:
+                        radial-gradient(circle at 36% 20%, rgba(255, 234, 174, 0.18), transparent 40%),
+                        linear-gradient(180deg, rgba(48, 32, 21, 0.99), rgba(8, 8, 7, 0.99));
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+                        inset 0 -14px 20px rgba(0, 0, 0, 0.32),
+                        0 14px 24px rgba(0, 0, 0, 0.38);
+                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.34);
                 }
-                .fr-live-turn-player {
-                    min-width: 0;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    font-size: 28px;
-                    font-weight: 700;
-                    color: #f2ead7;
-                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
-                }
-                .fr-live-progress-chip {
+                .fr-live-chip {
+                    position: relative;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    min-width: 94px;
-                    height: 46px;
-                    padding: 0 22px;
-                    border-radius: 999px;
-                    border: 1px solid rgba(255, 221, 158, 0.42);
-                    background: linear-gradient(180deg, #7b5330, #4b2c18);
+                    min-height: 48px;
+                    padding: 0 20px;
+                    border-radius: 14px;
+                    border: 1px solid rgba(231, 184, 92, 0.74);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.18), transparent 40%),
+                        linear-gradient(180deg, rgba(64, 41, 24, 0.99), rgba(10, 11, 10, 0.99));
                     box-shadow:
-                        inset 0 2px 0 rgba(255,255,255,0.14),
-                        0 12px 24px rgba(0,0,0,0.26);
-                    color: #fff2cf;
-                    font-size: 24px;
+                        inset 0 1px 0 rgba(255,255,255,0.16),
+                        inset 0 -14px 24px rgba(0, 0, 0, 0.36),
+                        0 14px 26px rgba(0,0,0,0.38);
+                    color: #ffe4a6;
                     font-weight: 800;
                     line-height: 1;
                     white-space: nowrap;
+                    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
+                    overflow: hidden;
                 }
-                .fr-live-action {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 40px;
-                    padding: 0 18px;
-                    border-radius: 999px;
-                    border: 0;
-                    background: rgba(31, 45, 37, 0.7);
-                    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.16);
-                    color: rgba(242, 234, 215, 0.7);
+                .fr-live-chip::before {
+                    content: "";
+                    position: absolute;
+                    inset: 4px 7px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 236, 188, 0.14);
+                    box-shadow: inset 0 1px 0 rgba(255, 250, 220, 0.04);
+                    pointer-events: none;
+                }
+                .fr-live-chip--turn {
+                    min-width: 128px;
+                    font-size: 24px;
+                    padding: 0 22px;
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.24), transparent 42%),
+                        linear-gradient(180deg, rgba(94, 58, 25, 0.99), rgba(19, 14, 10, 0.99));
+                }
+                .fr-live-chip--turn-active {
+                    min-width: 152px;
+                }
+                .fr-live-chip--round {
+                    min-height: 34px;
+                    padding: 0 14px;
                     font-size: 13px;
                     font-weight: 700;
-                    letter-spacing: 0.04em;
+                    color: rgba(255, 237, 197, 0.84);
+                    border-color: rgba(207, 174, 116, 0.34);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.12), transparent 42%),
+                        linear-gradient(180deg, rgba(29, 29, 22, 0.98), rgba(7, 8, 7, 0.99));
                 }
-                .fr-live-action--enabled {
-                    background: linear-gradient(180deg, #8f6a2f 0%, #6e5227 100%);
-                    color: #fbf5e8;
+                .fr-live-chip--progress {
+                    min-width: 96px;
+                    font-size: 24px;
+                    padding: 0 20px;
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.18), transparent 42%),
+                        linear-gradient(180deg, rgba(102, 45, 31, 0.98), rgba(35, 17, 14, 0.99));
                 }
-                .fr-live-action:disabled {
-                    cursor: default;
+                .fr-live-chip--cue {
+                    min-height: 40px;
+                    padding: 0 18px;
+                    font-size: 18px;
+                    border-color: rgba(191, 162, 109, 0.34);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(105, 179, 153, 0.16), transparent 42%),
+                        linear-gradient(180deg, rgba(20, 63, 57, 0.98), rgba(9, 29, 27, 0.99));
+                    color: rgba(255, 242, 207, 0.92);
                 }
                 .fr-live-score-strip {
                     position: absolute;
-                    top: 8px;
+                    top: 2px;
                     right: 0;
-                    width: 300px;
+                    width: 312px;
                 }
                 .fr-live-score-band {
                     position: relative;
-                    height: 96px;
+                    height: 100px;
                     padding: 14px 20px 12px;
-                    border-radius: 24px;
-                    border: 1px solid rgba(255, 221, 158, 0.42);
+                    border-radius: 6px;
+                    border: 1px solid rgba(218, 174, 84, 0.76);
                     background:
-                        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%),
-                        linear-gradient(180deg, #7b5330, #4b2c18);
+                        radial-gradient(circle at 16% 0%, rgba(255, 226, 158, 0.2), transparent 36%),
+                        radial-gradient(circle at 84% 100%, rgba(124, 72, 28, 0.22), transparent 42%),
+                        linear-gradient(180deg, rgba(48, 34, 20, 0.99), rgba(5, 5, 5, 0.99));
                     box-shadow:
-                        inset 0 2px 0 rgba(255,255,255,0.14),
-                        0 16px 28px rgba(0,0,0,0.28);
+                        inset 0 1px 0 rgba(255,255,255,0.14),
+                        inset 0 -20px 32px rgba(0, 0, 0, 0.42),
+                        0 18px 30px rgba(0,0,0,0.44),
+                        0 0 22px rgba(237, 183, 88, 0.08);
                 }
                 .fr-live-score-band::before {
                     content: "";
                     position: absolute;
-                    left: 26px;
-                    top: 10px;
-                    width: 96px;
-                    height: 14px;
-                    border-radius: 6px;
-                    background: rgba(230, 199, 126, 0.42);
-                    transform: rotate(3deg);
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+                    inset: 8px 10px;
+                    border-radius: 3px;
+                    border: 1px solid rgba(255, 229, 169, 0.14);
+                    box-shadow:
+                        -5px -5px 0 -4px rgba(255, 221, 145, 0.7),
+                        5px -5px 0 -4px rgba(255, 221, 145, 0.7),
+                        -5px 5px 0 -4px rgba(255, 221, 145, 0.7),
+                        5px 5px 0 -4px rgba(255, 221, 145, 0.7);
+                    pointer-events: none;
+                }
+                .fr-live-score-band::after {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    border-radius: inherit;
+                    background:
+                        linear-gradient(90deg, rgba(232, 178, 84, 0.3), transparent 12%, transparent 88%, rgba(232, 178, 84, 0.3)),
+                        linear-gradient(180deg, rgba(255, 238, 183, 0.08), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.18));
+                    mix-blend-mode: screen;
+                    opacity: 0.34;
+                    pointer-events: none;
                 }
                 .fr-live-score-band-kicker {
                     position: relative;
                     z-index: 1;
-                    color: rgba(43, 25, 13, 0.82);
+                    color: rgba(246, 223, 180, 0.72);
                     font-size: 11px;
                     line-height: 1;
                     font-weight: 700;
-                    letter-spacing: 0.04em;
+                    letter-spacing: 0.08em;
                 }
                 .fr-live-score-band-main {
                     display: flex;
                     align-items: baseline;
                     justify-content: space-between;
                     gap: 12px;
-                    margin-top: 14px;
+                    margin-top: 16px;
                 }
                 .fr-live-score-band-total {
-                    color: #fff2cf;
+                    color: #ffe4a4;
                     font-family: Georgia, "Times New Roman", "Microsoft YaHei", serif;
-                    font-size: 40px;
+                    font-size: 42px;
                     font-weight: 900;
                     line-height: 1;
-                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
-                }
-                .fr-live-score-band-rank {
-                    color: rgba(255, 242, 207, 0.88);
-                    font-size: 17px;
-                    font-weight: 800;
-                    white-space: nowrap;
+                    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.34);
                 }
                 .fr-live-river,
                 .fr-live-handband {
@@ -1568,42 +1713,96 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     align-items: center;
                     padding-top: 0;
                 }
+                .fr-live-river::before {
+                    content: "";
+                    position: absolute;
+                    left: 10%;
+                    right: 10%;
+                    top: 50px;
+                    bottom: 74px;
+                    border-radius: 42%;
+                    background:
+                        radial-gradient(ellipse at 50% 42%, rgba(255, 233, 178, 0.08), transparent 54%),
+                        radial-gradient(ellipse at 50% 74%, rgba(0, 0, 0, 0.28), transparent 68%);
+                    filter: blur(2px);
+                    pointer-events: none;
+                }
                 .fr-live-handband {
                     display: grid;
                     align-items: end;
                     padding-top: 0;
                 }
-                .fr-live-river-count {
+                .fr-live-river::after {
+                    display: none;
+                }
+                .fr-live-handband::before {
+                    content: "";
                     position: absolute;
-                    top: -2px;
-                    left: 50%;
-                    transform: translateX(-50%);
+                    left: 3%;
+                    right: 7%;
+                    bottom: 8px;
+                    height: 104px;
+                    border-radius: 50%;
+                    background:
+                        radial-gradient(ellipse at 50% 62%, rgba(0, 0, 0, 0.34), transparent 66%),
+                        linear-gradient(180deg, transparent, rgba(255, 215, 143, 0.035));
+                    pointer-events: none;
+                }
+                .fr-live-handband::after {
+                    display: none;
+                }
+                .fr-live-endgame {
+                    position: relative;
+                    z-index: 1;
+                    display: grid;
+                    gap: 14px;
+                    padding: 14px 10px 2px;
+                }
+                .fr-live-endgame-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    color: rgba(242, 234, 215, 0.8);
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                }
+                .fr-live-endgame-grid {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+                    gap: 14px;
+                    align-items: start;
+                }
+                .fr-live-endgame-focus-block,
+                .fr-live-endgame-summary-block {
+                    display: grid;
+                    gap: 10px;
+                    padding: 14px;
+                    border-radius: 18px;
+                    border: 1px solid rgba(255, 228, 179, 0.12);
+                    background:
+                        linear-gradient(180deg, rgba(25, 37, 31, 0.94), rgba(16, 24, 20, 0.96));
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 239, 197, 0.04),
+                        0 18px 30px rgba(0, 0, 0, 0.22);
+                }
+                .fr-live-endgame-section-title {
                     display: inline-flex;
                     align-items: center;
-                    justify-content: center;
-                    min-width: 74px;
-                    min-height: 34px;
-                    padding: 0 16px;
-                    border-radius: 999px;
-                    border: 1px solid rgba(238, 196, 108, 0.22);
-                    background:
-                        linear-gradient(180deg, rgba(105, 80, 35, 0.82), rgba(32, 42, 33, 0.82)),
-                        rgba(18, 27, 22, 0.82);
-                    box-shadow:
-                        0 12px 22px rgba(0, 0, 0, 0.2),
-                        inset 0 1px 0 rgba(255, 244, 213, 0.08);
-                    line-height: 1;
-                    font-size: 17px;
+                    gap: 8px;
+                    color: rgba(242, 234, 215, 0.66);
+                    font-size: 12px;
                     font-weight: 700;
-                    color: #fbf0d0;
-                    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.26);
-                    z-index: 3;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
                 }
                 .fr-discard-row--live-river {
                     position: relative;
                     display: block;
-                    width: min(1240px, 72vw);
-                    min-height: 520px;
+                    width: min(1160px, 68vw);
+                    min-height: 356px;
+                    height: 100%;
                     margin: 0 auto;
                     padding: 0;
                 }
@@ -1613,16 +1812,63 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     border: none;
                     background: transparent;
                 }
+                .fr-live-river-empty-mat {
+                    position: relative;
+                    width: min(700px, 54vw);
+                    height: 188px;
+                    margin: 18px auto 0;
+                    border-radius: 28px;
+                    border: 1px dashed rgba(239, 209, 143, 0.22);
+                    background:
+                        radial-gradient(circle at 50% 18%, rgba(255, 235, 176, 0.08), transparent 30%),
+                        radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.18), transparent 54%),
+                        linear-gradient(180deg, rgba(10, 25, 21, 0.08), rgba(7, 19, 16, 0.2));
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 240, 200, 0.04),
+                        inset 0 36px 72px rgba(255, 255, 255, 0.02);
+                }
+                .fr-live-river-empty-card {
+                    position: absolute;
+                    width: 132px;
+                    aspect-ratio: 0.72;
+                    top: 16px;
+                    border-radius: 16px;
+                    border: 1px solid rgba(255, 238, 201, 0.16);
+                    box-shadow:
+                        0 18px 28px rgba(0, 0, 0, 0.24),
+                        0 0 0 1px rgba(255, 234, 184, 0.04);
+                    opacity: 0.3;
+                    filter: saturate(0.82) brightness(0.88);
+                }
+                .fr-live-river-empty-card--left {
+                    left: calc(50% - 172px);
+                    transform: rotate(-7deg);
+                }
+                .fr-live-river-empty-card--center {
+                    left: calc(50% - 66px);
+                    top: 10px;
+                    transform: rotate(1deg);
+                    opacity: 0.4;
+                }
+                .fr-live-river-empty-card--right {
+                    left: calc(50% + 40px);
+                    transform: rotate(8deg);
+                }
                 .fr-card-button--live-river {
                     position: absolute;
                     width: 190px;
                 }
                 .fr-card-button--live-river .fr-card {
                     border-radius: 14px;
-                    border-color: rgba(255, 233, 191, 0.18);
+                    border-color: rgba(255, 238, 199, 0.58);
                     box-shadow:
-                        0 16px 28px rgba(0, 0, 0, 0.28),
-                        0 0 0 1px rgba(255, 243, 213, 0.08);
+                        0 28px 38px rgba(0, 0, 0, 0.48),
+                        0 9px 15px rgba(0, 0, 0, 0.2),
+                        0 0 20px rgba(255, 225, 158, 0.08);
+                    transition:
+                        box-shadow 140ms ease,
+                        border-color 140ms ease,
+                        transform 140ms ease;
                 }
                 .fr-card-button--live-river.fr-card-button--actionable .fr-card,
                 .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
@@ -1631,19 +1877,25 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-card-button--live-river.fr-card-button--actionable .fr-card {
                     border-color: rgba(255, 238, 201, 0.72);
                     box-shadow:
-                        0 18px 32px rgba(0, 0, 0, 0.3),
+                        0 20px 34px rgba(0, 0, 0, 0.34),
                         0 0 0 1px rgba(255, 243, 213, 0.16);
                 }
-                .fr-card-button--live-river:nth-child(1) { left: calc(50% - 595px); top: 18px; }
-                .fr-card-button--live-river:nth-child(2) { left: calc(50% - 335px); top: 18px; }
-                .fr-card-button--live-river:nth-child(3) { left: calc(50% - 75px); top: 18px; }
-                .fr-card-button--live-river:nth-child(4) { left: calc(50% + 185px); top: 18px; }
-                .fr-card-button--live-river:nth-child(5) { left: calc(50% + 445px); top: 18px; }
-                .fr-card-button--live-river:nth-child(6) { left: calc(50% - 465px); top: 222px; }
-                .fr-card-button--live-river:nth-child(7) { left: calc(50% - 205px); top: 222px; }
-                .fr-card-button--live-river:nth-child(8) { left: calc(50% + 55px); top: 222px; }
-                .fr-card-button--live-river:nth-child(9) { left: calc(50% + 315px); top: 222px; }
-                .fr-card-button--live-river:nth-child(10) { left: calc(50% + 445px); top: 222px; }
+                .fr-card-button--armed .fr-card {
+                    border-color: rgba(255, 245, 214, 0.94) !important;
+                    box-shadow:
+                        0 22px 36px rgba(0, 0, 0, 0.34),
+                        0 0 0 2px rgba(255, 226, 156, 0.52) !important;
+                }
+                .fr-card-button--live-river:nth-child(1) { left: calc(50% - 595px); top: 2px; z-index: 1; }
+                .fr-card-button--live-river:nth-child(2) { left: calc(50% - 335px); top: 2px; z-index: 1; }
+                .fr-card-button--live-river:nth-child(3) { left: calc(50% - 75px); top: 2px; z-index: 1; }
+                .fr-card-button--live-river:nth-child(4) { left: calc(50% + 185px); top: 2px; z-index: 1; }
+                .fr-card-button--live-river:nth-child(5) { left: calc(50% + 445px); top: 2px; z-index: 1; }
+                .fr-card-button--live-river:nth-child(6) { left: calc(50% - 465px); top: 182px; z-index: 2; }
+                .fr-card-button--live-river:nth-child(7) { left: calc(50% - 205px); top: 182px; z-index: 2; }
+                .fr-card-button--live-river:nth-child(8) { left: calc(50% + 55px); top: 182px; z-index: 2; }
+                .fr-card-button--live-river:nth-child(9) { left: calc(50% + 315px); top: 182px; z-index: 2; }
+                .fr-card-button--live-river:nth-child(10) { left: calc(50% + 445px); top: 182px; z-index: 2; }
                 .fr-card-button--live-river:nth-child(6):nth-last-child(5) { left: calc(50% - 595px); }
                 .fr-card-button--live-river:nth-child(7):nth-last-child(4) { left: calc(50% - 335px); }
                 .fr-card-button--live-river:nth-child(8):nth-last-child(3) { left: calc(50% - 75px); }
@@ -1651,14 +1903,42 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-card-button--live-river:nth-child(10):nth-last-child(1) { left: calc(50% + 445px); }
                 .fr-live-handband .fr-card-row-wrap {
                     position: relative;
-                    padding: 18px 0 0;
+                    padding: 0;
                     gap: 0;
+                }
+                .fr-live-focus-dock {
+                    position: absolute;
+                    right: 18px;
+                    bottom: 314px;
+                    z-index: 2;
+                    width: min(296px, 21vw);
+                    pointer-events: none;
+                }
+                .fr-live-focus-dock .fr-panel {
+                    border-radius: 18px;
+                    border-color: rgba(241, 209, 149, 0.18);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 236, 184, 0.08), transparent 36%),
+                        linear-gradient(180deg, rgba(31, 37, 33, 0.94), rgba(14, 18, 16, 0.96));
+                    box-shadow:
+                        0 24px 34px rgba(0, 0, 0, 0.32),
+                        inset 0 0 0 1px rgba(255, 240, 204, 0.04);
+                }
+                .fr-live-focus-dock .fr-panel-header {
+                    display: none;
+                }
+                .fr-live-focus-dock .fr-panel-body {
+                    padding-top: 14px;
+                }
+                .fr-live-focus-dock .fr-panel-header,
+                .fr-live-focus-dock .fr-panel-body {
+                    pointer-events: auto;
                 }
                 .fr-live-handband .fr-card-row--table-band {
                     position: relative;
                     z-index: 1;
-                    width: min(1638px, calc(100vw - 110px));
-                    margin: 0 auto;
+                    width: min(1652px, calc(100vw - 316px));
+                    margin: -24px 172px 0 auto;
                     grid-template-columns: repeat(7, minmax(0, 234px));
                     justify-content: center;
                     gap: 0;
@@ -1666,25 +1946,640 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-card-button--live-hand {
                     position: relative;
                     transform: none;
-                    width: 234px;
+                    width: 100%;
+                    max-width: 234px;
                 }
                 .fr-card-button--live-hand .fr-card {
                     border-radius: 14px;
-                    border-color: rgba(255, 233, 191, 0.18);
+                    border-color: rgba(255, 238, 199, 0.62);
                     box-shadow:
-                        0 14px 24px rgba(0, 0, 0, 0.24),
-                        0 0 0 1px rgba(255, 243, 213, 0.08);
+                        0 30px 40px rgba(0, 0, 0, 0.5),
+                        0 9px 15px rgba(0, 0, 0, 0.22),
+                        0 0 20px rgba(255, 225, 158, 0.08);
+                    transition:
+                        box-shadow 140ms ease,
+                        border-color 140ms ease,
+                        transform 140ms ease;
                 }
                 .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
                     border-color: rgba(255, 238, 201, 0.72);
                     box-shadow:
-                        0 18px 28px rgba(0, 0, 0, 0.26),
+                        0 20px 30px rgba(0, 0, 0, 0.32),
                         0 0 0 1px rgba(255, 243, 213, 0.16);
                 }
-                .fr-card-slot--live-hand {
-                    border-style: solid;
-                    border-color: rgba(170, 137, 70, 0.16);
-                    background: rgba(10, 16, 13, 0.16);
+                /* 主动作固定在右下操作坞，贴近摸牌/弃牌确认循环，同时避开手牌热区与全局浮球。 */
+                .fr-live-action-zone {
+                    position: fixed;
+                    right: clamp(38px, 2.7vw, 64px);
+                    top: clamp(476px, 47.6vh, 526px);
+                    z-index: 4;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 176px;
+                    height: 104px;
+                    min-height: 104px;
+                    pointer-events: none;
+                }
+                .fr-live-action-button {
+                    position: relative;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 176px;
+                    height: 104px;
+                    padding: 18px 22px;
+                    border-radius: 18px;
+                    border: 1px solid rgba(226, 184, 96, 0.82);
+                    background:
+                        radial-gradient(circle at 50% 12%, rgba(255, 236, 178, 0.16), transparent 36%),
+                        linear-gradient(180deg, rgba(64, 42, 24, 0.99), rgba(12, 11, 10, 0.99));
+                    color: #ffe7af;
+                    text-align: center;
+                    box-shadow:
+                        0 28px 42px rgba(0,0,0,0.48),
+                        inset 0 1px 0 rgba(255,255,255,0.12),
+                        inset 0 -20px 28px rgba(0, 0, 0, 0.34),
+                        0 0 0 4px rgba(20, 13, 8, 0.24);
+                    pointer-events: auto;
+                    cursor: default;
+                    overflow: hidden;
+                    transition:
+                        box-shadow 140ms ease,
+                        background 140ms ease,
+                        color 140ms ease;
+                }
+                .fr-live-action-button::before {
+                    content: "";
+                    position: absolute;
+                    inset: 6px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255, 225, 160, 0.16);
+                    box-shadow:
+                        -6px -6px 0 -5px rgba(255, 225, 160, 0.68),
+                        6px -6px 0 -5px rgba(255, 225, 160, 0.68),
+                        -6px 6px 0 -5px rgba(255, 225, 160, 0.68),
+                        6px 6px 0 -5px rgba(255, 225, 160, 0.68);
+                    pointer-events: none;
+                }
+                .fr-live-action-button::after {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    height: 34px;
+                    background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+                    pointer-events: none;
+                }
+                .fr-live-action-button-label {
+                    position: relative;
+                    z-index: 1;
+                    max-width: 124px;
+                    font-size: clamp(20px, 1.12vw, 24px);
+                    font-weight: 900;
+                    line-height: 1.1;
+                    letter-spacing: 0;
+                    white-space: normal;
+                    word-break: keep-all;
+                }
+                .fr-live-action-button--enabled {
+                    background:
+                        radial-gradient(circle at 50% 10%, rgba(255, 239, 190, 0.2), transparent 34%),
+                        linear-gradient(180deg, rgba(76, 49, 28, 0.99), rgba(14, 13, 11, 0.99));
+                    color: #ffecb9;
+                    box-shadow:
+                        0 30px 46px rgba(0,0,0,0.5),
+                        inset 0 1px 0 rgba(255,255,255,0.16),
+                        inset 0 -22px 32px rgba(0, 0, 0, 0.34),
+                        0 0 0 4px rgba(20, 13, 8, 0.24);
+                    cursor: pointer;
+                }
+                .fr-live-action-button--enabled:hover {
+                    transform: none;
+                    box-shadow:
+                        0 32px 48px rgba(0,0,0,0.38),
+                        inset 0 1px 0 rgba(255,255,255,0.18),
+                        inset 0 -18px 28px rgba(0, 0, 0, 0.28);
+                }
+                .fr-live-action-button--enabled:active {
+                    transform: none;
+                }
+                .fr-live-action-button:focus-visible,
+                .fr-live-deck--enabled:focus-visible {
+                    outline: 2px solid rgba(255, 238, 201, 0.92);
+                    outline-offset: 4px;
+                }
+                .fr-live-deck--enabled:hover .fr-live-deck-stack {
+                    transform: translateY(-2px) scale(1.02);
+                }
+                .fr-board--minimal-live {
+                    padding: 22px 34px 20px;
+                    border-radius: 12px;
+                    background: #10241f;
+                    box-shadow:
+                        inset 0 0 0 1px rgba(214, 170, 94, 0.08),
+                        0 18px 34px rgba(0, 0, 0, 0.38);
+                }
+                .fr-board--minimal-live::before {
+                    inset: 12px 16px 14px;
+                    border-radius: 10px;
+                    background:
+                        radial-gradient(ellipse at 50% 40%, rgba(36, 105, 86, 0.28), transparent 58%),
+                        linear-gradient(180deg, rgba(18, 75, 62, 0.96), rgba(7, 43, 37, 0.98));
+                    box-shadow:
+                        inset 0 0 0 1px rgba(228, 193, 126, 0.07),
+                        inset 0 46px 90px rgba(255, 246, 216, 0.018),
+                        inset 0 -70px 110px rgba(0, 0, 0, 0.24);
+                }
+                .fr-board--minimal-live::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-table {
+                    grid-template-rows: 132px minmax(0, 1fr) 326px;
+                    gap: 0;
+                }
+                .fr-board--minimal-live .fr-live-topbar {
+                    min-height: 128px;
+                }
+                .fr-board--minimal-live .fr-live-status-strip {
+                    top: 28px;
+                    gap: 16px;
+                }
+                .fr-board--minimal-live .fr-live-status-strip::before {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-chip {
+                    min-height: 28px;
+                    padding: 0 4px;
+                    border-radius: 0;
+                    border-color: transparent;
+                    background: transparent;
+                    box-shadow: none;
+                    color: rgba(246, 226, 185, 0.72);
+                    font-size: 13px;
+                    font-weight: 800;
+                    text-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-chip::before {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-chip--turn {
+                    min-width: 106px;
+                    font-size: 20px;
+                    padding: 0 4px;
+                    background: transparent;
+                    color: #ffe6aa;
+                }
+                .fr-board--minimal-live .fr-live-chip--turn-active {
+                    min-width: 124px;
+                }
+                .fr-board--minimal-live .fr-live-chip--round {
+                    min-height: 28px;
+                    padding: 0 4px;
+                    font-size: 12px;
+                    color: rgba(245, 226, 190, 0.68);
+                    background: transparent;
+                }
+                .fr-board--minimal-live .fr-live-chip--progress {
+                    min-width: 74px;
+                    font-size: 21px;
+                    background: transparent;
+                    color: #ffde9e;
+                }
+                .fr-board--minimal-live .fr-live-chip--cue {
+                    min-height: 30px;
+                    padding: 0 4px;
+                    font-size: 14px;
+                    background: transparent;
+                    color: rgba(232, 255, 235, 0.88);
+                }
+                .fr-board--minimal-live .fr-live-deck {
+                    top: 24px;
+                    left: 52px;
+                    gap: 0;
+                }
+                .fr-board--minimal-live .fr-live-deck::before,
+                .fr-board--minimal-live .fr-live-deck::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-deck-stack {
+                    width: 122px;
+                    height: 168px;
+                    border-radius: 12px;
+                    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.34));
+                }
+                .fr-board--minimal-live .fr-live-deck-stack .fr-stack-card {
+                    border-radius: 12px;
+                }
+                .fr-board--minimal-live .fr-live-deck-count {
+                    position: absolute;
+                    right: 8px;
+                    bottom: 10px;
+                    transform: none;
+                    z-index: 3;
+                    min-width: 42px;
+                    height: 32px;
+                    padding: 0 9px;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255, 229, 166, 0.34);
+                    background: rgba(10, 14, 11, 0.82);
+                    box-shadow:
+                        0 8px 14px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+                    color: #f6dfaa;
+                    font-size: 24px;
+                    text-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-score-strip {
+                    top: 28px;
+                    right: 36px;
+                    width: 132px;
+                }
+                .fr-board--minimal-live .fr-live-score-band {
+                    display: inline-flex;
+                    align-items: baseline;
+                    justify-content: flex-end;
+                    gap: 7px;
+                    width: 100%;
+                    height: 28px;
+                    padding: 0;
+                    border-radius: 0;
+                    border: none;
+                    background: transparent;
+                    box-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-score-band::before,
+                .fr-board--minimal-live .fr-live-score-band::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-score-band-kicker {
+                    color: rgba(246, 223, 180, 0.42);
+                    font-size: 10px;
+                    letter-spacing: 0;
+                    text-align: right;
+                    white-space: nowrap;
+                }
+                .fr-board--minimal-live .fr-live-score-band-main {
+                    display: inline-flex;
+                    align-items: baseline;
+                    justify-content: flex-end;
+                    gap: 5px;
+                    margin-top: 0;
+                }
+                .fr-board--minimal-live .fr-live-score-band-total {
+                    font-size: 18px;
+                    color: rgba(248, 223, 159, 0.72);
+                    font-weight: 750;
+                    text-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-river::before {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-handband::before {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-discard-row--live-river {
+                    width: min(1230px, 74vw);
+                    min-height: 408px;
+                    transform: translateY(18px);
+                }
+                .fr-board--minimal-live .fr-discard-row--empty {
+                    min-height: 0;
+                }
+                .fr-board--minimal-live .fr-zone-empty--silent {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-card-button--live-river {
+                    width: 190px;
+                }
+                .fr-board--minimal-live .fr-card-button--live-river .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-hand .fr-card {
+                    border-radius: 9px;
+                    border-color: rgba(255, 238, 199, 0.32);
+                    box-shadow:
+                        0 14px 20px rgba(0, 0, 0, 0.28),
+                        0 3px 6px rgba(0, 0, 0, 0.14);
+                    transition:
+                        box-shadow 140ms ease,
+                        border-color 140ms ease,
+                        transform 140ms ease;
+                }
+                .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
+                    border-color: rgba(255, 238, 201, 0.64);
+                    box-shadow:
+                        0 14px 18px rgba(0, 0, 0, 0.26),
+                        0 0 0 1px rgba(255, 243, 213, 0.1);
+                }
+                .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable:hover .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card {
+                    transform: translateY(-8px);
+                    border-color: rgba(255, 241, 203, 0.86);
+                    box-shadow:
+                        0 22px 30px rgba(0, 0, 0, 0.34),
+                        0 0 0 2px rgba(255, 224, 145, 0.18);
+                }
+                .fr-board--minimal-live .fr-card-button--live-river:active .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-hand:active .fr-card {
+                    transform: translateY(-2px) scale(0.99);
+                }
+                .fr-board--minimal-live .fr-card-button--live-river:focus-visible,
+                .fr-board--minimal-live .fr-card-button--live-hand:focus-visible {
+                    outline: 2px solid rgba(255, 238, 201, 0.86);
+                    outline-offset: 5px;
+                    border-radius: 12px;
+                }
+                .fr-board--minimal-live .fr-card-button--armed .fr-card {
+                    border-color: rgba(255, 235, 180, 0.9) !important;
+                    box-shadow:
+                        0 22px 30px rgba(0, 0, 0, 0.34),
+                        0 0 0 3px rgba(255, 215, 128, 0.46) !important;
+                    transform: translateY(-10px);
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw .fr-card {
+                    animation: fr-live-hand-arrive-from-deck 920ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(2n) .fr-card {
+                    animation-delay: 32ms;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(3n) .fr-card {
+                    animation-delay: 64ms;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-take .fr-card {
+                    animation: fr-live-hand-arrive-from-river 1000ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-river-receive .fr-card {
+                    animation: fr-live-river-receive-discard 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                }
+                @keyframes fr-live-hand-arrive-from-deck {
+                    0% {
+                        opacity: 0;
+                        transform: translate(-220px, -260px) scale(0.88) rotate(-3deg);
+                    }
+                    52% {
+                        opacity: 1;
+                        transform: translate(-24px, -28px) scale(1.015) rotate(-1deg);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translate(0, 0) scale(1) rotate(0deg);
+                    }
+                }
+                @keyframes fr-live-hand-arrive-from-river {
+                    0% {
+                        opacity: 0.22;
+                        transform: translate(0, -230px) scale(0.9) rotate(2deg);
+                    }
+                    62% {
+                        opacity: 1;
+                        transform: translate(0, -18px) scale(1.02) rotate(0deg);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translate(0, 0) scale(1) rotate(0deg);
+                    }
+                }
+                @keyframes fr-live-river-receive-discard {
+                    0% {
+                        opacity: 0.2;
+                        transform: translate(0, 300px) scale(0.9) rotate(-2deg);
+                    }
+                    58% {
+                        opacity: 1;
+                        transform: translate(0, 16px) scale(1.03) rotate(0deg);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translate(0, 0) scale(1) rotate(0deg);
+                    }
+                }
+                .fr-live-card-state {
+                    position: absolute;
+                    right: 8px;
+                    top: 8px;
+                    z-index: 4;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 44px;
+                    min-height: 26px;
+                    padding: 0 9px;
+                    border-radius: 6px;
+                    border: 1px solid rgba(255, 239, 190, 0.76);
+                    background: rgba(29, 18, 8, 0.88);
+                    color: #ffeab8;
+                    font-size: 13px;
+                    font-weight: 900;
+                    line-height: 1;
+                    box-shadow:
+                        0 8px 14px rgba(0, 0, 0, 0.28),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+                    pointer-events: none;
+                }
+                .fr-board--minimal-live .fr-live-handband .fr-card-row--table-band {
+                    width: min(1540px, calc(100vw - 260px));
+                    margin: 0 auto;
+                    grid-template-columns: repeat(var(--fr-live-hand-slots, 7), minmax(0, 1fr));
+                    justify-content: center;
+                    gap: 0;
+                    transform: translateY(-18px);
+                }
+                .fr-board--minimal-live .fr-card-button--live-hand {
+                    width: 100%;
+                    max-width: none;
+                }
+                .fr-board--minimal-live .fr-live-action-zone {
+                    right: clamp(96px, 6.2vw, 132px);
+                    top: auto;
+                    bottom: clamp(224px, 22vh, 254px);
+                    width: 178px;
+                    height: 68px;
+                    min-height: 68px;
+                }
+                .fr-board--minimal-live .fr-live-action-button {
+                    width: 178px;
+                    height: 68px;
+                    padding: 10px 18px;
+                    border-radius: 8px;
+                    border-color: rgba(247, 205, 122, 0.42);
+                    background: rgba(50, 36, 20, 0.9);
+                    box-shadow:
+                        0 12px 20px rgba(0, 0, 0, 0.28),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.12);
+                    color: #ffe8ad;
+                    opacity: 0.88;
+                }
+                .fr-board--minimal-live .fr-live-action-button::before,
+                .fr-board--minimal-live .fr-live-action-button::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-action-button-label {
+                    max-width: 142px;
+                    font-size: 20px;
+                    line-height: 1.05;
+                }
+                .fr-board--minimal-live .fr-live-action-button--enabled {
+                    background: rgba(126, 75, 24, 0.96);
+                    box-shadow:
+                        0 16px 24px rgba(0, 0, 0, 0.34),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.2);
+                    opacity: 1;
+                }
+                .fr-board--minimal-live .fr-live-action-button--enabled:hover {
+                    transform: translateY(-2px);
+                    box-shadow:
+                        0 18px 26px rgba(0, 0, 0, 0.34),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.2);
+                }
+                .fr-board--minimal-live .fr-live-action-button--enabled:active {
+                    transform: translateY(1px);
+                    box-shadow:
+                        0 8px 14px rgba(0, 0, 0, 0.28),
+                        inset 0 2px 5px rgba(0, 0, 0, 0.22);
+                }
+                .fr-compact-layout .fr-live-table {
+                    min-height: 650px;
+                    grid-template-rows: 112px minmax(0, 1fr) 252px;
+                }
+                .fr-compact-layout .fr-live-topbar {
+                    min-height: 108px;
+                }
+                .fr-compact-layout .fr-live-status-strip {
+                    top: 20px;
+                    gap: 12px;
+                }
+                .fr-compact-layout .fr-live-chip--turn {
+                    min-width: 96px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-chip--turn-active {
+                    min-width: 112px;
+                }
+                .fr-compact-layout .fr-live-chip--round {
+                    font-size: 11px;
+                }
+                .fr-compact-layout .fr-live-chip--progress {
+                    min-width: 62px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-chip--cue {
+                    font-size: 13px;
+                }
+                .fr-compact-layout .fr-live-deck {
+                    top: 20px;
+                    left: 18px;
+                }
+                .fr-compact-layout .fr-live-deck-stack {
+                    width: 88px;
+                    height: 122px;
+                }
+                .fr-compact-layout .fr-live-deck-count {
+                    right: 6px;
+                    bottom: 6px;
+                    min-width: 32px;
+                    height: 24px;
+                    padding: 0 7px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-score-strip {
+                    top: 20px;
+                    right: 18px;
+                    width: 112px;
+                }
+                .fr-compact-layout .fr-discard-row--live-river {
+                    width: min(880px, calc(100vw - 96px));
+                    min-height: 286px;
+                    transform: translateY(6px);
+                }
+                .fr-compact-layout .fr-card-button--live-river {
+                    width: 164px;
+                }
+                .fr-compact-layout .fr-live-handband .fr-card-row--table-band {
+                    width: min(920px, calc(100vw - 72px));
+                    transform: translateY(-8px);
+                }
+                .fr-compact-layout .fr-live-action-zone {
+                    right: 28px;
+                    bottom: 160px;
+                    width: 152px;
+                    height: 60px;
+                    min-height: 60px;
+                }
+                .fr-compact-layout .fr-live-action-button {
+                    width: 152px;
+                    height: 60px;
+                    padding: 8px 14px;
+                }
+                .fr-compact-layout .fr-live-action-button-label {
+                    max-width: 124px;
+                    font-size: 18px;
+                }
+                .fr-compact-focus-strip {
+                    position: absolute;
+                    right: 14px;
+                    bottom: 214px;
+                    z-index: 3;
+                    width: min(208px, calc(100% - 28px));
+                    margin-top: 0;
+                }
+                .fr-compact-focus-strip .fr-panel {
+                    border-radius: 16px;
+                    border-color: rgba(241, 209, 149, 0.16);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 236, 184, 0.06), transparent 36%),
+                        linear-gradient(180deg, rgba(31, 37, 33, 0.94), rgba(14, 18, 16, 0.96));
+                    box-shadow:
+                        0 20px 28px rgba(0, 0, 0, 0.28),
+                        inset 0 0 0 1px rgba(255, 240, 204, 0.04);
+                }
+                .fr-compact-focus-strip .fr-panel-body {
+                    padding: 10px;
+                }
+                .fr-compact-focus-strip .fr-focus-panel {
+                    gap: 8px;
+                }
+                .fr-compact-focus-strip .fr-focus-spotlight {
+                    grid-template-columns: 72px minmax(0, 1fr);
+                    gap: 8px;
+                }
+                .fr-compact-focus-strip .fr-focus-preview-shell {
+                    max-width: 72px;
+                }
+                .fr-compact-focus-strip .fr-focus-card {
+                    gap: 6px;
+                    padding: 8px;
+                }
+                .fr-compact-focus-strip .fr-focus-name {
+                    font-size: 14px;
+                }
+                .fr-compact-focus-strip .fr-focus-score strong {
+                    font-size: 24px;
+                }
+                .fr-compact-layout .fr-live-focus-dock {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-deck--enabled:active .fr-live-deck-stack {
+                    transform: translateY(1px) scale(0.99);
+                    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28));
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .fr-board--minimal-live .fr-card-button--live-river .fr-card,
+                    .fr-board--minimal-live .fr-card-button--live-hand .fr-card,
+                    .fr-board--minimal-live .fr-live-action-button,
+                    .fr-board--minimal-live .fr-live-deck-stack {
+                        transition: none;
+                        animation: none;
+                    }
+                    .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable:hover .fr-card,
+                    .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card,
+                    .fr-board--minimal-live .fr-card-button--armed .fr-card,
+                    .fr-board--minimal-live .fr-live-action-button--enabled:hover,
+                    .fr-board--minimal-live .fr-live-action-button--enabled:active,
+                    .fr-board--minimal-live .fr-live-deck--enabled:hover .fr-live-deck-stack,
+                    .fr-board--minimal-live .fr-live-deck--enabled:active .fr-live-deck-stack {
+                        transform: none;
+                    }
                 }
                 .fr-panel {
                     overflow: hidden;
@@ -1711,67 +2606,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     aspect-ratio: auto;
                     min-height: 112px;
                 }
-                .fr-panel--score-rail .fr-panel-body {
-                    padding: 10px 12px 12px;
-                    max-height: 210px;
-                    overflow: auto;
-                }
-                .fr-panel--score-rail {
-                    max-height: 256px;
-                }
-                .fr-panel--score-rail .fr-score-summary {
-                    gap: 8px;
-                }
-                .fr-panel--score-rail .fr-score-table {
-                    gap: 6px;
-                }
-                .fr-panel--score-rail .fr-score-row {
-                    padding: 8px 10px;
-                    gap: 10px;
-                }
-                .fr-panel--score-rail .fr-score-row-total strong {
-                    font-size: 20px;
-                }
-                .fr-panel--score-rail .fr-score-summary-value {
-                    padding: 8px 10px;
-                    border-radius: 10px;
-                    justify-content: space-between;
-                    background: rgba(13, 19, 16, 0.3);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
-                }
-                .fr-panel--score-rail .fr-score-summary-value strong {
-                    font-size: 30px;
-                }
-                .fr-panel--score-rail .fr-score-list {
-                    grid-template-columns: repeat(3, minmax(0, 1fr));
-                    gap: 6px;
-                    font-size: 11px;
-                }
-                .fr-panel--score-rail .fr-score-list span {
-                    display: grid;
-                    gap: 4px;
-                    justify-content: initial;
-                    padding: 8px 10px;
-                    border-radius: 10px;
-                    background: rgba(13, 19, 16, 0.24);
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                }
-                .fr-panel--score-rail .fr-score-list em {
-                    font-style: normal;
-                    color: rgba(242, 234, 215, 0.64);
-                }
-                .fr-stacked-turn-panel {
+                .fr-compact-turn-panel {
                     margin-bottom: 14px;
                 }
-                .fr-stacked-layout {
+                .fr-compact-layout {
+                    position: relative;
                     display: grid;
                     gap: 18px;
                 }
-                .fr-stacked-layout--compact-landscape {
+                .fr-compact-layout--tight-landscape {
                     gap: 12px;
                 }
-                .fr-stacked-insight-grid,
-                .fr-stacked-support-grid {
+                .fr-compact-insight-grid,
+                .fr-compact-support-grid {
                     display: grid;
                     gap: 18px;
                     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1843,9 +2690,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     color: #f2ead7;
                     font-size: 13px;
                     font-weight: 600;
-                }
-                .fr-chip--muted {
-                    color: rgba(242, 234, 215, 0.72);
                 }
                 .fr-chip--actionable {
                     box-shadow: none;
@@ -1979,27 +2823,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-weight: 700;
                     letter-spacing: 0.04em;
                 }
-                .fr-score-summary-value {
-                    display: flex;
-                    align-items: baseline;
-                    gap: 10px;
-                    color: #f2ead7;
-                }
-                .fr-score-summary-value--dense {
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 8px 10px;
-                    border-radius: 10px;
-                    background: rgba(13, 19, 16, 0.24);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
-                }
-                .fr-score-summary-value strong {
-                    font-size: 40px;
-                    line-height: 1;
-                }
-                .fr-score-summary-value--dense strong {
-                    font-size: 28px;
-                }
                 .fr-score-list {
                     display: grid;
                     gap: 8px;
@@ -2010,16 +2833,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
                     gap: 6px;
                     font-size: 12px;
-                }
-                .fr-score-note,
-                .fr-observer-note {
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    font-size: 12px;
-                    line-height: 1.5;
-                    color: rgba(242, 234, 215, 0.72);
-                    background: rgba(13, 19, 16, 0.24);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
                 }
                 .fr-score-list span {
                     display: flex;
@@ -2068,18 +2881,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     color: #f2ead7;
                     font-weight: 700;
                 }
-                .fr-zone--discard-river {
-                    min-height: 300px;
-                    display: grid;
-                    align-content: start;
-                }
-                .fr-board--minimal-live .fr-zone--discard-river {
-                    min-height: 252px;
-                }
-                .fr-zone--hand-band {
-                    padding-top: 14px;
-                    background: rgba(28, 39, 33, 0.34);
-                }
                 .fr-card-row {
                     display: grid;
                     grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -2103,20 +2904,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     justify-content: center;
                     align-content: center;
                 }
-                .fr-zone--discard-river .fr-discard-row--empty {
-                    min-height: 112px;
-                    align-content: start;
-                }
                 .fr-discard-row--empty {
                     min-height: 180px;
                     align-content: center;
-                }
-                .fr-zone--compact-empty-discard .fr-discard-row--empty {
-                    min-height: 112px;
-                    align-content: start;
-                }
-                .fr-zone--compact-empty-discard {
-                    align-self: start;
                 }
                 .fr-card-button {
                     min-width: 0;
@@ -2177,13 +2967,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     text-align: center;
                     font-size: 12px;
                     line-height: 1.4;
-                }
-                .fr-zone-empty--compact-discard {
-                    max-width: 520px;
-                    min-height: 88px;
-                    place-items: start;
-                    padding: 14px 16px;
-                    text-align: left;
                 }
                 .fr-card-row-wrap {
                     display: grid;
@@ -2260,10 +3043,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: grid;
                     gap: 14px;
                 }
-                .fr-panel--focus-note .fr-panel-body,
-                .fr-panel--progress-note .fr-panel-body {
-                    padding: 12px;
-                }
                 .fr-focus-spotlight {
                     display: grid;
                     grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
@@ -2309,11 +3088,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     line-height: 1.15;
                     overflow-wrap: anywhere;
                 }
-                .fr-focus-text {
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: rgba(242, 234, 215, 0.78);
-                }
                 .fr-focus-score {
                     display: flex;
                     align-items: center;
@@ -2325,12 +3099,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-size: 30px;
                     color: #f2ead7;
                     flex-shrink: 0;
-                }
-                .fr-combo-list {
-                    display: grid;
-                    gap: 10px;
-                    font-size: 13px;
-                    color: #f2ead7;
                 }
                 .fr-combo-item {
                     padding: 8px 10px;
@@ -2355,14 +3123,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-progress-fill {
                     height: 100%;
                     background: #f2ead7;
-                }
-                .fr-panel--progress-note {
-                    background: rgba(28, 39, 33, 0.78);
-                }
-                .fr-footer-text {
-                    font-size: 13px;
-                    line-height: 1.5;
-                    color: rgba(242, 234, 215, 0.72);
                 }
                 .fr-endgame-summary {
                     display: grid;
@@ -2419,9 +3179,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     line-height: 1;
                 }
                 @media (max-width: 1180px) {
-                    .fr-table-layout {
-                        display: revert;
-                    }
                     .fr-zone-header {
                         align-items: flex-start;
                         flex-direction: column;
@@ -2442,8 +3199,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         border-width: 10px;
                         border-radius: 22px;
                     }
-                    .fr-stacked-insight-grid,
-                    .fr-stacked-support-grid {
+                    .fr-compact-insight-grid,
+                    .fr-compact-support-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .fr-live-endgame-grid {
                         grid-template-columns: 1fr;
                     }
                     .fr-card-row {
@@ -2463,6 +3223,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         padding: 12px;
                         border-width: 8px;
                         border-radius: 18px;
+                    }
+                    .fr-live-table--gameover {
+                        grid-template-rows: minmax(0, 1fr) 248px auto;
                     }
                     .fr-panel-header {
                         padding: 8px 12px 6px;
@@ -2487,10 +3250,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         width: 8px;
                         height: 8px;
                     }
-                    .fr-observer-note,
-                    .fr-score-note,
-                    .fr-card-row-note,
-                    .fr-footer-text {
+                    .fr-card-row-note {
                         font-size: 11px;
                     }
                     .fr-zone {
@@ -2521,6 +3281,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         padding: 12px 10px;
                         font-size: 12px;
                     }
+                    .fr-live-endgame {
+                        gap: 10px;
+                        padding-top: 10px;
+                    }
+                    .fr-live-endgame-focus-block,
+                    .fr-live-endgame-summary-block {
+                        gap: 8px;
+                        padding: 12px;
+                    }
                     .fr-card-row-wrap {
                         gap: 8px;
                     }
@@ -2530,7 +3299,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         padding-right: 72px;
                     }
                     .fr-focus-panel,
-                    .fr-combo-list,
                     .fr-endgame-summary,
                     .fr-endgame-list {
                         gap: 8px;
@@ -2557,9 +3325,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     .fr-focus-name {
                         font-size: 20px;
                     }
-                    .fr-focus-text {
-                        font-size: 12px;
-                    }
                     .fr-focus-score strong {
                         font-size: 26px;
                     }
@@ -2584,73 +3349,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             `}</style>
 
             <div className={`fr-board${isMinimalLiveDesktop ? ' fr-board--minimal-live' : ''}`}>
-                {isStackedViewport ? turnPanelSection : null}
-                {isStackedViewport ? (
+                {isCompactLandscapeTableViewport ? (
                     <div
-                        className={`fr-stacked-layout${isCompactLandscapeViewport ? ' fr-stacked-layout--compact-landscape' : ''}`}
-                        data-testid="fantasyrealms-stacked-layout"
+                        className={`fr-compact-layout${isTightCompactLandscapeViewport ? ' fr-compact-layout--tight-landscape' : ''}`}
+                        data-testid="fantasyrealms-compact-layout"
                     >
-                        {isCompactLandscapeViewport ? (
-                            <>
-                                {handZoneSection}
-                                <div className="fr-stacked-insight-grid" data-testid="fantasyrealms-stacked-insight-grid">
-                                    {discardZoneSection}
-                                    {focusPanelSection}
-                                </div>
-                                <div className="fr-stacked-support-grid" data-testid="fantasyrealms-stacked-support-grid">
-                                    {scorePanelSection}
-                                    {progressPanelSection}
-                                </div>
-                                {deckPanelSection}
-                            </>
-                        ) : (
-                            <>
-                                {discardZoneSection}
-                                <div className="fr-stacked-insight-grid" data-testid="fantasyrealms-stacked-insight-grid">
-                                    {focusPanelSection}
-                                    {scorePanelSection}
-                                </div>
-                                {handZoneSection}
-                                <div className="fr-stacked-support-grid" data-testid="fantasyrealms-stacked-support-grid">
-                                    {progressPanelSection}
-                                    {deckPanelSection}
-                                </div>
-                            </>
-                        )}
-                    </div>
-                ) : isMinimalLiveDesktop ? (
-                    <div className="fr-live-table" data-testid="fantasyrealms-live-table">
-                        {minimalLiveTopbarSection}
-                        {minimalLiveDiscardZoneSection}
-                        {minimalLiveHandZoneSection}
-                    </div>
-                ) : (
-                    <div className="fr-table-layout" data-testid="fantasyrealms-table-layout">
-                        <aside className="fr-table-top-left" data-testid="fantasyrealms-table-top-left">
-                            {deckPanelSection}
-                            {turnPanelSection}
-                        </aside>
-
-                        <aside className="fr-table-top-right" data-testid="fantasyrealms-table-top-right">
-                            {scorePanelSection}
-                        </aside>
-
-                        <section className="fr-table-center" data-testid="fantasyrealms-table-center">
-                            {discardZoneSection}
-                        </section>
-
-                        {!isMinimalLiveDesktop ? (
-                            <aside className="fr-table-dock" data-testid="fantasyrealms-table-dock">
+                        {liveTableSection}
+                        {!isGameOver ? (
+                            <div className="fr-compact-focus-strip" data-testid="fantasyrealms-compact-focus-strip">
                                 {focusPanelSection}
-                                {progressPanelSection}
-                            </aside>
+                            </div>
                         ) : null}
-
-                        <section className="fr-table-bottom" data-testid="fantasyrealms-table-bottom">
-                            {handZoneSection}
-                        </section>
                     </div>
-                )}
+                ) : liveTableSection}
             </div>
         </div>
     );

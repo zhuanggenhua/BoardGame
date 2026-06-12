@@ -44,7 +44,7 @@ async function readBoardMetrics(page: import('@playwright/test').Page) {
 }
 
 test.describe('TicTacToe 移动端布局兼容', () => {
-    test('手机竖屏下棋盘应保持正方形，横屏时应显示独立方向 gate', async ({ page, game }, testInfo) => {
+    test('手机竖屏下棋盘应保持正方形，横屏时只显示可关闭方向提示条', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -73,21 +73,22 @@ test.describe('TicTacToe 移动端布局兼容', () => {
         await page.setViewportSize({ width: 844, height: 390 });
         await page.waitForTimeout(400);
 
-        const gate = page.getByTestId('mobile-orientation-game-gate');
-        await expect(gate).toBeVisible({ timeout: 10000 });
-        await expect(gate.getByText('请切换到竖屏继续')).toBeVisible();
-        await expect(page.getByText('建议切换为竖屏以获得更佳体验')).toHaveCount(0);
+        const banner = page.getByTestId('mobile-orientation-game-banner');
+        await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+        await expect(banner).toBeVisible({ timeout: 10000 });
+        await expect(banner.getByText('建议切换为竖屏以获得更佳体验')).toBeVisible();
+        await expect(page.getByRole('button', { name: '关闭提示' })).toBeVisible();
 
         const overflowX = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         expect(overflowX).toBeLessThanOrEqual(1);
 
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'tictactoe-mobile-landscape-orientation-gate'),
+            path: getEvidenceScreenshotPath(testInfo, 'tictactoe-mobile-landscape-orientation-banner'),
             fullPage: false,
         });
     });
 
-    test('手机端切到错方向后进入 gate，切回竖屏后仍可继续当前对局', async ({ page, game }, testInfo) => {
+    test('手机端切到错方向后显示提示条，切回竖屏后仍可继续当前对局', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
         await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -109,17 +110,18 @@ test.describe('TicTacToe 移动端布局兼容', () => {
 
         await page.setViewportSize({ width: 844, height: 390 });
         await page.waitForTimeout(400);
-        await expect(page.getByTestId('mobile-orientation-game-gate')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText('请切换到竖屏继续')).toBeVisible();
+        await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+        await expect(page.getByTestId('mobile-orientation-game-banner')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText('建议切换为竖屏以获得更佳体验')).toBeVisible();
         await page.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'tictactoe-mobile-landscape-gate-after-first-move'),
+            path: getEvidenceScreenshotPath(testInfo, 'tictactoe-mobile-landscape-banner-after-first-move'),
             fullPage: false,
         });
 
         await page.setViewportSize({ width: 390, height: 844 });
         await page.waitForTimeout(400);
 
-        await expect(page.getByTestId('mobile-orientation-game-gate')).toHaveCount(0);
+        await expect(page.getByTestId('mobile-orientation-game-banner')).toHaveCount(0);
         await expect(page.locator('[data-tutorial-id="cell-0"] svg')).toBeVisible({ timeout: 10000 });
 
         await page.locator('[data-tutorial-id="cell-4"]').click();

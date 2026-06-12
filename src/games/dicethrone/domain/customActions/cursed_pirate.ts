@@ -550,11 +550,13 @@ function resolveHefty({
 }
 
 function applyPowderKegIfThreeOfAKind({
+    ctx,
     targetId,
     sourceAbilityId,
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    if (ctx.damageDealt <= 0) return [];
     if (getAttackMaxDuplicateValueCount(state) < 3) return [];
 
     const target = state.players[targetId];
@@ -832,11 +834,13 @@ function requestHumanMercilessPlunder({
 }
 
 function applyPowderKegIfFourOfAKind({
+    ctx,
     targetId,
     sourceAbilityId,
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    if (ctx.damageDealt <= 0) return [];
     if (getAttackMaxDuplicateValueCount(state) < 4) return [];
 
     return buildStatusAppliedOrChoiceEvents({
