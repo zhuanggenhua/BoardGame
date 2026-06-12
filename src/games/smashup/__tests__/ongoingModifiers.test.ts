@@ -1138,6 +1138,75 @@ describe('registerOngoingPowerModifier 通用叠加', () => {
     });
 });
 
+describe('Pretty Pretty 猫咪与小马持续力量修正', () => {
+    it('kitty_cats_grumpiness 只让附着随从 -2 力量', () => {
+        const target = makeMinion('target', 'test_minion', '0', 3, {
+            attachedActions: [{ uid: 'grumpy-1', defId: 'kitty_cats_grumpiness', ownerId: '1' }],
+        });
+        const other = makeMinion('other', 'test_minion', '0', 4);
+        const base = { defId: 'base_a', minions: [target, other], ongoingActions: [] };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, target, 0)).toBe(1);
+        expect(getEffectivePower(state, other, 0)).toBe(4);
+    });
+
+    it('kitty_cats_hissy_fit 只让同基地其他玩家随从 -1 力量', () => {
+        const ownerMinion = makeMinion('own', 'test_minion', '0', 3);
+        const enemyMinion = makeMinion('enemy', 'test_minion', '1', 4);
+        const base = {
+            defId: 'base_a',
+            minions: [ownerMinion, enemyMinion],
+            ongoingActions: [{ uid: 'fit-1', defId: 'kitty_cats_hissy_fit', ownerId: '0' }],
+        };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, ownerMinion, 0)).toBe(3);
+        expect(getEffectivePower(state, enemyMinion, 0)).toBe(3);
+    });
+
+    it('mythic_horses_starlyte 给同基地其他己方随从 +1 但不加自己', () => {
+        const starlyte = makeMinion('starlyte', 'mythic_horses_starlyte', '0', 5);
+        const friend = makeMinion('friend', 'test_minion', '0', 3);
+        const enemy = makeMinion('enemy', 'test_minion', '1', 4);
+        const base = { defId: 'base_a', minions: [starlyte, friend, enemy], ongoingActions: [] };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, starlyte, 0)).toBe(5);
+        expect(getEffectivePower(state, friend, 0)).toBe(4);
+        expect(getEffectivePower(state, enemy, 0)).toBe(4);
+    });
+
+    it('mythic_horses_pinkie 只在同基地有其他己方随从时自身 +1', () => {
+        const pinkieWithFriend = makeMinion('pinkie-a', 'mythic_horses_pinkie', '0', 2);
+        const friend = makeMinion('friend', 'test_minion', '0', 3);
+        const pinkieAlone = makeMinion('pinkie-b', 'mythic_horses_pinkie', '0', 2);
+        const state = makeState({
+            bases: [
+                { defId: 'base_a', minions: [pinkieWithFriend, friend], ongoingActions: [] },
+                { defId: 'base_b', minions: [pinkieAlone], ongoingActions: [] },
+            ],
+        });
+
+        expect(getEffectivePower(state, pinkieWithFriend, 0)).toBe(3);
+        expect(getEffectivePower(state, pinkieAlone, 1)).toBe(2);
+    });
+
+    it('mythic_horses_encouragement_power 按每张附着牌 owner 判断是否有其他己方随从', () => {
+        const target = makeMinion('target', 'test_minion', '1', 3, {
+            attachedActions: [
+                { uid: 'enc-0', defId: 'mythic_horses_encouragement_power', ownerId: '0' },
+                { uid: 'enc-1', defId: 'mythic_horses_encouragement_power', ownerId: '1' },
+            ],
+        });
+        const ownerZeroFriend = makeMinion('friend-0', 'test_minion', '0', 2);
+        const base = { defId: 'base_a', minions: [target, ownerZeroFriend], ongoingActions: [] };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, target, 0)).toBe(4);
+    });
+});
+
 
 
 

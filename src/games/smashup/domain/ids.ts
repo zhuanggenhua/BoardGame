@@ -51,6 +51,8 @@ export const SMASHUP_FACTION_IDS = {
     DRAGONS: 'dragons',
     GEEKS: 'geeks',
     HULUWAWA: 'huluwawa',
+    KITTY_CATS: 'kitty_cats',
+    MYTHIC_HORSES: 'mythic_horses',
     PRINCESSES: 'princesses',
     SHARKS: 'sharks',
     TORNADOS: 'tornados',
@@ -132,7 +134,13 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
-export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.FAIRIES,
+    SMASHUP_FACTION_IDS.PRINCESSES,
+    SMASHUP_FACTION_IDS.SHARKS,
+    SMASHUP_FACTION_IDS.TORNADOS,
+    SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+]);
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
@@ -163,6 +171,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.DRAGONS]: '龙',
     [SMASHUP_FACTION_IDS.GEEKS]: '极客',
     [SMASHUP_FACTION_IDS.HULUWAWA]: '葫芦娃',
+    [SMASHUP_FACTION_IDS.KITTY_CATS]: '猫咪',
+    [SMASHUP_FACTION_IDS.MYTHIC_HORSES]: '小马',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.SHARKS]: '鲨鱼',
     [SMASHUP_FACTION_IDS.TORNADOS]: '龙卷风',

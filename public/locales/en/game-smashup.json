@@ -156,6 +156,27 @@
     "hide_nonessential_controls_short": "Hide",
     "me_first_title": "⚡ Me First!",
     "after_scoring_title": "After Scoring Response",
+    "kitty_cats_hang_in_there_title": "Hang In There: choose another base to move to",
+    "kitty_cats_temporary_control_title": "Kitty Cats: choose a minion of power {{maxPower}} or less to control until end of turn",
+    "kitty_cats_mr_grumpers_title": "Mr. Grumpers: choose a minion to get -2 power until end of turn",
+    "kitty_cats_cat_fight_title": "Cat Fight: choose one of your minions, draw cards equal to its power, then destroy it",
+    "kitty_cats_nine_lives_title": "Nine Lives: destroy one of your minions and play an extra action",
+    "kitty_cats_whiskers_title": "Whiskers: choose one of your minions to get +1 power until end of turn",
+    "kitty_cats_invisible_bicycle_minions_title": "Invisible Bicycle: choose minions of power 2 or less to move",
+    "kitty_cats_invisible_bicycle_base_title": "Invisible Bicycle: choose the destination base",
+    "mythic_horses_teaching_power_order_title": "Teaching Power: choose the order for the remaining revealed cards on top of your deck",
+    "mythic_horses_super_future_space_armor_power_title": "Super Future Space Armor Power: choose a minion to get +2 power and protection from other players' cards until end of turn",
+    "mythic_horses_teaching_power_title": "Teaching Power: choose a revealed minion to play as an extra minion",
+    "mythic_horses_teaching_power_skip_option": "Do not play one",
+    "mythic_horses_togetherness_power_title": "Togetherness Power: choose a base where you have a minion to gain an extra minion play limited to that base",
+    "mythic_horses_adventure_power_minions_title": "Adventure Power: choose your minions to move",
+    "mythic_horses_friendship_power_minion_title": "Friendship Power: choose one of your minions to move",
+    "mythic_horses_freedom_power_title": "Freedom Power: choose an action on a base or minion to return to its owner's hand",
+    "mythic_horses_adventure_power_base_title": "Adventure Power: choose the destination base",
+    "mythic_horses_friendship_power_base_title": "Friendship Power: choose another base where you have a minion",
+    "mythic_horses_friendship_power_top_title": "Friendship Power: put this action on top of your deck?",
+    "mythic_horses_friendship_power_top_option": "Put it on top of your deck",
+    "mythic_horses_friendship_power_discard_option": "Leave it in the discard pile",
     "reaction_choose_mandatory_title": "Choose the mandatory effect to resolve first",
     "reaction_choose_optional_title": "Choose a reaction",
     "titan_reaction_click_prompt": "Click a highlighted titan to resolve it, or pass",
@@ -1393,6 +1414,14 @@
     "mermaids": {
       "name": "Mermaids",
       "description": "Control bases with movement tricks and power suppression."
+    },
+    "kitty_cats": {
+      "name": "Kitty Cats",
+      "description": "Weaken and control minions, turning temporary control and sacrifices into tempo."
+    },
+    "mythic_horses": {
+      "name": "Mythic Horses",
+      "description": "Gather friendly minions, share bonuses, and chain movement with extra plays."
     },
     "skeletons": {
       "name": "Skeletons",
@@ -4640,6 +4669,102 @@
     "base_hall_of_fame": {
       "name": "Hall of Fame",
       "abilityText": "The first minion you play here during your turn gains +2 power until end of turn."
+    },
+    "kitty_cats_mr_grumpers": {
+      "name": "Mr. Grumpers",
+      "abilityText": "Choose a minion. That minion has -2 power until the end of the turn."
+    },
+    "kitty_cats_muffin": {
+      "name": "Muffin",
+      "abilityText": "Take control of a minion of power 5 or less until the end of the turn."
+    },
+    "kitty_cats_whiskers": {
+      "name": "Whiskers",
+      "abilityText": "Talent: Play an extra action and give one of your minions +1 power until the end of the turn."
+    },
+    "kitty_cats_queen_fluffy": {
+      "name": "Queen Fluffy",
+      "abilityText": "Talent: Take control of a minion of power 3 or less until the end of the turn."
+    },
+    "kitty_cats_grumpiness": {
+      "name": "Grumpiness",
+      "effectText": "Play on a minion.\nOngoing: This minion has -2 power."
+    },
+    "kitty_cats_cat_fight": {
+      "name": "Cat Fight",
+      "effectText": "Choose one of your minions. Draw cards equal to that minion's power. Then destroy that minion."
+    },
+    "kitty_cats_cats_paw": {
+      "name": "Cat's Paw",
+      "effectText": "Take control of a minion of power 5 or less until the end of the turn."
+    },
+    "kitty_cats_invisible_bicycle": {
+      "name": "Invisible Bicycle",
+      "effectText": "Choose a base. Move any number of minions of power 2 or less from here to another base."
+    },
+    "kitty_cats_nine_lives": {
+      "name": "Nine Lives",
+      "effectText": "Destroy one of your minions. Play an extra action."
+    },
+    "kitty_cats_hang_in_there": {
+      "name": "Hang in There",
+      "effectText": "Play on one of your minions.\nOngoing: If one of your minions would be destroyed, move it to another base and destroy this action."
+    },
+    "kitty_cats_hissy_fit": {
+      "name": "Hissy Fit",
+      "effectText": "Play on a base.\nOngoing: Other players' minions here have -1 power."
+    },
+    "kitty_cats_can_has_cheeseburger": {
+      "name": "Can Has Cheeseburger?",
+      "effectText": "Special: Before a base scores, you may take control of a minion there of power 5 or less until the end of the turn."
+    },
+    "mythic_horses_starlyte": {
+      "name": "Starlyte",
+      "abilityText": "Ongoing: Your other minions at this base have +1 power."
+    },
+    "mythic_horses_pinkie": {
+      "name": "Pinkie",
+      "abilityText": "Ongoing: As long as you have another minion here, this minion has +1 power."
+    },
+    "mythic_horses_seastar": {
+      "name": "Seastar",
+      "abilityText": "If you control another base where you have minions, you may use this minion's ability one extra time this turn."
+    },
+    "mythic_horses_rainbow": {
+      "name": "Rainbow",
+      "abilityText": "Talent: If you have another minion at this base, draw a card."
+    },
+    "mythic_horses_teaching_power": {
+      "name": "Teaching Power",
+      "effectText": "Special: Before a base scores, reveal the top card of your deck for each of your minions there. Play one revealed minion as an extra minion there. Return the other cards to the top of your deck in any order."
+    },
+    "mythic_horses_sharing_power": {
+      "name": "Sharing Power",
+      "effectText": "Play on a base.\nOngoing: At the start of your turn, if there is a minion of power 2 or less here, draw a card."
+    },
+    "mythic_horses_super_future_space_armor_power": {
+      "name": "Super Future Space Armor Power",
+      "effectText": "Choose a minion. Until the end of the turn, it is unaffected by other players' cards and has +2 power."
+    },
+    "mythic_horses_togetherness_power": {
+      "name": "Togetherness Power",
+      "effectText": "Play an extra minion at a base where you have a minion."
+    },
+    "mythic_horses_encouragement_power": {
+      "name": "Encouragement Power",
+      "effectText": "Play on one of your minions.\nOngoing: If this minion's base has another of your minions, this minion has +1 power."
+    },
+    "mythic_horses_adventure_power": {
+      "name": "Adventure Power",
+      "effectText": "Choose a base. Move any number of your minions to that base."
+    },
+    "mythic_horses_freedom_power": {
+      "name": "Freedom Power",
+      "effectText": "Return an action played on a base or minion to its owner's hand."
+    },
+    "mythic_horses_friendship_power": {
+      "name": "Friendship Power",
+      "effectText": "Move one of your minions to another base where you have a minion. You may place this card on top of your deck instead of the discard pile."
     },
     "fairies_titania": {
       "name": "Titania",
