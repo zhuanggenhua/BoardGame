@@ -1457,6 +1457,7 @@ export function processDestroyTriggers(
                     'base_nine_lives_intercept',        // 九命之屋
                     'giant_ant_drone_prevent_destroy',   // 雄蜂防止消灭
                     'pirate_buccaneer_move',             // 海盗：被消灭时移动到其他基地
+                    'kitty_cats_hang_in_there',          // 猫咪：坚持住移动随从并弃掉本行动
                 ];
                 const newInteraction = ms.sys.interaction.current ?? ms.sys.interaction.queue[ms.sys.interaction.queue.length - 1];
                 const sourceId = (newInteraction?.data as any)?.sourceId as string | undefined;

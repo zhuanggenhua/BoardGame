@@ -128,6 +128,27 @@
     "hide_nonessential_controls_short": "隐",
     "me_first_title": "⚡ 先手响应！",
     "after_scoring_title": "计分后响应",
+    "kitty_cats_hang_in_there_title": "坚持住：选择要移动到的其他基地",
+    "kitty_cats_temporary_control_title": "猫咪：选择一个力量 {{maxPower}} 或以下的随从获得控制权直到回合结束",
+    "kitty_cats_mr_grumpers_title": "坏脾气先生：选择一个随从直到回合结束 -2 力量",
+    "kitty_cats_cat_fight_title": "猫咪打架：选择你的一个随从，按其力量抽牌，然后消灭它",
+    "kitty_cats_nine_lives_title": "九条命：消灭你的一个随从并额外打出一个行动",
+    "kitty_cats_whiskers_title": "威斯克：选择你的一个随从直到回合结束 +1 力量",
+    "kitty_cats_invisible_bicycle_minions_title": "隐形自行车：选择要移动的力量 2 或以下随从",
+    "kitty_cats_invisible_bicycle_base_title": "隐形自行车：选择目标基地",
+    "mythic_horses_teaching_power_order_title": "教学之力：按顺序选择其余展示牌放回牌库顶",
+    "mythic_horses_super_future_space_armor_power_title": "超未来装甲之力：选择一个随从直到回合结束 +2 且不受其他玩家卡牌影响",
+    "mythic_horses_teaching_power_title": "教学之力：选择一张展示的随从作为额外随从打出",
+    "mythic_horses_teaching_power_skip_option": "不打出",
+    "mythic_horses_togetherness_power_title": "同行之力：选择一个你已有随从的基地，获得该基地限定额外随从",
+    "mythic_horses_adventure_power_minions_title": "冒险之力：选择要移动的你的随从",
+    "mythic_horses_friendship_power_minion_title": "友谊之力：选择要移动的你的一个随从",
+    "mythic_horses_freedom_power_title": "自由之力：选择一张基地或随从上的行动回到其所有者手牌",
+    "mythic_horses_adventure_power_base_title": "冒险之力：选择目标基地",
+    "mythic_horses_friendship_power_base_title": "友谊之力：选择另一个已有你随从的基地",
+    "mythic_horses_friendship_power_top_title": "友谊之力：是否将这张行动放到牌库顶？",
+    "mythic_horses_friendship_power_top_option": "放到牌库顶",
+    "mythic_horses_friendship_power_discard_option": "留在弃牌堆",
     "reaction_choose_mandatory_title": "选择先结算的强制效果",
     "reaction_choose_optional_title": "选择一个反应动作",
     "titan_reaction_click_prompt": "点击高亮泰坦执行效果，或选择跳过",
@@ -1357,6 +1378,14 @@
     "mermaids": {
       "name": "美人鱼",
       "description": "通过移动与力量压制掌控基地，并在关键时机削弱对手贡献。"
+    },
+    "kitty_cats": {
+      "name": "猫咪",
+      "description": "操控和削弱随从，用临时控制与自我牺牲换取节奏。"
+    },
+    "mythic_horses": {
+      "name": "小马",
+      "description": "围绕同基地协作、额外出牌和移动，让友方随从聚集并互相加成。"
     },
     "skeletons": {
       "name": "骷髅",
@@ -4604,6 +4633,102 @@
     "base_hall_of_fame": {
       "name": "名人堂",
       "abilityText": "你每回合第一次在这里打出的随从直到回合结束获得 +2 力量。"
+    },
+    "kitty_cats_mr_grumpers": {
+      "name": "坏脾气先生",
+      "abilityText": "选择一个仆从。该仆从直到回合结束具有 -2 力量。"
+    },
+    "kitty_cats_muffin": {
+      "name": "松饼",
+      "abilityText": "控制一个力量为 5 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_whiskers": {
+      "name": "威斯克",
+      "abilityText": "天赋：打出一个额外的行动，并让你的一个仆从直到回合结束具有 +1 力量。"
+    },
+    "kitty_cats_queen_fluffy": {
+      "name": "毛茸茸女王",
+      "abilityText": "天赋：控制一个力量为 3 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_grumpiness": {
+      "name": "悲哀",
+      "effectText": "打出到一个仆从上。\n持续：本仆从具有 -2 力量。"
+    },
+    "kitty_cats_cat_fight": {
+      "name": "猫咪打架",
+      "effectText": "选择你的一个仆从。抽等同于该仆从力量的牌。之后摧毁那个仆从。"
+    },
+    "kitty_cats_cats_paw": {
+      "name": "猫咪的爪子",
+      "effectText": "控制一个力量为 5 或更低的仆从直到回合结束。"
+    },
+    "kitty_cats_invisible_bicycle": {
+      "name": "隐形自行车",
+      "effectText": "选择一个基地。从这里移动任意数量力量为 2 或更低的仆从到另一个基地。"
+    },
+    "kitty_cats_nine_lives": {
+      "name": "九条命",
+      "effectText": "摧毁你的一个仆从。打出一个额外的行动。"
+    },
+    "kitty_cats_hang_in_there": {
+      "name": "坚持下去",
+      "effectText": "打出到你的一个仆从上。\n持续：如果你的一个仆从将要被摧毁，将其移动到另一个基地并摧毁本行动。"
+    },
+    "kitty_cats_hissy_fit": {
+      "name": "发脾气",
+      "effectText": "打出到基地上。\n持续：所有其他玩家在这里的仆从具有 -1 力量。"
+    },
+    "kitty_cats_can_has_cheeseburger": {
+      "name": "我能吃起士堡吗?",
+      "effectText": "特殊：在一个基地计分前，你可以控制那里一个力量为 5 或更低的仆从直到回合结束。"
+    },
+    "mythic_horses_starlyte": {
+      "name": "星耀",
+      "abilityText": "持续：你在同一基地的其他仆从具有 +1 力量。"
+    },
+    "mythic_horses_pinkie": {
+      "name": "粉琪",
+      "abilityText": "持续：只要有其他你的仆从在此，本仆从具有 +1 力量。"
+    },
+    "mythic_horses_seastar": {
+      "name": "海星",
+      "abilityText": "如果你控制另一个在这里有仆从的基地，本回合你可以额外使用一次本仆从的能力。"
+    },
+    "mythic_horses_rainbow": {
+      "name": "彩虹",
+      "abilityText": "天赋：如果你在本仆从所在的基地还有其他仆从，抓一张牌。"
+    },
+    "mythic_horses_teaching_power": {
+      "name": "教学之力",
+      "effectText": "特殊：在一个基地计分前，该基地上每有你一个仆从，你从牌库顶展示一张牌。将其中一个展示的仆从作为一张额外的仆从牌打在该基地。将其他卡放回你的牌库，顺序任意。"
+    },
+    "mythic_horses_sharing_power": {
+      "name": "分享之力",
+      "effectText": "打出到基地上。\n持续：在你的回合开始时，如果这里有力量 2 或更低的仆从，抓一张牌。"
+    },
+    "mythic_horses_super_future_space_armor_power": {
+      "name": "超未来装甲之力",
+      "effectText": "选择一个仆从。直到回合结束，其不受其他玩家的牌影响，并具有 +2 力量。"
+    },
+    "mythic_horses_togetherness_power": {
+      "name": "同行之力",
+      "effectText": "在一个有你仆从的基地上打出一张额外的仆从。"
+    },
+    "mythic_horses_encouragement_power": {
+      "name": "鼓舞之力",
+      "effectText": "打出到你的一个仆从上。\n持续：如果该仆从所在基地还有你的其他仆从，该仆从具有 +1 力量。"
+    },
+    "mythic_horses_adventure_power": {
+      "name": "冒险之力",
+      "effectText": "选择一个基地，将任意数量你的仆从移动到该基地。"
+    },
+    "mythic_horses_freedom_power": {
+      "name": "自由之力",
+      "effectText": "将一张打在基地或仆从上的行动放回其拥有者手牌。"
+    },
+    "mythic_horses_friendship_power": {
+      "name": "友谊之力",
+      "effectText": "将你的一个仆从移动到另一个有你仆从的基地上。你可以将本卡放到你的牌库顶，以代替放入弃牌堆。"
     },
     "fairies_titania": {
       "name": "泰坦妮娅",

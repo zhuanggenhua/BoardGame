@@ -463,6 +463,29 @@ export function resolvePendingActionExecution(
         if (!specialTiming) {
             return { state: updatedState, events };
         }
+        if (
+            reactionWindow
+            && (
+                (reactionWindow.windowType === 'meFirst' && specialTiming === 'beforeScoring')
+                || (reactionWindow.windowType === 'afterScoring' && specialTiming === 'afterScoring')
+            )
+        ) {
+            const limitGroup = def.type === 'fusion'
+                ? def.actionSpecialLimitGroup
+                : def.specialLimitGroup;
+            if (limitGroup) {
+                events.push({
+                    type: SU_EVENTS.SPECIAL_LIMIT_USED,
+                    payload: {
+                        playerId: pending.playerId,
+                        baseIndex: targetBaseIndex,
+                        limitGroup,
+                        abilityDefId: pending.defId,
+                    },
+                    timestamp: now,
+                } as SmashUpEvent);
+            }
+        }
         if (specialTiming === 'beforeScoring') {
             runActionExecutor(resolveSpecial(pending.defId) ?? resolveOnPlay(pending.defId), targetBaseIndex);
         } else if (specialTiming === 'afterScoring') {

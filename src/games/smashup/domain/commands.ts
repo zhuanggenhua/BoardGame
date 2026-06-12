@@ -923,8 +923,11 @@ export function validate(
                 const canUseGreatWolfSpiritDouble =
                     greatWolfSpiritBaseIndex === baseIndex
                     && !((core.greatWolfSpiritDoubleTalentCardUids ?? []).includes(minionUid));
+                const canUseSeastarDouble =
+                    targetMinion.metadata?.mythicHorsesSeastarExtraTalent === true
+                    && targetMinion.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
 
-                if (!(isStandingStones && doubleTalentAvailable) && !canUseGreatWolfSpiritDouble) {
+                if (!(isStandingStones && doubleTalentAvailable) && !canUseGreatWolfSpiritDouble && !canUseSeastarDouble) {
                     return { valid: false, error: '本回合天赋已使用' };
                 }
             }

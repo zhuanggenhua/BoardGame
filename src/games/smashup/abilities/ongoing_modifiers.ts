@@ -6,6 +6,7 @@
  */
 
 import {
+    registerPowerModifier,
     registerPowerModifiers,
     registerOngoingPowerModifiers,
     registerBasePowerModifiers,
@@ -497,6 +498,65 @@ function registerKaijuModifiers(): void {
         return 3;
     });
 }
+
+function registerKittyCatsModifiers(): void {
+    // 悲哀：附着随从 -2 力量
+    registerPowerModifier('kitty_cats_grumpiness', (ctx: PowerModifierContext) => {
+        const copies = ctx.minion.attachedActions.filter(action =>
+            matchesRuntimeDefId(action.defId, 'kitty_cats_grumpiness')
+        ).length;
+        return copies * -2;
+    }, { podStrategy: 'selfManaged' });
+
+    // 发脾气：基地上其他玩家的随从 -1 力量
+    registerPowerModifier('kitty_cats_hissy_fit', (ctx: PowerModifierContext) => {
+        return ctx.base.ongoingActions.reduce((total, action) => {
+            if (!matchesRuntimeDefId(action.defId, 'kitty_cats_hissy_fit')) return total;
+            return ctx.minion.controller !== getActionControllerId(action)
+                ? total - 1
+                : total;
+        }, 0);
+    }, { podStrategy: 'selfManaged' });
+}
+
+function registerMythicHorsesModifiers(): void {
+    // 星耀：同基地其他己方随从 +1 力量
+    registerPowerModifier('mythic_horses_starlyte', (ctx: PowerModifierContext) => {
+        if (ctx.minion.defId === 'mythic_horses_starlyte' || ctx.minion.defId === 'mythic_horses_starlyte_pod') {
+            return 0;
+        }
+        return ctx.base.minions.filter(minion =>
+            (minion.defId === 'mythic_horses_starlyte' || minion.defId === 'mythic_horses_starlyte_pod')
+            && minion.controller === ctx.minion.controller
+        ).length;
+    }, { podStrategy: 'selfManaged' });
+
+    // Pinkie：同基地还有其他己方随从时 +1 力量
+    registerPowerModifier('mythic_horses_pinkie', (ctx: PowerModifierContext) => {
+        if (ctx.minion.defId !== 'mythic_horses_pinkie' && ctx.minion.defId !== 'mythic_horses_pinkie_pod') {
+            return 0;
+        }
+        return ctx.base.minions.some(minion => minion.uid !== ctx.minion.uid && minion.controller === ctx.minion.controller)
+            ? 1
+            : 0;
+    }, { podStrategy: 'selfManaged' });
+
+    // 鼓舞之力：逐张附着牌按其 owner 判断“你的其他随从”，避免多 owner 附着时一次性放大。
+    registerPowerModifier('mythic_horses_encouragement_power', (ctx: PowerModifierContext) => {
+        return ctx.minion.attachedActions.reduce((total, action) => {
+            if (
+                action.defId !== 'mythic_horses_encouragement_power'
+                && action.defId !== 'mythic_horses_encouragement_power_pod'
+            ) {
+                return total;
+            }
+            const hasOtherOwnerMinion = ctx.base.minions.some(minion =>
+                minion.uid !== ctx.minion.uid && minion.controller === action.ownerId
+            );
+            return hasOtherOwnerMinion ? total + 1 : total;
+        }, 0);
+    }, { podStrategy: 'selfManaged' });
+}
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
@@ -561,6 +621,8 @@ export function registerAllOngoingModifiers(): void {
     registerFairiesModifiers();
     registerPrincessesModifiers();
     registerKaijuModifiers();
+    registerKittyCatsModifiers();
+    registerMythicHorsesModifiers();
     registerWerewolfModifiers();
     registerDragonModifiers();
     registerSuperheroesModifiers();
