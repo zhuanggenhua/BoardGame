@@ -10,6 +10,7 @@
 
 - 为 `fantasyrealms-foundation` 增补“当前工作区真实页面才是完成验收真相源”的要求。
 - 明确桌面端与紧凑横屏视口必须属于同一套正式牌桌壳层，不能出现两个像不同游戏的 UI 家族。
+- 明确 `compact-landscape` 是横屏承载语义，不得再用 `stacked / 堆叠态` 这类旧命名把当前实现与证据引向竖屏信息流。
 - 以当前根工作区 `fantasyrealms` 真实运行时为目标，恢复桌面主路径与紧凑横屏视口到同一 foundation 方向。
 - 审计并收敛 `src/games/fantasyrealms/**`、`design-system/games/fantasyrealms.md`、`evidence/fantasyrealms/**`，清除把历史 worktree 产物混成当前完成证据的口径。
 

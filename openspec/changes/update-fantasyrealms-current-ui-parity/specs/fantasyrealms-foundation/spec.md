@@ -9,6 +9,12 @@
 - **AND** 系统 MUST 不允许 `1440` 桌面像一套 UI、`1024` 紧凑横屏又像另一套游戏
 - **AND** 若存在历史候选实现，必须显式标注为历史，不得与当前完成态混写
 
+#### Scenario: 紧凑横屏语义不得漂移成竖屏堆叠态
+- **WHEN** 团队命名 `fantasyrealms` 的紧凑断点、截图 evidence、布局分支或实现说明
+- **THEN** 系统 MUST 将 `compact-landscape` 仅用于横屏视口
+- **AND** 系统 MUST 不再把当前正式实现写成 `stacked`、`堆叠态` 或其他会误导成竖屏信息流的名称
+- **AND** 竖屏视口不得复用该命名、截图口径或验收结论
+
 ### Requirement: FantasyRealms foundation 完成判定必须基于当前工作区真实页面
 系统 SHALL 只在当前执行工作区的 `fantasyrealms` 真实页面主路径已经端到端通过，且没有仍阻塞完成口径的已知 UI bug 时，才把 foundation UI 判为完成。
 

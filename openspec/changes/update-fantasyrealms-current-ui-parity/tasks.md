@@ -19,3 +19,4 @@
 - [x] 3.2 更新 `src/games/fantasyrealms/__tests__/Board.foundation.test.tsx`，让测试只为当前正式壳层背书
 - [x] 3.3 产出当前根工作区新的桌面/紧凑横屏真实截图 evidence，替换错误完成口径
 - [x] 3.4 运行 `openspec validate update-fantasyrealms-current-ui-parity --strict --no-interactive`
+- [x] 3.5 清理当前审计链路里把紧凑横屏误写成 `stacked / 堆叠态` 的旧命名，避免再把横屏牌桌理解成竖屏实现

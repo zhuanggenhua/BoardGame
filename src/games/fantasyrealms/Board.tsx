@@ -2,6 +2,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import {
+    getRuntimeImageCandidateUrls,
+    isImagePreloaded,
+    markImageCandidateFailed,
+    markImageLoaded,
+    onImageReady,
+} from '../../core/AssetLoader';
+import {
     EMPTY_FOCUS_INSIGHT,
     FANTASY_REALMS_HAND_CARD_SLOTS,
     getFantasyRealmsDiscardEndThreshold,
@@ -16,7 +23,12 @@ import {
     type FantasyRealmsCore,
     type FantasyRealmsPlayerState,
 } from './domain';
-import { getFantasyRealmsCardBackStyle, getFantasyRealmsCardFaceStyle } from './ui/cardAtlas';
+import {
+    FANTASY_REALMS_CARD_ATLAS_PATH,
+    FANTASY_REALMS_CARD_BACK_PATH,
+    getFantasyRealmsCardBackStyle,
+    getFantasyRealmsCardFaceStyle,
+} from './ui/cardAtlas';
 
 type Props = GameBoardProps<FantasyRealmsCore, FantasyRealmsCommandMap>;
 
@@ -65,12 +77,20 @@ type LiveMotionWindow = Window & {
     __FR_LIVE_MOTION_LAST_SNAPSHOT__?: LiveMotionSnapshot;
 };
 
-const LIVE_RIVER_CARD_WIDTH = 190;
-const LIVE_RIVER_PREFERRED_GAP = 108;
-const LIVE_RIVER_MIN_GAP = 16;
-const LIVE_RIVER_MAX_ROW_WIDTH = 1220;
+const LIVE_RIVER_CARD_WIDTH = 176;
+const LIVE_RIVER_PREFERRED_GAP = 44;
+const LIVE_RIVER_MIN_GAP = 12;
+const LIVE_RIVER_MAX_ROW_WIDTH = 980;
+const LIVE_RIVER_COMPACT_CARD_WIDTH = 138;
+const LIVE_RIVER_COMPACT_PREFERRED_GAP = 22;
+const LIVE_RIVER_COMPACT_MIN_GAP = 10;
+const LIVE_RIVER_COMPACT_MAX_ROW_WIDTH = 700;
 const LIVE_RIVER_ROW_TOP = 8;
-const LIVE_RIVER_ROW_OFFSET = 202;
+const LIVE_RIVER_ROW_OFFSET = 188;
+const EMPTY_LIVE_RIVER_SLOT_KEYS = ['far-left', 'left', 'center', 'right', 'far-right'] as const;
+const FALLBACK_CARD_BACK_SURFACE_STYLE: React.CSSProperties = {
+    background: 'linear-gradient(180deg, #6f573f 0%, #35261a 100%)',
+};
 
 function shouldUseCompactLandscapeTableViewport(width: number, height: number): boolean {
     return width > height && width <= 1180;
@@ -149,30 +169,47 @@ function buildCardSlots(cards: TableCard[], slotCount: number, prefix: string): 
     return slots;
 }
 
-function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties[] {
+function buildMinimalLiveRiverCardStyles(cardCount: number, isCompactLandscape: boolean): React.CSSProperties[] {
     if (cardCount <= 0) return [];
 
     const topRowCount = cardCount <= 5 ? cardCount : Math.ceil(cardCount / 2);
     const bottomRowCount = cardCount <= 5 ? 0 : Math.floor(cardCount / 2);
     const styles: React.CSSProperties[] = [];
+    const isHighDensity = cardCount >= 6;
+    const cardWidth = isCompactLandscape
+        ? (isHighDensity ? 124 : LIVE_RIVER_COMPACT_CARD_WIDTH)
+        : (isHighDensity ? 160 : LIVE_RIVER_CARD_WIDTH);
+    const preferredGap = isCompactLandscape
+        ? (isHighDensity ? 14 : LIVE_RIVER_COMPACT_PREFERRED_GAP)
+        : (isHighDensity ? 34 : LIVE_RIVER_PREFERRED_GAP);
+    const minGap = isCompactLandscape
+        ? (isHighDensity ? 8 : LIVE_RIVER_COMPACT_MIN_GAP)
+        : LIVE_RIVER_MIN_GAP;
+    const maxRowWidth = isCompactLandscape
+        ? (isHighDensity ? 620 : LIVE_RIVER_COMPACT_MAX_ROW_WIDTH)
+        : (isHighDensity ? 900 : LIVE_RIVER_MAX_ROW_WIDTH);
+    const rowOffset = isCompactLandscape
+        ? (isHighDensity ? 150 : LIVE_RIVER_ROW_OFFSET)
+        : (isHighDensity ? 174 : LIVE_RIVER_ROW_OFFSET);
 
     const pushRow = (rowCount: number, rowIndex: number) => {
         if (rowCount <= 0) return;
 
         const availableGap = rowCount <= 1
             ? 0
-            : Math.floor((LIVE_RIVER_MAX_ROW_WIDTH - (rowCount * LIVE_RIVER_CARD_WIDTH)) / (rowCount - 1));
+            : Math.floor((maxRowWidth - (rowCount * cardWidth)) / (rowCount - 1));
         const gap = rowCount <= 1
             ? 0
-            : Math.max(LIVE_RIVER_MIN_GAP, Math.min(LIVE_RIVER_PREFERRED_GAP, availableGap));
-        const rowWidth = (rowCount * LIVE_RIVER_CARD_WIDTH) + ((rowCount - 1) * gap);
+            : Math.max(minGap, Math.min(preferredGap, availableGap));
+        const rowWidth = (rowCount * cardWidth) + ((rowCount - 1) * gap);
         const startOffset = -(rowWidth / 2);
 
         for (let index = 0; index < rowCount; index += 1) {
-            const left = Math.round(startOffset + (index * (LIVE_RIVER_CARD_WIDTH + gap)));
+            const left = Math.round(startOffset + (index * (cardWidth + gap)));
             styles.push({
                 left: `calc(50% + ${left}px)`,
-                top: `${LIVE_RIVER_ROW_TOP + (rowIndex * LIVE_RIVER_ROW_OFFSET)}px`,
+                top: `${LIVE_RIVER_ROW_TOP + (rowIndex * rowOffset)}px`,
+                width: `${cardWidth}px`,
             });
         }
     };
@@ -185,9 +222,21 @@ function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties
 function buildMinimalLiveHandCardStyles(cardCount: number, slotCount: number): React.CSSProperties[] {
     if (cardCount <= 0 || slotCount <= 0) return [];
     const startColumn = Math.max(1, Math.floor((slotCount - cardCount) / 2) + 1);
-    return Array.from({ length: cardCount }, (_, index) => ({
-        gridColumn: `${startColumn + index}`,
-    }));
+    const middleIndex = (cardCount - 1) / 2;
+    return Array.from({ length: cardCount }, (_, index) => {
+        const centeredIndex = index - middleIndex;
+        const normalized = middleIndex <= 0 ? 0 : centeredIndex / middleIndex;
+        const tilt = normalized * 6;
+        const rise = (1 - Math.abs(normalized)) * 18 + (cardCount >= 7 ? 4 : 0);
+        const shift = normalized * 12;
+        return {
+            gridColumn: `${startColumn + index}`,
+            zIndex: String(100 + Math.round((cardCount * 2) - Math.abs(centeredIndex * 10))),
+            ['--fr-hand-card-tilt' as string]: `${tilt.toFixed(2)}deg`,
+            ['--fr-hand-card-rise' as string]: `${rise.toFixed(2)}px`,
+            ['--fr-hand-card-shift' as string]: `${shift.toFixed(2)}px`,
+        } as React.CSSProperties;
+    });
 }
 
 function getAddedIds(nextIds: string[], previousIds: string[]): string[] {
@@ -244,8 +293,78 @@ function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
     );
 }
 
-function renderCard(card: TableCard, t: Translator, locale?: string) {
-    const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, locale);
+function useLocalizedBackgroundAssetReady(src: string, locale?: string): boolean {
+    const effectiveLocale = locale || 'zh-CN';
+    const candidateUrls = React.useMemo(
+        () => getRuntimeImageCandidateUrls(src, effectiveLocale),
+        [effectiveLocale, src],
+    );
+    const [ready, setReady] = React.useState(() => isImagePreloaded(src, effectiveLocale));
+
+    React.useEffect(() => {
+        setReady(isImagePreloaded(src, effectiveLocale));
+    }, [effectiveLocale, src]);
+
+    React.useEffect(() => {
+        if (ready || candidateUrls.length === 0) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        const loadCandidate = (index: number) => {
+            if (cancelled || index >= candidateUrls.length) {
+                return;
+            }
+
+            const candidateUrl = candidateUrls[index];
+            if (isImagePreloaded(src, effectiveLocale) || isImagePreloaded(candidateUrl)) {
+                setReady(true);
+                return;
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                if (cancelled || img.naturalWidth <= 0 || img.naturalHeight <= 0) {
+                    return;
+                }
+                markImageLoaded(candidateUrl, undefined, img, candidateUrl);
+                markImageLoaded(src, effectiveLocale, img, candidateUrl);
+                setReady(true);
+            };
+            img.onerror = () => {
+                markImageCandidateFailed(src, effectiveLocale, candidateUrl);
+                loadCandidate(index + 1);
+            };
+            img.src = candidateUrl;
+        };
+
+        loadCandidate(0);
+        return () => {
+            cancelled = true;
+        };
+    }, [candidateUrls, effectiveLocale, ready, src]);
+
+    React.useEffect(() => {
+        if (ready || candidateUrls.length === 0) {
+            return undefined;
+        }
+
+        return onImageReady((url) => {
+            if (url !== src && !candidateUrls.includes(url)) {
+                return;
+            }
+            if (!isImagePreloaded(src, effectiveLocale) && !candidateUrls.some((candidateUrl) => isImagePreloaded(candidateUrl))) {
+                return;
+            }
+            setReady(true);
+        });
+    }, [candidateUrls, effectiveLocale, ready, src]);
+
+    return ready;
+}
+
+function renderCard(card: TableCard, t: Translator, locale?: string, atlasReady = true) {
+    const atlasStyle = atlasReady ? getFantasyRealmsCardFaceStyle(card.id, locale) : null;
     const displayName = getFantasyRealmsCardDisplayName(card);
     if (!atlasStyle) {
         return renderFallbackCard(card, t, locale);
@@ -538,13 +657,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         : (isGameOver
             ? t('focus.hiddenDelta')
             : (focusInsight.estimatedDelta >= 0 ? `+${focusInsight.estimatedDelta}` : String(focusInsight.estimatedDelta)));
-    const deckBackStyle = React.useMemo(() => getFantasyRealmsCardBackStyle(locale), [locale]);
+    const isCardAtlasReady = useLocalizedBackgroundAssetReady(FANTASY_REALMS_CARD_ATLAS_PATH, locale);
+    const isCardBackReady = useLocalizedBackgroundAssetReady(FANTASY_REALMS_CARD_BACK_PATH, locale);
+    const deckBackStyle = React.useMemo(
+        () => (isCardBackReady ? getFantasyRealmsCardBackStyle(locale) : null),
+        [isCardBackReady, locale],
+    );
     const focusFaceStyle = React.useMemo(
-        () => (visibleFocusCard ? getFantasyRealmsCardFaceStyle(visibleFocusCard.id, locale) : null),
-        [locale, visibleFocusCard],
+        () => (isCardAtlasReady && visibleFocusCard ? getFantasyRealmsCardFaceStyle(visibleFocusCard.id, locale) : null),
+        [isCardAtlasReady, locale, visibleFocusCard],
     );
     const focusPreviewUsesBack = focusDisplay.hiddenByOtherPlayer || !visibleFocusCard || !focusFaceStyle;
-    const focusPreviewStyle = focusPreviewUsesBack ? deckBackStyle : focusFaceStyle;
+    const focusPreviewStyle = focusPreviewUsesBack
+        ? (deckBackStyle ?? FALLBACK_CARD_BACK_SURFACE_STYLE)
+        : focusFaceStyle;
+    const deckStackCardStyle = deckBackStyle ?? FALLBACK_CARD_BACK_SURFACE_STYLE;
     const discardCards = React.useMemo(() => [...core.discardPile].reverse(), [core.discardPile]);
     const currentPlayerName = React.useMemo(() => {
         const matchPlayer = matchData.find((player) => String(player.id) === String(core.currentPlayer));
@@ -616,7 +743,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         () => getStageBannerText(core, viewerPlayerId, currentPlayerName, t),
         [core, currentPlayerName, t, viewerPlayerId],
     );
-    const shouldShowFocusKicker = !isGameOver && !focusDisplay.hiddenByOtherPlayer;
+    const shouldCollapseFocusPreview = !isGameOver
+        && !focusDisplay.hiddenByOtherPlayer
+        && (focusDisplay.source === 'discard' || focusDisplay.source === 'viewer-hand');
+    const shouldShowFocusKicker = !isGameOver
+        && !focusDisplay.hiddenByOtherPlayer
+        && !shouldCollapseFocusPreview;
     const isMinimalLiveDesktop = true;
     const handRowOverflowStyle = React.useMemo<React.CSSProperties | undefined>(() => {
         if (handSlotCount <= FANTASY_REALMS_HAND_CARD_SLOTS) {
@@ -806,8 +938,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         return t('actions.confirmTake');
     }, [canDiscard, selectedHandCard, t]);
     const minimalLiveRiverCardStyles = React.useMemo(
-        () => buildMinimalLiveRiverCardStyles(discardCards.length),
-        [discardCards.length],
+        () => buildMinimalLiveRiverCardStyles(discardCards.length, isCompactLandscapeTableViewport),
+        [discardCards.length, isCompactLandscapeTableViewport],
     );
     const minimalLiveHandCardStyles = React.useMemo(
         () => buildMinimalLiveHandCardStyles(viewerHandCards.length, handSlotCount),
@@ -856,9 +988,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             <div className="fr-panel-header">{t('deck.panelTitle')}</div>
             <div className="fr-panel-body">
                 <div className={`fr-stack fr-stack--deck${isCompactLandscapeTableViewport ? ' fr-stack--deck-compact' : ''}`}>
-                    <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--under" style={deckStackCardStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--mid" style={deckStackCardStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--top" style={deckStackCardStyle} aria-hidden="true" />
                     <div className="fr-stack-label">
                         <span>{t('deck.remaining')}</span>
                         <strong className="fr-count">{core.drawPile.length}</strong>
@@ -951,7 +1083,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                             ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
                             : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
                     >
-                        {renderCard(card, t, locale)}
+                        {renderCard(card, t, locale, isCardAtlasReady)}
                     </button>
                 ))}
             </div>
@@ -988,7 +1120,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                                 ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })
                                 : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })}
                         >
-                            {renderCard(slot.card, t, locale)}
+                            {renderCard(slot.card, t, locale, isCardAtlasReady)}
                         </button>
                     ) : (
                         <div
@@ -1009,12 +1141,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
     );
 
     const focusSpotlightSection = (
-        <div className="fr-focus-spotlight">
-            <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}`}>
+        <div className={`fr-focus-spotlight${shouldCollapseFocusPreview ? ' fr-focus-spotlight--preview-collapsed' : ''}`}>
+            <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}${shouldCollapseFocusPreview ? ' fr-focus-preview-shell--collapsed' : ''}`}>
                 <div
                     className="fr-card fr-card--atlas fr-card--focus-preview"
                     data-testid="fantasyrealms-focus-preview"
-                    data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
+                    data-card-renderer={focusPreviewUsesBack ? (deckBackStyle ? 'back' : 'fallback') : 'atlas'}
                     data-atlas-card-id={visibleFocusCard?.id ?? ''}
                     aria-label={focusName}
                     style={focusPreviewStyle}
@@ -1022,7 +1154,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     <div aria-hidden="true" className="fr-card-sheen" />
                 </div>
             </div>
-            <article className="fr-focus-card">
+            <article className={`fr-focus-card${shouldCollapseFocusPreview ? ' fr-focus-card--summary' : ''}`}>
                 {shouldShowFocusKicker ? <div className="fr-focus-kicker">{focusKicker}</div> : null}
                 <div className="fr-focus-name">{focusName}</div>
                 <div className="fr-focus-score">
@@ -1093,9 +1225,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 disabled={!canDrawFromDeck}
             >
                 <div className="fr-live-deck-stack">
-                    <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--under" style={deckStackCardStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--mid" style={deckStackCardStyle} aria-hidden="true" />
+                    <div className="fr-stack-card fr-stack-card--top" style={deckStackCardStyle} aria-hidden="true" />
                     <strong className="fr-live-deck-count">{core.drawPile.length}</strong>
                 </div>
             </button>
@@ -1170,9 +1302,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             >
                 {discardCards.length === 0 ? (
                     <div className="fr-live-river-empty-mat" data-testid="fantasyrealms-discard-empty" aria-hidden="true">
-                        <div className="fr-live-river-empty-card fr-live-river-empty-card--left" style={deckBackStyle} />
-                        <div className="fr-live-river-empty-card fr-live-river-empty-card--center" style={deckBackStyle} />
-                        <div className="fr-live-river-empty-card fr-live-river-empty-card--right" style={deckBackStyle} />
+                        {EMPTY_LIVE_RIVER_SLOT_KEYS.map((slotKey) => (
+                            <div
+                                key={slotKey}
+                                className={`fr-live-river-empty-card fr-live-river-empty-card--${slotKey}`}
+                                data-testid="fantasyrealms-discard-empty-slot"
+                                style={deckStackCardStyle}
+                            />
+                        ))}
                     </div>
                 ) : discardCards.map((card, index) => (
                     <button
@@ -1186,7 +1323,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                             ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
                             : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
                     >
-                        {renderCard(card, t, locale)}
+                        {renderCard(card, t, locale, isCardAtlasReady)}
                         {pendingDiscardSelectionId === card.id ? (
                             <span className="fr-live-card-state" aria-hidden="true">{t('actions.selected')}</span>
                         ) : null}
@@ -1211,6 +1348,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             className={`fr-live-handband${liveMotionCue?.type === 'draw-to-hand' ? ' fr-live-handband--motion-draw' : ''}${liveMotionCue?.type === 'discard-to-hand' ? ' fr-live-handband--motion-take' : ''}`}
             aria-label={t('zone.hand.ariaLabel')}
             data-motion={liveMotionCue?.type === 'draw-to-hand' || liveMotionCue?.type === 'discard-to-hand' ? liveMotionCue.type : 'idle'}
+            data-action-visible={shouldShowMinimalLiveAction ? 'true' : 'false'}
             data-testid="fantasyrealms-live-handband"
         >
             <div className="fr-card-row-wrap">
@@ -1233,7 +1371,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                                 ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(card) })
                                 : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(card) })}
                         >
-                            {renderCard(card, t, locale)}
+                            {renderCard(card, t, locale, isCardAtlasReady)}
                             {pendingHandSelectionId === card.id ? (
                                 <span className="fr-live-card-state" aria-hidden="true">{t('actions.selected')}</span>
                             ) : null}
@@ -1255,7 +1393,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                             <div
                                 className="fr-card fr-card--atlas fr-card--focus-preview"
                                 data-testid="fantasyrealms-focus-preview"
-                                data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
+                                data-card-renderer={focusPreviewUsesBack ? (deckBackStyle ? 'back' : 'fallback') : 'atlas'}
                                 data-atlas-card-id={visibleFocusCard?.id ?? ''}
                                 aria-label={focusName}
                                 style={focusPreviewStyle}
@@ -1814,44 +1952,84 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-live-river-empty-mat {
                     position: relative;
-                    width: min(700px, 54vw);
-                    height: 188px;
+                    width: min(820px, 62vw);
+                    height: 204px;
                     margin: 18px auto 0;
-                    border-radius: 28px;
-                    border: 1px dashed rgba(239, 209, 143, 0.22);
+                    border-radius: 999px;
+                    border: 1px dashed rgba(239, 209, 143, 0.16);
                     background:
-                        radial-gradient(circle at 50% 18%, rgba(255, 235, 176, 0.08), transparent 30%),
-                        radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.18), transparent 54%),
-                        linear-gradient(180deg, rgba(10, 25, 21, 0.08), rgba(7, 19, 16, 0.2));
+                        radial-gradient(ellipse at 50% 42%, rgba(255, 235, 176, 0.07), transparent 42%),
+                        radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.16), transparent 58%),
+                        linear-gradient(180deg, rgba(10, 25, 21, 0.04), rgba(7, 19, 16, 0.16));
                     box-shadow:
                         inset 0 0 0 1px rgba(255, 240, 200, 0.04),
-                        inset 0 36px 72px rgba(255, 255, 255, 0.02);
+                        inset 0 26px 52px rgba(255, 255, 255, 0.02);
+                }
+                .fr-live-river-empty-mat::before {
+                    content: "";
+                    position: absolute;
+                    left: 8%;
+                    right: 8%;
+                    top: 50%;
+                    height: 1px;
+                    border-top: 1px dashed rgba(239, 209, 143, 0.12);
+                    transform: translateY(-50%);
+                    opacity: 0.7;
+                    pointer-events: none;
+                }
+                .fr-live-river-empty-mat::after {
+                    content: "";
+                    position: absolute;
+                    left: 50%;
+                    top: 28px;
+                    width: 132px;
+                    aspect-ratio: 0.72;
+                    border-radius: 16px;
+                    border: 1px solid rgba(255, 236, 196, 0.16);
+                    background:
+                        radial-gradient(ellipse at 50% 12%, rgba(255, 236, 188, 0.08), transparent 34%),
+                        linear-gradient(180deg, rgba(25, 54, 46, 0.16), rgba(12, 28, 24, 0.28));
+                    box-shadow:
+                        0 16px 26px rgba(0, 0, 0, 0.18),
+                        -22px 12px 0 -2px rgba(11, 30, 25, 0.18),
+                        22px 12px 0 -2px rgba(11, 30, 25, 0.18);
+                    transform: translateX(-50%);
+                    opacity: 0.46;
+                    pointer-events: none;
                 }
                 .fr-live-river-empty-card {
                     position: absolute;
-                    width: 132px;
+                    width: 114px;
                     aspect-ratio: 0.72;
-                    top: 16px;
-                    border-radius: 16px;
-                    border: 1px solid rgba(255, 238, 201, 0.16);
+                    top: 52px;
+                    border-radius: 14px;
+                    border: 1px solid rgba(255, 238, 201, 0.13);
                     box-shadow:
-                        0 18px 28px rgba(0, 0, 0, 0.24),
-                        0 0 0 1px rgba(255, 234, 184, 0.04);
-                    opacity: 0.3;
-                    filter: saturate(0.82) brightness(0.88);
+                        0 12px 18px rgba(0, 0, 0, 0.18),
+                        0 0 0 1px rgba(255, 234, 184, 0.03);
+                    opacity: 0.24;
+                    filter: saturate(0.76) brightness(0.84);
+                }
+                .fr-live-river-empty-card--far-left {
+                    left: calc(50% - 308px);
+                    transform: rotate(-8deg);
                 }
                 .fr-live-river-empty-card--left {
-                    left: calc(50% - 172px);
-                    transform: rotate(-7deg);
+                    left: calc(50% - 166px);
+                    transform: rotate(-4deg);
                 }
                 .fr-live-river-empty-card--center {
-                    left: calc(50% - 66px);
-                    top: 10px;
-                    transform: rotate(1deg);
-                    opacity: 0.4;
+                    left: calc(50% - 57px);
+                    top: 42px;
+                    transform: rotate(0deg);
+                    opacity: 0.24;
                 }
                 .fr-live-river-empty-card--right {
-                    left: calc(50% + 40px);
+                    left: calc(50% + 52px);
+                    transform: rotate(4deg);
+                }
+                .fr-live-river-empty-card--far-right {
+                    left: calc(50% + 194px);
                     transform: rotate(8deg);
                 }
                 .fr-card-button--live-river {
@@ -1909,30 +2087,31 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-focus-dock {
                     position: absolute;
                     right: 18px;
-                    bottom: 314px;
+                    bottom: 296px;
                     z-index: 2;
-                    width: min(296px, 21vw);
+                    width: min(272px, 19vw);
                     pointer-events: none;
                 }
                 .fr-live-focus-dock .fr-panel {
-                    border-radius: 18px;
-                    border-color: rgba(241, 209, 149, 0.18);
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 236, 184, 0.08), transparent 36%),
-                        linear-gradient(180deg, rgba(31, 37, 33, 0.94), rgba(14, 18, 16, 0.96));
-                    box-shadow:
-                        0 24px 34px rgba(0, 0, 0, 0.32),
-                        inset 0 0 0 1px rgba(255, 240, 204, 0.04);
+                    overflow: visible;
+                    border: none;
+                    background: transparent;
+                    box-shadow: none;
                 }
                 .fr-live-focus-dock .fr-panel-header {
                     display: none;
                 }
                 .fr-live-focus-dock .fr-panel-body {
-                    padding-top: 14px;
+                    padding: 0;
+                    width: 100%;
                 }
                 .fr-live-focus-dock .fr-panel-header,
                 .fr-live-focus-dock .fr-panel-body {
                     pointer-events: auto;
+                }
+                .fr-live-focus-dock .fr-focus-panel,
+                .fr-live-focus-dock .fr-focus-spotlight {
+                    width: 100%;
                 }
                 .fr-live-handband .fr-card-row--table-band {
                     position: relative;
@@ -2096,18 +2275,26 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-table {
-                    grid-template-rows: 132px minmax(0, 1fr) 326px;
+                    grid-template-rows: 108px minmax(0, 1fr) 348px;
                     gap: 0;
                 }
                 .fr-board--minimal-live .fr-live-topbar {
-                    min-height: 128px;
+                    min-height: 104px;
                 }
                 .fr-board--minimal-live .fr-live-status-strip {
-                    top: 28px;
-                    gap: 16px;
+                    top: 12px;
+                    gap: 14px;
                 }
                 .fr-board--minimal-live .fr-live-status-strip::before {
-                    display: none;
+                    inset: -8px -20px;
+                    border-radius: 999px;
+                    background:
+                        radial-gradient(ellipse at 50% 0%, rgba(255, 222, 150, 0.12), transparent 42%),
+                        linear-gradient(180deg, rgba(67, 44, 26, 0.76), rgba(26, 19, 13, 0.88));
+                    box-shadow:
+                        0 10px 18px rgba(0, 0, 0, 0.2),
+                        inset 0 0 0 1px rgba(211, 171, 98, 0.14),
+                        inset 0 1px 0 rgba(255, 239, 196, 0.06);
                 }
                 .fr-board--minimal-live .fr-live-chip {
                     min-height: 28px;
@@ -2126,7 +2313,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-board--minimal-live .fr-live-chip--turn {
                     min-width: 106px;
-                    font-size: 20px;
+                    font-size: 19px;
                     padding: 0 4px;
                     background: transparent;
                     color: #ffe6aa;
@@ -2143,19 +2330,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-board--minimal-live .fr-live-chip--progress {
                     min-width: 74px;
-                    font-size: 21px;
+                    font-size: 20px;
                     background: transparent;
                     color: #ffde9e;
                 }
                 .fr-board--minimal-live .fr-live-chip--cue {
                     min-height: 30px;
                     padding: 0 4px;
-                    font-size: 14px;
+                    font-size: 13px;
                     background: transparent;
                     color: rgba(232, 255, 235, 0.88);
                 }
                 .fr-board--minimal-live .fr-live-deck {
-                    top: 24px;
+                    top: 18px;
                     left: 52px;
                     gap: 0;
                 }
@@ -2192,7 +2379,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     text-shadow: none;
                 }
                 .fr-board--minimal-live .fr-live-score-strip {
-                    top: 28px;
+                    top: 20px;
                     right: 36px;
                     width: 132px;
                 }
@@ -2214,8 +2401,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-score-band-kicker {
-                    color: rgba(246, 223, 180, 0.42);
-                    font-size: 10px;
+                    color: rgba(246, 223, 180, 0.3);
+                    font-size: 9px;
                     letter-spacing: 0;
                     text-align: right;
                     white-space: nowrap;
@@ -2228,10 +2415,99 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     margin-top: 0;
                 }
                 .fr-board--minimal-live .fr-live-score-band-total {
-                    font-size: 18px;
-                    color: rgba(248, 223, 159, 0.72);
+                    font-size: 17px;
+                    color: rgba(248, 223, 159, 0.62);
                     font-weight: 750;
                     text-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-focus-dock {
+                    right: 44px;
+                    bottom: 336px;
+                    width: min(238px, 16.5vw);
+                }
+                .fr-board--minimal-live .fr-focus-panel {
+                    gap: 6px;
+                }
+                .fr-board--minimal-live .fr-focus-spotlight {
+                    grid-template-columns: 82px minmax(0, 1fr);
+                    gap: 7px;
+                    align-items: center;
+                }
+                .fr-board--minimal-live .fr-focus-preview-shell {
+                    max-width: 82px;
+                }
+                .fr-board--minimal-live .fr-card--focus-preview {
+                    border-radius: 10px;
+                }
+                .fr-board--minimal-live .fr-focus-card {
+                    position: relative;
+                    overflow: hidden;
+                    gap: 4px;
+                    padding: 11px 11px 10px 13px;
+                    border-radius: 7px 10px 8px 7px;
+                    border: 1px solid rgba(120, 84, 46, 0.42);
+                    border-left: 3px solid rgba(126, 82, 38, 0.56);
+                    background:
+                        linear-gradient(180deg, rgba(221, 197, 153, 0.95), rgba(183, 156, 116, 0.94));
+                    color: #2c2014;
+                    box-shadow:
+                        0 9px 15px rgba(0, 0, 0, 0.16),
+                        inset 0 1px 0 rgba(255, 244, 220, 0.4),
+                        inset 0 -10px 18px rgba(103, 77, 48, 0.08);
+                }
+                .fr-board--minimal-live .fr-focus-card::before {
+                    content: "";
+                    position: absolute;
+                    top: -4px;
+                    left: 14px;
+                    width: 34px;
+                    height: 12px;
+                    border-radius: 999px;
+                    background: linear-gradient(180deg, rgba(144, 112, 72, 0.78), rgba(93, 67, 42, 0.68));
+                    box-shadow:
+                        0 2px 6px rgba(0, 0, 0, 0.16),
+                        inset 0 1px 0 rgba(255, 244, 216, 0.16);
+                    transform: rotate(-7deg);
+                    opacity: 0.82;
+                }
+                .fr-board--minimal-live .fr-focus-card::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    width: 18px;
+                    height: 18px;
+                    background: linear-gradient(135deg, rgba(255, 247, 227, 0.4), rgba(173, 145, 109, 0.12));
+                    clip-path: polygon(100% 0, 0 0, 100% 100%);
+                    opacity: 0.72;
+                }
+                .fr-board--minimal-live .fr-focus-kicker {
+                    font-size: 10px;
+                    letter-spacing: 0.06em;
+                    color: rgba(83, 55, 30, 0.56);
+                }
+                .fr-board--minimal-live .fr-focus-name {
+                    font-size: 14px;
+                    color: #2c2014;
+                }
+                .fr-board--minimal-live .fr-focus-spotlight--preview-collapsed .fr-focus-card {
+                    padding: 10px 12px 9px;
+                }
+                .fr-board--minimal-live .fr-focus-card--summary {
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: center;
+                    gap: 4px 10px;
+                }
+                .fr-board--minimal-live .fr-focus-card--summary .fr-focus-name {
+                    font-size: 13px;
+                }
+                .fr-board--minimal-live .fr-focus-score {
+                    color: rgba(66, 46, 28, 0.7);
+                    font-size: 11px;
+                }
+                .fr-board--minimal-live .fr-focus-score strong {
+                    font-size: 22px;
+                    color: #2c2014;
                 }
                 .fr-board--minimal-live .fr-live-river::before {
                     display: none;
@@ -2240,9 +2516,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-board--minimal-live .fr-discard-row--live-river {
-                    width: min(1230px, 74vw);
-                    min-height: 408px;
-                    transform: translateY(18px);
+                    width: min(1040px, 68vw);
+                    min-height: 332px;
+                    transform: translateY(-8px);
                 }
                 .fr-board--minimal-live .fr-discard-row--empty {
                     min-height: 0;
@@ -2250,8 +2526,34 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-board--minimal-live .fr-zone-empty--silent {
                     display: none;
                 }
+                .fr-board--minimal-live .fr-live-river-empty-mat {
+                    height: 214px;
+                    margin-top: 0;
+                    border-color: rgba(239, 209, 143, 0.2);
+                    background:
+                        radial-gradient(ellipse at 50% 42%, rgba(255, 235, 176, 0.085), transparent 44%),
+                        radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.18), transparent 58%),
+                        linear-gradient(180deg, rgba(10, 25, 21, 0.06), rgba(7, 19, 16, 0.2));
+                }
+                .fr-board--minimal-live .fr-live-river-empty-mat::after {
+                    top: 22px;
+                    width: 140px;
+                    border-color: rgba(255, 236, 196, 0.18);
+                    background:
+                        radial-gradient(ellipse at 50% 12%, rgba(255, 236, 188, 0.1), transparent 34%),
+                        linear-gradient(180deg, rgba(27, 58, 49, 0.2), rgba(12, 28, 24, 0.34));
+                    box-shadow:
+                        0 18px 30px rgba(0, 0, 0, 0.18),
+                        -24px 14px 0 -2px rgba(11, 30, 25, 0.22),
+                        24px 14px 0 -2px rgba(11, 30, 25, 0.22);
+                    opacity: 0.54;
+                }
+                .fr-board--minimal-live .fr-live-river-empty-card {
+                    opacity: 0.28;
+                    filter: saturate(0.76) brightness(0.88);
+                }
                 .fr-board--minimal-live .fr-card-button--live-river {
-                    width: 190px;
+                    width: 176px;
                 }
                 .fr-board--minimal-live .fr-card-button--live-river .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand .fr-card {
@@ -2383,24 +2685,30 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     grid-template-columns: repeat(var(--fr-live-hand-slots, 7), minmax(0, 1fr));
                     justify-content: center;
                     gap: 0;
-                    transform: translateY(-18px);
+                    transform: translateY(-22px);
                 }
                 .fr-board--minimal-live .fr-card-button--live-hand {
                     width: 100%;
                     max-width: none;
+                    transform: translate3d(
+                        var(--fr-hand-card-shift, 0px),
+                        calc(-1 * var(--fr-hand-card-rise, 0px)),
+                        0
+                    ) rotate(var(--fr-hand-card-tilt, 0deg));
+                    transform-origin: 50% 100%;
                 }
                 .fr-board--minimal-live .fr-live-action-zone {
-                    right: clamp(96px, 6.2vw, 132px);
+                    right: clamp(104px, 6.8vw, 144px);
                     top: auto;
-                    bottom: clamp(224px, 22vh, 254px);
-                    width: 178px;
-                    height: 68px;
-                    min-height: 68px;
+                    bottom: clamp(286px, 27vh, 314px);
+                    width: 170px;
+                    height: 62px;
+                    min-height: 62px;
                 }
                 .fr-board--minimal-live .fr-live-action-button {
-                    width: 178px;
-                    height: 68px;
-                    padding: 10px 18px;
+                    width: 170px;
+                    height: 62px;
+                    padding: 9px 16px;
                     border-radius: 8px;
                     border-color: rgba(247, 205, 122, 0.42);
                     background: rgba(50, 36, 20, 0.9);
@@ -2415,8 +2723,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-action-button-label {
-                    max-width: 142px;
-                    font-size: 20px;
+                    max-width: 136px;
+                    font-size: 18px;
                     line-height: 1.05;
                 }
                 .fr-board--minimal-live .fr-live-action-button--enabled {
@@ -2440,14 +2748,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-compact-layout .fr-live-table {
                     min-height: 650px;
-                    grid-template-rows: 112px minmax(0, 1fr) 252px;
+                    grid-template-rows: 96px minmax(0, 1fr) 274px;
                 }
                 .fr-compact-layout .fr-live-topbar {
-                    min-height: 108px;
+                    min-height: 92px;
                 }
                 .fr-compact-layout .fr-live-status-strip {
-                    top: 20px;
-                    gap: 12px;
+                    top: 12px;
+                    gap: 10px;
                 }
                 .fr-compact-layout .fr-live-chip--turn {
                     min-width: 96px;
@@ -2467,7 +2775,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-size: 13px;
                 }
                 .fr-compact-layout .fr-live-deck {
-                    top: 20px;
+                    top: 14px;
                     left: 18px;
                 }
                 .fr-compact-layout .fr-live-deck-stack {
@@ -2483,78 +2791,150 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-size: 18px;
                 }
                 .fr-compact-layout .fr-live-score-strip {
-                    top: 20px;
+                    top: 14px;
                     right: 18px;
                     width: 112px;
                 }
                 .fr-compact-layout .fr-discard-row--live-river {
-                    width: min(880px, calc(100vw - 96px));
-                    min-height: 286px;
-                    transform: translateY(6px);
+                    width: min(800px, calc(100vw - 136px));
+                    min-height: 236px;
+                    transform: translateY(0);
                 }
                 .fr-compact-layout .fr-card-button--live-river {
-                    width: 164px;
+                    width: 138px;
                 }
                 .fr-compact-layout .fr-live-handband .fr-card-row--table-band {
                     width: min(920px, calc(100vw - 72px));
-                    transform: translateY(-8px);
+                    transform: translateY(8px);
+                }
+                .fr-compact-layout .fr-live-handband[data-action-visible="true"] .fr-card-row--table-band {
+                    width: min(804px, calc(100vw - 188px));
+                    margin-left: 12px;
+                    margin-right: auto;
                 }
                 .fr-compact-layout .fr-live-action-zone {
                     right: 28px;
-                    bottom: 160px;
-                    width: 152px;
-                    height: 60px;
-                    min-height: 60px;
+                    bottom: 238px;
+                    width: 144px;
+                    height: 56px;
+                    min-height: 56px;
                 }
                 .fr-compact-layout .fr-live-action-button {
-                    width: 152px;
-                    height: 60px;
-                    padding: 8px 14px;
+                    width: 144px;
+                    height: 56px;
+                    padding: 8px 12px;
                 }
                 .fr-compact-layout .fr-live-action-button-label {
-                    max-width: 124px;
-                    font-size: 18px;
+                    max-width: 116px;
+                    font-size: 16px;
                 }
                 .fr-compact-focus-strip {
                     position: absolute;
                     right: 14px;
-                    bottom: 214px;
+                    bottom: 232px;
                     z-index: 3;
-                    width: min(208px, calc(100% - 28px));
+                    width: min(188px, calc(100% - 28px));
                     margin-top: 0;
                 }
                 .fr-compact-focus-strip .fr-panel {
-                    border-radius: 16px;
-                    border-color: rgba(241, 209, 149, 0.16);
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 236, 184, 0.06), transparent 36%),
-                        linear-gradient(180deg, rgba(31, 37, 33, 0.94), rgba(14, 18, 16, 0.96));
-                    box-shadow:
-                        0 20px 28px rgba(0, 0, 0, 0.28),
-                        inset 0 0 0 1px rgba(255, 240, 204, 0.04);
+                    overflow: visible;
+                    border: none;
+                    background: transparent;
+                    box-shadow: none;
                 }
                 .fr-compact-focus-strip .fr-panel-body {
-                    padding: 10px;
+                    padding: 0;
+                    width: 100%;
                 }
                 .fr-compact-focus-strip .fr-focus-panel {
-                    gap: 8px;
+                    gap: 6px;
                 }
                 .fr-compact-focus-strip .fr-focus-spotlight {
-                    grid-template-columns: 72px minmax(0, 1fr);
-                    gap: 8px;
+                    grid-template-columns: 58px minmax(0, 1fr);
+                    gap: 5px;
+                    align-items: center;
+                }
+                .fr-compact-focus-strip .fr-focus-panel,
+                .fr-compact-focus-strip .fr-focus-spotlight {
+                    width: 100%;
                 }
                 .fr-compact-focus-strip .fr-focus-preview-shell {
-                    max-width: 72px;
+                    max-width: 58px;
                 }
                 .fr-compact-focus-strip .fr-focus-card {
-                    gap: 6px;
-                    padding: 8px;
+                    position: relative;
+                    overflow: hidden;
+                    gap: 3px;
+                    padding: 9px 8px 8px 10px;
+                    border-radius: 7px 9px 8px 7px;
+                    border: 1px solid rgba(120, 84, 46, 0.38);
+                    border-left: 3px solid rgba(126, 82, 38, 0.52);
+                    background:
+                        linear-gradient(180deg, rgba(220, 197, 156, 0.95), rgba(183, 157, 119, 0.94));
+                    color: #2c2014;
+                    box-shadow:
+                        0 7px 12px rgba(0, 0, 0, 0.15),
+                        inset 0 1px 0 rgba(255, 244, 220, 0.34),
+                        inset 0 -8px 14px rgba(103, 77, 48, 0.08);
+                }
+                .fr-compact-focus-strip .fr-focus-card::before {
+                    content: "";
+                    position: absolute;
+                    top: -4px;
+                    left: 11px;
+                    width: 28px;
+                    height: 10px;
+                    border-radius: 999px;
+                    background: linear-gradient(180deg, rgba(144, 112, 72, 0.78), rgba(93, 67, 42, 0.68));
+                    box-shadow:
+                        0 2px 5px rgba(0, 0, 0, 0.14),
+                        inset 0 1px 0 rgba(255, 244, 216, 0.14);
+                    transform: rotate(-7deg);
+                    opacity: 0.8;
+                }
+                .fr-compact-focus-strip .fr-focus-card::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    width: 16px;
+                    height: 16px;
+                    background: linear-gradient(135deg, rgba(255, 247, 227, 0.36), rgba(173, 145, 109, 0.1));
+                    clip-path: polygon(100% 0, 0 0, 100% 100%);
+                    opacity: 0.68;
                 }
                 .fr-compact-focus-strip .fr-focus-name {
-                    font-size: 14px;
+                    font-size: 12px;
+                    color: #2c2014;
+                    line-height: 1.15;
+                }
+                .fr-compact-focus-strip .fr-focus-card--summary {
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: center;
+                    gap: 2px 8px;
+                }
+                .fr-compact-focus-strip .fr-focus-card--summary .fr-focus-name {
+                    font-size: 11px;
+                }
+                .fr-compact-focus-strip .fr-focus-score {
+                    font-size: 10px;
+                    color: rgba(66, 46, 28, 0.68);
                 }
                 .fr-compact-focus-strip .fr-focus-score strong {
-                    font-size: 24px;
+                    font-size: 18px;
+                    color: #2c2014;
+                }
+                .fr-compact-focus-strip .fr-focus-spotlight--preview-collapsed .fr-focus-card {
+                    padding: 10px 10px 9px 11px;
+                }
+                .fr-compact-focus-strip .fr-focus-spotlight--preview-collapsed .fr-focus-score {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: end;
+                    gap: 8px;
+                }
+                .fr-compact-focus-strip .fr-focus-spotlight--preview-collapsed .fr-focus-score span {
+                    display: none;
                 }
                 .fr-compact-layout .fr-live-focus-dock {
                     display: none;
@@ -3049,11 +3429,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     gap: 16px;
                     align-items: stretch;
                 }
+                .fr-focus-spotlight--preview-collapsed {
+                    grid-template-columns: minmax(0, 1fr);
+                    width: 100%;
+                    justify-items: stretch;
+                }
                 .fr-focus-preview-shell {
                     position: relative;
                     width: 100%;
                     max-width: 120px;
                     justify-self: start;
+                }
+                .fr-focus-preview-shell--collapsed {
+                    display: none;
                 }
                 .fr-focus-preview-shell--hidden::after {
                     content: "";
@@ -3076,6 +3464,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     color: #f2ead7;
                     box-shadow: none;
                 }
+                .fr-focus-card--summary {
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: end;
+                    gap: 8px 10px;
+                    width: 100%;
+                    justify-self: stretch;
+                }
                 .fr-focus-kicker {
                     font-size: 12px;
                     letter-spacing: 0.14em;
@@ -3094,6 +3489,28 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     justify-content: space-between;
                     color: rgba(242, 234, 215, 0.72);
                     font-size: 13px;
+                }
+                .fr-focus-spotlight--preview-collapsed .fr-focus-score {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: end;
+                    gap: 8px;
+                }
+                .fr-focus-spotlight--preview-collapsed .fr-focus-score span {
+                    display: none;
+                }
+                .fr-focus-card--summary .fr-focus-name {
+                    align-self: center;
+                    min-width: 0;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .fr-focus-card--summary .fr-focus-score {
+                    display: inline-flex;
+                    align-items: baseline;
+                    justify-content: flex-end;
+                    gap: 0;
                 }
                 .fr-focus-score strong {
                     font-size: 30px;

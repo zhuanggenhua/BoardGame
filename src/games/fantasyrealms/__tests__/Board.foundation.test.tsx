@@ -1,7 +1,8 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { __resetAssetLoaderCachesForTests, markImageLoaded } from '../../../core/AssetLoader';
 import type { MatchState } from '../../../engine/types';
 import Board from '../Board';
 import type { FantasyRealmsCore } from '../domain';
@@ -12,6 +13,10 @@ import {
     HAND_CARDS,
     PUBLIC_CARDS,
 } from '../foundation';
+import {
+    FANTASY_REALMS_CARD_ATLAS_PATH,
+    FANTASY_REALMS_CARD_BACK_PATH,
+} from '../ui/cardAtlas';
 
 type TranslationTree = Record<string, string | TranslationTree>;
 
@@ -28,6 +33,19 @@ function interpolate(template: string, options?: Record<string, unknown>): strin
     return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, token: string) => String(options?.[token] ?? ''));
 }
 
+function createLoadedImageMock(): HTMLImageElement {
+    const img = new Image();
+    Object.defineProperty(img, 'naturalWidth', {
+        configurable: true,
+        value: 1200,
+    });
+    Object.defineProperty(img, 'naturalHeight', {
+        configurable: true,
+        value: 800,
+    });
+    return img;
+}
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, unknown>) => {
@@ -41,6 +59,12 @@ vi.mock('react-i18next', () => ({
         init: vi.fn(),
     },
 }));
+
+beforeEach(() => {
+    __resetAssetLoaderCachesForTests();
+    markImageLoaded(FANTASY_REALMS_CARD_ATLAS_PATH, 'zh-CN', createLoadedImageMock());
+    markImageLoaded(FANTASY_REALMS_CARD_BACK_PATH, 'zh-CN', createLoadedImageMock());
+});
 
 function makeCore(overrides: Partial<FantasyRealmsCore> = {}): FantasyRealmsCore {
     return {
@@ -487,6 +511,7 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(screen.getByTestId('fantasyrealms-live-focus-dock')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toBeInTheDocument();
+            expect(screen.getAllByTestId('fantasyrealms-discard-empty-slot')).toHaveLength(5);
             expect(screen.getByTestId('fantasyrealms-focus-preview')).toBeInTheDocument();
         });
     });
@@ -653,6 +678,21 @@ describe('FantasyRealms Board foundation', () => {
         expect(focusPreview).toHaveAttribute('data-card-renderer', 'atlas');
         expect(focusPreview).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[0]!.id);
         expect(focusPreview.getAttribute('style')).toContain('fantasyrealms-base-cards-atlas');
+    });
+
+    it('atlas 未就绪时，手牌先回退到稳定文字卡而不是空黑壳', () => {
+        __resetAssetLoaderCachesForTests();
+        markImageLoaded(FANTASY_REALMS_CARD_BACK_PATH, 'zh-CN', createLoadedImageMock());
+
+        renderBoard();
+
+        const handRow = screen.getByTestId('fantasyrealms-hand-row');
+        const handCards = within(handRow).getAllByTestId('fantasyrealms-card');
+        const focusPreview = screen.getByTestId('fantasyrealms-focus-preview');
+
+        expect(handCards[0]).toHaveAttribute('data-card-renderer', 'fallback');
+        expect(handCards[0].getAttribute('style') ?? '').not.toContain('fantasyrealms-base-cards-atlas');
+        expect(focusPreview).toHaveAttribute('data-card-renderer', 'back');
     });
 
     it('桌面 live 页只保留最小动作与数值，不再显示描述性标题和说明', () => {

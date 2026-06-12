@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
 import { buildLocalizedImageSet } from '../../../core/AssetLoader';
 
-const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
-const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
+export const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
+export const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
 
 const ATLAS_COLUMNS = 10;
 const ATLAS_ROWS = 7;
