@@ -1058,6 +1058,28 @@
     - 截图：`test-results/evidence-screenshots/_shared/qidahen-region-mask-closed-fill-regions-current.png`。
   - 在隔离工作区 `manual-boundary-user-city-name-smoke-unique-20260530` 验证保存/回读：
     - `region-mask-regions.json`：`22` 个区域，包含 `测试城`；
+
+## 2026-06-13 真相源纠偏：默认正式页红线不是手工红线本体
+
+- 当前默认页 `/dev/qidahen-region-mask` 的正式工作区仍是：
+  - `src/games/qidahen/data`
+- 但这套正式边界输入当前是空的：
+  - `src/games/qidahen/data/region-boundary-mask.png`：`0 px`
+  - `src/games/qidahen/data/region-boundary-add.png`：`0 px`
+  - `src/games/qidahen/data/region-boundary-remove.png`：`0 px`
+- 因此默认页当前看到的红线，只是“根据已保存区域边缘反推出来的显示层”，不能再被解释成“用户手工画过的红线版本”。
+- 当前仍保留完整手工红线本体的工作区，应以：
+  - `temp/devtools/qidahen-region-mask-workspaces/manual-boundary-user`
+  - 其中 `region-boundary-mask.png`：`76,214 px`
+  为准。
+- `manual-boundary-user` 的几个派生副本：
+  - `manual-boundary-user-backup-20260530-163845`
+  - `manual-boundary-user-generate-smoke`
+  - `manual-boundary-user-city-name-smoke-20260530`
+  - `manual-boundary-user-city-name-smoke-unique-20260530`
+  当前 `region-boundary-mask.png` 都仍只有 `6,917 px`，属于旧编辑态或烟雾验证态，不能当完整边界本体。
+- 本轮已补 UI 告警，默认页会明确提示“当前红线只是自动反推显示层，不是真实手工边界图”。
+- 后续若继续清理旧 overlay、旧截图或旧工作区，先按 `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` 的分类核对引用，再决定归档或删除。
     - `region-graph.json`：`22` 个节点 / `44` 条边，节点名包含 `测试城`；
     - `region-mask.png`：`545,101` 个不透明像素，`22` 个唯一颜色；
     - 刷新回读后 UI 显示 `22` 个区域输入、`22` 个地图中心点、`中心 22 / 通路 44`；
