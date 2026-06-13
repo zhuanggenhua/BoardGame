@@ -39,7 +39,7 @@ import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
-import { resolveRoomExpansionLabel } from '../lobby/roomActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -567,6 +567,7 @@ function getRoomSearchHaystack(
         gameName?: string;
         publicSetupSummary?: {
             enabledExpansions?: string[];
+            scenarioId?: string;
         };
     },
     fallbackTitle: string,
@@ -575,11 +576,15 @@ function getRoomSearchHaystack(
     const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
         resolveRoomExpansionLabel(t, room.gameName, expansionId)
     )) ?? [];
+    const scenarioLabel = room.publicSetupSummary?.scenarioId
+        ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
+        : '';
 
     return [
         fallbackTitle,
         room.roomName ?? '',
         room.matchID,
+        scenarioLabel,
         ...enabledExpansionLabels,
         ...room.players.map((player) => player.name ?? ''),
     ].join(' ').toLowerCase();
@@ -1827,8 +1832,14 @@ export const Right = ({ game }: RightProps) => {
                                             const enabledExpansionLabels = room.publicSetupSummary?.enabledExpansions?.map((expansionId) => (
                                                 resolveRoomExpansionLabel(t, room.gameName, expansionId)
                                             )) ?? [];
+                                            const scenarioLabel = room.publicSetupSummary?.scenarioId
+                                                ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
+                                                : '';
                                             const roomExpansionSummary = enabledExpansionLabels.length > 0
                                         ? `${t('lobby:rooms.enabledExpansions')}：${enabledExpansionLabels.join(' / ')}`
+                                                : '';
+                                            const roomScenarioSummary = scenarioLabel
+                                                ? `${t('lobby:rooms.scenario', { defaultValue: '剧本' })}：${scenarioLabel}`
                                                 : '';
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
@@ -1867,10 +1878,18 @@ export const Right = ({ game }: RightProps) => {
                                                                     {getRoomTitle(room.matchID, t, room.roomName)}
                                                                 </div>
                                                                 <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
-                                                                    {isCompactLandscape && roomExpansionSummary
-                                                                        ? `${getRoomSeatLine(room, t)} · ${roomExpansionSummary}`
+                                                                    {isCompactLandscape && (roomScenarioSummary || roomExpansionSummary)
+                                                                        ? `${getRoomSeatLine(room, t)} · ${[roomScenarioSummary, roomExpansionSummary].filter(Boolean).join(' · ')}`
                                                                         : getRoomSeatLine(room, t)}
                                                                 </div>
+                                                                {!isCompactLandscape && roomScenarioSummary ? (
+                                                                    <div
+                                                                        data-testid={`home-v2-room-scenario-summary-${room.matchID}`}
+                                                                        className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
+                                                                    >
+                                                                        {roomScenarioSummary}
+                                                                    </div>
+                                                                ) : null}
                                                                 {!isCompactLandscape && roomExpansionSummary ? (
                                                                     <div
                                                                         data-testid={`home-v2-room-expansion-summary-${room.matchID}`}

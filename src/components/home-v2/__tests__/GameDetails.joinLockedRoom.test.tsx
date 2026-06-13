@@ -47,7 +47,9 @@ vi.mock('react-i18next', () => ({
             if (key === 'setup.expansions.titans') return '泰坦';
             if (key === 'setup.expansions.diy') return 'DIY';
             if (key === 'setup.deckQuery.label') return '余牌查询';
+            if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
             if (key === 'lobby:rooms.enabledExpansions' || key === 'rooms.enabledExpansions') return '扩展';
+            if (key === 'lobby:rooms.scenario' || key === 'rooms.scenario') return '剧本';
             return options?.defaultValue ?? key;
         },
         i18n: { language: 'zh-CN' },
@@ -332,6 +334,43 @@ describe('HomeV2 GameDetails locked room join', () => {
 
         expect(await screen.findByTestId('home-v2-room-expansion-summary-match-smashup-1'))
             .toHaveTextContent('扩展：泰坦 / DIY / 余牌查询');
+    });
+
+    it('七大恨房间账本会显示当前剧本摘要', async () => {
+        mockMatches = [{
+            matchID: 'match-qidahen-1',
+            players: [
+                { id: 0, name: '大明' },
+                { id: 1, name: '蒙古' },
+                { id: 2, name: '后金' },
+            ],
+            totalSeats: 3,
+            gameName: 'qidahen',
+            roomName: '山海关房间',
+            ownerKey: 'owner-2',
+            ownerType: 'guest',
+            isLocked: false,
+            publicSetupSummary: {
+                scenarioId: 'shanhaiguan-1622',
+            },
+        }];
+
+        render(createElement(GameDetailsRight, {
+            game: {
+                id: 'qidahen',
+                type: 'game',
+                enabled: true,
+                titleKey: 'games.qidahen.title',
+                descriptionKey: 'games.qidahen.description',
+                category: 'wargame',
+                playersKey: 'games.qidahen.players',
+                icon: '恨',
+                playerOptions: [3],
+            },
+        }));
+
+        expect(await screen.findByTestId('home-v2-room-scenario-summary-match-qidahen-1'))
+            .toHaveTextContent('剧本：剧本二：山海关之议（1622）');
     });
 
     it('当前房主房间会显示独立销毁入口，并在确认后调用销毁接口与隐藏房间行', async () => {

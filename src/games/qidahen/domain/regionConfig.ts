@@ -1,7 +1,7 @@
 import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';
 import type { QidahenFactionId, QidahenSpecialTroopStack } from './types';
 
-export type QidahenRegionTag =
+type QidahenRegionTag =
     | 'anchorage'
     | 'capital'
     | 'city'
@@ -12,14 +12,14 @@ export type QidahenRegionTag =
     | 'south-of-wall'
     | 'logical';
 
-export type QidahenFortificationId =
+type QidahenFortificationId =
     | 'outer-wall'
     | 'inner-wall'
     | 'shanhaiguan'
     | 'ningyuan'
     | 'jinzhou';
 
-export interface QidahenRuleRegionConfig {
+interface QidahenRuleRegionConfig {
     id: string;
     name: string;
     primaryRuntimeRegionId: string;
@@ -37,7 +37,7 @@ export interface QidahenRuleRegionConfig {
     prestigeCardBonusUnlock: 'always' | 'after-initial-controller-lost' | null;
 }
 
-export interface QidahenFortificationConfig {
+interface QidahenFortificationConfig {
     id: QidahenFortificationId;
     label: string;
     maintenanceCost: number;
@@ -84,31 +84,51 @@ const runtimeRegionOverrides: Partial<Record<string, Partial<QidahenRuleRegionCo
         initialNote: '剧本一蒙古本土：察哈尔，按规则书落 3 个 Lv3 骑兵与 3 人口。',
     },
     'city-region-19': {
-        name: '辽西',
-        tags: ['frontier', 'maintenance-dependency'],
-        initialController: 'jin',
-        initialTroops: 2,
+        name: '敖汉部',
+        tags: ['frontier'],
+        initialController: 'mongol',
+        initialTroops: 1,
         initialSpecialTroops: [
-            { id: 'jin-liaoxi-infantry-lv2', label: '后金步兵', faction: 'jin', troopKind: 'infantry', count: 2, level: 2 },
+            { id: 'mongol-aohanbu-mercenary-cavalry-lv2', label: '蒙古雇佣骑兵', faction: 'mongol', troopKind: 'cavalry', count: 1, level: 2 },
         ],
         initialPopulation: 1,
-        initialNote: '后金辽西侧前线，用于承接联姻诱降与突袭作战的邻接来源。',
+        initialNote: '剧本一蒙古控制区：敖汉部，按规则书落 1 个 Lv2 雇佣骑兵与 1 人口。',
+    },
+    'city-region-19-liaoxi': {
+        name: '辽西',
+        tags: ['frontier'],
+        initialController: 'ming',
+        initialTroops: 1,
+        initialSpecialTroops: [
+            { id: 'ming-liaoxi-infantry-lv1', label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 1 },
+        ],
+        initialPopulation: 2,
+        initialNote: '剧本一大明本土：辽西，按规则书落 1 个 Lv1 部队与 2 人口。',
     },
     'city-region-24': {
-        name: '宁远',
-        tags: ['city', 'frontier', 'maintenance-target'],
+        name: '宣府',
+        tags: ['city', 'frontier'],
         maintenanceFortificationId: 'ningyuan',
     },
     'city-region-28': {
+        name: '顺天',
+        tags: [],
+        initialController: 'ming',
+        initialTroops: 0,
+        initialSpecialTroops: [],
+        initialPopulation: 1,
+        initialNote: '剧本一本土区域拆模过渡：顺天当前先作为与蓟镇共用印刷区的独立 runtime 壳层，起始只承接 1 人口。',
+    },
+    'city-region-28-jizhen': {
         name: '蓟镇',
-        tags: ['frontier', 'maintenance-dependency', 'south-of-wall'],
+        tags: ['frontier', 'south-of-wall'],
         initialController: 'ming',
         initialTroops: 1,
         initialSpecialTroops: [
             { id: 'ming-jizhen-infantry-lv1', label: '大明步兵', faction: 'ming', troopKind: 'infantry', count: 1, level: 1 },
         ],
-        initialPopulation: 2,
-        initialNote: '剧本一大明本土区域，先按 1 个 Lv1 部队与 2 人口落地，用于山海关维护依赖和南墙方向基础可玩。',
+        initialPopulation: 1,
+        initialNote: '剧本一本土区域拆模过渡：蓟镇当前先承接原 `city-region-28` 的边界关系与前线兵力。',
     },
     'city-region-27': {
         tags: ['south-of-wall'],
@@ -291,9 +311,9 @@ const logicalRuleRegionConfigs: QidahenRuleRegionConfig[] = [
     createLogicalRuleRegionConfig({
         id: 'liao-xi',
         name: '辽西',
-        primaryRuntimeRegionId: 'city-region-19',
+        primaryRuntimeRegionId: 'city-region-19-liaoxi',
         tags: ['frontier', 'maintenance-dependency'],
-        initialController: 'jin',
+        initialController: 'ming',
     }),
     createLogicalRuleRegionConfig({
         id: 'ning-yuan',
@@ -305,7 +325,7 @@ const logicalRuleRegionConfigs: QidahenRuleRegionConfig[] = [
     createLogicalRuleRegionConfig({
         id: 'ji-zhen',
         name: '蓟镇',
-        primaryRuntimeRegionId: 'city-region-28',
+        primaryRuntimeRegionId: 'city-region-28-jizhen',
         tags: ['frontier', 'maintenance-dependency', 'south-of-wall'],
         initialController: 'ming',
     }),
@@ -317,7 +337,7 @@ const logicalRuleRegionConfigs: QidahenRuleRegionConfig[] = [
     createLogicalRuleRegionConfig({
         id: 'liao-dong',
         name: '辽东',
-        primaryRuntimeRegionId: 'city-region-15',
+        primaryRuntimeRegionId: 'city-region-15-liaodong',
     }),
     createLogicalRuleRegionConfig({
         id: 'xuan-fu',
@@ -331,28 +351,24 @@ const logicalRuleRegionConfigs: QidahenRuleRegionConfig[] = [
     }),
 ];
 
-export const QIDAHEN_RULE_REGION_CONFIGS: QidahenRuleRegionConfig[] = [
+const QIDAHEN_RULE_REGION_CONFIGS: QidahenRuleRegionConfig[] = [
     ...runtimeRegionConfigs,
     ...logicalRuleRegionConfigs,
 ];
 
-export const QIDAHEN_RULE_REGION_CONFIG_BY_ID = new Map(
+const QIDAHEN_RULE_REGION_CONFIG_BY_ID = new Map(
     QIDAHEN_RULE_REGION_CONFIGS.map((region) => [region.id, region]),
 );
 
-export const QIDAHEN_LOGICAL_RULE_REGION_IDS = new Set(
+const QIDAHEN_LOGICAL_RULE_REGION_IDS = new Set(
     logicalRuleRegionConfigs.map((region) => region.id),
 );
 
-export const QIDAHEN_KOREA_RUNTIME_REGION_IDS = runtimeRegionConfigs
+const QIDAHEN_KOREA_RUNTIME_REGION_IDS = runtimeRegionConfigs
     .filter((region) => region.tags.includes('korea'))
     .map((region) => region.id);
 
-export const QIDAHEN_MAINTENANCE_TARGET_REGION_IDS = runtimeRegionConfigs
-    .filter((region) => region.maintenanceFortificationId != null)
-    .map((region) => region.id);
-
-export const QIDAHEN_FORTIFICATION_CONFIGS: QidahenFortificationConfig[] = [
+const QIDAHEN_FORTIFICATION_CONFIGS: QidahenFortificationConfig[] = [
     {
         id: 'outer-wall',
         label: '外长城',
@@ -400,8 +416,21 @@ export const QIDAHEN_FORTIFICATION_CONFIGS: QidahenFortificationConfig[] = [
     },
 ];
 
-export const QIDAHEN_FORTIFICATION_CONFIG_BY_ID = new Map(
-    QIDAHEN_FORTIFICATION_CONFIGS.map((fortification) => [fortification.id, fortification]),
+export const getQidahenFortificationConfigs = () => (
+    QIDAHEN_FORTIFICATION_CONFIGS.map((config) => ({ ...config }))
+);
+
+export const getQidahenLogicalRuleRegionConfigs = (): QidahenRuleRegionConfig[] => (
+    logicalRuleRegionConfigs.map((config) => ({
+        ...config,
+        runtimeRegionIds: [...config.runtimeRegionIds],
+        tags: [...config.tags],
+        initialSpecialTroops: config.initialSpecialTroops.map((troop) => ({ ...troop })),
+    }))
+);
+
+export const isQidahenLogicalRuleRegionId = (regionId: string): boolean => (
+    QIDAHEN_LOGICAL_RULE_REGION_IDS.has(regionId)
 );
 
 export const resolveQidahenRuleRegionConfig = (regionId: string): QidahenRuleRegionConfig => (
@@ -438,48 +467,14 @@ export const isQidahenRuleRegionEquivalent = (regionId: string, targetRuleRegion
     return resolveQidahenRuntimeRegionIds(targetRuleRegionId).some((runtimeRegionId) => regionRuntimeIds.has(runtimeRegionId));
 };
 
-export const getQidahenRuleRegionTags = (regionId: string): QidahenRegionTag[] => (
-    [...resolveQidahenRuleRegionConfig(regionId).tags]
+export const isQidahenCityRuntimeRegion = (regionId: string): boolean => (
+    resolveQidahenRuleRegionConfig(regionId).tags.includes('city')
 );
 
 export const isQidahenKoreaRuntimeRegionId = (regionId: string): boolean => (
     QIDAHEN_KOREA_RUNTIME_REGION_IDS.includes(regionId)
 );
 
-export const getQidahenKoreaTributeCards = (regionId: string): number => (
-    resolveQidahenRuleRegionConfig(regionId).tributeCards
-);
-
 export const getQidahenInitialController = (regionId: string): QidahenFactionId | 'neutral' => (
     resolveQidahenRuleRegionConfig(regionId).initialController
-);
-
-export const getQidahenInitialTroops = (regionId: string): number => (
-    resolveQidahenRuleRegionConfig(regionId).initialTroops
-);
-
-export const getQidahenInitialSpecialTroops = (regionId: string): QidahenSpecialTroopStack[] => (
-    resolveQidahenRuleRegionConfig(regionId).initialSpecialTroops.map((stack) => ({ ...stack }))
-);
-
-export const getQidahenInitialPopulation = (regionId: string): number => (
-    isQidahenKoreaRuntimeRegionId(regionId) ? 0 : resolveQidahenRuleRegionConfig(regionId).initialPopulation
-);
-
-export const getQidahenInitialNote = (regionId: string): string | null => (
-    resolveQidahenRuleRegionConfig(regionId).initialNote
-);
-
-export const getQidahenCapitalOwner = (regionId: string): QidahenFactionId | null => (
-    resolveQidahenRuleRegionConfig(regionId).capitalOf
-);
-
-export const getQidahenPrestigeCardBonus = (regionId: string): number => (
-    resolveQidahenRuleRegionConfig(regionId).prestigeCardBonus
-);
-
-export const getQidahenPrestigeCardBonusUnlock = (
-    regionId: string,
-): 'always' | 'after-initial-controller-lost' | null => (
-    resolveQidahenRuleRegionConfig(regionId).prestigeCardBonusUnlock
 );

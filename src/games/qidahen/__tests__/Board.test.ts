@@ -10,12 +10,17 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-map-overlay"',
     'data-testid="qidahen-map-region-mask-overlay"',
     'data-testid="qidahen-map-region-movement-preview"',
+    'data-testid="qidahen-shared-printed-runtime-switcher"',
+    'data-testid={`qidahen-shared-printed-runtime-option-${region.id}`}',
     'data-testid="qidahen-runtime-region-graph"',
     'data-testid={`qidahen-runtime-region-edge-${edge.id}`}',
     "import qidahenRegionMaskUrl from './data/region-mask.png?url'",
     'QIDAHEN_REGION_GRAPH_EDGES',
     'QIDAHEN_REGION_ID_BY_MASK_COLOR',
     'getQidahenDirectedPassage',
+    'getQidahenPrintedRegionIdsForRuntimeRegionId',
+    'getQidahenRuntimeRegionIdsForPrintedRegionId',
+    'resolveQidahenRuntimeRegionIdFromPrintedRegionId',
     "mainMap: 'qidahen/board/qidahen-main-map'",
     'data-testid="qidahen-player-float"',
     'data-testid={`qidahen-armaments-${faction.id}`}',
@@ -29,6 +34,11 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-move-layer"',
     'data-testid={`qidahen-wheel-move-target-${choice.id}`}',
     'data-testid="qidahen-wheel-tip"',
+    'data-testid="qidahen-wheel-next-step-banner"',
+    'data-testid="qidahen-wheel-next-step-title"',
+    'data-testid="qidahen-wheel-next-step-hint"',
+    'data-testid="qidahen-wheel-next-step-choices"',
+    'data-testid={`qidahen-wheel-next-step-choice-${choice.id}`}',
     '开垦',
     '军屯',
     '征兵',
@@ -45,9 +55,17 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-dispatch-selection"',
     'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
     'data-testid="qidahen-actions-zone"',
+    'data-testid="qidahen-action-slot"',
     'data-testid="qidahen-action-rail"',
     'data-testid={`qidahen-action-${action.id}`}',
+    'data-testid="qidahen-hand-interaction-tray"',
+    'data-testid="qidahen-action-payment-panel"',
+    'data-testid="qidahen-action-payment-status"',
+    'data-testid="qidahen-action-payment-hint"',
+    'data-testid="qidahen-action-payment-confirm"',
+    'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-turn-banner"',
+    'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
@@ -56,7 +74,7 @@ const REQUIRED_TEST_IDS = [
     'onExecuteAction',
     'data-testid={`qidahen-hand-card-${card.id}`}',
     'data-testid="qidahen-discard-anchor"',
-    'data-testid="qidahen-resolve-pending-action"',
+    'data-testid={getPendingTargetChoiceTestId(choice.id)}',
     'data-testid="qidahen-pending-casualty-priority"',
     'data-testid={`qidahen-${group.id}-casualty-priority`}',
     'data-testid={`qidahen-${group.id}-casualty-${option.id}`}',
@@ -92,6 +110,30 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'data-testid="qidahen-wheel-move-choices"',
     'qidahen-wheel-move-${choice.id}',
     'data-testid="qidahen-wheel-summary"',
+    'qidahen-scenario-character-option-',
+    'qidahen-scenario-character-confirm-',
+    'qidahen-scenario-armament-option-',
+    'qidahen-scenario-armament-confirm-',
+    '?? core.postBattleSelection',
+    '?? core.recruitSelection',
+    '?? core.diplomacySelection',
+    '?? core.wheelDispatchProgress',
+    '?? core.internalDispatchSelection',
+    '?? core.maShiTradeSelection',
+    '?? core.khanEdictSelection',
+    'core.internalDispatchSelection ? (',
+    'core.internalDispatchSelection != null',
+    'const maShiTradeSelection = core.maShiTradeSelection;',
+    'const khanEdictSelection = core.khanEdictSelection;',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_DIPLOMACY_CHOICE',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_MA_SHI_TRADE_CHOICE',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT',
+    'dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE',
+    'dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: choiceId })',
     'WheelMoveChoiceButton',
     'QIDAHEN_MAP_REGION_SHAPES',
     'mapPath(shape)',
@@ -103,7 +145,6 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'paymentPrompt',
     '{action.cost}',
     '可付',
-    '已选',
     'ASSETS.actionWheel',
     "label: '乾'",
     "label: '兑'",
@@ -129,10 +170,116 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
+const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 
 describe('Qidahen Board 结构门禁', () => {
     it('纪年卡预览继续绑定纪年图集而不是蒙古图集', () => {
         expect(cardAtlasSource).toContain("image: 'qidahen/cards/atlases/chronology-deck-atlas'");
+    });
+
+    it('三势力手牌预览继续绑定各自牌库图集，而不是退回牌背', () => {
+        expect(cardAtlasSource).toMatch(/export const qidahenMingHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_MING_ATLAS_ID,[\s\S]*?index,/);
+        expect(cardAtlasSource).toMatch(/export const qidahenMongolHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_MONGOL_ATLAS_ID,[\s\S]*?index,/);
+        expect(cardAtlasSource).toMatch(/export const qidahenJinHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_JIN_ATLAS_ID,[\s\S]*?index,/);
+    });
+
+    it('Board 不再把剧本待决项重复渲染成局内面板，只保留动作区阻断提示', () => {
+        expect(boardSource).toContain('core.pendingScenarioCharacterChoices');
+        expect(boardSource).toContain('core.pendingScenarioArmamentChoices');
+        expect(boardSource).toContain('qidahen-actions-blocked-by-scenario');
+        expect(boardSource).not.toContain('qidahen-scenario-panel');
+        expect(boardSource).not.toContain('qidahen-scenario-compact-summary');
+        expect(boardSource).not.toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
+        expect(boardSource).not.toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
+    });
+
+    it('剧本待决项若异常残留，会在动作区提示必须先回前置页，而不是再占地图区', () => {
+        expect(boardSource).toContain('剧本待决项尚未确认');
+        expect(boardSource).toContain('当前只可处理剧本选择');
+        expect(boardSource).not.toContain('待选人物');
+        expect(boardSource).not.toContain('待选军备');
+    });
+
+    it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
+        expect(boardSource).toContain('showWheelNextStepBanner');
+        expect(boardSource).toContain('下一步：点击轮盘按钮推进回合');
+        expect(boardSource).toContain('不用点左侧轮盘盘面，直接点下面的明文按钮即可');
+        expect(boardSource).toContain('直接执行');
+        expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
+    });
+
+    it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
+        expect(boardSource).toContain('actionPaymentPreviewVisible');
+        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_WIDTH = 940;');
+        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 14;');
+        expect(boardSource).toContain('qidahen-hand-interaction-tray');
+        expect(boardSource).toContain('data-ui-anchor="bottom-hand"');
+        expect(boardSource).toContain('qidahen-action-payment-panel');
+        expect(boardSource).toContain('qidahen-action-payment-confirm');
+        expect(boardSource).toContain('qidahen-action-payment-cancel');
+        expect(boardSource).toContain('点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张');
+        expect(boardSource).toContain('QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION');
+        expect(boardSource).toContain('QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD');
+        expect(boardSource).toContain('QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION');
+        expect(boardSource).not.toContain('getAutoPaymentCardIds(state, command.payload.actionId)');
+    });
+
+    it('右侧交互区必须保留固定动作栏与独立交互槽位，瞬时面板不得再把动作按钮往下挤', () => {
+        expect(boardSource).toContain('const ACTIONS_DOCK_WIDTH = 420;');
+        expect(boardSource).toContain('const ACTIONS_DOCK_HEIGHT = 470;');
+        expect(boardSource).toContain('const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;');
+        expect(boardSource).toContain('data-testid="qidahen-action-slot"');
+        expect(boardSource).toContain('className="mt-3 shrink-0"');
+        expect(boardSource).toContain('className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot"');
+        expect(boardSource).toContain('left: ACTIONS_DOCK_LEFT,');
+        expect(boardSource).toContain('width: ACTIONS_DOCK_WIDTH,');
+        expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
+    });
+
+    it('地图区域提示必须避开右侧交互槽位，不能再盖到动作区上', () => {
+        expect(boardSource).toContain('const MAP_REGION_TIP_WIDTH = 252;');
+        expect(boardSource).toContain('const MAP_REGION_TIP_ACTION_GAP = 20;');
+        expect(boardSource).toContain('ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP');
+        expect(boardSource).toContain('width: MAP_REGION_TIP_WIDTH,');
+    });
+
+    it('手牌区改为小间距直排并贴底，空间不足时走横向滚动而不是卡牌重叠', () => {
+        expect(boardSource).toContain('const HAND_CARD_SELECTED_LIFT = 26;');
+        expect(boardSource).toContain('const HAND_CARD_GAP = 10;');
+        expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 8;');
+        expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
+        expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
+        expect(boardSource).toContain('className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"');
+        expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
+        expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
+        expect(boardSource).toContain('data-testid="qidahen-hand-row"');
+        expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center" data-testid="qidahen-hand-row" style={{ gap: HAND_CARD_GAP }}');
+        expect(boardSource).toContain('hover:-translate-y-[18px]');
+        expect(boardSource).not.toContain('marginLeft: stackIndex === 0 ? 0 : overlapPx');
+        expect(boardSource).not.toContain('const getQidahenHandCardOverlapPx = (handCount: number): number => {');
+    });
+
+    it('地图 army token 会拆成可旋转的方块棋子，非部队图片 token 才保留数量徽标', () => {
+        expect(boardSource).toContain("const isArmyToken = token.type === 'army';");
+        expect(boardSource).toContain("const isPopulationToken = token.type === 'population';");
+        expect(boardSource).toContain("rounded-[6px]");
+        expect(boardSource).toContain("const tokenShapeClass = isArmyToken ? 'rounded-[6px]' : (token.type === 'control' || isPopulationToken) ? 'rounded-full' : '';");
+        expect(boardSource).toContain("const showImageValueBadge = token.type === 'control' && typeof token.value === 'number';");
+        expect(boardSource).toContain('className="absolute inset-0 grid place-items-center text-[12px] font-black leading-none"');
+        expect(boardSource).toContain("rotate(${token.rotationDeg ?? 0}deg)");
+        expect(mapTokenSource).toContain("type: 'population',");
+        expect(mapTokenSource).toContain('value: region.population,');
+        expect(mapTokenSource).toContain('size: 28,');
+        expect(mapTokenSource).not.toContain('populationMarkerImageSrc');
+    });
+
+    it('pending-target 按钮 test id 继续由共享选择渲染统一生成', () => {
+        expect(boardSource).toContain('const getPendingTargetChoiceTestId = (choiceId: string): string => {');
+        expect(boardSource).toContain("return 'qidahen-resolve-pending-action';");
+        expect(boardSource).toContain("return 'qidahen-resolve-pending-action-rout';");
+        expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder';");
+        expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder-defender';");
+        expect(boardSource).toContain("return `qidahen-resolve-pending-action-${choiceId}`;");
     });
 
     for (const testId of REQUIRED_TEST_IDS) {

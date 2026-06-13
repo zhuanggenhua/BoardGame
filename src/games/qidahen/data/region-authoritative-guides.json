@@ -79,6 +79,13 @@
     "note": "seed 更靠近辽北字样；同一粗区域附近还能看到辽东字样，后续需继续核对是否存在运行时合并。"
   },
   {
+    "runtimeRegionId": "city-region-15-liaodong",
+    "label": "辽东",
+    "confidence": "medium",
+    "source": "qidahen-r15-jinzhou-clean-crop.png + shared printed 审计",
+    "note": "当前 runtime 已把东向邻接独立拆为辽东；该 guide 用于锁定 shared printed `city-region-15` 下的 runtime 映射真相。"
+  },
+  {
     "runtimeRegionId": "city-region-16",
     "label": "克什克腾部",
     "confidence": "high",
@@ -97,10 +104,23 @@
     "source": "qidahen-r17-r19-crop.png"
   },
   {
+    "runtimeRegionId": "city-region-19-liaoxi",
+    "label": "辽西",
+    "confidence": "medium",
+    "source": "qidahen-r17-r19-crop.png + shared printed 审计",
+    "note": "当前 runtime 已把锦州/皮岛方向的规则语义独立拆为辽西；该 guide 用于锁定 shared printed `city-region-19` 下的 runtime 映射真相。"
+  },
+  {
     "runtimeRegionId": "city-region-20",
     "label": "土默特部",
     "confidence": "high",
     "source": "qidahen-label-crop-left_lower.png"
+  },
+  {
+    "runtimeRegionId": "city-region-21",
+    "label": "喀喇沁部",
+    "confidence": "high",
+    "source": "crop-kalaqin-main-tight.png + qidahen-main-map.png"
   },
   {
     "runtimeRegionId": "city-region-22",
@@ -137,6 +157,13 @@
     "label": "顺天",
     "confidence": "high",
     "source": "r28-precise-clean.png"
+  },
+  {
+    "runtimeRegionId": "city-region-28-jizhen",
+    "label": "蓟镇",
+    "confidence": "medium",
+    "source": "r28-precise-clean.png + shared printed 审计",
+    "note": "当前 runtime 已把长城/山海关前线语义独立拆为蓟镇；该 guide 用于锁定 shared printed `city-region-28` 下的 runtime 映射真相。"
   },
   {
     "runtimeRegionId": "city-region-29",

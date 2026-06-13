@@ -20,5 +20,57 @@
   "actionLog": {
     "selectRegion": "Select map region",
     "confirmPreviewAction": "Confirm preview action"
+  },
+  "setup": {
+    "scenario": {
+      "label": "Opening Scenario",
+      "postSarhu1619": "Scenario I: After Sarhu (1619)",
+      "shanhaiguan1622": "Scenario II: Shanhaiguan Debate (1622)",
+      "dingmaoRebellion1627": "Two-Player Scenario: Dingmao Rebellion (1627)"
+    },
+    "pregameChoices": {
+      "title": "Scenario Preselection",
+      "description": "Applied directly when the room is created; the board only keeps a compact scenario summary.",
+      "fields": {
+        "shanhaiguan1622": {
+          "mingCharacter": "Ming Character",
+          "jinCharacter0": "Later Jin Character I",
+          "jinCharacter1": "Later Jin Character II",
+          "mingArmament0": "Ming Armament I",
+          "mingArmament1": "Ming Armament II"
+        },
+        "dingmaoRebellion1627": {
+          "jinCharacter0": "Later Jin Character I",
+          "jinCharacter1": "Later Jin Character II",
+          "mingArmament0": "Ming Armament"
+        }
+      },
+      "options": {
+        "mingWangHuazhen": "Wang Huazhen",
+        "mingXiongTingbi": "Xiong Tingbi",
+        "jinEidu": "Eidu",
+        "jinFanWencheng": "Fan Wencheng",
+        "jinAmin": "Amin",
+        "jinManggultai": "Manggultai",
+        "jinHuangtaiji": "Hong Taiji",
+        "jinDaisan": "Daisan",
+        "jinYanguli": "Yanguli",
+        "cavalryArmor": "Cavalry Armor",
+        "infantryArmor": "Infantry Armor",
+        "artilleryTech": "Artillery Technology",
+        "cavalryFirearm": "Cavalry Firearm",
+        "longBarreledMusket": "Long-Barreled Musket"
+      }
+    },
+    "pregameGate": {
+      "eyebrow": "Scenario Gate",
+      "title": "Confirm the opening characters and armaments before entering the board",
+      "description": "The live board keeps only a compact scenario summary. Finish these setup picks first, then enter the main map.",
+      "playerCount": "{{count}}-player scenario",
+      "summaryTitle": "This match will start with",
+      "summaryScenario": "Scenario",
+      "noExtraChoices": "This scenario has no extra pregame picks. Confirm to enter the board.",
+      "confirm": "Confirm and enter board"
+    }
   }
 }

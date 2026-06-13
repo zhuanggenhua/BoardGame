@@ -6,6 +6,9 @@ const QIDAHEN_MONGOL_ATLAS_ID = 'qidahen:mongol-hand-preview';
 const QIDAHEN_JIN_ATLAS_ID = 'qidahen:jin-hand-preview';
 const QIDAHEN_CHRONOLOGY_ATLAS_ID = 'qidahen:chronology-preview';
 const QIDAHEN_KOREA_ATLAS_ID = 'qidahen:korea-special-preview';
+const QIDAHEN_MING_CARD_BACK = 'qidahen/cards/backs/ming-card-back';
+const QIDAHEN_MONGOL_CARD_BACK = 'qidahen/cards/backs/mongol-card-back';
+const QIDAHEN_JIN_CARD_BACK = 'qidahen/cards/backs/jin-card-back';
 
 const buildFrames = (
     topXs: number[],

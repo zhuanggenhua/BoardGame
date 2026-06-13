@@ -1,5 +1,9 @@
-import regionGraphData from '../data/region-graph.json';
-import regionMaskRegionsData from '../data/region-mask-regions.json';
+import printedRegionGraphData from '../data/region-graph.json';
+import authoritativeGuidesData from '../data/region-authoritative-guides.json';
+import printedRegionMaskRegionsData from '../data/region-mask-regions.json';
+import runtimeRegionGraphData from '../data/runtime-region-graph.json';
+import runtimeRegionMaskRegionsData from '../data/runtime-region-mask-regions.json';
+import { extractQidahenFormalAuthoritativeGuideRuntimeRegionIds } from '../regionAuthoritativeGuideFormats';
 
 export type QidahenPassageBoundaryType =
     | 'plain'
@@ -76,6 +80,7 @@ export interface QidahenMaskRegionDefinition {
     color: string;
     seed: QidahenRegionGraphPoint | null;
     links: string[];
+    printedRegionIds: string[];
 }
 
 export interface QidahenRuntimeRegionDefinition extends QidahenMaskRegionDefinition {
@@ -85,6 +90,12 @@ export interface QidahenRuntimeRegionDefinition extends QidahenMaskRegionDefinit
     travelCostByRegionId: Record<string, number>;
     movementCostByRegionId: Record<string, number>;
     boundaryTypeByRegionId: Record<string, QidahenPassageBoundaryType>;
+}
+
+export interface QidahenSharedPrintedRegionAudit {
+    printedRegionId: string;
+    runtimeRegionIds: string[];
+    missingAuthoritativeRuntimeIds: string[];
 }
 
 const DEFAULT_BOUNDARY_TYPES: QidahenPassageBoundaryMeta[] = [
@@ -147,6 +158,9 @@ const parseMaskRegionDefinition = (value: unknown): QidahenMaskRegionDefinition 
         color: toStringOrEmpty(value.color),
         seed: parsePoint(value.seed),
         links,
+        printedRegionIds: Array.isArray(value.printedRegionIds)
+            ? value.printedRegionIds.map((item) => toStringOrEmpty(item)).filter(Boolean)
+            : [id],
     };
 };
 
@@ -246,19 +260,310 @@ export const parseQidahenRegionGraph = (raw: unknown): QidahenRegionGraph => {
     return { boundaryTypes, nodes, edges };
 };
 
-export const QIDAHEN_REGION_GRAPH = parseQidahenRegionGraph(regionGraphData);
-export const QIDAHEN_REGION_BOUNDARY_TYPES = QIDAHEN_REGION_GRAPH.boundaryTypes;
-export const QIDAHEN_REGION_GRAPH_NODES = QIDAHEN_REGION_GRAPH.nodes;
-export const QIDAHEN_REGION_GRAPH_EDGES = QIDAHEN_REGION_GRAPH.edges;
-export const QIDAHEN_REGION_GRAPH_NODE_BY_ID = new Map(QIDAHEN_REGION_GRAPH_NODES.map((node) => [node.id, node]));
-export const QIDAHEN_MASK_REGION_DEFINITIONS = (
-    Array.isArray((regionMaskRegionsData as Record<string, unknown>).regions)
-        ? (regionMaskRegionsData as Record<string, unknown>).regions
+export const QIDAHEN_PRINTED_REGION_GRAPH = parseQidahenRegionGraph(printedRegionGraphData);
+export const QIDAHEN_PRINTED_REGION_BOUNDARY_TYPES = QIDAHEN_PRINTED_REGION_GRAPH.boundaryTypes;
+export const QIDAHEN_PRINTED_REGION_GRAPH_NODES = QIDAHEN_PRINTED_REGION_GRAPH.nodes;
+export const QIDAHEN_PRINTED_REGION_GRAPH_EDGES = QIDAHEN_PRINTED_REGION_GRAPH.edges;
+export const QIDAHEN_PRINTED_REGION_GRAPH_NODE_BY_ID = new Map(QIDAHEN_PRINTED_REGION_GRAPH_NODES.map((node) => [node.id, node]));
+export const QIDAHEN_PRINTED_REGION_DEFINITIONS = (
+    Array.isArray((printedRegionMaskRegionsData as Record<string, unknown>).regions)
+        ? (printedRegionMaskRegionsData as Record<string, unknown>).regions
             .map((item) => parseMaskRegionDefinition(item))
             .filter((item): item is QidahenMaskRegionDefinition => item !== null)
         : []
 );
-export const QIDAHEN_MASK_REGION_BY_ID = new Map(QIDAHEN_MASK_REGION_DEFINITIONS.map((region) => [region.id, region]));
+export const QIDAHEN_PRINTED_REGION_BY_ID = new Map(QIDAHEN_PRINTED_REGION_DEFINITIONS.map((region) => [region.id, region]));
+
+export const QIDAHEN_MASK_REGION_DEFINITIONS = QIDAHEN_PRINTED_REGION_DEFINITIONS;
+export const QIDAHEN_MASK_REGION_BY_ID = QIDAHEN_PRINTED_REGION_BY_ID;
+
+const QIDAHEN_LIAOBEI_RUNTIME_REGION_ID = 'city-region-15';
+const QIDAHEN_LIAODONG_RUNTIME_REGION_ID = 'city-region-15-liaodong';
+const QIDAHEN_LIAOBEI_PRINTED_REGION_ID = 'city-region-15';
+const QIDAHEN_LIAODONG_REASSIGNED_NEIGHBOR_IDS = new Set([
+    'city-region-13',
+    'city-region-7',
+    'city-region-22',
+    'song-jin',
+    'xian-xing',
+]);
+const QIDAHEN_LIAODONG_SHARED_NEIGHBOR_IDS = new Set([
+    'jinzhou',
+]);
+const QIDAHEN_AOHANBU_RUNTIME_REGION_ID = 'city-region-19';
+const QIDAHEN_LIAOXI_RUNTIME_REGION_ID = 'city-region-19-liaoxi';
+const QIDAHEN_AOHANBU_PRINTED_REGION_ID = 'city-region-19';
+const QIDAHEN_LIAOXI_REASSIGNED_NEIGHBOR_IDS = new Set([
+    'jinzhou',
+    'song-jin',
+]);
+
+const normalizeRuntimeRegionLinks = (links: readonly string[]): string[] => (
+    [...new Set(links.filter(Boolean))].sort((left, right) => left.localeCompare(right, 'zh-CN'))
+);
+
+const replaceRuntimeRegionLink = (
+    links: readonly string[],
+    removedRegionId: string,
+    addedRegionIds: readonly string[],
+): string[] => normalizeRuntimeRegionLinks([
+    ...links.filter((linkId) => linkId !== removedRegionId),
+    ...addedRegionIds,
+]);
+
+const BASE_QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS = (
+    Array.isArray((runtimeRegionMaskRegionsData as Record<string, unknown>).regions)
+        ? (runtimeRegionMaskRegionsData as Record<string, unknown>).regions
+            .map((item) => parseMaskRegionDefinition(item))
+            .filter((item): item is QidahenMaskRegionDefinition => item !== null)
+        : []
+);
+
+const buildQidahenRuntimeRegionSourceDefinitions = (
+    baseRegions: readonly QidahenMaskRegionDefinition[],
+): QidahenMaskRegionDefinition[] => {
+    const regionById = new Map(baseRegions.map((region) => [region.id, { ...region, links: [...region.links] }]));
+    const liaobeiRegion = regionById.get(QIDAHEN_LIAOBEI_RUNTIME_REGION_ID);
+    if (!liaobeiRegion) {
+        return [...baseRegions];
+    }
+
+    const liaodongRegion: QidahenMaskRegionDefinition = {
+        ...liaobeiRegion,
+        id: QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+        name: '辽东',
+        links: normalizeRuntimeRegionLinks([
+            'city-region-13',
+            'city-region-7',
+            'city-region-22',
+            'jinzhou',
+            'song-jin',
+            'xian-xing',
+            QIDAHEN_LIAOBEI_RUNTIME_REGION_ID,
+        ]),
+        printedRegionIds: [QIDAHEN_LIAOBEI_PRINTED_REGION_ID],
+    };
+
+    regionById.set(QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, {
+        ...liaobeiRegion,
+        links: normalizeRuntimeRegionLinks([
+            'city-region-10',
+            'city-region-17',
+            'city-region-19',
+            'jinzhou',
+            QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+        ]),
+        printedRegionIds: [QIDAHEN_LIAOBEI_PRINTED_REGION_ID],
+    });
+    regionById.set(QIDAHEN_LIAODONG_RUNTIME_REGION_ID, liaodongRegion);
+
+    for (const regionId of QIDAHEN_LIAODONG_REASSIGNED_NEIGHBOR_IDS) {
+        const region = regionById.get(regionId);
+        if (!region) {
+            continue;
+        }
+        regionById.set(regionId, {
+            ...region,
+            links: replaceRuntimeRegionLink(region.links, QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, [QIDAHEN_LIAODONG_RUNTIME_REGION_ID]),
+        });
+    }
+
+    for (const regionId of QIDAHEN_LIAODONG_SHARED_NEIGHBOR_IDS) {
+        const region = regionById.get(regionId);
+        if (!region) {
+            continue;
+        }
+        regionById.set(regionId, {
+            ...region,
+            links: replaceRuntimeRegionLink(region.links, QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, [
+                QIDAHEN_LIAOBEI_RUNTIME_REGION_ID,
+                QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+            ]),
+        });
+    }
+
+    const aohanbuRegion = regionById.get(QIDAHEN_AOHANBU_RUNTIME_REGION_ID);
+    if (!aohanbuRegion) {
+        const nextRegions: QidahenMaskRegionDefinition[] = [];
+        for (const region of baseRegions) {
+            nextRegions.push(regionById.get(region.id) ?? region);
+        }
+        nextRegions.push(liaodongRegion);
+        return nextRegions;
+    }
+
+    const liaoxiRegion: QidahenMaskRegionDefinition = {
+        ...aohanbuRegion,
+        id: QIDAHEN_LIAOXI_RUNTIME_REGION_ID,
+        name: '辽西',
+        links: normalizeRuntimeRegionLinks([
+            'jinzhou',
+            'song-jin',
+            QIDAHEN_AOHANBU_RUNTIME_REGION_ID,
+        ]),
+        printedRegionIds: [QIDAHEN_AOHANBU_PRINTED_REGION_ID],
+    };
+
+    regionById.set(QIDAHEN_AOHANBU_RUNTIME_REGION_ID, {
+        ...aohanbuRegion,
+        links: normalizeRuntimeRegionLinks([
+            'city-region-14',
+            'city-region-15',
+            'city-region-17',
+            QIDAHEN_LIAOXI_RUNTIME_REGION_ID,
+        ]),
+        printedRegionIds: [QIDAHEN_AOHANBU_PRINTED_REGION_ID],
+    });
+    regionById.set(QIDAHEN_LIAOXI_RUNTIME_REGION_ID, liaoxiRegion);
+
+    for (const regionId of QIDAHEN_LIAOXI_REASSIGNED_NEIGHBOR_IDS) {
+        const region = regionById.get(regionId);
+        if (!region) {
+            continue;
+        }
+        regionById.set(regionId, {
+            ...region,
+            links: replaceRuntimeRegionLink(region.links, QIDAHEN_AOHANBU_RUNTIME_REGION_ID, [QIDAHEN_LIAOXI_RUNTIME_REGION_ID]),
+        });
+    }
+
+    const nextRegions: QidahenMaskRegionDefinition[] = [];
+    for (const region of baseRegions) {
+        nextRegions.push(regionById.get(region.id) ?? region);
+    }
+    nextRegions.push(liaodongRegion);
+    nextRegions.push(liaoxiRegion);
+    return nextRegions;
+};
+
+const BASE_QIDAHEN_RUNTIME_REGION_GRAPH = parseQidahenRegionGraph(runtimeRegionGraphData);
+
+const cloneRuntimeRegionGraphEdge = (
+    edge: QidahenRegionGraphEdge,
+    runtimeRegionId: string,
+    nextRuntimeRegionId: string,
+): QidahenRegionGraphEdge => {
+    const from = edge.from === runtimeRegionId ? nextRuntimeRegionId : edge.from;
+    const to = edge.to === runtimeRegionId ? nextRuntimeRegionId : edge.to;
+    return {
+        ...edge,
+        id: normalizeQidahenPassageId(from, to),
+        from,
+        to,
+    };
+};
+
+const buildQidahenRuntimeRegionGraph = (
+    baseGraph: QidahenRegionGraph,
+): QidahenRegionGraph => {
+    const nodes = [
+        ...baseGraph.nodes,
+        {
+            ...(baseGraph.nodes.find((node) => node.id === QIDAHEN_LIAOBEI_RUNTIME_REGION_ID) ?? {
+                id: QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+                name: '辽东',
+                seed: null,
+                center: null,
+                pixelCount: 0,
+            }),
+            id: QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+            name: '辽东',
+        },
+        {
+            ...(baseGraph.nodes.find((node) => node.id === QIDAHEN_AOHANBU_RUNTIME_REGION_ID) ?? {
+                id: QIDAHEN_LIAOXI_RUNTIME_REGION_ID,
+                name: '辽西',
+                seed: null,
+                center: null,
+                pixelCount: 0,
+            }),
+            id: QIDAHEN_LIAOXI_RUNTIME_REGION_ID,
+            name: '辽西',
+        },
+    ];
+
+    const edges = baseGraph.edges.flatMap((edge) => {
+        const involvesLiaobei = edge.from === QIDAHEN_LIAOBEI_RUNTIME_REGION_ID || edge.to === QIDAHEN_LIAOBEI_RUNTIME_REGION_ID;
+        if (involvesLiaobei) {
+            const adjacentRegionId = edge.from === QIDAHEN_LIAOBEI_RUNTIME_REGION_ID ? edge.to : edge.from;
+            if (QIDAHEN_LIAODONG_REASSIGNED_NEIGHBOR_IDS.has(adjacentRegionId)) {
+                return [cloneRuntimeRegionGraphEdge(edge, QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, QIDAHEN_LIAODONG_RUNTIME_REGION_ID)];
+            }
+            if (QIDAHEN_LIAODONG_SHARED_NEIGHBOR_IDS.has(adjacentRegionId)) {
+                return [
+                    edge,
+                    cloneRuntimeRegionGraphEdge(edge, QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, QIDAHEN_LIAODONG_RUNTIME_REGION_ID),
+                ];
+            }
+            return [edge];
+        }
+
+        const involvesAohanbu = edge.from === QIDAHEN_AOHANBU_RUNTIME_REGION_ID || edge.to === QIDAHEN_AOHANBU_RUNTIME_REGION_ID;
+        if (involvesAohanbu) {
+            const adjacentRegionId = edge.from === QIDAHEN_AOHANBU_RUNTIME_REGION_ID ? edge.to : edge.from;
+            if (QIDAHEN_LIAOXI_REASSIGNED_NEIGHBOR_IDS.has(adjacentRegionId)) {
+                return [cloneRuntimeRegionGraphEdge(edge, QIDAHEN_AOHANBU_RUNTIME_REGION_ID, QIDAHEN_LIAOXI_RUNTIME_REGION_ID)];
+            }
+            return [edge];
+        }
+        return [edge];
+    });
+
+    edges.push({
+        id: normalizeQidahenPassageId(QIDAHEN_LIAOBEI_RUNTIME_REGION_ID, QIDAHEN_LIAODONG_RUNTIME_REGION_ID),
+        from: QIDAHEN_LIAOBEI_RUNTIME_REGION_ID,
+        to: QIDAHEN_LIAODONG_RUNTIME_REGION_ID,
+        bidirectional: true,
+        boundaryType: 'plain',
+        boundaryLabel: '同区过渡',
+        travelCost: 1,
+        battleWidth: 3,
+        ruleNote: '辽北/辽东拆模过渡边',
+        unitCap: null,
+        reverseBoundaryType: 'plain',
+        reverseBoundaryLabel: '同区过渡',
+        reverseTravelCost: 1,
+        reverseBattleWidth: 3,
+        reverseRuleNote: '辽北/辽东拆模过渡边',
+        reverseUnitCap: null,
+    });
+    edges.push({
+        id: normalizeQidahenPassageId(QIDAHEN_AOHANBU_RUNTIME_REGION_ID, QIDAHEN_LIAOXI_RUNTIME_REGION_ID),
+        from: QIDAHEN_AOHANBU_RUNTIME_REGION_ID,
+        to: QIDAHEN_LIAOXI_RUNTIME_REGION_ID,
+        bidirectional: true,
+        boundaryType: 'plain',
+        boundaryLabel: '同区过渡',
+        travelCost: 1,
+        battleWidth: 3,
+        ruleNote: '敖汉部/辽西拆模过渡边',
+        unitCap: null,
+        reverseBoundaryType: 'plain',
+        reverseBoundaryLabel: '同区过渡',
+        reverseTravelCost: 1,
+        reverseBattleWidth: 3,
+        reverseRuleNote: '敖汉部/辽西拆模过渡边',
+        reverseUnitCap: null,
+    });
+
+    return {
+        ...baseGraph,
+        nodes,
+        edges,
+    };
+};
+
+export const QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS = buildQidahenRuntimeRegionSourceDefinitions(
+    BASE_QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS,
+);
+export const QIDAHEN_RUNTIME_REGION_SOURCE_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS.map((region) => [region.id, region]));
+
+export const QIDAHEN_RUNTIME_REGION_GRAPH = buildQidahenRuntimeRegionGraph(BASE_QIDAHEN_RUNTIME_REGION_GRAPH);
+export const QIDAHEN_REGION_GRAPH = QIDAHEN_RUNTIME_REGION_GRAPH;
+export const QIDAHEN_REGION_BOUNDARY_TYPES = QIDAHEN_RUNTIME_REGION_GRAPH.boundaryTypes;
+export const QIDAHEN_REGION_GRAPH_NODES = QIDAHEN_RUNTIME_REGION_GRAPH.nodes;
+export const QIDAHEN_REGION_GRAPH_EDGES = QIDAHEN_RUNTIME_REGION_GRAPH.edges;
+export const QIDAHEN_REGION_GRAPH_NODE_BY_ID = new Map(QIDAHEN_REGION_GRAPH_NODES.map((node) => [node.id, node]));
 
 export const getQidahenBoundaryTypeMeta = (boundaryType: QidahenPassageBoundaryType): QidahenPassageBoundaryMeta => (
     QIDAHEN_REGION_BOUNDARY_TYPES.find((item) => item.id === boundaryType)
@@ -327,9 +632,9 @@ export const getQidahenDirectedPassageBetween = (from: string, to: string): Qida
     return edge ? getQidahenDirectedPassage(edge, from, to) : null;
 };
 
-export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[] = QIDAHEN_MASK_REGION_DEFINITIONS.map((region) => {
+export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[] = QIDAHEN_RUNTIME_REGION_SOURCE_DEFINITIONS.map((region) => {
     const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(region.id);
-    const adjacentRegionIds = region.links.filter((linkId) => QIDAHEN_MASK_REGION_BY_ID.has(linkId)).sort();
+    const adjacentRegionIds = region.links.filter((linkId) => QIDAHEN_RUNTIME_REGION_SOURCE_BY_ID.has(linkId)).sort();
     const travelCostByRegionId: Record<string, number> = {};
     const movementCostByRegionId: Record<string, number> = {};
     const boundaryTypeByRegionId: Record<string, QidahenPassageBoundaryType> = {};
@@ -352,10 +657,72 @@ export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[
     };
 });
 export const QIDAHEN_RUNTIME_REGION_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_DEFINITIONS.map((region) => [region.id, region]));
+export const QIDAHEN_RUNTIME_REGION_IDS_BY_PRINTED_REGION_ID = QIDAHEN_RUNTIME_REGION_DEFINITIONS.reduce<Map<string, string[]>>(
+    (map, region) => {
+        for (const printedRegionId of region.printedRegionIds) {
+            const current = map.get(printedRegionId) ?? [];
+            if (!current.includes(region.id)) {
+                current.push(region.id);
+            }
+            map.set(printedRegionId, current);
+        }
+        return map;
+    },
+    new Map<string, string[]>(),
+);
+export const QIDAHEN_AUTHORITATIVE_GUIDE_RUNTIME_REGION_ID_SET = new Set(
+    extractQidahenFormalAuthoritativeGuideRuntimeRegionIds(authoritativeGuidesData),
+);
+
+export const getQidahenRuntimeRegionIdsForPrintedRegionId = (printedRegionId: string): string[] => (
+    [...(QIDAHEN_RUNTIME_REGION_IDS_BY_PRINTED_REGION_ID.get(printedRegionId) ?? [])]
+);
+
+export const getQidahenPrintedRegionIdsForRuntimeRegionId = (runtimeRegionId: string): string[] => (
+    [...(QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeRegionId)?.printedRegionIds ?? [runtimeRegionId])]
+);
+
+export const resolveQidahenRuntimeRegionIdFromPrintedRegionId = (
+    printedRegionId: string,
+    preferredRuntimeRegionIds: readonly string[] = [],
+): string => {
+    const runtimeRegionIds = getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId);
+    if (runtimeRegionIds.length === 0) {
+        return printedRegionId;
+    }
+    const preferredRuntimeRegionId = preferredRuntimeRegionIds.find((runtimeRegionId) => runtimeRegionIds.includes(runtimeRegionId));
+    return preferredRuntimeRegionId ?? runtimeRegionIds[0];
+};
+
+export const getQidahenSharedPrintedRegionAudits = (
+    visibleRuntimeRegionIds: readonly string[] = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map((region) => region.id),
+): QidahenSharedPrintedRegionAudit[] => {
+    const visibleRuntimeRegionIdSet = new Set(visibleRuntimeRegionIds);
+    const printedRegionIds = [...new Set(
+        visibleRuntimeRegionIds.flatMap((runtimeRegionId) => getQidahenPrintedRegionIdsForRuntimeRegionId(runtimeRegionId)),
+    )];
+
+    return printedRegionIds
+        .map((printedRegionId) => {
+            const runtimeRegionIds = getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId)
+                .filter((runtimeRegionId) => visibleRuntimeRegionIdSet.has(runtimeRegionId));
+            return {
+                printedRegionId,
+                runtimeRegionIds,
+                missingAuthoritativeRuntimeIds: runtimeRegionIds.filter(
+                    (runtimeRegionId) => !QIDAHEN_AUTHORITATIVE_GUIDE_RUNTIME_REGION_ID_SET.has(runtimeRegionId),
+                ),
+            };
+        })
+        .filter((audit) => audit.runtimeRegionIds.length > 1)
+        .sort((left, right) => left.printedRegionId.localeCompare(right.printedRegionId, 'zh-CN'));
+};
+
+export const QIDAHEN_FORMAL_SHARED_PRINTED_REGION_AUDITS = getQidahenSharedPrintedRegionAudits();
 
 export const hasQidahenFormalRegionGraph = (): boolean => (
-    QIDAHEN_REGION_GRAPH_NODES.some((node) => node.center != null && node.pixelCount > 0)
-        || QIDAHEN_REGION_GRAPH_EDGES.length > 0
+    QIDAHEN_PRINTED_REGION_GRAPH_NODES.some((node) => node.center != null && node.pixelCount > 0)
+        || QIDAHEN_PRINTED_REGION_GRAPH_EDGES.length > 0
 );
 
 const parseHexColor = (value: unknown): [number, number, number] | null => {
@@ -383,4 +750,4 @@ export const buildQidahenRegionMaskColorMap = (raw: unknown): Record<number, str
     }, {});
 };
 
-export const QIDAHEN_REGION_ID_BY_MASK_COLOR = buildQidahenRegionMaskColorMap(regionMaskRegionsData);
+export const QIDAHEN_REGION_ID_BY_MASK_COLOR = buildQidahenRegionMaskColorMap(printedRegionMaskRegionsData);

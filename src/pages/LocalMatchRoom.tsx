@@ -27,6 +27,7 @@ import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
 import { createLocalMatchSeed, ensureLocalMatchSeedSearchParams } from '../engine/transport/localSession';
 import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
+import { QidahenPregameScenarioGate } from '../games/qidahen/QidahenPregameScenarioGate';
 
 // 教程系统正常拦截，不弹 toast
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
@@ -77,29 +78,29 @@ export const LocalMatchRoom = () => {
         );
     }, [fallbackSeed, gameId, navigate, searchParams, seedFromUrl]);
 
-    const localPlayerCount = resolveLocalMatchPlayerCount(searchParams.get('players'), gameConfig?.playerOptions);
-    const seatControllers = useMemo(
+    const defaultLocalPlayerCount = resolveLocalMatchPlayerCount(searchParams.get('players'), gameConfig?.playerOptions);
+    const defaultSeatControllers = useMemo(
         () => resolveSeatControllersFromSearchParams({
-            numPlayers: localPlayerCount,
+            numPlayers: defaultLocalPlayerCount,
             searchParams,
             aiSupport: gameConfig?.ai,
         }),
-        [gameConfig?.ai, localPlayerCount, searchParams],
+        [defaultLocalPlayerCount, gameConfig?.ai, searchParams],
     );
-    const setupSelections = useMemo(
+    const defaultSetupSelections = useMemo(
         () => resolveSetupSelectionsFromSearchParams({
             gameManifest: gameConfig,
             searchParams,
         }),
         [gameConfig, searchParams],
     );
-    const localSetupData = useMemo(
-        () => buildLocalMatchSetupData(setupSelections),
-        [setupSelections],
+    const defaultLocalSetupData = useMemo(
+        () => buildLocalMatchSetupData(defaultSetupSelections),
+        [defaultSetupSelections],
     );
-    const hasAiSeat = useMemo(
-        () => Object.values(seatControllers).some((controller) => controller.type !== 'human'),
-        [seatControllers],
+    const defaultHasAiSeat = useMemo(
+        () => Object.values(defaultSeatControllers).some((controller) => controller.type !== 'human'),
+        [defaultSeatControllers],
     );
 
     // 从游戏实现中获取引擎配置
@@ -174,14 +175,6 @@ export const LocalMatchRoom = () => {
     return (
         <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
             <GamePageRuntimeProvider gameId={gameId}>
-                <Suspense fallback={null}>
-                    <LocalGameHUD
-                        mode="local"
-                        gameId={gameId}
-                        localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
-                        seatControllers={seatControllers}
-                    />
-                </Suspense>
                 <MobileBoardShell battlefieldZoomMode={gameConfig?.mobileBattlefieldZoom}>
                     <div
                         className="w-full h-full"
@@ -192,22 +185,84 @@ export const LocalMatchRoom = () => {
                         <GameModeProvider mode="local">
                             <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
                                 {engineConfig && WrappedBoard ? (
-                                    <LocalGameProvider
-                                        key={`local:${gameId ?? 'unknown'}:${gameSeed}:${localPlayerCount}`}
-                                        config={engineConfig}
-                                        numPlayers={localPlayerCount}
-                                        seed={gameSeed}
-                                        setupData={localSetupData}
-                                        onCommandRejected={handleCommandRejected}
-                                        seatControllers={seatControllers}
-                                        followCurrentTurnPlayer
-                                        persistSession
-                                    >
-                                        <BoardBridge
-                                            board={WrappedBoard}
-                                            loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
-                                        />
-                                    </LocalGameProvider>
+                                    gameId === 'qidahen' ? (
+                                        <QidahenPregameScenarioGate
+                                            searchParams={searchParams}
+                                            onSearchParamsChange={(nextSearchParams) => {
+                                                navigate(
+                                                    {
+                                                        pathname: `/play/${gameId}/local`,
+                                                        search: `?${nextSearchParams.toString()}`,
+                                                    },
+                                                    { replace: true },
+                                                );
+                                            }}
+                                        >
+                                            {({ numPlayers, setupData }) => {
+                                                const seatControllers = resolveSeatControllersFromSearchParams({
+                                                    numPlayers,
+                                                    searchParams,
+                                                    aiSupport: gameConfig?.ai,
+                                                });
+                                                const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
+                                                return (
+                                                    <>
+                                                        <Suspense fallback={null}>
+                                                            <LocalGameHUD
+                                                                mode="local"
+                                                                gameId={gameId}
+                                                                localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
+                                                                seatControllers={seatControllers}
+                                                            />
+                                                        </Suspense>
+                                                        <LocalGameProvider
+                                                            key={`local:${gameId ?? 'unknown'}:${gameSeed}:${numPlayers}`}
+                                                            config={engineConfig}
+                                                            numPlayers={numPlayers}
+                                                            seed={gameSeed}
+                                                            setupData={setupData}
+                                                            onCommandRejected={handleCommandRejected}
+                                                            seatControllers={seatControllers}
+                                                            followCurrentTurnPlayer
+                                                            persistSession
+                                                        >
+                                                            <BoardBridge
+                                                                board={WrappedBoard}
+                                                                loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
+                                                            />
+                                                        </LocalGameProvider>
+                                                    </>
+                                                );
+                                            }}
+                                        </QidahenPregameScenarioGate>
+                                    ) : (
+                                        <>
+                                            <Suspense fallback={null}>
+                                                <LocalGameHUD
+                                                    mode="local"
+                                                    gameId={gameId}
+                                                    localModeLabel={defaultHasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
+                                                    seatControllers={defaultSeatControllers}
+                                                />
+                                            </Suspense>
+                                            <LocalGameProvider
+                                                key={`local:${gameId ?? 'unknown'}:${gameSeed}:${defaultLocalPlayerCount}`}
+                                            config={engineConfig}
+                                            numPlayers={defaultLocalPlayerCount}
+                                            seed={gameSeed}
+                                            setupData={defaultLocalSetupData}
+                                            onCommandRejected={handleCommandRejected}
+                                            seatControllers={defaultSeatControllers}
+                                            followCurrentTurnPlayer
+                                            persistSession
+                                        >
+                                            <BoardBridge
+                                                board={WrappedBoard}
+                                                loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
+                                            />
+                                        </LocalGameProvider>
+                                        </>
+                                    )
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-white/50">
                                         {t('matchRoom.noClient')}

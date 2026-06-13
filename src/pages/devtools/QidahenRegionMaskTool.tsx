@@ -19,7 +19,26 @@ import {
     X,
 } from 'lucide-react';
 import { getLocalAssetPath } from '../../core';
+import {
+    buildQidahenRuntimeGuideCandidateKey,
+    normalizeQidahenRegionMaskRuntimeGuideCandidates,
+    normalizeQidahenRegionMaskStringArray,
+    type QidahenRegionMaskRuntimeGuideCandidate,
+} from '../../games/qidahen/regionAuthoritativeGuideFormats';
+import {
+    buildQidahenRuntimeGuideCandidateByKey,
+    buildQidahenSharedPrintedRegionMappings,
+} from '../../games/qidahen/sharedPrintedRegionMappings';
+import {
+    createQidahenRegionMaskSavePayload,
+    normalizeQidahenRegionMaskSaveResult,
+    readQidahenRegionMaskLoadPayload,
+    type QidahenRegionMaskSavePayload,
+} from '../../games/qidahen/regionMaskWorkspaceBridge';
 import { QIDAHEN_MAP_REGION_SHAPES } from '../../games/qidahen/ui/mapRegions';
+import {
+    QIDAHEN_RUNTIME_REGION_BY_ID,
+} from '../../games/qidahen/ui/mapGraph';
 import {
     EMPTY_REGION,
     applyBrushToBinaryMask,
@@ -424,6 +443,8 @@ type BarrierHistoryState = {
     canUndo: boolean;
     canRedo: boolean;
 };
+
+type RuntimeGuideCandidate = QidahenRegionMaskRuntimeGuideCandidate;
 
 type DiagnosticSample = {
     id: string;
@@ -1976,6 +1997,9 @@ const BOUNDARY_SHAPE_MAX_STRAIGHT_SUPPORT_RATIO = 0.36;
 const HAND_DRAWN_REGION_FILL_CLOSE_ITERATIONS = 4;
 const HAND_DRAWN_REGION_FILL_SEAL_ITERATIONS = 4;
 const HAND_DRAWN_REGION_FILL_EDGE_SEAL_DISTANCE = 96;
+const HAND_DRAWN_REGION_FILL_MIN_RAW_COVERAGE_RATIO = 0.84;
+const HAND_DRAWN_REGION_FILL_MIN_RAW_EXPECTED_RATIO = 0.52;
+const HAND_DRAWN_REGION_FILL_MAX_RAW_EXPECTED_RATIO = 1.85;
 const NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID = new Map<string, number>(
     QIDAHEN_MAP_REGION_SHAPES.map((shape) => {
         const shapeMask = STATIC_BOOTSTRAP_SHAPE_MASKS.get(shape.id);
@@ -4336,10 +4360,14 @@ const normalizeLoadedBoundaryPresets = (value: unknown): BoundaryPreset[] => {
 };
 
 const normalizeLoadedAuthoritativeGuideIds = (value: unknown) => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-    return value.filter((candidate): candidate is string => typeof candidate === 'string');
+    return normalizeQidahenRegionMaskStringArray(value);
+};
+
+const normalizeLoadedRuntimeGuideCandidates = (value: unknown) => {
+    return normalizeQidahenRegionMaskRuntimeGuideCandidates(
+        value,
+        (runtimeRegionId) => QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeRegionId)?.name ?? runtimeRegionId,
+    );
 };
 
 const extractBoundaryTolerance = (value: unknown) => {
@@ -5595,6 +5623,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [boundaryExpansion, setBoundaryExpansion] = React.useState<number>(DEFAULT_BOUNDARY_EXPANSION);
     const [regionColorTolerance, setRegionColorTolerance] = React.useState<number>(DEFAULT_REGION_COLOR_TOLERANCE);
     const [authoritativeGuideRegionIds, setAuthoritativeGuideRegionIds] = React.useState<string[]>([]);
+    const [runtimeGuideCandidates, setRuntimeGuideCandidates] = React.useState<RuntimeGuideCandidate[]>([]);
     const [sourcePixelsVersion, setSourcePixelsVersion] = React.useState<number>(0);
     const [assignmentsVersion, setAssignmentsVersion] = React.useState<number>(0);
     const [barrierMaskVersion, setBarrierMaskVersion] = React.useState<number>(0);
@@ -5621,6 +5650,7 @@ const QidahenRegionMaskTool: React.FC = () => {
     const [activeDiagnosticSampleId, setActiveDiagnosticSampleId] = React.useState<string>('beijing');
     const [diagnosticPreview, setDiagnosticPreview] = React.useState<DiagnosticPreview | null>(null);
     const [persistedWorkspaceState, setPersistedWorkspaceState] = React.useState<PersistedWorkspaceState>('empty');
+    const [autoDerivedBoundaryDisplay, setAutoDerivedBoundaryDisplay] = React.useState<boolean>(false);
     const [showAdvancedWorkbench, setShowAdvancedWorkbench] = React.useState<boolean>(true);
     const [showFormalEmptyToolPanel, setShowFormalEmptyToolPanel] = React.useState<boolean>(false);
     const [lastAcceptancePackageSignature, setLastAcceptancePackageSignature] = React.useState<string | null>(null);
@@ -5702,6 +5732,42 @@ const QidahenRegionMaskTool: React.FC = () => {
     }, []);
     const selectedRegion = regions.find((region) => region.id === selectedRegionId) ?? regions[0];
     const selectedRegionIndex = regions.findIndex((region) => region.id === selectedRegionId);
+    const runtimeGuideCandidateByKey = React.useMemo(
+        () => buildQidahenRuntimeGuideCandidateByKey(runtimeGuideCandidates),
+        [runtimeGuideCandidates],
+    );
+    const sharedPrintedGuideAuditRows = React.useMemo(() => {
+        const visiblePrintedRegionIds = regions.map((region) => region.id);
+        const printedRegionNameById = new Map(regions.map((region) => [region.id, region.name]));
+        return buildQidahenSharedPrintedRegionMappings({
+            visiblePrintedRegionIds,
+            visibleRuntimeRegionIds: visiblePrintedRegionIds,
+            runtimeGuideCandidates,
+            printedRegionNameById,
+        });
+    }, [regions, runtimeGuideCandidates]);
+    const selectedSharedPrintedGuideAudit = React.useMemo(() => (
+        selectedRegion
+            ? (sharedPrintedGuideAuditRows.find((audit) => audit.printedRegionId === selectedRegion.id) ?? null)
+            : null
+    ), [selectedRegion, sharedPrintedGuideAuditRows]);
+    const selectedRuntimeGuideCandidateRows = React.useMemo(() => {
+        if (!selectedSharedPrintedGuideAudit) {
+            return [];
+        }
+        return selectedSharedPrintedGuideAudit.runtimeRegionIds
+            .filter((runtimeRegionId) => runtimeRegionId !== selectedSharedPrintedGuideAudit.printedRegionId)
+            .map((runtimeRegionId) => {
+            const candidate = runtimeGuideCandidateByKey.get(
+                buildQidahenRuntimeGuideCandidateKey(selectedSharedPrintedGuideAudit.printedRegionId, runtimeRegionId),
+            ) ?? null;
+            return {
+                runtimeRegionId,
+                runtimeRegionName: QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeRegionId)?.name ?? runtimeRegionId,
+                candidate,
+            };
+            });
+    }, [runtimeGuideCandidateByKey, selectedSharedPrintedGuideAudit]);
     const lastRegionGenerationSummary = React.useMemo(() => ({
         generated: lastRegionGenerationResults.filter((result) => result.status === 'generated').length,
         leaked: lastRegionGenerationResults.filter((result) => result.status === 'leaked').length,
@@ -8675,11 +8741,15 @@ const QidahenRegionMaskTool: React.FC = () => {
 
         const loadPersistedRegionData = async () => {
             try {
+                setAutoDerivedBoundaryDisplay(false);
                 const response = await fetch(LOAD_ENDPOINT + workspaceQuery);
                 if (response.status === 404) {
                     clearBarrierHistory();
                     setPersistedWorkspaceState('empty');
                     setDataOutputDir(initialDataOutputDir);
+                    setAuthoritativeGuideRegionIds([]);
+                    setRuntimeGuideCandidates([]);
+                    setAutoDerivedBoundaryDisplay(false);
                     setStatusMessage(`当前工作区还没有保存过真实边界成果。请先导入完成边界图或带底图描线图，再开始修边。`);
                     return;
                 }
@@ -8688,36 +8758,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                     throw new Error(detail || response.statusText);
                 }
 
-                const payload = await response.json() as {
-                    outputDir?: unknown;
-                    maskPngDataUrl?: unknown;
-                    boundaryMaskPngDataUrl?: unknown;
-                    barrierHints?: {
-                        addPngDataUrl?: unknown;
-                        removePngDataUrl?: unknown;
-                    };
-                    authoritativeGuides?: {
-                        maskPngDataUrl?: unknown;
-                        regionIds?: unknown;
-                    } | null;
-                    boundarySourceReferencePngDataUrl?: unknown;
-                    regions?: {
-                        boundaryRules?: unknown;
-                        boundaryExpansion?: unknown;
-                        regionColorTolerance?: unknown;
-                        paintedBoundaryOnly?: unknown;
-                        regions?: unknown;
-                    };
-                    graph?: {
-                        nodes?: unknown;
-                        edges?: unknown;
-                    };
-                };
-                if (typeof payload.maskPngDataUrl !== 'string') {
-                    throw new Error('缺少已保存的 mask PNG');
-                }
-                setDataOutputDir(typeof payload.outputDir === 'string' ? payload.outputDir : DEFAULT_DATA_OUTPUT_DIR);
+                const payload = readQidahenRegionMaskLoadPayload(await response.json());
+                setDataOutputDir(payload.outputDir ?? DEFAULT_DATA_OUTPUT_DIR);
                 const loadedAuthoritativeGuideIds = normalizeLoadedAuthoritativeGuideIds(payload.authoritativeGuides?.regionIds ?? null);
+                const loadedRuntimeGuideCandidates = normalizeLoadedRuntimeGuideCandidates(payload.authoritativeGuides?.runtimeGuideCandidates ?? null);
 
                 const loadedRegions = normalizeLoadedRegions(payload.regions?.regions);
                 if (loadedRegions.length === 0) {
@@ -8895,6 +8939,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 pendingSeedNormalizationRef.current = !usePrimaryMapEditor;
                 setPersistedWorkspaceState(workspaceHasPersistedArtifacts ? 'populated' : 'empty');
                 setAuthoritativeGuideRegionIds(loadedAuthoritativeGuideIds.filter((regionId) => loadedRegions.some((region) => region.id === regionId)));
+                setRuntimeGuideCandidates(loadedRuntimeGuideCandidates);
                 skipNextGraphSyncEffectRef.current = true;
                 setRegions(normalizedRegions);
                 setGraphNodes(
@@ -8960,6 +9005,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 const derivedBoundaryNote = autoDerivedBoundaryFromSavedRegions
                     ? ' 已从已保存区域边缘反推红线显示；如需改边界，可直接画边界/擦边界后保存。'
                     : '';
+                setAutoDerivedBoundaryDisplay(autoDerivedBoundaryFromSavedRegions);
                 setStatusMessage(
                     workspaceHasPersistedArtifacts
                         ? shouldResumeRegionPathEditing
@@ -8979,6 +9025,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 if (cancelled) {
                     return;
                 }
+                setAutoDerivedBoundaryDisplay(false);
                 setStatusMessage(`读取已保存区域数据失败：${error instanceof Error ? error.message : '未知错误'}`);
             }
         };
@@ -13598,6 +13645,51 @@ const QidahenRegionMaskTool: React.FC = () => {
         );
     };
 
+    const upsertRuntimeGuideCandidate = React.useCallback((printedRegionId: string, runtimeRegionId: string) => {
+        setRuntimeGuideCandidates((current) => {
+            const candidateKey = buildQidahenRuntimeGuideCandidateKey(printedRegionId, runtimeRegionId);
+            if (current.some((candidate) => buildQidahenRuntimeGuideCandidateKey(candidate.printedRegionId, candidate.runtimeRegionId) === candidateKey)) {
+                return current;
+            }
+            const runtimeRegionName = QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeRegionId)?.name ?? runtimeRegionId;
+            const next = normalizeLoadedRuntimeGuideCandidates([
+                ...current,
+                {
+                    runtimeRegionId,
+                    printedRegionId,
+                    label: runtimeRegionName,
+                    source: '',
+                    note: '',
+                },
+            ]);
+            setStatusMessage(`已为 ${runtimeRegionName} 记录待补条目。现在可把证据来源和备注写进工作区 metadata。`);
+            return next;
+        });
+    }, []);
+
+    const updateRuntimeGuideCandidate = React.useCallback((
+        printedRegionId: string,
+        runtimeRegionId: string,
+        field: 'source' | 'note',
+        value: string,
+    ) => {
+        setRuntimeGuideCandidates((current) => normalizeLoadedRuntimeGuideCandidates(
+            current.map((candidate) => (
+                candidate.printedRegionId === printedRegionId && candidate.runtimeRegionId === runtimeRegionId
+                    ? { ...candidate, [field]: value }
+                    : candidate
+            )),
+        ));
+    }, []);
+
+    const removeRuntimeGuideCandidate = React.useCallback((printedRegionId: string, runtimeRegionId: string) => {
+        const runtimeRegionName = QIDAHEN_RUNTIME_REGION_BY_ID.get(runtimeRegionId)?.name ?? runtimeRegionId;
+        setRuntimeGuideCandidates((current) => current.filter((candidate) => !(
+            candidate.printedRegionId === printedRegionId && candidate.runtimeRegionId === runtimeRegionId
+        )));
+        setStatusMessage(`已移除 ${runtimeRegionName} 的待补条目。`);
+    }, []);
+
     const toggleAuthoritativeGuide = React.useCallback((regionId: string) => {
         if (isDiagnosticRegionId(regionId)) {
             setStatusMessage('诊断临时区域不会写入正式显式 truth；北京样本继续使用工具内 guide。');
@@ -14354,27 +14446,39 @@ const QidahenRegionMaskTool: React.FC = () => {
                 seedPoint: effectiveSeedPoint,
                 exclusionMask: regionExclusionMask,
             });
+            const rawFilledSelectionMask = removeExcludedPixels(
+                fillMaskInternalHoles({
+                    mask: rawSelectionMask,
+                    width: MASK_WIDTH,
+                    height: MASK_HEIGHT,
+                }),
+                regionExclusionMask,
+            );
             const clippedSelectionMask = regionClipMask
-                ? removeExcludedPixels(
-                    intersectBinaryMasks(
-                        fillMaskInternalHoles({
-                            mask: rawSelectionMask,
-                            width: MASK_WIDTH,
-                            height: MASK_HEIGHT,
-                        }),
-                        regionClipMask,
-                    ),
-                    regionExclusionMask,
-                )
-                : rawSelectionMask;
+                ? removeExcludedPixels(intersectBinaryMasks(rawFilledSelectionMask, regionClipMask), regionExclusionMask)
+                : rawFilledSelectionMask;
             const expectedPixelCount = Math.max(1, NORMAL_REGION_EXPECTED_PIXEL_COUNT_BY_ID.get(region.id) ?? 0);
+            const rawSelectionPixelCount = countMaskPixels(rawFilledSelectionMask);
             const clippedPixelCount = countMaskPixels(clippedSelectionMask);
+            const rawCoverageRatio = rawSelectionPixelCount > 0
+                ? (clippedPixelCount / rawSelectionPixelCount)
+                : 0;
+            const rawExpectedRatio = rawSelectionPixelCount / expectedPixelCount;
             const shouldKeepClippedSelectionForOverride = Boolean(
                 overridePoint
                 && clippedPixelCount > 0,
             );
+            const shouldTrustRawBoundarySelection = Boolean(
+                !shouldKeepClippedSelectionForOverride
+                && regionClipMask
+                && rawSelectionPixelCount > 0
+                && rawCoverageRatio < HAND_DRAWN_REGION_FILL_MIN_RAW_COVERAGE_RATIO
+                && rawExpectedRatio >= HAND_DRAWN_REGION_FILL_MIN_RAW_EXPECTED_RATIO
+                && rawExpectedRatio <= HAND_DRAWN_REGION_FILL_MAX_RAW_EXPECTED_RATIO
+            );
             const shouldUseRoughFallback = Boolean(
                 !shouldKeepClippedSelectionForOverride
+                && !shouldTrustRawBoundarySelection
                 && roughFallbackMask
                 && countMaskPixels(roughFallbackMask) > 0
                 && (
@@ -14382,7 +14486,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                     || (clippedPixelCount / expectedPixelCount) < 0.58
                 )
             );
-            const selectionMask = shouldUseRoughFallback ? roughFallbackMask! : clippedSelectionMask;
+            const selectionMask = shouldUseRoughFallback
+                ? roughFallbackMask!
+                : (shouldTrustRawBoundarySelection ? rawFilledSelectionMask : clippedSelectionMask);
             const pixelCount = countMaskPixels(selectionMask);
             if (pixelCount === 0) {
                 skippedRegionCount += 1;
@@ -14452,6 +14558,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                 seed: effectiveSeedPoint,
                 note: shouldUseRoughFallback
                     ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前边界分区过小，已回退到可见粗轮廓，先给你一版可继续手修的正常大轮廓。`
+                    : shouldTrustRawBoundarySelection
+                        ? `已写入 ${regionWrittenPixels.toLocaleString()} px；当前手工边界分区比静态 clip 更可信，已保留原始闭合分区，避免把区域硬裁回旧轮廓。`
                     : `已写入 ${regionWrittenPixels.toLocaleString()} px。`,
             });
         }
@@ -14720,6 +14828,8 @@ const QidahenRegionMaskTool: React.FC = () => {
         setMode('barrier');
         setBarrierEditMode('brush');
         setBarrierHintOperation('add');
+        setAuthoritativeGuideRegionIds([]);
+        setRuntimeGuideCandidates([]);
         setBoundaryDraftPixelCount(0);
         setBarrierPixelCount(0);
         setManualBarrierAddCount(0);
@@ -14735,7 +14845,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
 
-        const payload = {
+        const payload = createQidahenRegionMaskSavePayload({
             maskPngDataUrl: buildMaskDataUrlFromAssignments({
                 assignments: emptyAssignments,
                 regions: nextRegions,
@@ -14751,6 +14861,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regions: nextRegions,
                 }),
                 regionIds: [],
+                runtimeGuideCandidates: [],
             },
             boundarySourceReferencePngDataUrl: null,
             regions: buildRegionPayload({
@@ -14763,24 +14874,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                 paintedBoundaryOnly,
             }),
             graph: buildGraphPayload(nextRegions, [], []),
-        };
-        const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
         });
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
+        await postWorkspaceSavePayload(payload);
         setPersistedWorkspaceState('empty');
         setStatusMessage('已重置当前工作区：边界、补边/擦除、区域和路径都已清空，刷新不会再自动回读旧红线。');
     };
 
-    const postWorkspaceSavePayload = async (payload: Record<string, unknown>) => {
+    const postWorkspaceSavePayload = async (payload: QidahenRegionMaskSavePayload) => {
+        const normalizedPayload = createQidahenRegionMaskSavePayload(payload);
         const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(normalizedPayload),
         });
         if (!response.ok) {
             throw new Error(await response.text() || response.statusText);
@@ -14788,7 +14893,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         if (currentWorkspaceKey) {
             window.localStorage.setItem(LAST_WORKSPACE_STORAGE_KEY, currentWorkspaceKey);
         }
-        return response.json() as Promise<{ outputDir?: unknown; files?: string[]; internalFiles?: string[] }>;
+        return normalizeQidahenRegionMaskSaveResult(await response.json());
     };
 
     const getExportableWorkspaceParts = () => {
@@ -14799,11 +14904,13 @@ const QidahenRegionMaskTool: React.FC = () => {
         ));
         const exportableGraphNodes = graphNodes.filter((node) => exportableRegionIdSet.has(node.id));
         const exportableAuthoritativeGuideRegionIds = authoritativeGuideRegionIds.filter((regionId) => exportableRegionIdSet.has(regionId));
+        const exportableRuntimeGuideCandidates = runtimeGuideCandidates.filter((candidate) => exportableRegionIdSet.has(candidate.printedRegionId));
         return {
             exportableRegions,
             exportablePassages,
             exportableGraphNodes,
             exportableAuthoritativeGuideRegionIds,
+            exportableRuntimeGuideCandidates,
         };
     };
 
@@ -14818,6 +14925,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             exportablePassages,
             exportableGraphNodes,
             exportableAuthoritativeGuideRegionIds,
+            exportableRuntimeGuideCandidates,
         } = getExportableWorkspaceParts();
         const bakedBoundaryMask = currentBoundaryMask.slice();
         const emptyBoundaryMask = new Uint8Array(MASK_WIDTH * MASK_HEIGHT);
@@ -14826,7 +14934,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             regions,
             includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
         });
-        const payload = {
+        const payload = createQidahenRegionMaskSavePayload({
             saveScope: 'boundary',
             maskPngDataUrl: buildMaskDataUrlFromAssignments({
                 assignments: buildExportAssignments({ assignments: assignmentsRef.current, regions, exportableRegions }),
@@ -14843,6 +14951,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regions,
                 }),
                 regionIds: exportableAuthoritativeGuideRegionIds,
+                runtimeGuideCandidates: exportableRuntimeGuideCandidates,
             },
             boundarySourceReferencePngDataUrl: boundarySourceReferenceDataUrl,
             regions: buildRegionPayload({
@@ -14855,7 +14964,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 paintedBoundaryOnly,
             }),
             graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
-        };
+        });
         try {
             const result = await postWorkspaceSavePayload(payload);
             boundaryDraftMaskRef.current = bakedBoundaryMask;
@@ -14879,6 +14988,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             exportableRegions,
             exportablePassages,
             exportableAuthoritativeGuideRegionIds,
+            exportableRuntimeGuideCandidates,
         } = getExportableWorkspaceParts();
         const exportedAssignments = buildExportAssignments({
             assignments: assignmentsRef.current,
@@ -14904,7 +15014,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             regions,
             includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
         });
-        const payload = {
+        const payload = createQidahenRegionMaskSavePayload({
             saveScope: 'regions',
             maskPngDataUrl: buildMaskDataUrlFromAssignments({
                 assignments: exportedAssignments,
@@ -14916,6 +15026,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regions,
                 }),
                 regionIds: exportableAuthoritativeGuideRegionIds,
+                runtimeGuideCandidates: exportableRuntimeGuideCandidates,
             },
             regions: buildRegionPayload({
                 regions: exportableRegions,
@@ -14926,7 +15037,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                 regionColorTolerance,
                 paintedBoundaryOnly,
             }),
-        };
+        });
         try {
             const result = await postWorkspaceSavePayload(payload);
             const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
@@ -14943,10 +15054,10 @@ const QidahenRegionMaskTool: React.FC = () => {
             exportablePassages,
             exportableGraphNodes,
         } = getExportableWorkspaceParts();
-        const payload = {
+        const payload = createQidahenRegionMaskSavePayload({
             saveScope: 'graph',
             graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
-        };
+        });
         try {
             const result = await postWorkspaceSavePayload(payload);
             const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
@@ -14954,6 +15065,41 @@ const QidahenRegionMaskTool: React.FC = () => {
             setStatusMessage(`已单独保存连线到 ${nextOutputDir}：region-graph.json；边界和区域未改。`);
         } catch (error: unknown) {
             setStatusMessage(`保存连线失败：${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const saveAuthoritativeGuidesOnly = async () => {
+        const {
+            exportableRuntimeGuideCandidates,
+            exportableAuthoritativeGuideRegionIds,
+        } = getExportableWorkspaceParts();
+        if (exportableAuthoritativeGuideRegionIds.length === 0 && exportableRuntimeGuideCandidates.length === 0) {
+            setStatusMessage('保存 guide 候选失败：当前没有显式 truth，也没有 runtime-only 候选。');
+            return;
+        }
+        const authoritativeAssignments = buildSubsetAssignments({
+            assignments: assignmentsRef.current,
+            regions,
+            includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
+        });
+        const payload = createQidahenRegionMaskSavePayload({
+            saveScope: 'authoritative-guides',
+            authoritativeGuides: {
+                maskPngDataUrl: buildMaskDataUrlFromAssignments({
+                    assignments: authoritativeAssignments,
+                    regions,
+                }),
+                regionIds: exportableAuthoritativeGuideRegionIds,
+                runtimeGuideCandidates: exportableRuntimeGuideCandidates,
+            },
+        });
+        try {
+            const result = await postWorkspaceSavePayload(payload);
+            const nextOutputDir = typeof result.outputDir === 'string' ? result.outputDir : dataOutputDir;
+            setDataOutputDir(nextOutputDir);
+            setStatusMessage(`已单独保存 guide 候选到 ${nextOutputDir}：region-authoritative-guides.workspace.json；区域、边界和连线未改。`);
+        } catch (error: unknown) {
+            setStatusMessage(`保存 guide 候选失败：${error instanceof Error ? error.message : '未知错误'}`);
         }
     };
 
@@ -14970,6 +15116,7 @@ const QidahenRegionMaskTool: React.FC = () => {
         ));
         const exportableGraphNodes = graphNodes.filter((node) => exportableRegionIdSet.has(node.id));
         const exportableAuthoritativeGuideRegionIds = authoritativeGuideRegionIds.filter((regionId) => exportableRegionIdSet.has(regionId));
+        const exportableRuntimeGuideCandidates = runtimeGuideCandidates.filter((candidate) => exportableRegionIdSet.has(candidate.printedRegionId));
         const currentBoundaryMask = barrierMaskRef.current;
         const shouldBakeManualBlankBoundaryOnSave = manualBlankBoundaryBase
             && !boundaryDraftMaskRef.current
@@ -15040,7 +15187,7 @@ const QidahenRegionMaskTool: React.FC = () => {
             includedRegionIds: new Set(exportableAuthoritativeGuideRegionIds),
         });
         const hiddenDiagnosticRegions = regions.length - exportableRegions.length;
-        const payload = {
+        const payload = createQidahenRegionMaskSavePayload({
             maskPngDataUrl: buildMaskDataUrlFromAssignments({
                 assignments: exportedAssignments,
                 regions: exportableRegions,
@@ -15056,6 +15203,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     regions,
                 }),
                 regionIds: exportableAuthoritativeGuideRegionIds,
+                runtimeGuideCandidates: exportableRuntimeGuideCandidates,
             },
             boundarySourceReferencePngDataUrl: boundarySourceReferenceDataUrl,
             regions: buildRegionPayload({
@@ -15068,20 +15216,14 @@ const QidahenRegionMaskTool: React.FC = () => {
                 paintedBoundaryOnly,
             }),
             graph: buildGraphPayload(exportableRegions, exportablePassages, exportableGraphNodes),
-        };
-
-        const response = await fetch(SAVE_ENDPOINT + workspaceQuery, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
         });
-
-        if (!response.ok) {
-            const detail = await response.text();
-            setStatusMessage('保存失败：' + (detail || response.statusText));
+        let result;
+        try {
+            result = await postWorkspaceSavePayload(payload);
+        } catch (error: unknown) {
+            setStatusMessage('保存失败：' + (error instanceof Error ? error.message : '未知错误'));
             return;
         }
-        const result = await response.json() as { outputDir?: unknown; files?: string[]; internalFiles?: string[] };
         const hiddenSuffix = (result.internalFiles?.length ?? 0) > 0 ? '（含边界修正/显式 truth 内部文件）' : '';
         const diagnosticSuffix = hiddenDiagnosticRegions > 0 ? `；已自动忽略 ${hiddenDiagnosticRegions} 个诊断临时区域` : '';
         const bakedBlankBoundarySuffix = shouldBakeManualBlankBoundaryOnSave ? '；空白手绘边界已直接固化为边界图' : '';
@@ -15163,16 +15305,22 @@ const QidahenRegionMaskTool: React.FC = () => {
                             <p className="mt-2 text-sm leading-6 text-stone-400">
                                 自动读取上次工作区。直接在地图上画边界、生成区域、点通路改移动代价。
                             </p>
-                            <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
-                                <div className="flex items-center justify-between gap-3">
-                                    <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
-                                    <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
-                                        {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
-                                    </span>
-                                </div>
-                                <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
+                        <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
+                                <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
+                                    {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
+                                </span>
                             </div>
+                            <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
                         </div>
+                        {autoDerivedBoundaryDisplay ? (
+                            <div className="mt-3 rounded-xl border border-rose-500/50 bg-rose-500/12 px-3 py-3 text-xs leading-6 text-rose-100">
+                                当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。
+                                <span className="ml-1 text-rose-200/80">正式边界文件为空时，默认页会先回显这层辅助红线；要核对当前手工红线，请切到 `manual-boundary-user` 这类带真实边界像素的隔离工作区。</span>
+                            </div>
+                        ) : null}
+                    </div>
 
                         <div ref={sidebarScrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
                             <section data-testid="qidahen-boundary-workflow-panel" className="space-y-3 rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
@@ -15303,6 +15451,101 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             <div className="mt-2 text-xs leading-5 text-stone-400">
                                                 点地图区域或中心点选中；这里改名后，地图点标签和保存的区域/连线节点会同步使用这个名字。
                                             </div>
+                                            {selectedSharedPrintedGuideAudit ? (
+                                                <div
+                                                    className="mt-3 rounded-lg border border-rose-500/25 bg-rose-500/8 px-3 py-2 text-[11px] leading-5 text-stone-200"
+                                                    data-testid={`qidahen-shared-printed-guide-audit-selected-${selectedRegion.id}`}
+                                                >
+                                                    <div>
+                                                        这个 printed 区当前同时承接 runtime：{selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / ')}。
+                                                    </div>
+                                                    {selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeIds.length > 0 ? (
+                                                        <div className="mt-1 text-rose-300">
+                                                            当前仍缺 authoritative guide：{selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / ')}。
+                                                        </div>
+                                                    ) : null}
+                                                    {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideIds.length > 0 ? (
+                                                        <div className="mt-1 text-amber-200">
+                                                            当前这条缺口属于 runtime-only guide；这里只会写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                        </div>
+                                                    ) : null}
+                                                    {selectedRuntimeGuideCandidateRows.length > 0 ? (
+                                                        <div className="mt-3 space-y-2">
+                                                            {selectedRuntimeGuideCandidateRows.map((row) => (
+                                                                <div
+                                                                    key={row.runtimeRegionId}
+                                                                    className="rounded-md border border-amber-400/20 bg-stone-950/55 px-3 py-2"
+                                                                >
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <div className="font-bold text-amber-100">
+                                                                            {row.runtimeRegionName} · {row.runtimeRegionId}
+                                                                        </div>
+                                                                        {row.candidate ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId)}
+                                                                                data-testid={`qidahen-runtime-guide-candidate-remove-${row.runtimeRegionId}`}
+                                                                                className="inline-flex items-center gap-1 rounded-md border border-rose-400/45 px-2 py-1 text-[11px] font-black text-rose-100 transition hover:border-rose-200"
+                                                                            >
+                                                                                <X size={12} />
+                                                                                移除待补条目
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => upsertRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId)}
+                                                                                data-testid={`qidahen-runtime-guide-candidate-add-${row.runtimeRegionId}`}
+                                                                                className="inline-flex items-center gap-1 rounded-md border border-amber-400/45 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
+                                                                            >
+                                                                                <Plus size={12} />
+                                                                                记录待补条目
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="mt-1 text-[11px] leading-5 text-stone-400">
+                                                                        只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                                    </div>
+                                                                    {row.candidate ? (
+                                                                        <div className="mt-2 space-y-2">
+                                                                            <div>
+                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">source</div>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={row.candidate.source}
+                                                                                    onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'source', event.target.value)}
+                                                                                    data-testid={`qidahen-runtime-guide-candidate-source-${row.runtimeRegionId}`}
+                                                                                    placeholder="例如：r28-jizhen-crop.png + 原图局部标注"
+                                                                                    className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
+                                                                                />
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">note</div>
+                                                                                <textarea
+                                                                                    value={row.candidate.note}
+                                                                                    onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'note', event.target.value)}
+                                                                                    data-testid={`qidahen-runtime-guide-candidate-note-${row.runtimeRegionId}`}
+                                                                                    rows={3}
+                                                                                    placeholder="记录为什么它属于这个 printed 区，以及还缺哪一步正式证据。"
+                                                                                    className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs leading-5 text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            ))}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => void saveAuthoritativeGuidesOnly()}
+                                                                data-testid="qidahen-save-authoritative-guides-only"
+                                                                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
+                                                            >
+                                                                <Save size={13} />
+                                                                仅保存 guide 候选
+                                                            </button>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ) : null}
                                         </>
                                     ) : (
                                         <div className="mt-3 rounded-md border border-dashed border-stone-700 px-2 py-2 text-xs leading-5 text-stone-400">
@@ -15475,6 +15718,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     <button type="button" onClick={() => void saveGraphOnly()} data-testid="qidahen-primary-save-graph-only" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-400/50 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300">
                                         <Link2 size={14} />
                                         保存连线
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveAuthoritativeGuidesOnly()}
+                                        data-testid="qidahen-primary-save-authoritative-guides-only"
+                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-400/50 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                    >
+                                        <Save size={14} />
+                                        仅保存 guide 候选
                                     </button>
                                 </div>
                                 {formalRegionSaveBlocked ? (
@@ -15770,6 +16022,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     : '当前页面直接读写正式七大恨数据。确认是真实边界成果后再保存。'}
                             </div>
                         </div>
+                        {autoDerivedBoundaryDisplay ? (
+                            <div className="mt-3 rounded-xl border border-rose-500/50 bg-rose-500/12 px-3 py-3 text-xs leading-6 text-rose-100">
+                                当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。
+                                <span className="ml-1 text-rose-200/80">如果要核对真正的边界 truth，请切到 `manual-boundary-user` 这类有边界像素的手工工作区，或重新导入边界图。</span>
+                            </div>
+                        ) : null}
                         {shouldShowBestAvailableWorkspaceSwitcher ? (
                             <div className="mt-3 rounded-xl border border-cyan-500/20 bg-cyan-500/8 px-3 py-3 text-xs leading-5">
                                 <div className="font-black uppercase tracking-[0.16em] text-cyan-200">推荐工作区</div>
@@ -15833,13 +16091,53 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     {lastRegionGenerationWorkflow === 'region-path-quick-start'
                                         ? ' 当前可以直接改区域、改通路类型，再继续调移动代价。'
                                         : ' 当前可以先用画笔微调区域，之后再切到路径模式补通路和移动代价。'}
-                                </div>
-                                <div className="text-xs font-mono text-emerald-100/85">
-                                    当前已锁显式 truth：{authoritativeGuideRegionIdSet.size} 区
-                                </div>
-                                <div className="rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
-                                    <div><span className="font-black text-emerald-100">现在该看：</span> 区块轮廓大致对不对、中心点位置对不对、相邻通路需不需要补或改类型。</div>
-                                    <div><span className="font-black text-emerald-100">现在不用纠结：</span> 边界候选 seed 0/5、自动抽线红字、accepted 门禁；那是边界手修主路的诊断，不影响这条区域次路线继续用。</div>
+                                  </div>
+                                  <div className="text-xs font-mono text-emerald-100/85">
+                                      当前已锁显式 truth：{authoritativeGuideRegionIdSet.size} 区
+                                  </div>
+                                  {sharedPrintedGuideAuditRows.length > 0 ? (
+                                      <div
+                                          className="rounded-xl border border-rose-500/30 bg-rose-500/8 px-3 py-3 text-xs leading-6 text-stone-200"
+                                          data-testid="qidahen-shared-printed-guide-audit-panel"
+                                      >
+                                          <div className="font-black uppercase tracking-[0.16em] text-rose-200">shared printed guide 审计</div>
+                                          <div
+                                              className="mt-2 rounded-lg border border-rose-500/20 bg-stone-950/50 px-3 py-2 text-stone-300"
+                                              data-testid="qidahen-shared-printed-guide-audit-summary"
+                                          >
+                                              当前 formal shared printed 缺口 {sharedPrintedGuideAuditRows.length} 条；其中 {sharedPrintedGuideAuditRows.filter((audit) => audit.missingRuntimeOnlyGuideIds.length > 0).length} 条缺口还是 runtime-only，当前工具的 `regionIds` guide 模型不能直接落盘。
+                                          </div>
+                                          <div className="mt-3 space-y-2">
+                                              {sharedPrintedGuideAuditRows.map((audit) => (
+                                                  <div
+                                                      key={audit.printedRegionId}
+                                                      data-testid={`qidahen-shared-printed-guide-audit-${audit.printedRegionId}`}
+                                                      className="rounded-lg border border-rose-400/20 bg-stone-950/45 px-3 py-2"
+                                                  >
+                                                      <div className="font-bold text-rose-100">
+                                                          {audit.printedRegionName} · {audit.printedRegionId}
+                                                      </div>
+                                                      <div className="mt-1 text-stone-300">
+                                                          当前 shared runtime：{audit.runtimeRegionNames.join(' / ')}
+                                                      </div>
+                                                      {audit.missingAuthoritativeRuntimeIds.length > 0 ? (
+                                                          <div className="mt-1 text-rose-300">
+                                                              缺 authoritative guide：{audit.missingAuthoritativeRuntimeNames.join(' / ')}
+                                                          </div>
+                                                      ) : null}
+                                                      {audit.missingRuntimeOnlyGuideIds.length > 0 ? (
+                                                          <div className="mt-1 text-amber-200">
+                                                              当前工具只能把 guide 写到当前 regions 里的 id；以下缺口是 runtime-only，不能直接靠现有 `regionIds` 模型保存：{audit.missingRuntimeOnlyGuideNames.join(' / ')}
+                                                          </div>
+                                                      ) : null}
+                                                  </div>
+                                              ))}
+                                          </div>
+                                      </div>
+                                  ) : null}
+                                  <div className="rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
+                                      <div><span className="font-black text-emerald-100">现在该看：</span> 区块轮廓大致对不对、中心点位置对不对、相邻通路需不需要补或改类型。</div>
+                                      <div><span className="font-black text-emerald-100">现在不用纠结：</span> 边界候选 seed 0/5、自动抽线红字、accepted 门禁；那是边界手修主路的诊断，不影响这条区域次路线继续用。</div>
                                 </div>
                                 <button
                                     type="button"
@@ -17003,6 +17301,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     >
                                         <Route size={14} />
                                         保存连线
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void saveAuthoritativeGuidesOnly()}
+                                        data-testid="qidahen-primary-save-authoritative-guides-only"
+                                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
+                                    >
+                                        <Save size={14} />
+                                        仅保存 guide 候选
                                     </button>
                                     {showAdvancedWorkbench ? (
                                         <button
@@ -18175,21 +18482,116 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 : 'mask 负责点击和高亮；通行路径图只表达规则连通关系。'}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className="text-stone-500">真相级别：</span>
-                                        <span className="font-bold text-stone-200">
-                                            {isDiagnosticRegionId(selectedRegion.id)
-                                                ? '诊断样本。可用于验证方向，但不能替代正式区域真相。'
+                                      <div>
+                                          <span className="text-stone-500">真相级别：</span>
+                                          <span className="font-bold text-stone-200">
+                                              {isDiagnosticRegionId(selectedRegion.id)
+                                                  ? '诊断样本。可用于验证方向，但不能替代正式区域真相。'
                                                 : authoritativeGuideRegionIdSet.has(selectedRegion.id)
                                                     ? '显式 truth。主链直接消费当前区域结果。'
                                                     : '启发式 bootstrap。需要继续锁链微调或升格为显式 truth。'}
-                                        </span>
-                                    </div>
-                                    {!isDiagnosticRegionId(selectedRegion.id) ? (
-                                        <div className="mt-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleAuthoritativeGuide(selectedRegion.id)}
+                                          </span>
+                                      </div>
+                                      {selectedSharedPrintedGuideAudit ? (
+                                          <div
+                                              className="mt-2 rounded-lg border border-rose-500/25 bg-rose-500/8 px-3 py-2 text-[11px] leading-5 text-stone-200"
+                                              data-testid={`qidahen-shared-printed-guide-audit-selected-${selectedRegion.id}`}
+                                          >
+                                              <div>
+                                                  这个 printed 区当前同时承接 runtime：{selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / ')}。
+                                              </div>
+                                              {selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeIds.length > 0 ? (
+                                                  <div className="mt-1 text-rose-300">
+                                                      当前仍缺 authoritative guide：{selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / ')}。
+                                                  </div>
+                                              ) : null}
+                                              {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideIds.length > 0 ? (
+                                                  <div className="mt-1 text-amber-200">
+                                                      这里的 blocker 不是没继续画，而是当前工具保存的 guide 目标仍绑定 `regionIds`；像 {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideNames.join(' / ')} 这种 runtime-only 缺口，现模型还不能直接落进工作区 authoritative guide 文件。
+                                                  </div>
+                                              ) : null}
+                                              {selectedRuntimeGuideCandidateRows.length > 0 ? (
+                                                  <div className="mt-3 space-y-2">
+                                                      {selectedRuntimeGuideCandidateRows.map((row) => (
+                                                          <div
+                                                              key={row.runtimeRegionId}
+                                                              className="rounded-md border border-amber-400/20 bg-stone-950/55 px-3 py-2"
+                                                          >
+                                                              <div className="flex items-center justify-between gap-2">
+                                                                  <div className="font-bold text-amber-100">
+                                                                      {row.runtimeRegionName} · {row.runtimeRegionId}
+                                                                  </div>
+                                                                  {row.candidate ? (
+                                                                      <button
+                                                                          type="button"
+                                                                          onClick={() => removeRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId)}
+                                                                          data-testid={`qidahen-runtime-guide-candidate-remove-${row.runtimeRegionId}`}
+                                                                          className="inline-flex items-center gap-1 rounded-md border border-rose-400/45 px-2 py-1 text-[11px] font-black text-rose-100 transition hover:border-rose-200"
+                                                                      >
+                                                                          <X size={12} />
+                                                                          移除待补条目
+                                                                      </button>
+                                                                  ) : (
+                                                                      <button
+                                                                          type="button"
+                                                                          onClick={() => upsertRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId)}
+                                                                          data-testid={`qidahen-runtime-guide-candidate-add-${row.runtimeRegionId}`}
+                                                                          className="inline-flex items-center gap-1 rounded-md border border-amber-400/45 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
+                                                                      >
+                                                                          <Plus size={12} />
+                                                                          记录待补条目
+                                                                      </button>
+                                                                  )}
+                                                              </div>
+                                                              <div className="mt-1 text-[11px] leading-5 text-stone-400">
+                                                                  只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                              </div>
+                                                              {row.candidate ? (
+                                                                  <div className="mt-2 space-y-2">
+                                                                      <div>
+                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">source</div>
+                                                                          <input
+                                                                              type="text"
+                                                                              value={row.candidate.source}
+                                                                              onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'source', event.target.value)}
+                                                                              data-testid={`qidahen-runtime-guide-candidate-source-${row.runtimeRegionId}`}
+                                                                              placeholder="例如：r28-jizhen-crop.png + 原图局部标注"
+                                                                              className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
+                                                                          />
+                                                                      </div>
+                                                                      <div>
+                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">note</div>
+                                                                          <textarea
+                                                                              value={row.candidate.note}
+                                                                              onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'note', event.target.value)}
+                                                                              data-testid={`qidahen-runtime-guide-candidate-note-${row.runtimeRegionId}`}
+                                                                              rows={3}
+                                                                              placeholder="记录为什么它属于这个 printed 区，以及还缺哪一步正式证据。"
+                                                                              className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs leading-5 text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
+                                                                          />
+                                                                      </div>
+                                                                  </div>
+                                                              ) : null}
+                                                          </div>
+                                                      ))}
+                                                      <button
+                                                          type="button"
+                                                          onClick={() => void saveAuthoritativeGuidesOnly()}
+                                                          data-testid="qidahen-save-authoritative-guides-only"
+                                                          className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
+                                                      >
+                                                          <Save size={13} />
+                                                          仅保存 guide 候选
+                                                      </button>
+                                                  </div>
+                                              ) : null}
+                                          </div>
+                                      ) : null}
+                                      {!isDiagnosticRegionId(selectedRegion.id) ? (
+                                          <div className="mt-2">
+                                              <button
+                                                  type="button"
+                                                  onClick={() => toggleAuthoritativeGuide(selectedRegion.id)}
                                                 data-testid={`qidahen-authoritative-toggle-${selectedRegion.id}`}
                                                 className={'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (authoritativeGuideRegionIdSet.has(selectedRegion.id) ? 'border-emerald-400 bg-emerald-500/10 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                             >

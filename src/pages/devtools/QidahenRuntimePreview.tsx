@@ -3,8 +3,15 @@ import { Link } from 'react-router-dom';
 import { Eye, Pencil, RefreshCcw, Route } from 'lucide-react';
 import { getLocalAssetPath } from '../../core';
 import {
+    normalizeQidahenRegionMaskRuntimeGuideCandidates,
+    type QidahenRegionMaskRuntimeGuideCandidate,
+} from '../../games/qidahen/regionAuthoritativeGuideFormats';
+import { buildQidahenSharedPrintedRegionMappings } from '../../games/qidahen/sharedPrintedRegionMappings';
+import { readQidahenRegionMaskLoadPayload } from '../../games/qidahen/regionMaskWorkspaceBridge';
+import {
     getQidahenBoundaryTypeMeta,
     parseQidahenRegionGraph,
+    QIDAHEN_RUNTIME_REGION_DEFINITIONS,
     type QidahenRegionGraph,
     type QidahenRegionGraphNode,
 } from '../../games/qidahen/ui/mapGraph';
@@ -12,6 +19,7 @@ import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../games/qidahen/ui/ma
 
 const DEFAULT_WORKSPACE = 'best-available-move-cost-ready';
 const DEFAULT_MAP_PATH = getLocalAssetPath('i18n/zh-CN/qidahen/board/qidahen-main-map.png');
+const LOAD_ENDPOINT = '/devtools/qidahen-region-mask/load';
 
 const BOUNDARY_TYPE_RUNTIME_COLORS: Record<string, string> = {
     plain: 'rgba(218,175,83,0.88)',
@@ -52,9 +60,16 @@ const workspaceAssetUrl = (workspace: string, fileName: string, nonce: number) =
     `/temp/devtools/qidahen-region-mask-workspaces/${encodeURIComponent(workspace)}/${fileName}?t=${nonce}`
 );
 
+type RuntimeGuideCandidate = QidahenRegionMaskRuntimeGuideCandidate;
+
+const normalizeLoadedRuntimeGuideCandidates = (value: unknown) => {
+    return normalizeQidahenRegionMaskRuntimeGuideCandidates(value);
+};
+
 type PreviewState = {
     graph: QidahenRegionGraph | null;
     workspace: string;
+    runtimeGuideCandidates: RuntimeGuideCandidate[];
     error: string | null;
     loading: boolean;
     loadedAtLabel: string;
@@ -70,6 +85,17 @@ type QidahenRuntimePreviewDebugSnapshot = {
     graphEdgeCount: number;
     graphEdgeIds: string[];
     unresolvedNodeCount: number;
+    sharedPrintedRegionCount: number;
+    sharedPrintedRegionIds: string[];
+    sharedPrintedRegionRuntimeIdsByPrintedId: Record<string, string[]>;
+    sharedPrintedRegionMissingGuideCount: number;
+    sharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Record<string, string[]>;
+    sharedPrintedRegionRuntimeGuideCandidateCount: number;
+    sharedPrintedRegionRuntimeGuideCandidateRuntimeIdsByPrintedId: Record<string, string[]>;
+    formalSharedPrintedRegionCount: number;
+    formalSharedPrintedRegionIds: string[];
+    formalSharedPrintedRegionMissingGuideCount: number;
+    formalSharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Record<string, string[]>;
     edgeById: Record<string, {
         from: string;
         to: string;
@@ -99,6 +125,7 @@ const QidahenRuntimePreview: React.FC = () => {
     const [state, setState] = React.useState<PreviewState>({
         graph: null,
         workspace: initialWorkspace,
+        runtimeGuideCandidates: [],
         error: null,
         loading: true,
         loadedAtLabel: '',
@@ -106,17 +133,17 @@ const QidahenRuntimePreview: React.FC = () => {
 
     React.useEffect(() => {
         let cancelled = false;
-        const graphUrl = workspaceAssetUrl(workspace, 'region-graph.json', reloadNonce);
+        const loadUrl = `${LOAD_ENDPOINT}?workspace=${encodeURIComponent(workspace)}&t=${reloadNonce}`;
         setState((current) => ({
             ...current,
             workspace,
             loading: true,
             error: null,
         }));
-        void fetch(graphUrl, { cache: 'no-store' })
+        void fetch(loadUrl, { cache: 'no-store' })
             .then(async (response) => {
                 if (!response.ok) {
-                    throw new Error(`读取 ${workspace}/region-graph.json 失败：${response.status}`);
+                    throw new Error(`读取 ${workspace} 工作区失败：${response.status}`);
                 }
                 return response.json();
             })
@@ -124,10 +151,15 @@ const QidahenRuntimePreview: React.FC = () => {
                 if (cancelled) {
                     return;
                 }
-                const graph = parseQidahenRegionGraph(payload);
+                const normalizedPayload = readQidahenRegionMaskLoadPayload(payload);
+                const graph = parseQidahenRegionGraph(normalizedPayload.graph);
+                const runtimeGuideCandidates = normalizeLoadedRuntimeGuideCandidates(
+                    normalizedPayload.authoritativeGuides?.runtimeGuideCandidates ?? null,
+                );
                 setState({
                     graph,
                     workspace,
+                    runtimeGuideCandidates,
                     error: null,
                     loading: false,
                     loadedAtLabel: new Date().toLocaleString('zh-CN', { hour12: false }),
@@ -140,6 +172,7 @@ const QidahenRuntimePreview: React.FC = () => {
                 setState({
                     graph: null,
                     workspace,
+                    runtimeGuideCandidates: [],
                     error: error instanceof Error ? error.message : '读取临时工作区失败',
                     loading: false,
                     loadedAtLabel: '',
@@ -175,6 +208,17 @@ const QidahenRuntimePreview: React.FC = () => {
     const nodeNameById = React.useMemo(() => (
         new Map((state.graph?.nodes ?? []).map((node) => [node.id, node.name]))
     ), [state.graph]);
+    const sharedPrintedMappings = React.useMemo(() => (
+        buildQidahenSharedPrintedRegionMappings({
+            visiblePrintedRegionIds: (state.graph?.nodes ?? []).map((node) => node.id),
+            visibleRuntimeRegionIds: (state.graph?.nodes ?? []).map((node) => node.id),
+            runtimeGuideCandidates: state.runtimeGuideCandidates,
+            runtimeRegionNameById: nodeNameById,
+        })
+    ), [nodeNameById, state.graph, state.runtimeGuideCandidates]);
+    const formalSharedPrintedMappings = React.useMemo(() => (
+        buildQidahenSharedPrintedRegionMappings()
+    ), []);
     const debugSnapshot = React.useMemo<QidahenRuntimePreviewDebugSnapshot>(() => ({
         workspace,
         loading: state.loading,
@@ -185,6 +229,31 @@ const QidahenRuntimePreview: React.FC = () => {
         graphEdgeCount: state.graph?.edges.length ?? 0,
         graphEdgeIds: (state.graph?.edges ?? []).map((edge) => edge.id),
         unresolvedNodeCount,
+        sharedPrintedRegionCount: sharedPrintedMappings.length,
+        sharedPrintedRegionIds: sharedPrintedMappings.map((item) => item.printedRegionId),
+        sharedPrintedRegionRuntimeIdsByPrintedId: Object.fromEntries(
+            sharedPrintedMappings.map((item) => [item.printedRegionId, item.runtimeRegionIds]),
+        ),
+        sharedPrintedRegionMissingGuideCount: sharedPrintedMappings.filter((item) => item.missingAuthoritativeRuntimeIds.length > 0).length,
+        sharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Object.fromEntries(
+            sharedPrintedMappings
+                .filter((item) => item.missingAuthoritativeRuntimeIds.length > 0)
+                .map((item) => [item.printedRegionId, item.missingAuthoritativeRuntimeIds]),
+        ),
+        sharedPrintedRegionRuntimeGuideCandidateCount: sharedPrintedMappings.filter((item) => item.runtimeGuideCandidates.length > 0).length,
+        sharedPrintedRegionRuntimeGuideCandidateRuntimeIdsByPrintedId: Object.fromEntries(
+            sharedPrintedMappings
+                .filter((item) => item.runtimeGuideCandidates.length > 0)
+                .map((item) => [item.printedRegionId, item.runtimeGuideCandidates.map((candidate) => candidate.runtimeRegionId)]),
+        ),
+        formalSharedPrintedRegionCount: formalSharedPrintedMappings.length,
+        formalSharedPrintedRegionIds: formalSharedPrintedMappings.map((item) => item.printedRegionId),
+        formalSharedPrintedRegionMissingGuideCount: formalSharedPrintedMappings.filter((item) => item.missingAuthoritativeRuntimeIds.length > 0).length,
+        formalSharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Object.fromEntries(
+            formalSharedPrintedMappings
+                .filter((item) => item.missingAuthoritativeRuntimeIds.length > 0)
+                .map((item) => [item.printedRegionId, item.missingAuthoritativeRuntimeIds]),
+        ),
         edgeById: Object.fromEntries(
             (state.graph?.edges ?? []).map((edge) => [edge.id, {
                 from: edge.from,
@@ -195,7 +264,7 @@ const QidahenRuntimePreview: React.FC = () => {
                 battleWidth: edge.battleWidth,
             }]),
         ),
-    }), [state.error, state.graph, state.loadedAtLabel, state.loading, unresolvedNodeCount, workspace]);
+    }), [formalSharedPrintedMappings, sharedPrintedMappings, state.error, state.graph, state.loadedAtLabel, state.loading, unresolvedNodeCount, workspace]);
     React.useEffect(() => {
         if (typeof window === 'undefined') {
             return;
@@ -243,7 +312,7 @@ const QidahenRuntimePreview: React.FC = () => {
                                         data-testid="qidahen-runtime-preview-stats"
                                         className="rounded-full border border-stone-700 bg-stone-900 px-3 py-1 text-stone-200"
                                     >
-                                        中心 {state.graph.nodes.length} / 通路 {state.graph.edges.length} / 缺中心 {unresolvedNodeCount}
+                                        中心 {state.graph.nodes.length} / 通路 {state.graph.edges.length} / 缺中心 {unresolvedNodeCount} / 共享印刷区 {sharedPrintedMappings.length} / 缺 guide {sharedPrintedMappings.filter((item) => item.missingAuthoritativeRuntimeIds.length > 0).length} / 候选 {sharedPrintedMappings.filter((item) => item.runtimeGuideCandidates.length > 0).length}
                                     </span>
                                 ) : null}
                                 {state.loadedAtLabel ? (
@@ -420,6 +489,140 @@ const QidahenRuntimePreview: React.FC = () => {
                                 <Pencil size={15} />
                                 去当前工作区继续编辑
                             </button>
+                        </div>
+
+                        <div
+                            className="mt-4 rounded-xl border border-stone-800 bg-stone-900/75 px-3 py-3 text-xs leading-6 text-stone-300"
+                            data-testid="qidahen-runtime-preview-formal-shared-printed-panel"
+                        >
+                            <div className="font-black uppercase tracking-[0.16em] text-stone-400">正式共图块审计</div>
+                            <div className="mt-2">
+                                这里直接按正式 runtime 合同统计 shared printed 图块，不依赖当前工作区是否只载入局部区域。
+                            </div>
+                            <div className="mt-1 text-stone-500">
+                                当前最重要的是把“缺 authoritative guide”的 formal 红灯直接暴露出来。
+                            </div>
+                            <div
+                                className="mt-2 rounded-lg border border-stone-800 bg-stone-950/50 px-3 py-2 text-stone-300"
+                                data-testid="qidahen-runtime-preview-formal-shared-printed-summary"
+                            >
+                                正式 shared printed：{formalSharedPrintedMappings.length}；缺 guide：{formalSharedPrintedMappings.filter((item) => item.missingAuthoritativeRuntimeIds.length > 0).length}
+                            </div>
+                            <div className="mt-3 space-y-2">
+                                {formalSharedPrintedMappings.map((mapping) => (
+                                    <div
+                                        key={mapping.printedRegionId}
+                                        data-testid={`qidahen-runtime-preview-formal-shared-printed-${mapping.printedRegionId}`}
+                                        className="rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-3 py-2"
+                                    >
+                                        <div className="font-bold text-cyan-100">
+                                            {mapping.printedRegionName} · {mapping.printedRegionId}
+                                        </div>
+                                        <div className="mt-1 text-stone-300">
+                                            runtime：{mapping.runtimeRegionNames.join(' / ')}
+                                        </div>
+                                        <div className="mt-1 font-mono text-stone-500">
+                                            {mapping.runtimeRegionIds.join(' / ')}
+                                        </div>
+                                        {mapping.missingAuthoritativeRuntimeIds.length > 0 ? (
+                                            <div
+                                                className="mt-1 text-rose-300"
+                                                data-testid={`qidahen-runtime-preview-formal-shared-printed-missing-guide-${mapping.printedRegionId}`}
+                                            >
+                                                缺 authoritative guide：{mapping.missingAuthoritativeRuntimeIds.map((runtimeRegionId) => (
+                                                    QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === runtimeRegionId)?.name ?? runtimeRegionId
+                                                )).join(' / ')}
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className="mt-1 text-emerald-300"
+                                                data-testid={`qidahen-runtime-preview-formal-shared-printed-guide-complete-${mapping.printedRegionId}`}
+                                            >
+                                                authoritative guide 已覆盖当前 runtime 映射
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div
+                            className="mt-4 rounded-xl border border-stone-800 bg-stone-900/75 px-3 py-3 text-xs leading-6 text-stone-300"
+                            data-testid="qidahen-runtime-preview-shared-printed-panel"
+                        >
+                            <div className="font-black uppercase tracking-[0.16em] text-stone-400">共享印刷区</div>
+                            <div className="mt-2">
+                                当前工作区里，若一个 printed 图块同时命中多个 runtime，这里会直接列出来。
+                            </div>
+                            <div className="mt-1 text-stone-500">
+                                这是 runtime/printed 分层真相，不代表 formal printed 数据已经拆开。
+                            </div>
+                            <div
+                                className="mt-2 rounded-lg border border-stone-800 bg-stone-950/50 px-3 py-2 text-stone-300"
+                                data-testid="qidahen-runtime-preview-shared-printed-candidate-summary"
+                            >
+                                当前工作区已记录 runtime-only guide 候选：{sharedPrintedMappings.filter((item) => item.runtimeGuideCandidates.length > 0).length} 条。
+                            </div>
+                            {sharedPrintedMappings.length === 0 ? (
+                                <div
+                                    className="mt-3 rounded-lg border border-dashed border-stone-800 px-3 py-2 text-stone-500"
+                                    data-testid="qidahen-runtime-preview-shared-printed-empty"
+                                >
+                                    当前工作区没有载入共享 printed 图块的多 runtime 样本。
+                                </div>
+                            ) : (
+                                <div className="mt-3 space-y-2">
+                                    {sharedPrintedMappings.map((mapping) => (
+                                        <div
+                                            key={mapping.printedRegionId}
+                                            data-testid={`qidahen-runtime-preview-shared-printed-${mapping.printedRegionId}`}
+                                            className="rounded-lg border border-amber-400/25 bg-amber-500/5 px-3 py-2"
+                                        >
+                                            <div className="font-bold text-amber-100">
+                                                {mapping.printedRegionName} · {mapping.printedRegionId}
+                                            </div>
+                                            <div className="mt-1 text-stone-300">
+                                                runtime：{mapping.runtimeRegionNames.join(' / ')}
+                                            </div>
+                                            <div className="mt-1 font-mono text-stone-500">
+                                                {mapping.runtimeRegionIds.join(' / ')}
+                                            </div>
+                                            {mapping.missingAuthoritativeRuntimeIds.length > 0 ? (
+                                                <div
+                                                    className="mt-1 text-rose-300"
+                                                    data-testid={`qidahen-runtime-preview-shared-printed-missing-guide-${mapping.printedRegionId}`}
+                                                >
+                                                    缺 authoritative guide：{mapping.missingAuthoritativeRuntimeIds.map((runtimeRegionId) => (
+                                                        QIDAHEN_RUNTIME_REGION_DEFINITIONS.find((region) => region.id === runtimeRegionId)?.name
+                                                        ?? nodeNameById.get(runtimeRegionId)
+                                                        ?? runtimeRegionId
+                                                    )).join(' / ')}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="mt-1 text-emerald-300"
+                                                    data-testid={`qidahen-runtime-preview-shared-printed-guide-complete-${mapping.printedRegionId}`}
+                                                >
+                                                    authoritative guide 已覆盖当前 runtime 映射
+                                                </div>
+                                            )}
+                                            {mapping.runtimeGuideCandidates.length > 0 ? (
+                                                <div
+                                                    className="mt-1 text-amber-200"
+                                                    data-testid={`qidahen-runtime-preview-shared-printed-runtime-guide-candidates-${mapping.printedRegionId}`}
+                                                >
+                                                    工作区待补候选：{mapping.runtimeGuideCandidates.map((candidate) => {
+                                                        const runtimeRegionName = nodeNameById.get(candidate.runtimeRegionId) ?? candidate.label ?? candidate.runtimeRegionId;
+                                                        return candidate.source
+                                                            ? `${runtimeRegionName}（${candidate.source}）`
+                                                            : runtimeRegionName;
+                                                    }).join(' / ')}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-4">

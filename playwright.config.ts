@@ -24,6 +24,7 @@ const headedByEnv = process.env.PW_HEADED === 'true' || process.env.PWDEBUG === 
 const headedByCli = process.argv.some(arg => arg === '--headed' || arg === '--debug' || arg === '--ui');
 const headedMode = headedByEnv || headedByCli;
 const allowFullRun = process.env.PW_ALLOW_FULL_RUN === 'true';
+const shouldDisableChromiumGpu = process.platform === 'win32' && !headedMode;
 // 每次 Playwright 启动链都分配独立 scope，供 globalSetup/globalTeardown 和端口文件隔离。
 const runtimeScope = process.env.PW_RUNTIME_SCOPE
     || `pw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -262,6 +263,11 @@ export default defineConfig({
             use: {
                 ...devices['Desktop Chrome'],
                 viewport: { width: 1920, height: 1080 },
+                launchOptions: shouldDisableChromiumGpu
+                    ? {
+                        args: ['--disable-gpu'],
+                    }
+                    : undefined,
             },
         },
     ],

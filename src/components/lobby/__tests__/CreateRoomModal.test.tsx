@@ -6,6 +6,7 @@ import { CreateRoomModal } from '../CreateRoomModal';
 import { PasswordEntryModal } from '../../common/overlays/PasswordEntryModal';
 import type { GameManifestEntry } from '../../../games/manifest.types';
 import type { LocalMatchPreferences } from '../../../engine/ai';
+import { QIDAHEN_MANIFEST } from '../../../games/qidahen/manifest';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -37,6 +38,10 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
             if (key === 'createRoom.occupiedSeatUnit') return `seat-${options?.seat}`;
             if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
+            if (key === 'setup.scenario.label') return '开局剧本';
+            if (key === 'setup.scenario.postSarhu1619') return '剧本一：萨尔浒战后（1619）';
+            if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
+            if (key === 'setup.scenario.dingmaoRebellion1627') return '二人剧本：丁卯胡乱（1627）';
             return key;
         },
     }),
@@ -276,5 +281,88 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(passwordInput).toHaveAttribute('name', 'roomPassword');
         expect(passwordInput).toHaveAttribute('autocomplete', 'new-password');
+    });
+
+    it('七大恨切到剧本二后会显示房间预选字段，并把选择写入 setupSelections', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: QIDAHEN_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
+            target: { value: 'shanhaiguan-1622' },
+        });
+
+        expect(screen.getByTestId('qidahen-pregame-choice-fields')).toBeInTheDocument();
+
+        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:character:0'), {
+            target: { value: 'ming-xiong-tingbi' },
+        });
+        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:armament:1'), {
+            target: { value: 'long-barreled-musket' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            setupSelections: expect.objectContaining({
+                scenario: 'shanhaiguan-1622',
+                'shanhaiguan-1622:ming:character:0': 'ming-xiong-tingbi',
+                'shanhaiguan-1622:jin:character:0': 'jin-eidu',
+                'shanhaiguan-1622:jin:character:1': 'jin-amin',
+                'shanhaiguan-1622:ming:armament:0': 'cavalry-armor',
+                'shanhaiguan-1622:ming:armament:1': 'long-barreled-musket',
+            }),
+        }));
+    });
+
+    it('七大恨默认剧本会自动锁到三人房，而不是沿用 manifest 的最小人数', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: QIDAHEN_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 3,
+            setupSelections: expect.objectContaining({
+                scenario: 'post-sarhu-1619',
+            }),
+        }));
+    });
+
+    it('七大恨切到丁卯胡乱后会自动收敛到二人房并带着二人配置提交', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: QIDAHEN_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
+            target: { value: 'dingmao-rebellion-1627' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(screen.queryByRole('button', { name: '3人' })).toBeNull();
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 2,
+            setupSelections: expect.objectContaining({
+                scenario: 'dingmao-rebellion-1627',
+            }),
+        }));
     });
 });

@@ -1,4 +1,4 @@
-export type QidahenWheelPositionId =
+type QidahenWheelPositionId =
     | 'wheel-reclaim'
     | 'wheel-military-farm'
     | 'wheel-recruit-train'
@@ -18,7 +18,7 @@ export interface QidahenWheelImmediateEffectConfig {
     requiresFriendlyRegion: boolean;
 }
 
-export const QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS: QidahenWheelImmediateEffectConfig[] = [
+const QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS: QidahenWheelImmediateEffectConfig[] = [
     {
         id: 'wheel-reclaim',
         label: '开垦',

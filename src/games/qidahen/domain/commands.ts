@@ -1,7 +1,22 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
-import type { QidahenCommand, QidahenCore, QidahenFactionId } from './types';
-
-const QIDAHEN_ARMAMENT_LOW_FIDELITY_MAX_LEVEL = 2;
+import type { QidahenCommand, QidahenCore } from './types';
+import { hasUpgradableArmament } from './armamentLowFidelity';
+import {
+    getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenDiplomacySelectionForCore,
+    getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenHandLimitDiscardSelectionForCore,
+    getQidahenInternalDispatchSelectionForCore,
+    getQidahenKhanEdictSelectionForCore,
+    getQidahenMaShiTradeSelectionForCore,
+    getQidahenPendingTargetActionForCore,
+    getQidahenPostBattleSelectionForCore,
+    getQidahenRecruitSelectionForCore,
+} from './interactionSelectionAccessors';
+import {
+    hasRemainingFactionAction,
+} from './factionActionWindow';
+import { getCurrentFactionId } from './factionTurnAccessors';
 
 export const QIDAHEN_COMMANDS = {
     SELECT_REGION: 'SELECT_REGION',
@@ -26,43 +41,21 @@ export const QIDAHEN_COMMANDS = {
     RESOLVE_DRIVE_TIGER_CONSENT: 'RESOLVE_DRIVE_TIGER_CONSENT',
     RESOLVE_RECRUIT_CHOICE: 'RESOLVE_RECRUIT_CHOICE',
     RESOLVE_FORTIFICATION_MAINTENANCE: 'RESOLVE_FORTIFICATION_MAINTENANCE',
+    RESOLVE_SCENARIO_CHARACTER_CHOICE: 'RESOLVE_SCENARIO_CHARACTER_CHOICE',
+    RESOLVE_SCENARIO_ARMAMENT_CHOICE: 'RESOLVE_SCENARIO_ARMAMENT_CHOICE',
 } as const;
 
+const hasPendingScenarioChoices = (state: MatchState<QidahenCore>): boolean => (
+    state.core.pendingScenarioCharacterChoices.length > 0
+    || state.core.pendingScenarioArmamentChoices.length > 0
+);
+
 const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
-    state.core.pendingTargetAction != null
-    || state.core.postBattleSelection != null
-    || state.core.khanEdictSelection != null
-    || state.core.diplomacySelection != null
-    || state.core.maShiTradeSelection != null
-    || state.core.driveTigerConsentSelection != null
-    || state.core.recruitSelection != null
-    || state.core.fortificationMaintenanceSelection != null
-    || state.core.handLimitDiscardSelection != null
+    state.sys.interaction?.current != null
+    || state.sys.interaction?.isBlocked === true
     || state.core.sunYuanhuaTechSelection != null
     || state.core.gaoDiDispatchSelection != null
-    || state.core.internalDispatchSelection != null
 );
-
-const getCurrentFactionId = (core: QidahenCore): QidahenFactionId => (
-    (Object.values(core.factions).find((faction) => faction.playerId === core.currentPlayer)?.id ?? 'ming') as QidahenFactionId
-);
-
-const hasActiveCharacter = (
-    core: QidahenCore,
-    factionId: QidahenFactionId,
-    characterId: string,
-): boolean => core.factions[factionId].characters.some((character) => character.id === characterId && character.inPlay);
-
-const hasRemainingFactionAction = (core: QidahenCore): boolean => {
-    if (!core.factionActionUsed) {
-        return true;
-    }
-    const currentFactionId = getCurrentFactionId(core);
-    return currentFactionId === 'jin'
-        && hasActiveCharacter(core, 'jin', 'jin-huangtaiji')
-        && core.bonusFactionActionAvailable
-        && !core.bonusFactionActionUsed;
-};
 
 const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): boolean => (
     core.factionActionUsed
@@ -70,14 +63,14 @@ const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): bool
     && core.lastFactionActionId === actionId
 );
 
-const hasUpgradableArmament = (core: QidahenCore, factionId: QidahenFactionId): boolean => (
-    core.factions[factionId].armaments.some((armament) => armament.level < QIDAHEN_ARMAMENT_LOW_FIDELITY_MAX_LEVEL)
-);
-
 export function validate(
     state: MatchState<QidahenCore>,
     command: QidahenCommand,
 ): ValidationResult {
+    if (command.type.startsWith('SYS_')) {
+        return { valid: true };
+    }
+    const currentInteraction = state.sys.interaction?.current;
     switch (command.type) {
         case QIDAHEN_COMMANDS.SELECT_REGION:
             return state.core.regions.some((region) => region.id === command.payload.regionId)
@@ -94,6 +87,9 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
             if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
                 return { valid: false, error: 'wheelAlreadyUsed' };
             }
@@ -101,6 +97,9 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'unknownWheelMove' };
         case QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
             if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
                 return { valid: false, error: 'wheelAlreadyUsed' };
             }
@@ -108,6 +107,9 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'unknownWheelMove' };
         case QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
@@ -119,7 +121,8 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
         case QIDAHEN_COMMANDS.SELECT_HAND_LIMIT_DISCARD_CARD:
-            return state.core.handLimitDiscardSelection?.candidateCardIds.includes(command.payload.cardId)
+            return getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction)
+                ?.candidateCardIds.includes(command.payload.cardId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
         case QIDAHEN_COMMANDS.SELECT_SUN_YUANHUA_TECH_CARD:
@@ -131,10 +134,13 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'unknownPaymentCard' };
         case QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD:
-            return state.core.handLimitDiscardSelection
-                && state.core.handLimitDiscardSelection.selectedCardIds.length >= state.core.handLimitDiscardSelection.requiredDiscardCount
+            {
+                const selection = getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction);
+                return !!selection
+                    && selection.selectedCardIds.length >= selection.requiredDiscardCount
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
+            }
         case QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH:
             if (!state.core.sunYuanhuaTechSelection) {
                 return { valid: false, error: 'unknownAction' };
@@ -157,10 +163,14 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
         case QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH:
-            return state.core.internalDispatchSelection?.candidates.some((candidate) => candidate.id === command.payload.choiceId)
+            return getQidahenInternalDispatchSelectionForCore(state.core, currentInteraction)
+                ?.candidates.some((candidate) => candidate.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
@@ -177,6 +187,9 @@ export function validate(
                 ? { valid: true }
                 : { valid: false, error: 'paymentIncomplete' };
         case QIDAHEN_COMMANDS.EXECUTE_ACTION: {
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
             if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
                 return { valid: false, error: 'actionAlreadyUsed' };
             }
@@ -197,31 +210,37 @@ export function validate(
                 : { valid: false, error: 'paymentIncomplete' };
         }
         case QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION:
-            return state.core.pendingTargetAction
+            return getQidahenPendingTargetActionForCore(state.core, currentInteraction)
                 ? { valid: true }
                 : { valid: false, error: 'noPendingAction' };
         case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
-            return state.core.postBattleSelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenPostBattleSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownPostBattleChoice' };
         case QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE:
-            return state.core.khanEdictSelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenKhanEdictSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.RESOLVE_DIPLOMACY_CHOICE:
-            return state.core.diplomacySelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenDiplomacySelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.RESOLVE_MA_SHI_TRADE_CHOICE:
-            return state.core.maShiTradeSelection?.choices.some((choice) => choice.troopCount === command.payload.troopCount)
+            return getQidahenMaShiTradeSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.troopCount === command.payload.troopCount)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT:
-            return state.core.driveTigerConsentSelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenDriveTigerConsentSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE:
-            return state.core.recruitSelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenRecruitSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
         case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
@@ -232,9 +251,36 @@ export function validate(
             ) {
                 return { valid: false, error: 'unknownAction' };
             }
-            return state.core.fortificationMaintenanceSelection?.choices.some((choice) => choice.id === command.payload.choiceId)
+            return getQidahenFortificationMaintenanceSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE: {
+            const group = state.core.pendingScenarioCharacterChoices.find((choice) => choice.id === command.payload.groupId);
+            if (!group) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            const selectedIds = Array.from(new Set(command.payload.characterIds));
+            if (selectedIds.length !== group.count) {
+                return { valid: false, error: 'paymentIncomplete' };
+            }
+            return selectedIds.every((characterId) => group.characterIds.includes(characterId))
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE: {
+            const group = state.core.pendingScenarioArmamentChoices.find((choice) => choice.id === command.payload.groupId);
+            if (!group) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            const selectedIds = Array.from(new Set(command.payload.armamentIds));
+            if (selectedIds.length !== group.count) {
+                return { valid: false, error: 'paymentIncomplete' };
+            }
+            return selectedIds.every((armamentId) => group.armamentIds.includes(armamentId))
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
         default:
             return { valid: false, error: 'unknownCommand' };
     }

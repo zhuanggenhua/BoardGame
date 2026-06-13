@@ -255,6 +255,7 @@
     "matchTitle": "Match #{{id}}",
     "mine": "Mine",
     "enabledExpansions": "Exp",
+    "scenario": "Scenario",
     "seatSeparator": " / ",
     "emptySlot": "Empty",
     "ownerMustReconnect": "This is your room. Please reconnect.",

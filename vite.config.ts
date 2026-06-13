@@ -8,6 +8,16 @@ import ts from 'typescript'
 import localeHashPlugin from './plugins/vite-locale-hash.ts'
 import assetHashPlugin from './plugins/vite-asset-hash.ts'
 import publicFileHashPlugin from './plugins/vite-public-file-hash.ts'
+import {
+  normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta,
+  readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat,
+} from './src/games/qidahen/regionAuthoritativeGuideFormats.ts'
+import type {
+  QidahenRegionMaskLoadPayload,
+  QidahenRegionMaskSavePayload,
+  QidahenRegionMaskSaveResult,
+} from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
+import { normalizeQidahenRegionMaskSaveScope } from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
 import { readyCheckPlugin } from './vite-plugins/ready-check.ts'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
@@ -41,8 +51,9 @@ const QIDAHEN_REGION_MASK_INTERNAL_FILES = {
   barrierRemove: 'region-boundary-remove.png',
   boundarySourceReference: 'region-boundary-source-reference.png',
   authoritativeMask: 'region-authoritative-guides.png',
-  authoritativeMeta: 'region-authoritative-guides.json',
+  authoritativeWorkspaceMeta: 'region-authoritative-guides.workspace.json',
 } as const
+const QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE = 'region-authoritative-guides.json'
 const IOS_EMBEDDED_PRUNE_PATHS = [
   'assets/i18n',
   'assets/common/audio',
@@ -316,14 +327,21 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
         const barrierRemovePath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove)
         const boundarySourceReferencePath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference)
         const authoritativeMaskPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask)
-        const authoritativeMetaPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMeta)
+        const authoritativeWorkspaceMetaPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta)
+        const authoritativeLegacyMetaPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE)
 
         if (!fs.existsSync(maskPath) || !fs.existsSync(regionsPath) || !fs.existsSync(graphPath)) {
           send(res, 404, '尚未保存区域数据')
           return
         }
 
-        send(res, 200, {
+        const authoritativeGuideMeta = fs.existsSync(authoritativeWorkspaceMetaPath)
+          ? normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta(JSON.parse(fs.readFileSync(authoritativeWorkspaceMetaPath, 'utf8')))
+          : fs.existsSync(authoritativeLegacyMetaPath)
+            ? readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat(JSON.parse(fs.readFileSync(authoritativeLegacyMetaPath, 'utf8')))
+            : null
+
+        const loadPayload: QidahenRegionMaskLoadPayload = {
           ok: true,
           outputDir: outputConfig.outputDirRelative,
           maskPngDataUrl: toPngDataUrl(fs.readFileSync(maskPath)),
@@ -333,15 +351,16 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
             removePngDataUrl: fs.existsSync(barrierRemovePath) ? toPngDataUrl(fs.readFileSync(barrierRemovePath)) : null,
           },
           boundarySourceReferencePngDataUrl: fs.existsSync(boundarySourceReferencePath) ? toPngDataUrl(fs.readFileSync(boundarySourceReferencePath)) : null,
-          authoritativeGuides: fs.existsSync(authoritativeMetaPath)
+          authoritativeGuides: authoritativeGuideMeta
             ? {
                 maskPngDataUrl: fs.existsSync(authoritativeMaskPath) ? toPngDataUrl(fs.readFileSync(authoritativeMaskPath)) : null,
-                ...JSON.parse(fs.readFileSync(authoritativeMetaPath, 'utf8')),
+                ...authoritativeGuideMeta,
               }
             : null,
           regions: JSON.parse(fs.readFileSync(regionsPath, 'utf8')),
           graph: JSON.parse(fs.readFileSync(graphPath, 'utf8')),
-        })
+        }
+        send(res, 200, loadPayload)
       } catch (error: unknown) {
         send(res, 500, error instanceof Error ? error.message : '读取失败')
       }
@@ -356,25 +375,8 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
       void readRequestBody(req)
         .then((body) => {
           const outputConfig = resolveQidahenRegionMaskOutputConfig(req.url)
-          const payload = JSON.parse(body) as {
-            saveScope?: unknown
-            maskPngDataUrl?: unknown
-            boundaryMaskPngDataUrl?: unknown
-            barrierHints?: {
-              addPngDataUrl?: unknown
-              removePngDataUrl?: unknown
-            }
-            boundarySourceReferencePngDataUrl?: unknown
-            authoritativeGuides?: {
-              maskPngDataUrl?: unknown
-              regionIds?: unknown
-            }
-            regions?: unknown
-            graph?: unknown
-          }
-          const saveScope = payload.saveScope === 'boundary' || payload.saveScope === 'regions' || payload.saveScope === 'graph'
-            ? payload.saveScope
-            : 'all'
+          const payload = JSON.parse(body) as QidahenRegionMaskSavePayload
+          const saveScope = normalizeQidahenRegionMaskSaveScope(payload.saveScope)
 
           if ((saveScope === 'all' || saveScope === 'regions') && payload.regions == null) {
             throw new Error('缺少 regions')
@@ -384,6 +386,9 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
           }
           if (saveScope === 'boundary' && payload.boundaryMaskPngDataUrl == null) {
             throw new Error('缺少 boundaryMaskPngDataUrl')
+          }
+          if (saveScope === 'authoritative-guides' && payload.authoritativeGuides?.maskPngDataUrl == null) {
+            throw new Error('缺少 authoritativeGuides.maskPngDataUrl')
           }
           if (saveScope === 'all' && (payload.regions == null || payload.graph == null)) {
             throw new Error('缺少 regions 或 graph')
@@ -431,23 +436,22 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
               fs.rmSync(boundarySourceReferenceOutputPath, { force: true })
             }
           }
-          if (saveScope === 'all' || saveScope === 'regions') {
+          if (saveScope === 'all' || saveScope === 'regions' || saveScope === 'authoritative-guides') {
             fs.writeFileSync(
               path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask),
               parsePngDataUrl(payload.authoritativeGuides?.maskPngDataUrl),
             )
             fs.writeFileSync(
-              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMeta),
-              `${JSON.stringify({
-                regionIds: Array.isArray(payload.authoritativeGuides?.regionIds)
-                  ? payload.authoritativeGuides?.regionIds.filter((value): value is string => typeof value === 'string')
-                  : [],
-              }, null, 2)}\n`,
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta),
+              `${JSON.stringify(normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta({
+                regionIds: payload.authoritativeGuides?.regionIds,
+                runtimeGuideCandidates: payload.authoritativeGuides?.runtimeGuideCandidates,
+              }), null, 2)}\n`,
               'utf8',
             )
           }
 
-          send(res, 200, {
+          const saveResult: QidahenRegionMaskSaveResult = {
             ok: true,
             outputDir: outputConfig.outputDirRelative,
             files: [
@@ -458,10 +462,11 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
               ? Object.values(QIDAHEN_REGION_MASK_INTERNAL_FILES)
               : saveScope === 'boundary'
                 ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference]
-                : saveScope === 'regions'
-                  ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMeta]
+                : saveScope === 'regions' || saveScope === 'authoritative-guides'
+                  ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta]
                   : [],
-          })
+          }
+          send(res, 200, saveResult)
         })
         .catch((error: unknown) => {
           send(res, 400, error instanceof Error ? error.message : '保存失败')

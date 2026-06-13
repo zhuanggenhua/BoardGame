@@ -1,10 +1,13 @@
 import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
 import type { QidahenPassageBoundaryType } from '../ui/mapGraph';
 import {
+    isQidahenCityRuntimeRegion,
     resolveQidahenPrimaryRuntimeRegionId,
-    resolveQidahenRuleRegionConfig,
 } from './regionConfig';
-import type { QidahenCore, QidahenFactionId, QidahenRegionSummary } from './types';
+import { hasActiveCharacter } from './characterPresenceAccessors';
+import type { QidahenCore, QidahenFactionId } from './types';
+
+type QidahenRegionSummary = QidahenCore['regions'][number];
 
 export type QidahenMovementProfileId =
     | 'infantry'
@@ -31,7 +34,7 @@ export interface QidahenDirectedPassageRule {
     usesCoast: boolean;
 }
 
-export interface QidahenAdjacentRuntimeRegion {
+interface QidahenAdjacentRuntimeRegion {
     regionId: string;
     regionName: string;
     controller: QidahenFactionId | 'neutral';
@@ -54,7 +57,7 @@ interface FindReachableOptions {
     allowPassThroughNonFriendly?: boolean;
 }
 
-export const QIDAHEN_MOVEMENT_PROFILES: QidahenMovementProfile[] = [
+const QIDAHEN_MOVEMENT_PROFILES: QidahenMovementProfile[] = [
     { id: 'infantry', label: '步 1', movementBudget: 1 },
     { id: 'cavalry', label: '骑 2', movementBudget: 2 },
     { id: 'dispatch-infantry', label: '调步 2', movementBudget: 2 },
@@ -65,13 +68,11 @@ const QIDAHEN_MOVEMENT_PROFILE_BY_ID = new Map(
     QIDAHEN_MOVEMENT_PROFILES.map((profile) => [profile.id, profile]),
 );
 
-const toRuntimeRegionId = (regionId: string): string => resolveQidahenPrimaryRuntimeRegionId(regionId);
-
 const findRuntimeRegion = (
     state: QidahenCore,
     regionId: string,
 ): QidahenRegionSummary | undefined => {
-    const runtimeRegionId = toRuntimeRegionId(regionId);
+    const runtimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionId);
     return state.regions.find((region) => !region.isLogicalRegion && region.id === runtimeRegionId);
 };
 
@@ -83,10 +84,6 @@ const isFriendlyControlledRegion = (
     || region.diplomacyMarkerFaction === factionId
 );
 
-const isCityRuntimeRegion = (regionId: string): boolean => (
-    resolveQidahenRuleRegionConfig(regionId).tags.includes('city')
-);
-
 const isCityWaterRouteEnabled = (
     state: QidahenCore,
     fromRegion: QidahenRegionSummary,
@@ -94,15 +91,9 @@ const isCityWaterRouteEnabled = (
 ): boolean => (
     [fromRegion.id, toRuntimeId].some((regionId) => {
         const runtimeRegion = findRuntimeRegion(state, regionId);
-        return Boolean(runtimeRegion?.siegeState) && isCityRuntimeRegion(regionId);
+        return Boolean(runtimeRegion?.siegeState) && isQidahenCityRuntimeRegion(regionId);
     })
 );
-
-const hasActiveCharacter = (
-    state: QidahenCore,
-    factionId: QidahenFactionId,
-    characterId: string,
-): boolean => state.factions[factionId].characters.some((character) => character.id === characterId && character.inPlay);
 
 const getEffectiveMovementBudget = (
     state: QidahenCore,
@@ -135,7 +126,7 @@ export const getQidahenDirectedPassageRule = (
     factionId: QidahenFactionId,
 ): QidahenDirectedPassageRule | null => {
     const fromRegion = findRuntimeRegion(state, fromId);
-    const toRuntimeId = toRuntimeRegionId(toId);
+    const toRuntimeId = resolveQidahenPrimaryRuntimeRegionId(toId);
     if (!fromRegion || fromRegion.id === toRuntimeId) {
         return null;
     }
@@ -147,7 +138,10 @@ export const getQidahenDirectedPassageRule = (
     }
     const meta = getQidahenBoundaryTypeMeta(boundaryType as QidahenPassageBoundaryType);
     const usesCoast = boundaryType === 'coast';
-    const touchesCity = usesCoast && (isCityRuntimeRegion(fromRegion.id) || isCityRuntimeRegion(toRuntimeId));
+    const touchesCity = usesCoast && (
+        isQidahenCityRuntimeRegion(fromRegion.id)
+        || isQidahenCityRuntimeRegion(toRuntimeId)
+    );
     const cityWaterRouteEnabled = !touchesCity || isCityWaterRouteEnabled(state, fromRegion, toRuntimeId);
     return {
         fromId: fromRegion.id,
@@ -163,17 +157,7 @@ export const getQidahenDirectedPassageRule = (
     };
 };
 
-export const getQidahenDirectedTravelCost = (
-    state: QidahenCore,
-    fromId: string,
-    toId: string,
-    factionId: QidahenFactionId,
-): number | null => {
-    const passage = getQidahenDirectedPassageRule(state, fromId, toId, factionId);
-    return passage?.usable ? passage.travelCost : null;
-};
-
-export const getQidahenAdjacentRuntimeRegions = (
+const getQidahenAdjacentRuntimeRegions = (
     state: QidahenCore,
     regionId: string,
     factionId: QidahenFactionId,

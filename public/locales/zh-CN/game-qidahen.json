@@ -20,5 +20,57 @@
   "actionLog": {
     "selectRegion": "选择地图区域",
     "confirmPreviewAction": "确认预览行动"
+  },
+  "setup": {
+    "scenario": {
+      "label": "开局剧本",
+      "postSarhu1619": "剧本一：萨尔浒战后（1619）",
+      "shanhaiguan1622": "剧本二：山海关之议（1622）",
+      "dingmaoRebellion1627": "二人剧本：丁卯胡乱（1627）"
+    },
+    "pregameChoices": {
+      "title": "剧本预选",
+      "description": "本次建房时直接带入开局；正式棋盘内只保留紧凑剧本摘要。",
+      "fields": {
+        "shanhaiguan1622": {
+          "mingCharacter": "大明人物",
+          "jinCharacter0": "后金人物一",
+          "jinCharacter1": "后金人物二",
+          "mingArmament0": "大明军备一",
+          "mingArmament1": "大明军备二"
+        },
+        "dingmaoRebellion1627": {
+          "jinCharacter0": "后金人物一",
+          "jinCharacter1": "后金人物二",
+          "mingArmament0": "大明军备"
+        }
+      },
+      "options": {
+        "mingWangHuazhen": "王化贞",
+        "mingXiongTingbi": "熊廷弼",
+        "jinEidu": "额亦都",
+        "jinFanWencheng": "范文程",
+        "jinAmin": "阿敏",
+        "jinManggultai": "莽古尔泰",
+        "jinHuangtaiji": "皇太极",
+        "jinDaisan": "代善",
+        "jinYanguli": "扬古利",
+        "cavalryArmor": "骑兵铁甲",
+        "infantryArmor": "步兵铁甲",
+        "artilleryTech": "火炮技术",
+        "cavalryFirearm": "骑兵火器",
+        "longBarreledMusket": "长管火铳"
+      }
+    },
+    "pregameGate": {
+      "eyebrow": "剧本前置页",
+      "title": "先确认当前剧本的开局人物与军备",
+      "description": "正式棋盘只保留紧凑剧本摘要。这里确认完本局剧本后，再进入地图主视图。",
+      "playerCount": "{{count}} 人剧本",
+      "summaryTitle": "本局将带入以下配置",
+      "summaryScenario": "剧本",
+      "noExtraChoices": "这个剧本没有额外前置选择，确认后可直接进入棋盘。",
+      "confirm": "确认并进入棋盘"
+    }
   }
 }

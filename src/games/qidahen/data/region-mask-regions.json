@@ -394,6 +394,17 @@
       "acceptance": null
     },
     {
+      "id": "city-region-21",
+      "name": "喀喇沁部",
+      "color": "#2f6ac6",
+      "seed": {
+        "x": 304,
+        "y": 455
+      },
+      "links": [],
+      "acceptance": null
+    },
+    {
       "id": "jinzhou",
       "name": "锦州",
       "color": "#4d64d5",

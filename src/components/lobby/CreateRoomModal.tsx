@@ -8,7 +8,7 @@
  * - manifest 声明的 setupOptions（单选 / 多选）
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -28,6 +28,12 @@ import {
     getDefaultSetupSelections,
     type GameSetupSelections,
 } from '../../games/setupOptions';
+import {
+    applyQidahenPregameChoiceDefaults,
+    getQidahenAllowedPlayerCounts,
+    getQidahenPregameChoiceFields,
+    readQidahenScenarioId,
+} from '../../games/qidahen/roomSetup';
 import { SetupOptionsFields } from './SetupOptionsFields';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -220,6 +226,18 @@ const isSameSetupValues = (
     return leftKeys.every((key) => left[key] === right[key]);
 };
 
+const isSameSetupSelections = (
+    left: GameSetupSelections,
+    right: GameSetupSelections,
+) => {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    if (leftKeys.length !== rightKeys.length) {
+        return false;
+    }
+    return leftKeys.every((key) => Object.is(left[key], right[key]));
+};
+
 const toSelectValueRecord = (selections: GameSetupSelections): Record<string, string> => {
     const selectValues: Record<string, string> = {};
     for (const [key, value] of Object.entries(selections)) {
@@ -229,6 +247,15 @@ const toSelectValueRecord = (selections: GameSetupSelections): Record<string, st
     }
     return selectValues;
 };
+
+const normalizeExtendedSetupSelections = (
+    selections: GameSetupSelections,
+    isQidahenRoom: boolean,
+): GameSetupSelections => (
+    isQidahenRoom
+        ? applyQidahenPregameChoiceDefaults(selections)
+        : selections
+);
 
 export const CreateRoomModal = ({
     isOpen,
@@ -246,7 +273,7 @@ export const CreateRoomModal = ({
         () => Object.entries(gameManifest.setupOptions ?? {}),
         [gameManifest.setupOptions],
     );
-    const hasPlayerOptions = playerOptions.length > 1;
+    const isQidahenRoom = gameManifest.id === 'qidahen';
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
@@ -255,6 +282,17 @@ export const CreateRoomModal = ({
     const inputClassName = isCompactHomeV2Layout ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
     const primaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
     const secondaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
+
+    const resolveSetupLabel = (labelKey: string): string => {
+        const gamePrefix = `games.${gameManifest.id}.`;
+        if (labelKey.startsWith(gamePrefix)) {
+            return t(labelKey.slice(gamePrefix.length), {
+                ns: gameNamespace,
+                defaultValue: labelKey,
+            });
+        }
+        return t(labelKey, { defaultValue: labelKey });
+    };
 
     const [roomName, setRoomName] = useState('');
     const [numPlayers, setNumPlayers] = useState(playerOptions[0]);
@@ -266,11 +304,33 @@ export const CreateRoomModal = ({
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
     const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
         const defaults = getDefaultSetupSelections(gameManifest);
-        return {
+        return normalizeExtendedSetupSelections({
             ...defaults,
             ...normalizeSetupValuesForFields(setupFields, playerOptions[0], toSelectValueRecord(defaults)),
-        };
+        }, isQidahenRoom);
     });
+
+    const currentQidahenScenarioId = useMemo(
+        () => (isQidahenRoom
+            ? readQidahenScenarioId(setupSelections as Record<string, unknown>)
+            : null),
+        [isQidahenRoom, setupSelections],
+    );
+    const qidahenPregameChoiceFields = useMemo(
+        () => (currentQidahenScenarioId
+            ? getQidahenPregameChoiceFields(currentQidahenScenarioId)
+            : []),
+        [currentQidahenScenarioId],
+    );
+    const currentPlayerOptions = useMemo(
+        () => (
+            isQidahenRoom && currentQidahenScenarioId
+                ? [...getQidahenAllowedPlayerCounts(currentQidahenScenarioId)]
+                : playerOptions
+        ),
+        [currentQidahenScenarioId, isQidahenRoom, playerOptions],
+    );
+    const hasPlayerOptions = currentPlayerOptions.length > 1;
 
     useEffect(() => {
         if (!isOpen) return;
@@ -307,15 +367,27 @@ export const CreateRoomModal = ({
         setAiDifficulty(inferredDifficulty);
         setManualFactionSelection(shouldManualFactionSelection);
         setSeatControllers(nextSeatControllers);
-        setSetupSelections({
+        setSetupSelections(normalizeExtendedSetupSelections({
             ...nextPreferences.setupSelections,
             ...normalizeSetupValuesForFields(
                 setupFields,
                 nextPreferences.numPlayers,
                 toSelectValueRecord(nextPreferences.setupSelections),
             ),
-        });
-    }, [gameManifest, initialPreferences, isOpen, playerOptions, setupFields]);
+        }, isQidahenRoom));
+    }, [gameManifest, initialPreferences, isOpen, isQidahenRoom, playerOptions, setupFields]);
+
+    useEffect(() => {
+        const fallbackPlayerCount = currentPlayerOptions[0];
+        if (fallbackPlayerCount == null) {
+            return;
+        }
+        setNumPlayers((current) => (
+            currentPlayerOptions.includes(current)
+                ? current
+                : fallbackPlayerCount
+        ));
+    }, [currentPlayerOptions]);
 
     useEffect(() => {
         setSetupSelections((current) => {
@@ -325,15 +397,19 @@ export const CreateRoomModal = ({
                 numPlayers,
                 currentSelectValues,
             );
-            if (isSameSetupValues(currentSelectValues, normalizedSelectValues)) {
-                return current;
-            }
-            return {
+            const nextSelections = normalizeExtendedSetupSelections({
                 ...current,
                 ...normalizedSelectValues,
-            };
+            }, isQidahenRoom);
+            if (
+                isSameSetupValues(currentSelectValues, normalizedSelectValues)
+                && isSameSetupSelections(current, nextSelections)
+            ) {
+                return current;
+            }
+            return nextSelections;
         });
-    }, [numPlayers, setupFields]);
+    }, [isQidahenRoom, numPlayers, setupFields]);
 
     useEffect(() => {
         setSeatControllers((current) => {
@@ -345,6 +421,17 @@ export const CreateRoomModal = ({
             return forceHumanOwnerSeat(normalized);
         });
     }, [gameManifest, numPlayers, setupSelections]);
+
+    const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
+        setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
+    };
+
+    const handleQidahenPregameChoiceChange = (fieldKey: string, value: string) => {
+        setSetupSelections((current) => normalizeExtendedSetupSelections({
+            ...current,
+            [fieldKey]: value,
+        }, isQidahenRoom));
+    };
 
     const handleToggleAiEnabled = () => {
         if (!gameManifest.ai?.localAi && !gameManifest.ai?.remoteAi) {
@@ -428,6 +515,67 @@ export const CreateRoomModal = ({
             onClose();
         }
     };
+
+    const renderQidahenPregameChoiceSection = (
+        containerClassName: string,
+        titleClassName: string,
+        descriptionClassName: string,
+        fieldListClassName: string,
+        choiceLabelClassName: string,
+        selectClassName: string,
+        selectStyle?: CSSProperties,
+    ) => {
+        if (!isQidahenRoom || qidahenPregameChoiceFields.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className={containerClassName} data-testid="qidahen-pregame-choice-fields">
+                <div className="space-y-1">
+                    <div className={titleClassName}>
+                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.title')}
+                    </div>
+                    <div className={descriptionClassName}>
+                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.description')}
+                    </div>
+                </div>
+                <div className={fieldListClassName}>
+                    {qidahenPregameChoiceFields.map((field) => {
+                        const options = field.field.options ?? [];
+                        const fallbackValue = field.field.default ?? options[0]?.value ?? '';
+                        const currentValue = setupSelections[field.key];
+                        const selectedValue = typeof currentValue === 'string'
+                            && options.some((option) => option.value === currentValue)
+                            ? currentValue
+                            : fallbackValue;
+
+                        return (
+                            <div key={field.key} className="space-y-1">
+                                <label className={choiceLabelClassName} htmlFor={`qidahen-pregame-choice-${field.key}`}>
+                                    {resolveSetupLabel(field.field.labelKey)}
+                                </label>
+                                <select
+                                    id={`qidahen-pregame-choice-${field.key}`}
+                                    value={selectedValue}
+                                    onChange={(event) => handleQidahenPregameChoiceChange(field.key, event.target.value)}
+                                    className={selectClassName}
+                                    style={selectStyle}
+                                    data-testid={`qidahen-pregame-choice-${field.key}`}
+                                >
+                                    {options.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {resolveSetupLabel(option.labelKey)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     const lockedViewportHeight = 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))';
     const lockedBottomInset = isHomeV2Style
         ? 'var(--safe-area-bottom)'
@@ -563,7 +711,7 @@ export const CreateRoomModal = ({
                                                 {t('createRoom.playerCount')}
                                             </label>
                                             <div className={isCompactHomeV2Layout ? 'flex flex-wrap gap-[6px]' : 'flex flex-wrap gap-2'}>
-                                                {playerOptions.map((count) => (
+                                                {currentPlayerOptions.map((count) => (
                                                     <button
                                                         key={count}
                                                         type="button"
@@ -609,11 +757,31 @@ export const CreateRoomModal = ({
                                     <SetupOptionsFields
                                         gameManifest={gameManifest}
                                         selections={setupSelections}
-                                        onSelectionsChange={setSetupSelections}
+                                        onSelectionsChange={handleSetupSelectionsChange}
                                         t={t}
                                         gameNamespace={gameNamespace}
                                         numPlayers={numPlayers}
                                     />
+
+                                    {renderQidahenPregameChoiceSection(
+                                        isCompactHomeV2Layout
+                                            ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]'
+                                            : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3',
+                                        isCompactHomeV2Layout
+                                            ? 'text-[8.2px] font-bold uppercase tracking-[0.08em] text-[#5b3822]'
+                                            : 'text-xs font-bold uppercase tracking-[0.08em] text-[#5b3822]',
+                                        isCompactHomeV2Layout
+                                            ? 'text-[7px] leading-[1.45] text-[#7a573d]'
+                                            : 'text-xs leading-5 text-[#7a573d]',
+                                        isCompactHomeV2Layout ? 'grid gap-[7px]' : 'grid gap-3',
+                                        isCompactHomeV2Layout
+                                            ? 'block text-[7.6px] font-bold text-[#5b3822]'
+                                            : 'block text-xs font-bold text-[#5b3822]',
+                                        clsx(inputClassName, 'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat'),
+                                        {
+                                            backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
+                                        },
+                                    )}
 
                                     {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                         <div className={isCompactHomeV2Layout ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]' : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3'}>
@@ -817,7 +985,7 @@ export const CreateRoomModal = ({
                                             {t('createRoom.playerCount')}
                                         </label>
                                         <div className="flex gap-2 flex-wrap">
-                                            {playerOptions.map((count) => (
+                                            {currentPlayerOptions.map((count) => (
                                                 <button
                                                     key={count}
                                                     type="button"
@@ -860,11 +1028,20 @@ export const CreateRoomModal = ({
                                 <SetupOptionsFields
                                     gameManifest={gameManifest}
                                     selections={setupSelections}
-                                    onSelectionsChange={setSetupSelections}
+                                    onSelectionsChange={handleSetupSelectionsChange}
                                     t={t}
                                     gameNamespace={gameNamespace}
                                     numPlayers={numPlayers}
                                 />
+
+                                {renderQidahenPregameChoiceSection(
+                                    'space-y-3 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3',
+                                    'text-xs font-bold uppercase tracking-[0.08em] text-parchment-base-text',
+                                    'text-xs leading-5 text-parchment-light-text',
+                                    'grid gap-3',
+                                    'block text-xs font-bold text-parchment-base-text',
+                                    "w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm",
+                                )}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                     <div className="rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">

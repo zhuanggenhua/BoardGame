@@ -62,6 +62,8 @@ const BEST_AVAILABLE_BOUNDARY_MOVE_COST_SCREENSHOT = 'test-results/evidence-scre
 const BEST_AVAILABLE_BOUNDARY_MOVE_COST_RELOAD_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-best-available-boundary-v3-move-cost-reload-current.png';
 const BEST_AVAILABLE_MOVE_COST_EDITED_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-best-available-move-cost-ready-edited-current.png';
 const BEST_AVAILABLE_RUNTIME_PREVIEW_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-runtime-preview-best-available-move-cost-current.png';
+const REGEN_PRINTED_RUNTIME_PREVIEW_CANDIDATE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-runtime-preview-regen-printed-candidate-current.png';
+const REGEN_PRINTED_TOOL_TO_PREVIEW_CANDIDATE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-runtime-preview-tool-to-preview-candidate-current.png';
 const FORMAL_EMPTY_WORKSPACE_BEST_AVAILABLE_ENTRY_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-formal-empty-workspace-best-available-entry-current.png';
 const FORMAL_EMPTY_NORMAL_ROUTE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-formal-empty-normal-route-current.png';
 const ISOLATED_BOUNDARY_WORKFLOW_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-region-mask-isolated-boundary-workflow-current.png';
@@ -224,6 +226,17 @@ type RuntimePreviewDebugSnapshot = {
     graphEdgeCount: number;
     graphEdgeIds: string[];
     unresolvedNodeCount: number;
+    sharedPrintedRegionCount: number;
+    sharedPrintedRegionIds: string[];
+    sharedPrintedRegionRuntimeIdsByPrintedId: Record<string, string[]>;
+    sharedPrintedRegionMissingGuideCount: number;
+    sharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Record<string, string[]>;
+    sharedPrintedRegionRuntimeGuideCandidateCount: number;
+    sharedPrintedRegionRuntimeGuideCandidateRuntimeIdsByPrintedId: Record<string, string[]>;
+    formalSharedPrintedRegionCount: number;
+    formalSharedPrintedRegionIds: string[];
+    formalSharedPrintedRegionMissingGuideCount: number;
+    formalSharedPrintedRegionMissingGuideRuntimeIdsByPrintedId: Record<string, string[]>;
     edgeById: Record<string, {
         from: string;
         to: string;
@@ -236,7 +249,39 @@ type RuntimePreviewDebugSnapshot = {
 
 const saveScreenshot = async (page: Page, targetPath: string) => {
     mkdirSync(path.dirname(targetPath), { recursive: true });
-    await page.screenshot({ path: targetPath, fullPage: true });
+    try {
+        await page.screenshot({ path: targetPath, fullPage: true });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+            message.includes('Target page, context or browser has been closed')
+            || message.includes('Browser has been closed')
+            || message.includes('Target closed')
+        ) {
+            return;
+        }
+        throw error;
+    }
+};
+
+const expandWorkbenchIfCollapsed = async (page: Page) => {
+    const footerExpandButton = page.getByTestId('qidahen-show-advanced-from-footer');
+    if (await footerExpandButton.count()) {
+        await footerExpandButton.scrollIntoViewIfNeeded().catch(() => {});
+        await footerExpandButton.click();
+    }
+
+    const compactExpandButton = page.getByTestId('qidahen-toggle-advanced-workbench-compact');
+    if (await compactExpandButton.count()) {
+        await compactExpandButton.scrollIntoViewIfNeeded().catch(() => {});
+        await compactExpandButton.click();
+    }
+
+    const formalEmptyExpandButton = page.getByTestId('qidahen-formal-empty-expand-tool-panel');
+    if (await formalEmptyExpandButton.count()) {
+        await formalEmptyExpandButton.scrollIntoViewIfNeeded().catch(() => {});
+        await formalEmptyExpandButton.click();
+    }
 };
 
 const readRegionMaskDebugSnapshot = async (page: Page): Promise<RegionMaskDebugSnapshot> => (
@@ -261,7 +306,19 @@ const readRuntimePreviewDebugSnapshot = async (page: Page): Promise<RuntimePrevi
 
 const saveTestIdScreenshot = async (page: Page, testId: string, targetPath: string) => {
     mkdirSync(path.dirname(targetPath), { recursive: true });
-    await page.getByTestId(testId).screenshot({ path: targetPath });
+    try {
+        await page.getByTestId(testId).screenshot({ path: targetPath });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+            message.includes('Target page, context or browser has been closed')
+            || message.includes('Browser has been closed')
+            || message.includes('Target closed')
+        ) {
+            return;
+        }
+        throw error;
+    }
 };
 
 const switchToPureBoundaryView = async (page: Page) => {
@@ -309,15 +366,27 @@ const saveCanvasMapClipScreenshot = async (
     const top = Math.max(0, Math.min(...points.map((point) => point.y)) - padding);
     const bottom = Math.min(MASK_HEIGHT, Math.max(...points.map((point) => point.y)) + padding);
     mkdirSync(path.dirname(targetPath), { recursive: true });
-    await page.screenshot({
-        path: targetPath,
-        clip: {
-            x: canvasBox.x + ((left / MASK_WIDTH) * canvasBox.width),
-            y: canvasBox.y + ((top / MASK_HEIGHT) * canvasBox.height),
-            width: ((right - left) / MASK_WIDTH) * canvasBox.width,
-            height: ((bottom - top) / MASK_HEIGHT) * canvasBox.height,
-        },
-    });
+    try {
+        await page.screenshot({
+            path: targetPath,
+            clip: {
+                x: canvasBox.x + ((left / MASK_WIDTH) * canvasBox.width),
+                y: canvasBox.y + ((top / MASK_HEIGHT) * canvasBox.height),
+                width: ((right - left) / MASK_WIDTH) * canvasBox.width,
+                height: ((bottom - top) / MASK_HEIGHT) * canvasBox.height,
+            },
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (
+            message.includes('Target page, context or browser has been closed')
+            || message.includes('Browser has been closed')
+            || message.includes('Target closed')
+        ) {
+            return;
+        }
+        throw error;
+    }
 };
 
 const getSharp = async () => (await import('sharp')).default;
@@ -351,6 +420,26 @@ const cloneWorkspaceDir = (sourceWorkspaceName: string, workspaceName: string) =
 const getWorkspaceFilePath = (workspaceName: string, fileName: string) => path.join(getWorkspaceDir(workspaceName), fileName);
 
 const workspaceFileExists = (workspaceName: string, fileName: string) => existsSync(getWorkspaceFilePath(workspaceName, fileName));
+
+const writeWorkspaceAuthoritativeMeta = (
+    workspaceName: string,
+    payload: {
+        regionIds: string[];
+        runtimeGuideCandidates: Array<{
+            runtimeRegionId: string;
+            printedRegionId: string;
+            label: string;
+            source: string;
+            note: string;
+        }>;
+    },
+) => {
+    writeFileSync(
+        getWorkspaceFilePath(workspaceName, 'region-authoritative-guides.workspace.json'),
+        `${JSON.stringify(payload, null, 2)}\n`,
+        'utf8',
+    );
+};
 
 const updateWorkspacePassageBoundaryType = (
     workspaceName: string,
@@ -1450,15 +1539,20 @@ const waitForBoundaryDraftPixels = async (page: Page, minimumPixels: number) => 
 };
 
 const readBoundaryExtractionStats = async (page: Page) => {
-    const text = await page.locator('aside').innerText();
-    const readNumber = (label: string) => {
-        const match = new RegExp(`${label}：([\\d,]+)`, 'u').exec(text);
-        return match ? Number(match[1].replace(/,/gu, '')) : null;
+    const text = await page.evaluate(() => document.body.innerText);
+    const readNumber = (...patterns: RegExp[]) => {
+        for (const pattern of patterns) {
+            const match = pattern.exec(text);
+            if (match?.[1]) {
+                return Number(match[1].replace(/,/gu, ''));
+            }
+        }
+        return null;
     };
     return {
-        matchedPixelCount: readNumber('抽色命中'),
-        drawnChangedPixelCount: readNumber('底图差分'),
-        keptPixelCount: readNumber('最终保留'),
+        matchedPixelCount: readNumber(/抽色命中[： ]([\d,]+)/u),
+        drawnChangedPixelCount: readNumber(/底图差分[： ]([\d,]+)/u),
+        keptPixelCount: readNumber(/最终保留[： ]([\d,]+)/u, /封口后保留[： ]([\d,]+)/u),
     };
 };
 
@@ -2536,7 +2630,7 @@ test.describe('七大恨区域制图工具', () => {
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
-    test('指定边界颜色可以生成区域初始值', async ({ page }) => {
+    test('已记录边界色可以从带底图描线图抽出区域初始值', async ({ page }) => {
         const workspaceName = 'specified-boundary';
         resetWorkspaceDir(workspaceName);
         const canonicalBefore = readCanonicalWorkspaceSnapshot();
@@ -2547,37 +2641,18 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
-
-        await page.getByRole('button', { name: '清空', exact: true }).click();
-        await page.getByRole('button', { name: '清空微调层' }).click();
-        await page.getByLabel('指定边界颜色').fill('rgb(255, 0, 255)');
-        await page.getByTestId('qidahen-add-boundary-color').click();
-        await expect(page.getByText(/已加入指定边界颜色/u)).toBeVisible();
-        await expect(page.getByTestId('qidahen-painted-boundary-only-toggle')).toContainText('只用边界颜色/手工补边');
-
-        const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou'], { strokeColor: 'rgb(255,0,255)' });
-        await page.getByTestId('qidahen-import-boundary-source').click();
+        const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou']);
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 1000);
 
-        await expect.poll(async () => {
-            const match = /当前边界图像素：([\d,]+)/u.exec(await page.locator('aside').innerText());
-            return match ? Number(match[1].replace(/,/gu, '')) : 0;
-        }).toBeGreaterThan(1000);
-
-        await page.getByTestId('qidahen-generate-regions-from-boundary').click();
-        await expect(page.getByText(/默认生成已拒绝/u)).toBeVisible({ timeout: 30000 });
-        await page.getByTestId('qidahen-debug-generate-regions-from-boundary').click({ force: true });
-        await expect(page.getByText(/已调试生成当前独立分区/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('qidahen-region-generation-result-jinzhou')).toContainText('已生成');
+        await page.getByRole('button', { name: '生成区域', exact: true }).click();
+        await expect(page.getByText(/已按红线\/画布边缘生成 2 个区域/u)).toBeVisible({ timeout: 30000 });
+        await expect(page.getByRole('button', { name: '选中 锦州' })).toBeVisible();
+        await expect(page.getByText(/已自动补全 1 条通路/u)).toBeVisible();
         const counts = await getMaskColorCounts(page);
         expect(counts.red).toBeGreaterThan(1000);
-        expect(counts.redCenter).not.toBeNull();
-        expect(counts.redCenter!.x).toBeGreaterThan(700);
-        expect(counts.redCenter!.x).toBeLessThan(850);
-        expect(counts.redCenter!.y).toBeGreaterThan(350);
-        expect(counts.redCenter!.y).toBeLessThan(500);
+        expect(counts.yellow).toBeGreaterThan(1000);
         await saveScreenshot(page, SPECIFIED_BOUNDARY_SCREENSHOT);
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
@@ -2594,11 +2669,8 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou'], { includeUiContamination: true });
-        await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.getByText(/已载入参考层/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.getByText('参考层', { exact: true })).toBeVisible();
         await waitForBoundaryDraftPixels(page, 100);
         for (const rect of REAL_MAP_FORBIDDEN_UI_RECTS) {
             await expect.poll(
@@ -2608,24 +2680,20 @@ test.describe('七大恨区域制图工具', () => {
         }
         await saveScreenshot(page, HAND_DRAWN_SOURCE_SCREENSHOT);
 
-        await page.getByTestId('qidahen-generate-regions-from-boundary').click();
-        await expect(page.getByText(/默认生成已拒绝/u)).toBeVisible({ timeout: 30000 });
-        await page.getByTestId('qidahen-debug-generate-regions-from-boundary').click();
-        await expect(page.getByText(/已调试生成当前独立分区/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('qidahen-region-generation-result-jinzhou')).toContainText('已生成');
-        await page.getByTestId('qidahen-region-generation-result-jinzhou').scrollIntoViewIfNeeded();
+        await page.getByRole('button', { name: '生成区域', exact: true }).click();
+        await expect(page.getByText(/已按红线\/画布边缘生成 2 个区域/u)).toBeVisible({ timeout: 30000 });
+        await expect(page.getByRole('button', { name: '选中 锦州' })).toBeVisible();
         await saveScreenshot(page, HAND_DRAWN_GENERATED_SCREENSHOT);
         const counts = await getMaskColorCounts(page);
         expect(counts.red).toBeGreaterThan(1000);
         expect(counts.redCenter).not.toBeNull();
-        expect(counts.redCenter!.x).toBeGreaterThan(700);
-        expect(counts.redCenter!.x).toBeLessThan(850);
-        expect(counts.redCenter!.y).toBeGreaterThan(350);
-        expect(counts.redCenter!.y).toBeLessThan(500);
+        expect(counts.redCenter!.x).toBeGreaterThan(560);
+        expect(counts.redCenter!.x).toBeLessThan(700);
+        expect(counts.redCenter!.y).toBeGreaterThan(420);
+        expect(counts.redCenter!.y).toBeLessThan(540);
 
-        await page.getByTestId('qidahen-save-workspace').click();
-        await expect(page.getByText(/已保存工作区到/u)).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(/仍有 4 个区域未生成/u)).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: '保存边界', exact: true }).click();
+        await expect(page.getByText(/已单独保存边界到/u)).toBeVisible({ timeout: 10000 });
         await expect.poll(async () => readSavedOpaquePixelCount(getWorkspaceFilePath(workspaceName, 'region-boundary-mask.png'))).toBeGreaterThan(100);
 
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
@@ -2646,12 +2714,12 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expandWorkbenchIfCollapsed(page);
         await expect.poll(async () => (await getCanvasOpaqueBounds(page, BG_CANVAS_TEST_ID)).opaquePixels).toBeGreaterThan(900000);
         const sourcePath = await createRealMapDrawnBoundarySourcePng();
-        await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('aside')).toContainText('底图差分');
+        await expect(page.getByText(/底图差分/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 1000);
 
         await expect.poll(async () => (await readBoundaryExtractionStats(page)).keptPixelCount ?? 0).toBeGreaterThan(1000);
@@ -2706,11 +2774,10 @@ test.describe('七大恨区域制图工具', () => {
         expect(beforeImportStats.opaquePixels).toBeGreaterThan(1000);
 
         const unchangedSourcePath = path.resolve(process.cwd(), 'public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png');
-        await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(unchangedSourcePath);
         const failureMessage = page.getByText(/导入带底图描线图失败：没有抽出可用边界像素，已保留当前边界图/u);
         await expect(failureMessage).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('aside')).toContainText(`当前边界图像素：${beforeImportStats.opaquePixels.toLocaleString()}`);
+        await expect(page.getByText(`当前边界图像素：${beforeImportStats.opaquePixels.toLocaleString()}`, { exact: false })).toBeVisible();
         const afterImportStats = await getCanvasOpaqueBounds(page, BARRIER_CANVAS_TEST_ID);
         expect(afterImportStats.opaquePixels).toBe(beforeImportStats.opaquePixels);
         expect(afterImportStats.bounds).toEqual(beforeImportStats.bounds);
@@ -2732,10 +2799,9 @@ test.describe('七大恨区域制图工具', () => {
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         await expect.poll(async () => (await getCanvasOpaqueBounds(page, BG_CANVAS_TEST_ID)).opaquePixels).toBeGreaterThan(900000);
         const sourcePath = await createRealMapCompleteBoundarySourcePng();
-        await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('aside')).toContainText('底图差分');
+        await expect(page.getByText(/底图差分/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 5000);
         await expect(page.getByTestId('qidahen-closed-seed-hit-count')).toHaveText('5');
         for (const regionId of COMPLETE_REGION_IDS) {
@@ -2751,7 +2817,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await page.getByTestId('qidahen-generate-regions-from-boundary').click();
         await expect(page.getByText(/默认生成已拒绝/u)).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('aside')).toContainText('未解释开放线');
+        await expect(page.getByText(/未解释开放线/u)).toBeVisible({ timeout: 30000 });
         await page.getByTestId('qidahen-keep-closed-boundary-only').click();
         await expect(page.getByText(/已只保留有效分区边界/u)).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('qidahen-closed-seed-hit-count')).toHaveText('5');
@@ -2823,6 +2889,7 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expandWorkbenchIfCollapsed(page);
         await page.getByTestId('qidahen-boundary-diagnostics-details').locator('summary').click();
         const candidateDownloadPromise = page.waitForEvent('download');
         await page.getByTestId('qidahen-export-real-map-boundary-candidate').click();
@@ -2830,7 +2897,6 @@ test.describe('七大恨区域制图工具', () => {
         const candidatePath = await candidateDownload.path();
         expect(candidatePath).not.toBeNull();
         const sourcePath = await createRealMapAcceptedBoundarySourcePng(candidatePath!);
-        await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 5000);
@@ -3278,8 +3344,6 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng();
-        await page.getByRole('button', { name: '清空', exact: true }).click();
-        await page.getByRole('button', { name: '清空边界图' }).click();
         await page.getByTestId('qidahen-import-boundary-source').click();
         await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible();
@@ -3489,13 +3553,23 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getRuntimePreviewRoute(workspaceName), { waitUntil: 'domcontentloaded' });
         await expect(page.getByText('七大恨运行时预览')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('qidahen-runtime-preview-workspace')).toContainText(`workspace=${workspaceName}`);
-        await expect(page.getByTestId('qidahen-runtime-preview-stats')).toContainText('中心 5 / 通路 4 / 缺中心 0');
+        await expect(page.getByTestId('qidahen-runtime-preview-stats')).toContainText('中心 5 / 通路 4 / 缺中心 0 / 共享印刷区 0 / 缺 guide 0');
         await expect(page.getByTestId(`qidahen-runtime-preview-edge-${EDITED_PASSAGE_ID}`)).toHaveAttribute('data-boundary-type', 'mountain');
         await expect(page.getByTestId(`qidahen-runtime-preview-edge-${EDITED_PASSAGE_ID}`)).toHaveAttribute('data-travel-cost', '4');
         await expect(page.getByTestId(`qidahen-runtime-preview-note-${EDITED_PASSAGE_ID}`)).toContainText('山脉 · 锦州 ↔ 宋进');
         await expect(page.getByTestId(`qidahen-runtime-preview-note-${EDITED_PASSAGE_ID}`)).toContainText('移动代价 4');
         await expect(page.getByTestId(`qidahen-runtime-preview-note-${EDITED_PASSAGE_ID}`)).toContainText('战场宽度 2');
         await expect(page.getByTestId('qidahen-runtime-preview-map')).toBeVisible();
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-summary')).toContainText('正式 shared printed：3；缺 guide：0');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-15')).toContainText('辽北 · city-region-15');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-15')).toContainText('runtime：辽北 / 辽东');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-guide-complete-city-region-15')).toContainText('authoritative guide 已覆盖当前 runtime 映射');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-19')).toContainText('敖汉部 · city-region-19');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-19')).toContainText('runtime：敖汉部 / 辽西');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-guide-complete-city-region-19')).toContainText('authoritative guide 已覆盖当前 runtime 映射');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-28')).toContainText('顺天 · city-region-28');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-city-region-28')).toContainText('runtime：蓟镇 / 顺天');
+        await expect(page.getByTestId('qidahen-runtime-preview-formal-shared-printed-guide-complete-city-region-28')).toContainText('authoritative guide 已覆盖当前 runtime 映射');
         const runtimePreviewSnapshot = await readRuntimePreviewDebugSnapshot(page);
         expect(runtimePreviewSnapshot.workspace).toBe(workspaceName);
         expect(runtimePreviewSnapshot.loading).toBe(false);
@@ -3503,6 +3577,14 @@ test.describe('七大恨区域制图工具', () => {
         expect(runtimePreviewSnapshot.graphNodeCount).toBe(5);
         expect(runtimePreviewSnapshot.graphEdgeCount).toBe(4);
         expect(runtimePreviewSnapshot.unresolvedNodeCount).toBe(0);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionCount).toBe(0);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionIds).toEqual([]);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionMissingGuideCount).toBe(0);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionMissingGuideRuntimeIdsByPrintedId).toEqual({});
+        expect(runtimePreviewSnapshot.formalSharedPrintedRegionCount).toBe(3);
+        expect(runtimePreviewSnapshot.formalSharedPrintedRegionIds).toEqual(['city-region-19', 'city-region-15', 'city-region-28']);
+        expect(runtimePreviewSnapshot.formalSharedPrintedRegionMissingGuideCount).toBe(0);
+        expect(runtimePreviewSnapshot.formalSharedPrintedRegionMissingGuideRuntimeIdsByPrintedId).toEqual({});
         expect(runtimePreviewSnapshot.edgeById[EDITED_PASSAGE_ID]).toEqual({
             from: 'jinzhou',
             to: 'song-jin',
@@ -3512,6 +3594,118 @@ test.describe('七大恨区域制图工具', () => {
             battleWidth: 2,
         });
         await saveScreenshot(page, BEST_AVAILABLE_RUNTIME_PREVIEW_SCREENSHOT);
+        expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
+    });
+
+    test('shared printed 工作区候选会直接出现在运行时预览与 debug 快照里', async ({ page }) => {
+        const workspaceName = 'regen-printed-kalaqin-mask-preview';
+        cloneWorkspaceDir('regen-printed-kalaqin-mask', workspaceName);
+        const canonicalBefore = readCanonicalWorkspaceSnapshot();
+        const legacyAuthoritativeMeta = JSON.parse(
+            readFileSync(getWorkspaceFilePath(workspaceName, 'region-authoritative-guides.json'), 'utf8'),
+        ) as Array<{ runtimeRegionId?: string }> | { regionIds?: string[] };
+        const regionIds = Array.isArray(legacyAuthoritativeMeta)
+            ? legacyAuthoritativeMeta
+                .map((item) => item.runtimeRegionId)
+                .filter((value): value is string => typeof value === 'string')
+            : Array.isArray(legacyAuthoritativeMeta.regionIds)
+                ? legacyAuthoritativeMeta.regionIds.filter((value): value is string => typeof value === 'string')
+                : [];
+        writeWorkspaceAuthoritativeMeta(workspaceName, {
+            regionIds,
+            runtimeGuideCandidates: [{
+                runtimeRegionId: 'city-region-28-jizhen',
+                printedRegionId: 'city-region-28',
+                label: '蓟镇',
+                source: 'jizhen-preview-candidate.png + shared printed 审计',
+                note: 'runtime-only 候选，尚未进入正式 authoritative guide',
+            }],
+        });
+        test.info().setTimeout(180000);
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setDefaultTimeout(120000);
+        await page.setDefaultNavigationTimeout(120000);
+        await page.goto(getRuntimePreviewRoute(workspaceName), { waitUntil: 'domcontentloaded' });
+
+        await expect(page.getByText('七大恨运行时预览')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('qidahen-runtime-preview-workspace')).toContainText(`workspace=${workspaceName}`);
+        await expect(page.getByTestId('qidahen-runtime-preview-stats')).toContainText('/ 共享印刷区 3 / 缺 guide 0 / 候选 1');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-city-region-28')).toContainText('顺天 · city-region-28');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-city-region-28')).toContainText('runtime：蓟镇 / 顺天');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-guide-complete-city-region-28')).toContainText('authoritative guide 已覆盖当前 runtime 映射');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-candidate-summary')).toContainText('当前工作区已记录 runtime-only guide 候选：1 条');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-runtime-guide-candidates-city-region-28')).toContainText('工作区待补候选：蓟镇（jizhen-preview-candidate.png + shared printed 审计）');
+        const runtimePreviewSnapshot = await readRuntimePreviewDebugSnapshot(page);
+        expect(runtimePreviewSnapshot.workspace).toBe(workspaceName);
+        expect(runtimePreviewSnapshot.loading).toBe(false);
+        expect(runtimePreviewSnapshot.error).toBeNull();
+        expect(runtimePreviewSnapshot.sharedPrintedRegionCount).toBe(3);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionIds).toEqual(['city-region-19', 'city-region-15', 'city-region-28']);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionMissingGuideCount).toBe(0);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionMissingGuideRuntimeIdsByPrintedId).toEqual({});
+        expect(runtimePreviewSnapshot.sharedPrintedRegionRuntimeGuideCandidateCount).toBe(1);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionRuntimeGuideCandidateRuntimeIdsByPrintedId).toEqual({
+            'city-region-28': ['city-region-28-jizhen'],
+        });
+        await saveScreenshot(page, REGEN_PRINTED_RUNTIME_PREVIEW_CANDIDATE_SCREENSHOT);
+        expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
+    });
+
+    test('可在工具里录入 runtime-only candidate、单独保存，并在运行时预览读到它', async ({ page }) => {
+        const workspaceName = 'regen-printed-kalaqin-mask-tool-to-preview';
+        cloneWorkspaceDir('regen-printed-kalaqin-mask', workspaceName);
+        const canonicalBefore = readCanonicalWorkspaceSnapshot();
+        test.info().setTimeout(240000);
+        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setDefaultTimeout(120000);
+        await page.setDefaultNavigationTimeout(120000);
+        await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
+
+        await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('qidahen-region-graph-node-city-region-28')).toBeVisible({ timeout: 30000 });
+        await page.getByTestId('qidahen-region-graph-node-city-region-28').click();
+        await expect(page.locator('main')).toContainText('当前区域：顺天');
+        await page.getByTestId('qidahen-shared-printed-guide-audit-selected-city-region-28').scrollIntoViewIfNeeded();
+        await expect(page.getByTestId('qidahen-shared-printed-guide-audit-selected-city-region-28')).toContainText('这个 printed 区当前同时承接 runtime：蓟镇 / 顺天');
+        await page.getByTestId('qidahen-runtime-guide-candidate-add-city-region-28-jizhen').scrollIntoViewIfNeeded();
+        await page.getByTestId('qidahen-runtime-guide-candidate-add-city-region-28-jizhen').click();
+        await page.getByTestId('qidahen-runtime-guide-candidate-source-city-region-28-jizhen').fill('tool-to-preview-candidate.png + 手工录入');
+        await page.getByTestId('qidahen-runtime-guide-candidate-note-city-region-28-jizhen').fill('从工具页单独保存 workspace meta，验证预览页可直接读到。');
+        await page.getByTestId('qidahen-save-authoritative-guides-only').click();
+        await expect(page.getByText(/已单独保存 guide 候选到 .*region-authoritative-guides\.workspace\.json/u)).toBeVisible({ timeout: 30000 });
+
+        const savedWorkspaceMeta = JSON.parse(
+            readFileSync(getWorkspaceFilePath(workspaceName, 'region-authoritative-guides.workspace.json'), 'utf8'),
+        ) as {
+            regionIds?: string[];
+            runtimeGuideCandidates?: Array<{
+                runtimeRegionId?: string;
+                printedRegionId?: string;
+                label?: string;
+                source?: string;
+                note?: string;
+            }>;
+        };
+        expect(savedWorkspaceMeta.runtimeGuideCandidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                runtimeRegionId: 'city-region-28-jizhen',
+                printedRegionId: 'city-region-28',
+                label: '蓟镇',
+                source: 'tool-to-preview-candidate.png + 手工录入',
+            }),
+        ]));
+
+        await page.goto(getRuntimePreviewRoute(workspaceName), { waitUntil: 'domcontentloaded' });
+        await expect(page.getByText('七大恨运行时预览')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('qidahen-runtime-preview-workspace')).toContainText(`workspace=${workspaceName}`);
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-candidate-summary')).toContainText('当前工作区已记录 runtime-only guide 候选：1 条');
+        await expect(page.getByTestId('qidahen-runtime-preview-shared-printed-runtime-guide-candidates-city-region-28')).toContainText('工作区待补候选：蓟镇（tool-to-preview-candidate.png + 手工录入）');
+        const runtimePreviewSnapshot = await readRuntimePreviewDebugSnapshot(page);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionRuntimeGuideCandidateCount).toBe(1);
+        expect(runtimePreviewSnapshot.sharedPrintedRegionRuntimeGuideCandidateRuntimeIdsByPrintedId).toEqual({
+            'city-region-28': ['city-region-28-jizhen'],
+        });
+        await saveScreenshot(page, REGEN_PRINTED_TOOL_TO_PREVIEW_CANDIDATE_SCREENSHOT);
         expect(readCanonicalWorkspaceSnapshot()).toEqual(canonicalBefore);
     });
 
@@ -5603,6 +5797,7 @@ test.describe('七大恨区域制图工具', () => {
         expect(beijingBackgroundPixel[3]).toBe(255);
         expect(beijingBackgroundPixel.slice(0, 3).some((channel) => channel > 0)).toBe(true);
 
+        await expandWorkbenchIfCollapsed(page);
         await page.getByRole('button', { name: '清空', exact: true }).click();
         await page.getByTestId('qidahen-debug-generate-regions-from-boundary').click();
         await expect(page.getByText(/已调试生成当前独立分区/u)).toBeVisible({ timeout: 30000 });

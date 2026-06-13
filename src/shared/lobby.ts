@@ -12,6 +12,7 @@ export const LOBBY_ALL = 'all' as const;
 
 export type PublicSetupSummary = {
     enabledExpansions?: string[];
+    scenarioId?: string;
 } | undefined;
 
 export interface LobbyMatch {
