@@ -133,7 +133,7 @@ function renderBaseZone(options?: {
 }
 
 describe('BaseZone 移动端 ongoing 交互', () => {
-    it('基地上的天赋战术在移动端单击一次就应发动', () => {
+    it('基地上的天赋战术在移动端应先选中，再次点击才发动', () => {
         const { dispatch } = renderBaseZone({
             ongoingActions: [
                 { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
@@ -143,6 +143,10 @@ describe('BaseZone 移动端 ongoing 交互', () => {
 
         const ongoingCard = document.querySelector('[data-ongoing-uid="oa1"]');
         expect(ongoingCard).not.toBeNull();
+        fireEvent.click(ongoingCard as Element);
+
+        expect(dispatch).not.toHaveBeenCalled();
+
         fireEvent.click(ongoingCard as Element);
 
         expect(dispatch).toHaveBeenCalledTimes(1);
@@ -163,7 +167,7 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]')).toBeNull();
     });
 
-    it('基地上的普通持续行动卡在移动端可直接点卡面打开放大预览，且不再常驻放大镜', () => {
+    it('基地上的普通持续行动卡在移动端应先选中，再显示放大镜用于放大预览', () => {
         const { onViewAction } = renderBaseZone({
             ongoingActions: [
                 { uid: 'oa1', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
@@ -175,6 +179,12 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         expect(ongoingCard).not.toBeNull();
 
         fireEvent.click(ongoingCard as Element);
+        expect(onViewAction).not.toHaveBeenCalled();
+
+        const magnifyButton = document.querySelector('[data-testid="su-base-ongoing-magnify-oa1"]');
+        expect(magnifyButton).not.toBeNull();
+
+        fireEvent.click(magnifyButton as Element);
         expect(onViewAction).toHaveBeenCalledWith('miskatonic_lost_knowledge');
     });
 
@@ -442,8 +452,8 @@ describe('BaseZone 移动端 ongoing 交互', () => {
 
         const firstMinion = document.querySelector('[data-minion-uid="m1"]') as HTMLElement | null;
         expect(firstMinion).not.toBeNull();
-        const firstFrame = firstMinion?.querySelector('div');
-        const secondFrame = secondMinion?.querySelector('div');
+        const firstFrame = document.querySelector('[data-testid="su-minion-frame-m1"]');
+        const secondFrame = document.querySelector('[data-testid="su-minion-frame-m2"]');
         expect(firstFrame?.className).toContain('border-green-400');
         expect(secondFrame?.className).not.toContain('border-green-400');
         fireEvent.click(firstMinion as Element);

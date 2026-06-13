@@ -229,6 +229,36 @@ describe('教程端到端测试（TutorialSystem 活跃）', () => {
         return s;
     };
 
+    it('setup AI 动作不应依赖当前 activePlayerId，必须把教程起手牌发给 0 号位', () => {
+        let s: MatchState<DiceThroneCore> = {
+            core: DiceThroneDomain.setup(playerIds, random),
+            sys: createInitialSystemState(playerIds, testSystems, undefined),
+        };
+
+        s = {
+            ...s,
+            core: {
+                ...s.core,
+                activePlayerId: '1',
+            },
+        };
+
+        s = exec(s, TUTORIAL_COMMANDS.START, '0', { manifest }, 'tutorial start with shifted active player');
+        const setupStep = manifest.steps[0];
+        s = consumeAiActions(s, 'setup', setupStep.aiActions!, 'setup with shifted active player');
+
+        const player0Hand = s.core.players['0'].hand.map(card => card.id);
+        expect(player0Hand).toHaveLength(4);
+        expect(player0Hand).toEqual(expect.arrayContaining([
+            'card-deep-thought',
+            'card-play-six',
+            'card-enlightenment',
+            'card-inner-peace',
+        ]));
+        expect(s.core.players['1'].hand.map(card => card.id)).toContain('card-palm-strike');
+        expect(s.sys.phase).toBe('main1');
+    });
+
     it('完整教程流程', () => {
         let s = runToKnockdownExplain();
 

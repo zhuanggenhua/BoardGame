@@ -438,9 +438,19 @@ const zombieGraveDiggerPromptProgram = createPromptProgram<ZombieGraveDiggerCont
             '选择要从弃牌堆取回的随从（可跳过）',
             [
                 ...buildZombieDiscardCardOptions(context.minionsInDiscard),
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                {
+                    id: 'skip',
+                    label: '跳过',
+                    labelKey: 'ui.zombie_grave_digger_skip_option',
+                    value: { skip: true },
+                    displayMode: 'button' as const,
+                },
             ],
-            { sourceId: 'zombie_grave_digger', targetType: 'generic' },
+            {
+                sourceId: 'zombie_grave_digger',
+                titleKey: 'ui.zombie_grave_digger_title',
+                targetType: 'generic',
+            },
         ),
         (state) => {
             const player = state.core.players[context.playerId];
@@ -453,7 +463,13 @@ const zombieGraveDiggerPromptProgram = createPromptProgram<ZombieGraveDiggerCont
                 });
             return [
                 ...buildZombieDiscardCardOptions(minions),
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                {
+                    id: 'skip',
+                    label: '跳过',
+                    labelKey: 'ui.zombie_grave_digger_skip_option',
+                    value: { skip: true },
+                    displayMode: 'button' as const,
+                },
             ];
         },
     ),
@@ -477,8 +493,20 @@ const zombieWalkerChoiceProgram = createPromptProgram<ZombieWalkerContext, Smash
         context.playerId,
         `牌库顶是「${context.cardName}」，选择处理方式`,
         [
-            { id: 'discard', label: '弃掉', value: { action: 'discard' }, displayMode: 'button' as const },
-            { id: 'keep', label: '放回牌库顶', value: { action: 'keep' }, displayMode: 'button' as const },
+            {
+                id: 'discard',
+                label: '弃掉',
+                labelKey: 'ui.zombie_walker_discard_option',
+                value: { action: 'discard' },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'keep',
+                label: '放回牌库顶',
+                labelKey: 'ui.zombie_walker_keep_option',
+                value: { action: 'keep' },
+                displayMode: 'button' as const,
+            },
         ],
         { sourceId: 'zombie_walker', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
@@ -518,7 +546,11 @@ const zombieGraveRobbingPromptProgram = createPromptProgram<ZombieGraveRobbingCo
             context.playerId,
             '选择要从弃牌堆取回的卡牌',
             buildZombieDiscardCardOptions(context.discardCards),
-            { sourceId: 'zombie_grave_robbing', targetType: 'generic' },
+            {
+                sourceId: 'zombie_grave_robbing',
+                titleKey: 'ui.zombie_grave_robbing_title',
+                targetType: 'generic',
+            },
         ),
         (state) => {
             const player = state.core.players[context.playerId];
@@ -558,7 +590,11 @@ const zombieNotEnoughBulletsPromptProgram = createPromptProgram<ZombieNotEnoughB
             label: `${group.name} (×${group.count})`,
             value: { defId: group.defId },
         })),
-        { sourceId: 'zombie_not_enough_bullets', targetType: 'generic' },
+        {
+            sourceId: 'zombie_not_enough_bullets',
+            titleKey: 'ui.zombie_not_enough_bullets_title',
+            targetType: 'generic',
+        },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as ZombieDiscardChoice;
@@ -588,6 +624,7 @@ const zombieLendAHandPromptProgram = createPromptProgram<ZombieLendAHandContext,
             buildZombieDiscardCardOptions(context.discardCards),
             {
                 sourceId: 'zombie_lend_a_hand',
+                titleKey: 'ui.zombie_lend_a_hand_title',
                 targetType: 'generic',
                 multi: { min: 0, max: context.discardCards.length },
             },
@@ -651,7 +688,11 @@ const zombieOutbreakChooseBasePromptProgram = createPromptProgram<ZombieOutbreak
         context.playerId,
         '爆发：选择一个没有你随从的基地',
         buildBaseTargetOptions(context.emptyBases, context.matchState.core),
-        { sourceId: 'zombie_outbreak_choose_base', targetType: 'base' },
+        {
+            sourceId: 'zombie_outbreak_choose_base',
+            titleKey: 'ui.zombie_outbreak_choose_base_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as ZombieBaseChoice;
@@ -707,7 +748,11 @@ const zombieMallCrawlPromptProgram = createPromptProgram<ZombieMallCrawlContext,
         context.playerId,
         '选择一个卡名，将牌库中所有同名卡放入弃牌堆',
         context.groups.map((group, index) => ({ id: `group-${index}`, label: group.label, value: { defId: group.defId } })),
-        { sourceId: 'zombie_mall_crawl', targetType: 'generic' },
+        {
+            sourceId: 'zombie_mall_crawl',
+            titleKey: 'ui.zombie_mall_crawl_title',
+            targetType: 'generic',
+        },
     ),
     onResolve: ({ state, playerId, value, random, timestamp }) => {
         const choice = value as ZombieDiscardChoice;
@@ -730,7 +775,11 @@ const zombieTheyKeepComingPromptProgram = createPromptProgram<ZombieTheyKeepComi
             context.playerId,
             '它们不断来临：选择弃牌堆中的随从，然后点击目标基地',
             buildZombieDiscardCardOptions(context.discardMinions),
-            { sourceId: 'zombie_they_keep_coming', targetType: 'discard_minion' },
+            {
+                sourceId: 'zombie_they_keep_coming',
+                titleKey: 'ui.zombie_they_keep_coming_title',
+                targetType: 'discard_minion',
+            },
         );
         (interaction.data as Record<string, unknown>).allowedBaseIndices = context.allowedBaseIndices;
         return attachOptionsGenerator(interaction, (state) => {
@@ -799,9 +848,19 @@ function buildZombieLordInteraction(context: ZombieLordContext) {
         '僵尸领主：选择弃牌堆中的随从，然后点击目标基地',
         [
             ...buildZombieDiscardCardOptions(context.availableMinions),
-            { id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const },
+            {
+                id: 'done',
+                label: '完成',
+                labelKey: 'ui.zombie_lord_done_option',
+                value: { done: true },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'zombie_lord_pick', targetType: 'discard_minion' },
+        {
+            sourceId: 'zombie_lord_pick',
+            titleKey: 'ui.zombie_lord_title',
+            targetType: 'discard_minion',
+        },
     );
     (interaction.data as Record<string, unknown>).allowedBaseIndices = context.emptyBases
         .filter((base) => !context.filledBases.includes(base.baseIndex))
@@ -827,7 +886,13 @@ function buildZombieLordInteraction(context: ZombieLordContext) {
             });
         return [
             ...buildZombieDiscardCardOptions(minions),
-            { id: 'done', label: '完成', value: { done: true }, displayMode: 'button' as const },
+            {
+                id: 'done',
+                label: '完成',
+                labelKey: 'ui.zombie_lord_done_option',
+                value: { done: true },
+                displayMode: 'button' as const,
+            },
         ];
     });
 }

@@ -51,6 +51,8 @@ const buildGameRegistry = () => {
     return registry;
 };
 
+const isGameListed = (game: Pick<GameManifestEntry, 'enabled' | 'listed'>) => game.enabled && game.listed !== false;
+
 export let GAMES_REGISTRY: Record<string, GameConfig> = buildGameRegistry();
 
 const notifyRegistryUpdate = () => {
@@ -219,7 +221,7 @@ export const refreshUgcGames = async () => {
     return ugcLoadingPromise;
 };
 
-export const getAllGames = () => Object.values(GAMES_REGISTRY).filter(g => g.enabled);
+export const getAllGames = () => Object.values(GAMES_REGISTRY).filter(isGameListed);
 export const getGameById = (id: string) => GAMES_REGISTRY[id];
 export const getGamesByCategory = (category: string) => {
     const games = getAllGames();

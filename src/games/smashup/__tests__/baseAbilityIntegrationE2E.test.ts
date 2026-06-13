@@ -10,7 +10,7 @@
  *    - base_innsmouth_base: 印斯茅斯
  *    - base_plateau_of_leng: 伦格高原
  *    - base_land_of_balance: 平衡之地
- *    - base_miskatonic_university_base: 密大基地
+ *    - base_miskatonic_university_base_pod: 密大基地 POD
  *
  * 2. onTurnStart: FlowHooks.onPhaseEnter('startTurn') → triggerAllBaseAbilities → Interaction
  *    - base_rlyeh: 拉莱耶
@@ -23,6 +23,7 @@
  *    - base_pirate_cove: 海盗湾
  *    - base_tortuga: 托尔图加
  *    - base_wizard_academy: 巫师学院
+ *    - base_miskatonic_university_base: 密大基地（经典版）
  *    - base_greenhouse: 温室
  *    - base_inventors_salon: 发明家沙龙
  */
@@ -649,10 +650,10 @@ describe('集成: base_laboratorium 实验工坊 (onMinionPlayed)', () => {
     });
 });
 
-describe('集成: base_miskatonic_university_base 密大基地 (onMinionPlayed)', () => {
+describe('集成: base_miskatonic_university_base_pod 密大基地 POD (onMinionPlayed)', () => {
     it('首次打出随从到该基地且手牌有疯狂卡 → Interaction 返回疯狂卡/弃疯狂换额外行动', () => {
         const core = makeState({
-            bases: [makeBase('base_miskatonic_university_base')],
+            bases: [makeBase('base_miskatonic_university_base_pod')],
             madnessDeck: ['madness_0', 'madness_1'],
             players: {
                 '0': makePlayer('0', { hand: [
@@ -664,7 +665,24 @@ describe('集成: base_miskatonic_university_base 密大基地 (onMinionPlayed)'
         });
         const ms = makeMatchState(core);
         const { ms: resultMs } = executePlayMinion(ms, '0', 'minion-1', 0);
-        expect(hasInteraction(resultMs, 'base_miskatonic_university_base')).toBe(true);
+        expect(hasInteraction(resultMs, 'base_miskatonic_university_base_pod')).toBe(true);
+    });
+});
+
+describe('集成: base_miskatonic_university_base 密大基地经典版 (afterScoring)', () => {
+    it('基地计分后冠军有疯狂卡 → Interaction 连续返回疯狂卡到疯狂牌库', () => {
+        const core = makeScoringCore('base_miskatonic_university_base', 24, {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'mad-1', defId: MADNESS_CARD_DEF_ID, type: 'action', owner: '0' }],
+                    discard: [{ uid: 'mad-2', defId: MADNESS_CARD_DEF_ID, type: 'action', owner: '0' }],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeScoreBasesMS(core);
+        callOnPhaseExitScoreBases(ms);
+        expect(hasInteraction(ms, 'base_miskatonic_university_base')).toBe(true);
     });
 });
 

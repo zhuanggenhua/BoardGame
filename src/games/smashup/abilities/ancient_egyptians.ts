@@ -234,6 +234,7 @@ const ancientEgyptiansPyramidEngineerUncoverPromptProgram = createPromptProgram<
                 targetType: 'generic',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_pyramid_engineer_uncover_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -283,6 +284,7 @@ const ancientEgyptiansPyramidEngineerTalentProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_pyramid_engineer_talent',
                 targetType: 'hand',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_pyramid_engineer_bury_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -330,6 +332,7 @@ const ancientEgyptiansLostKnowledgeBuryBasePromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_lost_knowledge_bury_base',
                 targetType: 'base',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_lost_knowledge_bury_base_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -379,6 +382,7 @@ const ancientEgyptiansLostKnowledgeBuryPromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_lost_knowledge_bury',
                 targetType: 'hand',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_lost_knowledge_bury_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -414,6 +418,7 @@ const ancientEgyptiansLostKnowledgeUncoverPromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_lost_knowledge_uncover',
                 targetType: 'generic',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_lost_knowledge_uncover_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -450,8 +455,24 @@ const ancientEgyptiansLostKnowledgeModePromptProgram = createPromptProgram<
         const canBury = buriableHand.length > 0;
         const canUncover = getBuriedCardChoices(context.state, context.playerId).length > 0;
         const options = [];
-        if (canBury) options.push({ id: 'bury', label: '埋葬一张手牌', value: { mode: 'bury' }, displayMode: 'button' as const });
-        if (canUncover) options.push({ id: 'uncover', label: '翻开一张你的埋葬牌', value: { mode: 'uncover' }, displayMode: 'button' as const });
+        if (canBury) {
+            options.push({
+                id: 'bury',
+                label: '埋葬一张手牌',
+                labelKey: 'ui.ancient_egyptians_lost_knowledge_mode_bury_option',
+                value: { mode: 'bury' },
+                displayMode: 'button' as const,
+            });
+        }
+        if (canUncover) {
+            options.push({
+                id: 'uncover',
+                label: '翻开一张你的埋葬牌',
+                labelKey: 'ui.ancient_egyptians_lost_knowledge_mode_uncover_option',
+                value: { mode: 'uncover' },
+                displayMode: 'button' as const,
+            });
+        }
         return createAbilityRuntimeSimpleChoice(
             `ancient_egyptians_lost_knowledge_mode_${context.now}`,
             context.playerId,
@@ -461,6 +482,7 @@ const ancientEgyptiansLostKnowledgeModePromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_lost_knowledge_mode',
                 targetType: 'button',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_lost_knowledge_mode_title',
             },
         );
     },
@@ -529,6 +551,7 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_tomb_trap_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -580,6 +603,7 @@ const ancientEgyptiansPlagueOfLocustsProgram = createPromptProgram<
             sourceId: 'ancient_egyptians_plague_of_locusts',
             targetType: 'base',
             responseValidationMode: 'live',
+            titleKey: 'ui.ancient_egyptians_plague_of_locusts_title',
         },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -611,6 +635,7 @@ const ancientEgyptiansMummyStrengthTargetPromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_mummy_strength_target',
                 targetType: 'minion',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_mummy_strength_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -652,6 +677,7 @@ const ancientEgyptiansAncientCurseConfirmPromptProgram = createPromptProgram<
             {
                 id: 'apply',
                 label: '移除 1 个 +1 力量指示物',
+                labelKey: 'ui.ancient_egyptians_ancient_curse_confirm_option',
                 value: {
                     apply: true,
                     targetMinionUid: context.targetMinionUid,
@@ -660,13 +686,14 @@ const ancientEgyptiansAncientCurseConfirmPromptProgram = createPromptProgram<
                 },
                 displayMode: 'button' as const,
             },
-            createSkipOption('跳过（不移除）'),
+            createSkipOption('跳过（不移除）', 'ui.ancient_egyptians_ancient_curse_skip_option'),
         ],
         {
             sourceId: 'ancient_egyptians_ancient_curse_confirm',
             targetType: 'minion',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
+            titleKey: 'ui.ancient_egyptians_ancient_curse_confirm_title',
         },
     ),
     onResolve: ({ state, value, timestamp }) => {
@@ -720,6 +747,7 @@ const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<
                 targetType: 'hand',
                 multi: { min: 0, max: Math.min(2, buriableHand.length) },
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_seal_the_tomb_bury_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -766,6 +794,7 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
                 targetType: 'generic',
                 multi: { min: 0, max: Math.min(2, choices.length) },
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_seal_the_tomb_uncover_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -805,10 +834,22 @@ const ancientEgyptiansSealTheTombModePromptProgram = createPromptProgram<
         const buriableHand = player?.hand.filter(card => card.uid !== context.cardUid) ?? [];
         const options = [];
         if (buriableHand.length > 0) {
-            options.push({ id: 'bury', label: '埋葬至多两张手牌', value: { mode: 'bury' }, displayMode: 'button' as const });
+            options.push({
+                id: 'bury',
+                label: '埋葬至多两张手牌',
+                labelKey: 'ui.ancient_egyptians_seal_the_tomb_mode_bury_option',
+                value: { mode: 'bury' },
+                displayMode: 'button' as const,
+            });
         }
         if (buriedChoices.length > 0) {
-            options.push({ id: 'uncover', label: '翻开同一基地至多两张你的埋葬牌', value: { mode: 'uncover' }, displayMode: 'button' as const });
+            options.push({
+                id: 'uncover',
+                label: '翻开同一基地至多两张你的埋葬牌',
+                labelKey: 'ui.ancient_egyptians_seal_the_tomb_mode_uncover_option',
+                value: { mode: 'uncover' },
+                displayMode: 'button' as const,
+            });
         }
         return createAbilityRuntimeSimpleChoice(
             `ancient_egyptians_seal_the_tomb_mode_${context.now}`,
@@ -819,6 +860,7 @@ const ancientEgyptiansSealTheTombModePromptProgram = createPromptProgram<
                 sourceId: 'ancient_egyptians_seal_the_tomb_mode',
                 targetType: 'button',
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_seal_the_tomb_mode_title',
             },
         );
     },
@@ -869,6 +911,7 @@ const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
             targetType: 'base',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
+            titleKey: 'ui.ancient_egyptians_mummy_after_scoring_title',
         },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
@@ -934,6 +977,7 @@ const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<
                 targetType: 'generic',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.ancient_egyptians_pharaoh_before_scoring_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -985,6 +1029,7 @@ const ancientEgyptiansPyramidsDuringTurnPromptProgram = createPromptProgram<
                 targetType: 'hand',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.base_pyramids_bury_title',
             },
         );
         interaction.data.optionsGenerator = (state) =>

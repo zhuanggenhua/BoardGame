@@ -500,7 +500,7 @@ export const HomeV2 = () => {
             <HomeV2DangerConfirmModal
                 open={Boolean(pendingDestroyMatch)}
                 title={t('confirm.destroy.title')}
-                description={t('homeV2.confirm.destroyDescription', { defaultValue: '销毁后会立即关闭房间，所有玩家将被移出当前对局。' })}
+                description={t('homeV2.confirm.destroyDescription')}
                 subject={pendingDestroyMatch ? `${pendingDestroyMatch.gameLabel} #${pendingDestroyMatch.matchID.slice(-4).toUpperCase()}` : ''}
                 cancelLabel={t('common:button.cancel')}
                 confirmLabel={t('actions.destroy')}

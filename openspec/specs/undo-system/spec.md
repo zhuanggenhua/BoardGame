@@ -15,6 +15,12 @@
 - **WHEN** Command 执行
 - **THEN** 系统按配置策略决定是否保存快照
 
+#### Scenario: AI 操作不占用人类撤回次数
+- **GIVEN** 对局已标记 AI 座位或命令明确标记为 AI 自动执行
+- **WHEN** AI 执行会改变领域状态的 Command
+- **THEN** 系统 MUST 不为该命令新增撤回快照
+- **AND** 已存在的人类玩家撤回历史保持不变
+
 ### Requirement: 撤销恢复
 系统 SHALL 支持从历史快照恢复游戏状态。
 

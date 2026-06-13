@@ -67,6 +67,8 @@ type QPointCardChoice = {
     ownerId: PlayerId;
     baseIndex: number;
     label: string;
+    minionUid?: string;
+    cardUid?: string;
 };
 
 type QPointContext = {
@@ -190,6 +192,8 @@ function queueMinionPrompt(
     targets: MinionTarget[],
     effectType: 'destroy' | 'move' | 'affect' | 'power_change',
     optional = false,
+    titleKey?: string,
+    titleParams?: Record<string, string | number>,
 ): AbilityResult {
     const options = buildMinionTargetOptions(targets, {
         state: ctx.state,
@@ -203,7 +207,7 @@ function queueMinionPrompt(
         ctx.playerId,
         title,
         optional ? [createSkipOption(), ...options] : options,
-        { sourceId, targetType: 'minion', autoResolveIfSingle: !optional },
+        { sourceId, targetType: 'minion', autoResolveIfSingle: !optional, titleKey, titleParams },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -238,6 +242,8 @@ function coronetAttack(ctx: AbilityContext): AbilityResult {
         '冠冕攻击：选择不由你控制且力量不高于你这里随从数量的随从',
         targets,
         'destroy',
+        false,
+        'ui.magical_girls_coronet_attack_title',
     );
 }
 
@@ -280,6 +286,7 @@ function lunarHealingLoveSpell(ctx: AbilityContext): AbilityResult {
         })),
         {
             sourceId: 'magical_girls_lunar_healing_love_spell',
+            titleKey: 'ui.magical_girls_lunar_healing_love_spell_title',
             targetType: 'generic',
             multi: { min: playersWithChoices.size, max: playersWithChoices.size },
         },
@@ -307,7 +314,11 @@ function kissTheSkySpell(ctx: AbilityContext): AbilityResult {
             value: { cardUid: card.uid, defId: card.defId, ownerId: ctx.playerId },
             displayCard: { defId: card.defId, cardUid: card.uid },
         })),
-        { sourceId: 'magical_girls_kiss_the_sky_spell', targetType: 'generic' },
+        {
+            sourceId: 'magical_girls_kiss_the_sky_spell',
+            titleKey: 'ui.magical_girls_kiss_the_sky_spell_title',
+            targetType: 'generic',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = { grantExtraAction: true };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -356,7 +367,11 @@ function purgeTheDemon(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '净化恶魔：摧毁一张行动牌，或移除一张卡上的所有力量指示物',
         options,
-        { sourceId: 'magical_girls_purge_the_demon', targetType: 'generic' },
+        {
+            sourceId: 'magical_girls_purge_the_demon',
+            titleKey: 'ui.magical_girls_purge_the_demon_title',
+            targetType: 'board',
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -374,6 +389,8 @@ function celestialTeleport(ctx: AbilityContext): AbilityResult {
         '传送：选择你的一个随从',
         ownMinions,
         'move',
+        false,
+        'ui.magical_girls_celestial_teleport_title',
     );
 }
 
@@ -391,12 +408,14 @@ function coordination(ctx: AbilityContext): AbilityResult {
         {
             id: 'extra-minion',
             label: '额外打出一个随从',
+            labelKey: 'ui.magical_girls_coordination_extra_minion_option',
             value: { choice: 'extra_minion' },
             displayMode: 'button' as const,
         },
         {
             id: 'walking-castle',
-            label: '打出 Walking Castle 泰坦',
+            label: '打出移动城堡泰坦',
+            labelKey: 'ui.magical_girls_coordination_walk_castle_option',
             value: { choice: 'walking_castle', titanUid: titan.uid },
             displayMode: 'button' as const,
         },
@@ -404,9 +423,13 @@ function coordination(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `magical_girls_coordination_${ctx.now}`,
         ctx.playerId,
-        '和谐：额外打出一个随从，或打出 Walking Castle',
+        '和谐：额外打出一个随从，或打出移动城堡',
         options,
-        { sourceId: 'magical_girls_coordination', targetType: 'button' },
+        {
+            sourceId: 'magical_girls_coordination',
+            titleKey: 'ui.magical_girls_coordination_title',
+            targetType: 'button',
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -447,7 +470,11 @@ function lunarCaptain(ctx: AbilityContext): AbilityResult {
             value: { cardUid: card.uid, defId: card.defId, ownerId: ctx.playerId },
             displayCard: { defId: card.defId, cardUid: card.uid },
         })),
-        { sourceId: 'magical_girls_lunar_captain', targetType: 'generic' },
+        {
+            sourceId: 'magical_girls_lunar_captain',
+            titleKey: 'ui.magical_girls_lunar_captain_title',
+            targetType: 'generic',
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -464,6 +491,8 @@ function technomagicalLass(ctx: AbilityContext): AbilityResult {
         'Technomagical Lass：消灭这里一个力量不高于你这里随从数量的敌方随从',
         targets,
         'destroy',
+        false,
+        'ui.magical_girls_technomagical_lass_title',
     );
 }
 
@@ -481,6 +510,9 @@ function sakuraWarrior(ctx: AbilityContext): AbilityResult {
         `樱花战士：选择这里一个随从直到你的下回合开始时 -${amount} 力量`,
         targets,
         'power_change',
+        false,
+        'ui.magical_girls_sakura_warrior_title',
+        { amount },
     );
     if (result.matchState) {
         (result.matchState.sys.interaction?.current?.data as { continuationContext?: unknown } | undefined)!.continuationContext = { amount };
@@ -574,6 +606,8 @@ function powerMaid(ctx: AbilityContext): AbilityResult {
         '女仆：选择力量不高于你这里随从数量的随从，将其移入或移出这里',
         targets,
         'move',
+        false,
+        'ui.magical_girls_power_maid_title',
     );
 }
 
@@ -598,6 +632,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
                 ownerId: minion.owner,
                 baseIndex,
                 label: `${cardLabel(minion.defId)}（随从）`,
+                minionUid: minion.uid,
             });
         }
         minion.attachedActions.forEach((action) => {
@@ -609,6 +644,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
                 ownerId: action.ownerId,
                 baseIndex,
                 label: `${cardLabel(action.defId)}（附着行动）`,
+                cardUid: action.uid,
             });
         });
     });
@@ -621,6 +657,7 @@ function collectQPointChoicesForPlayer(state: SmashUpCore, baseIndex: number, pl
             ownerId: action.ownerId,
             baseIndex,
             label: `${cardLabel(action.defId)}（基地行动）`,
+            cardUid: action.uid,
         });
     });
     return choices;
@@ -642,7 +679,11 @@ function queueQPointPrompt(matchState: MatchState<SmashUpCore>, context: QPointC
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.uid },
         })),
-        { sourceId: 'base_q_point', targetType: 'generic' },
+        {
+            sourceId: 'base_q_point',
+            titleKey: 'ui.magical_girls_q_point_title',
+            targetType: 'board',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = context;
     return queueInteraction(matchState, interaction);
@@ -914,9 +955,13 @@ export function registerMagicalGirlsInteractionHandlers(): void {
         const interaction = createSimpleChoice(
             `magical_girls_coordination_base_${timestamp}`,
             playerId,
-            '和谐：选择 Walking Castle 要进入的基地',
+            '和谐：选择移动城堡要进入的基地',
             buildBaseTargetOptions(eligibleBases, state.core),
-            { sourceId: 'magical_girls_coordination_base', targetType: 'base' },
+            {
+                sourceId: 'magical_girls_coordination_base',
+                titleKey: 'ui.magical_girls_coordination_base_title',
+                targetType: 'base',
+            },
         );
         return { state: queueInteraction(state, interaction), events: [] };
     });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { OptimizedImage } from '../common/media/OptimizedImage';
 import { isAndroidShellBuildMode, isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
@@ -13,6 +14,7 @@ const shouldHideOnRoute = (pathname: string) => (
 );
 
 export const PcWebMascot = () => {
+    const { t } = useTranslation('lobby');
     const location = useLocation();
     const [pulseKey, setPulseKey] = React.useState(0);
 
@@ -21,18 +23,18 @@ export const PcWebMascot = () => {
     }
 
     return (
-        <aside className="pc-web-mascot" data-testid="pc-web-mascot" aria-label="易桌游看板娘">
+        <aside className="pc-web-mascot" data-testid="pc-web-mascot" aria-label={t('mascot.container_label')}>
             <button
                 type="button"
                 className="pc-web-mascot__button"
-                aria-label="点击看板娘"
+                aria-label={t('mascot.button_label')}
                 data-testid="pc-web-mascot-button"
                 onClick={() => setPulseKey((value) => value + 1)}
             >
                 <span key={pulseKey} className="pc-web-mascot__scale">
                     <OptimizedImage
                         src={MASCOT_SRC}
-                        alt="易桌游看板娘"
+                        alt={t('mascot.image_alt')}
                         className="pc-web-mascot__image"
                         placeholder={false}
                         draggable={false}

@@ -9,6 +9,7 @@ import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel, ValidationResult } from './types';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import { isCardSuppressed } from './ongoingEffects';
+import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 import {
     createEffectProgram,
     executeAbilityProgram,
@@ -326,6 +327,7 @@ export function registerPodAbilityAliases(): void {
         if (defId.endsWith('_pod')) continue;
         if (defId.includes('_pod_')) continue;
         if (getTitanDef(defId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ability', defId)) continue;
 
         const podDefId = `${defId}_pod`;
         const podTagMap = registry.get(podDefId) ?? new Map<AbilityTag, RegisteredAbility>();

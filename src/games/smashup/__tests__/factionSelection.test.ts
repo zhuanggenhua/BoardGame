@@ -8,6 +8,7 @@
 
 import { describe, expect, it, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import type { MatchState } from '../../../engine/types';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
@@ -124,6 +125,51 @@ describe('派系选择系统', () => {
             expect(result.steps[0]?.success).toBe(true);
             expect(result.steps[1]?.success).toBe(true);
             expect(result.steps[2]?.success).toBe(true);
+        });
+
+        it('选种族记录缺失时会重建空选种族状态，并阻止自动推进到开局', () => {
+            const runner = createRunner();
+            const initial = runner.run({
+                name: '初始选种族状态',
+                commands: [],
+            }).finalState;
+
+            const corruptedState: MatchState<SmashUpCore> = {
+                ...initial,
+                sys: {
+                    ...initial.sys,
+                    phase: 'factionSelect',
+                },
+                core: {
+                    ...initial.core,
+                    factionSelection: undefined,
+                },
+            };
+
+            const normalized = SmashUpDomain.normalizeRuntimeState(corruptedState);
+            expect(normalized.core.factionSelection).toEqual({
+                takenFactions: [],
+                playerSelections: {
+                    '0': [],
+                    '1': [],
+                },
+                completedPlayers: [],
+            });
+
+            expect(
+                smashUpFlowHooks.onAutoContinueCheck({
+                    state: normalized,
+                    events: [],
+                }),
+            ).toBeUndefined();
+
+            expect(
+                SmashUpDomain.validate(normalized, {
+                    type: SU_COMMANDS.SELECT_FACTION,
+                    playerId: '0',
+                    payload: { factionId: SMASHUP_FACTION_IDS.ALIENS },
+                }).valid,
+            ).toBe(true);
         });
 
         it('非当前玩家不能选择', () => {
@@ -496,37 +542,37 @@ describe('派系选择系统', () => {
             ]);
         });
 
-        it('POD factions reuse their original base pool', () => {
+        it('POD factions return their POD base pool variants', () => {
             const baseIds = getBaseDefIdsForFactions([
                 SMASHUP_FACTION_IDS.WIZARDS_POD,
                 SMASHUP_FACTION_IDS.GHOSTS_POD,
             ]);
 
             expect(baseIds).toEqual(expect.arrayContaining([
-                'base_great_library',
-                'base_wizard_academy',
-                'base_dread_lookout',
-                'base_haunted_house_al9000',
+                'base_great_library_pod',
+                'base_wizard_academy_pod',
+                'base_dread_lookout_pod',
+                'base_haunted_house_al9000_pod',
             ]));
             expect(baseIds).not.toContain('base_the_homeworld');
         });
 
-        it('保留 POD 派系专属的基地池覆盖', () => {
+        it('POD 克苏鲁扩展派系返回 POD 基地 id', () => {
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD]).sort()).toEqual([
-                'base_mountains_of_madness',
-                'base_rlyeh',
+                'base_mountains_of_madness_pod',
+                'base_rlyeh_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.ELDER_THINGS_POD]).sort()).toEqual([
-                'base_antarctic_base',
-                'base_plateau_of_leng',
+                'base_antarctic_base_pod',
+                'base_plateau_of_leng_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.INNSMOUTH_POD]).sort()).toEqual([
-                'base_innsmouth_base',
-                'base_ritual_site',
+                'base_innsmouth_base_pod',
+                'base_ritual_site_pod',
             ]);
             expect(getBaseDefIdsForFactions([SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD]).sort()).toEqual([
-                'base_miskatonic_university_base',
-                'base_the_asylum',
+                'base_miskatonic_university_base_pod',
+                'base_the_asylum_pod',
             ]);
         });
 

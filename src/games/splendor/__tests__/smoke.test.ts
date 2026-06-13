@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { injectSimpleChoiceBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import { SplendorDomain } from '../domain';
 import type { SplendorCommand, SplendorCore, TokenColor } from '../domain';
 import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, calculateDiscounts, calculateEffectiveCost, computeGameResult, createPlayerState, getBankForPlayerCount } from '../domain/rules';
@@ -1970,6 +1971,22 @@ describe('splendor smoke', () => {
         const state = createAiState({
             hostStarted: false,
             currentPlayer: '0',
+        });
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+
+        expect(actions).toEqual([]);
+    });
+
+    test('AI 存在全局阻塞交互时不应继续生成普通行动', () => {
+        const state = createAiState({
+            hostStarted: true,
+            currentPlayer: '0',
+        });
+        injectSimpleChoiceBlockingInteraction(state, {
+            id: 'splendor-future-choice',
+            playerId: '1',
+            sourceId: 'splendor-future-choice',
         });
 
         const actions = buildSplendorAiLegalActions({ playerId: '0', state });

@@ -22,6 +22,8 @@ import {
   useEffectTrigger,
 } from './shared';
 
+const BREAKPOINT_LABEL_KEY = 'devtools.effectPreview.gameplay.shared.breakpoint';
+
 // ============================================================================
 // 基地占领特效
 // ============================================================================
@@ -29,9 +31,10 @@ import {
 /** 模拟基地卡牌 */
 const FakeBaseCard: React.FC<{
   label: string;
+  breakpointLabel: string;
   color: string;
   visible: boolean;
-}> = ({ label, color, visible }) => (
+}> = ({ label, breakpointLabel, color, visible }) => (
   <motion.div
     className={`absolute inset-0 rounded-lg border-2 flex flex-col items-center justify-center ${color}`}
     initial={false}
@@ -42,11 +45,12 @@ const FakeBaseCard: React.FC<{
     transition={{ duration: 0.4, ease: 'easeOut' }}
   >
     <span className="text-xs font-bold text-white drop-shadow">{label}</span>
-    <span className="text-[9px] text-white/60 mt-0.5">突破点: 20</span>
+    <span className="text-[9px] text-white/60 mt-0.5">{breakpointLabel}</span>
   </motion.div>
 );
 
 export const BaseCaptureCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [phase, setPhase] = useState<'idle' | 'capturing' | 'done'>('idle');
   const [showOld, setShowOld] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -83,17 +87,17 @@ export const BaseCaptureCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 
   return (
     <EffectCard
-      title="基地占领"
+      title={t('devtools.effectPreview.gameplay.base_capture.title')}
       icon={Castle}
       iconColor={iconColor}
-      desc="旧基地碎裂 → 能量汇聚 → 新基地出现"
+      desc={t('devtools.effectPreview.gameplay.base_capture.description')}
       stats={stats}
       buttons={<>
-        <TriggerButton label="触发占领" onClick={trigger} color="bg-amber-700 hover:bg-amber-600" />
-        <TriggerButton label="重置" onClick={reset} color="bg-slate-600 hover:bg-slate-500" />
+        <TriggerButton label={t('devtools.effectPreview.gameplay.base_capture.buttons.trigger')} onClick={trigger} color="bg-amber-700 hover:bg-amber-600" />
+        <TriggerButton label={t('devtools.effectPreview.gameplay.base_capture.buttons.reset')} onClick={reset} color="bg-slate-600 hover:bg-slate-500" />
         <div className="flex flex-wrap gap-1">
-          <ToggleChip label="粒子" active={showParticles} onClick={() => setShowParticles(v => !v)} />
-          <ToggleChip label="光晕" active={showGlow} onClick={() => setShowGlow(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.gameplay.base_capture.toggles.particles')} active={showParticles} onClick={() => setShowParticles(v => !v)} />
+          <ToggleChip label={t('devtools.effectPreview.gameplay.base_capture.toggles.glow')} active={showGlow} onClick={() => setShowGlow(v => !v)} />
         </div>
       </>}
     >
@@ -102,14 +106,16 @@ export const BaseCaptureCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
         <div className="relative w-40 h-28 rounded-lg">
           {/* 旧基地 */}
           <FakeBaseCard
-            label="罗兹 9 号"
+            label={t('devtools.effectPreview.gameplay.base_capture.preview.old_base')}
+            breakpointLabel={t(BREAKPOINT_LABEL_KEY, { value: 20 })}
             color="bg-gradient-to-br from-slate-700 to-slate-800 border-slate-500/50"
             visible={showOld}
           />
 
           {/* 新基地 */}
           <FakeBaseCard
-            label="中央指挥部"
+            label={t('devtools.effectPreview.gameplay.base_capture.preview.new_base')}
+            breakpointLabel={t(BREAKPOINT_LABEL_KEY, { value: 20 })}
             color="bg-gradient-to-br from-amber-700 to-orange-800 border-amber-400/50"
             visible={showNew}
           />
@@ -161,26 +167,26 @@ export const BaseCaptureCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 const TRIGGER_SCENES = [
   {
     defId: 'trickster_leprechaun',
-    label: '矮妖',
-    desc: '持续：消灭力量比自己低的随从',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_leprechaun.label',
+    descKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_leprechaun.description',
     previewRef: { type: 'atlas' as const, atlasId: 'smashup:cards4', index: 24 },
   },
   {
     defId: 'trickster_flame_trap',
-    label: '火焰陷阱',
-    desc: '持续：消灭进入基地的力量≤2随从',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_flame_trap.label',
+    descKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_flame_trap.description',
     previewRef: { type: 'atlas' as const, atlasId: 'smashup:cards4', index: 31 },
   },
   {
     defId: 'ninja_assassination',
-    label: '暗杀',
-    desc: '消灭力量≤3的随从',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.ninja_assassination.label',
+    descKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.ninja_assassination.description',
     previewRef: { type: 'atlas' as const, atlasId: 'smashup:cards1', index: 18 },
   },
   {
     defId: 'bear_cavalry_high_ground',
-    label: '制高点',
-    desc: '持续：你的随从+1力量',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.bear_cavalry_high_ground.label',
+    descKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.bear_cavalry_high_ground.description',
     previewRef: { type: 'atlas' as const, atlasId: 'smashup:cards3', index: 22 },
   },
 ] as const;
@@ -198,6 +204,7 @@ const FakeMinionSlot: React.FC<{
 );
 
 export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
+  const { t } = useTranslation('lobby');
   const [activeKey, setActiveKey] = useState(0);
   const [presetIdx, setPresetIdx] = useState(0);
   const { stats, startMeasure } = useEffectTrigger(2000);
@@ -238,16 +245,16 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
 
   return (
     <EffectCard
-      title="触发器激活"
+      title={t('devtools.effectPreview.gameplay.ability_triggered.title')}
       icon={Zap}
       iconColor={iconColor}
-      desc="⚡ 持续效果/被动能力触发时的卡牌动画"
+      desc={t('devtools.effectPreview.gameplay.ability_triggered.description')}
       stats={stats}
       buttons={<>
         {TRIGGER_SCENES.map((s, i) => (
           <TriggerButton
             key={s.defId}
-            label={s.label}
+            label={t(s.labelKey)}
             onClick={() => trigger(i)}
             color={i === presetIdx ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-slate-600 hover:bg-slate-500'}
           />
@@ -262,7 +269,7 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
               previewRef={scene.previewRef as CardPreviewRef}
               locale="zh-CN"
               className="w-full h-full"
-              title={scene.label}
+              title={t(scene.labelKey)}
             />
             {/* 触发标记 */}
             <AnimatePresence>
@@ -275,26 +282,26 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
                   transition={{ type: 'spring', stiffness: 500 }}
                 >
                   <Zap size={10} fill="currentColor" strokeWidth={1.5} />
-                  触发
+                  {t('devtools.effectPreview.gameplay.ability_triggered.preview.trigger_badge')}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <span className="text-[10px] text-amber-300 font-bold">{scene.label}</span>
-          <span className="text-[8px] text-slate-500 text-center max-w-[100px]">{scene.desc}</span>
+          <span className="text-[10px] text-amber-300 font-bold">{t(scene.labelKey)}</span>
+          <span className="text-[8px] text-slate-500 text-center max-w-[100px]">{t(scene.descKey)}</span>
         </div>
 
         {/* 右侧：模拟基地场景 */}
         <div className="relative flex flex-col items-center gap-1.5">
           {/* 基地标题 */}
-          <div className="text-[9px] text-slate-500 font-bold">蘑菇王国 · 突破点 20</div>
+          <div className="text-[9px] text-slate-500 font-bold">{t('devtools.effectPreview.gameplay.ability_triggered.preview.base_title')}</div>
           {/* 随从区 */}
           <div className="flex gap-1.5 p-2 rounded-lg bg-slate-800/60 border border-slate-700/50">
-            <FakeMinionSlot label="棕仙" power={4} color="border-emerald-600/50 bg-emerald-900/30" />
-            <FakeMinionSlot label="侏儒" power={3} color="border-blue-600/50 bg-blue-900/30" />
-            <FakeMinionSlot label="小鬼" power={2} color="border-purple-600/50 bg-purple-900/30" />
+            <FakeMinionSlot label={t('devtools.effectPreview.gameplay.ability_triggered.preview.minions.brownie')} power={4} color="border-emerald-600/50 bg-emerald-900/30" />
+            <FakeMinionSlot label={t('devtools.effectPreview.gameplay.ability_triggered.preview.minions.gnome')} power={3} color="border-blue-600/50 bg-blue-900/30" />
+            <FakeMinionSlot label={t('devtools.effectPreview.gameplay.ability_triggered.preview.minions.imp')} power={2} color="border-purple-600/50 bg-purple-900/30" />
           </div>
-          <span className="text-[8px] text-slate-600">模拟基地上的随从</span>
+          <span className="text-[8px] text-slate-600">{t('devtools.effectPreview.gameplay.ability_triggered.preview.minions_hint')}</span>
         </div>
 
         {/* ⚡ 触发动画浮层 */}
@@ -313,7 +320,7 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
         {/* 空闲提示 */}
         {activeKey === 0 && (
           <div className="absolute bottom-2 left-0 right-0 text-center">
-            <span className="text-[9px] text-slate-600">点击卡牌名触发预览</span>
+            <span className="text-[9px] text-slate-600">{t('devtools.effectPreview.gameplay.ability_triggered.preview.idle_hint')}</span>
           </div>
         )}
       </div>
@@ -328,18 +335,18 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
 export const meta: EffectEntryMeta[] = [
   {
     id: 'baseCapture',
-    label: '基地占领',
+    labelKey: 'devtools.effectPreview.entries.gameplay.baseCapture.label',
     icon: Castle,
     component: BaseCaptureCard,
     group: 'gameplay',
-    usageDesc: '大杀四方·基地被占领后的替换动画',
+    usageDescKey: 'devtools.effectPreview.entries.gameplay.baseCapture.usage',
   },
   {
     id: 'abilityTriggered',
-    label: '触发器激活',
+    labelKey: 'devtools.effectPreview.entries.gameplay.abilityTriggered.label',
     icon: Zap,
     component: AbilityTriggeredCard,
     group: 'gameplay',
-    usageDesc: '大杀四方·持续效果/被动能力触发时的 ⚡ 动画',
+    usageDescKey: 'devtools.effectPreview.entries.gameplay.abilityTriggered.usage',
   },
 ];

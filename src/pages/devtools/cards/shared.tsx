@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { getSpriteAtlasStyle, CARDS_ATLAS } from '../../../games/summonerwars/ui/cardAtlas';
 
@@ -155,6 +156,7 @@ export const TriggerButton: React.FC<{
 );
 
 export const PerfBar: React.FC<{ stats: PerfStats }> = ({ stats }) => {
+  const { t } = useTranslation('lobby');
   const fpsColor = !stats.isRunning ? 'text-slate-500' : stats.fps >= 55 ? 'text-emerald-400' : stats.fps >= 40 ? 'text-yellow-400' : 'text-red-400';
   const maxColor = stats.maxFrameTime > 33 ? 'text-red-400' : stats.maxFrameTime > 20 ? 'text-yellow-400' : 'text-slate-400';
   const showSecondLine = stats.avgFrameTime > 0 || stats.maxFrameTime > 0;
@@ -177,12 +179,12 @@ export const PerfBar: React.FC<{ stats: PerfStats }> = ({ stats }) => {
         className="flex gap-2.5 items-center whitespace-nowrap transition-opacity"
         style={{ opacity: showSecondLine ? 1 : 0 }}
       >
-        <span className="text-slate-400" title="全程平均帧时间">
-          均<span className="inline-block w-[5ch] text-right">{stats.avgFrameTime.toFixed(1)}</span>
+        <span className="text-slate-400" title={t('devtools.effectPreview.shared.avg_frame_time_title')}>
+          {t('devtools.effectPreview.shared.perf_avg')}<span className="inline-block w-[5ch] text-right">{stats.avgFrameTime.toFixed(1)}</span>
           <span className="text-[10px]">ms</span>
         </span>
-        <span className={maxColor} title="全程最高帧时间">
-          峰<span className="inline-block w-[5ch] text-right">{stats.maxFrameTime.toFixed(1)}</span>
+        <span className={maxColor} title={t('devtools.effectPreview.shared.peak_frame_time_title')}>
+          {t('devtools.effectPreview.shared.perf_peak')}<span className="inline-block w-[5ch] text-right">{stats.maxFrameTime.toFixed(1)}</span>
           <span className="text-[10px]">ms</span>
         </span>
         {stats.particles > 0 && <span className="text-blue-400">{stats.particles}p</span>}
@@ -290,16 +292,16 @@ export type PreviewCardProps = { useRealCards?: boolean; iconColor?: string };
 export interface EffectEntryMeta {
   /** 唯一 ID */
   id: string;
-  /** 显示名称 */
-  label: string;
+  /** 显示名称 i18n key */
+  labelKey: string;
   /** 图标组件（Lucide 风格） */
   icon: IconComponent;
   /** 预览卡片组件 */
   component: React.FC<PreviewCardProps>;
   /** 所属分组 ID */
   group: string;
-  /** 业务用途描述 */
-  usageDesc?: string;
+  /** 业务用途描述 i18n key */
+  usageDescKey?: string;
 }
 
 /**
@@ -307,7 +309,7 @@ export interface EffectEntryMeta {
  */
 export interface EffectGroupDef {
   id: string;
-  label: string;
+  labelKey: string;
   icon: IconComponent;
   colorClass: string;
   /** 排序权重，越小越靠前 */
@@ -316,12 +318,12 @@ export interface EffectGroupDef {
 
 /** 预置分组定义（卡片文件通过 group ID 引用） */
 export const EFFECT_GROUP_DEFS: EffectGroupDef[] = [
-  { id: 'particle', label: '粒子类', icon: Flame, colorClass: 'text-purple-400', order: 0 },
-  { id: 'impact', label: '打击类', icon: Swords, colorClass: 'text-rose-400', order: 1 },
-  { id: 'projectile', label: '投射类', icon: Send, colorClass: 'text-cyan-400', order: 2 },
-  { id: 'gameplay', label: '玩法类', icon: Castle, colorClass: 'text-orange-400', order: 3 },
-  { id: 'ui', label: 'UI 类', icon: Sparkles, colorClass: 'text-amber-400', order: 4 },
-  { id: 'loading', label: '加载类', icon: Hourglass, colorClass: 'text-emerald-400', order: 5 },
+  { id: 'particle', labelKey: 'devtools.effectPreview.groups.particle', icon: Flame, colorClass: 'text-purple-400', order: 0 },
+  { id: 'impact', labelKey: 'devtools.effectPreview.groups.impact', icon: Swords, colorClass: 'text-rose-400', order: 1 },
+  { id: 'projectile', labelKey: 'devtools.effectPreview.groups.projectile', icon: Send, colorClass: 'text-cyan-400', order: 2 },
+  { id: 'gameplay', labelKey: 'devtools.effectPreview.groups.gameplay', icon: Castle, colorClass: 'text-orange-400', order: 3 },
+  { id: 'ui', labelKey: 'devtools.effectPreview.groups.ui', icon: Sparkles, colorClass: 'text-amber-400', order: 4 },
+  { id: 'loading', labelKey: 'devtools.effectPreview.groups.loading', icon: Hourglass, colorClass: 'text-emerald-400', order: 5 },
 ];
 
 // 分组定义需要的图标（在此统一导入，避免每个卡片文件重复导入分组图标）

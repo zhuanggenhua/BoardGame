@@ -5,6 +5,7 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PlayerPanelSkeletonProps } from './types';
 
 /**
@@ -40,6 +41,7 @@ export const PlayerPanelSkeleton = memo(function PlayerPanelSkeleton({
     renderStatusEffect,
     renderPlayerInfo,
 }: PlayerPanelSkeletonProps) {
+    const { t } = useTranslation('game');
     const resourceEntries = Object.entries(player.resources);
     const statusEntries = Object.entries(player.statusEffects ?? {}).filter(
         ([, stacks]) => stacks > 0
@@ -51,7 +53,9 @@ export const PlayerPanelSkeleton = memo(function PlayerPanelSkeleton({
             data-player-id={player.playerId}
             data-current-player={isCurrentPlayer}
             role="region"
-            aria-label={`Player ${player.displayName ?? player.playerId} panel`}
+            aria-label={t('framework.player_panel.region_aria_label', {
+                player: player.displayName ?? player.playerId,
+            })}
         >
             {/* 玩家信息区域 */}
             {renderPlayerInfo && (
@@ -62,7 +66,12 @@ export const PlayerPanelSkeleton = memo(function PlayerPanelSkeleton({
 
             {/* 资源区域 */}
             {resourceEntries.length > 0 && renderResource && (
-                <div data-section="resources" className="flex flex-col gap-[0.5vw]" role="list" aria-label="Resources">
+                <div
+                    data-section="resources"
+                    className="flex flex-col gap-[0.5vw]"
+                    role="list"
+                    aria-label={t('framework.player_panel.resources_list_aria_label')}
+                >
                     {resourceEntries.map(([key, value]) => (
                         <div key={key} role="listitem" data-resource={key}>
                             {renderResource(key, value)}
@@ -73,7 +82,11 @@ export const PlayerPanelSkeleton = memo(function PlayerPanelSkeleton({
 
             {/* 状态效果区域 */}
             {statusEntries.length > 0 && renderStatusEffect && (
-                <div data-section="status-effects" role="list" aria-label="Status effects">
+                <div
+                    data-section="status-effects"
+                    role="list"
+                    aria-label={t('framework.player_panel.status_effects_list_aria_label')}
+                >
                     {statusEntries.map(([effectId, stacks]) => (
                         <div key={effectId} role="listitem" data-effect={effectId}>
                             {renderStatusEffect(effectId, stacks)}

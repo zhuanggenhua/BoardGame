@@ -1,0 +1,8 @@
+{
+  "route": "/dev/home-v2-preview",
+  "accountCount": 1,
+  "badgeCount": 0,
+  "accountText": "书友甲",
+  "badgeText": "",
+  "accountHtml": "<button type=\"button\" data-testid=\"home-v2-account-entry\" aria-label=\"书友甲\" title=\"书友甲\" class=\"absolute flex items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70\" style=\"left: 71%; top: 7.6%; width: 10%; height: 5.2%; gap: calc(6px * var(--home-v2-stage-scale));\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-user\" aria-hidden=\"true\" style=\"width: calc(21px * var(--home-v2-stage-scale)); height: calc(21px * var(--home-v2-stage-scale));\"><path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\"></path><circle cx=\"12\" cy=\"7\" r=\"4\"></circle></svg><span class=\"truncate\" style=\"max-width: calc(102px * var(--home-v2-stage-scale)); font-size: calc(16px * var(--home-v2-stage-scale)); font-weight: 700;\">书友甲</span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-down\" aria-hidden=\"true\" style=\"width: calc(17px * var(--home-v2-stage-scale)); height: calc(17px * var(--home-v2-stage-scale));\"><path d=\"m6 9 6 6 6-6\"></path></svg></button>"
+}

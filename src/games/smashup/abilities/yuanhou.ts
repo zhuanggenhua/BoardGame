@@ -312,6 +312,7 @@ function shapeshiftersGeneticShift(ctx: AbilityContext): AbilityResult {
             {
                 id: 'all-own-minions',
                 label: '你的所有仆从 +1',
+                labelKey: 'ui.shapeshifters_genetic_shift_all_option',
                 value: { mode: 'all' },
                 displayMode: 'button',
             },
@@ -326,7 +327,11 @@ function shapeshiftersGeneticShift(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '基因转变：选择强化模式',
             options,
-            { sourceId: 'shapeshifters_genetic_shift_choose', targetType: 'generic' },
+            {
+                sourceId: 'shapeshifters_genetic_shift_choose',
+                targetType: 'generic',
+                titleKey: 'ui.shapeshifters_genetic_shift_choose_title',
+            },
         );
         interaction.data.allowedMinionUids = allMinions(ctx.state)
             .filter(({ minion }) => minion.controller === ctx.playerId)
@@ -351,6 +356,7 @@ function shapeshiftersTransmogrify(ctx: AbilityContext): AbilityResult {
             reason: 'shapeshifters_transmogrify',
             maxPower: targetPower,
         },
+        'ui.shapeshifters_transmogrify_search_title',
     );
     return {
         events: [
@@ -381,6 +387,7 @@ function shapeshiftersReally(ctx: AbilityContext): AbilityResult {
             reason: 'shapeshifters_really',
             maxPower: targetPower,
         },
+        'ui.shapeshifters_really_search_title',
     );
     return {
         events: [
@@ -422,6 +429,7 @@ function shapeshiftersMitosis(ctx: AbilityContext): AbilityResult {
                 sourceId: 'shapeshifters_mitosis_choose',
                 targetType: 'generic',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.shapeshifters_mitosis_choose_title',
             },
         );
         interaction.data.allowedCardUids = sameNameCards.map(card => card.uid);
@@ -444,6 +452,7 @@ function shapeshiftersGelf(ctx: AbilityContext): AbilityResult {
             excludeDefId: 'shapeshifters_gelf',
             extraDeckUidsForShuffle: [located.minion.uid],
         },
+        'ui.shapeshifters_gelf_search_title',
     );
     return {
         events: [
@@ -473,6 +482,7 @@ function shapeshiftersDoppelganger(ctx: TriggerContext): SmashUpEvent[] | Trigge
             baseIndex: ctx.baseIndex,
             reason: 'shapeshifters_doppelganger',
         },
+        'ui.shapeshifters_doppelganger_search_title',
     );
     return search.matchState ? search : search.events;
 }
@@ -489,7 +499,11 @@ function shapeshiftersCopycat(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '模仿者：选择要复制能力的其他玩家仆从',
             candidates.map(({ minion }) => buildMinionPromptOption(minion, { minionUid: minion.uid })),
-            { sourceId: 'shapeshifters_copycat_choose', targetType: 'minion' },
+            {
+                sourceId: 'shapeshifters_copycat_choose',
+                targetType: 'minion',
+                titleKey: 'ui.shapeshifters_copycat_choose_title',
+            },
         );
         interaction.data.copycatUid = ctx.cardUid;
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
@@ -523,8 +537,12 @@ function shapeshiftersCellularBonding(ctx: AbilityContext): AbilityResult {
             `shapeshifters_cellular_bonding_choose_${ctx.now}`,
             ctx.playerId,
             '细胞结合：选择要复制能力的附着行动',
-            candidates.map(action => buildAttachedActionPromptOption(action, { actionUid: action.uid })),
-            { sourceId: 'shapeshifters_cellular_bonding_choose', targetType: 'generic' },
+            candidates.map(action => buildAttachedActionPromptOption(action, { actionUid: action.uid, cardUid: action.uid })),
+            {
+                sourceId: 'shapeshifters_cellular_bonding_choose',
+                targetType: 'ongoing',
+                titleKey: 'ui.shapeshifters_cellular_bonding_choose_title',
+            },
         );
         interaction.data.hostMinionUid = host.minion.uid;
         interaction.data.hostBaseIndex = host.baseIndex;
@@ -677,7 +695,11 @@ function cyborgApesMonkeyOnYourBack(ctx: AbilityContext): AbilityResult {
                 value: { minionUid: minion.uid },
                 displayMode: 'card' as const,
             })),
-            { sourceId: 'cyborg_apes_monkey_on_your_back_choose', targetType: 'minion' },
+            {
+                sourceId: 'cyborg_apes_monkey_on_your_back_choose',
+                targetType: 'minion',
+                titleKey: 'ui.cyborg_apes_monkey_on_your_back_choose_title',
+            },
         );
         interaction.data.actionUid = ctx.cardUid;
         interaction.data.allowedMinionUids = targets.map(({ minion }) => minion.uid);
@@ -730,6 +752,7 @@ function cyborgApesMonkeySeeMonkeyDo(ctx: AbilityContext): AbilityResult {
                 targetType: 'generic',
                 multi: { min: 0, max: actions.length },
                 responseValidationMode: 'live',
+                titleKey: 'ui.cyborg_apes_monkey_see_monkey_do_choose_title',
             },
         );
         interaction.data.inspectedUids = revealed.map(card => card.uid);
@@ -812,7 +835,7 @@ function cyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): TriggerResult 
             getOngoingActionControllerId(action),
             '飞猴：选择要移动到的另一基地',
             [
-                createSkipOption('跳过（照常进入弃牌堆）'),
+                createSkipOption('跳过（照常进入弃牌堆）', 'ui.cyborg_apes_flying_monkey_skip_discard_option'),
                 ...destinations.map(({ base: targetBase, index }, choiceIndex) => ({
                     id: `base-${index}`,
                     label: getBaseDef(targetBase.defId)?.name ?? targetBase.defId,
@@ -820,7 +843,11 @@ function cyborgApesFlyingMonkeyAfterScoring(ctx: TriggerContext): TriggerResult 
                     displayMode: 'button' as const,
                 })),
             ],
-            { sourceId: 'cyborg_apes_flying_monkey_move', targetType: 'button' },
+            {
+                sourceId: 'cyborg_apes_flying_monkey_move',
+                targetType: 'button',
+                titleKey: 'ui.cyborg_apes_flying_monkey_move_title',
+            },
         );
         interaction.data.allowedFlyingMonkeyMoves = moveChoices;
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -881,7 +908,7 @@ function shapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): TriggerR
         getOngoingActionControllerId(bondingAction),
         '细胞结合-飞猴：选择要移动到的另一基地',
         [
-            createSkipOption('跳过（照常进入弃牌堆）'),
+            createSkipOption('跳过（照常进入弃牌堆）', 'ui.cyborg_apes_flying_monkey_skip_discard_option'),
             ...destinations.map(({ base: targetBase, index }, choiceIndex) => ({
                 id: `base-${index}`,
                 label: getBaseDef(targetBase.defId)?.name ?? targetBase.defId,
@@ -889,7 +916,11 @@ function shapeshiftersCellularBondingFlyingMonkey(ctx: TriggerContext): TriggerR
                 displayMode: 'button' as const,
             })),
         ],
-        { sourceId: 'cyborg_apes_flying_monkey_move', targetType: 'button' },
+        {
+            sourceId: 'cyborg_apes_flying_monkey_move',
+            targetType: 'button',
+            titleKey: 'ui.shapeshifters_cellular_bonding_flying_monkey_move_title',
+        },
     );
     interaction.data.allowedFlyingMonkeyMoves = moveChoices;
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -911,7 +942,11 @@ function superSpiesSpy(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '间谍：将这几张牌按任意顺序放回牌库顶/底',
         buildIsiSwinginPadReorderOptions(ctx.playerId, revealed),
-        { sourceId: 'super_spies_spy_reorder', targetType: 'generic' },
+        {
+            sourceId: 'super_spies_spy_reorder',
+            targetType: 'generic',
+            titleKey: 'ui.super_spies_spy_reorder_title',
+        },
     );
     attachDeckReorderContext(interaction, ctx.playerId, revealed);
     return {
@@ -940,6 +975,7 @@ function superSpiesOperative(ctx: AbilityContext): AbilityResult {
             targetType: 'player',
             multi: { min: 0, max: playerOptions.length },
             responseValidationMode: 'live',
+            titleKey: 'ui.super_spies_operative_players_title',
         },
     );
     interaction.data.allowedPlayerIds = playerOptions.map(option => option.value.targetPlayerId);
@@ -961,7 +997,11 @@ function superSpiesLiveAndLetChum(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '让对手鱼饵：选择要摧毁的低力量随从',
             candidates.map(({ minion }) => buildMinionPromptOption(minion, { minionUid: minion.uid })),
-            { sourceId: 'super_spies_live_and_let_chum_choose', targetType: 'minion' },
+            {
+                sourceId: 'super_spies_live_and_let_chum_choose',
+                targetType: 'minion',
+                titleKey: 'ui.super_spies_live_and_let_chum_choose_title',
+            },
         );
         interaction.data.baseIndex = baseIndex;
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
@@ -996,7 +1036,11 @@ function superSpiesTheSpyWhoDitchedMe(ctx: AbilityContext): AbilityResult {
                     playerId,
                     '抛弃我的间谍：选择一张随从牌弃掉',
                     minionCards.map(card => buildCardPromptOption(card, { cardUid: card.uid })),
-                    { sourceId: 'super_spies_the_spy_who_ditched_me_discard', targetType: 'hand' },
+                    {
+                        sourceId: 'super_spies_the_spy_who_ditched_me_discard',
+                        targetType: 'hand',
+                        titleKey: 'ui.super_spies_the_spy_who_ditched_me_discard_title',
+                    },
                 );
                 interaction.data.allowedCardUids = minionCards.map(card => card.uid);
                 matchState = queueInteraction(matchState, interaction);
@@ -1050,7 +1094,11 @@ function superSpiesPermitToKill(ctx: AbilityContext): AbilityResult {
                 ctx.playerId,
                 '杀戮许可：选择其余牌回到牌库顶的顺序',
                 buildDeckTopOrderOptions(playerId, rest, 'permit-kill-order'),
-                { sourceId: 'super_spies_permit_to_kill_order', targetType: 'generic' },
+                {
+                    sourceId: 'super_spies_permit_to_kill_order',
+                    targetType: 'generic',
+                    titleKey: 'ui.super_spies_permit_to_kill_order_title',
+                },
             );
             attachDeckReorderContext(interaction, playerId, rest);
             matchState = queueInteraction(matchState, interaction);
@@ -1071,7 +1119,11 @@ function superSpiesForMyEyesOnly(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '只为我的眼睛：选择牌库顶/牌库底顺序',
         buildIsiSwinginPadReorderOptions(ctx.playerId, revealed),
-        { sourceId: 'super_spies_for_my_eyes_only_reorder', targetType: 'generic' },
+        {
+            sourceId: 'super_spies_for_my_eyes_only_reorder',
+            targetType: 'generic',
+            titleKey: 'ui.super_spies_for_my_eyes_only_reorder_title',
+        },
     );
     attachDeckReorderContext(interaction, ctx.playerId, revealed);
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1118,7 +1170,11 @@ function superSpiesTheBaseIsNotEnough(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '基地永远不够：选择要控制的低力量随从',
             candidates.map(({ minion }) => buildMinionPromptOption(minion, { minionUid: minion.uid })),
-            { sourceId: 'super_spies_the_base_is_not_enough_choose', targetType: 'minion' },
+            {
+                sourceId: 'super_spies_the_base_is_not_enough_choose',
+                targetType: 'minion',
+                titleKey: 'ui.super_spies_the_base_is_not_enough_choose_title',
+            },
         );
         interaction.data.baseIndex = baseIndex;
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
@@ -1170,6 +1226,7 @@ function superSpiesFromQWithLove(ctx: AbilityContext): AbilityResult {
                 targetType: 'hand',
                 multi: { min: discardCount, max: discardCount },
                 responseValidationMode: 'live',
+                titleKey: 'ui.super_spies_from_q_with_love_discard_title',
             },
         );
         interaction.data.allowedCardUids = projectedHand.map(card => card.uid);
@@ -1230,7 +1287,11 @@ function superSpiesSecretAgent(ctx: TriggerContext): SmashUpEvent[] | TriggerRes
             actionPlayerId,
             '秘密特工：选择要弃掉的手牌',
             hand.map(card => buildCardPromptOption(card, { cardUid: card.uid })),
-            { sourceId: 'super_spies_secret_agent_discard', targetType: 'hand' },
+            {
+                sourceId: 'super_spies_secret_agent_discard',
+                targetType: 'hand',
+                titleKey: 'ui.super_spies_secret_agent_discard_title',
+            },
         );
         interaction.data.allowedCardUids = hand.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1251,7 +1312,11 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
                 value: { cardUid: card.uid },
                 displayMode: 'card' as const,
             })),
-            { sourceId: 'time_travelers_time_raider_choose', targetType: 'generic' },
+            {
+                sourceId: 'time_travelers_time_raider_choose',
+                targetType: 'generic',
+                titleKey: 'ui.time_travelers_time_raider_choose_title',
+            },
         );
         interaction.data.allowedCardUids = discard.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1284,7 +1349,11 @@ function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
                 value: { cardUid: card.uid },
                 displayMode: 'card' as const,
             })),
-            { sourceId: 'time_travelers_repeater_perfect_choose', targetType: 'generic' },
+            {
+                sourceId: 'time_travelers_repeater_perfect_choose',
+                targetType: 'generic',
+                titleKey: 'ui.time_travelers_repeater_perfect_choose_title',
+            },
         );
         interaction.data.allowedCardUids = actions.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1308,10 +1377,15 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '时间博士：选择要返回手牌的另一个己方随从',
             [
-                createSkipOption('不返回随从'),
+                createSkipOption('不返回随从', 'ui.time_travelers_doctor_when_skip_option'),
                 ...candidates.map(({ minion }) => buildMinionPromptOption(minion, { minionUid: minion.uid })),
             ],
-            { sourceId: 'time_travelers_doctor_when_choose', targetType: 'minion', autoResolveIfSingle: false },
+            {
+                sourceId: 'time_travelers_doctor_when_choose',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                titleKey: 'ui.time_travelers_doctor_when_choose_title',
+            },
         );
         interaction.data.doctorUid = ctx.cardUid;
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
@@ -1323,10 +1397,15 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '时间博士：选择是否返回另一个己方随从',
             [
-                createSkipOption('不返回随从'),
+                createSkipOption('不返回随从', 'ui.time_travelers_doctor_when_skip_option'),
                 buildMinionPromptOption(candidates[0].minion, { minionUid: candidates[0].minion.uid }),
             ],
-            { sourceId: 'time_travelers_doctor_when_choose', targetType: 'minion', autoResolveIfSingle: false },
+            {
+                sourceId: 'time_travelers_doctor_when_choose',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                titleKey: 'ui.time_travelers_doctor_when_optional_title',
+            },
         );
         interaction.data.doctorUid = ctx.cardUid;
         interaction.data.allowedMinionUids = candidates.map(({ minion }) => minion.uid);
@@ -1362,7 +1441,11 @@ function timeTravelersItsAstounding(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '令人震惊：选择从弃牌堆打出的行动',
             actions.map(card => buildCardPromptOption(card, { cardUid: card.uid })),
-            { sourceId: 'time_travelers_its_astounding_choose', targetType: 'generic' },
+            {
+                sourceId: 'time_travelers_its_astounding_choose',
+                targetType: 'generic',
+                titleKey: 'ui.time_travelers_its_astounding_choose_title',
+            },
         );
         interaction.data.allowedCardUids = actions.map(card => card.uid);
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1399,10 +1482,16 @@ function timeTravelersIntoTheTimeSlip(ctx: AbilityContext): AbilityResult {
         inPlay.map(card => ({
             id: card.cardUid,
             label: card.label,
-            value: { cardUid: card.cardUid },
+            value: card.type === 'minion'
+                ? { cardUid: card.cardUid, minionUid: card.cardUid }
+                : { cardUid: card.cardUid },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'time_travelers_into_the_time_slip_choose', targetType: 'generic' },
+        {
+            sourceId: 'time_travelers_into_the_time_slip_choose',
+            targetType: 'board',
+            titleKey: 'ui.time_travelers_into_the_time_slip_choose_title',
+        },
     );
     interaction.data.allowedCardUids = inPlay.map(card => card.cardUid);
     return {
@@ -1423,10 +1512,14 @@ function timeTravelersGigawatts(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             '1.21 千兆瓦：选择把行动或仆从放回牌库',
             [
-                { id: 'actions', label: '行动', value: { cardType: 'action' }, displayMode: 'button' as const },
-                { id: 'minions', label: '仆从', value: { cardType: 'minion' }, displayMode: 'button' as const },
+                { id: 'actions', label: '行动', labelKey: 'ui.time_travelers_1_21_gigawatts_action_option', value: { cardType: 'action' }, displayMode: 'button' as const },
+                { id: 'minions', label: '仆从', labelKey: 'ui.time_travelers_1_21_gigawatts_minion_option', value: { cardType: 'minion' }, displayMode: 'button' as const },
             ],
-            { sourceId: 'time_travelers_1_21_gigawatts_choose', targetType: 'button' },
+            {
+                sourceId: 'time_travelers_1_21_gigawatts_choose',
+                targetType: 'button',
+                titleKey: 'ui.time_travelers_1_21_gigawatts_choose_title',
+            },
         );
         interaction.data.allowedCardTypes = allowedCardTypes;
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1540,7 +1633,11 @@ function timeTravelersTimeIsFleeting(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '时间流逝：选择要放到基地牌库顶的基地',
         options,
-        { sourceId: 'time_travelers_time_is_fleeting_choose', targetType: 'generic' },
+        {
+            sourceId: 'time_travelers_time_is_fleeting_choose',
+            targetType: 'generic',
+            titleKey: 'ui.time_travelers_time_is_fleeting_choose_title',
+        },
     );
     interaction.data.scoredBaseDefId = scoredBaseDefId;
     interaction.data.allowedBaseDefIds = baseDiscard;
@@ -1641,6 +1738,7 @@ function timeTravelersWormhole(ctx: AbilityContext): AbilityResult {
                 targetType: 'minion',
                 multi: { min: 0, max: playerMinions.length },
                 responseValidationMode: 'live',
+                titleKey: 'ui.time_travelers_wormhole_choose_title',
             },
         );
         interaction.data.allowedMinionUids = playerMinions.map(minion => minion.uid);
@@ -1696,10 +1794,14 @@ function baseFacelessCity(ctx: BaseAbilityContext): AbilityResult {
             ctx.playerId,
             '无面之城：选择是否搜寻同名随从加入手牌',
             [
-                createSkipOption('跳过搜寻'),
+                createSkipOption('跳过搜寻', 'ui.base_faceless_city_skip_search_option'),
                 ...matchingCards.map(card => buildCardPromptOption(card, { cardUid: card.uid })),
             ],
-            { sourceId: 'base_faceless_city_choose', targetType: 'generic' },
+            {
+                sourceId: 'base_faceless_city_choose',
+                targetType: 'generic',
+                titleKey: 'ui.base_faceless_city_choose_title',
+            },
         );
         interaction.data.allowedCardUids = matchingCards.map(card => card.uid);
         interaction.data.minionDefId = ctx.minionDefId;
@@ -1758,7 +1860,7 @@ function baseTheNexus(ctx: BaseAbilityContext): AbilityResult {
         winnerId,
         '联结点：选择一个基地放到基地牌库顶',
         [
-            createSkipOption('跳过（照常抽新基地）'),
+            createSkipOption('跳过（照常抽新基地）', 'ui.base_the_nexus_skip_option'),
             ...choices.map(baseDefId => ({
                 id: baseDefId,
                 label: getBaseDef(baseDefId)?.name ?? baseDefId,
@@ -1766,7 +1868,11 @@ function baseTheNexus(ctx: BaseAbilityContext): AbilityResult {
                 displayMode: 'button' as const,
             })),
         ],
-        { sourceId: 'base_the_nexus_choose', targetType: 'button' },
+        {
+            sourceId: 'base_the_nexus_choose',
+            targetType: 'button',
+            titleKey: 'ui.base_the_nexus_choose_title',
+        },
     );
     interaction.data.allowedBaseDefIds = choices;
     return {
@@ -1800,9 +1906,10 @@ function basePrimatePark(ctx: BaseAbilityContext): AbilityResult {
         })),
         {
             sourceId: 'base_primate_park_return',
-            targetType: 'generic',
+            targetType: 'ongoing',
             multi: { min: 0, max: attachedActions.length },
             responseValidationMode: 'live',
+            titleKey: 'ui.base_primate_park_return_title',
         },
     );
     interaction.data.allowedCardUids = attachedActions.map(card => card.cardUid);
@@ -2219,6 +2326,7 @@ function buildDiscardActionTargetOptions(
             ? [{
                 id: 'play',
                 label: '直接打出',
+                labelKey: 'ui.discard_action_play_direct_option',
                 value: { cardUid: card.uid },
                 displayMode: 'button' as const,
             }]
@@ -2362,6 +2470,8 @@ function resolveItsAstoundingAction(
             targetType: mode,
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
+            titleKey: 'ui.time_travelers_its_astounding_target_title',
+            titleParams: { cardName: cardLabel(card) },
         },
     );
     interaction.data.cardUid = card.uid;
@@ -2390,6 +2500,7 @@ function queueDiscardMinionBaseChoice(
             targetType: 'base',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
+            titleKey: 'ui.shapeshifters_really_base_title',
         },
     );
     interaction.data.selectedCardUid = selected.cardUid;
@@ -2437,6 +2548,7 @@ function queueOperativeTopBottomChoice(
             targetType: 'generic',
             multi: { min: 0, max: options.length },
             responseValidationMode: 'live',
+            titleKey: 'ui.super_spies_operative_top_bottom_title',
         },
     );
     interaction.data.revealedByPlayer = revealedByPlayer;
@@ -2448,6 +2560,7 @@ function queueDeckMinionSearch(
     sourceId: string,
     title: string,
     params: Omit<DeckMinionSearchChoice, 'cardUid'>,
+    titleKey?: string,
 ): AbilityResult {
     const cardOptions = buildDeckMinionSearchOptions(ctx.state, ctx.playerId, params);
     const options = [...cardOptions, buildSkipSearchOption<DeckMinionSearchChoice & { skip?: true }>() as PromptOption<DeckMinionSearchChoice>];
@@ -2466,6 +2579,7 @@ function queueDeckMinionSearch(
             autoResolveIfSingle: false,
             autoRefresh: 'deck',
             responseValidationMode: 'live',
+            titleKey,
         },
     );
     interaction.data.allowedCardUids = cardOptions.map(option => option.value.cardUid);
@@ -2477,6 +2591,7 @@ function queueDiscardMinionSearch(
     sourceId: string,
     title: string,
     params: Omit<DiscardMinionSearchChoice, 'cardUid'>,
+    titleKey?: string,
 ): AbilityResult {
     const cardOptions = buildDiscardMinionSearchOptions(ctx.state, ctx.playerId, params);
     const options = [...cardOptions, buildSkipSearchOption<DiscardMinionSearchChoice & { skip?: true }>() as PromptOption<DiscardMinionSearchChoice>];
@@ -2495,6 +2610,7 @@ function queueDiscardMinionSearch(
             autoResolveIfSingle: false,
             autoRefresh: 'discard',
             responseValidationMode: 'live',
+            titleKey,
         },
     );
     interaction.data.allowedCardUids = cardOptions.map(option => option.value.cardUid);
@@ -2523,7 +2639,11 @@ function baseIsiSwinginPad(ctx: BaseAbilityContext): AbilityResult {
         winnerId,
         "ISI摇摆据点：选择牌库顶顺序",
         buildIsiSwinginPadReorderOptions(winnerId, inspected),
-        { sourceId: 'base_isis_swingin_pad_reorder', targetType: 'generic' },
+        {
+            sourceId: 'base_isis_swingin_pad_reorder',
+            targetType: 'generic',
+            titleKey: 'ui.base_isis_swingin_pad_reorder_title',
+        },
     );
     attachDeckReorderContext(interaction, winnerId, inspected);
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };

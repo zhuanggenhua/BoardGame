@@ -5,6 +5,7 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PhaseIndicatorSkeletonProps } from './types';
 
 /**
@@ -41,13 +42,14 @@ export const PhaseIndicatorSkeleton = memo(function PhaseIndicatorSkeleton({
     );
 
     const render = renderPhaseItem ?? defaultRenderPhaseItem;
+    const { t } = useTranslation('game');
 
     return (
         <div
             className={className}
             data-orientation={orientation}
             role="list"
-            aria-label="游戏阶段"
+            aria-label={t('framework.phase_indicator.list_aria_label')}
         >
             {phases.map((phase, index) => {
                 const isActive = phase.id === currentPhaseId;

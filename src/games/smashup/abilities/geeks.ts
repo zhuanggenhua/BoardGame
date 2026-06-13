@@ -52,6 +52,8 @@ type GeeksPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
 };
 
 type GeeksCosplayPromptContext = GeeksPromptContext & {
@@ -246,12 +248,13 @@ const geeksCosplayPromptProgram = createPromptProgram<GeeksCosplayPromptContext,
             {
                 id: 'play',
                 label: '打出角色扮演',
+                labelKey: 'ui.geeks_cosplay_play_option',
                 value: { cardUid: context.cardUid, defId: context.defId },
                 displayMode: 'card',
             } satisfies PromptOption<GeeksCosplayChoice>,
             createSkipOption(),
         ],
-        { sourceId: 'geeks_cosplay', targetType: 'hand', autoResolveIfSingle: false },
+        { sourceId: 'geeks_cosplay', targetType: 'hand', autoResolveIfSingle: false, titleKey: 'ui.geeks_cosplay_title' },
     ),
     onResolve: ({ context, value, timestamp }) => {
         const choice = value as GeeksCosplayChoice | undefined;
@@ -583,7 +586,7 @@ function buildGeeksMinMaxingBaseOptions(
 
     return [
         ...buildBaseTargetOptions(candidates, borrowedState.core) as PromptOption<GeeksMinMaxingBaseChoice>[],
-        createSkipOption('放弃打出这张牌') as PromptOption<GeeksMinMaxingBaseChoice>,
+        createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksMinMaxingBaseChoice>,
     ];
 }
 
@@ -627,7 +630,7 @@ function buildGeeksMinMaxingMinionOptions(
 
     return [
         ...buildMinionTargetOptions(candidates, { state: borrowedState.core }) as PromptOption<GeeksMinMaxingMinionChoice>[],
-        createSkipOption('放弃打出这张牌') as PromptOption<GeeksMinMaxingMinionChoice>,
+        createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksMinMaxingMinionChoice>,
     ];
 }
 
@@ -639,7 +642,7 @@ function buildGeeksMinMaxingActionOptions(
 ): PromptOption<GeeksMinMaxingActionChoice>[] {
     const targetPlayer = matchState.core.players[targetPlayerId];
     if (!targetPlayer) {
-        return [createSkipOption('放弃额外打牌') as PromptOption<GeeksMinMaxingActionChoice>];
+        return [createSkipOption('放弃额外打牌', 'ui.geeks_skip_extra_action_option') as PromptOption<GeeksMinMaxingActionChoice>];
     }
 
     const options = targetPlayer.hand
@@ -685,7 +688,7 @@ function buildGeeksMinMaxingActionOptions(
             } satisfies PromptOption<GeeksMinMaxingActionChoice>];
         });
 
-    return [...options, createSkipOption('放弃额外打牌') as PromptOption<GeeksMinMaxingActionChoice>];
+    return [...options, createSkipOption('放弃额外打牌', 'ui.geeks_skip_extra_action_option') as PromptOption<GeeksMinMaxingActionChoice>];
 }
 
 function buildGeeksMinMaxingOpponentOptions(
@@ -769,7 +772,7 @@ function buildGeeksNonInfiniteLoopActionOptions(
 ): PromptOption<GeeksNonInfiniteLoopActionChoice>[] {
     const player = matchState.core.players[playerId];
     if (!player) {
-        return [createSkipOption('放弃额外打牌') as PromptOption<GeeksNonInfiniteLoopActionChoice>];
+        return [createSkipOption('放弃额外打牌', 'ui.geeks_skip_extra_action_option') as PromptOption<GeeksNonInfiniteLoopActionChoice>];
     }
 
     const preparedState = buildGeeksNonInfiniteLoopPreparedMatchState(matchState, playerId, now);
@@ -811,7 +814,7 @@ function buildGeeksNonInfiniteLoopActionOptions(
         } satisfies PromptOption<GeeksNonInfiniteLoopActionChoice>];
     });
 
-    return [...options, createSkipOption('放弃额外打牌') as PromptOption<GeeksNonInfiniteLoopActionChoice>];
+    return [...options, createSkipOption('放弃额外打牌', 'ui.geeks_skip_extra_action_option') as PromptOption<GeeksNonInfiniteLoopActionChoice>];
 }
 
 function buildGeeksNonInfiniteLoopBaseOptions(
@@ -834,7 +837,7 @@ function buildGeeksNonInfiniteLoopBaseOptions(
 
     return [
         ...buildBaseTargetOptions(candidates, preparedState.core) as PromptOption<GeeksNonInfiniteLoopBaseChoice>[],
-        createSkipOption('放弃打出这张牌') as PromptOption<GeeksNonInfiniteLoopBaseChoice>,
+        createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksNonInfiniteLoopBaseChoice>,
     ];
 }
 
@@ -869,7 +872,7 @@ function buildGeeksNonInfiniteLoopMinionOptions(
 
     return [
         ...buildMinionTargetOptions(candidates, { state: preparedState.core }) as PromptOption<GeeksNonInfiniteLoopMinionChoice>[],
-        createSkipOption('放弃打出这张牌') as PromptOption<GeeksNonInfiniteLoopMinionChoice>,
+        createSkipOption('放弃打出这张牌', 'ui.geeks_skip_replay_card_option') as PromptOption<GeeksNonInfiniteLoopMinionChoice>,
     ];
 }
 
@@ -1501,12 +1504,14 @@ const geeksMulliganPromptProgram = createPromptProgram<GeeksMulliganPromptContex
             {
                 id: 'draw',
                 label: '全部加入手牌',
+                labelKey: 'ui.geeks_mulligan_draw_all_option',
                 value: { action: 'draw' },
                 displayMode: 'button',
             } satisfies PromptOption<GeeksMulliganChoice>,
             {
                 id: 'keep',
                 label: '保持原样',
+                labelKey: 'ui.geeks_mulligan_keep_option',
                 value: { action: 'keep' },
                 displayMode: 'button',
             } satisfies PromptOption<GeeksMulliganChoice>,
@@ -1514,6 +1519,8 @@ const geeksMulliganPromptProgram = createPromptProgram<GeeksMulliganPromptContex
         {
             sourceId: 'geeks_mulligan',
             targetType: 'button',
+            titleKey: 'ui.geeks_mulligan_title',
+            titleParams: { count: context.topCards.length },
         },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
@@ -1670,6 +1677,7 @@ const geeksMinMaxingBasePromptProgram = createPromptProgram<GeeksMinMaxingTarget
                 targetType: 'base',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_min_maxing_base_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksMinMaxingBaseOptions(
@@ -1720,6 +1728,7 @@ const geeksMinMaxingMinionPromptProgram = createPromptProgram<GeeksMinMaxingTarg
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_min_maxing_minion_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksMinMaxingMinionOptions(
@@ -1769,6 +1778,8 @@ const geeksMinMaxingActionPromptProgram = createPromptProgram<GeeksMinMaxingActi
                 targetType: 'generic',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_min_maxing_action_title',
+                titleParams: { playerLabel: getPlayerLabel(context.targetPlayerId) },
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksMinMaxingActionOptions(
@@ -1834,6 +1845,7 @@ const geeksMinMaxingOpponentPromptProgram = createPromptProgram<GeeksMinMaxingOp
                 targetType: 'button',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_min_maxing_opponent_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksMinMaxingOpponentOptions(
@@ -1890,6 +1902,7 @@ const geeksNonInfiniteLoopBasePromptProgram = createPromptProgram<GeeksNonInfini
                 targetType: 'base',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_non_infinite_loop_base_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksNonInfiniteLoopBaseOptions(
@@ -1936,6 +1949,7 @@ const geeksNonInfiniteLoopMinionPromptProgram = createPromptProgram<GeeksNonInfi
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_non_infinite_loop_minion_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksNonInfiniteLoopMinionOptions(
@@ -1983,6 +1997,7 @@ const geeksNonInfiniteLoopActionPromptProgram = createPromptProgram<GeeksNonInfi
                 targetType: 'hand',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_non_infinite_loop_action_title',
             },
         );
         interaction.data.optionsGenerator = (state) => buildGeeksNonInfiniteLoopActionOptions(
@@ -2046,6 +2061,7 @@ const geeksControlMinionTriggeredPromptProgram = createPromptProgram<GeeksContro
             {
                 id: 'play',
                 label: '打出控制仆从',
+                labelKey: 'ui.geeks_control_minion_play_option',
                 value: { play: true },
                 displayMode: 'button' as const,
             } satisfies PromptOption<GeeksControlMinionTriggeredChoice>,
@@ -2055,6 +2071,7 @@ const geeksControlMinionTriggeredPromptProgram = createPromptProgram<GeeksContro
             sourceId: 'geeks_control_minion_triggered',
             targetType: 'button',
             displayCard: { defId: 'geeks_control_minion', cardUid: context.cardUid },
+            titleKey: 'ui.geeks_control_minion_triggered_title',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -2114,6 +2131,7 @@ const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyer
                     targetType: 'base',
                     autoResolveIfSingle: false,
                     responseValidationMode: 'live',
+                    titleKey: 'ui.geeks_rules_lawyer_target_base_title',
                 },
             );
         }
@@ -2136,6 +2154,7 @@ const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyer
                 targetType: 'minion',
                 autoResolveIfSingle: false,
                 responseValidationMode: 'live',
+                titleKey: 'ui.geeks_rules_lawyer_target_minion_title',
             },
         );
     },
@@ -2205,9 +2224,10 @@ const geeksRulesLawyerActionPromptProgram = createPromptProgram<GeeksRulesLawyer
         })),
         {
             sourceId: 'geeks_rules_lawyer_action',
-            targetType: 'generic',
+            targetType: 'ongoing',
             autoResolveIfSingle: false,
             responseValidationMode: 'live',
+            titleKey: 'ui.geeks_rules_lawyer_action_title',
         },
     ),
     onResolve: ({ state, playerId, value, timestamp, context }) => {

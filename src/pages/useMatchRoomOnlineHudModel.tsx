@@ -1,6 +1,7 @@
 import { type ComponentProps } from 'react';
 import { GameHUD, resolveGameHudPhase } from '../components/game/framework/widgets/GameHUD';
 import { type AiSeatController } from '../engine/ai';
+import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import { useGameClient } from '../engine/transport/react';
 import { useMatchRoomHudForceDismiss } from './useMatchRoomHudForceDismiss';
 import { useMatchRoomHudPresenceModel } from './useMatchRoomHudPresenceModel';
@@ -21,6 +22,7 @@ export type MatchRoomOnlineHudBridgeProps = {
     showForceEndAiPhase?: boolean;
     isLoading?: boolean;
     seatControllers: Record<string, AiSeatController>;
+    engineConfig?: OnlineAiRecoveryEngineConfig | null;
 };
 
 type MatchRoomOnlineHudModel = ComponentProps<typeof GameHUD>;
@@ -40,6 +42,7 @@ export function useMatchRoomOnlineHudModel({
     showForceEndAiPhase,
     isLoading,
     seatControllers,
+    engineConfig,
 }: MatchRoomOnlineHudBridgeProps): MatchRoomOnlineHudModel {
     const { state, dispatch, matchPlayers, isConnected } = useGameClient();
     const hudPresence = useMatchRoomHudPresenceModel({
@@ -59,6 +62,7 @@ export function useMatchRoomOnlineHudModel({
         state,
         dispatch,
         myPlayerId,
+        engineConfig,
     });
     const seatSwapModel = useMatchRoomHudSeatSwapModel({
         gameId,

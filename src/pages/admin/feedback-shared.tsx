@@ -2,30 +2,8 @@
 import { useState } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, Copy } from 'lucide-react';
+import type { FeedbackClientContext, FeedbackElementSummary, FeedbackErrorContext } from '../../lib/feedback/feedbackPayload';
 import { cn } from '../../lib/utils';
-
-export interface FeedbackClientContext {
-    route?: string;
-    mode?: string;
-    matchId?: string;
-    playerId?: string;
-    gameId?: string;
-    appVersion?: string;
-    userAgent?: string;
-    viewport?: {
-        width: number;
-        height: number;
-    };
-    language?: string;
-    timezone?: string;
-}
-
-export interface FeedbackErrorContext {
-    message?: string;
-    name?: string;
-    stack?: string;
-    source?: string;
-}
 
 export interface FeedbackUser {
     _id: string;
@@ -296,6 +274,57 @@ function prettyPrintJson(raw?: string | null): string | null {
     }
 }
 
+function formatElementSummary(element?: FeedbackElementSummary): string {
+    if (!element) return '-';
+
+    const head = [
+        element.tagName || '',
+        element.type ? `[type=${element.type}]` : '',
+        element.role ? `[role=${element.role}]` : '',
+        element.testId ? `[testid=${element.testId}]` : '',
+        element.id ? `#${element.id}` : '',
+        element.name ? `[name=${element.name}]` : '',
+    ].filter(Boolean).join('');
+    const tail = [element.ariaLabel ? `label=${element.ariaLabel}` : '', element.text ? `text=${element.text}` : '']
+        .filter(Boolean)
+        .join(', ');
+
+    return tail ? `${head || '-'} (${tail})` : head || '-';
+}
+
+function formatLastUserAction(context: FeedbackClientContext): string {
+    const action = context.lastUserAction;
+    if (!action) return '-';
+    const parts = [
+        action.type,
+        action.key ? `key=${action.key}` : '',
+        action.at ? `at=${action.at}` : '',
+        action.target ? `target=${formatElementSummary(action.target)}` : '',
+    ].filter(Boolean);
+    return parts.join(', ');
+}
+
+function formatRouteChange(context: FeedbackClientContext): string {
+    const routeChange = context.lastRouteChange;
+    if (!routeChange) return '-';
+    const from = routeChange.from || '-';
+    return `${from} -> ${routeChange.to} (${routeChange.trigger} @ ${routeChange.at})`;
+}
+
+function formatPageFlags(context: FeedbackClientContext): string {
+    const flags = context.pageFlags;
+    if (!flags) return '-';
+    const parts = [
+        flags.isGamePage ? 'game-page' : '',
+        flags.hasModalOpen ? 'modal-open' : '',
+        flags.gameId ? `game=${flags.gameId}` : '',
+        flags.homeStyle ? `homeStyle=${flags.homeStyle}` : '',
+        flags.mobileLayoutPreset ? `layout=${flags.mobileLayoutPreset}` : '',
+        flags.mobileProfile ? `profile=${flags.mobileProfile}` : '',
+    ].filter(Boolean);
+    return parts.join(', ') || '-';
+}
+
 function buildClientContextLines(context: FeedbackClientContext | null | undefined): string[] {
     if (!context) return ['- 未附带客户端上下文'];
 
@@ -309,6 +338,10 @@ function buildClientContextLines(context: FeedbackClientContext | null | undefin
         `- language: ${context.language || '-'}`,
         `- timezone: ${context.timezone || '-'}`,
         `- viewport: ${context.viewport ? `${context.viewport.width}x${context.viewport.height}` : '-'}`,
+        `- activeElement: ${formatElementSummary(context.activeElement)}`,
+        `- lastUserAction: ${formatLastUserAction(context)}`,
+        `- lastRouteChange: ${formatRouteChange(context)}`,
+        `- pageFlags: ${formatPageFlags(context)}`,
         `- userAgent: ${context.userAgent || '-'}`,
     ];
 }
@@ -320,6 +353,8 @@ function buildErrorContextLines(context: FeedbackErrorContext | null | undefined
         `- source: ${context.source || '-'}`,
         `- name: ${context.name || '-'}`,
         `- message: ${context.message || '-'}`,
+        `- jsStack: ${measureTextBlock(context.jsStack || context.stack) ? `${measureTextBlock(context.jsStack || context.stack)?.lines ?? 0} 行` : '-'}`,
+        `- componentStack: ${measureTextBlock(context.componentStack) ? `${measureTextBlock(context.componentStack)?.lines ?? 0} 行` : '-'}`,
     ];
 }
 
@@ -339,6 +374,8 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
     const prettyActionLog = prettyPrintJson(item.actionLog);
     const prettyStateSnapshot = prettyPrintJson(item.stateSnapshot);
     const errorStack = item.errorContext?.stack?.trim() || null;
+    const jsStack = item.errorContext?.jsStack?.trim() || null;
+    const componentStack = item.errorContext?.componentStack?.trim() || null;
     const contentText = extractText(item.content, t);
 
     return [
@@ -371,19 +408,33 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
         `- 状态快照: ${stateSnapshotMetrics ? `${stateSnapshotMetrics.lines} 行 / ${stateSnapshotMetrics.chars} 字符` : '未附带'}`,
         stateSummary ? `- 状态摘要: ${stateSummary}` : '',
         factionSummary ? `- 派系摘要: ${factionSummary}` : '',
-        errorStack ? `- 错误堆栈: ${measureTextBlock(errorStack)?.lines ?? 0} 行` : '- 错误堆栈: 未附带',
+        jsStack
+            ? `- JS 堆栈: ${measureTextBlock(jsStack)?.lines ?? 0} 行`
+            : errorStack
+                ? `- 错误堆栈: ${measureTextBlock(errorStack)?.lines ?? 0} 行`
+                : '- 错误堆栈: 未附带',
+        componentStack ? `- 组件栈: ${measureTextBlock(componentStack)?.lines ?? 0} 行` : '',
         '',
         '## 4. 客户端上下文',
         ...buildClientContextLines(item.clientContext),
         '',
         '## 5. 错误上下文',
         ...buildErrorContextLines(item.errorContext),
-        ...(errorStack
+        ...((jsStack || (!jsStack && errorStack))
             ? [
                 '',
-                '### 错误堆栈',
+                jsStack ? '### JS 堆栈' : '### 错误堆栈',
                 '```text',
-                errorStack,
+                jsStack || errorStack || '',
+                '```',
+            ]
+            : []),
+        ...(componentStack
+            ? [
+                '',
+                '### React 组件栈',
+                '```text',
+                componentStack,
                 '```',
             ]
             : []),

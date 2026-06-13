@@ -33,6 +33,11 @@ import {
     hasEmbeddedImage,
 } from './components/FeedbackHelpers';
 import { ADMIN_API_URL } from '../../config/server';
+import type {
+    FeedbackClientContext,
+    FeedbackElementSummary,
+    FeedbackErrorContext,
+} from '../../lib/feedback/feedbackPayload';
 import { cn } from '../../lib/utils';
 
 interface FeedbackItem {
@@ -60,26 +65,21 @@ interface FeedbackItem {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
-    clientContext?: {
-        route?: string;
-        mode?: string;
-        matchId?: string;
-        playerId?: string;
-        gameId?: string;
-        appVersion?: string;
-        userAgent?: string;
-        viewport?: { width: number; height: number };
-        language?: string;
-        timezone?: string;
-    };
-    errorContext?: {
-        message?: string;
-        name?: string;
-        stack?: string;
-        source?: string;
-    };
+    clientContext?: FeedbackClientContext;
+    errorContext?: FeedbackErrorContext;
     createdAt: string;
     canManage?: boolean;
+}
+
+function summarizeFeedbackElement(element?: FeedbackElementSummary): string {
+    if (!element) return '-';
+    const base = [
+        element.tagName || '',
+        element.type ? `[type=${element.type}]` : '',
+        element.testId ? `[testid=${element.testId}]` : '',
+        element.id ? `#${element.id}` : '',
+    ].filter(Boolean).join('');
+    return element.text ? `${base || '-'} ${element.text}` : (base || '-');
 }
 
 type StatusOption = { value: FeedbackItem['status']; color: string };
@@ -1005,6 +1005,12 @@ function FeedbackRow({
                             >
                                 <div className="font-semibold">{item.errorContext.name || '-'}</div>
                                 <div>{item.errorContext.message || '-'}</div>
+                                <div className="text-red-500">{item.errorContext.source || '-'}</div>
+                                {item.clientContext?.lastUserAction && (
+                                    <div className="text-red-500">
+                                        {t('feedback.detail.recentAction')}: {item.clientContext.lastUserAction.type} / {summarizeFeedbackElement(item.clientContext.lastUserAction.target)}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1321,16 +1327,16 @@ function FeedbackDetailPanel({
                                             <p className="break-all">{t('feedback.detail.incidentKey')}: {item.incidentKey}</p>
                                         )}
                                         {typeof item.occurrenceCount === 'number' && (
-                                            <p>聚合次数: {item.occurrenceCount}</p>
+                                            <p>{t('feedback.detail.occurrenceCount')}: {item.occurrenceCount}</p>
                                         )}
                                         {item.firstOccurredAt && (
-                                            <p>首次出现: {formatAbsoluteTime(item.firstOccurredAt)}</p>
+                                            <p>{t('feedback.detail.firstOccurredAt')}: {formatAbsoluteTime(item.firstOccurredAt)}</p>
                                         )}
                                         {item.lastOccurredAt && (
-                                            <p>最近出现: {formatAbsoluteTime(item.lastOccurredAt)}</p>
+                                            <p>{t('feedback.detail.lastOccurredAt')}: {formatAbsoluteTime(item.lastOccurredAt)}</p>
                                         )}
                                         {item.latestIncidentKey && (
-                                            <p className="break-all">最新 Incident: {item.latestIncidentKey}</p>
+                                            <p className="break-all">{t('feedback.detail.latestIncidentKey')}: {item.latestIncidentKey}</p>
                                         )}
                                     </>
                                 )}
@@ -1369,12 +1375,18 @@ function FeedbackDetailPanel({
                         className="rounded-lg border border-red-100 bg-red-50 p-2.5"
                     >
                         <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-red-400">
-                            错误上下文
+                            {t('feedback.detail.errorContext')}
                         </p>
                         <div className="space-y-1 text-xs text-red-700">
                             <p>{item.errorContext.name || '-'}</p>
                             <p>{item.errorContext.message || '-'}</p>
                             <p>{item.errorContext.source || '-'}</p>
+                            {item.clientContext?.lastUserAction && (
+                                <p>{t('feedback.detail.recentAction')}: {item.clientContext.lastUserAction.type} / {summarizeFeedbackElement(item.clientContext.lastUserAction.target)}</p>
+                            )}
+                            {item.clientContext?.activeElement && (
+                                <p>{t('feedback.detail.activeElement')}: {summarizeFeedbackElement(item.clientContext.activeElement)}</p>
+                            )}
                         </div>
                     </section>
                 )}

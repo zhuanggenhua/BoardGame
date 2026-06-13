@@ -56,7 +56,7 @@ export const ReviewForm = ({ onSubmit, initialData, isSubmitting }: ReviewFormPr
         >
             <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-parchment-base-text">{t('form.label', '你的评价')}</label>
+                    <label className="text-sm font-bold text-parchment-base-text">{t('form.label')}</label>
                     <div className="flex gap-4">
                         <button
                             type="button"

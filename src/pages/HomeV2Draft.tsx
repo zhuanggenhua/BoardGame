@@ -1579,7 +1579,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                     ) : null}
                     <button
                         type="button"
-                        aria-label="调整左侧抽屉宽度"
+                        aria-label={t('homeV2.authoring.resize_left_drawer_aria')}
                         data-testid="home-v2-left-drawer-resize"
                         className="absolute -right-[3px] top-5 bottom-5 z-10 w-[6px] cursor-ew-resize rounded-full bg-amber-100/70 shadow-[0_0_0_1px_rgba(255,248,235,0.38)]"
                         onPointerDown={(event) => {
@@ -1644,7 +1644,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                     ) : null}
                     <button
                         type="button"
-                        aria-label="调整属性抽屉宽度"
+                        aria-label={t('homeV2.authoring.resize_right_drawer_aria')}
                         data-testid="home-v2-right-drawer-resize"
                         className="absolute -left-[3px] top-5 bottom-5 z-10 w-[6px] cursor-ew-resize rounded-full bg-amber-100/70 shadow-[0_0_0_1px_rgba(255,248,235,0.38)]"
                         onPointerDown={(event) => {
@@ -1703,7 +1703,7 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                     />
                     <button
                         type="button"
-                        aria-label="调整源码抽屉高度"
+                        aria-label={t('homeV2.authoring.resize_source_drawer_aria')}
                         data-testid="home-v2-source-drawer-resize"
                         className="absolute left-1/2 top-2 z-10 h-[6px] w-28 -translate-x-1/2 cursor-ns-resize rounded-full bg-amber-100/72 shadow-[0_0_0_1px_rgba(255,248,235,0.38)]"
                         onPointerDown={(event) => {

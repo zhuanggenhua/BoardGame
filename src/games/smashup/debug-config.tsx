@@ -38,12 +38,12 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
         <div className="space-y-4">
             {/* 分数调整 */}
             <div className="bg-rose-50 p-3 rounded-lg border border-rose-200" data-testid="su-debug-vp">
-                <h4 className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-3">分数调整 (VP)</h4>
+                <h4 className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-3">{t('debug.vp.section_title')}</h4>
                 <div className="space-y-2">
                     <div className="flex gap-2 items-center">
                         <select value={vpPlayer} onChange={(e) => setVpPlayer(e.target.value)} className="flex-1 px-2 py-1.5 text-xs border border-rose-300 rounded bg-white text-gray-900">
-                            <option value="0">P0 (VP: {core?.players?.['0']?.vp ?? 0})</option>
-                            <option value="1">P1 (VP: {core?.players?.['1']?.vp ?? 0})</option>
+                            <option value="0">{t('debug.vp.player_option', { player: 0, vp: core?.players?.['0']?.vp ?? 0 })}</option>
+                            <option value="1">{t('debug.vp.player_option', { player: 1, vp: core?.players?.['1']?.vp ?? 0 })}</option>
                         </select>
                         <input
                             type="number"
@@ -58,14 +58,14 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                             className="flex-1 px-3 py-1.5 bg-rose-500 text-white rounded text-xs font-bold hover:bg-rose-600"
                             data-testid="su-debug-vp-add"
                         >
-                            ➕ 增加 {vpDelta} VP
+                            {t('debug.vp.add', { count: vpDelta })}
                         </button>
                         <button
                             onClick={() => dispatch('SYS_CHEAT_ADD_RESOURCE', { playerId: vpPlayer, resourceId: 'vp', delta: -vpDelta })}
                             className="flex-1 px-3 py-1.5 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600"
                             data-testid="su-debug-vp-sub"
                         >
-                            ➖ 减少 {vpDelta} VP
+                            {t('debug.vp.subtract', { count: vpDelta })}
                         </button>
                     </div>
                 </div>
@@ -73,16 +73,19 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
 
             {/* 刷新基地调试 */}
             <div className="bg-blue-50 p-3 rounded-lg border border-blue-200" data-testid="su-debug-refresh-base">
-                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">刷新基地</h4>
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">{t('debug.refresh_base.section_title')}</h4>
                 <div className="space-y-2">
                     <div className="text-[9px] text-blue-600 mb-2">
-                        场上基地: {core?.bases?.length ?? 0} 个 | 基地牌库: {core?.baseDeck?.length ?? 0} 张
+                        {t('debug.refresh_base.summary', {
+                            baseCount: core?.bases?.length ?? 0,
+                            deckCount: core?.baseDeck?.length ?? 0,
+                        })}
                     </div>
                     <div className="text-[9px] text-blue-700 bg-blue-100 p-2 rounded mb-2">
                         {core?.baseDeck && core.baseDeck.length > 0 ? (
-                            <>💡 点击场上基地可刷新单个，或点击下方按钮刷新全部</>
+                            <>{t('debug.refresh_base.help')}</>
                         ) : (
-                            <span className="text-orange-500">基地牌库为空，刷新将清空所有基地</span>
+                            <span className="text-orange-500">{t('debug.refresh_base.empty_deck')}</span>
                         )}
                     </div>
                     <button
@@ -99,17 +102,19 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                         className="w-full px-3 py-1.5 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         data-testid="su-debug-refresh-all-bases-apply"
                     >
-                        🔄 刷新所有基地 {core?.baseDeck?.length === 0 ? '(清空)' : ''}
+                        {t('debug.refresh_base.apply', {
+                            clearSuffix: core?.baseDeck?.length === 0 ? ` ${t('debug.refresh_base.clear_suffix')}` : '',
+                        })}
                     </button>
                 </div>
             </div>
 
             {/* 强制结算基地 */}
             <div className="bg-orange-50 p-3 rounded-lg border border-orange-200" data-testid="su-debug-force-score">
-                <h4 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-3">强制结算基地</h4>
+                <h4 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-3">{t('debug.force_score.section_title')}</h4>
                 <div className="space-y-2">
                     <div className="text-[9px] text-orange-700 bg-orange-100 p-2 rounded mb-2">
-                        💡 将所有有随从的基地临界点设为 0，触发立即结算
+                        {t('debug.force_score.help')}
                     </div>
                     <button
                         onClick={() => {
@@ -127,22 +132,22 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                         className="w-full px-3 py-1.5 bg-orange-500 text-white rounded text-xs font-bold hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         data-testid="su-debug-force-score-apply"
                     >
-                        ⚡ 强制结算有随从的基地
+                        {t('debug.force_score.apply')}
                     </button>
                 </div>
             </div>
 
             {/* 发牌调试 */}
             <div className="bg-green-50 p-3 rounded-lg border border-green-200" data-testid="su-debug-deal">
-                <h4 className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-3">发牌调试 (剩余牌库索引)</h4>
+                <h4 className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-3">{t('debug.deal.section_title')}</h4>
                 <div className="space-y-2">
                     <div className="text-[9px] text-green-700 bg-green-100 p-2 rounded">
-                        这里只操作当前剩余牌库，不会从完整卡池直接补牌到手牌。
+                        {t('debug.deal.description')}
                     </div>
                     <div className="flex gap-2">
                         <select value={dealPlayer} onChange={(e) => setDealPlayer(e.target.value)} className="flex-1 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-gray-900">
-                            <option value="0">P0 (牌库 {core?.players?.['0']?.deck?.length ?? 0} 张)</option>
-                            <option value="1">P1 (牌库 {core?.players?.['1']?.deck?.length ?? 0} 张)</option>
+                            <option value="0">{t('debug.deal.player_deck_option', { player: 0, count: core?.players?.['0']?.deck?.length ?? 0 })}</option>
+                            <option value="1">{t('debug.deal.player_deck_option', { player: 1, count: core?.players?.['1']?.deck?.length ?? 0 })}</option>
                         </select>
                         <input
                             type="number"
@@ -151,14 +156,25 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                             value={deckIndex}
                             onChange={(e) => setDeckIndex(Number(e.target.value))}
                             className="w-16 px-2 py-1.5 text-xs border border-green-300 rounded bg-white text-center text-gray-900"
-                            placeholder="索引"
+                            placeholder={t('debug.deal.index_placeholder')}
                         />
                     </div>
                     <div className="text-[9px] text-green-600 mb-1">
-                        牌库剩余: {playerDeck.length} 张 | 手牌: {playerHand.length} 张
+                        {t('debug.deal.status', {
+                            deckCount: playerDeck.length,
+                            handCount: playerHand.length,
+                        })}
                         {selectedCard
-                            ? <span className="ml-1 text-green-700">| 索引 {deckIndex}: {getCardName(selectedCard.defId)} ({selectedCard.type === 'minion' ? '随从' : '行动'})</span>
-                            : <span className="ml-1 text-red-400">| 索引超出范围</span>
+                            ? (
+                                <span className="ml-1 text-green-700">
+                                    {t('debug.deal.status_hit', {
+                                        index: deckIndex,
+                                        name: getCardName(selectedCard.defId),
+                                        cardType: t(selectedCard.type === 'minion' ? 'ui.minion' : 'ui.action'),
+                                    })}
+                                </span>
+                            )
+                            : <span className="ml-1 text-red-400">{t('debug.deal.status_miss')}</span>
                         }
                     </div>
                     <button
@@ -179,7 +195,7 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                         className="w-full px-3 py-1.5 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         data-testid="su-debug-deal-apply"
                     >
-                        🎴 从剩余牌库发牌 (索引 {deckIndex})
+                        {t('debug.deal.apply', { index: deckIndex })}
                     </button>
                 </div>
             </div>
@@ -187,11 +203,11 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
             {/* 牌库预览 */}
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
                 <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">
-                    牌库预览 (P{dealPlayer}) - 共 {playerDeck.length} 张
+                    {t('debug.deck_preview.section_title', { player: dealPlayer, count: playerDeck.length })}
                 </h4>
                 <div className="max-h-48 overflow-y-auto">
                     {playerDeck.length === 0 ? (
-                        <div className="text-[10px] text-amber-400 text-center py-2">牌库为空</div>
+                        <div className="text-[10px] text-amber-400 text-center py-2">{t('debug.deck_preview.empty')}</div>
                     ) : (
                         <div className="space-y-1">
                             {playerDeck.map((card, idx) => {
@@ -207,7 +223,7 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
                                     >
                                         <span className="w-5 text-amber-500 font-mono">{idx}</span>
                                         <span className={`px-1 rounded text-[8px] ${card.type === 'minion' ? 'bg-amber-200 text-amber-800' : 'bg-purple-200 text-purple-800'}`}>
-                                            {card.type === 'minion' ? '随从' : '行动'}
+                                            {t(card.type === 'minion' ? 'ui.minion' : 'ui.action')}
                                         </span>
                                         <span className="flex-1 truncate">{getCardName(card.defId)}</span>
                                         <span className="text-amber-400 text-[8px] font-mono">{card.defId}</span>
@@ -221,22 +237,22 @@ export const SmashUpDebugConfig: React.FC<SmashUpDebugConfigProps> = ({ G, dispa
 
             {/* 手牌预览 */}
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">手牌预览 (P{dealPlayer}) - 共 {playerHand.length} 张</h4>
+                <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">{t('debug.hand_preview.section_title', { player: dealPlayer, count: playerHand.length })}</h4>
                 <div className="max-h-24 overflow-y-auto">
                     {playerHand.length === 0 ? (
-                        <div className="text-[10px] text-slate-400 text-center py-2">手牌为空</div>
+                        <div className="text-[10px] text-slate-400 text-center py-2">{t('debug.hand_preview.empty')}</div>
                     ) : (
                         <div className="space-y-1">
                             {playerHand.map((card) => (
                                 <div key={card.uid} className="flex items-center gap-2 text-[10px] text-slate-700 px-1 py-0.5 rounded">
                                     <span className={`px-1 rounded text-[8px] ${card.type === 'minion' ? 'bg-amber-200 text-amber-800' : 'bg-purple-200 text-purple-800'}`}>
-                                        {card.type === 'minion' ? '随从' : '行动'}
+                                        {t(card.type === 'minion' ? 'ui.minion' : 'ui.action')}
                                     </span>
                                     <span className="flex-1 truncate">{getCardName(card.defId)}</span>
                                     <button
                                         onClick={() => dispatch('SYS_CHEAT_REMOVE_HAND_CARD', { playerId: dealPlayer, cardUid: card.uid })}
                                         className="px-1.5 py-0.5 bg-red-400 text-white rounded text-[8px] font-bold hover:bg-red-500 shrink-0"
-                                        title="删除此手牌（移入弃牌堆）"
+                                        title={t('debug.hand_preview.remove_card_title')}
                                     >
                                         ✕
                                     </button>

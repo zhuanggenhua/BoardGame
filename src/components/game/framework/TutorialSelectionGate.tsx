@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { LoadingScreen } from '../../system/LoadingScreen';
 
 export interface TutorialSelectionGateProps {
@@ -23,16 +24,19 @@ export interface TutorialSelectionGateProps {
 export const TutorialSelectionGate: React.FC<TutorialSelectionGateProps> = ({
     isTutorialMode,
     isTutorialActive,
-    loadingText = '教程初始化中',
+    loadingText,
     containerClassName,
     textClassName,
     children,
 }) => {
+    const { t } = useTranslation('common');
+    const resolvedLoadingText = loadingText ?? t('tutorialSelectionGate.loading');
+
     if (isTutorialMode || isTutorialActive) {
         return (
             <LoadingScreen
                 anchor="container"
-                description={loadingText}
+                description={resolvedLoadingText}
                 className={containerClassName}
                 descriptionClassName={textClassName}
             />

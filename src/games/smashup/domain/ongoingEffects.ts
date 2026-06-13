@@ -18,6 +18,7 @@ import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import { isSameNameDefId, matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
+import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 
 // ============================================================================
 // Registry types
@@ -976,6 +977,42 @@ export function hasRegisteredTrigger(sourceDefId: string, timing: TriggerTiming)
     return triggerRegistry.some(entry => entry.sourceDefId === sourceDefId && entry.timing === timing);
 }
 
+export interface OngoingRuntimeRegistrationShape {
+    protectionTypes: Set<ProtectionType>;
+    restrictionTypes: Set<RestrictionType>;
+    triggerTimings: Set<TriggerTiming>;
+    hasInterceptor: boolean;
+    hasBaseAbilitySuppression: boolean;
+    hasBaseScoringSuppression: boolean;
+    hasBaseVpModifier: boolean;
+    hasCardAbilitySuppression: boolean;
+}
+
+export function getOngoingRuntimeRegistrationShape(sourceDefId: string): OngoingRuntimeRegistrationShape {
+    return {
+        protectionTypes: new Set(
+            protectionRegistry
+                .filter((entry) => entry.sourceDefId === sourceDefId)
+                .map((entry) => entry.protectionType),
+        ),
+        restrictionTypes: new Set(
+            restrictionRegistry
+                .filter((entry) => entry.sourceDefId === sourceDefId)
+                .map((entry) => entry.restrictionType),
+        ),
+        triggerTimings: new Set(
+            triggerRegistry
+                .filter((entry) => entry.sourceDefId === sourceDefId)
+                .map((entry) => entry.timing as TriggerTiming),
+        ),
+        hasInterceptor: interceptorRegistry.some((entry) => entry.sourceDefId === sourceDefId),
+        hasBaseAbilitySuppression: baseAbilitySuppressionRegistry.some((entry) => entry.sourceDefId === sourceDefId),
+        hasBaseScoringSuppression: baseScoringSuppressionRegistry.some((entry) => entry.sourceDefId === sourceDefId),
+        hasBaseVpModifier: baseVpModifierRegistry.some((entry) => entry.sourceDefId === sourceDefId),
+        hasCardAbilitySuppression: cardAbilitySuppressionRegistry.some((entry) => entry.sourceDefId === sourceDefId),
+    };
+}
+
 /**
 
  *
@@ -1012,6 +1049,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1069,6 +1107,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1090,6 +1129,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1119,6 +1159,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1140,6 +1181,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1161,6 +1203,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1182,6 +1225,7 @@ export function registerPodOngoingAliases(): void {
 
         if (sourceDefId.endsWith('_pod')) continue;
         if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
 
@@ -1449,7 +1493,7 @@ export function isMinionProtected(
     protectionType: ProtectionType,
     options?: { sourceKind?: 'action' | 'nonAction' },
 ): boolean {
-    if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType)) return true;
+    if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
 
     const ctx: ProtectionCheckContext = {
@@ -1484,7 +1528,7 @@ export function isMinionProtectedNonConsumable(
     protectionType: ProtectionType,
     options?: { sourceKind?: 'action' | 'nonAction' },
 ): boolean {
-    if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType)) return true;
+    if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
 
     const ctx: ProtectionCheckContext = {
@@ -1509,9 +1553,14 @@ function hasTurnScopedMetadataProtection(
     state: SmashUpCore,
     targetMinion: MinionOnBase,
     protectionType: ProtectionType,
+    sourcePlayerId: PlayerId,
 ): boolean {
     const metadata = targetMinion.metadata ?? {};
     const currentTurn = state.turnNumber ?? 0;
+    const protectingPlayerId = typeof metadata.tempProtectSourcePlayerId === 'string'
+        ? metadata.tempProtectSourcePlayerId
+        : undefined;
+    if (protectingPlayerId !== undefined && protectingPlayerId === sourcePlayerId) return false;
     const destroyUntilTurn = typeof metadata.tempProtectDestroyUntilTurnNumber === 'number'
         ? metadata.tempProtectDestroyUntilTurnNumber
         : undefined;

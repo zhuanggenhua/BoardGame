@@ -89,7 +89,7 @@ export const DiscardPile = React.forwardRef<HTMLDivElement, {
                             if (onInspectRecent) onInspectRecent(getPreviewCards());
                         }}
                         data-testid="discard-pile-inspect-button"
-                        aria-label="查看弃牌堆"
+                        aria-label={t('actions.inspectDiscardPile')}
                     >
                         <span className={inspectButtonVisualClassName}>
                             <svg className={inspectIconClassName} viewBox="0 0 20 20">

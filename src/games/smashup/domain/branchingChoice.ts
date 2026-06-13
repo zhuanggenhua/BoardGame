@@ -23,10 +23,14 @@ export interface BranchingChoiceOption {
     id: string;
     branchId: string;
     label: string;
+    labelKey?: string;
+    labelParams?: Record<string, string | number>;
     value?: Record<string, unknown>;
     displayMode?: PromptDisplayMode;
     disabled?: boolean;
     disabledReason?: string;
+    disabledReasonKey?: string;
+    disabledReasonParams?: Record<string, string | number>;
     _ai?: PromptOption['_ai'];
     /**
      * 该分支实际可能读写的具体资源。
@@ -49,6 +53,8 @@ export interface QueueBranchingChoiceArgs {
     now: number;
     sourceId: string;
     title: string;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
     options: BranchingChoiceOption[];
     executeBranch: BranchExecutor;
     targetType?: SimpleChoiceTargetType;
@@ -60,6 +66,8 @@ interface PendingBranchPlan {
     playerId: PlayerId;
     sourceId: string;
     title: string;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
     targetType: SimpleChoiceTargetType;
     planContext?: Record<string, unknown>;
     remainingOptions: BranchingChoiceOption[];
@@ -76,6 +84,8 @@ interface BranchingChoicePromptContext {
     now: number;
     sourceId: string;
     title: string;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
     options: BranchingChoiceOption[];
     targetType: SimpleChoiceTargetType;
     executeBranch: BranchExecutor;
@@ -143,10 +153,16 @@ function normalizeBranchingOptions(value: unknown): BranchingChoiceOption[] {
             id: option.id,
             branchId,
             label: option.label,
+            ...(typeof option.labelKey === 'string' ? { labelKey: option.labelKey } : {}),
+            ...(option.labelParams && typeof option.labelParams === 'object' ? { labelParams: option.labelParams as Record<string, string | number> } : {}),
             ...(optionValue ? { value: optionValue } : {}),
             ...(option.displayMode === 'card' || option.displayMode === 'button' ? { displayMode: option.displayMode } : {}),
             ...(typeof option.disabled === 'boolean' ? { disabled: option.disabled } : {}),
             ...(typeof option.disabledReason === 'string' ? { disabledReason: option.disabledReason } : {}),
+            ...(typeof option.disabledReasonKey === 'string' ? { disabledReasonKey: option.disabledReasonKey } : {}),
+            ...(option.disabledReasonParams && typeof option.disabledReasonParams === 'object'
+                ? { disabledReasonParams: option.disabledReasonParams as Record<string, string | number> }
+                : {}),
             ...(option._ai ? { _ai: option._ai as PromptOption['_ai'] } : {}),
             ...(isReactionResourceFootprint(option.footprint) ? { footprint: option.footprint } : {}),
         } satisfies BranchingChoiceOption;
@@ -185,6 +201,10 @@ function getBranchingChoiceFrameMeta(
                 playerId: typeof pendingPlanRaw.playerId === 'string' ? pendingPlanRaw.playerId : '0',
                 sourceId: typeof pendingPlanRaw.sourceId === 'string' ? pendingPlanRaw.sourceId : '',
                 title: typeof pendingPlanRaw.title === 'string' ? pendingPlanRaw.title : '',
+                ...(typeof pendingPlanRaw.titleKey === 'string' ? { titleKey: pendingPlanRaw.titleKey } : {}),
+                ...(pendingPlanRaw.titleParams && typeof pendingPlanRaw.titleParams === 'object'
+                    ? { titleParams: pendingPlanRaw.titleParams as Record<string, string | number> }
+                    : {}),
                 targetType:
                     pendingPlanRaw.targetType === 'button'
                     || pendingPlanRaw.targetType === 'generic'
@@ -292,6 +312,8 @@ function buildPromptOptions(options: BranchingChoiceOption[]): PromptOption[] {
     return options.map((option) => ({
         id: option.id,
         label: option.label,
+        ...(option.labelKey ? { labelKey: option.labelKey } : {}),
+        ...(option.labelParams ? { labelParams: option.labelParams } : {}),
         value: {
             branchId: option.branchId,
             ...(option.value ?? {}),
@@ -299,6 +321,8 @@ function buildPromptOptions(options: BranchingChoiceOption[]): PromptOption[] {
         ...(option.displayMode ? { displayMode: option.displayMode } : {}),
         ...(option.disabled !== undefined ? { disabled: option.disabled } : {}),
         ...(option.disabledReason ? { disabledReason: option.disabledReason } : {}),
+        ...(option.disabledReasonKey ? { disabledReasonKey: option.disabledReasonKey } : {}),
+        ...(option.disabledReasonParams ? { disabledReasonParams: option.disabledReasonParams } : {}),
         ...(option._ai ? { _ai: option._ai } : {}),
         ...(option.footprint ? { _resourceFootprint: option.footprint } : {}),
     }));
@@ -313,6 +337,7 @@ function createSkipBranchOption(): BranchingChoiceOption {
         id: 'skip',
         branchId: 'skip',
         label: '跳过',
+        labelKey: 'ui.skip',
         value: { skip: true },
         displayMode: 'button',
     };
@@ -400,6 +425,8 @@ function resolveBranchingChoiceSelection(args: {
             playerId: args.playerId,
             sourceId: args.context.sourceId,
             title: args.context.title,
+            titleKey: args.context.titleKey,
+            titleParams: args.context.titleParams,
             targetType: args.context.targetType,
             planContext: args.context.planContext,
             remainingOptions,
@@ -444,6 +471,8 @@ const branchingChoicePromptProgram = createPromptProgram<BranchingChoicePromptCo
             sourceId: context.sourceId,
             targetType: context.targetType,
             autoResolveIfSingle: false,
+            ...(context.titleKey ? { titleKey: context.titleKey } : {}),
+            ...(context.titleParams ? { titleParams: context.titleParams } : {}),
         },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
@@ -468,6 +497,8 @@ function queueBranchPrompt(args: {
     now: number;
     sourceId: string;
     title: string;
+    titleKey?: string;
+    titleParams?: Record<string, string | number>;
     options: BranchingChoiceOption[];
     executeBranch: BranchExecutor;
     targetType: SimpleChoiceTargetType;
@@ -482,6 +513,8 @@ function queueBranchPrompt(args: {
         now: args.now,
         sourceId: args.sourceId,
         title: args.title,
+        titleKey: args.titleKey,
+        titleParams: args.titleParams,
         options: args.options,
         executeBranch: args.executeBranch,
         targetType: args.targetType,
@@ -507,6 +540,8 @@ function queueFollowUpBranchChoice(
         now,
         sourceId: plan.sourceId,
         title: plan.title,
+        titleKey: plan.titleKey,
+        titleParams: plan.titleParams,
         options: [...remainingOptions, createSkipBranchOption()],
         executeBranch: requireBranchExecutor(plan.sourceId),
         targetType: plan.targetType,
@@ -539,6 +574,8 @@ export function queueBranchingChoice(args: QueueBranchingChoiceArgs): MatchState
         now: args.now,
         sourceId: args.sourceId,
         title: args.title,
+        titleKey: args.titleKey,
+        titleParams: args.titleParams,
         options: args.options,
         executeBranch: args.executeBranch,
         targetType: args.targetType ?? 'button',

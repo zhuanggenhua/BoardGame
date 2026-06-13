@@ -1,4 +1,5 @@
 import { useState, type ComponentPropsWithoutRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -15,13 +16,16 @@ export const PasswordField = ({
     wrapperClassName,
     toggleButtonClassName,
     toggleButtonTestId,
-    showLabel = '显示密码',
-    hideLabel = '隐藏密码',
+    showLabel,
+    hideLabel,
     iconSize = 18,
     className,
     ...inputProps
 }: PasswordFieldProps) => {
+    const { t } = useTranslation('common');
     const [isVisible, setIsVisible] = useState(false);
+    const resolvedShowLabel = showLabel ?? t('passwordField.showPassword');
+    const resolvedHideLabel = hideLabel ?? t('passwordField.hidePassword');
 
     return (
         <div
@@ -36,7 +40,7 @@ export const PasswordField = ({
             </div>
             <button
                 type="button"
-                aria-label={isVisible ? hideLabel : showLabel}
+                aria-label={isVisible ? resolvedHideLabel : resolvedShowLabel}
                 aria-pressed={isVisible}
                 data-testid={toggleButtonTestId}
                 onMouseDown={(event) => event.preventDefault()}

@@ -326,7 +326,11 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
                     playerId,
                     '选择要附着的随从',
                     options as any[],
-                    { sourceId: 'bury_uncover_ongoing_target', targetType: 'minion' },
+                    {
+                        sourceId: 'bury_uncover_ongoing_target',
+                        targetType: 'minion',
+                        titleKey: 'ui.bury_uncover_ongoing_target_title',
+                    },
                 );
                 (interaction.data as any).continuationContext = { cardUid: buried.uid, defId: buried.defId, baseIndex };
                 return { state: queueInteraction(currentState, interaction), events };

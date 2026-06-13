@@ -84,7 +84,9 @@ type MiskatonicMadnessBoostPromptContext = {
     sourceId: 'miskatonic_mandatory_reading' | 'miskatonic_things_best_not_known_pod';
     drawSourceId: 'miskatonic_mandatory_reading_draw' | 'miskatonic_things_best_not_known_pod_draw';
     minionPromptTitle: string;
+    minionPromptTitleKey: string;
     drawPromptTitle: string;
+    drawPromptTitleKey: string;
     madnessSourceId: 'miskatonic_mandatory_reading' | 'miskatonic_things_best_not_known_pod';
     boostMode: 'permanent' | 'temp';
     minionUid?: string;
@@ -323,6 +325,7 @@ function buildMiskatonicMandatoryReadingDrawOptions(
     options.push({
         id: 'skip',
         label: '不抽',
+        labelKey: 'ui.miskatonic_mandatory_reading_skip_draw_option',
         value: { skip: true },
         displayMode: 'button' as const,
     });
@@ -344,7 +347,7 @@ const miskatonicMandatoryReadingChooseMinionPromptProgram = createPromptProgram<
                 effectType: 'affect',
             },
         ),
-        { sourceId: context.sourceId, targetType: 'minion' },
+        { sourceId: context.sourceId, targetType: 'minion', titleKey: context.minionPromptTitleKey },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as { minionUid?: string; defId?: string } | undefined;
@@ -383,7 +386,7 @@ const miskatonicMandatoryReadingChooseDrawPromptProgram = createPromptProgram<Mi
                 context.playerId,
                 context.drawPromptTitle,
                 buildMiskatonicMandatoryReadingDrawOptions(context),
-                { sourceId: 'miskatonic_mandatory_reading_draw', targetType: 'button' },
+                { sourceId: 'miskatonic_mandatory_reading_draw', targetType: 'button', titleKey: context.drawPromptTitleKey },
             );
         }
         return createAbilityRuntimeSimpleChoice(
@@ -391,7 +394,7 @@ const miskatonicMandatoryReadingChooseDrawPromptProgram = createPromptProgram<Mi
             context.playerId,
             context.drawPromptTitle,
             buildMiskatonicMandatoryReadingDrawOptions(context),
-            { sourceId: 'miskatonic_things_best_not_known_pod_draw', targetType: 'button' },
+            { sourceId: 'miskatonic_things_best_not_known_pod_draw', targetType: 'button', titleKey: context.drawPromptTitleKey },
         );
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -451,7 +454,9 @@ const miskatonicMandatoryReadingProgram = createEffectProgram<AbilityContext, Sm
         sourceId: 'miskatonic_mandatory_reading',
         drawSourceId: 'miskatonic_mandatory_reading_draw',
         minionPromptTitle: '最好不知道的事：选择一个随从',
+        minionPromptTitleKey: 'ui.miskatonic_mandatory_reading_minion_title',
         drawPromptTitle: '最好不知道的事：选择抽取疯狂卡数量',
+        drawPromptTitleKey: 'ui.miskatonic_mandatory_reading_draw_title',
         madnessSourceId: 'miskatonic_mandatory_reading',
         boostMode: 'permanent',
     });
@@ -491,7 +496,9 @@ const miskatonicThingsBestNotKnownPodProgram = createEffectProgram<AbilityContex
         sourceId: 'miskatonic_things_best_not_known_pod',
         drawSourceId: 'miskatonic_things_best_not_known_pod_draw',
         minionPromptTitle: 'Things Best Not Known：选择一个随从',
+        minionPromptTitleKey: 'ui.miskatonic_things_best_not_known_pod_minion_title',
         drawPromptTitle: 'Things Best Not Known：选择抽取疯狂卡数量',
+        drawPromptTitleKey: 'ui.miskatonic_things_best_not_known_pod_draw_title',
         madnessSourceId: 'miskatonic_things_best_not_known_pod',
         boostMode: 'temp',
     });
@@ -534,7 +541,7 @@ const miskatonicResearcherChooseMinionPromptProgram = createPromptProgram<Miskat
                 sourcePlayerId: context.playerId,
                 effectType: 'affect',
             }),
-            { sourceId: 'miskatonic_researcher_pod_choose_minion', targetType: 'minion' },
+            { sourceId: 'miskatonic_researcher_pod_choose_minion', targetType: 'minion', titleKey: 'ui.miskatonic_researcher_pod_choose_minion_title' },
         );
     },
     onResolve: ({ context: _context, state, playerId, value, timestamp }) => {
@@ -566,10 +573,13 @@ const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearch
                 label: context.sourceId === 'miskatonic_researcher'
                     ? '抽取疯狂卡'
                     : '抽疯狂卡并放置 +1 标记',
+                labelKey: context.sourceId === 'miskatonic_researcher'
+                    ? 'ui.miskatonic_researcher_draw_madness_option'
+                    : 'ui.miskatonic_researcher_pod_draw_and_counter_option',
                 value: { draw: true },
                 displayMode: 'button' as const,
             },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ];
         if (context.sourceId === 'miskatonic_researcher') {
             return createAbilityRuntimeSimpleChoice(
@@ -577,7 +587,7 @@ const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearch
                 context.playerId,
                 '是否抽取一张疯狂卡？',
                 options,
-                { sourceId: 'miskatonic_researcher', targetType: 'button' },
+                { sourceId: 'miskatonic_researcher', targetType: 'button', titleKey: 'ui.miskatonic_researcher_title' },
             );
         }
         return createAbilityRuntimeSimpleChoice(
@@ -585,7 +595,7 @@ const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearch
             context.playerId,
             '研究员：你可以抽一张疯狂卡。若如此做，在一个随从上放置一个 +1 战斗力标记。',
             options,
-            { sourceId: 'miskatonic_researcher_pod', targetType: 'button' },
+            { sourceId: 'miskatonic_researcher_pod', targetType: 'button', titleKey: 'ui.miskatonic_researcher_pod_title' },
         );
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -619,7 +629,7 @@ function buildMiskatonicPsychologistOptions(
     const player = context.matchState.core.players[context.playerId];
     const handMadness = player.hand.filter((card) => card.defId === MADNESS_CARD_DEF_ID && card.uid !== context.cardUid);
     const discardMadness = player.discard.filter((card) => card.defId === MADNESS_CARD_DEF_ID);
-    const options: Array<{ id: string; label: string; value: { source: string } | { skip: true }; displayMode: 'button' }> = [];
+    const options: Array<{ id: string; label: string; labelKey?: string; value: { source: string } | { skip: true }; displayMode: 'button' }> = [];
 
     if (handMadness.length > 0) {
         options.push({
@@ -627,6 +637,9 @@ function buildMiskatonicPsychologistOptions(
             label: context.sourceId === 'miskatonic_psychologist'
                 ? '从手牌返回1张疯狂卡'
                 : '将手牌中的一张疯狂卡返回疯狂牌库',
+            labelKey: context.sourceId === 'miskatonic_psychologist'
+                ? 'ui.miskatonic_psychologist_return_hand_one_option'
+                : 'ui.miskatonic_psychologist_pod_return_hand_option',
             value: { source: 'hand' },
             displayMode: 'button',
         });
@@ -637,6 +650,9 @@ function buildMiskatonicPsychologistOptions(
             label: context.sourceId === 'miskatonic_psychologist'
                 ? '从弃牌堆返回1张疯狂卡'
                 : '将弃牌堆中的一张疯狂卡返回疯狂牌库',
+            labelKey: context.sourceId === 'miskatonic_psychologist'
+                ? 'ui.miskatonic_psychologist_return_discard_one_option'
+                : 'ui.miskatonic_psychologist_pod_return_discard_option',
             value: { source: 'discard' },
             displayMode: 'button',
         });
@@ -644,6 +660,7 @@ function buildMiskatonicPsychologistOptions(
             options.push({
                 id: 'draw_discard',
                 label: '从弃牌堆抓一张疯狂卡',
+                labelKey: 'ui.miskatonic_psychologist_draw_discard_option',
                 value: { source: 'draw_discard' },
                 displayMode: 'button',
             });
@@ -652,6 +669,7 @@ function buildMiskatonicPsychologistOptions(
     options.push({
         id: 'skip',
         label: '跳过',
+        labelKey: 'ui.skip',
         value: { skip: true },
         displayMode: 'button',
     });
@@ -669,7 +687,7 @@ const miskatonicPsychologistPromptProgram = createPromptProgram<MiskatonicPsycho
                 context.playerId,
                 '选择要返回疯狂牌库的疯狂卡（可跳过）',
                 options,
-                { sourceId: 'miskatonic_psychologist', targetType: 'button' },
+                { sourceId: 'miskatonic_psychologist', targetType: 'button', titleKey: 'ui.miskatonic_psychologist_title' },
             );
         }
         return createAbilityRuntimeSimpleChoice(
@@ -677,7 +695,7 @@ const miskatonicPsychologistPromptProgram = createPromptProgram<MiskatonicPsycho
             context.playerId,
             '心理学家：选择一个效果（可跳过）',
             options,
-            { sourceId: 'miskatonic_psychologist_pod', targetType: 'button' },
+            { sourceId: 'miskatonic_psychologist_pod', targetType: 'button', titleKey: 'ui.miskatonic_psychologist_pod_title' },
         );
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -720,29 +738,30 @@ function buildMiskatonicBookOptions(
     const player = core.players[playerId];
     const handMadness = player.hand.filter((card) => card.defId === MADNESS_CARD_DEF_ID && card.uid !== excludedCardUid);
     const discardMadness = player.discard.filter((card) => card.defId === MADNESS_CARD_DEF_ID);
-    const options: Array<{ id: string; label: string; value: Record<string, unknown>; displayMode: 'button' }> = [];
+    const options: Array<{ id: string; label: string; labelKey?: string; value: Record<string, unknown>; displayMode: 'button' }> = [];
 
     if (handMadness.length >= 1) {
-        options.push({ id: 'hand-1', label: '从手牌返回1张疯狂卡', value: { source: 'hand', count: 1 }, displayMode: 'button' });
+        options.push({ id: 'hand-1', label: '从手牌返回1张疯狂卡', labelKey: 'ui.miskatonic_book_return_hand_one_option', value: { source: 'hand', count: 1 }, displayMode: 'button' });
     }
     if (handMadness.length >= 2) {
-        options.push({ id: 'hand-2', label: '从手牌返回2张疯狂卡', value: { source: 'hand', count: 2 }, displayMode: 'button' });
+        options.push({ id: 'hand-2', label: '从手牌返回2张疯狂卡', labelKey: 'ui.miskatonic_book_return_hand_two_option', value: { source: 'hand', count: 2 }, displayMode: 'button' });
     }
     if (discardMadness.length >= 1) {
-        options.push({ id: 'discard-1', label: '从弃牌堆返回1张疯狂卡', value: { source: 'discard', count: 1 }, displayMode: 'button' });
+        options.push({ id: 'discard-1', label: '从弃牌堆返回1张疯狂卡', labelKey: 'ui.miskatonic_book_return_discard_one_option', value: { source: 'discard', count: 1 }, displayMode: 'button' });
     }
     if (discardMadness.length >= 2) {
-        options.push({ id: 'discard-2', label: '从弃牌堆返回2张疯狂卡', value: { source: 'discard', count: 2 }, displayMode: 'button' });
+        options.push({ id: 'discard-2', label: '从弃牌堆返回2张疯狂卡', labelKey: 'ui.miskatonic_book_return_discard_two_option', value: { source: 'discard', count: 2 }, displayMode: 'button' });
     }
     if (handMadness.length >= 1 && discardMadness.length >= 1) {
         options.push({
             id: 'mixed',
             label: '手牌1张+弃牌堆1张',
+            labelKey: 'ui.miskatonic_book_return_mixed_option',
             value: { source: 'mixed', handCount: 1, discardCount: 1 },
             displayMode: 'button',
         });
     }
-    options.push({ id: 'skip', label: '不返回', value: { skip: true }, displayMode: 'button' });
+    options.push({ id: 'skip', label: '不返回', labelKey: 'ui.miskatonic_book_skip_option', value: { skip: true }, displayMode: 'button' });
     return options;
 }
 
@@ -757,14 +776,14 @@ const miskatonicBookPromptProgram = createPromptProgram<MiskatonicBookPromptCont
                 context.playerId,
                 '金克丝!：选择要返回疯狂卡牌堆的疯狂卡',
                 options,
-                { sourceId: 'miskatonic_book_of_iter_the_unseen', targetType: 'generic' },
+                { sourceId: 'miskatonic_book_of_iter_the_unseen', targetType: 'generic', titleKey: 'ui.miskatonic_book_title' },
             )
             : createAbilityRuntimeSimpleChoice(
                 `${context.sourceId}_${context.now}`,
                 context.playerId,
                 '金克丝!：选择要返回疯狂卡牌堆的疯狂卡',
                 options,
-                { sourceId: 'miskatonic_jinkies_pod', targetType: 'generic' },
+                { sourceId: 'miskatonic_jinkies_pod', targetType: 'generic', titleKey: 'ui.miskatonic_book_title' },
             );
         interaction.data.optionsGenerator = (state: MatchState<SmashUpCore>) =>
             buildMiskatonicBookOptions(state.core, context.playerId, context.cardUid);
@@ -817,6 +836,7 @@ function buildMiskatonicFieldTripOptions(
     excludedCardUid: string,
     includeMadness: boolean,
     skipLabel: string,
+    skipLabelKey: string,
 ) {
     const handCards = core.players[playerId].hand.filter((card) =>
         card.uid !== excludedCardUid
@@ -834,7 +854,7 @@ function buildMiskatonicFieldTripOptions(
     });
     return [
         ...options,
-        { id: 'skip', label: skipLabel, value: { skip: true }, displayMode: 'button' as const },
+        { id: 'skip', label: skipLabel, labelKey: skipLabelKey, value: { skip: true }, displayMode: 'button' as const },
     ];
 }
 
@@ -843,12 +863,14 @@ const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTrip
     interactionSourceIds: ['miskatonic_field_trip_pod'],
     buildInteraction: (context) => {
         const skipLabel = context.sourceId === 'miskatonic_field_trip' ? '跳过' : '不放置（仍抽 1）';
+        const skipLabelKey = context.sourceId === 'miskatonic_field_trip' ? 'ui.skip' : 'ui.miskatonic_field_trip_pod_skip_option';
         const options = buildMiskatonicFieldTripOptions(
             context.matchState.core,
             context.playerId,
             context.cardUid,
             context.includeMadness,
             skipLabel,
+            skipLabelKey,
         );
         const multi = {
             min: 0,
@@ -862,14 +884,14 @@ const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTrip
                 context.playerId,
                 '选择要放到牌库底的卡牌（抽等量）',
                 options,
-                { sourceId: 'miskatonic_field_trip', targetType: 'hand', multi },
+                { sourceId: 'miskatonic_field_trip', targetType: 'hand', multi, titleKey: 'ui.miskatonic_field_trip_title' },
             )
             : createAbilityRuntimeSimpleChoice(
                 `${context.sourceId}_${context.now}`,
                 context.playerId,
                 '选择要放到牌库底的卡牌（抽取所选数量 + 1）',
                 options,
-                { sourceId: 'miskatonic_field_trip_pod', targetType: 'hand', multi },
+                { sourceId: 'miskatonic_field_trip_pod', targetType: 'hand', multi, titleKey: 'ui.miskatonic_field_trip_pod_title' },
             );
         interaction.data.optionsGenerator = (state: MatchState<SmashUpCore>) =>
             buildMiskatonicFieldTripOptions(
@@ -878,6 +900,7 @@ const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTrip
                 context.cardUid,
                 context.includeMadness,
                 skipLabel,
+                skipLabelKey,
             );
         return interaction;
     },
@@ -927,7 +950,7 @@ const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<Miska
                 _source: 'hand' as const,
                 displayMode: 'card' as const,
             })),
-            { sourceId: 'miskatonic_librarian_pod_play_madness', targetType: 'hand' },
+            { sourceId: 'miskatonic_librarian_pod_play_madness', targetType: 'hand', titleKey: 'ui.miskatonic_librarian_pod_play_madness_title' },
         );
         interaction.data.optionsGenerator = (state: MatchState<SmashUpCore>) =>
             state.core.players[context.playerId].hand
@@ -980,10 +1003,10 @@ const miskatonicLibrarianPodPromptProgram = createPromptProgram<MiskatonicLibrar
         context.playerId,
         '图书管理员：选择一个效果',
         [
-            { id: 'draw', label: '抓一张疯狂卡', value: { mode: 'draw' }, displayMode: 'button' as const },
-            { id: 'extra', label: '你可以将一张疯狂卡作为额外战术打出', value: { mode: 'extra' }, displayMode: 'button' as const },
+            { id: 'draw', label: '抓一张疯狂卡', labelKey: 'ui.miskatonic_librarian_pod_draw_option', value: { mode: 'draw' }, displayMode: 'button' as const },
+            { id: 'extra', label: '你可以将一张疯狂卡作为额外战术打出', labelKey: 'ui.miskatonic_librarian_pod_extra_action_option', value: { mode: 'extra' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'miskatonic_librarian_pod', targetType: 'button' },
+        { sourceId: 'miskatonic_librarian_pod', targetType: 'button', titleKey: 'ui.miskatonic_librarian_pod_title' },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const selected = value as { mode?: 'draw' | 'extra' } | undefined;
@@ -1017,14 +1040,18 @@ const miskatonicItJustMightWorkPodPromptProgram = createPromptProgram<Miskatonic
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_it_just_might_work_pod_${context.now}`,
         context.playerId,
-        '...It Just Might Work：选择要弃置的疯狂卡数量（至多2张）',
+        '...没准能行：选择要弃置的疯狂卡数量（至多2张）',
         Array.from({ length: context.maxDiscard + 1 }, (_, index) => ({
             id: `discard-${index}`,
             label: index === 0 ? '不弃置' : `弃置${index}张疯狂卡（每张使你场上的随从+1战斗力直到回合结束）`,
+            labelKey: index === 0
+                ? 'ui.miskatonic_it_just_might_work_pod_no_discard_option'
+                : 'ui.miskatonic_it_just_might_work_pod_discard_option',
+            ...(index === 0 ? {} : { labelParams: { count: index } }),
             value: { count: index },
             displayMode: 'button' as const,
         })),
-        { sourceId: 'miskatonic_it_just_might_work_pod', targetType: 'button' },
+        { sourceId: 'miskatonic_it_just_might_work_pod', targetType: 'button', titleKey: 'ui.miskatonic_it_just_might_work_pod_title' },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const count = Math.max(0, Math.min(2, Math.floor(((value as { count?: number } | undefined)?.count) ?? 0)));
@@ -1120,7 +1147,7 @@ const miskatonicMeddlingKidsSelectPromptProgram = createPromptProgram<Miskatonic
             context.playerId,
             '多管闲事的小鬼：点击要消灭的行动卡（可选）',
             [
-                { id: 'skip', label: '跳过（不再消灭）', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过（不再消灭）', labelKey: 'ui.miskatonic_meddling_kids_skip_destroy_option', value: { skip: true }, displayMode: 'button' as const },
                 ...actionCards.map((card, index) => ({
                     id: `action-${index}`,
                     label: card.label,
@@ -1129,7 +1156,7 @@ const miskatonicMeddlingKidsSelectPromptProgram = createPromptProgram<Miskatonic
                     displayMode: 'card' as const,
                 })),
             ],
-            { sourceId: 'miskatonic_those_meddling_kids_select', targetType: 'ongoing' },
+            { sourceId: 'miskatonic_those_meddling_kids_select', targetType: 'ongoing', titleKey: 'ui.miskatonic_meddling_kids_select_title' },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1187,6 +1214,7 @@ const miskatonicMeddlingKidsBasePromptProgram = createPromptProgram<MiskatonicMe
             sourceId: 'miskatonic_those_meddling_kids',
             targetType: 'base',
             autoResolveIfSingle: false,
+            titleKey: 'ui.miskatonic_meddling_kids_base_title',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1220,10 +1248,10 @@ const miskatonicThoseMeddlingKidsPodModePromptProgram = createPromptProgram<Misk
         context.playerId,
         '那些爱管闲事的孩子：选择一个效果',
         [
-            { id: 'destroy', label: '消灭一个基地上任意数量的战术', value: { mode: 'destroy' }, displayMode: 'button' as const },
-            { id: 'madness', label: '抽一张疯狂卡并额外打出一张战术', value: { mode: 'madness' }, displayMode: 'button' as const },
+            { id: 'destroy', label: '消灭一个基地上任意数量的战术', labelKey: 'ui.miskatonic_meddling_kids_pod_destroy_option', value: { mode: 'destroy' }, displayMode: 'button' as const },
+            { id: 'madness', label: '抽一张疯狂卡并额外打出一张战术', labelKey: 'ui.miskatonic_meddling_kids_pod_madness_option', value: { mode: 'madness' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'miskatonic_those_meddling_kids_pod_mode', targetType: 'button' },
+        { sourceId: 'miskatonic_those_meddling_kids_pod_mode', targetType: 'button', titleKey: 'ui.miskatonic_meddling_kids_pod_mode_title' },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const selected = value as { mode?: 'destroy' | 'madness' } | undefined;
@@ -1421,7 +1449,7 @@ const miskatonicThingOnTheDoorstepPromptProgram = createPromptProgram<Miskatonic
             sourcePlayerId: context.playerId,
             effectType: 'destroy',
         }),
-        { sourceId: 'miskatonic_thing_on_the_doorstep', targetType: 'minion' },
+        { sourceId: 'miskatonic_thing_on_the_doorstep', targetType: 'minion', titleKey: 'ui.miskatonic_thing_on_the_doorstep_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as { minionUid?: string; defId?: string } | undefined;

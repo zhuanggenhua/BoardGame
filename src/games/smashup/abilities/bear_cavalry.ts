@@ -77,8 +77,8 @@ type BearCavalryHighGroundPromptContext = BearCavalryPromptContext & {
 };
 
 type BearNecessitiesValue =
-    | { type: 'minion'; uid: string; defId: string; baseIndex: number; owner: string }
-    | { type: 'action'; uid: string; defId: string; ownerId: string };
+    | { type: 'minion'; uid: string; minionUid: string; defId: string; baseIndex: number; owner: string }
+    | { type: 'action'; uid: string; cardUid: string; defId: string; ownerId: string; baseIndex: number };
 
 function createBearCavalryPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: MatchState<any>,
@@ -185,7 +185,7 @@ export function registerBearCavalryAbilities(): void {
 
 function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId: PlayerId) {
     const minionTargets: Array<{ uid: string; defId: string; baseIndex: number; owner: string; label: string }> = [];
-    const actionTargets: Array<{ uid: string; defId: string; ownerId: string; label: string }> = [];
+    const actionTargets: Array<{ uid: string; defId: string; ownerId: string; baseIndex: number; label: string }> = [];
 
     for (let i = 0; i < state.bases.length; i++) {
         const base = state.bases[i];
@@ -205,14 +205,6 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
                     label: `[随从] ${name} (力量 ${power}) @ ${baseName}`,
                 });
             }
-            for (const a of m.attachedActions) {
-                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
-                if (attachedControllerId !== playerId) {
-                    const def = getCardDef(a.defId);
-                    const name = def?.name ?? a.defId;
-                    actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
-                }
-            }
         }
 
         for (const o of base.ongoingActions) {
@@ -220,7 +212,7 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
             if (ongoingControllerId !== playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
-                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
+                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, baseIndex: i, label: `[行动] ${name} @ ${baseName}` });
             }
         }
     }
@@ -252,7 +244,7 @@ const bearCavalryPolarCommandoPodPromptProgram = createPromptProgram<BearCavalry
             context.playerId,
             '选择放置 +1 力量标记的随从',
             buildMinionTargetOptions(options, { state: context.matchState.core, sourcePlayerId: context.playerId }) as any[],
-            { sourceId: 'bear_cavalry_polar_commando_pod', targetType: 'minion' },
+            { sourceId: 'bear_cavalry_polar_commando_pod', targetType: 'minion', titleKey: 'ui.bear_cavalry_polar_commando_pod_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -271,10 +263,10 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
         context.playerId,
         '全面优势：选择一项',
         [
-            { id: 'draw', label: '摸一张牌', value: { action: 'draw' as const }, displayMode: 'button' as const },
-            { id: 'protect', label: '保护随从直到下回合', value: { action: 'protect' as const }, displayMode: 'button' as const },
+            { id: 'draw', label: '摸一张牌', labelKey: 'ui.bear_cavalry_superiority_pod_draw_option', value: { action: 'draw' as const }, displayMode: 'button' as const },
+            { id: 'protect', label: '保护随从直到下回合', labelKey: 'ui.bear_cavalry_superiority_pod_protect_option', value: { action: 'protect' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_superiority_pod_talent', targetType: 'button' },
+        { sourceId: 'bear_cavalry_superiority_pod_talent', targetType: 'button', titleKey: 'ui.bear_cavalry_superiority_pod_title' },
     ),
     onResolve: (args) => {
         const { context, state, value, interactionData, playerId } = args;
@@ -319,10 +311,10 @@ const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGe
         context.playerId,
         '伊万将军：是否给对手随从移动到的基地上你的随从 +1 力量直到回合结束？（每回合限一次）',
         [
-            { id: 'yes', label: '是（给己方随从 +1 力量）', value: { action: 'yes' as const }, displayMode: 'button' as const },
-            { id: 'no', label: '否', value: { action: 'no' as const }, displayMode: 'button' as const },
+            { id: 'yes', label: '是（给己方随从 +1 力量）', labelKey: 'ui.bear_cavalry_general_ivan_pod_yes_option', value: { action: 'yes' as const }, displayMode: 'button' as const },
+            { id: 'no', label: '否', labelKey: 'ui.bear_cavalry_general_ivan_pod_no_option', value: { action: 'no' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_general_ivan_pod_trigger', targetType: 'button' },
+        { sourceId: 'bear_cavalry_general_ivan_pod_trigger', targetType: 'button', titleKey: 'ui.bear_cavalry_general_ivan_pod_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const action = (value as { action?: 'yes' | 'no' } | undefined)?.action;
@@ -360,10 +352,10 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
         context.playerId,
         '制高点：选择一项',
         [
-            { id: 'destroy', label: '消灭制高点并消灭该随从', value: { action: 'destroy' as const }, displayMode: 'button' as const },
-            { id: 'draw', label: '摸一张牌并打出一张战术', value: { action: 'draw' as const }, displayMode: 'button' as const },
+            { id: 'destroy', label: '消灭制高点并消灭该随从', labelKey: 'ui.bear_cavalry_high_ground_pod_destroy_option', value: { action: 'destroy' as const }, displayMode: 'button' as const },
+            { id: 'draw', label: '摸一张牌并打出一张战术', labelKey: 'ui.bear_cavalry_high_ground_pod_draw_option', value: { action: 'draw' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_high_ground_pod_trigger', targetType: 'button' },
+        { sourceId: 'bear_cavalry_high_ground_pod_trigger', targetType: 'button', titleKey: 'ui.bear_cavalry_high_ground_pod_title' },
     ),
     onResolve: (args) => {
         const { context, state, value, timestamp, playerId } = args;
@@ -408,8 +400,8 @@ const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryP
             id: `target-${index}`,
             label: target.label,
             value: ('owner' in target
-                ? { type: 'minion' as const, uid: target.uid, defId: target.defId, baseIndex: target.baseIndex, owner: target.owner }
-                : { type: 'action' as const, uid: target.uid, defId: target.defId, ownerId: target.ownerId }) as BearNecessitiesValue,
+                ? { type: 'minion' as const, uid: target.uid, minionUid: target.uid, defId: target.defId, baseIndex: target.baseIndex, owner: target.owner }
+                : { type: 'action' as const, uid: target.uid, cardUid: target.uid, defId: target.defId, ownerId: target.ownerId, baseIndex: target.baseIndex }) as BearNecessitiesValue,
             displayMode: 'card' as const,
         }));
         return createAbilityRuntimeSimpleChoice(
@@ -417,32 +409,32 @@ const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryP
             context.playerId,
             '选择要消灭的随从或行动卡',
             options as any[],
-            { sourceId: 'bear_cavalry_bear_necessities', targetType: 'generic' },
+            { sourceId: 'bear_cavalry_bear_necessities', targetType: 'board', titleKey: 'ui.bear_cavalry_bear_necessities_title' },
         );
     },
-    onResolve: ({ state, value, timestamp }) => {
+    onResolve: ({ state, value, timestamp, playerId }) => {
         const selected = value as BearNecessitiesValue | undefined;
         if (!selected) return { events: [] };
         if (selected.type === 'minion') {
+            const selectedMinionUid = selected.minionUid ?? selected.uid;
             return {
                 events: buildValidatedDestroyEvents(state.core, {
-                    minionUid: selected.uid,
+                    minionUid: selectedMinionUid,
                     minionDefId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
+                    destroyerId: playerId,
                     reason: 'bear_cavalry_bear_necessities',
                     now: timestamp,
                 }),
             };
         }
-        const actionStillOnBoard = state.core.bases.some(base =>
-            base.ongoingActions.some(action => action.uid === selected.uid)
-            || base.minions.some(minion => minion.attachedActions.some(action => action.uid === selected.uid))
-        );
+        const selectedCardUid = selected.cardUid ?? selected.uid;
+        const actionStillOnBoard = state.core.bases[selected.baseIndex]?.ongoingActions.some(action => action.uid === selectedCardUid) ?? false;
         if (!actionStillOnBoard) return { events: [] };
         return {
             events: [{
                 type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: selected.uid, defId: selected.defId, ownerId: selected.ownerId, reason: 'bear_cavalry_bear_necessities' },
+                payload: { cardUid: selectedCardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'bear_cavalry_bear_necessities' },
                 timestamp,
             } as OngoingDetachedEvent],
         };
@@ -527,9 +519,13 @@ function bearHugProcessNext(
             `bear_cavalry_bear_hug_${opId}_${ctx.now}`, opId,
             '黑熊擒抱：选择要消灭的最弱随从',
             buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-            { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion' },
+            { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion', titleKey: 'ui.bear_cavalry_bear_hug_title' },
         );
-        (interaction.data as any).continuationContext = { opponents, opponentIdx: idx };
+        (interaction.data as any).continuationContext = {
+            opponents,
+            opponentIdx: idx,
+            destroyerId: ctx.playerId,
+        };
         return { events, matchState: queueInteraction(ctx.matchState, interaction) };
     }
     return { events };
@@ -557,7 +553,7 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `bear_cavalry_commission_choose_minion_${ctx.now}`, ctx.playerId,
         '委任：选择要额外打出的随从', options as any[],
-        { sourceId: 'bear_cavalry_commission_choose_minion', targetType: 'hand' },
+        { sourceId: 'bear_cavalry_commission_choose_minion', targetType: 'hand', titleKey: 'ui.bear_cavalry_commission_choose_minion_title' },
     );
     // 标记是否为 POD 版本，用于后续交互链区分“必须移动”和“可以跳过”
     (interaction.data as any).isPod = ctx.defId === 'bear_cavalry_commission_pod';
@@ -897,10 +893,15 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
                 scout.controller,
                 `幼熊斥候：是否消灭 ${getCardDef(movedMinion.defId)?.name ?? movedMinion.defId}？`,
                 [
-                    { id: 'yes', label: '是（消灭并移动己方小随从）', value: 'yes' as any, displayMode: 'button' as const },
-                    { id: 'no', label: '否', value: 'no' as any, displayMode: 'button' as const },
+                    { id: 'yes', label: '是（消灭并移动己方小随从）', labelKey: 'ui.bear_cavalry_cub_scout_pod_destroy_yes_option', value: 'yes' as any, displayMode: 'button' as const },
+                    { id: 'no', label: '否', labelKey: 'ui.bear_cavalry_cub_scout_pod_destroy_no_option', value: 'no' as any, displayMode: 'button' as const },
                 ],
-                { sourceId: 'bear_cavalry_cub_scout_pod_destroy', targetType: 'generic' },
+                {
+                    sourceId: 'bear_cavalry_cub_scout_pod_destroy',
+                    targetType: 'generic',
+                    titleKey: 'ui.bear_cavalry_cub_scout_pod_destroy_title',
+                    titleParams: { minionName: getCardDef(movedMinion.defId)?.name ?? movedMinion.defId },
+                },
             );
             (interaction.data as any).minionUid = movedMinion.uid;
             (interaction.data as any).minionDefId = movedMinion.defId;
@@ -1081,7 +1082,7 @@ function bearCavalryBearCavalryAbility(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `bear_cavalry_bear_cavalry_choose_minion_${ctx.now}`, ctx.playerId,
         '选择要移动的对手随从', options,
-        { sourceId: 'bear_cavalry_bear_cavalry_choose_minion', targetType: 'minion' },
+        { sourceId: 'bear_cavalry_bear_cavalry_choose_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_choose_enemy_minion_title' },
     );
     (interaction.data as any).continuationContext = { fromBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1117,7 +1118,7 @@ function bearCavalryBearCavalryPodAbility(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '黑熊骑兵：选择要移动的对手随从（可跳过）',
         [...options, createSkipOption()],
-        { sourceId: 'bear_cavalry_bear_cavalry_pod_choose_minion', targetType: 'minion' }
+        { sourceId: 'bear_cavalry_bear_cavalry_pod_choose_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_bear_cavalry_pod_title' }
     );
     (interaction.data as any).continuationContext = { fromBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -1140,7 +1141,7 @@ function bearCavalryYoureScrewed(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `bear_cavalry_youre_screwed_choose_base_${ctx.now}`, ctx.playerId,
         '选择有己方随从的基地', buildBaseTargetOptions(candidates, ctx.state),
-        { sourceId: 'bear_cavalry_youre_screwed_choose_base', targetType: 'base', autoCancelOption: true }
+        { sourceId: 'bear_cavalry_youre_screwed_choose_base', targetType: 'base', autoCancelOption: true, titleKey: 'ui.bear_cavalry_youre_screwed_choose_base_title' }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1170,7 +1171,7 @@ function bearCavalryBearRidesYou(ctx: AbilityContext): AbilityResult {
     if (myMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
     const interaction = createSimpleChoice(
-        `bear_cavalry_bear_rides_you_choose_minion_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'bear_cavalry_bear_rides_you_choose_minion', targetType: 'minion' }
+        `bear_cavalry_bear_rides_you_choose_minion_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'bear_cavalry_bear_rides_you_choose_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_bear_rides_you_choose_minion_title' }
         );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1200,7 +1201,7 @@ function bearCavalryBearRidesYouPod(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         '与熊同行：选择要移动的随从',
         buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-        { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_minion', targetType: 'minion' }
+        { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_bear_rides_you_pod_choose_minion_title' }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1228,7 +1229,7 @@ function bearCavalryYourePrettyMuchBorscht(ctx: AbilityContext): AbilityResult {
     const interaction = createSimpleChoice(
         `bear_cavalry_borscht_choose_from_${ctx.now}`, ctx.playerId,
         '选择基地（移动所有对手随从）', buildBaseTargetOptions(candidates, ctx.state),
-        { sourceId: 'bear_cavalry_borscht_choose_from', targetType: 'base', autoCancelOption: true }
+        { sourceId: 'bear_cavalry_borscht_choose_from', targetType: 'base', autoCancelOption: true, titleKey: 'ui.bear_cavalry_borscht_choose_from_title' }
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -1251,7 +1252,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
         }
     }
     // 收集所有可消灭的对手行动卡
-    const actionTargets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
+    const actionTargets: { uid: string; defId: string; ownerId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
         const base = ctx.state.bases[i];
         const baseDef = getBaseDef(base.defId);
@@ -1261,17 +1262,7 @@ function bearCavalryBearNecessities(ctx: AbilityContext): AbilityResult {
             if (ongoingControllerId !== ctx.playerId) {
                 const def = getCardDef(o.defId);
                 const name = def?.name ?? o.defId;
-                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: `[行动] ${name} @ ${baseName}` });
-            }
-        }
-        for (const m of base.minions) {
-            for (const a of m.attachedActions) {
-                const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
-                if (attachedControllerId !== ctx.playerId) {
-                    const def = getCardDef(a.defId);
-                    const name = def?.name ?? a.defId;
-                    actionTargets.push({ uid: a.uid, defId: a.defId, ownerId: a.ownerId, label: `[行动] ${name}` });
-                }
+                actionTargets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, baseIndex: i, label: `[行动] ${name} @ ${baseName}` });
             }
         }
     }
@@ -1384,10 +1375,25 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (!base) return { state, events: [] };
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return { state, events: [] };
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'bear_cavalry_bear_hug', timestamp)];
+        const ctx = (iData as any)?.continuationContext as {
+            opponents: string[];
+            opponentIdx: number;
+            destroyerId?: PlayerId;
+        } | undefined;
+        const destroyerId = ctx?.destroyerId ?? playerId;
+        const events: SmashUpEvent[] = [
+            destroyMinion(
+                target.uid,
+                target.defId,
+                baseIndex,
+                target.owner,
+                destroyerId,
+                'bear_cavalry_bear_hug',
+                timestamp,
+            ),
+        ];
 
         // 链式处理下一个对手
-        const ctx = (iData as any)?.continuationContext as { opponents: string[]; opponentIdx: number } | undefined;
         if (!ctx) return { state, events };
         const nextIdx = ctx.opponentIdx + 1;
         if (nextIdx >= ctx.opponents.length) return { state, events };
@@ -1407,7 +1413,15 @@ export function registerBearCavalryInteractionHandlers(): void {
             const weakest = minions.filter(m => m.power === minPower);
             if (weakest.length <= 1) {
                 if (weakest.length === 1) {
-                    events.push(destroyMinion(weakest[0].uid, weakest[0].defId, weakest[0].baseIndex, weakest[0].owner, playerId, 'bear_cavalry_bear_hug', timestamp));
+                    events.push(destroyMinion(
+                        weakest[0].uid,
+                        weakest[0].defId,
+                        weakest[0].baseIndex,
+                        weakest[0].owner,
+                        destroyerId,
+                        'bear_cavalry_bear_hug',
+                        timestamp,
+                    ));
                 }
                 continue;
             }
@@ -1423,9 +1437,13 @@ export function registerBearCavalryInteractionHandlers(): void {
                 `bear_cavalry_bear_hug_${opId}_${timestamp}`, opId,
                 '\u9ed1\u718a\u64d2\u62b1\uff1a\u9009\u62e9\u8981\u6d88\u706d\u7684\u6700\u5f31\u968f\u4ece',
                 buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: opId }),
-                { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion' }
+                { sourceId: 'bear_cavalry_bear_hug', targetType: 'minion', titleKey: 'ui.bear_cavalry_bear_hug_title' }
             );
-            (interaction.data as any).continuationContext = { opponents: ctx.opponents, opponentIdx: i };
+            (interaction.data as any).continuationContext = {
+                opponents: ctx.opponents,
+                opponentIdx: i,
+                destroyerId,
+            };
             return { state: queueInteraction(state, interaction), events };
         }
 
@@ -1474,12 +1492,12 @@ export function registerBearCavalryInteractionHandlers(): void {
             }
             // POD 版文本为 “you may move”，允许跳过；基础版则必须移动（若有合法目标）
             if (isPod) {
-                moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { skip: true }, displayMode: 'button' as const });
+                moveOptions.unshift(createSkipOption('跳过（不移动）', 'ui.bear_cavalry_skip_move_option'));
             }
             const next = createSimpleChoice(
                 `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
                 '委任：选择要移动的对手随从', moveOptions,
-                { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion' },
+                { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_commission_move_minion_title' },
             );
             return {
                 state: queueInteraction(state, {
@@ -1494,7 +1512,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             playerId,
             '委任：选择打出随从的基地',
             buildBaseTargetOptions(baseCandidates, state.core),
-            { sourceId: 'bear_cavalry_commission_choose_base', targetType: 'base' }
+            { sourceId: 'bear_cavalry_commission_choose_base', targetType: 'base', titleKey: 'ui.bear_cavalry_commission_choose_base_title' }
         );
         return {
             state: queueInteraction(state, {
@@ -1538,12 +1556,12 @@ export function registerBearCavalryInteractionHandlers(): void {
             return { state, events: [playedEvt] };
         }
         if (isPod) {
-            moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { skip: true }, displayMode: 'button' as const });
+            moveOptions.unshift(createSkipOption('跳过（不移动）', 'ui.bear_cavalry_skip_move_option'));
         }
         const next = createSimpleChoice(
             `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
             '委任：选择要移动的对手随从', moveOptions,
-            { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion' },
+            { sourceId: 'bear_cavalry_commission_move_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_commission_move_minion_title' },
         );
         return {
             state: queueInteraction(state, {
@@ -1574,7 +1592,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
         });
         const next = createSimpleChoice(
-            `bear_cavalry_commission_move_dest_${timestamp}`, playerId, '委任：选择移动到的基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_commission_move_dest', targetType: 'base' }
+            `bear_cavalry_commission_move_dest_${timestamp}`, playerId, '委任：选择移动到的基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_commission_move_dest', targetType: 'base', titleKey: 'ui.bear_cavalry_commission_move_dest_title' }
             );
         return {
             state: queueInteraction(state, {
@@ -1621,7 +1639,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             playerId,
             '选择要移动到的基地',
             buildBaseTargetOptions(options, state.core),
-            { sourceId: 'bear_cavalry_bear_cavalry_choose_base', targetType: 'base' }
+            { sourceId: 'bear_cavalry_bear_cavalry_choose_base', targetType: 'base', titleKey: 'ui.bear_cavalry_choose_destination_base_title' }
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -1669,7 +1687,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         const next = createSimpleChoice(
             `bear_cavalry_youre_screwed_choose_minion_${timestamp}`, playerId,
             '选择要移动的对手随从', options,
-            { sourceId: 'bear_cavalry_youre_screwed_choose_minion', targetType: 'minion' },
+            { sourceId: 'bear_cavalry_youre_screwed_choose_minion', targetType: 'minion', titleKey: 'ui.bear_cavalry_choose_enemy_minion_title' },
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBaseIndex: baseIndex } } }), events: [] };
     });
@@ -1688,7 +1706,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
         });
         const next = createSimpleChoice(
-            `bear_cavalry_youre_screwed_choose_dest_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_youre_screwed_choose_dest', targetType: 'base' }
+            `bear_cavalry_youre_screwed_choose_dest_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_youre_screwed_choose_dest', targetType: 'base', titleKey: 'ui.bear_cavalry_choose_target_base_title' }
             );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -1724,7 +1742,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
         });
         const next = createSimpleChoice(
-            `bear_cavalry_bear_rides_you_choose_base_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_bear_rides_you_choose_base', targetType: 'base' }
+            `bear_cavalry_bear_rides_you_choose_base_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(options, state.core), { sourceId: 'bear_cavalry_bear_rides_you_choose_base', targetType: 'base', titleKey: 'ui.bear_cavalry_choose_target_base_title' }
             );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -1777,7 +1795,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             playerId,
             '选择目标基地（移动对手随从到此处）',
             buildBaseTargetOptions(destBases, state.core),
-            { sourceId: 'bear_cavalry_borscht_choose_dest', targetType: 'base' }
+            { sourceId: 'bear_cavalry_borscht_choose_dest', targetType: 'base', titleKey: 'ui.bear_cavalry_borscht_choose_dest_title' }
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { fromBase } } }), events: [] };
     });
@@ -1878,9 +1896,9 @@ export function registerBearCavalryInteractionHandlers(): void {
             '幼熊斥候：选择一个牌面战力≤3的己方随从移动到本基地（可跳过）',
             [
                 ...buildMinionTargetOptions(candidates, { state: state.core, sourcePlayerId: playerId, effectType: 'move' }),
-                { id: 'skip', label: '跳过', value: 'skip' as any, displayMode: 'button' as const }
+                { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: 'skip' as any, displayMode: 'button' as const }
             ],
-            { sourceId: 'bear_cavalry_cub_scout_pod_chain_move', targetType: 'minion' }
+            { sourceId: 'bear_cavalry_cub_scout_pod_chain_move', targetType: 'minion', titleKey: 'ui.bear_cavalry_cub_scout_pod_chain_move_title' }
         );
         (interaction.data as any).scoutBaseIndex = scoutBaseIndex;
         const matchState = queueInteraction(state, interaction);
@@ -1938,7 +1956,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             playerId,
             '选择要移动到的基地',
             buildBaseTargetOptions(options, state.core),
-            { sourceId: 'bear_cavalry_bear_cavalry_pod_choose_base', targetType: 'base' }
+            { sourceId: 'bear_cavalry_bear_cavalry_pod_choose_base', targetType: 'base', titleKey: 'ui.bear_cavalry_choose_destination_base_title' }
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase } } }), events: [] };
     });
@@ -1971,7 +1989,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             playerId,
             '选择目标基地',
             buildBaseTargetOptions(options, state.core),
-            { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_base', targetType: 'base' }
+            { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_base', targetType: 'base', titleKey: 'ui.bear_cavalry_choose_target_base_title' }
         );
         return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBase, isMyMinion: target.controller === playerId } } }), events: [] };
     });
@@ -2044,14 +2062,14 @@ export function registerBearCavalryInteractionHandlers(): void {
             });
         }
 
-        suppressOptions.push({ id: 'skip', label: '跳过（不压制）', value: { kind: 'skip' }, displayMode: 'button' });
+        suppressOptions.push({ id: 'skip', label: '跳过（不压制）', labelKey: 'ui.bear_cavalry_bear_rides_you_pod_skip_suppress_option', value: { kind: 'skip' }, displayMode: 'button' });
 
         const next = createSimpleChoice(
             `bear_cavalry_bear_rides_you_pod_choose_suppress_${timestamp}`,
             playerId,
             '与熊同行：选择要压制能力的卡牌（到你下回合开始）',
             suppressOptions as any[],
-            { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_suppress', targetType: 'generic', autoCancelOption: true }
+            { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_suppress', targetType: 'generic', autoCancelOption: true, titleKey: 'ui.bear_cavalry_bear_rides_you_pod_choose_suppress_title' }
         );
         (next.data as any).continuationContext = { toBase };
 

@@ -53,12 +53,12 @@ export function RewardPointsBadge({
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1 rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-[0_1px_0_rgba(120,53,15,0.08)]',
+                'inline-flex items-center gap-1 leading-none rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 shadow-[0_1px_0_rgba(120,53,15,0.08)]',
                 className,
             )}
             data-testid="reward-points-badge"
         >
-            <RewardPointsStarIcon className={cn('h-3.5 w-3.5 shrink-0 text-amber-500', iconClassName)} />
+            <RewardPointsStarIcon className={cn('h-[1em] w-[1em] shrink-0 -translate-y-[0.02em] text-amber-500', iconClassName)} />
             <span className={cn('tabular-nums leading-none', textClassName)}>{displayValue}</span>
         </span>
     );

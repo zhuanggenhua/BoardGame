@@ -9,7 +9,7 @@
 
 项目当前已经有：
 
-- `.windsurf/skills/data-entry-workflow/SKILL.md`
+- `.codex/skill/data-entry-workflow/SKILL.md`
 - `docs/games/smashup/workflows/smashup-faction-intake.md`
 
 但缺少 intake 之后的实现 workflow，因此 AI 容易在“资源接好了”和“派系真的做完了”之间停住。

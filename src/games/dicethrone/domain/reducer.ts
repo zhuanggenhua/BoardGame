@@ -17,7 +17,7 @@ import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
-import { removeCard } from './utils';
+import { removeCard, updatePendingAttackSettlementStage } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
@@ -233,7 +233,7 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     const isAttackBonusSettlement = state.pendingBonusDiceSettlement?.resolutionMode === 'attackBonus';
     // 仅“独立伤害型”奖励骰才标记 bonusDiceResolved。
     const pendingAttack = !isDisplayOnly && !isAttackBonusSettlement && state.pendingAttack
-        ? { ...state.pendingAttack, bonusDiceResolved: true }
+        ? updatePendingAttackSettlementStage({ ...state.pendingAttack, bonusDiceResolved: true }, 'readyToResolve')
         : state.pendingAttack;
     return { ...state, pendingBonusDiceSettlement: undefined, pendingAttack };
 };
@@ -531,6 +531,7 @@ const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { 
         ...state,
         pendingAttack: {
             ...state.pendingAttack,
+            settlementStage: 'targeting',
             targetingSelectionPending: true,
             targetingSelectionResolved: false,
         },
@@ -552,6 +553,7 @@ const handleDefenderSelectionResolved: EventHandler<Extract<DiceThroneEvent, { t
         pendingAttack: {
             ...state.pendingAttack,
             defenderId: event.payload.defenderId,
+            settlementStage: 'preDamage',
             targetingSelectionPending: false,
             targetingSelectionResolved: true,
         },
@@ -620,11 +622,21 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         }
     }
 
+    const tokenActiveUseTiming = tokenId
+        ? state.tokenDefinitions.find(def => def.id === tokenId)?.activeUse?.timing
+        : undefined;
+    const isOffensiveRollEndChoice = tokenId
+        && (
+            tokenActiveUseTiming === 'onOffensiveRollEnd'
+            || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+        );
+
     if (
         sourceAbilityId
         && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
+        && isOffensiveRollEndChoice
     ) {
         resultState = {
             ...resultState,
@@ -758,15 +770,15 @@ const handleResponseWindowClosed: EventHandler<Extract<DiceThroneEvent, { type: 
  * 处理骰子修改事件
  * 
  * 设计原则：
- * - 如果修改骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
- * - 这样对手有机会响应新的骰面
- * - 如果是对手改我的骰，不需要重新确认（我只能接受结果）
+ * - 只要当前投掷池的骰面真实发生变化，就重置 rollConfirmed=false
+ * - 这样投掷方若仍有剩余投掷次数，可以继续重投并重新确认
+ * - 响应窗口是否已处理由 afterRollConfirmed 的序号/签名去重负责，不再复用 rollConfirmed 表达
  */
 const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODIFIED' }>> = (
     state,
     event
 ) => {
-    const { dieId, newValue, playerId } = event.payload;
+    const { dieId, newValue } = event.payload;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -774,8 +786,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
         return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
     });
 
-    const rollerId = getRollerId(state);
-    const rollConfirmed = (playerId === rollerId && state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
     return { ...state, dice: newDice, rollConfirmed };
 };
@@ -784,14 +795,14 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
  * 处理骰子重掷事件
  * 
  * 设计原则（同 handleDieModified）：
- * - 如果重掷骰子的玩家 === 骰子所有者（rollerId），则重置 rollConfirmed=false
- * - 这样对手有机会响应新的骰面
+ * - 只要当前投掷池的骰面真实发生变化，就重置 rollConfirmed=false
+ * - 这样投掷方若仍有剩余投掷次数，可以继续重投并重新确认
  */
 const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_REROLLED' }>> = (
     state,
     event
 ) => {
-    const { dieId, newValue, playerId } = event.payload;
+    const { dieId, newValue } = event.payload;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -799,8 +810,7 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
         return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
     });
 
-    const rollerId = getRollerId(state);
-    const rollConfirmed = (playerId === rollerId && state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
     return { ...state, dice: newDice, rollConfirmed };
 };

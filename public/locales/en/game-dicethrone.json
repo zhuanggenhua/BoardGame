@@ -290,8 +290,8 @@
     "shame": {
       "name": "Shame",
       "description": [
-        "When you calculate attack damage, you may spend Shame by stacks.",
-        "Each 1 spent reduces that attack's damage by 1."
+        "When calculating attack damage, remove Shame by stacks.",
+        "Each 1 removed reduces that attack's damage by 1."
       ]
     },
     "samurai_retribution": {
@@ -544,6 +544,7 @@
     "defenderDesc": "You may spend tokens to reduce or negate incoming damage.",
     "originalDamage": "Original Damage",
     "currentDamage": "Current Damage",
+    "critRequirementDetail": "Current damage {{damage}}, requires >= 5",
     "damage": "Damage",
     "available": "available",
     "taijiBoostHint": "Spend Taiji to boost damage",
@@ -976,6 +977,8 @@
     "endDefense": "End Defense",
     "nextPhase": "Next Phase",
     "closePreview": "Close Preview ✕",
+    "magnify": "View Large Image",
+    "inspectDiscardPile": "View Discard Pile",
     "undoSell": "Undo Sell",
     "play": "Play",
     "upgrade": "Upgrade",
@@ -993,7 +996,11 @@
   },
   "layout": {
     "exitEdit": "🧱 Exit Layout Edit",
-    "enterEdit": "📐 Enter Layout Edit (Drag/Resize)"
+    "enterEdit": "📐 Enter Layout Edit (Drag/Resize)",
+    "passiveTag": "Passive",
+    "currentLayout": "Current layout config: {{version}} ({{width}}×{{height}})",
+    "saving": "Saving…",
+    "saveLayout": "Save {{version}} layout config"
   },
   "status": {
     "loadingGameState": "Loading game state... (Player {{playerId}})"
@@ -1149,6 +1156,13 @@
       "title": "Ninjutsu 6 result",
       "poison": "+2 damage and apply Delayed Poison",
       "undefendable": "+2 damage and make the attack undefendable"
+    },
+    "ninjaSmokeScreen": {
+      "title": "Choose Smoke Screen II target(s)",
+      "option": "Give Smoke Bomb and 3 Ninjutsu to Player {{ally}}; apply Delayed Poison to Player {{opponent}}",
+      "kujiKiriTitle": "Choose Kuji Kiri target(s)",
+      "kujiKiriSameTarget": "Deal 4 true damage twice to Player {{opponent}}",
+      "kujiKiriSplitTargets": "Deal 4 true damage to Player {{firstOpponent}} and Player {{secondOpponent}}"
     },
     "treantWildGrowth": {
       "title": "Wild Growth: choose Spirits and Life Sap",
@@ -1310,8 +1324,11 @@
     "selectStatusToRemove": "Select a status effect to remove",
     "selectPlayerToRemoveAllStatus": "Select a player to remove all status",
     "selectPlayerForRetribution": "Select a player to gain Retribution",
-      "selectPlayerForConsecrate": "Select a player to consecrate",
-      "gunslingerTheLaw": "Select up to 2 target players",
+    "selectPlayerForConsecrate": "Select a player to consecrate",
+    "gunslingerTheLaw": "Select up to 2 target players",
+    "targetingRollSelectTarget": "Select this attack's target",
+    "targetingRollOpponentDecidesTarget": "The opponent decides who takes this attack",
+    "targetingRollPlayerOption": "Player {{playerNumber}}",
       "selectHandCardToDiscard": "Select 1 card from your hand to discard",
       "selectStatusToTransfer": "Select a status effect to transfer",
     "hint_copy_step1": "Select source die to copy",
@@ -3111,7 +3128,7 @@
     },
     "war-monger": {
       "name": "War Monger",
-      "description": "1 Sabre + 3 Banners: gain 1 Tactical Advantage and roll 1 die; Sabre deals 5 damage, Banner gains 4 Tactical Advantage, Medal draws 1 card; after resolution, immediately enter an extra Offensive Roll Phase.",
+      "description": "1 Sabre + 3 Banners: gain 1 Tactical Advantage and roll 1 die; Sabre deals 5 damage, Banner gains 4 Tactical Advantage, Medal draws 1 card, then immediately enter an extra Offensive Roll Phase.",
       "effects": {
         "gainTa1": "Gain 1 Tactical Advantage.",
         "bonusRoll": "Roll 1 die: Sabre deals 5 damage; Banner gains 4 Tactical Advantage; Medal draws 1 card.",
@@ -4563,6 +4580,90 @@
     "transferShort": "Transfer",
     "transfer": "Spend 4 Tactical Advantage to transfer 1 status effect"
   }
+  },
+  "debug": {
+    "testingTools": "Testing Tools",
+    "resource": {
+      "section_title": "Resource Controls",
+      "set": "Set To",
+      "add": "+Add",
+      "subtract": "-Remove"
+    },
+    "dice": {
+      "section_title": "Dice Controls",
+      "die_label": "D{{index}}",
+      "apply": "✓ Apply Dice Values",
+      "all_ones": "All 1s",
+      "all_sixes": "All 6s",
+      "large_straight_1_5": "Large Straight 1-5",
+      "large_straight_2_6": "Large Straight 2-6",
+      "small_straight_1_4": "Small Straight 1-4"
+    },
+    "token": {
+      "section_title": "Token Controls",
+      "lotus": "Lotus 🪷",
+      "set_amount": "Set Token Amount"
+    },
+    "deal": {
+      "section_title": "Deal Debug (Atlas Index)",
+      "index_placeholder": "Atlas Index",
+      "no_character": "No hero selected",
+      "reversed_common_hint": "Current hero {{hero}} uses reversed common slots: 0-17 = common cards, 18-31 = hero cards. If you are unsure, use the candidates in the card pool lookup below for an exact deal.",
+      "legacy_common_hint": "Current hero {{hero}} uses the legacy hero order: the front half is mostly hero cards, and 15-32 = common cards.",
+      "deck_remaining": "Deck remaining: {{count}} card(s)",
+      "deck_hit": "| Found in deck: {{name}}",
+      "deck_multi_hit": "| This index matches {{count}} cards in deck. Use the candidate list below for an exact deal.",
+      "pool_single_hit": "| Not in the remaining deck. You can add it directly to hand: {{name}} (Hand {{handCount}}, Discard {{discardCount}})",
+      "pool_multi_hit": "| Not in the remaining deck, but the hero card pool matches {{count}} cards. Use the candidate list below for an exact add.",
+      "pool_missing": "| This atlas index does not exist in the current hero card pool",
+      "button_deal_from_deck": "🎴 Deal From Remaining Deck",
+      "button_choose_deck_candidate": "🎴 Choose Deck Match",
+      "button_add_from_pool": "🪄 Add Directly To Hand",
+      "button_choose_pool_candidate": "🪄 Choose Exact Card",
+      "button_default": "🎴 Deal By Atlas Index",
+      "deck_slot": "deck#{{index}}"
+    },
+    "quickDeal": {
+      "status": "Deck: {{count}} cards {{detail}}",
+      "selected": "| Selected: {{id}}",
+      "missing": "| No card at this index remains in deck",
+      "button": "Deal Specific Card"
+    },
+    "card_pool": {
+      "section_title": "Hero Card Pool Lookup ({{player}})",
+      "description": "Clicking any entry will deal from the remaining deck first. If that card has already left the deck and is in hand or discard, one more copy will be added directly to hand.",
+      "empty_character": "No hero selected",
+      "empty_group": "This section has no cards for the current hero",
+      "deck_index_short": "#{{index}}"
+    },
+    "hand_preview": {
+      "section_title": "Hand Preview ({{player}})",
+      "empty": "Hand is empty"
+    },
+    "deck_section": {
+      "unknown": "Unknown",
+      "common": "Common",
+      "hero": "Hero",
+      "common_0_17_title": "Common Range 0-17",
+      "common_0_17_desc": "Clicking any entry deals from the remaining deck first. If that card already left the deck, it will be added directly to hand.",
+      "hero_18_31_title": "Hero Range 18-31",
+      "hero_18_31_desc": "Indexes after 18 belong to the current hero. Matching cards in hand or discard can also be added directly.",
+      "hero_title": "Hero Range",
+      "hero_desc": "Legacy heroes mostly use the front half for hero cards. Click to deal first, then auto-add if it is no longer in deck.",
+      "common_15_32_title": "Common Range 15-32",
+      "common_15_32_desc": "Legacy heroes keep common cards in forward order. Matching cards in hand or discard no longer block debug dealing."
+    },
+    "card_type": {
+      "upgrade": "Upgrade",
+      "action": "Action"
+    },
+    "short": {
+      "add_to_hand": "Add",
+      "in_hand_and_discard": "Hand {{handCount}} / Discard {{discardCount}}",
+      "in_deck": "✓ In Deck",
+      "can_add_with_counts": "+ Addable (H {{handCount}} / D {{discardCount}})",
+      "can_add": "+ Addable"
+    }
   },
   "cardSpotlight": {
     "playerPlayed": "{{player}} played a card",

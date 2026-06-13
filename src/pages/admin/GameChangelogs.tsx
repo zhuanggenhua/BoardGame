@@ -76,6 +76,16 @@ export default function AdminGameChangelogs() {
         return allGames.filter((game) => allowed.has(game.id));
     }, [allGames, availableGameIds]);
 
+    const gameTitleMap = useMemo(
+        () => new Map(allGames.map((game) => [game.id, t(game.titleKey, { defaultValue: game.id })])),
+        [allGames, t]
+    );
+
+    const getGameTitle = useCallback(
+        (gameId: string) => gameTitleMap.get(gameId) ?? gameId,
+        [gameTitleMap]
+    );
+
     const fetchChangelogs = useCallback(async (gameId?: string) => {
         if (!token) return;
         setLoading(true);
@@ -85,7 +95,7 @@ export default function AdminGameChangelogs() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
-                const message = await normalizeErrorMessage(res, '获取更新日志失败');
+                const message = await normalizeErrorMessage(res, t('admin.gameChangelogs.toast.fetch_failed'));
                 throw new Error(message);
             }
             const data = await res.json() as GameChangelogResponse;
@@ -96,11 +106,11 @@ export default function AdminGameChangelogs() {
                 gameId,
                 error,
             });
-            toast.error(error instanceof Error ? error.message : '获取更新日志失败');
+            toast.error(error instanceof Error ? error.message : t('admin.gameChangelogs.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
-    }, [toast, token]);
+    }, [t, toast, token]);
 
     useEffect(() => {
         if (!token) return;
@@ -124,7 +134,7 @@ export default function AdminGameChangelogs() {
 
     const openCreate = () => {
         if (manageableGames.length === 0) {
-            toast.error('当前没有可管理的游戏');
+            toast.error(t('admin.gameChangelogs.empty.no_manageable_games'));
             return;
         }
         setEditing(null);
@@ -174,10 +184,19 @@ export default function AdminGameChangelogs() {
                 body: JSON.stringify(payload),
             });
             if (!res.ok) {
-                const message = await normalizeErrorMessage(res, editing ? '更新更新日志失败' : '创建更新日志失败');
+                const message = await normalizeErrorMessage(
+                    res,
+                    editing
+                        ? t('admin.gameChangelogs.toast.update_failed')
+                        : t('admin.gameChangelogs.toast.create_failed')
+                );
                 throw new Error(message);
             }
-            toast.success(editing ? '更新日志已保存' : '更新日志已创建');
+            toast.success(
+                editing
+                    ? t('admin.gameChangelogs.toast.update_success')
+                    : t('admin.gameChangelogs.toast.create_success')
+            );
             resetForm();
             await fetchChangelogs(selectedGameId || undefined);
         } catch (error) {
@@ -185,7 +204,7 @@ export default function AdminGameChangelogs() {
                 editingId: editing?.id,
                 error,
             });
-            toast.error(error instanceof Error ? error.message : '保存更新日志失败');
+            toast.error(error instanceof Error ? error.message : t('admin.gameChangelogs.toast.save_failed'));
         } finally {
             setSubmitting(false);
         }
@@ -193,7 +212,7 @@ export default function AdminGameChangelogs() {
 
     const handleDelete = async (id: string) => {
         if (!token) return;
-        if (!window.confirm('确定删除这条更新日志吗？删除后无法恢复。')) return;
+        if (!window.confirm(t('admin.gameChangelogs.confirm.delete'))) return;
 
         try {
             const res = await fetch(`${ADMIN_API_URL}/game-changelogs/${id}`, {
@@ -201,17 +220,17 @@ export default function AdminGameChangelogs() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
-                const message = await normalizeErrorMessage(res, '删除更新日志失败');
+                const message = await normalizeErrorMessage(res, t('admin.gameChangelogs.toast.delete_failed'));
                 throw new Error(message);
             }
-            toast.success('更新日志已删除');
+            toast.success(t('admin.gameChangelogs.toast.delete_success'));
             await fetchChangelogs(selectedGameId || undefined);
         } catch (error) {
             logger.error('[AdminGameChangelogs] 删除更新日志失败', {
                 id,
                 error,
             });
-            toast.error(error instanceof Error ? error.message : '删除更新日志失败');
+            toast.error(error instanceof Error ? error.message : t('admin.gameChangelogs.toast.delete_failed'));
         }
     };
 
@@ -227,17 +246,23 @@ export default function AdminGameChangelogs() {
                 body: JSON.stringify({ published: !item.published }),
             });
             if (!res.ok) {
-                const message = await normalizeErrorMessage(res, '切换发布状态失败');
+                const message = await normalizeErrorMessage(res, t('admin.gameChangelogs.toast.toggle_publish_failed'));
                 throw new Error(message);
             }
-            toast.success(item.published ? '已撤回发布' : '已发布更新日志');
+            toast.success(
+                item.published
+                    ? t('admin.gameChangelogs.toast.unpublish_success')
+                    : t('admin.gameChangelogs.toast.publish_success')
+            );
             await fetchChangelogs(selectedGameId || undefined);
         } catch (error) {
             logger.error('[AdminGameChangelogs] 切换发布状态失败', {
                 id: item.id,
                 error,
             });
-            toast.error(error instanceof Error ? error.message : '切换发布状态失败');
+            toast.error(
+                error instanceof Error ? error.message : t('admin.gameChangelogs.toast.toggle_publish_failed')
+            );
         }
     };
 
@@ -246,9 +271,11 @@ export default function AdminGameChangelogs() {
             <div className="mx-auto max-w-[1200px] space-y-6 pb-10">
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">更新日志</h1>
+                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+                            {t('admin.gameChangelogs.title')}
+                        </h1>
                         <p className="mt-1 text-zinc-500">
-                            按游戏发布版本说明，只对已发布内容开放前台可见。
+                            {t('admin.gameChangelogs.description')}
                         </p>
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -257,7 +284,7 @@ export default function AdminGameChangelogs() {
                             onChange={(event) => setSelectedGameId(event.target.value)}
                             className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-700 shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/15"
                         >
-                            <option value="">全部可管理游戏</option>
+                            <option value="">{t('admin.gameChangelogs.filters.all_games')}</option>
                             {manageableGames.map((game) => (
                                     <option key={game.id} value={game.id}>
                                         {t(game.titleKey, { defaultValue: game.id })}
@@ -271,7 +298,7 @@ export default function AdminGameChangelogs() {
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Plus size={16} />
-                            新建更新日志
+                            {t('admin.gameChangelogs.actions.create')}
                         </button>
                     </div>
                 </div>
@@ -281,10 +308,12 @@ export default function AdminGameChangelogs() {
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h2 className="text-lg font-bold text-zinc-900">
-                                    {editing ? '编辑更新日志' : '新建更新日志'}
+                                    {editing
+                                        ? t('admin.gameChangelogs.form.edit_title')
+                                        : t('admin.gameChangelogs.form.create_title')}
                                 </h2>
                                 <p className="mt-1 text-sm text-zinc-500">
-                                    开发者只能操作自己被分配到的游戏。
+                                    {t('admin.gameChangelogs.form.scope_hint')}
                                 </p>
                             </div>
                             <button
@@ -292,13 +321,15 @@ export default function AdminGameChangelogs() {
                                 onClick={resetForm}
                                 className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-50"
                             >
-                                取消
+                                {t('admin.gameChangelogs.actions.cancel')}
                             </button>
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <div>
-                                <label className="mb-1 block text-sm font-medium text-zinc-600">目标游戏</label>
+                                <label className="mb-1 block text-sm font-medium text-zinc-600">
+                                    {t('admin.gameChangelogs.form.game_label')}
+                                </label>
                                 <select
                                     value={form.gameId}
                                     onChange={(event) => setForm((current) => ({ ...current, gameId: event.target.value }))}
@@ -313,35 +344,41 @@ export default function AdminGameChangelogs() {
                                 </select>
                             </div>
                             <div>
-                                <label className="mb-1 block text-sm font-medium text-zinc-600">版本号</label>
+                                <label className="mb-1 block text-sm font-medium text-zinc-600">
+                                    {t('admin.gameChangelogs.form.version_label')}
+                                </label>
                                 <input
                                     value={form.versionLabel}
                                     onChange={(event) => setForm((current) => ({ ...current, versionLabel: event.target.value }))}
                                     className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/15"
-                                    placeholder="例如 v1.2.0"
+                                    placeholder={t('admin.gameChangelogs.form.version_placeholder')}
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-zinc-600">标题</label>
+                            <label className="mb-1 block text-sm font-medium text-zinc-600">
+                                {t('admin.gameChangelogs.form.title_label')}
+                            </label>
                             <input
                                 value={form.title}
                                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                                 className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/15"
-                                placeholder="例如 平衡性调整"
+                                placeholder={t('admin.gameChangelogs.form.title_placeholder')}
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-zinc-600">内容</label>
+                            <label className="mb-1 block text-sm font-medium text-zinc-600">
+                                {t('admin.gameChangelogs.form.content_label')}
+                            </label>
                             <textarea
                                 value={form.content}
                                 onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))}
                                 rows={6}
                                 className="w-full resize-y rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/15"
-                                placeholder="填写会展示在前台排行榜右侧的更新说明"
+                                placeholder={t('admin.gameChangelogs.form.content_placeholder')}
                                 required
                             />
                         </div>
@@ -354,7 +391,7 @@ export default function AdminGameChangelogs() {
                                     onChange={(event) => setForm((current) => ({ ...current, pinned: event.target.checked }))}
                                     className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
                                 />
-                                置顶显示
+                                {t('admin.gameChangelogs.form.pinned')}
                             </label>
                             <label className="flex items-center gap-2 text-sm text-zinc-600">
                                 <input
@@ -363,11 +400,11 @@ export default function AdminGameChangelogs() {
                                     onChange={(event) => setForm((current) => ({ ...current, published: event.target.checked }))}
                                     className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
                                 />
-                                立即发布
+                                {t('admin.gameChangelogs.form.publish_now')}
                             </label>
                         </div>
                         <p className="text-xs leading-5 text-amber-700">
-                            未勾选“立即发布”的日志会保存为草稿，只在后台列表可见，不会出现在前台详情页的“更新”页签。
+                            {t('admin.gameChangelogs.form.publish_hint')}
                         </p>
 
                         <div className="flex gap-3 pt-2">
@@ -376,14 +413,18 @@ export default function AdminGameChangelogs() {
                                 disabled={submitting}
                                 className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {submitting ? '提交中...' : editing ? '保存修改' : '创建日志'}
+                                {submitting
+                                    ? t('admin.gameChangelogs.actions.submitting')
+                                    : editing
+                                        ? t('admin.gameChangelogs.actions.save')
+                                        : t('admin.gameChangelogs.actions.create_entry')}
                             </button>
                             <button
                                 type="button"
                                 onClick={resetForm}
                                 className="rounded-lg bg-zinc-100 px-5 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-200"
                             >
-                                取消
+                                {t('admin.gameChangelogs.actions.cancel')}
                             </button>
                         </div>
                     </form>
@@ -393,7 +434,9 @@ export default function AdminGameChangelogs() {
                     <AdminCardListSkeleton rows={4} />
                 ) : items.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-zinc-300 bg-white py-16 text-center text-sm text-zinc-400">
-                        {manageableGames.length === 0 ? '当前没有可管理的游戏' : '暂无更新日志'}
+                        {manageableGames.length === 0
+                            ? t('admin.gameChangelogs.empty.no_manageable_games')
+                            : t('admin.gameChangelogs.empty.no_items')}
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -406,7 +449,7 @@ export default function AdminGameChangelogs() {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h3 className="truncate text-lg font-bold text-zinc-900">{item.title}</h3>
                                                 <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-medium text-zinc-500">
-                                                    {item.gameId}
+                                                    {getGameTitle(item.gameId)}
                                                 </span>
                                                 {item.versionLabel && (
                                                     <span className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-medium text-zinc-500">
@@ -421,12 +464,14 @@ export default function AdminGameChangelogs() {
                                                             : 'bg-zinc-100 text-zinc-500'
                                                     )}
                                                 >
-                                                    {item.published ? '已发布' : '草稿'}
+                                                    {item.published
+                                                        ? t('admin.gameChangelogs.status.published')
+                                                        : t('admin.gameChangelogs.status.draft')}
                                                 </span>
                                                 {item.pinned && (
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                                                         <Pin size={12} />
-                                                        置顶
+                                                        {t('admin.gameChangelogs.status.pinned')}
                                                     </span>
                                                 )}
                                             </div>
@@ -434,7 +479,9 @@ export default function AdminGameChangelogs() {
                                                 {item.content}
                                             </p>
                                             <div className="mt-3 text-xs text-zinc-400">
-                                                最近时间：{new Date(displayDate).toLocaleString('zh-CN')}
+                                                {t('admin.gameChangelogs.status.latest_time', {
+                                                    time: new Date(displayDate).toLocaleString('zh-CN'),
+                                                })}
                                             </div>
                                         </div>
 
@@ -443,7 +490,11 @@ export default function AdminGameChangelogs() {
                                                 type="button"
                                                 onClick={() => togglePublish(item)}
                                                 className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                                                title={item.published ? '撤回发布' : '发布'}
+                                                title={
+                                                    item.published
+                                                        ? t('admin.gameChangelogs.actions.unpublish')
+                                                        : t('admin.gameChangelogs.actions.publish')
+                                                }
                                             >
                                                 {item.published ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
@@ -451,7 +502,7 @@ export default function AdminGameChangelogs() {
                                                 type="button"
                                                 onClick={() => openEdit(item)}
                                                 className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-indigo-600"
-                                                title="编辑"
+                                                title={t('admin.gameChangelogs.actions.edit')}
                                             >
                                                 <Pencil size={16} />
                                             </button>
@@ -459,7 +510,7 @@ export default function AdminGameChangelogs() {
                                                 type="button"
                                                 onClick={() => handleDelete(item.id)}
                                                 className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                                                title="删除"
+                                                title={t('admin.gameChangelogs.actions.delete')}
                                             >
                                                 <Trash2 size={16} />
                                             </button>

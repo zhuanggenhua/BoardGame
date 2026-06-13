@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import { AndroidForceUpdateGate } from './AndroidForceUpdateGate';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
@@ -19,6 +20,7 @@ const HIDDEN_FORCE_UPDATE_STATE: AndroidForceUpdateState = {
 };
 
 export const AndroidLiveUpdateManager = () => {
+    const { t } = useTranslation('lobby');
     const toast = useToast();
     const isNativeAndroid = isNativeAndroidRuntime();
     const isNativeMobile = isNativeAndroid || isNativeMobileRuntime();
@@ -46,7 +48,7 @@ export const AndroidLiveUpdateManager = () => {
             if (result.status === 'up-to-date' && options?.interactive) {
                 setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
                 if (shouldShowAndroidOtaToastOncePerDay('up-to-date')) {
-                    toast.success('当前已经是最新版本。', '应用更新', {
+                    toast.success(t('nativeUpdate.toast.upToDate'), t('nativeUpdate.eyebrow'), {
                         dedupeKey: 'android-ota-up-to-date',
                         ttlMs: 3000,
                     });
@@ -68,7 +70,7 @@ export const AndroidLiveUpdateManager = () => {
                 console.warn('[OTA] 后台检查失败', result.reason);
                 if (options?.interactive) {
                     if (shouldShowAndroidOtaToastOncePerDay('error')) {
-                        toast.error(result.reason, '应用更新');
+                        toast.error(result.reason, t('nativeUpdate.eyebrow'));
                     }
                 }
                 return;
@@ -113,7 +115,7 @@ export const AndroidLiveUpdateManager = () => {
             disposed = true;
             unsubscribeRequest();
         };
-    }, [isNativeAndroid, isNativeMobile, toast]);
+    }, [isNativeAndroid, isNativeMobile, t, toast]);
 
     if (!isNativeMobile) {
         return null;

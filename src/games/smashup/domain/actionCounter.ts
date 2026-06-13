@@ -223,6 +223,7 @@ function queueActionCounterPrompt(
             {
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             },
@@ -242,6 +243,7 @@ function queueActionCounterPrompt(
             return [{
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             }];
@@ -251,6 +253,7 @@ function queueActionCounterPrompt(
             return [{
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             }];
@@ -269,6 +272,7 @@ function queueActionCounterPrompt(
             {
                 id: 'pass',
                 label: '让过',
+                labelKey: 'ui.me_first_pass',
                 value: { pass: true },
                 displayMode: 'button' as const,
             },
@@ -289,6 +293,7 @@ function queueActionCounterContinuePrompt(
         [{
             id: 'continue',
             label: '继续',
+            labelKey: 'ui.continue',
             value: { continue: true },
             displayMode: 'button',
         }],
@@ -296,6 +301,7 @@ function queueActionCounterContinuePrompt(
             sourceId: ACTION_COUNTER_CONTINUE_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: true,
+            titleKey: 'ui.action_counter_continue_title',
         },
     );
     interaction.data.continuationContext = { stack };
@@ -327,6 +333,7 @@ function queueWilBasePrompt(
             targetType: 'base',
             autoResolveIfSingle: false,
             displayCard: { defId, cardUid },
+            titleKey: 'ui.action_counter_wil_base_title',
         },
     );
     interaction.data.continuationContext = {
@@ -455,6 +462,29 @@ export function resolvePendingActionExecution(
         const specialTiming = getActionLikeResponseWindowTiming(def);
         if (!specialTiming) {
             return { state: updatedState, events };
+        }
+        if (
+            reactionWindow
+            && (
+                (reactionWindow.windowType === 'meFirst' && specialTiming === 'beforeScoring')
+                || (reactionWindow.windowType === 'afterScoring' && specialTiming === 'afterScoring')
+            )
+        ) {
+            const limitGroup = def.type === 'fusion'
+                ? def.actionSpecialLimitGroup
+                : def.specialLimitGroup;
+            if (limitGroup) {
+                events.push({
+                    type: SU_EVENTS.SPECIAL_LIMIT_USED,
+                    payload: {
+                        playerId: pending.playerId,
+                        baseIndex: targetBaseIndex,
+                        limitGroup,
+                        abilityDefId: pending.defId,
+                    },
+                    timestamp: now,
+                } as SmashUpEvent);
+            }
         }
         if (specialTiming === 'beforeScoring') {
             runActionExecutor(resolveSpecial(pending.defId) ?? resolveOnPlay(pending.defId), targetBaseIndex);

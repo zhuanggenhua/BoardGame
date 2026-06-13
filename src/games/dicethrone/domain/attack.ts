@@ -2,7 +2,6 @@ import type { RandomFn } from '../../../engine/types';
 import type {
     DiceThroneCore,
     DiceThroneEvent,
-    AttackResolvedEvent,
     AttackPreDefenseResolvedEvent,
     AttackDefenseResolvedEvent,
 } from './types';
@@ -321,7 +320,7 @@ export const resolvePostDamageEffects = (
     }
 
     const events: DiceThroneEvent[] = [];
-    const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = pending;
+    const { attackerId, defenderId, sourceAbilityId } = pending;
     const damageDealt = pending.resolvedDamage ?? pending.damage ?? 0;
 
     if (sourceAbilityId) {
@@ -338,20 +337,6 @@ export const resolvePostDamageEffects = (
         events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, { random, skipDamage: true }));
         events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
     }
-
-    const resolvedEvent: AttackResolvedEvent = {
-        type: 'ATTACK_RESOLVED',
-        payload: {
-            attackerId,
-            defenderId,
-            sourceAbilityId,
-            defenseAbilityId,
-            totalDamage: damageDealt,
-        },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp,
-    };
-    events.push(resolvedEvent);
 
     return events;
 };

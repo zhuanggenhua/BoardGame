@@ -21,7 +21,7 @@ import { STARTING_HAND_MULLIGAN_SOURCE_ID } from '../domain/mulliganHandlers';
 import { execute } from '../domain/reducer';
 import type { AllFactionsSelectedEvent, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { STARTING_HAND_SIZE, SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { getSimpleChoicePrompt } from './helpers';
+import { expectNoPrompt, getSimpleChoicePrompt, respondToPrompt } from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -74,6 +74,33 @@ function createActionsFirstRandom(): RandomFn {
     };
 }
 
+function createP0ActionsP1MinionsRandom(): RandomFn {
+    return {
+        random: () => 0.5,
+        d: (max: number) => Math.ceil(max / 2),
+        range: (min: number, max: number) => Math.floor((min + max) / 2),
+        shuffle: <T>(arr: T[]): T[] => {
+            const first = arr[0] as any;
+            if (!first || typeof first !== 'object' || typeof first.owner !== 'string') {
+                return [...arr];
+            }
+            const owner = first.owner;
+            return [...arr].sort((a: any, b: any) => {
+                if (typeof a?.type !== 'string' || typeof b?.type !== 'string') return 0;
+                const preferActionsFirst = owner === '0';
+                if (preferActionsFirst) {
+                    if (a.type === 'action' && b.type !== 'action') return -1;
+                    if (a.type !== 'action' && b.type === 'action') return 1;
+                    return 0;
+                }
+                if (a.type === 'minion' && b.type !== 'minion') return -1;
+                if (a.type !== 'minion' && b.type === 'minion') return 1;
+                return 0;
+            });
+        },
+    };
+}
+
 const FIRST_THREE_COMMANDS = [
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
@@ -88,6 +115,12 @@ const FOURTH_COMMAND = {
 };
 
 const FULL_DRAFT_COMMANDS = [...FIRST_THREE_COMMANDS, FOURTH_COMMAND] as const;
+const KITTY_HORSES_DRAFT_COMMANDS = [
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.KITTY_CATS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.MYTHIC_HORSES }, timestamp: 4 },
+] as const;
 
 describe('SmashUp 起手重抽', () => {
     describe('起手含随从时不触发重抽', () => {
@@ -177,6 +210,26 @@ describe('SmashUp 起手重抽', () => {
             for (const [, count] of mulliganCounts) {
                 expect(count).toBe(1);
             }
+        });
+    });
+
+    describe('猫咪 + 小马起手重抽', () => {
+        it('点重抽一次后仍应保留 5 张手牌且不残留重抽交互', () => {
+            const random = createP0ActionsP1MinionsRandom();
+            const runner = createRunner(random);
+            const started = runner.run({ name: '猫咪小马进入对局', commands: [...KITTY_HORSES_DRAFT_COMMANDS] });
+
+            const prompt = getSimpleChoicePrompt(started.finalState, STARTING_HAND_MULLIGAN_SOURCE_ID);
+            expect(prompt.playerId).toBe('0');
+
+            const resolved = respondToPrompt(started.finalState, 'mulligan', '0', random);
+
+            expect(resolved.finalState.core.players['0'].hand.length).toBe(STARTING_HAND_SIZE);
+            expect(resolved.finalState.core.players['0'].deck.length).toBe(40 - STARTING_HAND_SIZE);
+            expect(resolved.finalState.core.players['0'].hand.every(card => typeof card.uid === 'string')).toBe(true);
+            expect(resolved.finalState.core.players['0'].hand.some(card => card.type === 'minion')).toBe(false);
+            expect(['startTurn', 'playCards']).toContain(resolved.finalState.sys.phase);
+            expectNoPrompt(resolved.finalState);
         });
     });
 });

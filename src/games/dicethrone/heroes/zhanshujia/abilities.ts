@@ -154,21 +154,7 @@ const WAR_MONGER: AbilityDef = {
     trigger: { type: 'diceSet', faces: { [FACE.SABRE]: 1, [FACE.BANNER]: 3 } },
     effects: [
         grantToken(1, abilityEffectText('war-monger', 'gainTa1')),
-        {
-            description: abilityEffectText('war-monger', 'bonusRoll'),
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 1,
-                conditionalEffects: [
-                    { face: FACE.SABRE, bonusDamage: 5, effectKey: 'bonusDie.effect.zhanshujiaWarMongerSabre' },
-                    { face: FACE.BANNER, grantToken: { tokenId: TOKEN_IDS.TACTICAL_ADVANTAGE, value: 4 }, effectKey: 'bonusDie.effect.zhanshujiaWarMongerBanner' },
-                    { face: FACE.MEDAL, drawCard: 1, effectKey: 'bonusDie.effect.zhanshujiaWarMongerMedal' },
-                ],
-            },
-            timing: 'preDefense',
-        },
-        custom('zhanshujia-war-monger-extra-offensive-roll', abilityEffectText('war-monger', 'extraOffensiveRoll'), 'postDamage'),
+        custom('zhanshujia-war-monger-roll', abilityEffectText('war-monger', 'bonusRoll'), 'preDefense', 'opponent'),
     ],
 };
 

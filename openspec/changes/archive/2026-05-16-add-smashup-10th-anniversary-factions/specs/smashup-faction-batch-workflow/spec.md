@@ -12,7 +12,7 @@
 - **AND** 系统 MUST 明确记录 handoff 包，而不是把“资源接入完成”误报成“派系完成”
 
 ### Requirement: Smash Up 派系批量任务必须复用通用 data-entry 入口
-系统 SHALL 继续以 `.windsurf/skills/data-entry-workflow/SKILL.md` 作为 Smash Up 新派系任务的统一入口，而不是为每一批派系单独复制一套 skill。
+系统 SHALL 继续以 `.codex/skill/data-entry-workflow/SKILL.md` 作为 Smash Up 新派系任务的统一入口，而不是为每一批派系单独复制一套 skill。
 
 #### Scenario: 处理 Smash Up 新派系图片包
 - **WHEN** AI 接到 Smash Up 派系图片录入或派系新增任务

@@ -231,6 +231,44 @@ describe('Fairies abilities', () => {
             .toBe(resolved.finalState.core.turnNumber);
     });
 
+    it('fairies_tinx 应以 ongoing 直点附着行动卡，并把目标行动移到自己身上', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('tinx-1', 'fairies_tinx', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-a', 'robot_microbot_alpha', '0', 1, {
+                        attachedActions: [{ uid: 'attach-a', defId: 'fairies_enchantment', ownerId: '0', talentUsed: false }],
+                    }),
+                    makeMinion('tinx-host', 'ghosts_spectre', '0', 2),
+                ],
+                ongoingActions: [],
+            })],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'tinx-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'fairies_tinx');
+        expect(prompt.targetType).toBe('ongoing');
+        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'attach-a', 'Tinx attached action option');
+
+        const resolved = respondToPrompt(played.finalState, option.id, '0', defaultTestRandom);
+        const sourceHost = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'host-a');
+        const tinx = resolved.finalState.core.bases[0].minions.find(minion => minion.defId === 'fairies_tinx');
+
+        expect(sourceHost?.attachedActions.some(action => action.uid === 'attach-a')).toBe(false);
+        expect(tinx?.attachedActions.some(action => action.uid === 'attach-a')).toBe(true);
+    });
+
     it('埋骨堂把 Puck 从弃牌堆埋葬到基地时，不应触发 Puck 或丛林之灵的打出分支', () => {
         const core = makeState({
             turnNumber: 1,
@@ -705,6 +743,38 @@ describe('Fairies abilities', () => {
         });
         expect(summoned.finalState.core.players['0'].actionsPlayed).toBe(1);
         expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
+    });
+
+    it('fairies_playful_tricks 选择消灭行动分支时应走 ongoing 直选并允许多选基地/附着行动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('playful-1', 'fairies_playful_tricks', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_a',
+                ongoingActions: [{ uid: 'base-action', defId: 'kaiju_stomp', ownerId: '1' }],
+                minions: [
+                    makeMinion('host-a', 'robot_microbot_alpha', '1', 2, {
+                        attachedActions: [{ uid: 'attached-action', defId: 'fairies_enchantment', ownerId: '1', talentUsed: false }],
+                    }),
+                ],
+            })],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'playful-1' } },
+            defaultTestRandom,
+        );
+
+        const destroyPrompt = getSimpleChoicePrompt(played.finalState, 'fairies_playful_tricks_destroy');
+        expect(destroyPrompt.targetType).toBe('ongoing');
+        expect(destroyPrompt.multi).toMatchObject({ min: 0, max: 2 });
+        expect(getPromptOption(destroyPrompt, entry => entry.value?.cardUid === 'base-action', 'base ongoing option')).toBeDefined();
+        expect(getPromptOption(destroyPrompt, entry => entry.value?.cardUid === 'attached-action', 'attached ongoing option')).toBeDefined();
     });
 
     it('fairies_enchantment 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过并记录 both 模式', () => {

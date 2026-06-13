@@ -236,6 +236,7 @@ describe('龙派系可复用实现批', () => {
         expect(result.success).toBe(true);
         const played = result.finalState.core.bases[0].minions.find((minion) => minion.uid === 'p1-minion');
         expect(played?.tempPowerModifier).toBe(-1);
+        expect(played?.powerCounters ?? 0).toBe(0);
         expect(played && getEffectivePower(result.finalState.core, played, 0)).toBe(1);
     });
 
@@ -278,6 +279,7 @@ describe('龙派系可复用实现批', () => {
         const movedMinion = finalCore.bases[0].minions.find((minion) => minion.uid === 'move-1');
 
         expect(movedMinion?.tempPowerModifier).toBe(-1);
+        expect(movedMinion?.powerCounters ?? 0).toBe(0);
         expect(movedMinion && getEffectivePower(finalCore, movedMinion, 0)).toBe(1);
     });
 
@@ -481,6 +483,7 @@ describe('龙派系可复用实现批', () => {
 
         expect(played.success).toBe(true);
         const scopePrompt = getSimpleChoicePrompt(played.finalState, 'dragons_flank_attack_source');
+        expect(scopePrompt.targetType).toBe('button');
         const bothOption = getPromptOption(
             scopePrompt,
             (option) => option.value?.searchScope === 'both',
@@ -754,6 +757,7 @@ describe('龙派系可复用实现批', () => {
 
         expect(played.success).toBe(true);
         const prompt = getSimpleChoicePrompt(played.finalState, 'dragons_burn_it_down');
+        expect(prompt.targetType).toBe('button');
         const discardOption = getPromptOption(
             prompt,
             (option) => option.value?.source === 'discard' && option.value?.baseDefId === 'base_central_brain',

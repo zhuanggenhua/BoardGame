@@ -1,10 +1,9 @@
+import { installClientDiagnosticCapture } from './clientFeedbackContext';
 import { reportClientAutoFeedbackOnce } from './clientAutoReport';
+import type { FeedbackErrorContext } from './feedbackPayload';
 
-export interface LastErrorContext {
+export interface LastErrorContext extends FeedbackErrorContext {
     message: string;
-    name?: string;
-    stack?: string;
-    source?: string;
     timestamp: number;
 }
 
@@ -31,6 +30,8 @@ export const setLastErrorContext = (context: Omit<LastErrorContext, 'timestamp'>
         name: truncate(context.name, 120),
         stack: truncate(context.stack, 4000),
         source: truncate(context.source, 128),
+        jsStack: truncate(context.jsStack, 4000),
+        componentStack: truncate(context.componentStack, 4000),
         timestamp: context.timestamp ?? Date.now(),
     };
 };
@@ -44,6 +45,7 @@ export const installGlobalErrorContextCapture = () => {
     const host = getHost();
     if (!host || host.__BG_ERROR_CONTEXT_CAPTURE_INSTALLED__) return;
     host.__BG_ERROR_CONTEXT_CAPTURE_INSTALLED__ = true;
+    installClientDiagnosticCapture();
 
     host.addEventListener('error', (event) => {
         const error = event.error as Error | undefined;
@@ -58,6 +60,7 @@ export const installGlobalErrorContextCapture = () => {
             name,
             stack,
             source,
+            jsStack: stack,
         });
         if (event.defaultPrevented) return;
         const signature = `client-window-error:${name}:${message}:${source}`;
@@ -71,6 +74,7 @@ export const installGlobalErrorContextCapture = () => {
             errorMessage: message,
             errorSource: source,
             stack,
+            jsStack: stack,
         });
     });
 
@@ -86,6 +90,7 @@ export const installGlobalErrorContextCapture = () => {
                 name,
                 stack,
                 source: 'window.unhandledrejection',
+                jsStack: stack,
             });
             const signature = `client-unhandled-rejection:${name}:${message}`;
             void reportClientAutoFeedbackOnce(signature, {
@@ -98,6 +103,7 @@ export const installGlobalErrorContextCapture = () => {
                 errorMessage: message,
                 errorSource: 'window.unhandledrejection',
                 stack,
+                jsStack: stack,
             });
             return;
         }

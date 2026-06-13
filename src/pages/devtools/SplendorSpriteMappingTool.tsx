@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getLocalAssetPath } from '../../core';
 import { SPLENDOR_CARD_DEFS, SPLENDOR_NOBLE_DEFS } from '../../games/splendor/domain/data';
@@ -61,21 +62,13 @@ function buildSpriteStyle(imagePath: string, cols: number, rows: number, index: 
     };
 }
 
-const COST_COLOR_LABEL: Record<string, string> = {
-    white: '白',
-    blue: '蓝',
-    green: '绿',
-    red: '红',
-    black: '黑',
-};
-
-function formatCardCostText(cardId: string): string {
+function formatCardCostText(cardId: string, getColorLabel: (color: string) => string): string {
     const card = SPLENDOR_CARD_DEFS.find((item) => item.id === cardId);
     if (!card) return '';
 
     return Object.entries(card.cost)
         .filter(([, count]) => count > 0)
-        .map(([color, count]) => `${count}${COST_COLOR_LABEL[color] ?? color}`)
+        .map(([color, count]) => `${count}${getColorLabel(color)}`)
         .join(' ');
 }
 
@@ -84,6 +77,7 @@ export default function SplendorSpriteMappingTool({
 }: {
     onBackToSlicer: () => void;
 }) {
+    const { t } = useTranslation('lobby');
     const [activeAtlasId, setActiveAtlasId] = useState<SplendorSpriteAtlasId>('tier1');
     const [selectedFrameIndex, setSelectedFrameIndex] = useState(0);
     const [draftMapping, setDraftMapping] = useState<DraftMapping>(() => readDraftMappingFromStorage());
@@ -100,6 +94,13 @@ export default function SplendorSpriteMappingTool({
         }
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draftMapping));
     }, [defaultDraftMapping, draftMapping]);
+
+    const getColorLabel = (color: string) =>
+        t(`devtools.splendorSpriteMappingTool.colors.${color}`, { defaultValue: color });
+    const getAtlasTitle = (atlasId: SplendorSpriteAtlasId) =>
+        t(`devtools.splendorSpriteMappingTool.atlases.${atlasId}`, {
+            defaultValue: SPLENDOR_SPRITE_ATLAS_BY_ID[atlasId].title,
+        });
 
     const activeAtlas = SPLENDOR_SPRITE_ATLAS_BY_ID[activeAtlasId];
     const currentOrder = draftMapping[activeAtlasId];
@@ -204,26 +205,33 @@ export default function SplendorSpriteMappingTool({
             <aside className="flex w-[360px] flex-col border-r border-slate-800 bg-slate-900">
                 <div className="border-b border-slate-800 p-5">
                     <div className="mb-2 flex items-center justify-between">
-                        <Link to="/" className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 transition hover:text-amber-300">
-                            返回首页
+                        <Link
+                            to="/"
+                            className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 transition hover:text-amber-300"
+                        >
+                            {t('devtools.assetSlicer.back_home')}
                         </Link>
                         <button
                             type="button"
                             onClick={onBackToSlicer}
                             className="rounded-full border border-slate-700 px-3 py-1 text-[11px] text-slate-300 transition hover:border-amber-400 hover:text-amber-200"
                         >
-                            切回切片模式
+                            {t('devtools.splendorSpriteMappingTool.actions.back_to_slicer')}
                         </button>
                     </div>
-                    <h1 className="text-2xl font-black text-amber-200">Splendor 映射校对</h1>
+                    <h1 className="text-2xl font-black text-amber-200">
+                        {t('devtools.splendorSpriteMappingTool.title')}
+                    </h1>
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                        在同一页中同时查看雪碧图格子与对应的数据模型，校对发展卡与贵族的映射关系。
+                        {t('devtools.splendorSpriteMappingTool.description')}
                     </p>
                 </div>
 
                 <div className="flex-1 space-y-6 overflow-y-auto p-5">
                     <section className="space-y-3">
-                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">图集</div>
+                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">
+                            {t('devtools.splendorSpriteMappingTool.sections.atlases')}
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                             {SPLENDOR_SPRITE_ATLASES.map((atlas) => (
                                 <button
@@ -240,7 +248,7 @@ export default function SplendorSpriteMappingTool({
                                             : 'border-slate-700 bg-slate-800/80 text-slate-300 hover:border-slate-500'
                                     }`}
                                 >
-                                    <div className="text-sm font-semibold">{atlas.title}</div>
+                                    <div className="text-sm font-semibold">{getAtlasTitle(atlas.id)}</div>
                                     <div className="mt-1 text-[11px] text-slate-400">{atlas.cols} x {atlas.rows}</div>
                                 </button>
                             ))}
@@ -248,13 +256,20 @@ export default function SplendorSpriteMappingTool({
                     </section>
 
                     <section className="space-y-3">
-                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">当前格子</div>
+                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">
+                            {t('devtools.splendorSpriteMappingTool.sections.current_frame')}
+                        </div>
                         <div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
                             <div className="text-sm font-semibold text-slate-200">
-                                第 {selectedFrameIndex + 1} 格
+                                {t('devtools.splendorSpriteMappingTool.current_frame.index', {
+                                    index: selectedFrameIndex + 1,
+                                })}
                             </div>
                             <div className="mt-2 text-xs text-slate-400">
-                                当前绑定：<span className="font-mono text-slate-200">{selectedAssignedId || '未映射'}</span>
+                                {t('devtools.splendorSpriteMappingTool.current_frame.binding')}
+                                <span className="font-mono text-slate-200">
+                                    {selectedAssignedId || t('devtools.splendorSpriteMappingTool.status.unmapped')}
+                                </span>
                             </div>
                             <select
                                 data-testid="splendor-mapping-model-select"
@@ -262,7 +277,7 @@ export default function SplendorSpriteMappingTool({
                                 onChange={(event) => updateSelectedFrame(event.target.value)}
                                 className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-amber-400"
                             >
-                                <option value="">未映射</option>
+                                <option value="">{t('devtools.splendorSpriteMappingTool.status.unmapped')}</option>
                                 {modelOptions.map((option) => (
                                     <option key={option.id} value={option.id}>
                                         {option.label}
@@ -275,71 +290,112 @@ export default function SplendorSpriteMappingTool({
                                     onClick={() => updateSelectedFrame('')}
                                     className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-rose-400 hover:text-rose-200"
                                 >
-                                    清空此格
+                                    {t('devtools.splendorSpriteMappingTool.actions.clear_frame')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={restoreActiveAtlas}
                                     className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-amber-400 hover:text-amber-200"
                                 >
-                                    恢复当前图集
+                                    {t('devtools.splendorSpriteMappingTool.actions.restore_atlas')}
                                 </button>
                             </div>
                         </div>
                     </section>
 
                     <section className="space-y-3">
-                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">校验</div>
+                        <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">
+                            {t('devtools.splendorSpriteMappingTool.sections.validation')}
+                        </div>
                         <div className="space-y-2 rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-xs">
                             <div className="flex justify-between">
-                                <span className="text-slate-400">未映射格子</span>
+                                <span className="text-slate-400">
+                                    {t('devtools.splendorSpriteMappingTool.validation.unmapped_frames')}
+                                </span>
                                 <span className={diagnostics.unmapped.length ? 'text-rose-300' : 'text-emerald-300'}>
                                     {diagnostics.unmapped.length}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-slate-400">重复映射模型</span>
+                                <span className="text-slate-400">
+                                    {t('devtools.splendorSpriteMappingTool.validation.duplicate_models')}
+                                </span>
                                 <span className={diagnostics.duplicateIds.length ? 'text-rose-300' : 'text-emerald-300'}>
                                     {diagnostics.duplicateIds.length}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-slate-400">缺失模型</span>
+                                <span className="text-slate-400">
+                                    {t('devtools.splendorSpriteMappingTool.validation.missing_models')}
+                                </span>
                                 <span className={diagnostics.missingIds.length ? 'text-rose-300' : 'text-emerald-300'}>
                                     {diagnostics.missingIds.length}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-slate-400">未知 ID</span>
+                                <span className="text-slate-400">
+                                    {t('devtools.splendorSpriteMappingTool.validation.unknown_ids')}
+                                </span>
                                 <span className={diagnostics.unknownIds.length ? 'text-rose-300' : 'text-emerald-300'}>
                                     {diagnostics.unknownIds.length}
                                 </span>
                             </div>
                         </div>
-                        {(diagnostics.unmapped.length > 0 || diagnostics.duplicateIds.length > 0 || diagnostics.missingIds.length > 0 || diagnostics.unknownIds.length > 0) ? (
-                            <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs leading-6 text-rose-100">
-                                {diagnostics.unmapped.length > 0 ? <div>未映射格子：{diagnostics.unmapped.map((index) => index + 1).join('、')}</div> : null}
-                                {diagnostics.duplicateIds.length > 0 ? <div>重复模型：{diagnostics.duplicateIds.join('、')}</div> : null}
-                                {diagnostics.missingIds.length > 0 ? <div>缺失模型：{diagnostics.missingIds.join('、')}</div> : null}
-                                {diagnostics.unknownIds.length > 0 ? <div>未知 ID：{diagnostics.unknownIds.join('、')}</div> : null}
-                            </div>
-                        ) : (
-                            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-100">
-                                当前图集映射在结构上完整，可继续做人眼校对或导出回填。
-                            </div>
-                        )}
+                        {(diagnostics.unmapped.length > 0
+                            || diagnostics.duplicateIds.length > 0
+                            || diagnostics.missingIds.length > 0
+                            || diagnostics.unknownIds.length > 0) ? (
+                                <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs leading-6 text-rose-100">
+                                    {diagnostics.unmapped.length > 0 ? (
+                                        <div>
+                                            {t('devtools.splendorSpriteMappingTool.validation.details.unmapped', {
+                                                values: diagnostics.unmapped.map((index) => index + 1).join('、'),
+                                            })}
+                                        </div>
+                                    ) : null}
+                                    {diagnostics.duplicateIds.length > 0 ? (
+                                        <div>
+                                            {t('devtools.splendorSpriteMappingTool.validation.details.duplicate', {
+                                                values: diagnostics.duplicateIds.join('、'),
+                                            })}
+                                        </div>
+                                    ) : null}
+                                    {diagnostics.missingIds.length > 0 ? (
+                                        <div>
+                                            {t('devtools.splendorSpriteMappingTool.validation.details.missing', {
+                                                values: diagnostics.missingIds.join('、'),
+                                            })}
+                                        </div>
+                                    ) : null}
+                                    {diagnostics.unknownIds.length > 0 ? (
+                                        <div>
+                                            {t('devtools.splendorSpriteMappingTool.validation.details.unknown', {
+                                                values: diagnostics.unknownIds.join('、'),
+                                            })}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-100">
+                                    {t('devtools.splendorSpriteMappingTool.validation.success')}
+                                </div>
+                            )}
                     </section>
 
                     <section className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">导出</div>
+                            <div className="text-xs font-black uppercase tracking-[0.28em] text-slate-500">
+                                {t('devtools.splendorSpriteMappingTool.sections.export')}
+                            </div>
                             <button
                                 type="button"
                                 data-testid="splendor-mapping-copy-export"
                                 onClick={copyExport}
                                 className="rounded-full border border-slate-700 px-3 py-1 text-[11px] text-slate-300 transition hover:border-amber-400 hover:text-amber-200"
                             >
-                                {copied ? '已复制' : '复制配置'}
+                                {copied
+                                    ? t('devtools.splendorSpriteMappingTool.actions.copied')
+                                    : t('devtools.splendorSpriteMappingTool.actions.copy_export')}
                             </button>
                         </div>
                         <textarea
@@ -353,14 +409,14 @@ export default function SplendorSpriteMappingTool({
                                 onClick={restoreAll}
                                 className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-amber-400 hover:text-amber-200"
                             >
-                                恢复全部仓库配置
+                                {t('devtools.splendorSpriteMappingTool.actions.restore_all')}
                             </button>
                             <button
                                 type="button"
                                 onClick={clearLocalDraft}
                                 className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-rose-400 hover:text-rose-200"
                             >
-                                清空本地草稿
+                                {t('devtools.splendorSpriteMappingTool.actions.clear_local_draft')}
                             </button>
                         </div>
                     </section>
@@ -370,7 +426,8 @@ export default function SplendorSpriteMappingTool({
             <main className="flex min-w-0 flex-1 flex-col bg-slate-950">
                 <div className="border-b border-slate-800 px-6 py-4">
                     <div className="text-sm text-slate-400">
-                        当前图集：<span className="font-semibold text-slate-100">{activeAtlas.title}</span>
+                        {t('devtools.splendorSpriteMappingTool.current_frame.current_atlas')}
+                        <span className="font-semibold text-slate-100">{getAtlasTitle(activeAtlas.id)}</span>
                     </div>
                 </div>
 
@@ -378,7 +435,7 @@ export default function SplendorSpriteMappingTool({
                     <section className="min-h-0 overflow-auto p-6">
                         <div
                             data-testid="splendor-mapping-frame-grid"
-                            className={`grid gap-3`}
+                            className="grid gap-3"
                             style={{ gridTemplateColumns: `repeat(${activeAtlas.cols}, minmax(0, 1fr))` }}
                         >
                             {currentOrder.map((assignedId, index) => {
@@ -387,7 +444,7 @@ export default function SplendorSpriteMappingTool({
                                 const isUnknown = assignedId && diagnostics.unknownIds.includes(assignedId);
                                 const isUnmapped = !assignedId;
                                 const costText = activeAtlas.modelKind === 'card' && assignedId
-                                    ? formatCardCostText(assignedId)
+                                    ? formatCardCostText(assignedId, getColorLabel)
                                     : '';
 
                                 return (
@@ -404,14 +461,16 @@ export default function SplendorSpriteMappingTool({
                                     >
                                         <div className="mb-2 flex items-center justify-between text-[11px]">
                                             <span className="font-bold text-slate-300">#{index + 1}</span>
-                                            <span className={`rounded-full px-2 py-0.5 ${
-                                                isUnmapped
-                                                    ? 'bg-slate-700 text-slate-300'
-                                                    : isDuplicate || isUnknown
-                                                        ? 'bg-rose-500/20 text-rose-200'
-                                                        : 'bg-emerald-500/15 text-emerald-200'
-                                            }`}>
-                                                {isUnmapped ? '未映射' : assignedId}
+                                            <span
+                                                className={`rounded-full px-2 py-0.5 ${
+                                                    isUnmapped
+                                                        ? 'bg-slate-700 text-slate-300'
+                                                        : isDuplicate || isUnknown
+                                                            ? 'bg-rose-500/20 text-rose-200'
+                                                            : 'bg-emerald-500/15 text-emerald-200'
+                                                }`}
+                                            >
+                                                {isUnmapped ? t('devtools.splendorSpriteMappingTool.status.unmapped') : assignedId}
                                             </span>
                                         </div>
                                         <div
@@ -435,7 +494,9 @@ export default function SplendorSpriteMappingTool({
                     </section>
 
                     <section className="min-h-0 border-l border-slate-800 bg-slate-900/70 p-6">
-                        <div className="mb-4 text-xs font-black uppercase tracking-[0.28em] text-slate-500">模型列表</div>
+                        <div className="mb-4 text-xs font-black uppercase tracking-[0.28em] text-slate-500">
+                            {t('devtools.splendorSpriteMappingTool.sections.model_list')}
+                        </div>
                         <div className="h-full overflow-auto rounded-2xl border border-slate-800 bg-slate-950/50">
                             {modelOptions.map((option) => {
                                 const frameIndex = currentOrder.findIndex((id) => id === option.id);
@@ -454,10 +515,16 @@ export default function SplendorSpriteMappingTool({
                                             <div className="font-mono text-xs text-slate-200">{option.id}</div>
                                             <div className="mt-1 text-xs text-slate-400">{option.label.split(' · ')[1]}</div>
                                         </div>
-                                        <div className={`shrink-0 rounded-full px-2 py-1 text-[11px] ${
-                                            frameIndex >= 0 ? 'bg-emerald-500/15 text-emerald-200' : 'bg-slate-700 text-slate-300'
-                                        }`}>
-                                            {frameIndex >= 0 ? `第 ${frameIndex + 1} 格` : '未分配'}
+                                        <div
+                                            className={`shrink-0 rounded-full px-2 py-1 text-[11px] ${
+                                                frameIndex >= 0 ? 'bg-emerald-500/15 text-emerald-200' : 'bg-slate-700 text-slate-300'
+                                            }`}
+                                        >
+                                            {frameIndex >= 0
+                                                ? t('devtools.splendorSpriteMappingTool.model_list.frame_index', {
+                                                    index: frameIndex + 1,
+                                                })
+                                                : t('devtools.splendorSpriteMappingTool.model_list.unassigned')}
                                         </div>
                                     </button>
                                 );

@@ -22,9 +22,30 @@ describe('errorContext 自动反馈', () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
-        delete (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
-        delete (window as Window & { __BG_ERROR_CONTEXT_CAPTURE_INSTALLED__?: boolean }).__BG_ERROR_CONTEXT_CAPTURE_INSTALLED__;
-        delete (window as Window & { __BG_LAST_ERROR_CONTEXT__?: unknown }).__BG_LAST_ERROR_CONTEXT__;
+        const host = window as Window & {
+            __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean;
+            __BG_ERROR_CONTEXT_CAPTURE_INSTALLED__?: boolean;
+            __BG_LAST_ERROR_CONTEXT__?: unknown;
+            __BG_LAST_USER_ACTION__?: unknown;
+            __BG_LAST_ROUTE_CHANGE__?: unknown;
+            __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
+            __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
+            __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
+        };
+        delete host.__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
+        delete host.__BG_ERROR_CONTEXT_CAPTURE_INSTALLED__;
+        delete host.__BG_LAST_ERROR_CONTEXT__;
+        delete host.__BG_LAST_USER_ACTION__;
+        delete host.__BG_LAST_ROUTE_CHANGE__;
+        delete host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__;
+        if (host.__BG_HISTORY_PUSH_STATE_ORIGINAL__) {
+            window.history.pushState = host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
+            delete host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
+        }
+        if (host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__) {
+            window.history.replaceState = host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__;
+            delete host.__BG_HISTORY_REPLACE_STATE_ORIGINAL__;
+        }
     });
 
     it('window error 会自动上报并写入最近错误上下文', async () => {
@@ -58,6 +79,7 @@ describe('errorContext 自动反馈', () => {
             autoReportKind: 'window-error',
             errorContext: {
                 message: 'window boom',
+                jsStack: expect.stringContaining('window boom'),
             },
         });
     });

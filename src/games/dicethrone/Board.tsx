@@ -1671,7 +1671,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
                         {/* 测试工具 */}
                         <div className="pt-4 border-t border-gray-200 mt-4 space-y-3">
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">测试工具</h4>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('debug.testingTools')}</h4>
                             <button
                                 onClick={toggleLayoutEditing}
                                 className={`w-full py-2 rounded font-bold text-xs border transition-[background-color] duration-200 ${isLayoutEditing ? 'bg-amber-600 border-amber-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}

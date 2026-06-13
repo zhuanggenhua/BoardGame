@@ -52,6 +52,24 @@ interface UseGameEventsParams {
   playerNames?: Record<string, string>;
 }
 
+function resolveTriggeredFxPosition(
+  event: { payload?: unknown },
+  baseRefs: React.RefObject<Map<number, HTMLElement>>,
+): { left: number; top: number } | undefined {
+  const baseIndex = (event.payload as { fromBaseIndex?: number; baseIndex?: number })?.fromBaseIndex
+    ?? (event.payload as { baseIndex?: number })?.baseIndex;
+  if (baseIndex === undefined) return undefined;
+
+  const baseEl = baseRefs.current?.get(baseIndex);
+  if (!baseEl) return undefined;
+
+  const rect = baseEl.getBoundingClientRect();
+  return {
+    left: rect.left + rect.width / 2,
+    top: rect.top + Math.max(rect.height * 0.28, 56),
+  };
+}
+
 function isImmediateExtraPromptFamilyActive(
   G: MatchState<SmashUpCore>,
   playerId: string,
@@ -126,18 +144,16 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
         const reason = (event.payload as { reason?: string })?.reason;
         if (reason && triggerDefIds.has(reason) && !triggeredThisBatch.has(reason)) {
           triggeredThisBatch.add(reason);
-          // 尝试从事件中提取基地索引用于定位动画
-          const baseIndex = (event.payload as { fromBaseIndex?: number; baseIndex?: number })?.fromBaseIndex
-            ?? (event.payload as { baseIndex?: number })?.baseIndex;
-          const baseEl = baseIndex !== undefined ? baseRefs.current?.get(baseIndex) : undefined;
-          let position: { left: number; top: number } | undefined;
-          if (baseEl) {
-            const rect = baseEl.getBoundingClientRect();
-            position = { left: rect.left + rect.width / 2, top: rect.top };
-          }
+          const position = resolveTriggeredFxPosition(event, baseRefs);
+          const destroyedPayload = event.type === SU_EVENTS.MINION_DESTROYED
+            ? (event.payload as { minionDefId?: string })
+            : undefined;
           fxBus.push(SU_FX.ABILITY_TRIGGERED, { space: 'screen' }, {
             sourceDefId: reason,
             position,
+            targetDefId: destroyedPayload?.minionDefId,
+            effectLabel: destroyedPayload?.minionDefId ? '消灭' : undefined,
+            highlightTone: destroyedPayload?.minionDefId ? 'danger' : 'info',
           });
         }
       }

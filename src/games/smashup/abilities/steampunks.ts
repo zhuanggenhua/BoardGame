@@ -519,7 +519,12 @@ const steampunkScrapDivingPromptProgram = createPromptProgram<SteampunkPromptCon
             context.playerId,
             '选择要从弃牌堆取回的行动卡',
             buildDiscardActionOptions(context.state, context.playerId, context.sourceCardUid),
-            { sourceId: 'steampunk_scrap_diving', targetType: 'generic', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_scrap_diving',
+                titleKey: 'ui.steampunk_scrap_diving_title',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildDiscardActionOptions(state.core as SmashUpCore, context.playerId, context.sourceCardUid);
@@ -559,7 +564,11 @@ const steampunkCaptainAhabPromptProgram = createPromptProgram<SteampunkPromptCon
         context.playerId,
         '选择要移动到的基地',
         buildCaptainAhabBaseOptions(context.state, context.playerId, context.currentBaseIndex ?? -1),
-        { sourceId: 'steampunk_captain_ahab', targetType: 'base' },
+        {
+            sourceId: 'steampunk_captain_ahab',
+            titleKey: 'ui.steampunk_captain_ahab_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as Partial<{ baseIndex: number }> | undefined;
@@ -610,7 +619,12 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
             context.playerId,
             '齐柏林飞艇：点击目标基地',
             buildZeppelinBaseOptions(context.state, context.zepBaseIndex ?? -1, context.fromBaseIndex ?? -1),
-            { sourceId: 'steampunk_zeppelin_choose_base', targetType: 'base', autoResolveIfSingle: true },
+            {
+                sourceId: 'steampunk_zeppelin_choose_base',
+                titleKey: 'ui.steampunk_zeppelin_choose_base_title',
+                targetType: 'base',
+                autoResolveIfSingle: true,
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildZeppelinBaseOptions(state.core as SmashUpCore, context.zepBaseIndex ?? -1, context.fromBaseIndex ?? -1);
@@ -652,7 +666,12 @@ const steampunkZeppelinChooseMinionPromptProgram = createPromptProgram<Steampunk
             context.playerId,
             '齐柏林飞艇：点击要移动的随从',
             buildZeppelinMinionOptions(context.state, context.playerId),
-            { sourceId: 'steampunk_zeppelin_choose_minion', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_zeppelin_choose_minion',
+                titleKey: 'ui.steampunk_zeppelin_choose_minion_title',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildZeppelinMinionOptions(state.core as SmashUpCore, context.playerId);
@@ -707,7 +726,12 @@ const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPrompt
             context.playerId,
             '选择要将行动卡打出到的基地',
             buildMechanicBaseOptions(context.matchState, context.playerId, context.replayDefId ?? ''),
-            { sourceId: 'steampunk_mechanic_target', targetType: 'base', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_mechanic_target',
+                titleKey: 'ui.steampunk_mechanic_target_title',
+                targetType: 'base',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildMechanicBaseOptions(state as MatchState<SmashUpCore>, context.playerId, context.replayDefId ?? '');
@@ -771,6 +795,7 @@ const steampunkMechanicPromptProgram = createPromptProgram<SteampunkPromptContex
             buildMechanicDiscardOptions(context.state, context.playerId),
             {
                 sourceId: 'steampunk_mechanic',
+                titleKey: 'ui.steampunk_mechanic_title',
                 targetType: 'generic',
                 autoCancelOption: true,
                 responseValidationMode: 'live',
@@ -827,7 +852,12 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
             context.playerId,
             '选择要将行动卡附着到的随从',
             buildChangeOfVenueMinionOptions(context.state, context.playerId),
-            { sourceId: 'steampunk_change_of_venue_choose_minion', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_change_of_venue_choose_minion',
+                titleKey: 'ui.steampunk_change_of_venue_choose_minion_title',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildChangeOfVenueMinionOptions(state.core as SmashUpCore, context.playerId);
@@ -895,7 +925,12 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
             context.playerId,
             '选择要将行动卡附着到的基地',
             buildChangeOfVenueBaseOptions(context.state),
-            { sourceId: 'steampunk_change_of_venue_choose_base', targetType: 'base', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_change_of_venue_choose_base',
+                titleKey: 'ui.steampunk_change_of_venue_choose_base_title',
+                targetType: 'base',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildChangeOfVenueBaseOptions(state.core as SmashUpCore);
@@ -957,7 +992,12 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
             context.playerId,
             '选择要取回的持续行动卡',
             buildChangeOfVenueOngoingOptions(context.state, context.playerId),
-            { sourceId: 'steampunk_change_of_venue', targetType: 'ongoing', responseValidationMode: 'live' },
+            {
+                sourceId: 'steampunk_change_of_venue',
+                titleKey: 'ui.steampunk_change_of_venue_title',
+                targetType: 'ongoing',
+                responseValidationMode: 'live',
+            },
         );
         interaction.data.optionsGenerator = state =>
             buildChangeOfVenueOngoingOptions(state.core as SmashUpCore, context.playerId);

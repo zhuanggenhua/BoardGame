@@ -1,7 +1,7 @@
 ## 1. 合同与 workflow
 
 - [x] 1.1 固化 `wangling.png / wangling_base.png` 的 truth-source 合同、atlas 几何与索引表
-- [x] 1.2 更新 `.windsurf/skills/data-entry-workflow/SKILL.md`，补齐 Smash Up 的 `intake` / `implementation` 分流规则
+- [x] 1.2 更新 `.codex/skill/data-entry-workflow/SKILL.md`，补齐 Smash Up 的 `intake` / `implementation` 分流规则
 - [x] 1.3 收紧 `docs/games/smashup/workflows/smashup-faction-intake.md` 为 intake-only 文档
 - [x] 1.4 新增 `docs/games/smashup/workflows/smashup-faction-implementation.md`，定义逐派系实施、验证与统一收口流程
 

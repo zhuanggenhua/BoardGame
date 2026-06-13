@@ -305,7 +305,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                                         src={previewAssets.playerBoard}
                                                         locale={locale}
                                                         className="h-full w-auto object-contain"
-                                                        alt="玩家面板"
+                                                        alt={t('framework.character_selection.player_board_alt')}
                                                     />
                                                 </div>
 
@@ -320,7 +320,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                                             src={previewAssets.tipBoard}
                                                             locale={locale}
                                                             className="h-full w-auto object-contain"
-                                                            alt="提示板"
+                                                            alt={t('framework.character_selection.tip_board_alt')}
                                                         />
                                                     </div>
                                                 )}
@@ -536,7 +536,7 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                         src={magnifyImage}
                         locale={locale}
                         className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain"
-                        alt="预览图"
+                        alt={t('framework.character_selection.preview_alt')}
                     />
                 )}
             </MagnifyOverlay>

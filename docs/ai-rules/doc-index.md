@@ -14,10 +14,14 @@
 | **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
+| **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先建对象清单，再锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；E2E 汇报必须附截图路径 |
+| **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |
+| **测试驱动是不是一直在写测试 / 为什么 45 分钟还没推进实现** | `docs/ai-rules/e2e-verification.md` + `docs/automated-testing.md` | 先看“长链不是默认调试循环”“15 分钟定位预算”“先状态注入锁定位点，再做最窄回归” |
 | **开发前端 / 新增游戏** (引擎/组件) | `docs/framework/frontend.md` | 系统复用 (Ability/Status)、动画组件、解耦规范 |
 | **开发后端 / 数据库** (NestJS/Mongo) | `docs/framework/backend.md` | 模块划分、Socket 网关、存储适配器 |
 | **接口调用 / 联调** (REST/WS) | `docs/api/README.md` | 认证方式、分页约定、实时通信事件 |
+| **处理系统反馈 / watchdog 自动反馈** | `docs/ai-rules/engine-systems.md` § 在线 AI 决策视图与 watchdog / 系统反馈闭环 | 先判断 feedback 是否足够定位；能定位就修业务；不能定位先补 reason/fingerprint/stateSnapshot/失败命令；业务无 bug 时改 feedback 链本身 |
 | **使用 Undo / Fab 功能** | `docs/components/UndoFab.md` | UndoFab 组件的 Props 要求与环境依赖 |
 | **新增/修改游戏光标主题** (cursor/光标/鼠标样式) | `docs/ai-rules/global-systems.md` § 光标主题系统 | 自注册流程、形态规范（grabbing 必须握拳）、共享样式模板、设置弹窗交互逻辑 |
 | **新增作弊/调试指令** | `docs/debug-tool-refactor.md` | 游戏专属调试配置的解耦注入方式 |
@@ -27,6 +31,7 @@
 | **卡牌特写队列** (其他玩家打出卡牌展示) | `docs/ai-rules/engine-systems.md` § 卡牌特写队列 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，点击关闭，队列上限 |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-systems.md` § 序列特效 | pushSequence API、delayAfter、cancelSequence、适用场景 |
 | **新增/审查游戏机制实现** (技能/Token/事件卡/被动) | `docs/ai-rules/engine-systems.md` § 描述→实现全链路审查 | 拆分描述为原子效果，逐效果检查六层链路，禁止只测注册 |
+| **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分 |
 | **用户明确裁定 / 与规则书或既有实现偏离的需求** | `docs/user-stories/README.md` | 先把用户描述沉淀为独立真相参考；项目级需求放 `docs/user-stories/project/`，游戏级需求统一放 `docs/games/<gameId>/user-stories/` |
 | **新游戏设计阶段** (领域建模/决策点/引擎缺口) | `docs/ai-rules/engine-systems.md` § 领域建模前置审查 | 规则→领域模型→实现，禁止跳过建模；术语映射、决策点识别、引擎缺口分析 |
 | **大杀四方 POD 系统** (POD 卡牌/自动映射/数据一致性) | `docs/refactor/pod-system-architecture.md` + `src/games/smashup/rule/POD-SYSTEM.md` | 数据层完整定义不继承，能力层自动映射+选择性覆盖，审计脚本检查一致性 |
@@ -38,8 +43,9 @@
 | **从外部导入新音效素材** (新增音频资源) | `.codex/skill/audio-integration/SKILL.md` + `docs/audio/add-audio.md` | skill 负责执行步骤与收口；文档负责目录、命名、产物、压缩、registry、中文友好名和 `/dev/audio` 验收合同 |
 | **音频不播放 / AudioContext** (浏览器兼容) | `docs/ai-rules/golden-rules.md` § AudioContext | `ctx.resume()` 异步竞态、HTML5 Audio vs WebAudio 区别 |
 | **状态同步/存储调优** (16MB 限制) | `docs/mongodb-16mb-fix.md` | 状态裁剪策略、Log 限制、Undo 快照优化 |
-| **复杂任务规划** (多文件/长流程) | `C:\Users\zhuagenbao\.codex\skills\planning-with-files\SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |
+| **复杂任务规划** (多文件/长流程) | `D:\codex-home\skills\planning-with-files\SKILL.md` | 必须维护 `task_plan.md`，定期转存 `findings.md` |
 | **AI 规范文档整理** (压缩根 AGENTS、拆分大文档、去重但不丢内容) | `docs/ai-rules/document-consolidation.md` + `.codex/skill/README.md` | 统一到单一入口；记录来源、目标、语义变化和冲突裁决 |
+| **根 AGENTS 该写到什么粒度** (渐进式披露 / 路由优先 / 只保留触发入口) | `docs/ai-rules/document-consolidation.md` + 本文件 | 根文件只保留“何时触发、先看哪里、哪些红线不能越过”；细节下沉到二级文档 |
 | **UI/UX 设计** (配色/组件/动效) | `.codex/skill/ui-ux-pro-max/SKILL.md` | 这是 BoardGame 的 UI/UX overlay；先走全局 `ui-ux-pro-max`，再叠加项目设计系统与验收口径 |
 | **七大恨区域工具 / 红线 truth / 工作区清点** | `docs/games/qidahen/workflows/qidahen-region-mask-truth-sources.md` | 先区分正式边界输入、默认页自动反推红线、`manual-boundary-user` 手工候选、历史 overlay/证据图，再决定截图、修图或清理 |
 | **生图设计稿 → 实现设计稿** (AI 生成 UI mockup 后按图实现/复刻) | `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-ux.md` | 真实内容盘点、禁止无中生有、目标稿复看、关键几何比例量测、E2E 截图证据 |

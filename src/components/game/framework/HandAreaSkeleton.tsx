@@ -6,6 +6,7 @@
  */
 
 import { memo, useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { HandAreaFilterContext } from '../../../core/ui';
 import type { HandAreaSkeletonProps } from './types';
 import type { DragOffset } from '../../../core/ui';
@@ -66,6 +67,7 @@ export const HandAreaSkeleton = memo(function HandAreaSkeleton<TCard>({
     onPlayHintChange,
     onSellHintChange,
 }: HandAreaSkeletonProps<TCard>) {
+    const { t } = useTranslation('game');
     const resolvedInteractionMode =
         interactionMode === 'drag' || interactionMode === 'click' || interactionMode === 'both'
             ? interactionMode
@@ -387,7 +389,7 @@ export const HandAreaSkeleton = memo(function HandAreaSkeleton<TCard>({
             data-max-cards={maxCards}
             data-is-dragging={!!draggingCardId}
             role="list"
-            aria-label="手牌列表"
+            aria-label={t('framework.hand_area.list_aria_label')}
             style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}
         >
             {processedCards.map((card, index) => {

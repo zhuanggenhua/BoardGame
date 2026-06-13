@@ -5,6 +5,7 @@
  */
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PhaseHudSkeletonProps } from './types';
 
 export const PhaseHudSkeleton = memo(function PhaseHudSkeleton({
@@ -30,6 +31,7 @@ export const PhaseHudSkeleton = memo(function PhaseHudSkeleton({
 
     const renderPlayer = renderCurrentPlayer
         ?? ((label?: string) => (label ? <span>{label}</span> : null));
+    const { t } = useTranslation('game');
 
     return (
         <div
@@ -37,7 +39,7 @@ export const PhaseHudSkeleton = memo(function PhaseHudSkeleton({
             data-component="phase-hud"
             data-orientation={orientation}
             role="region"
-            aria-label="阶段提示"
+            aria-label={t('framework.phase_hud.region_aria_label')}
         >
             <div data-section="phases" role="list">
                 {phases.map((phase, index) => {

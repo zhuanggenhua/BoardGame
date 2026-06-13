@@ -1619,20 +1619,29 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             // 重置天赋使用状态 + 清零临时力量修正（随从 + ongoing 行动卡）
             const newBases = state.bases.map(base => ({
                 ...base,
-                minions: base.minions.map(m => ({
-                    ...m,
-                    powerCounters: m.powerCounters,  // 显式保留力量指示物（独立实体）
-                    powerModifier: m.powerModifier + (timedPowerReverts.get(m.uid) ?? 0),
-                    talentUsed: m.controller === playerId ? false : m.talentUsed,
-                    playedThisTurn: m.controller === playerId ? undefined : m.playedThisTurn,
-                    tempPowerModifier: 0,
-                    attachedActions: m.attachedActions.map(a => ({
-                        ...a,
-                        talentUsed: ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === playerId
-                            ? false
-                            : a.talentUsed,
-                    })),
-                })),
+                minions: base.minions.map(m => {
+                    const {
+                        mythicHorsesSeastarExtraTalent: _seastarExtra,
+                        mythicHorsesSeastarExtraTalentConsumed: _seastarConsumed,
+                        ...remainingMetadata
+                    } = m.metadata ?? {};
+                    const metadata = Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
+                    return {
+                        ...m,
+                        ...(metadata ? { metadata } : { metadata: undefined }),
+                        powerCounters: m.powerCounters,  // 显式保留力量指示物（独立实体）
+                        powerModifier: m.powerModifier + (timedPowerReverts.get(m.uid) ?? 0),
+                        talentUsed: m.controller === playerId ? false : m.talentUsed,
+                        playedThisTurn: m.controller === playerId ? undefined : m.playedThisTurn,
+                        tempPowerModifier: 0,
+                        attachedActions: m.attachedActions.map(a => ({
+                            ...a,
+                            talentUsed: ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === playerId
+                                ? false
+                                : a.talentUsed,
+                        })),
+                    };
+                }),
                 ongoingActions: base.ongoingActions.map(o => ({
                     ...o,
                     talentUsed: ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) === playerId
@@ -2620,6 +2629,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const oldBase = baseIndex < state.bases.length ? state.bases[baseIndex] : undefined;
             let reusedTalent = false;
             let consumedStandingStones = false;
+            let consumedSeastarExtra = false;
             let standingStonesHostMinionUid: string | undefined;
 
             if (ongoingCardUid) {
@@ -2650,6 +2660,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 consumedStandingStones = reusedTalent
                     && oldBase?.defId === 'base_standing_stones'
                     && !state.standingStonesDoubleTalentMinionUid;
+                consumedSeastarExtra = reusedTalent
+                    && oldMinion?.metadata?.mythicHorsesSeastarExtraTalent === true
+                    && oldMinion?.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
             }
 
             // 使用 uid 查找，不依赖 baseIndex（避免基地删除后索引错位）
@@ -2672,9 +2685,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 // 随从天赋
                 return {
                     ...base,
-                    minions: base.minions.map(m => 
-                        m.uid === minionUid ? { ...m, talentUsed: true } : m
-                    ),
+                    minions: base.minions.map(m => {
+                        if (m.uid !== minionUid) return m;
+                        return {
+                            ...m,
+                            talentUsed: true,
+                            metadata: consumedSeastarExtra
+                                ? { ...(m.metadata ?? {}), mythicHorsesSeastarExtraTalentConsumed: true }
+                                : m.metadata,
+                        };
+                    }),
                 };
             });
             // 巨石阵双才能追踪：如果随从在使用前 talentUsed 已为 true，说明这是第二次使用

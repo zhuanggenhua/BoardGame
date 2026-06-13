@@ -153,6 +153,7 @@ function buildKillerPlantDeckSearchOptions(
         {
             id: 'skip',
             label: options.skipLabel ?? '跳过',
+            labelKey: 'ui.skip',
             value: { skip: true },
             displayMode: 'button' as const,
         },
@@ -515,6 +516,7 @@ const killerPlantVenusManTrapPromptProgram = createPromptProgram<
                     targetType: 'generic',
                     autoRefresh: 'deck',
                     responseValidationMode: 'live',
+                    titleKey: 'ui.killer_plant_venus_man_trap_search_title',
                 },
             ),
             (state) => buildKillerPlantDeckSearchOptions(
@@ -593,6 +595,7 @@ const killerPlantSproutPromptProgram = createPromptProgram<
                     targetType: 'generic',
                     autoRefresh: 'deck',
                     responseValidationMode: 'live',
+                    titleKey: 'ui.killer_plant_sprout_search_title',
                 },
             ),
             (state) => buildKillerPlantDeckSearchOptions(
@@ -682,6 +685,7 @@ const killerPlantBuddingPromptProgram = createPromptProgram<
                 {
                     sourceId: 'killer_plant_budding_choose',
                     targetType: 'minion',
+                    titleKey: 'ui.killer_plant_budding_choose_title',
                     autoCancelOption: true,
                     autoRefresh: 'field',
                     responseValidationMode: 'live',

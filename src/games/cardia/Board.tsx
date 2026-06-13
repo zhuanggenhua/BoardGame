@@ -1904,6 +1904,7 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
  * 卡背组件
  */
 const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
+    const { t } = useTranslation('game-cardia');
     const [imageError, setImageError] = React.useState(false);
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
     const sizeStyle = getCardSizeStyle(size);
@@ -1913,7 +1914,7 @@ const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) 
             {!imageError ? (
                 <OptimizedImage
                     src={CARDIA_IMAGE_PATHS.DECK1_BACK}
-                    alt="Card Back"
+                    alt={t('imageAlt.cardBack')}
                     className="w-full h-full object-cover"
                     onError={() => setImageError(true)}
                 />
@@ -1930,11 +1931,12 @@ const CardBack: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) 
  * 空槽位组件
  */
 const EmptySlot: React.FC<{ size?: 'normal' | 'small' }> = ({ size = 'normal' }) => {
+    const { t } = useTranslation('game-cardia');
     const sizeClasses = size === 'small' ? SMALL_CARD_SIZE_CLASSES : CARD_SIZE_CLASSES;
     const sizeStyle = getCardSizeStyle(size);
     return (
         <div className={`${sizeClasses} flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 text-gray-500`} style={sizeStyle}>
-            <div className="text-[10px] sm:text-xs">等待中...</div>
+            <div className="text-[10px] sm:text-xs">{t('waiting')}</div>
         </div>
     );
 };

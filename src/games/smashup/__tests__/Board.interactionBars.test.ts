@@ -24,6 +24,15 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).not.toContain('isReactionDirectHandPrompt');
     });
 
+    it('计分响应里手牌后点基地应优先回到 smashup_reaction_choose 的统一响应入口', () => {
+        const source = readBoardSource();
+        expect(source).toContain("if (currentPrompt?.sourceId === 'smashup_reaction_choose')");
+        expect(source).toContain("value?.kind === 'play_action'");
+        expect(source).toContain('value.cardUid === meFirstPendingCard.cardUid');
+        expect(source).toContain('value.targetBaseIndex === index');
+        expect(source).toContain('respondCurrentPrompt({ optionId: reactionOption.id })');
+    });
+
     it('弃牌横条应把 discardActionPlayProvider 结果映射成点随从模式', () => {
         const stripCards = buildDiscardStripCards({
             isDiscardMinionPrompt: false,

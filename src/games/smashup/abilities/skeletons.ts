@@ -179,6 +179,7 @@ function buildOptionalCounterPrompt(
     interactionId: string,
     playerId: PlayerId,
     title: string,
+    titleKey: string,
     sourceId: string,
     targetMinionUid: string,
     targetBaseIndex: number,
@@ -189,10 +190,10 @@ function buildOptionalCounterPrompt(
         playerId,
         title,
         [
-            { id: 'apply', label: '放置指示物', value: { apply: true }, displayMode: 'button' as const },
-            createSkipOption('跳过'),
+            { id: 'apply', label: '放置指示物', labelKey: 'ui.place_counter', value: { apply: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ] as any[],
-        { sourceId, targetType: 'button' },
+        { sourceId, targetType: 'button', titleKey },
     );
     (interaction.data as any).continuationContext = { targetMinionUid, targetBaseIndex };
     return queueInteraction(matchState, interaction);
@@ -200,10 +201,10 @@ function buildOptionalCounterPrompt(
 
 function skeletonsReturnedOneOnPlay(ctx: AbilityContext): AbilityResult {
     const options: any[] = [
-        createSkipOption('跳过（不埋葬）'),
+        createSkipOption('跳过（不埋葬）', 'ui.skeletons_returned_one_skip_bury_option'),
         { id: 'bury-self', label: getCardDef(ctx.defId)?.name ?? ctx.defId, value: { cardUid: ctx.cardUid, defId: ctx.defId, buriedFrom: 'play' as const }, _source: 'play' as const, displayMode: 'card' as const },
     ];
-    const interaction = createSimpleChoice(`skeletons_returned_one_${ctx.now}`, ctx.playerId, '轮回者：你可以将这张随从埋葬到这里', options, { sourceId: 'skeletons_returned_one', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_returned_one_${ctx.now}`, ctx.playerId, '轮回者：你可以将这张随从埋葬到这里', options, { sourceId: 'skeletons_returned_one', targetType: 'generic', titleKey: 'ui.skeletons_returned_one_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -220,36 +221,36 @@ function skeletonsReturnedOneAfterUncover(ctx: TriggerContext): AbilityResult {
         `skeletons_returned_one_uncover_${ctx.now}`,
         ctx.triggerMinion.controller,
         '轮回者：你可以再挖掘这里另一张你埋葬的牌',
-        [createSkipOption('跳过'), ...buried] as any[],
-        { sourceId: 'skeletons_returned_one_uncover', targetType: 'generic' },
+        [createSkipOption(), ...buried] as any[],
+        { sourceId: 'skeletons_returned_one_uncover', targetType: 'generic', titleKey: 'ui.skeletons_returned_one_uncover_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function skeletonsPlaceEmDownOnPlay(ctx: AbilityContext): AbilityResult {
     if (getDiscardMinions(ctx.state, ctx.playerId).length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_place_em_down_base_${ctx.now}`, ctx.playerId, '往下埋：选择要埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_place_em_down_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_place_em_down_base_${ctx.now}`, ctx.playerId, '往下埋：选择要埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_place_em_down_base', targetType: 'base', titleKey: 'ui.skeletons_place_em_down_base_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function skeletonsDigEmUpOnPlay(ctx: AbilityContext): AbilityResult {
     const bases = ctx.state.bases.map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`, count: (base.buriedCards ?? []).filter(card => card.controllerId === ctx.playerId).length })).filter(base => base.count > 0);
     if (bases.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_dig_em_up_base_${ctx.now}`, ctx.playerId, '他们出来了：选择一个基地', buildBaseTargetOptions(bases.map(({ baseIndex, label }) => ({ baseIndex, label })), ctx.state), { sourceId: 'skeletons_dig_em_up_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_dig_em_up_base_${ctx.now}`, ctx.playerId, '他们出来了：选择一个基地', buildBaseTargetOptions(bases.map(({ baseIndex, label }) => ({ baseIndex, label })), ctx.state), { sourceId: 'skeletons_dig_em_up_base', targetType: 'base', titleKey: 'ui.skeletons_dig_em_up_base_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function skeletonsBurstForthSpecial(ctx: AbilityContext): AbilityResult {
     const buried = buildOwnedBuriedOptions(ctx.state, ctx.playerId, { baseIndex: ctx.baseIndex });
     if (buried.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_burst_forth_${ctx.now}`, ctx.playerId, '墓地爆发：挖掘你埋葬在此基地的一张牌', buried, { sourceId: 'skeletons_burst_forth', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_burst_forth_${ctx.now}`, ctx.playerId, '墓地爆发：挖掘你埋葬在此基地的一张牌', buried, { sourceId: 'skeletons_burst_forth', targetType: 'generic', titleKey: 'ui.skeletons_burst_forth_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function skeletonsGraveyardTalent(ctx: AbilityContext): AbilityResult {
     const buried = buildOwnedBuriedOptions(ctx.state, ctx.playerId, { baseIndex: ctx.baseIndex });
     if (buried.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_graveyard_${ctx.now}`, ctx.playerId, '墓园：挖掘这里一张你的埋葬牌', buried, { sourceId: 'skeletons_graveyard', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_graveyard_${ctx.now}`, ctx.playerId, '墓园：挖掘这里一张你的埋葬牌', buried, { sourceId: 'skeletons_graveyard', targetType: 'generic', titleKey: 'ui.skeletons_graveyard_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -258,18 +259,18 @@ function skeletonsLordOfBonesTalent(ctx: AbilityContext): AbilityResult {
     const buried = buildBuriedOptions(ctx.state, { baseIndex: ctx.baseIndex });
     if (hand.length === 0 && buried.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     if (hand.length === 0) {
-        const interaction = createSimpleChoice(`skeletons_lord_of_bones_uncover_${ctx.now}`, ctx.playerId, '骸骨之王：挖掘这里一张埋葬牌', buried, { sourceId: 'skeletons_lord_of_bones_uncover', targetType: 'generic' });
+        const interaction = createSimpleChoice(`skeletons_lord_of_bones_uncover_${ctx.now}`, ctx.playerId, '骸骨之王：挖掘这里一张埋葬牌', buried, { sourceId: 'skeletons_lord_of_bones_uncover', targetType: 'generic', titleKey: 'ui.skeletons_lord_of_bones_uncover_title' });
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     if (buried.length === 0) {
-        const interaction = createSimpleChoice(`skeletons_lord_of_bones_bury_${ctx.now}`, ctx.playerId, '骸骨之王：从手牌埋葬一张牌到这里', [createSkipOption('跳过'), ...buildHandCardOptions(hand)] as any[], { sourceId: 'skeletons_lord_of_bones_bury', targetType: 'hand' });
+        const interaction = createSimpleChoice(`skeletons_lord_of_bones_bury_${ctx.now}`, ctx.playerId, '骸骨之王：从手牌埋葬一张牌到这里', [createSkipOption(), ...buildHandCardOptions(hand)] as any[], { sourceId: 'skeletons_lord_of_bones_bury', targetType: 'hand', titleKey: 'ui.skeletons_lord_of_bones_bury_title' });
         (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     const interaction = createSimpleChoice(`skeletons_lord_of_bones_mode_${ctx.now}`, ctx.playerId, '骸骨之王：选择埋葬手牌或挖掘这里的一张埋葬牌', [
-        { id: 'bury', label: '埋葬手牌', value: { mode: 'bury' }, displayMode: 'button' as const },
-        { id: 'uncover', label: '挖掘这里', value: { mode: 'uncover' }, displayMode: 'button' as const },
-    ], { sourceId: 'skeletons_lord_of_bones_mode', targetType: 'button' });
+        { id: 'bury', label: '埋葬手牌', labelKey: 'ui.skeletons_lord_of_bones_mode_bury_option', value: { mode: 'bury' }, displayMode: 'button' as const },
+        { id: 'uncover', label: '挖掘这里', labelKey: 'ui.skeletons_lord_of_bones_mode_uncover_option', value: { mode: 'uncover' }, displayMode: 'button' as const },
+    ], { sourceId: 'skeletons_lord_of_bones_mode', targetType: 'button', titleKey: 'ui.skeletons_lord_of_bones_mode_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -277,14 +278,14 @@ function skeletonsLordOfBonesTalent(ctx: AbilityContext): AbilityResult {
 function skeletonsSpookyScaryOnPlay(ctx: AbilityContext): AbilityResult {
     const discard = getDiscardMinions(ctx.state, ctx.playerId, 3);
     if (discard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_spooky_scary_base_${ctx.now}`, ctx.playerId, '诡异。可怕。：选择埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_spooky_scary_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_spooky_scary_base_${ctx.now}`, ctx.playerId, '诡异。可怕。：选择埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_spooky_scary_base', targetType: 'base', titleKey: 'ui.skeletons_spooky_scary_base_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function skeletonsGraveGoodsOnPlay(ctx: AbilityContext): AbilityResult {
     const hand = getHandCards(ctx.state, ctx.playerId);
     if (hand.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const interaction = createSimpleChoice(`skeletons_grave_goods_base_${ctx.now}`, ctx.playerId, '殉葬品：选择埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_grave_goods_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_grave_goods_base_${ctx.now}`, ctx.playerId, '殉葬品：选择埋葬到的基地', buildBaseTargetOptions(getBaseOptions(ctx.state), ctx.state), { sourceId: 'skeletons_grave_goods_base', targetType: 'base', titleKey: 'ui.skeletons_grave_goods_base_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -292,7 +293,7 @@ function skeletonsHearseFleetOnPlay(ctx: AbilityContext): AbilityResult {
     const buried = buildBuriedOptions(ctx.state);
     if (buried.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const sourceBases = getBaseOptions(ctx.state).filter(base => (ctx.state.bases[base.baseIndex].buriedCards ?? []).length > 0);
-    const interaction = createSimpleChoice(`skeletons_hearse_fleet_base_${ctx.now}`, ctx.playerId, '灵车队伍：选择要移出埋葬牌的基地', buildBaseTargetOptions(sourceBases, ctx.state), { sourceId: 'skeletons_hearse_fleet_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_hearse_fleet_base_${ctx.now}`, ctx.playerId, '灵车队伍：选择要移出埋葬牌的基地', buildBaseTargetOptions(sourceBases, ctx.state), { sourceId: 'skeletons_hearse_fleet_base', targetType: 'base', titleKey: 'ui.skeletons_hearse_fleet_base_title' });
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -301,19 +302,19 @@ function skeletonsHearseFleetSpecial(ctx: AbilityContext): AbilityResult {
     const otherBase = buildOwnedBuriedOptions(ctx.state, ctx.playerId).filter(option => option.value.baseIndex !== ctx.baseIndex);
     if (sameBase.length === 0 && otherBase.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     if (sameBase.length === 0) {
-        const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_into_${ctx.now}`, ctx.playerId, '灵车队伍：选择至多两张埋葬牌移入这个基地', otherBase, { sourceId: 'skeletons_hearse_fleet_special_into', targetType: 'generic', multi: { min: 0, max: Math.min(2, otherBase.length) } });
+        const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_into_${ctx.now}`, ctx.playerId, '灵车队伍：选择至多两张埋葬牌移入这个基地', otherBase, { sourceId: 'skeletons_hearse_fleet_special_into', targetType: 'generic', multi: { min: 0, max: Math.min(2, otherBase.length) }, titleKey: 'ui.skeletons_hearse_fleet_special_into_title' });
         (interaction.data as any).continuationContext = { fixedBaseIndex: ctx.baseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     if (otherBase.length === 0) {
-        const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_from_${ctx.now}`, ctx.playerId, '灵车队伍：选择至多两张埋葬牌移出这个基地', sameBase, { sourceId: 'skeletons_hearse_fleet_special_from', targetType: 'generic', multi: { min: 0, max: Math.min(2, sameBase.length) } });
+        const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_from_${ctx.now}`, ctx.playerId, '灵车队伍：选择至多两张埋葬牌移出这个基地', sameBase, { sourceId: 'skeletons_hearse_fleet_special_from', targetType: 'generic', multi: { min: 0, max: Math.min(2, sameBase.length) }, titleKey: 'ui.skeletons_hearse_fleet_special_from_title' });
         (interaction.data as any).continuationContext = { fixedBaseIndex: ctx.baseIndex };
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_mode_${ctx.now}`, ctx.playerId, '灵车队伍：选择把埋葬牌移入或移出这个基地', [
-        { id: 'to-base', label: '移入这个基地', value: { mode: 'to_base' }, displayMode: 'button' as const },
-        { id: 'from-base', label: '移出这个基地', value: { mode: 'from_base' }, displayMode: 'button' as const },
-    ], { sourceId: 'skeletons_hearse_fleet_special_mode', targetType: 'button' });
+        { id: 'to-base', label: '移入这个基地', labelKey: 'ui.skeletons_hearse_fleet_special_mode_into_option', value: { mode: 'to_base' }, displayMode: 'button' as const },
+        { id: 'from-base', label: '移出这个基地', labelKey: 'ui.skeletons_hearse_fleet_special_mode_from_option', value: { mode: 'from_base' }, displayMode: 'button' as const },
+    ], { sourceId: 'skeletons_hearse_fleet_special_mode', targetType: 'button', titleKey: 'ui.skeletons_hearse_fleet_special_mode_title' });
     (interaction.data as any).continuationContext = { fixedBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -328,10 +329,10 @@ function skeletonsLordOfBonesOnUncovered(ctx: TriggerContext): AbilityResult {
         ctx.sourceControllerId ?? ctx.playerId,
         '骸骨之王：你可以在该随从上放置 1 个 +1 力量指示物',
         [
-            { id: 'apply', label: '放置 +1 指示物', value: { apply: true }, displayMode: 'button' as const },
-            createSkipOption('跳过'),
+            { id: 'apply', label: '放置 +1 指示物', labelKey: 'ui.skeletons_place_plus_one_counter_option', value: { apply: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ] as any[],
-        { sourceId: 'skeletons_lord_of_bones_ongoing', targetType: 'button' },
+        { sourceId: 'skeletons_lord_of_bones_ongoing', targetType: 'button', titleKey: 'ui.skeletons_lord_of_bones_counter_title' },
     );
     (interaction.data as any).continuationContext = { targetMinionUid: ctx.buriedCardUid, targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -346,10 +347,10 @@ function skeletonsGravestonesOnUncovered(ctx: TriggerContext): AbilityResult {
         ctx.sourceControllerId ?? ctx.playerId,
         '墓碑：你可以在该随从上放置 1 个 +1 力量指示物',
         [
-            { id: 'apply', label: '放置 +1 指示物', value: { apply: true }, displayMode: 'button' as const },
-            createSkipOption('跳过'),
+            { id: 'apply', label: '放置 +1 指示物', labelKey: 'ui.skeletons_place_plus_one_counter_option', value: { apply: true }, displayMode: 'button' as const },
+            createSkipOption(),
         ] as any[],
-        { sourceId: 'skeletons_gravestones_counter', targetType: 'button' },
+        { sourceId: 'skeletons_gravestones_counter', targetType: 'button', titleKey: 'ui.skeletons_gravestones_counter_title' },
     );
     (interaction.data as any).continuationContext = { targetMinionUid: ctx.buriedCardUid, targetBaseIndex: ctx.baseIndex };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -362,7 +363,7 @@ function skeletonsGravestonesAfterScoring(ctx: TriggerContext): AbilityResult {
         ctx.sourceControllerId,
         '墓碑：选择把这张牌埋葬到的基地',
         buildBaseTargetOptions(getBaseOptions(ctx.state).filter(base => base.baseIndex !== ctx.sourceBaseIndex), ctx.state),
-        { sourceId: 'skeletons_gravestones_after_scoring', targetType: 'base' },
+        { sourceId: 'skeletons_gravestones_after_scoring', targetType: 'base', titleKey: 'ui.skeletons_gravestones_after_scoring_title' },
     );
     (interaction.data as any).continuationContext = { sourceBaseIndex: ctx.sourceBaseIndex, sourceCardUid: ctx.sourceCardUid };
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
@@ -507,7 +508,7 @@ const handleSkeletonsReturnedOneUncover: InteractionHandler = (state, playerId, 
 const handleSkeletonsPlaceEmDownBase: InteractionHandler = (state, playerId, value, _data, _random, now) => {
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_place_em_down_cards_${now}`, playerId, '往下埋：选择至多三张随从，总力量 6 或更少', buildDiscardCardOptions(getDiscardMinions(state.core, playerId)), { sourceId: 'skeletons_place_em_down_cards', targetType: 'generic', multi: { min: 0, max: Math.min(3, getDiscardMinions(state.core, playerId).length) } });
+    const interaction = createSimpleChoice(`skeletons_place_em_down_cards_${now}`, playerId, '往下埋：选择至多三张随从，总力量 6 或更少', buildDiscardCardOptions(getDiscardMinions(state.core, playerId)), { sourceId: 'skeletons_place_em_down_cards', targetType: 'generic', multi: { min: 0, max: Math.min(3, getDiscardMinions(state.core, playerId).length) }, titleKey: 'ui.skeletons_place_em_down_cards_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -525,7 +526,7 @@ const handleSkeletonsDigEmUpBase: InteractionHandler = (state, playerId, value, 
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
     const buried = buildOwnedBuriedOptions(state.core, playerId, { baseIndex: selected.baseIndex });
-    const interaction = createSimpleChoice(`skeletons_dig_em_up_cards_${now}`, playerId, '他们出来了：选择至多三张埋葬牌挖掘', buried, { sourceId: 'skeletons_dig_em_up_cards', targetType: 'generic', multi: { min: 0, max: Math.min(3, buried.length) } });
+    const interaction = createSimpleChoice(`skeletons_dig_em_up_cards_${now}`, playerId, '他们出来了：选择至多三张埋葬牌挖掘', buried, { sourceId: 'skeletons_dig_em_up_cards', targetType: 'generic', multi: { min: 0, max: Math.min(3, buried.length) }, titleKey: 'ui.skeletons_dig_em_up_cards_title' });
     return { state: queueInteraction(state, interaction), events: [] };
 };
 
@@ -553,6 +554,7 @@ const handleSkeletonsGraveyard: InteractionHandler = (state, playerId, value, _d
             `skeletons_graveyard_counter_${now}`,
             playerId,
             '墓园：你可以在该仆从上放置 1 个 +1 力量指示物',
+            'ui.skeletons_graveyard_counter_title',
             'skeletons_graveyard_counter',
             selected.cardUid,
             selected.baseIndex,
@@ -567,11 +569,11 @@ const handleSkeletonsLordOfBonesMode: InteractionHandler = (state, playerId, val
     const continuation = data?.continuationContext as { targetBaseIndex?: number } | undefined;
     if (continuation?.targetBaseIndex === undefined) return { state, events: [] };
     if (selected.mode === 'bury') {
-        const interaction = createSimpleChoice(`skeletons_lord_of_bones_bury_${now}`, playerId, '骸骨之王：从手牌埋葬一张牌到这里', [createSkipOption('跳过'), ...buildHandCardOptions(getHandCards(state.core, playerId))] as any[], { sourceId: 'skeletons_lord_of_bones_bury', targetType: 'hand' });
+        const interaction = createSimpleChoice(`skeletons_lord_of_bones_bury_${now}`, playerId, '骸骨之王：从手牌埋葬一张牌到这里', [createSkipOption(), ...buildHandCardOptions(getHandCards(state.core, playerId))] as any[], { sourceId: 'skeletons_lord_of_bones_bury', targetType: 'hand', titleKey: 'ui.skeletons_lord_of_bones_bury_title' });
         (interaction.data as any).continuationContext = continuation;
         return { state: queueInteraction(state, interaction), events: [] };
     }
-    const interaction = createSimpleChoice(`skeletons_lord_of_bones_uncover_${now}`, playerId, '骸骨之王：挖掘这里一张埋葬牌', buildBuriedOptions(state.core, { baseIndex: continuation.targetBaseIndex }), { sourceId: 'skeletons_lord_of_bones_uncover', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_lord_of_bones_uncover_${now}`, playerId, '骸骨之王：挖掘这里一张埋葬牌', buildBuriedOptions(state.core, { baseIndex: continuation.targetBaseIndex }), { sourceId: 'skeletons_lord_of_bones_uncover', targetType: 'generic', titleKey: 'ui.skeletons_lord_of_bones_uncover_title' });
     return { state: queueInteraction(state, interaction), events: [] };
 };
 
@@ -592,7 +594,7 @@ const handleSkeletonsSpookyScaryBase: InteractionHandler = (state, playerId, val
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
     const discard = getDiscardMinions(state.core, playerId, 3);
-    const interaction = createSimpleChoice(`skeletons_spooky_scary_card_${now}`, playerId, '诡异。可怕。：选择一张力量 3 或以下随从', buildDiscardCardOptions(discard), { sourceId: 'skeletons_spooky_scary_card', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_spooky_scary_card_${now}`, playerId, '诡异。可怕。：选择一张力量 3 或以下随从', buildDiscardCardOptions(discard), { sourceId: 'skeletons_spooky_scary_card', targetType: 'generic', titleKey: 'ui.skeletons_spooky_scary_card_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -607,17 +609,17 @@ const handleSkeletonsSpookyScaryCard: InteractionHandler = (state, playerId, val
 const handleSkeletonsGraveGoodsMode: InteractionHandler = (state, playerId, value, _data, _random, now) => {
     const selected = value as ModeChoice;
     if (selected.mode === 'extra_bury') {
-        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(getHandCards(state.core, playerId)), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand' });
+        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(getHandCards(state.core, playerId)), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_discard_title' });
         return { state: queueInteraction(state, interaction), events: [] };
     }
-    const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buildOwnedBuriedOptions(state.core, playerId), { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic' });
+    const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buildOwnedBuriedOptions(state.core, playerId), { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic', titleKey: 'ui.skeletons_grave_goods_uncover_title' });
     return { state: queueInteraction(state, interaction), events: [] };
 };
 
 const handleSkeletonsGraveGoodsBase: InteractionHandler = (state, playerId, value, _data, _random, now) => {
     const selected = value as BaseChoice;
     if (selected.baseIndex === undefined) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_grave_goods_bury_${now}`, playerId, '殉葬品：从手牌埋葬一张牌', buildHandCardOptions(getHandCards(state.core, playerId)), { sourceId: 'skeletons_grave_goods_bury', targetType: 'hand' });
+    const interaction = createSimpleChoice(`skeletons_grave_goods_bury_${now}`, playerId, '殉葬品：从手牌埋葬一张牌', buildHandCardOptions(getHandCards(state.core, playerId)), { sourceId: 'skeletons_grave_goods_bury', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_bury_title' });
     (interaction.data as any).continuationContext = { targetBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -637,17 +639,17 @@ const handleSkeletonsGraveGoodsBury: InteractionHandler = (state, playerId, valu
     const canUncover = buried.length > 0;
     if (!canExtraBury && !canUncover) return { state, events: firstEvents };
     if (canExtraBury && !canUncover) {
-        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand' });
+        const interaction = createSimpleChoice(`skeletons_grave_goods_discard_${now}`, playerId, '殉葬品：选择要弃掉的手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_discard', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_discard_title' });
         return { state: queueInteraction(nextState, interaction), events: firstEvents };
     }
     if (!canExtraBury && canUncover) {
-        const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buried, { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic' });
+        const interaction = createSimpleChoice(`skeletons_grave_goods_uncover_${now}`, playerId, '殉葬品：选择一张你埋葬的牌', buried, { sourceId: 'skeletons_grave_goods_uncover', targetType: 'generic', titleKey: 'ui.skeletons_grave_goods_uncover_title' });
         return { state: queueInteraction(nextState, interaction), events: firstEvents };
     }
     const interaction = createSimpleChoice(`skeletons_grave_goods_mode_${now}`, playerId, '殉葬品：你可以弃一张牌，再额外埋葬另一张牌，或挖掘一张你的埋葬牌', [
-        { id: 'extra-bury', label: '弃一张，再额外埋葬', value: { mode: 'extra_bury' }, displayMode: 'button' as const },
-        { id: 'uncover', label: '挖掘一张埋葬牌', value: { mode: 'uncover' }, displayMode: 'button' as const },
-    ], { sourceId: 'skeletons_grave_goods_mode', targetType: 'button' });
+        { id: 'extra-bury', label: '弃一张，再额外埋葬', labelKey: 'ui.skeletons_grave_goods_mode_extra_bury_option', value: { mode: 'extra_bury' }, displayMode: 'button' as const },
+        { id: 'uncover', label: '挖掘一张埋葬牌', labelKey: 'ui.skeletons_grave_goods_mode_uncover_option', value: { mode: 'uncover' }, displayMode: 'button' as const },
+    ], { sourceId: 'skeletons_grave_goods_mode', targetType: 'button', titleKey: 'ui.skeletons_grave_goods_mode_title' });
     return { state: queueInteraction(nextState, interaction), events: firstEvents };
 };
 
@@ -656,7 +658,7 @@ const handleSkeletonsGraveGoodsDiscard: InteractionHandler = (state, playerId, v
     if (selected.skip || !selected.cardUid) return { state, events: [] };
     const remainingHand = getHandCards(state.core, playerId).filter(card => card.uid !== selected.cardUid);
     if (remainingHand.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_grave_goods_bonus_${now}`, playerId, '殉葬品：选择要额外埋葬的另一张手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_bonus', targetType: 'hand' });
+    const interaction = createSimpleChoice(`skeletons_grave_goods_bonus_${now}`, playerId, '殉葬品：选择要额外埋葬的另一张手牌', buildHandCardOptions(remainingHand), { sourceId: 'skeletons_grave_goods_bonus', targetType: 'hand', titleKey: 'ui.skeletons_grave_goods_bonus_title' });
     (interaction.data as any).continuationContext = { discardCardUid: selected.cardUid };
     return { state: queueInteraction(state, interaction), events: [] };
 };
@@ -665,7 +667,7 @@ const handleSkeletonsGraveGoodsBonus: InteractionHandler = (state, playerId, val
     const selected = value as CardChoice;
     const continuation = data?.continuationContext as { discardCardUid?: string } | undefined;
     if (selected.skip || !selected.cardUid || !selected.defId || !continuation?.discardCardUid) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_grave_goods_bonus_base_${now}`, playerId, '殉葬品：选择额外埋葬到的基地', buildBaseTargetOptions(getBaseOptions(state.core), state.core), { sourceId: 'skeletons_grave_goods_bonus_base', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_grave_goods_bonus_base_${now}`, playerId, '殉葬品：选择额外埋葬到的基地', buildBaseTargetOptions(getBaseOptions(state.core), state.core), { sourceId: 'skeletons_grave_goods_bonus_base', targetType: 'base', titleKey: 'ui.skeletons_grave_goods_bonus_base_title' });
     (interaction.data as any).continuationContext = {
         discardCardUid: continuation.discardCardUid,
         buryCardUid: selected.cardUid,
@@ -698,6 +700,7 @@ const handleSkeletonsGraveGoodsUncover: InteractionHandler = (state, playerId, v
             `skeletons_grave_goods_counter_${now}`,
             playerId,
             '殉葬品：你可以在该仆从上放置 2 个 +1 力量指示物',
+            'ui.skeletons_grave_goods_counter_title',
             'skeletons_grave_goods_counter',
             selected.cardUid,
             selected.baseIndex,
@@ -715,7 +718,7 @@ const handleSkeletonsHearseFleetBase: InteractionHandler = (state, playerId, val
         playerId,
         '灵车队伍：选择要移动到的基地',
         buildBaseTargetOptions(getBaseOptions(state.core).filter(base => base.baseIndex !== selected.baseIndex), state.core),
-        { sourceId: 'skeletons_hearse_fleet_target', targetType: 'base' },
+        { sourceId: 'skeletons_hearse_fleet_target', targetType: 'base', titleKey: 'ui.skeletons_hearse_fleet_target_title' },
     );
     (interaction.data as any).continuationContext = { sourceBaseIndex: selected.baseIndex };
     return { state: queueInteraction(state, interaction), events: [] };
@@ -731,7 +734,7 @@ const handleSkeletonsHearseFleetTarget: InteractionHandler = (state, playerId, v
         playerId,
         '灵车队伍：选择要移动的埋葬牌',
         buried,
-        { sourceId: 'skeletons_hearse_fleet_cards', targetType: 'generic', multi: { min: 0, max: buried.length } },
+        { sourceId: 'skeletons_hearse_fleet_cards', targetType: 'generic', multi: { min: 0, max: buried.length }, titleKey: 'ui.skeletons_hearse_fleet_cards_title' },
     );
     (interaction.data as any).continuationContext = {
         sourceBaseIndex: continuation.sourceBaseIndex,
@@ -762,7 +765,7 @@ const handleSkeletonsHearseFleetSpecialMode: InteractionHandler = (state, player
             playerId,
             '灵车队伍：选择至多两张埋葬牌移入这个基地',
             buried,
-            { sourceId: 'skeletons_hearse_fleet_special_into', targetType: 'generic', multi: { min: 0, max: Math.min(2, buried.length) } },
+            { sourceId: 'skeletons_hearse_fleet_special_into', targetType: 'generic', multi: { min: 0, max: Math.min(2, buried.length) }, titleKey: 'ui.skeletons_hearse_fleet_special_into_title' },
         );
         (interaction.data as any).continuationContext = continuation;
         return { state: queueInteraction(state, interaction), events: [] };
@@ -773,7 +776,7 @@ const handleSkeletonsHearseFleetSpecialMode: InteractionHandler = (state, player
         playerId,
         '灵车队伍：选择至多两张埋葬牌移出这个基地',
         buried,
-        { sourceId: 'skeletons_hearse_fleet_special_from', targetType: 'generic', multi: { min: 0, max: Math.min(2, buried.length) } },
+        { sourceId: 'skeletons_hearse_fleet_special_from', targetType: 'generic', multi: { min: 0, max: Math.min(2, buried.length) }, titleKey: 'ui.skeletons_hearse_fleet_special_from_title' },
     );
     (interaction.data as any).continuationContext = continuation;
     return { state: queueInteraction(state, interaction), events: [] };
@@ -794,7 +797,7 @@ const handleSkeletonsHearseFleetSpecialFrom: InteractionHandler = (state, player
     const picks = (Array.isArray(value) ? value : [value]) as BuriedChoice[];
     const selectedCards = picks.filter(pick => pick.cardUid && pick.baseIndex !== undefined).slice(0, 2);
     if (selectedCards.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_from_target_${now}`, playerId, '灵车队伍：选择移到的基地', buildBaseTargetOptions(getBaseOptions(state.core).filter(base => base.baseIndex !== continuation.fixedBaseIndex), state.core), { sourceId: 'skeletons_hearse_fleet_special_from_target', targetType: 'base' });
+    const interaction = createSimpleChoice(`skeletons_hearse_fleet_special_from_target_${now}`, playerId, '灵车队伍：选择移到的基地', buildBaseTargetOptions(getBaseOptions(state.core).filter(base => base.baseIndex !== continuation.fixedBaseIndex), state.core), { sourceId: 'skeletons_hearse_fleet_special_from_target', targetType: 'base', titleKey: 'ui.skeletons_hearse_fleet_special_from_target_title' });
     (interaction.data as any).continuationContext = { fixedBaseIndex: continuation.fixedBaseIndex, cardUids: selectedCards.map(card => card.cardUid!) };
     return { state: queueInteraction(state, interaction), events: [] };
 };

@@ -111,6 +111,80 @@
 - `responseWindow` 决策：responder 不是 activePlayer 时仍可决策（并验证 watchdog 能执行 `RESPONSE_PASS`/等价动作）。
 - 推荐统一门禁命令：`npm run test:ai:decision-view`（合并执行上述四类回归）。
 
+##### AI 决策语义接入（新游戏强制）
+
+- **新游戏阻塞交互必须声明 AI 支持状态**：凡 `sys.interaction.current` 可能分配给 AI 座位，必须在交互上声明 `ai.status`：
+  - `semantic`：交互自身携带 `AiDecisionDescriptor[]`，例如 `select-player` / `select-card` / `select-object` / `select-dice` / `choose-option`。
+  - `adapter`：游戏 AI runtime 有明确适配器消费该 interaction kind。
+  - `unsupported`：明确人类专用，并写清原因；正常 AI 对局不得把该交互分配给 AI 座位。
+- **新游戏禁止把 UI 外壳当 AI 语义来源**：AI 不得以 `interaction.kind === 'simple-choice'`、`data.type === 'selectPlayer'`、option label、数组下标、按钮文案这类 UI/展示形态作为主要业务语义。UI 可以继续使用自己的 `kind/data`，但 AI 必须消费规则决策语义或显式 adapter。
+- **候选身份必须稳定**：AI 候选 ID 必须是当前决策内稳定业务 ID（playerId/cardUid/minionUid/base stable ref/dieId 等），禁止用 label、翻译文案、数组 index 作为唯一身份。数组 index 只能作为附加去重片段。
+- **复杂选择必须声明边界**：多选必须声明 `min/max`，有顺序语义时必须声明 `ordered`；可跳过/必须跳过/不可跳过必须通过 skip policy 或明确候选表达，禁止让 AI 猜 `skip/pass/cancel` 字符串。
+- **隐藏信息仍以 playerView/seat overlay 为边界**：AI 语义描述只能来自该 AI 可见状态，不得把隐藏手牌、牌库顺序、他人私有 prompt、私有候选塞进 shared 快照。
+- **诊断门禁**：新增 AI 可控阻塞交互时，必须至少有一条测试或诊断证明：该交互能生成合法动作、明确 cancel/fallback，或被 `unsupported` 明确拦住；空 legalActions 不能被当作正常 idle。
+
+##### AI 交互反模式（新游戏禁止）
+
+```typescript
+// ❌ AI 直接识别 UI 外壳，新增另一个 UI kind 后会漏掉同一条规则决策
+if (current.kind === 'simple-choice') {
+  return current.data.options.map(optionToAiAction);
+}
+
+// ❌ 用 option label / 翻译文案 / 数组下标当目标身份
+const targetId = current.data.options[0].label;
+
+// ❌ 只给 UI 写 targetType，不声明 AI 这一步是在 select-player / select-card / select-object
+createSimpleChoice(id, playerId, title, options, { targetType: 'player' });
+
+// ❌ AI 无动作时直接返回 []，导致 AI 座位静默卡死
+if (!supportedInteraction) return [];
+```
+
+```typescript
+// ✅ 交互声明 AI 语义，UI kind 仍然可以保持 simple-choice
+createSimpleChoice(id, playerId, title, options, {
+  targetType: 'player',
+  ai: {
+    status: 'semantic',
+    decisions: [{
+      kind: 'select-player',
+      interactionId: id,
+      actorPlayerId: playerId,
+      selection: { min: 1, max: 1 },
+      skipPolicy: 'forbidden',
+      candidates: visibleTargets.map(target => ({
+        id: `player:${target.playerId}`,
+        playerId: target.playerId,
+      })),
+    }],
+  },
+});
+
+// ✅ 历史或复杂自定义交互先明确 adapter，再逐步迁移到 semantic
+queueInteraction(state, {
+  id,
+  kind: 'game:custom-targeting',
+  playerId,
+  ai: { status: 'adapter', adapterId: 'game.custom-targeting' },
+  data,
+});
+```
+
+##### 系统反馈闭环（强制）
+
+- **触发条件**：处理 `online-ai-watchdog`、`force-end-turn-failed`、`legal-action-recovered`、`unsatisfiable interaction` 或其他系统自动反馈时。
+- **单一处理顺序**：必须按 `先看能否直接定位业务问题 -> 不能定位就补诊断能力 -> 已证伪业务 bug 才修反馈链本身` 的顺序推进，禁止把三类问题混在一起处理。
+- **能定位时直接修业务**：如果当前 feedback 已经带有足以命中的 `reason / fingerprint / stateSnapshot / command failure / player surface`，并能明确落到某个业务 bug、共享合同缺口或恢复逻辑缺口，则本轮主目标就是修该真实问题，而不是先改反馈文案、关闭反馈或重写 reporter。
+- **不能定位时先补诊断**：如果 feedback 只能证明“卡了/失败了”，但仍无法回答“卡在哪个 phase / interaction / legal-action surface / 命令失败原因”，则先增强 feedback 本身的可定位性。至少应补到下一次同类 incident 能直接回答以下问题中的大部分：
+- `当前卡点在哪个 phase / interaction kind / sourceId`
+- `watchdog 当时看到的 progress marker / fingerprint / continuity`
+- `试图执行了什么命令，为什么失败`
+- `当前 active player / responder / AI seat / defender-choice options` 等关键上下文
+- **证伪业务 bug 后，系统反馈本身就是 bug**：如果已经用本地定向复现、命令回放、共享合同测试或线上快照证明业务链路本身正确，但系统反馈仍误报、重复上报、对恢复态继续入库、缺字段导致无法定位，必须把 reporter / dedupe / recovery closeout / persisted feedback filter 当作正式 bug 修，而不是把这类记录归为“正常噪音”。
+- **最低收口证据**：宣称“系统反馈已修”前，至少要能说明 ① 命中的是真实业务 bug 还是 feedback 链 bug；② 现在的 feedback 是否已足以定位同类问题；③ 本轮新增或复跑了哪条 transport/watchdog 直测；④ 若是恢复态/误报类问题，为什么以后不会继续生成相同 open feedback。
+- **推荐测试落点**：优先在 `src/engine/transport/__tests__/server.test.ts` 增补或复跑 watchdog / automatic feedback / persisted feedback 相关直测；若根因落在具体游戏 legal-action 生成或 interaction 可解性，再补对应游戏的命令级回归，避免只在服务端层看到“已恢复”但不知道恢复的到底是不是正确动作。
+
 #### GameBoardProps 契约（强制）
 
 ```typescript

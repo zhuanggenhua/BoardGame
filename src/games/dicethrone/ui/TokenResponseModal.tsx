@@ -257,7 +257,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                         </span>
                         {tokenDef.id === TOKEN_IDS.CRIT && !preview.canUse && (
                             <div className="text-xs text-red-400 mt-1">
-                                当前伤害 {pendingDamage.currentDamage}，需要 &gt;= 5
+                                {t('tokenResponse.critRequirementDetail', { damage: pendingDamage.currentDamage })}
                             </div>
                         )}
                     </div>
@@ -299,7 +299,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                             {pendingDamage.originalDamage}
                         </div>
                     </div>
-                    <div className="text-2xl text-slate-600">-&gt;</div>
+                    <div className="text-2xl text-slate-600" aria-hidden="true">→</div>
                     <div className="text-center">
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">
                             {t('tokenResponse.currentDamage')}

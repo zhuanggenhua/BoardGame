@@ -13,6 +13,7 @@ import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import type { SmashUpCore, SmashUpEvent } from './types';
 import { getAbilityRuntimePromptHandler, getRegisteredAbilityRuntimePromptIds } from './abilityRuntime';
+import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 
 // ============================================================================
 // 交互处理函数类型
@@ -107,6 +108,7 @@ export function registerPodInteractionAliases(): void {
     for (const [sourceId, handler] of allEntries) {
         if (sourceId.endsWith('_pod') || sourceId.includes('_pod_')) continue;
         if (sourceId.startsWith('titan_')) continue;
+        if (!shouldGenerateSmashUpPodAlias('interaction', sourceId)) continue;
 
         const podSourceId = `${sourceId}_pod`;
         // 如果已存在则不覆盖

@@ -39,12 +39,12 @@ const authModeTabs: Array<{ mode: HomeV2AuthMode; testId: string }> = [
 function getAuthModeLabel(t: ReturnType<typeof useTranslation>['t'], mode: HomeV2AuthMode) {
     switch (mode) {
         case 'register':
-            return t('auth:menu.register', '注册');
+            return t('auth:menu.register');
         case 'reset':
-            return t('auth:login.forgot', '找回密码');
+            return t('auth:login.forgot');
         case 'login':
         default:
-            return t('auth:menu.login', '登录');
+            return t('auth:menu.login');
     }
 }
 
@@ -309,16 +309,16 @@ export function HomeV2LoginPanel({
     const { user } = useAuth();
     const featureItems = [
         {
-            title: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyTitle', '丰富策略'),
-            description: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyDescription', '海量卡牌组合，构筑无限可能'),
+            title: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyTitle'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyDescription'),
         },
         {
-            title: t('lobby:homeV2.tabs.rooms.brandFeatureBattleTitle', '公平竞技'),
-            description: t('lobby:homeV2.tabs.rooms.brandFeatureBattleDescription', '平衡对战环境，凭实力一决高下'),
+            title: t('lobby:homeV2.tabs.rooms.brandFeatureBattleTitle'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeatureBattleDescription'),
         },
         {
-            title: t('lobby:homeV2.tabs.rooms.brandFeaturePartyTitle', '好友畅玩'),
-            description: t('lobby:homeV2.tabs.rooms.brandFeaturePartyDescription', '组队开黑，享受桌游乐趣'),
+            title: t('lobby:homeV2.tabs.rooms.brandFeaturePartyTitle'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeaturePartyDescription'),
         },
     ];
 
@@ -345,10 +345,10 @@ export function HomeV2LoginPanel({
                     <div className="flex h-full min-h-0 flex-col">
                         <div className="pt-[10%] text-center">
                             <div className="text-[clamp(46px,4.1vw,68px)] font-bold tracking-[0.08em] text-[#4d3120]">
-                                {t('lobby:homeV2.tabs.rooms.brandTitle', '易桌游')}
+                                {t('lobby:homeV2.tabs.rooms.brandTitle')}
                             </div>
                             <div className="mt-[2.8%] text-[clamp(12px,1vw,15px)] font-semibold tracking-[0.24em] text-[#7a5a40]">
-                                {t('lobby:homeV2.tabs.rooms.brandSubtitle', '策略 · 卡牌 · 对战')}
+                                {t('lobby:homeV2.tabs.rooms.brandSubtitle')}
                             </div>
                         </div>
 
@@ -370,7 +370,7 @@ export function HomeV2LoginPanel({
 
                         <div className="mt-[7%] border-t border-[rgba(164,118,78,0.16)] pt-[4.4%]">
                             <div className="mb-[2.2%] text-center text-[clamp(9px,0.76vw,10px)] font-semibold uppercase tracking-[0.22em] text-[#9a7759]">
-                                {t('lobby:homeV2.tabs.rooms.accountActionLabel', '账号入口')}
+                                {t('lobby:homeV2.tabs.rooms.accountActionLabel')}
                             </div>
                             <div className="flex items-center justify-center gap-[18px]">
                             {authModeTabs.map(({ mode: tabMode, testId }) => {

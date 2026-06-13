@@ -17,7 +17,7 @@
       "expand": "展开撤回",
       "collapse": "收起撤回",
       "title": "撤回操作",
-      "waiting": "等待对方批准...",
+      "waiting": "等待对方批准…",
       "cancel": "取消申请",
       "opponentRequest": "对方请求撤回",
       "reviewHint": "对方想要撤回上一步操作，是否同意？",
@@ -28,6 +28,36 @@
       "request": "申请撤回",
       "loading": "撤回状态加载中…",
       "none": "暂无可撤回操作。"
+    }
+  },
+  "framework": {
+    "buff": {
+      "click_hint": "点击可查看卡牌详情"
+    },
+    "board_layout": {
+      "background_alt": "棋盘背景"
+    },
+    "character_selection": {
+      "player_board_alt": "玩家面板",
+      "tip_board_alt": "提示板",
+      "preview_alt": "预览图"
+    },
+    "player_panel": {
+      "region_aria_label": "{{player}} 面板",
+      "resources_list_aria_label": "资源列表",
+      "status_effects_list_aria_label": "状态效果列表"
+    },
+    "resource_tray": {
+      "list_aria_label": "资源托盘"
+    },
+    "hand_area": {
+      "list_aria_label": "手牌列表"
+    },
+    "phase_hud": {
+      "region_aria_label": "阶段提示"
+    },
+    "phase_indicator": {
+      "list_aria_label": "游戏阶段"
     }
   },
   "hud": {
@@ -42,11 +72,11 @@
       "classic": "经典"
     },
     "copyRoomId": "复制房间 ID",
-    "roomId": "ID: {{id}}",
+    "roomId": "ID：{{id}}",
     "status": {
       "self": "本人",
       "connected": "已连接",
-      "waiting": "等待中...",
+      "waiting": "等待中…",
       "player": "玩家{{id}}",
       "playerShort": "P{{id}}",
       "playerUnknown": "玩家",
@@ -61,7 +91,7 @@
     },
     "offlineBanner": {
       "message": "{{name}} 已离线 {{time}}",
-      "waitingOpponent": "等待对手加入...",
+      "waitingOpponent": "等待对手加入…",
       "seconds": "{{count}}秒",
       "minutes": "{{count}}分钟"
     },
@@ -84,7 +114,7 @@
       "backToLobbyHint": "彻底离开房间",
       "social": "好友",
       "feedback": "反馈",
-      "downloadApp": "下载 App",
+      "downloadApp": "下载应用",
       "checkUpdate": "检查更新",
       "checkingUpdate": "更新中",
       "about": "关于",
@@ -103,7 +133,7 @@
     },
     "about": {
       "title": "易桌游",
-      "githubTitle": "GitHub",
+      "githubTitle": "代码仓库",
       "githubSubtitle": "查看源码并参与贡献",
       "qqTitle": "QQ群",
       "qqSubtitle": "加入社区：",
@@ -112,12 +142,12 @@
       "qrPlaceholder": "二维码",
       "wechatLabel": "微信",
       "alipayLabel": "支付宝",
-      "sponsorLoading": "赞助名单加载中...",
+      "sponsorLoading": "赞助名单加载中…",
       "sponsorError": "赞助名单加载失败",
       "sponsorEmpty": "暂无赞助记录",
       "qqCopied": "QQ群号已复制",
       "copyFailed": "复制失败，请手动复制",
-      "loadMore": "加载更多..."
+      "loadMore": "加载更多…"
     },
     "feedback": {
       "title": "反馈",
@@ -127,7 +157,7 @@
       "typeLabel": "类型",
       "severityLabel": "优先级",
       "contentLabel": "描述",
-      "contentPlaceholder": "请描述问题或建议...\n支持粘贴截图 (Ctrl+V)",
+      "contentPlaceholder": "请描述问题或建议…\n支持粘贴截图 (Ctrl+V)",
       "pasteHint": "支持截图粘贴",
       "imageAlt": "反馈截图",
       "deleteImage": "删除图片",
@@ -140,11 +170,11 @@
       "success": "反馈已提交，感谢支持！",
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",
-        "apiDisabled": "当前 dev:lite 轻量模式未启动 API 服务，反馈提交已禁用；草稿会保留在本机。",
+        "apiDisabled": "当前轻量开发模式未启动后端服务，反馈提交已禁用；草稿会保留在本机。",
         "submitFailed": "提交失败，请稍后再试"
       },
       "type": {
-        "bug": "Bug",
+        "bug": "问题",
         "suggestion": "建议",
         "other": "其他"
       },
@@ -159,9 +189,9 @@
       "empty": "暂无行为日志"
     },
     "chat": {
-      "placeholder": "输入消息...",
+      "placeholder": "输入消息…",
       "readonlyPlaceholder": "观战模式不可发言",
-      "empty": "暂无消息...",
+      "empty": "暂无消息…",
       "unknownPlayer": "未知玩家",
       "preview": "{{name}}：{{message}}",
       "maxLength": "最多{{count}}字",
@@ -183,8 +213,8 @@
       "exitFailed": "退出全屏失败，请检查浏览器权限或系统状态。"
     },
     "download": {
-      "missingLink": "下载入口未配置，请先配置原生更新 manifest 或 APK 直链。",
-      "resolveFailed": "未能获取最新 App 下载地址，请稍后重试。"
+      "missingLink": "下载入口未配置，请先配置原生更新清单或安装包直链。",
+      "resolveFailed": "未能获取最新应用下载地址，请稍后重试。"
     },
     "toggle": {
       "collapse": "收起菜单",
@@ -206,13 +236,13 @@
     },
     "ai": {
       "forceEndPhase": "强制结束 AI 阶段",
-      "forceEndPhaseHint": "用于 AI 卡死时强制推进当前阶段。",
+      "forceEndPhaseHint": "用于 AI 托管卡死时强制推进当前阶段。",
       "forceEndPhaseConfirm": "确认强制结束",
-      "forceDismissPopup": "强制去弹窗",
-      "forceDismissPopupHint": "用于前台弹窗、特写或遮挡层卡死时，强制关闭当前阻塞界面。",
-      "forceDismissPopupConfirm": "确认强制去弹窗",
-      "forceDismissPopupUnavailable": "当前没有可强制关闭的前台弹窗。",
-      "forceDismissPopupSubmitting": "正在强制关闭前台弹窗…",
+      "forceDismissPopup": "强制结束回合",
+      "forceDismissPopupHint": "用于计分响应、前台交互或遮挡层卡死时，强制关闭当前阻塞并持续推进，直到当前回合结束。",
+      "forceDismissPopupConfirm": "确认强制结束回合",
+      "forceDismissPopupUnavailable": "当前没有可强制结束的卡死回合。",
+      "forceDismissPopupSubmitting": "正在强制结束当前回合…",
       "forceEndPhaseUnavailable": "当前没有可强制结束的 AI 阶段。",
       "forceEndPhaseNotReady": "AI 控制未就绪，请稍后再试。",
       "forceEndPhaseSeatOffline": "AI 座位未连接，无法执行。",
@@ -303,7 +333,7 @@
     "saved": "已保存",
     "savedWithPath": "已保存：{{path}}",
     "saveFailed": "保存失败",
-    "exportFileName": "layout.config.json",
+    "exportFileName": "布局配置.json",
     "import": "导入",
     "export": "导出",
     "finishTrack": "完成轨道（{{count}}点）",
@@ -319,10 +349,10 @@
     "grid": {
       "rows": "行数",
       "cols": "列数",
-      "gapX": "X间距",
-      "gapY": "Y间距",
-      "offsetX": "X偏移",
-      "offsetY": "Y偏移",
+      "gapX": "横向间距",
+      "gapY": "纵向间距",
+      "offsetX": "横向偏移",
+      "offsetY": "纵向偏移",
       "width": "宽度",
       "height": "高度",
       "create": "创建网格"
@@ -360,7 +390,7 @@
       "SYS_CHEAT_SET_PHASE": "设置阶段",
       "SYS_CHEAT_SET_DICE": "设置骰子"
     },
-    "viewLabel": "视角:",
+    "viewLabel": "视角：",
     "spectator": "旁观",
     "tabs": {
       "actions": "🎮 指令",
@@ -376,7 +406,7 @@
       "empty": "暂无可用动作"
     },
     "placeholders": {
-      "moveArgs": "参数 (JSON/String)...",
+      "moveArgs": "参数（结构化数据/文本）…",
       "commandName": "命令名称"
     },
     "events": {
@@ -387,16 +417,16 @@
       "phase": "阶段",
       "turn": "回合",
       "activePlayer": "当前玩家",
-      "gameState": "游戏状态 (G)",
+      "gameState": "游戏状态",
       "copy": "复制",
       "copied": "已复制",
       "assign": "赋值",
       "cancelAssign": "取消",
-      "pastePlaceholder": "粘贴游戏状态 JSON...",
+      "pastePlaceholder": "粘贴游戏状态结构化数据…",
       "pasteFromClipboard": "从剪贴板粘贴",
       "apply": "应用状态",
       "errorUnsupported": "此游戏不支持状态赋值",
-      "errorInvalidJson": "JSON 格式错误"
+      "errorInvalidJson": "结构化数据格式错误"
     },
     "ai": {
       "section": "AI",
@@ -408,7 +438,7 @@
       "remote": "远程 AI",
       "difficulty": "难度：{{value}}",
       "policy": "策略：{{value}}",
-      "provider": "Provider：{{value}}",
+      "provider": "提供方：{{value}}",
       "modes": {
         "local": "本地对战",
         "online": "联机对战"
@@ -417,7 +447,7 @@
     "reset": {
       "button": "🔄 重置游戏",
       "newRoom": "🆕 创建新房间",
-      "creating": "创建中...",
+      "creating": "创建中…",
       "linkCopied": "新房间链接已复制到剪贴板，请发送给对手！",
       "shareLinkManually": "请复制以下链接发送给对手：",
       "hintTitle": "💡 提示",

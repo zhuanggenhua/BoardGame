@@ -205,7 +205,8 @@ export function isScoringSessionAwaitingDeferredResolution(
         return false;
     }
     return session.currentStep === 'awaiting-interactions'
-        || session.currentStep === 'awaiting-response-window';
+        || session.currentStep === 'awaiting-response-window'
+        || session.currentStep === 'awaiting-post-scoring-delay';
 }
 
 export function getDeferredReplacementBaseDefId(

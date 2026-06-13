@@ -27,9 +27,22 @@ export interface CreateInteractionHintScorerOptions extends ScoreAiHintOptions {
     confirmBonus?: number;
 }
 
+export interface ResolveAiRelationToActorOptions {
+    actorPlayerId?: string;
+    targetPlayerId?: string;
+    targetOwnerId?: string;
+    targetControllerId?: string;
+}
+
+export type AiRelationResolver = (
+    options: ResolveAiRelationToActorOptions,
+) => AiRelationToActor | undefined;
+
 export interface BuildTargetAiHintOptions {
     actorPlayerId?: string;
     targetPlayerId?: string;
+    relationToActor?: AiRelationToActor;
+    relationResolver?: AiRelationResolver;
     effectIntent?: AiEffectIntent;
     targetKind?: AiTargetKind;
     targetOwnerId?: string;
@@ -55,6 +68,29 @@ export function inferAiRelationToActor(
 ): AiRelationToActor | undefined {
     if (!targetPlayerId || !actorPlayerId) return undefined;
     return targetPlayerId === actorPlayerId ? 'self' : 'enemy';
+}
+
+export function resolveAiRelationToActor(
+    options: ResolveAiRelationToActorOptions & {
+        relationToActor?: AiRelationToActor;
+        relationResolver?: AiRelationResolver;
+    },
+): AiRelationToActor | undefined {
+    if (options.relationToActor) {
+        return options.relationToActor;
+    }
+
+    const resolvedByGame = options.relationResolver?.({
+        actorPlayerId: options.actorPlayerId,
+        targetPlayerId: options.targetPlayerId,
+        targetOwnerId: options.targetOwnerId,
+        targetControllerId: options.targetControllerId,
+    });
+    if (resolvedByGame) {
+        return resolvedByGame;
+    }
+
+    return inferAiRelationToActor(options.targetPlayerId, options.actorPlayerId);
 }
 
 export function getAiRelationSign(relation: AiRelationToActor | undefined): number {
@@ -135,7 +171,7 @@ export function scoreAiHint(hint: AiHint, options: ScoreAiHintOptions = {}): num
 }
 
 export function buildTargetAiHint(options: BuildTargetAiHintOptions): AiHint {
-    const relationToActor = inferAiRelationToActor(options.targetPlayerId, options.actorPlayerId);
+    const relationToActor = resolveAiRelationToActor(options);
     const tags = [
         ...(options.tags ?? []),
         ...(options.targetKind ? [`target:${options.targetKind}`] : []),

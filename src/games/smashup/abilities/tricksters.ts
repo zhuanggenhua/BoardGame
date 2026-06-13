@@ -180,7 +180,11 @@ const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptCont
             context.playerId,
             '选择要消灭的行动牌',
             options as any[],
-            { sourceId: 'trickster_disenchant', targetType: 'ongoing' },
+            {
+                sourceId: 'trickster_disenchant',
+                titleKey: 'ui.trickster_disenchant_title',
+                targetType: 'ongoing',
+            },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -214,7 +218,12 @@ const tricksterBlockThePathPromptProgram = createPromptProgram<TricksterBlockThe
             context.playerId,
             '封路：选择一个派系（该派系随从不能被打出到此基地）',
             options as any[],
-            { sourceId: 'trickster_block_the_path', targetType: 'generic', autoCancelOption: true },
+            {
+                sourceId: 'trickster_block_the_path',
+                titleKey: 'ui.trickster_block_the_path_title',
+                targetType: 'generic',
+                autoCancelOption: true,
+            },
         );
     },
     onResolve: ({ context, state, value }) => {
@@ -244,6 +253,7 @@ const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptCon
         const options = context.matchState.core.turnOrder.map((pid, index) => ({
             id: `player-${index}`,
             label: pid === context.playerId ? '你自己' : getOpponentLabel(pid),
+            labelKey: pid === context.playerId ? 'ui.you' : undefined,
             value: { pid },
         }));
         return createAbilityRuntimeSimpleChoice(
@@ -251,7 +261,12 @@ const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptCon
             context.playerId,
             '选择一个玩家（其下回合不能打行动卡）',
             options as any[],
-            { sourceId: 'trickster_mark_of_sleep', targetType: 'player', autoCancelOption: true },
+            {
+                sourceId: 'trickster_mark_of_sleep',
+                titleKey: 'ui.trickster_mark_of_sleep_title',
+                targetType: 'player',
+                autoCancelOption: true,
+            },
         );
     },
     onResolve: ({ state, value }) => {
@@ -306,7 +321,12 @@ const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPrompt
             context.playerId,
             '睡眠印记：为每个对手选择限制（持续到你下回合开始）',
             options as any[],
-            { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'player', autoCancelOption: true },
+            {
+                sourceId: 'trickster_mark_of_sleep_pod',
+                titleKey: 'ui.trickster_mark_of_sleep_pod_title',
+                targetType: 'player',
+                autoCancelOption: true,
+            },
         );
     },
     onResolve: ({ context, state, value }) => {
@@ -530,7 +550,11 @@ const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHid
         context.playerId,
         '藏身处：你可以消灭这里一个战斗力≤2的随从（或跳过）',
         buildHideoutPodDestroyOptions(context.matchState.core, context.baseIndex) as any[],
-        { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
+        {
+            sourceId: 'trickster_hideout_pod_destroy',
+            titleKey: 'ui.trickster_hideout_pod_destroy_title',
+            targetType: 'minion',
+        },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -551,7 +575,11 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
         context.playerId,
         '藏身处：选择要交换进来的“打出到基地上”的持续战术（或跳过）',
         buildHideoutPodSwapOptions(context.matchState.core, context.playerId) as any[],
-        { sourceId: 'trickster_hideout_pod_swap', targetType: 'generic' },
+        {
+            sourceId: 'trickster_hideout_pod_swap',
+            titleKey: 'ui.trickster_hideout_pod_swap_title',
+            targetType: 'generic',
+        },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -650,6 +678,7 @@ const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixieP
             options as any[],
             {
                 sourceId: 'trickster_pixie_pod_minion',
+                titleKey: 'ui.trickster_pixie_pod_minion_title',
                 targetType: 'minion',
                 multi: { min: 0, max: options.length },
             },
@@ -679,6 +708,7 @@ const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<Trickst
             options as any[],
             {
                 sourceId: 'trickster_pixie_pod_action_counters',
+                titleKey: 'ui.trickster_pixie_pod_action_counters_title',
                 targetType: 'minion',
                 multi: { min: 1, max: Math.min(2, options.length) },
             },
@@ -724,7 +754,12 @@ const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<Trickste
                 _source: 'ongoing' as const,
                 displayMode: 'card' as const,
             })) as any[],
-            { sourceId: 'trickster_pixie_pod_action_destroy', targetType: 'ongoing', autoCancelOption: true },
+            {
+                sourceId: 'trickster_pixie_pod_action_destroy',
+                titleKey: 'ui.trickster_pixie_pod_action_destroy_title',
+                targetType: 'ongoing',
+                autoCancelOption: true,
+            },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -762,7 +797,12 @@ const tricksterBlockThePathPodPromptProgram = createPromptProgram<TricksterBlock
             label: combo.label,
             value: { blocked: combo.blocked },
         })) as any[],
-        { sourceId: 'trickster_block_the_path_pod', targetType: 'option', autoCancelOption: true },
+        {
+            sourceId: 'trickster_block_the_path_pod',
+            titleKey: 'ui.trickster_block_the_path_pod_title',
+            targetType: 'option',
+            autoCancelOption: true,
+        },
     ),
     onResolve: ({ context, state, value }) => {
         if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
@@ -794,10 +834,27 @@ const tricksterFlameTrapPodBreakpointPromptProgram = createPromptProgram<Trickst
         context.playerId,
         '火焰陷阱：是否降低此基地爆分线？',
         [
-            { id: 'yes', label: '是（本回合该基地 breakpoint -4）', value: { yes: true }, displayMode: 'button' as const },
-            { id: 'no', label: '否', value: { yes: false }, displayMode: 'button' as const },
+            {
+                id: 'yes',
+                label: '是（本回合该基地 breakpoint -4）',
+                labelKey: 'ui.trickster_flame_trap_pod_bp_yes_option',
+                value: { yes: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'no',
+                label: '否',
+                labelKey: 'ui.trickster_flame_trap_pod_bp_no_option',
+                value: { yes: false },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'trickster_flame_trap_pod_bp', targetType: 'option', autoCancelOption: false },
+        {
+            sourceId: 'trickster_flame_trap_pod_bp',
+            titleKey: 'ui.trickster_flame_trap_pod_bp_title',
+            targetType: 'option',
+            autoCancelOption: false,
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         if ((value as { yes?: boolean } | undefined)?.yes !== true) return { events: [] };
@@ -827,7 +884,11 @@ const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptCont
             context.playerId,
             '选择要消灭的随从（力量低于己方随从数量），或跳过',
             options,
-            { sourceId: 'trickster_gnome', targetType: 'minion' },
+            {
+                sourceId: 'trickster_gnome',
+                titleKey: 'ui.trickster_gnome_title',
+                targetType: 'minion',
+            },
         );
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -864,7 +925,11 @@ const tricksterGnomePodPromptProgram = createPromptProgram<TricksterGnomePromptC
             context.playerId,
             '侏儒：你可以消灭这里一个力量低于你在此基地随从数量的随从（或跳过）',
             options,
-            { sourceId: 'trickster_gnome_pod', targetType: 'minion' },
+            {
+                sourceId: 'trickster_gnome_pod',
+                titleKey: 'ui.trickster_gnome_pod_title',
+                targetType: 'minion',
+            },
         );
     },
     onResolve: ({ context, state, value, timestamp, playerId }) => {
@@ -1224,34 +1289,39 @@ function registerTricksterOngoingEffects(): void {
     // 小矮妖：其他玩家打出力量更低的随从到同基地时消灭该随从
     registerTrigger('trickster_leprechaun', 'onMinionPlayed', (trigCtx) => {
         if (!trigCtx.triggerMinionUid || !trigCtx.triggerMinionDefId || trigCtx.baseIndex === undefined) return [];
-        // 找到 leprechaun 所在基地
-        for (let i = 0; i < trigCtx.state.bases.length; i++) {
-            const base = trigCtx.state.bases[i];
-            // 只在同基地触?
-            if (i !== trigCtx.baseIndex) continue;
-            const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
-            if (!triggerMinion) continue;
-            const trigPower = getMinionPower(trigCtx.state, triggerMinion, i);
-            for (const leprechaun of base.minions.filter(m => matchesDefId(m.defId, 'trickster_leprechaun'))) {
-                // 只对其他玩家触发
-                if (leprechaun.controller === trigCtx.playerId) continue;
-                // 检查打出的随从力量是否低于 leprechaun
-                const lepPower = getMinionPower(trigCtx.state, leprechaun, i);
-                if (trigPower < lepPower) {
-                    return [{
-                        type: SU_EVENTS.MINION_DESTROYED,
-                        payload: {
-                            minionUid: trigCtx.triggerMinionUid,
-                            minionDefId: trigCtx.triggerMinionDefId,
-                            fromBaseIndex: i,
-                            ownerId: triggerMinion.owner,
-                            controllerId: triggerMinion.controller,
-                            destroyerId: leprechaun.controller,
-                            reason: 'trickster_leprechaun',
-                        },
-                        timestamp: trigCtx.now,
-                    }];
-                }
+        const baseIndex = trigCtx.baseIndex;
+        const base = trigCtx.state.bases[baseIndex];
+        if (!base) return [];
+
+        // queued runtime 若已指明 sourceCardUid，必须只结算该实例，不能回退到基地扫描顺序里的第一只基础版 Leprechaun。
+        const leprechauns = trigCtx.sourceCardUid
+            ? base.minions.filter(m => m.uid === trigCtx.sourceCardUid && matchesDefId(m.defId, 'trickster_leprechaun'))
+            : base.minions.filter(m => matchesDefId(m.defId, 'trickster_leprechaun'));
+        if (leprechauns.length === 0) return [];
+
+        const triggerMinion = base.minions.find(m => m.uid === trigCtx.triggerMinionUid);
+        if (!triggerMinion) return [];
+        const triggerPower = getMinionPower(trigCtx.state, triggerMinion, baseIndex);
+
+        for (const leprechaun of leprechauns) {
+            // 只对其他玩家触发
+            if (leprechaun.controller === trigCtx.playerId) continue;
+            // 检查打出的随从力量是否低于 leprechaun
+            const leprechaunPower = getMinionPower(trigCtx.state, leprechaun, baseIndex);
+            if (triggerPower < leprechaunPower) {
+                return [{
+                    type: SU_EVENTS.MINION_DESTROYED,
+                    payload: {
+                        minionUid: trigCtx.triggerMinionUid,
+                        minionDefId: trigCtx.triggerMinionDefId,
+                        fromBaseIndex: baseIndex,
+                        ownerId: triggerMinion.owner,
+                        controllerId: triggerMinion.controller,
+                        destroyerId: leprechaun.controller,
+                        reason: 'trickster_leprechaun',
+                    },
+                    timestamp: trigCtx.now,
+                }];
             }
         }
         return [];

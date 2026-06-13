@@ -38,6 +38,13 @@
     },
     "catalog": {
       "allGames": "All Games",
+      "hotAria": "Hot",
+      "previousPage": "Previous Page",
+      "nextPage": "Next Page",
+      "continueMatchAria": "Continue match {{game}}",
+      "continueMatchLabel": "Continue match · {{game}}{{code}}",
+      "noContinueMatch": "No resumable match",
+      "destroyCurrentRoom": "Destroy current room",
       "accountSettings": "Account and Settings",
       "playerNickname": "Player",
       "help": "Filter"
@@ -118,7 +125,9 @@
     },
     "reviews": {
       "error": "Failed to load reviews. Please try again later.",
-      "empty": "No reviews yet"
+      "empty": "No reviews yet",
+      "recommend": "Recommend",
+      "not_recommend": "Not Recommended"
     },
     "detailTabs": {
       "updates": "Updates",
@@ -143,6 +152,11 @@
       "players": "Seats",
       "status": "Status",
       "action": "Action"
+    },
+    "authoring": {
+      "resize_left_drawer_aria": "Resize left drawer width",
+      "resize_right_drawer_aria": "Resize inspector drawer width",
+      "resize_source_drawer_aria": "Resize source drawer height"
     }
   },
   "password": {
@@ -192,6 +206,43 @@
   },
   "button": {
     "processing": "Processing..."
+  },
+  "mascot": {
+    "container_label": "Yi Board Game mascot",
+    "button_label": "Tap mascot",
+    "image_alt": "Yi Board Game mascot"
+  },
+  "viewportDebug": {
+    "title": "Device viewport diagnostics",
+    "refresh": "Refresh",
+    "overflowItemDetail": "{{position}} | L{{left}} R{{right}} T{{top}} B{{bottom}} | {{width}}x{{height}}",
+    "scrollContainerDetail": "Overflow X: {{overflowX}} | {{clientWidth}}/{{scrollWidth}} | L{{left}} R{{right}} B{{bottom}}",
+    "labels": {
+      "inner": "inner",
+      "visual": "visual",
+      "client": "client",
+      "runtime": "runtime",
+      "safe_area": "safeArea",
+      "doc_scroll": "doc scroll",
+      "body_scroll": "body scroll",
+      "overflow_elements": "Overflow elements",
+      "horizontal_containers": "Horizontal containers"
+    },
+    "position": {
+      "static": "Static",
+      "relative": "Relative",
+      "absolute": "Absolute",
+      "fixed": "Fixed",
+      "sticky": "Sticky"
+    },
+    "overflowX": {
+      "auto": "Auto",
+      "scroll": "Scroll",
+      "overlay": "Overlay",
+      "hidden": "Hidden",
+      "visible": "Visible",
+      "clip": "Clip"
+    }
   },
   "activeMatch": {
     "notice": "You are currently in a match",
@@ -307,6 +358,30 @@
     "guest": "Guest{{id}}"
   },
   "ota": {
+    "footer": {
+      "currentVersionTitle": "Current version {{version}}",
+      "clickToCollapse": "Click to collapse the full version",
+      "clickToExpand": "Click to expand the full version",
+      "currentBundleTitle": "Current bundle {{version}}",
+      "currentAppShellTitle": "App shell {{version}}",
+      "latestOtaTitle": "Latest OTA {{version}}",
+      "statusDisabled": "Status: OTA is disabled in the current test shell. Please use the production app.",
+      "statusCheckingAndApplying": "Status: checking and applying OTA update",
+      "statusMismatchUpdateNow": "Status: current bundle does not match the latest OTA. Click to update now.",
+      "statusCheckNow": "Status: click to check OTA updates now",
+      "bundleLabel": "Bundle {{version}}",
+      "appLabel": "App {{version}}",
+      "latestLabel": "Latest {{version}}",
+      "disabledLabel": "OTA disabled in current test shell",
+      "updatingNow": "Updating now",
+      "mismatchUpdateNow": "OTA mismatch, click to update now",
+      "checkingNow": "Checking for updates",
+      "checkNow": "Click to check for updates",
+      "ariaVersion": "Current version {{version}}",
+      "ariaBundleAndApp": "Current bundle {{bundleVersion}}, app shell {{appVersion}}",
+      "ariaBundleAndAppMismatch": "Current bundle {{bundleVersion}}, app shell {{appVersion}}, latest OTA {{latestVersion}}, versions are not aligned",
+      "ariaBundleAndAppDisabled": "Current bundle {{bundleVersion}}, app shell {{appVersion}}, OTA is disabled in the current test shell"
+    },
     "forceUpdate": {
       "eyebrow": "Updating",
       "checkingTitle": "Preparing update",
@@ -356,7 +431,10 @@
     "progressHint": "Fetching download progress. Please wait.",
     "openSettings": "Open install settings",
     "continueInstall": "Continue install",
-    "retryAction": "Check again"
+    "retryAction": "Check again",
+    "toast": {
+      "upToDate": "You already have the latest version."
+    }
   },
   "gameDetails": {
     "description": "Classic strategy play. Connect three symbols to win."
@@ -540,6 +618,1429 @@
     },
     "admin": {
       "dashboard": "Admin Dashboard"
+    }
+  },
+  "testMatchRoom": {
+    "missing_game_config": "Game configuration not found",
+    "loading": "Loading...",
+    "loading_with_game": "Loading {{game}}...",
+    "game_load_failed": "Failed to load game",
+    "seo_title": "{{game}} - Test Mode",
+    "seo_description": "{{game}} E2E test mode"
+  },
+  "smashUp4PLayoutTest": {
+    "title": "Smash Up Layout Test",
+    "player_count": "{{count}}P Layout",
+    "back": "Back",
+    "ongoing": "Ongoing",
+    "base_label": "Base {{id}}",
+    "hand_area_placeholder": "Hand area placeholder ({{height}}px)",
+    "metrics": {
+      "base_gap": "Base Gap",
+      "base_width": "Base Width",
+      "minion_width": "Minion Width",
+      "hand_height": "Hand Height",
+      "base_count": "Base Count"
+    }
+  },
+  "admin": {
+    "shared": {
+      "no_data": "No data yet",
+      "total_items": "{{count}} items"
+    },
+    "layout": {
+      "nav": {
+        "overview": "Overview",
+        "matches": "Matches",
+        "changelogs": "Changelogs",
+        "feedback": "Feedback",
+        "users": "Users",
+        "rooms": "Rooms",
+        "sponsors": "Sponsors",
+        "notifications": "Notifications",
+        "health": "System Health"
+      },
+      "role": {
+        "admin": "Admin",
+        "developer": "Developer",
+        "user": "Regular User",
+        "guest": "Guest"
+      },
+      "panel": {
+        "title_developer": "Content Panel",
+        "title_viewer": "Data Panel",
+        "title_admin": "Admin Panel",
+        "subtitle_developer": "Creator Workspace",
+        "subtitle_viewer": "Public Dashboard",
+        "subtitle_admin": "BoardGame Platform"
+      },
+      "menu": "Menu",
+      "logout": "Log Out",
+      "back_home": "Back to Home →"
+    },
+    "dashboard": {
+      "common": {
+        "no_data": "No data yet"
+      },
+      "home": {
+        "title": "Overview",
+        "description": "Welcome back. Here's a snapshot of your platform operations.",
+        "more_sources": "More data sources are being connected..."
+      },
+      "overview": {
+        "total_users": "Total Users",
+        "active_users_24h": "Active Users (24h)",
+        "total_matches": "Total Matches",
+        "banned_users": "Banned Users"
+      },
+      "toast": {
+        "stats_failed": "Failed to fetch stats",
+        "trend_failed": "Failed to fetch trend stats"
+      },
+      "user_composition": {
+        "title": "User Composition",
+        "description": "Active vs Inactive vs Banned users",
+        "active": "Active Users",
+        "inactive": "Inactive Users",
+        "banned": "Banned Users",
+        "total": "Total"
+      },
+      "activity_tier": {
+        "title": "Activity Tiers",
+        "description": "User segmentation based on last active time",
+        "tooltip_value": "{{count}} users ({{percent}}%)",
+        "total_users": "Total Users"
+      },
+      "game_popularity": {
+        "title": "Game Popularity Ranking",
+        "description": "Ranked by total play duration",
+        "total_duration": "Total Duration",
+        "total_matches": "Total Matches"
+      },
+      "global_trend": {
+        "title": "Activity Trend",
+        "description": "User activity and match volume over the last 7 days",
+        "date_label": "Date {{date}}",
+        "active_users": "Active Users",
+        "matches": "Matches"
+      },
+      "retention": {
+        "title": "User Retention",
+        "description": "Return rate by registration cohort (based on users registered in the last week)",
+        "tooltip_value": "{{percent}} ({{retained}}/{{total}} users)",
+        "tooltip_label": "Retention Rate"
+      }
+    },
+    "roleModal": {
+      "eyebrow": "Role Settings",
+      "title": "User Admin Role",
+      "description": "Admins have full backend access. Developers can view feedback and manage changelogs for their assigned games.",
+      "close_aria": "Close role settings",
+      "current_role": "Current: {{role}}",
+      "locked_warning": "You cannot change your own backend role, to avoid accidentally demoting the only admin.",
+      "role_section_title": "Role",
+      "roles": {
+        "user": {
+          "label": "Regular User",
+          "hint": "No backend permissions"
+        },
+        "developer": {
+          "label": "Developer",
+          "hint": "Can view feedback and manage changelogs for assigned games"
+        },
+        "admin": {
+          "label": "Admin",
+          "hint": "Full backend permissions"
+        }
+      },
+      "games": {
+        "title": "Manageable Games",
+        "description": "Multi-select supported. Developers can only manage changelogs for checked games, but can still view all feedback.",
+        "selected_count": "{{count}} selected",
+        "required": "Developers must be assigned at least one game."
+      },
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save Role"
+    },
+    "systemHealth": {
+      "title": "System Health Monitor",
+      "description": "Monitor platform rooms, online player presence, and core backend metrics in real time",
+      "socket": {
+        "label": "Lobby socket",
+        "connected": "Connected",
+        "disconnected": "Disconnected",
+        "online": "Online",
+        "offline": "Offline"
+      },
+      "realtime_players": {
+        "title": "Online Players",
+        "summary": "{{totalPlayers}} seated across {{activeRooms}} live rooms"
+      },
+      "today_matches": {
+        "title": "Today's Matches",
+        "total": "Total: {{count}}"
+      },
+      "active_rooms": {
+        "title": "Live Rooms (Including Guests)"
+      },
+      "room_distribution": {
+        "title": "Live Room Distribution (Including Guests)",
+        "empty": "No active rooms",
+        "group_room_count": "{{count}} live rooms",
+        "group_online": "{{connected}}/{{total}} online",
+        "room_online": "{{connected}}/{{total}} online",
+        "empty_seats": "No players seated"
+      },
+      "overview": {
+        "title": "Platform Overview",
+        "total_users": "Total Registered Users",
+        "persisted_rooms": "Persisted Rooms",
+        "banned_users": "Banned Users"
+      },
+      "footer": "System Health Monitor v1.2.0 · Last updated: {{time}}"
+    },
+    "userDetail": {
+      "title": {
+        "back_to_users": "Back to User List"
+      },
+      "badge": {
+        "banned": "Banned",
+        "admin": "Admin",
+        "developer": "Developer"
+      },
+      "field": {
+        "email_unbound": "No email linked"
+      },
+      "action": {
+        "send_message": "Send Message",
+        "ban": "Ban",
+        "unban": "Unban",
+        "delete": "Delete User"
+      },
+      "tooltip": {
+        "cannot_ban_admin": "Cannot ban admin users"
+      },
+      "stats": {
+        "section_title": "Activity",
+        "total_matches": "Total Matches",
+        "wins": "Wins",
+        "win_rate": "Win Rate",
+        "empty": "No data yet"
+      },
+      "account": {
+        "section_title": "Account Info",
+        "role": "Role",
+        "created_at": "Created At",
+        "last_online": "Last Active",
+        "never_online": "Never"
+      },
+      "role": {
+        "admin": "Admin",
+        "developer_scoped": "Developer ({{scope}})",
+        "developer": "Developer",
+        "user": "Regular User"
+      },
+      "ban": {
+        "section_title": "Ban Details",
+        "reason": "Reason: {{reason}}",
+        "unspecified": "Not provided"
+      },
+      "developer": {
+        "section_title": "Developer Role",
+        "description": "This user can only manage changelogs for the games listed here. To change it, go back to the user list and use Role Settings.",
+        "scope": "Current Scope: {{scope}}",
+        "unassigned": "Unassigned",
+        "empty_games": "No manageable games assigned yet"
+      },
+      "matches": {
+        "section_title": "Recent Matches",
+        "count": "{{count}} total"
+      },
+      "table": {
+        "unknown_opponent": "Unknown Opponent",
+        "result": "Result",
+        "result_win": "Win",
+        "result_draw": "Draw",
+        "result_loss": "Loss",
+        "game": "Game",
+        "opponent": "Opponent",
+        "time": "Time"
+      },
+      "confirm": {
+        "ban": "Are you sure you want to ban this user?",
+        "unban": "Are you sure you want to unban this user?",
+        "delete": "Are you sure you want to delete this user? This action cannot be undone."
+      },
+      "prompt": {
+        "ban_reason": "Enter a ban reason"
+      },
+      "toast": {
+        "fetch_failed": "Failed to load details",
+        "cannot_ban_admin": "Cannot ban admin accounts",
+        "ban_reason_required": "Ban reason is required",
+        "action_success": "Action completed",
+        "action_failed": "Action failed",
+        "cannot_delete_admin": "Cannot delete admin accounts",
+        "delete_success": "User deleted",
+        "delete_failed": "Delete failed",
+        "message_demo": "This is a demo action and is not implemented yet"
+      }
+    },
+    "usersPage": {
+      "title": "User Management",
+      "description": "Manage platform users and their backend role status",
+      "search_placeholder": "Search by username or email...",
+      "roles": {
+        "admin": "Admin",
+        "developer": "Developer",
+        "user": "Regular User"
+      },
+      "status": {
+        "normal": "Normal",
+        "banned": "Banned"
+      },
+      "online": {
+        "online": "Online",
+        "offline": "Offline"
+      },
+      "aria": {
+        "select_all": "Select all users",
+        "select_user": "Select user {{username}}"
+      },
+      "columns": {
+        "user": "User",
+        "role": "Role",
+        "status": "Status",
+        "created_at": "Created At",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view_detail": "View Details",
+        "role_settings": "Role Settings",
+        "ban": "Ban",
+        "unban": "Unban",
+        "delete": "Delete",
+        "cannot_delete_admin": "Cannot delete admin users",
+        "bulk_delete": "Delete Selected"
+      },
+      "filters": {
+        "all_roles": "All Roles",
+        "all_status": "All Statuses"
+      },
+      "confirm": {
+        "ban": "Are you sure you want to ban this user?",
+        "unban": "Are you sure you want to unban this user?",
+        "delete": "Are you sure you want to delete this user? This action cannot be undone.",
+        "bulk_delete": "Are you sure you want to delete the selected {{count}} users?"
+      },
+      "prompt": {
+        "ban_reason": "Enter a ban reason"
+      },
+      "toast": {
+        "fetch_failed": "Failed to load users",
+        "ban_reason_required": "Ban reason is required",
+        "action_success": "Action completed",
+        "action_failed": "Action failed",
+        "cannot_delete_admin": "Cannot delete admin accounts",
+        "delete_success": "User deleted",
+        "delete_failed": "Delete failed",
+        "bulk_delete_failed": "Bulk delete failed",
+        "bulk_delete_success": "Deleted {{deleted}} users{{skippedText}}",
+        "bulk_delete_skipped": ", skipped {{skipped}}",
+        "role_saved_admin": "Set as admin",
+        "role_saved_developer": "Set as developer with access to {{count}} games",
+        "role_saved_user": "Set as regular user",
+        "role_update_failed": "Failed to update role",
+        "role_save_failed": "Failed to save role settings"
+      }
+    },
+    "gameChangelogs": {
+      "title": "Changelogs",
+      "description": "Publish release notes by game. Only published entries are visible on the frontend.",
+      "filters": {
+        "all_games": "All Manageable Games"
+      },
+      "actions": {
+        "create": "New Changelog",
+        "cancel": "Cancel",
+        "submitting": "Submitting...",
+        "save": "Save Changes",
+        "create_entry": "Create Entry",
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "form": {
+        "create_title": "New Changelog",
+        "edit_title": "Edit Changelog",
+        "scope_hint": "Developers can only operate on games assigned to them.",
+        "game_label": "Target Game",
+        "version_label": "Version",
+        "version_placeholder": "e.g. v1.2.0",
+        "title_label": "Title",
+        "title_placeholder": "e.g. Balance Changes",
+        "content_label": "Content",
+        "content_placeholder": "This text will be shown in the update panel on the frontend leaderboard.",
+        "pinned": "Pin to Top",
+        "publish_now": "Publish Now",
+        "publish_hint": "If Publish Now is unchecked, the entry will be saved as a draft and only shown in the admin list, not in the frontend Updates tab."
+      },
+      "empty": {
+        "no_manageable_games": "No manageable games available",
+        "no_items": "No changelogs yet"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft",
+        "pinned": "Pinned",
+        "latest_time": "Latest time: {{time}}"
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete this changelog? This action cannot be undone."
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch changelogs",
+        "update_failed": "Failed to update changelog",
+        "create_failed": "Failed to create changelog",
+        "update_success": "Changelog saved",
+        "create_success": "Changelog created",
+        "save_failed": "Failed to save changelog",
+        "delete_failed": "Failed to delete changelog",
+        "delete_success": "Changelog deleted",
+        "toggle_publish_failed": "Failed to toggle publish state",
+        "unpublish_success": "Publication withdrawn",
+        "publish_success": "Changelog published"
+      }
+    },
+    "notificationsPage": {
+      "title": "System Notifications",
+      "description": "Manage platform-wide announcements shown to all users",
+      "empty": "No notifications yet",
+      "form": {
+        "create_title": "New Notification",
+        "edit_title": "Edit Notification",
+        "title_label": "Title",
+        "title_placeholder": "Notification title",
+        "content_label": "Content",
+        "content_placeholder": "Notification content...",
+        "expires_at": "Expiration Time (Optional)",
+        "pinned": "Pin to Top",
+        "publish_now": "Publish Now"
+      },
+      "actions": {
+        "create": "Create Notification",
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "submitting": "Submitting..."
+      },
+      "status": {
+        "pinned": "Pinned",
+        "draft": "Draft",
+        "expired": "Expired",
+        "expires_at": "Expires: {{time}}"
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch notifications",
+        "action_failed": "Action failed",
+        "create_success": "Notification created",
+        "update_success": "Notification updated",
+        "delete_success": "Deleted",
+        "delete_failed": "Delete failed"
+      }
+    },
+    "sponsorsPage": {
+      "title": "Sponsor Management",
+      "description": "Maintain the sponsor ticker list shown in the popup.",
+      "search_placeholder": "Search sponsors",
+      "form": {
+        "name_label": "Sponsor Name",
+        "name_placeholder": "Enter display name",
+        "amount_label": "Sponsor Amount",
+        "amount_placeholder": "Amount (CNY)",
+        "pin_checkbox": "Pin this sponsor"
+      },
+      "columns": {
+        "name": "Sponsor",
+        "amount": "Amount",
+        "pin": "Pinned",
+        "created_at": "Created At",
+        "actions": "Actions"
+      },
+      "status": {
+        "pinned": "Pinned",
+        "normal": "Normal"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "delete": "Delete",
+        "create": "Add Sponsor",
+        "submitting": "Submitting..."
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete sponsor record \"{{name}}\"?"
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch sponsors",
+        "invalid_form": "Please provide a sponsor name and a valid amount",
+        "create_failed": "Create failed",
+        "create_success": "Sponsor added",
+        "update_failed": "Update failed",
+        "pin_success": "Pinned",
+        "unpin_success": "Unpinned",
+        "delete_failed": "Delete failed",
+        "delete_success": "Sponsor record deleted"
+      }
+    },
+    "roomsPage": {
+      "title": "Room Management",
+      "description": "Inspect room presence, duration, and clean up by filter",
+      "unknown": "Unknown",
+      "unnamed_room": "Unnamed Room",
+      "guest_prefix": "Guest#",
+      "search_placeholder": "Search room ID or room name...",
+      "aria": {
+        "select_all": "Select all rooms",
+        "select_room": "Select room {{id}}"
+      },
+      "owner_type": {
+        "guest": "Guest",
+        "user": "User"
+      },
+      "columns": {
+        "room": "Room",
+        "game": "Game",
+        "owner": "Owner",
+        "status": "Status",
+        "players": "Player Presence",
+        "duration": "Duration",
+        "updated_at": "Updated At",
+        "actions": "Actions"
+      },
+      "status": {
+        "locked": "Password Protected",
+        "public": "Public"
+      },
+      "players": {
+        "online_count": "{{connected}}/{{total}} online",
+        "empty": "No players seated"
+      },
+      "player_labels": {
+        "seat_number": "Seat {{seat}}",
+        "seat_id": "Seat {{seat}}"
+      },
+      "online": {
+        "online": "Online",
+        "offline": "Offline"
+      },
+      "duration": {
+        "started_at": "Started at {{time}}"
+      },
+      "actions": {
+        "delete": "Delete",
+        "bulk_delete": "Delete Selected"
+      },
+      "filters": {
+        "all_games": "All Games"
+      },
+      "bulk": {
+        "filtered_count": "{{count}} filtered rooms",
+        "selected_count": "{{count}} selected rooms",
+        "total_count": "{{count}} total",
+        "all_filtered_selected": "All filtered results are selected ({{count}} items). Click the header checkbox to cancel."
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete this room?",
+        "bulk_delete": "Are you sure you want to delete {{label}}?"
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch room list",
+        "delete_failed": "Delete failed",
+        "delete_success": "Room deleted",
+        "bulk_delete_failed": "Bulk delete failed",
+        "bulk_delete_success": "Deleted {{label}}"
+      }
+    },
+    "ugcPackagesPage": {
+      "title": "UGC Management",
+      "description": "Review and manage all UGC packages (unpublish/delete).",
+      "search_placeholder": "Search package ID / name / author...",
+      "owner_placeholder": "Author ID",
+      "columns": {
+        "package_info": "Package",
+        "owner": "Author",
+        "status": "Status",
+        "published_at": "Published At",
+        "updated_at": "Updated At",
+        "actions": "Actions"
+      },
+      "status": {
+        "published": "Published",
+        "draft": "Draft"
+      },
+      "filters": {
+        "all_status": "All Statuses"
+      },
+      "actions": {
+        "unpublish": "Unpublish",
+        "delete": "Delete"
+      },
+      "confirm": {
+        "unpublish": "Are you sure you want to unpublish UGC package \"{{name}}\"?",
+        "delete": "Are you sure you want to delete UGC package \"{{name}}\"? This action cannot be undone."
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch UGC packages",
+        "unpublish_failed": "Failed to unpublish package",
+        "unpublish_success": "UGC package unpublished",
+        "delete_failed": "Delete failed",
+        "delete_success": "UGC package deleted"
+      }
+    },
+    "matchesPage": {
+      "title": "Match Records",
+      "description": "Review full platform match history and state",
+      "search_placeholder": "Search match ID or player...",
+      "player_unknown": "?",
+      "player_fallback": "Player {{id}}",
+      "filters": {
+        "all_games": "All Games"
+      },
+      "aria": {
+        "select_all": "Select all matches",
+        "select_match": "Select match {{id}}"
+      },
+      "columns": {
+        "id": "ID",
+        "game": "Game",
+        "players": "Players",
+        "result": "Result",
+        "ended_at": "Ended At",
+        "actions": "Actions"
+      },
+      "actions": {
+        "delete": "Delete",
+        "detail": "Details",
+        "bulk_delete": "Delete Selected"
+      },
+      "results": {
+        "draw": "Draw",
+        "winner": "{{name}} won",
+        "win": "Win",
+        "loss": "Loss"
+      },
+      "duration": {
+        "unknown": "Duration unknown",
+        "hours_minutes": "Duration {{hours}}h {{minutes}}m",
+        "minutes_seconds": "Duration {{minutes}}m {{seconds}}s",
+        "seconds": "Duration {{seconds}}s",
+        "seconds_only": "{{seconds}}s"
+      },
+      "detail": {
+        "title": "Match Details",
+        "game": "Game",
+        "duration": "Duration",
+        "ended_at": "Ended At",
+        "players": "Players",
+        "action_log": "Action Log",
+        "no_logs": "No action log"
+      },
+      "confirm": {
+        "delete": "Are you sure you want to delete this match record?",
+        "bulk_delete": "Are you sure you want to delete the selected {{count}} match records?"
+      },
+      "toast": {
+        "fetch_failed": "Failed to fetch match list",
+        "detail_fetch_failed": "Failed to fetch match details",
+        "admin_only": "Only admins can delete match records",
+        "delete_failed": "Delete failed",
+        "delete_success": "Match record deleted",
+        "bulk_delete_failed": "Bulk delete failed",
+        "bulk_delete_success": "Deleted {{count}} match records"
+      }
+    }
+  },
+  "devtools": {
+    "assetSlicer": {
+      "default_image_name": "Image",
+      "close_sidebar_aria": "Close Asset Slicer Sidebar",
+      "back_home": "← Back Home",
+      "splendor_mapping": "Splendor Mapping",
+      "title": "Asset Slicer",
+      "subtitle": "Creative Workshop",
+      "shortcut": {
+        "paste": "Ctrl+V"
+      },
+      "image_alt": {
+        "source": "Source image"
+      },
+      "upload_cta_line_1": "Replace Image (Ctrl+V)",
+      "upload_cta_line_2": "or drop it here",
+      "shape": {
+        "square": "Rectangle",
+        "circle": "Circle"
+      },
+      "crop_size_title": "Crop Size (W x H)",
+      "crop_size_label": "Crop Size",
+      "quick_slice_title": "Quick slice mode: release mouse to crop immediately",
+      "quick_slice": "Quick Slice",
+      "unlock_ratio": "Unlock Ratio",
+      "lock_ratio": "Lock Ratio",
+      "shrink": "Smaller",
+      "enlarge": "Larger",
+      "viewport": "View: {{value}}%",
+      "reset": "Reset",
+      "hint": {
+        "paste_clipboard": "Paste clipboard image",
+        "right_drag": "Right-drag",
+        "pan_canvas": "Pan canvas",
+        "ctrl_wheel": "Ctrl+Wheel",
+        "zoom_crop": "Resize crop box"
+      },
+      "extracted_count": "Extracted ({{count}})",
+      "export_sprite_sheet": "Export Sprite Sheet",
+      "empty": {
+        "no_image": "No Image",
+        "upload_prompt": "Replace Image (Ctrl+V) / Drop Image Here"
+      },
+      "overlay": {
+        "release_extract": "Release to Extract",
+        "release_lock": "Release to Lock",
+        "quick_slice_mode": "Quick Slice",
+        "drag_select_mode": "Drag Select"
+      },
+      "status": {
+        "viewport": "View",
+        "panning": "Panning",
+        "drag_hint": "Right Click / Alt Drag"
+      }
+    },
+    "audioBrowser": {
+      "title": "Audio Browser",
+      "loading": "Loading...",
+      "group_labels": {
+        "ambient": "Ambient",
+        "bgm": "Background Music",
+        "card": "Card",
+        "coins": "Coins",
+        "combat": "Combat",
+        "cyberpunk": "Cyberpunk",
+        "dice": "Dice",
+        "fantasy": "Fantasy",
+        "magic": "Magic",
+        "misc": "Misc",
+        "monster": "Monster",
+        "puzzle": "Puzzle",
+        "status": "Status Effect",
+        "steampunk": "Steampunk",
+        "stinger": "Stinger",
+        "system": "System",
+        "token": "Token",
+        "ui": "UI"
+      },
+      "sub_labels": {
+        "general": "General",
+        "ethereal": "Ethereal",
+        "fantasy": "Fantasy",
+        "funk": "Funk",
+        "fire": "Fire",
+        "ice": "Ice",
+        "water": "Water",
+        "wind": "Wind",
+        "lightning": "Lightning",
+        "poison": "Poison",
+        "dark": "Dark",
+        "rock": "Rock",
+        "earth": "Earth",
+        "attack": "Attack",
+        "impact": "Impact",
+        "footstep": "Footstep",
+        "shout": "Shout",
+        "celebrate": "Celebrate",
+        "handling": "Handling",
+        "fx": "FX",
+        "loops": "Loops",
+        "movement": "Movement",
+        "death": "Death",
+        "growl": "Growl",
+        "breath": "Breath",
+        "click": "Click",
+        "shooting": "Shooting"
+      },
+      "sidebar": {
+        "title": "Categories",
+        "all": "All"
+      },
+      "table": {
+        "name": "Name",
+        "type": "Type",
+        "preview": "Preview",
+        "limit_notice": "Showing the first 300 items, {{count}} matches total",
+        "empty": "No matching results"
+      },
+      "types": {
+        "sfx": "SFX",
+        "bgm": "Music"
+      },
+      "history": {
+        "title": "Playback History",
+        "clear": "Clear",
+        "empty_line_1": "Play any audio clip",
+        "empty_line_2": "and the history will appear here",
+        "bgm_short": "M",
+        "sfx_short": "S",
+        "replay": "Replay"
+      },
+      "summary": {
+        "total_count": "({{count}} items)",
+        "results_count": "{{count}} results"
+      },
+      "error": {
+        "title": "Failed to load audio registry",
+        "retry": "Retry"
+      },
+      "filters": {
+        "search_placeholder": "Search key / file name...",
+        "type_all": "All"
+      },
+      "actions": {
+        "stop_bgm": "Stop BGM",
+        "cancel_preload": "Cancel Preload",
+        "cancel_preload_progress": "Cancel ({{loaded}}/{{total}})",
+        "preload_title": "Preload every sound effect in the current filtered result to remove first-play delay",
+        "preload_all": "Preload All"
+      },
+      "logs": {
+        "phrase_map_loaded": "[AudioBrowser] Phrase map loaded: {{count}} entries",
+        "phrase_map_failed": "[AudioBrowser] Failed to load phrase map, fallback to English",
+        "registry_failed": "Failed to load audio registry"
+      }
+    },
+    "architectureView": {
+      "common": {
+        "back": "← Back",
+        "click_anywhere_back": "Click anywhere to go back"
+      },
+      "zoom": {
+        "zoom_in": "Zoom in",
+        "zoom_out": "Zoom out",
+        "reset": "Reset zoom"
+      },
+      "overview": {
+        "title": "🏗️ Architecture Overview — One Action End to End",
+        "subtitle": "Click any layer card to drill in · dashed links on the right show cross-layer connections",
+        "full_button": "🗺️ Full Architecture",
+        "c4_context_button": "🏛️ C4 Context",
+        "c4_container_button": "📦 C4 Containers",
+        "story_button": "📖 User Story",
+        "click_expand": "Click to expand →",
+        "legend": "Solid = layer-by-layer dependency flow · Dashed = cross-layer links driven by events or UI injection"
+      },
+      "full": {
+        "title": "🗺️ Full Architecture — All Nodes and Layers",
+        "subtitle": "Click any node for details · click empty space to go back"
+      },
+      "popup": {
+        "details": "📋 Details",
+        "interface_signature": "🔌 Interface Signature",
+        "data_flow": "🔄 Data Flow",
+        "example": "🎲 Dice Throne Example",
+        "upstream": "⬆️ Upstream Dependencies ({{count}})",
+        "downstream": "⬇️ Downstream Consumers ({{count}})"
+      },
+      "pipeline": {
+        "title": "⚡ Turn Execution Engine — 8-Step Pipeline",
+        "example_scenario": "📎 Example: Dice Throne — Player A attacks Player B",
+        "involved_systems": "Systems involved",
+        "halt_intercept": "halt: intercept",
+        "halt_skip": "skip ③④⑤"
+      },
+      "systems": {
+        "title": "🔌 System Plugins — 11 Systems",
+        "defaults_title": "Enabled by default (8) — automatically included by createBaseSystems()",
+        "optional_title": "Configured on demand (3) — created explicitly in the game layer",
+        "hook_position": "Hook position:",
+        "hook_before": "Before (beforeCommand)",
+        "hook_after": "After (afterEvents)",
+        "hook_both": "Before + After",
+        "hook_before_short": "Before",
+        "hook_after_short": "After",
+        "hook_both_short": "Both"
+      },
+      "testing": {
+        "title": "🧪 Automated Testing + AI Audit — Five Parallel Tracks",
+        "subtitle": "Command-driven first · Entity integrity · Interaction integrity · E2E screenshots · AI logic audit · Click anywhere to go back",
+        "track_vitest": "🧪 Command-Driven Tests (Primary)",
+        "track_integrity": "🔗 Entity Integrity",
+        "track_interaction": "🎯 Interaction Integrity",
+        "track_e2e": "🌐 E2E Screenshots",
+        "track_ai": "🤖 AI Logic Audit",
+        "modified_boundary": "── Triggered after code changes ──",
+        "summary_vitest": "🧪 Command-driven first: pure-function engine + deterministic pipeline → replay commands to verify rule correctness",
+        "summary_integrity": "🔗 Entity integrity: registry + reference chain + trigger path + effect contracts → ensure definitions never break their links",
+        "summary_interaction": "🎯 Interaction integrity: Mode A (UI state machine payload) + Mode B (handler registration chain) → ensure the interaction chain stays intact",
+        "summary_e2e": "🌐 E2E screenshots: headless browser + pixel diff → prevent visual UI regressions",
+        "summary_ai": "🤖 AI logic audit: eight-layer tracing + semantic consistency + metadata audit + role reversal + data-query consistency + 16 anti-pattern checks",
+        "coverage_title": "📊 Estimated bug coverage:",
+        "coverage_vitest": "Command-driven ~35%",
+        "coverage_integrity": "Entity integrity ~15%",
+        "coverage_interaction": "Interaction integrity ~10%",
+        "coverage_e2e": "E2E screenshots ~10%",
+        "coverage_ai": "AI audit ~25%",
+        "coverage_other": "Other ~5%",
+        "coverage_note": "* Command-driven tests cover rule logic and state transitions · AI audit covers spec/implementation mismatches, query bypasses, and cross-effects · Other includes issues such as environment, concurrency, and performance that are harder to automate"
+      },
+      "story": {
+        "title": "📖 User Story — 6 Phases to Create a New Game",
+        "subtitle": "Based on the create-new-game skill, data entry is merged into one phase · each phase is independently verifiable · click anywhere to go back",
+        "workflow": "🎲 Workflow: skeleton → data entry (rules + entities + types) → domain core → system assembly → UI interaction → polish and release",
+        "principle": "💡 Core principle: each phase should be independently verifiable and committable → the game only answers four core questions and opts into base capabilities → the engine handles the rest",
+        "layer_game": "Game",
+        "layer_engine": "Engine",
+        "layer_core": "Core",
+        "layer_ui": "UI",
+        "layer_server": "Server"
+      },
+      "c4Context": {
+        "title": "🏛️ C4 Model — L1 System Context",
+        "container_button": "📦 L2 Container View →",
+        "subtitle": "Highest-level view: system boundary · external dependencies · user interactions · click anywhere to go back",
+        "type_external": "External System",
+        "type_story": "User Story",
+        "type_core": "Core System",
+        "legend": "C4 Level 1 · System Context · Solid = core systems · Dashed = external dependencies"
+      },
+      "c4Container": {
+        "title": "📦 C4 Model — L2 Container",
+        "context_button": "← L1 Context View",
+        "subtitle": "Container-level view: five core layers · inter-layer dependencies · data and event flow · click anywhere to go back",
+        "container_badge": "Container",
+        "legend": "C4 Level 2 · Container · Solid = direct dependencies · Dashed = event/UI-driven links",
+        "layer_game": "🎮 Game Layer",
+        "layer_engine": "⚡ Engine Layer",
+        "layer_core": "💎 Core Layer",
+        "layer_ui": "🖥️ UI Layer",
+        "layer_server": "🖧 Server Layer"
+      },
+      "layerDetail": {
+        "title_suffix": "— Component Details",
+        "subtitle": "{{count}} components · click to inspect interfaces and examples · click empty space to go back",
+        "expand": "→ Expand",
+        "click_detail": "Click for details",
+        "cross_layer": "Cross-layer Links",
+        "direction_out": "→ Out",
+        "direction_in": "← In",
+        "interface_definition": "📋 Interface Definition",
+        "data_chain": "🔗 Data Chain",
+        "example": "🎲 Dice Throne Example"
+      }
+    },
+    "splendorSpriteMappingTool": {
+      "title": "Splendor Mapping Review",
+      "description": "Inspect sprite frames and their mapped data models side by side to validate development card and noble mappings.",
+      "atlases": {
+        "tier1": "Tier 1 Development Cards",
+        "tier2": "Tier 2 Development Cards",
+        "tier3": "Tier 3 Development Cards",
+        "nobles": "Nobles"
+      },
+      "colors": {
+        "white": "White",
+        "blue": "Blue",
+        "green": "Green",
+        "red": "Red",
+        "black": "Black"
+      },
+      "sections": {
+        "atlases": "Atlases",
+        "current_frame": "Current Frame",
+        "validation": "Validation",
+        "export": "Export",
+        "model_list": "Model List"
+      },
+      "actions": {
+        "back_to_slicer": "Back to Slice Mode",
+        "clear_frame": "Clear Frame",
+        "restore_atlas": "Restore Current Atlas",
+        "copy_export": "Copy Mapping",
+        "copied": "Copied",
+        "restore_all": "Restore Repository Defaults",
+        "clear_local_draft": "Clear Local Draft"
+      },
+      "status": {
+        "unmapped": "Unmapped"
+      },
+      "current_frame": {
+        "index": "Frame {{index}}",
+        "binding": "Current Binding: ",
+        "current_atlas": "Current Atlas: "
+      },
+      "validation": {
+        "unmapped_frames": "Unmapped Frames",
+        "duplicate_models": "Duplicate Model Mappings",
+        "missing_models": "Missing Models",
+        "unknown_ids": "Unknown IDs",
+        "success": "This atlas mapping is structurally complete. You can continue visual review or export it back into the repo.",
+        "details": {
+          "unmapped": "Unmapped frames: {{values}}",
+          "duplicate": "Duplicate models: {{values}}",
+          "missing": "Missing models: {{values}}",
+          "unknown": "Unknown IDs: {{values}}"
+        }
+      },
+      "model_list": {
+        "frame_index": "Frame {{index}}",
+        "unassigned": "Unassigned"
+      }
+    },
+    "effectPreview": {
+      "shared": {
+        "perf_avg": "Avg",
+        "perf_peak": "Peak",
+        "avg_frame_time_title": "Average frame time",
+        "peak_frame_time_title": "Peak frame time"
+      },
+      "groups": {
+        "particle": "Particles",
+        "impact": "Impact",
+        "projectile": "Projectile",
+        "gameplay": "Gameplay",
+        "ui": "UI",
+        "loading": "Loading"
+      },
+      "page": {
+        "close_sidebar_backdrop_aria": "Close the effect preview sidebar",
+        "collapse_sidebar_aria": "Collapse effect categories",
+        "expand_sidebar_aria": "Expand effect categories",
+        "sidebar_toggle_label": "Categories",
+        "back_home": "← Back to Home",
+        "close_sidebar_aria": "Close effect categories",
+        "title": "Effect Preview",
+        "expand_all": "Expand all",
+        "collapse_all": "Collapse all",
+        "expand_all_short": "▶ Expand",
+        "collapse_all_short": "▼ Collapse",
+        "use_real_cards": "Real card art",
+        "use_placeholder": "Placeholder area"
+      },
+      "impact": {
+        "shared": {
+          "labels": {
+            "light": "Light",
+            "normal": "Normal",
+            "heavy": "Heavy",
+            "critical": "Critical",
+            "ice": "Ice",
+            "holy": "Holy",
+            "void": "Void"
+          }
+        },
+        "shake_hit_stop": {
+          "title": "Shake + Hit Stop",
+          "description": "Screen shake + frame freeze (pause on current offset)",
+          "buttons": {
+            "shake_only": "Shake Only",
+            "light": "Shake+Stop · Light",
+            "heavy": "Shake+Stop · Heavy",
+            "critical": "Shake+Stop · Critical"
+          },
+          "preview": {
+            "shake_only": "Shake Only",
+            "light": "Light",
+            "heavy": "Heavy",
+            "critical": "Critical"
+          }
+        },
+        "slash": {
+          "title": "Arc Slash",
+          "description": "Canvas arc slash + sparks",
+          "preview": "Impact zone"
+        },
+        "rift": {
+          "title": "Rift Slash",
+          "description": "Canvas linear slash + sparks",
+          "preview": "Impact zone"
+        },
+        "combo": {
+          "title": "Impact Combo",
+          "description": "Shake + hit stop + DamageFlash",
+          "buttons": {
+            "light": "Light (2)",
+            "normal": "Normal (5)",
+            "heavy": "Heavy (8)",
+            "critical": "Critical (12)"
+          },
+          "toggles": {
+            "shake": "Shake",
+            "hit_stop": "Hit Stop",
+            "arc_slash": "Arc Slash",
+            "rift": "Rift",
+            "white_flash": "White Flash",
+            "red_pulse": "Red Pulse",
+            "number": "Number"
+          }
+        },
+        "damage_flash": {
+          "title": "Damage Feedback",
+          "description": "ImpactContainer (shake) + DamageFlash (slash + red pulse + number)",
+          "buttons": {
+            "light": "Light (1)",
+            "medium": "Medium (3)",
+            "heavy": "Heavy (5)",
+            "fatal": "Fatal (10)"
+          }
+        }
+      },
+      "particle": {
+        "shared": {
+          "labels": {
+            "explosion": "Explosion",
+            "explosionStrong": "Big Explosion",
+            "summonGlow": "Summon Glow",
+            "summonGlowStrong": "Strong Summon",
+            "smoke": "Smoke",
+            "sparks": "Sparks",
+            "magicDust": "Magic Dust"
+          }
+        },
+        "burst": {
+          "title": "Burst Particles",
+          "description": "Canvas 2D particle engine",
+          "preview": "Burst zone"
+        },
+        "shatter": {
+          "title": "Shatter Dissolve",
+          "description": "Card shatters into pieces and falls with gravity",
+          "buttons": {
+            "normal": "Normal Death",
+            "strong": "Strong Kill"
+          }
+        },
+        "victory": {
+          "title": "Victory Confetti",
+          "description": "Colorful particles launched from the bottom",
+          "buttons": {
+            "trigger": "Trigger"
+          },
+          "preview": "Victory FX"
+        },
+        "summon": {
+          "title": "Summon Effect",
+          "description": "Canvas 2D multi-stage effect",
+          "buttons": {
+            "normal": "Normal (Blue)",
+            "strong": "Strong (Gold)"
+          }
+        },
+        "summon_shader": {
+          "title": "Summon Hybrid (FX System)",
+          "description": "Shader + Canvas particles + sound + shake",
+          "buttons": {
+            "blue": "Blue",
+            "blue_strong": "Blue+",
+            "gold": "Gold",
+            "gold_strong": "Gold+"
+          }
+        },
+        "vortex": {
+          "title": "Charge Vortex",
+          "description": "WebGL shader",
+          "buttons": {
+            "blue": "Blue",
+            "blue_strong": "Blue+",
+            "purple": "Purple",
+            "green": "Green"
+          }
+        },
+        "combat_shockwave": {
+          "title": "Combat Shockwave (FX System)",
+          "description": "Hit feedback + shake preview",
+          "buttons": {
+            "melee": "Melee",
+            "melee_strong": "Melee+",
+            "ranged": "Ranged",
+            "ranged_strong": "Ranged+"
+          }
+        }
+      },
+      "projectile": {
+        "flying": {
+          "title": "Flying Effect",
+          "description": "Constant speed at 800px/s with particle trail",
+          "buttons": {
+            "damage_1": "Damage x1",
+            "damage_5": "Damage x5",
+            "damage_10": "Damage x10",
+            "heal_3": "Heal x3",
+            "buff": "Buff"
+          },
+          "preview": {
+            "start": "S",
+            "end": "E"
+          }
+        },
+        "cone_blast": {
+          "title": "Cone Blast",
+          "description": "Orb projectile + particle trail + impact burst",
+          "buttons": {
+            "normal": "Normal",
+            "strong": "Strong"
+          },
+          "preview": {
+            "source": "Src",
+            "target": "Dst"
+          }
+        }
+      },
+      "ui": {
+        "floating": {
+          "title": "Floating Text",
+          "description": "Pop out → elastic recoil → float up and fade",
+          "preview": "Floating text area"
+        },
+        "pulse_glow": {
+          "title": "Pulse Glow",
+          "description": "Glow or ripple, once or looped",
+          "buttons": {
+            "glow": "Glow",
+            "glow_loop": "Glow Loop",
+            "ripple": "Ripple",
+            "stop": "Stop"
+          }
+        },
+        "ability_ready": {
+          "title": "Ability Ready Ripple",
+          "description": "Cyan ripple around units with activatable abilities in Summoner Wars",
+          "buttons": {
+            "hide_ripple": "Hide Ripple",
+            "show_ripple": "Show Ripple",
+            "hide_ring": "Hide Ring",
+            "show_ring": "Show Ring"
+          },
+          "preview": "Unit Card"
+        }
+      },
+      "loading": {
+        "shared": {
+          "start": "Start",
+          "stop": "Stop"
+        },
+        "arcane_qualified": {
+          "title": "Qualified Arcane",
+          "description": "[Approved] Layered composite version with particle streams"
+        },
+        "arcane_grandmaster": {
+          "title": "Arcane Grandmaster",
+          "description": "[Candidate] Heavily enhanced version based on the approved one"
+        },
+        "magic_cards": {
+          "title": "Magic Cards",
+          "description": "[Candidate] Magician-style flying cards"
+        },
+        "orrery": {
+          "title": "Solar System Pro",
+          "description": "Realistic solar system model with eight planets"
+        },
+        "grand_clock": {
+          "title": "Grandmaster Clock",
+          "description": "Extreme mechanical feel with precision meshing gears"
+        }
+      },
+      "gameplay": {
+        "shared": {
+          "breakpoint": "Breakpoint: {{value}}"
+        },
+        "base_capture": {
+          "title": "Base Capture",
+          "description": "Old base shatters → energy gathers → new base appears",
+          "buttons": {
+            "trigger": "Trigger Capture",
+            "reset": "Reset"
+          },
+          "toggles": {
+            "particles": "Particles",
+            "glow": "Glow"
+          },
+          "preview": {
+            "old_base": "Rhodes No. 9",
+            "new_base": "Central Command"
+          }
+        },
+        "ability_triggered": {
+          "title": "Ability Triggered",
+          "description": "⚡ Card animation when passive or ongoing abilities trigger",
+          "scenes": {
+            "trickster_leprechaun": {
+              "label": "Leprechaun",
+              "description": "Ongoing: destroy minions with lower power than itself"
+            },
+            "trickster_flame_trap": {
+              "label": "Flame Trap",
+              "description": "Ongoing: destroy minions with power 2 or less that enter the base"
+            },
+            "ninja_assassination": {
+              "label": "Assassination",
+              "description": "Destroy a minion with power 3 or less"
+            },
+            "bear_cavalry_high_ground": {
+              "label": "High Ground",
+              "description": "Ongoing: your minions have +1 power"
+            }
+          },
+          "preview": {
+            "trigger_badge": "Trigger",
+            "base_title": "Mushroom Kingdom · Breakpoint 20",
+            "minions": {
+              "brownie": "Brownie",
+              "gnome": "Gnome",
+              "imp": "Imp"
+            },
+            "minions_hint": "Mock minions on the base",
+            "idle_hint": "Click a card name to preview"
+          }
+        }
+      },
+      "sequence": {
+        "title": "Sequence FX (pushSequence)",
+        "description": "Ordered sequencing vs parallel playback",
+        "buttons": {
+          "token_then_damage": "Token→Damage (Sequence)",
+          "heal_then_status_then_damage": "Heal→Status→Damage",
+          "parallel": "Parallel Compare"
+        },
+        "logs": {
+          "token_then_damage": "▶ Token remove → damage",
+          "heal_then_status_then_damage": "▶ Heal → status → damage",
+          "parallel": "▶ Parallel (no sequence)"
+        },
+        "preview": {
+          "buff_zone": "Buff Zone",
+          "hp_zone": "HP Zone"
+        }
+      },
+      "entries": {
+        "impact": {
+          "shake": {
+            "label": "Shake + Hit Stop",
+            "usage": "Dice Throne hit shake / Summoner Wars cell impact"
+          },
+          "slash": {
+            "label": "Arc Slash",
+            "usage": "Not wired into gameplay yet"
+          },
+          "rift": {
+            "label": "Rift Slash",
+            "usage": "Damage feedback slash effect inside DamageFlash"
+          },
+          "impactCombo": {
+            "label": "Impact Combo",
+            "usage": "Sandbox for freely combining effects"
+          },
+          "dmgflash": {
+            "label": "Damage Feedback",
+            "usage": "Summoner Wars damage feedback overlay"
+          }
+        },
+        "particle": {
+          "burst": {
+            "label": "Burst Particles",
+            "usage": "Summoner Wars unit destroyed"
+          },
+          "shatter": {
+            "label": "Shatter Dissolve",
+            "usage": "Summoner Wars unit or structure death shatter"
+          },
+          "victory": {
+            "label": "Victory Confetti",
+            "usage": "Generic victory settlement"
+          },
+          "summon": {
+            "label": "Summon Effect",
+            "usage": "Summoner Wars summon unit entry"
+          },
+          "summonShader": {
+            "label": "Summon Hybrid",
+            "usage": "Summoner Wars summon entry with shader + particles"
+          },
+          "vortex": {
+            "label": "Charge Vortex",
+            "usage": "Summoner Wars unit charge-up"
+          },
+          "combatShockwave": {
+            "label": "Combat Shockwave",
+            "usage": "Summoner Wars attack impact feedback with full FX system"
+          }
+        },
+        "projectile": {
+          "flying": {
+            "label": "Flying Effect",
+            "usage": "Dice Throne flying damage, heal, and buff numbers"
+          },
+          "coneblast": {
+            "label": "Cone Blast",
+            "usage": "Summoner Wars ranged attack projectile"
+          }
+        },
+        "ui": {
+          "floating": {
+            "label": "Floating Text",
+            "usage": "Not wired into gameplay yet"
+          },
+          "pulseglow": {
+            "label": "Pulse Glow",
+            "usage": "Dice Throne skill highlight / floating menu"
+          },
+          "abilityready": {
+            "label": "Ability Ready Ripple",
+            "usage": "Summoner Wars activatable unit cyan ripple"
+          }
+        },
+        "loading": {
+          "arcane_qualified": {
+            "label": "Qualified Arcane",
+            "usage": "Loading animation approved composite particle variant"
+          },
+          "arcane_grandmaster": {
+            "label": "Arcane Grandmaster",
+            "usage": "Loading animation enhanced candidate variant"
+          },
+          "magic_cards": {
+            "label": "Magic Cards",
+            "usage": "Loading animation flying card candidate"
+          },
+          "solar_system": {
+            "label": "Solar System Pro",
+            "usage": "Loading animation realistic orrery variant"
+          },
+          "grand_clock": {
+            "label": "Grandmaster Clock",
+            "usage": "Loading animation mechanical clockwork variant"
+          }
+        },
+        "gameplay": {
+          "baseCapture": {
+            "label": "Base Capture",
+            "usage": "Smash Up base replacement animation after capture"
+          },
+          "abilityTriggered": {
+            "label": "Ability Triggered",
+            "usage": "Smash Up passive or ongoing ability trigger animation"
+          }
+        },
+        "sequence": {
+          "sequence": {
+            "label": "Sequence FX",
+            "usage": "FxBus.pushSequence ordered playback preview"
+          }
+        }
+      }
     }
   },
   "error": {

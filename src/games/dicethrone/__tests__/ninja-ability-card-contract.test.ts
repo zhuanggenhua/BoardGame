@@ -18,6 +18,13 @@ import { createHeroMatchup, createQueuedRandom } from './test-utils';
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
 
+type ChoiceOption = {
+    customId: string;
+    value: number;
+    labelKey?: string;
+    labelParams?: Record<string, unknown>;
+};
+
 const createNinjaTeamMatchup = () => {
     const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
     state.core.players['2'] = JSON.parse(JSON.stringify(state.core.players['0']));
@@ -48,6 +55,13 @@ function createNinjaDie(value: number): Die {
         symbols: [faceMap[value]],
         isKept: false,
     };
+}
+
+function findChoiceOption(
+    options: ChoiceOption[],
+    matcher: (option: ChoiceOption) => boolean,
+): ChoiceOption | undefined {
+    return options.find(matcher);
 }
 
 describe('DiceThrone Ninja 能力与卡牌合同', () => {
@@ -186,20 +200,23 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             { random: createQueuedRandom([1]) },
         );
         const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
-        const selectedOption = (choiceEvent as any)?.payload?.options?.find((option: { labelKey?: string }) =>
-            option.labelKey === '令1号玩家获得烟雾弹与3忍术；对2号玩家施加慢性中毒'
+        const options = ((choiceEvent as any)?.payload?.options ?? []) as ChoiceOption[];
+        const selectedOption = findChoiceOption(options, (option) =>
+            option.labelKey === 'choices.ninjaSmokeScreen.option'
+            && option.labelParams?.ally === 1
+            && option.labelParams?.opponent === 2
         );
         expect(selectedOption).toBeDefined();
 
         let next = applyEvents(state.core, events);
-        const followupHandler = getChoiceResolvedEventHandler(selectedOption.customId);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption!.customId);
         expect(followupHandler).toBeDefined();
         const followupEvents = followupHandler?.({
             state: next,
             playerId: '0',
-            customId: selectedOption.customId,
+            customId: selectedOption!.customId,
             sourceAbilityId: 'smoke-screen-2-main',
-            value: selectedOption.value,
+            value: selectedOption!.value,
             timestamp: 141,
         }) ?? [];
 
@@ -208,8 +225,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             payload: {
                 playerId: '0',
                 sourceAbilityId: 'smoke-screen-2-main',
-                customId: selectedOption.customId,
-                value: selectedOption.value,
+                customId: selectedOption!.customId,
+                value: selectedOption!.value,
             },
             sourceCommandType: 'RESOLVE_CHOICE',
             timestamp: 141,
@@ -248,20 +265,22 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             { random: createQueuedRandom([1]) },
         );
         const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
-        const selectedOption = (choiceEvent as any)?.payload?.options?.find((option: { labelKey?: string }) =>
-            option.labelKey === '对2号玩家造成两次 4 点真实伤害'
+        const options = ((choiceEvent as any)?.payload?.options ?? []) as ChoiceOption[];
+        const selectedOption = findChoiceOption(options, (option) =>
+            option.labelKey === 'choices.ninjaSmokeScreen.kujiKiriSameTarget'
+            && option.labelParams?.opponent === 2
         );
         expect(selectedOption).toBeDefined();
 
         let next = applyEvents(state.core, events);
-        const followupHandler = getChoiceResolvedEventHandler(selectedOption.customId);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption!.customId);
         expect(followupHandler).toBeDefined();
         const followupEvents = followupHandler?.({
             state: next,
             playerId: '0',
-            customId: selectedOption.customId,
+            customId: selectedOption!.customId,
             sourceAbilityId: 'smoke-screen-2-kuji-kiri',
-            value: selectedOption.value,
+            value: selectedOption!.value,
             timestamp: 161,
         }) ?? [];
 
@@ -270,8 +289,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             payload: {
                 playerId: '0',
                 sourceAbilityId: 'smoke-screen-2-kuji-kiri',
-                customId: selectedOption.customId,
-                value: selectedOption.value,
+                customId: selectedOption!.customId,
+                value: selectedOption!.value,
             },
             sourceCommandType: 'RESOLVE_CHOICE',
             timestamp: 161,
@@ -316,8 +335,10 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         const options = ((choiceEvent as any)?.payload?.options ?? []) as Array<{ labelKey?: string; customId: string; value: number }>;
 
         expect(options).toHaveLength(8);
-        const selectedOption = options.find((option) =>
-            option.labelKey === '令3号玩家获得烟雾弹与3忍术；对4号玩家施加慢性中毒'
+        const selectedOption = findChoiceOption(options, (option) =>
+            option.labelKey === 'choices.ninjaSmokeScreen.option'
+            && option.labelParams?.ally === 3
+            && option.labelParams?.opponent === 4
         );
         expect(selectedOption).toBeDefined();
 
@@ -383,8 +404,10 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         const options = ((choiceEvent as any)?.payload?.options ?? []) as Array<{ labelKey?: string; customId: string; value: number }>;
 
         expect(options).toHaveLength(3);
-        const selectedOption = options.find((option) =>
-            option.labelKey === '对2号与4号玩家各造成 4 点真实伤害'
+        const selectedOption = findChoiceOption(options, (option) =>
+            option.labelKey === 'choices.ninjaSmokeScreen.kujiKiriSplitTargets'
+            && option.labelParams?.firstOpponent === 2
+            && option.labelParams?.secondOpponent === 4
         );
         expect(selectedOption).toBeDefined();
 

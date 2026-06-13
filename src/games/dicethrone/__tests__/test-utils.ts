@@ -103,6 +103,29 @@ export const getSimpleChoicePrompt = (
     return prompt;
 };
 
+export const getDefenderChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const current = state.sys.interaction.current as any;
+    if (!current || current.kind !== 'dt:defender-choice' || !current.data) {
+        throw new Error('Expected a defender-choice prompt, but none was active.');
+    }
+
+    const prompt = {
+        id: current.id,
+        playerId: current.playerId,
+        ...(current.data as InteractionDescriptor),
+        sourceId: current.data.sourceId,
+    };
+
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected defender-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+
+    return prompt;
+};
+
 export const getCardInteractionPrompt = (
     state: MatchState<DiceThroneCore>,
     expectedSourceId?: string,

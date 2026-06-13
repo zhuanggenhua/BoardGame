@@ -20,13 +20,13 @@ description: 用于 BoardGame 生产更新的最短路径工作流。用户说�
 使用本 skill 的包装脚本：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\deploy-prod.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1
 ```
 
 指定 tag：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3
 ```
 
 脚本会通过 SSH 在生产机执行：
@@ -40,19 +40,19 @@ cd /home/admin/BoardGame && bash scripts/deploy/deploy-image.sh update [tag]
 使用一条包装命令：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi
 ```
 
 指定 tag：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -Tag v1.2.3
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -Tag v1.2.3
 ```
 
 验证流程但不执行生产更新：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -DryRun
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-after-ci.ps1 -CheckCi -DryRun
 ```
 
 CI 检查口径：
@@ -67,7 +67,7 @@ CI 检查口径：
 ## 只查 CI
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .windsurf\skills\deploy-after-ci\scripts\check-remote-ci.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\check-remote-ci.ps1
 ```
 
 ## 强制边界

@@ -144,6 +144,7 @@ function useBuffLabel(visualConfig: BuffVisualConfig): string {
 }
 
 export const BuffIconBadge: React.FC<BuffIconBadgeProps> = ({ buff, visualConfig, onClick }) => {
+  const { t } = useTranslation('game');
   const Icon = visualConfig.icon;
   const resolvedLabel = useBuffLabel(visualConfig);
   // 只有来源卡牌有精灵图配置时才可点击
@@ -169,7 +170,7 @@ export const BuffIconBadge: React.FC<BuffIconBadgeProps> = ({ buff, visualConfig
   return (
     <DiscoveryTooltip
       storageKey="buff-icon-click-hint"
-      message="点击可查看卡牌详情"
+      message={t('framework.buff.click_hint')}
       placement="top"
     >
       {badge}

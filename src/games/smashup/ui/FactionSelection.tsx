@@ -262,7 +262,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             return;
         }
         grid.scrollTop = 0;
-    }, [mySelections.length, normalizedFactionSearch]);
+    }, [normalizedFactionSearch]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
             .map((group) => {
@@ -435,7 +435,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                     {t('ui.waiting_for_player', {
                                         id: playerNames[currentPlayerId] ?? `P${Number(currentPlayerId) + 1}`,
                                         player: playerNames[currentPlayerId] ?? `P${Number(currentPlayerId) + 1}`,
-                                        defaultValue: '正在等待 {{player}}',
                                     })}
                                 </span>
                             </div>
@@ -456,8 +455,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         const showImplementationBanner = isFactionImplementationInProgress(group.groupId)
             || (selectedVariantId ? isFactionImplementationInProgress(selectedVariantId) : false);
         const selectedOverlayText = isMyTurn
-            ? t('ui.click_to_cancel_selection', { defaultValue: '点击取消选择' })
-            : t('ui.selected', { defaultValue: '已选' });
+            ? t('ui.click_to_cancel_selection')
+            : t('ui.selected');
 
         return (
             <motion.div
@@ -513,7 +512,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                         {t('ui.player_taken', {
                                             id: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
                                             player: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
-                                            defaultValue: '{{player}} 已占领',
                                         })}
                                     </span>
                                 </div>
@@ -539,7 +537,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
                             {showImplementationBanner && (
                                 <ImplementationStatusRibbon
-                                    label={t('ui.faction_implementation_in_progress', { defaultValue: '实施中' })}
+                                    label={t('ui.faction_implementation_in_progress')}
                                     testId={`faction-implementation-banner-${group.groupId}`}
                                 />
                             )}
@@ -582,7 +580,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         type="search"
                         value={factionSearch}
                         onChange={(event) => setFactionSearch(event.target.value)}
-                        placeholder={t('ui.faction_search_placeholder', { defaultValue: '搜索派系' })}
+                        placeholder={t('ui.faction_search_placeholder')}
                         data-testid="faction-search-input"
                         className={useDesktopLikeLandscapeLayout
                             ? isUltraCompactLandscape
@@ -598,7 +596,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             onClick={() => setFactionSearch('')}
                             data-testid="faction-search-clear"
                             className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-amber-50 transition-colors hover:bg-white/20"
-                            aria-label={t('ui.faction_search_clear', { defaultValue: '清空搜索' })}
+                            aria-label={t('ui.faction_search_clear')}
                         >
                             <X size={14} />
                         </button>
@@ -612,25 +610,22 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         {t('ui.faction_filter_result_count', {
                             visible: filteredFactionGroups.length,
                             total: factionStatusCounts.total,
-                            defaultValue: '显示 {{visible}} / {{total}}',
                         })}
                     </span>
                     <span>
                         {t('ui.faction_available_count', {
                             count: factionStatusCounts.available + factionStatusCounts.selected,
-                            defaultValue: '可选 {{count}}',
                         })}
                     </span>
                     <span>
                         {t('ui.faction_taken_count', {
                             count: factionStatusCounts.taken,
-                            defaultValue: '已锁定 {{count}}',
                         })}
                     </span>
                     <span className={remainingSelections > 0 ? 'text-amber-200' : 'text-emerald-300'}>
                         {remainingSelections > 0
-                            ? t('ui.faction_picks_left', { count: remainingSelections, defaultValue: '还需选择 {{count}} 个' })
-                            : t('ui.faction_ready_to_start', { defaultValue: '已选满 2 个派系' })}
+                            ? t('ui.faction_picks_left', { count: remainingSelections })
+                            : t('ui.faction_ready_to_start')}
                     </span>
                 </div>
             )}
@@ -645,10 +640,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         >
             <SearchGlyph className="mb-3 h-[18px] w-[18px] text-amber-200/70" />
             <div className="mb-1 text-sm font-black uppercase tracking-[0.12em] text-white">
-                {t('ui.faction_filter_empty_title', { defaultValue: '没有匹配派系' })}
+                {t('ui.faction_filter_empty_title')}
             </div>
             <p className="mb-4 max-w-md text-xs font-bold leading-relaxed text-amber-100/70">
-                {t('ui.faction_filter_empty_desc', { defaultValue: '试试切换筛选或清空搜索，先聚焦当前真正能选的派系。' })}
+                {t('ui.faction_filter_empty_desc')}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
                 {factionSearch.trim().length > 0 && (
@@ -660,7 +655,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         onClick={() => setFactionSearch('')}
                         data-testid="faction-filter-reset-search"
                     >
-                        {t('ui.faction_search_clear', { defaultValue: '清空搜索' })}
+                        {t('ui.faction_search_clear')}
                     </GameButton>
                 )}
             </div>
@@ -844,7 +839,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     <>
                         <motion.button
                             type="button"
-                            aria-label={t('ui.close_faction_details', { defaultValue: '关闭派系详情' })}
+                            aria-label={t('ui.close_faction_details')}
                             className="fixed inset-0 bg-black/45 backdrop-blur-[2px]"
                             style={{ zIndex: UI_Z_INDEX.overlayRaised - 1 }}
                             initial={{ opacity: 0 }}
@@ -939,7 +934,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                         onClick={() => navigate(`/play/smashup/tutorial/${focusedMechanicTutorial.tutorialId}`)}
                                                                     >
                                                                         <BookOpen size={14} />
-                                                                        {t('ui.mechanic_tutorial', { defaultValue: '机制教程' })}
+                                                                        {t('ui.mechanic_tutorial')}
                                                                     </GameButton>
                                                                 ) : null}
                                                             </div>
@@ -951,7 +946,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                 >
                                                                     <div className="relative h-10 overflow-hidden rounded-sm border border-amber-200/90 bg-amber-100/60">
                                                                         <ImplementationStatusRibbon
-                                                                            label={t('ui.faction_implementation_in_progress', { defaultValue: '实施中' })}
+                                                                            label={t('ui.faction_implementation_in_progress')}
                                                                             testId="faction-detail-implementation-banner-label"
                                                                             className="absolute inset-0 z-40 overflow-hidden pointer-events-none"
                                                                         />
@@ -978,8 +973,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                                 data-testid={variantTestId}
                                                                             >
                                                                                 {variant.id.endsWith('_pod')
-                                                                                    ? t('ui.faction_variant_pod', { defaultValue: 'POD版' })
-                                                                                    : t('ui.faction_variant_base', { defaultValue: '原版' })}
+                                                                                    ? t('ui.faction_variant_pod')
+                                                                                    : t('ui.faction_variant_base')}
                                                                             </GameButton>
                                                                         );
                                                                     })}
@@ -1004,7 +999,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                     <div className="mb-2 flex items-center gap-2 text-slate-400">
                                                                         <BookOpen size={16} />
                                                                         <span className="text-xs font-black uppercase tracking-widest">
-                                                                            {t('ui.faction_mechanic_rules', { defaultValue: '机制规则' })}
+                                                                            {t('ui.faction_mechanic_rules')}
                                                                         </span>
                                                                     </div>
                                                                     <div
@@ -1030,7 +1025,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                             <div className="mb-2 flex items-center gap-2 text-slate-400">
                                                                 <Layers size={16} />
                                                                 <span className="text-xs font-black uppercase tracking-widest">
-                                                                    {t('ui.faction_titan_preview', { defaultValue: '泰坦预览' })}
+                                                                    {t('ui.faction_titan_preview')}
                                                                 </span>
                                                             </div>
 
@@ -1068,7 +1063,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                         className="flex min-h-[12rem] items-center justify-center rounded-sm border border-dashed border-slate-300 bg-slate-50/80 px-4 text-center text-sm font-bold leading-relaxed text-slate-500 md:min-h-[14rem] lg:min-h-[18rem]"
                                                                         data-testid="faction-titan-empty"
                                                                     >
-                                                                        {t('ui.faction_titan_missing', { defaultValue: '该种族泰坦暂未接入' })}
+                                                                        {t('ui.faction_titan_missing')}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -1224,7 +1219,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                         {resolveCardName(base, t)}
                                                                     </div>
                                                                     <div className="text-[8px] text-amber-300 font-bold uppercase tracking-widest">
-                                                                        BP {base.breakpoint} · VP {base.vpAwards.join('/')}
+                                                                        {t('ui.base_stat_line', {
+                                                                            breakpoint: base.breakpoint,
+                                                                            vp: base.vpAwards.join('/'),
+                                                                        })}
                                                                     </div>
                                                                 </div>
                                                             </div>

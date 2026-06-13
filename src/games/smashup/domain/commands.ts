@@ -24,7 +24,11 @@ import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
 import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility } from './baseAbilities';
-import { getActionPlayRestrictionError, validateActionPlaySemantics } from './playLegality';
+import {
+    getActionPlayRestrictionError,
+    validateActionPlaySemantics,
+    validateDiscardMinionPlaySemantics,
+} from './playLegality';
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { hasCardActivatableAbility } from './activationMetadata';
@@ -394,16 +398,18 @@ export function validate(
                 if (!discardCheck) {
                     return { valid: false, error: '该卡牌不能从弃牌堆打出到此基地' };
                 }
-                // 消耗正常额度的弃牌堆出牌需要检查额度
-                if (discardCheck.consumesNormalLimit && player.minionsPlayed >= player.minionLimit) {
-                    return { valid: false, error: '本回合随从额度已用完' };
-                }
                 // 限制检查
                 const discardCard = player.discard.find(c => c.uid === command.payload.cardUid);
                 if (!discardCard || !isCardMinionLike(discardCard)) {
                     return { valid: false, error: '弃牌堆中没有该随从' };
                 }
                 const basePower = getMinionLikePower(discardCard.defId) ?? 0;
+                const discardSemantics = validateDiscardMinionPlaySemantics(core, command.playerId, {
+                    cardUid: discardCard.uid,
+                    baseIndex,
+                    consumesNormalLimit: discardCheck.consumesNormalLimit,
+                });
+                if (!discardSemantics.valid) return discardSemantics;
                 const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
                     && isExtraMinionPlayAttempt(
                         core,
@@ -917,8 +923,11 @@ export function validate(
                 const canUseGreatWolfSpiritDouble =
                     greatWolfSpiritBaseIndex === baseIndex
                     && !((core.greatWolfSpiritDoubleTalentCardUids ?? []).includes(minionUid));
+                const canUseSeastarDouble =
+                    targetMinion.metadata?.mythicHorsesSeastarExtraTalent === true
+                    && targetMinion.metadata?.mythicHorsesSeastarExtraTalentConsumed !== true;
 
-                if (!(isStandingStones && doubleTalentAvailable) && !canUseGreatWolfSpiritDouble) {
+                if (!(isStandingStones && doubleTalentAvailable) && !canUseGreatWolfSpiritDouble && !canUseSeastarDouble) {
                     return { valid: false, error: '本回合天赋已使用' };
                 }
             }

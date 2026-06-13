@@ -74,7 +74,7 @@ describe('MobileOrientationGuard native orientation behavior', () => {
     });
 });
 
-describe('MobileOrientationGuard game orientation gate', () => {
+describe('MobileOrientationGuard game orientation banner', () => {
     afterEach(() => {
         vi.clearAllMocks();
         vi.useRealTimers();
@@ -82,7 +82,7 @@ describe('MobileOrientationGuard game orientation gate', () => {
         document.body.innerHTML = '';
     });
 
-    it('Web 端错方向进入 portrait 游戏时应渲染独立 gate，而不是继续渲染游戏主界面', () => {
+    it('Web 端错方向进入 portrait 游戏时只显示可关闭提示条，不再整屏遮挡游戏主界面', () => {
         vi.useFakeTimers();
         setViewport(844, 390);
 
@@ -97,10 +97,36 @@ describe('MobileOrientationGuard game orientation gate', () => {
             vi.runOnlyPendingTimers();
         });
 
-        expect(screen.getByTestId('mobile-orientation-game-gate')).toBeTruthy();
-        expect(screen.getByText('请切换到竖屏继续')).toBeTruthy();
+        expect(screen.queryByTestId('mobile-orientation-game-gate')).toBeNull();
+        expect(screen.getByTestId('mobile-orientation-game-banner')).toBeTruthy();
+        expect(screen.getByText('mobileOrientation.banner.rotateToPortrait')).toBeTruthy();
         expect(screen.getByTestId('game-content')).toBeTruthy();
-        expect(screen.queryByText('建议切换为竖屏以获得更佳体验')).toBeNull();
+        expect(document.documentElement.style.getPropertyValue('--mobile-orientation-banner-offset')).toBe('calc(env(safe-area-inset-top) + 3.75rem)');
+    });
+
+    it('游戏方向提示条点击关闭后应立即消失并清空顶部让位变量', () => {
+        vi.useFakeTimers();
+        setViewport(844, 390);
+
+        render(
+            <MemoryRouter initialEntries={['/play/tictactoe']}>
+                <MobileOrientationGuard>
+                    <div data-testid="game-content">game content</div>
+                </MobileOrientationGuard>
+            </MemoryRouter>,
+        );
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+
+        const closeButton = screen.getByRole('button', { name: 'mobileOrientation.closeHint' });
+        act(() => {
+            closeButton.click();
+        });
+
+        expect(screen.queryByTestId('mobile-orientation-game-banner')).toBeNull();
+        expect(screen.getByTestId('game-content')).toBeTruthy();
+        expect(document.documentElement.style.getPropertyValue('--mobile-orientation-banner-offset')).toBe('0px');
     });
 });
 
@@ -138,7 +164,7 @@ describe('MobileOrientationGuard home orientation gate', () => {
 
         expect(screen.getByTestId('home-content')).toBeTruthy();
         expect(screen.queryByTestId('mobile-orientation-home-gate')).toBeNull();
-        expect(screen.getByText('建议切换为竖屏以获得更佳体验')).toBeTruthy();
+        expect(screen.getByText('mobileOrientation.banner.rotateToPortrait')).toBeTruthy();
         expect(document.documentElement.style.getPropertyValue('--mobile-orientation-banner-offset')).toBe('calc(env(safe-area-inset-top) + 3.75rem)');
     });
 

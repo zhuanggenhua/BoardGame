@@ -1,6 +1,7 @@
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import i18n from "../../lib/i18n";
 import { reportClientAutoFeedbackOnce } from "../../lib/feedback/clientAutoReport";
 import { setLastErrorContext } from "../../lib/feedback/errorContext";
 import { isStaleChunkError, reloadForStaleChunkOnce } from "../../lib/staleChunkReloadGuard";
@@ -27,12 +28,16 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     }
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        const stack = [error.stack ?? '', errorInfo.componentStack ?? ''].filter(Boolean).join('\n');
+        const jsStack = error.stack;
+        const componentStack = errorInfo.componentStack ?? undefined;
+        const stack = [jsStack ?? '', componentStack ?? ''].filter(Boolean).join('\n');
         setLastErrorContext({
             message: error.message || 'React render error',
             name: error.name,
             stack,
             source: 'react.error_boundary',
+            jsStack,
+            componentStack,
         });
         if (isStaleChunkError(error)) {
             const reloaded = reloadForStaleChunkOnce('react-error-boundary', window);
@@ -51,6 +56,8 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             errorMessage: error.message || 'React render error',
             errorSource: 'react.error_boundary',
             stack,
+            jsStack,
+            componentStack,
         });
         console.error("Uncaught error:", error, errorInfo);
         // Here you would log to Sentry
@@ -67,6 +74,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
     public render() {
         if (this.state.hasError) {
+            const t = i18n.getFixedT(i18n.language || 'zh-CN', 'common');
             return (
                 <div
                     data-bg-friendly-screen="true"
@@ -95,10 +103,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                         </div>
 
                         <h1 className="text-3xl font-bold text-parchment-brown mb-2 tracking-wide">
-                            页面出了点问题
+                            {t('errorBoundary.title')}
                         </h1>
                         <p className="text-parchment-light-text mb-6">
-                            当前页面渲染失败了，请先刷新重试；如果反复出现，再返回大厅。
+                            {t('errorBoundary.description')}
                         </p>
 
                         {/* Error Details (Only in Dev) */}
@@ -114,14 +122,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                                 className="flex items-center justify-center gap-2 px-6 py-2.5 bg-parchment-brown text-parchment-cream font-bold rounded-sm shadow-lg hover:bg-parchment-brown/90 transition-all hover:-translate-y-0.5"
                             >
                                 <RefreshCw size={18} />
-                                刷新页面 Reload
+                                {t('errorBoundary.reload')}
                             </button>
                             <button
                                 onClick={this.handleGoHome}
                                 className="flex items-center justify-center gap-2 px-6 py-2.5 bg-transparent border border-parchment-brown/30 text-parchment-brown font-bold rounded-sm hover:bg-parchment-brown/5 transition-all"
                             >
                                 <Home size={18} />
-                                返回大厅 Home
+                                {t('errorBoundary.backHome')}
                             </button>
                         </div>
                     </div>

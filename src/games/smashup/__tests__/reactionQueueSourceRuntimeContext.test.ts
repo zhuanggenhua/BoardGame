@@ -1301,6 +1301,63 @@ describe('reaction queue: preserves source card/controller runtime context', () 
         ).toBe(35);
     });
 
+    it('queued onMinionPlayed trigger 手工回放第二只 trickster_leprechaun source 时，不应回退到基地扫描顺序里的第一只基础版来源', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            currentPlayerIndex: 2,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_nexus',
+                minions: [
+                    makeMinion('lp-a', 'trickster_leprechaun', '0', 5),
+                    makeMinion('lp-b', 'trickster_leprechaun', '1', 5),
+                    makeMinion('lep-target-minion', 'robot_microbot_alpha', '2', 2),
+                ],
+            })],
+            turnNumber: 35,
+        });
+
+        const trigger: TriggerInstance = {
+            id: 'queued-leprechaun-b',
+            timing: 'onMinionPlayed',
+            sourceDefId: 'trickster_leprechaun',
+            sourceCardUid: 'lp-b',
+            sourceControllerId: '1',
+            sourceBaseIndex: 0,
+            mandatory: true,
+            resolutionClass: 'mandatory',
+            ownerPlayerId: '1',
+            eventPlayerId: '2',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            baseIndex: 0,
+            triggerMinionUid: 'lep-target-minion',
+            triggerMinionDefId: 'robot_microbot_alpha',
+        };
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: [trigger],
+            }),
+            defaultTestRandom,
+            35,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'lep-target-minion',
+                destroyerId: '1',
+                reason: 'trickster_leprechaun',
+            }),
+        }));
+    });
+
     it('queued onMinionAffected trigger 处理 borrowed Dinner Date POD 时，不应被同宿主其他玩家的同名 attachment 抢走 source', () => {
         const core = makeState({
             turnOrder: ['0', '1'],

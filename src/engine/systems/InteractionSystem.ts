@@ -16,6 +16,7 @@ import type {
     GameEvent,
 } from '../types';
 import type { AiHint } from '../ai/types';
+import type { AiInteractionSupportDeclaration } from '../ai/decisionSemantics';
 import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
@@ -240,6 +241,8 @@ export interface InteractionDescriptor<TData = unknown> {
     playerId: PlayerId;
     /** 所属 resolution frame（可选；未提供时由 queueInteraction 绑定当前 active frame） */
     resolutionFrameId?: string;
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。UI 不应依赖此字段渲染。 */
+    ai?: AiInteractionSupportDeclaration;
     data: TData;
 }
 
@@ -313,6 +316,8 @@ export interface SimpleChoiceData<T = unknown> {
      * 仅对当前交互所属玩家生效。
      */
     allowedCommands?: string[];
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。 */
+    ai?: AiInteractionSupportDeclaration;
 }
 
 /**
@@ -384,6 +389,23 @@ export interface InteractionState {
     queue: InteractionDescriptor[];
     /** 当其他玩家有未完成的交互时为 true，此时当前玩家不应发送任何命令（如结束回合） */
     isBlocked?: boolean;
+}
+
+function sanitizeStoredPromptText(text: string | undefined, key: string | undefined): string {
+    if (typeof key === 'string' && key.trim()) {
+        return key;
+    }
+    return text ?? '';
+}
+
+function sanitizePromptOption<T>(option: PromptOption<T>): PromptOption<T> {
+    return {
+        ...option,
+        label: sanitizeStoredPromptText(option.label, option.labelKey),
+        ...(typeof option.disabledReasonKey === 'string' && option.disabledReasonKey.trim()
+            ? { disabledReason: option.disabledReasonKey }
+            : {}),
+    };
 }
 
 function isControlChoiceValue(value: unknown): boolean {
@@ -598,6 +620,8 @@ export interface SimpleChoiceConfig {
      * 仅对当前交互所属玩家生效。
      */
     allowedCommands?: string[];
+    /** AI 支持声明：语义描述、游戏适配器或明确不支持。 */
+    ai?: AiInteractionSupportDeclaration;
 }
 
 /**
@@ -622,7 +646,8 @@ export function createSimpleChoice<T>(
     if (config.autoCancelOption) {
         const cancelOption: PromptOption<T> = {
             id: '__cancel__',
-            label: '取消',
+            label: 'common:button.cancel',
+            labelKey: 'common:button.cancel',
             value: { __cancel__: true } as T,
         };
         finalOptions = [...options, cancelOption];
@@ -635,16 +660,18 @@ export function createSimpleChoice<T>(
         console.trace(); // 打印调用栈
     }
     finalOptions = ensureResolvableSimpleChoiceOptions(finalOptions, { multi: config.multi });
+    finalOptions = finalOptions.map((option) => sanitizePromptOption(option));
 
     return {
         id,
         kind: 'simple-choice',
         playerId,
+        ...(config.ai ? { ai: config.ai } : {}),
         data: {
-            title,
+            title: sanitizeStoredPromptText(title, config.titleKey),
             titleKey: config.titleKey,
             titleParams: config.titleParams,
-            subtitle: config.subtitle,
+            subtitle: sanitizeStoredPromptText(config.subtitle, config.subtitleKey),
             subtitleKey: config.subtitleKey,
             subtitleParams: config.subtitleParams,
             options: finalOptions,
@@ -659,6 +686,7 @@ export function createSimpleChoice<T>(
             responseValidationMode: config.responseValidationMode ?? (config.revalidateOnRespond ? 'live' : undefined),
             revalidateOnRespond: config.revalidateOnRespond,
             allowedCommands: config.allowedCommands,
+            ai: config.ai,
         } as any,
     };
 }
@@ -1020,7 +1048,8 @@ function refreshOptionsGeneric<T>(
 function buildEmergencySkipOption<T>(reason: UnsatisfiableSimpleChoiceReason): PromptOption<T> {
     return {
         id: '__emergency_skip__',
-        label: '跳过（当前无可执行选项）',
+        label: 'common:interaction.emergencySkip',
+        labelKey: 'common:interaction.emergencySkip',
         value: {
             __emergency_skip__: true,
             __emergency_skip_reason__: reason,

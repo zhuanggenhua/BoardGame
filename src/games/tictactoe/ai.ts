@@ -60,6 +60,7 @@ export function buildTicTacToeAiLegalActions(args: {
     state: MatchState<unknown>;
 }): AiLegalAction[] {
     const state = args.state as TicTacToeState;
+    if (state.sys.interaction?.current) return [];
     if (state.core.gameResult) return [];
     if (state.core.currentPlayer !== args.playerId) return [];
 

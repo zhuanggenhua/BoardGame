@@ -1,6 +1,0 @@
-interface:
-  display_name: "Add New Faction"
-  short_description: "新增派系/角色从录入、资源、机制到审计与 E2E 的完整门禁。"
-  default_prompt: "Use $add-new-faction to add a BoardGame faction, hero, or character with data, assets, mechanics, audit, and E2E evidence."
-policy:
-  allow_implicit_invocation: true

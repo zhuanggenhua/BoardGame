@@ -1,5 +1,6 @@
 import { FEEDBACK_API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { isStaleChunkError } from '../staleChunkReloadGuard';
+import { buildFeedbackClientContext, getCurrentRouteContext } from './clientFeedbackContext';
 import { setLastErrorContext } from './errorContext';
 
 const DEFAULT_CLIENT_AUTO_REPORT_SOURCE = 'client-auto-report';
@@ -34,27 +35,12 @@ type ClientAutoReportPayload = {
     errorMessage: string;
     errorSource: string;
     stack?: string;
+    jsStack?: string;
+    componentStack?: string;
 };
 
 function getStorageKey(signature: string): string {
     return `${DEDUPE_STORAGE_PREFIX}${signature}`;
-}
-
-function buildRouteContext() {
-    if (typeof window === 'undefined') return {};
-
-    const route = `${window.location.pathname}${window.location.search}${window.location.hash}` || undefined;
-    const match = /^\/play\/([^/]+)\/match\/([^/?#]+)/.exec(window.location.pathname);
-    const gameIdFromRoute = match?.[1];
-    const matchId = match?.[2];
-    const mode = (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
-
-    return {
-        route,
-        matchId,
-        mode,
-        gameIdFromRoute,
-    };
 }
 
 function normalizeGameIdCandidate(value?: string | null): string | undefined {
@@ -227,11 +213,16 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
 }
 
 export async function reportClientAutoFeedbackOnce(signature: string, payload: ClientAutoReportPayload) {
+    const combinedStack = payload.stack
+        ?? [payload.jsStack ?? '', payload.componentStack ?? ''].filter(Boolean).join('\n');
+
     setLastErrorContext({
         name: payload.errorName,
         message: payload.errorMessage,
-        stack: payload.stack,
+        stack: combinedStack,
         source: payload.errorSource,
+        jsStack: payload.jsStack ?? payload.stack,
+        componentStack: payload.componentStack,
     });
 
     if (typeof window === 'undefined') return;
@@ -241,7 +232,7 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     if (shouldSkipClientAutoReport(payload)) return;
     if (hasRecentReport(signature)) return;
 
-    const { route, matchId, mode, gameIdFromRoute } = buildRouteContext();
+    const { matchId, mode, gameIdFromRoute } = getCurrentRouteContext();
     const gameId = resolveClientAutoReportGameId(payload.gameId, payload.gameName, gameIdFromRoute);
     const source = payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE;
 
@@ -261,27 +252,19 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 autoReportKind: payload.autoReportKind,
                 gameName: payload.gameName,
                 contactInfo: `auto:${source}`,
-                clientContext: {
-                    route,
+                clientContext: buildFeedbackClientContext({
                     mode,
                     matchId,
                     playerId: payload.playerId ?? undefined,
                     gameId,
-                    appVersion: (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION
-                        || (import.meta as { env?: Record<string, string | undefined> }).env?.MODE
-                        || undefined,
-                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-                    viewport: typeof window !== 'undefined'
-                        ? { width: window.innerWidth, height: window.innerHeight }
-                        : undefined,
-                    language: typeof navigator !== 'undefined' ? navigator.language : undefined,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || undefined,
-                },
+                }),
                 errorContext: {
                     name: payload.errorName,
                     message: payload.errorMessage,
-                    stack: payload.stack,
+                    stack: combinedStack,
                     source: payload.errorSource,
+                    jsStack: payload.jsStack ?? payload.stack,
+                    componentStack: payload.componentStack,
                 },
             }),
         });

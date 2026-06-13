@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ADMIN_API_URL } from '../../config/server';
@@ -42,6 +43,7 @@ const emptyForm: SponsorFormState = {
 };
 
 export default function SponsorsPage() {
+    const { t } = useTranslation('lobby');
     const { token } = useAuth();
     const { success, error } = useToast();
     const [sponsors, setSponsors] = useState<SponsorItem[]>([]);
@@ -76,14 +78,14 @@ export default function SponsorsPage() {
             const res = await fetch(`${ADMIN_API_URL}/sponsors?${query}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('获取赞助列表失败');
+            if (!res.ok) throw new Error(t('admin.sponsorsPage.toast.fetch_failed'));
             const data = await res.json();
             setSponsors(data.items || []);
             setTotalPages(Math.ceil((data.total || 0) / (data.limit || 10)) || 1);
             setTotalItems(data.total || 0);
         } catch (err) {
             console.error(err);
-            error('获取赞助列表失败');
+            error(t('admin.sponsorsPage.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
@@ -98,7 +100,7 @@ export default function SponsorsPage() {
         event.preventDefault();
         if (!token) return;
         if (!canSubmit) {
-            error('请填写赞助者姓名与正确金额');
+            error(t('admin.sponsorsPage.toast.invalid_form'));
             return;
         }
         setCreating(true);
@@ -116,14 +118,14 @@ export default function SponsorsPage() {
                 },
                 body: JSON.stringify(payload),
             });
-            if (!res.ok) throw new Error('创建失败');
-            success('赞助信息已添加');
+            if (!res.ok) throw new Error(t('admin.sponsorsPage.toast.create_failed'));
+            success(t('admin.sponsorsPage.toast.create_success'));
             setForm(emptyForm);
             setPage(1);
             fetchSponsors();
         } catch (err) {
             console.error(err);
-            error(err instanceof Error ? err.message : '创建失败');
+            error(err instanceof Error ? err.message : t('admin.sponsorsPage.toast.create_failed'));
         } finally {
             setCreating(false);
         }
@@ -140,35 +142,35 @@ export default function SponsorsPage() {
                 },
                 body: JSON.stringify({ isPinned: !item.isPinned }),
             });
-            if (!res.ok) throw new Error('更新失败');
-            success(item.isPinned ? '已取消置顶' : '已设为置顶');
+            if (!res.ok) throw new Error(t('admin.sponsorsPage.toast.update_failed'));
+            success(item.isPinned ? t('admin.sponsorsPage.toast.unpin_success') : t('admin.sponsorsPage.toast.pin_success'));
             fetchSponsors();
         } catch (err) {
             console.error(err);
-            error(err instanceof Error ? err.message : '更新失败');
+            error(err instanceof Error ? err.message : t('admin.sponsorsPage.toast.update_failed'));
         }
     };
 
     const handleDelete = async (item: SponsorItem) => {
         if (!token) return;
-        if (!confirm(`确定要删除赞助记录 “${item.name}” 吗？`)) return;
+        if (!confirm(t('admin.sponsorsPage.confirm.delete', { name: item.name }))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/sponsors/${item.id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('删除失败');
-            success('赞助记录已删除');
+            if (!res.ok) throw new Error(t('admin.sponsorsPage.toast.delete_failed'));
+            success(t('admin.sponsorsPage.toast.delete_success'));
             fetchSponsors();
         } catch (err) {
             console.error(err);
-            error(err instanceof Error ? err.message : '删除失败');
+            error(err instanceof Error ? err.message : t('admin.sponsorsPage.toast.delete_failed'));
         }
     };
 
     const columns: Column<SponsorItem>[] = [
         {
-            header: '赞助者',
+            header: t('admin.sponsorsPage.columns.name'),
             cell: (item) => (
                 <div className="min-w-0">
                     <div className="font-semibold text-zinc-900 truncate">{item.name}</div>
@@ -176,13 +178,13 @@ export default function SponsorsPage() {
             ),
         },
         {
-            header: '金额',
+            header: t('admin.sponsorsPage.columns.amount'),
             cell: (item) => (
                 <div className="font-mono text-zinc-700">¥{item.amount}</div>
             ),
         },
         {
-            header: '置顶',
+            header: t('admin.sponsorsPage.columns.pin'),
             cell: (item) => (
                 <span className={cn(
                     'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border',
@@ -191,18 +193,18 @@ export default function SponsorsPage() {
                         : 'bg-zinc-100 text-zinc-500 border-zinc-200'
                 )}>
                     {item.isPinned ? <BadgeCheck size={12} /> : <BadgeX size={12} />}
-                    {item.isPinned ? '置顶' : '普通'}
+                    {item.isPinned ? t('admin.sponsorsPage.status.pinned') : t('admin.sponsorsPage.status.normal')}
                 </span>
             ),
         },
         {
-            header: '创建时间',
+            header: t('admin.sponsorsPage.columns.created_at'),
             cell: (item) => (
                 <div className="text-xs text-zinc-500 font-mono">{formatDate(item.createdAt)}</div>
             ),
         },
         {
-            header: '操作',
+            header: t('admin.sponsorsPage.columns.actions'),
             align: 'right',
             cell: (item) => (
                 <div className="flex items-center justify-end gap-2">
@@ -211,14 +213,14 @@ export default function SponsorsPage() {
                         className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-zinc-200 text-zinc-600 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
                     >
                         {item.isPinned ? <PinOff size={12} /> : <Pin size={12} />}
-                        {item.isPinned ? '取消置顶' : '置顶'}
+                        {item.isPinned ? t('admin.sponsorsPage.actions.unpin') : t('admin.sponsorsPage.actions.pin')}
                     </button>
                     <button
                         onClick={() => handleDelete(item)}
                         className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors"
                     >
                         <Trash2 size={12} />
-                        删除
+                        {t('admin.sponsorsPage.actions.delete')}
                     </button>
                 </div>
             ),
@@ -230,15 +232,17 @@ export default function SponsorsPage() {
             <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">赞助管理</h1>
-                        <p className="text-zinc-500 mt-1">维护关于弹窗的赞助滚动列表。</p>
+                        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                            {t('admin.sponsorsPage.title')}
+                        </h1>
+                        <p className="text-zinc-500 mt-1">{t('admin.sponsorsPage.description')}</p>
                     </div>
                     <button
                         onClick={fetchSponsors}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-200 text-sm text-zinc-600 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
                     >
                         <RefreshCw size={16} />
-                        刷新
+                        {t('admin.sponsorsPage.actions.refresh')}
                     </button>
                 </div>
 
@@ -248,16 +252,20 @@ export default function SponsorsPage() {
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-500">赞助者姓名</label>
+                            <label className="text-xs font-semibold text-zinc-500">
+                                {t('admin.sponsorsPage.form.name_label')}
+                            </label>
                             <input
                                 value={form.name}
                                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
                                 className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500"
-                                placeholder="请输入昵称"
+                                placeholder={t('admin.sponsorsPage.form.name_placeholder')}
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-500">赞助金额</label>
+                            <label className="text-xs font-semibold text-zinc-500">
+                                {t('admin.sponsorsPage.form.amount_label')}
+                            </label>
                             <input
                                 type="number"
                                 min={0}
@@ -265,7 +273,7 @@ export default function SponsorsPage() {
                                 value={form.amount}
                                 onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
                                 className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500"
-                                placeholder="金额（元）"
+                                placeholder={t('admin.sponsorsPage.form.amount_placeholder')}
                             />
                         </div>
                     </div>
@@ -276,7 +284,7 @@ export default function SponsorsPage() {
                                 checked={form.isPinned}
                                 onChange={(e) => setForm((prev) => ({ ...prev, isPinned: e.target.checked }))}
                             />
-                            设为置顶
+                            {t('admin.sponsorsPage.form.pin_checkbox')}
                         </label>
                         <button
                             type="submit"
@@ -288,7 +296,7 @@ export default function SponsorsPage() {
                                     : 'bg-zinc-200 text-zinc-500 cursor-not-allowed'
                             )}
                         >
-                            {creating ? '提交中...' : '添加赞助'}
+                            {creating ? t('admin.sponsorsPage.actions.submitting') : t('admin.sponsorsPage.actions.create')}
                         </button>
                     </div>
                 </form>
@@ -300,7 +308,7 @@ export default function SponsorsPage() {
                             setPage(1);
                             setSearch(value);
                         }}
-                        placeholder="搜索赞助者"
+                        placeholder={t('admin.sponsorsPage.search_placeholder')}
                     />
                 </div>
 

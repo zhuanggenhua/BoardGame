@@ -213,7 +213,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                         <span className="max-w-[13rem] truncate text-sm font-black text-slate-800">
                                             {displayName}
                                         </span>
-                                        {isMe && <span className="rounded-full bg-slate-800/8 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{tSmashUp('ui.you_short', { defaultValue: '你' })}</span>}
+                                        {isMe && <span className="rounded-full bg-slate-800/8 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{tSmashUp('ui.you_short')}</span>}
                                         {isThisWinner && <Trophy className="w-4 h-4 text-amber-500" />}
                                     </div>
                                     {/* 派系图标 */}
@@ -235,7 +235,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }:
                                     <div className="text-lg font-black text-slate-800">{finalVp} <span className="text-[10px] text-slate-400">VP</span></div>
                                     {penalty > 0 && (
                                         <div className="text-red-500 text-[10px]">
-                                            {tSmashUp('endgame.madnessPenalty', { defaultValue: '疯狂卡 ×{{count}} (-{{penalty}})', count: madnessCount, penalty })}
+                                            {tSmashUp('endgame.madnessPenalty', { count: madnessCount, penalty })}
                                         </div>
                                     )}
                                 </div>

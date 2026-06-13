@@ -32,29 +32,29 @@ interface UserRoleModalProps {
 
 const ROLE_CARDS: Array<{
     role: UserRole;
-    label: string;
-    hint: string;
+    labelKey: string;
+    hintKey: string;
     icon: typeof UserIcon;
     activeClassName: string;
 }> = [
     {
         role: 'user',
-        label: '普通用户',
-        hint: '无后台权限',
+        labelKey: 'admin.roleModal.roles.user.label',
+        hintKey: 'admin.roleModal.roles.user.hint',
         icon: UserIcon,
         activeClassName: 'border-zinc-800 bg-zinc-900 text-white',
     },
     {
         role: 'developer',
-        label: '开发者',
-        hint: '可查看反馈并管理所选游戏更新日志',
+        labelKey: 'admin.roleModal.roles.developer.label',
+        hintKey: 'admin.roleModal.roles.developer.hint',
         icon: ScrollText,
         activeClassName: 'border-amber-500 bg-amber-500 text-white',
     },
     {
         role: 'admin',
-        label: '管理员',
-        hint: '完整后台权限',
+        labelKey: 'admin.roleModal.roles.admin.label',
+        hintKey: 'admin.roleModal.roles.admin.hint',
         icon: Shield,
         activeClassName: 'border-indigo-500 bg-indigo-600 text-white',
     },
@@ -74,6 +74,7 @@ export function UserRoleModal({
     onToggleGame,
 }: UserRoleModalProps) {
     const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.roleModal.${key}`, options);
 
     return (
         <ModalBase
@@ -86,13 +87,13 @@ export function UserRoleModal({
                 <div className="flex flex-none items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4 sm:px-6">
                     <div>
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">
-                            角色设置
+                            {adminT('eyebrow')}
                         </p>
                         <h2 className="mt-2 text-xl font-bold text-zinc-900">
-                            用户后台角色
+                            {adminT('title')}
                         </h2>
                         <p className="mt-2 text-sm leading-6 text-zinc-500">
-                            管理员拥有完整后台权限；开发者可查看反馈，并管理被分配游戏的更新日志。
+                            {adminT('description')}
                         </p>
                     </div>
                     <button
@@ -100,7 +101,7 @@ export function UserRoleModal({
                         onClick={onClose}
                         disabled={saving}
                         className="rounded-xl border border-zinc-200 p-2 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label="关闭角色设置"
+                        aria-label={adminT('close_aria')}
                     >
                         <X size={18} />
                     </button>
@@ -117,22 +118,22 @@ export function UserRoleModal({
                                     </p>
                                 </div>
                                 <span className="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600">
-                                    当前：{roleDraft === 'admin' ? '管理员' : roleDraft === 'developer' ? '开发者' : '普通用户'}
+                                    {adminT('current_role', { role: t(`admin.roleModal.roles.${roleDraft}.label`) })}
                                 </span>
                             </div>
                         </div>
 
                         {roleLocked && (
                             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                不能修改自己的后台角色，避免误把唯一管理员降权。
+                                {adminT('locked_warning')}
                             </div>
                         )}
 
                         <div className="space-y-3">
                             <div>
-                                <p className="text-sm font-semibold text-zinc-900">角色</p>
+                                <p className="text-sm font-semibold text-zinc-900">{adminT('role_section_title')}</p>
                                 <p className="mt-1 text-xs leading-5 text-zinc-500">
-                                    管理员拥有完整后台权限；开发者可查看反馈，并管理被分配游戏的更新日志。
+                                    {adminT('description')}
                                 </p>
                             </div>
 
@@ -160,14 +161,14 @@ export function UserRoleModal({
                                             )}>
                                                 <Icon size={18} />
                                             </div>
-                                            <span className="truncate text-sm font-semibold">{card.label}</span>
+                                            <span className="truncate text-sm font-semibold">{t(card.labelKey)}</span>
                                         </button>
                                     );
                                 })}
                             </div>
 
                             <p className="text-xs font-medium text-zinc-500">
-                                {ROLE_CARDS.find((card) => card.role === roleDraft)?.hint}
+                                {t(ROLE_CARDS.find((card) => card.role === roleDraft)?.hintKey ?? 'admin.roleModal.roles.user.hint')}
                             </p>
                         </div>
 
@@ -175,13 +176,13 @@ export function UserRoleModal({
                             <div className="rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-4">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <p className="text-sm font-semibold text-amber-900">可管理游戏</p>
+                                        <p className="text-sm font-semibold text-amber-900">{adminT('games.title')}</p>
                                         <p className="mt-1 text-xs leading-5 text-amber-800/80">
-                                            可多选。开发者只能管理这里勾选游戏的更新日志，但可查看全部反馈。
+                                            {adminT('games.description')}
                                         </p>
                                     </div>
                                     <span className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                                        已选 {developerGameIdsDraft.length} 个
+                                        {adminT('games.selected_count', { count: developerGameIdsDraft.length })}
                                     </span>
                                 </div>
 
@@ -213,7 +214,7 @@ export function UserRoleModal({
 
                                 {developerGameIdsDraft.length === 0 && (
                                     <p className="mt-3 text-xs font-medium text-rose-600">
-                                        开发者至少需要分配一个游戏。
+                                        {adminT('games.required')}
                                     </p>
                                 )}
                             </div>
@@ -228,7 +229,7 @@ export function UserRoleModal({
                         disabled={saving}
                         className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        取消
+                        {adminT('cancel')}
                     </button>
                     <button
                         type="button"
@@ -236,7 +237,7 @@ export function UserRoleModal({
                         disabled={saveDisabled}
                         className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        {saving ? '保存中...' : '保存角色'}
+                        {saving ? adminT('saving') : adminT('save')}
                     </button>
                 </div>
             </div>

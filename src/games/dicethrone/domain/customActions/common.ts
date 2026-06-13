@@ -298,6 +298,7 @@ function handleResolveCardEffectsOnSelectedOpponent({
                 attackerId,
                 patch: {
                     defenderId: targetId,
+                    settlementStage: 'preDamage',
                     targetingSelectionPending: false,
                     targetingSelectionResolved: true,
                 },

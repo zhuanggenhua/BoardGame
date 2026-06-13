@@ -959,6 +959,9 @@ export function execute(
                 const targetPlayer = state.players[targetPlayerId];
                 Object.entries(targetPlayer.statusEffects).forEach(([statusId, stacks], statusIndex) => {
                     if (stacks <= 0) return;
+                    const statusDef = (state.tokenDefinitions ?? []).find(def => def.id === statusId);
+                    const isRemovable = statusDef?.passiveTrigger?.removable ?? true;
+                    if (!isRemovable) return;
                     events.push({
                         type: 'STATUS_REMOVED',
                         payload: { targetId: targetPlayerId, statusId, stacks },
@@ -969,6 +972,9 @@ export function execute(
 
                 Object.entries(targetPlayer.tokens).forEach(([tokenId, amount], tokenIndex) => {
                     if (amount <= 0) return;
+                    const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
+                    const isRemovable = tokenDef?.passiveTrigger?.removable ?? true;
+                    if (!isRemovable) return;
                     events.push({
                         type: 'TOKEN_CONSUMED',
                         payload: { playerId: targetPlayerId, tokenId, amount, newTotal: 0 },

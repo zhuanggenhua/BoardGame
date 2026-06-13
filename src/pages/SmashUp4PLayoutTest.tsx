@@ -5,11 +5,13 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { getLayoutConfig } from '../games/smashup/ui/layoutConfig';
 
 const SmashUp4PLayoutTest: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation('lobby');
     const [playerCount, setPlayerCount] = useState<2 | 3 | 4>(4);
     const layout = getLayoutConfig(playerCount);
 
@@ -35,7 +37,7 @@ const SmashUp4PLayoutTest: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-lg font-bold text-gray-800">大杀四方布局测试</h1>
+                            <h1 className="text-lg font-bold text-gray-800">{t('smashUp4PLayoutTest.title')}</h1>
                             <div className="flex gap-2">
                                 {([2, 3, 4] as const).map((count) => (
                                     <button
@@ -47,7 +49,7 @@ const SmashUp4PLayoutTest: React.FC = () => {
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                         }`}
                                     >
-                                        {count}人局
+                                        {t('smashUp4PLayoutTest.player_count', { count })}
                                     </button>
                                 ))}
                             </div>
@@ -56,29 +58,29 @@ const SmashUp4PLayoutTest: React.FC = () => {
                             onClick={() => navigate('/')}
                             className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
                         >
-                            返回
+                            {t('smashUp4PLayoutTest.back')}
                         </button>
                     </div>
                     {/* 配置详情 */}
                     <div className="grid grid-cols-5 gap-4 text-xs">
                         <div className="bg-green-50 px-3 py-2 rounded">
-                            <div className="text-gray-600">基地间距</div>
+                            <div className="text-gray-600">{t('smashUp4PLayoutTest.metrics.base_gap')}</div>
                             <div className="text-lg font-bold text-green-600">{layout.baseGap}vw</div>
                         </div>
                         <div className="bg-blue-50 px-3 py-2 rounded">
-                            <div className="text-gray-600">基地宽度</div>
+                            <div className="text-gray-600">{t('smashUp4PLayoutTest.metrics.base_width')}</div>
                             <div className="text-lg font-bold text-blue-600">{layout.baseCardWidth}vw</div>
                         </div>
                         <div className="bg-purple-50 px-3 py-2 rounded">
-                            <div className="text-gray-600">随从宽度</div>
+                            <div className="text-gray-600">{t('smashUp4PLayoutTest.metrics.minion_width')}</div>
                             <div className="text-lg font-bold text-purple-600">{layout.minionCardWidth}vw</div>
                         </div>
                         <div className="bg-orange-50 px-3 py-2 rounded">
-                            <div className="text-gray-600">手牌高度</div>
+                            <div className="text-gray-600">{t('smashUp4PLayoutTest.metrics.hand_height')}</div>
                             <div className="text-lg font-bold text-orange-600">{layout.handAreaHeight}px</div>
                         </div>
                         <div className="bg-gray-50 px-3 py-2 rounded">
-                            <div className="text-gray-600">基地数量</div>
+                            <div className="text-gray-600">{t('smashUp4PLayoutTest.metrics.base_count')}</div>
                             <div className="text-lg font-bold text-gray-600">{baseCount}</div>
                         </div>
                     </div>
@@ -108,7 +110,7 @@ const SmashUp4PLayoutTest: React.FC = () => {
                                                 aspectRatio: '0.714',
                                             }}
                                         >
-                                            <div className="text-white text-[0.4vw] font-bold">持续</div>
+                                            <div className="text-white text-[0.4vw] font-bold">{t('smashUp4PLayoutTest.ongoing')}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -123,7 +125,7 @@ const SmashUp4PLayoutTest: React.FC = () => {
                                 }}
                             >
                                 <div className="text-white text-center">
-                                    <div className="text-[1.2vw] font-bold">基地 {base.id}</div>
+                                    <div className="text-[1.2vw] font-bold">{t('smashUp4PLayoutTest.base_label', { id: base.id })}</div>
                                     <div className="text-[0.6vw] opacity-75 mt-1">{layout.baseCardWidth}vw</div>
                                 </div>
                             </div>
@@ -166,7 +168,7 @@ const SmashUp4PLayoutTest: React.FC = () => {
                 style={{ height: `${layout.handAreaHeight}px` }}
             >
                 <div className="text-white text-sm opacity-75">
-                    手牌区域占位 ({layout.handAreaHeight}px)
+                    {t('smashUp4PLayoutTest.hand_area_placeholder', { height: layout.handAreaHeight })}
                 </div>
             </div>
         </div>

@@ -1541,6 +1541,7 @@ export function buildSplendorAiLegalActions(
   args: BuildGameAiLegalActionsArgs,
 ): AiLegalAction[] {
   const { state, playerId } = args;
+  if ((state as SplendorState).sys.interaction?.current) return [];
   const core = (state as SplendorState).core;
   const player = core.players[playerId];
   if (!player) return [];

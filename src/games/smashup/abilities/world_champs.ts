@@ -272,6 +272,7 @@ const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptC
                 targetType: 'generic',
                 autoRefresh: 'deck',
                 responseValidationMode: 'live',
+                titleKey: 'ui.world_champs_stoneford_title',
             },
         );
     },
@@ -304,17 +305,21 @@ const worldChampsShieldMaidenPromptProgram = createPromptProgram<WorldChampsProm
             context.playerId,
             '盾牌少女：选择另一位玩家，展示其牌库顶的一张牌',
             [
-                createSkipOption('跳过（不揭示）'),
+                createSkipOption('跳过（不揭示）', 'ui.world_champs_shield_maiden_skip_option'),
                 ...buildPlayerTargetOptions(
                     opponents.map((pid) => ({
                         label: `玩家 ${pid}`,
                         targetPlayerId: pid,
                         displayMode: 'button' as const,
                     })),
-                    { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                    {
+                        state: context.matchState.core,
+                        sourcePlayerId: context.playerId,
+                        effectIntent: 'inspect',
+                    },
                 ),
             ],
-            { sourceId: 'world_champs_shield_maiden', targetType: 'generic' },
+            { sourceId: 'world_champs_shield_maiden', targetType: 'generic', titleKey: 'ui.world_champs_shield_maiden_title' },
         );
     },
     onResolve: ({ state, context, value, random, timestamp }) => {
@@ -358,7 +363,7 @@ const worldChampsCalicoinPromptProgram = createPromptProgram<WorldChampsMinionPr
                 sourcePlayerId: context.playerId,
                 sourceDefId: context.sourceDefId,
             }),
-            { sourceId: 'world_champs_calicoin', targetType: 'minion' },
+            { sourceId: 'world_champs_calicoin', targetType: 'minion', titleKey: 'ui.world_champs_calicoin_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -383,7 +388,7 @@ const worldChampsItsBlitzinTimePromptProgram = createPromptProgram<WorldChampsPr
                 sourcePlayerId: context.playerId,
                 sourceDefId: 'world_champs_its_blitzin_time',
             }),
-            { sourceId: 'world_champs_its_blitzin_time', targetType: 'minion' },
+            { sourceId: 'world_champs_its_blitzin_time', targetType: 'minion', titleKey: 'ui.world_champs_its_blitzin_time_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -412,6 +417,7 @@ const worldChampsFightingSpiritPrizePromptProgram = createPromptProgram<WorldCha
                 sourceId: 'world_champs_fighting_spirit_prize',
                 targetType: 'minion',
                 multi: { min: 1, max: Math.min(2, ownMinions.length) },
+                titleKey: 'ui.world_champs_fighting_spirit_prize_title',
             },
         );
     },
@@ -457,7 +463,7 @@ const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCard
                 _source: 'hand' as const,
                 displayMode: 'card' as const,
             })),
-            { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand' },
+            { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand', titleKey: 'ui.world_champs_akye_the_turtle_card_title' },
         );
     },
     onResolve: (args) => {
@@ -482,17 +488,21 @@ const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPrompt
             context.playerId,
             '海龟阿凯：选择一位玩家并交给其一张手牌（然后你抽两张牌）',
             [
-                createSkipOption('跳过（不发动）'),
+                createSkipOption('跳过（不发动）', 'ui.world_champs_akye_the_turtle_skip_option'),
                 ...buildPlayerTargetOptions(
                     opponents.map(opponentId => ({
                         targetPlayerId: opponentId,
                         label: `玩家 ${opponentId}`,
                         displayMode: 'button' as const,
                     })),
-                    { sourcePlayerId: context.playerId, effectIntent: 'affect' },
+                    {
+                        state: context.matchState.core,
+                        sourcePlayerId: context.playerId,
+                        effectIntent: 'affect',
+                    },
                 ),
             ],
-            { sourceId: 'world_champs_akye_the_turtle_player', targetType: 'generic' },
+            { sourceId: 'world_champs_akye_the_turtle_player', targetType: 'generic', titleKey: 'ui.world_champs_akye_the_turtle_player_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -524,7 +534,7 @@ const worldChampsFastAsLightningPromptProgram = createPromptProgram<WorldChampsP
                 sourceDefId: 'world_champs_fast_as_lightning',
                 effectType: 'affect',
             }),
-            { sourceId: 'world_champs_fast_as_lightning', targetType: 'minion' },
+            { sourceId: 'world_champs_fast_as_lightning', targetType: 'minion', titleKey: 'ui.world_champs_fast_as_lightning_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -550,7 +560,7 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
             context.playerId,
             '高速追逐：选择目标基地',
             buildBaseTargetOptions(baseOptions, context.matchState.core),
-            { sourceId: 'world_champs_high_speed_chase_base', targetType: 'base' },
+            { sourceId: 'world_champs_high_speed_chase_base', targetType: 'base', titleKey: 'ui.world_champs_high_speed_chase_base_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -624,7 +634,7 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
                 sourceDefId: 'world_champs_high_speed_chase',
                 effectType: 'move',
             }),
-            { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion' },
+            { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion', titleKey: 'ui.world_champs_high_speed_chase_minion_title' },
         );
     },
     onResolve: ({ state, context, playerId, value, timestamp }) => {
@@ -676,6 +686,7 @@ const worldChampsMouseBirdTargetsPromptProgram = createPromptProgram<WorldChamps
                 sourceId: 'world_champs_mouse_bird_and_sausage_targets',
                 targetType: 'minion',
                 multi: { min: 1, max: Math.min(2, candidates.length) },
+                titleKey: 'ui.world_champs_mouse_bird_and_sausage_targets_title',
             },
         );
     },
@@ -711,7 +722,7 @@ const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsP
                 sourceDefId: 'world_champs_mouse_bird_and_sausage',
                 effectType: 'affect',
             }),
-            { sourceId: 'world_champs_mouse_bird_and_sausage_anchor', targetType: 'minion' },
+            { sourceId: 'world_champs_mouse_bird_and_sausage_anchor', targetType: 'minion', titleKey: 'ui.world_champs_mouse_bird_and_sausage_anchor_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -756,7 +767,7 @@ const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContex
             context.playerId,
             '嗯？：选择你的一个随从，本回合力量 +1（并将此卡返回手牌）',
             [
-                createSkipOption('跳过（不发动）'),
+                createSkipOption('跳过（不发动）', 'ui.world_champs_eh_skip_option'),
                 ...buildMinionTargetOptions(ownMinions, {
                     state: context.matchState.core,
                     sourcePlayerId: context.playerId,
@@ -764,7 +775,7 @@ const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContex
                     effectType: 'affect',
                 }),
             ],
-            { sourceId: 'world_champs_eh', targetType: 'minion' },
+            { sourceId: 'world_champs_eh', targetType: 'minion', titleKey: 'ui.world_champs_eh_title' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -794,10 +805,10 @@ const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldCh
         context.playerId,
         '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
         [
-            createSkipOption('跳过（不决斗）'),
+            createSkipOption('跳过（不决斗）', 'ui.world_champs_sheriff_before_scoring_skip_option'),
             ...buildEnemyMinionOptions(context.matchState.core, context.sourceBaseIndex, context.casterPlayerId),
         ],
-        { sourceId: 'world_champs_sheriff_before_scoring', targetType: 'minion' },
+        { sourceId: 'world_champs_sheriff_before_scoring', targetType: 'minion', titleKey: 'ui.world_champs_sheriff_before_scoring_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -826,8 +837,8 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
             `world_champs_mummy_after_scoring_${context.now}_${context.cardUid}`,
             context.playerId,
             '木乃伊：你可以将本随从埋葬到另一个基地',
-            [createSkipOption('跳过（不埋葬）'), ...buildBaseTargetOptions(baseOptions, context.matchState.core)],
-            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'base' },
+            [createSkipOption('跳过（不埋葬）', 'ui.world_champs_mummy_after_scoring_skip_option'), ...buildBaseTargetOptions(baseOptions, context.matchState.core)],
+            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'base', titleKey: 'ui.world_champs_mummy_after_scoring_title' },
         );
     },
     onResolve: ({ state, context, value, random, timestamp }) => {
@@ -872,7 +883,7 @@ const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChamp
                 sourceDefId: 'world_champs_bewitched',
                 effectType: 'affect',
             }),
-            { sourceId: 'world_champs_bewitched_transfer', targetType: 'minion' },
+            { sourceId: 'world_champs_bewitched_transfer', targetType: 'minion', titleKey: 'ui.world_champs_bewitched_transfer_title' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {

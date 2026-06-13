@@ -25,6 +25,7 @@ const ROW_HEIGHT = 42;
 
 export default function GamePopularityChart({ stats }: Props) {
     const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.dashboard.${key}`, options);
     const gameConfigs = useMemo(
         () => getAllGames().filter((game) => game.type === 'game' && !game.isUgc),
         []
@@ -72,13 +73,13 @@ export default function GamePopularityChart({ stats }: Props) {
         <div className="bg-white p-6 rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 flex flex-col h-[400px]">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-zinc-900">游戏热度排行</h3>
-                    <p className="text-xs text-zinc-500 mt-1">按游戏总时长排名</p>
+                    <h3 className="text-lg font-bold text-zinc-900">{adminT('game_popularity.title')}</h3>
+                    <p className="text-xs text-zinc-500 mt-1">{adminT('game_popularity.description')}</p>
                 </div>
             </div>
 
             {data.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-400">暂无数据</div>
+                <div className="flex-1 flex items-center justify-center text-zinc-400">{adminT('common.no_data')}</div>
             ) : (
                 <div className="flex-1 min-h-0 w-full overflow-y-auto pr-1">
                     <ResponsiveContainer width="100%" height={chartHeight}>
@@ -105,8 +106,8 @@ export default function GamePopularityChart({ stats }: Props) {
                                         return (
                                             <div className="bg-white p-3 rounded-xl shadow-xl border border-zinc-100 text-xs">
                                                 <div className="font-bold text-zinc-900 mb-1 capitalize">{data.name}</div>
-                                                <div className="text-zinc-500">总时长: <span className="text-indigo-600 font-mono font-medium">{formatDuration(data.duration)}</span></div>
-                                                <div className="text-zinc-500">总局数: <span className="text-indigo-600 font-mono font-medium">{data.count}</span></div>
+                                                <div className="text-zinc-500">{adminT('game_popularity.total_duration')}: <span className="text-indigo-600 font-mono font-medium">{formatDuration(data.duration)}</span></div>
+                                                <div className="text-zinc-500">{adminT('game_popularity.total_matches')}: <span className="text-indigo-600 font-mono font-medium">{data.count}</span></div>
                                             </div>
                                         );
                                     }

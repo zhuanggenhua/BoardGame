@@ -276,6 +276,7 @@ describe('Magical Girls 代表性玩法行为', () => {
             timestamp: 80,
         }, FIXED_RANDOM);
         const prompt = getSimpleChoicePrompt(play.finalState, 'magical_girls_purge_the_demon');
+        expect(prompt.targetType).toBe('board');
         expect(getPromptOption(prompt, option => option.value?.cardUid === 'enemy-action')).toBeDefined();
 
         const removeCounters = respondToPromptOption(play.finalState, option => option.value?.minionUid === 'countered', 'countered', '0', FIXED_RANDOM);
@@ -399,8 +400,15 @@ describe('Magical Girls 代表性玩法行为', () => {
             now: 100,
         });
 
-        const keepFirst = respondToPromptOption(result.matchState!, option => option.value?.uid === 'keep-0', 'keep-0', '0', FIXED_RANDOM);
-        const keepSecond = respondToPromptOption(keepFirst.finalState, option => option.value?.uid === 'keep-1', 'keep-1', '1', FIXED_RANDOM);
+        const firstPrompt = getSimpleChoicePrompt(result.matchState!, 'base_q_point');
+        expect(firstPrompt.targetType).toBe('board');
+        expect(getPromptOption(firstPrompt, option => option.value?.minionUid === 'keep-0', 'keep-0 board option')).toBeDefined();
+        expect(getPromptOption(firstPrompt, option => option.value?.cardUid === 'lose-action-0', 'lose-action-0 board option')).toBeDefined();
+
+        const keepFirst = respondToPromptOption(result.matchState!, option => option.value?.minionUid === 'keep-0', 'keep-0', '0', FIXED_RANDOM);
+        const secondPrompt = getSimpleChoicePrompt(keepFirst.finalState, 'base_q_point');
+        expect(secondPrompt.targetType).toBe('board');
+        const keepSecond = respondToPromptOption(keepFirst.finalState, option => option.value?.minionUid === 'keep-1', 'keep-1', '1', FIXED_RANDOM);
 
         expect(keepSecond.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['keep-0', 'keep-1']);
         expect(keepSecond.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(expect.arrayContaining(['lose-0', 'lose-action-0']));

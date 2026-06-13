@@ -86,7 +86,11 @@ const moveToBasePromptProgram = createPromptProgram<MoveMinionToBaseContext, Sma
         context.playerId,
         '选择移动目标基地',
         buildBaseTargetOptions(context.destinationBases, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base' },
+        {
+            sourceId: context.sourceId,
+            titleKey: 'ui.tornados_move_destination_title',
+            targetType: 'base',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -254,6 +258,7 @@ const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCo
         }),
         {
             sourceId: 'tornados_whirlwinds',
+            titleKey: 'ui.tornados_whirlwinds_title',
             targetType: 'minion',
             multi: { min: 0, max: context.candidates.length },
             autoResolveIfSingle: false,
@@ -329,7 +334,11 @@ const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext,
         context.playerId,
         '信风：选择第一个力量≤3的随从',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
-        { sourceId: 'tornados_trade_winds_first', targetType: 'minion' },
+        {
+            sourceId: 'tornados_trade_winds_first',
+            titleKey: 'ui.tornados_trade_winds_first_title',
+            targetType: 'minion',
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;
@@ -348,7 +357,11 @@ const tradeWindsSecondPromptProgram = createPromptProgram<TradeWindsSecondContex
         context.playerId,
         '信风：选择第二个力量≤3的随从并交换基地',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
-        { sourceId: 'tornados_trade_winds_second', targetType: 'minion' },
+        {
+            sourceId: 'tornados_trade_winds_second',
+            titleKey: 'ui.tornados_trade_winds_second_title',
+            targetType: 'minion',
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as MinionChoice;
@@ -404,7 +417,11 @@ const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, Smash
         context.playerId,
         '扯走：选择要转移的持续行动卡',
         context.actions.map((action, index) => ({ id: `action-${index}`, label: action.label, value: action, displayMode: 'card' as const })),
-        { sourceId: 'tornados_ripped_off', targetType: 'generic' },
+        {
+            sourceId: 'tornados_ripped_off',
+            titleKey: 'ui.tornados_ripped_off_title',
+            targetType: 'ongoing',
+        },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as CardChoice & { targetType?: 'base' | 'minion'; baseIndex?: number; minionUid?: string };
@@ -436,7 +453,11 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
                 context.playerId,
                 '扯走：选择新的基地',
                 buildBaseTargetOptions(collectBaseTargets(context.matchState.core, baseIndex => baseIndex !== context.fromBaseIndex), context.matchState.core),
-                { sourceId: 'tornados_ripped_off_target_base', targetType: 'base' },
+                {
+                    sourceId: 'tornados_ripped_off_target_base',
+                    titleKey: 'ui.tornados_ripped_off_target_base_title',
+                    targetType: 'base',
+                },
             );
         }
         const targets = collectMinionTargets(context.matchState.core, (minion) => minion.uid !== context.fromMinionUid);
@@ -445,7 +466,11 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
             context.playerId,
             '扯走：选择新的随从',
             buildMinionTargetOptions(targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'affect' }),
-            { sourceId: 'tornados_ripped_off_target_minion', targetType: 'minion' },
+            {
+                sourceId: 'tornados_ripped_off_target_minion',
+                titleKey: 'ui.tornados_ripped_off_target_minion_title',
+                targetType: 'minion',
+            },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -551,9 +576,20 @@ const dustDevilPromptProgram = createPromptProgram<DustDevilContext, SmashUpCore
         '尘卷风：是否移动到即将计分的基地？',
         [
             createSkipOption(),
-            { id: 'move', label: '移动到计分基地', value: { choice: 'move' }, displayMode: 'button' as const },
+            {
+                id: 'move',
+                label: '移动到计分基地',
+                labelKey: 'ui.tornados_dust_devil_move_option',
+                value: { choice: 'move' },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'tornados_dust_devil', targetType: 'button', autoResolveIfSingle: false },
+        {
+            sourceId: 'tornados_dust_devil',
+            titleKey: 'ui.tornados_dust_devil_title',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as ButtonChoice<'move'>;
@@ -613,7 +649,12 @@ const tornadoAlleyPromptProgram = createPromptProgram<TornadoAlleyContext, Smash
                 effectType: 'move',
             }),
         ],
-        { sourceId: 'base_tornado_alley', targetType: 'minion', autoResolveIfSingle: false },
+        {
+            sourceId: 'base_tornado_alley',
+            titleKey: 'ui.tornados_tornado_alley_title',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;

@@ -124,11 +124,11 @@
       "userRoleUpdated": "用户角色已更新"
     }
   },
-    "email": {
-      "error": {
-        "missingConfig": "邮件服务未配置",
-        "sendFailed": "邮件发送失败，请稍后重试"
-      },
+  "email": {
+    "error": {
+      "missingConfig": "邮件服务未配置",
+      "sendFailed": "邮件发送失败，请稍后重试"
+    },
     "subject": "邮箱验证码 - 易桌游",
     "reset": {
       "subject": "重置密码验证码 - 易桌游",

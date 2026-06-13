@@ -1,5 +1,7 @@
 # FantasyRealms Foundation Completion Audit（2026-06-06）
 
+> 历史说明：本文件记录的是 `2026-06-06` 兄弟 worktree `D:\gongzuo\webgame\BoardGame\.worktrees\fantasyrealms` 的候选实现审计，不能再作为当前根工作区 `D:\gongzuo\webgame\BoardGame` 的完成证据。
+
 ## 审计范围
 
 - OpenSpec change：`add-fantasyrealms-foundation`
@@ -50,10 +52,10 @@
 - 当前未发现仍会阻塞 `add-fantasyrealms-foundation` 完成口径的已知 UI bug。
 - 后续若继续优化，可作为独立 polish 处理，但不再反向否定本 change 的完成状态。
 
-## 审计结论
+## 历史审计结论
 
-- `add-fantasyrealms-foundation` 当前已满足：
+- 该次 worktree 审计里，`add-fantasyrealms-foundation` 当时被判定为已满足：
   - 真实页面主路径端到端复核
   - 阻塞级 UI bug 清零
   - 剩余项未再与主完成态混写
-- 因此，按更新后的 spec，这条 foundation change 可以按“已完成”口径收口。
+- 该结论只对应当时的兄弟 worktree 候选实现；当前根工作区是否完成，必须以 `current-ui-audit-2026-06-12.md` 与当前真实运行页为准。

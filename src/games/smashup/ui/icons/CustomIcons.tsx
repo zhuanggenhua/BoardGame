@@ -192,7 +192,29 @@ export const CowboyHatIcon = ({ size = 24, strokeWidth = 2, ...props }: LucidePr
     </svg>
 );
 
-// 8. 武士刀图标 (Katana) - 用于武士派系
+// 8. 变形者图标 (Shapeshifter) - 用于变形者派系，避免与科学怪人重复
+export const ShapeshifterIcon = ({ size = 24, strokeWidth = 2, ...props }: LucideProps) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M12 3L16 7L12 11L8 7L12 3Z" />
+        <path d="M8 7L5 12L8 17L12 21L16 17L19 12L16 7" />
+        <path d="M8.5 12H15.5" />
+        <path d="M10 9.5L14 14.5" />
+        <path d="M14 9.5L10 14.5" />
+    </svg>
+);
+
+// 9. 武士刀图标 (Katana) - 用于武士派系
 export const KatanaIcon = ({ size = 24, strokeWidth = 2, ...props }: LucideProps) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"

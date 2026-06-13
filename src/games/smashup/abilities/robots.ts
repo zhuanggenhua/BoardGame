@@ -199,7 +199,12 @@ const robotMicrobotGuardPromptProgram = createPromptProgram<RobotMicrobotGuardCo
                 sourceDefId: context.sourceDefId,
                 effectType: 'destroy',
             }),
-            { sourceId: 'robot_microbot_guard', targetType: 'minion', responseValidationMode: 'live' },
+            {
+                sourceId: 'robot_microbot_guard',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                titleKey: 'ui.robot_microbot_guard_title',
+            },
         ),
         (state) => buildMinionTargetOptions(
             buildRobotMicrobotGuardOptions(
@@ -287,6 +292,7 @@ const robotMicrobotReclaimerPromptProgram = createPromptProgram<RobotMicrobotRec
                 multi: { min: 0, max: context.options.length },
                 autoRefresh: 'discard',
                 responseValidationMode: 'live',
+                titleKey: 'ui.robot_microbot_reclaimer_title',
             },
         ),
         (state) => buildRobotMicrobotReclaimerOptions(state.core, context.playerId),
@@ -364,7 +370,7 @@ const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseCont
             })),
             context.matchState.core,
         ),
-        { sourceId: 'robot_hoverbot_base', targetType: 'base' },
+        { sourceId: 'robot_hoverbot_base', targetType: 'base', titleKey: 'ui.robot_hoverbot_base_title' },
     ),
     onResolve: ({ state, playerId, value, timestamp, context }) => {
         const choice = value as RobotHoverbotChoice;
@@ -409,6 +415,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'skip',
                         label: '放回牌库顶',
+                        labelKey: 'ui.robot_hoverbot_skip_option',
                         value: { skip: true },
                         displayMode: 'button' as const,
                     },
@@ -419,7 +426,13 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                 const topUid = state?.core?.players?.[context.playerId]?.deck?.[0]?.uid;
                 if (typeof topUid !== 'string' || topUid !== topCard.uid) {
                     return [
-                        { id: 'skip', label: '放回牌库顶', value: { skip: true }, displayMode: 'button' as const },
+                        {
+                            id: 'skip',
+                            label: '放回牌库顶',
+                            labelKey: 'ui.robot_hoverbot_skip_option',
+                            value: { skip: true },
+                            displayMode: 'button' as const,
+                        },
                     ];
                 }
                 return [
@@ -430,7 +443,13 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
-                    { id: 'skip', label: '放回牌库顶', value: { skip: true }, displayMode: 'button' as const },
+                    {
+                        id: 'skip',
+                        label: '放回牌库顶',
+                        labelKey: 'ui.robot_hoverbot_skip_option',
+                        value: { skip: true },
+                        displayMode: 'button' as const,
+                    },
                 ];
             },
         );
@@ -521,7 +540,12 @@ const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext,
             context.playerId,
             '选择一个基地（按该基地上你的随从数抽牌）',
             buildBaseTargetOptions(context.candidates, context.matchState.core),
-            { sourceId: 'robot_tech_center', targetType: 'base', autoCancelOption: true },
+            {
+                sourceId: 'robot_tech_center',
+                targetType: 'base',
+                autoCancelOption: true,
+                titleKey: 'ui.robot_tech_center_title',
+            },
         ),
         (state) => {
             const candidates = state.core.bases

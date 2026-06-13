@@ -97,6 +97,6 @@ export const ZHANSHUJIA_PASSIVE_ABILITIES: PassiveAbilityDef[] = [
 ];
 
 export const ZHANSHUJIA_INITIAL_TOKENS: Record<string, number> = {
-    [TOKEN_IDS.TACTICAL_ADVANTAGE]: 0,
+    [TOKEN_IDS.TACTICAL_ADVANTAGE]: 2,
     [STATUS_IDS.BIND]: 0,
 };

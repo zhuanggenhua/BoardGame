@@ -148,6 +148,13 @@ function getEligibleHumanApproverIds(
     return playerIds.filter((playerId) => playerId !== requesterId && !aiSeatIdSet.has(playerId));
 }
 
+function isAiSeatCommand(
+    playerId: PlayerId,
+    undo: UndoState & { aiSeatIds?: PlayerId[] },
+): boolean {
+    return normalizeAiSeatIds(undo.aiSeatIds).includes(playerId);
+}
+
 const UNDO_COMMAND_SET = new Set<string>(Object.values(UNDO_COMMANDS));
 
 const IS_SERVER = typeof (typeof globalThis !== 'undefined' ? (globalThis as { window?: unknown }).window : undefined) === 'undefined';
@@ -250,6 +257,11 @@ export function createUndoSystem<TCore>(
             // 用于「移动后触发的技能」等场景与前一个命令共享同一个撤回点
             const pl = command.payload as Record<string, unknown> | undefined;
             if (pl?._noSnapshot === true) {
+                return;
+            }
+
+            const undo = state.sys.undo as UndoState & { aiSeatIds?: PlayerId[] };
+            if (isAiSeatCommand(command.playerId, undo)) {
                 return;
             }
 
@@ -582,7 +594,7 @@ function handleApproveUndo<TCore>(
             approvals: approvals.length,
             beforeSnapshotLen: undo.snapshots.length,
             afterSnapshotLen: newSnapshots.length,
-            restoredPhase: (previousState as any).sys?.phase,
+            restoredPhase: previousState.sys?.phase,
             restoredRandomCursor: restoredCursor,
         });
         

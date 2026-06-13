@@ -609,7 +609,7 @@ function buildCullTheWeakCardOptions(core: SmashUpCore, playerId: string) {
         });
     return [
         ...cardOptions,
-        { id: 'stop', label: '停止弃置并结算', value: { stop: true }, displayMode: 'button' as const },
+        { id: 'stop', label: '停止弃置并结算', labelKey: 'ui.vampire_cull_the_weak_stop_option', value: { stop: true }, displayMode: 'button' as const },
     ];
 }
 
@@ -629,6 +629,7 @@ function createCullTheWeakCardInteraction(
             sourceId: 'vampire_cull_the_weak_choose_card',
             targetType: 'hand' as const,
             autoResolveIfSingle: false,
+            titleKey: 'ui.vampire_cull_the_weak_choose_card_title',
         },
     );
 
@@ -681,9 +682,9 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
-                createSkipOption('跳过（不消灭）') as any,
+                createSkipOption('跳过（不消灭）', 'ui.vampire_skip_destroy_option') as any,
             ] as any[],
-            { sourceId: 'vampire_heavy_drinker', targetType: 'minion' },
+            { sourceId: 'vampire_heavy_drinker', targetType: 'minion', titleKey: 'ui.vampire_heavy_drinker_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -740,9 +741,9 @@ const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinion
                     sourcePlayerId: context.playerId,
                     effectType: 'destroy',
                 }),
-                createSkipOption('跳过（不消灭）') as any,
+                createSkipOption('跳过（不消灭）', 'ui.vampire_skip_destroy_option') as any,
             ] as any[],
-            { sourceId: 'vampire_nightstalker', targetType: 'minion' },
+            { sourceId: 'vampire_nightstalker', targetType: 'minion', titleKey: 'ui.vampire_nightstalker_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -792,7 +793,7 @@ const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMini
                 sourcePlayerId: context.playerId,
                 effectType: 'destroy',
             }),
-            { sourceId: 'vampire_dinner_date_target', targetType: 'minion' },
+            { sourceId: 'vampire_dinner_date_target', targetType: 'minion', titleKey: 'ui.vampire_dinner_date_target_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -831,7 +832,7 @@ const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext,
             context.playerId,
             '选择你的随从放置+1指示物（然后消灭同基地力量≤2随从）',
             ownMinions as any[],
-            { sourceId: 'vampire_dinner_date', targetType: 'minion' },
+            { sourceId: 'vampire_dinner_date', targetType: 'minion', titleKey: 'ui.vampire_dinner_date_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -882,9 +883,9 @@ const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext, Sm
                     sourcePlayerId: context.playerId,
                     effectType: 'destroy',
                 }),
-                createSkipOption('跳过') as any,
+                createSkipOption() as any,
             ] as any[],
-            { sourceId: 'vampire_big_gulp', targetType: 'minion' },
+            { sourceId: 'vampire_big_gulp', targetType: 'minion', titleKey: 'ui.vampire_big_gulp_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -962,7 +963,7 @@ const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext
             context.playerId,
             '选择你的随从（弃手牌随从卡来放指示物）',
             ownMinions as any[],
-            { sourceId: 'vampire_cull_the_weak', targetType: 'minion' },
+            { sourceId: 'vampire_cull_the_weak', targetType: 'minion', titleKey: 'ui.vampire_cull_the_weak_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -996,7 +997,7 @@ const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDu
             })),
             context.matchState.core,
         ),
-        { sourceId: 'vampire_crack_of_dusk_base', targetType: 'base' },
+        { sourceId: 'vampire_crack_of_dusk_base', targetType: 'base', titleKey: 'ui.vampire_choose_play_base_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
@@ -1048,7 +1049,7 @@ const vampireCrackOfDuskPromptProgram = createPromptProgram<VampirePromptContext
             context.playerId,
             '从弃牌堆选择力量≤2的随从打出（+1指示物）',
             options as any[],
-            { sourceId: 'vampire_crack_of_dusk', targetType: 'generic' },
+            { sourceId: 'vampire_crack_of_dusk', targetType: 'generic', titleKey: 'ui.vampire_crack_of_dusk_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1090,9 +1091,9 @@ const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountP
             '吸血鬼伯爵：你可以在该基地的一个随从上放置+1战斗力指示物',
             [
                 ...options,
-                createSkipOption('跳过') as any,
+                createSkipOption() as any,
             ] as any[],
-            { sourceId: 'vampire_the_count_pod_add_counter', targetType: 'minion' },
+            { sourceId: 'vampire_the_count_pod_add_counter', targetType: 'minion', titleKey: 'ui.vampire_the_count_pod_add_counter_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -1112,10 +1113,10 @@ const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPl
         context.playerId,
         '自助餐：你可以打出此牌（抽两张牌）',
         [
-            { id: 'play', label: '打出自助餐', value: { play: true }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'play', label: '打出自助餐', labelKey: 'ui.vampire_buffet_pod_play_option', value: { play: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ] as any[],
-        { sourceId: 'vampire_buffet_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
+        { sourceId: 'vampire_buffet_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid }, titleKey: 'ui.vampire_buffet_pod_play_title' },
     ),
     onResolve: (args) => {
         const { state, context, value, playerId, timestamp } = args;
@@ -1142,10 +1143,10 @@ const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMa
         context.playerId,
         '疯狂怪物派对：你可以打出此牌（选择被消灭随从的基地）',
         [
-            { id: 'play', label: '打出疯狂怪物派对', value: { play: true }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'play', label: '打出疯狂怪物派对', labelKey: 'ui.vampire_mad_monster_party_pod_play_option', value: { play: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ] as any[],
-        { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
+        { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid }, titleKey: 'ui.vampire_mad_monster_party_pod_play_title' },
     ),
     onResolve: ({ state, context, value, playerId, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -1184,7 +1185,7 @@ const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFled
             })),
             context.matchState.core,
         ),
-        { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base' },
+        { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base', titleKey: 'ui.vampire_bury_base_title' },
     ),
     onResolve: ({ context, value, playerId, random, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
@@ -1217,6 +1218,7 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `hand-${index}`,
                     label: '从手牌埋葬',
+                    labelKey: 'ui.vampire_fledgling_vampire_pod_bury_from_hand_option',
                     value: { cardUid: card.uid, defId: card.defId, fromDiscard: false },
                     _source: 'hand' as const,
                     displayMode: 'card' as const,
@@ -1226,18 +1228,19 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `discard-${index}`,
                     label: '从弃牌堆埋葬',
+                    labelKey: 'ui.vampire_fledgling_vampire_pod_bury_from_discard_option',
                     value: { cardUid: card.uid, defId: card.defId, fromDiscard: true },
                     _source: 'discard' as const,
                     displayMode: 'card' as const,
                 })),
-            createSkipOption('跳过') as any,
+            createSkipOption() as any,
         ];
         return createSimpleChoice(
             `vampire_fledgling_vampire_pod_bury_${context.playerId}_${context.now}`,
             context.playerId,
             '新生吸血鬼：你可以埋葬这张牌到任意基地',
             options as any[],
-            { sourceId: 'vampire_fledgling_vampire_pod_bury_source', targetType: 'generic' },
+            { sourceId: 'vampire_fledgling_vampire_pod_bury_source', targetType: 'generic', titleKey: 'ui.vampire_fledgling_vampire_pod_bury_source_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1312,9 +1315,9 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
-                createSkipOption('跳过（不消灭）') as any,
+                createSkipOption('跳过（不消灭）', 'ui.vampire_skip_destroy_option') as any,
             ] as any[],
-            { sourceId: 'vampire_heavy_drinker_pod', targetType: 'minion' },
+            { sourceId: 'vampire_heavy_drinker_pod', targetType: 'minion', titleKey: 'ui.vampire_heavy_drinker_pod_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1366,9 +1369,9 @@ const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptCont
                     sourcePlayerId: context.playerId,
                     effectType: 'affect',
                 }),
-                createSkipOption('跳过') as any,
+                createSkipOption() as any,
             ] as any[],
-            { sourceId: 'vampire_the_count_pod_talent', targetType: 'minion' },
+            { sourceId: 'vampire_the_count_pod_talent', targetType: 'minion', titleKey: 'ui.vampire_the_count_pod_talent_title' },
         );
     },
     onResolve: ({ state, value, timestamp }) => {
@@ -1414,7 +1417,7 @@ const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext,
                 sourcePlayerId: context.playerId,
                 effectType: 'destroy',
             }),
-            { sourceId: 'vampire_big_gulp_pod', targetType: 'minion' },
+            { sourceId: 'vampire_big_gulp_pod', targetType: 'minion', titleKey: 'ui.vampire_big_gulp_pod_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1448,7 +1451,7 @@ const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWea
                 sourcePlayerId: context.playerId,
                 effectType: 'affect',
             }) as any,
-            { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion' },
+            { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion', titleKey: 'ui.vampire_cull_the_weak_pod_title' },
         );
     },
     onResolve: ({ context, value, playerId, timestamp }) => {
@@ -1480,7 +1483,7 @@ const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackO
             })),
             context.matchState.core,
         ),
-        { sourceId: 'vampire_crack_of_dusk_pod_base', targetType: 'base' },
+        { sourceId: 'vampire_crack_of_dusk_pod_base', targetType: 'base', titleKey: 'ui.vampire_choose_play_base_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { baseIndex?: number } | undefined;
@@ -1533,7 +1536,7 @@ const vampireCrackOfDuskPodPromptProgram = createPromptProgram<VampirePromptCont
             context.playerId,
             '从弃牌堆选择力量≤2的随从打出（+1指示物，不占用普通随从次数）',
             options as any[],
-            { sourceId: 'vampire_crack_of_dusk_pod', targetType: 'generic' },
+            { sourceId: 'vampire_crack_of_dusk_pod', targetType: 'generic', titleKey: 'ui.vampire_crack_of_dusk_pod_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1585,7 +1588,7 @@ const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDateP
                 })),
                 { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'affect' },
             ) as any,
-            { sourceId: 'vampire_dinner_date_pod', targetType: 'minion' },
+            { sourceId: 'vampire_dinner_date_pod', targetType: 'minion', titleKey: 'ui.vampire_dinner_date_pod_title' },
         );
     },
     onResolve: ({ state, context, value, playerId, timestamp }) => {
@@ -1639,7 +1642,7 @@ const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireW
             context.playerId,
             '狼之契约：选择在该基地的另一个你的随从放置+1战斗力指示物',
             recipients as any[],
-            { sourceId: 'vampire_wolf_pact_pod_minion_target', targetType: 'minion' },
+            { sourceId: 'vampire_wolf_pact_pod_minion_target', targetType: 'minion', titleKey: 'ui.vampire_wolf_pact_pod_minion_target_title' },
         );
     },
     onResolve: ({ value, timestamp }) => {
@@ -1669,9 +1672,9 @@ const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPac
                 ),
                 { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'affect' },
             ),
-            createSkipOption('跳过') as any,
+            createSkipOption() as any,
         ] as any[],
-        { sourceId: 'vampire_wolf_pact_pod_minion', targetType: 'minion' },
+        { sourceId: 'vampire_wolf_pact_pod_minion', targetType: 'minion', titleKey: 'ui.vampire_wolf_pact_pod_minion_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -1718,7 +1721,7 @@ const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptC
             context.playerId,
             '狼之契约（战术）：选择弃牌堆的一张卡洗入牌库',
             options as any[],
-            { sourceId: 'vampire_wolf_pact_pod_action', targetType: 'generic' },
+            { sourceId: 'vampire_wolf_pact_pod_action', targetType: 'generic', titleKey: 'ui.vampire_wolf_pact_pod_action_title' },
         );
     },
     onResolve: ({ state, value, playerId, random, timestamp }) => {

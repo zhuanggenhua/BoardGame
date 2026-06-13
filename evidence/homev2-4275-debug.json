@@ -1,0 +1,22 @@
+{
+  "url": "chrome-error://chromewebdata/",
+  "title": "",
+  "hasBookStage": 0,
+  "hasAccount": 0,
+  "hasRewardBadge": 0,
+  "bodySnippet": "",
+  "consoleMessages": [
+    "[debug] [vite] connecting...",
+    "[debug] [vite] connected.",
+    "[info] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "[info] 🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙",
+    "[log] [TokenRefresh] 启动时未发现本地 token，尝试刷新 token",
+    "[error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "[log] [vite] server connection lost. Polling for restart...",
+    "[error] Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "[error] Failed to load resource: net::ERR_CONNECTION_REFUSED",
+    "[error] %o\n\n%s\n\n%s\n TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:4275/src/pages/HomeV2.tsx The above error occurred in one of your React components. React will try to recreate this component tree from scratch using the error boundary you provided, GlobalErrorBoundary.",
+    "[warning] [bootstrap] stale chunk detected, reloading page {reason: react-error-boundary}",
+    "[pageerror] SecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.\n    at <anonymous>:11:3\n    at <anonymous>:12:7"
+  ]
+}

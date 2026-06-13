@@ -1,6 +1,7 @@
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
     buildDeterministicAiNoise,
+    buildSelectPlayerDecisionActions,
     createAiLegalActionId,
     createProfileAwareActionScorer,
     getAiActionStrategyTags,
@@ -22,6 +23,7 @@ import type {
     AiStrategyProfile,
     AiEffectIntent,
     AiHint,
+    AiSelectPlayerDecisionDescriptor,
     GameAiRuntime,
     LocalAiActionScorer,
 } from '../../engine/ai';
@@ -163,6 +165,17 @@ const createCommand = (playerId: PlayerId, type: string, payload: unknown = {}):
 const isCommandValid = (state: DiceThroneState, playerId: PlayerId, type: string, payload: unknown = {}): boolean => {
     const result = DiceThroneDomain.validate(state, createCommand(playerId, type, payload) as never);
     return result.valid;
+};
+
+const isOffensiveRollRerollBlockedByBindCp = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): boolean => {
+    if (phase !== 'offensiveRoll') return false;
+    const bindStacks = state.core.players[playerId]?.statusEffects[STATUS_IDS.BIND] ?? 0;
+    const currentCp = state.core.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+    return bindStacks > 0 && state.core.rollCount > 0 && currentCp < 1;
 };
 
 const appendAction = (
@@ -554,33 +567,6 @@ const getBestDiceTargetPlan = (
     })[0] ?? null;
 };
 
-const buildPlayerSelectionCombos = (
-    playerIds: PlayerId[],
-    selectCount: number,
-): PlayerId[][] => {
-    if (playerIds.length === 0) return [];
-
-    const normalizedCount = Math.max(1, Math.min(selectCount, playerIds.length));
-    const combinations: PlayerId[][] = [];
-    const current: PlayerId[] = [];
-
-    const dfs = (startIndex: number) => {
-        if (current.length === normalizedCount) {
-            combinations.push([...current]);
-            return;
-        }
-
-        for (let i = startIndex; i < playerIds.length; i += 1) {
-            current.push(playerIds[i]);
-            dfs(i + 1);
-            current.pop();
-        }
-    };
-
-    dfs(0);
-    return combinations;
-};
-
 const isRemovableStatusId = (state: DiceThroneState, statusId: string): boolean => {
     const def = state.core.tokenDefinitions.find((definition) => definition.id === statusId);
     return def?.passiveTrigger?.removable ?? true;
@@ -614,15 +600,6 @@ const getSelectableStatusIds = (state: DiceThroneState, playerId: PlayerId): str
 const isFriendlyTarget = (state: DiceThroneState, actingPlayerId: PlayerId, targetPlayerId: PlayerId): boolean => {
     return actingPlayerId === targetPlayerId
         || areTeammates(state.core, actingPlayerId, targetPlayerId);
-};
-
-const getRelationToActor = (
-    state: DiceThroneState,
-    actingPlayerId: PlayerId,
-    targetPlayerId: PlayerId,
-): AiHint['relationToActor'] => {
-    if (actingPlayerId === targetPlayerId) return 'self';
-    return areTeammates(state.core, actingPlayerId, targetPlayerId) ? 'ally' : 'enemy';
 };
 
 const getCardInteractionById = (
@@ -769,6 +746,165 @@ const parseTargetPlayerIdFromCustomId = (customId: string | undefined): PlayerId
     return targetPlayerId ? targetPlayerId : null;
 };
 
+const buildPlayerTargetHint = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    targetPlayerId: PlayerId,
+    args: {
+        effectIntent: AiEffectIntent;
+        estimatedSwing?: number;
+        tags: string[];
+    },
+): AiHint => {
+    return buildTargetAiHint({
+        actorPlayerId: actingPlayerId,
+        targetPlayerId,
+        relationResolver: ({ actorPlayerId, targetPlayerId }) => {
+            if (!actorPlayerId || !targetPlayerId) {
+                return undefined;
+            }
+            if (actorPlayerId === targetPlayerId) {
+                return 'self';
+            }
+            return areTeammates(state.core, actorPlayerId, targetPlayerId) ? 'ally' : 'enemy';
+        },
+        targetKind: 'player',
+        effectIntent: args.effectIntent,
+        ...(typeof args.estimatedSwing === 'number' ? { estimatedSwing: args.estimatedSwing } : {}),
+        tags: args.tags,
+    });
+};
+
+const buildSelectPlayerDecisionFromInteraction = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+): AiSelectPlayerDecisionDescriptor | null => {
+    if (current.kind === 'dt:defender-choice') {
+        const data = current.data as {
+            options?: Array<{ playerId?: PlayerId; customId?: string; disabled?: boolean }>;
+            targetRollValue?: number;
+        };
+        return {
+            kind: 'select-player',
+            interactionId: current.id,
+            actorPlayerId: playerId,
+            sourceId: current.sourceId,
+            selection: { min: 1, max: 1 },
+            metadata: {
+                targetRollValue: data.targetRollValue,
+            },
+            candidates: (data.options ?? [])
+                .filter((option) => option.disabled !== true)
+                .map((option, index) => {
+                    const defenderId = parseTargetPlayerIdFromCustomId(option.customId) ?? option.playerId ?? null;
+                    if (!defenderId) return null;
+                    return {
+                        id: `defender:${defenderId}:${index}`,
+                        playerId: defenderId,
+                        actionKeyParts: ['select-defender-target', defenderId, index],
+                        label: `选择受击者 ${defenderId}`,
+                        aiHints: [buildPlayerTargetHint(state, playerId, defenderId, {
+                            effectIntent: 'debuff',
+                            tags: ['choice:select-target', 'defender-selection'],
+                        })],
+                        metadata: {
+                            interactionId: current.id,
+                            defenderId,
+                            targetRollValue: data.targetRollValue,
+                        },
+                    };
+                })
+                .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null),
+        };
+    }
+
+    if (current.kind === 'dt:card-interaction') {
+        const data = current.data as CardInteractionData;
+        if (data.type !== 'selectPlayer') {
+            return null;
+        }
+
+        const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
+            .filter((targetId) => !!state.core.players[targetId])
+            .filter((targetId) => !data.requiresTargetWithStatus || playerHasStatusOrToken(state, targetId));
+        const selectCount = Math.max(1, Math.min(data.selectCount ?? 1, targetPlayerIds.length));
+        return {
+            kind: 'select-player',
+            interactionId: current.id,
+            actorPlayerId: playerId,
+            sourceId: current.sourceId,
+            selection: { min: selectCount, max: selectCount },
+            candidates: targetPlayerIds.map((targetPlayerId) => ({
+                id: targetPlayerId,
+                playerId: targetPlayerId,
+                actionKeyParts: [targetPlayerId],
+                label: targetPlayerId,
+                metadata: {
+                    interactionId: current.id,
+                    targetPlayerId,
+                },
+            })),
+        };
+    }
+
+    return null;
+};
+
+const buildSelectPlayerInteractionActions = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    current: EngineInteractionDescriptor,
+): AiLegalAction[] | null => {
+    const decision = buildSelectPlayerDecisionFromInteraction(state, playerId, current);
+    if (!decision) return null;
+
+    if (current.kind === 'dt:defender-choice') {
+        return buildSelectPlayerDecisionActions({
+            descriptor: decision,
+            defaultActionKind: 'interaction-choice',
+            emptyAction: (descriptor) => buildEmergencyInteractionCancelAction(descriptor.interactionId, 'empty-options'),
+            buildCommands: (selection) => {
+                const defenderId = selection[0]?.playerId;
+                return defenderId
+                    ? [{ type: 'SELECT_DEFENDER_TARGET', payload: { defenderId } }]
+                    : [];
+            },
+            buildMetadata: (selection, descriptor) => ({
+                interactionId: descriptor.interactionId,
+                defenderId: selection[0]?.playerId,
+                targetRollValue: descriptor.metadata?.targetRollValue,
+            }),
+        });
+    }
+
+    if (current.kind === 'dt:card-interaction') {
+        const data = current.data as CardInteractionData;
+        return buildSelectPlayerDecisionActions({
+            descriptor: decision,
+            emptyAction: (descriptor) => buildEmergencyInteractionCancelAction(descriptor.interactionId, 'empty-options'),
+            buildCommands: (selection) => [{
+                type: 'RESOLVE_INTERACTION',
+                payload: { selectedPlayerIds: selection.map((candidate) => candidate.playerId) },
+            }],
+            buildActionKeyParts: (selection) => ['select-player', ...selection.map((candidate) => candidate.playerId)],
+            buildLabel: (selection) => `选择玩家 ${selection.map((candidate) => candidate.playerId).join(', ')}`,
+            buildAiHints: (selection) => buildSelectPlayerActionAiHints(
+                state,
+                playerId,
+                selection.map((candidate) => candidate.playerId),
+                data,
+            ),
+            buildMetadata: (selection, descriptor) => ({
+                interactionId: descriptor.interactionId,
+                selectedPlayerIds: selection.map((candidate) => candidate.playerId),
+            }),
+        });
+    }
+
+    return null;
+};
+
 const isBenefitChoiceCustomId = (customId: string | undefined): boolean => {
     if (!customId) return false;
     return customId.startsWith('use-')
@@ -801,11 +937,7 @@ const buildChoiceOptionAiHints = (
 
     const targetPlayerId = parseTargetPlayerIdFromCustomId(customId);
     if (targetPlayerId) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: playerId,
-            targetPlayerId,
-            relationToActor: getRelationToActor(state, playerId, targetPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, playerId, targetPlayerId, {
             effectIntent: 'debuff',
             tags: ['choice:select-target'],
         }));
@@ -818,11 +950,7 @@ const buildChoiceOptionAiHints = (
         : 'apply';
     const effectIntent = getEffectIntentForCategory(category, effectMode);
     if (effectId && effectIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: playerId,
-            targetPlayerId: playerId,
-            relationToActor: getRelationToActor(state, playerId, playerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, playerId, playerId, {
             effectIntent,
             tags: [
                 'choice:effect',
@@ -854,11 +982,7 @@ const buildSelectPlayerActionAiHints = (
             const category = getEffectCategory(state, config.tokenId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
-            hints.push(buildTargetAiHint({
-                actorPlayerId: actingPlayerId,
-                targetPlayerId,
-                relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                targetKind: 'player',
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                 effectIntent,
                 estimatedSwing: getGrantedEffectValue(
                     state,
@@ -875,11 +999,7 @@ const buildSelectPlayerActionAiHints = (
             const category = getEffectCategory(state, config.statusId);
             const effectIntent = getEffectIntentForCategory(category, 'apply');
             if (!effectIntent) continue;
-            hints.push(buildTargetAiHint({
-                actorPlayerId: actingPlayerId,
-                targetPlayerId,
-                relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                targetKind: 'player',
+            hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                 effectIntent,
                 estimatedSwing: getGrantedEffectValue(
                     state,
@@ -895,11 +1015,7 @@ const buildSelectPlayerActionAiHints = (
         if (tokenConfigs.length === 0 && statusConfigs.length === 0 && interaction.requiresTargetWithStatus === true) {
             const swing = scoreRemoveAllStatusesTarget(state, actingPlayerId, targetPlayerId);
             if (swing !== 0) {
-                hints.push(buildTargetAiHint({
-                    actorPlayerId: actingPlayerId,
-                    targetPlayerId,
-                    relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-                    targetKind: 'player',
+                hints.push(buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
                     effectIntent: 'affect',
                     estimatedSwing: swing,
                     tags: ['remove-status:all'],
@@ -920,11 +1036,7 @@ const buildRemoveStatusAiHints = (
     const category = getEffectCategory(state, statusId);
     const effectIntent = getEffectIntentForCategory(category, 'remove');
     if (!effectIntent) return [];
-    return [buildTargetAiHint({
-        actorPlayerId: actingPlayerId,
-        targetPlayerId,
-        relationToActor: getRelationToActor(state, actingPlayerId, targetPlayerId),
-        targetKind: 'player',
+    return [buildPlayerTargetHint(state, actingPlayerId, targetPlayerId, {
         effectIntent,
         estimatedSwing: scoreRemoveSingleStatusTarget(state, actingPlayerId, targetPlayerId, statusId),
         tags: [`remove-status:${statusId}`],
@@ -944,11 +1056,7 @@ const buildTransferStatusAiHints = (
     const hints: AiHint[] = [];
 
     if (removeIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: actingPlayerId,
-            targetPlayerId: fromPlayerId,
-            relationToActor: getRelationToActor(state, actingPlayerId, fromPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, actingPlayerId, fromPlayerId, {
             effectIntent: removeIntent,
             estimatedSwing: scoreRemoveSingleStatusTarget(state, actingPlayerId, fromPlayerId, statusId),
             tags: [`transfer-remove:${statusId}`],
@@ -956,11 +1064,7 @@ const buildTransferStatusAiHints = (
     }
 
     if (applyIntent) {
-        hints.push(buildTargetAiHint({
-            actorPlayerId: actingPlayerId,
-            targetPlayerId: toPlayerId,
-            relationToActor: getRelationToActor(state, actingPlayerId, toPlayerId),
-            targetKind: 'player',
+        hints.push(buildPlayerTargetHint(state, actingPlayerId, toPlayerId, {
             effectIntent: applyIntent,
             estimatedSwing: getGrantedEffectValue(state, actingPlayerId, toPlayerId, statusId, 1),
             tags: [`transfer-apply:${statusId}`],
@@ -992,7 +1096,13 @@ const buildInteractionActions = (
     playerId: PlayerId,
 ): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
-    if (!current || current.playerId !== playerId) return null;
+    if (!current) return null;
+    if (current.playerId !== playerId) return [];
+
+    const selectPlayerActions = buildSelectPlayerInteractionActions(state, playerId, current);
+    if (selectPlayerActions) {
+        return selectPlayerActions;
+    }
 
     if (current.kind === 'simple-choice') {
         const data = current.data as {
@@ -1144,34 +1254,6 @@ const buildInteractionActions = (
     if (current.kind === 'dt:card-interaction') {
         const data = current.data as CardInteractionData;
 
-        if (data.type === 'selectPlayer') {
-            const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
-                .filter((targetId) => !!state.core.players[targetId])
-                .filter((targetId) => !data.requiresTargetWithStatus || playerHasStatusOrToken(state, targetId));
-            const selections = buildPlayerSelectionCombos(targetPlayerIds, data.selectCount ?? 1);
-
-            const actions = selections.map((selectedPlayerIds, index) => {
-                const aiHints = buildSelectPlayerActionAiHints(state, playerId, selectedPlayerIds, data);
-                return {
-                    actionId: createAiLegalActionId('interaction', current.id, 'select-player', index),
-                    kind: 'interaction-select-player',
-                    label: `选择玩家 ${selectedPlayerIds.join(', ')}`,
-                    commands: [{
-                        type: 'RESOLVE_INTERACTION',
-                        payload: { selectedPlayerIds },
-                    }],
-                    ...(aiHints.length > 0 ? { aiHints } : {}),
-                    metadata: {
-                        interactionId: current.id,
-                        selectedPlayerIds,
-                    },
-                };
-            });
-            return actions.length > 0
-                ? actions
-                : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
-        }
-
         if (data.type === 'selectHandCard') {
             const player = state.core.players[playerId];
             const selectedCardId = player?.hand[0]?.id;
@@ -1300,11 +1382,11 @@ const buildInteractionActions = (
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
         }
 
-        return [];
+        return [buildEmergencyInteractionCancelAction(current.id, 'no-legal-actions')];
     }
 
     if (current.kind !== 'multistep-choice') {
-        return null;
+        return [buildEmergencyInteractionCancelAction(current.id, 'unsupported-interaction-kind')];
     }
 
     const data = current.data as DiceInteractionData;
@@ -1402,7 +1484,7 @@ const buildInteractionActions = (
                 : mode === 'adjust'
                     ? enumeratePerItemValueAssignments(selection, (die) =>
                         [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
-                : [selection.map((die) => {
+                : [selection.map((_die) => {
                     return targetValue;
                 })];
 
@@ -1815,6 +1897,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
     const actions: AiLegalAction[] = [];
     const player = state.core.players[playerId];
     if (!player) return actions;
+    const rerollBlockedByBindCp = isOffensiveRollRerollBlockedByBindCp(state, playerId, phase);
 
     if (phase === 'discard') {
         // 规则口径（Rulepop）：弃牌阶段应"卖牌得 CP"而非纯弃牌。
@@ -1852,6 +1935,7 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
         (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll')
         && state.core.rollCount < state.core.rollLimit
         && !state.core.rollConfirmed
+        && !rerollBlockedByBindCp
     ) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('roll', 'dice'),
@@ -1876,7 +1960,11 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
 
     if (phase === 'offensiveRoll' || phase === 'defensiveRoll') {
         const offensiveAttackAlreadyInitiated = phase === 'offensiveRoll' && Boolean(state.core.pendingAttack);
-        if (phase === 'offensiveRoll' && state.core.rollCount > 0 && !state.core.rollConfirmed) {
+        if (phase === 'offensiveRoll'
+            && state.core.rollCount > 0
+            && !state.core.rollConfirmed
+            && !rerollBlockedByBindCp
+        ) {
             for (const die of getActiveDice(state.core)) {
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('toggle-die-lock', die.id, die.isKept ? 'unlock' : 'lock'),
@@ -2793,6 +2881,7 @@ const dicePlanScorer: LocalAiActionScorer = {
             const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
             return shouldKeep !== die.isKept;
         }).length;
+        const rerollBlockedByBindCp = isOffensiveRollRerollBlockedByBindCp(state, context.playerId, phase);
 
         if (action.kind === 'toggle-die-lock') {
             const dieId = typeof action.metadata?.dieId === 'number' ? action.metadata.dieId : null;
@@ -2800,6 +2889,12 @@ const dicePlanScorer: LocalAiActionScorer = {
             if (!die) return null;
             const shouldKeep = plan ? plan.keepDieIds.includes(die.id) : false;
             if (shouldKeep === die.isKept) return null;
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: -240,
+                    reason: '紧缚且 CP 不足，已经不能继续重投，锁骰调整没有收益',
+                };
+            }
 
             return {
                 score: shouldKeep ? 175 : 135,
@@ -2814,6 +2909,12 @@ const dicePlanScorer: LocalAiActionScorer = {
                 return {
                     score: 45,
                     reason: '先拿到第一手骰面，再决定锁骰与重投路线',
+                };
+            }
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: -220,
+                    reason: '紧缚要求额外消耗 CP，但当前 CP 不足，不能继续重投',
                 };
             }
             if (pendingToggleCount > 0) {
@@ -2841,6 +2942,12 @@ const dicePlanScorer: LocalAiActionScorer = {
         }
 
         if (action.kind === 'confirm-roll') {
+            if (rerollBlockedByBindCp) {
+                return {
+                    score: 160,
+                    reason: '紧缚且 CP 不足，无法继续重投，应直接确认当前骰面',
+                };
+            }
             if (pendingToggleCount > 0) {
                 return {
                     score: -180,
@@ -4193,6 +4300,28 @@ function shouldUseRemoteDecisionForDiceThrone(context: AiDecisionContext): boole
     return context.legalActions.some((action) => REMOTE_VISIBLE_MAJOR_ACTION_KINDS.has(action.kind));
 }
 
+function refineDiceThroneAiAction(args: {
+    context: AiDecisionContext;
+    proposedAction: AiLegalAction;
+}): AiLegalAction {
+    const phase = getContextPhase(args.context);
+    if (
+        (args.proposedAction.kind === 'toggle-die-lock' || args.proposedAction.kind === 'roll-dice')
+        && isOffensiveRollRerollBlockedByBindCp(
+            args.context.visibleState as DiceThroneState,
+            args.context.playerId,
+            phase,
+        )
+    ) {
+        const confirmRollAction = args.context.legalActions.find((action) => action.kind === 'confirm-roll');
+        if (confirmRollAction) {
+            return confirmRollAction;
+        }
+    }
+
+    return args.proposedAction;
+}
+
 export const diceThroneAiRuntime: GameAiRuntime = {
     gameId: 'dicethrone',
     buildLegalActions: buildDiceThroneAiLegalActions,
@@ -4213,5 +4342,11 @@ export const diceThroneAiRuntime: GameAiRuntime = {
         baseline: defaultLocalPolicy,
     },
     defaultLocalPolicyId: 'baseline',
+    refineAiAction({ context, proposedAction }) {
+        return refineDiceThroneAiAction({
+            context,
+            proposedAction,
+        });
+    },
     shouldUseRemoteDecision: shouldUseRemoteDecisionForDiceThrone,
 };

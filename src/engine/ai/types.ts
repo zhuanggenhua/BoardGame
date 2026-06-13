@@ -1,4 +1,5 @@
 import type { MatchState, PlayerId } from '../types';
+import type { AiDecisionDescriptor, AiInteractionSupportDeclaration } from './decisionSemantics';
 
 export type AiRelationToActor = 'self' | 'ally' | 'enemy' | 'neutral';
 
@@ -99,6 +100,8 @@ export interface AiInteractionSnapshot {
     playerId?: string;
     options: AiInteractionOptionSnapshot[];
     multi?: unknown;
+    ai?: AiInteractionSupportDeclaration;
+    aiDecisions?: AiDecisionDescriptor[];
 }
 
 export interface AiResponseWindowSnapshot {
@@ -236,6 +239,11 @@ export interface GameAiRuntime {
     gameId: string;
     buildLegalActions(args: BuildGameAiLegalActionsArgs): AiLegalAction[];
     buildFeatureSnapshot?(args: BuildGameAiFeatureSnapshotArgs): Record<string, unknown> | null | undefined;
+    refineAiAction?(args: {
+        context: AiDecisionContext;
+        proposedAction: AiLegalAction;
+        source: 'local-policy' | 'local-fallback' | 'remote-ai' | 'remote-ai-fallback';
+    }): AiLegalAction | null | undefined;
     resolveOnlineDecisionVisibility?(args: {
         playerId: PlayerId;
         sharedState: MatchState<unknown>;

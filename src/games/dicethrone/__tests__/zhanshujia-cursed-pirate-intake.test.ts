@@ -502,15 +502,8 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
         expect(getCustomActionMeta('zhanshujia-war-room-roll')?.categories).toEqual(['dice', 'token', 'card']);
 
         const warMonger = findZhanshujiaAbility('war-monger');
-        const warMongerRoll = getRollDieAction(warMonger);
-        expect(warMongerRoll.diceCount).toBe(1);
-        expect(getConditionalFaces(warMongerRoll)).toEqual([
-            ZHANSHUJIA_DICE_FACE_IDS.SABRE,
-            ZHANSHUJIA_DICE_FACE_IDS.BANNER,
-            ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
-        ]);
-        expect(getCustomActionIds(warMonger)).toEqual(['zhanshujia-war-monger-extra-offensive-roll']);
-        expect(getCustomActionMeta('zhanshujia-war-monger-extra-offensive-roll')?.categories).toEqual(['other']);
+        expect(getCustomActionIds(warMonger)).toEqual(['zhanshujia-war-monger-roll']);
+        expect(getCustomActionMeta('zhanshujia-war-monger-roll')?.categories).toEqual(['damage', 'token', 'card', 'other']);
 
         const disengageRoll = getRollDieAction(findZhanshujiaCard('card-zhanshujia-disengage'));
         expect(disengageRoll.diceCount).toBe(1);

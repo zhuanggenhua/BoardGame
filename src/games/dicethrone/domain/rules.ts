@@ -412,13 +412,15 @@ export const getTargetingRollChoiceOptions = (
     customId: string;
     value: number;
     labelKey: string;
+    labelParams?: Record<string, string | number>;
     disabled?: boolean;
 }> => {
     return getOpponents(state, attackerId)
         .map((pid) => ({
             customId: `select-target:${pid}`,
             value: 1,
-            labelKey: `玩家 ${Number(pid) + 1}`,
+            labelKey: 'interaction.targetingRollPlayerOption',
+            labelParams: { playerNumber: Number(pid) + 1 },
         }));
 };
 

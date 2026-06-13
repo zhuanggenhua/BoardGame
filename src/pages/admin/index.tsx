@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import StatsCard from './components/StatsCard';
 import { Users, Gamepad2, Activity, ShieldAlert } from 'lucide-react';
@@ -48,6 +49,7 @@ interface StatItem {
 }
 
 export default function AdminDashboard() {
+    const { t } = useTranslation('lobby');
     const { token } = useAuth();
     const { error } = useToast();
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -65,12 +67,12 @@ export default function AdminDashboard() {
                 const res = await fetch(`${ADMIN_API_URL}/stats`, {
                     headers,
                 });
-                if (!res.ok) throw new Error('Failed to fetch stats');
+                if (!res.ok) throw new Error(t('admin.dashboard.toast.stats_failed'));
                 const data = await res.json();
                 setStats(data);
             } catch (err) {
                 console.error(err);
-                error('获取统计数据失败');
+                error(t('admin.dashboard.toast.stats_failed'));
             } finally {
                 setLoading(false);
             }
@@ -91,12 +93,12 @@ export default function AdminDashboard() {
                 const res = await fetch(`${ADMIN_API_URL}/stats/trend?days=7`, {
                     headers,
                 });
-                if (!res.ok) throw new Error('Failed to fetch trend stats');
+                if (!res.ok) throw new Error(t('admin.dashboard.toast.trend_failed'));
                 const data = await res.json();
                 setTrend(data);
             } catch (err) {
                 console.error(err);
-                error('获取趋势数据失败');
+                error(t('admin.dashboard.toast.trend_failed'));
             } finally {
                 setTrendLoading(false);
             }
@@ -108,25 +110,25 @@ export default function AdminDashboard() {
 
     const statItems: StatItem[] = [
         {
-            title: "总用户数",
+            title: t('admin.dashboard.overview.total_users'),
             value: stats?.totalUsers ?? '-',
             icon: <Users size={24} />,
             color: "text-indigo-600 bg-indigo-50"
         },
         {
-            title: "24h 活跃用户",
+            title: t('admin.dashboard.overview.active_users_24h'),
             value: stats?.activeUsers24h ?? '-',
             icon: <Activity size={24} />,
             color: "text-emerald-600 bg-emerald-50"
         },
         {
-            title: "总对局数",
+            title: t('admin.dashboard.overview.total_matches'),
             value: stats?.totalMatches ?? '-',
             icon: <Gamepad2 size={24} />,
             color: "text-violet-600 bg-violet-50"
         },
         {
-            title: "被封禁用户",
+            title: t('admin.dashboard.overview.banned_users'),
             value: stats?.bannedUsers ?? '-',
             icon: <ShieldAlert size={24} />,
             color: "text-rose-600 bg-rose-50"
@@ -145,8 +147,10 @@ export default function AdminDashboard() {
         <div className="h-full overflow-y-auto p-8">
             <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">概览</h1>
-                    <p className="text-zinc-500 mt-1">欢迎回来，这里是您的平台运营状态概览。</p>
+                    <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                        {t('admin.dashboard.home.title')}
+                    </h1>
+                    <p className="text-zinc-500 mt-1">{t('admin.dashboard.home.description')}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -163,26 +167,22 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* 活跃趋势 */}
                     <GlobalTrendChart data={trendData} loading={trendLoading} />
 
-                    {/* 游戏热度 */}
                     <GamePopularityChart stats={playTimeStats} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* 用户构成 */}
                     <UserCompositionChart
                         totalUsers={stats?.totalUsers || 0}
                         activeUsers={stats?.activeUsers24h || 0}
                         bannedUsers={stats?.bannedUsers || 0}
                     />
 
-                    {/* Placeholder for future charts */}
                     <div className="lg:col-span-2 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 p-6 rounded-2xl border border-dashed border-indigo-200 flex items-center justify-center text-indigo-300">
                         <div className="text-center">
                             <Activity className="mx-auto mb-2 opacity-50" size={32} />
-                            <p className="text-sm font-medium">更多数据源接入中...</p>
+                            <p className="text-sm font-medium">{t('admin.dashboard.home.more_sources')}</p>
                         </div>
                     </div>
                 </div>

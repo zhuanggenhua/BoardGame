@@ -275,6 +275,164 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(finalState.core.bases[1].minions.find(minion => minion.uid === 'm3')?.powerCounters).toBe(7);
     });
 
+    it('afterScoring 通过统一反应入口打出我们乃最强后若没有合法接收目标，应直接反馈并自动收口而不是卡死', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('m1', 'alien_invader', '0', '0', 3, 7),
+                        makeMinion('m2', 'ninja_shinobi', '1', '1', 2, 2),
+                    ],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].hand = [
+                { uid: 'c1', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const playOptionId = findOptionId(
+            choice,
+            option => option.value?.kind === 'play_action' && option.value?.cardUid === 'c1',
+            '找不到我们乃最强的统一反应入口',
+        );
+        const playResult = runner.resolveInteraction('0', { optionId: playOptionId });
+        expect(playResult.success).toBe(true);
+        eventLog.push(...playResult.events);
+        expect(
+            playResult.events.some(
+                event => event.type === SU_EVENTS.ABILITY_FEEDBACK
+                    && (
+                        (event as { payload?: { feedbackKey?: string; messageKey?: string } }).payload?.feedbackKey === 'feedback.no_valid_targets'
+                        || (event as { payload?: { feedbackKey?: string; messageKey?: string } }).payload?.messageKey === 'feedback.no_valid_targets'
+                    ),
+            ),
+        ).toBe(true);
+        expect(getCurrentChoice(runner.getState())).toBeUndefined();
+
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
+
+        const finalState = runner.getState();
+        expect(getCurrentChoice(finalState)).toBeUndefined();
+        expect(getReactionSession(finalState)).toBeUndefined();
+        expect(finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
+        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_REPLACED)).toBe(1);
+    });
+
+    it('afterScoring 同一基地内玩家已让过后，其他玩家出牌结算不应把已让过玩家重新拉回响应窗', () => {
+        const runner = createRunner((ids, random) => {
+            const core = SmashUpDomain.setup(ids, random);
+            const sys = createInitialSystemState(ids, smashUpSystemsForTest, undefined);
+
+            core.factionSelection = undefined;
+            sys.phase = 'playCards';
+            core.bases = [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [
+                        makeMinion('p0-source', 'giant_ant_worker', '0', '0', 3, 4),
+                        makeMinion('p1-source', 'giant_ant_soldier', '1', '1', 2, 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_great_library',
+                    minions: [makeMinion('p0-target', 'alien_invader', '0', '0', 3, 0)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_the_hill',
+                    minions: [makeMinion('p1-target', 'robot_microbot_alpha', '1', '1', 2, 0)],
+                    ongoingActions: [],
+                },
+            ];
+            core.baseDeck = ['base_secret_garden'];
+            core.players['0'].hand = [
+                { uid: 'p0-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '0' },
+            ];
+            core.players['1'].hand = [
+                { uid: 'p1-champs', defId: 'giant_ant_we_are_the_champions', type: 'action', owner: '1' },
+            ];
+
+            return { sys, core };
+        });
+
+        const { eventLog, choice } = advanceToAfterScoring(runner);
+        const passResult = runner.resolveInteraction(choice.playerId, { optionId: 'pass' });
+        expect(passResult.success).toBe(true);
+        eventLog.push(...passResult.events);
+
+        const playerOneChoice = getCurrentChoice(runner.getState());
+        expect(playerOneChoice?.sourceId).toBe('smashup_reaction_choose');
+        expect(playerOneChoice?.playerId).toBe('1');
+
+        const playResult = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                playerOneChoice!,
+                option => option.value?.kind === 'play_action' && option.value?.cardUid === 'p1-champs',
+                '找不到 1 号玩家的我们乃最强统一反应入口',
+            ),
+        });
+        expect(playResult.success).toBe(true);
+        eventLog.push(...playResult.events);
+
+        const sourceChoice = getCurrentChoice(runner.getState());
+        expect(sourceChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_source');
+        const chooseSource = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                sourceChoice!,
+                option => option.value?.minionUid === 'p1-source',
+                '找不到 1 号玩家的力量来源随从',
+            ),
+        });
+        expect(chooseSource.success).toBe(true);
+        eventLog.push(...chooseSource.events);
+
+        const targetChoice = getCurrentChoice(runner.getState());
+        expect(targetChoice?.sourceId).toBe('giant_ant_we_are_the_champions_choose_target');
+        const chooseTarget = runner.resolveInteraction('1', {
+            optionId: findOptionId(
+                targetChoice!,
+                option => option.value?.minionUid === 'p1-target',
+                '找不到 1 号玩家的力量目标随从',
+            ),
+        });
+        expect(chooseTarget.success).toBe(true);
+        eventLog.push(...chooseTarget.events);
+
+        const chooseAmount = runner.resolveInteraction('1', {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 3, value: 3 },
+        });
+        expect(chooseAmount.success).toBe(true);
+        eventLog.push(...chooseAmount.events);
+
+        const resumedChoice = getCurrentChoice(runner.getState());
+        expect(resumedChoice?.sourceId).not.toBe('smashup_reaction_choose');
+        expect(resumedChoice?.playerId).not.toBe('0');
+        expect(getReactionSession(runner.getState())).toBeUndefined();
+
+        drainScoreBasesDelayUntilPromptOrIdle(runner, eventLog);
+
+        const finalState = runner.getState();
+        expect(getCurrentChoice(finalState)).toBeUndefined();
+        expect(getReactionSession(finalState)).toBeUndefined();
+        expect(finalState.sys.responseWindow?.current).toBeUndefined();
+    });
+
     it('afterScoring 窗口打开时不会提前清场换基地，全部让过后只补发一次', () => {
         const runner = createRunner((ids, random) => {
             const core = SmashUpDomain.setup(ids, random);

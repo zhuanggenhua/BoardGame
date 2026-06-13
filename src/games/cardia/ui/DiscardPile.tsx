@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { safeMatchMedia, subscribeMediaQueryChange } from '../../../lib/mediaQuery';
 import type { CardInstance } from '../domain/core-types';
@@ -29,6 +30,7 @@ interface DiscardCardImageProps {
 }
 
 const DiscardCardImage: React.FC<DiscardCardImageProps> = ({ card, className }) => {
+    const { t } = useTranslation('game-cardia');
     const [failed, setFailed] = React.useState(false);
     const cardSrc = resolveCardiaCardImagePath(card) || CARDIA_IMAGE_PATHS.DECK1_BACK;
 
@@ -37,12 +39,12 @@ const DiscardCardImage: React.FC<DiscardCardImageProps> = ({ card, className }) 
             <div className={`relative ${className}`}>
                 <OptimizedImage
                     src={CARDIA_IMAGE_PATHS.DECK1_BACK}
-                    alt="Discard fallback"
+                    alt={t('imageAlt.discardFallback')}
                     className="h-full w-full rounded-lg object-cover shadow-lg"
                     sizes="106px"
                 />
                 <div className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 px-2 py-1 text-center text-[10px] font-semibold text-white">
-                    影响力 {card.baseInfluence}
+                    {t('influence')} {card.baseInfluence}
                 </div>
             </div>
         );
@@ -51,7 +53,7 @@ const DiscardCardImage: React.FC<DiscardCardImageProps> = ({ card, className }) 
     return (
         <OptimizedImage
             src={cardSrc}
-            alt={`Card ${card.baseInfluence}`}
+            alt={`${t('imageAlt.card')} ${card.baseInfluence}`}
             className={className}
             sizes="106px"
             onError={() => setFailed(true)}
@@ -149,6 +151,7 @@ const DiscardCardFace: React.FC<DiscardCardFaceProps> = ({ card, onMagnify, clas
 };
 
 export const DiscardPile: React.FC<DiscardPileProps> = ({ cards, isOpponent: _isOpponent = false, onCardClick, onCardHover, onCardHoverMove, onCardLeave, setCardRef }) => {
+    const { t } = useTranslation('game-cardia');
     const [isTightLandscape, setIsTightLandscape] = React.useState(false);
 
     React.useEffect(() => {
@@ -190,7 +193,7 @@ export const DiscardPile: React.FC<DiscardPileProps> = ({ cards, isOpponent: _is
                 className="relative box-border flex items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-gray-600"
                 style={shellStyle}
             >
-                <div className="text-center text-xs text-gray-500">空</div>
+                <div className="text-center text-xs text-gray-500">{t('empty')}</div>
             </div>
         );
     }
@@ -223,7 +226,7 @@ export const DiscardPile: React.FC<DiscardPileProps> = ({ cards, isOpponent: _is
                                 onMouseEnter={(event) => onCardHover?.(card, { x: event.clientX, y: event.clientY })}
                                 onMouseMove={(event) => onCardHoverMove?.(card, { x: event.clientX, y: event.clientY })}
                                 onMouseLeave={() => onCardLeave?.(card)}
-                                title={`影响力 ${card.baseInfluence}`}
+                                title={`${t('influence')} ${card.baseInfluence}`}
                             >
                                 <div
                                     className="relative"

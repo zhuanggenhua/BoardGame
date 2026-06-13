@@ -184,6 +184,14 @@ production/session-logs/
 # Codex/OMX 状态文件
 .omx/
 
+# codedb-mcp local indexes
+.codedb-mcp/**
+!.codedb-mcp/
+!.codedb-mcp/codedb-mcp.toml
+
+# DotCraft local workspace state
+.craft/
+
 # 临时分析文档（应移到 docs/bugs/ 或 evidence/）
 BUG-*.md
 DEBUG-*.md

@@ -204,9 +204,12 @@ interface PromptSliderConfig {
     defaultValue: number;
     confirmOptionId?: string;
     confirmLabel?: string;
+    confirmLabelKey?: string;
     valueLabel?: string;
+    valueLabelKey?: string;
     skipOptionId?: string;
     skipLabel?: string;
+    skipLabelKey?: string;
 }
 
 function parseSliderConfig(prompt: unknown): PromptSliderConfig | undefined {
@@ -229,9 +232,12 @@ function parseSliderConfig(prompt: unknown): PromptSliderConfig | undefined {
         defaultValue: Number.isFinite(defaultValue) ? defaultValue : max,
         confirmOptionId: typeof slider.confirmOptionId === 'string' ? slider.confirmOptionId : undefined,
         confirmLabel: typeof slider.confirmLabel === 'string' ? slider.confirmLabel : undefined,
+        confirmLabelKey: typeof slider.confirmLabelKey === 'string' ? slider.confirmLabelKey : undefined,
         valueLabel: typeof slider.valueLabel === 'string' ? slider.valueLabel : undefined,
+        valueLabelKey: typeof slider.valueLabelKey === 'string' ? slider.valueLabelKey : undefined,
         skipOptionId: typeof slider.skipOptionId === 'string' ? slider.skipOptionId : undefined,
         skipLabel: typeof slider.skipLabel === 'string' ? slider.skipLabel : undefined,
+        skipLabelKey: typeof slider.skipLabelKey === 'string' ? slider.skipLabelKey : undefined,
     };
 }
 
@@ -240,6 +246,26 @@ function formatSliderText(template: string | undefined, value: number, max: numb
     return template
         .replace(/\{\{\s*value\s*\}\}/g, String(value))
         .replace(/\{\{\s*max\s*\}\}/g, String(max));
+}
+
+function resolveSliderText(
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    key: string | undefined,
+    template: string | undefined,
+    value: number,
+    max: number,
+    fallback: string,
+): string {
+    const formattedFallback = formatSliderText(template, value, max, fallback);
+    if (!key) {
+        return formattedFallback;
+    }
+    return t(key, {
+        value,
+        max,
+        count: value,
+        defaultValue: formattedFallback,
+    });
 }
 
 const DECK_REORDER_SOURCE_IDS = new Set([
@@ -722,7 +748,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 </span>
                             )}
                             <GameButton variant="secondary" size="sm" onClick={displayCards.onClose}>
-                                {t('ui.close', { defaultValue: '关闭' })}
+                                {t('ui.close')}
                             </GameButton>
                         </div>
                     </div>
@@ -743,7 +769,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const waitingText = t('ui.waiting_for_player', {
         id: promptOwnerName,
         player: promptOwnerName,
-        defaultValue: '正在等待 {{player}}',
     });
 
     // 非 owner 的等待页必须收敛成单一语义，避免把等待态误读成可操作 prompt。
@@ -771,19 +796,30 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     }
 
     if (sliderConfig) {
-        const confirmLabel = formatSliderText(
+        const confirmLabel = resolveSliderText(
+            t,
+            sliderConfig.confirmLabelKey,
             sliderConfig.confirmLabel,
             sliderValue,
             sliderConfig.max,
             `确认转移 ${sliderValue}`,
         );
-        const valueLabel = formatSliderText(
+        const valueLabel = resolveSliderText(
+            t,
+            sliderConfig.valueLabelKey,
             sliderConfig.valueLabel,
             sliderValue,
             sliderConfig.max,
             `当前数量：${sliderValue} / ${sliderConfig.max}`,
         );
-        const skipLabel = sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip', { defaultValue: '跳过' });
+        const skipLabel = sliderConfig.skipLabelKey
+            ? t(sliderConfig.skipLabelKey, {
+                value: sliderValue,
+                max: sliderConfig.max,
+                count: sliderValue,
+                defaultValue: sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip'),
+            })
+            : (sliderConfig.skipLabel ?? sliderSkipOption?.label ?? t('ui.skip'));
 
         return (
             <motion.div
@@ -808,7 +844,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     {t('ui.waiting_for_player', {
                                         id: promptOwnerName,
                                         player: promptOwnerName,
-                                        defaultValue: '正在等待 {{player}}',
                                     })}
                                 </div>
                             )}
@@ -847,7 +882,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         [&::-moz-range-thumb]:border-2
                                         [&::-moz-range-thumb]:border-amber-600
                                         disabled:opacity-50 disabled:cursor-not-allowed"
-                                    aria-label="slider-choice"
+                                    aria-label={t('ui.slider_choice')}
                                 />
                                 <div className="flex justify-between mt-1 text-xs text-slate-500">
                                     <span>{sliderConfig.min}</span>
@@ -894,10 +929,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-black tracking-tight text-amber-200 uppercase">
-                        {lane === 'top' ? '牌库顶' : '牌库底'}
+                        {lane === 'top' ? t('ui.deck_top_short') : t('ui.deck_bottom_short')}
                     </h3>
                     <span className="text-xs text-slate-400">
-                        {uids.length} 张
+                        {t('ui.card_count_short', { count: uids.length })}
                     </span>
                 </div>
                 <div className="min-h-[12rem] rounded-lg border border-slate-700 bg-slate-950/70 p-3">
@@ -944,7 +979,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             </div>
         );
 
-        const moveButtonLabel = deckReorderSelectedPile === 'bottom' ? '移到牌库顶' : '移到牌库底';
+        const moveButtonLabel = deckReorderSelectedPile === 'bottom'
+            ? t('ui.deck_reorder_move_to_top')
+            : t('ui.deck_reorder_move_to_bottom');
         const selectedDeckReorderCardName = selectedDeckReorderUid
             ? (() => {
                 const selectedCard = deckReorderCardMap.get(selectedDeckReorderUid);
@@ -973,14 +1010,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 {title}
                             </h2>
                             <p className="mt-2 text-center text-sm text-slate-300">
-                                选中一张牌后，只显示当前可执行的整理操作。
+                                {t('ui.deck_reorder_hint')}
                             </p>
                         </div>
 
                         <div className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto]">
                             <div className="grid gap-4">
-                                {renderDeckReorderLane('top', deckReorderTopUids, '这里的牌会按从左到右的顺序放回牌库顶')}
-                                {renderDeckReorderLane('bottom', deckReorderBottomUids, '这里的牌会按从左到右的顺序放回牌库底')}
+                                {renderDeckReorderLane('top', deckReorderTopUids, t('ui.deck_reorder_top_empty'))}
+                                {renderDeckReorderLane('bottom', deckReorderBottomUids, t('ui.deck_reorder_bottom_empty'))}
                             </div>
 
                             <div className="flex min-w-[13rem] flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
@@ -988,10 +1025,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     <>
                                         <div className="rounded-md border border-slate-700 bg-slate-950/50 px-3 py-3">
                                             <div className="text-[11px] font-semibold tracking-tight text-slate-400">
-                                                当前操作对象
+                                                {t('ui.deck_reorder_current_subject')}
                                             </div>
                                             <div className="mt-1 text-sm font-bold text-amber-200 min-h-[1.25rem]">
-                                                {selectedDeckReorderCardName ?? '先从左侧选一张牌'}
+                                                {selectedDeckReorderCardName ?? t('ui.deck_reorder_select_subject')}
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2">
@@ -1015,7 +1052,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     disabled={!selectedDeckReorderUid || !deckReorderSelectedPile}
                                                     onClick={() => shiftDeckReorderSelection(-1)}
                                                 >
-                                                    前移
+                                                    {t('ui.deck_reorder_move_backward')}
                                                 </GameButton>
                                             )}
                                             {canShiftSelectedForward && (
@@ -1025,7 +1062,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     disabled={!selectedDeckReorderUid || !deckReorderSelectedPile}
                                                     onClick={() => shiftDeckReorderSelection(1)}
                                                 >
-                                                    后移
+                                                    {t('ui.deck_reorder_move_forward')}
                                                 </GameButton>
                                             )}
                                             {isDeckReorderDirty && (
@@ -1035,7 +1072,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                     onClick={resetDeckReorder}
                                                     className="opacity-80 hover:opacity-100"
                                                 >
-                                                    重置
+                                                    {t('ui.deck_reorder_reset')}
                                                 </GameButton>
                                             )}
                                         </div>
@@ -1046,7 +1083,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             disabled={!deckReorderMatchedOption || isSubmitLocked}
                                             onClick={() => handleAction(deckReorderMatchedOption!.id, deckReorderMatchedOption!.disabled)}
                                         >
-                                            确认顺序
+                                            {t('ui.deck_reorder_confirm')}
                                         </GameButton>
                                         {skipOption && (
                                             <GameButton
@@ -1063,13 +1100,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 ) : (
                                     <>
                                         <div className="text-xs font-bold uppercase tracking-tight text-slate-400">
-                                            等待调整
+                                            {t('ui.deck_reorder_waiting')}
                                         </div>
                                         <div className="rounded-md border border-yellow-500/25 bg-yellow-500/10 px-3 py-3 text-sm font-bold leading-6 text-yellow-100/90">
                                             {t('ui.waiting_for_player', {
                                                 id: promptOwnerName,
                                                 player: promptOwnerName,
-                                                defaultValue: '正在等待 {{player}}',
                                             })}
                                         </div>
                                     </>
@@ -1115,7 +1151,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 {t('ui.waiting_for_player', {
                                     id: promptOwnerName,
                                     player: promptOwnerName,
-                                    defaultValue: '正在等待 {{player}}',
                                 })}
                             </div>
                         ) : (
@@ -1178,9 +1213,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs md:text-sm">
                                 {isMyPrompt && (
                                     <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 font-semibold text-slate-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                        已选 {selectedIds.length}
-                                        {maxSelections !== undefined ? ` / ${maxSelections}` : ''}
-                                        {minSelections > 0 ? `，至少 ${minSelections}` : ''}
+                                        {maxSelections !== undefined
+                                            ? t('ui.selected_count_with_max', { count: selectedIds.length, max: maxSelections })
+                                            : t('ui.selected_count', { count: selectedIds.length })}
+                                        {minSelections > 0 ? t('ui.selected_minimum', { min: minSelections }) : ''}
                                     </span>
                                 )}
                             </div>
@@ -1231,7 +1267,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     {t('ui.waiting_for_player', {
                                         id: promptOwnerName,
                                         player: promptOwnerName,
-                                        defaultValue: '正在等待 {{player}}',
                                     })}
                                 </div>
                             )}
@@ -1246,7 +1281,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             size="sm"
                                             onClick={() => setSelectedIds([])}
                                         >
-                                            清空选择
+                                            {t('ui.clear_selection')}
                                         </GameButton>
                                     )}
                                     <GameButton
@@ -1257,7 +1292,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         }}
                                         disabled={!canSubmitMulti || isSubmitLocked}
                                     >
-                                        {t('ui.confirm', { defaultValue: '确认' })}
+                                        {t('ui.confirm')}
                                         {selectedIds.length > 0 && ` (${selectedIds.length})`}
                                     </GameButton>
                                     {skipOption && (
@@ -1324,9 +1359,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         )}
                         {isMyPrompt && isMulti && (
                             <span className="font-semibold text-slate-200">
-                                已选 {selectedIds.length}
-                                {maxSelections !== undefined ? ` / ${maxSelections}` : ''}
-                                {minSelections > 0 ? `，至少 ${minSelections}` : ''}
+                                {maxSelections !== undefined
+                                    ? t('ui.selected_count_with_max', { count: selectedIds.length, max: maxSelections })
+                                    : t('ui.selected_count', { count: selectedIds.length })}
+                                {minSelections > 0 ? t('ui.selected_minimum', { min: minSelections }) : ''}
                             </span>
                         )}
                     </div>
@@ -1343,7 +1379,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     type="search"
                                     value={cardSearch}
                                     onChange={(event) => setCardSearch(event.target.value)}
-                                    placeholder={t('ui.card_search_placeholder', { defaultValue: '搜索卡牌' })}
+                                    placeholder={t('ui.card_search_placeholder')}
                                     data-testid="prompt-card-search-input"
                                     className="h-10 w-full rounded-full border border-amber-200/25 bg-black/28 pl-10 pr-10 text-sm font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25"
                                 />
@@ -1353,7 +1389,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         onClick={() => setCardSearch('')}
                                         data-testid="prompt-card-search-clear"
                                         className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-amber-50 transition-colors hover:bg-white/20"
-                                        aria-label={t('ui.card_search_clear', { defaultValue: '清空搜索' })}
+                                        aria-label={t('ui.card_search_clear')}
                                     >
                                         <X size={14} />
                                     </button>
@@ -1363,7 +1399,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 {t('ui.card_filter_result_count', {
                                     visible: visibleCardOptions.length,
                                     total: cardOptions.length,
-                                    defaultValue: '显示 {{visible}} / {{total}}',
                                 })}
                             </div>
                         </div>
@@ -1375,7 +1410,6 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         {t('ui.waiting_for_player', {
                             id: promptOwnerName,
                             player: promptOwnerName,
-                            defaultValue: '正在等待 {{player}}',
                         })}
                     </div>
                 )}
@@ -1468,7 +1502,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         })}
                         {visibleCardOptions.length === 0 && (
                             <div className="mx-auto flex min-h-[260px] w-full items-center justify-center rounded-xl border border-dashed border-amber-200/20 bg-black/20 px-6 text-center text-sm font-bold text-amber-100/70">
-                                {t('ui.card_search_empty', { defaultValue: '没有匹配的卡牌' })}
+                                {t('ui.card_search_empty')}
                             </div>
                         )}
                     </div>
@@ -1507,7 +1541,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         size="sm"
                                         onClick={() => setSelectedIds([])}
                                     >
-                                        清空选择
+                                        {t('ui.clear_selection')}
                                     </GameButton>
                                 )}
                                 {showBulkSelectControl && (
@@ -1522,10 +1556,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         }}
                                     >
                                         {selectedIds.length === nonSkipOptions.length
-                                            ? t('ui.deselect_all', { defaultValue: '取消全选' })
+                                            ? t('ui.deselect_all')
                                             : (maxSelections !== undefined && maxSelections < cardOptions.length
-                                                ? '选满可选'
-                                                : t('ui.select_all', { defaultValue: '全选' }))}
+                                                ? t('ui.select_max_available')
+                                                : t('ui.select_all'))}
                                     </GameButton>
                                 )}
                                 {isMulti && (
@@ -1537,7 +1571,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                         }}
                                         disabled={!canSubmitMulti || isSubmitLocked}
                                     >
-                                        {t('ui.confirm', { defaultValue: '确认' })}
+                                        {t('ui.confirm')}
                                         {selectedIds.length > 0 && ` (${selectedIds.length})`}
                                     </GameButton>
                                 )}
@@ -1613,11 +1647,10 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         }) : (
                             <div className="text-sm text-slate-500 text-center py-6">
                                 {isMyPrompt
-                                    ? t('ui.prompt_no_options', { defaultValue: '暂无可选项' })
+                                    ? t('ui.prompt_no_options')
                                     : t('ui.waiting_for_player', {
                                         id: promptOwnerName,
                                         player: promptOwnerName,
-                                        defaultValue: '正在等待 {{player}}',
                                     })}
                             </div>
                         )}
@@ -1651,8 +1684,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     }}
                                 >
                                     {selectedIds.length === nonSkipOptions.length
-                                        ? t('ui.deselect_all', { defaultValue: '取消全选' })
-                                        : t('ui.select_all', { defaultValue: '全选' })}
+                                        ? t('ui.deselect_all')
+                                        : t('ui.select_all')}
                                 </GameButton>
                             )}
                             <GameButton
@@ -1663,7 +1696,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 }}
                                 disabled={!canSubmitMulti || isSubmitLocked}
                             >
-                                {t('ui.confirm', { defaultValue: '确认' })}
+                                {t('ui.confirm')}
                                 {selectedIds.length > 0 && ` (${selectedIds.length})`}
                             </GameButton>
                         </div>

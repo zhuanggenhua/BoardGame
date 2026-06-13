@@ -28,7 +28,9 @@ import {
     buildValidatedDestroyEvents,
     buildValidatedCardToDeckBottomEvents,
     buildStandardDrawEvents,
+    createSkipOption,
     drawMadnessCards,
+    returnMadnessCard,
     findMinionOnBases,
     getAvailableSpiritOfTheForestOrTitan,
     markSpiritOfTheForestOrUsed,
@@ -40,7 +42,6 @@ import { registerBaseAbility, registerExtended as registerExtendedBase, type Bas
 import { registerProtection, registerTrigger } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
-import { reduce } from './reduce';
 import { getPlayerLabel } from './utils';
 import {
     appendPendingPostScoringActions,
@@ -53,6 +54,7 @@ import {
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
 } from './branchingChoice';
+import { reduce } from './reduce';
 import { executeAbilityProgram } from './abilityRuntime';
 import {
     createEffectDslProgram,
@@ -91,6 +93,60 @@ function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boo
     return (player?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) === 1;
 }
 
+function getPlayerNumberLabelParams(playerId: PlayerId): { playerNumber: number } {
+    const numericId = typeof playerId === 'number' ? playerId : parseInt(playerId, 10);
+    return { playerNumber: Number.isFinite(numericId) ? numericId + 1 : 1 };
+}
+
+function buildMiskatonicUniversityClassicOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+): PromptOption<{ source?: 'hand' | 'discard'; skip?: true }>[] {
+    const player = state.players[playerId];
+    if (!player) {
+        return [createSkipOption()];
+    }
+
+    const options: PromptOption<{ source?: 'hand' | 'discard'; skip?: true }>[] = [];
+    if (player.hand.some(card => card.defId === MADNESS_CARD_DEF_ID)) {
+        options.push({
+            id: 'hand',
+            label: '从手牌返回1张疯狂卡',
+            labelKey: 'ui.miskatonic_psychologist_return_hand_one_option',
+            value: { source: 'hand' },
+            displayMode: 'button',
+        });
+    }
+    if (player.discard.some(card => card.defId === MADNESS_CARD_DEF_ID)) {
+        options.push({
+            id: 'discard',
+            label: '从弃牌堆返回1张疯狂卡',
+            labelKey: 'ui.miskatonic_psychologist_return_discard_one_option',
+            value: { source: 'discard' },
+            displayMode: 'button',
+        });
+    }
+    options.push(createSkipOption());
+    return options;
+}
+
+function queueMiskatonicUniversityClassicPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+): MatchState<SmashUpCore> {
+    const interaction = createSimpleChoice(
+        `base_miskatonic_university_base_${playerId}_${now}`,
+        playerId,
+        '米斯卡塔尼克大学：选择要返回的疯狂卡',
+        buildMiskatonicUniversityClassicOptions(matchState.core, playerId),
+        { sourceId: 'base_miskatonic_university_base', targetType: 'button', titleKey: 'ui.base_miskatonic_university_choose_return_title' },
+    );
+    interaction.data.optionsGenerator = (state: MatchState<SmashUpCore>) =>
+        buildMiskatonicUniversityClassicOptions(state.core, playerId);
+    return queueInteraction(matchState, interaction);
+}
+
 function getSpiritOptionalBothUpgradeForBase(
     state: SmashUpCore,
     playerId: string,
@@ -110,10 +166,14 @@ function createBaseFairyRingBranchOption(
     branchId: string,
     value?: Record<string, unknown>,
     footprint?: import('./types').SmashUpReactionResourceFootprint,
+    labelKey?: string,
+    labelParams?: Record<string, string | number>,
 ): BranchingChoiceOption {
     return {
         id,
         label,
+        ...(labelKey ? { labelKey } : {}),
+        ...(labelParams ? { labelParams } : {}),
         branchId,
         ...(value ? { value } : {}),
         displayMode: 'button',
@@ -220,7 +280,7 @@ export function registerExpansionBaseAbilities(): void {
         if (candidates.length === 0) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
             ...candidates.map((candidate, index) => ({
                 id: `minion-${index}`,
                 label: candidate.label,
@@ -238,7 +298,7 @@ export function registerExpansionBaseAbilities(): void {
             ctx.playerId,
             '人鱼水池：你可以移动另一位玩家的一个仆从到这里',
             options,
-            { sourceId: 'base_mermaid_pool', targetType: 'minion' },
+            { sourceId: 'base_mermaid_pool', targetType: 'minion', titleKey: 'ui.base_mermaid_pool_title' },
         );
         return {
             events: [],
@@ -262,7 +322,7 @@ export function registerExpansionBaseAbilities(): void {
         if (discardMinions.length === 0) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
             ...discardMinions.map((card, index) => ({
                 id: `discard-${index}`,
                 label: getCardDef(card.defId)?.name ?? card.defId,
@@ -276,7 +336,7 @@ export function registerExpansionBaseAbilities(): void {
             ctx.playerId,
             '藏骨堂：你可以从弃牌堆埋葬一个力量 3 或更少的仆从到这里',
             options,
-            { sourceId: 'base_ossuary', targetType: 'discard' },
+            { sourceId: 'base_ossuary', targetType: 'discard', titleKey: 'ui.base_ossuary_title' },
         );
         return {
             events: [],
@@ -297,16 +357,16 @@ export function registerExpansionBaseAbilities(): void {
         if (playedAtBase !== 1) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'extra-action', label: '额外打出行动', value: { choice: 'extra_action' }, displayMode: 'button' as const },
-            { id: 'draw-card', label: '抽一张牌', value: { choice: 'draw_card' }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'extra-action', label: '额外打出行动', labelKey: 'ui.base_arena_extra_action_option', value: { choice: 'extra_action' }, displayMode: 'button' as const },
+            { id: 'draw-card', label: '抽一张牌', labelKey: 'ui.base_arena_draw_card_option', value: { choice: 'draw_card' }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ];
         const interaction = createSimpleChoice(
             `base_arena_${ctx.playerId}_${ctx.now}`,
             ctx.playerId,
             '竞技场：选择额外打行动或抽牌',
             options,
-            { sourceId: 'base_arena', targetType: 'button' },
+            { sourceId: 'base_arena', targetType: 'button', titleKey: 'ui.base_arena_title' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
@@ -342,7 +402,7 @@ export function registerExpansionBaseAbilities(): void {
         });
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...handOptions,
         ];
 
@@ -350,7 +410,7 @@ export function registerExpansionBaseAbilities(): void {
             `base_the_asylum_${ctx.now}`, ctx.playerId,
             '疯人院：选择一张手牌放入盒子',
             options,
-            { sourceId: 'base_the_asylum', targetType: 'hand' },
+            { sourceId: 'base_the_asylum', targetType: 'hand', titleKey: 'ui.base_the_asylum_title' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
@@ -381,11 +441,13 @@ export function registerExpansionBaseAbilities(): void {
 
         if (playersWithDiscard.length === 0) return { events: [] };
 
-        const options = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        const options: PromptOption<Record<string, unknown>>[] = [
+            createSkipOption(),
             ...playersWithDiscard.map((pid, i) => ({
                 id: `player-${i}`,
                 label: pid === ownerId ? '你自己的弃牌堆' : `${getPlayerLabel(pid)}的弃牌堆`,
+                labelKey: pid === ownerId ? 'ui.base_innsmouth_choose_player_self_option' : 'ui.base_innsmouth_choose_player_other_option',
+                ...(pid === ownerId ? {} : { labelParams: getPlayerNumberLabelParams(pid) }),
                 value: { targetPlayerId: pid },
             })),
         ];
@@ -394,7 +456,12 @@ export function registerExpansionBaseAbilities(): void {
         const interaction = createSimpleChoice(
             `base_innsmouth_base_choose_player_${ctx.now}`, ownerId,
             '印斯茅斯基地：选择从哪个玩家的弃牌堆选卡', options,
-            { sourceId: 'base_innsmouth_base_choose_player', targetType: 'player', autoCancelOption: true },
+            {
+                sourceId: 'base_innsmouth_base_choose_player',
+                targetType: 'player',
+                autoCancelOption: true,
+                titleKey: 'ui.base_innsmouth_choose_player_title',
+            },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
@@ -410,9 +477,28 @@ export function registerExpansionBaseAbilities(): void {
         },
     });
 
-    // ── 密斯卡托尼克大学基地（Miskatonic University Base）────────
-    // "每回合一次，在你打出一个随从到这里后，你可以抓两张疯狂卡，或者从手牌弃置一张疯狂卡来额外打出一张行动。"
-    registerBaseAbility('base_miskatonic_university_base', 'onMinionPlayed', (ctx) => {
+    // ── 米斯卡塔尼克大学（Miskatonic University）────────────────
+    // 基础版："在这个基地计分后，冠军可以搜寻他的手牌和弃牌堆中任意数量的疯狂卡，然后返回到疯狂卡牌库。"
+    registerBaseAbility('base_miskatonic_university_base', 'afterScoring', (ctx) => {
+        const winnerId = ctx.rankings?.[0]?.playerId;
+        if (!winnerId || !ctx.matchState) return { events: [] };
+
+        const winner = ctx.state.players[winnerId];
+        if (!winner) return { events: [] };
+
+        const hasMadnessInHand = winner.hand.some(card => card.defId === MADNESS_CARD_DEF_ID);
+        const hasMadnessInDiscard = winner.discard.some(card => card.defId === MADNESS_CARD_DEF_ID);
+        if (!hasMadnessInHand && !hasMadnessInDiscard) return { events: [] };
+
+        return {
+            events: [],
+            matchState: queueMiskatonicUniversityClassicPrompt(ctx.matchState, winnerId, ctx.now),
+        };
+    }, {
+    });
+
+    // POD 版："每回合一次，在你打出一个随从到这里后，你可以抓两张疯狂卡，或者从手牌弃置一张疯狂卡来额外打出一张行动。"
+    registerBaseAbility('base_miskatonic_university_base_pod', 'onMinionPlayed', (ctx) => {
         const player = ctx.state.players[ctx.playerId];
         if (!player || !ctx.matchState) return { events: [] };
 
@@ -428,6 +514,7 @@ export function registerExpansionBaseAbilities(): void {
             options.push({
                 id: 'draw',
                 label: '抓两张疯狂卡',
+                labelKey: 'ui.base_miskatonic_university_draw_madness_option',
                 value: { choice: 'draw' },
                 displayMode: 'button' as const,
             });
@@ -436,25 +523,25 @@ export function registerExpansionBaseAbilities(): void {
             options.push({
                 id: 'discard',
                 label: '弃一张疯狂卡并额外打出行动',
+                labelKey: 'ui.base_miskatonic_university_discard_madness_option',
                 value: { choice: 'discard_for_action' },
                 displayMode: 'button' as const,
             });
         }
-        options.push({
-            id: 'skip',
-            label: '跳过',
-            value: { skip: true },
-            displayMode: 'button' as const,
-        });
+        options.push(createSkipOption());
 
         const interaction = createSimpleChoice(
-            `base_miskatonic_university_base_${ctx.playerId}_${ctx.now}`, ctx.playerId,
-            '阿卡姆大学：选择要执行的效果',
+            `base_miskatonic_university_base_pod_${ctx.playerId}_${ctx.now}`, ctx.playerId,
+            '米斯卡塔尼克大学：选择要执行的效果',
             options,
-            { sourceId: 'base_miskatonic_university_base', targetType: 'button' },
+            { sourceId: 'base_miskatonic_university_base_pod', targetType: 'button', titleKey: 'ui.base_miskatonic_university_title' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
+    });
+
+    // 显式阻断基础版 afterScoring 自动别名泄漏到 POD 版。
+    registerBaseAbility('base_miskatonic_university_base_pod', 'afterScoring', () => ({ events: [] }), {
     });
 
     // ── 冷原高地（Plateau of Leng）──────────────────────────────
@@ -500,7 +587,7 @@ export function registerExpansionBaseAbilities(): void {
         if (minionsInDeck.length === 0) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...minionsInDeck.map((c, i) => {
                 const def = getMinionDef(c.defId);
                 return {
@@ -517,7 +604,7 @@ export function registerExpansionBaseAbilities(): void {
         const interaction = createSimpleChoice(
             `base_greenhouse_${ctx.now}`, winnerId,
             '温室：从牌库中选择一个随从打出到新基地', options,
-            { sourceId: 'base_greenhouse', targetType: 'generic' },
+            { sourceId: 'base_greenhouse', targetType: 'generic', titleKey: 'ui.base_greenhouse_title' },
         );
         return {
             events: [],
@@ -560,7 +647,7 @@ export function registerExpansionBaseAbilities(): void {
         if (actionsInDiscard.length === 0) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...actionsInDiscard.map((c, i) => {
                 const def = getCardDef(c.defId);
                 return {
@@ -577,7 +664,7 @@ export function registerExpansionBaseAbilities(): void {
         const interaction = createSimpleChoice(
             `base_inventors_salon_${ctx.now}`, winnerId,
             '发明家沙龙：从弃牌堆选择一张行动卡放入手牌', options,
-            { sourceId: 'base_inventors_salon', targetType: 'generic' },
+            { sourceId: 'base_inventors_salon', targetType: 'generic', titleKey: 'ui.base_inventors_salon_title' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
@@ -593,7 +680,7 @@ export function registerExpansionBaseAbilities(): void {
         if (minionsInDiscard.length === 0) return { events: [] };
 
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...minionsInDiscard.map((card, index) => ({
                 id: `minion-${index}`,
                 label: getCardDef(card.defId)?.name ?? card.defId,
@@ -608,7 +695,7 @@ export function registerExpansionBaseAbilities(): void {
             ctx.playerId,
             '水晶堡垒：从弃牌堆选择一个随从放到牌库底',
             options,
-            { sourceId: 'base_crystal_fortress', targetType: 'generic' },
+            { sourceId: 'base_crystal_fortress', targetType: 'generic', titleKey: 'ui.base_crystal_fortress_title' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
@@ -669,6 +756,7 @@ export function registerExpansionBaseAbilities(): void {
                 targetType: 'hand',
                 multi: { min: 2, max: 2 },
                 responseValidationMode: 'live',
+                titleKey: 'ui.base_tabletop_title',
             },
         );
         interaction.data.optionsGenerator = (state) => {
@@ -727,7 +815,7 @@ export function registerExpansionBaseAbilities(): void {
             };
         });
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...minionOptions,
         ];
 
@@ -735,7 +823,7 @@ export function registerExpansionBaseAbilities(): void {
         const interaction = createSimpleChoice(
             `base_cat_fanciers_alley_${ctx.now}`, ctx.playerId,
             '诡猫巷：消灭一个己方随从来抽一张卡牌', options,
-            { sourceId: 'base_cat_fanciers_alley', targetType: 'minion' },
+            { sourceId: 'base_cat_fanciers_alley', targetType: 'minion', titleKey: 'ui.base_cat_fanciers_alley_title' },
         );
         return {
             events: [],
@@ -785,6 +873,7 @@ export function registerExpansionBaseAbilities(): void {
                 now: ctx.now,
                 sourceId: 'base_fairy_ring',
                 title: '精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡',
+                titleKey: 'ui.base_fairy_ring_title',
                 executeBranch: runBaseFairyRingBranch,
                 targetType: 'button',
                 planContext: { baseIndex: ctx.baseIndex },
@@ -796,6 +885,7 @@ export function registerExpansionBaseAbilities(): void {
                         'extra_minion',
                         undefined,
                         baseFairyRingExtraMinionPrimitive.footprint(branchContext),
+                        'ui.base_fairy_ring_extra_minion_option',
                     ),
                     createBaseFairyRingBranchOption(
                         'extra-action',
@@ -803,8 +893,9 @@ export function registerExpansionBaseAbilities(): void {
                         'extra_action',
                         undefined,
                         baseFairyRingExtraActionPrimitive.footprint(branchContext),
+                        'ui.base_fairy_ring_extra_action_option',
                     ),
-                    createBaseFairyRingBranchOption('skip', '跳过', 'skip', { skip: true }),
+                    createBaseFairyRingBranchOption('skip', '跳过', 'skip', { skip: true }, undefined, 'ui.skip'),
                 ],
             }),
         };
@@ -845,7 +936,7 @@ export function registerExpansionBaseAbilities(): void {
             displayMode: 'card' as const,
         }));
         const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            createSkipOption(),
             ...minionOptions,
         ];
 
@@ -853,7 +944,7 @@ export function registerExpansionBaseAbilities(): void {
         const interaction = createSimpleChoice(
             `base_land_of_balance_${ctx.now}`, ctx.playerId,
             '平衡之地：选择一个己方随从移动到这里', options,
-            { sourceId: 'base_land_of_balance', targetType: 'minion' },
+            { sourceId: 'base_land_of_balance', targetType: 'minion', titleKey: 'ui.base_land_of_balance_title' },
         );
         return {
             events: [],
@@ -904,12 +995,19 @@ export function registerExpansionBaseAbilities(): void {
                 {
                     id: 'move',
                     label: '移动到九命之屋',
+                    labelKey: 'ui.base_house_of_nine_lives_move_option',
                     value: { move: true, minionUid: triggerMinionUid, minionDefId: triggerMinionDefId },
                     displayMode: 'button' as const,
                 },
-                { id: 'skip', label: '不移动（正常消灭）', value: { move: false }, displayMode: 'button' as const },
+                {
+                    id: 'skip',
+                    label: '不移动（正常消灭）',
+                    labelKey: 'ui.base_house_of_nine_lives_stay_option',
+                    value: { move: false },
+                    displayMode: 'button' as const,
+                },
             ],
-            { sourceId: 'base_nine_lives_intercept', targetType: 'minion' },
+            { sourceId: 'base_nine_lives_intercept', targetType: 'minion', titleKey: 'ui.base_house_of_nine_lives_title' },
         );
         const updatedMS = queueInteraction(trigCtx.matchState, {
             ...interaction,
@@ -1020,14 +1118,14 @@ export function registerExpansionBaseAbilities(): void {
                 displayMode: 'card' as const,
             }));
             const options: PromptOption<Record<string, unknown>>[] = [
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                createSkipOption(),
                 ...minionOptions,
             ];
 
             const interaction = createSimpleChoice(
                 `base_sheep_shrine_${pid}_${ctx.now}`, pid,
                 '绵羊神社：选择移动一个己方随从到此基地', options,
-                { sourceId: 'base_sheep_shrine', targetType: 'minion' },
+                { sourceId: 'base_sheep_shrine', targetType: 'minion', titleKey: 'ui.base_sheep_shrine_title' },
             );
             ms = queueInteraction(ms, {
                 ...interaction,
@@ -1088,7 +1186,7 @@ export function registerExpansionBaseAbilities(): void {
             `base_the_pasture_${ctx.now}`, ctx.playerId,
             '牧场：选择另一基地的一个随从移动到这里',
             minionOptions,
-            { sourceId: 'base_the_pasture', targetType: 'minion' },
+            { sourceId: 'base_the_pasture', targetType: 'minion', titleKey: 'ui.base_the_pasture_title' },
         );
         return {
             events: [],
@@ -1219,7 +1317,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             `base_the_asylum_choose_minion_${timestamp}`, playerId,
             '疯人院：选择你的一个随从放置 +1 力量指示物',
             minionOptions,
-            { sourceId: 'base_the_asylum_choose_minion', targetType: 'minion' },
+            { sourceId: 'base_the_asylum_choose_minion', targetType: 'minion', titleKey: 'ui.base_the_asylum_choose_minion_title' },
         );
 
         return {
@@ -1305,8 +1403,8 @@ export function registerExpansionBaseInteractionHandlers(): void {
             };
         });
 
-        const options = [
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        const options: PromptOption<Record<string, unknown>>[] = [
+            createSkipOption(),
             ...discardCards,
         ];
 
@@ -1314,7 +1412,15 @@ export function registerExpansionBaseInteractionHandlers(): void {
             `base_innsmouth_base_choose_card_${timestamp}`, playerId,
             `印斯茅斯基地：从${targetPlayerId === playerId ? '你的' : getPlayerLabel(targetPlayerId) + '的'}弃牌堆选择一张卡`,
             options,
-            { sourceId: 'base_innsmouth_base_choose_card', targetType: 'generic', autoCancelOption: true },
+            {
+                sourceId: 'base_innsmouth_base_choose_card',
+                targetType: 'generic',
+                autoCancelOption: true,
+                titleKey: targetPlayerId === playerId
+                    ? 'ui.base_innsmouth_choose_card_self_title'
+                    : 'ui.base_innsmouth_choose_card_other_title',
+                ...(targetPlayerId === playerId ? {} : { titleParams: getPlayerNumberLabelParams(targetPlayerId) }),
+            },
         );
 
         return { state: queueInteraction(state, interaction), events: [] };
@@ -1338,8 +1444,32 @@ export function registerExpansionBaseInteractionHandlers(): void {
         };
     });
 
-    // 密大基地：打出随从后，选择抓疯狂或弃疯狂换额外行动
+    // 基础版米斯卡塔尼克大学：冠军可连续把手牌/弃牌堆中的疯狂卡送回疯狂牌库，直到选择跳过或没有可返回的疯狂卡
     registerInteractionHandler('base_miskatonic_university_base', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as {
+            skip?: boolean;
+            source?: 'hand' | 'discard';
+        };
+        if (selected.skip) return { state, events: [] };
+
+        const player = state.core.players[playerId];
+        const handMadnessCount = player?.hand.filter(card => card.defId === MADNESS_CARD_DEF_ID).length ?? 0;
+        const discardMadnessCount = player?.discard.filter(card => card.defId === MADNESS_CARD_DEF_ID).length ?? 0;
+        const pool = selected.source === 'discard' ? player?.discard : player?.hand;
+        const madnessCard = pool?.find(card => card.defId === MADNESS_CARD_DEF_ID);
+        if (!player || !selected.source || !madnessCard) return { state, events: [] };
+
+        const events = [returnMadnessCard(playerId, madnessCard.uid, 'base_miskatonic_university_base', timestamp)];
+        const remainingMadnessCount = handMadnessCount + discardMadnessCount - 1;
+
+        return {
+            state: remainingMadnessCount > 0 ? queueMiskatonicUniversityClassicPrompt(state, playerId, timestamp) : state,
+            events,
+        };
+    });
+
+    // POD 版密大基地：打出随从后，选择抓疯狂或弃疯狂换额外行动
+    registerInteractionHandler('base_miskatonic_university_base_pod', (state, playerId, value, _iData, _random, timestamp) => {
         const selected = value as {
             skip?: boolean;
             choice?: 'draw' | 'discard_for_action';
@@ -1347,7 +1477,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (selected.skip) return { state, events: [] };
 
         if (selected.choice === 'draw') {
-            const drawEvent = drawMadnessCards(playerId, 2, state.core, 'base_miskatonic_university_base', timestamp);
+            const drawEvent = drawMadnessCards(playerId, 2, state.core, 'base_miskatonic_university_base_pod', timestamp);
             return { state, events: drawEvent ? [drawEvent] : [] };
         }
 
@@ -1363,7 +1493,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                         payload: { playerId, cardUids: [madnessCard.uid] },
                         timestamp,
                     } as SmashUpEvent,
-                    grantExtraAction(playerId, 'base_miskatonic_university_base', timestamp),
+                    grantExtraAction(playerId, 'base_miskatonic_university_base_pod', timestamp),
                 ],
             };
         }

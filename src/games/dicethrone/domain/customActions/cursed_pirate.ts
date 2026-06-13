@@ -30,6 +30,7 @@ import {
     buildStatusAppliedOrChoiceEvents,
     getPowderKegTransferTargetIds,
 } from '../statusEvents';
+import { updatePendingAttackSettlementStage } from '../utils';
 
 const MERCILESS_CURSE_POWDER_KEG_CHOICE_ID = 'cursed-pirate-merciless-curse-powder-keg';
 const CURSE_CARD_CHOICE_ID = 'cursed-pirate-curse-card-choice';
@@ -549,11 +550,13 @@ function resolveHefty({
 }
 
 function applyPowderKegIfThreeOfAKind({
+    ctx,
     targetId,
     sourceAbilityId,
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    if (ctx.damageDealt <= 0) return [];
     if (getAttackMaxDuplicateValueCount(state) < 3) return [];
 
     const target = state.players[targetId];
@@ -831,11 +834,13 @@ function requestHumanMercilessPlunder({
 }
 
 function applyPowderKegIfFourOfAKind({
+    ctx,
     targetId,
     sourceAbilityId,
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    if (ctx.damageDealt <= 0) return [];
     if (getAttackMaxDuplicateValueCount(state) < 4) return [];
 
     return buildStatusAppliedOrChoiceEvents({
@@ -1359,10 +1364,10 @@ export function registerCursedPirateCustomActions(): void {
         }
         return {
             pendingAttack: {
-                ...state.pendingAttack,
+                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
                 // 惊魂动魄的 7 点主伤害已在 withDamage 阶段落地；
                 // 选择是否移除诅咒金币后只需要收口 ATTACK_RESOLVED，不应继续挂住攻击链。
-                bonusDiceResolved: true,
+                postDamageFollowUpResolved: true,
             },
         };
     });
@@ -1474,10 +1479,10 @@ export function registerCursedPirateCustomActions(): void {
         };
         if (sourceAbilityId && state.pendingAttack?.sourceAbilityId === sourceAbilityId) {
             result.pendingAttack = {
-                ...state.pendingAttack,
+                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
                 // 无情劫掠的 12 点主伤害已在 withDamage 阶段落地；
                 // 选择诅咒金币后只需要收口 ATTACK_RESOLVED，不应再次重放整段攻击链。
-                bonusDiceResolved: true,
+                postDamageFollowUpResolved: true,
             };
         }
         return result;

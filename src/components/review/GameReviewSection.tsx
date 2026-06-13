@@ -50,7 +50,7 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
                         {/* 弹窗头部 */}
                         <div className="shrink-0 flex items-center justify-between px-4 py-4 sm:px-6 border-b border-parchment-card-border/10">
                             <span className="text-lg font-bold text-parchment-base-text uppercase tracking-widest">
-                                {myReview ? t('form.editTitle', '修改我的评价') : t('form.newTitle', '撰写评价')}
+                                {myReview ? t('form.editTitle') : t('form.newTitle')}
                             </span>
                             <button onClick={close} className="p-1 hover:bg-parchment-base-bg rounded-full text-parchment-light-text transition-colors">
                                 <X size={20} />
@@ -63,11 +63,11 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
                                 onSubmit={async (data) => {
                                     try {
                                         await createReview(gameId, data.isPositive, data.content);
-                                        success(t('form.success', '评价已发布'));
+                                        success(t('form.success'));
                                         refreshData();
                                         close();
                                     } catch (err) {
-                                        const message = err instanceof Error ? err.message : t('common:unknownError', '发生未知错误');
+                                        const message = err instanceof Error ? err.message : t('common:unknownError');
                                         error(message);
                                     }
                                 }}
@@ -84,7 +84,7 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
         mutationFn: (gid: string) => deleteReview(gid),
         onSuccess: () => {
             refreshData();
-            success(t('form.deleted', '评价已删除'));
+            success(t('form.deleted'));
         },
         onError: (err: Error) => {
             error(err.message);
@@ -115,14 +115,14 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
                                     onClick={handleOpenReviewModal}
                                     className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-parchment-card-bg bg-parchment-brown hover:bg-parchment-brown/80 rounded transition-colors uppercase tracking-widest shadow-sm"
                                 >
-                                    {myReview ? t('form.edit', '修改') : t('form.writeReview', '写评价')}
+                                    {myReview ? t('form.edit') : t('form.writeReview')}
                                 </button>
                             )}
                         </div>
                     </div>
                 ) : isStatsError ? (
                     <div className="text-[10px] text-parchment-light-text italic opacity-60">
-                        {t('section.statsError', '暂时无法加载统计信息')}
+                        {t('section.statsError')}
                     </div>
                 ) : (
                     <div className="h-1.5 w-full bg-parchment-base-bg/30 animate-pulse rounded-full" />
@@ -177,7 +177,7 @@ const ReviewListWrapper = ({
     if (isError) {
         return (
             <div className="text-center py-10 text-parchment-light-text italic text-sm">
-                {t('list.error', '加载评价失败，请稍后重试')}
+                {t('list.error')}
             </div>
         );
     }

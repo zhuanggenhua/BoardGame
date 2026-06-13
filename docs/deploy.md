@@ -144,6 +144,7 @@ bash deploy-auto.sh
 - **前端**：Cloudflare Pages 托管（自动构建、CDN 加速）
 - **后端**：服务器 Docker + Nginx 反向代理
 - **流程**：浏览器 → Cloudflare → Pages/服务器
+- **当前正式环境口径**：`easyboardgame.top` 是 Pages 自定义域名，`api.easyboardgame.top` 才指向服务器；因此“根域名前端是否更新”必须先看 Pages / GitHub `main` 发布链，不能默认拿服务器 `dist` 当真相源
 
 ### 1. Pages 项目设置
 
@@ -328,8 +329,9 @@ GitHub Actions 自动化：
 - **服务端缓存头**：生产单体服务会把上述目录按 `Cache-Control: public, max-age=31536000, immutable` 提供；浏览器或 Cloudflare 拿到新 URL 才会请求新内容。
 - **例外文件**：`/game-data/summonerwars.layout.json` 仍保持 `no-cache, no-store, must-revalidate`，因为它承载运行时布局编辑结果，不能误进长期缓存。
 - **入口页策略不变**：`index.html` 和 SPA fallback 继续 `no-cache, no-store, must-revalidate`，确保部署后刷新页面一定拿到新的资源引用关系。
-- **部署门禁新增**：`scripts/deploy/deploy-image.sh` 现在会在源站 smoke 通过后，再校验**公网首页引用的入口资源**是否与 `http://127.0.0.1/` 一致；如果 Cloudflare 仍在发旧 `index-*.js` / `MatchRoom-*.js`，部署不会被视为完成。
-- **Cloudflare purge 约定**：若服务器环境提供 `CLOUDFLARE_ZONE_ID` 与 `CLOUDFLARE_API_TOKEN`，部署脚本默认按 `CLOUDFLARE_PURGE_MODE=auto` 自动执行 purge（有凭据时等价于 `everything`）；若公网仍可能命中旧入口包，这是正式部署链的第一补救动作。
+- **部署门禁新增**：`scripts/deploy/deploy-image.sh` 现在会在 smoke 通过后，再校验**公网首页引用的入口资源**是否与 `PUBLIC_ENTRY_SYNC_SOURCE_URL` 一致；默认仍是 `http://127.0.0.1/`，适用于“根域名直指服务器”的链路。
+- **Pages 根域名额外约束**：如果根域名实际挂在 Pages（当前正式环境就是 `easyboardgame.top -> boardgame-e6c.pages.dev`），不要再用服务器 `127.0.0.1` 当比对源。此时应把 `PUBLIC_ENTRY_SYNC_SOURCE_URL` 设为对应的 Pages 域名或某次 Pages 部署 URL，例如 `https://boardgame-e6c.pages.dev/`；否则部署门禁会把“服务器较新、Pages 较旧”的正常分叉误报成 CDN 缓存问题。
+- **Cloudflare purge 约定**：若服务器环境提供 `CLOUDFLARE_ZONE_ID`，以及 `CLOUDFLARE_API_TOKEN` 或 `CLOUDFLARE_AUTH_EMAIL + CLOUDFLARE_GLOBAL_API_KEY`，部署脚本默认按 `CLOUDFLARE_PURGE_MODE=auto` 自动执行 purge（有凭据时等价于 `everything`）；若公网仍可能命中旧入口包，这是正式部署链的第一补救动作。
 - **新增 game-data 的判断规则**：如果文件是“构建期静态产物”，应纳入版本指纹 + 长缓存；如果文件可能被后台、编辑器或运行时直接改写，则默认保守缓存，除非同时设计了独立版本号或发布链路。
 
 ## 资源发布流程（官方）

@@ -251,6 +251,7 @@ function createAlienProbeProgramContext(ctx: AbilityContext): AlienProbePromptCo
             targetPlayerId: pid,
         })),
         {
+            state: ctx.state,
             sourcePlayerId: ctx.playerId,
             effectIntent: 'inspect',
         },
@@ -371,7 +372,13 @@ function buildAlienTerraformPlayOptions(core: SmashUpCore, playerId: PlayerId): 
     }
 
     return [
-        { id: 'skip', label: '跳过额外随从', value: { skip: true, defId: '__skip__' }, displayMode: 'button' as const },
+        {
+            id: 'skip',
+            label: '跳过额外随从',
+            labelKey: 'ui.alien_terraform_play_minion_skip_option',
+            value: { skip: true, defId: '__skip__' },
+            displayMode: 'button' as const,
+        },
         ...minionOptions,
         ...titanOptions,
     ];
@@ -568,7 +575,7 @@ const alienSupremeOverlordPromptProgram = createPromptProgram<
         context.playerId,
         '你可以将一个随从返回到其拥有者的手上',
         [
-            { id: 'skip', label: '跳过（不返回随从）', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过（不返回随从）', labelKey: 'ui.alien_supreme_overlord_skip_option', value: { skip: true }, displayMode: 'button' as const },
             ...buildMinionTargetOptions(
                 collectAlienMinionTargets(context.matchState.core),
                 {
@@ -582,6 +589,7 @@ const alienSupremeOverlordPromptProgram = createPromptProgram<
             sourceId: 'alien_supreme_overlord',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_supreme_overlord_title',
         },
     ),
     onResolve: ({ state, value, playerId, timestamp }) => {
@@ -641,7 +649,7 @@ const alienCollectorPromptProgram = createPromptProgram<
         context.playerId,
         '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上',
         [
-            { id: 'skip', label: '跳过（不收回随从）', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过（不收回随从）', labelKey: 'ui.alien_collector_skip_option', value: { skip: true }, displayMode: 'button' as const },
             ...buildMinionTargetOptions(
                 buildAlienCollectorTargets(
                     context.matchState.core,
@@ -659,6 +667,7 @@ const alienCollectorPromptProgram = createPromptProgram<
             sourceId: 'alien_collector',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_collector_title',
         },
     ),
     onResolve: ({ state, value, playerId, timestamp }) => {
@@ -731,12 +740,14 @@ const alienScoutReturnPromptProgram = createPromptProgram<
             {
                 id: 'yes',
                 label: '返回手牌',
+                labelKey: 'ui.alien_scout_return_option',
                 value: { returnIt: true },
                 displayMode: 'button' as const,
             },
             {
                 id: 'no',
                 label: '留在基地',
+                labelKey: 'ui.alien_scout_stay_option',
                 value: { returnIt: false },
                 displayMode: 'button' as const,
             },
@@ -745,6 +756,7 @@ const alienScoutReturnPromptProgram = createPromptProgram<
             sourceId: 'alien_scout_return',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_scout_return_title',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -852,6 +864,7 @@ const alienInvasionDestinationPromptProgram = createPromptProgram<
                 sourceId: 'alien_invasion_choose_base',
                 targetType: 'base',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.alien_invasion_choose_base_title',
             },
         );
     },
@@ -898,6 +911,7 @@ const alienInvasionPromptProgram = createPromptProgram<
             sourceId: 'alien_invasion_choose_minion',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_invasion_choose_minion_title',
         },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -939,6 +953,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
             sourceId: 'alien_terraform_play_minion',
             targetType: 'hand',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_terraform_play_minion_title',
         },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -1032,6 +1047,7 @@ const alienTerraformReplacementPromptProgram = createPromptProgram<
             sourceId: 'alien_terraform_choose_replacement',
             targetType: 'generic',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_terraform_choose_replacement_title',
         },
     ),
     onResolve: ({ context, state, playerId, value, random, timestamp }) => {
@@ -1099,6 +1115,7 @@ const alienTerraformPromptProgram = createPromptProgram<
             sourceId: 'alien_terraform',
             targetType: 'base',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_terraform_title',
         },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
@@ -1171,7 +1188,7 @@ const alienDisintegratorPromptProgram = createPromptProgram<
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_disintegrator_${alienRuntimePromptCounter++}`,
         context.playerId,
-        '选择要放到牌库底的力量≤3的随从',
+        'ui.alien_disintegrator_title',
         buildMinionTargetOptions(
             collectAlienMinionTargets(context.matchState.core).filter(target => {
                 const base = context.matchState.core.bases[target.baseIndex];
@@ -1184,6 +1201,7 @@ const alienDisintegratorPromptProgram = createPromptProgram<
             sourceId: 'alien_disintegrator',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_disintegrator_title',
         },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
@@ -1268,6 +1286,7 @@ const alienBeamUpPromptProgram = createPromptProgram<
             sourceId: 'alien_beam_up',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_beam_up_title',
         },
     ),
     onResolve: ({ state, value, playerId, timestamp }) => {
@@ -1359,6 +1378,7 @@ const alienCropCirclesPromptProgram = createPromptProgram<
             sourceId: 'alien_crop_circles',
             targetType: 'base',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_crop_circles_title',
         },
     ),
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -1410,6 +1430,7 @@ const alienProbeDiscardPromptProgram = createPromptProgram<
                 sourceId: 'alien_probe',
                 targetType: 'generic',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.alien_probe_discard_title',
             },
         );
         (interaction.data as { optionsGenerator?: (state: MatchState<SmashUpCore>) => unknown[] }).optionsGenerator = (state) => {
@@ -1466,6 +1487,7 @@ const alienProbeChooseTargetPromptProgram = createPromptProgram<
                     targetPlayerId: pid,
                 })),
             {
+                state: context.matchState.core,
                 sourcePlayerId: context.playerId,
                 effectIntent: 'inspect',
             },
@@ -1474,6 +1496,7 @@ const alienProbeChooseTargetPromptProgram = createPromptProgram<
             sourceId: 'alien_probe_choose_target',
             targetType: 'player',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_probe_choose_target_title',
         },
     ),
     onResolve: ({ context, state, value, playerId, timestamp }) => {
@@ -1548,6 +1571,7 @@ const alienAbductionPromptProgram = createPromptProgram<
             sourceId: 'alien_abduction',
             targetType: 'minion',
             autoResolveIfSingle: false,
+            titleKey: 'ui.alien_abduction_title',
         },
     ),
     onResolve: ({ state, value, playerId, timestamp }) => {

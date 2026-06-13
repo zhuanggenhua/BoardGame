@@ -156,6 +156,7 @@ function queueActionReturnToHandPrompts(
                 {
                     id: 'return',
                     label: '收入手牌',
+                    labelKey: 'ui.geeks_non_infinite_loop_return_option',
                     value: {
                         returnToHand: true,
                         cardUid: event.payload.cardUid,
@@ -167,6 +168,7 @@ function queueActionReturnToHandPrompts(
                 {
                     id: 'leave',
                     label: '留在原处',
+                    labelKey: 'ui.geeks_non_infinite_loop_leave_option',
                     value: {
                         returnToHand: false,
                         cardUid: event.payload.cardUid,
@@ -179,6 +181,8 @@ function queueActionReturnToHandPrompts(
             {
                 sourceId: 'geeks_non_infinite_loop_return',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.geeks_non_infinite_loop_return_title',
+                titleParams: { actionName },
             },
         ));
     }
@@ -1872,13 +1876,25 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     value: { cardUid: c.cardUid, baseIndex: c.baseIndex },
                     displayMode: 'button' as const,
                 }));
-                options.push({ id: 'skip', label: '跳过（不揭开）', value: { skip: true }, displayMode: 'button' as const });
+                options.push({
+                    id: 'skip',
+                    label: '跳过（不揭开）',
+                    labelKey: 'ui.bury_uncover_start_turn_skip_option',
+                    value: { skip: true },
+                    displayMode: 'button' as const,
+                });
                 const interaction = createSimpleChoice(
                     `bury_uncover_start_turn_${now}`,
                     nextPlayerId,
                     '你可以揭开一张你控制的埋葬牌，并立刻作为额外牌打出',
                     options as any[],
-                    { sourceId: 'bury_uncover_start_turn', targetType: 'generic', autoRefresh: 'buried', responseValidationMode: 'live' },
+                    {
+                        sourceId: 'bury_uncover_start_turn',
+                        targetType: 'generic',
+                        autoRefresh: 'buried',
+                        responseValidationMode: 'live',
+                        titleKey: 'ui.bury_uncover_start_turn_title',
+                    },
                 );
                 currentMatchState = queueInteraction(currentMatchState, interaction);
                 hasSysUpdate = true;
@@ -1984,6 +2000,14 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         const core = state.core;
         const pid = getCurrentPlayerId(core);
         const phase = state.sys.phase as GamePhase;
+        const isFactionDraftReadyToStart = core.turnOrder.length > 0 && core.turnOrder.every((playerId) => {
+            const player = core.players[playerId];
+            return Boolean(
+                player
+                && player.factions.length === 2
+                && (player.hand.length > 0 || player.deck.length > 0),
+            );
+        });
         const justResolvedSmashUpReactionChoice = events.some((event) => {
             if (event.type !== 'SYS_INTERACTION_RESOLVED' && event.type !== 'SYS_INTERACTION_CANCELLED') {
                 return false;
@@ -1992,25 +2016,21 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             return payload?.sourceId === 'smashup_reaction_choose';
         });
 
-        if (phase === 'factionSelect' && !core.factionSelection) {
-            return { autoContinue: true, playerId: pid };
-        }
-
-        if (state.sys.interaction?.current) {
-            return undefined;
-        }
-
         const hasLiveScoringOrReactionFrame = Boolean(
             getSmashUpReactionSession(state)
             || getScoringSession(state)?.currentBaseRef,
         );
 
-        // factionSelect 鑷姩鎺ㄨ繘 check
+        // factionSelect -> startTurn 不应被起手重抽 Prompt 卡住。
+        // 选秀完成后先离开选秀阶段，后续再由 startTurn 等待重抽交互收口。
         if (phase === 'factionSelect') {
-
             if (!core.factionSelection) {
-                return { autoContinue: true, playerId: pid };
+                return isFactionDraftReadyToStart ? { autoContinue: true, playerId: pid } : undefined;
             }
+        }
+
+        if (state.sys.interaction?.current) {
+            return undefined;
         }
 
         // startTurn 鑷姩鎺ㄨ繘鍒?playCards
@@ -2295,13 +2315,20 @@ function resolveTitanClashEventsOnBase(
                 loser.controllerId,
                 '丛林之灵：你可以改为将其移动到另一个基地',
                 [
-                    createSkipOption('照常移除'),
+                    {
+                        id: 'skip',
+                        label: '照常移除',
+                        labelKey: 'ui.titan_fairies_spirit_of_the_forest_clash_move_skip_option',
+                        value: { skip: true },
+                        displayMode: 'button' as const,
+                    },
                     ...buildBaseTargetOptions(otherBases, state),
                 ],
                 {
                     sourceId: 'titan_fairies_spirit_of_the_forest_clash_move',
                     targetType: 'base',
                     autoResolveIfSingle: false,
+                    titleKey: 'ui.titan_fairies_spirit_of_the_forest_clash_move_title',
                 },
             );
             return {

@@ -31,6 +31,8 @@ import { registerWerewolfAbilities } from './werewolves';
 import { registerVampireAbilities, registerVampireInteractionHandlers } from './vampires';
 import { registerGiantAntAbilities, registerGiantAntInteractionHandlers } from './giant_ants';
 import { registerFairiesAbilities } from './fairies';
+import { registerKittyCatsAbilities } from './kitty_cats';
+import { registerMythicHorsesAbilities } from './mythic_horses';
 import { registerAncientEgyptiansAbilities } from './ancient_egyptians';
 import { registerCowboysAbilities, registerCowboysInteractionHandlers } from './cowboys';
 import { registerSamuraiAbilities, registerSamuraiInteractionHandlers } from './samurai';
@@ -73,13 +75,13 @@ import { clearDiscardSpecialProviders } from '../domain/discardSpecialAbilities'
 import { clearRegistry, registerPodAbilityAliases } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, registerPodInteractionAliases } from '../domain/abilityInteractionHandlers';
 import { clearTitanAbilityValidators } from '../domain/titanAbilityValidators';
+import { validateSmashUpVariantBindings } from '../domain/variantBindingValidation';
 
 let initialized = false;
 
 /** 注册所有派系能力（幂等，多次调用安全） */
 export function initAllAbilities(): void {
     if (initialized) return;
-    initialized = true;
 
     // HMR 安全：先清除所有注册表，防止模块热更新时 initialized 被重置但注册表保留旧数据
     clearRegistry();
@@ -141,6 +143,8 @@ export function initAllAbilities(): void {
     registerVampireInteractionHandlers();
     registerGiantAntAbilities();
     registerGiantAntInteractionHandlers();
+    registerKittyCatsAbilities();
+    registerMythicHorsesAbilities();
     registerFairiesAbilities();
     registerAncientEgyptiansAbilities();
     registerCowboysAbilities();
@@ -178,14 +182,15 @@ export function initAllAbilities(): void {
     // 持续力量修正
     registerAllOngoingModifiers();
 
-    // === POD 版本能力别名注册 ===
-    // 将所有基础版卡牌能力和交互处理回调自动复制给对应的 _pod 版本
-    // 不需为每张 POD 卡单独写一行能力代码就能让其自动接继基础版的全套逻辑
+    // === POD 变体绑定 ===
+    // 只有 metadata 显式声明 shared 的 surface，才允许生成 _pod 运行时别名。
     registerPodAbilityAliases();
     registerPodInteractionAliases();
     registerPodBaseAbilityAliases();
-    registerPodOngoingAliases(); // 自动映射 trigger/restriction/protection
-    registerPodPowerModifierAliases(); // 自动映射力量修正
+    registerPodOngoingAliases();
+    registerPodPowerModifierAliases();
+    validateSmashUpVariantBindings();
+    initialized = true;
 }
 /** 重置初始化状态（测试用） */
 export function resetAbilityInit(): void {

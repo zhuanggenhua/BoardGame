@@ -15,7 +15,10 @@ import {
     collectReferencesFromContent,
     collectDiceThroneAbilityChoiceFaceLabelReferences,
     collectDiceThroneRawContractWarningsFromContent,
+    collectZhCnLocaleEnglishWarnings,
     collectMissingTranslations,
+    createWarningBaselineId,
+    partitionWarningsAgainstBaseline,
 } from '../../../scripts/verify/i18n-check';
 import {
     collectImplicitCandidateFiles,
@@ -368,12 +371,12 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
-    it('createSimpleChoice 直接使用英文标题且缺少 titleKey 时会产生告警', () => {
+    it('createSimpleChoice 直接使用可见标题且未写 titleKey 时会产生告警；写了 titleKey 则放行', () => {
         const content = `
             createSimpleChoice(
                 'choice-1',
                 playerId,
-                'The Bride: choose the first effect',
+                '新娘：选择第一个效果',
                 options,
                 { sourceId: 'demo', targetType: 'generic' },
             );
@@ -381,7 +384,7 @@ describe('i18n 静态检查工具', () => {
             createSimpleChoice(
                 'choice-2',
                 playerId,
-                'The Bride: choose the second effect',
+                '新娘：选择第二个效果',
                 options,
                 { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.titan_the_bride_start_second_effect_title' },
             );
@@ -393,23 +396,55 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
-            key: 'The Bride: choose the first effect',
+            key: '新娘：选择第一个效果',
+            detail: expect.stringContaining('请改成 titleKey'),
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-title',
-            key: 'The Bride: choose the second effect',
+            key: '新娘：选择第二个效果',
         }));
     });
 
-    it('createSimpleChoice 内联英文 label 缺少 labelKey 时会产生告警', () => {
+    it('会拦截 helper 透传到 createSimpleChoice 的可见标题；补 titleKey 参数后放行', () => {
+        const content = `
+            function buildPrompt(interactionId, playerId, title, titleKey) {
+                return createSimpleChoice(
+                    interactionId,
+                    playerId,
+                    title,
+                    options,
+                    { sourceId: 'demo', targetType: 'generic', titleKey },
+                );
+            }
+
+            buildPrompt('choice-1', playerId, '墓园：挖掘这里一张你的埋葬牌');
+            buildPrompt('choice-2', playerId, '墓园：挖掘这里一张你的埋葬牌', 'ui.skeletons_graveyard_title');
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common', 'game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-title',
+            key: '墓园：挖掘这里一张你的埋葬牌',
+            source: 'buildPrompt.title',
+        }));
+        expect(result.warnings.filter((warning) => (
+            warning.type === 'raw-simple-choice-title'
+            && warning.source === 'buildPrompt.title'
+        ))).toHaveLength(1);
+    });
+
+    it('createSimpleChoice 内联可见 label 缺少 labelKey 时会产生告警', () => {
         const content = `
             createSimpleChoice(
                 'choice-1',
                 playerId,
-                'Choose a branch',
+                '选择一个分支',
                 [
-                    { id: 'raw', label: 'Draw 2 cards', value: { draw: true }, displayMode: 'button' },
-                    { id: 'keyed', label: 'Place a +1 counter', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' },
+                    { id: 'raw', label: '抽两张牌', value: { draw: true }, displayMode: 'button' },
+                    { id: 'keyed', label: '放置一个 +1 指示物', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' },
                 ],
                 { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.demo_title' },
             );
@@ -421,19 +456,19 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-option-label',
-            key: 'Draw 2 cards',
+            key: '抽两张牌',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-simple-choice-option-label',
-            key: 'Place a +1 counter',
+            key: '放置一个 +1 指示物',
         }));
     });
 
-    it('PromptOption 变量中的英文 label 缺少 labelKey 时会产生告警', () => {
+    it('PromptOption 变量中的可见 label 缺少 labelKey 时会产生告警', () => {
         const content = `
             const options = [
-                { id: 'raw', label: 'Place it on Ancient Lord', value: { mode: 'store' }, displayMode: 'button' },
-                { id: 'keyed', label: 'Draw 2 cards', labelKey: 'ui.draw_two_cards', value: { draw: true }, displayMode: 'button' },
+                { id: 'raw', label: '放到鲜血领主上', value: { mode: 'store' }, displayMode: 'button' },
+                { id: 'keyed', label: '抽 2 张牌', labelKey: 'ui.draw_two_cards', value: { draw: true }, displayMode: 'button' },
                 { label: 'Debug only', value: 1 },
             ];
         `;
@@ -444,11 +479,11 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
-            key: 'Place it on Ancient Lord',
+            key: '放到鲜血领主上',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
-            key: 'Draw 2 cards',
+            key: '抽 2 张牌',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-prompt-option-label',
@@ -456,10 +491,11 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
-    it('createSkipOption 直接使用英文 label 时会产生告警', () => {
+    it('createSkipOption 直接使用可见 label 时会产生告警', () => {
         const content = `
-            const options = [createSkipOption('Skip this effect')];
-            const zhOptions = [createSkipOption('跳过')];
+            const options = [createSkipOption('跳过这次效果')];
+            const keyedOptions = [createSkipOption('ui.skip')];
+            const keyedFallbackOptions = [createSkipOption('跳过这次效果', 'ui.skip_effect')];
         `;
         const result = collectReferencesFromContent(content, 'demo.ts', {
             defaultNamespace: 'common',
@@ -468,11 +504,113 @@ describe('i18n 静态检查工具', () => {
 
         expect(result.warnings).toContainEqual(expect.objectContaining({
             type: 'raw-create-skip-label',
-            key: 'Skip this effect',
+            key: '跳过这次效果',
         }));
         expect(result.warnings).not.toContainEqual(expect.objectContaining({
             type: 'raw-create-skip-label',
-            key: '跳过',
+            key: 'ui.skip',
+        }));
+        expect(result.warnings.filter((warning) => (
+            warning.type === 'raw-create-skip-label'
+            && warning.key === '跳过这次效果'
+        ))).toHaveLength(1);
+    });
+
+    it('不会把注释里的示例 label / createSkipOption 当成真实 UI 文案告警', () => {
+        const content = `
+            // { id: '__cancel__', label: '取消', value: { __cancel__: true } }
+            /* createSkipOption('跳过这次效果') */
+            const options = [{ id: 'keyed', label: 'ui.skip', labelKey: 'ui.skip', value: { ok: true }, displayMode: 'button' }];
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common']),
+        });
+
+        expect(result.warnings).toEqual([]);
+    });
+
+    it('会拦截伪 *Key 字段里的可见文案，但放过 key 模板', () => {
+        const content = `
+            const config = {
+                titleKey: '选择攻击目标',
+                labelKey: condition ? '令2号玩家获得烟雾弹' : 'choices.ninjaSmokeScreen.option',
+                nameKey: \`tokens.${'${def.id}'}.name\`,
+            };
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'game-dicethrone',
+            knownNamespaces: new Set(['game-dicethrone']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: '选择攻击目标',
+            source: 'titleKey',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: '令2号玩家获得烟雾弹',
+            source: 'labelKey',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-i18n-key-property',
+            key: 'tokens.${def.id}.name',
+        }));
+    });
+
+    it('会拦截 slider 直接写可见文案的标签字段', () => {
+        const content = `
+            const prompt = {
+                confirmLabel: '确认转移 2 个力量指示物',
+                valueLabel: condition ? '承受压力：2 / 3' : 'ui.giant_ants_under_pressure_value_label',
+                skipLabel: '跳过这次转移',
+            };
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'game-smashup',
+            knownNamespaces: new Set(['game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '确认转移 2 个力量指示物',
+            source: 'confirmLabel',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '承受压力：2 / 3',
+            source: 'valueLabel',
+        }));
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: '跳过这次转移',
+            source: 'skipLabel',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-slider-label',
+            key: 'ui.giant_ants_under_pressure_value_label',
+        }));
+    });
+
+    it('t(variable) 且提供 defaultValue 时，不把统一翻译 helper 误报为 dynamic-key', () => {
+        const content = `
+            function resolveSliderText(t, key, fallback) {
+                if (!key) return fallback;
+                return t(key, {
+                    defaultValue: fallback,
+                    count: 1,
+                });
+            }
+        `;
+        const result = collectReferencesFromContent(content, 'demo.tsx', {
+            defaultNamespace: 'game-smashup',
+            knownNamespaces: new Set(['game-smashup']),
+        });
+
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'dynamic-key',
+            key: 'key',
         }));
     });
 
@@ -635,6 +773,312 @@ describe('i18n 静态检查工具', () => {
             }),
         ]));
         expect(result).toHaveLength(2);
+    });
+
+    it('warning baseline 只放过已登记旧债，新增告警仍会留下', () => {
+        const legacyWarning = {
+            type: 'raw-prompt-option-label',
+            key: '放到鲜血领主上',
+            file: 'src/games/smashup/abilities/demo.ts',
+            line: 12,
+            source: 'PromptOption.label',
+            detail: 'legacy',
+        } as const;
+        const newWarning = {
+            type: 'raw-simple-choice-title',
+            key: '选择一个分支',
+            file: 'src/games/smashup/abilities/demo.ts',
+            line: 24,
+            source: 'createSimpleChoice.title',
+            detail: 'new',
+        } as const;
+
+        const baselineIds = new Set([createWarningBaselineId(legacyWarning)]);
+        const result = partitionWarningsAgainstBaseline([legacyWarning, newWarning], baselineIds);
+
+        expect(result.legacyWarnings).toEqual([legacyWarning]);
+        expect(result.newWarnings).toEqual([newWarning]);
+    });
+
+    it('会识别中文语言包中的纯英文或中英混写可见文案', () => {
+        const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'temp-i18n-check-'));
+        const filePath = path.join(tempDir, 'common.json');
+        fs.writeFileSync(filePath, JSON.stringify({
+            notFound: {
+                headlineSub: 'Lost off the edge of the map',
+                reload: '刷新页面 Reload',
+                middleEnglish: '点击 Submit 按钮继续',
+                allCapsEnglish: '点击 PLAY 按钮继续',
+            },
+            allowedTerms: {
+                aiSupport: 'AI 支持',
+                androidApp: '请在 Android App 内重试',
+                shortcut: '支持截图粘贴 (Ctrl+V)',
+                buffZone: 'Buff 区',
+                duel: '当前 1v1 对局中按唯一对手结算',
+                duelLabel: '对决（Duel）防御阶段不能手动掷骰',
+                damageFlash: '受伤反馈·斜切视觉（DamageFlash 内部）',
+                functionName: 'createBaseSystems() 自动包含',
+                hookName: '前置（beforeCommand）',
+                i18nTerm: '未能加载当前游戏的 i18n 资源，请重试',
+                bugTerm: 'Bug 覆盖率估算:',
+                modePayload: '交互完整性：Mode A(UI状态机payload) + Mode B(Handler注册链)',
+                teamMode: '当前为 2v2 站位',
+                multiplier: '获得2x[火魂]层火焰精通',
+                multiplierPrefix: '伤害 x5',
+                properNoun: 'DIY 模式',
+                pascalCaseInternal: '挂到 BattleLogOverlay 里查看',
+                pascalCaseAcronymInternal: '挂到 BattleHUDPanel 里查看',
+                camelCaseInternal: '读取 roomDebugState 完成恢复',
+                camelCaseIds: '按 spriteIds 和 frameIndex 做映射',
+                kebabCaseInternal: '切到 room-debug-panel 查看详情',
+                kebabCaseRoute: '切到 game-room-debug-panel 查看详情',
+                fmMode: 'FM 模式',
+                qqGroup: '加入 QQ 群',
+                shaderFx: '召唤单位入场（Shader + 粒子混合版）',
+                playerShort: 'P1 先手',
+                teamMode3v3: '当前为 3v3 站位',
+                multiplierX10: '伤害 x10',
+                bundle: '请重新下载 Bundle',
+                exportJson: '导出 JSON',
+                ugcTitle: 'UGC 管理',
+                c4Model: '🏛️ C4 模型 — L1 系统上下文',
+                otaBundle: '当前 Bundle 与最新 OTA 不一致',
+                policyId: '策略 ID',
+                providerId: '提供方 ID',
+                gameIdError: '非法 gameId，已忽略订阅',
+                cpGain: '获得2CP',
+                vpGain: '获得 1 VP',
+                debugIds: '按稳定 cardId 处理，不把 atlasIndex 当唯一键',
+                futureId: '按 matchId 过滤最新快照',
+                futureVersion: '当前 bundleVersion 与 appVersion 不一致',
+                futureHandler: '统一交给 choiceHandler 处理',
+                futurePayload: '调试 syncPayload 是否缺字段',
+                futureOverlay: '挂到 ReplayOverlay 里查看',
+                futureSlug: '切到 create-room-debug-panel 查看详情',
+                sdkGuide: '打开 SDK 文档',
+                nodeJsServer: '连接 Node.js 服务',
+                oauthLogin: '切换 OAuth 登录',
+                semver: '系统健康监控 v1.2.0',
+                worldName: '征服 Itharia 的战场',
+                webviewCompat: '通常是 WebView 兼容性或启动阶段资源初始化卡住了',
+                corsConfig: '请使用本地代理或检查 CORS 配置',
+                mongoServer: '请确认后端容器（MongoDB/Server）已启动',
+                imageFormats: '仅支持 JPG、PNG、WebP、GIF，最大 5MB',
+                appShell: '当前 Bundle {{bundleVersion}}，App 壳版本 {{appVersion}}',
+                podLabel: '浪人（POD）',
+                romanDeck: 'II 牌组（进阶）',
+                teamLabel: 'A 队 vs B 队',
+                mathFormula: '小顺子：造成 6+X 伤害',
+            },
+        }, null, 2));
+
+        const warnings = collectZhCnLocaleEnglishWarnings(tempDir);
+
+        expect(warnings).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.headlineSub',
+                key: 'Lost off the edge of the map',
+            }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.reload',
+                key: '刷新页面 Reload',
+            }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.middleEnglish',
+                key: '点击 Submit 按钮继续',
+            }),
+            expect.objectContaining({
+                type: 'zh-cn-locale-english',
+                source: 'zh-CN:common.notFound.allCapsEnglish',
+                key: '点击 PLAY 按钮继续',
+            }),
+        ]));
+
+        expect(warnings).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.aiSupport',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.androidApp',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.buffZone',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.duelLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.damageFlash',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.functionName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.hookName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.i18nTerm',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.bugTerm',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.modePayload',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.shortcut',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.duel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamMode',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplier',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplierPrefix',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.properNoun',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.pascalCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.pascalCaseAcronymInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.camelCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.camelCaseIds',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.kebabCaseInternal',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.kebabCaseRoute',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.fmMode',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.qqGroup',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.shaderFx',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.playerShort',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamMode3v3',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.multiplierX10',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.bundle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.exportJson',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.ugcTitle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.c4Model',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.otaBundle',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.policyId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.providerId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.gameIdError',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.cpGain',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.vpGain',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.debugIds',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureId',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureVersion',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureHandler',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futurePayload',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureOverlay',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.futureSlug',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.sdkGuide',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.nodeJsServer',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.oauthLogin',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.semver',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.worldName',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.webviewCompat',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.corsConfig',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.mongoServer',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.imageFormats',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.appShell',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.podLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.romanDeck',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.teamLabel',
+            }),
+            expect.objectContaining({
+                source: 'zh-CN:common.allowedTerms.mathFormula',
+            }),
+        ]));
+
+        fs.rmSync(tempDir, { recursive: true, force: true });
     });
 });
 
@@ -838,6 +1282,8 @@ describe('encoding check candidate scope', () => {
         expect(shouldIncludeChangedGitFile('android/build.gradle')).toBe(true);
 
         expect(shouldIncludeChangedGitFile('.kiro/specs/demo/tasks.md')).toBe(false);
+        expect(shouldIncludeChangedGitFile('.codex/skill/demo/SKILL.md')).toBe(false);
+        expect(shouldIncludeChangedGitFile('.devin/skills/demo/SKILL.md')).toBe(false);
         expect(shouldIncludeChangedGitFile('.windsurf/skills/demo/SKILL.md')).toBe(false);
         expect(shouldIncludeChangedGitFile('evidence/scope-audit.md')).toBe(false);
         expect(shouldIncludeChangedGitFile('tmp/temp-reducer-diff.txt')).toBe(false);

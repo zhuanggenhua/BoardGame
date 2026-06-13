@@ -1,4 +1,5 @@
 import { cn } from '../../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface RoomPresencePlayer {
     id: number | string;
@@ -13,26 +14,30 @@ interface RoomPlayerStatusListProps {
     className?: string;
 }
 
-const resolvePlayerLabel = (player: RoomPresencePlayer) => {
+const resolvePlayerLabel = (
+    t: (key: string, options?: Record<string, unknown>) => string,
+    player: RoomPresencePlayer
+) => {
     if (player.name?.trim()) {
         return player.name.trim();
     }
     if (typeof player.id === 'number' && Number.isFinite(player.id)) {
-        return `座位 ${player.id + 1}`;
+        return t('admin.roomsPage.player_labels.seat_number', { seat: player.id + 1 });
     }
-    return `座位 ${player.id}`;
+    return t('admin.roomsPage.player_labels.seat_id', { seat: player.id });
 };
 
 export default function RoomPlayerStatusList({
     players,
     compact = false,
-    emptyLabel = '暂无玩家',
+    emptyLabel,
     className,
 }: RoomPlayerStatusListProps) {
+    const { t } = useTranslation('lobby');
     if (players.length === 0) {
         return (
             <div className={cn('text-xs text-zinc-400', className)}>
-                {emptyLabel}
+                {emptyLabel ?? t('admin.roomsPage.players.empty')}
             </div>
         );
     }
@@ -59,9 +64,9 @@ export default function RoomPlayerStatusList({
                             )}
                             aria-hidden="true"
                         />
-                        <span className="max-w-[120px] truncate">{resolvePlayerLabel(player)}</span>
+                        <span className="max-w-[120px] truncate">{resolvePlayerLabel(t, player)}</span>
                         <span className="text-[10px] uppercase tracking-[0.08em] opacity-70">
-                            {isConnected ? '在线' : '离线'}
+                            {isConnected ? t('admin.roomsPage.online.online') : t('admin.roomsPage.online.offline')}
                         </span>
                     </span>
                 );

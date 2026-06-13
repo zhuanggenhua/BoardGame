@@ -72,3 +72,5 @@ export const HomeEntry = () => {
 
     return <Home />;
 };
+
+export default HomeEntry;

@@ -35,16 +35,6 @@ interface RoomItem {
 
 const PAGE_LIMIT = 10;
 
-const resolveOwnerLabel = (room: RoomItem) => {
-    if (room.ownerName) return room.ownerName;
-    if (room.ownerType === 'guest' && room.ownerKey) {
-        return room.ownerKey.replace('guest:', '游客#');
-    }
-    return room.ownerKey || '未知';
-};
-
-const resolveRoomTitle = (room: RoomItem) => room.roomName?.trim() || '未命名房间';
-
 export default function RoomsPage() {
     const { t } = useTranslation('lobby');
     const { token } = useAuth();
@@ -76,6 +66,18 @@ export default function RoomsPage() {
         [gameConfigs, t]
     );
     const resolveGameName = (gameId: string) => gameNameLabelMap.get(gameId) ?? gameId;
+    const resolveOwnerTypeLabel = (ownerType?: 'user' | 'guest') =>
+        ownerType === 'user'
+            ? t('admin.roomsPage.owner_type.user')
+            : t('admin.roomsPage.owner_type.guest');
+    const resolveOwnerLabel = (room: RoomItem) => {
+        if (room.ownerName) return room.ownerName;
+        if (room.ownerType === 'guest' && room.ownerKey) {
+            return room.ownerKey.replace('guest:', t('admin.roomsPage.guest_prefix'));
+        }
+        return room.ownerKey || t('admin.roomsPage.unknown');
+    };
+    const resolveRoomTitle = (room: RoomItem) => room.roomName?.trim() || t('admin.roomsPage.unnamed_room');
 
     const fetchRooms = async () => {
         if (!token) {
@@ -99,7 +101,7 @@ export default function RoomsPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '获取房间列表失败');
+                throw new Error(payload?.error || t('admin.roomsPage.toast.fetch_failed'));
             }
 
             const data = await res.json();
@@ -112,7 +114,7 @@ export default function RoomsPage() {
             setTotalPages(Math.max(1, Math.ceil(nextTotal / nextLimit)));
             setTotalItems(nextTotal);
         } catch (err) {
-            toastError(err instanceof Error ? err.message : '获取房间列表失败');
+            toastError(err instanceof Error ? err.message : t('admin.roomsPage.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
@@ -156,7 +158,7 @@ export default function RoomsPage() {
     };
 
     const handleDelete = async (matchID: string) => {
-        if (!confirm('确定要删除该房间吗？')) return;
+        if (!confirm(t('admin.roomsPage.confirm.delete'))) return;
         try {
             const res = await fetch(`${ADMIN_API_URL}/rooms/${matchID}`, {
                 method: 'DELETE',
@@ -164,19 +166,21 @@ export default function RoomsPage() {
             });
             if (!res.ok) {
                 const payload = await res.json().catch(() => null);
-                throw new Error(payload?.error || '删除失败');
+                throw new Error(payload?.error || t('admin.roomsPage.toast.delete_failed'));
             }
-            success('房间已删除');
+            success(t('admin.roomsPage.toast.delete_success'));
             fetchRooms();
         } catch (err) {
-            toastError(err instanceof Error ? err.message : '删除失败');
+            toastError(err instanceof Error ? err.message : t('admin.roomsPage.toast.delete_failed'));
         }
     };
 
     const handleBulkDelete = async () => {
         if (!selectAllFiltered && selectedIds.length === 0) return;
-        const label = selectAllFiltered ? `当前筛选的 ${totalItems} 个房间` : `选中的 ${selectedIds.length} 个房间`;
-        if (!confirm(`确定要删除${label}吗？`)) return;
+        const label = selectAllFiltered
+            ? t('admin.roomsPage.bulk.filtered_count', { count: totalItems })
+            : t('admin.roomsPage.bulk.selected_count', { count: selectedIds.length });
+        if (!confirm(t('admin.roomsPage.confirm.bulk_delete', { label }))) return;
 
         try {
             const url = selectAllFiltered
@@ -195,14 +199,14 @@ export default function RoomsPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => null);
-                throw new Error(data?.error || '批量删除失败');
+                throw new Error(data?.error || t('admin.roomsPage.toast.bulk_delete_failed'));
             }
-            success(`已删除${label}`);
+            success(t('admin.roomsPage.toast.bulk_delete_success', { label }));
             setSelectedIds([]);
             setSelectAllFiltered(false);
             fetchRooms();
         } catch (err) {
-            toastError(err instanceof Error ? err.message : '批量删除失败');
+            toastError(err instanceof Error ? err.message : t('admin.roomsPage.toast.bulk_delete_failed'));
         }
     };
 
@@ -213,7 +217,7 @@ export default function RoomsPage() {
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    aria-label="选择全部房间"
+                    aria-label={t('admin.roomsPage.aria.select_all')}
                 />
             ),
             width: '48px',
@@ -224,13 +228,13 @@ export default function RoomsPage() {
                         type="checkbox"
                         checked={selectAllFiltered || selectedIds.includes(room.matchID)}
                         onChange={() => toggleSelectOne(room.matchID)}
-                        aria-label={`选择房间 ${room.matchID}`}
+                        aria-label={t('admin.roomsPage.aria.select_room', { id: room.matchID })}
                     />
                 </div>
             ),
         },
         {
-            header: '房间',
+            header: t('admin.roomsPage.columns.room'),
             cell: (room) => (
                 <div className="space-y-1">
                     <div className="font-semibold text-zinc-900">{resolveRoomTitle(room)}</div>
@@ -239,23 +243,25 @@ export default function RoomsPage() {
             ),
         },
         {
-            header: '游戏',
+            header: t('admin.roomsPage.columns.game'),
             accessorKey: 'gameName',
             cell: (room) => (
                 <span className="font-medium text-zinc-700">{resolveGameName(room.gameName)}</span>
             ),
         },
         {
-            header: '房主',
+            header: t('admin.roomsPage.columns.owner'),
             cell: (room) => (
                 <div className="space-y-1 text-xs">
                     <div className="font-medium text-zinc-700">{resolveOwnerLabel(room)}</div>
-                    <div className="uppercase tracking-[0.08em] text-zinc-400">{room.ownerType || 'guest'}</div>
+                    <div className="uppercase tracking-[0.08em] text-zinc-400">
+                        {resolveOwnerTypeLabel(room.ownerType)}
+                    </div>
                 </div>
             ),
         },
         {
-            header: '状态',
+            header: t('admin.roomsPage.columns.status'),
             cell: (room) => (
                 <span className={cn(
                     'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold',
@@ -264,39 +270,45 @@ export default function RoomsPage() {
                         : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 )}>
                     {room.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
-                    {room.isLocked ? '有密码' : '公开'}
+                    {room.isLocked ? t('admin.roomsPage.status.locked') : t('admin.roomsPage.status.public')}
                 </span>
             ),
         },
         {
-            header: '玩家在线状态',
+            header: t('admin.roomsPage.columns.players'),
             width: '320px',
             cell: (room) => {
                 const summary = summarizeRoomPlayers(room.players);
                 return (
                     <div className="space-y-2">
                         <div className="text-xs font-medium text-zinc-700">
-                            {summary.connected}/{summary.total} 在线
+                            {t('admin.roomsPage.players.online_count', {
+                                connected: summary.connected,
+                                total: summary.total,
+                            })}
                         </div>
-                        <RoomPlayerStatusList players={room.players} emptyLabel="暂无玩家入座" />
+                        <RoomPlayerStatusList
+                            players={room.players}
+                            emptyLabel={t('admin.roomsPage.players.empty')}
+                        />
                     </div>
                 );
             },
         },
         {
-            header: '持续时间',
+            header: t('admin.roomsPage.columns.duration'),
             cell: (room) => (
                 <div className="space-y-1 text-xs text-zinc-500">
                     <div className="inline-flex items-center gap-1.5 font-medium text-zinc-700">
                         <Timer size={12} className="opacity-70" />
                         {formatDurationMs(getElapsedDurationMs(room.createdAt))}
                     </div>
-                    <div>开始于 {formatDateTime(room.createdAt)}</div>
+                    <div>{t('admin.roomsPage.duration.started_at', { time: formatDateTime(room.createdAt) })}</div>
                 </div>
             ),
         },
         {
-            header: '最近更新',
+            header: t('admin.roomsPage.columns.updated_at'),
             accessorKey: 'updatedAt',
             cell: (room) => (
                 <div className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-500">
@@ -306,7 +318,7 @@ export default function RoomsPage() {
             ),
         },
         {
-            header: '操作',
+            header: t('admin.roomsPage.columns.actions'),
             className: 'text-right',
             cell: (room) => (
                 <div className="flex justify-end">
@@ -314,7 +326,7 @@ export default function RoomsPage() {
                         onClick={() => handleDelete(room.matchID)}
                         className="text-xs font-medium text-red-500 transition-colors hover:text-red-600"
                     >
-                        删除
+                        {t('admin.roomsPage.actions.delete')}
                     </button>
                 </div>
             ),
@@ -325,13 +337,15 @@ export default function RoomsPage() {
         <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col bg-zinc-50/50 p-8">
             <div className="mb-8 flex flex-none flex-col justify-between gap-6 xl:flex-row xl:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">房间管理</h1>
-                    <p className="mt-1 text-sm text-zinc-500">查看房间在线状态、持续时间，并支持按条件清理</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+                        {t('admin.roomsPage.title')}
+                    </h1>
+                    <p className="mt-1 text-sm text-zinc-500">{t('admin.roomsPage.description')}</p>
                 </div>
 
                 <div className="flex flex-col items-center gap-3 sm:flex-row">
                     <SearchInput
-                        placeholder="搜索房间 ID 或房间名..."
+                        placeholder={t('admin.roomsPage.search_placeholder')}
                         onSearch={(value) => {
                             setSearch(value);
                             setPage(1);
@@ -349,8 +363,8 @@ export default function RoomsPage() {
                             setSelectAllFiltered(false);
                         }}
                         options={gameOptions}
-                        placeholder="所有游戏"
-                        allOptionLabel="所有游戏"
+                        placeholder={t('admin.roomsPage.filters.all_games')}
+                        allOptionLabel={t('admin.roomsPage.filters.all_games')}
                         prefixIcon={<Filter size={14} />}
                         className="w-full sm:w-48"
                     />
@@ -359,14 +373,20 @@ export default function RoomsPage() {
                         disabled={!selectAllFiltered && selectedIds.length === 0}
                         className="rounded-lg border border-red-200 px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        删除选中 {selectAllFiltered ? `(共 ${totalItems})` : selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
+                        {t('admin.roomsPage.actions.bulk_delete')}
+                        {' '}
+                        {selectAllFiltered
+                            ? `(${t('admin.roomsPage.bulk.total_count', { count: totalItems })})`
+                            : selectedIds.length > 0
+                                ? `(${selectedIds.length})`
+                                : ''}
                     </button>
                 </div>
             </div>
 
             {selectAllFiltered && (
                 <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-600">
-                    已全选当前筛选结果（{totalItems} 条）。如需取消，请点击表头的全选框。
+                    {t('admin.roomsPage.bulk.all_filtered_selected', { count: totalItems })}
                 </div>
             )}
 

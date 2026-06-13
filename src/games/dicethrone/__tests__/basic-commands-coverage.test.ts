@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { buildAiDecisionContext, registerRemoteAiProvider, resolveNextLocalAiAction, withAiActionStrategyTags } from '../../../engine/ai';
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions, diceThroneAiRuntime } from '../ai';
@@ -17,6 +18,7 @@ import {
     testSystems,
     createQueuedRandom,
     createNoResponseSetup,
+    createRunner,
     assertState,
     cmd,
     createSetupWithHand,
@@ -776,7 +778,7 @@ describe('AI legal actions', () => {
         });
     });
 
-    it('本地 AI 在全体候选的增益选人交互里优先选择更需要增益的友方', async () => {
+    it('本地 AI 在全体候选的增益选人交互里优先选择更需要增益的队友', async () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 40;
         state.core.players['2'].resources[RESOURCE_IDS.HP] = 9;
@@ -811,7 +813,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-select-player');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'RESOLVE_INTERACTION',
-            payload: { selectedPlayerIds: ['0'] },
+            payload: { selectedPlayerIds: ['2'] },
         });
     });
 
@@ -848,6 +850,29 @@ describe('AI legal actions', () => {
             type: 'RESOLVE_INTERACTION',
             payload: { selectedPlayerIds: ['3'] },
         });
+    });
+
+    it('移除全部状态交互不会误移除诅咒金币这类不可移除状态', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 2;
+        state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 1;
+
+        const interaction: InteractionDescriptor = {
+            id: 'remove-all-status-but-keep-cursed-coin',
+            playerId: '1',
+            sourceCardId: 'card-what-status',
+            type: 'selectPlayer',
+            titleKey: 'interaction.selectPlayerToRemoveAllStatus',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['0'],
+            requiresTargetWithStatus: true,
+        };
+        injectPendingInteraction(state, interaction);
+
+        const next = execCmd(state, cmd('RESOLVE_INTERACTION', '1', { selectedPlayerIds: ['0'] }));
+        expect(next.core.players['0'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(0);
+        expect(next.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN]).toBe(2);
     });
 
     it('dt:card-interaction 的 selectStatus 交互应生成 REMOVE_STATUS 动作', () => {
@@ -1871,6 +1896,170 @@ describe('AI legal actions', () => {
         expect(executedKinds).toEqual(['roll-dice', 'confirm-roll', 'advance-phase']);
         expect(state.sys.phase).toBe('defensiveRoll');
         expect(state.core.pendingAttack?.defenderId).toBe('3');
+    });
+
+    it('本地 AI 在四人 targetingRoll 掷出 5 时，应替防守方选定受击目标而不是停住', async () => {
+        const playerIds = ['0', '1', '2', '3'] as const;
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 5]);
+        let state = createNoResponseSetup()(playerIds as unknown as string[], random);
+
+        for (const player of Object.values(state.core.players)) {
+            player.hand = [];
+            player.deck = [];
+            player.discard = [];
+        }
+
+        const setupCommands: CommandInput[] = [
+            ...advanceTo('offensiveRoll', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('ADVANCE_PHASE', '0'),
+        ];
+
+        for (const input of setupCommands) {
+            const result = executePipeline(
+                pipelineConfig,
+                state,
+                { type: input.type, playerId: input.playerId, payload: input.payload, timestamp: Date.now() },
+                random,
+                [...playerIds],
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+        }
+
+        expect(state.sys.phase).toBe('targetingRoll');
+        expect(getCurrentInteractionSummary(state)).toMatchObject({
+            kind: 'dt:defender-choice',
+            playerId: '3',
+        });
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '3',
+            state,
+        });
+        expect(legalActions.some((action) =>
+            action.commands.some((command) => command.type === 'SELECT_DEFENDER_TARGET')
+        )).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '3': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('3');
+        expect(resolution?.action).toBeTruthy();
+        expect(resolution?.action.commands).toHaveLength(1);
+        expect(resolution?.action.commands[0]?.type).toBe('SELECT_DEFENDER_TARGET');
+        expect(['1', '3']).toContain(resolution?.action.commands[0]?.payload?.defenderId);
+
+        const result = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                type: resolution!.action.commands[0]!.type,
+                playerId: resolution!.playerId,
+                payload: resolution!.action.commands[0]!.payload ?? {},
+                timestamp: Date.now(),
+            },
+            random,
+            [...playerIds],
+        );
+        expect(result.success).toBe(true);
+        state = result.state as MatchState<DiceThroneCore>;
+
+        expect(state.sys.phase).toBe('defensiveRoll');
+        expect(['1', '3']).toContain(state.core.pendingAttack?.defenderId);
+    });
+
+    it('本地 AI 在四人 targetingRoll 掷出 6 时，应替进攻方选定受击目标而不是停住', async () => {
+        const playerIds = ['0', '1', '2', '3'] as const;
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 6]);
+        let state = createNoResponseSetup()(playerIds as unknown as string[], random);
+
+        for (const player of Object.values(state.core.players)) {
+            player.hand = [];
+            player.deck = [];
+            player.discard = [];
+        }
+
+        const setupCommands: CommandInput[] = [
+            ...advanceTo('offensiveRoll', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
+            cmd('ADVANCE_PHASE', '0'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('ADVANCE_PHASE', '0'),
+        ];
+
+        for (const input of setupCommands) {
+            const result = executePipeline(
+                pipelineConfig,
+                state,
+                { type: input.type, playerId: input.playerId, payload: input.payload, timestamp: Date.now() },
+                random,
+                [...playerIds],
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+        }
+
+        expect(state.sys.phase).toBe('targetingRoll');
+        expect(getCurrentInteractionSummary(state)).toMatchObject({
+            kind: 'dt:defender-choice',
+            playerId: '0',
+        });
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+        expect(legalActions.some((action) =>
+            action.commands.some((command) => command.type === 'SELECT_DEFENDER_TARGET')
+        )).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action).toBeTruthy();
+        expect(resolution?.action.commands).toHaveLength(1);
+        expect(resolution?.action.commands[0]?.type).toBe('SELECT_DEFENDER_TARGET');
+        expect(['1', '2', '3']).toContain(resolution?.action.commands[0]?.payload?.defenderId);
+
+        const result = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                type: resolution!.action.commands[0]!.type,
+                playerId: resolution!.playerId,
+                payload: resolution!.action.commands[0]!.payload ?? {},
+                timestamp: Date.now(),
+            },
+            random,
+            [...playerIds],
+        );
+        expect(result.success).toBe(true);
+        state = result.state as MatchState<DiceThroneCore>;
+
+        expect(state.sys.phase).toBe('defensiveRoll');
+        expect(['1', '2', '3']).toContain(state.core.pendingAttack?.defenderId);
     });
 
     it('本地 AI 在 displayOnly 奖励骰结算伴随响应与交互链时，应沿真实链路收口且不误生成 bonus-die 动作', async () => {
@@ -3033,6 +3222,43 @@ describe('AI legal actions', () => {
         expect(state.core.rollConfirmed).toBe(false);
     });
 
+    it('确认骰面后若被对手改骰且仍有剩余投掷次数，应允许继续重投', () => {
+        const random = createQueuedRandom([3, 3, 3, 3, 3, 4, 4, 4, 4, 4]);
+        const runner = createRunner(random, true);
+
+        const afterModify = runner.run({
+            name: 'afterRollConfirmed 对手改骰后应撤销已确认',
+            setup: createSetupWithHand(['card-flick'], {
+                playerId: '1',
+                cp: 10,
+                mutate: (core) => {
+                    core.players['0'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                },
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('PLAY_CARD', '1', { cardId: 'card-flick' }),
+                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 4 }),
+                cmd('SYS_INTERACTION_CONFIRM', '1'),
+            ],
+        });
+
+        expect(afterModify.finalState.core.rollLimit).toBe(3);
+        expect(afterModify.finalState.core.rollCount).toBe(1);
+        expect(afterModify.finalState.core.rollConfirmed).toBe(false);
+
+        runner.setState(afterModify.finalState);
+        const rerollAttempt = runner.dispatch('ROLL_DICE', { playerId: '0' });
+
+        expect(rerollAttempt.success).toBe(true);
+        expect(rerollAttempt.finalState.core.rollCount).toBe(2);
+        expect(rerollAttempt.finalState.core.rollConfirmed).toBe(false);
+    });
+
     it('不同难度会影响搜索行为，专家玩法噪声保持为 0', async () => {
         const state = createSetupWithHand(['card-enlightenment', 'card-boss-generous'], { cp: 0 })(['0', '1'], fixedRandom);
         const matchId = 'probe';
@@ -3356,6 +3582,45 @@ describe('AI legal actions', () => {
                 .filter((item) => item.kind === 'toggle-die-lock' || item.kind === 'roll-dice' || item.kind === 'confirm-roll')
                 .every((item) => (item.searchPriority ?? 0) === 0),
         ).toBe(true);
+    });
+
+    it('本地 AI 在紧缚且 0CP 无法继续重投时，不应继续锁骰循环', async () => {
+        const state = createHeroMatchup('zhanshujia', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 2;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].statusEffects[STATUS_IDS.BIND] = 1;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        state.core.dice = [
+            { id: 0, value: 6, symbol: 'medal', isKept: false },
+            { id: 1, value: 3, symbol: 'sabre', isKept: false },
+            { id: 2, value: 3, symbol: 'sabre', isKept: false },
+            { id: 3, value: 3, symbol: 'sabre', isKept: true },
+            { id: 4, value: 6, symbol: 'medal', isKept: false },
+        ];
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'toggle-die-lock')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'roll-dice')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'confirm-roll')).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-bind-zero-cp-confirm',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('confirm-roll');
     });
 
     it('远程 AI 在可见大动作决策点应调用 provider', async () => {

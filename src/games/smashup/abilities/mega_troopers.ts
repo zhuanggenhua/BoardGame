@@ -210,7 +210,7 @@ function lightningCrystal(ctx: AbilityContext): AbilityResult {
             value: choice,
             displayCard: { defId: choice.defId, cardUid: choice.cardUid },
         })),
-        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'generic' },
+        { sourceId: 'mega_troopers_lightning_crystal', targetType: 'ongoing', titleKey: 'ui.mega_troopers_lightning_crystal_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -258,7 +258,7 @@ function itsBlitzinTime(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'affect',
         }),
-        { sourceId: 'mega_troopers_its_blitzin_time', targetType: 'minion' },
+        { sourceId: 'mega_troopers_its_blitzin_time', targetType: 'minion', titleKey: 'ui.mega_troopers_its_blitzin_time_title' },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -366,6 +366,7 @@ function planForMore(ctx: AbilityContext): AbilityResult {
             sourceId: 'mega_troopers_plan_for_more',
             targetType: 'generic',
             multi: { min: 0, max: minions.length },
+            titleKey: 'ui.mega_troopers_plan_for_more_title',
         },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
@@ -589,7 +590,7 @@ function yellowTrooperSpecial(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'move',
         })],
-        { sourceId: 'mega_troopers_yellow_trooper', targetType: 'minion' },
+        { sourceId: 'mega_troopers_yellow_trooper', targetType: 'minion', titleKey: 'ui.mega_troopers_yellow_trooper_title' },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         scoringBaseIndex: ctx.baseIndex,
@@ -620,7 +621,7 @@ function pinkTrooperSpecial(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'return',
         })],
-        { sourceId: 'mega_troopers_pink_trooper', targetType: 'minion' },
+        { sourceId: 'mega_troopers_pink_trooper', targetType: 'minion', titleKey: 'ui.mega_troopers_pink_trooper_title' },
     );
     return {
         events: [specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now)],
@@ -657,7 +658,7 @@ function lightningRescue(ctx: AbilityContext): AbilityResult {
             displayCard: { defId: card.defId, cardUid: card.uid },
             _source: 'hand' as const,
         }))],
-        { sourceId: 'mega_troopers_lightning_rescue', targetType: 'hand' },
+        { sourceId: 'mega_troopers_lightning_rescue', targetType: 'hand', titleKey: 'ui.mega_troopers_lightning_rescue_title' },
     );
     return {
         events: [specialUsedEvent(ctx.playerId, ctx.defId, ctx.baseIndex, ctx.now)],
@@ -711,7 +712,7 @@ function blitzingSwordAttack(ctx: AbilityContext): AbilityResult {
             sourceDefId: ctx.defId,
             effectType: 'destroy',
         }),
-        { sourceId: 'mega_troopers_blitzing_sword_attack', targetType: 'minion' },
+        { sourceId: 'mega_troopers_blitzing_sword_attack', targetType: 'minion', titleKey: 'ui.mega_troopers_blitzing_sword_attack_title' },
     );
     return { events, matchState: queueInteraction(ctx.matchState, interaction) };
 }

@@ -47,6 +47,7 @@ COMPOSE_PROJECT_NAME_EFFECTIVE="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)" | tr
 DEPLOY_STATE_FILE="${DEPLOY_STATE_FILE:-.deploy-last-success.env}"
 DEPLOY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLIC_WEB_URL="${PUBLIC_WEB_URL:-https://easyboardgame.top}"
+PUBLIC_ENTRY_SYNC_SOURCE_URL="${PUBLIC_ENTRY_SYNC_SOURCE_URL:-http://127.0.0.1/}"
 PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
 PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
 REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
@@ -454,6 +455,46 @@ normalize_public_web_url() {
   printf '%s' "${url%/}"
 }
 
+has_cloudflare_auth_configured() {
+  if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  if [ -n "${CLOUDFLARE_AUTH_EMAIL:-}" ] && [ -n "${CLOUDFLARE_GLOBAL_API_KEY:-}" ]; then
+    return 0
+  fi
+
+  return 1
+}
+
+run_cloudflare_purge_script() {
+  local purge_script="${1:-}"
+  shift || true
+
+  if [ -z "$purge_script" ]; then
+    log "❌ 未提供 Cloudflare purge 脚本路径"
+    return 1
+  fi
+
+  if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
+    CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
+      bash "$purge_script" "$@"
+    return $?
+  fi
+
+  if [ -n "${CLOUDFLARE_AUTH_EMAIL:-}" ] && [ -n "${CLOUDFLARE_GLOBAL_API_KEY:-}" ]; then
+    CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
+    CLOUDFLARE_AUTH_EMAIL="${CLOUDFLARE_AUTH_EMAIL}" \
+    CLOUDFLARE_GLOBAL_API_KEY="${CLOUDFLARE_GLOBAL_API_KEY}" \
+      bash "$purge_script" "$@"
+    return $?
+  fi
+
+  log "❌ 缺少 Cloudflare 认证信息：请提供 CLOUDFLARE_API_TOKEN，或同时提供 CLOUDFLARE_AUTH_EMAIL + CLOUDFLARE_GLOBAL_API_KEY"
+  return 1
+}
+
 extract_entry_assets_from_html() {
   grep -o 'assets/[^"[:space:]]*' | sort -u
 }
@@ -472,14 +513,18 @@ verify_public_entry_sync_once() {
     return 0
   fi
 
-  local normalized_public_url origin_assets public_assets
+  local normalized_public_url normalized_source_url source_assets public_assets
   normalized_public_url="$(normalize_public_web_url "$PUBLIC_WEB_URL")" || {
     log "❌ 无法解析 PUBLIC_WEB_URL：${PUBLIC_WEB_URL}"
     return 1
   }
+  normalized_source_url="$(normalize_public_web_url "$PUBLIC_ENTRY_SYNC_SOURCE_URL")" || {
+    log "❌ 无法解析 PUBLIC_ENTRY_SYNC_SOURCE_URL：${PUBLIC_ENTRY_SYNC_SOURCE_URL}"
+    return 1
+  }
 
-  origin_assets="$(collect_entry_assets_from_url "http://127.0.0.1/")" || {
-    log "❌ 无法读取源站首页入口资源列表"
+  source_assets="$(collect_entry_assets_from_url "${normalized_source_url}/")" || {
+    log "❌ 无法读取参考入口资源列表：${normalized_source_url}/"
     return 1
   }
   public_assets="$(collect_entry_assets_from_url "${normalized_public_url}/")" || {
@@ -487,27 +532,27 @@ verify_public_entry_sync_once() {
     return 1
   }
 
-  if [ -z "$origin_assets" ] || [ -z "$public_assets" ]; then
-    log "❌ 入口资源列表为空，无法判定公网/源站是否一致"
-    log "  - origin: ${origin_assets:-<empty>}"
+  if [ -z "$source_assets" ] || [ -z "$public_assets" ]; then
+    log "❌ 入口资源列表为空，无法判定公网/参考入口是否一致"
+    log "  - source(${normalized_source_url}/): ${source_assets:-<empty>}"
     log "  - public: ${public_assets:-<empty>}"
     return 1
   fi
 
-  if [ "$origin_assets" != "$public_assets" ]; then
-    log "❌ 公网入口资源仍与源站不一致"
-    log "  - origin:"
+  if [ "$source_assets" != "$public_assets" ]; then
+    log "❌ 公网入口资源仍与参考入口不一致"
+    log "  - source (${normalized_source_url}/):"
     while IFS= read -r line; do
       [ -n "$line" ] && log "    ${line}"
-    done <<< "$origin_assets"
-    log "  - public:"
+    done <<< "$source_assets"
+    log "  - public (${normalized_public_url}/):"
     while IFS= read -r line; do
       [ -n "$line" ] && log "    ${line}"
     done <<< "$public_assets"
     return 1
   fi
 
-  log "✅ 公网入口资源已与源站一致"
+  log "✅ 公网入口资源已与参考入口一致"
   return 0
 }
 
@@ -542,7 +587,7 @@ purge_cloudflare_cache_if_configured() {
 
   mode="${CLOUDFLARE_PURGE_MODE:-auto}"
   if [ "$mode" = "auto" ]; then
-    if [ -n "${CLOUDFLARE_ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+    if [ -n "${CLOUDFLARE_ZONE_ID:-}" ] && has_cloudflare_auth_configured; then
       mode="everything"
     else
       mode="skip"
@@ -564,8 +609,8 @@ purge_cloudflare_cache_if_configured() {
       ;;
   esac
 
-  if [ -z "${CLOUDFLARE_ZONE_ID:-}" ] || [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-    log "❌ 已要求 Cloudflare purge，但缺少 CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN"
+  if [ -z "${CLOUDFLARE_ZONE_ID:-}" ] || ! has_cloudflare_auth_configured; then
+    log "❌ 已要求 Cloudflare purge，但缺少 CLOUDFLARE_ZONE_ID 或 Cloudflare 认证信息"
     return 1
   fi
 
@@ -576,9 +621,7 @@ purge_cloudflare_cache_if_configured() {
 
   if [ "$mode" = "everything" ]; then
     log "执行 Cloudflare 全量 purge"
-    CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
-    CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
-      bash "$purge_script" everything
+    run_cloudflare_purge_script "$purge_script" everything
     return $?
   fi
 
@@ -590,12 +633,10 @@ purge_cloudflare_cache_if_configured() {
   local -a files_to_purge=("${normalized_public_url}/" "${normalized_public_url}/index.html")
   while IFS= read -r asset; do
     [ -n "$asset" ] && files_to_purge+=("${normalized_public_url}/${asset}")
-  done < <(collect_entry_assets_from_url "http://127.0.0.1/" || true)
+  done < <(collect_entry_assets_from_url "${PUBLIC_ENTRY_SYNC_SOURCE_URL}" || true)
 
   log "执行 Cloudflare 定向 purge，共 ${#files_to_purge[@]} 个 URL"
-  CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID}" \
-  CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}" \
-    bash "$purge_script" files "${files_to_purge[@]}"
+  run_cloudflare_purge_script "$purge_script" files "${files_to_purge[@]}"
 }
 
 run_public_entry_sync_gate() {
@@ -614,11 +655,11 @@ run_public_entry_sync_gate() {
   fi
 
   if [ "${REQUIRE_PUBLIC_ENTRY_SYNC:-1}" = "1" ]; then
-    log "❌ 公网入口仍未与源站一致，拒绝把本次部署视为完成"
+    log "❌ 公网入口仍未与参考入口一致，拒绝把本次部署视为完成"
     return 1
   fi
 
-  log "⚠️ 公网入口仍未与源站一致，但 REQUIRE_PUBLIC_ENTRY_SYNC=${REQUIRE_PUBLIC_ENTRY_SYNC}，仅警告"
+  log "⚠️ 公网入口仍未与参考入口一致，但 REQUIRE_PUBLIC_ENTRY_SYNC=${REQUIRE_PUBLIC_ENTRY_SYNC}，仅警告"
   return 0
 }
 
@@ -1024,7 +1065,7 @@ deploy() {
   init_admin_if_configured
 
   if ! run_public_entry_sync_gate; then
-    die "源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+    die "参考入口与公网入口资源仍未收敛到同一版本；请检查 Cloudflare / Pages / DNS 发布链并重试"
   fi
 
   record_successful_runtime_state "deploy" || true
@@ -1067,7 +1108,7 @@ rollback() {
   fi
 
   if ! run_public_entry_sync_gate; then
-    die "回退后的源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+    die "回退后的参考入口与公网入口资源仍未收敛到同一版本；请检查 Cloudflare / Pages / DNS 发布链并重试"
   fi
 
   record_successful_runtime_state "rollback-tag" || true
@@ -1099,7 +1140,7 @@ rollback_last() {
   fi
 
   if ! run_public_entry_sync_gate; then
-    die "回退后的源站已更新，但公网入口资源未同步到同一版本；请检查 Cloudflare/CDN 缓存并重试"
+    die "回退后的参考入口与公网入口资源仍未收敛到同一版本；请检查 Cloudflare / Pages / DNS 发布链并重试"
   fi
 
   write_deploy_state \

@@ -51,6 +51,36 @@ const createTestState = (): MatchState<TestCore> => {
 };
 
 describe('InteractionSystem', () => {
+    it('createSimpleChoice 在写了 titleKey / labelKey 时应优先把状态正文收敛为 key', () => {
+        const interaction = createSimpleChoice(
+            'interaction-keyed',
+            '0',
+            '新娘：选择第一个效果',
+            [
+                { id: 'play', label: '打出这个泰坦', labelKey: 'ui.play_this_titan', value: { play: true } },
+                { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true } },
+            ],
+            {
+                sourceId: 'demo',
+                targetType: 'generic',
+                titleKey: 'ui.titan_the_bride_start_first_effect_title',
+                subtitle: '可选说明',
+                subtitleKey: 'common:interaction.emergencySkip',
+                autoCancelOption: true,
+            },
+        );
+
+        expect(interaction.data.title).toBe('ui.titan_the_bride_start_first_effect_title');
+        expect(interaction.data.subtitle).toBe('common:interaction.emergencySkip');
+        expect(interaction.data.options?.[0]?.label).toBe('ui.play_this_titan');
+        expect(interaction.data.options?.[1]?.label).toBe('ui.skip');
+        expect(interaction.data.options?.[2]).toMatchObject({
+            id: '__cancel__',
+            label: 'common:button.cancel',
+            labelKey: 'common:button.cancel',
+        });
+    });
+
     it('SYS_INTERACTION_CANCEL 应取消当前交互并推进队列', () => {
         const system = createInteractionSystem<TestCore>();
         const state = createTestState();
@@ -872,7 +902,7 @@ describe('InteractionSystem', () => {
         ]));
     });
 
-    it('buildTargetAiHint 会以 target/actor 推导 relation，而不是接受外部覆盖', () => {
+    it('buildTargetAiHint 在已知关系时会保留外部显式 relation', () => {
         const hint = buildTargetAiHint({
             actorPlayerId: '0',
             targetPlayerId: '2',
@@ -881,9 +911,27 @@ describe('InteractionSystem', () => {
             targetKind: 'player',
         });
 
-        expect(hint.relationToActor).toBe('enemy');
+        expect(hint.relationToActor).toBe('ally');
         expect(hint.tags).toEqual(expect.arrayContaining([
-            'relation:enemy',
+            'relation:ally',
+            'intent:buff',
+        ]));
+    });
+
+    it('buildTargetAiHint 支持通过游戏侧 relationResolver 复用队伍关系', () => {
+        const hint = buildTargetAiHint({
+            actorPlayerId: '0',
+            targetPlayerId: '2',
+            relationResolver: ({ actorPlayerId, targetPlayerId }) => (
+                actorPlayerId === '0' && targetPlayerId === '2' ? 'ally' : 'enemy'
+            ),
+            effectIntent: 'buff',
+            targetKind: 'player',
+        });
+
+        expect(hint.relationToActor).toBe('ally');
+        expect(hint.tags).toEqual(expect.arrayContaining([
+            'relation:ally',
             'intent:buff',
         ]));
     });

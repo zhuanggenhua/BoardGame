@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { sortGamesForLobbyDirectory } from './lobbyDirectorySorting';
+import { UserMenu } from '../social/UserMenu';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -83,7 +84,7 @@ function centeredPercent(left: string, width: string) {
 
 function buildCategoryLabel(category: LobbyCategory, t: (key: string, options?: { defaultValue?: string }) => string) {
     if (category === 'all') {
-        return '全部';
+        return t('lobby:homeV2.catalog.allGames');
     }
     return t(`common:category.${category}`);
 }
@@ -280,7 +281,7 @@ export const OverviewSpread = ({
     onDestroyContinueMatch,
 }: OverviewSpreadProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [catalogPageIndex, setCatalogPageIndex] = React.useState(0);
     const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
     const languageMenuRef = React.useRef<HTMLDivElement>(null);
@@ -309,7 +310,7 @@ export const OverviewSpread = ({
         setCatalogPageIndex((current) => Math.min(current, totalPages - 1));
     }, [totalPages]);
 
-    const playerLabel = user?.username?.trim() || t('auth:menu.login', '登录');
+    const playerLabel = user?.username?.trim() || t('auth:menu.login');
     const canGoPrevious = catalogPageIndex > 0;
     const canGoNext = catalogPageIndex + 1 < totalPages;
     const activeCategoryRect = CATEGORY_NAV_ITEMS.find((item) => item.id === activeCategory)?.rect ?? CATEGORY_NAV_ITEMS[0].rect;
@@ -412,31 +413,39 @@ export const OverviewSpread = ({
                 }}
             />
 
-            <button
-                type="button"
-                data-testid="home-v2-account-entry"
-                aria-label={playerLabel}
-                title={playerLabel}
-                className="absolute flex items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
-                style={{
-                    ...asAbsoluteStyle(ACCOUNT_RECT),
-                    gap: scaled(6),
-                }}
-                onClick={onAccountClick}
+            <div
+                className="absolute"
+                style={asAbsoluteStyle(ACCOUNT_RECT)}
             >
-                <User aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
-                <span
-                    className="truncate"
-                    style={{
-                        maxWidth: scaled(102),
-                        fontSize: scaled(16),
-                        fontWeight: 700,
-                    }}
-                >
-                    {playerLabel}
-                </span>
-                <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
-            </button>
+                {user ? (
+                    <UserMenu onLogout={logout} variant="book" triggerTestId="home-v2-account-entry" />
+                ) : (
+                    <button
+                        type="button"
+                        data-testid="home-v2-account-entry"
+                        aria-label={playerLabel}
+                        title={playerLabel}
+                        className="flex h-full w-full items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                        style={{
+                            gap: scaled(6),
+                        }}
+                        onClick={onAccountClick}
+                    >
+                        <User aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
+                        <span
+                            className="truncate"
+                            style={{
+                                maxWidth: scaled(102),
+                                fontSize: scaled(16),
+                                fontWeight: 700,
+                            }}
+                        >
+                            {playerLabel}
+                        </span>
+                        <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
+                    </button>
+                )}
+            </div>
 
             <div
                 className="pointer-events-none absolute bg-[rgba(98,65,33,0.45)]"
@@ -573,7 +582,7 @@ export const OverviewSpread = ({
                                             height: scaled(24),
                                             padding: scaled(4),
                                         }}
-                                        aria-label="热门"
+                                        aria-label={t('lobby:homeV2.catalog.hotAria')}
                                     >
                                         <Flame
                                             aria-hidden="true"
@@ -648,7 +657,7 @@ export const OverviewSpread = ({
             <button
                 type="button"
                 data-testid="home-v2-catalog-prev-page"
-                aria-label="上一页"
+                aria-label={t('lobby:homeV2.catalog.previousPage')}
                 className="absolute flex items-center justify-center border border-[#a98655]/60 bg-[rgba(229,209,174,0.54)] text-[#604126] transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                 style={{
                     ...asAbsoluteStyle(PREVIOUS_PAGE_RECT),
@@ -673,7 +682,7 @@ export const OverviewSpread = ({
             <button
                 type="button"
                 data-testid="home-v2-catalog-next-page"
-                aria-label="下一页"
+                aria-label={t('lobby:homeV2.catalog.nextPage')}
                 className="absolute flex items-center justify-center border border-[#a98655]/60 bg-[rgba(229,209,174,0.54)] text-[#604126] transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                 style={{
                     ...asAbsoluteStyle(NEXT_PAGE_RECT),
@@ -695,7 +704,9 @@ export const OverviewSpread = ({
                 <button
                     type="button"
                     data-testid="home-v2-continue-entry"
-                    aria-label={continueMatch ? `继续对局 ${continueMatch.gameLabel}` : '暂无可继续对局'}
+                    aria-label={continueMatch
+                        ? t('lobby:homeV2.catalog.continueMatchAria', { game: continueMatch.gameLabel })
+                        : t('lobby:homeV2.catalog.noContinueMatch')}
                     className="flex min-w-0 flex-1 items-center border border-[#9a7a4a]/52 bg-[rgba(196,179,136,0.36)] font-serif text-[#3b321f] shadow-[inset_0_1px_0_rgba(255,248,222,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                     style={{
                         height: '100%',
@@ -716,7 +727,12 @@ export const OverviewSpread = ({
                         }}
                     />
                     <span className="min-w-0 flex-1 truncate leading-none">
-                        {continueMatch ? `继续对局 · ${continueMatch.gameLabel} ${continueMatchCode}` : '暂无可继续对局'}
+                        {continueMatch
+                            ? t('lobby:homeV2.catalog.continueMatchLabel', {
+                                game: continueMatch.gameLabel,
+                                code: continueMatchCode ? ` ${continueMatchCode}` : '',
+                            })
+                            : t('lobby:homeV2.catalog.noContinueMatch')}
                     </span>
                     <span className="flex items-center whitespace-nowrap" style={{ gap: scaled(5), marginLeft: scaled(12), marginRight: scaled(14) }}>
                         <span>{continueMatch?.playerLabel ?? '-'}</span>
@@ -727,7 +743,7 @@ export const OverviewSpread = ({
                     <button
                         type="button"
                         data-testid="home-v2-continue-destroy-button"
-                        aria-label="销毁当前房间"
+                        aria-label={t('lobby:homeV2.catalog.destroyCurrentRoom')}
                         className="shrink-0 border border-[#a16f43]/72 bg-[linear-gradient(180deg,rgba(94,53,29,0.96)_0%,rgba(70,39,21,0.98)_100%)] font-serif text-[#f3dfbd] shadow-[0_2px_5px_rgba(59,33,17,0.18)] transition-colors hover:bg-[linear-gradient(180deg,rgba(104,58,30,0.98)_0%,rgba(75,42,22,1)_100%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                         style={{
                             height: '100%',
@@ -740,7 +756,7 @@ export const OverviewSpread = ({
                         }}
                         onClick={() => onDestroyContinueMatch?.(continueMatch)}
                     >
-                        销毁
+                        {t('lobby:actions.destroy')}
                     </button>
                 ) : null}
             </div>

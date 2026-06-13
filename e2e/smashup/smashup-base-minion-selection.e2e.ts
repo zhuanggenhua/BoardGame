@@ -1155,6 +1155,244 @@ function createChampionsReactionDirectState(baseState: any) {
     return advanced.state;
 }
 
+function createChampionsReactionNoTargetState(baseState: any) {
+    initAllAbilities();
+
+    const core = {
+        ...(baseState?.core ?? {}),
+        players: {
+            ...(baseState?.core?.players ?? {}),
+            '0': {
+                ...(baseState?.core?.players?.['0'] ?? {}),
+                id: '0',
+                vp: 0,
+                hand: [
+                    makeInjectedCard('champ-card', 'giant_ant_we_are_the_champions', 'action', HOST_PLAYER_ID),
+                ],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['giant_ants', 'vampires'],
+                sameNameMinionDefId: null,
+            },
+            '1': {
+                ...(baseState?.core?.players?.['1'] ?? {}),
+                id: '1',
+                vp: 0,
+                hand: [],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['pirates', 'ninjas'],
+                sameNameMinionDefId: null,
+            },
+        },
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        bases: [
+            {
+                defId: 'base_the_homeworld',
+                minions: [
+                    makeInjectedMinion('scoring-source', 'giant_ant_worker', '0', '0', 25, { powerCounters: 2 }),
+                    makeInjectedMinion('scoring-rival', 'ninja_shinobi', '1', '1', 5),
+                ],
+                ongoingActions: [],
+            },
+            { defId: 'base_temple_of_goju', minions: [], ongoingActions: [] },
+            { defId: 'base_pirate_cove', minions: [], ongoingActions: [] },
+        ],
+        titans: [],
+        enabledExpansions: [],
+        baseDeck: [],
+        baseDiscard: [],
+        turnNumber: 7,
+        nextUid: 910,
+        cardsPlayedThisTurn: 0,
+        powerCountersPlacedOnMinionsThisTurn: 0,
+        turnDestroyedMinions: [],
+        triggerQueue: [],
+    };
+
+    const frameId = 'champions-no-target-after-scoring-frame';
+    let state = {
+        ...baseState,
+        core,
+        sys: {
+            ...baseState.sys,
+            phase: 'scoreBases',
+            currentPlayerIndex: 0,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            _waitForPostScoringReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            resolution: undefined,
+        },
+    };
+
+    const baseRef = createScoringBaseRef(state.core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造我们乃最强无目标计分基地引用');
+    }
+
+    state = setScoringSession(state, {
+        ...createScoringSession(state.core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    state = startSmashUpReactionSession(state, {
+        frameId,
+        frameKind: 'score-after',
+        phase: 'optional',
+        currentPlayerId: '0',
+        activePlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+    const advanced = advanceSmashUpReactionSession(state, FIXED_SMASHUP_RANDOM, 75);
+    if (!advanced?.state.sys.interaction?.current) {
+        throw new Error('无法构造我们乃最强无目标 afterScoring 响应窗口');
+    }
+    return advanced.state;
+}
+
+function createChampionsPassStickyState(baseState: any) {
+    initAllAbilities();
+
+    const core = {
+        ...(baseState?.core ?? {}),
+        players: {
+            ...(baseState?.core?.players ?? {}),
+            '0': {
+                ...(baseState?.core?.players?.['0'] ?? {}),
+                id: '0',
+                vp: 0,
+                hand: [
+                    makeInjectedCard('p0-champs', 'giant_ant_we_are_the_champions', 'action', '0'),
+                ],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['giant_ants', 'vampires'],
+                sameNameMinionDefId: null,
+            },
+            '1': {
+                ...(baseState?.core?.players?.['1'] ?? {}),
+                id: '1',
+                vp: 0,
+                hand: [
+                    makeInjectedCard('p1-champs', 'giant_ant_we_are_the_champions', 'action', '1'),
+                ],
+                deck: [],
+                discard: [],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+                factions: ['giant_ants', 'pirates'],
+                sameNameMinionDefId: null,
+            },
+        },
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        bases: [
+            {
+                defId: 'base_the_jungle',
+                minions: [
+                    makeInjectedMinion('p0-source', 'giant_ant_worker', '0', '0', 3, { powerCounters: 4 }),
+                    makeInjectedMinion('p1-source', 'giant_ant_soldier', '1', '1', 2, { powerCounters: 3 }),
+                ],
+                ongoingActions: [],
+            },
+            {
+                defId: 'base_great_library',
+                minions: [
+                    makeInjectedMinion('p0-target', 'alien_invader', '0', '0', 3),
+                ],
+                ongoingActions: [],
+            },
+            {
+                defId: 'base_the_hill',
+                minions: [
+                    makeInjectedMinion('p1-target', 'robot_microbot_alpha', '1', '1', 2),
+                ],
+                ongoingActions: [],
+            },
+        ],
+        titans: [],
+        enabledExpansions: [],
+        baseDeck: [],
+        baseDiscard: [],
+        turnNumber: 8,
+        nextUid: 920,
+        cardsPlayedThisTurn: 0,
+        powerCountersPlacedOnMinionsThisTurn: 0,
+        turnDestroyedMinions: [],
+        triggerQueue: [],
+    };
+
+    const frameId = 'champions-pass-sticky-after-scoring-frame';
+    let state = {
+        ...baseState,
+        core,
+        sys: {
+            ...baseState.sys,
+            phase: 'scoreBases',
+            currentPlayerIndex: 0,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            _waitForPostScoringReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            resolution: undefined,
+        },
+    };
+
+    const baseRef = createScoringBaseRef(state.core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造让过粘性计分基地引用');
+    }
+
+    state = setScoringSession(state, {
+        ...createScoringSession(state.core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    state = startSmashUpReactionSession(state, {
+        frameId,
+        frameKind: 'score-after',
+        phase: 'optional',
+        currentPlayerId: '0',
+        activePlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+    const advanced = advanceSmashUpReactionSession(state, FIXED_SMASHUP_RANDOM, 75);
+    if (!advanced?.state.sys.interaction?.current) {
+        throw new Error('无法构造让过粘性 afterScoring 响应窗口');
+    }
+    return advanced.state;
+}
+
 async function injectAlienInteractionState(
     matchId: string,
     page: Page,
@@ -1231,6 +1469,45 @@ async function injectChampionsReactionDirectState(matchId: string, page: Page): 
     await applySmashUpStatePatch(matchId, page, (state) => createChampionsReactionDirectState(state));
     await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
     await page.waitForSelector('[data-card-uid="champ-card"]', { timeout: 5000 });
+}
+
+async function injectChampionsReactionNoTargetState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => createChampionsReactionNoTargetState(state));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+    await page.waitForSelector('[data-card-uid="champ-card"]', { timeout: 5000 });
+}
+
+async function injectChampionsReactionDeadlockState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => {
+        const seeded = createChampionsReactionDirectState(state);
+        return {
+            ...seeded,
+            core: {
+                ...seeded.core,
+                players: {
+                    ...seeded.core.players,
+                    '0': {
+                        ...seeded.core.players['0'],
+                        hand: [],
+                    },
+                },
+            },
+            sys: {
+                ...seeded.sys,
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        ...(seeded.sys?.responseWindow?.current ?? {}),
+                        id: 'forced-end-turn-deadlock-window',
+                        responderQueue: ['0'],
+                        currentResponderIndex: 0,
+                        pendingInteractionId: undefined,
+                    },
+                },
+            },
+        };
+    });
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
 }
 
 async function injectCthulhuCorruptionState(matchId: string, page: Page): Promise<void> {
@@ -1660,6 +1937,18 @@ async function dispatchHarnessCommand(
         commandPlayerId: playerId,
     });
     await page.waitForTimeout(300);
+}
+
+async function openForceActionsPanel(page: Page): Promise<void> {
+    const mainFabButton = page.locator('[data-fab-id="chat"]');
+    await expect(mainFabButton).toBeVisible({ timeout: 10000 });
+    await mainFabButton.click();
+
+    const forceActionsButton = page.locator('[data-fab-id="force-actions"]');
+    await expect(forceActionsButton).toBeVisible({ timeout: 5000 });
+    await forceActionsButton.click();
+
+    await expect(page.getByTestId('fab-panel-force-actions')).toBeVisible({ timeout: 5000 });
 }
 
 async function drainPostResolutionFlow(
@@ -2751,6 +3040,208 @@ test.describe('SmashUp Base/Minion Selection', () => {
 
         const resolvedShot = getEvidenceScreenshotPath(testInfo, 'champions-mefirst-resolved', {
             filename: 'smashup-champions-mefirst-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈回归：计分后响应卡死且无可让过时，强制结束回合应直接收口到下一玩家', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectChampionsReactionDeadlockState(matchId, hostPage);
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            phase: 'scoreBases',
+            interactionSourceId: null,
+            responseWindowId: 'forced-end-turn-deadlock-window',
+            currentPlayerIndex: 0,
+        });
+
+        await openForceActionsPanel(hostPage);
+        const forceEndTurnButton = hostPage.getByTestId('hud-force-dismiss-popup');
+        await expect(forceEndTurnButton).toContainText('强制结束回合');
+        const stuckShot = getEvidenceScreenshotPath(testInfo, 'scorebases-force-end-turn-stuck', {
+            filename: 'smashup-scorebases-force-end-turn-stuck.png',
+        });
+        await hostPage.screenshot({ path: stuckShot, fullPage: false });
+
+        await forceEndTurnButton.click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state?.sys?.phase ?? null,
+                currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+            };
+        }, { timeout: 12000 }).toEqual({
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            responseWindowOpen: false,
+            interactionSourceId: null,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'scorebases-force-end-turn-resolved', {
+            filename: 'smashup-scorebases-force-end-turn-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈回归：我们乃最强在没有合法接收目标时，应直接给出反馈并自动收口', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectChampionsReactionNoTargetState(matchId, hostPage);
+
+        await waitForInteractionSourceId(matchId, hostPage, 'smashup_reaction_choose', 8000);
+        await expect(hostPage.locator('[data-testid="me-first-overlay"]')).toBeVisible();
+        await expect(hostPage.locator('[data-card-uid="champ-card"]')).toBeVisible();
+
+        const beforeClickShot = getEvidenceScreenshotPath(testInfo, 'champions-no-target-before-click', {
+            filename: 'smashup-champions-no-target-before-click.png',
+        });
+        await hostPage.screenshot({ path: beforeClickShot, fullPage: false });
+
+        await triggerHandCardClickForReaction(hostPage, 'champ-card', { expectBaseIndex: 0 });
+        await waitForSelectableBase(hostPage, 0, 8000);
+        const baseSelectShot = getEvidenceScreenshotPath(testInfo, 'champions-no-target-base-highlight', {
+            filename: 'smashup-champions-no-target-base-highlight.png',
+        });
+        await hostPage.screenshot({ path: baseSelectShot, fullPage: false });
+        await clickBaseZone(hostPage, 0);
+        await hostPage.waitForTimeout(500);
+        await expect(hostPage.getByText(/没有可用目标|场上没有符合条件的目标/)).toBeVisible({ timeout: 8000 });
+        await expect(hostPage.getByText(/选择一个反应动作|Choose a reaction/)).toHaveCount(0);
+        const immediateShot = getEvidenceScreenshotPath(testInfo, 'champions-no-target-after-base-click', {
+            filename: 'smashup-champions-no-target-after-base-click.png',
+        });
+        await hostPage.screenshot({ path: immediateShot, fullPage: false });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                interactionSourceId: getInteractionSourceId(state),
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                stillInHand: state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'champ-card') ?? false,
+                inDiscard: state?.core?.players?.['0']?.discard?.some((card: any) => card.uid === 'champ-card') ?? false,
+            };
+        }, { timeout: 12000 }).toEqual({
+            interactionSourceId: null,
+            responseWindowOpen: false,
+            stillInHand: false,
+            inDiscard: true,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'champions-no-target-resolved', {
+            filename: 'smashup-champions-no-target-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈回归：同一基地计分响应里 0 号位让过后，1 号位出牌不应再把 0 号位拉回二次让过', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await applySmashUpStatePatch(matchId, hostPage, (state) => createChampionsPassStickyState(state));
+
+        await waitForInteractionSourceId(matchId, hostPage, 'smashup_reaction_choose', 8000);
+        await expect(hostPage.locator('[data-testid="me-first-pass-button"]')).toBeVisible();
+        await expect(hostPage.locator('[data-card-uid="p0-champs"]')).toBeVisible();
+        const beforePassShot = getEvidenceScreenshotPath(testInfo, 'champions-pass-sticky-before-pass', {
+            filename: 'smashup-champions-pass-sticky-before-pass.png',
+        });
+        await hostPage.screenshot({ path: beforePassShot, fullPage: false });
+
+        await hostPage.locator('[data-testid="me-first-pass-button"]').click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                sourceId: getInteractionSourceId(state),
+                playerId: state?.sys?.interaction?.current?.playerId ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: 'smashup_reaction_choose',
+            playerId: '1',
+        });
+
+        await expect(guestPage.locator('[data-card-uid="p1-champs"]')).toBeVisible({ timeout: 8000 });
+        const playerOneTurnShot = getEvidenceScreenshotPath(testInfo, 'champions-pass-sticky-player-one-turn', {
+            filename: 'smashup-champions-pass-sticky-player-one-turn.png',
+        });
+        await guestPage.screenshot({ path: playerOneTurnShot, fullPage: false });
+
+        await triggerHandCardClickForReaction(guestPage, 'p1-champs', { expectBaseIndex: 0 });
+        await waitForSelectableBase(guestPage, 0, 8000);
+        await clickBaseZone(guestPage, 0);
+        await waitForInteractionSourceId(matchId, guestPage, 'giant_ant_we_are_the_champions_choose_source', 8000);
+        await clickMinion(guestPage, 'p1-source');
+        await waitForInteractionSourceId(matchId, guestPage, 'giant_ant_we_are_the_champions_choose_target', 8000);
+        await clickMinion(guestPage, 'p1-target');
+        await waitForInteractionSourceId(matchId, guestPage, 'giant_ant_we_are_the_champions_choose_amount', 8000);
+
+        const slider = guestPage.getByLabel('slider-choice');
+        await expect(slider).toBeVisible();
+        await slider.evaluate((element) => {
+            const input = element as HTMLInputElement;
+            input.value = '3';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        await respondCurrentInteraction(guestPage, {
+            optionId: 'confirm-transfer',
+            mergedValue: { amount: 3, value: 3 },
+        });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                interactionSourceId: getInteractionSourceId(state),
+                interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                p0StillInHand: state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'p0-champs') ?? false,
+                p1InDiscard: state?.core?.players?.['1']?.discard?.some((card: any) => card.uid === 'p1-champs') ?? false,
+            };
+        }, { timeout: 12000 }).toEqual({
+            interactionSourceId: null,
+            interactionPlayerId: null,
+            responseWindowOpen: false,
+            p0StillInHand: true,
+            p1InDiscard: true,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'champions-pass-sticky-resolved', {
+            filename: 'smashup-champions-pass-sticky-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });

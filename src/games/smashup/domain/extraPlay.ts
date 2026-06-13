@@ -124,7 +124,7 @@ function buildImmediateExtraMinionCardOptions(
 ) {
     const validationState = buildValidationState(state, extra);
     const player = state.core.players[extra.playerId];
-    if (!player) return [createSkipOption('放弃这次额外随从') as any];
+    if (!player) return [createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
 
     const handOptions = player.hand
         .filter(card => isCardMinionLike(card))
@@ -182,7 +182,7 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    return [...handOptions, ...titanOptions, createSkipOption('放弃这次额外随从') as any];
+    return [...handOptions, ...titanOptions, createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
 }
 
 function buildImmediateExtraMinionBaseOptions(
@@ -228,7 +228,7 @@ function buildImmediateExtraActionCardOptions(
 ) {
     const validationState = buildValidationState(state, extra);
     const player = state.core.players[extra.playerId];
-    if (!player) return [createSkipOption('放弃这次额外战术') as any];
+    if (!player) return [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
 
     const options = player.hand
         .filter(card => isCardActionLike(card))
@@ -299,7 +299,7 @@ function buildImmediateExtraActionCardOptions(
             }];
         });
 
-    return [...options, createSkipOption('放弃这次额外战术') as any];
+    return [...options, createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
 }
 
 function buildImmediateExtraActionBaseOptions(
@@ -508,12 +508,13 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
             '选择要打出该额外随从的基地',
             [
                 ...buildImmediateExtraMinionBaseOptions(context.matchState, context.extra, context.choice),
-                createSkipOption('放弃这次额外随从') as any,
+                createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any,
             ],
             {
                 sourceId: 'smashup_immediate_extra_minion_base',
                 targetType: 'base',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.immediate_extra_minion_base_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
@@ -533,7 +534,7 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraMinionBaseOptions(latestState, latestExtra, latestChoice),
-                createSkipOption('放弃这次额外随从') as any,
+                createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any,
             ];
         };
         return interactionWithSnapshot;
@@ -569,6 +570,7 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
                 sourceId: 'smashup_immediate_extra_minion',
                 targetType: 'hand',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.immediate_extra_minion_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
@@ -581,7 +583,7 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
             const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraMinionPayload }>(data);
             const latestExtra = snapshot?.extra;
             if (!latestExtra) {
-                return [createSkipOption('放弃这次额外随从') as any];
+                return [createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
             }
             return buildImmediateExtraMinionCardOptions(latestState, latestExtra) as any[];
         };
@@ -635,12 +637,13 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
             '选择该额外战术的目标基地',
             [
                 ...buildImmediateExtraActionBaseOptions(context.matchState, context.extra, context.choice),
-                createSkipOption('放弃这次额外战术') as any,
+                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
             ],
             {
                 sourceId: 'smashup_immediate_extra_action_base',
                 targetType: 'base',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.immediate_extra_action_base_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
@@ -660,7 +663,7 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionBaseOptions(latestState, latestExtra, latestChoice),
-                createSkipOption('放弃这次额外战术') as any,
+                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
             ];
         };
         return interactionWithSnapshot;
@@ -690,12 +693,13 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
             '选择该额外战术的目标随从',
             [
                 ...buildImmediateExtraActionMinionOptions(context.matchState, context.extra, context.choice),
-                createSkipOption('放弃这次额外战术') as any,
+                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
             ],
             {
                 sourceId: 'smashup_immediate_extra_action_minion',
                 targetType: 'minion',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.immediate_extra_action_minion_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, {
@@ -715,7 +719,7 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionMinionOptions(latestState, latestExtra, latestChoice),
-                createSkipOption('放弃这次额外战术') as any,
+                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
             ];
         };
         return interactionWithSnapshot;
@@ -748,6 +752,7 @@ const immediateExtraActionPromptProgram = createPromptProgram<
                 sourceId: 'smashup_immediate_extra_action',
                 targetType: 'hand',
                 autoResolveIfSingle: false,
+                titleKey: 'ui.immediate_extra_action_title',
             },
         );
         const interactionWithSnapshot = attachDeferredInteractionSnapshot(interaction, { extra: context.extra });
@@ -760,7 +765,7 @@ const immediateExtraActionPromptProgram = createPromptProgram<
             const snapshot = readDeferredInteractionSnapshot<{ extra?: ImmediateExtraActionPayload }>(data);
             const latestExtra = snapshot?.extra;
             if (!latestExtra) {
-                return [createSkipOption('放弃这次额外战术') as any];
+                return [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
             }
             return buildImmediateExtraActionCardOptions(latestState, latestExtra) as any[];
         };

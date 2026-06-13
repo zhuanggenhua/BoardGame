@@ -2,12 +2,13 @@
  * 大杀四方 (Smash Up) - Me First! 响应窗口覆盖层
  */
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { SU_COMMANDS, type CardInstance, type SmashUpCommand, type SmashUpCore } from '../domain/types';
 import {
     canCardBePlayedInResponseWindowForMatchState,
@@ -81,14 +82,34 @@ export const MeFirstOverlay: React.FC<{
     const { t } = useTranslation('game-smashup');
     const reactionWindow = getSmashUpReactionWindowPresentation(G);
 
-    const handlePass = useCallback(() => {
-        onSelectCard(null);
-        dispatch('RESPONSE_PASS');
-    }, [dispatch, onSelectCard]);
-
     // `smashup_reaction_choose` 本身就是计分响应的中间承载语义，不应把这层提示弹窗隐藏掉。
     const currentInteraction = G.sys.interaction?.current;
     const interactionSourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
+    const reactionPassOptionId = (() => {
+        if (interactionSourceId !== 'smashup_reaction_choose') return undefined;
+        const rawOptions = (currentInteraction?.data as { options?: unknown } | undefined)?.options;
+        if (!Array.isArray(rawOptions)) return undefined;
+        const option = rawOptions.find((entry) => {
+            if (!entry || typeof entry !== 'object') return false;
+            const candidate = entry as { id?: unknown; value?: { kind?: unknown; __emergency_skip__?: unknown } };
+            return candidate.id === 'pass'
+                || candidate.value?.kind === 'pass'
+                || candidate.id === '__emergency_skip__'
+                || candidate.value?.__emergency_skip__ === true;
+        }) as { id?: unknown } | undefined;
+        return typeof option?.id === 'string' ? option.id : undefined;
+    })();
+    const handlePass = () => {
+        onSelectCard(null);
+        if (interactionSourceId === 'smashup_reaction_choose' && currentInteraction?.id && reactionPassOptionId) {
+            dispatch(INTERACTION_COMMANDS.RESPOND, {
+                interactionId: currentInteraction.id,
+                optionId: reactionPassOptionId,
+            });
+            return;
+        }
+        dispatch('RESPONSE_PASS');
+    };
     const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
@@ -110,7 +131,7 @@ export const MeFirstOverlay: React.FC<{
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'
-        ? t('ui.after_scoring_title', { defaultValue: '计分后响应' })
+        ? t('ui.after_scoring_title')
         : t('ui.me_first_title');
 
     if (!isMyResponse) {
@@ -133,7 +154,6 @@ export const MeFirstOverlay: React.FC<{
                     <p className="text-sm font-bold text-slate-700 text-center" data-testid="me-first-status">
                         {t('ui.me_first_waiting', {
                             player: currentResponderName,
-                            defaultValue: '正在等待 {{player}} 响应...',
                         })}
                     </p>
                 </motion.div>
@@ -169,11 +189,11 @@ export const MeFirstOverlay: React.FC<{
                     {/* 提示：从手牌中选择可响应的卡牌或让过 */}
                     {hasRespondableCards ? (
                         <p className="text-xs text-center text-amber-700/80 font-medium">
-                            {t('ui.me_first_select_from_hand', { defaultValue: '从手牌中选择可响应的卡牌打出' })}
+                            {t('ui.me_first_select_from_hand')}
                         </p>
                     ) : (
                         <p className="text-xs text-center text-slate-600 font-medium">
-                            {t('ui.me_first_no_special', { defaultValue: '你没有可在当前窗口打出的卡牌' })}
+                            {t('ui.me_first_no_special')}
                         </p>
                     )}
 

@@ -479,6 +479,7 @@ const dinoLaserTriceratopsPromptProgram = createPromptProgram<
         }),
         {
             sourceId: 'dino_laser_triceratops',
+            titleKey: 'ui.dino_laser_triceratops_title',
             targetType: 'minion',
         },
     ),
@@ -535,7 +536,7 @@ const dinoLaserTriceratopsPodProgram = createBranchProgram<
             context.playerId,
             '你可以消灭这里一个印制力量≤2的随从',
             [
-                createSkipOption('跳过（不消灭随从）'),
+                createSkipOption('跳过（不消灭随从）', 'ui.dino_laser_triceratops_pod_skip_option'),
                 ...buildMinionTargetOptions(context.targets, {
                     state: context.matchState.core,
                     sourcePlayerId: context.playerId,
@@ -544,6 +545,7 @@ const dinoLaserTriceratopsPodProgram = createBranchProgram<
             ],
             {
                 sourceId: 'dino_laser_triceratops_pod',
+                titleKey: 'ui.dino_laser_triceratops_pod_title',
                 targetType: 'minion',
                 subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
             },
@@ -603,6 +605,7 @@ const dinoAugmentationProgram = createBranchProgram<
             }),
             {
                 sourceId: 'dino_augmentation',
+                titleKey: 'ui.dino_augmentation_title',
                 targetType: 'minion',
             },
         ),
@@ -658,6 +661,7 @@ const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<
         }),
         {
             sourceId: 'dino_natural_selection_choose_target',
+            titleKey: 'ui.dino_natural_selection_target_title',
             targetType: 'minion',
         },
     ),
@@ -698,6 +702,7 @@ const dinoNaturalSelectionProgram = createBranchProgram<
             }),
             {
                 sourceId: 'dino_natural_selection_choose_mine',
+                titleKey: 'ui.dino_natural_selection_reference_title',
                 targetType: 'minion',
                 autoCancelOption: true,
             },
@@ -751,6 +756,7 @@ const dinoSurvivalTiebreakPromptProgram = createPromptProgram<
             }),
             {
                 sourceId: 'dino_survival_tiebreak',
+                titleKey: 'ui.dino_survival_tiebreak_title',
                 targetType: 'minion',
             },
         );
@@ -861,6 +867,7 @@ const dinoRampageMinionPromptProgram = createPromptProgram<
         }),
         {
             sourceId: 'dino_rampage_choose_minion',
+            titleKey: 'ui.dino_rampage_minion_title',
             targetType: 'minion',
         },
     ),
@@ -894,6 +901,7 @@ const dinoRampageBasePromptProgram = createPromptProgram<
         buildBaseTargetOptions(context.baseCandidates, context.matchState.core),
         {
             sourceId: 'dino_rampage',
+            titleKey: 'ui.dino_rampage_base_title',
             targetType: 'base',
         },
     ),

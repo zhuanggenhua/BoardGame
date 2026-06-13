@@ -708,6 +708,7 @@ export interface SmashUpReactionSession {
     activePlayerId: PlayerId;
     currentPlayerId: PlayerId;
     consecutivePasses: number;
+    passedPlayerIds?: PlayerId[];
     sourceBaseIndex?: number;
     responseWindowType?: 'meFirst' | 'afterScoring';
     consumedSpecialCardUids?: string[];

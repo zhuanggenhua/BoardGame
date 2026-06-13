@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface RetentionItem {
     label: string;
@@ -17,6 +18,8 @@ const COLORS = ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff'];
 const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
 
 export default function RetentionChart({ data, loading }: Props) {
+    const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.dashboard.${key}`, options);
     const chartData = data.map(item => ({
         ...item,
         percent: item.rate * 100,
@@ -25,8 +28,8 @@ export default function RetentionChart({ data, loading }: Props) {
     return (
         <div className="bg-white p-6 rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 flex flex-col h-[400px]">
             <div className="mb-4">
-                <h3 className="text-lg font-bold text-zinc-900">用户留存</h3>
-                <p className="text-xs text-zinc-500 mt-1">各周期注册用户的回访率（基于近一周注册用户样本）</p>
+                <h3 className="text-lg font-bold text-zinc-900">{adminT('retention.title')}</h3>
+                <p className="text-xs text-zinc-500 mt-1">{adminT('retention.description')}</p>
             </div>
             {loading ? (
                 <div className="flex-1 flex items-center justify-center">
@@ -37,7 +40,7 @@ export default function RetentionChart({ data, loading }: Props) {
                     </div>
                 </div>
             ) : chartData.length === 0 || chartData.every(d => d.total === 0) ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-400">暂无数据</div>
+                <div className="flex-1 flex items-center justify-center text-zinc-400">{adminT('common.no_data')}</div>
             ) : (
                 <div className="flex-1 w-full min-h-0">
                     <ResponsiveContainer width="100%" height={280}>
@@ -60,7 +63,7 @@ export default function RetentionChart({ data, loading }: Props) {
                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 formatter={(_value: unknown, _name: unknown, props: { payload?: { rate?: number; total?: number; retained?: number } }) => {
                                     const { rate = 0, total = 0, retained = 0 } = props.payload ?? {};
-                                    return [`${formatPercent(rate)}（${retained}/${total} 人）`, '留存率'];
+                                    return [adminT('retention.tooltip_value', { percent: formatPercent(rate), retained, total }), adminT('retention.tooltip_label')];
                                 }}
                             />
                             <Bar dataKey="percent" radius={[6, 6, 0, 0]} maxBarSize={48}>

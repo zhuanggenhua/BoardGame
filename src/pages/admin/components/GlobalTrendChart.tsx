@@ -1,4 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface TrendPoint {
     date: string;
@@ -17,13 +18,15 @@ const formatLabel = (value: string) => {
 };
 
 export default function GlobalTrendChart({ data, loading }: Props) {
+    const { t } = useTranslation('lobby');
+    const adminT = (key: string, options?: Record<string, unknown>) => t(`admin.dashboard.${key}`, options);
     const hasData = data.length > 0;
     return (
         <div className="bg-white p-6 rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 flex flex-col h-[400px]">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-zinc-900">活跃趋势</h3>
-                    <p className="text-xs text-zinc-500 mt-1">近 7 天用户活跃度与对局数</p>
+                    <h3 className="text-lg font-bold text-zinc-900">{adminT('global_trend.title')}</h3>
+                    <p className="text-xs text-zinc-500 mt-1">{adminT('global_trend.description')}</p>
                 </div>
             </div>
             {loading ? (
@@ -35,7 +38,7 @@ export default function GlobalTrendChart({ data, loading }: Props) {
                     </div>
                 </div>
             ) : !hasData ? (
-                <div className="flex-1 flex items-center justify-center text-zinc-400">暂无数据</div>
+                <div className="flex-1 flex items-center justify-center text-zinc-400">{adminT('common.no_data')}</div>
             ) : (
                 <div className="flex-1 w-full min-h-0">
                     <ResponsiveContainer width="100%" height={280}>
@@ -67,7 +70,7 @@ export default function GlobalTrendChart({ data, loading }: Props) {
                             <Tooltip
                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 cursor={{ stroke: '#e4e4e7', strokeWidth: 1 }}
-                                labelFormatter={(label) => `日期 ${label}`}
+                                labelFormatter={(label) => adminT('global_trend.date_label', { date: label })}
                             />
                             <Area
                                 type="monotone"
@@ -76,7 +79,7 @@ export default function GlobalTrendChart({ data, loading }: Props) {
                                 strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#colorActive)"
-                                name="活跃用户"
+                                name={adminT('global_trend.active_users')}
                             />
                             <Area
                                 type="monotone"
@@ -85,7 +88,7 @@ export default function GlobalTrendChart({ data, loading }: Props) {
                                 strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#colorMatches)"
-                                name="对局数"
+                                name={adminT('global_trend.matches')}
                             />
                         </AreaChart>
                     </ResponsiveContainer>

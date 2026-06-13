@@ -37,7 +37,11 @@ type I18nWarning = {
         | 'raw-simple-choice-option-label'
         | 'raw-prompt-option-label'
         | 'raw-create-skip-label'
-        | 'raw-dicethrone-contract-text';
+        | 'raw-i18n-key-property'
+        | 'raw-slider-label'
+        | 'raw-jsx-visible-text'
+        | 'raw-dicethrone-contract-text'
+        | 'zh-cn-locale-english';
     key: string;
     file: string;
     line: number;
@@ -52,10 +56,32 @@ type MissingTranslation = {
     refs: I18nReference[];
 };
 
+type SourceRange = {
+    start: number;
+    end: number;
+};
+
+type LocaleAuditEntry = {
+    filePath: string;
+    namespace: string;
+    keyPath: string;
+    value: string;
+    line: number;
+};
+
+type WarningBaselineEntry = {
+    type: I18nWarning['type'];
+    file: string;
+    line: number;
+    source: string;
+    key: string;
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../..');
 const LOCALES_DIR = path.join(ROOT_DIR, 'public', 'locales');
+const WARNING_BASELINE_PATH = path.join(ROOT_DIR, 'scripts', 'verify', 'i18n-warning-baseline.json');
 
 const DEFAULT_NAMESPACE = 'common';
 const SCAN_DIRS = ['src', 'apps'];
@@ -63,6 +89,8 @@ const ALLOWED_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const IGNORED_DIRS = new Set([
     '.git',
     '.agent',
+    '.codex',
+    '.devin',
     '.windsurf',
     '.claude',
     'node_modules',
@@ -81,12 +109,142 @@ const IGNORED_DIRS = new Set([
     'evidence',
 ]);
 
+const ZH_CN_LOCALE_DIR = path.join(LOCALES_DIR, 'zh-CN');
+const LOCALE_VISIBLE_TECHNICAL_TERMS = new Set([
+    'AI',
+    'API',
+    'APP',
+    'Android',
+    'afterEvents',
+    'Bug',
+    'BGM',
+    'beforeCommand',
+    'Bundle',
+    'Buff',
+    'C4',
+    'CORS',
+    'CP',
+    'Ctrl+V',
+    'CLI',
+    'CSV',
+    'CPU',
+    'CSS',
+    'create-new-game',
+    'createBaseSystems',
+    'BattleHUDPanel',
+    'BattleLogOverlay',
+    'DamageFlash',
+    'Duel',
+    'DIY',
+    'E2E',
+    'FM',
+    'FX',
+    'GIF',
+    'GPU',
+    'GUID',
+    'Handler',
+    'HTML',
+    'HP',
+    'HTTP',
+    'HTTPS',
+    'ID',
+    'Itharia',
+    'JSON',
+    'JPG',
+    'JWT',
+    'L1',
+    'L2',
+    'L3',
+    'L4',
+    'PC',
+    'P0',
+    'P1',
+    'P2',
+    'P3',
+    'PNG',
+    'MongoDB',
+    'Mode',
+    'Node.js',
+    'OAuth',
+    'OAuth2',
+    'OTA',
+    'Pro',
+    'QQ',
+    'rAF',
+    'halt',
+    'i18n',
+    'payload',
+    'SDK',
+    'SFX',
+    'Server',
+    'Shader',
+    'SQL',
+    'atlasIndex',
+    'cardId',
+    'frameIndex',
+    'game-room-debug-panel',
+    'room-debug-panel',
+    'roomDebugState',
+    'spriteIds',
+    'spriteIndex',
+    'Token',
+    'UGC',
+    'UI',
+    'URL',
+    'URLs',
+    'UUID',
+    'UX',
+    'VP',
+    'WebView',
+    'WebP',
+    'XML',
+    'XO',
+    'YAML',
+    '2v2',
+    'App',
+    'gameId',
+]);
+
+// 放行常见技术缩写、专有名词和结构化标识，避免继续靠逐条补词维持门禁。
+const LOCALE_VISIBLE_TECHNICAL_TOKEN_PATTERNS = [
+    /^\d+v\d+$/i,
+    /^\d+x$/i,
+    /^[vV]?\d+(?:\.\d+)+$/,
+    /^[xX]\d+$/,
+    // 常见内部标识：matchId / policyId / providerId / bundleVersion / choiceHandler / syncPayload
+    /^[a-z][A-Za-z0-9]*(?:Id|Ids|Index|Key|Keys|Mode|State|Handler|Payload|Version)$/,
+    // 常见内部类名/组件名：ReplayOverlay / BattleHUDPanel / DamageFlash
+    /^[A-Z][A-Za-z0-9]*(?:Panel|Overlay|View|Flash|Shader|HUD|System|Systems)$/,
+    // 常见路由/面板 slug：create-new-game / room-debug-panel / game-room-debug-panel
+    /^[a-z0-9]+(?:-[a-z0-9]+){2,}$/,
+];
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => (
     typeof value === 'object' && value !== null && !Array.isArray(value)
 );
 
 const isAsciiOnly = (value: string): boolean => (
     Array.from(value).every((char) => char.charCodeAt(0) <= 0x7f)
+);
+
+const looksLikeI18nKey = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    if (/\s/.test(trimmed)) return false;
+    if (!isAsciiOnly(trimmed)) return false;
+    return /[.:]/.test(trimmed);
+};
+
+const looksLikeI18nKeyPattern = (value: string): boolean => {
+    const normalized = value.trim().replace(/\$\{[^}]+\}/g, 'placeholder');
+    if (!normalized) return false;
+    if (/\s/.test(normalized)) return false;
+    if (!isAsciiOnly(normalized)) return false;
+    return /[.:]/.test(normalized);
+};
+
+const isI18nPropertyName = (propertyName: string): boolean => (
+    /(?:^|[A-Z])(title|label|description|players|name|message|hint|effect|text)Key$/.test(propertyName)
 );
 
 export const parseNamespaceLiteral = (value: string): string[] => {
@@ -379,6 +537,150 @@ const looksLikeHumanReadableValidationError = (value: string): boolean => {
     if (!trimmed) return false;
     if (!isAsciiOnly(trimmed)) return false;
     return trimmed.includes(' ') || /[:!]/.test(trimmed);
+};
+
+const looksLikeVisibleUiLiteral = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    return !looksLikeI18nKeyPattern(trimmed);
+};
+
+const containsCjk = (value: string): boolean => /[\u3400-\u9fff\uf900-\ufaff]/.test(value);
+const containsAsciiLetters = (value: string): boolean => /[A-Za-z]/.test(value);
+
+const normalizeVisibleTextLiteral = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+const normalizeLocaleAuditValue = (value: string): string => value
+    .replace(/\{\{[^}]+\}\}/g, ' ')
+    .replace(/\[[^\]]+\]/g, ' ')
+    .replace(/[“”"'`]/g, ' ')
+    .replace(/[()[\]{}<>]/g, ' ')
+    // 保留 kebab-case、语义化版本号和快捷键/公式里的 +，避免 create-new-game / v1.2.0 / Ctrl+V 被拆散。
+    .replace(/[|｜·•,:：;；，。！？!?–—_/\\=~*]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeLocaleAuditToken = (token: string): string => (
+    token.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '')
+);
+
+const isAllowedLocaleEnglishToken = (token: string): boolean => {
+    const normalized = normalizeLocaleAuditToken(token);
+    if (!normalized) return true;
+    return LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized)
+        || LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized.toUpperCase())
+        || LOCALE_VISIBLE_TECHNICAL_TOKEN_PATTERNS.some((pattern) => pattern.test(normalized));
+};
+
+const getEnglishSequences = (value: string): string[] => (
+    normalizeLocaleAuditValue(value).match(/[A-Za-z][A-Za-z0-9.+/-]*(?:\s+[A-Za-z][A-Za-z0-9.+/-]*){0,3}/g) ?? []
+);
+
+const looksLikeExternalLiteral = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    return /^https?:\/\//.test(trimmed)
+        || /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(trimmed);
+};
+
+const isSuspiciousEnglishSequence = (sequence: string): boolean => {
+    const tokens = sequence
+        .split(/\s+/)
+        .map((token) => normalizeLocaleAuditToken(token))
+        .filter(Boolean)
+        .filter((token) => !isAllowedLocaleEnglishToken(token));
+    if (tokens.length === 0) return false;
+    if (tokens.length === 1 && /^[A-Z]{4,}$/.test(tokens[0])) {
+        return true;
+    }
+
+    const longTokens = tokens.filter((token) => token.length >= 4);
+    if (longTokens.length === 0) return false;
+    return tokens.length >= 2 || longTokens.some((token) => token.length >= 5);
+};
+
+const isSuspiciousEnglishOnlyLocaleValue = (value: string): boolean => {
+    const rawTrimmed = value.trim();
+    if (!rawTrimmed || looksLikeI18nKeyPattern(rawTrimmed) || looksLikeExternalLiteral(rawTrimmed)) {
+        return false;
+    }
+
+    const normalized = normalizeLocaleAuditValue(value);
+    if (!normalized || containsCjk(normalized) || !containsAsciiLetters(normalized)) {
+        return false;
+    }
+    if (LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized) || LOCALE_VISIBLE_TECHNICAL_TERMS.has(normalized.toUpperCase())) {
+        return false;
+    }
+
+    return getEnglishSequences(normalized).some((sequence) => isSuspiciousEnglishSequence(sequence));
+};
+
+const isSuspiciousMixedLocaleValue = (value: string): boolean => {
+    const rawTrimmed = value.trim();
+    if (!rawTrimmed || looksLikeI18nKeyPattern(rawTrimmed) || looksLikeExternalLiteral(rawTrimmed)) {
+        return false;
+    }
+
+    const normalized = normalizeLocaleAuditValue(value);
+    if (!normalized || !containsCjk(normalized) || !containsAsciiLetters(normalized)) {
+        return false;
+    }
+
+    // 中文文案里的非术语英文残留，无论出现在句首、句中还是句尾，都应当阻断。
+    return getEnglishSequences(normalized).some((sequence) => isSuspiciousEnglishSequence(sequence));
+};
+
+const looksLikeRawJsxVisibleText = (value: string): boolean => {
+    const normalized = normalizeVisibleTextLiteral(value);
+    if (!normalized) return false;
+    if (looksLikeI18nKeyPattern(normalized)) return false;
+    if (containsCjk(normalized)) return true;
+    if (!containsAsciiLetters(normalized)) return false;
+    if (/^[A-Z0-9]{1,4}$/.test(normalized)) return false;
+    if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(normalized) && normalized.length < 4) return false;
+    return normalized.includes(' ')
+        || normalized.length >= 4
+        || /[/:!?()[\]<>+=-]/.test(normalized);
+};
+
+const isVisibleJsxAttributeName = (attributeName: string): boolean => (
+    /^(title|placeholder|alt|aria-label|aria-description|aria-placeholder|label|helperText|emptyText|tooltip|hint|description|message|text|confirmText|cancelText)$/.test(attributeName)
+);
+
+const shouldAuditRawJsxVisibleTextFile = (filePath: string): boolean => {
+    const normalized = filePath.replace(/\\/g, '/');
+    if (!/\.(tsx|jsx)$/.test(normalized)) {
+        return false;
+    }
+    if (!normalized.includes('/src/')) {
+        return false;
+    }
+    if (
+        normalized.includes('/src/engine/')
+        || normalized.includes('/src/ui-scene/')
+        || normalized.includes('/src/lib/')
+        || normalized.includes('/src/hooks/')
+    ) {
+        return false;
+    }
+    return normalized.includes('/src/components/')
+        || normalized.includes('/src/pages/')
+        || normalized.includes('/src/games/');
+};
+
+const isInsideJsxTag = (node: ts.Node, tagName: string): boolean => {
+    let current: ts.Node | undefined = node.parent;
+    while (current) {
+        if (ts.isJsxElement(current) && current.openingElement.tagName.getText() === tagName) {
+            return true;
+        }
+        if (ts.isJsxSelfClosingElement(current) && current.tagName.getText() === tagName) {
+            return true;
+        }
+        current = current.parent;
+    }
+    return false;
 };
 
 const detectValidationFailHelperNames = (content: string): string[] => {
@@ -1141,6 +1443,64 @@ const splitTopLevelCallArguments = (
     return args;
 };
 
+const collectCommentRanges = (content: string): SourceRange[] => {
+    const ranges: SourceRange[] = [];
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inTemplate = false;
+
+    for (let i = 0; i < content.length; i++) {
+        const char = content[i];
+        const next = i + 1 < content.length ? content[i + 1] : '';
+        const prev = i > 0 ? content[i - 1] : '';
+
+        if (inSingleQuote) {
+            if (char === '\'' && prev !== '\\') inSingleQuote = false;
+            continue;
+        }
+        if (inDoubleQuote) {
+            if (char === '"' && prev !== '\\') inDoubleQuote = false;
+            continue;
+        }
+        if (inTemplate) {
+            if (char === '`' && prev !== '\\') inTemplate = false;
+            continue;
+        }
+
+        if (char === '\'') {
+            inSingleQuote = true;
+            continue;
+        }
+        if (char === '"') {
+            inDoubleQuote = true;
+            continue;
+        }
+        if (char === '`') {
+            inTemplate = true;
+            continue;
+        }
+
+        if (char === '/' && next === '/') {
+            const end = content.indexOf('\n', i + 2);
+            ranges.push({ start: i, end: end === -1 ? content.length : end });
+            i = end === -1 ? content.length : end;
+            continue;
+        }
+        if (char === '/' && next === '*') {
+            const end = content.indexOf('*/', i + 2);
+            const rangeEnd = end === -1 ? content.length : end + 2;
+            ranges.push({ start: i, end: rangeEnd });
+            i = rangeEnd - 1;
+        }
+    }
+
+    return ranges;
+};
+
+const isIndexInRanges = (ranges: SourceRange[], index: number): boolean => (
+    ranges.some((range) => index >= range.start && index < range.end)
+);
+
 const parseStandaloneStringLiteral = (expression: string): { value: string; dynamic: boolean } | null => {
     const match = expression.trim().match(/^(['"`])((?:\\.|(?!\1)[\s\S])*)\1$/);
     if (!match) return null;
@@ -1224,6 +1584,7 @@ export const collectReferencesFromContent = (
     const references: I18nReference[] = [];
     const warnings: I18nWarning[] = [];
     const aliasMap = buildAliasMap(content, defaultNamespace);
+    const commentRanges = collectCommentRanges(content);
 
     const addWarning = (warning: I18nWarning) => {
         warnings.push(warning);
@@ -1384,6 +1745,9 @@ export const collectReferencesFromContent = (
             const identifier = match[1];
             const line = getLineNumber(content, match.index);
             const source = `${aliasName}(${identifier})`;
+            const callEnd = findCallEnd(content, match.index + match[0].length);
+            const snippet = content.slice(match.index, callEnd);
+            const hasDefaultValueFallback = /\bdefaultValue\s*:/.test(snippet);
 
             const contextStart = Math.max(0, match.index - 300);
             const context = content.slice(contextStart, match.index + 300);
@@ -1407,8 +1771,6 @@ export const collectReferencesFromContent = (
             const resolved = resolveIdentifierKeys(content, filePath, identifier, match.index, knownNamespaces);
 
             if (resolved.patterns && resolved.patterns.length > 0) {
-                const callEnd = findCallEnd(content, match.index + match[0].length);
-                const snippet = content.slice(match.index, callEnd);
                 const overrideNamespaces = findNsOverride(snippet);
 
                 for (const pattern of resolved.patterns) {
@@ -1422,6 +1784,9 @@ export const collectReferencesFromContent = (
             }
 
             if (resolved.dynamic || resolved.keys.length === 0) {
+                if (hasDefaultValueFallback) {
+                    continue;
+                }
                 addWarning({ 
                     type: 'dynamic-key', 
                     key: identifier, 
@@ -1434,8 +1799,6 @@ export const collectReferencesFromContent = (
             }
             
             // 解析成功，检查所有可能的 key
-            const callEnd = findCallEnd(content, match.index + match[0].length);
-            const snippet = content.slice(match.index, callEnd);
             const overrideNamespaces = findNsOverride(snippet);
             
             for (const keyValue of resolved.keys) {
@@ -1607,6 +1970,9 @@ export const collectReferencesFromContent = (
     const validationErrorRegex = /return\s*\{\s*valid\s*:\s*false[\s\S]{0,160}?error\s*:\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
     let validationErrorMatch: RegExpExecArray | null;
     while ((validationErrorMatch = validationErrorRegex.exec(content)) !== null) {
+        if (isIndexInRanges(commentRanges, validationErrorMatch.index)) {
+            continue;
+        }
         const literal = parseStringLiteral(validationErrorMatch[1], validationErrorMatch[2]);
         if (literal.dynamic || !looksLikeHumanReadableValidationError(literal.value)) {
             continue;
@@ -1622,106 +1988,626 @@ export const collectReferencesFromContent = (
         });
     }
 
-    const simpleChoiceRegex = /\bcreateSimpleChoice\s*\(/g;
+    const isSimpleChoiceLikeName = (name: string | null): boolean => (
+        name === 'createSimpleChoice' || name === 'createAbilityRuntimeSimpleChoice'
+    );
+    const simpleChoiceRegex = /\b(createSimpleChoice|createAbilityRuntimeSimpleChoice)\s*\(/g;
     const rawPromptOptionLabelIndices = new Set<number>();
     let simpleChoiceMatch: RegExpExecArray | null;
     while ((simpleChoiceMatch = simpleChoiceRegex.exec(content)) !== null) {
+        if (isIndexInRanges(commentRanges, simpleChoiceMatch.index)) {
+            continue;
+        }
+        const callName = simpleChoiceMatch[1];
         const openParenIndex = simpleChoiceMatch.index + simpleChoiceMatch[0].length - 1;
         const args = splitTopLevelCallArguments(content, openParenIndex);
         const titleArg = args[2];
         if (!titleArg) continue;
 
         const literal = parseStandaloneStringLiteral(titleArg.expression);
-        const configArg = args[4]?.expression;
-        if (
-            literal
-            && !literal.dynamic
-            && looksLikeHumanReadableValidationError(literal.value)
-            && !hasObjectLiteralTitleKey(configArg)
-        ) {
-            addWarning({
-                type: 'raw-simple-choice-title',
-                key: literal.value,
-                file: filePath,
-                line: getLineNumber(content, titleArg.start),
-                source: 'createSimpleChoice.title',
-                detail: 'createSimpleChoice 标题直接使用了英文可见文案，请补 titleKey 并同步 locales',
-            });
+        const hasTitleKey = args
+            .slice(4)
+            .some((arg) => hasObjectLiteralTitleKey(arg.expression));
+        if (literal && !literal.dynamic && looksLikeVisibleUiLiteral(literal.value)) {
+            if (!hasTitleKey) {
+                addWarning({
+                    type: 'raw-simple-choice-title',
+                    key: literal.value,
+                    file: filePath,
+                    line: getLineNumber(content, titleArg.start),
+                    source: `${callName}.title`,
+                    detail: `${callName} 标题直接使用了可见文案，请改成 titleKey 并同步 locales`,
+                });
+            }
         }
 
         const optionsArg = args[3];
         if (optionsArg) {
+            const optionsArgAbsoluteStart = content.indexOf(optionsArg.expression, optionsArg.start);
             const optionLabelRegex = /\blabel\s*:\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
             let optionLabelMatch: RegExpExecArray | null;
             while ((optionLabelMatch = optionLabelRegex.exec(optionsArg.expression)) !== null) {
+                const absoluteIndex = optionsArgAbsoluteStart + optionLabelMatch.index;
+                if (isIndexInRanges(commentRanges, absoluteIndex)) {
+                    continue;
+                }
                 const labelLiteral = parseStringLiteral(optionLabelMatch[1], optionLabelMatch[2]);
-                if (labelLiteral.dynamic || !looksLikeHumanReadableValidationError(labelLiteral.value)) {
+                if (labelLiteral.dynamic || !looksLikeVisibleUiLiteral(labelLiteral.value)) {
                     continue;
                 }
                 if (objectLiteralHasProperty(optionsArg.expression, optionLabelMatch.index, 'labelKey')) {
                     continue;
                 }
 
-                rawPromptOptionLabelIndices.add(optionsArg.start + optionLabelMatch.index);
+                rawPromptOptionLabelIndices.add(absoluteIndex);
                 addWarning({
                     type: 'raw-simple-choice-option-label',
                     key: labelLiteral.value,
                     file: filePath,
-                    line: getLineNumber(content, optionsArg.start + optionLabelMatch.index),
-                    source: 'createSimpleChoice.option.label',
-                    detail: 'createSimpleChoice 内联选项 label 直接使用了英文可见文案，请补 labelKey 并同步 locales',
+                    line: getLineNumber(content, absoluteIndex),
+                    source: `${callName}.option.label`,
+                    detail: `${callName} 内联选项 label 直接使用了可见文案，请补 labelKey 并同步 locales`,
                 });
             }
         }
     }
 
-    const promptOptionLabelRegex = /\blabel\s*:\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
-    let promptOptionLabelMatch: RegExpExecArray | null;
-    while ((promptOptionLabelMatch = promptOptionLabelRegex.exec(content)) !== null) {
-        if (rawPromptOptionLabelIndices.has(promptOptionLabelMatch.index)) {
-            continue;
-        }
-
-        const labelLiteral = parseStringLiteral(promptOptionLabelMatch[1], promptOptionLabelMatch[2]);
-        if (labelLiteral.dynamic || !looksLikeHumanReadableValidationError(labelLiteral.value)) {
-            continue;
-        }
-
-        const objectLiteral = findNearestObjectLiteral(content, promptOptionLabelMatch.index);
-        if (!objectLiteral) continue;
-        if (/\blabelKey\s*:/.test(objectLiteral)) continue;
-        const looksLikePromptOption = /\bdisplayMode\s*:/.test(objectLiteral)
-            || (/\bid\s*:/.test(objectLiteral) && /\bvalue\s*:/.test(objectLiteral));
-        if (!looksLikePromptOption) {
-            continue;
-        }
-
-        addWarning({
-            type: 'raw-prompt-option-label',
-            key: labelLiteral.value,
-            file: filePath,
-            line: getLineNumber(content, promptOptionLabelMatch.index),
-            source: 'PromptOption.label',
-            detail: 'PromptOption label 直接使用了英文可见文案，请补 labelKey 并同步 locales',
-        });
-    }
-
-    const skipOptionRegex = /\bcreateSkipOption\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
+    const skipOptionRegex = /\bcreateSkipOption\s*\(/g;
     let skipOptionMatch: RegExpExecArray | null;
     while ((skipOptionMatch = skipOptionRegex.exec(content)) !== null) {
-        const literal = parseStringLiteral(skipOptionMatch[1], skipOptionMatch[2]);
-        if (literal.dynamic || !looksLikeHumanReadableValidationError(literal.value)) {
+        if (isIndexInRanges(commentRanges, skipOptionMatch.index)) {
             continue;
+        }
+
+        const openParenIndex = skipOptionMatch.index + skipOptionMatch[0].length - 1;
+        const args = splitTopLevelCallArguments(content, openParenIndex);
+        const labelArg = args[0];
+        if (!labelArg) {
+            continue;
+        }
+
+        const literal = parseStandaloneStringLiteral(labelArg.expression);
+        if (!literal) {
+            continue;
+        }
+        if (literal.dynamic || !looksLikeVisibleUiLiteral(literal.value)) {
+            continue;
+        }
+
+        const labelKeyArg = args[1];
+        if (labelKeyArg) {
+            const labelKeyLiteral = parseStandaloneStringLiteral(labelKeyArg.expression);
+            if (labelKeyLiteral && !labelKeyLiteral.dynamic && looksLikeI18nKeyPattern(labelKeyLiteral.value)) {
+                continue;
+            }
         }
 
         addWarning({
             type: 'raw-create-skip-label',
             key: literal.value,
             file: filePath,
-            line: getLineNumber(content, skipOptionMatch.index),
+            line: getLineNumber(content, labelArg.start),
             source: 'createSkipOption.label',
-            detail: 'createSkipOption 直接使用了英文可见文案，请用带 labelKey 的 PromptOption 或补统一 helper',
+            detail: 'createSkipOption 直接使用了可见文案，请用带 labelKey 的 PromptOption 或补统一 helper',
         });
+    }
+
+    const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const isSliderVisibleLabelProperty = (propertyName: string): boolean => (
+        propertyName === 'confirmLabel' || propertyName === 'valueLabel' || propertyName === 'skipLabel'
+    );
+    const getPropertyNameText = (name: ts.PropertyName): string | null => {
+        if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name)) {
+            return name.text;
+        }
+        return null;
+    };
+    const getLiteralInfo = (node: ts.Expression): { value: string; dynamic: boolean } | null => {
+        if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+            return { value: node.text.trim(), dynamic: false };
+        }
+        if (ts.isTemplateExpression(node)) {
+            const raw = node.getText(sourceFile);
+            return { value: raw.slice(1, -1).trim(), dynamic: true };
+        }
+        return null;
+    };
+    const collectLiteralCandidates = (node: ts.Expression): Array<{ node: ts.Expression; value: string; dynamic: boolean }> => {
+        const direct = getLiteralInfo(node);
+        if (direct) {
+            return [{ node, value: direct.value, dynamic: direct.dynamic }];
+        }
+        if (ts.isConditionalExpression(node)) {
+            return [...collectLiteralCandidates(node.whenTrue), ...collectLiteralCandidates(node.whenFalse)];
+        }
+        if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isNonNullExpression(node) || ts.isTypeAssertionExpression(node)) {
+            return collectLiteralCandidates(node.expression);
+        }
+        if (
+            ts.isBinaryExpression(node)
+            && (node.operatorToken.kind === ts.SyntaxKind.BarBarToken || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
+        ) {
+            return collectLiteralCandidates(node.right);
+        }
+        return [];
+    };
+    const objectLiteralLooksLikePromptOptionImmediateProps = (node: ts.ObjectLiteralExpression): boolean => {
+        let hasDisplayMode = false;
+        let hasId = false;
+        let hasValue = false;
+        for (const property of node.properties) {
+            if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) {
+                continue;
+            }
+            const propertyName = getPropertyNameText(property.name);
+            if (propertyName === 'displayMode') hasDisplayMode = true;
+            if (propertyName === 'id') hasId = true;
+            if (propertyName === 'value') hasValue = true;
+        }
+        return hasDisplayMode || (hasId && hasValue);
+    };
+    const promptOptionLabelAstIndices = new Set<number>();
+    const visitPromptOptionLabelCandidates = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node) && getPropertyNameText(node.name) === 'label') {
+            const parent = node.parent;
+            if (ts.isObjectLiteralExpression(parent) && objectLiteralLooksLikePromptOptionImmediateProps(parent)) {
+                const hasLabelKey = parent.properties.some((property) => (
+                    (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property))
+                    && getPropertyNameText(property.name) === 'labelKey'
+                ));
+                if (!hasLabelKey) {
+                    promptOptionLabelAstIndices.add(node.name.getStart(sourceFile));
+                }
+            }
+        }
+        ts.forEachChild(node, visitPromptOptionLabelCandidates);
+    };
+    visitPromptOptionLabelCandidates(sourceFile);
+    const visitPromptOptionLabelWarnings = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node) && getPropertyNameText(node.name) === 'label') {
+            const labelStart = node.name.getStart(sourceFile);
+            if (!promptOptionLabelAstIndices.has(labelStart) || rawPromptOptionLabelIndices.has(labelStart)) {
+                ts.forEachChild(node, visitPromptOptionLabelWarnings);
+                return;
+            }
+            for (const literal of collectLiteralCandidates(node.initializer)) {
+                if (!literal.value || literal.dynamic || !looksLikeVisibleUiLiteral(literal.value)) {
+                    continue;
+                }
+                addWarning({
+                    type: 'raw-prompt-option-label',
+                    key: literal.value,
+                    file: filePath,
+                    line: getLineNumber(content, labelStart),
+                    source: 'PromptOption.label',
+                    detail: 'PromptOption label 直接使用了可见文案，请补 labelKey 并同步 locales',
+                });
+            }
+        }
+        ts.forEachChild(node, visitPromptOptionLabelWarnings);
+    };
+    visitPromptOptionLabelWarnings(sourceFile);
+    type SimpleChoiceTitleWrapper = {
+        name: string;
+        titleParamIndex: number;
+        titleKeyParamIndex?: number;
+        hasFixedTitleKey: boolean;
+    };
+    const unwrapTsExpression = (node: ts.Expression): ts.Expression => {
+        let current = node;
+        while (
+            ts.isParenthesizedExpression(current)
+            || ts.isAsExpression(current)
+            || ts.isSatisfiesExpression(current)
+            || ts.isNonNullExpression(current)
+            || ts.isTypeAssertionExpression(current)
+        ) {
+            current = current.expression;
+        }
+        return current;
+    };
+    const getCallTargetName = (expression: ts.Expression): string | null => {
+        const target = unwrapTsExpression(expression);
+        if (ts.isIdentifier(target)) {
+            return target.text;
+        }
+        if (ts.isPropertyAccessExpression(target)) {
+            return target.name.text;
+        }
+        return null;
+    };
+    const hasUsableSimpleChoiceTitleKey = (configArg: ts.Expression | undefined): boolean => {
+        if (!configArg) {
+            return false;
+        }
+        const unwrappedConfigArg = unwrapTsExpression(configArg);
+        if (!ts.isObjectLiteralExpression(unwrappedConfigArg)) {
+            return false;
+        }
+        for (const property of unwrappedConfigArg.properties) {
+            if (ts.isPropertyAssignment(property)) {
+                if (getPropertyNameText(property.name) !== 'titleKey') {
+                    continue;
+                }
+                const titleKeyLiterals = collectLiteralCandidates(property.initializer);
+                return (
+                    titleKeyLiterals.length === 0
+                    || titleKeyLiterals.some((literal) => !literal.dynamic && looksLikeI18nKeyPattern(literal.value))
+                );
+            }
+            if (ts.isShorthandPropertyAssignment(property) && property.name.text === 'titleKey') {
+                return true;
+            }
+        }
+        return false;
+    };
+    const buildSimpleChoiceTitleWrapper = (
+        name: string,
+        parameters: readonly ts.ParameterDeclaration[],
+        body: ts.ConciseBody | undefined,
+    ): SimpleChoiceTitleWrapper | null => {
+        if (!body) {
+            return null;
+        }
+        const paramIndexByName = new Map<string, number>();
+        parameters.forEach((parameter, index) => {
+            if (ts.isIdentifier(parameter.name)) {
+                paramIndexByName.set(parameter.name.text, index);
+            }
+        });
+        let wrapper: SimpleChoiceTitleWrapper | null = null;
+        const visit = (node: ts.Node) => {
+            if (wrapper || !ts.isCallExpression(node)) {
+                ts.forEachChild(node, visit);
+                return;
+            }
+            if (!isSimpleChoiceLikeName(getCallTargetName(node.expression))) {
+                ts.forEachChild(node, visit);
+                return;
+            }
+            const titleArg = node.arguments[2];
+            if (!titleArg) {
+                return;
+            }
+            const unwrappedTitleArg = unwrapTsExpression(titleArg);
+            if (!ts.isIdentifier(unwrappedTitleArg)) {
+                return;
+            }
+            const titleParamIndex = paramIndexByName.get(unwrappedTitleArg.text);
+            if (titleParamIndex === undefined) {
+                return;
+            }
+            let titleKeyParamIndex: number | undefined;
+            let hasFixedTitleKey = false;
+            const configArg = node.arguments[4];
+            if (configArg) {
+                const unwrappedConfigArg = unwrapTsExpression(configArg);
+                if (ts.isObjectLiteralExpression(unwrappedConfigArg)) {
+                    for (const property of unwrappedConfigArg.properties) {
+                        if (ts.isPropertyAssignment(property)) {
+                            const propertyName = getPropertyNameText(property.name);
+                            if (propertyName !== 'titleKey') {
+                                continue;
+                            }
+                            const initializer = unwrapTsExpression(property.initializer);
+                            if (ts.isIdentifier(initializer)) {
+                                titleKeyParamIndex = paramIndexByName.get(initializer.text);
+                            } else {
+                                hasFixedTitleKey = true;
+                            }
+                            break;
+                        }
+                        if (ts.isShorthandPropertyAssignment(property) && property.name.text === 'titleKey') {
+                            titleKeyParamIndex = paramIndexByName.get(property.name.text);
+                            if (titleKeyParamIndex === undefined) {
+                                hasFixedTitleKey = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            wrapper = { name, titleParamIndex, titleKeyParamIndex, hasFixedTitleKey };
+        };
+        ts.forEachChild(body, visit);
+        return wrapper;
+    };
+    const collectSimpleChoiceTitleWrappers = (root: ts.Node): Map<string, SimpleChoiceTitleWrapper> => {
+        const wrappers = new Map<string, SimpleChoiceTitleWrapper>();
+        const visit = (node: ts.Node) => {
+            if (ts.isFunctionDeclaration(node) && node.name) {
+                const wrapper = buildSimpleChoiceTitleWrapper(node.name.text, node.parameters, node.body);
+                if (wrapper) {
+                    wrappers.set(wrapper.name, wrapper);
+                }
+            } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+                const initializer = unwrapTsExpression(node.initializer);
+                if (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)) {
+                    const wrapper = buildSimpleChoiceTitleWrapper(node.name.text, initializer.parameters, initializer.body);
+                    if (wrapper) {
+                        wrappers.set(wrapper.name, wrapper);
+                    }
+                }
+            }
+            ts.forEachChild(node, visit);
+        };
+        visit(root);
+        return wrappers;
+    };
+    const simpleChoiceTitleWrappers = collectSimpleChoiceTitleWrappers(sourceFile);
+    const visitWrappedSimpleChoiceTitleWarnings = (node: ts.Node) => {
+        if (ts.isCallExpression(node)) {
+            const wrapperName = getCallTargetName(node.expression);
+            const wrapper = wrapperName ? simpleChoiceTitleWrappers.get(wrapperName) : undefined;
+            if (wrapper) {
+                const titleArg = node.arguments[wrapper.titleParamIndex];
+                if (titleArg) {
+                    const titleLiterals = collectLiteralCandidates(titleArg);
+                    const titleKeyArg = wrapper.titleKeyParamIndex !== undefined
+                        ? node.arguments[wrapper.titleKeyParamIndex]
+                        : undefined;
+                    const titleKeyLiterals = titleKeyArg ? collectLiteralCandidates(titleKeyArg) : [];
+                    const hasUsableTitleKey = wrapper.hasFixedTitleKey
+                        || (
+                            !!titleKeyArg
+                            && (
+                                titleKeyLiterals.length === 0
+                                || titleKeyLiterals.some((literal) => !literal.dynamic && looksLikeI18nKeyPattern(literal.value))
+                            )
+                        );
+                    for (const literal of titleLiterals) {
+                        if (literal.dynamic || !looksLikeVisibleUiLiteral(literal.value) || hasUsableTitleKey) {
+                            continue;
+                        }
+                        addWarning({
+                            type: 'raw-simple-choice-title',
+                            key: literal.value,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: `${wrapper.name}.title`,
+                            detail: `${wrapper.name} 透传给 createSimpleChoice 的标题直接使用了可见文案，请补 titleKey 并同步 locales`,
+                        });
+                    }
+                }
+            }
+        }
+        ts.forEachChild(node, visitWrappedSimpleChoiceTitleWarnings);
+    };
+    visitWrappedSimpleChoiceTitleWarnings(sourceFile);
+    const createWarningIdentity = (warning: I18nWarning): string => JSON.stringify([
+        warning.type,
+        warning.file,
+        warning.line,
+        warning.source,
+        warning.key,
+    ]);
+    const falsePositiveSimpleChoiceTitleWarnings = new Set<string>();
+    const addSimpleChoiceTitleFalsePositiveIdentity = (
+        source: string,
+        key: string,
+        positions: number[],
+    ) => {
+        for (const position of positions) {
+            falsePositiveSimpleChoiceTitleWarnings.add(createWarningIdentity({
+                type: 'raw-simple-choice-title',
+                key,
+                file: filePath,
+                line: getLineNumber(content, position),
+                source,
+            }));
+        }
+    };
+    const visitDirectSimpleChoiceTitleFalsePositives = (node: ts.Node) => {
+        if (ts.isCallExpression(node)) {
+            const callName = getCallTargetName(node.expression);
+            if (callName && isSimpleChoiceLikeName(callName) && hasUsableSimpleChoiceTitleKey(node.arguments[4])) {
+                const titleArg = node.arguments[2];
+                if (titleArg) {
+                    for (const literal of collectLiteralCandidates(titleArg)) {
+                        if (literal.dynamic || !looksLikeVisibleUiLiteral(literal.value)) {
+                            continue;
+                        }
+                        addSimpleChoiceTitleFalsePositiveIdentity(
+                            `${callName}.title`,
+                            literal.value,
+                            [
+                                titleArg.getFullStart(),
+                                titleArg.getStart(sourceFile),
+                                literal.node.getFullStart(),
+                                literal.node.getStart(sourceFile),
+                            ],
+                        );
+                    }
+                }
+            }
+        }
+        ts.forEachChild(node, visitDirectSimpleChoiceTitleFalsePositives);
+    };
+    visitDirectSimpleChoiceTitleFalsePositives(sourceFile);
+    const objectLiteralLooksLikePromptOptionAst = (node: ts.ObjectLiteralExpression): boolean => {
+        let hasDisplayMode = false;
+        let hasId = false;
+        let hasValue = false;
+        for (const property of node.properties) {
+            if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) {
+                continue;
+            }
+            const propertyName = getPropertyNameText(property.name);
+            if (propertyName === 'displayMode') hasDisplayMode = true;
+            if (propertyName === 'id') hasId = true;
+            if (propertyName === 'value') hasValue = true;
+        }
+        return hasDisplayMode || (hasId && hasValue);
+    };
+    const falsePositivePromptOptionLabelWarnings = new Set<string>();
+    const visitPromptOptionLabelFalsePositives = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node) && getPropertyNameText(node.name) === 'label') {
+            const parent = node.parent;
+            if (ts.isObjectLiteralExpression(parent) && !objectLiteralLooksLikePromptOptionAst(parent)) {
+                for (const literal of collectLiteralCandidates(node.initializer)) {
+                    if (literal.dynamic || !looksLikeVisibleUiLiteral(literal.value)) {
+                        continue;
+                    }
+                    falsePositivePromptOptionLabelWarnings.add(createWarningIdentity({
+                        type: 'raw-prompt-option-label',
+                        key: literal.value,
+                        file: filePath,
+                        line: getLineNumber(content, node.name.getStart(sourceFile)),
+                        source: 'PromptOption.label',
+                    }));
+                    falsePositivePromptOptionLabelWarnings.add(createWarningIdentity({
+                        type: 'raw-prompt-option-label',
+                        key: literal.value,
+                        file: filePath,
+                        line: getLineNumber(content, node.getStart(sourceFile)),
+                        source: 'PromptOption.label',
+                    }));
+                    falsePositivePromptOptionLabelWarnings.add(createWarningIdentity({
+                        type: 'raw-prompt-option-label',
+                        key: literal.value,
+                        file: filePath,
+                        line: getLineNumber(content, node.getFullStart()),
+                        source: 'PromptOption.label',
+                    }));
+                    falsePositivePromptOptionLabelWarnings.add(createWarningIdentity({
+                        type: 'raw-prompt-option-label',
+                        key: literal.value,
+                        file: filePath,
+                        line: getLineNumber(content, node.initializer.getStart(sourceFile)),
+                        source: 'PromptOption.label',
+                    }));
+                    falsePositivePromptOptionLabelWarnings.add(createWarningIdentity({
+                        type: 'raw-prompt-option-label',
+                        key: literal.value,
+                        file: filePath,
+                        line: getLineNumber(content, parent.getStart(sourceFile)),
+                        source: 'PromptOption.label',
+                    }));
+                }
+            }
+        }
+        ts.forEachChild(node, visitPromptOptionLabelFalsePositives);
+    };
+    visitPromptOptionLabelFalsePositives(sourceFile);
+    const visitedLiteralWarnings = new Set<string>();
+    const visitPropertyWarnings = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node)) {
+            const propertyName = getPropertyNameText(node.name);
+            if (propertyName) {
+                for (const literal of collectLiteralCandidates(node.initializer)) {
+                    if (!literal.value) {
+                        continue;
+                    }
+                    const warningKey = `${propertyName}:${literal.node.getStart(sourceFile)}`;
+                    if (visitedLiteralWarnings.has(warningKey)) {
+                        continue;
+                    }
+
+                    if (isI18nPropertyName(propertyName) && !looksLikeI18nKeyPattern(literal.value)) {
+                        visitedLiteralWarnings.add(warningKey);
+                        addWarning({
+                            type: 'raw-i18n-key-property',
+                            key: literal.value,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: propertyName,
+                            detail: `${propertyName} 应该存放翻译 key，但当前直接写了可见文案或非 key 字符串`,
+                        });
+                        continue;
+                    }
+
+                    if (isSliderVisibleLabelProperty(propertyName) && !looksLikeI18nKeyPattern(literal.value)) {
+                        visitedLiteralWarnings.add(warningKey);
+                        addWarning({
+                            type: 'raw-slider-label',
+                            key: literal.value,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: propertyName,
+                            detail: `${propertyName} 直接使用了可见文案，请优先改成对应的 *LabelKey 并走 locales`,
+                        });
+                    }
+                }
+            }
+        }
+
+        ts.forEachChild(node, visitPropertyWarnings);
+    };
+    visitPropertyWarnings(sourceFile);
+
+    if (shouldAuditRawJsxVisibleTextFile(filePath)) {
+        const visitJsxVisibleTextWarnings = (node: ts.Node) => {
+            if (isInsideJsxTag(node, 'style')) {
+                ts.forEachChild(node, visitJsxVisibleTextWarnings);
+                return;
+            }
+            if (ts.isJsxText(node)) {
+                const text = normalizeVisibleTextLiteral(node.getText(sourceFile));
+                if (looksLikeRawJsxVisibleText(text)) {
+                    addWarning({
+                        type: 'raw-jsx-visible-text',
+                        key: text,
+                        file: filePath,
+                        line: getLineNumber(content, node.getStart(sourceFile)),
+                        source: 'JSX.text',
+                        detail: 'JSX 直接写入了可见文案，请改为 i18n key 或 t()',
+                    });
+                }
+            } else if (ts.isJsxExpression(node) && node.expression && !ts.isJsxAttribute(node.parent)) {
+                for (const literal of collectLiteralCandidates(node.expression)) {
+                    const text = normalizeVisibleTextLiteral(literal.value);
+                    if (literal.dynamic || !looksLikeRawJsxVisibleText(text)) {
+                        continue;
+                    }
+                    addWarning({
+                        type: 'raw-jsx-visible-text',
+                        key: text,
+                        file: filePath,
+                        line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                        source: 'JSX.expression',
+                        detail: 'JSX 表达式分支直接返回了可见文案，请改为 i18n key 或 t()',
+                    });
+                }
+            } else if (ts.isJsxAttribute(node)) {
+                const attributeName = node.name.text;
+                if (!isVisibleJsxAttributeName(attributeName) || !node.initializer) {
+                    ts.forEachChild(node, visitJsxVisibleTextWarnings);
+                    return;
+                }
+
+                if (ts.isStringLiteral(node.initializer)) {
+                    const text = normalizeVisibleTextLiteral(node.initializer.text);
+                    if (looksLikeRawJsxVisibleText(text)) {
+                        addWarning({
+                            type: 'raw-jsx-visible-text',
+                            key: text,
+                            file: filePath,
+                            line: getLineNumber(content, node.initializer.getStart(sourceFile)),
+                            source: `JSX.${attributeName}`,
+                            detail: `${attributeName} 直接使用了可见文案，请改为 i18n key 或 t()`,
+                        });
+                    }
+                } else if (ts.isJsxExpression(node.initializer) && node.initializer.expression) {
+                    for (const literal of collectLiteralCandidates(node.initializer.expression)) {
+                        const text = normalizeVisibleTextLiteral(literal.value);
+                        if (literal.dynamic || !looksLikeRawJsxVisibleText(text)) {
+                            continue;
+                        }
+                        addWarning({
+                            type: 'raw-jsx-visible-text',
+                            key: text,
+                            file: filePath,
+                            line: getLineNumber(content, literal.node.getStart(sourceFile)),
+                            source: `JSX.${attributeName}`,
+                            detail: `${attributeName} 的 JSX 表达式分支直接返回了可见文案，请改为 i18n key 或 t()`,
+                        });
+                    }
+                }
+            }
+
+            ts.forEachChild(node, visitJsxVisibleTextWarnings);
+        };
+        visitJsxVisibleTextWarnings(sourceFile);
     }
 
     // 检测本文件内 fail-helper('error_code') 调用并注册 error.<code> 引用
@@ -1762,10 +2648,99 @@ export const collectReferencesFromContent = (
         }
     }
 
-    return { references, warnings };
+    return {
+        references,
+        warnings: warnings.filter((warning) => {
+            const identity = createWarningIdentity(warning);
+            return !falsePositiveSimpleChoiceTitleWarnings.has(identity)
+                && !falsePositivePromptOptionLabelWarnings.has(identity);
+        }),
+    };
 };
 
 const normalizeFilePath = (filePath: string): string => filePath.replace(/\\/g, '/');
+
+const toBaselineFilePath = (filePath: string): string => {
+    const normalized = normalizeFilePath(filePath);
+    if (!path.isAbsolute(filePath)) {
+        return normalized;
+    }
+    const relative = normalizeFilePath(path.relative(ROOT_DIR, filePath));
+    return relative.startsWith('..') ? normalized : relative;
+};
+
+const createWarningBaselineEntry = (warning: I18nWarning): WarningBaselineEntry => ({
+    type: warning.type,
+    file: toBaselineFilePath(warning.file),
+    line: warning.line,
+    source: warning.source,
+    key: warning.key,
+});
+
+export const createWarningBaselineId = (warning: WarningBaselineEntry | I18nWarning): string => {
+    const entry = 'detail' in warning
+        ? createWarningBaselineEntry(warning)
+        : warning;
+    return JSON.stringify([
+        entry.type,
+        entry.file,
+        entry.line,
+        entry.source,
+        entry.key,
+    ]);
+};
+
+const sortWarningBaselineEntries = (entries: WarningBaselineEntry[]): WarningBaselineEntry[] => (
+    [...entries].sort((a, b) => createWarningBaselineId(a).localeCompare(createWarningBaselineId(b)))
+);
+
+const loadWarningBaselineIds = (): Set<string> => {
+    if (!fs.existsSync(WARNING_BASELINE_PATH)) {
+        return new Set();
+    }
+
+    const raw = JSON.parse(fs.readFileSync(WARNING_BASELINE_PATH, 'utf-8')) as { warnings?: WarningBaselineEntry[] };
+    const warnings = Array.isArray(raw.warnings) ? raw.warnings : [];
+    return new Set(warnings.map((warning) => createWarningBaselineId(warning)));
+};
+
+const writeWarningBaseline = (warnings: I18nWarning[]) => {
+    const entries = sortWarningBaselineEntries(warnings.map((warning) => createWarningBaselineEntry(warning)));
+    const payload = {
+        version: 1,
+        warnings: entries,
+    };
+    fs.writeFileSync(WARNING_BASELINE_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8');
+};
+
+export const partitionWarningsAgainstBaseline = (
+    warnings: I18nWarning[],
+    baselineIds: ReadonlySet<string>,
+): { legacyWarnings: I18nWarning[]; newWarnings: I18nWarning[] } => {
+    const legacyWarnings: I18nWarning[] = [];
+    const newWarnings: I18nWarning[] = [];
+
+    for (const warning of warnings) {
+        if (baselineIds.has(createWarningBaselineId(warning))) {
+            legacyWarnings.push(warning);
+        } else {
+            newWarnings.push(warning);
+        }
+    }
+
+    return { legacyWarnings, newWarnings };
+};
+
+const summarizeWarningCounts = (warnings: I18nWarning[]): string => {
+    const counts = new Map<I18nWarning['type'], number>();
+    for (const warning of warnings) {
+        counts.set(warning.type, (counts.get(warning.type) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([type, count]) => `${type}=${count}`)
+        .join(', ');
+};
 
 const getManifestGameId = (filePath: string): string | null => {
     const normalized = normalizeFilePath(filePath);
@@ -1784,18 +2759,6 @@ const getGameIdFromPath = (filePath: string): string | null => {
     const match = normalized.match(/\/src\/games\/([^/]+)\//);
     return match?.[1] ?? null;
 };
-
-const looksLikeI18nKey = (value: string): boolean => {
-    const trimmed = value.trim();
-    if (!trimmed) return false;
-    if (/\s/.test(trimmed)) return false;
-    if (!isAsciiOnly(trimmed)) return false;
-    return /[.:]/.test(trimmed);
-};
-
-const isI18nPropertyName = (propertyName: string): boolean => (
-    /(?:^|[A-Z])(title|label|description|players|name|message|hint|effect)Key$/.test(propertyName)
-);
 
 const inferStaticNamespacesForFile = (
     content: string,
@@ -2174,10 +3137,14 @@ export const collectDiceThroneRawContractWarningsFromContent = (
     }
 
     const warnings: I18nWarning[] = [];
+    const commentRanges = collectCommentRanges(content);
     const literalPropertyRegex = /\b(name|description|label|sourceName)\s*:\s*(['"`])([\s\S]*?)\2/g;
     let match: RegExpExecArray | null;
 
     while ((match = literalPropertyRegex.exec(content)) !== null) {
+        if (isIndexInRanges(commentRanges, match.index)) {
+            continue;
+        }
         const property = match[1];
         const quote = match[2];
         const rawValue = match[3].trim();
@@ -2570,6 +3537,98 @@ const dedupeWarnings = (warnings: I18nWarning[]): I18nWarning[] => {
     return deduped;
 };
 
+const findLocaleEntryLineNumber = (content: string, keyName: string, value: string): number => {
+    const encodedValue = JSON.stringify(value);
+    const pattern = new RegExp(`"${escapeRegExp(keyName)}"\\s*:\\s*${escapeRegExp(encodedValue)}`);
+    const match = pattern.exec(content);
+    if (match) {
+        return getLineNumber(content, match.index);
+    }
+
+    const fallbackIndex = content.indexOf(encodedValue);
+    return getLineNumber(content, fallbackIndex >= 0 ? fallbackIndex : 0);
+};
+
+const collectSuspiciousLocaleEntries = (
+    value: unknown,
+    namespace: string,
+    filePath: string,
+    fileContent: string,
+    keyPath: string[] = [],
+): LocaleAuditEntry[] => {
+    if (typeof value === 'string') {
+        const joinedKeyPath = keyPath.join('.');
+        const shouldWarn = isSuspiciousEnglishOnlyLocaleValue(value)
+            || isSuspiciousMixedLocaleValue(value);
+        if (!shouldWarn) {
+            return [];
+        }
+
+        const keyName = keyPath[keyPath.length - 1] ?? joinedKeyPath;
+        return [{
+            filePath,
+            namespace,
+            keyPath: joinedKeyPath,
+            value,
+            line: findLocaleEntryLineNumber(fileContent, keyName, value),
+        }];
+    }
+
+    if (Array.isArray(value)) {
+        return value.flatMap((item, index) => collectSuspiciousLocaleEntries(
+            item,
+            namespace,
+            filePath,
+            fileContent,
+            [...keyPath, String(index)],
+        ));
+    }
+
+    if (!isPlainObject(value)) {
+        return [];
+    }
+
+    return Object.entries(value).flatMap(([key, nestedValue]) => collectSuspiciousLocaleEntries(
+        nestedValue,
+        namespace,
+        filePath,
+        fileContent,
+        [...keyPath, key],
+    ));
+};
+
+export const collectZhCnLocaleEnglishWarnings = (localeDir: string = ZH_CN_LOCALE_DIR): I18nWarning[] => {
+    if (!fs.existsSync(localeDir)) {
+        return [];
+    }
+
+    const files = fs.readdirSync(localeDir)
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => path.join(localeDir, file));
+
+    const warnings: I18nWarning[] = [];
+
+    for (const filePath of files) {
+        const namespace = path.basename(filePath, '.json');
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(content) as LocaleNamespace;
+        const suspiciousEntries = collectSuspiciousLocaleEntries(data, namespace, filePath, content);
+
+        for (const entry of suspiciousEntries) {
+            warnings.push({
+                type: 'zh-cn-locale-english',
+                key: entry.value,
+                file: entry.filePath,
+                line: entry.line,
+                source: `zh-CN:${entry.namespace}.${entry.keyPath}`,
+                detail: '中文语言包仍残留明显英文可见文案，请改成中文或拆分成可接受的术语形式',
+            });
+        }
+    }
+
+    return warnings;
+};
+
 const formatRawDiceThroneContractWarnings = (warnings: I18nWarning[]): string[] => {
     const grouped = new Map<string, Array<{ line: number; source: string }>>();
 
@@ -2594,6 +3653,7 @@ const formatRawDiceThroneContractWarnings = (warnings: I18nWarning[]): string[] 
 };
 
 const main = () => {
+    const shouldWriteWarningBaseline = process.argv.includes('--write-warning-baseline');
     const { locales, namespaceFiles } = loadLocales();
     const knownNamespaces = new Set([...namespaceFiles, ...I18N_NAMESPACES]);
     const files = scanFilePaths(ROOT_DIR);
@@ -2616,18 +3676,38 @@ const main = () => {
     const diceThroneContract = collectDiceThroneDataContractReferences();
     references.push(...diceThroneContract.references);
     warnings.push(...diceThroneContract.warnings);
+    warnings.push(...collectZhCnLocaleEnglishWarnings());
 
     const missing = collectMissingTranslations(references, locales);
     const dedupedWarnings = dedupeWarnings(warnings);
+    if (shouldWriteWarningBaseline) {
+        writeWarningBaseline(dedupedWarnings);
+        console.log(`i18n-check: warning baseline updated -> ${WARNING_BASELINE_PATH}`);
+        return;
+    }
+
+    const baselineIds = loadWarningBaselineIds();
+    const { legacyWarnings, newWarnings } = partitionWarningsAgainstBaseline(dedupedWarnings, baselineIds);
     const blockingWarningTypes = new Set<I18nWarning['type']>([
         'deprecated-dicethrone-hero-key',
         'raw-validation-error',
+        'raw-simple-choice-title',
+        'raw-simple-choice-option-label',
+        'raw-prompt-option-label',
+        'raw-create-skip-label',
+        'raw-i18n-key-property',
+        'raw-slider-label',
+        'raw-jsx-visible-text',
         'raw-dicethrone-contract-text',
+        'zh-cn-locale-english',
     ]);
-    const blockingWarnings = dedupedWarnings.filter((warning) => blockingWarningTypes.has(warning.type));
+    const blockingWarnings = newWarnings.filter((warning) => blockingWarningTypes.has(warning.type));
 
-    if (missing.length === 0 && dedupedWarnings.length === 0) {
+    if (missing.length === 0 && newWarnings.length === 0) {
         console.log('i18n-check: no missing keys detected.');
+        if (legacyWarnings.length > 0) {
+            console.log(`legacy warning baseline: ${legacyWarnings.length} (${summarizeWarningCounts(legacyWarnings)})`);
+        }
         return;
     }
 
@@ -2639,10 +3719,15 @@ const main = () => {
         }
     }
 
-    if (dedupedWarnings.length) {
-        console.log(`\nWarnings (${dedupedWarnings.length}):`);
-        const rawDiceThroneWarnings = dedupedWarnings.filter((warning) => warning.type === 'raw-dicethrone-contract-text');
-        const otherWarnings = dedupedWarnings.filter((warning) => warning.type !== 'raw-dicethrone-contract-text');
+    if (legacyWarnings.length > 0) {
+        console.log(`\nLegacy warning baseline (${legacyWarnings.length}): ${summarizeWarningCounts(legacyWarnings)}`);
+        console.log(`baseline file: ${toBaselineFilePath(WARNING_BASELINE_PATH)}`);
+    }
+
+    if (newWarnings.length) {
+        console.log(`\nNew warnings (${newWarnings.length}):`);
+        const rawDiceThroneWarnings = newWarnings.filter((warning) => warning.type === 'raw-dicethrone-contract-text');
+        const otherWarnings = newWarnings.filter((warning) => warning.type !== 'raw-dicethrone-contract-text');
 
         for (const line of formatRawDiceThroneContractWarnings(rawDiceThroneWarnings)) {
             console.log(line);

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ADMIN_API_URL } from '../../config/server';
@@ -16,6 +17,7 @@ interface NotificationItem {
 }
 
 export default function AdminNotifications() {
+    const { t } = useTranslation('lobby');
     const { token } = useAuth();
     const toast = useToast();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -36,15 +38,15 @@ export default function AdminNotifications() {
             const res = await fetch(`${ADMIN_API_URL}/notifications`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed');
+            if (!res.ok) throw new Error(t('admin.notificationsPage.toast.fetch_failed'));
             const data = await res.json();
             setNotifications(data.notifications);
         } catch {
-            toast.error('获取通知列表失败');
+            toast.error(t('admin.notificationsPage.toast.fetch_failed'));
         } finally {
             setLoading(false);
         }
-    }, [token, toast]);
+    }, [t, token, toast]);
 
     useEffect(() => {
         if (token) fetchNotifications();
@@ -93,12 +95,16 @@ export default function AdminNotifications() {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) throw new Error('Failed');
-            toast.success(editing ? '通知已更新' : '通知已创建');
+            if (!res.ok) throw new Error(t('admin.notificationsPage.toast.action_failed'));
+            toast.success(
+                editing
+                    ? t('admin.notificationsPage.toast.update_success')
+                    : t('admin.notificationsPage.toast.create_success')
+            );
             resetForm();
             await fetchNotifications();
         } catch {
-            toast.error('操作失败');
+            toast.error(t('admin.notificationsPage.toast.action_failed'));
         } finally {
             setSubmitting(false);
         }
@@ -110,11 +116,11 @@ export default function AdminNotifications() {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
             });
-            if (!res.ok) throw new Error('Failed');
-            toast.success('已删除');
+            if (!res.ok) throw new Error(t('admin.notificationsPage.toast.delete_failed'));
+            toast.success(t('admin.notificationsPage.toast.delete_success'));
             await fetchNotifications();
         } catch {
-            toast.error('删除失败');
+            toast.error(t('admin.notificationsPage.toast.delete_failed'));
         }
     };
 
@@ -125,10 +131,10 @@ export default function AdminNotifications() {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ published: !item.published }),
             });
-            if (!res.ok) throw new Error('Failed');
+            if (!res.ok) throw new Error(t('admin.notificationsPage.toast.action_failed'));
             await fetchNotifications();
         } catch {
-            toast.error('操作失败');
+            toast.error(t('admin.notificationsPage.toast.action_failed'));
         }
     };
 
@@ -139,45 +145,57 @@ export default function AdminNotifications() {
             <div className="max-w-[1200px] mx-auto space-y-6 pb-10">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">系统通知</h1>
-                        <p className="text-zinc-500 mt-1">管理面向所有用户的系统公告</p>
+                        <h1 className="text-3xl font-bold text-zinc-900 tracking-tight">
+                            {t('admin.notificationsPage.title')}
+                        </h1>
+                        <p className="text-zinc-500 mt-1">{t('admin.notificationsPage.description')}</p>
                     </div>
                     <button
                         onClick={openCreate}
                         className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
                     >
-                        <Plus size={16} /> 发布通知
+                        <Plus size={16} /> {t('admin.notificationsPage.actions.create')}
                     </button>
                 </div>
 
                 {/* 创建/编辑表单 */}
                 {showForm && (
                     <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-zinc-200 p-6 space-y-4 shadow-sm">
-                        <h2 className="font-bold text-lg text-zinc-800">{editing ? '编辑通知' : '新建通知'}</h2>
+                        <h2 className="font-bold text-lg text-zinc-800">
+                            {editing
+                                ? t('admin.notificationsPage.form.edit_title')
+                                : t('admin.notificationsPage.form.create_title')}
+                        </h2>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-600 mb-1">标题</label>
+                            <label className="block text-sm font-medium text-zinc-600 mb-1">
+                                {t('admin.notificationsPage.form.title_label')}
+                            </label>
                             <input
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
                                 className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
-                                placeholder="通知标题"
+                                placeholder={t('admin.notificationsPage.form.title_placeholder')}
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-600 mb-1">内容</label>
+                            <label className="block text-sm font-medium text-zinc-600 mb-1">
+                                {t('admin.notificationsPage.form.content_label')}
+                            </label>
                             <textarea
                                 value={content}
                                 onChange={e => setContent(e.target.value)}
                                 rows={4}
                                 className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 resize-y"
-                                placeholder="通知内容..."
+                                placeholder={t('admin.notificationsPage.form.content_placeholder')}
                                 required
                             />
                         </div>
                         <div className="flex gap-4 items-end">
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-zinc-600 mb-1">过期时间（可选）</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                                    {t('admin.notificationsPage.form.expires_at')}
+                                </label>
                                 <input
                                     type="datetime-local"
                                     value={expiresAt}
@@ -188,11 +206,11 @@ export default function AdminNotifications() {
                             <div className="flex flex-wrap items-center gap-4 pb-2">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} className="rounded" />
-                                    <span className="text-sm text-zinc-600">置顶显示</span>
+                                    <span className="text-sm text-zinc-600">{t('admin.notificationsPage.form.pinned')}</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} className="rounded" />
-                                    <span className="text-sm text-zinc-600">立即发布</span>
+                                    <span className="text-sm text-zinc-600">{t('admin.notificationsPage.form.publish_now')}</span>
                                 </label>
                             </div>
                         </div>
@@ -202,10 +220,14 @@ export default function AdminNotifications() {
                                 disabled={submitting}
                                 className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
                             >
-                                {submitting ? '提交中...' : editing ? '保存' : '发布'}
+                                {submitting
+                                    ? t('admin.notificationsPage.actions.submitting')
+                                    : editing
+                                        ? t('admin.notificationsPage.actions.save')
+                                        : t('admin.notificationsPage.actions.publish')}
                             </button>
                             <button type="button" onClick={resetForm} className="px-5 py-2 bg-zinc-100 text-zinc-600 rounded-lg text-sm hover:bg-zinc-200 transition-colors">
-                                取消
+                                {t('admin.notificationsPage.actions.cancel')}
                             </button>
                         </div>
                     </form>
@@ -215,7 +237,9 @@ export default function AdminNotifications() {
                 {loading ? (
                     <AdminCardListSkeleton rows={4} />
                 ) : notifications.length === 0 ? (
-                    <div className="text-center text-zinc-400 py-16 text-sm">暂无通知</div>
+                    <div className="text-center text-zinc-400 py-16 text-sm">
+                        {t('admin.notificationsPage.empty')}
+                    </div>
                 ) : (
                     <div className="space-y-3">
                         {notifications.map(item => (
@@ -226,30 +250,52 @@ export default function AdminNotifications() {
                                         {item.pinned && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                                                 <Pin size={11} />
-                                                置顶
+                                                {t('admin.notificationsPage.status.pinned')}
                                             </span>
                                         )}
                                         {!item.published && (
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-medium">草稿</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded font-medium">
+                                                {t('admin.notificationsPage.status.draft')}
+                                            </span>
                                         )}
                                         {isExpired(item) && (
-                                            <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded font-medium">已过期</span>
+                                            <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-500 rounded font-medium">
+                                                {t('admin.notificationsPage.status.expired')}
+                                            </span>
                                         )}
                                     </div>
                                     <p className="text-sm text-zinc-500 line-clamp-2 whitespace-pre-wrap">{item.content}</p>
                                     <div className="text-xs text-zinc-400 mt-2">
                                         {new Date(item.createdAt).toLocaleString('zh-CN')}
-                                        {item.expiresAt && <span className="ml-3">过期：{new Date(item.expiresAt).toLocaleString('zh-CN')}</span>}
+                                        {item.expiresAt && (
+                                            <span className="ml-3">
+                                                {t('admin.notificationsPage.status.expires_at', {
+                                                    time: new Date(item.expiresAt).toLocaleString('zh-CN'),
+                                                })}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
-                                    <button onClick={() => togglePublish(item)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors" title={item.published ? '取消发布' : '发布'}>
+                                    <button
+                                        onClick={() => togglePublish(item)}
+                                        className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition-colors"
+                                        title={item.published ? t('admin.notificationsPage.actions.unpublish') : t('admin.notificationsPage.actions.publish')}
+                                    >
                                         {item.published ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
-                                    <button onClick={() => openEdit(item)} className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-indigo-600 transition-colors" title="编辑">
+                                    <button
+                                        onClick={() => openEdit(item)}
+                                        className="p-2 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-indigo-600 transition-colors"
+                                        title={t('admin.notificationsPage.actions.edit')}
+                                    >
                                         <Pencil size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(item._id)} className="p-2 rounded-lg hover:bg-red-50 text-zinc-400 hover:text-red-500 transition-colors" title="删除">
+                                    <button
+                                        onClick={() => handleDelete(item._id)}
+                                        className="p-2 rounded-lg hover:bg-red-50 text-zinc-400 hover:text-red-500 transition-colors"
+                                        title={t('admin.notificationsPage.actions.delete')}
+                                    >
                                         <Trash2 size={16} />
                                     </button>
                                 </div>

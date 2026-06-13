@@ -284,11 +284,13 @@ function buildFullSailChooseMinionInteraction(
     if (myMinions.length === 0) return null;
     const options = [
         ...buildMinionTargetOptions(myMinions, { state: state, sourcePlayerId: playerId }),
-        { id: 'done', label: '完成移动', value: { done: true }, displayMode: 'button' as const },
+        { id: 'done', label: '完成移动', labelKey: 'ui.pirate_full_sail_done_option', value: { done: true }, displayMode: 'button' as const },
     ];
     const interaction = createSimpleChoice(
         `pirate_full_sail_minion_${now}`, playerId,
-        '选择要移动的己方随从（或完成）', options as any[], { sourceId: 'pirate_full_sail_choose_minion', targetType: 'minion' },
+        '选择要移动的己方随从（或完成）',
+        options as any[],
+        { sourceId: 'pirate_full_sail_choose_minion', targetType: 'minion', titleKey: 'ui.pirate_full_sail_choose_minion_title' },
     );
     return { ...interaction, data: { ...interaction.data, continuationContext: { movedUids } } };
 }
@@ -575,10 +577,10 @@ const pirateSaucyWenchPromptProgram = createPromptProgram<PiratePromptContext & 
             context.playerId,
             '你可以消灭本基地一个力量≤2的随从',
             [
-                { id: 'skip', label: '跳过（不消灭随从）', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过（不消灭随从）', labelKey: 'ui.pirate_saucy_wench_skip_option', value: { skip: true }, displayMode: 'button' as const },
                 ...buildMinionTargetOptions(options, { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'destroy' }),
             ],
-            { sourceId: 'pirate_saucy_wench', targetType: 'minion' },
+            { sourceId: 'pirate_saucy_wench', targetType: 'minion', titleKey: 'ui.pirate_saucy_wench_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -607,9 +609,13 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
                     value: { baseIndex: context.baseIndex },
                     displayMode: 'button' as const,
                 })),
-                { sourcePlayerId: context.playerId, effectIntent: 'destroy' },
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectIntent: 'destroy',
+                },
             ),
-            { sourceId: 'pirate_broadside_choose_player', targetType: 'player', autoResolveIfSingle: false },
+            { sourceId: 'pirate_broadside_choose_player', targetType: 'player', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_player_title' },
         );
     },
     onResolve: ({ state, value, timestamp }) => {
@@ -642,7 +648,7 @@ const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptC
             context.playerId,
             '选择一个你有随从的基地',
             buildBaseTargetOptions(candidates, context.matchState.core),
-            { sourceId: 'pirate_broadside_choose_base', targetType: 'base', autoResolveIfSingle: false },
+            { sourceId: 'pirate_broadside_choose_base', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_base_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -680,10 +686,10 @@ const pirateCannonChooseSecondPromptProgram = createPromptProgram<PirateCannonSe
             context.playerId,
             '加农炮：点击第二个要消灭的力量≤2的随从（可选）',
             [
-                { id: 'skip', label: '跳过（不消灭第二个）', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过（不消灭第二个）', labelKey: 'ui.pirate_cannon_choose_second_skip_option', value: { skip: true }, displayMode: 'button' as const },
                 ...buildMinionTargetOptions(remaining, { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'destroy' }),
             ],
-            { sourceId: 'pirate_cannon_choose_second', targetType: 'minion' },
+            { sourceId: 'pirate_cannon_choose_second', targetType: 'minion', titleKey: 'ui.pirate_cannon_choose_second_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -717,7 +723,7 @@ const pirateCannonChooseFirstPromptProgram = createPromptProgram<PiratePromptCon
             context.playerId,
             '加农炮：点击第一个要消灭的力量≤2的随从',
             buildMinionTargetOptions(allTargets, { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'destroy' }),
-            { sourceId: 'pirate_cannon_choose_first', targetType: 'minion' },
+            { sourceId: 'pirate_cannon_choose_first', targetType: 'minion', titleKey: 'ui.pirate_cannon_choose_first_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -758,7 +764,7 @@ const pirateShanghaiChooseBasePromptProgram = createPromptProgram<PirateMoveBase
             context.playerId,
             '选择目标基地',
             buildBaseTargetOptions(candidates, context.matchState.core),
-            { sourceId: 'pirate_shanghai_choose_base', targetType: 'base' },
+            { sourceId: 'pirate_shanghai_choose_base', targetType: 'base', titleKey: 'ui.pirate_shanghai_choose_base_title' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -792,7 +798,7 @@ const pirateShanghaiChooseMinionPromptProgram = createPromptProgram<PiratePrompt
                 sourcePlayerId: context.playerId,
                 effectType: 'affect',
             }),
-            { sourceId: 'pirate_shanghai_choose_minion', targetType: 'minion' },
+            { sourceId: 'pirate_shanghai_choose_minion', targetType: 'minion', titleKey: 'ui.pirate_shanghai_choose_minion_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -831,6 +837,7 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
                 sourceId: 'pirate_sea_dogs_choose_to',
                 targetType: 'base',
                 subtitle: buildSeaDogsFactionSubtitle(context.factionId),
+                titleKey: 'ui.pirate_sea_dogs_choose_to_title',
             },
         );
     },
@@ -890,6 +897,7 @@ const pirateSeaDogsChooseFromPromptProgram = createPromptProgram<PirateSeaDogsFr
                 sourceId: 'pirate_sea_dogs_choose_from',
                 targetType: 'base',
                 subtitle: buildSeaDogsFactionSubtitle(context.factionId),
+                titleKey: 'ui.pirate_sea_dogs_choose_from_title',
             },
         );
     },
@@ -933,7 +941,7 @@ const pirateSeaDogsChooseFactionPromptProgram = createPromptProgram<PiratePrompt
             context.playerId,
             '水手：指定一个派系',
             options,
-            { sourceId: 'pirate_sea_dogs_choose_faction', targetType: 'generic' },
+            { sourceId: 'pirate_sea_dogs_choose_faction', targetType: 'generic', titleKey: 'ui.pirate_sea_dogs_choose_faction_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -974,7 +982,7 @@ const pirateDinghySecondChooseBasePromptProgram = createPromptProgram<PirateMove
             context.playerId,
             '选择目标基地',
             buildBaseTargetOptions(candidates, context.matchState.core),
-            { sourceId: 'pirate_dinghy_second_choose_base', targetType: 'base' },
+            { sourceId: 'pirate_dinghy_second_choose_base', targetType: 'base', titleKey: 'ui.pirate_dinghy_second_choose_base_title' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -1005,10 +1013,10 @@ const pirateDinghyChooseSecondPromptProgram = createPromptProgram<PirateDinghySe
             context.playerId,
             '选择第二个要移动的随从（可选）',
             [
-                { id: 'skip', label: '跳过（不移动第二个）', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过（不移动第二个）', labelKey: 'ui.pirate_dinghy_choose_second_skip_option', value: { skip: true }, displayMode: 'button' as const },
                 ...buildMinionTargetOptions(remaining, { state: context.matchState.core, sourcePlayerId: context.playerId }),
             ],
-            { sourceId: 'pirate_dinghy_choose_second', targetType: 'minion' },
+            { sourceId: 'pirate_dinghy_choose_second', targetType: 'minion', titleKey: 'ui.pirate_dinghy_choose_second_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -1043,7 +1051,7 @@ const pirateDinghyFirstChooseBasePromptProgram = createPromptProgram<PirateMoveB
             context.playerId,
             '选择目标基地',
             buildBaseTargetOptions(candidates, context.matchState.core),
-            { sourceId: 'pirate_dinghy_first_choose_base', targetType: 'base' },
+            { sourceId: 'pirate_dinghy_first_choose_base', targetType: 'base', titleKey: 'ui.pirate_dinghy_first_choose_base_title' },
         );
     },
     onResolve: ({ state, playerId, context, value, timestamp }) => {
@@ -1086,7 +1094,7 @@ const pirateDinghyChooseFirstPromptProgram = createPromptProgram<PiratePromptCon
             context.playerId,
             '选择要移动的己方随从（至多2个，第1个）',
             buildMinionTargetOptions(myMinions, { state: context.matchState.core, sourcePlayerId: context.playerId }),
-            { sourceId: 'pirate_dinghy_choose_first', targetType: 'minion' },
+            { sourceId: 'pirate_dinghy_choose_first', targetType: 'minion', titleKey: 'ui.pirate_dinghy_choose_first_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -1127,7 +1135,7 @@ const piratePowderkegPromptProgram = createPromptProgram<PiratePromptContext, Sm
             context.playerId,
             '选择要牺牲的己方随从（同基地力量≤它的随从也会被消灭）',
             buildMinionTargetOptions(myMinions, { state: context.matchState.core, sourcePlayerId: context.playerId }),
-            { sourceId: 'pirate_powderkeg', targetType: 'minion' },
+            { sourceId: 'pirate_powderkeg', targetType: 'minion', titleKey: 'ui.pirate_powderkeg_title' },
         );
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
@@ -1162,7 +1170,7 @@ const pirateFullSailChooseBasePromptProgram = createPromptProgram<PirateFullSail
             context.playerId,
             '选择目标基地',
             buildBaseTargetOptions(candidates, context.matchState.core),
-            { sourceId: 'pirate_full_sail_choose_base', targetType: 'base' },
+            { sourceId: 'pirate_full_sail_choose_base', targetType: 'base', titleKey: 'ui.pirate_full_sail_choose_base_title' },
         );
     },
     onResolve: ({ state, context, value, playerId, timestamp }) => {
@@ -1239,7 +1247,7 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
                 value: { toBaseIndex: candidate.baseIndex, baseDefId: candidate.baseDefId },
                 displayMode: 'button' as const,
             })),
-            { sourceId: 'pirate_buccaneer_move', targetType: 'base' },
+            { sourceId: 'pirate_buccaneer_move', targetType: 'base', titleKey: 'ui.pirate_buccaneer_move_title' },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1281,10 +1289,15 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
             context.current.controller,
             `海盗王：是否移动到即将计分的「${baseName}」？`,
             [
-                { id: 'yes', label: '移动到该基地', value: { move: true }, displayMode: 'button' as const },
-                { id: 'no', label: '留在原地', value: { move: false }, displayMode: 'button' as const },
+                { id: 'yes', label: '移动到该基地', labelKey: 'ui.pirate_king_move_option', value: { move: true }, displayMode: 'button' as const },
+                { id: 'no', label: '留在原地', labelKey: 'ui.pirate_king_stay_option', value: { move: false }, displayMode: 'button' as const },
             ],
-            { sourceId: 'pirate_king_move', targetType: 'minion' },
+            {
+                sourceId: 'pirate_king_move',
+                targetType: 'minion',
+                titleKey: 'ui.pirate_king_move_title',
+                titleParams: { baseName },
+            },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -1348,10 +1361,15 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
             context.playerId,
             `${mateName}：你可以移动本随从到其他基地（而不是弃牌堆）`,
             [
-                { id: 'skip', label: '跳过（不移动大副）', value: { skip: true }, displayMode: 'button' as const },
+                { id: 'skip', label: '跳过（不移动大副）', labelKey: 'ui.pirate_first_mate_skip_move_option', value: { skip: true }, displayMode: 'button' as const },
                 ...baseOptions,
             ] as any[],
-            { sourceId: 'pirate_first_mate_choose_base', targetType: 'base' },
+            {
+                sourceId: 'pirate_first_mate_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.pirate_first_mate_choose_base_title',
+                titleParams: { mateName },
+            },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {

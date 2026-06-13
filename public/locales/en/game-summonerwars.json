@@ -85,6 +85,60 @@
     "attached": "Attached",
     "click_to_magnify": "Click to Magnify"
   },
+  "debug": {
+    "phase_labels": {
+      "factionSelect": "Faction",
+      "summon": "Summon",
+      "move": "Move",
+      "build": "Build",
+      "attack": "Attack",
+      "magic": "Magic",
+      "draw": "Draw"
+    },
+    "card_types": {
+      "unit": "Unit",
+      "event": "Event",
+      "structure": "Structure"
+    },
+    "magic": {
+      "section_title": "Magic Adjustment",
+      "player_option": "P{{player}} ({{magic}} Magic)",
+      "set": "Set To",
+      "add": "+ Add",
+      "subtract": "- Remove",
+      "clear": "Clear",
+      "full": "Full Magic (15)"
+    },
+    "phase": {
+      "section_title": "Phase Switch",
+      "current": "Current phase: ",
+      "switch": "Switch"
+    },
+    "deal": {
+      "section_title": "Deal Debug (stable card)",
+      "description": "The debug flow is split into two steps: prefer dealing from the remaining deck; if the card has left the deck, add it directly by stable cardId.",
+      "atlas_note": "Atlas indexes are now reference-only and are no longer treated as a stable cross-game key.",
+      "empty_pool": "No complete card pool is available for debugging right now",
+      "status": "Deck: {{deckCount}} | Hand: {{handCount}}",
+      "selected_card_status": "| Current card: {{name}} | deck {{deckCount}} hand {{handCount}} discard {{discardCount}} active {{activeCount}} board {{boardCount}}",
+      "no_pool_for_player": "| The current player has no injectable complete card pool data",
+      "collision_warning": "This spriteIndex is reused across multiple atlases. The button still resolves by stable cardId instead of treating atlasIndex as a unique key.",
+      "prefer_deal": "🎴 Prefer Deal From Remaining Deck",
+      "direct_add": "🪄 Add Directly To Hand"
+    },
+    "lookup": {
+      "section_title": "Card Lookup (full pool)",
+      "description": "Clicking an entry only switches the current target card. Actual submission always uses the stable cardId.",
+      "no_atlas": "No Atlas",
+      "deck_short": "deck {{count}}",
+      "hand_short": "hand {{count}}",
+      "discard_short": "discard {{count}}"
+    },
+    "hand_preview": {
+      "section_title": "Hand Preview (P{{player}})",
+      "empty": "Hand is empty"
+    }
+  },
   "phaseTracker": {
     "turn": "Turn {{count}}"
   },

@@ -21,3 +21,4 @@
 - DiceThrone：`docs/games/dicethrone/user-stories/pyromancer-burn-image-standard-2026-05-12.md`
 - SmashUp：`docs/games/smashup/user-stories/body-shop-sentence-boundary-2026-05-23.md`
 - SmashUp：`docs/games/smashup/user-stories/controller-does-not-transfer-ownership-2026-06-06.md`
+- SmashUp：`docs/games/smashup/user-stories/bear-necessities-minions-and-base-actions-2026-06-07.md`

@@ -16,6 +16,7 @@ import {
     Orbit,
     PawPrint,
     Pyramid,
+    Rainbow,
     Skull,
     Sword,
     Sprout,
@@ -24,7 +25,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { isSmashUpFactionImplementationInProgress, SMASHUP_FACTION_IDS } from '../domain/ids';
-import { AntIcon, CowboyHatIcon, OctopusHeadIcon, ShurikenIcon } from './icons/CustomIcons';
+import { AntIcon, CowboyHatIcon, OctopusHeadIcon, ShapeshifterIcon, ShurikenIcon } from './icons/CustomIcons';
 
 export interface FactionMeta {
     id: string;
@@ -160,6 +161,8 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS, nameKey: 'factions.giant_ants.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.GIANT_ANTS_POD, nameKey: 'factions.giant_ants_pod.name', icon: AntIcon, color: '#ca8a04', descriptionKey: 'factions.giant_ants_pod.description', mechanicRule: POWER_COUNTER_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.MERMAIDS, nameKey: 'factions.mermaids.name', icon: Fish, color: '#0ea5e9', descriptionKey: 'factions.mermaids.description' },
+    { id: SMASHUP_FACTION_IDS.KITTY_CATS, nameKey: 'factions.kitty_cats.name', icon: PawPrint, color: '#c026d3', descriptionKey: 'factions.kitty_cats.description' },
+    { id: SMASHUP_FACTION_IDS.MYTHIC_HORSES, nameKey: 'factions.mythic_horses.name', icon: Rainbow, color: '#14b8a6', descriptionKey: 'factions.mythic_horses.description' },
     { id: SMASHUP_FACTION_IDS.FAIRIES, nameKey: 'factions.fairies.name', icon: Flower2, color: '#ec4899', descriptionKey: 'factions.fairies.description' },
     { id: SMASHUP_FACTION_IDS.HULUWAWA, nameKey: 'factions.huluwawa.name', icon: Sprout, color: '#15803d', descriptionKey: 'factions.huluwawa.description', locales: ['zh-CN'], expansion: 'diy' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
@@ -169,7 +172,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.DRAGONS, nameKey: 'factions.dragons.name', icon: Bone, color: '#b91c1c', descriptionKey: 'factions.dragons.description' },
     { id: SMASHUP_FACTION_IDS.SUPERHEROES, nameKey: 'factions.superheroes.name', icon: Medal, color: '#2563eb', descriptionKey: 'factions.superheroes.description' },
     { id: SMASHUP_FACTION_IDS.GEEKS, nameKey: 'factions.geeks.name', icon: GraduationCap, color: '#16a34a', descriptionKey: 'factions.geeks.description' },
-    { id: SMASHUP_FACTION_IDS.SHAPESHIFTERS, nameKey: 'factions.shapeshifters.name', icon: FlaskConical, color: '#db2777', descriptionKey: 'factions.shapeshifters.description' },
+    { id: SMASHUP_FACTION_IDS.SHAPESHIFTERS, nameKey: 'factions.shapeshifters.name', icon: ShapeshifterIcon, color: '#db2777', descriptionKey: 'factions.shapeshifters.description' },
     { id: SMASHUP_FACTION_IDS.CYBORG_APES, nameKey: 'factions.cyborg_apes.name', icon: Bot, color: '#84cc16', descriptionKey: 'factions.cyborg_apes.description' },
     { id: SMASHUP_FACTION_IDS.SUPER_SPIES, nameKey: 'factions.super_spies.name', icon: Eye, color: '#dc2626', descriptionKey: 'factions.super_spies.description' },
     { id: SMASHUP_FACTION_IDS.TIME_TRAVELERS, nameKey: 'factions.time_travelers.name', icon: Orbit, color: '#0d9488', descriptionKey: 'factions.time_travelers.description' },

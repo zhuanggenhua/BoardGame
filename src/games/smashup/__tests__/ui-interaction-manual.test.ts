@@ -511,6 +511,161 @@ describe('SmashUp UI 交互验证', () => {
         });
     });
 
+    it('随从高亮框应只包卡面，不应把力量角标和附着角标纳入描边层', () => {
+        render(
+            React.createElement(BaseZone, {
+                base: makeBase('base_the_vats', [
+                    {
+                        ...makeMinion('badge-host', 'pirate_first_mate', '0', 2),
+                        powerCounters: 1,
+                        powerModifier: 2,
+                        attachedActions: [
+                            { uid: 'attached-1', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
+                        ],
+                    },
+                ]),
+                baseIndex: 0,
+                core: makeState(),
+                turnOrder: ['0', '1'],
+                isDeployMode: false,
+                isMyTurn: true,
+                myPlayerId: '0',
+                dispatch: vi.fn(),
+                onClick: vi.fn(),
+                onViewMinion: vi.fn(),
+                onViewAction: vi.fn(),
+                onViewBase: vi.fn(),
+                onViewTitan: vi.fn(),
+            }),
+        );
+
+        const frame = screen.getByTestId('su-minion-frame-badge-host');
+        const powerBadge = screen.getByTestId('su-minion-power-badge-badge-host');
+        const attachedBadge = screen.getByTestId('smashup-attached-badge-shell');
+
+        expect(frame.contains(powerBadge)).toBe(false);
+        expect(frame.contains(attachedBadge)).toBe(false);
+    });
+
+    it('随从自己高亮时，内部角标和附着预览不应复用宿主描边语义', () => {
+        render(
+            React.createElement(BaseZone, {
+                base: makeBase('base_the_vats', [
+                    {
+                        ...makeMinion('badge-host', 'pirate_first_mate', '0', 2),
+                        powerCounters: 1,
+                        powerModifier: 2,
+                        attachedActions: [
+                            { uid: 'attached-1', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
+                            { uid: 'attached-2', defId: 'fairies_daisy_chain', ownerId: '0', talentUsed: false },
+                        ],
+                    },
+                ]),
+                baseIndex: 0,
+                core: makeState(),
+                turnOrder: ['0', '1'],
+                isDeployMode: false,
+                isMyTurn: true,
+                myPlayerId: '0',
+                isMinionSelectMode: true,
+                selectableMinionUids: new Set(['badge-host']),
+                dispatch: vi.fn(),
+                onClick: vi.fn(),
+                onViewMinion: vi.fn(),
+                onViewAction: vi.fn(),
+                onViewBase: vi.fn(),
+                onViewTitan: vi.fn(),
+            }),
+        );
+
+        const minionCard = document.querySelector('[data-minion-uid="badge-host"]');
+        expect(minionCard).not.toBeNull();
+        fireEvent.mouseEnter(minionCard as Element);
+
+        const powerBadge = screen.getByTestId('su-minion-power-badge-badge-host');
+        const attachedBadgeFace = screen.getByTestId('smashup-attached-badge-face');
+        const attachedBadgeCountFace = screen.getByTestId('smashup-attached-badge-count-face');
+        const attachedPreview = document.querySelector('[data-attached-action-uid="attached-1"]') as HTMLElement | null;
+
+        expect(powerBadge.className).toContain('border-0');
+        expect(powerBadge.className).toContain('shadow-none');
+        expect(attachedBadgeFace.className).toContain('border-0');
+        expect(attachedBadgeFace.className).toContain('shadow-none');
+        expect(attachedBadgeCountFace.className).toContain('border-0');
+        expect(attachedPreview).not.toBeNull();
+        expect(attachedPreview?.className).toContain('border-slate-200');
+        expect(attachedPreview?.className).not.toContain('border-green-300');
+        expect(attachedPreview?.className).not.toContain('ring-green-300');
+    });
+
+    it('持续行动卡和泰坦高亮时，角标与状态标记也不应复用宿主描边', () => {
+        render(
+            React.createElement(BaseZone, {
+                base: {
+                    ...makeBase('base_the_vats'),
+                    ongoingActions: [
+                        {
+                            uid: 'oa1',
+                            defId: 'miskatonic_lost_knowledge',
+                            ownerId: '0',
+                            talentUsed: true,
+                            metadata: { powerCounters: 2 },
+                        },
+                    ],
+                },
+                baseIndex: 0,
+                core: {
+                    ...makeState(),
+                    titans: [
+                        {
+                            uid: 'time-box-live',
+                            defId: 'time_travelers_time_box',
+                            faction: 'time_travelers',
+                            ownerId: '0',
+                            controllerId: '0',
+                            powerCounters: 1,
+                            talentUsed: true,
+                            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                            metadata: { timeBoxCounters: 5 },
+                        },
+                    ],
+                } as any,
+                turnOrder: ['0', '1'],
+                isDeployMode: false,
+                isMyTurn: true,
+                myPlayerId: '0',
+                selectableOngoingUids: new Set(['oa1']),
+                usableTitanTalentUids: new Set(['time-box-live']),
+                dispatch: vi.fn(),
+                onClick: vi.fn(),
+                onViewMinion: vi.fn(),
+                onViewAction: vi.fn(),
+                onViewBase: vi.fn(),
+                onViewTitan: vi.fn(),
+            }),
+        );
+
+        const ongoingPowerCounter = screen.getByTestId('su-base-ongoing-power-counter-oa1');
+        const ongoingUsedBadge = screen.getByTestId('su-base-ongoing-used-badge-oa1');
+        const titanTimeboxCounter = screen.getByTestId('su-base-titan-timebox-counter-time-box-live');
+        const titanPowerCounter = screen.getByTestId('su-base-titan-power-counter-time-box-live');
+        const titanUsedBadge = screen.getByTestId('su-base-titan-used-badge-time-box-live');
+
+        expect(ongoingPowerCounter.className).toContain('border-0');
+        expect(ongoingPowerCounter.className).toContain('shadow-none');
+        expect(ongoingPowerCounter.className).toContain('bg-amber-400');
+        expect(ongoingUsedBadge.className).toContain('border-0');
+        expect(ongoingUsedBadge.className).toContain('shadow-none');
+        expect(titanTimeboxCounter.className).toContain('border-0');
+        expect(titanTimeboxCounter.className).toContain('shadow-none');
+        expect(titanTimeboxCounter.className).toContain('bg-sky-300');
+        expect(titanPowerCounter.className).toContain('border-0');
+        expect(titanPowerCounter.className).toContain('shadow-none');
+        expect(titanPowerCounter.className).toContain('bg-amber-400');
+        expect(titanUsedBadge.className).toContain('border-0');
+        expect(titanUsedBadge.className).toContain('shadow-none');
+    });
+
     it('PromptOverlay 的卡牌选择模式应始终走 smashup-card-renderer（POD 卡也一样）', () => {
         const interaction = createSimpleChoice(
             'pod-preview-check',

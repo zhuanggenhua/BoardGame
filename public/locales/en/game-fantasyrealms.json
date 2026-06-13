@@ -2,6 +2,7 @@
   "fallback": {
     "currentPlayer": "Current Player",
     "viewer": "You",
+    "spectator": "Spectator",
     "unknownPlayer": "Unknown Player"
   },
   "card": {
@@ -14,53 +15,28 @@
   },
   "turn": {
     "panelTitle": "Turn",
-    "roundChip": "Round {{turn}} · {{player}}",
+    "roundChip": "Round {{turn}}",
     "reviewChip": "Endgame Review",
     "compact": {
       "draw": "Draw",
-      "discard": "Discard",
-      "waiting": "Wait",
-      "review": "Review"
+      "discard": "Discard"
     },
     "drawDeck": {
       "one": "Draw 1 from deck",
       "twoThenDiscardOne": "Draw 2 from deck, discard 1"
     },
-    "primaryAction": {
-      "discardRequired": "Discard 1 hand card first",
-      "waiting": "Waiting for current player",
-      "reviewOnly": "Endgame review"
-    },
     "primaryActionShort": {
-      "drawOne": "Draw 1",
-      "twoThenDiscardOne": "Draw 2, drop 1",
-      "discardRequired": "Drop 1",
-      "waiting": "Wait",
-      "reviewOnly": "Review"
+      "discardRequired": "Discard 1"
     },
     "short": {
       "round": "R{{turn}}"
     },
-    "statusBanner": {
-      "drawSelf": "There is no face-up discard yet, so you must draw from the deck first.",
-      "takeDiscardSelf": "This is the draw step. You may take a face-up discard now, then return to your hand to finish the discard.",
-      "discardSelf": "You must discard 1 card from your hand before the turn can continue.",
-      "waiting": "It is currently {{player}}'s turn. Wait for that player to finish this turn.",
-      "gameOver": "The match is over. The table is now in results and review mode."
+    "live": {
+      "selfTurn": "Your Turn"
     },
-    "observerNote": "You are currently waiting. You may still inspect your own hand and the open discard pile here, but other players' hidden hands stay concealed.",
-    "stageSummary": {
-      "gameOver": "Final scores and standings are now fully revealed",
-      "duel": {
-        "discard": "Discard 1 card from your hand",
-        "fullHand": "Hand is full: this turn is draw 1, discard 1",
-        "opening": "Hand not full: take 1 discard, or draw 2 and discard 1"
-      },
-      "multiplayer": {
-        "discard": "Discard 1 card from your hand",
-        "emptyDiscard": "Standard game first turn: discard pile is empty, so you must draw 1 from deck",
-        "standard": "Standard game: take 1 from deck or discard, then discard 1"
-      }
+    "statusBanner": {
+      "discardSelf": "Confirm Discard",
+      "waiting": "Waiting for {{player}}"
     }
   },
   "score": {
@@ -69,11 +45,9 @@
     "totalLabel": "Official Total",
     "hiddenLabel": "Reveal at End",
     "hiddenValue": "??",
-    "hiddenReasonLive": "During a multiplayer game, only your official total is shown here. Other players' scores are revealed together at the end.",
     "handCount": "{{count}} cards in hand",
     "badges": {
       "you": "You",
-      "current": "Current Turn",
       "winner": "Winner"
     },
     "labels": {
@@ -84,34 +58,13 @@
   },
   "zone": {
     "discard": {
-      "ariaLabel": "Open discard pile",
       "title": "Open Discard Pile",
-      "hint": "In duel variant, you may take 1 card directly",
-      "hintAvailable": "You may take 1 face-up discard right now.",
-      "hintDiscardStage": "You are discarding now. The face-up discard pile will update after this discard resolves.",
-      "hintLocked": "Decide whether to draw from deck first; you can still choose a face-up discard during this step.",
-      "hintEmpty": "No face-up discard is available, so you must draw from the deck.",
-      "hintWaiting": "This is not your action step. Watch the face-up discard pile instead.",
-      "hintReview": "After the game, the full face-up discard pile stays visible here.",
-      "emptyDrawFirst": "There is no face-up discard yet. Draw from the deck first, and the first discarded card will appear here.",
-      "emptyDiscardStage": "There is no face-up discard yet; the card you discard now will appear here immediately.",
-      "emptyWaiting": "The previous player has not left any face-up discard here yet.",
-      "emptyReview": "No face-up discard pile was formed in this game.",
       "emptyCompact": "No discard"
     },
     "hand": {
       "ariaLabel": "Hand zone",
       "title": "{{player}}'s hand",
-      "hint": "Hand limit is 7 cards, empty slots stay visible",
-      "hintDefault": "Hand limit is 7 cards, empty slots stay visible",
-      "hintDiscard": "You must discard 1 card from your hand now.",
-      "hintInspect": "Finish drawing or taking a discard first, then come back here to choose what to discard.",
-      "hintWaiting": "This is not your action step, so your hand is view-only right now.",
-      "hintReview": "After the game, your full hand remains here for review.",
-      "emptyDraw": "Your hand is empty right now. Draw from the deck or take a discard, and the cards for this turn will appear here immediately.",
-      "emptyDiscard": "There is nothing to discard yet. Finish the draw result first, then return here.",
-      "emptyWaiting": "Another player is acting now, so this hand area is currently empty or not shown from this viewpoint.",
-      "emptyReview": "If this player ended with no cards, the empty slots stay visible here after the game.",
+      "titleSpectator": "Hidden hand zone",
       "emptyCompact": "No hand"
     }
   },
@@ -119,7 +72,10 @@
     "takeDiscardAria": "Take discard {{name}}",
     "inspectDiscardAria": "Inspect discard {{name}}",
     "discardHandAria": "Discard hand card {{name}}",
-    "inspectHandAria": "Inspect hand card {{name}}"
+    "inspectHandAria": "Inspect hand card {{name}}",
+    "confirmTake": "Confirm",
+    "confirmDiscard": "Confirm Discard",
+    "selected": "Selected"
   },
   "focus": {
     "panelTitle": "Focus",
@@ -133,50 +89,15 @@
         "handKeep": "Keep for Now",
         "handNeutral": "Watch This Slot",
         "reviewCard": "Public Review Card"
-      },
-      "descriptions": {
-        "discardTakeNow": "If you take {{name}} right now, your official total would become {{nextScore}} (net change {{delta}}).",
-        "discardSwapBest": "If you take {{name}} and discard {{candidate}}, your official total would become {{nextScore}} (net change {{delta}}).",
-        "discardNoViewerHand": "{{name}} is public right now, but this viewpoint has no hand to evaluate against it.",
-        "handDiscardNow": "If you discard {{name}} right now, your official total would become {{nextScore}} (net change {{delta}}).",
-        "reviewCard": "{{name}} is now part of the {{suit}} review line; compare it against the final table to see which scoring line it actually held together."
-      },
-      "tips": {
-        "discardTakeDirectPrimary": "You can add it to your hand immediately without breaking an existing slot first.",
-        "discardTakeDirectSecondary": "If the net change is small, compare it with the next face-up discard before committing long-term.",
-        "discardSwapPrimary": "Best current swap target: discard {{candidate}}.",
-        "discardSwapSecondary": "If you are already trying to lock this build, this face-up card is worth priority now.",
-        "discardNoGainPrimary": "Against your current hand, it does not produce a higher total yet.",
-        "discardNoGainSecondary": "Keep watching the next draw or the next face-up discard first.",
-        "handDropPrimary": "This card is currently dragging your total down, so it is a valid early discard candidate.",
-        "handDropSecondary": "If the next face-up discard also strengthens your active suit line, that discard slot becomes even more valuable.",
-        "handKeepPrimary": "This card is genuinely holding your total up right now.",
-        "handKeepSecondary": "Unless you need the slot for a much larger combo, do not treat it as your first discard.",
-        "handNeutralPrimary": "Right now this card is mostly occupying space without a clear net gain.",
-        "handNeutralSecondary": "Wait for the next draw or face-up discard to see whether it can join a real scoring line.",
-        "reviewPrimary": "Compare it with the final standings, face-up discard pile, and full hand to confirm which scoring line it really supported.",
-        "reviewSecondary": "During endgame review, this panel is better used as a structure checkpoint than as a next-step hint."
       }
     },
-    "hiddenKicker": "Current Focus",
     "hiddenName": "Focus unavailable",
-    "hiddenDescription": "The current focus is not in a public zone, so this panel does not reveal its name, text, or estimate. Once it becomes public or the match reaches endgame review, the real card will appear here.",
-    "hiddenDelta": "--",
-    "hiddenTipPrimary": "Keep watching the open discard pile, the active turn marker, and changes to your own hand.",
-    "hiddenTipSecondary": "As soon as the current focus becomes public, this panel switches back to the real card automatically.",
-    "reviewKicker": "Endgame Review Focus",
-    "reviewDescription": "Endgame review: this card has already been scored against the final table. It is now more useful to compare it with the open discard pile, final standings, and your full hand to understand its real contribution.",
-    "reviewDelta": "--",
-    "reviewTipPrimary": "Compare this card against the final standings, open discard pile, and full hand to verify its actual bonus or penalty impact.",
-    "reviewTipSecondary": "No next-step decision hint is shown during endgame review; this panel is now review-only."
+    "hiddenDelta": "--"
   },
   "progress": {
     "panelTitle": "End Progress",
     "duelThreshold": "Duel discard threshold",
     "standardThreshold": "Standard discard threshold",
-    "duelStatus": "{{handsFilled}} / {{playerCount}} players have reached 7 cards. Official duel scoring is already being evaluated live.",
-    "standardStatus": "Current mode is the {{playerCount}}-player standard game: everyone starts with 7 cards, each turn is draw 1 and discard 1, and the game ends when the discard pile reaches 10 cards.",
-    "gameOverReview": "Final scores, winner, and standings are now fully revealed; the table remains in review mode only.",
     "gameOverDraw": "The current match ended in an official draw.",
     "gameOverWinner": "The current match is over. Winner: {{winner}}.",
     "finalStandings": "Final Standings",

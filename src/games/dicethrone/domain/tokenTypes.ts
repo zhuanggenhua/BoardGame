@@ -261,6 +261,8 @@ export interface PassiveTriggerConfig {
     damageTriggerScope?: 'anyDamage' | 'opponentAttackDamage';
     /** 效果行为（可自动执行） */
     actions?: EffectAction[];
+    /** 触发后自动移除自身全部层数 */
+    consumeOnTrigger?: boolean;
     /** 持续回合数（undefined = 永久，直到手动移除） */
     duration?: number;
     /** 是否可被净化/移除类效果移除 */

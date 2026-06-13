@@ -95,4 +95,106 @@ describe('resolveNextAiAction attemptKey', () => {
         expect(second?.attemptKey).toBeTruthy();
         expect(first?.attemptKey).not.toBe(second?.attemptKey);
     });
+
+    it('本地 AI 策略若仍返回无进展微操作，runner 应允许 runtime 改成收口动作', async () => {
+        const gameId = '__test_local_ai_refine_action__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') {
+                    return [];
+                }
+                return [
+                    {
+                        actionId: 'toggle-die-lock:0:lock',
+                        kind: 'toggle-die-lock',
+                        label: '锁定骰子 0',
+                        commands: [{ type: 'TOGGLE_DIE_LOCK', payload: { dieId: 0, keep: true } }],
+                    },
+                    {
+                        actionId: 'confirm-roll',
+                        kind: 'confirm-roll',
+                        label: '确认掷骰',
+                        commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                    },
+                ];
+            },
+            refineAiAction({ context, proposedAction }) {
+                if (proposedAction.kind !== 'toggle-die-lock') {
+                    return proposedAction;
+                }
+                return context.legalActions.find((action) => action.kind === 'confirm-roll') ?? proposedAction;
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'toggle-die-lock:0:lock' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildState(9),
+            matchId: 'match-refine-action-1',
+            seatControllers: {
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('confirm-roll');
+        expect(resolution?.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
+    });
+
+    it('refineAiAction 返回 null 时应拒绝本地 fallback 动作，而不是继续执行原候选动作', async () => {
+        const gameId = '__test_local_ai_refine_rejects_local_fallback__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') {
+                    return [];
+                }
+                return [{
+                    actionId: 'unsafe-fallback-action',
+                    kind: 'unsafe-fallback-action',
+                    label: '不安全 fallback',
+                    commands: [{ type: 'UNSAFE_FALLBACK', payload: {} }],
+                }];
+            },
+            refineAiAction({ source }) {
+                if (source === 'local-fallback') {
+                    return null;
+                }
+                return undefined;
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => null,
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildState(10),
+            matchId: 'match-refine-reject-fallback-1',
+            seatControllers: {
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
 });

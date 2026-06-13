@@ -490,7 +490,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                         src={ASSETS.PLAYER_BOARD(previewCharId as CharacterId)}
                                         locale={locale}
                                         className="block h-full w-auto object-contain"
-                                        alt="玩家面板"
+                                        alt={t('imageAlt.playerBoard')}
                                     />
                                 </div>
 
@@ -507,7 +507,7 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                                         src={ASSETS.TIP_BOARD(previewCharId as CharacterId)}
                                         locale={locale}
                                         className="h-full w-auto object-contain"
-                                        alt="提示板"
+                                        alt={t('imageAlt.tipBoard')}
                                     />
                                 </div>
                             </div>
@@ -823,12 +823,12 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                             ? { aspectRatio: String(getPlayerBoardAspectRatio(magnifyPreview.characterId)) }
                             : undefined}
                     >
-                        <OptimizedImage
-                            src={magnifyPreview.src}
-                            locale={locale}
-                            className="block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain"
-                            alt="预览图"
-                        />
+                    <OptimizedImage
+                        src={magnifyPreview.src}
+                        locale={locale}
+                        className="block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain"
+                        alt={t('imageAlt.magnifiedView')}
+                    />
                     </div>
                 )}
             </MagnifyOverlay>

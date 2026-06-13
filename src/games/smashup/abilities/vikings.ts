@@ -140,7 +140,7 @@ function buildRaidingPartyChoiceOptions(
             displayMode: 'card' as const,
         }));
 
-    return [createSkipOption('不打出') as any, ...eligible] as Array<{
+    return [createSkipOption('不打出', 'ui.vikings_raiding_party_skip_play_option') as any, ...eligible] as Array<{
         id: string;
         label: string;
         value: RaidingPartyChoice;
@@ -463,8 +463,8 @@ const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext,
         `vikings_huscarl_${context.now}`,
         context.playerId,
         '侍卫：选择一张手牌置于牌库顶，本随从在回合结束前 +2 力量',
-        [createSkipOption('跳过（不放牌）') as any, ...buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? [])] as any[],
-        { sourceId: 'vikings_huscarl', targetType: 'generic' },
+        [createSkipOption('跳过（不放牌）', 'ui.vikings_huscarl_skip_option') as any, ...buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? [])] as any[],
+        { sourceId: 'vikings_huscarl', targetType: 'generic', titleKey: 'ui.vikings_huscarl_title' },
     ),
     onResolve: ({ context, playerId, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -486,17 +486,17 @@ const vikingsShieldMaidenPromptProgram = createPromptProgram<VikingPromptContext
         context.playerId,
         '盾女：选择另一位玩家，展示其牌库顶的一张牌',
         [
-            createSkipOption('跳过（不揭示）') as any,
+            createSkipOption('跳过（不揭示）', 'ui.vikings_shield_maiden_skip_option') as any,
             ...buildPlayerOptions(
                 getOtherPlayers(context.matchState.core, context.playerId).filter(
                     pid => (context.matchState.core.players[pid]?.hand.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
                 ),
-                { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
             ),
         ] as any[],
-        { sourceId: 'vikings_shield_maiden', targetType: 'generic' },
+        { sourceId: 'vikings_shield_maiden', targetType: 'generic', titleKey: 'ui.vikings_shield_maiden_title' },
     ),
     onResolve: ({ state, context, value, random, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -559,8 +559,8 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
             `vikings_valkyrie_${context.now}`,
             context.playerId,
             '女武神：选择另一位玩家弃牌堆中的一个随从',
-            [createSkipOption('跳过（不取回）') as any, ...options] as any[],
-            { sourceId: 'vikings_valkyrie', targetType: 'generic' },
+            [createSkipOption('跳过（不取回）', 'ui.vikings_valkyrie_skip_option') as any, ...options] as any[],
+            { sourceId: 'vikings_valkyrie', targetType: 'generic', titleKey: 'ui.vikings_valkyrie_title' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -580,7 +580,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
         context.playerId,
         '洗劫：选择一个打出的行动牌或一张埋葬牌，将其置入你的手牌',
         collectRansackTargets(context.matchState.core),
-        { sourceId: 'vikings_ransack', targetType: 'generic' },
+        { sourceId: 'vikings_ransack', targetType: 'generic', titleKey: 'ui.vikings_ransack_title' },
     ),
     onResolve: ({ context, value, timestamp }) => {
         const selected = value as {
@@ -620,9 +620,9 @@ const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, Sma
         '掠夺：选择另一位玩家，随机拿走其一张手牌',
         buildPlayerOptions(
             getOtherPlayers(context.matchState.core, context.playerId).filter(pid => (context.matchState.core.players[pid]?.hand.length ?? 0) > 0),
-            { sourcePlayerId: context.playerId, effectIntent: 'debuff' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'debuff' },
         ),
-        { sourceId: 'vikings_pillage', targetType: 'generic' },
+        { sourceId: 'vikings_pillage', targetType: 'generic', titleKey: 'ui.vikings_pillage_title' },
     ),
     onResolve: ({ state, context, value, random, timestamp }) => {
         const selected = value as PlayerChoice | undefined;
@@ -644,7 +644,7 @@ const vikingsCastTheRunesOrderPromptProgram = createPromptProgram<VikingCastRune
             context.playerId,
             '掷卢恩符文：选择放回牌库顶的顺序',
             buildCastTheRunesOrderOptions(context.matchState.core, context.targetPlayerId, context.revealedCards),
-            { sourceId: 'vikings_cast_the_runes_order', targetType: 'generic', responseValidationMode: 'live' },
+            { sourceId: 'vikings_cast_the_runes_order', targetType: 'generic', responseValidationMode: 'live', titleKey: 'ui.vikings_cast_the_runes_order_title' },
         );
         (interaction.data as any).optionsGenerator = (nextState: MatchState<SmashUpCore>) =>
             buildCastTheRunesOrderOptions(nextState.core, context.targetPlayerId, context.revealedCards);
@@ -704,9 +704,9 @@ const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptC
                     || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                     || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
             ),
-            { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
         ),
-        { sourceId: 'vikings_cast_the_runes_player', targetType: 'generic' },
+        { sourceId: 'vikings_cast_the_runes_player', targetType: 'generic', titleKey: 'ui.vikings_cast_the_runes_player_title' },
     ),
     onResolve: ({ state, context, value, random, timestamp }) => {
         const selected = value as PlayerChoice | undefined;
@@ -747,7 +747,7 @@ const vikingsRaidingPartyMinionBasePromptProgram = createPromptProgram<VikingRai
         context.playerId,
         '突袭队：选择该额外随从要打出的基地',
         buildBaseOptions(context.matchState.core),
-        { sourceId: 'vikings_raiding_party_minion_base', targetType: 'base' },
+        { sourceId: 'vikings_raiding_party_minion_base', targetType: 'base', titleKey: 'ui.vikings_raiding_party_minion_base_title' },
     ),
     onResolve: ({ state, context, playerId, value, random, timestamp }) => {
         const selectedBase = value as { baseIndex?: number } | undefined;
@@ -763,7 +763,7 @@ const vikingsRaidingPartyActionBasePromptProgram = createPromptProgram<VikingRai
         context.playerId,
         '突袭队：选择该额外行动的目标基地',
         buildBaseOptions(context.matchState.core),
-        { sourceId: 'vikings_raiding_party_action_base', targetType: 'base' },
+        { sourceId: 'vikings_raiding_party_action_base', targetType: 'base', titleKey: 'ui.vikings_raiding_party_action_base_title' },
     ),
     onResolve: ({ state, context, playerId, value, random, timestamp }) => {
         const selectedBase = value as { baseIndex?: number } | undefined;
@@ -779,7 +779,7 @@ const vikingsRaidingPartyActionMinionPromptProgram = createPromptProgram<VikingR
         context.playerId,
         '突袭队：选择该额外行动的目标随从',
         getAllMinionOptions(context.matchState.core, context.playerId),
-        { sourceId: 'vikings_raiding_party_action_minion', targetType: 'minion' },
+        { sourceId: 'vikings_raiding_party_action_minion', targetType: 'minion', titleKey: 'ui.vikings_raiding_party_action_minion_title' },
     ),
     onResolve: ({ state, context, playerId, value, random, timestamp }) => {
         const selectedMinion = value as { minionUid?: string; baseIndex?: number } | undefined;
@@ -804,7 +804,7 @@ const vikingsRaidingPartyChoicePromptProgram = createPromptProgram<VikingRaiding
             context.playerId,
             '突袭队：你可以选择一张可打出的牌',
             buildRaidingPartyChoiceOptions(context.matchState.core, context.targetPlayerId, context.revealedCards) as any[],
-            { sourceId: 'vikings_raiding_party_choice', targetType: 'generic', responseValidationMode: 'live' },
+            { sourceId: 'vikings_raiding_party_choice', targetType: 'generic', responseValidationMode: 'live', titleKey: 'ui.vikings_raiding_party_choice_title' },
         );
         (interaction.data as any).optionsGenerator = (nextState: MatchState<SmashUpCore>) =>
             buildRaidingPartyChoiceOptions(nextState.core, context.targetPlayerId, context.revealedCards);
@@ -873,9 +873,9 @@ const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptC
             getOtherPlayers(context.matchState.core, context.playerId).filter(
                 pid => (context.matchState.core.players[pid]?.deck.length ?? 0) > 0 || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
             ),
-            { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+            { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
         ),
-        { sourceId: 'vikings_raiding_party_player', targetType: 'generic' },
+        { sourceId: 'vikings_raiding_party_player', targetType: 'generic', titleKey: 'ui.vikings_raiding_party_player_title' },
     ),
     onResolve: ({ state, context, value, random, timestamp }) => {
         const selected = value as PlayerChoice | undefined;
@@ -918,7 +918,7 @@ const vikingsBerserkMinionPromptProgram = createPromptProgram<VikingBerserkMinio
             })),
             { state: context.matchState.core, sourcePlayerId: context.playerId },
         ),
-        { sourceId: 'vikings_berserk_minion', targetType: 'minion' },
+        { sourceId: 'vikings_berserk_minion', targetType: 'minion', titleKey: 'ui.vikings_berserk_minion_title' },
     ),
     onResolve: ({ context, playerId, value, timestamp }) => {
         const selected = value as MinionChoice | undefined;
@@ -939,7 +939,7 @@ const vikingsBerserkCardPromptProgram = createPromptProgram<VikingPromptContext,
         context.playerId,
         '狂战：选择一张手牌置于牌库顶',
         buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? []),
-        { sourceId: 'vikings_berserk_card', targetType: 'generic' },
+        { sourceId: 'vikings_berserk_card', targetType: 'generic', titleKey: 'ui.vikings_berserk_card_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as HandChoice | undefined;
@@ -964,17 +964,17 @@ const vikingsBaseDrakkarPromptProgram = createPromptProgram<VikingPromptContext,
         context.playerId,
         '德拉卡尔号：选择另一位玩家，展示其牌库顶的一张牌',
         [
-            createSkipOption('跳过（不揭示）') as any,
+            createSkipOption('跳过（不揭示）', 'ui.base_drakkar_skip_option') as any,
             ...buildPlayerOptions(
                 getOtherPlayers(context.matchState.core, context.playerId).filter(
                     pid => (context.matchState.core.players[pid]?.hand.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.deck.length ?? 0) > 0
                         || (context.matchState.core.players[pid]?.discard.length ?? 0) > 0,
                 ),
-                { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectIntent: 'inspect' },
             ),
         ] as any[],
-        { sourceId: 'base_drakkar', targetType: 'generic' },
+        { sourceId: 'base_drakkar', targetType: 'generic', titleKey: 'ui.base_drakkar_title' },
     ),
     onResolve: ({ state, context, value, random, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -1009,7 +1009,7 @@ const vikingsBaseLonghouseMinionPromptProgram = createPromptProgram<VikingBaseLo
                 })),
                 { state: context.matchState.core, sourcePlayerId: context.playerId },
             ),
-            { sourceId: 'base_longhouse_minion', targetType: 'minion' },
+            { sourceId: 'base_longhouse_minion', targetType: 'minion', titleKey: 'ui.base_longhouse_minion_title' },
         );
     },
     onResolve: ({ context, playerId, value, timestamp }) => {
@@ -1031,7 +1031,7 @@ const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptCo
         context.playerId,
         '长屋：你可以选择一张手牌置于牌库顶',
         [createSkipOption(), ...buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? [])] as any[],
-        { sourceId: 'base_longhouse_card', targetType: 'generic' },
+        { sourceId: 'base_longhouse_card', targetType: 'generic', titleKey: 'ui.base_longhouse_card_title' },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -1079,7 +1079,11 @@ function buildHandCardOptions(cards: CardInstance[]) {
 
 function buildPlayerOptions(
     playerIds: PlayerId[],
-    context: { sourcePlayerId: PlayerId; effectIntent?: 'buff' | 'debuff' | 'inspect' | 'resource' },
+    context: {
+        state?: SmashUpCore;
+        sourcePlayerId: PlayerId;
+        effectIntent?: 'buff' | 'debuff' | 'inspect' | 'resource';
+    },
 ) {
     return buildPlayerTargetOptions(
         playerIds.map((targetPlayerId, index) => ({

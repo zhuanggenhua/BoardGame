@@ -5,6 +5,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface ChoiceOption {
     id: string;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ChoiceModal({ title, description, options, onConfirm, onCancel }: Props) {
+    const { t } = useTranslation('game-cardia');
     return (
         <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4">
             <motion.div
@@ -66,7 +68,7 @@ export function ChoiceModal({ title, description, options, onConfirm, onCancel }
                     onClick={onCancel}
                     className="w-full rounded-lg border-2 border-gray-600 bg-gray-300 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-400 sm:text-base"
                 >
-                    取消
+                    {t('cancel')}
                 </button>
             </motion.div>
         </div>

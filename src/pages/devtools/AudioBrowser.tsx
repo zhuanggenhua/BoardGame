@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { AudioManager } from '../../lib/audio/AudioManager';
 import {
   COMMON_AUDIO_BASE_PATH,
@@ -27,63 +28,122 @@ interface CategoryNode {
 }
 
 /** group 中文名映射 */
-const GROUP_LABELS: Record<string, string> = {
-  ambient: '环境音',
-  bgm: '背景音乐',
-  card: '卡牌',
-  coins: '金币',
-  combat: '战斗',
-  cyberpunk: '赛博朋克',
-  dice: '骰子',
-  fantasy: '奇幻',
-  magic: '魔法',
-  misc: '其他',
-  monster: '怪物',
-  puzzle: '解谜',
-  status: '状态效果',
-  steampunk: '蒸汽朋克',
-  stinger: '过场音效',
-  system: '系统',
-  token: '标记物',
-  ui: '界面',
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  ambient: 'ambient',
+  bgm: 'bgm',
+  card: 'card',
+  coins: 'coins',
+  combat: 'combat',
+  cyberpunk: 'cyberpunk',
+  dice: 'dice',
+  fantasy: 'fantasy',
+  magic: 'magic',
+  misc: 'misc',
+  monster: 'monster',
+  puzzle: 'puzzle',
+  status: 'status',
+  steampunk: 'steampunk',
+  stinger: 'stinger',
+  system: 'system',
+  token: 'token',
+  ui: 'ui',
 };
 
 /** sub 中文名映射（仅翻译常见的有意义分类，音效包名称保持原样） */
-const SUB_LABELS: Record<string, string> = {
-  general: '通用',
-  ethereal: '空灵',
-  fantasy: '奇幻',
-  funk: '放克',
-  fire: '火焰',
-  ice: '冰霜',
-  water: '水流',
-  wind: '风',
-  lightning: '闪电',
-  poison: '毒素',
-  dark: '暗黑',
-  rock: '岩石',
-  earth: '大地',
-  attack: '攻击',
-  impact: '冲击',
-  footstep: '脚步',
-  shout: '呼喊',
-  celebrate: '庆祝',
-  handling: '操作',
-  fx: '特效',
-  loops: '循环',
-  movement: '移动',
-  death: '死亡',
-  growl: '低吼',
-  breath: '呼吸',
-  click: '点击',
-  shooting: '射击',
+const SUB_LABEL_KEYS: Record<string, string> = {
+  general: 'general',
+  ethereal: 'ethereal',
+  fantasy: 'fantasy',
+  funk: 'funk',
+  fire: 'fire',
+  ice: 'ice',
+  water: 'water',
+  wind: 'wind',
+  lightning: 'lightning',
+  poison: 'poison',
+  dark: 'dark',
+  rock: 'rock',
+  earth: 'earth',
+  attack: 'attack',
+  impact: 'impact',
+  footstep: 'footstep',
+  shout: 'shout',
+  celebrate: 'celebrate',
+  handling: 'handling',
+  fx: 'fx',
+  loops: 'loops',
+  movement: 'movement',
+  death: 'death',
+  growl: 'growl',
+  breath: 'breath',
+  click: 'click',
+  shooting: 'shooting',
+};
+
+const GROUP_LABEL_TRANSLATORS: Record<string, (t: (key: string) => string) => string> = {
+  ambient: (t) => t('devtools.audioBrowser.group_labels.ambient'),
+  bgm: (t) => t('devtools.audioBrowser.group_labels.bgm'),
+  card: (t) => t('devtools.audioBrowser.group_labels.card'),
+  coins: (t) => t('devtools.audioBrowser.group_labels.coins'),
+  combat: (t) => t('devtools.audioBrowser.group_labels.combat'),
+  cyberpunk: (t) => t('devtools.audioBrowser.group_labels.cyberpunk'),
+  dice: (t) => t('devtools.audioBrowser.group_labels.dice'),
+  fantasy: (t) => t('devtools.audioBrowser.group_labels.fantasy'),
+  magic: (t) => t('devtools.audioBrowser.group_labels.magic'),
+  misc: (t) => t('devtools.audioBrowser.group_labels.misc'),
+  monster: (t) => t('devtools.audioBrowser.group_labels.monster'),
+  puzzle: (t) => t('devtools.audioBrowser.group_labels.puzzle'),
+  status: (t) => t('devtools.audioBrowser.group_labels.status'),
+  steampunk: (t) => t('devtools.audioBrowser.group_labels.steampunk'),
+  stinger: (t) => t('devtools.audioBrowser.group_labels.stinger'),
+  system: (t) => t('devtools.audioBrowser.group_labels.system'),
+  token: (t) => t('devtools.audioBrowser.group_labels.token'),
+  ui: (t) => t('devtools.audioBrowser.group_labels.ui'),
+};
+
+const SUB_LABEL_TRANSLATORS: Record<string, (t: (key: string) => string) => string> = {
+  general: (t) => t('devtools.audioBrowser.sub_labels.general'),
+  ethereal: (t) => t('devtools.audioBrowser.sub_labels.ethereal'),
+  fantasy: (t) => t('devtools.audioBrowser.sub_labels.fantasy'),
+  funk: (t) => t('devtools.audioBrowser.sub_labels.funk'),
+  fire: (t) => t('devtools.audioBrowser.sub_labels.fire'),
+  ice: (t) => t('devtools.audioBrowser.sub_labels.ice'),
+  water: (t) => t('devtools.audioBrowser.sub_labels.water'),
+  wind: (t) => t('devtools.audioBrowser.sub_labels.wind'),
+  lightning: (t) => t('devtools.audioBrowser.sub_labels.lightning'),
+  poison: (t) => t('devtools.audioBrowser.sub_labels.poison'),
+  dark: (t) => t('devtools.audioBrowser.sub_labels.dark'),
+  rock: (t) => t('devtools.audioBrowser.sub_labels.rock'),
+  earth: (t) => t('devtools.audioBrowser.sub_labels.earth'),
+  attack: (t) => t('devtools.audioBrowser.sub_labels.attack'),
+  impact: (t) => t('devtools.audioBrowser.sub_labels.impact'),
+  footstep: (t) => t('devtools.audioBrowser.sub_labels.footstep'),
+  shout: (t) => t('devtools.audioBrowser.sub_labels.shout'),
+  celebrate: (t) => t('devtools.audioBrowser.sub_labels.celebrate'),
+  handling: (t) => t('devtools.audioBrowser.sub_labels.handling'),
+  fx: (t) => t('devtools.audioBrowser.sub_labels.fx'),
+  loops: (t) => t('devtools.audioBrowser.sub_labels.loops'),
+  movement: (t) => t('devtools.audioBrowser.sub_labels.movement'),
+  death: (t) => t('devtools.audioBrowser.sub_labels.death'),
+  growl: (t) => t('devtools.audioBrowser.sub_labels.growl'),
+  breath: (t) => t('devtools.audioBrowser.sub_labels.breath'),
+  click: (t) => t('devtools.audioBrowser.sub_labels.click'),
+  shooting: (t) => t('devtools.audioBrowser.sub_labels.shooting'),
 };
 
 /** 获取 group 的中文显示名，未映射的原样返回 */
-const groupLabel = (group: string): string => GROUP_LABELS[group] ?? group;
+const groupLabel = (t: (key: string) => string, group: string): string => {
+  const mapped = GROUP_LABEL_KEYS[group];
+  const translator = mapped ? GROUP_LABEL_TRANSLATORS[mapped] : undefined;
+  return translator ? translator(t) : group;
+};
 
 /** 获取 sub 的中文显示名，未映射的原样返回 */
-const subLabel = (sub: string): string => SUB_LABELS[sub] ?? sub;
+const subLabel = (t: (key: string) => string, sub: string): string => {
+  const mapped = SUB_LABEL_KEYS[sub];
+  const translator = mapped ? SUB_LABEL_TRANSLATORS[mapped] : undefined;
+  return translator ? translator(t) : sub;
+};
 
 // ============================================================================
 // 通用 UI
@@ -115,9 +175,12 @@ const CategorySidebar: React.FC<{
   onSelectSub: (sub: string | null) => void;
   totalCount: number;
 }> = ({ categories, selectedGroup, selectedSub, onSelectGroup, onSelectSub, totalCount }) => {
+  const { t } = useTranslation('lobby');
   return (
     <div className="w-56 shrink-0 overflow-y-auto max-h-[calc(100vh-10rem)] pr-2 max-[900px]:w-full max-[900px]:max-h-48 max-[900px]:pr-0">
-      <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">分类</div>
+      <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+        {t('devtools.audioBrowser.sidebar.title')}
+      </div>
       {/* 全部 */}
       <button
         onClick={() => { onSelectGroup(null); onSelectSub(null); }}
@@ -125,7 +188,9 @@ const CategorySidebar: React.FC<{
           !selectedGroup ? 'bg-indigo-600/30 text-indigo-300 font-bold' : 'text-slate-300 hover:bg-slate-700/50'
         }`}
       >
-        全部 <span className="text-slate-500 text-xs">({totalCount})</span>
+        {t('devtools.audioBrowser.sidebar.all')}
+        {' '}
+        <span className="text-slate-500 text-xs">({totalCount})</span>
       </button>
 
       {categories.map((cat) => (
@@ -144,7 +209,9 @@ const CategorySidebar: React.FC<{
               selectedGroup === cat.group ? 'bg-indigo-600/30 text-indigo-300 font-bold' : 'text-slate-300 hover:bg-slate-700/50'
             }`}
           >
-            {groupLabel(cat.group)} <span className="text-slate-500 text-xs">({cat.count})</span>
+            {groupLabel(t, cat.group)}
+            {' '}
+            <span className="text-slate-500 text-xs">({cat.count})</span>
           </button>
           {/* 展开子分类 */}
           {selectedGroup === cat.group && cat.subs.length > 1 && (
@@ -157,7 +224,7 @@ const CategorySidebar: React.FC<{
                     selectedSub === sub ? 'bg-indigo-600/20 text-indigo-200 font-bold' : 'text-slate-400 hover:bg-slate-700/40'
                   }`}
                 >
-                  {subLabel(sub)}
+                  {subLabel(t, sub)}
                 </button>
               ))}
             </div>
@@ -178,6 +245,7 @@ const AudioTable: React.FC<{
   playingKey: string | null;
   friendlyName: (key: string) => string;
 }> = ({ entries, playEntry, playingKey, friendlyName }) => {
+  const { t } = useTranslation('lobby');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const timerRef = useRef<number>(0);
 
@@ -193,8 +261,8 @@ const AudioTable: React.FC<{
       <table className="w-full text-xs table-fixed">
         <thead className="sticky top-0 bg-slate-800 z-10">
           <tr className="text-slate-400 border-b border-slate-700">
-            <th className="text-left px-1.5 py-1 font-medium">名称</th>
-            <th className="text-left px-1.5 py-1 font-medium w-16">类型</th>
+            <th className="text-left px-1.5 py-1 font-medium">{t('devtools.audioBrowser.table.name')}</th>
+            <th className="text-left px-1.5 py-1 font-medium w-16">{t('devtools.audioBrowser.table.type')}</th>
             <th className="px-1.5 py-1 w-10">▶</th>
           </tr>
         </thead>
@@ -212,14 +280,16 @@ const AudioTable: React.FC<{
               </td>
               <td className="px-1.5 py-0.5">
                 <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'}`}>
-                  {entry.type === 'bgm' ? '音乐' : '音效'}
+                  {entry.type === 'bgm'
+                    ? t('devtools.audioBrowser.types.bgm')
+                    : t('devtools.audioBrowser.types.sfx')}
                 </span>
               </td>
               <td className="px-1.5 py-0.5 text-center">
                 <button
                   onClick={() => playEntry(entry)}
                   className="px-1.5 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold transition-[background-color]"
-                  title="试听"
+                  title={t('devtools.audioBrowser.table.preview')}
                 >
                   {playingKey === entry.key ? '⏸' : '▶'}
                 </button>
@@ -229,10 +299,14 @@ const AudioTable: React.FC<{
         </tbody>
       </table>
       {entries.length > 300 && (
-        <div className="text-center text-slate-500 text-xs py-2">显示前 300 条，共 {entries.length} 条匹配</div>
+        <div className="text-center text-slate-500 text-xs py-2">
+          {t('devtools.audioBrowser.table.limit_notice', { count: entries.length })}
+        </div>
       )}
       {entries.length === 0 && (
-        <div className="text-center text-slate-500 text-xs py-4">无匹配结果</div>
+        <div className="text-center text-slate-500 text-xs py-4">
+          {t('devtools.audioBrowser.table.empty')}
+        </div>
       )}
     </div>
   );
@@ -272,19 +346,22 @@ const HistoryPanel: React.FC<{
   friendlyName: (key: string) => string;
   onClear: () => void;
 }> = ({ history, replayEntry, playingKey, friendlyName, onClear }) => {
+  const { t } = useTranslation('lobby');
   return (
     <div
       data-testid="audio-browser-history-panel"
       className="w-56 shrink-0 flex flex-col max-h-[calc(100vh-10rem)] max-[900px]:w-full max-[900px]:max-h-48 max-[900px]:pb-[calc(env(safe-area-inset-bottom)+6rem)]"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">历史播放</div>
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          {t('devtools.audioBrowser.history.title')}
+        </div>
         {history.length > 0 && (
           <button
             onClick={onClear}
             className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
           >
-            清空
+            {t('devtools.audioBrowser.history.clear')}
           </button>
         )}
       </div>
@@ -293,8 +370,11 @@ const HistoryPanel: React.FC<{
         className="flex-1 overflow-y-auto rounded border border-slate-700 bg-slate-800/40 max-[900px]:w-[calc(100%_-_5.5rem)] max-[900px]:self-start"
       >
         {history.length === 0 ? (
-          <div className="text-center text-slate-500 text-xs py-6">播放音效后
-此处会记录历史</div>
+          <div className="text-center text-slate-500 text-xs py-6">
+            {t('devtools.audioBrowser.history.empty_line_1')}
+            <br />
+            {t('devtools.audioBrowser.history.empty_line_2')}
+          </div>
         ) : (
           <div className="divide-y divide-slate-700/50">
             {history.map((item, idx) => (
@@ -315,12 +395,14 @@ const HistoryPanel: React.FC<{
                 <span className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-bold ${
                   item.entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'
                 }`}>
-                  {item.entry.type === 'bgm' ? '乐' : '效'}
+                  {item.entry.type === 'bgm'
+                    ? t('devtools.audioBrowser.history.bgm_short')
+                    : t('devtools.audioBrowser.history.sfx_short')}
                 </span>
                 <button
                   onClick={() => replayEntry(item.entry)}
                   className="shrink-0 w-5 h-5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center transition-[background-color]"
-                  title="重新播放"
+                  title={t('devtools.audioBrowser.history.replay')}
                 >
                   {playingKey === item.entry.key ? '⏸' : '▶'}
                 </button>
@@ -338,6 +420,7 @@ const HistoryPanel: React.FC<{
 // ============================================================================
 
 const AudioBrowser: React.FC = () => {
+  const { t } = useTranslation('lobby');
   const [entries, setEntries] = useState<AudioRegistryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -359,12 +442,12 @@ const AudioBrowser: React.FC = () => {
   useEffect(() => {
     try {
       const phrases = (phraseMappingsData as { phrases?: Record<string, string> }).phrases ?? {};
-      console.log(`[AudioBrowser] 短语映射表加载成功，${Object.keys(phrases).length} 条`);
+      console.log(t('devtools.audioBrowser.logs.phrase_map_loaded', { count: Object.keys(phrases).length }));
       setPhraseMappings(phrases);
     } catch (err) {
-      console.error('[AudioBrowser] 短语映射表加载失败，使用英文', err);
+      console.error(t('devtools.audioBrowser.logs.phrase_map_failed'), err);
     }
-  }, []);
+  }, [t]);
 
   // 创建精确匹配的 friendlyName 函数
   const friendlyName = useMemo(() => {
@@ -397,11 +480,11 @@ const AudioBrowser: React.FC = () => {
         }
       })
       .catch((err) => {
-        console.error('加载音频注册表失败', err);
+        console.error(t('devtools.audioBrowser.logs.registry_failed'), err);
         setLoadError(String(err?.message ?? err));
       })
       .finally(() => setLoading(false));
-  }, [initialized]);
+  }, [initialized, t]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -568,22 +651,28 @@ const AudioBrowser: React.FC = () => {
     <div className="min-h-screen bg-slate-900 text-slate-200 p-6 max-[900px]:p-4">
       <div className="max-w-6xl mx-auto min-w-0">
         <div className="mb-6 flex flex-wrap items-center gap-3 max-[900px]:mb-4">
-          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">← 返回首页</a>
-          <h1 className="text-xl font-black text-slate-100">音效浏览器</h1>
-          <span className="text-slate-500 text-sm">({entries.length} 条)</span>
+          <a href="/" className="text-slate-400 hover:text-slate-200 text-sm">
+            {t('devtools.assetSlicer.back_home')}
+          </a>
+          <h1 className="text-xl font-black text-slate-100">{t('devtools.audioBrowser.title')}</h1>
+          <span className="text-slate-500 text-sm">
+            {t('devtools.audioBrowser.summary.total_count', { count: entries.length })}
+          </span>
         </div>
 
         {loading ? (
-          <div className="text-slate-400 text-sm py-8 text-center">加载中...</div>
+          <div className="text-slate-400 text-sm py-8 text-center">
+            {t('devtools.audioBrowser.loading')}
+          </div>
         ) : loadError ? (
           <div className="text-center py-12">
-            <p className="text-red-400 mb-2">加载音频注册表失败</p>
+            <p className="text-red-400 mb-2">{t('devtools.audioBrowser.error.title')}</p>
             <p className="text-slate-500 text-sm mb-4">{loadError}</p>
             <button
               className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm"
               onClick={() => { setLoading(true); setLoadError(null); setInitialized(false); }}
             >
-              重试
+              {t('devtools.audioBrowser.error.retry')}
             </button>
           </div>
         ) : (
@@ -604,7 +693,7 @@ const AudioBrowser: React.FC = () => {
               <div className="mb-2 flex gap-2 max-[900px]:flex-wrap">
                 <input
                   type="text"
-                  placeholder="搜索键名 / 文件名..."
+                  placeholder={t('devtools.audioBrowser.filters.search_placeholder')}
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                   className="min-w-[180px] flex-1 px-2 py-1 rounded bg-slate-800 border border-slate-600 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500"
@@ -614,45 +703,50 @@ const AudioBrowser: React.FC = () => {
                   onChange={(e) => setTypeFilter(e.target.value as 'all' | 'sfx' | 'bgm')}
                   className="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-sm text-slate-200 outline-none"
                 >
-                  <option value="all">全部</option>
-                  <option value="sfx">音效</option>
-                  <option value="bgm">音乐</option>
+                  <option value="all">{t('devtools.audioBrowser.filters.type_all')}</option>
+                  <option value="sfx">{t('devtools.audioBrowser.types.sfx')}</option>
+                  <option value="bgm">{t('devtools.audioBrowser.types.bgm')}</option>
                 </select>
                 <button
                   onClick={() => AudioManager.stopBgm()}
                   className="px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 text-[10px] font-bold text-white transition-[background-color]"
                 >
-                  停止BGM
+                  {t('devtools.audioBrowser.actions.stop_bgm')}
                 </button>
                 {preloading ? (
                   <button
                     onClick={cancelPreload}
                     className="px-2 py-1 rounded text-[10px] font-bold text-white bg-red-600 hover:bg-red-500 transition-[background-color]"
-                    title="取消预加载"
+                    title={t('devtools.audioBrowser.actions.cancel_preload')}
                   >
-                    取消 ({preloadedCount}/{filtered.filter((e) => e.type === 'sfx').length})
+                    {t('devtools.audioBrowser.actions.cancel_preload_progress', {
+                      loaded: preloadedCount,
+                      total: filtered.filter((e) => e.type === 'sfx').length,
+                    })}
                   </button>
                 ) : (
                   <button
                     onClick={preloadFiltered}
                     disabled={filtered.filter((e) => e.type === 'sfx').length === 0}
                     className="px-2 py-1 rounded text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-[background-color]"
-                    title="预加载当前搜索结果中的所有音效，消除首次播放延迟"
+                    title={t('devtools.audioBrowser.actions.preload_title')}
                   >
-                    预加载全部
+                    {t('devtools.audioBrowser.actions.preload_all')}
                   </button>
                 )}
               </div>
 
               {/* 结果统计 */}
               <div className="text-xs text-slate-500 mb-1">
-                {selectedGroup && (
-                  <span>
-                    {groupLabel(selectedGroup)}{selectedSub ? ` / ${selectedSub}` : ''} ·{' '}
-                  </span>
-                )}
-                {filtered.length} 条结果
-              </div>
+        {selectedGroup && (
+          <span>
+            {groupLabel(t, selectedGroup)}
+            {selectedSub ? ` / ${subLabel(t, selectedSub)}` : ''}
+            {' · '}
+          </span>
+        )}
+        {t('devtools.audioBrowser.summary.results_count', { count: filtered.length })}
+      </div>
 
               <AudioTable entries={filtered} playEntry={playEntry} playingKey={playingKey} friendlyName={friendlyName} />
             </div>
