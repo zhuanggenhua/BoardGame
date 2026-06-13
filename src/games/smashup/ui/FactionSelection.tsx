@@ -262,7 +262,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             return;
         }
         grid.scrollTop = 0;
-    }, [mySelections.length, normalizedFactionSearch]);
+    }, [normalizedFactionSearch]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
             .map((group) => {
