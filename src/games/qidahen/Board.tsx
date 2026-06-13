@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CardPreviewRef } from '../../core/types';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import type { GameBoardProps } from '../../engine/transport/protocol';
@@ -325,6 +326,7 @@ const HandInteractionTray: React.FC<{
     onCancelSelectedActionPreview,
     onResolveSunYuanhuaTech,
 }) => {
+    const { t } = useTranslation('game-qidahen');
     const selectedAction = actionPaymentPreviewVisible
         ? core.actionChoices.find((action) => action.id === core.selectedActionId && action.cost > 0) ?? null
         : null;
@@ -357,10 +359,16 @@ const HandInteractionTray: React.FC<{
                     <div className="min-w-0 flex-1">
                         <div className="text-[13px] font-black leading-5">{selectedAction.label}</div>
                         <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-status" style={{ color: UI_STYLE.mapGold }}>
-                            需弃 {selectedAction.cost} 张 · 已选 {core.selectedPaymentCardIds.length} 张
+                            {t('board.handInteraction.actionPaymentStatus', {
+                                cost: selectedAction.cost,
+                                selected: core.selectedPaymentCardIds.length,
+                                defaultValue: '需弃 {{cost}} 张 · 已选 {{selected}} 张',
+                            })}
                         </div>
                         <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
-                            点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。
+                            {t('board.handInteraction.actionPaymentHint', {
+                                defaultValue: '点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。',
+                            })}
                         </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -372,7 +380,7 @@ const HandInteractionTray: React.FC<{
                             onClick={onConfirmSelectedAction}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                         >
-                            确认执行
+                            {t('board.handInteraction.confirmExecute', { defaultValue: '确认执行' })}
                         </button>
                         <button
                             type="button"
@@ -381,7 +389,7 @@ const HandInteractionTray: React.FC<{
                             onClick={onCancelSelectedActionPreview}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                         >
-                            取消本次行动
+                            {t('board.handInteraction.cancelAction', { defaultValue: '取消本次行动' })}
                         </button>
                     </div>
                 </div>
@@ -410,12 +418,23 @@ const HandInteractionTray: React.FC<{
                     }}
                 >
                     <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-black leading-5">{handLimitDiscardSelection.factionName} · 检查手牌上限</div>
-                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                            手牌 {handLimitDiscardSelection.handCount}/{handLimitDiscardSelection.handLimit} · 需弃 {handLimitDiscardSelection.requiredDiscardCount} · 已择 {selectedHandLimitCardIds.length}
+                        <div className="text-[13px] font-black leading-5">
+                            {t('board.handInteraction.handLimitTitle', {
+                                factionName: handLimitDiscardSelection.factionName,
+                                defaultValue: '{{factionName}} · 检查手牌上限',
+                            })}
                         </div>
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                            点击底部手牌选择要弃掉的牌。
+                            {t('board.handInteraction.handLimitStatus', {
+                                handCount: handLimitDiscardSelection.handCount,
+                                handLimit: handLimitDiscardSelection.handLimit,
+                                requiredDiscardCount: handLimitDiscardSelection.requiredDiscardCount,
+                                selected: selectedHandLimitCardIds.length,
+                                defaultValue: '手牌 {{handCount}}/{{handLimit}} · 需弃 {{requiredDiscardCount}} · 已择 {{selected}}',
+                            })}
+                        </div>
+                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            {t('board.handInteraction.handLimitHint', { defaultValue: '点击底部手牌选择要弃掉的牌。' })}
                         </div>
                     </div>
                     <button
@@ -426,7 +445,7 @@ const HandInteractionTray: React.FC<{
                         onClick={onResolveHandLimitDiscard}
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                     >
-                        确认弃牌
+                        {t('board.handInteraction.confirmDiscard', { defaultValue: '确认弃牌' })}
                     </button>
                 </div>
             </div>
@@ -455,13 +474,17 @@ const HandInteractionTray: React.FC<{
                 <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-black leading-5">{sunYuanhuaSelection!.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        需弃 {sunYuanhuaSelection!.requiredCardCount} 张 · 已择 {sunYuanhuaSelection!.selectedCardIds.length}
+                        {t('board.handInteraction.sunYuanhuaStatus', {
+                            requiredCardCount: sunYuanhuaSelection!.requiredCardCount,
+                            selected: sunYuanhuaSelection!.selectedCardIds.length,
+                            defaultValue: '需弃 {{requiredCardCount}} 张 · 已择 {{selected}}',
+                        })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {sunYuanhuaSelection!.summary}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        点击底部手牌选择要弃掉的牌。
+                        {t('board.handInteraction.sunYuanhuaHint', { defaultValue: '点击底部手牌选择要弃掉的牌。' })}
                     </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -473,7 +496,7 @@ const HandInteractionTray: React.FC<{
                         onClick={() => onResolveSunYuanhuaTech('confirm')}
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                     >
-                        确认打科技
+                        {t('board.handInteraction.confirmSunYuanhua', { defaultValue: '确认打科技' })}
                     </button>
                     <button
                         type="button"
@@ -482,7 +505,7 @@ const HandInteractionTray: React.FC<{
                         onClick={() => onResolveSunYuanhuaTech('skip')}
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                     >
-                        跳过孙元化科技
+                        {t('board.handInteraction.skipSunYuanhua', { defaultValue: '跳过孙元化科技' })}
                     </button>
                 </div>
             </div>
@@ -663,11 +686,23 @@ const PlayerChip: React.FC<{
     effectiveVp: number;
     prestigeBonus: number;
 }> = ({ faction, current, effectiveVp, prestigeBonus }) => {
+    const { t } = useTranslation('game-qidahen');
     const tone = factionTone[faction.id];
     const markedCharacters = faction.characters.filter((character) => character.defeatMarkers > 0);
     const armamentSummary = faction.armaments.length > 0
         ? faction.armaments.map((armament) => `${armament.name}${armament.level}`).join(' / ')
-        : '未开发';
+        : t('board.player.armamentsUndeveloped', { defaultValue: '未开发' });
+    const characterSummary = markedCharacters.length > 0
+        ? markedCharacters.map((character) => t('board.player.characterDefeatMarkers', {
+            name: character.name,
+            number: character.number,
+            count: character.defeatMarkers,
+            defaultValue: '{{name}}({{number}})败×{{count}}',
+        })).join(' / ')
+        : t('board.player.characterCount', {
+            count: faction.characters.filter((character) => character.inPlay).length,
+            defaultValue: '人物 {{count}}',
+        });
     return (
         <div
             className="relative flex h-[74px] min-w-0 flex-1 items-center gap-3 overflow-hidden border-[3px] px-3.5"
@@ -698,7 +733,12 @@ const PlayerChip: React.FC<{
                     <span>{faction.name}</span>
                     <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>VP{effectiveVp}</span>
                     {prestigeBonus > 0 ? (
-                        <span className="ml-2 text-[11px]" style={{ color: '#f3d1a5' }}>汉城+{prestigeBonus}</span>
+                        <span className="ml-2 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            {t('board.player.prestigeBonus', {
+                                bonus: prestigeBonus,
+                                defaultValue: '汉城+{{bonus}}',
+                            })}
+                        </span>
                     ) : null}
                     <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>{faction.handCount}/{faction.handLimit}</span>
                 </div>
@@ -707,16 +747,17 @@ const PlayerChip: React.FC<{
                     data-testid={`qidahen-armaments-${faction.id}`}
                     style={{ color: '#f3d1a5' }}
                 >
-                    军备 {armamentSummary}
+                    {t('board.player.armaments', {
+                        summary: armamentSummary,
+                        defaultValue: '军备 {{summary}}',
+                    })}
                 </div>
                 <div
                     className="mt-1 truncate text-[11px] leading-none"
                     data-testid={`qidahen-character-markers-${faction.id}`}
                     style={{ color: markedCharacters.length > 0 ? '#f3d1a5' : 'rgba(243,209,165,0.62)' }}
                 >
-                    {markedCharacters.length > 0
-                        ? markedCharacters.map((character) => `${character.name}(${character.number})败×${character.defeatMarkers}`).join(' / ')
-                        : `人物 ${faction.characters.filter((character) => character.inPlay).length}`}
+                    {characterSummary}
                 </div>
             </div>
             {faction.defeatMarkers > 0 ? (
@@ -730,7 +771,10 @@ const PlayerChip: React.FC<{
                         borderRadius: 2,
                     }}
                 >
-                    败×{faction.defeatMarkers}
+                    {t('board.player.defeatMarkers', {
+                        count: faction.defeatMarkers,
+                        defaultValue: '败×{{count}}',
+                    })}
                 </span>
             ) : null}
             {current ? (
@@ -744,7 +788,7 @@ const PlayerChip: React.FC<{
                         borderRadius: 2,
                     }}
                 >
-                    当前
+                    {t('board.player.current', { defaultValue: '当前' })}
                 </span>
             ) : null}
         </div>
@@ -839,6 +883,7 @@ const MapSceneLayer: React.FC<{
     locale?: string;
     onSelectRegion: (regionId: string) => void;
 }> = ({ core, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, locale, onSelectRegion }) => {
+    const { t } = useTranslation('game-qidahen');
     const currentFactionId = QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer) ?? 'ming';
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -1079,7 +1124,7 @@ const MapSceneLayer: React.FC<{
                 <OptimizedImage
                     src={ASSETS.mainMap}
                     locale={locale}
-                    alt="七大恨主地图"
+                    alt={t('board.map.mainMapAlt', { defaultValue: '七大恨主地图' })}
                     className="absolute inset-0 h-full w-full select-none object-fill"
                     data-testid="qidahen-main-map-image"
                     draggable={false}
@@ -1177,7 +1222,7 @@ const MapSceneLayer: React.FC<{
                     onPointerMove={handlePointerMove}
                     onPointerLeave={() => setHoveredRegionId(null)}
                     onPointerDown={handleClick}
-                    aria-label="七大恨地图区域选择"
+                    aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
             </div>
             {activeRegion ? (
@@ -1196,15 +1241,27 @@ const MapSceneLayer: React.FC<{
                     }}
                 >
                     <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{activeRegion.name} · {activeRegion.controlLabel}</div>
-                    <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mapGold }}>兵力 {activeRegion.troops} · 人口 {activeRegion.population}</div>
+                    <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mapGold }}>
+                        {t('board.map.regionTroopsPopulation', {
+                            troops: activeRegion.troops,
+                            population: activeRegion.population,
+                            defaultValue: '兵力 {{troops}} · 人口 {{population}}',
+                        })}
+                    </div>
                     {activeSpecialTroopsSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                            特殊 {activeSpecialTroopsSummary}
+                            {t('board.map.regionSpecialTroops', {
+                                summary: activeSpecialTroopsSummary,
+                                defaultValue: '特殊 {{summary}}',
+                            })}
                         </div>
                     ) : null}
                     {activePassageSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                            接边 {activePassageSummary}
+                            {t('board.map.regionPassages', {
+                                summary: activePassageSummary,
+                                defaultValue: '接边 {{summary}}',
+                            })}
                         </div>
                     ) : null}
                     {activeMovementPreview ? (
@@ -1213,7 +1270,10 @@ const MapSceneLayer: React.FC<{
                             data-testid="qidahen-map-region-movement-preview"
                             style={{ color: '#f3d1a5' }}
                         >
-                            调度可达 {activeMovementPreview}
+                            {t('board.map.regionReachable', {
+                                summary: activeMovementPreview,
+                                defaultValue: '调度可达 {{summary}}',
+                            })}
                         </div>
                     ) : null}
                     {sharedPrintedRuntimeOptions.length > 1 ? (
@@ -1222,7 +1282,7 @@ const MapSceneLayer: React.FC<{
                             data-testid="qidahen-shared-printed-runtime-switcher"
                         >
                             <span className="text-[10px]" style={{ color: UI_STYLE.mapGold }}>
-                                同图块
+                                {t('board.map.sharedPrintedRegion', { defaultValue: '同图块' })}
                             </span>
                             {sharedPrintedRuntimeOptions.map((region) => {
                                 const selectedOption = selectedRuntimeRegionIds.has(region.id);
@@ -1316,6 +1376,7 @@ const WheelPanel: React.FC<{
     onSelectMove: (moveId: string) => void;
     onExecuteMove: (moveId: string) => void;
 }> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, disabled, onSelectMove, onExecuteMove }) => {
+    const { t } = useTranslation('game-qidahen');
     const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
     const selectedIndex = Math.max(0, WHEEL_SECTORS.findIndex((sector) => sector.id === selectedId));
     const selectedAngle = WHEEL_SECTORS[selectedIndex]?.angle ?? -90;
@@ -1352,7 +1413,7 @@ const WheelPanel: React.FC<{
             <div
                 className="relative h-full w-full"
                 role="img"
-                aria-label="七大恨行动轮盘"
+                aria-label={t('board.wheel.aria', { defaultValue: '七大恨行动轮盘' })}
                 data-testid="qidahen-action-wheel-asset"
             >
                 <svg
@@ -1444,7 +1505,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '12px', fontWeight: 700 }}
                     >
-                        新年 &gt;&gt;&gt;
+                        {t('board.wheel.newYear', { defaultValue: '新年 >>>' })}
                     </text>
                     <text
                         x={WHEEL_CENTER}
@@ -1454,7 +1515,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '12px', fontWeight: 700 }}
                     >
-                        年中
+                        {t('board.wheel.midyear', { defaultValue: '年中' })}
                     </text>
                     <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_INNER_RADIUS - 6} fill="url(#qidahen-wheel-center-paper)" stroke="#24190f" strokeWidth="2" />
                     <text
@@ -1465,7 +1526,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '22px', fontWeight: 700 }}
                     >
-                        行
+                        {t('board.wheel.centerTop', { defaultValue: '行' })}
                     </text>
                     <text
                         x={WHEEL_CENTER + 31}
@@ -1475,7 +1536,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '22px', fontWeight: 700 }}
                     >
-                        轮
+                        {t('board.wheel.centerRight', { defaultValue: '轮' })}
                     </text>
                     <text
                         x={WHEEL_CENTER - 31}
@@ -1485,7 +1546,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '22px', fontWeight: 700 }}
                     >
-                        盘
+                        {t('board.wheel.centerLeft', { defaultValue: '盘' })}
                     </text>
                     <text
                         x={WHEEL_CENTER}
@@ -1495,7 +1556,7 @@ const WheelPanel: React.FC<{
                         className="fill-[#241b14]"
                         style={{ fontFamily: 'KaiTi, STKaiti, Songti SC, serif', fontSize: '22px', fontWeight: 700 }}
                     >
-                        动
+                        {t('board.wheel.centerBottom', { defaultValue: '动' })}
                     </text>
                     <g data-testid="qidahen-wheel-move-layer">
                         {moveChoices.map((choice) => {
@@ -1602,36 +1663,40 @@ const ChronologyZone: React.FC<{
 const KoreaZone: React.FC<{
     core: QidahenCore;
     locale?: string;
-}> = ({ core, locale }) => (
-    <div
-        className="pointer-events-auto absolute right-[80px] top-[92px] z-20 flex gap-4"
-        data-testid="qidahen-korea-zone"
-        data-ui-anchor="right-top"
-    >
-        <DeckStack
-            src={ASSETS.koreaCard}
-            label="朝鲜牌库"
-            count={core.koreaDeckCount}
-            width={CARD_DIMENSIONS.koreaDeck.width}
-            height={CARD_DIMENSIONS.koreaDeck.height}
-            rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
-            rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
-            testId="qidahen-korea-draw-pile"
-        />
-        <DeckStack
-            previewRef={core.koreaDiscardPreviewRef}
-            locale={locale}
-            label="朝鲜弃牌"
-            count={core.koreaDiscardCount}
-            tone="red"
-            width={CARD_DIMENSIONS.koreaDeck.width}
-            height={CARD_DIMENSIONS.koreaDeck.height}
-            rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
-            rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
-            testId="qidahen-korea-discard-pile"
-        />
-    </div>
-);
+}> = ({ core, locale }) => {
+    const { t } = useTranslation('game-qidahen');
+
+    return (
+        <div
+            className="pointer-events-auto absolute right-[80px] top-[92px] z-20 flex gap-4"
+            data-testid="qidahen-korea-zone"
+            data-ui-anchor="right-top"
+        >
+            <DeckStack
+                src={ASSETS.koreaCard}
+                label={t('board.korea.drawPile', { defaultValue: '朝鲜牌库' })}
+                count={core.koreaDeckCount}
+                width={CARD_DIMENSIONS.koreaDeck.width}
+                height={CARD_DIMENSIONS.koreaDeck.height}
+                rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
+                rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
+                testId="qidahen-korea-draw-pile"
+            />
+            <DeckStack
+                previewRef={core.koreaDiscardPreviewRef}
+                locale={locale}
+                label={t('board.korea.discardPile', { defaultValue: '朝鲜弃牌' })}
+                count={core.koreaDiscardCount}
+                tone="red"
+                width={CARD_DIMENSIONS.koreaDeck.width}
+                height={CARD_DIMENSIONS.koreaDeck.height}
+                rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
+                rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
+                testId="qidahen-korea-discard-pile"
+            />
+        </div>
+    );
+};
 
 const ActionButton: React.FC<{
     action: QidahenActionChoice;
@@ -1696,6 +1761,7 @@ const ActionsZone: React.FC<{
     onResolveWheelDispatchChoice: (choiceId: string) => void;
     onExecuteWheelMove: (moveId: string) => void;
 }> = ({ core, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
+    const { t } = useTranslation('game-qidahen');
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
     const pendingScenarioChoices = core.pendingScenarioCharacterChoices.length > 0 || core.pendingScenarioArmamentChoices.length > 0;
     const showWheelNextStepBanner = !pendingScenarioChoices
@@ -1735,11 +1801,22 @@ const ActionsZone: React.FC<{
             >
                 <div>{core.turnLabel}</div>
                 <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                    {core.currentYear} · 轮盘 {core.wheelActionUsed ? '已用' : '未用'} · 势力行动 {core.factionActionUsed ? '已用' : '未用'}
+                    {t('board.actions.turnStatus', {
+                        year: core.currentYear,
+                        wheelStatus: core.wheelActionUsed
+                            ? t('board.actions.status.used', { defaultValue: '已用' })
+                            : t('board.actions.status.unused', { defaultValue: '未用' }),
+                        factionStatus: core.factionActionUsed
+                            ? t('board.actions.status.used', { defaultValue: '已用' })
+                            : t('board.actions.status.unused', { defaultValue: '未用' }),
+                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}',
+                    })}
                 </div>
                 {pendingScenarioChoices ? (
                     <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
-                        剧本待决项尚未确认，当前只可处理剧本选择。
+                        {t('board.actions.scenarioBlocked', {
+                            defaultValue: '剧本待决项尚未确认，当前只可处理剧本选择。',
+                        })}
                     </div>
                 ) : null}
             </div>
@@ -1750,9 +1827,15 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-wheel-next-step-banner"
                     style={{ borderColor: UI_STYLE.oldGold, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div data-testid="qidahen-wheel-next-step-title">下一步：点击轮盘按钮推进回合</div>
+                    <div data-testid="qidahen-wheel-next-step-title">
+                        {t('board.actions.wheelNextStepTitle', {
+                            defaultValue: '下一步：点击轮盘按钮推进回合',
+                        })}
+                    </div>
                     <div className="mt-1 text-[11px]" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
-                        不用点左侧轮盘盘面，直接点下面的明文按钮即可。
+                        {t('board.actions.wheelNextStepHint', {
+                            defaultValue: '不用点左侧轮盘盘面，直接点下面的明文按钮即可。',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">
                         {core.wheelMoveChoices.map((choice) => (
@@ -1771,7 +1854,7 @@ const ActionsZone: React.FC<{
                                     </span>
                                 </span>
                                 <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    直接执行
+                                    {t('board.actions.directExecute', { defaultValue: '直接执行' })}
                                 </span>
                             </button>
                         ))}
@@ -1784,13 +1867,15 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-victory-status"
                     style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{core.victoryStatus.winnerName} 已达成{
-                        core.victoryStatus.condition === 'hegemony'
-                            ? '霸权胜利'
+                    <div>{t('board.actions.victoryAchieved', {
+                        winnerName: core.victoryStatus.winnerName,
+                        condition: core.victoryStatus.condition === 'hegemony'
+                            ? t('board.actions.victory.hegemony', { defaultValue: '霸权胜利' })
                             : core.victoryStatus.condition === 'military'
-                                ? '军事胜利'
-                                : '威望胜利'
-                    }</div>
+                                ? t('board.actions.victory.military', { defaultValue: '军事胜利' })
+                                : t('board.actions.victory.prestige', { defaultValue: '威望胜利' }),
+                        defaultValue: '{{winnerName}} 已达成{{condition}}',
+                    })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {core.victoryStatus.detail}
                     </div>
@@ -1814,7 +1899,13 @@ const ActionsZone: React.FC<{
                             borderRadius: 3,
                         }}
                     >
-                        {fortification.label} · {fortification.ruined ? '破败' : '完整'}
+                        {t('board.actions.fortificationStatus', {
+                            label: fortification.label,
+                            status: fortification.ruined
+                                ? t('board.actions.fortification.ruined', { defaultValue: '破败' })
+                                : t('board.actions.fortification.intact', { defaultValue: '完整' }),
+                            defaultValue: '{{label}} · {{status}}',
+                        })}
                     </div>
                 ))}
             </div>
@@ -1843,10 +1934,18 @@ const ActionsZone: React.FC<{
                         {fortificationMaintenanceSelection.summary}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-testid="qidahen-upkeep-attrition-priority">
-                        <span className="mr-1" style={{ color: '#f3d1a5' }}>兵力耗损</span>
+                        <span className="mr-1" style={{ color: '#f3d1a5' }}>
+                            {t('board.actions.attritionLabel', { defaultValue: '兵力耗损' })}
+                        </span>
                         {[
-                            { id: 'lowest-level' as const, label: '低级先损' },
-                            { id: 'highest-level' as const, label: '高级先损' },
+                            {
+                                id: 'lowest-level' as const,
+                                label: t('board.actions.casualtyPriority.lowestFirst', { defaultValue: '低级先损' }),
+                            },
+                            {
+                                id: 'highest-level' as const,
+                                label: t('board.actions.casualtyPriority.highestFirst', { defaultValue: '高级先损' }),
+                            },
                         ].map((option) => {
                             const selected = option.id === upkeepAttritionPriority;
                             return (
@@ -1898,13 +1997,20 @@ const ActionsZone: React.FC<{
                 >
                     <div>{core.gaoDiDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        源区 {core.gaoDiDispatchSelection.sourceRegionName} · 部队最多 {core.gaoDiDispatchSelection.maxTroops} · 人口最多 {core.gaoDiDispatchSelection.maxPopulation}
+                        {t('board.actions.gaoDi.summary', {
+                            sourceRegionName: core.gaoDiDispatchSelection.sourceRegionName,
+                            maxTroops: core.gaoDiDispatchSelection.maxTroops,
+                            maxPopulation: core.gaoDiDispatchSelection.maxPopulation,
+                            defaultValue: '源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}',
+                        })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {core.gaoDiDispatchSelection.summary}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。
+                        {t('board.actions.gaoDi.hint', {
+                            defaultValue: '先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {core.gaoDiDispatchSelection.candidates.map((candidate) => {
@@ -1920,13 +2026,24 @@ const ActionsZone: React.FC<{
                                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                                 >
                                     <span className="min-w-0">
-                                        <span className="block text-[13px]">{candidate.targetRegionName} · {candidate.mode === 'troops' ? '部队' : '人口'} {amount}</span>
+                                        <span className="block text-[13px]">
+                                            {t('board.actions.gaoDi.target', {
+                                                targetRegionName: candidate.targetRegionName,
+                                                type: candidate.mode === 'troops'
+                                                    ? t('board.actions.gaoDi.typeTroops', { defaultValue: '部队' })
+                                                    : t('board.actions.gaoDi.typePopulation', { defaultValue: '人口' }),
+                                                amount,
+                                                defaultValue: '{{targetRegionName}} · {{type}} {{amount}}',
+                                            })}
+                                        </span>
                                         <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
                                             {candidate.resolutionHint}
                                         </span>
                                     </span>
                                     <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.mode === 'troops' ? `${amount} 个部队` : `${amount} 个人口`}
+                                        {candidate.mode === 'troops'
+                                            ? t('board.actions.gaoDi.amountTroops', { amount, defaultValue: '{{amount}} 个部队' })
+                                            : t('board.actions.gaoDi.amountPopulation', { amount, defaultValue: '{{amount}} 个人口' })}
                                     </span>
                                 </button>
                             );
@@ -1939,7 +2056,7 @@ const ActionsZone: React.FC<{
                         onClick={() => onResolveGaoDiDispatch('skip')}
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                     >
-                        跳过高第调度
+                        {t('board.actions.gaoDi.skip', { defaultValue: '跳过高第调度' })}
                     </button>
                 </div>
             ) : null}
@@ -1951,7 +2068,11 @@ const ActionsZone: React.FC<{
                 >
                     <div>{internalDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        源区 {internalDispatchSelection.sourceRegionName} · 最多调度 {internalDispatchSelection.maxTroops} 部队
+                        {t('board.actions.internalDispatch.summary', {
+                            sourceRegionName: internalDispatchSelection.sourceRegionName,
+                            maxTroops: internalDispatchSelection.maxTroops,
+                            defaultValue: '源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队',
+                        })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {internalDispatchSelection.summary}
@@ -1973,7 +2094,10 @@ const ActionsZone: React.FC<{
                                     </span>
                                 </span>
                                 <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    调 {candidate.committedTroops}
+                                    {t('board.actions.internalDispatch.committedTroops', {
+                                        troops: candidate.committedTroops,
+                                        defaultValue: '调 {{troops}}',
+                                    })}
                                 </span>
                             </button>
                         ))}
@@ -1986,9 +2110,12 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-recruit-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>征召军队</div>
+                    <div>{t('board.actions.recruit.title', { defaultValue: '征召军队' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        当前目标 {recruitSelection.targetRegionName ?? '未锁定'} · 可切换到其他己方控制区后再决定建军方式
+                        {t('board.actions.recruit.summary', {
+                            targetRegionName: recruitSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            defaultValue: '当前目标 {{targetRegionName}} · 可切换到其他己方控制区后再决定建军方式',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {recruitSelection.choices.map((choice) => (
@@ -2017,9 +2144,12 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-ma-shi-trade-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>马市贸易</div>
+                    <div>{t('board.actions.maShiTrade.title', { defaultValue: '马市贸易' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        当前目标 {maShiTradeSelection.targetRegionName ?? '未锁定'} · 可切换到其他大明控制区后再决定建立数量
+                        {t('board.actions.maShiTrade.summary', {
+                            targetRegionName: maShiTradeSelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            defaultValue: '当前目标 {{targetRegionName}} · 可切换到其他大明控制区后再决定建立数量',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {maShiTradeSelection.choices.map((choice) => (
@@ -2048,9 +2178,12 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-khan-edict-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>大汗令箭</div>
+                    <div>{t('board.actions.khanEdict.title', { defaultValue: '大汗令箭' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        当前区域 {khanEdictSelection.sourceRegionName ?? '未锁定'} · 可切换地图选中区后再决定
+                        {t('board.actions.khanEdict.summary', {
+                            sourceRegionName: khanEdictSelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            defaultValue: '当前区域 {{sourceRegionName}} · 可切换地图选中区后再决定',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {khanEdictSelection.choices.map((choice) => (
@@ -2081,13 +2214,26 @@ const ActionsZone: React.FC<{
                 >
                     <div>{diplomacySelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        源区 {diplomacySelection.sourceRegionName ?? '未锁定'} · 雇佣落在 {diplomacySelection.hireRegionName ?? '当前控制区'}
+                        {t('board.actions.diplomacy.sourceSummary', {
+                            sourceRegionName: diplomacySelection.sourceRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            hireRegionName: diplomacySelection.hireRegionName ?? t('board.actions.diplomacy.currentControlRegion', { defaultValue: '当前控制区' }),
+                            defaultValue: '源区 {{sourceRegionName}} · 雇佣落在 {{hireRegionName}}',
+                        })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        已执行 {diplomacySelection.resolvedSteps.length}/{diplomacySelection.maxTargetCount} 次外交 · 还可继续 {diplomacySelection.remainingTargetCount} 次
+                        {t('board.actions.diplomacy.resolvedSummary', {
+                            resolved: diplomacySelection.resolvedSteps.length,
+                            total: diplomacySelection.maxTargetCount,
+                            remaining: diplomacySelection.remainingTargetCount,
+                            defaultValue: '已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次',
+                        })}
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        当前目标 {diplomacySelection.targetRegionName ?? '未锁定'} · {diplomacySelection.targetHint}
+                        {t('board.actions.diplomacy.targetSummary', {
+                            targetRegionName: diplomacySelection.targetRegionName ?? t('board.actions.targetUnlocked', { defaultValue: '未锁定' }),
+                            targetHint: diplomacySelection.targetHint,
+                            defaultValue: '当前目标 {{targetRegionName}} · {{targetHint}}',
+                        })}
                     </div>
                     {diplomacySelection.resolvedSteps.length > 0 ? (
                         <div
@@ -2097,7 +2243,11 @@ const ActionsZone: React.FC<{
                         >
                             {diplomacySelection.resolvedSteps.map((step) => (
                                 <div key={`${step.index}-${step.targetRegionId}`} className="mt-1 first:mt-0">
-                                    外交 {step.index} · {step.summary}
+                                    {t('board.actions.diplomacy.stepSummary', {
+                                        index: step.index,
+                                        summary: step.summary,
+                                        defaultValue: '外交 {{index}} · {{summary}}',
+                                    })}
                                 </div>
                             ))}
                         </div>
@@ -2153,9 +2303,12 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-drive-tiger-consent-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>驱虎吞狼</div>
+                    <div>{t('board.actions.driveTiger.title', { defaultValue: '驱虎吞狼' })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        {driveTigerConsentSelection.targetFactionName} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。
+                        {t('board.actions.driveTiger.summary', {
+                            targetFactionName: driveTigerConsentSelection.targetFactionName,
+                            defaultValue: '{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {driveTigerConsentSelection.choices.map((choice) => (
@@ -2186,7 +2339,11 @@ const ActionsZone: React.FC<{
                 >
                     <div>{wheelDispatchSelection.restriction}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        源区 {wheelDispatchSelection.sourceRegionName} · 可选目标 {wheelDispatchSelection.candidates.length} · 可直接点击地图高亮区
+                        {t('board.actions.wheelDispatch.summary', {
+                            sourceRegionName: wheelDispatchSelection.sourceRegionName,
+                            count: wheelDispatchSelection.candidates.length,
+                            defaultValue: '源区 {{sourceRegionName}} · 可选目标 {{count}} · 可直接点击地图高亮区',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {wheelDispatchSelection.candidates.map((candidate) => (
@@ -2199,16 +2356,30 @@ const ActionsZone: React.FC<{
                                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
                                 <span className="min-w-0">
-                                    <span className="block text-[13px]">{candidate.targetRegionName} · 防守 {candidate.defenderLabel}</span>
+                                    <span className="block text-[13px]">
+                                        {t('board.actions.wheelDispatch.targetSummary', {
+                                            targetRegionName: candidate.targetRegionName,
+                                            defenderLabel: candidate.defenderLabel,
+                                            defaultValue: '{{targetRegionName}} · 防守 {{defenderLabel}}',
+                                        })}
+                                    </span>
                                     <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
                                         {candidate.resolutionHint}
                                     </span>
                                     <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                        源兵 {candidate.sourceAvailableTroops} · 投入 {candidate.committedTroops} · 压力 {candidate.attackPressure}
+                                        {t('board.actions.wheelDispatch.stats', {
+                                            sourceAvailableTroops: candidate.sourceAvailableTroops,
+                                            committedTroops: candidate.committedTroops,
+                                            attackPressure: candidate.attackPressure,
+                                            defaultValue: '源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}',
+                                        })}
                                     </span>
                                 </span>
                                 <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    耗 {candidate.totalTravelCost}
+                                    {t('board.actions.wheelDispatch.travelCost', {
+                                        totalTravelCost: candidate.totalTravelCost,
+                                        defaultValue: '耗 {{totalTravelCost}}',
+                                    })}
                                 </span>
                             </button>
                         ))}
@@ -2221,20 +2392,42 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-raid-intent"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{pendingTargetAction.title} · 目标 {pendingTargetAction.targetRegionName} · 防守 {pendingTargetAction.defenderLabel}</div>
+                    <div>{t('board.actions.pendingTarget.header', {
+                        title: pendingTargetAction.title,
+                        targetRegionName: pendingTargetAction.targetRegionName,
+                        defenderLabel: pendingTargetAction.defenderLabel,
+                        defaultValue: '{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}',
+                    })}</div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {pendingTargetAction.resolutionHint}
-                        {pendingTargetAction.defenderPayCost != null ? ` · 守方需付 ${pendingTargetAction.defenderPayCost}` : ''}
+                        {pendingTargetAction.defenderPayCost != null
+                            ? t('board.actions.pendingTarget.defenderPayCost', {
+                                cost: pendingTargetAction.defenderPayCost,
+                                defaultValue: ' · 守方需付 {{cost}}',
+                            })
+                            : ''}
                     </div>
                     {pendingTargetAction.actionId === 'raid' || pendingTargetAction.actionId === 'wheel-dispatch' || pendingTargetAction.actionId === 'drive-tiger' ? (
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                            源兵 {pendingTargetAction.sourceAvailableTroops} · 投入 {pendingTargetAction.committedTroops} · 压力 {pendingTargetAction.attackPressure}
-                            {pendingTargetAction.boundaryUnitCap ? ` · 边界上限 ${pendingTargetAction.boundaryUnitCap}` : ''}
+                            {t('board.actions.pendingTarget.stats', {
+                                sourceAvailableTroops: pendingTargetAction.sourceAvailableTroops,
+                                committedTroops: pendingTargetAction.committedTroops,
+                                attackPressure: pendingTargetAction.attackPressure,
+                                defaultValue: '源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}',
+                            })}
+                            {pendingTargetAction.boundaryUnitCap
+                                ? t('board.actions.pendingTarget.boundaryUnitCap', {
+                                    count: pendingTargetAction.boundaryUnitCap,
+                                    defaultValue: ' · 边界上限 {{count}}',
+                                })
+                                : ''}
                         </div>
                     ) : null}
                     {getPendingCommittedTroopOptions(pendingTargetAction).length > 1 ? (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-testid="qidahen-pending-committed-troops">
-                            <span className="mr-1" style={{ color: '#f3d1a5' }}>实际投入</span>
+                            <span className="mr-1" style={{ color: '#f3d1a5' }}>
+                                {t('board.actions.pendingTarget.actualCommittedTroops', { defaultValue: '实际投入' })}
+                            </span>
                             {getPendingCommittedTroopOptions(pendingTargetAction).map((committedTroops) => {
                                 const selected = committedTroops === (pendingCommittedTroops ?? pendingTargetAction.committedTroops);
                                 return (
@@ -2263,13 +2456,13 @@ const ActionsZone: React.FC<{
                             {[
                                 {
                                     id: 'attacker' as const,
-                                    label: '攻方承伤',
+                                    label: t('board.actions.pendingTarget.attackerCasualtyLabel', { defaultValue: '攻方承伤' }),
                                     selected: pendingAttackerCasualtyPriority,
                                     onSelect: onSelectPendingAttackerCasualtyPriority,
                                 },
                                 {
                                     id: 'defender' as const,
-                                    label: '守方承伤',
+                                    label: t('board.actions.pendingTarget.defenderCasualtyLabel', { defaultValue: '守方承伤' }),
                                     selected: pendingDefenderCasualtyPriority,
                                     onSelect: onSelectPendingDefenderCasualtyPriority,
                                 },
@@ -2277,8 +2470,8 @@ const ActionsZone: React.FC<{
                                 <div key={group.id} className="flex flex-wrap items-center gap-1.5" data-testid={`qidahen-${group.id}-casualty-priority`}>
                                     <span className="mr-1" style={{ color: '#f3d1a5' }}>{group.label}</span>
                                     {[
-                                        { id: 'highest-level' as const, label: '高级先损' },
-                                        { id: 'lowest-level' as const, label: '低级先损' },
+                                        { id: 'highest-level' as const, label: t('board.actions.casualtyPriority.highestFirst', { defaultValue: '高级先损' }) },
+                                        { id: 'lowest-level' as const, label: t('board.actions.casualtyPriority.lowestFirst', { defaultValue: '低级先损' }) },
                                     ].map((option) => {
                                         const selected = option.id === group.selected;
                                         return (
@@ -2328,7 +2521,11 @@ const ActionsZone: React.FC<{
                 >
                     <div>{postBattleSelection.title} · {postBattleSelection.targetRegionName}</div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        {postBattleSelection.summary} · 投入 {postBattleSelection.committedTroops}
+                        {t('board.actions.postBattle.summary', {
+                            summary: postBattleSelection.summary,
+                            committedTroops: postBattleSelection.committedTroops,
+                            defaultValue: '{{summary}} · 投入 {{committedTroops}}',
+                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {postBattleSelection.choices.map((choice) => (

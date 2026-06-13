@@ -5552,6 +5552,13 @@ const buildSubsetAssignments = ({
 
 const QidahenRegionMaskTool: React.FC = () => {
     const { t } = useTranslation('game-qidahen');
+    const tr = React.useCallback(
+        (key: string, defaultValue: string, params?: Record<string, string | number>) => t(
+            key as never,
+            { defaultValue, ...(params ?? {}) } as never,
+        ),
+        [t],
+    );
     const bgCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const boundarySourceReferenceCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -15301,32 +15308,51 @@ const QidahenRegionMaskTool: React.FC = () => {
                     <aside className="flex h-screen w-[392px] shrink-0 flex-col border-r border-stone-800 bg-stone-900/92">
                         <div className="shrink-0 border-b border-stone-800 px-5 py-4">
                             <Link to="/" className="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 transition hover:text-amber-200">
-                                返回首页
+                                {tr('devtools.regionMaskTool.primary.backHome', '返回首页')}
                             </Link>
-                            <h1 className="mt-3 text-2xl font-black text-amber-100">七大恨地图编辑器</h1>
+                            <h1 className="mt-3 text-2xl font-black text-amber-100">
+                                {tr('devtools.regionMaskTool.primary.title', '七大恨地图编辑器')}
+                            </h1>
                             <p className="mt-2 text-sm leading-6 text-stone-400">
-                                自动读取上次工作区。直接在地图上画边界、生成区域、点通路改移动代价。
+                                {tr(
+                                    'devtools.regionMaskTool.primary.description',
+                                    '自动读取上次工作区。直接在地图上画边界、生成区域、点通路改移动代价。',
+                                )}
                             </p>
                         <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
                             <div className="flex items-center justify-between gap-3">
-                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
+                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">
+                                    {tr('devtools.regionMaskTool.primary.currentWorkspace', '当前工作区')}
+                                </span>
                                 <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
-                                    {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
+                                    {isIsolatedWorkspace
+                                        ? tr('devtools.regionMaskTool.primary.workspaceType.isolated', '临时隔离工作区')
+                                        : tr('devtools.regionMaskTool.primary.workspaceType.formal', '正式工作区')}
                                 </span>
                             </div>
                             <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
                         </div>
                         {autoDerivedBoundaryDisplay ? (
                             <div className="mt-3 rounded-xl border border-rose-500/50 bg-rose-500/12 px-3 py-3 text-xs leading-6 text-rose-100">
-                                当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。
-                                <span className="ml-1 text-rose-200/80">正式边界文件为空时，默认页会先回显这层辅助红线；要核对当前手工红线，请切到 `manual-boundary-user` 这类带真实边界像素的隔离工作区。</span>
+                                {tr(
+                                    'devtools.regionMaskTool.primary.autoDerivedBoundaryWarning',
+                                    '当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。',
+                                )}
+                                <span className="ml-1 text-rose-200/80">
+                                    {tr(
+                                        'devtools.regionMaskTool.primary.autoDerivedBoundaryHint',
+                                        '正式边界文件为空时，默认页会先回显这层辅助红线；要核对当前手工红线，请切到 `manual-boundary-user` 这类带真实边界像素的隔离工作区。',
+                                    )}
+                                </span>
                             </div>
                         ) : null}
                     </div>
 
                         <div ref={sidebarScrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
                             <section data-testid="qidahen-boundary-workflow-panel" className="space-y-3 rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
-                                <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">边界</div>
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
+                                    {tr('devtools.regionMaskTool.primary.boundarySection', '边界')}
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => void loadRealMapColorLineDraft()}
@@ -15334,7 +15360,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
                                 >
                                     <WandSparkles size={16} />
-                                    初始化红线
+                                    {tr('devtools.regionMaskTool.primary.initializeBoundary', '初始化红线')}
                                 </button>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
@@ -15353,7 +15379,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                     >
                                         <Pencil size={14} />
-                                        画边界
+                                        {tr('devtools.regionMaskTool.primary.drawBoundary', '画边界')}
                                     </button>
                                     <button
                                         type="button"
@@ -15371,7 +15397,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                     >
                                         <Eraser size={14} />
-                                        擦边界
+                                        {tr('devtools.regionMaskTool.primary.eraseBoundary', '擦边界')}
                                     </button>
                                     <button
                                         type="button"
@@ -15381,7 +15407,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                     >
                                         <RotateCcw size={14} />
-                                        撤回
+                                        {tr('devtools.regionMaskTool.primary.undo', '撤回')}
                                     </button>
                                     <button
                                         type="button"
@@ -15391,7 +15417,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                     >
                                         <RotateCcw size={14} className="-scale-x-100" />
-                                        重做
+                                        {tr('devtools.regionMaskTool.primary.redo', '重做')}
                                     </button>
                                     <button
                                         type="button"
@@ -15400,7 +15426,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                     >
                                         <Upload size={14} />
-                                        导入边界图
+                                        {tr('devtools.regionMaskTool.primary.importBoundary', '导入边界图')}
                                     </button>
                                     <button
                                         type="button"
@@ -15409,7 +15435,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
                                     >
                                         <ScanSearch size={14} />
-                                        自动贴合轮廓
+                                        {tr('devtools.regionMaskTool.primary.autoSnapBoundary', '自动贴合轮廓')}
                                     </button>
                                     <button
                                         type="button"
@@ -15418,7 +15444,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className={'col-span-2 inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (showBarrier ? 'border-stone-500/70 bg-stone-950/60 text-stone-100 hover:border-stone-300' : 'border-rose-400/60 bg-rose-500/10 text-rose-100 hover:border-rose-300')}
                                     >
                                         {showBarrier ? <EyeOff size={14} /> : <Eye size={14} />}
-                                        {showBarrier ? '隐藏红线' : '显示红线'}
+                                        {showBarrier
+                                            ? tr('devtools.regionMaskTool.primary.hideBoundary', '隐藏红线')
+                                            : tr('devtools.regionMaskTool.primary.showBoundary', '显示红线')}
                                     </button>
                                 </div>
                                 <input ref={boundaryMaskInputRef} data-testid="qidahen-boundary-draft-input" type="file" accept="image/png" className="hidden" onChange={importBoundaryDraft} />
@@ -15429,8 +15457,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 <div data-testid="qidahen-compact-region-editor" className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-3">
                                     <div className="flex items-center justify-between gap-2">
                                         <div>
-                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">当前区域/点</div>
-                                            <div className="mt-1 font-mono text-[11px] text-stone-400">{selectedRegion?.id ?? '未选择'}</div>
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">
+                                                {tr('devtools.regionMaskTool.primary.currentRegionPoint', '当前区域/点')}
+                                            </div>
+                                            <div className="mt-1 font-mono text-[11px] text-stone-400">
+                                                {selectedRegion?.id ?? tr('devtools.regionMaskTool.primary.unselected', '未选择')}
+                                            </div>
                                         </div>
                                         <button
                                             type="button"
@@ -15439,7 +15471,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md border border-stone-600 bg-stone-950/60 px-2.5 py-1.5 text-xs font-black text-stone-100 transition hover:border-amber-300"
                                         >
                                             {showMask ? <EyeOff size={14} /> : <Eye size={14} />}
-                                            {showMask ? '隐藏涂色' : '显示涂色'}
+                                            {showMask
+                                                ? tr('devtools.regionMaskTool.primary.hideFill', '隐藏涂色')
+                                                : tr('devtools.regionMaskTool.primary.showFill', '显示涂色')}
                                         </button>
                                     </div>
                                     {selectedRegion ? (
@@ -15451,7 +15485,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="mt-3 w-full rounded-md border border-stone-700 bg-stone-900 px-2 py-2 text-sm font-black text-stone-100 outline-none focus:border-amber-400"
                                             />
                                             <div className="mt-2 text-xs leading-5 text-stone-400">
-                                                点地图区域或中心点选中；这里改名后，地图点标签和保存的区域/连线节点会同步使用这个名字。
+                                                {tr(
+                                                    'devtools.regionMaskTool.primary.renameHint',
+                                                    '点地图区域或中心点选中；这里改名后，地图点标签和保存的区域/连线节点会同步使用这个名字。',
+                                                )}
                                             </div>
                                             {selectedSharedPrintedGuideAudit ? (
                                                 <div
@@ -15459,16 +15496,27 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     data-testid={`qidahen-shared-printed-guide-audit-selected-${selectedRegion.id}`}
                                                 >
                                                     <div>
-                                                        这个 printed 区当前同时承接 runtime：{selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / ')}。
+                                                        {tr(
+                                                            'devtools.regionMaskTool.primary.sharedPrintedRuntime',
+                                                            '这个 printed 区当前同时承接 runtime：{{names}}。',
+                                                            { names: selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / ') },
+                                                        )}
                                                     </div>
                                                     {selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeIds.length > 0 ? (
                                                         <div className="mt-1 text-rose-300">
-                                                            当前仍缺 authoritative guide：{selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / ')}。
+                                                            {tr(
+                                                                'devtools.regionMaskTool.primary.missingAuthoritativeGuide',
+                                                                '当前仍缺 authoritative guide：{{names}}。',
+                                                                { names: selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / ') },
+                                                            )}
                                                         </div>
                                                     ) : null}
                                                     {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideIds.length > 0 ? (
                                                         <div className="mt-1 text-amber-200">
-                                                            当前这条缺口属于 runtime-only guide；这里只会写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                            {tr(
+                                                                'devtools.regionMaskTool.primary.runtimeOnlyGuideHint',
+                                                                '当前这条缺口属于 runtime-only guide；这里只会写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。',
+                                                            )}
                                                         </div>
                                                     ) : null}
                                                     {selectedRuntimeGuideCandidateRows.length > 0 ? (
@@ -15490,7 +15538,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                                 className="inline-flex items-center gap-1 rounded-md border border-rose-400/45 px-2 py-1 text-[11px] font-black text-rose-100 transition hover:border-rose-200"
                                                                             >
                                                                                 <X size={12} />
-                                                                                移除待补条目
+                                                                                {tr('devtools.regionMaskTool.primary.removePendingEntry', '移除待补条目')}
                                                                             </button>
                                                                         ) : (
                                                                             <button
@@ -15500,34 +15548,38 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                                 className="inline-flex items-center gap-1 rounded-md border border-amber-400/45 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
                                                                             >
                                                                                 <Plus size={12} />
-                                                                                记录待补条目
+                                                                                {tr('devtools.regionMaskTool.primary.recordPendingCandidate', '记录待补条目')}
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                     <div className="mt-1 text-[11px] leading-5 text-stone-400">
-                                                                        只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                                        {tr('devtools.regionMaskTool.primary.guideMetadataOnly', '只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。')}
                                                                     </div>
                                                                     {row.candidate ? (
                                                                         <div className="mt-2 space-y-2">
                                                                             <div>
-                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">source</div>
+                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                                                                                    {tr('devtools.regionMaskTool.primary.sourceLabel', 'source')}
+                                                                                </div>
                                                                                 <input
                                                                                     type="text"
                                                                                     value={row.candidate.source}
                                                                                     onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'source', event.target.value)}
                                                                                     data-testid={`qidahen-runtime-guide-candidate-source-${row.runtimeRegionId}`}
-                                                                                    placeholder="例如：r28-jizhen-crop.png + 原图局部标注"
+                                                                                    placeholder={tr('devtools.regionMaskTool.primary.sourcePlaceholder', '例如：r28-jizhen-crop.png + 原图局部标注')}
                                                                                     className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
                                                                                 />
                                                                             </div>
                                                                             <div>
-                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">note</div>
+                                                                                <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                                                                                    {tr('devtools.regionMaskTool.primary.noteLabel', 'note')}
+                                                                                </div>
                                                                                 <textarea
                                                                                     value={row.candidate.note}
                                                                                     onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'note', event.target.value)}
                                                                                     data-testid={`qidahen-runtime-guide-candidate-note-${row.runtimeRegionId}`}
                                                                                     rows={3}
-                                                                                    placeholder="记录为什么它属于这个 printed 区，以及还缺哪一步正式证据。"
+                                                                                    placeholder={tr('devtools.regionMaskTool.primary.notePlaceholder', '记录为什么它属于这个 printed 区，以及还缺哪一步正式证据。')}
                                                                                     className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs leading-5 text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
                                                                                 />
                                                                             </div>
@@ -15542,7 +15594,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
                                                             >
                                                                 <Save size={13} />
-                                                                仅保存 guide 候选
+                                                                {tr('devtools.regionMaskTool.primary.saveGuideCandidatesOnly', '仅保存 guide 候选')}
                                                             </button>
                                                         </div>
                                                     ) : null}
@@ -15551,15 +15603,23 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         </>
                                     ) : (
                                         <div className="mt-3 rounded-md border border-dashed border-stone-700 px-2 py-2 text-xs leading-5 text-stone-400">
-                                            生成区域后，点地图上的填色区域或中心点，再在这里重命名。
+                                            {tr('devtools.regionMaskTool.primary.renameAfterGenerationHint', '生成区域后，点地图上的填色区域或中心点，再在这里重命名。')}
                                         </div>
                                     )}
                                 </div>
                                 <div data-testid="qidahen-compact-passage-editor" className="rounded-xl border border-sky-500/35 bg-sky-500/10 px-3 py-3">
                                     <div className="flex items-center justify-between gap-2">
                                         <div>
-                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">通路与移动代价</div>
-                                            <div className="mt-1 text-xs text-stone-400">中心 {graphNodes.length} / 自动连线 {passages.length}</div>
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">
+                                                {tr('devtools.regionMaskTool.compactPassages.title', '通路与移动代价')}
+                                            </div>
+                                            <div className="mt-1 text-xs text-stone-400">
+                                                {t('devtools.regionMaskTool.compactPassages.summary', {
+                                                    centers: graphNodes.length,
+                                                    passages: passages.length,
+                                                    defaultValue: '中心 {{centers}} / 自动连线 {{passages}}',
+                                                })}
+                                            </div>
                                         </div>
                                         <button
                                             type="button"
@@ -15568,7 +15628,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex shrink-0 items-center justify-center gap-1 rounded-md border border-emerald-500/45 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                         >
                                             <Link2 size={14} />
-                                            自动连线
+                                            {tr('devtools.regionMaskTool.compactPassages.autoDetect', '自动连线')}
                                         </button>
                                     </div>
                                     {passages.length > 0 ? (
@@ -15606,7 +15666,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                     {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
                                                                 </div>
                                                                 <div className="text-[11px] text-stone-500">
-                                                                    移 {passage.travelCost} / 宽 {boundaryMeta.width}
+                                                                    {t('devtools.regionMaskTool.compactPassages.rowSummary', {
+                                                                        travelCost: passage.travelCost,
+                                                                        width: boundaryMeta.width,
+                                                                        defaultValue: '移 {{travelCost}} / 宽 {{width}}',
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                             <select
@@ -15618,13 +15682,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                             >
                                                                 {PASSAGE_BOUNDARY_TYPES.map((boundaryType) => (
                                                                     <option key={boundaryType.id} value={boundaryType.id}>
-                                                                        {boundaryType.label} 路 {boundaryType.note}
+                                                                        {t('devtools.regionMaskTool.compactPassages.boundaryOption', {
+                                                                            label: boundaryType.label,
+                                                                            note: boundaryType.note,
+                                                                            defaultValue: '{{label}} 路 {{note}}',
+                                                                        })}
                                                                     </option>
                                                                 ))}
                                                             </select>
                                                         </div>
                                                         <div className="mt-1 flex items-center gap-2">
-                                                            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-stone-500">移动代价</span>
+                                                            <span className="text-[11px] font-black uppercase tracking-[0.12em] text-stone-500">
+                                                                {tr('devtools.regionMaskTool.travelCostLabel', '移动代价')}
+                                                            </span>
                                                             <input
                                                                 type="number"
                                                                 min={1}
@@ -15637,8 +15707,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                             />
                                                         </div>
                                                         <div data-testid={`qidahen-passage-note-${passage.id}`} className="mt-1 truncate text-[11px] leading-4 text-stone-400">
-                                                            边界规则：<span className="font-black text-stone-200">{boundaryMeta.label} · {boundaryMeta.note}</span>
-                                                            <span className="ml-2">移动代价 {passage.travelCost} / 战场宽度 {boundaryMeta.width}</span>
+                                                            {tr('devtools.regionMaskTool.boundaryRuleLabel', '边界规则：')}
+                                                            <span className="font-black text-stone-200">{boundaryMeta.label} · {boundaryMeta.note}</span>
+                                                            <span className="ml-2">
+                                                                {t('devtools.regionMaskTool.compactPassages.travelCostSummary', {
+                                                                    travelCost: passage.travelCost,
+                                                                    battleWidth: boundaryMeta.width,
+                                                                    defaultValue: '移动代价 {{travelCost}} / 战场宽度 {{battleWidth}}',
+                                                                })}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 );
@@ -15646,23 +15723,30 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className="mt-3 rounded-md border border-dashed border-stone-700 px-2 py-2 text-xs leading-5 text-stone-400">
-                                            生成区域后会按相邻区域自动连线；也可以点“自动连线”补全，再逐条设置边界类型。
+                                            {tr('devtools.regionMaskTool.compactPassages.emptyHint', '生成区域后会按相邻区域自动连线；也可以点“自动连线”补全，再逐条设置边界类型。')}
                                         </div>
                                     )}
                                 </div>
                                 <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                     <div>
-                                        初始红线像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.initialBarrierPixelsLabel', { defaultValue: '初始红线像素：' })}
+                                        <span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
                                         <span className="mx-2 text-stone-600">/</span>
-                                        最终红线/障碍：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.finalBarrierPixelsLabel', { defaultValue: '最终红线/障碍：' })}
+                                        <span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
                                     </div>
                                     <div>
-                                        手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.manualAdditionsLabel', { defaultValue: '手工补边：' })}
+                                        <span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
                                         <span className="mx-2 text-stone-600">/</span>
-                                        去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.denoiseRemovedLabel', { defaultValue: '去噪：' })}
+                                        <span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
                                     </div>
                                     <label className="mt-3 block text-stone-300">
-                                        画笔宽度约 {brushSize * 2}px
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.brushWidth', {
+                                            width: brushSize * 2,
+                                            defaultValue: '画笔宽度约 {{width}}px',
+                                        })}
                                         <input
                                             data-testid="qidahen-compact-brush-size-input"
                                             type="range"
@@ -15674,7 +15758,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         />
                                     </label>
                                     <label className="mt-3 block text-stone-300">
-                                        缩放 {(displayScale).toFixed(2)}x
+                                        {t('devtools.regionMaskTool.compactBoundaryStats.zoom', {
+                                            scale: displayScale.toFixed(2),
+                                            defaultValue: '缩放 {{scale}}x',
+                                        })}
                                         <input
                                             data-testid="qidahen-compact-zoom-input"
                                             type="range"
@@ -15690,7 +15777,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                             </section>
 
                             <section className="space-y-3">
-                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">区域与保存</div>
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+                                    {tr('devtools.regionMaskTool.compactRegions.title', '区域与保存')}
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         type="button"
@@ -15699,11 +15788,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <WandSparkles size={15} />
-                                        生成区域
+                                        {tr('devtools.regionMaskTool.compactRegions.generateRegions', '生成区域')}
                                     </button>
                                     <button type="button" onClick={() => void saveBoundaryOnly()} data-testid="qidahen-primary-save-boundary-only" className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-400/50 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300">
                                         <Save size={14} />
-                                        保存边界
+                                        {tr('devtools.regionMaskTool.compactRegions.saveBoundary', '保存边界')}
                                     </button>
                                     <button
                                         type="button"
@@ -15715,11 +15804,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             : 'border-amber-400/50 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
                                     >
                                         <Save size={14} />
-                                        保存区域
+                                        {tr('devtools.regionMaskTool.compactRegions.saveRegions', '保存区域')}
                                     </button>
                                     <button type="button" onClick={() => void saveGraphOnly()} data-testid="qidahen-primary-save-graph-only" className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-400/50 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300">
                                         <Link2 size={14} />
-                                        保存连线
+                                        {tr('devtools.regionMaskTool.compactRegions.saveGraph', '保存连线')}
                                     </button>
                                     <button
                                         type="button"
@@ -15728,18 +15817,21 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-400/50 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <Save size={14} />
-                                        仅保存 guide 候选
+                                        {tr('devtools.regionMaskTool.compactRegions.saveGuideCandidatesOnly', '仅保存 guide 候选')}
                                     </button>
                                 </div>
                                 {formalRegionSaveBlocked ? (
                                     <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
-                                        正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                                        {t('devtools.regionMaskTool.saveFormalGuard', {
+                                            state: boundaryQualityReport.normality.state,
+                                            defaultValue: '正式工作区不能保存 {{state}} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。',
+                                        })}
                                     </div>
                                 ) : null}
                                 <div className="space-y-2">
                                     {graphNodes.length === 0 ? (
                                         <div className="rounded-xl border border-dashed border-stone-800 px-3 py-3 text-sm text-stone-500">
-                                            生成区域后，这里会列出每个中心点。把名称改成城市名后再保存区域。
+                                            {tr('devtools.regionMaskTool.compactRegions.emptyHint', '生成区域后，这里会列出每个中心点。把名称改成城市名后再保存区域。')}
                                         </div>
                                     ) : graphNodes.map((node) => {
                                         const region = regions.find((item) => item.id === node.id);
@@ -15762,7 +15854,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         }}
                                                         className="h-5 w-5 shrink-0 rounded-full border border-white/25"
                                                         style={{ backgroundColor: region.color }}
-                                                        aria-label={`选中 ${region.name}`}
+                                                        aria-label={t('devtools.regionMaskTool.compactRegions.selectRegionAria', {
+                                                            regionName: region.name,
+                                                            defaultValue: '选中 {{regionName}}',
+                                                        })}
                                                     />
                                                     <input
                                                         value={region.name}
@@ -15772,7 +15867,13 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     />
                                                 </div>
                                                 <div className="mt-1 font-mono text-[11px] text-stone-500">
-                                                    点 {node.x},{node.y} · {node.pixelCount.toLocaleString()} px · {node.id}
+                                                    {t('devtools.regionMaskTool.compactRegions.regionMeta', {
+                                                        x: node.x,
+                                                        y: node.y,
+                                                        pixels: node.pixelCount.toLocaleString(),
+                                                        id: node.id,
+                                                        defaultValue: '点 {{x}},{{y}} · {{pixels}} px · {{id}}',
+                                                    })}
                                                 </div>
                                             </div>
                                         );
@@ -15783,21 +15884,25 @@ const QidahenRegionMaskTool: React.FC = () => {
                             <section className="space-y-3">
                                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-stone-500">
                                     <Link2 size={13} />
-                                    通路
+                                    {tr('devtools.regionMaskTool.passages.title', '通路')}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button type="button" onClick={autoDetectPassagesFromRegions} data-testid="qidahen-auto-detect-passages" className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-bold text-emerald-100 transition hover:border-emerald-300">
                                         <Link2 size={15} />
-                                        按邻近补全
+                                        {tr('devtools.regionMaskTool.passages.autoFillByAdjacency', '按邻近补全')}
                                     </button>
                                     <div data-testid="qidahen-passage-summary" className="rounded-md border border-stone-800 bg-stone-900/70 px-3 py-2 text-xs leading-5 text-stone-300">
-                                        中心 {graphNodes.length} / 通路 {passages.length}
+                                        {t('devtools.regionMaskTool.passages.summary', {
+                                            centers: graphNodes.length,
+                                            passages: passages.length,
+                                            defaultValue: '中心 {{centers}} / 通路 {{passages}}',
+                                        })}
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     {passages.length === 0 ? (
                                         <div className="rounded-xl border border-dashed border-stone-800 px-3 py-4 text-sm text-stone-500">
-                                            暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。
+                                            {tr('devtools.regionMaskTool.passages.emptyHint', '暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。')}
                                         </div>
                                     ) : passages.map((passage) => {
                                         const fromRegion = regions.find((region) => region.id === passage.from);
@@ -15838,7 +15943,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         }}
                                                         data-testid={`qidahen-passage-delete-${passage.id}`}
                                                         className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-stone-700 text-stone-400 transition hover:border-rose-400 hover:text-rose-200"
-                                                        aria-label="删除路径"
+                                                        aria-label={tr('devtools.regionMaskTool.deletePathAria', '删除路径')}
                                                     >
                                                         <X size={14} />
                                                     </button>
@@ -15850,18 +15955,40 @@ const QidahenRegionMaskTool: React.FC = () => {
                             </section>
                         </div>
                         <div className="shrink-0 border-t border-stone-800 bg-stone-950/95 px-5 py-4 text-xs leading-5 text-stone-500">
-                            当前工作区：{dataOutputDir}
+                            {t('devtools.regionMaskTool.currentWorkspace', {
+                                path: dataOutputDir,
+                                defaultValue: '当前工作区：{{path}}',
+                            })}
                         </div>
                     </aside>
 
                     <main className="flex h-screen min-w-0 flex-1 flex-col bg-stone-950">
                         <div className="shrink-0 border-b border-stone-800 px-6 py-4 text-sm text-stone-400">
-                            当前区域：<span className="font-bold text-stone-100">{selectedRegion?.name ?? '未选择'}</span>
+                            {tr('devtools.regionMaskTool.currentRegion', '当前区域：')}
+                            <span className="font-bold text-stone-100">{selectedRegion?.name ?? tr('devtools.regionMaskTool.unselectedRegion', '未选择')}</span>
                             <span className="ml-3 font-mono text-xs text-stone-500">{selectedRegion?.id}</span>
                             <span className="ml-4 text-xs text-stone-500">
-                                模式：{mode === 'wand' ? '魔棒' : mode === 'chain' ? '锁链' : mode === 'paint' ? '区域修正' : mode === 'erase' ? '区域擦除' : mode === 'barrier' ? '边界修正' : '通路编辑'}
+                                {t('devtools.regionMaskTool.currentMode', {
+                                    mode: mode === 'wand'
+                                        ? tr('devtools.regionMaskTool.mode.wand', '魔棒')
+                                        : mode === 'chain'
+                                            ? tr('devtools.regionMaskTool.mode.chain', '锁链')
+                                            : mode === 'paint'
+                                                ? tr('devtools.regionMaskTool.mode.paint', '区域修正')
+                                                : mode === 'erase'
+                                                    ? tr('devtools.regionMaskTool.mode.erase', '区域擦除')
+                                                    : mode === 'barrier'
+                                                        ? tr('devtools.regionMaskTool.mode.barrier', '边界修正')
+                                                        : tr('devtools.regionMaskTool.mode.path', '通路编辑'),
+                                    defaultValue: '模式：{{mode}}',
+                                })}
                             </span>
-                            <span className="ml-4 text-xs text-stone-500">路径：{passages.length}</span>
+                            <span className="ml-4 text-xs text-stone-500">
+                                {t('devtools.regionMaskTool.regions.pathCount', {
+                                    count: passages.length,
+                                    defaultValue: '路径 {{count}}',
+                                })}
+                            </span>
                         </div>
                         <div ref={viewportRef} className="grid min-h-0 flex-1 place-items-center overflow-auto px-4 py-4">
                             <div className="relative" style={{ width: Math.round(MASK_WIDTH * displayScale), aspectRatio: `${MASK_WIDTH} / ${MASK_HEIGHT}` }}>
@@ -15901,7 +16028,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         setPathDragStartId(null);
                                         setPathDraftPoint(null);
                                     }}
-                                    aria-label="通行路径图"
+                                    aria-label={tr('devtools.regionMaskTool.graphAria', '通行路径图')}
                                 >
                                     <rect
                                         x="0"
@@ -15991,7 +16118,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                     <div className="shrink-0 border-b border-stone-800 px-5 py-4">
                         <div className="flex items-center justify-between gap-3">
                             <Link to="/" className="text-xs font-bold uppercase tracking-[0.2em] text-stone-400 transition hover:text-amber-200">
-                                返回首页
+                                {tr('devtools.regionMaskTool.backHome', '返回首页')}
                             </Link>
                             {showAdvancedWorkbench ? (
                                 <button
@@ -16001,38 +16128,40 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex items-center gap-2 rounded-md border border-stone-700 px-3 py-1.5 text-xs font-bold text-stone-200 transition hover:border-amber-400 hover:text-amber-200"
                                 >
                                     <Upload size={14} />
-                                    导入 Mask
+                                    {tr('devtools.regionMaskTool.importMask', '导入 Mask')}
                                 </button>
                             ) : null}
                             <input ref={importInputRef} data-testid="qidahen-import-mask-input" type="file" accept="image/png" className="hidden" onChange={importMask} />
                         </div>
-                        <h1 className="mt-3 text-2xl font-black text-amber-100">七大恨地图编辑器</h1>
+                        <h1 className="mt-3 text-2xl font-black text-amber-100">{tr('devtools.regionMaskTool.title', '七大恨地图编辑器')}</h1>
                         <p className="mt-2 text-sm leading-6 text-stone-400">
-                            默认自动读取上次工作区。直接在地图上画/擦红色边界，生成区域后补通路，再分别保存边界、区域和连线。
+                            {tr('devtools.regionMaskTool.description', '默认自动读取上次工作区。直接在地图上画/擦红色边界，生成区域后补通路，再分别保存边界、区域和连线。')}
                         </p>
                         <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6">
                             <div className="flex items-center justify-between gap-3">
-                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">当前工作区</span>
+                                <span className="font-black uppercase tracking-[0.16em] text-stone-500">{tr('devtools.regionMaskTool.workspace.title', '当前工作区')}</span>
                                 <span className={isIsolatedWorkspace ? 'rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-black text-cyan-100' : 'rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 font-black text-amber-100'}>
-                                    {isIsolatedWorkspace ? '临时隔离工作区' : '正式工作区'}
+                                    {isIsolatedWorkspace
+                                        ? tr('devtools.regionMaskTool.workspace.isolated', '临时隔离工作区')
+                                        : tr('devtools.regionMaskTool.workspace.formal', '正式工作区')}
                                 </span>
                             </div>
                             <div className="mt-2 break-all font-mono text-[11px] text-stone-300">{dataOutputDir}</div>
                             <div className="mt-1 text-[11px] text-stone-500">
                                 {isIsolatedWorkspace
-                                    ? '当前页面只会读写这份临时工作区，不会污染正式七大恨数据。'
-                                    : '当前页面直接读写正式七大恨数据。确认是真实边界成果后再保存。'}
+                                        ? tr('devtools.regionMaskTool.workspace.isolatedHint', '当前页面只会读写这份临时工作区，不会污染正式七大恨数据。')
+                                        : tr('devtools.regionMaskTool.workspace.formalHint', '当前页面直接读写正式七大恨数据。确认是真实边界成果后再保存。')}
                             </div>
                         </div>
                         {autoDerivedBoundaryDisplay ? (
                             <div className="mt-3 rounded-xl border border-rose-500/50 bg-rose-500/12 px-3 py-3 text-xs leading-6 text-rose-100">
-                                当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。
-                                <span className="ml-1 text-rose-200/80">如果要核对真正的边界 truth，请切到 `manual-boundary-user` 这类有边界像素的手工工作区，或重新导入边界图。</span>
+                                {tr('devtools.regionMaskTool.workspace.autoDerivedBoundaryWarning', '当前红线只是根据已保存区域边缘反推出来的显示层，不是真实手工边界图。')}
+                                <span className="ml-1 text-rose-200/80">{tr('devtools.regionMaskTool.workspace.autoDerivedBoundaryHint', '如果要核对真正的边界 truth，请切到 `manual-boundary-user` 这类有边界像素的手工工作区，或重新导入边界图。')}</span>
                             </div>
                         ) : null}
                         {shouldShowBestAvailableWorkspaceSwitcher ? (
                             <div className="mt-3 rounded-xl border border-cyan-500/20 bg-cyan-500/8 px-3 py-3 text-xs leading-5">
-                                <div className="font-black uppercase tracking-[0.16em] text-cyan-200">推荐工作区</div>
+                                <div className="font-black uppercase tracking-[0.16em] text-cyan-200">{tr('devtools.regionMaskTool.workspace.recommendedTitle', '推荐工作区')}</div>
                                 <div className="mt-2 grid gap-2">
                                     <button
                                         type="button"
@@ -16046,7 +16175,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         )}
                                     >
                                         <Pencil size={14} />
-                                        边界手修起稿
+                                        {tr('devtools.regionMaskTool.workspace.openBoundaryDraft', '边界手修起稿')}
                                     </button>
                                     <button
                                         type="button"
@@ -16060,7 +16189,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         )}
                                     >
                                         <Route size={14} />
-                                        移动代价可用成果
+                                        {tr('devtools.regionMaskTool.workspace.openMoveCostReady', '移动代价可用成果')}
                                     </button>
                                     <button
                                         type="button"
@@ -16069,7 +16198,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/45 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-200"
                                     >
                                         <Eye size={14} />
-                                        运行时预览
+                                        {tr('devtools.regionMaskTool.workspace.openRuntimePreview', '运行时预览')}
                                     </button>
                                 </div>
                             </div>
@@ -16082,32 +16211,39 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 data-testid="qidahen-region-truth-workflow-banner"
                                 className="space-y-2 rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/12 via-stone-950 to-cyan-950/25 p-4"
                             >
-                                <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200">当前区域路线</div>
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-emerald-200">{tr('devtools.regionMaskTool.regionTruthWorkflow.title', '当前区域路线')}</div>
                                 <div className="text-lg font-black text-emerald-50">
                                     {lastRegionGenerationWorkflow === 'region-path-quick-start'
-                                        ? '区域粗稿 + 通路编辑（次路线）'
-                                        : '区域粗稿编辑（次路线）'}
+                                        ? tr('devtools.regionMaskTool.regionTruthWorkflow.pathQuickStart', '区域粗稿 + 通路编辑（次路线）')
+                                        : tr('devtools.regionMaskTool.regionTruthWorkflow.regionOnly', '区域粗稿编辑（次路线）')}
                                 </div>
                                 <div className="text-sm leading-6 text-stone-200">
-                                    你现在看到的是区域 truth 的可编辑初稿，不是正式边界主路。
+                                    {tr('devtools.regionMaskTool.regionTruthWorkflow.description', '你现在看到的是区域 truth 的可编辑初稿，不是正式边界主路。')}
                                     {lastRegionGenerationWorkflow === 'region-path-quick-start'
-                                        ? ' 当前可以直接改区域、改通路类型，再继续调移动代价。'
-                                        : ' 当前可以先用画笔微调区域，之后再切到路径模式补通路和移动代价。'}
+                                        ? tr('devtools.regionMaskTool.regionTruthWorkflow.pathQuickStartHint', ' 当前可以直接改区域、改通路类型，再继续调移动代价。')
+                                        : tr('devtools.regionMaskTool.regionTruthWorkflow.regionOnlyHint', ' 当前可以先用画笔微调区域，之后再切到路径模式补通路和移动代价。')}
                                   </div>
                                   <div className="text-xs font-mono text-emerald-100/85">
-                                      当前已锁显式 truth：{authoritativeGuideRegionIdSet.size} 区
+                                      {t('devtools.regionMaskTool.regionTruthWorkflow.authoritativeCount', {
+                                          count: authoritativeGuideRegionIdSet.size,
+                                          defaultValue: '当前已锁显式 truth：{{count}} 区',
+                                      })}
                                   </div>
                                   {sharedPrintedGuideAuditRows.length > 0 ? (
                                       <div
                                           className="rounded-xl border border-rose-500/30 bg-rose-500/8 px-3 py-3 text-xs leading-6 text-stone-200"
                                           data-testid="qidahen-shared-printed-guide-audit-panel"
                                       >
-                                          <div className="font-black uppercase tracking-[0.16em] text-rose-200">shared printed guide 审计</div>
+                                          <div className="font-black uppercase tracking-[0.16em] text-rose-200">{tr('devtools.regionMaskTool.regionTruthWorkflow.sharedGuideAuditTitle', 'shared printed guide 审计')}</div>
                                           <div
                                               className="mt-2 rounded-lg border border-rose-500/20 bg-stone-950/50 px-3 py-2 text-stone-300"
                                               data-testid="qidahen-shared-printed-guide-audit-summary"
                                           >
-                                              当前 formal shared printed 缺口 {sharedPrintedGuideAuditRows.length} 条；其中 {sharedPrintedGuideAuditRows.filter((audit) => audit.missingRuntimeOnlyGuideIds.length > 0).length} 条缺口还是 runtime-only，当前工具的 `regionIds` guide 模型不能直接落盘。
+                                              {t('devtools.regionMaskTool.regionTruthWorkflow.sharedGuideAuditSummary', {
+                                                  total: sharedPrintedGuideAuditRows.length,
+                                                  runtimeOnly: sharedPrintedGuideAuditRows.filter((audit) => audit.missingRuntimeOnlyGuideIds.length > 0).length,
+                                                  defaultValue: '当前 formal shared printed 缺口 {{total}} 条；其中 {{runtimeOnly}} 条缺口还是 runtime-only，当前工具的 `regionIds` guide 模型不能直接落盘。',
+                                              })}
                                           </div>
                                           <div className="mt-3 space-y-2">
                                               {sharedPrintedGuideAuditRows.map((audit) => (
@@ -16120,16 +16256,25 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                           {audit.printedRegionName} · {audit.printedRegionId}
                                                       </div>
                                                       <div className="mt-1 text-stone-300">
-                                                          当前 shared runtime：{audit.runtimeRegionNames.join(' / ')}
+                                                          {t('devtools.regionMaskTool.regionTruthWorkflow.sharedRuntime', {
+                                                              names: audit.runtimeRegionNames.join(' / '),
+                                                              defaultValue: '当前 shared runtime：{{names}}',
+                                                          })}
                                                       </div>
                                                       {audit.missingAuthoritativeRuntimeIds.length > 0 ? (
                                                           <div className="mt-1 text-rose-300">
-                                                              缺 authoritative guide：{audit.missingAuthoritativeRuntimeNames.join(' / ')}
+                                                              {t('devtools.regionMaskTool.regionTruthWorkflow.missingAuthoritativeGuide', {
+                                                                  names: audit.missingAuthoritativeRuntimeNames.join(' / '),
+                                                                  defaultValue: '缺 authoritative guide：{{names}}',
+                                                              })}
                                                           </div>
                                                       ) : null}
                                                       {audit.missingRuntimeOnlyGuideIds.length > 0 ? (
                                                           <div className="mt-1 text-amber-200">
-                                                              当前工具只能把 guide 写到当前 regions 里的 id；以下缺口是 runtime-only，不能直接靠现有 `regionIds` 模型保存：{audit.missingRuntimeOnlyGuideNames.join(' / ')}
+                                                              {t('devtools.regionMaskTool.regionTruthWorkflow.runtimeOnlyGuideGap', {
+                                                                  names: audit.missingRuntimeOnlyGuideNames.join(' / '),
+                                                                  defaultValue: '当前工具只能把 guide 写到当前 regions 里的 id；以下缺口是 runtime-only，不能直接靠现有 `regionIds` 模型保存：{{names}}',
+                                                              })}
                                                           </div>
                                                       ) : null}
                                                   </div>
@@ -16138,8 +16283,8 @@ const QidahenRegionMaskTool: React.FC = () => {
                                       </div>
                                   ) : null}
                                   <div className="rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
-                                      <div><span className="font-black text-emerald-100">现在该看：</span> 区块轮廓大致对不对、中心点位置对不对、相邻通路需不需要补或改类型。</div>
-                                      <div><span className="font-black text-emerald-100">现在不用纠结：</span> 边界候选 seed 0/5、自动抽线红字、accepted 门禁；那是边界手修主路的诊断，不影响这条区域次路线继续用。</div>
+                                      <div><span className="font-black text-emerald-100">{tr('devtools.regionMaskTool.regionTruthWorkflow.reviewNowLabel', '现在该看：')}</span> {tr('devtools.regionMaskTool.regionTruthWorkflow.reviewNowHint', '区块轮廓大致对不对、中心点位置对不对、相邻通路需不需要补或改类型。')}</div>
+                                      <div><span className="font-black text-emerald-100">{tr('devtools.regionMaskTool.regionTruthWorkflow.ignoreNowLabel', '现在不用纠结：')}</span> {tr('devtools.regionMaskTool.regionTruthWorkflow.ignoreNowHint', '边界候选 seed 0/5、自动抽线红字、accepted 门禁；那是边界手修主路的诊断，不影响这条区域次路线继续用。')}</div>
                                 </div>
                                 <button
                                     type="button"
@@ -16148,10 +16293,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
                                 >
                                     <Pencil size={15} />
-                                    改方向：反推闭合边界稿
+                                    {tr('devtools.regionMaskTool.regionTruthWorkflow.switchToBoundaryDraft', '改方向：反推闭合边界稿')}
                                 </button>
                                 <div className="text-[11px] leading-5 text-stone-400">
-                                    不要求一次全对。先给一版大致正确的闭合边界，错线删掉，缺线补上，再按边界重生区域。
+                                    {tr('devtools.regionMaskTool.regionTruthWorkflow.switchToBoundaryDraftHint', '不要求一次全对。先给一版大致正确的闭合边界，错线删掉，缺线补上，再按边界重生区域。')}
                                 </div>
                                 {isIsolatedWorkspace ? (
                                     <button
@@ -16161,7 +16306,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/10 px-3 py-2 text-sm font-black text-sky-100 transition hover:border-sky-100"
                                     >
                                         <Eye size={15} />
-                                        打开当前工作区运行时预览
+                                        {tr('devtools.regionMaskTool.regionTruthWorkflow.openCurrentRuntimePreview', '打开当前工作区运行时预览')}
                                     </button>
                                 ) : null}
                             </section>
@@ -16170,23 +16315,23 @@ const QidahenRegionMaskTool: React.FC = () => {
                         {showAdvancedWorkbench && showFormalEmptyWorkspaceGuide ? (
                             <section className="space-y-3" data-testid="qidahen-empty-workspace-guide">
                                 <div className="rounded-2xl border border-amber-500/35 bg-gradient-to-br from-amber-500/12 via-stone-950 to-cyan-950/30 p-4">
-                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">开始工作区</div>
-                                    <div className="mt-2 text-xl font-black text-amber-50">先准备手修边界稿</div>
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-200">{tr('devtools.regionMaskTool.emptyWorkspace.title', '开始工作区')}</div>
+                                    <div className="mt-2 text-xl font-black text-amber-50">{tr('devtools.regionMaskTool.emptyWorkspace.prepareBoundaryDraft', '先准备手修边界稿')}</div>
                                     <div className="mt-2 text-sm leading-6 text-stone-300">
-                                        现在这份正式工作区是空白起点。先得到一张可微调的边界图，再保存工作区，最后才按边界图生成区域。
+                                        {tr('devtools.regionMaskTool.emptyWorkspace.description', '现在这份正式工作区是空白起点。先得到一张可微调的边界图，再保存工作区，最后才按边界图生成区域。')}
                                     </div>
                                     <div className="mt-4 rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-3 py-3 text-xs leading-6 text-emerald-50" data-testid="qidahen-empty-guide-normal-route">
-                                        <div className="font-black uppercase tracking-[0.16em] text-emerald-200">正常成果路线</div>
-                                        <div className="mt-2 text-sm font-black text-emerald-50">要正式边界成果，先手修边界，再生区域；不要继续卡在自动抽线。</div>
+                                        <div className="font-black uppercase tracking-[0.16em] text-emerald-200">{tr('devtools.regionMaskTool.emptyWorkspace.normalRouteTitle', '正常成果路线')}</div>
+                                        <div className="mt-2 text-sm font-black text-emerald-50">{tr('devtools.regionMaskTool.emptyWorkspace.normalRouteSummary', '要正式边界成果，先手修边界，再生区域；不要继续卡在自动抽线。')}</div>
                                         <div className="mt-3 grid gap-2">
                                             <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
-                                                <span className="font-black text-emerald-100">1.</span> 先导入你已经画好的完成边界图；如果还没画，就直接在图上补边或导出描边包去外部画笔修。
+                                                <span className="font-black text-emerald-100">1.</span> {tr('devtools.regionMaskTool.emptyWorkspace.normalRouteStep1', '先导入你已经画好的完成边界图；如果还没画，就直接在图上补边或导出描边包去外部画笔修。')}
                                             </div>
                                             <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
-                                                <span className="font-black text-emerald-100">2.</span> 修边时只关心闭合轮廓，连不上的碎线直接舍弃，不要再追自动边界“全自动正确”。
+                                                <span className="font-black text-emerald-100">2.</span> {tr('devtools.regionMaskTool.emptyWorkspace.normalRouteStep2', '修边时只关心闭合轮廓，连不上的碎线直接舍弃，不要再追自动边界“全自动正确”。')}
                                             </div>
                                             <div className="rounded-lg border border-emerald-500/20 bg-stone-950/45 px-3 py-2">
-                                                <span className="font-black text-emerald-100">3.</span> 修完后保存工作区，再按完成边界图生成区域；如果只是测通路和移动代价，直接走下面的现成可用成果。
+                                                <span className="font-black text-emerald-100">3.</span> {tr('devtools.regionMaskTool.emptyWorkspace.normalRouteStep3', '修完后保存工作区，再按完成边界图生成区域；如果只是测通路和移动代价，直接走下面的现成可用成果。')}
                                             </div>
                                         </div>
                                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -16197,7 +16342,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/60 bg-emerald-500/12 px-3 py-2.5 text-sm font-black text-emerald-50 transition hover:border-emerald-200"
                                             >
                                                 <Upload size={15} />
-                                                正常成果：导入完成边界图
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.importFinishedBoundary', '正常成果：导入完成边界图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16206,15 +16351,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
                                             >
                                                 <Pencil size={15} />
-                                                正常成果：直接在图上补边
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.drawBoundaryDirectly', '正常成果：直接在图上补边')}
                                             </button>
                                         </div>
                                     </div>
                                     <div className="mt-4 rounded-xl border border-sky-400/35 bg-sky-500/10 px-3 py-3 text-xs leading-6 text-sky-50">
-                                        <div className="font-black uppercase tracking-[0.16em] text-sky-200">现成可用成果</div>
-                                        <div className="mt-2 text-sm font-black text-sky-50">如果你现在就是要改区域、通路和移动代价，不用先卡在自动边界主路。</div>
+                                        <div className="font-black uppercase tracking-[0.16em] text-sky-200">{tr('devtools.regionMaskTool.emptyWorkspace.readyRouteTitle', '现成可用成果')}</div>
+                                        <div className="mt-2 text-sm font-black text-sky-50">{tr('devtools.regionMaskTool.emptyWorkspace.readyRouteSummary', '如果你现在就是要改区域、通路和移动代价，不用先卡在自动边界主路。')}</div>
                                         <div className="mt-2 text-[11px] leading-5 text-sky-100/85">
-                                            下面两个入口都只会打开临时隔离工作区，不会写正式七大恨数据。一个用于继续手修边界，一个直接进入当前可用的区域/通路编辑成果。
+                                            {tr('devtools.regionMaskTool.emptyWorkspace.readyRouteHint', '下面两个入口都只会打开临时隔离工作区，不会写正式七大恨数据。一个用于继续手修边界，一个直接进入当前可用的区域/通路编辑成果。')}
                                         </div>
                                         <div className="mt-3 grid gap-2">
                                             <button
@@ -16224,7 +16369,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-400/45 bg-amber-500/10 px-3 py-2.5 text-sm font-black text-amber-100 transition hover:border-amber-200"
                                             >
                                                 <Pencil size={15} />
-                                                现成入口：边界手修起稿
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.readyBoundaryDraft', '现成入口：边界手修起稿')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16233,7 +16378,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/15 px-3 py-2.5 text-sm font-black text-sky-50 transition hover:border-sky-100"
                                             >
                                                 <Route size={15} />
-                                                现成入口：移动代价可用成果
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.readyMoveCostDraft', '现成入口：移动代价可用成果')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16242,13 +16387,13 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/45 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200"
                                             >
                                                 <Eye size={15} />
-                                                现成入口：运行时预览
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.readyRuntimePreview', '现成入口：运行时预览')}
                                             </button>
                                         </div>
                                     </div>
                                     <details data-testid="qidahen-empty-guide-hand-edit-toolbox" className="mt-4 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                         <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-stone-300">
-                                            边界手修工具与描边包（按需展开）
+                                            {tr('devtools.regionMaskTool.emptyWorkspace.toolboxTitle', '边界手修工具与描边包（按需展开）')}
                                         </summary>
                                         <div className="mt-3 grid gap-2">
                                             <button
@@ -16258,7 +16403,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/70 bg-emerald-500/12 px-3 py-2.5 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
                                             >
                                                 <Download size={15} />
-                                                一键准备固定色边界稿 + 描边包
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.prepareTraceKit', '一键准备固定色边界稿 + 描边包')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16267,7 +16412,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <WandSparkles size={15} />
-                                                载入固定色边界稿
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.loadColorBoundaryDraft', '载入固定色边界稿')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16276,7 +16421,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <Download size={15} />
-                                                导出全图描边包 ZIP
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.exportFullTraceZip', '导出全图描边包 ZIP')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16285,7 +16430,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/60 bg-emerald-500/8 px-3 py-2.5 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
                                             >
                                                 <Upload size={15} />
-                                                导入完成边界图
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.importBoundary', '导入完成边界图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16294,7 +16439,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <Upload size={15} />
-                                                导入带底图描线图
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.importBoundarySource', '导入带底图描线图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16303,18 +16448,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
                                             >
                                                 <Pencil size={15} />
-                                                直接在图上补边
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.drawBoundaryOnMap', '直接在图上补边')}
                                             </button>
                                         </div>
                                         <div className="mt-4 rounded-xl border border-stone-800 bg-stone-950/70 px-3 py-3 text-xs leading-6 text-stone-300">
-                                            <div><span className="font-black text-amber-100">1.</span> 主路先用“固定色边界稿”起稿，或者直接导出全图描边包去外部画笔手修。</div>
-                                            <div><span className="font-black text-amber-100">2.</span> 连不上的边界先不用强凑，不能封口的碎线直接舍弃。</div>
-                                            <div><span className="font-black text-amber-100">3.</span> 修完后优先导入透明/纯边界 PNG；如果你画在底图上，就导入带底图描线图。</div>
-                                            <div><span className="font-black text-amber-100">4.</span> 真要落正式成果时，仍然是保存工作区后，再按完成边界图生成区域。</div>
+                                            <div><span className="font-black text-amber-100">1.</span> {tr('devtools.regionMaskTool.emptyWorkspace.toolboxStep1', '主路先用“固定色边界稿”起稿，或者直接导出全图描边包去外部画笔手修。')}</div>
+                                            <div><span className="font-black text-amber-100">2.</span> {tr('devtools.regionMaskTool.emptyWorkspace.toolboxStep2', '连不上的边界先不用强凑，不能封口的碎线直接舍弃。')}</div>
+                                            <div><span className="font-black text-amber-100">3.</span> {tr('devtools.regionMaskTool.emptyWorkspace.toolboxStep3', '修完后优先导入透明/纯边界 PNG；如果你画在底图上，就导入带底图描线图。')}</div>
+                                            <div><span className="font-black text-amber-100">4.</span> {tr('devtools.regionMaskTool.emptyWorkspace.toolboxStep4', '真要落正式成果时，仍然是保存工作区后，再按完成边界图生成区域。')}</div>
                                         </div>
                                         <details className="mt-4 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                             <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-stone-400">
-                                                次路线：区域粗稿与移动代价
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.secondaryRouteTitle', '次路线：区域粗稿与移动代价')}
                                             </summary>
                                             <div className="mt-3 grid gap-2">
                                                 <button
@@ -16324,7 +16469,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-500/55 bg-amber-500/10 px-3 py-2.5 text-sm font-black text-amber-100 transition hover:border-amber-300"
                                                 >
                                                     <WandSparkles size={15} />
-                                                    载入粗轮廓初稿
+                                                    {tr('devtools.regionMaskTool.emptyWorkspace.loadRoughOutline', '载入粗轮廓初稿')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -16333,15 +16478,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2.5 text-sm font-black text-sky-100 transition hover:border-sky-300"
                                                 >
                                                     <Route size={15} />
-                                                    次路线：区域粗稿 + 通路
+                                                    {tr('devtools.regionMaskTool.emptyWorkspace.secondaryRouteQuickStart', '次路线：区域粗稿 + 通路')}
                                                 </button>
                                             </div>
                                             <div className="mt-3 text-xs leading-6 text-stone-400">
-                                                这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路。
+                                                {tr('devtools.regionMaskTool.emptyWorkspace.secondaryRouteHint', '这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路。')}
                                             </div>
                                         </details>
                                         <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3 text-xs leading-6 text-stone-400">
-                                            已记录边界色：
+                                            {tr('devtools.regionMaskTool.emptyWorkspace.boundaryPresetTitle', '已记录边界色：')}
                                             <div className="mt-2 flex flex-wrap gap-2">
                                                 {boundaryPresets.map((preset) => (
                                                     <span
@@ -16352,7 +16497,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                             className="h-3 w-3 rounded-full border border-white/10"
                                                             style={{ backgroundColor: 'rgb(' + preset.rgb[0] + ', ' + preset.rgb[1] + ', ' + preset.rgb[2] + ')' }}
                                                         />
-                                                        rgb({preset.rgb.join(', ')})
+                                                        {t('devtools.regionMaskTool.workspace.boundaryPresetValue', {
+                                                            value: preset.rgb.join(', '),
+                                                            defaultValue: 'rgb({{value}})',
+                                                        })}
                                                     </span>
                                                 ))}
                                             </div>
@@ -16365,12 +16513,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                         {shouldShowMoveCostDetourCard ? (
                             <section data-testid="qidahen-boundary-move-cost-detour" className="space-y-3">
                                 <div className="rounded-2xl border border-sky-400/35 bg-sky-400/10 px-4 py-4 text-[11px] leading-5 text-sky-50">
-                                    <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">改方向入口</div>
-                                    <div className="mt-2 text-lg font-black text-sky-50">如果你现在是测试通路和移动代价，直接改方向</div>
+                                    <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">{tr('devtools.regionMaskTool.detour.title', '改方向入口')}</div>
+                                    <div className="mt-2 text-lg font-black text-sky-50">{tr('devtools.regionMaskTool.detour.summary', '如果你现在是测试通路和移动代价，直接改方向')}</div>
                                     <div className="mt-2">
-                                        当前这版边界稿还不能直接按边界生区域：
-                                        独立 seed {boundaryClosureDiagnostics.matchedSeedCount}/{boundaryQualityReport.formalRegionCount}
-                                        ，未解释开放线 {unexplainedBoundaryOpenDiagnostics.openComponentCount} 条。
+                                        {tr('devtools.regionMaskTool.detour.reasonPrefix', '当前这版边界稿还不能直接按边界生区域：')}
+                                        {t('devtools.regionMaskTool.detour.matchedSeedCount', {
+                                            matched: boundaryClosureDiagnostics.matchedSeedCount,
+                                            total: boundaryQualityReport.formalRegionCount,
+                                            defaultValue: '独立 seed {{matched}}/{{total}}',
+                                        })}
+                                        ，{t('devtools.regionMaskTool.detour.unexplainedOpenLines', {
+                                            count: unexplainedBoundaryOpenDiagnostics.openComponentCount,
+                                            defaultValue: '未解释开放线 {{count}} 条。',
+                                        })}
                                     </div>
                                 <button
                                     type="button"
@@ -16379,7 +16534,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/55 bg-sky-500/15 px-3 py-2.5 text-sm font-black text-sky-50 transition hover:border-sky-100"
                                 >
                                     <Route size={15} />
-                                    改方向：直接进入区域 + 通路 + 移动代价
+                                    {tr('devtools.regionMaskTool.detour.openRegionPathDraft', '改方向：直接进入区域 + 通路 + 移动代价')}
                                 </button>
                                 {isIsolatedWorkspace && currentWorkspaceKey !== BEST_AVAILABLE_MOVE_COST_READY_WORKSPACE ? (
                                     <div className="mt-2 grid gap-2">
@@ -16390,7 +16545,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-300/45 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-50 transition hover:border-cyan-100"
                                         >
                                             <Route size={14} />
-                                            直接打开现成可用工作区
+                                            {tr('devtools.regionMaskTool.detour.openReadyWorkspace', '直接打开现成可用工作区')}
                                         </button>
                                         <button
                                             type="button"
@@ -16399,12 +16554,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-sky-300/45 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-50 transition hover:border-sky-100"
                                         >
                                             <Eye size={14} />
-                                            直接看运行时预览
+                                            {tr('devtools.regionMaskTool.detour.openRuntimePreview', '直接看运行时预览')}
                                         </button>
                                     </div>
                                 ) : null}
                                 <div className="mt-2 text-[10px] leading-4 text-sky-100/85">
-                                    这不会把当前粗边界稿当正式成果；只是先给你一个可编辑的区域/通路起点。
+                                    {tr('devtools.regionMaskTool.detour.hint', '这不会把当前粗边界稿当正式成果；只是先给你一个可编辑的区域/通路起点。')}
                                 </div>
                             </div>
                         </section>
@@ -16413,10 +16568,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                         {showAdvancedWorkbench && showFormalEmptyWorkspaceGuide && !showFormalEmptyToolPanel ? (
                             <section data-testid="qidahen-formal-empty-tool-panel-collapsed" className="space-y-3">
                                 <div className="rounded-2xl border border-stone-800 bg-stone-950/55 p-4">
-                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-400">工具面板</div>
-                                    <div className="mt-2 text-lg font-black text-stone-100">默认先收起，避免首屏又像旧工具台</div>
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-400">{tr('devtools.regionMaskTool.toolPanel.title', '工具面板')}</div>
+                                    <div className="mt-2 text-lg font-black text-stone-100">{tr('devtools.regionMaskTool.toolPanel.collapsedSummary', '默认先收起，避免首屏又像旧工具台')}</div>
                                     <div className="mt-2 text-sm leading-6 text-stone-400">
-                                        真正开始补边时，再展开模式按钮、进度和调试区。空白起点先看上面的正常成果路线和现成成果入口就够了。
+                                        {tr('devtools.regionMaskTool.toolPanel.collapsedHint', '真正开始补边时，再展开模式按钮、进度和调试区。空白起点先看上面的正常成果路线和现成成果入口就够了。')}
                                     </div>
                                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                                         <button
@@ -16426,7 +16581,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-400/60 bg-cyan-500/10 px-3 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-300"
                                         >
                                             <Pencil size={15} />
-                                            开始补边：进入边界修正
+                                            {tr('devtools.regionMaskTool.toolPanel.startBoundaryEdit', '开始补边：进入边界修正')}
                                         </button>
                                         <button
                                             type="button"
@@ -16435,7 +16590,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2.5 text-sm font-black text-stone-100 transition hover:border-stone-500"
                                         >
                                             <Eye size={15} />
-                                            展开工具面板
+                                            {tr('devtools.regionMaskTool.toolPanel.expand', '展开工具面板')}
                                         </button>
                                     </div>
                                 </div>
@@ -16446,7 +16601,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                         <>
                         <section className="space-y-3">
                             <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
-                                {showFormalEmptyWorkspaceGuide ? '已展开工具面板' : '模式'}
+                                {showFormalEmptyWorkspaceGuide
+                                    ? tr('devtools.regionMaskTool.modePanel.expandedTitle', '已展开工具面板')
+                                    : tr('devtools.regionMaskTool.modePanel.title', '模式')}
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <button
@@ -16455,7 +16612,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'wand' ? 'border-amber-400 bg-amber-500/10 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <WandSparkles size={15} />
-                                    魔棒
+                                    {tr('devtools.regionMaskTool.mode.wand', '魔棒')}
                                 </button>
                                 <button
                                     type="button"
@@ -16463,7 +16620,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'chain' ? 'border-emerald-400 bg-emerald-500/10 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Link2 size={15} />
-                                    锁链
+                                    {tr('devtools.regionMaskTool.mode.chain', '锁链')}
                                 </button>
                                 <button
                                     type="button"
@@ -16471,7 +16628,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'paint' ? 'border-amber-400 bg-amber-500/10 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Pencil size={15} />
-                                    画笔
+                                    {tr('devtools.regionMaskTool.mode.paintBrush', '画笔')}
                                 </button>
                                 <button
                                     type="button"
@@ -16479,7 +16636,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'erase' ? 'border-rose-400 bg-rose-500/10 text-rose-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Eraser size={15} />
-                                    擦除
+                                    {tr('devtools.regionMaskTool.mode.eraseShort', '擦除')}
                                 </button>
                                 <button
                                     type="button"
@@ -16487,7 +16644,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'barrier' ? 'border-cyan-400 bg-cyan-500/10 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Pencil size={15} />
-                                    边界修正
+                                    {tr('devtools.regionMaskTool.mode.barrier', '边界修正')}
                                 </button>
                                 <button
                                     type="button"
@@ -16495,14 +16652,14 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (mode === 'path' ? 'border-sky-400 bg-sky-500/10 text-sky-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Route size={15} />
-                                    路径
+                                    {tr('devtools.regionMaskTool.mode.pathShort', '路径')}
                                 </button>
                             </div>
                             {mode === 'chain' ? (
                                 <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-2">
                                     {([
-                                        ['add', '加入'],
-                                        ['subtract', '减去'],
+                                        ['add', tr('devtools.regionMaskTool.chain.add', '加入')],
+                                        ['subtract', tr('devtools.regionMaskTool.chain.subtract', '减去')],
                                     ] as const).map(([operation, label]) => (
                                         <button
                                             key={operation}
@@ -16514,15 +16671,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         </button>
                                     ))}
                                     <div className="col-span-3 text-[11px] leading-5 text-stone-400">
-                                        锁链是主修边工具：先看当前区域边界点，再沿边界拖一段局部链；Shift 临时减去，碎岛会拒绝。
+                                        {tr('devtools.regionMaskTool.chain.hint', '锁链是主修边工具：先看当前区域边界点，再沿边界拖一段局部链；Shift 临时减去，碎岛会拒绝。')}
                                     </div>
                                 </div>
                             ) : null}
                             {mode === 'barrier' ? (
                                 <div className="grid grid-cols-2 gap-2 rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-2">
                                     {([
-                                        ['add', '补边'],
-                                        ['subtract', '去噪'],
+                                        ['add', tr('devtools.regionMaskTool.barrier.add', '补边')],
+                                        ['subtract', tr('devtools.regionMaskTool.barrier.subtract', '去噪')],
                                     ] as const).map(([operation, label]) => (
                                         <button
                                             key={operation}
@@ -16539,7 +16696,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         data-testid="qidahen-barrier-edit-mode-brush"
                                         className={'rounded-md border px-2 py-1.5 text-xs font-black transition ' + (barrierEditMode === 'brush' ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                     >
-                                        画笔
+                                        {tr('devtools.regionMaskTool.mode.paintBrush', '画笔')}
                                     </button>
                                     <button
                                         type="button"
@@ -16547,10 +16704,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         data-testid="qidahen-barrier-edit-mode-bridge"
                                         className={'rounded-md border px-2 py-1.5 text-xs font-black transition ' + (barrierEditMode === 'bridge' ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                     >
-                                        沿候选线补边
+                                        {tr('devtools.regionMaskTool.barrier.bridge', '沿候选线补边')}
                                     </button>
                                     <div className="col-span-2 text-[11px] leading-5 text-stone-400">
-                                        当前问题不是区域颜色，而是边界识别会把马纹、山纹、字块一起膨胀成噪声。正常修边优先用画笔沿真实边界手绘；“沿候选线补边”只沿连续细线候选寻路，找不到连续线会拒绝，不会直线封口。
+                                        {tr('devtools.regionMaskTool.barrier.hint', '当前问题不是区域颜色，而是边界识别会把马纹、山纹、字块一起膨胀成噪声。正常修边优先用画笔沿真实边界手绘；“沿候选线补边”只沿连续细线候选寻路，找不到连续线会拒绝，不会直线封口。')}
                                     </div>
                                 </div>
                             ) : null}
@@ -16559,31 +16716,38 @@ const QidahenRegionMaskTool: React.FC = () => {
                             </div>
                             {showFormalEmptyWorkspaceGuide ? (
                                 <div className="rounded-xl border border-stone-800 bg-stone-950/45 px-3 py-3 text-xs leading-6 text-stone-500">
-                                    这组工具先不用急着调。正式空白工作区第一步只需要导入完成边界图，或切到“边界修正”继续补线。
+                                    {tr('devtools.regionMaskTool.toolPanel.firstStepHint', '这组工具先不用急着调。正式空白工作区第一步只需要导入完成边界图，或切到“边界修正”继续补线。')}
                                 </div>
                             ) : null}
                             <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-3">
-                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">主路进度</div>
+                                <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">{tr('devtools.regionMaskTool.progress.title', '主路进度')}</div>
                                 <div className="mt-3 grid gap-2">
                                     {([
                                         {
-                                            label: '1. 边界图',
+                                            label: tr('devtools.regionMaskTool.progress.stepBoundary', '1. 边界图'),
                                             done: hasBoundaryDraft,
-                                            note: hasBoundaryDraft ? `${boundaryDraftPixelCount.toLocaleString()} px` : '还没开始',
+                                            note: hasBoundaryDraft ? `${boundaryDraftPixelCount.toLocaleString()} px` : tr('devtools.regionMaskTool.progress.notStarted', '还没开始'),
                                         },
                                         {
-                                            label: '2. 保存工作区',
+                                            label: tr('devtools.regionMaskTool.progress.stepSaveWorkspace', '2. 保存工作区'),
                                             done: persistedWorkspaceState === 'populated',
-                                            note: persistedWorkspaceState === 'populated' ? '已可刷新回读' : '还没固化',
+                                            note: persistedWorkspaceState === 'populated' ? tr('devtools.regionMaskTool.progress.workspaceSaved', '已可刷新回读') : tr('devtools.regionMaskTool.progress.workspaceUnsaved', '还没固化'),
                                         },
                                         {
-                                            label: '3. 生成区域',
+                                            label: tr('devtools.regionMaskTool.progress.stepGenerateRegions', '3. 生成区域'),
                                             done: hasGeneratedRegions,
                                             note: hasGeneratedRegions
                                                 ? hasLeakedRegions
-                                                    ? `已生成 ${lastRegionGenerationSummary.generated}，漏边 ${lastRegionGenerationSummary.leaked}`
-                                                    : `已生成 ${lastRegionGenerationSummary.generated}`
-                                                : '还没生成',
+                                                    ? t('devtools.regionMaskTool.progress.generatedWithLeaks', {
+                                                        generated: lastRegionGenerationSummary.generated,
+                                                        leaked: lastRegionGenerationSummary.leaked,
+                                                        defaultValue: '已生成 {{generated}}，漏边 {{leaked}}',
+                                                    })
+                                                    : t('devtools.regionMaskTool.progress.generated', {
+                                                        generated: lastRegionGenerationSummary.generated,
+                                                        defaultValue: '已生成 {{generated}}',
+                                                    })
+                                                : tr('devtools.regionMaskTool.progress.notGenerated', '还没生成'),
                                         },
                                     ] as const).map((step) => (
                                         <div key={step.label} className="flex items-center justify-between gap-3 rounded-lg border border-stone-800 bg-stone-950/50 px-3 py-2 text-xs">
@@ -16593,7 +16757,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     ))}
                                 </div>
                                 <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs leading-5 text-emerald-100">
-                                    下一步：{nextActionHint}
+                                    {tr('devtools.regionMaskTool.progress.nextStep', '下一步：')}{nextActionHint}
                                 </div>
                             </div>
                             <button
@@ -16602,7 +16766,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 data-testid="qidahen-toggle-advanced-workbench"
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-sm font-bold text-stone-200 transition hover:border-stone-500"
                             >
-                                {showAdvancedWorkbench ? '收起高级调试与参数' : '展开高级调试与参数'}
+                                {showAdvancedWorkbench
+                                    ? tr('devtools.regionMaskTool.advanced.collapse', '收起高级调试与参数')
+                                    : tr('devtools.regionMaskTool.advanced.expand', '展开高级调试与参数')}
                             </button>
                         </section>
                         </>
@@ -16612,7 +16778,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                             <>
                                 <section className="space-y-3">
                                     <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
-                                        {showFormalEmptyWorkspaceGuide ? '高级诊断' : '诊断样本'}
+                                        {showFormalEmptyWorkspaceGuide
+                                            ? tr('devtools.regionMaskTool.diagnostics.advancedTitle', '高级诊断')
+                                            : tr('devtools.regionMaskTool.diagnostics.samplesTitle', '诊断样本')}
                                     </div>
                                     <div className="space-y-2">
                                         {DIAGNOSTIC_SAMPLES.map((sample) => (
@@ -16633,73 +16801,75 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         ))}
                                     </div>
                                     <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
-                                        北京不是当前正式区域列表的一部分，但它适合先验证“边界有没有停住”。这一步做不对，后面的大区域也不会对。
+                                        {tr('devtools.regionMaskTool.diagnostics.beijingHint', '北京不是当前正式区域列表的一部分，但它适合先验证“边界有没有停住”。这一步做不对，后面的大区域也不会对。')}
                                     </div>
                                     {diagnosticPreview ? (
                                         <div className="space-y-3 rounded-xl border border-stone-800 bg-stone-950/45 p-3">
-                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-stone-500">局部预览</div>
+                                            <div className="text-xs font-black uppercase tracking-[0.16em] text-stone-500">{tr('devtools.regionMaskTool.diagnostics.previewTitle', '局部预览')}</div>
                                             <div className={`grid gap-2 ${diagnosticPreview.comparisonDataUrl ? 'grid-cols-2' : 'grid-cols-3'}`}>
                                                 <div>
-                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">原图</div>
+                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">{tr('devtools.regionMaskTool.diagnostics.originalImage', '原图')}</div>
                                                     <img
                                                         src={diagnosticPreview.originalDataUrl}
-                                                        alt="诊断原图"
+                                                        alt={tr('devtools.regionMaskTool.diagnostics.originalImageAlt', '诊断原图')}
                                                         className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-stone-950 object-cover"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">启发式边界</div>
+                                                    <div className="mb-1 text-[11px] font-bold text-stone-400">{tr('devtools.regionMaskTool.diagnostics.heuristicBoundary', '启发式边界')}</div>
                                                     <img
                                                         src={diagnosticPreview.heuristicBarrierDataUrl}
-                                                        alt="启发式边界"
+                                                        alt={tr('devtools.regionMaskTool.diagnostics.heuristicBoundaryAlt', '启发式边界')}
                                                         className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
                                                     />
                                                 </div>
                                                 <div>
                                                     <div className="mb-1 text-[11px] font-bold text-stone-400">
-                                                        {diagnosticPreview.comparisonDataUrl ? '禁用 truth 后的启发式初选' : '当前魔棒填充'}
+                                                            {diagnosticPreview.comparisonDataUrl
+                                                                ? tr('devtools.regionMaskTool.diagnostics.heuristicWithoutTruth', '禁用 truth 后的启发式初选')
+                                                                : tr('devtools.regionMaskTool.diagnostics.currentWandFill', '当前魔棒填充')}
                                                     </div>
                                                     <img
                                                         src={diagnosticPreview.fillDataUrl}
-                                                        alt="当前魔棒填充"
+                                                        alt={tr('devtools.regionMaskTool.diagnostics.currentWandFillAlt', '当前魔棒填充')}
                                                         className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
                                                     />
                                                     <div className={`mt-1 text-[11px] font-bold ${diagnosticPreview.usable ? 'text-emerald-300' : 'text-rose-300'}`}>
-                                                        {diagnosticPreview.fillPixelCount.toLocaleString()} px · {diagnosticPreview.methodLabel}
+                                                        {diagnosticPreview.fillPixelCount.toLocaleString()} {tr('devtools.regionMaskTool.diagnostics.pixelUnit', 'px')} · {diagnosticPreview.methodLabel}
                                                     </div>
                                                     {diagnosticPreview.guideRejected ? (
                                                         <div className="mt-1 text-[10px] font-bold text-amber-300">
-                                                            粗轮廓不包含当前 seed，已自动禁用
+                                                            {tr('devtools.regionMaskTool.diagnostics.guideRejected', '粗轮廓不包含当前 seed，已自动禁用')}
                                                         </div>
                                                     ) : null}
                                                 </div>
                                                 {diagnosticPreview.comparisonDataUrl ? (
                                                     <div>
-                                                        <div className="mb-1 text-[11px] font-bold text-stone-400">与显式 truth 的差异</div>
+                                                        <div className="mb-1 text-[11px] font-bold text-stone-400">{tr('devtools.regionMaskTool.diagnostics.truthDiff', '与显式 truth 的差异')}</div>
                                                         <img
                                                             src={diagnosticPreview.comparisonDataUrl}
-                                                            alt="启发式与显式 truth 差异"
+                                                            alt={tr('devtools.regionMaskTool.diagnostics.truthDiffAlt', '启发式与显式 truth 差异')}
                                                             className="block aspect-[15/11] w-full rounded-md border border-stone-800 bg-black object-cover"
                                                         />
                                                         <div className="mt-1 text-[11px] font-bold text-amber-200">
                                                             {diagnosticPreview.comparisonLabel}
                                                         </div>
                                                         <div className="mt-1 text-[10px] leading-4 text-stone-500">
-                                                            黄=重合，粉=truth 里有但启发式没到边，蓝=启发式越界。
+                                                            {tr('devtools.regionMaskTool.diagnostics.truthDiffLegend', '黄=重合，粉=truth 里有但启发式没到边，蓝=启发式越界。')}
                                                         </div>
                                                     </div>
                                                 ) : null}
                                             </div>
                                             <div className="text-xs leading-5 text-stone-500">
-                                                先看“启发式边界”是不是仍被纹理糊成大块；如果这里都不闭合，继续调魔棒容差没有意义。
+                                                {tr('devtools.regionMaskTool.diagnostics.previewHint', '先看“启发式边界”是不是仍被纹理糊成大块；如果这里都不闭合，继续调魔棒容差没有意义。')}
                                             </div>
                                             {diagnosticPreview.comparisonDataUrl ? (
                                                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs leading-5 text-amber-100">
-                                                    北京这块当前主链可以直用显式 truth；上面的启发式初选和差异图才是用来判断“算法有没有到边界停止”的证据。
+                                                    {tr('devtools.regionMaskTool.diagnostics.truthEvidenceHint', '北京这块当前主链可以直用显式 truth；上面的启发式初选和差异图才是用来判断“算法有没有到边界停止”的证据。')}
                                                 </div>
                                             ) : (
                                                 <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-5 text-stone-400">
-                                                    当前这张局部图仍是启发式 bootstrap。它只能证明初选方向，不能直接当最终区域真相。
+                                                    {tr('devtools.regionMaskTool.diagnostics.bootstrapHint', '当前这张局部图仍是启发式 bootstrap。它只能证明初选方向，不能直接当最终区域真相。')}
                                                 </div>
                                             )}
                                         </div>
@@ -16707,9 +16877,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 </section>
 
                                 <section className="space-y-3">
-                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">边界停线</div>
+                                    <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">{tr('devtools.regionMaskTool.diagnostics.boundaryStopTitle', '边界停线')}</div>
                                     <label className="block text-sm text-stone-300">
-                                        颜色容差 {boundaryTolerance}
+                                        {t('devtools.regionMaskTool.diagnostics.boundaryTolerance', {
+                                            value: boundaryTolerance,
+                                            defaultValue: '颜色容差 {{value}}',
+                                        })}
                                         <input
                                             type="range"
                                             min="2"
@@ -16720,7 +16893,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         />
                                     </label>
                                     <label className="block text-sm text-stone-300">
-                                        边界加粗 {boundaryExpansion}px
+                                        {t('devtools.regionMaskTool.diagnostics.boundaryExpansion', {
+                                            value: boundaryExpansion,
+                                            defaultValue: '边界加粗 {{value}}px',
+                                        })}
                                         <input
                                             type="range"
                                             min="0"
@@ -16731,7 +16907,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         />
                                     </label>
                                     <label className="block text-sm text-stone-300">
-                                        区域底色容差 {regionColorTolerance}（魔棒使用种子色相近区域 + 边界停线；必要时再用锁链修边）
+                                        {t('devtools.regionMaskTool.diagnostics.regionTolerance', {
+                                            value: regionColorTolerance,
+                                            defaultValue: '区域底色容差 {{value}}（魔棒使用种子色相近区域 + 边界停线；必要时再用锁链修边）',
+                                        })}
                                         <input
                                             type="range"
                                             min="8"
@@ -16748,7 +16927,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                         <section className="space-y-3">
                             <div data-testid="qidahen-boundary-workflow-panel" className="rounded-xl border border-cyan-900/60 bg-cyan-950/20 p-3">
                                 <div className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
-                                    {showAdvancedWorkbench && regionTruthWorkflowActive ? '区域/路径工作流' : '边界图工作流'}
+                                    {showAdvancedWorkbench && regionTruthWorkflowActive
+                                        ? tr('devtools.regionMaskTool.workflow.regionPathTitle', '区域/路径工作流')
+                                        : tr('devtools.regionMaskTool.workflow.boundaryTitle', '边界图工作流')}
                                 </div>
                                 {!showAdvancedWorkbench ? (
                                     <div className="mt-3 grid gap-2">
@@ -16759,7 +16940,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
                                         >
                                             <WandSparkles size={16} />
-                                            初始化红线
+                                            {tr('devtools.regionMaskTool.workflow.initializeBoundary', '初始化红线')}
                                         </button>
                                         <div className="grid grid-cols-2 gap-2">
                                             <button
@@ -16781,7 +16962,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                             >
                                                 <Pencil size={14} />
-                                                画边界
+                                                {tr('devtools.regionMaskTool.workflow.drawBoundary', '画边界')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16802,7 +16983,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                             >
                                                 <Eraser size={14} />
-                                                擦边界
+                                                {tr('devtools.regionMaskTool.workflow.eraseBoundary', '擦边界')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16812,7 +16993,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                             >
                                                 <RotateCcw size={14} />
-                                                撤回
+                                                {tr('devtools.regionMaskTool.workflow.undo', '撤回')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16822,7 +17003,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                             >
                                                 <RotateCcw size={14} className="-scale-x-100" />
-                                                重做
+                                                {tr('devtools.regionMaskTool.workflow.redo', '重做')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16831,7 +17012,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <Upload size={14} />
-                                                导入边界图
+                                                {tr('devtools.regionMaskTool.workflow.importBoundary', '导入边界图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16840,7 +17021,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
                                             >
                                                 <ScanSearch size={14} />
-                                                自动贴合轮廓
+                                                {tr('devtools.regionMaskTool.workflow.autoSnapContour', '自动贴合轮廓')}
                                             </button>
                                         </div>
                                         <div data-testid="qidahen-compact-status-message" className="rounded-md border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs leading-5 text-stone-300">
@@ -16851,7 +17032,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 {showAdvancedWorkbench && regionTruthWorkflowActive ? (
                                     <>
                                         <div className="mt-2 text-[11px] leading-5 text-cyan-100/85">
-                                            你已经在区域 truth 主路里。这里优先给当前可直接推进成果的动作；边界失败诊断先降级，不挡路。
+                                            {tr('devtools.regionMaskTool.regionTruthWorkflow.inWorkflowHint', '你已经在区域 truth 主路里。这里优先给当前可直接推进成果的动作；边界失败诊断先降级，不挡路。')}
                                         </div>
                                         <div className="mt-3 grid grid-cols-3 gap-2">
                                             <button
@@ -16861,7 +17042,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Pencil size={14} />
-                                                改区域
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.editRegion', '改区域')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16870,7 +17051,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
                                             >
                                                 <Route size={14} />
-                                                改通路
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.editPath', '改通路')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16879,7 +17060,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                             >
                                                 <Save size={14} />
-                                                存进度
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.saveProgress', '存进度')}
                                             </button>
                                         </div>
                                         <div className="mt-2 grid grid-cols-3 gap-2">
@@ -16890,7 +17071,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
                                             >
                                                 <Eye size={14} />
-                                                聚焦当前区
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.focusCurrentRegion', '聚焦当前区')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16899,7 +17080,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
                                             >
                                                 <Plus size={14} />
-                                                下一区
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.nextRegion', '下一区')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16908,16 +17089,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
                                             >
                                                 <Download size={14} />
-                                                导出局部稿
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.exportLocalDraft', '导出局部稿')}
                                             </button>
                                         </div>
                                         <details data-testid="qidahen-region-truth-boundary-tools" className="mt-3 rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                             <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
-                                                继续修边 / 切回边界工具
+                                                {tr('devtools.regionMaskTool.regionTruthWorkflow.backToBoundaryTools', '继续修边 / 切回边界工具')}
                                             </summary>
                                             <div className="mt-3 space-y-2">
                                                 <div className="text-[11px] leading-5 text-stone-400">
-                                                    只有当这版区域粗稿还不够用时，再回到边界图路线。下面保留最少必需入口，不再默认把整套边界失败诊断铺满。
+                                                    {tr('devtools.regionMaskTool.regionTruthWorkflow.backToBoundaryToolsHint', '只有当这版区域粗稿还不够用时，再回到边界图路线。下面保留最少必需入口，不再默认把整套边界失败诊断铺满。')}
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <button
@@ -16927,7 +17108,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                                     >
                                                         <Upload size={14} />
-                                                        导入边界图
+                                                        {tr('devtools.regionMaskTool.workflow.importBoundary', '导入边界图')}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -16936,7 +17117,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                                     >
                                                         <Upload size={14} />
-                                                        导入描线图
+                                                        {tr('devtools.regionMaskTool.regionTruthWorkflow.importBoundarySource', '导入描线图')}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -16945,7 +17126,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/75 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
                                                     >
                                                         <Pencil size={14} />
-                                                        空白补边
+                                                        {tr('devtools.regionMaskTool.regionTruthWorkflow.blankBoundary', '空白补边')}
                                                     </button>
                                                     <button
                                                         type="button"
@@ -16954,7 +17135,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                                     >
                                                         <Download size={14} />
-                                                        导出描边参考
+                                                        {tr('devtools.regionMaskTool.regionTruthWorkflow.exportBoundaryTrace', '导出描边参考')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -16965,7 +17146,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 {showAdvancedWorkbench && !regionTruthWorkflowActive ? (
                                 <div className="mt-3 space-y-3">
                                     <div className="rounded-xl border border-rose-500/25 bg-rose-500/8 px-3 py-3">
-                                        <div className="text-xs font-black uppercase tracking-[0.14em] text-rose-100">主流程</div>
+                                        <div className="text-xs font-black uppercase tracking-[0.14em] text-rose-100">{tr('devtools.regionMaskTool.workflow.mainFlowTitle', '主流程')}</div>
                                         <div className="mt-3 grid gap-2">
                                             <button
                                                 type="button"
@@ -16974,7 +17155,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-rose-300 bg-rose-500/18 px-3 text-sm font-black text-rose-50 transition hover:bg-rose-500/25"
                                             >
                                                 <WandSparkles size={16} />
-                                                初始化整图红色边界
+                                                {tr('devtools.regionMaskTool.workflow.initializeWholeBoundary', '初始化整图红色边界')}
                                             </button>
                                             <button
                                                 type="button"
@@ -16985,7 +17166,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-stone-600 bg-stone-950/70 px-3 text-xs font-black text-stone-100 transition hover:border-rose-300 hover:text-rose-50"
                                             >
                                                 <RotateCcw size={14} />
-                                                重置当前工作区
+                                                {tr('devtools.regionMaskTool.workflow.resetWorkspace', '重置当前工作区')}
                                             </button>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
@@ -17007,7 +17188,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'add' ? 'border-rose-300 bg-rose-500/15 text-rose-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                                 >
                                                     <Pencil size={14} />
-                                                    绘制边界
+                                                    {tr('devtools.regionMaskTool.workflow.drawBoundaryDetailed', '绘制边界')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -17028,7 +17209,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (mode === 'barrier' && barrierHintOperation === 'subtract' ? 'border-fuchsia-300 bg-fuchsia-500/15 text-fuchsia-50' : 'border-stone-600 bg-stone-950/70 text-stone-100 hover:border-stone-400')}
                                                 >
                                                     <Eraser size={14} />
-                                                    擦除边界
+                                                    {tr('devtools.regionMaskTool.workflow.eraseBoundaryDetailed', '擦除边界')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -17038,7 +17219,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                                 >
                                                     <RotateCcw size={14} />
-                                                    撤回
+                                                    {tr('devtools.regionMaskTool.workflow.undo', '撤回')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -17048,7 +17229,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 bg-stone-950/50 text-stone-600')}
                                                 >
                                                     <RotateCcw size={14} className="-scale-x-100" />
-                                                    重做
+                                                    {tr('devtools.regionMaskTool.workflow.redo', '重做')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -17057,7 +17238,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                                 >
                                                     <Upload size={14} />
-                                                    导入边界图
+                                                    {tr('devtools.regionMaskTool.workflow.importBoundary', '导入边界图')}
                                                 </button>
                                             </div>
                                         </div>
@@ -17067,7 +17248,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             data-testid="qidahen-toggle-advanced-workbench-compact"
                                             className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-xs font-black text-stone-300 transition hover:border-stone-500"
                                         >
-                                            {showAdvancedWorkbench ? '收起高级面板' : '显示高级面板'}
+                                            {showAdvancedWorkbench
+                                                ? tr('devtools.regionMaskTool.advanced.collapsePanel', '收起高级面板')
+                                                : tr('devtools.regionMaskTool.advanced.showPanel', '显示高级面板')}
                                         </button>
                                         <div data-testid="qidahen-compact-status-message" className="mt-3 rounded-md border border-stone-800 bg-stone-950/60 px-3 py-2 text-xs leading-5 text-stone-300">
                                             {statusMessage}
@@ -17078,7 +17261,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     <>
                                     <details data-testid="qidahen-boundary-trace-assets-details" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                         <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
-                                            其它工具
+                                            {tr('devtools.regionMaskTool.workflow.otherTools', '其它工具')}
                                         </summary>
                                         <div className="mt-3 grid grid-cols-2 gap-2">
                                             <button
@@ -17088,7 +17271,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                             >
                                                 <Download size={14} />
-                                                固定色边界稿 + 描边包
+                                                {tr('devtools.regionMaskTool.workflow.traceKit', '固定色边界稿 + 描边包')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17097,7 +17280,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <ScanSearch size={14} />
-                                                叠加自然候选参考层
+                                                {tr('devtools.regionMaskTool.workflow.overlayCandidateReference', '叠加自然候选参考层')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17106,7 +17289,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/60 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <Upload size={14} />
-                                                导入描线图
+                                                {tr('devtools.regionMaskTool.workflow.importBoundarySource', '导入描线图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17115,7 +17298,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-400/50 bg-rose-950/20 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-200"
                                             >
                                                 <Upload size={14} />
-                                                导入补边包
+                                                {tr('devtools.regionMaskTool.workflow.importRepairPackage', '导入补边包')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17124,7 +17307,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                             >
                                                 <Download size={14} />
-                                                导出描边参考图
+                                                {tr('devtools.regionMaskTool.workflow.exportBoundaryTraceTemplate', '导出描边参考图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17133,7 +17316,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/50 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                             >
                                                 <Download size={14} />
-                                                导出空白边界 PNG
+                                                {tr('devtools.regionMaskTool.workflow.exportBlankBoundary', '导出空白边界 PNG')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17142,7 +17325,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Download size={14} />
-                                                导出当前区域局部底稿
+                                                {tr('devtools.regionMaskTool.workflow.exportCurrentRegionDraft', '导出当前区域局部底稿')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17151,7 +17334,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-stone-950/70 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Download size={14} />
-                                                批量导出所有局部底稿 ZIP
+                                                {tr('devtools.regionMaskTool.workflow.exportAllRegionDrafts', '批量导出所有局部底稿 ZIP')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17160,7 +17343,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Upload size={14} />
-                                                导入当前区域局部描边图
+                                                {tr('devtools.regionMaskTool.workflow.importCurrentRegionTrace', '导入当前区域局部描边图')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17169,17 +17352,17 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Upload size={14} />
-                                                批量导入局部描边 ZIP
+                                                {tr('devtools.regionMaskTool.workflow.importRegionTraceZip', '批量导入局部描边 ZIP')}
                                             </button>
                                         </div>
                                     </details>
 
                                     <details data-testid="qidahen-boundary-secondary-region-workflow" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                         <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
-                                            次路线：区域粗稿与移动代价
+                                            {tr('devtools.regionMaskTool.workflow.secondaryRouteTitle', '次路线：区域粗稿与移动代价')}
                                         </summary>
                                         <div className="mt-3 text-[11px] leading-5 text-stone-400">
-                                            这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路，也不能替代完成边界图。
+                                            {tr('devtools.regionMaskTool.workflow.secondaryRouteHint', '这条路只在你现在就是要改区域中心点、通路类型、移动代价时使用。它不是边界主路，也不能替代完成边界图。')}
                                         </div>
                                         <div className="mt-3 grid gap-2">
                                             <button
@@ -17187,33 +17370,33 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 onClick={generateRealMapRegionColorDraft}
                                                 data-testid="qidahen-generate-real-map-region-color-draft"
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/60 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
-                                                title="改方向入口：先按真实底图底色生成可编辑区域草稿，再微调区域，不把它当成正式边界成果。"
+                                                title={tr('devtools.regionMaskTool.workflow.secondaryRouteDraftTitle', '改方向入口：先按真实底图底色生成可编辑区域草稿，再微调区域，不把它当成正式边界成果。')}
                                             >
                                                 <WandSparkles size={14} />
-                                                次路线：载入人工整理粗轮廓初稿
+                                                {tr('devtools.regionMaskTool.workflow.loadManualRoughDraft', '次路线：载入人工整理粗轮廓初稿')}
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => generateRealMapRegionColorDraft({ autoDetectPassages: true })}
                                                 data-testid="qidahen-quick-start-region-path-draft"
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
-                                                title="一键生成区域粗稿并补全相邻通路，直接进入路径模式改边界类型和移动代价。"
+                                                title={tr('devtools.regionMaskTool.workflow.secondaryRouteQuickStartTitle', '一键生成区域粗稿并补全相邻通路，直接进入路径模式改边界类型和移动代价。')}
                                             >
                                                 <Route size={14} />
-                                                次路线：区域粗稿 + 通路 + 移动代价
+                                                {tr('devtools.regionMaskTool.workflow.secondaryRoutePathAndCost', '次路线：区域粗稿 + 通路 + 移动代价')}
                                             </button>
                                             <div
                                                 data-testid="qidahen-region-color-draft-disabled-note"
                                                 className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] font-bold leading-5 text-rose-100"
                                             >
-                                                自动边界主路仍不够格时，这是一条改方向入口：它直接生成可编辑区域草稿，用来先得到区域 truth 的大轮廓；它不是正式边界成果，也不会绕过 accepted 门禁。
+                                                {tr('devtools.regionMaskTool.workflow.secondaryRouteWarning', '自动边界主路仍不够格时，这是一条改方向入口：它直接生成可编辑区域草稿，用来先得到区域 truth 的大轮廓；它不是正式边界成果，也不会绕过 accepted 门禁。')}
                                             </div>
                                         </div>
                                     </details>
 
                                     <details data-testid="qidahen-boundary-diagnostics-details" className="rounded-xl border border-stone-800 bg-stone-950/55 px-3 py-3">
                                         <summary className="cursor-pointer list-none text-xs font-black uppercase tracking-[0.16em] text-stone-300">
-                                            候选诊断与自动结果说明
+                                            {tr('devtools.regionMaskTool.workflow.candidateDiagnosticsTitle', '候选诊断与自动结果说明')}
                                         </summary>
                                         <div className="mt-3 grid gap-2">
                                             <button
@@ -17223,27 +17406,41 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                             >
                                                 <Download size={14} />
-                                                导出候选诊断 PNG
+                                                {tr('devtools.regionMaskTool.workflow.exportCandidateDiagnostics', '导出候选诊断 PNG')}
                                             </button>
                                             <div
                                                 data-testid="qidahen-auto-extraction-verdict"
                                                 className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] font-bold leading-5 text-amber-100"
                                             >
-                                                自动抽线不能自动生成正常成果：真实图像参数扫描最多 {REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.bestObservedMatchedSeedCount}/{REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.requiredSeedCount} 个独立 seed；高容差会命中 UI/文字/装饰。固定色边界稿只作为手修起稿层，不能直接保存为成果。
+                                                {t('devtools.regionMaskTool.workflow.candidateDiagnosticsVerdict', {
+                                                    matched: REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.bestObservedMatchedSeedCount,
+                                                    required: REAL_MAP_COLOR_AUTO_EXTRACTION_VERDICT.requiredSeedCount,
+                                                    defaultValue: '自动抽线不能自动生成正常成果：真实图像参数扫描最多 {{matched}}/{{required}} 个独立 seed；高容差会命中 UI/文字/装饰。固定色边界稿只作为手修起稿层，不能直接保存为成果。',
+                                                })}
                                             </div>
                                             <div
                                                 data-testid="qidahen-real-map-boundary-candidate-readiness"
                                                 className={'rounded-md border px-3 py-2 text-[11px] font-bold leading-5 ' + (realMapBoundaryCandidateReadiness.canLoadAsDraft ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100' : 'border-rose-900/60 bg-rose-950/20 text-rose-100')}
                                             >
                                                 {realMapBoundaryCandidateReadiness.label}：
-                                                seed {realMapBoundaryCandidateReadiness.matchedSeedCount}/{realMapBoundaryCandidateReadiness.requiredSeedCount}
+                                                {t('devtools.regionMaskTool.workflow.candidateSeedCount', {
+                                                    matched: realMapBoundaryCandidateReadiness.matchedSeedCount,
+                                                    required: realMapBoundaryCandidateReadiness.requiredSeedCount,
+                                                    defaultValue: 'seed {{matched}}/{{required}}',
+                                                })}
                                                 <span className="mx-2 text-stone-600">/</span>
-                                                可填分区 {realMapBoundaryCandidateReadiness.closedFaceCount}
+                                                {t('devtools.regionMaskTool.workflow.candidateClosedFaceCount', {
+                                                    count: realMapBoundaryCandidateReadiness.closedFaceCount,
+                                                    defaultValue: '可填分区 {{count}}',
+                                                })}
                                                 <span className="mx-2 text-stone-600">/</span>
-                                                UI {realMapBoundaryCandidateReadiness.uiPixelCount.toLocaleString()} px
+                                                {t('devtools.regionMaskTool.workflow.candidateUiPixels', {
+                                                    count: realMapBoundaryCandidateReadiness.uiPixelCount.toLocaleString(),
+                                                    defaultValue: 'UI {{count}} px',
+                                                })}
                                                 {realMapBoundaryCandidatePixelCount > 0 ? (
                                                     <div className="mt-1 text-amber-100">
-                                                        候选诊断 PNG 只用于看噪声和吸附参考；需要起稿请用“载入固定色边界稿”，写入后仍必须手工补成真实闭合边界。
+                                                        {tr('devtools.regionMaskTool.workflow.candidateDiagnosticsHint', '候选诊断 PNG 只用于看噪声和吸附参考；需要起稿请用“载入固定色边界稿”，写入后仍必须手工补成真实闭合边界。')}
                                                     </div>
                                                 ) : null}
                                                 {realMapBoundaryCandidateReadiness.blockers.length > 0 ? (
@@ -17272,7 +17469,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <WandSparkles size={14} />
-                                        生成区域
+                                        {tr('devtools.regionMaskTool.compactRegions.generateRegions', '生成区域')}
                                     </button>
                                     <button
                                         type="button"
@@ -17281,7 +17478,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-rose-500/70 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-100 transition hover:border-rose-300"
                                     >
                                         <Save size={14} />
-                                        保存边界
+                                        {tr('devtools.regionMaskTool.compactRegions.saveBoundary', '保存边界')}
                                     </button>
                                     <button
                                         type="button"
@@ -17293,7 +17490,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             : 'border-amber-500/70 bg-amber-500/10 text-amber-100 hover:border-amber-300')}
                                     >
                                         <Save size={14} />
-                                        保存区域
+                                        {tr('devtools.regionMaskTool.compactRegions.saveRegions', '保存区域')}
                                     </button>
                                     <button
                                         type="button"
@@ -17302,7 +17499,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-violet-500/70 bg-violet-500/10 px-3 py-2 text-xs font-black text-violet-100 transition hover:border-violet-300"
                                     >
                                         <Route size={14} />
-                                        保存连线
+                                        {tr('devtools.regionMaskTool.compactRegions.saveGraph', '保存连线')}
                                     </button>
                                     <button
                                         type="button"
@@ -17311,7 +17508,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <Save size={14} />
-                                        仅保存 guide 候选
+                                        {tr('devtools.regionMaskTool.compactRegions.saveGuideCandidatesOnly', '仅保存 guide 候选')}
                                     </button>
                                     {showAdvancedWorkbench ? (
                                         <button
@@ -17321,13 +17518,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-sky-500/70 bg-sky-500/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:border-sky-300"
                                         >
                                             <Save size={14} />
-                                            保存工作区（全部）
+                                            {tr('devtools.regionMaskTool.workflow.saveWorkspaceAll', '保存工作区（全部）')}
                                         </button>
                                     ) : null}
                                 </div>
                                 {formalRegionSaveBlocked ? (
                                     <div data-testid="qidahen-primary-formal-save-guard" className="rounded-md border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-100">
-                                        正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                                        {t('devtools.regionMaskTool.saveFormalGuard', {
+                                            state: boundaryQualityReport.normality.state,
+                                            defaultValue: '正式工作区不能保存 {{state}} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。',
+                                        })}
                                     </div>
                                 ) : null}
                                 {showAdvancedWorkbench ? (
@@ -17340,7 +17540,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                     >
                                         <Save size={14} />
-                                        固化微调
+                                        {tr('devtools.regionMaskTool.workflow.bakeAdjustments', '固化微调')}
                                     </button>
                                     <button
                                         type="button"
@@ -17349,7 +17549,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <Eraser size={14} />
-                                        只保留有效分区边界
+                                        {tr('devtools.regionMaskTool.workflow.keepValidBoundaryOnly', '只保留有效分区边界')}
                                     </button>
                                     <button
                                         type="button"
@@ -17358,7 +17558,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-xs font-black text-stone-200 transition hover:border-stone-500"
                                     >
                                         <Upload size={14} className="rotate-180" />
-                                        导出边界图
+                                        {tr('devtools.regionMaskTool.workflow.exportBoundary', '导出边界图')}
                                     </button>
                                     <button
                                         type="button"
@@ -17367,7 +17567,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-xs font-black text-stone-200 transition hover:border-stone-500"
                                     >
                                         <Upload size={14} />
-                                        导入带底图描线图
+                                        {tr('devtools.regionMaskTool.workflow.importBoundarySource', '导入带底图描线图')}
                                     </button>
                                 </div>
                                 <details className="mt-3 rounded-md border border-stone-800 bg-stone-950/45 px-3 py-2">
@@ -17375,7 +17575,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         data-testid="qidahen-readonly-boundary-diagnostics-summary"
                                         className="cursor-pointer text-xs font-black text-stone-300"
                                     >
-                                        只读底图诊断
+                                        {tr('devtools.regionMaskTool.workflow.readonlyDiagnostics', '只读底图诊断')}
                                     </summary>
                                     <div className="mt-3 grid grid-cols-2 gap-2">
                                         <button
@@ -17385,7 +17585,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/70 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                         >
                                             <WandSparkles size={14} />
-                                            诊断底图颜色
+                                            {tr('devtools.regionMaskTool.workflow.diagnoseMapColor', '诊断底图颜色')}
                                         </button>
                                         <button
                                             type="button"
@@ -17394,7 +17594,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-100 transition hover:border-amber-300"
                                         >
                                             <WandSparkles size={14} />
-                                            生成粗轮廓初稿
+                                            {tr('devtools.regionMaskTool.workflow.generateRoughOutline', '生成粗轮廓初稿')}
                                         </button>
                                         <button
                                             type="button"
@@ -17403,7 +17603,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/70 bg-cyan-500/10 px-3 py-2 text-xs font-black text-cyan-100 transition hover:border-cyan-300"
                                         >
                                             <WandSparkles size={14} />
-                                            载入固定色边界稿
+                                            {tr('devtools.regionMaskTool.emptyWorkspace.loadColorBoundaryDraft', '载入固定色边界稿')}
                                         </button>
                                         <button
                                             type="button"
@@ -17412,7 +17612,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/60 px-3 py-2 text-xs font-black text-stone-100 transition hover:border-stone-500"
                                         >
                                             <Download size={14} />
-                                            导出原始底图
+                                            {tr('devtools.regionMaskTool.workflow.exportOriginalMap', '导出原始底图')}
                                         </button>
                                     </div>
                                 </details>
@@ -17423,7 +17623,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-500/70 bg-emerald-500/10 px-3 py-2 text-sm font-black text-emerald-100 transition hover:border-emerald-300"
                                 >
                                     <WandSparkles size={15} />
-                                    生成粗略初始区域
+                                    {tr('devtools.regionMaskTool.workflow.generateRoughRegions', '生成粗略初始区域')}
                                 </button>
                                 <button
                                     type="button"
@@ -17432,7 +17632,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 bg-stone-950/65 px-3 py-2 text-xs font-black text-stone-200 transition hover:border-stone-500"
                                 >
                                     <WandSparkles size={14} />
-                                    调试生成当前独立分区
+                                    {tr('devtools.regionMaskTool.workflow.debugGenerateCurrentPartition', '调试生成当前独立分区')}
                                 </button>
                                 <button
                                     type="button"
@@ -17440,44 +17640,46 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     data-testid="qidahen-painted-boundary-only-toggle"
                                     className={'mt-2 inline-flex w-full items-center justify-center rounded-md border px-3 py-2 text-xs font-black transition ' + (paintedBoundaryOnly ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
-                                    {paintedBoundaryOnly ? '当前：只用边界颜色/手工补边' : '实验模式：原图启发式 + 边界颜色'}
+                                    {paintedBoundaryOnly
+                                        ? tr('devtools.regionMaskTool.workflow.paintedBoundaryOnlyOn', '当前：只用边界颜色/手工补边')
+                                        : tr('devtools.regionMaskTool.workflow.paintedBoundaryOnlyOff', '实验模式：原图启发式 + 边界颜色')}
                                 </button>
                                 <div className="mt-2 text-[11px] leading-5 text-stone-400">
-                                    正式主路：导入完成边界图最稳；如果你是在原地图上描线，就导入带底图描线图。粗轮廓初稿现在只给一版大致分界，颜色候选只做诊断和吸附参考，不再写入编辑层，避免把断线/噪声误当边界。
+                                    {tr('devtools.regionMaskTool.workflow.mainRouteHint', '正式主路：导入完成边界图最稳；如果你是在原地图上描线，就导入带底图描线图。粗轮廓初稿现在只给一版大致分界，颜色候选只做诊断和吸附参考，不再写入编辑层，避免把断线/噪声误当边界。')}
                                 </div>
                                 <div className="mt-2 rounded-md border border-amber-500/25 bg-amber-500/8 px-2 py-1.5 text-[11px] leading-5 text-amber-100">
-                                    自动颜色线扫描已被看图和数据否定：它最多只能分出局部 seed，不能直接生成正常成果。继续走手绘/补边包回导，再逐区看图验收。
+                                    {tr('devtools.regionMaskTool.workflow.autoScanRejected', '自动颜色线扫描已被看图和数据否定：它最多只能分出局部 seed，不能直接生成正常成果。继续走手绘/补边包回导，再逐区看图验收。')}
                                 </div>
                                 <div className="mt-2 rounded-md border border-emerald-500/20 bg-emerald-500/8 px-2 py-1.5 text-[11px] leading-5 text-emerald-100">
-                                    正常成果链：导出底图模板 → 外部描边 → 导入完成边界图或带底图描线图 → 工具内补边/去噪 → 保存工作区 → 按边界分割全图生成区域。
+                                    {tr('devtools.regionMaskTool.workflow.normalRouteChain', '正常成果链：导出底图模板 → 外部描边 → 导入完成边界图或带底图描线图 → 工具内补边/去噪 → 保存工作区 → 按边界分割全图生成区域。')}
                                 </div>
                                 {boundarySourceReferenceImage ? (
                                     <div className="mt-2 rounded-md border border-cyan-500/20 bg-cyan-500/8 px-2 py-1.5 text-[11px] leading-5 text-cyan-100">
-                                        已载入参考层。它可能来自你的描线图，也可能来自底图候选；正式边界仍以你手绘/导入的闭合边界图为准。
+                                        {tr('devtools.regionMaskTool.workflow.referenceLayerLoaded', '已载入参考层。它可能来自你的描线图，也可能来自底图候选；正式边界仍以你手绘/导入的闭合边界图为准。')}
                                     </div>
                                 ) : null}
                             <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                 <div>
-                                    当前边界图像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                    {tr('devtools.regionMaskTool.workflow.boundaryPixels', '当前边界图像素：')}<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
                                 </div>
                                 <div>
-                                    当前最终红线/障碍像素：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
+                                    {tr('devtools.regionMaskTool.workflow.finalBarrierPixels', '当前最终红线/障碍像素：')}<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
                                 </div>
                                 <div>
-                                    手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                    {t('devtools.regionMaskTool.compactBoundaryStats.manualAdditionsLabel', { defaultValue: '手工补边：' })}<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
                                     <span className="mx-2 text-stone-600">/</span>
-                                    去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                    {t('devtools.regionMaskTool.compactBoundaryStats.denoiseRemovedLabel', { defaultValue: '去噪：' })}<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
                                 </div>
                                 <div>
-                                    底图支撑：<span data-testid="qidahen-real-map-boundary-support-count" className="font-mono text-amber-200">{realMapBoundarySupportPixelCount.toLocaleString()}</span>
+                                    {tr('devtools.regionMaskTool.workflow.realMapSupport', '底图支撑：')}<span data-testid="qidahen-real-map-boundary-support-count" className="font-mono text-amber-200">{realMapBoundarySupportPixelCount.toLocaleString()}</span>
                                     <span className="mx-2 text-stone-600">/</span>
-                                    候选诊断：<span data-testid="qidahen-real-map-boundary-candidate-count" className="font-mono text-amber-200">{realMapBoundaryCandidatePixelCount.toLocaleString()}</span>
+                                    {tr('devtools.regionMaskTool.workflow.candidateDiagnostics', '候选诊断：')}<span data-testid="qidahen-real-map-boundary-candidate-count" className="font-mono text-amber-200">{realMapBoundaryCandidatePixelCount.toLocaleString()}</span>
                                     <span className="mx-2 text-stone-600">/</span>
-                                    吸附：<span data-testid="qidahen-real-map-boundary-snap-state" className="font-mono text-emerald-200">{snapBarrierBrushToRealMapSupport ? 'on' : 'off'}</span>
+                                    {tr('devtools.regionMaskTool.workflow.snapState', '吸附：')}<span data-testid="qidahen-real-map-boundary-snap-state" className="font-mono text-emerald-200">{snapBarrierBrushToRealMapSupport ? tr('devtools.regionMaskTool.workflow.on', 'on') : tr('devtools.regionMaskTool.workflow.off', 'off')}</span>
                                 </div>
                                 {boundarySourceReferenceImage ? (
                                     <div>
-                                        参考层：<span className="font-mono text-cyan-200">{showBoundarySourceReference ? `${Math.round(boundarySourceReferenceOpacity * 100)}%` : '隐藏'}</span>
+                                        {tr('devtools.regionMaskTool.workflow.referenceLayer', '参考层：')}<span className="font-mono text-cyan-200">{showBoundarySourceReference ? `${Math.round(boundarySourceReferenceOpacity * 100)}%` : tr('devtools.regionMaskTool.workflow.hidden', '隐藏')}</span>
                                     </div>
                                 ) : null}
                                 {hasBoundaryDraft ? (
@@ -17485,26 +17687,26 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         data-testid="qidahen-boundary-closure-diagnostics"
                                         className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[11px] leading-5 text-emerald-100"
                                     >
-                                        <div className="font-black uppercase tracking-[0.14em] text-emerald-200">分区诊断</div>
+                                        <div className="font-black uppercase tracking-[0.14em] text-emerald-200">{tr('devtools.regionMaskTool.workflow.partitionDiagnostics', '分区诊断')}</div>
                                         <div>
-                                            可填分区：<span data-testid="qidahen-closed-face-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.closedFaceCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.closedFaceCount', '可填分区：')}<span data-testid="qidahen-closed-face-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.closedFaceCount}</span>
                                             <span className="mx-2 text-stone-600">/</span>
-                                            独立 seed：<span data-testid="qidahen-closed-seed-hit-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.matchedSeedCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.matchedSeedCount', '独立 seed：')}<span data-testid="qidahen-closed-seed-hit-count" className="font-mono text-emerald-100">{boundaryClosureDiagnostics.matchedSeedCount}</span>
                                         </div>
                                         <div>
-                                            最大分区：<span className="font-mono text-stone-200">{boundaryClosureDiagnostics.largestFacePixelCount.toLocaleString()}</span> px
+                                            {tr('devtools.regionMaskTool.workflow.largestFace', '最大分区：')}<span className="font-mono text-stone-200">{boundaryClosureDiagnostics.largestFacePixelCount.toLocaleString()}</span> px
                                         </div>
                                         <div data-testid="qidahen-open-boundary-summary" className={boundaryOpenDiagnostics.openComponentCount > 0 ? 'text-amber-100' : 'text-emerald-100'}>
-                                            开放线段：<span data-testid="qidahen-open-boundary-count" className="font-mono">{boundaryOpenDiagnostics.openComponentCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.openSegments', '开放线段：')}<span data-testid="qidahen-open-boundary-count" className="font-mono">{boundaryOpenDiagnostics.openComponentCount}</span>
                                             {boundaryOpenDiagnostics.openComponentCount > 0 ? `，最大 ${boundaryOpenDiagnostics.largestOpenPixelCount.toLocaleString()} px` : ''}
                                         </div>
                                         <div data-testid="qidahen-unexplained-open-boundary-summary" className={unexplainedBoundaryOpenDiagnostics.openComponentCount > 0 ? 'text-amber-100' : 'text-emerald-100'}>
-                                            未解释开放线：<span data-testid="qidahen-unexplained-open-boundary-count" className="font-mono">{unexplainedBoundaryOpenDiagnostics.openComponentCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.unexplainedOpenSegments', '未解释开放线：')}<span data-testid="qidahen-unexplained-open-boundary-count" className="font-mono">{unexplainedBoundaryOpenDiagnostics.openComponentCount}</span>
                                             {unexplainedBoundaryOpenDiagnostics.openComponentCount > 0 ? `，最大 ${unexplainedBoundaryOpenDiagnostics.largestOpenPixelCount.toLocaleString()} px` : ''}
                                         </div>
                                         {unexplainedBoundaryOpenDiagnostics.hints.length > 0 ? (
                                             <div data-testid="qidahen-open-boundary-hints" className="text-amber-100">
-                                                提示点：{unexplainedBoundaryOpenDiagnostics.hints.slice(0, 3).map((hint) => (
+                                                {tr('devtools.regionMaskTool.workflow.hintPoints', '提示点：')}{unexplainedBoundaryOpenDiagnostics.hints.slice(0, 3).map((hint) => (
                                                     `${hint.nearestRegionName ? `${hint.nearestRegionName} ` : ''}${hint.endpoints[0].x},${hint.endpoints[0].y} ↔ ${hint.endpoints[1].x},${hint.endpoints[1].y}${hint.distanceToNearestSeed != null ? `，距 seed ${Math.round(hint.distanceToNearestSeed)}px` : ''}`
                                                 )).join('；')}
                                             </div>
@@ -17516,19 +17718,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 data-testid="qidahen-focus-nearest-open-boundary"
                                                 className="mt-2 rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
                                             >
-                                                定位断点并手绘补边
+                                                {tr('devtools.regionMaskTool.workflow.focusAndPatchOpenSegment', '定位断点并手绘补边')}
                                             </button>
                                         ) : null}
                                         {boundaryClosureDiagnostics.unmatchedRegionNames.length > 0 ? (
                                             <div data-testid="qidahen-unmatched-closed-seeds" className="text-amber-100">
-                                                未独立：{boundaryClosureDiagnostics.unmatchedRegionNames.slice(0, 5).join('、')}
+                                                {tr('devtools.regionMaskTool.workflow.unmatchedRegions', '未独立：')}{boundaryClosureDiagnostics.unmatchedRegionNames.slice(0, 5).join('、')}
                                                 {boundaryClosureDiagnostics.unmatchedRegionNames.length > 5 ? ` 等 ${boundaryClosureDiagnostics.unmatchedRegionNames.length} 个` : ''}
                                             </div>
                                         ) : (
-                                            <div className="text-emerald-100">所有正式区域 seed 都已进入独立分区。</div>
+                                            <div className="text-emerald-100">{tr('devtools.regionMaskTool.workflow.allSeedsMatched', '所有正式区域 seed 都已进入独立分区。')}</div>
                                         )}
                                         <div data-testid="qidahen-boundary-repair-action-hint" className="mt-2 rounded border border-amber-400/20 bg-stone-950/45 px-2 py-1.5 text-amber-50">
-                                            下一步：{boundaryRepairActionHint}
+                                            {tr('devtools.regionMaskTool.progress.nextStep', '下一步：')}{boundaryRepairActionHint}
                                         </div>
                                         <div className="mt-2 grid grid-cols-2 gap-2">
                                             <button
@@ -17539,7 +17741,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                             >
                                                 <Pencil size={12} />
-                                                定位未独立 seed
+                                                {tr('devtools.regionMaskTool.workflow.focusUnmatchedSeed', '定位未独立 seed')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17556,7 +17758,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                             >
                                                 <Pencil size={12} />
-                                                定位开放线段
+                                                {tr('devtools.regionMaskTool.workflow.focusOpenSegment', '定位开放线段')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17566,7 +17768,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-1 rounded-md border border-cyan-500/45 bg-cyan-500/10 px-2 py-1 text-[11px] font-black text-cyan-100 transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                             >
                                                 <Eraser size={12} />
-                                                舍弃无效断线
+                                                {tr('devtools.regionMaskTool.workflow.discardInvalidOpenSegments', '舍弃无效断线')}
                                             </button>
                                             <button
                                                 type="button"
@@ -17576,7 +17778,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 className="inline-flex items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-500/10 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-300 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                             >
                                                 <Download size={12} />
-                                                导出问题包
+                                                {tr('devtools.regionMaskTool.workflow.exportProblemPackage', '导出问题包')}
                                             </button>
                                         </div>
                                     </div>
@@ -17587,7 +17789,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2 text-[11px] leading-5 text-amber-50"
                                     >
                                         <div className="mb-2 flex items-center justify-between gap-3">
-                                            <div className="font-black uppercase tracking-[0.14em] text-amber-100">补边问题队列</div>
+                                            <div className="font-black uppercase tracking-[0.14em] text-amber-100">{tr('devtools.regionMaskTool.workflow.repairQueueTitle', '补边问题队列')}</div>
                                             <div data-testid="qidahen-boundary-repair-queue-count" className="font-mono text-amber-100/75">
                                                 {boundaryClosureDiagnostics.unmatchedRegions.length + unexplainedBoundaryOpenDiagnostics.hints.length + weakRealMapFitRegionReports.length}
                                             </div>
@@ -17601,7 +17803,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     data-testid={`qidahen-repair-queue-weak-support-${report.regionId}`}
                                                     className="flex w-full items-center justify-between gap-2 rounded border border-rose-300/30 bg-rose-950/25 px-2 py-1 text-left transition hover:border-rose-100"
                                                 >
-                                                    <span className="min-w-0 truncate font-bold text-rose-100">{report.regionName} 底图弱支撑</span>
+                                                    <span className="min-w-0 truncate font-bold text-rose-100">{report.regionName} {tr('devtools.regionMaskTool.workflow.weakSupport', '底图弱支撑')}</span>
                                                     <span className="shrink-0 font-mono text-rose-100/75">
                                                         {(report.supportRatio * 100).toFixed(1)}%
                                                     </span>
@@ -17621,9 +17823,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         data-testid={`qidahen-repair-queue-unmatched-${unmatchedRegion.id}`}
                                                         className="flex w-full items-center justify-between gap-2 rounded border border-amber-400/25 bg-stone-950/45 px-2 py-1 text-left transition hover:border-amber-200"
                                                     >
-                                                        <span className="min-w-0 truncate font-bold text-amber-100">{unmatchedRegion.name} 未独立 seed</span>
+                                                        <span className="min-w-0 truncate font-bold text-amber-100">{unmatchedRegion.name} {tr('devtools.regionMaskTool.workflow.unmatchedSeedShort', '未独立 seed')}</span>
                                                         <span className="shrink-0 font-mono text-amber-100/70">
-                                                            {unmatchedRegion.seed ? `${unmatchedRegion.seed.x},${unmatchedRegion.seed.y}` : '缺 seed'}
+                                                            {unmatchedRegion.seed ? `${unmatchedRegion.seed.x},${unmatchedRegion.seed.y}` : tr('devtools.regionMaskTool.workflow.missingSeed', '缺 seed')}
                                                         </span>
                                                     </button>
                                                 );
@@ -17637,7 +17839,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     className="flex w-full items-center justify-between gap-2 rounded border border-amber-400/25 bg-stone-950/45 px-2 py-1 text-left transition hover:border-amber-200"
                                                 >
                                                     <span className="min-w-0 truncate font-bold text-amber-100">
-                                                        {hint.nearestRegionName ? `${hint.nearestRegionName} ` : ''}开放线段 {index + 1}
+                                                        {hint.nearestRegionName ? `${hint.nearestRegionName} ` : ''}{tr('devtools.regionMaskTool.workflow.openSegmentShort', '开放线段')} {index + 1}
                                                     </span>
                                                     <span className="shrink-0 font-mono text-amber-100/70">
                                                         {hint.endpoints[0].x},{hint.endpoints[0].y} ↔ {hint.endpoints[1].x},{hint.endpoints[1].y}
@@ -17660,7 +17862,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 <div data-testid="qidahen-boundary-repair-preview-meta" className="font-mono text-amber-100/75">
                                                     {boundaryRepairPreview.kind}
                                                     <span className="mx-1 opacity-45">·</span>
-                                                    crop {boundaryRepairPreview.crop.left},{boundaryRepairPreview.crop.top}
+                                                    {tr('devtools.regionMaskTool.workflow.cropLabel', 'crop')} {boundaryRepairPreview.crop.left},{boundaryRepairPreview.crop.top}
                                                     +{boundaryRepairPreview.crop.width}x{boundaryRepairPreview.crop.height}
                                                 </div>
                                             </div>
@@ -17668,7 +17870,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 type="button"
                                                 onClick={() => setBoundaryRepairPreview(null)}
                                                 data-testid="qidahen-close-boundary-repair-preview"
-                                                aria-label="关闭补边问题裁图"
+                                                aria-label={tr('devtools.regionMaskTool.workflow.closeRepairPreviewAria', '关闭补边问题裁图')}
                                                 className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-amber-300/35 bg-stone-950/50 text-amber-100 transition hover:border-amber-100"
                                             >
                                                 <X size={13} />
@@ -17702,22 +17904,22 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     </div>
                                     <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-stone-300">
                                         <div>
-                                            缺 seed：<span data-testid="qidahen-quality-missing-seed-count" className="font-mono text-stone-100">{boundaryQualityReport.missingSeedNames.length}</span>
+                                            {tr('devtools.regionMaskTool.workflow.missingSeedCount', '缺 seed：')}<span data-testid="qidahen-quality-missing-seed-count" className="font-mono text-stone-100">{boundaryQualityReport.missingSeedNames.length}</span>
                                         </div>
                                         <div>
-                                            UI 边界：<span data-testid="qidahen-quality-boundary-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.boundaryUiPixels.toLocaleString()}</span>
+                                            {tr('devtools.regionMaskTool.workflow.uiBoundaryCount', 'UI 边界：')}<span data-testid="qidahen-quality-boundary-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.boundaryUiPixels.toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            UI mask：<span data-testid="qidahen-quality-mask-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.maskUiPixels.toLocaleString()}</span>
+                                            {tr('devtools.regionMaskTool.workflow.uiMaskCount', 'UI mask：')}<span data-testid="qidahen-quality-mask-ui-pixels" className="font-mono text-stone-100">{boundaryQualityReport.maskUiPixels.toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            未独立：<span data-testid="qidahen-quality-unmatched-count" className="font-mono text-stone-100">{boundaryQualityReport.unmatchedCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.unmatchedCount', '未独立：')}<span data-testid="qidahen-quality-unmatched-count" className="font-mono text-stone-100">{boundaryQualityReport.unmatchedCount}</span>
                                         </div>
                                         <div>
-                                            开放线：<span data-testid="qidahen-quality-open-count" className="font-mono text-stone-100">{boundaryQualityReport.openComponentCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.openLineCount', '开放线：')}<span data-testid="qidahen-quality-open-count" className="font-mono text-stone-100">{boundaryQualityReport.openComponentCount}</span>
                                         </div>
                                         <div>
-                                            未解释开放线：<span data-testid="qidahen-quality-unexplained-open-count" className="font-mono text-stone-100">{boundaryQualityReport.unexplainedOpenComponentCount}</span>
+                                            {tr('devtools.regionMaskTool.workflow.unexplainedOpenLineCount', '未解释开放线：')}<span data-testid="qidahen-quality-unexplained-open-count" className="font-mono text-stone-100">{boundaryQualityReport.unexplainedOpenComponentCount}</span>
                                         </div>
                                     </div>
                                     <div
@@ -17733,10 +17935,14 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             </div>
                                         </div>
                                         <div data-testid="qidahen-boundary-normality-approval-count" className="mt-0.5 font-mono text-[10px] opacity-80">
-                                            人工验收 {boundaryQualityReport.normality.approvedCount}/{boundaryQualityReport.normality.requiredApprovalCount}
+                                            {t('devtools.regionMaskTool.workflow.manualApprovalCount', {
+                                                approved: boundaryQualityReport.normality.approvedCount,
+                                                required: boundaryQualityReport.normality.requiredApprovalCount,
+                                                defaultValue: '人工验收 {{approved}}/{{required}}',
+                                            })}
                                         </div>
                                         <div data-testid="qidahen-boundary-real-map-fit" className="mt-0.5 font-mono text-[10px] opacity-80">
-                                            底图贴合 {boundaryQualityReport.normality.realMapFit.state}
+                                            {tr('devtools.regionMaskTool.workflow.realMapFit', '底图贴合')} {boundaryQualityReport.normality.realMapFit.state}
                                             <span className="mx-1 opacity-45">·</span>
                                             {(boundaryQualityReport.normality.realMapFit.supportRatio * 100).toFixed(1)}%
                                             <span className="mx-1 opacity-45">·</span>
@@ -17745,12 +17951,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             {boundaryQualityReport.normality.realMapFit.weakRegionNames.length > 0 ? (
                                                 <span data-testid="qidahen-boundary-real-map-fit-weak-regions">
                                                     <span className="mx-1 opacity-45">·</span>
-                                                    弱支撑 {boundaryQualityReport.normality.realMapFit.weakRegionNames.join('、')}
+                                                    {tr('devtools.regionMaskTool.workflow.weakSupportShort', '弱支撑')} {boundaryQualityReport.normality.realMapFit.weakRegionNames.join('、')}
                                                 </span>
                                             ) : null}
                                         </div>
                                         <div data-testid="qidahen-boundary-shape-report" className="mt-0.5 font-mono text-[10px] opacity-80">
-                                            直线形态 {boundaryQualityReport.normality.shape.state}
+                                            {tr('devtools.regionMaskTool.workflow.straightShape', '直线形态')} {boundaryQualityReport.normality.shape.state}
                                             <span className="mx-1 opacity-45">·</span>
                                             {(boundaryQualityReport.normality.shape.straightSupportRatio * 100).toFixed(1)}%
                                             <span className="mx-1 opacity-45">·</span>
@@ -17761,7 +17967,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             {boundaryQualityReport.normality.detail}
                                         </div>
                                         <div data-testid="qidahen-acceptance-package-signature-state" className="mt-0.5 font-mono text-[10px] opacity-80">
-                                            验收包 {isCurrentAcceptancePackageExported ? 'current' : lastAcceptancePackageSignature ? 'stale' : 'missing'}
+                                            {tr('devtools.regionMaskTool.workflow.acceptancePackage', '验收包')} {isCurrentAcceptancePackageExported ? tr('devtools.regionMaskTool.workflow.acceptanceCurrent', 'current') : lastAcceptancePackageSignature ? tr('devtools.regionMaskTool.workflow.acceptanceStale', 'stale') : tr('devtools.regionMaskTool.workflow.acceptanceMissing', 'missing')}
                                         </div>
                                         {boundaryQualityReport.normality.blockers.length > 0 ? (
                                             <div data-testid="qidahen-boundary-normality-blockers" className="mt-1 space-y-0.5 text-[10px] text-amber-100">
@@ -17779,7 +17985,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 >
                                                     <span className="min-w-0 truncate">{coverage.regionName}</span>
                                                     <span className="shrink-0 font-mono">
-                                                        {coverage.coverageRatio == null ? 'n/a' : `${(coverage.coverageRatio * 100).toFixed(1)}%`}
+                                                        {coverage.coverageRatio == null ? tr('devtools.regionMaskTool.workflow.notAvailable', 'n/a') : `${(coverage.coverageRatio * 100).toFixed(1)}%`}
                                                         <span className="mx-1 opacity-45">·</span>
                                                         {coverage.label}
                                                     </span>
@@ -17806,7 +18012,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                     : 'border-stone-600 bg-stone-950/45 text-stone-300'
                                                             }`}
                                                         >
-                                                            {hasViewedRegionAcceptanceCrop(coverage) ? '已看图' : '未看图'}
+                                                            {hasViewedRegionAcceptanceCrop(coverage)
+                                                                ? t('devtools.regionMaskTool.reviewStatus.viewed', { defaultValue: '已看图' })
+                                                                : t('devtools.regionMaskTool.reviewStatus.unviewed', { defaultValue: '未看图' })}
                                                         </span>
                                                         <button
                                                             type="button"
@@ -17815,7 +18023,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                             data-testid={`qidahen-view-normality-region-${coverage.regionId}`}
                                                             className="rounded border border-cyan-400/45 bg-cyan-400/10 px-2 py-0.5 font-black text-cyan-100 transition hover:border-cyan-200 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                                         >
-                                                            查看裁图
+                                                            {t('devtools.regionMaskTool.reviewStatus.viewCrop', { defaultValue: '查看裁图' })}
                                                         </button>
                                                         {coverage.acceptanceState === 'approved' ? (
                                                             <button
@@ -17824,7 +18032,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                 data-testid={`qidahen-revoke-normality-acceptance-${coverage.regionId}`}
                                                                 className="rounded border border-stone-500/60 bg-stone-950/60 px-2 py-0.5 font-black text-stone-100 transition hover:border-stone-300"
                                                             >
-                                                                撤销
+                                                                {t('devtools.regionMaskTool.reviewStatus.revoke', { defaultValue: '撤销' })}
                                                             </button>
                                                         ) : (
                                                             <button
@@ -17840,7 +18048,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                 data-testid={`qidahen-approve-normality-region-${coverage.regionId}`}
                                                                 className="rounded border border-sky-400/45 bg-sky-400/10 px-2 py-0.5 font-black text-sky-100 transition hover:border-sky-200 disabled:cursor-not-allowed disabled:border-stone-700 disabled:bg-stone-950/40 disabled:text-stone-500"
                                                             >
-                                                                看图通过
+                                                                {t('devtools.regionMaskTool.reviewStatus.approveAfterReview', { defaultValue: '看图通过' })}
                                                             </button>
                                                         )}
                                                     </div>
@@ -17855,20 +18063,27 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 <div className="mb-1 flex items-center justify-between gap-2">
                                                     <div className="min-w-0">
                                                         <div data-testid="qidahen-region-acceptance-preview-title" className="truncate font-black">
-                                                            {regionAcceptancePreview.regionName} 验收裁图
+                                                            {t('devtools.regionMaskTool.acceptancePreview.title', {
+                                                                regionName: regionAcceptancePreview.regionName,
+                                                                defaultValue: '{{regionName}} 验收裁图',
+                                                            })}
                                                         </div>
                                                         <div data-testid="qidahen-region-acceptance-preview-meta" className="font-mono opacity-80">
-                                                            {regionAcceptancePreview.pixelCount.toLocaleString()} px
-                                                            <span className="mx-1 opacity-45">·</span>
-                                                            crop {regionAcceptancePreview.crop.left},{regionAcceptancePreview.crop.top}
-                                                            -{regionAcceptancePreview.crop.right},{regionAcceptancePreview.crop.bottom}
+                                                            {t('devtools.regionMaskTool.acceptancePreview.meta', {
+                                                                pixels: regionAcceptancePreview.pixelCount.toLocaleString(),
+                                                                left: regionAcceptancePreview.crop.left,
+                                                                top: regionAcceptancePreview.crop.top,
+                                                                right: regionAcceptancePreview.crop.right,
+                                                                bottom: regionAcceptancePreview.crop.bottom,
+                                                                defaultValue: '{{pixels}} 像素 · 裁图 {{left}},{{top}}-{{right}},{{bottom}}',
+                                                            })}
                                                         </div>
                                                     </div>
                                                     <button
                                                         type="button"
                                                         onClick={() => setRegionAcceptancePreview(null)}
                                                         data-testid="qidahen-close-region-acceptance-preview"
-                                                        aria-label="关闭区域验收裁图"
+                                                        aria-label={t('devtools.regionMaskTool.acceptancePreview.closeAria', { defaultValue: '关闭区域验收裁图' })}
                                                         className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-cyan-300/35 bg-stone-950/50 text-cyan-100 transition hover:border-cyan-100"
                                                     >
                                                         <X size={13} />
@@ -17876,7 +18091,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 </div>
                                                 <img
                                                     src={regionAcceptancePreview.dataUrl}
-                                                    alt={`${regionAcceptancePreview.regionName} 验收裁图`}
+                                                    alt={t('devtools.regionMaskTool.acceptancePreview.imageAlt', {
+                                                        regionName: regionAcceptancePreview.regionName,
+                                                        defaultValue: '{{regionName}} 验收裁图',
+                                                    })}
                                                     data-testid="qidahen-region-acceptance-preview-image"
                                                     className="max-h-72 w-full rounded border border-white/10 object-contain"
                                                 />
@@ -17906,7 +18124,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-600 bg-stone-950/70 px-3 py-1.5 text-[11px] font-black text-stone-100 transition hover:border-stone-400"
                                     >
                                         <Download size={13} />
-                                        导出质量报告 JSON
+                                        {t('devtools.regionMaskTool.exportQualityReport', { defaultValue: '导出质量报告 JSON' })}
                                     </button>
                                     <button
                                         type="button"
@@ -17915,7 +18133,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/45 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-black text-cyan-100 transition hover:border-cyan-300"
                                     >
                                         <Download size={13} />
-                                        导出分区预览 PNG
+                                        {t('devtools.regionMaskTool.exportPartitionPreview', { defaultValue: '导出分区预览 PNG' })}
                                     </button>
                                     <button
                                         type="button"
@@ -17924,7 +18142,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-500/45 bg-amber-500/10 px-3 py-1.5 text-[11px] font-black text-amber-100 transition hover:border-amber-300"
                                     >
                                         <Download size={13} />
-                                        导出补边问题包 ZIP
+                                        {t('devtools.regionMaskTool.exportBoundaryRepairPackage', { defaultValue: '导出补边问题包 ZIP' })}
                                     </button>
                                     <button
                                         type="button"
@@ -17933,70 +18151,95 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-500/45 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black text-emerald-100 transition hover:border-emerald-300"
                                     >
                                         <Download size={13} />
-                                        导出区域验收包 ZIP
+                                        {t('devtools.regionMaskTool.exportAcceptancePackage', { defaultValue: '导出区域验收包 ZIP' })}
                                     </button>
                                 </div>
                                 {lastBoundaryExtractionStats ? (
                                     <div className="mt-3 rounded-lg border border-stone-800 bg-stone-950/70 px-3 py-2 text-[11px] leading-5 text-stone-400">
                                         <div className="font-black uppercase tracking-[0.14em] text-stone-500">
-                                            最近抽线读数 · {
-                                                lastBoundaryExtractionStats.writeMode === 'candidate-reference'
-                                                    ? '当前底图区域导向候选参考'
+                                            {t('devtools.regionMaskTool.extractionStats.title', {
+                                                mode: lastBoundaryExtractionStats.writeMode === 'candidate-reference'
+                                                    ? t('devtools.regionMaskTool.extractionStats.mode.candidateReference', { defaultValue: '当前底图区域导向候选参考' })
                                                     : lastBoundaryExtractionStats.writeMode === 'editable-draft'
-                                                        ? '真实底图颜色线编辑草稿'
-                                                        : (lastBoundaryExtractionStats.mode === 'hand-drawn' ? '带底图描线图' : '当前底图实验')
-                                            }
+                                                        ? t('devtools.regionMaskTool.extractionStats.mode.editableDraft', { defaultValue: '真实底图颜色线编辑草稿' })
+                                                        : (lastBoundaryExtractionStats.mode === 'hand-drawn'
+                                                            ? t('devtools.regionMaskTool.extractionStats.mode.handDrawn', { defaultValue: '带底图描线图' })
+                                                            : t('devtools.regionMaskTool.extractionStats.mode.currentExperiment', { defaultValue: '当前底图实验' })),
+                                                defaultValue: '最近抽线读数 · {{mode}}',
+                                            })}
                                         </div>
                                         <div>
-                                            抽色命中：<span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.matchedPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.extractionStats.matchedPixelCountLabel', { defaultValue: '抽色命中：' })}
+                                            <span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.matchedPixelCount.toLocaleString()}</span>
                                         </div>
                                         {lastBoundaryExtractionStats.drawnChangedPixelCount != null ? (
                                             <div>
-                                                底图差分：<span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.drawnChangedPixelCount.toLocaleString()}</span>
+                                                {t('devtools.regionMaskTool.extractionStats.drawnDiffPixelCountLabel', { defaultValue: '底图差分：' })}
+                                                <span className="font-mono text-cyan-200">{lastBoundaryExtractionStats.drawnChangedPixelCount.toLocaleString()}</span>
                                             </div>
                                         ) : null}
                                         <div>
-                                            贴支撑带：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.boundedPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.extractionStats.supportBandPixelCountLabel', { defaultValue: '贴支撑带：' })}
+                                            <span className="font-mono text-stone-200">{lastBoundaryExtractionStats.boundedPixelCount.toLocaleString()}</span>
                                         </div>
                                         {lastBoundaryExtractionStats.guidePixelCount != null ? (
                                             <div>
-                                                区域导向带：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.guidePixelCount.toLocaleString()}</span>
+                                                {t('devtools.regionMaskTool.extractionStats.guideBandPixelCountLabel', { defaultValue: '区域导向带：' })}
+                                                <span className="font-mono text-stone-200">{lastBoundaryExtractionStats.guidePixelCount.toLocaleString()}</span>
                                             </div>
                                         ) : null}
                                         {lastBoundaryExtractionStats.decorationExcludedPixelCount != null ? (
                                             <div>
-                                                装饰/标记排除：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.decorationExcludedPixelCount.toLocaleString()}</span>
+                                                {t('devtools.regionMaskTool.extractionStats.decorationExcludedPixelCountLabel', { defaultValue: '装饰/标记排除：' })}
+                                                <span className="font-mono text-stone-200">{lastBoundaryExtractionStats.decorationExcludedPixelCount.toLocaleString()}</span>
                                             </div>
                                         ) : null}
                                         <div>
-                                            {lastBoundaryExtractionStats.mode === 'hand-drawn' ? '抽线后' : '剔除后'}：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.sealedPixelCount.toLocaleString()}</span>
+                                            {t(
+                                                lastBoundaryExtractionStats.mode === 'hand-drawn'
+                                                    ? 'devtools.regionMaskTool.extractionStats.postExtractPixelCountLabel'
+                                                    : 'devtools.regionMaskTool.extractionStats.postTrimPixelCountLabel',
+                                                {
+                                                    defaultValue: lastBoundaryExtractionStats.mode === 'hand-drawn' ? '抽线后：' : '剔除后：',
+                                                },
+                                            )}
+                                            <span className="font-mono text-stone-200">{lastBoundaryExtractionStats.sealedPixelCount.toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            最终保留：<span className="font-mono text-emerald-200">{lastBoundaryExtractionStats.keptPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.extractionStats.keptPixelCountLabel', { defaultValue: '最终保留：' })}
+                                            <span className="font-mono text-emerald-200">{lastBoundaryExtractionStats.keptPixelCount.toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            舍弃：<span className="font-mono text-fuchsia-200">{lastBoundaryExtractionStats.discardedPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.extractionStats.discardedPixelCountLabel', { defaultValue: '舍弃：' })}
+                                            <span className="font-mono text-fuchsia-200">{lastBoundaryExtractionStats.discardedPixelCount.toLocaleString()}</span>
                                         </div>
                                         {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.componentCount != null ? (
                                             <div>
-                                                边界链：<span className="font-mono text-stone-200">{lastBoundaryExtractionStats.keptComponentCount ?? 0}</span>
+                                                {t('devtools.regionMaskTool.extractionStats.boundaryChainCountLabel', { defaultValue: '边界链：' })}
+                                                <span className="font-mono text-stone-200">{lastBoundaryExtractionStats.keptComponentCount ?? 0}</span>
                                                 <span className="mx-1 text-stone-600">/</span>
                                                 <span className="font-mono text-stone-500">{lastBoundaryExtractionStats.componentCount}</span>
                                             </div>
                                         ) : null}
                                         {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'candidate-reference' ? (
                                             <div className="text-amber-200">
-                                                候选判定：只写入参考层，不写入边界图本体；需要沿参考手绘成闭合边界后再生成区域。
+                                                {t('devtools.regionMaskTool.extractionStats.candidateNote', {
+                                                    defaultValue: '候选判定：只写入参考层，不写入边界图本体；需要沿参考手绘成闭合边界后再生成区域。',
+                                                })}
                                             </div>
                                         ) : null}
                                         {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'editable-draft' ? (
                                             <div className="text-amber-200">
-                                                草稿判定：已写入边界编辑层，但仍是未闭合初始线稿；断线可舍弃，正式成果必须逐区验收。
+                                                {t('devtools.regionMaskTool.extractionStats.draftNote', {
+                                                    defaultValue: '草稿判定：已写入边界编辑层，但仍是未闭合初始线稿；断线可舍弃，正式成果必须逐区验收。',
+                                                })}
                                             </div>
                                         ) : null}
                                         {lastBoundaryExtractionStats.mode === 'auto-map' && lastBoundaryExtractionStats.writeMode === 'read-only' ? (
                                             <div className="text-amber-200">
-                                                诊断判定：真实底图颜色撞色严重，只读显示，不写入边界图。
+                                                {t('devtools.regionMaskTool.extractionStats.readOnlyNote', {
+                                                    defaultValue: '诊断判定：真实底图颜色撞色严重，只读显示，不写入边界图。',
+                                                })}
                                             </div>
                                         ) : null}
                                     </div>
@@ -18016,7 +18259,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         />
                                         <span className="min-w-0 flex-1">
                                             <span className="block font-bold">{preset.label}</span>
-                                            <span className="block text-xs text-stone-500">rgb({preset.rgb.join(', ')})</span>
+                                            <span className="block text-xs text-stone-500">
+                                                {t('devtools.regionMaskTool.manualView.rgbValue', {
+                                                    value: preset.rgb.join(', '),
+                                                    defaultValue: 'rgb({{value}})',
+                                                })}
+                                            </span>
                                         </span>
                                         {preset.enabled ? <Eye size={16} /> : <EyeOff size={16} />}
                                     </button>
@@ -18026,17 +18274,24 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 ) : (
                                     <div className="mt-3 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                         <div>
-                                            初始红线像素：<span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.initialBarrierPixelsLabel', { defaultValue: '初始红线像素：' })}
+                                            <span className="font-mono text-rose-200">{boundaryDraftPixelCount.toLocaleString()}</span>
                                             <span className="mx-2 text-stone-600">/</span>
-                                            最终红线/障碍：<span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.finalBarrierPixelsLabel', { defaultValue: '最终红线/障碍：' })}
+                                            <span className="font-mono text-rose-200">{barrierPixelCount.toLocaleString()}</span>
                                         </div>
                                         <div>
-                                            手工补边：<span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.manualAdditionsLabel', { defaultValue: '手工补边：' })}
+                                            <span data-testid="qidahen-manual-barrier-add-count" className="font-mono text-rose-200">{manualBarrierAddCount.toLocaleString()}</span>
                                             <span className="mx-2 text-stone-600">/</span>
-                                            去噪：<span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.denoiseRemovedLabel', { defaultValue: '去噪：' })}
+                                            <span data-testid="qidahen-manual-barrier-remove-count" className="font-mono text-fuchsia-200">{manualBarrierRemoveCount.toLocaleString()}</span>
                                         </div>
                                         <label className="mt-3 block text-stone-300">
-                                            画笔宽度约 {brushSize * 2}px
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.brushWidth', {
+                                                width: brushSize * 2,
+                                                defaultValue: '画笔宽度约 {{width}}px',
+                                            })}
                                             <input
                                                 data-testid="qidahen-compact-brush-size-input"
                                                 type="range"
@@ -18048,7 +18303,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             />
                                         </label>
                                         <label className="mt-3 block text-stone-300">
-                                            缩放 {(displayScale).toFixed(2)}x
+                                            {t('devtools.regionMaskTool.compactBoundaryStats.zoom', {
+                                                scale: displayScale.toFixed(2),
+                                                defaultValue: '缩放 {{scale}}x',
+                                            })}
                                             <input
                                                 data-testid="qidahen-compact-zoom-input"
                                                 type="range"
@@ -18069,20 +18327,34 @@ const QidahenRegionMaskTool: React.FC = () => {
                         <>
                         <section className="space-y-3">
                             <div className="flex items-center justify-between gap-3">
-                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">最近批量生成结果</div>
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                    {t('devtools.regionMaskTool.recentGeneration.title', { defaultValue: '最近批量生成结果' })}
+                                </div>
                                 {lastRegionGenerationResults.length > 0 ? (
                                     <div className="flex flex-wrap justify-end gap-2 text-[11px] leading-5 text-stone-400">
                                         <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
-                                            已生成 {lastRegionGenerationSummary.generated}
+                                            {t('devtools.regionMaskTool.recentGeneration.generatedCount', {
+                                                count: lastRegionGenerationSummary.generated,
+                                                defaultValue: '已生成 {{count}}',
+                                            })}
                                         </span>
                                         <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-rose-100">
-                                            漏边 {lastRegionGenerationSummary.leaked}
+                                            {t('devtools.regionMaskTool.recentGeneration.leakedCount', {
+                                                count: lastRegionGenerationSummary.leaked,
+                                                defaultValue: '漏边 {{count}}',
+                                            })}
                                         </span>
                                         <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-amber-100">
-                                            未生成 {lastRegionGenerationSummary.skipped}
+                                            {t('devtools.regionMaskTool.recentGeneration.skippedCount', {
+                                                count: lastRegionGenerationSummary.skipped,
+                                                defaultValue: '未生成 {{count}}',
+                                            })}
                                         </span>
                                         <span className="rounded-full border border-stone-700 bg-stone-900/70 px-2 py-0.5 text-stone-200">
-                                            被占用 {lastRegionGenerationSummary.overlapOnly}
+                                            {t('devtools.regionMaskTool.recentGeneration.occupiedCount', {
+                                                count: lastRegionGenerationSummary.overlapOnly,
+                                                defaultValue: '被占用 {{count}}',
+                                            })}
                                         </span>
                                     </div>
                                 ) : null}
@@ -18096,12 +18368,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 ? 'border-rose-500/40 bg-rose-500/10'
                                                 : 'border-amber-500/40 bg-amber-500/10';
                                         const label = result.status === 'generated'
-                                            ? '已生成'
+                                            ? t('devtools.regionMaskTool.recentGeneration.status.generated', { defaultValue: '已生成' })
                                             : result.status === 'leaked'
-                                                ? '漏边跳过'
+                                                ? t('devtools.regionMaskTool.recentGeneration.status.leaked', { defaultValue: '漏边跳过' })
                                                 : result.status === 'overlap-only'
-                                                    ? '被占用'
-                                                    : '未生成';
+                                                    ? t('devtools.regionMaskTool.recentGeneration.status.occupied', { defaultValue: '被占用' })
+                                                    : t('devtools.regionMaskTool.recentGeneration.status.skipped', { defaultValue: '未生成' });
                                         return (
                                             <div
                                                 key={result.regionId}
@@ -18113,7 +18385,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     <div className="text-[11px] font-black tracking-[0.14em] text-stone-300">{label}</div>
                                                 </div>
                                                 <div className="text-stone-300">
-                                                    {result.pixelCount > 0 ? `${result.pixelCount.toLocaleString()} px` : '0 px'}
+                                                    {result.pixelCount > 0
+                                                        ? t('devtools.regionMaskTool.recentGeneration.pixelCount', {
+                                                            count: result.pixelCount.toLocaleString(),
+                                                            defaultValue: '{{count}} px',
+                                                        })
+                                                        : tr('devtools.regionMaskTool.recentGeneration.zeroPixelCount', '0 px')}
                                                     {result.seed ? ` · seed ${result.seed.x}, ${result.seed.y}` : ''}
                                                 </div>
                                                 <div className="text-stone-400">{result.note}</div>
@@ -18123,15 +18400,22 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="rounded-xl border border-dashed border-stone-700 px-4 py-4 text-sm text-stone-500">
-                                    批量生成一次后，这里会告诉你每个区域现在是“已生成”“漏边跳过”还是“未生成”。边界主路看这里补哪块边；区域粗稿主路看这里哪些区还要手修。
+                                    {t('devtools.regionMaskTool.recentGeneration.emptyHint', {
+                                        defaultValue: '批量生成一次后，这里会告诉你每个区域现在是“已生成”“漏边跳过”还是“未生成”。边界主路看这里补哪块边；区域粗稿主路看这里哪些区还要手修。',
+                                    })}
                                 </div>
                             )}
                         </section>
 
                         <section className="space-y-3">
-                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">手修与视图</div>
+                            <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                {t('devtools.regionMaskTool.manualView.title', { defaultValue: '手修与视图' })}
+                            </div>
                             <label className="block text-sm text-stone-300">
-                                修边宽度约 {brushSize * 2}px
+                                {t('devtools.regionMaskTool.manualView.brushWidth', {
+                                    width: brushSize * 2,
+                                    defaultValue: '修边宽度约 {{width}}px',
+                                })}
                                 <input
                                     data-testid="qidahen-brush-size-input"
                                     type="range"
@@ -18143,7 +18427,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 />
                             </label>
                             <label className="block text-sm text-stone-300">
-                                显示比例 {(displayScale).toFixed(2)}x
+                                {t('devtools.regionMaskTool.manualView.displayScale', {
+                                    scale: displayScale.toFixed(2),
+                                    defaultValue: '显示比例 {{scale}}x',
+                                })}
                                 <input
                                     type="range"
                                     min="0.75"
@@ -18155,7 +18442,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 />
                             </label>
                             <label className="block text-sm text-stone-300">
-                                Mask 透明度 {maskOpacity.toFixed(2)}
+                                {t('devtools.regionMaskTool.manualView.maskOpacity', {
+                                    opacity: maskOpacity.toFixed(2),
+                                    defaultValue: 'Mask 透明度 {{opacity}}',
+                                })}
                                 <input
                                     type="range"
                                     min="0.1"
@@ -18173,7 +18463,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-sm font-bold text-stone-200 transition hover:border-stone-500"
                                 >
                                     {showMask ? <Eye size={15} /> : <EyeOff size={15} />}
-                                    {showMask ? '隐藏 Mask' : '显示 Mask'}
+                                    {showMask
+                                        ? t('devtools.regionMaskTool.manualView.hideMask', { defaultValue: '隐藏 Mask' })
+                                        : t('devtools.regionMaskTool.manualView.showMask', { defaultValue: '显示 Mask' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18181,7 +18473,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-sky-500/40 px-3 py-2 text-sm font-bold text-sky-100 transition hover:border-sky-300"
                                 >
                                     {showBarrier ? <Eye size={15} /> : <EyeOff size={15} />}
-                                    {showBarrier ? '隐藏边界' : '边界调试'}
+                                    {showBarrier
+                                        ? t('devtools.regionMaskTool.manualView.hideBoundary', { defaultValue: '隐藏边界' })
+                                        : t('devtools.regionMaskTool.manualView.showBoundaryDebug', { defaultValue: '边界调试' })}
                                 </button>
                             </div>
                             <button
@@ -18191,7 +18485,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showSelectedOutline ? 'border-amber-300 bg-amber-400/15 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                             >
                                 {showSelectedOutline ? <Eye size={15} /> : <EyeOff size={15} />}
-                                {showSelectedOutline ? '隐藏选区描边' : '显示选区描边'}
+                                {showSelectedOutline
+                                    ? t('devtools.regionMaskTool.manualView.hideSelectedOutline', { defaultValue: '隐藏选区描边' })
+                                    : t('devtools.regionMaskTool.manualView.showSelectedOutline', { defaultValue: '显示选区描边' })}
                             </button>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -18201,7 +18497,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showForbiddenUiOverlay ? 'border-rose-300 bg-rose-400/15 text-rose-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     {showForbiddenUiOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
-                                    {showForbiddenUiOverlay ? '隐藏禁区' : '显示禁区'}
+                                    {showForbiddenUiOverlay
+                                        ? t('devtools.regionMaskTool.manualView.hideForbiddenZone', { defaultValue: '隐藏禁区' })
+                                        : t('devtools.regionMaskTool.manualView.showForbiddenZone', { defaultValue: '显示禁区' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18213,7 +18511,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-500/40 px-3 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-300"
                                 >
                                     <Pencil size={15} />
-                                    聚焦 seed 描边
+                                    {t('devtools.regionMaskTool.manualView.focusSeedTrace', { defaultValue: '聚焦 seed 描边' })}
                                 </button>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
@@ -18236,7 +18534,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (seedStatusOverlayVisible ? 'border-emerald-300 bg-emerald-400/15 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     {seedStatusOverlayVisible ? <Eye size={15} /> : <EyeOff size={15} />}
-                                    {seedStatusOverlayVisible ? '隐藏 seed 状态' : '显示 seed 状态'}
+                                    {seedStatusOverlayVisible
+                                        ? t('devtools.regionMaskTool.manualView.hideSeedStatus', { defaultValue: '隐藏 seed 状态' })
+                                        : t('devtools.regionMaskTool.manualView.showSeedStatus', { defaultValue: '显示 seed 状态' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18248,7 +18548,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-amber-500/45 px-3 py-2 text-sm font-bold text-amber-100 transition hover:border-amber-300"
                                 >
                                     <Pencil size={15} />
-                                    聚焦未独立 seed
+                                    {t('devtools.regionMaskTool.manualView.focusUnmatchedSeed', { defaultValue: '聚焦未独立 seed' })}
                                 </button>
                             </div>
                             <button
@@ -18258,7 +18558,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 className={'inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showPartitionPreviewOverlay ? 'border-violet-300 bg-violet-400/15 text-violet-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                             >
                                 {showPartitionPreviewOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
-                                {showPartitionPreviewOverlay ? '隐藏分区铺色' : '显示分区铺色'}
+                                {showPartitionPreviewOverlay
+                                    ? t('devtools.regionMaskTool.manualView.hidePartitionPreview', { defaultValue: '隐藏分区铺色' })
+                                    : t('devtools.regionMaskTool.manualView.showPartitionPreview', { defaultValue: '显示分区铺色' })}
                             </button>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -18268,7 +18570,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (showRealMapBoundarySupportOverlay ? 'border-amber-300 bg-amber-400/15 text-amber-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     {showRealMapBoundarySupportOverlay ? <Eye size={15} /> : <EyeOff size={15} />}
-                                    {showRealMapBoundarySupportOverlay ? '隐藏细线候选' : '显示细线候选'}
+                                    {showRealMapBoundarySupportOverlay
+                                        ? t('devtools.regionMaskTool.manualView.hideSupportCandidates', { defaultValue: '隐藏细线候选' })
+                                        : t('devtools.regionMaskTool.manualView.showSupportCandidates', { defaultValue: '显示细线候选' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18277,11 +18581,15 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (snapBarrierBrushToRealMapSupport ? 'border-emerald-300 bg-emerald-400/15 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                 >
                                     <Pencil size={15} />
-                                    {snapBarrierBrushToRealMapSupport ? '吸附细线候选' : '吸附关闭'}
+                                    {snapBarrierBrushToRealMapSupport
+                                        ? t('devtools.regionMaskTool.manualView.enableSupportSnap', { defaultValue: '吸附细线候选' })
+                                        : t('devtools.regionMaskTool.manualView.disableSupportSnap', { defaultValue: '吸附关闭' })}
                                 </button>
                             </div>
                             <div className="rounded-md border border-amber-500/20 bg-amber-500/8 px-2 py-1.5 text-[11px] leading-5 text-amber-100">
-                                细线候选只辅助沿底图长线描边；它不会自动写入边界图，也不能替代手绘闭合边界。
+                                {t('devtools.regionMaskTool.manualView.supportHint', {
+                                    defaultValue: '细线候选只辅助沿底图长线描边；它不会自动写入边界图，也不能替代手绘闭合边界。',
+                                })}
                             </div>
                             <button
                                 type="button"
@@ -18290,23 +18598,28 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-amber-400/70 bg-amber-500/12 px-3 py-2 text-sm font-black text-amber-100 transition hover:border-amber-200 hover:bg-amber-500/18"
                             >
                                 <ScanSearch size={15} />
-                                自动贴合当前红线到细线轮廓
+                                {t('devtools.regionMaskTool.manualView.autoSnapToContour', { defaultValue: '自动贴合当前红线到细线轮廓' })}
                             </button>
                             {boundarySourceReferenceImage ? (
                                 <div className="space-y-2 rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3">
                                     <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.16em] text-stone-500">
-                                        <span>参考层</span>
+                                        <span>{t('devtools.regionMaskTool.manualView.referenceLayer', { defaultValue: '参考层' })}</span>
                                         <button
                                             type="button"
                                             onClick={() => setShowBoundarySourceReference((current) => !current)}
                                             className={'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-black transition ' + (showBoundarySourceReference ? 'border-cyan-300 bg-cyan-400/15 text-cyan-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                         >
                                             {showBoundarySourceReference ? <Eye size={13} /> : <EyeOff size={13} />}
-                                            {showBoundarySourceReference ? '显示中' : '已隐藏'}
+                                            {showBoundarySourceReference
+                                                ? t('devtools.regionMaskTool.manualView.referenceShown', { defaultValue: '显示中' })
+                                                : t('devtools.regionMaskTool.manualView.referenceHidden', { defaultValue: '已隐藏' })}
                                         </button>
                                     </div>
                                     <label className="block text-sm text-stone-300">
-                                        参考透明度 {boundarySourceReferenceOpacity.toFixed(2)}
+                                        {t('devtools.regionMaskTool.manualView.referenceOpacity', {
+                                            opacity: boundarySourceReferenceOpacity.toFixed(2),
+                                            defaultValue: '参考透明度 {{opacity}}',
+                                        })}
                                         <input
                                             type="range"
                                             min="0.1"
@@ -18324,12 +18637,14 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-100 transition hover:border-rose-300"
                                     >
                                         <X size={14} />
-                                        清除参考图
+                                        {t('devtools.regionMaskTool.manualView.clearReference', { defaultValue: '清除参考图' })}
                                     </button>
                                 </div>
                             ) : null}
                             <div className="text-xs leading-5 text-stone-500">
-                                红线就是最终参与区域分割的边界：边界图本体与手工补边会合成同一份障碍数据；擦除只从最终红线里扣掉。
+                                {t('devtools.regionMaskTool.manualView.finalBoundaryHint', {
+                                    defaultValue: '红线就是最终参与区域分割的边界：边界图本体与手工补边会合成同一份障碍数据；擦除只从最终红线里扣掉。',
+                                })}
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -18340,7 +18655,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (barrierHistoryState.canUndo ? 'border-emerald-500/40 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 text-stone-600')}
                                 >
                                     <RotateCcw size={15} />
-                                    撤销微调
+                                    {t('devtools.regionMaskTool.manualView.undoAdjustments', { defaultValue: '撤销微调' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18350,7 +18665,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className={'inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-bold transition ' + (barrierHistoryState.canRedo ? 'border-emerald-500/40 text-emerald-100 hover:border-emerald-300' : 'cursor-not-allowed border-stone-800 text-stone-600')}
                                 >
                                     <RotateCcw size={15} className="-scale-x-100" />
-                                    重做微调
+                                    {t('devtools.regionMaskTool.manualView.redoAdjustments', { defaultValue: '重做微调' })}
                                 </button>
                             </div>
                             <div className="flex gap-2">
@@ -18360,7 +18675,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-sm font-bold text-stone-200 transition hover:border-rose-400 hover:text-rose-200"
                                 >
                                     <RotateCcw size={15} />
-                                    清空
+                                    {t('devtools.regionMaskTool.manualView.clearMask', { defaultValue: '清空' })}
                                 </button>
                                 <button
                                     type="button"
@@ -18368,7 +18683,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-cyan-700/70 px-3 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-300"
                                 >
                                     <RotateCcw size={15} />
-                                    清空边界图
+                                    {t('devtools.regionMaskTool.manualView.clearBoundaryImage', { defaultValue: '清空边界图' })}
                                 </button>
                             </div>
                             <button
@@ -18377,20 +18692,22 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 py-2 text-sm font-bold text-stone-200 transition hover:border-stone-500"
                             >
                                 <RotateCcw size={15} />
-                                清空微调层
+                                {t('devtools.regionMaskTool.manualView.clearAdjustmentLayer', { defaultValue: '清空微调层' })}
                             </button>
                         </section>
 
                         <section className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">区域</div>
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                    {t('devtools.regionMaskTool.regions.title', { defaultValue: '区域' })}
+                                </div>
                                 <button
                                     type="button"
                                     onClick={addRegion}
                                     className="inline-flex items-center gap-1 rounded-md border border-stone-700 px-2 py-1 text-xs font-bold text-stone-200 transition hover:border-amber-400 hover:text-amber-200"
                                     >
                                         <Plus size={13} />
-                                        新增
+                                        {t('devtools.regionMaskTool.regions.add', { defaultValue: '新增' })}
                                 </button>
                             </div>
                             <div className="space-y-2">
@@ -18401,11 +18718,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     const diagnostic = isDiagnosticRegionId(region.id);
                                     const seedStatus = seedStatusByRegionId.get(region.id);
                                     const seedStatusLabel = seedStatus?.status === 'matched'
-                                        ? '独立'
+                                        ? t('devtools.regionMaskTool.regions.seedStatus.independent', { defaultValue: '独立' })
                                         : seedStatus?.status === 'unmatched'
-                                            ? '未独立'
+                                            ? t('devtools.regionMaskTool.regions.seedStatus.unmatched', { defaultValue: '未独立' })
                                             : seedStatus?.status === 'empty'
-                                                ? '待描'
+                                                ? t('devtools.regionMaskTool.regions.seedStatus.pendingTrace', { defaultValue: '待描' })
                                                 : null;
                                     const seedStatusClass = seedStatus?.status === 'matched'
                                         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-100'
@@ -18437,8 +18754,18 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     />
                                                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
                                                         <span className="font-mono">{region.id}</span>
-                                                        <span>seed {formatSeed(region.seed)}</span>
-                                                        <span>路径 {passageCount}</span>
+                                                        <span>
+                                                            {t('devtools.regionMaskTool.regions.seedValue', {
+                                                                seed: formatSeed(region.seed),
+                                                                defaultValue: 'seed {{seed}}',
+                                                            })}
+                                                        </span>
+                                                        <span>
+                                                            {t('devtools.regionMaskTool.regions.pathCount', {
+                                                                count: passageCount,
+                                                                defaultValue: '路径 {{count}}',
+                                                            })}
+                                                        </span>
                                                         {seedStatusLabel ? (
                                                             <span
                                                                 data-testid={`qidahen-region-card-seed-status-${region.id}`}
@@ -18447,8 +18774,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                 {seedStatusLabel}
                                                             </span>
                                                         ) : null}
-                                                        {diagnostic ? <span className="text-cyan-300">诊断区，不导出</span> : null}
-                                                        {duplicated ? <span className="text-rose-300">颜色重复</span> : null}
+                                                        {diagnostic ? (
+                                                            <span className="text-cyan-300">
+                                                                {t('devtools.regionMaskTool.regions.diagnosticNoExport', { defaultValue: '诊断区，不导出' })}
+                                                            </span>
+                                                        ) : null}
+                                                        {duplicated ? (
+                                                            <span className="text-rose-300">
+                                                                {t('devtools.regionMaskTool.regions.duplicateColor', { defaultValue: '颜色重复' })}
+                                                            </span>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </div>
@@ -18460,38 +18795,52 @@ const QidahenRegionMaskTool: React.FC = () => {
 
                         {selectedRegion ? (
                             <section className="space-y-3">
-                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">当前区域细节</div>
+                                <div className="text-xs font-black uppercase tracking-[0.2em] text-stone-500">
+                                    {t('devtools.regionMaskTool.selectedRegion.title', { defaultValue: '当前区域细节' })}
+                                </div>
                                 <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
                                     <div>
-                                        <span className="text-stone-500">类型：</span>
+                                        <span className="text-stone-500">{t('devtools.regionMaskTool.selectedRegion.typeLabel', { defaultValue: '类型：' })}</span>
                                         <span className={isDiagnosticRegionId(selectedRegion.id) ? 'font-bold text-cyan-200' : 'font-bold text-stone-200'}>
-                                            {isDiagnosticRegionId(selectedRegion.id) ? '诊断临时区域（仅 devtools）' : '正式区域'}
+                                            {isDiagnosticRegionId(selectedRegion.id)
+                                                ? t('devtools.regionMaskTool.selectedRegion.typeDiagnostic', { defaultValue: '诊断临时区域（仅 devtools）' })
+                                                : t('devtools.regionMaskTool.selectedRegion.typeFormal', { defaultValue: '正式区域' })}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-stone-500">区域：</span>
+                                        <span className="text-stone-500">{t('devtools.regionMaskTool.selectedRegion.regionLabel', { defaultValue: '区域：' })}</span>
                                         <span className="font-bold text-stone-100">{selectedRegion.name}</span>
                                     </div>
                                     <div>
-                                        <span className="text-stone-500">seed：</span>
+                                        <span className="text-stone-500">{t('devtools.regionMaskTool.selectedRegion.seedLabel', { defaultValue: 'seed：' })}</span>
                                         <span className="font-mono text-stone-200">{formatSeed(selectedRegion.seed)}</span>
                                     </div>
                                     <div>
-                                        <span className="text-stone-500">用途：</span>
+                                        <span className="text-stone-500">{t('devtools.regionMaskTool.selectedRegion.purposeLabel', { defaultValue: '用途：' })}</span>
                                         <span>
                                             {isDiagnosticRegionId(selectedRegion.id)
-                                                ? '只服务样本 bootstrap、魔棒和锁链修边；保存时会自动从正式 mask/graph 导出中排除。'
-                                                : 'mask 负责点击和高亮；通行路径图只表达规则连通关系。'}
+                                                ? t('devtools.regionMaskTool.selectedRegion.purposeDiagnostic', {
+                                                    defaultValue: '只服务样本引导、魔棒和锁链修边；保存时会自动从正式 mask/graph 导出中排除。',
+                                                })
+                                                : t('devtools.regionMaskTool.selectedRegion.purposeFormal', {
+                                                    defaultValue: 'mask 负责点击和高亮；通行路径图只表达规则连通关系。',
+                                                })}
                                         </span>
                                     </div>
                                       <div>
-                                          <span className="text-stone-500">真相级别：</span>
+                                          <span className="text-stone-500">{t('devtools.regionMaskTool.selectedRegion.truthLevelLabel', { defaultValue: '真相级别：' })}</span>
                                           <span className="font-bold text-stone-200">
                                               {isDiagnosticRegionId(selectedRegion.id)
-                                                  ? '诊断样本。可用于验证方向，但不能替代正式区域真相。'
+                                                  ? t('devtools.regionMaskTool.selectedRegion.truthDiagnostic', {
+                                                      defaultValue: '诊断样本。可用于验证方向，但不能替代正式区域真相。',
+                                                  })
                                                 : authoritativeGuideRegionIdSet.has(selectedRegion.id)
-                                                    ? '显式 truth。主链直接消费当前区域结果。'
-                                                    : '启发式 bootstrap。需要继续锁链微调或升格为显式 truth。'}
+                                                    ? t('devtools.regionMaskTool.selectedRegion.truthAuthoritative', {
+                                                        defaultValue: '显式真相。主链直接消费当前区域结果。',
+                                                    })
+                                                    : t('devtools.regionMaskTool.selectedRegion.truthBootstrap', {
+                                                        defaultValue: '启发起点。需要继续锁链微调或升格为显式真相。',
+                                                    })}
                                           </span>
                                       </div>
                                       {selectedSharedPrintedGuideAudit ? (
@@ -18500,16 +18849,25 @@ const QidahenRegionMaskTool: React.FC = () => {
                                               data-testid={`qidahen-shared-printed-guide-audit-selected-${selectedRegion.id}`}
                                           >
                                               <div>
-                                                  这个 printed 区当前同时承接 runtime：{selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / ')}。
+                                                  {t('devtools.regionMaskTool.selectedRegion.sharedPrintedRuntime', {
+                                                      names: selectedSharedPrintedGuideAudit.runtimeRegionNames.join(' / '),
+                                                      defaultValue: '这个印刷区当前同时承接运行时区域：{{names}}。',
+                                                  })}
                                               </div>
                                               {selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeIds.length > 0 ? (
                                                   <div className="mt-1 text-rose-300">
-                                                      当前仍缺 authoritative guide：{selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / ')}。
+                                                      {t('devtools.regionMaskTool.selectedRegion.missingAuthoritativeGuide', {
+                                                          names: selectedSharedPrintedGuideAudit.missingAuthoritativeRuntimeNames.join(' / '),
+                                                          defaultValue: '当前仍缺显式指引：{{names}}。',
+                                                      })}
                                                   </div>
                                               ) : null}
                                               {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideIds.length > 0 ? (
                                                   <div className="mt-1 text-amber-200">
-                                                      这里的 blocker 不是没继续画，而是当前工具保存的 guide 目标仍绑定 `regionIds`；像 {selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideNames.join(' / ')} 这种 runtime-only 缺口，现模型还不能直接落进工作区 authoritative guide 文件。
+                                                      {t('devtools.regionMaskTool.selectedRegion.runtimeOnlyGuideBlocker', {
+                                                          names: selectedSharedPrintedGuideAudit.missingRuntimeOnlyGuideNames.join(' / '),
+                                                          defaultValue: '这里卡住的原因不是没继续画，而是当前工具保存的 guide 目标仍绑定 `regionIds`；像 {{names}} 这种仅运行时缺口，现模型还不能直接落进工作区权威 guide 文件。',
+                                                      })}
                                                   </div>
                                               ) : null}
                                               {selectedRuntimeGuideCandidateRows.length > 0 ? (
@@ -18531,7 +18889,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                           className="inline-flex items-center gap-1 rounded-md border border-rose-400/45 px-2 py-1 text-[11px] font-black text-rose-100 transition hover:border-rose-200"
                                                                       >
                                                                           <X size={12} />
-                                                                          移除待补条目
+                                                                          {t('devtools.regionMaskTool.selectedRegion.removePendingCandidate', { defaultValue: '移除待补条目' })}
                                                                       </button>
                                                                   ) : (
                                                                       <button
@@ -18541,34 +18899,44 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                                           className="inline-flex items-center gap-1 rounded-md border border-amber-400/45 px-2 py-1 text-[11px] font-black text-amber-100 transition hover:border-amber-200"
                                                                       >
                                                                           <Plus size={12} />
-                                                                          记录待补条目
+                                                                          {t('devtools.regionMaskTool.selectedRegion.recordPendingCandidate', { defaultValue: '记录待补条目' })}
                                                                       </button>
                                                                   )}
                                                               </div>
                                                               <div className="mt-1 text-[11px] leading-5 text-stone-400">
-                                                                  只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。
+                                                                  {t('devtools.regionMaskTool.selectedRegion.metadataOnlyNote', {
+                                                                      defaultValue: '只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`。',
+                                                                  })}
                                                               </div>
                                                               {row.candidate ? (
                                                                   <div className="mt-2 space-y-2">
                                                                       <div>
-                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">source</div>
+                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                                                                              {t('devtools.regionMaskTool.selectedRegion.sourceLabel', { defaultValue: '来源' })}
+                                                                          </div>
                                                                           <input
                                                                               type="text"
                                                                               value={row.candidate.source}
                                                                               onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'source', event.target.value)}
                                                                               data-testid={`qidahen-runtime-guide-candidate-source-${row.runtimeRegionId}`}
-                                                                              placeholder="例如：r28-jizhen-crop.png + 原图局部标注"
+                                                                              placeholder={t('devtools.regionMaskTool.selectedRegion.sourcePlaceholder', {
+                                                                                  defaultValue: '例如：r28-jizhen-crop.png + 原图局部标注',
+                                                                              })}
                                                                               className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
                                                                           />
                                                                       </div>
                                                                       <div>
-                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">note</div>
+                                                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-stone-500">
+                                                                              {t('devtools.regionMaskTool.selectedRegion.noteLabel', { defaultValue: '备注' })}
+                                                                          </div>
                                                                           <textarea
                                                                               value={row.candidate.note}
                                                                               onChange={(event) => updateRuntimeGuideCandidate(selectedSharedPrintedGuideAudit.printedRegionId, row.runtimeRegionId, 'note', event.target.value)}
                                                                               data-testid={`qidahen-runtime-guide-candidate-note-${row.runtimeRegionId}`}
                                                                               rows={3}
-                                                                              placeholder="记录为什么它属于这个 printed 区，以及还缺哪一步正式证据。"
+                                                                              placeholder={t('devtools.regionMaskTool.selectedRegion.notePlaceholder', {
+                                                                                  defaultValue: '记录为什么它属于这个印刷区，以及还缺哪一步正式证据。',
+                                                                              })}
                                                                               className="w-full rounded-md border border-stone-700 bg-stone-900/80 px-3 py-2 text-xs leading-5 text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
                                                                           />
                                                                       </div>
@@ -18583,7 +18951,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                           className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-emerald-400/45 bg-emerald-500/10 px-3 py-2 text-[11px] font-black text-emerald-100 transition hover:border-emerald-200"
                                                       >
                                                           <Save size={13} />
-                                                          仅保存 guide 候选
+                                                          {t('devtools.regionMaskTool.selectedRegion.saveGuideCandidatesOnly', { defaultValue: '仅保存 guide 候选' })}
                                                       </button>
                                                   </div>
                                               ) : null}
@@ -18597,15 +18965,21 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                 data-testid={`qidahen-authoritative-toggle-${selectedRegion.id}`}
                                                 className={'inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-black transition ' + (authoritativeGuideRegionIdSet.has(selectedRegion.id) ? 'border-emerald-400 bg-emerald-500/10 text-emerald-100' : 'border-stone-700 text-stone-300 hover:border-stone-500')}
                                             >
-                                                {authoritativeGuideRegionIdSet.has(selectedRegion.id) ? '取消显式 truth' : '设为显式 truth'}
+                                                {authoritativeGuideRegionIdSet.has(selectedRegion.id)
+                                                    ? t('devtools.regionMaskTool.selectedRegion.unsetAuthoritativeTruth', { defaultValue: '取消显式真相' })
+                                                    : t('devtools.regionMaskTool.selectedRegion.setAuthoritativeTruth', { defaultValue: '设为显式真相' })}
                                             </button>
                                             <div className="mt-1 text-[11px] leading-5 text-stone-500">
-                                                显式 truth 会被主链直接消费，并随保存自动落到当前工作区。
+                                                {t('devtools.regionMaskTool.selectedRegion.authoritativeTruthNote', {
+                                                    defaultValue: '显式真相会被主链直接消费，并随保存自动落到当前工作区。',
+                                                })}
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="mt-2 text-[11px] leading-5 text-stone-500">
-                                            诊断临时区域不写入正式显式 truth；北京样本继续用工具内 guide 验证方向。
+                                            {t('devtools.regionMaskTool.selectedRegion.diagnosticTruthNote', {
+                                                defaultValue: '诊断临时区域不写入正式显式真相；北京样本继续用工具内 guide 验证方向。',
+                                            })}
                                         </div>
                                     )}
                                 </div>
@@ -18617,10 +18991,12 @@ const QidahenRegionMaskTool: React.FC = () => {
                         <section className="space-y-3">
                             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-stone-500">
                                 <Link2 size={13} />
-                                通路
+                                {t('devtools.regionMaskTool.passages.title', { defaultValue: '通路' })}
                             </div>
                             <div className="rounded-xl border border-stone-800 bg-stone-950/60 px-3 py-3 text-xs leading-6 text-stone-400">
-                                在地图上点通路边，或从一个区域中心拖到另一个中心建边。左侧只编辑当前选中的通路。
+                                {t('devtools.regionMaskTool.passages.description', {
+                                    defaultValue: '在地图上点通路边，或从一个区域中心拖到另一个中心建边。左侧只编辑当前选中的通路。',
+                                })}
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
@@ -18630,19 +19006,25 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-bold text-emerald-100 transition hover:border-emerald-300"
                                 >
                                     <Link2 size={15} />
-                                    按邻近补全
+                                    {t('devtools.regionMaskTool.passages.autoFillByAdjacency', { defaultValue: '按邻近补全' })}
                                 </button>
                                 <div
                                     data-testid="qidahen-passage-summary"
                                     className="rounded-md border border-stone-800 bg-stone-900/70 px-3 py-2 text-xs leading-5 text-stone-300"
                                 >
-                                    中心 {graphNodes.length} / 通路 {passages.length}
+                                    {t('devtools.regionMaskTool.passages.summary', {
+                                        centers: graphNodes.length,
+                                        passages: passages.length,
+                                        defaultValue: '中心 {{centers}} / 通路 {{passages}}',
+                                    })}
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 {passages.length === 0 ? (
                                     <div className="rounded-xl border border-dashed border-stone-800 px-3 py-4 text-sm text-stone-500">
-                                        暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。
+                                        {t('devtools.regionMaskTool.passages.empty', {
+                                            defaultValue: '暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。',
+                                        })}
                                     </div>
                                 ) : passages.map((passage) => {
                                     const fromRegion = regions.find((region) => region.id === passage.from);
@@ -18674,7 +19056,11 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                         {fromRegion?.name ?? passage.from} ↔ {toRegion?.name ?? passage.to}
                                                     </div>
                                                     <div className="text-[11px] text-stone-400">
-                                                        移 {passage.travelCost} / 宽 {boundaryMeta.width}
+                                                        {t('devtools.regionMaskTool.passages.travelWidthSummary', {
+                                                            travelCost: passage.travelCost,
+                                                            width: boundaryMeta.width,
+                                                            defaultValue: '移 {{travelCost}} / 宽 {{width}}',
+                                                        })}
                                                     </div>
                                                 </div>
                                                 <span

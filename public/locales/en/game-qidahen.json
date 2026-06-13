@@ -73,6 +73,144 @@
       "confirm": "Confirm and enter board"
     }
   },
+  "board": {
+    "handInteraction": {
+      "actionPaymentStatus": "Discard {{cost}} card(s) · Selected {{selected}}",
+      "actionPaymentHint": "Click a hand card at the bottom to discard it. Click a selected card again to remove it.",
+      "confirmExecute": "Confirm action",
+      "cancelAction": "Cancel this action",
+      "handLimitTitle": "{{factionName}} · Hand limit check",
+      "handLimitStatus": "Hand {{handCount}}/{{handLimit}} · Must discard {{requiredDiscardCount}} · Selected {{selected}}",
+      "handLimitHint": "Click a hand card at the bottom to discard it.",
+      "confirmDiscard": "Confirm discard",
+      "sunYuanhuaStatus": "Discard {{requiredCardCount}} card(s) · Selected {{selected}}",
+      "sunYuanhuaHint": "Click a hand card at the bottom to discard it.",
+      "confirmSunYuanhua": "Confirm tech",
+      "skipSunYuanhua": "Skip Sun Yuanhua tech"
+    },
+    "player": {
+      "armamentsUndeveloped": "Not developed",
+      "characterDefeatMarkers": "{{name}}({{number}}) defeats ×{{count}}",
+      "characterCount": "Characters {{count}}",
+      "prestigeBonus": "Hanseong +{{bonus}}",
+      "armaments": "Armaments {{summary}}",
+      "defeatMarkers": "Defeats ×{{count}}",
+      "current": "Current"
+    },
+    "map": {
+      "mainMapAlt": "Qidahen main map",
+      "regionSelectionAria": "Qidahen map region selection",
+      "regionTroopsPopulation": "Troops {{troops}} · Population {{population}}",
+      "regionSpecialTroops": "Special {{summary}}",
+      "regionPassages": "Borders {{summary}}",
+      "regionReachable": "Dispatch reach {{summary}}",
+      "sharedPrintedRegion": "Shared print"
+    },
+    "wheel": {
+      "aria": "Qidahen action wheel",
+      "newYear": "New Year >>>",
+      "midyear": "Midyear",
+      "centerTop": "Act",
+      "centerRight": "ion",
+      "centerLeft": "Whe",
+      "centerBottom": "el"
+    },
+    "korea": {
+      "drawPile": "Korea draw pile",
+      "discardPile": "Korea discard pile"
+    },
+    "actions": {
+      "status": {
+        "used": "used",
+        "unused": "unused"
+      },
+      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Faction action {{factionStatus}}",
+      "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
+      "wheelNextStepTitle": "Next: click a wheel button to advance the turn",
+      "wheelNextStepHint": "Do not click the painted wheel directly. Use the explicit button below.",
+      "directExecute": "Execute",
+      "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
+      "victory": {
+        "hegemony": "Hegemony victory",
+        "military": "Military victory",
+        "prestige": "Prestige victory"
+      },
+      "fortificationStatus": "{{label}} · {{status}}",
+      "fortification": {
+        "ruined": "Ruined",
+        "intact": "Intact"
+      },
+      "attritionLabel": "Attrition",
+      "casualtyPriority": {
+        "highestFirst": "High first",
+        "lowestFirst": "Low first"
+      },
+      "targetUnlocked": "Unlocked",
+      "gaoDi": {
+        "summary": "Source {{sourceRegionName}} · Troops up to {{maxTroops}} · Population up to {{maxPopulation}}",
+        "hint": "Select the discard card from your hand first, then choose the dispatch target below. You can also skip.",
+        "target": "{{targetRegionName}} · {{type}} {{amount}}",
+        "typeTroops": "Troops",
+        "typePopulation": "Population",
+        "amountTroops": "{{amount}} troop(s)",
+        "amountPopulation": "{{amount}} population",
+        "skip": "Skip Gao Di dispatch"
+      },
+      "internalDispatch": {
+        "summary": "Source {{sourceRegionName}} · Dispatch up to {{maxTroops}} troop(s)",
+        "committedTroops": "Send {{troops}}"
+      },
+      "recruit": {
+        "title": "Recruit troops",
+        "summary": "Current target {{targetRegionName}} · Switch to another friendly-controlled region before deciding how to recruit"
+      },
+      "maShiTrade": {
+        "title": "Horse market trade",
+        "summary": "Current target {{targetRegionName}} · Switch to another Ming-controlled region before deciding the build amount"
+      },
+      "khanEdict": {
+        "title": "Khan's edict",
+        "summary": "Current region {{sourceRegionName}} · Switch the selected map region before deciding"
+      },
+      "diplomacy": {
+        "currentControlRegion": "current controlled region",
+        "sourceSummary": "Source {{sourceRegionName}} · Hire goes to {{hireRegionName}}",
+        "resolvedSummary": "Diplomacy used {{resolved}}/{{total}} times · {{remaining}} remaining",
+        "targetSummary": "Current target {{targetRegionName}} · {{targetHint}}",
+        "stepSummary": "Diplomacy {{index}} · {{summary}}"
+      },
+      "driveTiger": {
+        "title": "Drive Tiger",
+        "summary": "Will {{targetFactionName}} accept Ming command? If accepted, they will draw 6 cards and enter dispatch attack."
+      },
+      "wheelDispatch": {
+        "summary": "Source {{sourceRegionName}} · {{count}} target(s) · Click a highlighted map region directly",
+        "targetSummary": "{{targetRegionName}} · Defend {{defenderLabel}}",
+        "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
+        "travelCost": "Cost {{totalTravelCost}}"
+      },
+      "pendingTarget": {
+        "header": "{{title}} · Target {{targetRegionName}} · Defend {{defenderLabel}}",
+        "defenderPayCost": " · Defender pays {{cost}}",
+        "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
+        "boundaryUnitCap": " · Boundary cap {{count}}",
+        "actualCommittedTroops": "Actual commit",
+        "attackerCasualtyLabel": "Attacker losses",
+        "defenderCasualtyLabel": "Defender losses"
+      },
+      "postBattle": {
+        "summary": "{{summary}} · Commit {{committedTroops}}"
+      }
+    }
+  },
+  "battle": {
+    "pendingTargetChoice": {
+      "rearGuard": "Rear guard resolution",
+      "rout": "Rout resolution",
+      "cavalryPlunderAttacker": "Cavalry plunder own deck",
+      "cavalryPlunderDefender": "Cavalry plunder defender deck"
+    }
+  },
   "devtools": {
     "runtimePreview": {
       "eyebrow": "Qidahen Runtime Preview",
@@ -148,7 +286,203 @@
       },
       "pathCount": "Paths: {{count}}",
       "graphAria": "Passage graph",
-      "forbiddenBoundaryLabel": "Forbidden boundary area: {{label}}"
+      "forbiddenBoundaryLabel": "Forbidden boundary area: {{label}}",
+      "reviewStatus": {
+        "viewed": "Reviewed",
+        "unviewed": "Not reviewed",
+        "viewCrop": "View crop",
+        "revoke": "Revoke",
+        "approveAfterReview": "Approve after review"
+      },
+      "acceptancePreview": {
+        "title": "{{regionName}} review crop",
+        "meta": "{{pixels}} px · crop {{left}},{{top}}-{{right}},{{bottom}}",
+        "closeAria": "Close region review crop",
+        "imageAlt": "{{regionName}} review crop"
+      },
+      "exportQualityReport": "Export quality report JSON",
+      "exportPartitionPreview": "Export partition preview PNG",
+      "exportBoundaryRepairPackage": "Export boundary repair package ZIP",
+      "exportAcceptancePackage": "Export region acceptance package ZIP",
+      "extractionStats": {
+        "title": "Latest extraction stats · {{mode}}",
+        "mode": {
+          "candidateReference": "candidate reference from the current base map guide",
+          "editableDraft": "editable draft from the real base-map color line",
+          "handDrawn": "hand-drawn trace over the base map",
+          "currentExperiment": "current base-map experiment"
+        },
+        "matchedPixelCountLabel": "Matched pixels: ",
+        "drawnDiffPixelCountLabel": "Base-map diff: ",
+        "supportBandPixelCountLabel": "Support band: ",
+        "guideBandPixelCountLabel": "Guide band: ",
+        "decorationExcludedPixelCountLabel": "Decorations/markers excluded: ",
+        "postExtractPixelCountLabel": "After trace extraction: ",
+        "postTrimPixelCountLabel": "After trimming: ",
+        "keptPixelCountLabel": "Kept: ",
+        "discardedPixelCountLabel": "Discarded: ",
+        "boundaryChainCountLabel": "Boundary chains: ",
+        "candidateNote": "Candidate verdict: only write to the reference layer, not the live boundary image; trace it into a closed boundary before generating regions.",
+        "draftNote": "Draft verdict: written into the editable boundary layer, but still an open draft; broken segments may be discarded, and final output still needs per-region review.",
+        "readOnlyNote": "Diagnostic verdict: the real base map has severe color collisions here, so this stays read-only and never writes into the boundary image."
+      },
+      "compactBoundaryStats": {
+        "initialBarrierPixelsLabel": "Initial red-line pixels: ",
+        "finalBarrierPixelsLabel": "Final red-line/barrier pixels: ",
+        "manualAdditionsLabel": "Manual edge additions: ",
+        "denoiseRemovedLabel": "Noise removed: ",
+        "brushWidth": "Brush width about {{width}}px",
+        "zoom": "Zoom {{scale}}x"
+      },
+      "compactPassages": {
+        "summary": "Centers {{centers}} / Auto-linked {{passages}}",
+        "rowSummary": "Move {{travelCost}} / Width {{width}}",
+        "boundaryOption": "{{label}} route {{note}}",
+        "travelCostSummary": "Travel cost {{travelCost}} / Battle width {{battleWidth}}"
+      },
+      "compactRegions": {
+        "selectRegionAria": "Select {{regionName}}",
+        "regionMeta": "Point {{x}},{{y}} · {{pixels}} px · {{id}}"
+      },
+      "saveFormalGuard": "The formal workspace cannot save region output while the normality state is {{state}}. Export the review bundle, inspect each region, and finish all 5/5 manual approvals first; the temporary workspace can still save progress.",
+      "currentMode": "Mode: {{mode}}",
+      "workspace": {
+        "boundaryPresetValue": "rgb({{value}})"
+      },
+      "regionTruthWorkflow": {
+        "authoritativeCount": "Locked explicit truth: {{count}} regions",
+        "sharedGuideAuditSummary": "There are {{total}} formal shared-printed gaps right now; {{runtimeOnly}} of them are still runtime-only, so the current `regionIds` guide model cannot write them to disk directly.",
+        "sharedRuntime": "Current shared runtime: {{names}}",
+        "missingAuthoritativeGuide": "Missing authoritative guide: {{names}}",
+        "runtimeOnlyGuideGap": "The current tool can only write guides to ids already present in current regions; the following gaps are runtime-only and cannot be saved directly through the current `regionIds` model: {{names}}"
+      },
+      "detour": {
+        "matchedSeedCount": "Independent seeds {{matched}}/{{total}}",
+        "unexplainedOpenLines": "{{count}} unexplained open segments."
+      },
+      "progress": {
+        "generatedWithLeaks": "Generated {{generated}}, leaked {{leaked}}",
+        "generated": "Generated {{generated}}"
+      },
+      "diagnostics": {
+        "boundaryTolerance": "Color tolerance {{value}}",
+        "boundaryExpansion": "Boundary expansion {{value}}px",
+        "regionTolerance": "Region base-color tolerance {{value}} (the wand uses seed-adjacent color plus boundary stopping; refine with the chain tool when needed)",
+        "pixelUnit": "px"
+      },
+      "workflow": {
+        "candidateDiagnosticsVerdict": "Auto extraction still cannot produce formal output: parameter scans on the real image reach at most {{matched}}/{{required}} independent seeds, and high tolerance hits UI/text/decorations. The fixed-color boundary draft is only a hand-repair starting layer and cannot be saved as final output directly.",
+        "candidateSeedCount": "seed {{matched}}/{{required}}",
+        "candidateClosedFaceCount": "Fillable partitions {{count}}",
+        "candidateUiPixels": "UI {{count}} px",
+        "manualApprovalCount": "Manual review {{approved}}/{{required}}",
+        "notAvailable": "n/a"
+      },
+      "recentGeneration": {
+        "title": "Latest batch generation results",
+        "generatedCount": "Generated {{count}}",
+        "leakedCount": "Leaked {{count}}",
+        "skippedCount": "Skipped {{count}}",
+        "occupiedCount": "Occupied {{count}}",
+        "pixelCount": "{{count}} px",
+        "zeroPixelCount": "0 px",
+        "status": {
+          "generated": "Generated",
+          "leaked": "Skipped for leakage",
+          "occupied": "Occupied",
+          "skipped": "Not generated"
+        },
+        "emptyHint": "After one batch generation run, this panel tells you whether each region is generated, skipped for leakage, or not generated. Use it to see where the boundary pipeline still needs repair and which rough region drafts still need manual cleanup."
+      },
+      "manualView": {
+        "title": "Manual editing and view",
+        "brushWidth": "Repair brush width about {{width}}px",
+        "displayScale": "Display scale {{scale}}x",
+        "maskOpacity": "Mask opacity {{opacity}}",
+        "hideMask": "Hide mask",
+        "showMask": "Show mask",
+        "hideBoundary": "Hide boundary",
+        "showBoundaryDebug": "Boundary debug",
+        "hideSelectedOutline": "Hide selection outline",
+        "showSelectedOutline": "Show selection outline",
+        "hideForbiddenZone": "Hide forbidden zone",
+        "showForbiddenZone": "Show forbidden zone",
+        "focusSeedTrace": "Focus seed tracing",
+        "hideSeedStatus": "Hide seed status",
+        "showSeedStatus": "Show seed status",
+        "focusUnmatchedSeed": "Focus unmatched seed",
+        "hidePartitionPreview": "Hide partition colors",
+        "showPartitionPreview": "Show partition colors",
+        "hideSupportCandidates": "Hide fine-line candidates",
+        "showSupportCandidates": "Show fine-line candidates",
+        "enableSupportSnap": "Snap to fine-line candidates",
+        "disableSupportSnap": "Snap off",
+        "supportHint": "Fine-line candidates only help you trace along long lines on the base map. They never write into the boundary image automatically and cannot replace a hand-drawn closed boundary.",
+        "autoSnapToContour": "Snap the current red line to the fine-line contour",
+        "referenceLayer": "Reference layer",
+        "referenceShown": "Visible",
+        "referenceHidden": "Hidden",
+        "referenceOpacity": "Reference opacity {{opacity}}",
+        "clearReference": "Clear reference image",
+        "finalBoundaryHint": "The red line is the final boundary used for region partitioning: the boundary image itself and manual edge additions merge into one obstacle dataset, and erasing only subtracts from that final red line.",
+        "rgbValue": "rgb({{value}})",
+        "undoAdjustments": "Undo adjustments",
+        "redoAdjustments": "Redo adjustments",
+        "clearMask": "Clear",
+        "clearBoundaryImage": "Clear boundary image",
+        "clearAdjustmentLayer": "Clear adjustment layer"
+      },
+      "regions": {
+        "title": "Regions",
+        "add": "Add",
+        "seedValue": "seed {{seed}}",
+        "seedStatus": {
+          "independent": "Independent",
+          "unmatched": "Unmatched",
+          "pendingTrace": "Needs trace"
+        },
+        "pathCount": "Paths {{count}}",
+        "diagnosticNoExport": "Diagnostic only, not exported",
+        "duplicateColor": "Duplicate color"
+      },
+      "selectedRegion": {
+        "title": "Selected region details",
+        "typeLabel": "Type: ",
+        "typeDiagnostic": "Diagnostic temporary region (devtools only)",
+        "typeFormal": "Formal region",
+        "regionLabel": "Region: ",
+        "seedLabel": "Seed: ",
+        "purposeLabel": "Purpose: ",
+        "purposeDiagnostic": "Only used for sample guidance, magic-wand work, and chain boundary repair; it is excluded automatically from formal mask/graph exports.",
+        "purposeFormal": "The mask handles clicking and highlighting; the passage graph only expresses rules-level connectivity.",
+        "truthLevelLabel": "Truth level: ",
+        "truthDiagnostic": "Diagnostic sample. It can validate direction but cannot replace formal region truth.",
+        "truthAuthoritative": "Explicit truth. The main pipeline consumes this region result directly.",
+        "truthBootstrap": "Heuristic bootstrap. It still needs chain refinement or promotion into explicit truth.",
+        "sharedPrintedRuntime": "This printed region currently maps to runtime regions: {{names}}.",
+        "missingAuthoritativeGuide": "Missing explicit guides: {{names}}.",
+        "runtimeOnlyGuideBlocker": "The blocker is not missing drawing work. The current guide target is still bound to `regionIds`, so runtime-only gaps like {{names}} cannot yet be written straight into the workspace authoritative guide file.",
+        "removePendingCandidate": "Remove pending entry",
+        "recordPendingCandidate": "Record pending entry",
+        "metadataOnlyNote": "This only writes workspace metadata and will not edit the formal `region-authoritative-guides.json` directly.",
+        "sourceLabel": "Source",
+        "sourcePlaceholder": "Example: r28-jizhen-crop.png + annotated base-map detail",
+        "noteLabel": "Note",
+        "notePlaceholder": "Record why it belongs to this printed region and which formal proof step is still missing.",
+        "saveGuideCandidatesOnly": "Save guide candidates only",
+        "unsetAuthoritativeTruth": "Unset explicit truth",
+        "setAuthoritativeTruth": "Mark as explicit truth",
+        "authoritativeTruthNote": "Explicit truth is consumed directly by the main pipeline and is written into the current workspace when saved.",
+        "diagnosticTruthNote": "Diagnostic temporary regions are not written into formal explicit truth; the Beijing sample should keep using the in-tool guide to validate direction."
+      },
+      "passages": {
+        "title": "Passages",
+        "description": "Click an existing passage edge on the map, or drag from one region center to another to create an edge. The left panel only edits the currently selected passage.",
+        "autoFillByAdjacency": "Auto-fill by adjacency",
+        "summary": "Centers {{centers}} / Passages {{passages}}",
+        "empty": "No passages yet. Generate regions first, then use auto-fill by adjacency; special passages can still be drawn directly on the map.",
+        "travelWidthSummary": "Move {{travelCost}} / Width {{width}}"
+      }
     }
   }
 }

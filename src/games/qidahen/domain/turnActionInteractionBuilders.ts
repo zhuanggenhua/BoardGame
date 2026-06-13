@@ -110,6 +110,7 @@ function buildQidahenRecruitInteraction(
         '征召军队：选择建军方式',
         options,
         {
+            titleKey: 'board.actions.recruit.title',
             sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
@@ -267,6 +268,7 @@ function buildQidahenMaShiTradeInteraction(
         '马市贸易：选择建兵数量',
         options,
         {
+            titleKey: 'board.actions.maShiTrade.title',
             sourceId: QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
@@ -305,6 +307,7 @@ function buildQidahenKhanEdictInteraction(
         '大汗令箭：选择执行效果',
         options,
         {
+            titleKey: 'board.actions.khanEdict.title',
             sourceId: QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
@@ -347,6 +350,7 @@ function buildQidahenDriveTigerConsentInteraction(
         '驱虎吞狼：是否接受大明指挥',
         options,
         {
+            titleKey: 'board.actions.driveTiger.title',
             sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,

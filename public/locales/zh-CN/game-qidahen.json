@@ -73,6 +73,144 @@
       "confirm": "确认并进入棋盘"
     }
   },
+  "board": {
+    "handInteraction": {
+      "actionPaymentStatus": "需弃 {{cost}} 张 · 已选 {{selected}} 张",
+      "actionPaymentHint": "点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。",
+      "confirmExecute": "确认执行",
+      "cancelAction": "取消本次行动",
+      "handLimitTitle": "{{factionName}} · 检查手牌上限",
+      "handLimitStatus": "手牌 {{handCount}}/{{handLimit}} · 需弃 {{requiredDiscardCount}} · 已择 {{selected}}",
+      "handLimitHint": "点击底部手牌选择要弃掉的牌。",
+      "confirmDiscard": "确认弃牌",
+      "sunYuanhuaStatus": "需弃 {{requiredCardCount}} 张 · 已择 {{selected}}",
+      "sunYuanhuaHint": "点击底部手牌选择要弃掉的牌。",
+      "confirmSunYuanhua": "确认打科技",
+      "skipSunYuanhua": "跳过孙元化科技"
+    },
+    "player": {
+      "armamentsUndeveloped": "未开发",
+      "characterDefeatMarkers": "{{name}}({{number}})败×{{count}}",
+      "characterCount": "人物 {{count}}",
+      "prestigeBonus": "汉城+{{bonus}}",
+      "armaments": "军备 {{summary}}",
+      "defeatMarkers": "败×{{count}}",
+      "current": "当前"
+    },
+    "map": {
+      "mainMapAlt": "七大恨主地图",
+      "regionSelectionAria": "七大恨地图区域选择",
+      "regionTroopsPopulation": "兵力 {{troops}} · 人口 {{population}}",
+      "regionSpecialTroops": "特殊 {{summary}}",
+      "regionPassages": "接边 {{summary}}",
+      "regionReachable": "调度可达 {{summary}}",
+      "sharedPrintedRegion": "同图块"
+    },
+    "wheel": {
+      "aria": "七大恨行动轮盘",
+      "newYear": "新年 >>>",
+      "midyear": "年中",
+      "centerTop": "行",
+      "centerRight": "轮",
+      "centerLeft": "盘",
+      "centerBottom": "动"
+    },
+    "korea": {
+      "drawPile": "朝鲜牌库",
+      "discardPile": "朝鲜弃牌"
+    },
+    "actions": {
+      "status": {
+        "used": "已用",
+        "unused": "未用"
+      },
+      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}",
+      "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
+      "wheelNextStepTitle": "下一步：点击轮盘按钮推进回合",
+      "wheelNextStepHint": "不用点左侧轮盘盘面，直接点下面的明文按钮即可。",
+      "directExecute": "直接执行",
+      "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
+      "victory": {
+        "hegemony": "霸权胜利",
+        "military": "军事胜利",
+        "prestige": "威望胜利"
+      },
+      "fortificationStatus": "{{label}} · {{status}}",
+      "fortification": {
+        "ruined": "破败",
+        "intact": "完整"
+      },
+      "attritionLabel": "兵力耗损",
+      "casualtyPriority": {
+        "highestFirst": "高级先损",
+        "lowestFirst": "低级先损"
+      },
+      "targetUnlocked": "未锁定",
+      "gaoDi": {
+        "summary": "源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}",
+        "hint": "先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。",
+        "target": "{{targetRegionName}} · {{type}} {{amount}}",
+        "typeTroops": "部队",
+        "typePopulation": "人口",
+        "amountTroops": "{{amount}} 个部队",
+        "amountPopulation": "{{amount}} 个人口",
+        "skip": "跳过高第调度"
+      },
+      "internalDispatch": {
+        "summary": "源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队",
+        "committedTroops": "调 {{troops}}"
+      },
+      "recruit": {
+        "title": "征召军队",
+        "summary": "当前目标 {{targetRegionName}} · 可切换到其他己方控制区后再决定建军方式"
+      },
+      "maShiTrade": {
+        "title": "马市贸易",
+        "summary": "当前目标 {{targetRegionName}} · 可切换到其他大明控制区后再决定建立数量"
+      },
+      "khanEdict": {
+        "title": "大汗令箭",
+        "summary": "当前区域 {{sourceRegionName}} · 可切换地图选中区后再决定"
+      },
+      "diplomacy": {
+        "currentControlRegion": "当前控制区",
+        "sourceSummary": "源区 {{sourceRegionName}} · 雇佣落在 {{hireRegionName}}",
+        "resolvedSummary": "已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次",
+        "targetSummary": "当前目标 {{targetRegionName}} · {{targetHint}}",
+        "stepSummary": "外交 {{index}} · {{summary}}"
+      },
+      "driveTiger": {
+        "title": "驱虎吞狼",
+        "summary": "{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。"
+      },
+      "wheelDispatch": {
+        "summary": "源区 {{sourceRegionName}} · 可选目标 {{count}} · 可直接点击地图高亮区",
+        "targetSummary": "{{targetRegionName}} · 防守 {{defenderLabel}}",
+        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "travelCost": "耗 {{totalTravelCost}}"
+      },
+      "pendingTarget": {
+        "header": "{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}",
+        "defenderPayCost": " · 守方需付 {{cost}}",
+        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "boundaryUnitCap": " · 边界上限 {{count}}",
+        "actualCommittedTroops": "实际投入",
+        "attackerCasualtyLabel": "攻方承伤",
+        "defenderCasualtyLabel": "守方承伤"
+      },
+      "postBattle": {
+        "summary": "{{summary}} · 投入 {{committedTroops}}"
+      }
+    }
+  },
+  "battle": {
+    "pendingTargetChoice": {
+      "rearGuard": "断后结算",
+      "rout": "溃败结算",
+      "cavalryPlunderAttacker": "骑兵劫掠己方牌堆",
+      "cavalryPlunderDefender": "骑兵劫掠守方牌堆"
+    }
+  },
   "devtools": {
     "runtimePreview": {
       "eyebrow": "七大恨运行时预览",
@@ -148,7 +286,203 @@
       },
       "pathCount": "路径：{{count}}",
       "graphAria": "通行路径图",
-      "forbiddenBoundaryLabel": "禁止描边：{{label}}"
+      "forbiddenBoundaryLabel": "禁止描边：{{label}}",
+      "reviewStatus": {
+        "viewed": "已看图",
+        "unviewed": "未看图",
+        "viewCrop": "查看裁图",
+        "revoke": "撤销",
+        "approveAfterReview": "看图通过"
+      },
+      "acceptancePreview": {
+        "title": "{{regionName}} 验收裁图",
+        "meta": "{{pixels}} 像素 · 裁图 {{left}},{{top}}-{{right}},{{bottom}}",
+        "closeAria": "关闭区域验收裁图",
+        "imageAlt": "{{regionName}} 验收裁图"
+      },
+      "exportQualityReport": "导出质量报告 JSON",
+      "exportPartitionPreview": "导出分区预览 PNG",
+      "exportBoundaryRepairPackage": "导出补边问题包 ZIP",
+      "exportAcceptancePackage": "导出区域验收包 ZIP",
+      "extractionStats": {
+        "title": "最近抽线读数 · {{mode}}",
+        "mode": {
+          "candidateReference": "当前底图区域导向候选参考",
+          "editableDraft": "真实底图颜色线编辑草稿",
+          "handDrawn": "带底图描线图",
+          "currentExperiment": "当前底图实验"
+        },
+        "matchedPixelCountLabel": "抽色命中：",
+        "drawnDiffPixelCountLabel": "底图差分：",
+        "supportBandPixelCountLabel": "贴支撑带：",
+        "guideBandPixelCountLabel": "区域导向带：",
+        "decorationExcludedPixelCountLabel": "装饰/标记排除：",
+        "postExtractPixelCountLabel": "抽线后：",
+        "postTrimPixelCountLabel": "剔除后：",
+        "keptPixelCountLabel": "最终保留：",
+        "discardedPixelCountLabel": "舍弃：",
+        "boundaryChainCountLabel": "边界链：",
+        "candidateNote": "候选判定：只写入参考层，不写入边界图本体；需要沿参考手绘成闭合边界后再生成区域。",
+        "draftNote": "草稿判定：已写入边界编辑层，但仍是未闭合初始线稿；断线可舍弃，正式成果必须逐区验收。",
+        "readOnlyNote": "诊断判定：真实底图颜色撞色严重，只读显示，不写入边界图。"
+      },
+      "compactBoundaryStats": {
+        "initialBarrierPixelsLabel": "初始红线像素：",
+        "finalBarrierPixelsLabel": "最终红线/障碍：",
+        "manualAdditionsLabel": "手工补边：",
+        "denoiseRemovedLabel": "去噪：",
+        "brushWidth": "画笔宽度约 {{width}}px",
+        "zoom": "缩放 {{scale}}x"
+      },
+      "compactPassages": {
+        "summary": "中心 {{centers}} / 自动连线 {{passages}}",
+        "rowSummary": "移 {{travelCost}} / 宽 {{width}}",
+        "boundaryOption": "{{label}} 路 {{note}}",
+        "travelCostSummary": "移动代价 {{travelCost}} / 战场宽度 {{battleWidth}}"
+      },
+      "compactRegions": {
+        "selectRegionAria": "选中 {{regionName}}",
+        "regionMeta": "点 {{x}},{{y}} · {{pixels}} px · {{id}}"
+      },
+      "saveFormalGuard": "正式工作区不能保存 {{state}} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。",
+      "currentMode": "模式：{{mode}}",
+      "workspace": {
+        "boundaryPresetValue": "rgb({{value}})"
+      },
+      "regionTruthWorkflow": {
+        "authoritativeCount": "当前已锁定显式真相：{{count}} 区",
+        "sharedGuideAuditSummary": "当前正式共图块缺口 {{total}} 条；其中 {{runtimeOnly}} 条缺口仍是仅运行时区域，现有 `regionIds` 指引模型不能直接落盘。",
+        "sharedRuntime": "当前共享运行时区域：{{names}}",
+        "missingAuthoritativeGuide": "缺显式指引：{{names}}",
+        "runtimeOnlyGuideGap": "当前工具只能把指引写到现有区域 id；以下缺口是仅运行时区域，不能直接靠现有 `regionIds` 模型保存：{{names}}"
+      },
+      "detour": {
+        "matchedSeedCount": "独立 seed {{matched}}/{{total}}",
+        "unexplainedOpenLines": "未解释开放线 {{count}} 条。"
+      },
+      "progress": {
+        "generatedWithLeaks": "已生成 {{generated}}，漏边 {{leaked}}",
+        "generated": "已生成 {{generated}}"
+      },
+      "diagnostics": {
+        "boundaryTolerance": "颜色容差 {{value}}",
+        "boundaryExpansion": "边界加粗 {{value}}px",
+        "regionTolerance": "区域底色容差 {{value}}（魔棒使用种子色相近区域 + 边界停线；必要时再用锁链修边）",
+        "pixelUnit": "px"
+      },
+      "workflow": {
+        "candidateDiagnosticsVerdict": "自动抽线不能自动生成正常成果：真实图像参数扫描最多 {{matched}}/{{required}} 个独立 seed；高容差会命中 UI/文字/装饰。固定色边界稿只作为手修起稿层，不能直接保存为成果。",
+        "candidateSeedCount": "seed {{matched}}/{{required}}",
+        "candidateClosedFaceCount": "可填分区 {{count}}",
+        "candidateUiPixels": "UI {{count}} px",
+        "manualApprovalCount": "人工验收 {{approved}}/{{required}}",
+        "notAvailable": "n/a"
+      },
+      "recentGeneration": {
+        "title": "最近批量生成结果",
+        "generatedCount": "已生成 {{count}}",
+        "leakedCount": "漏边 {{count}}",
+        "skippedCount": "未生成 {{count}}",
+        "occupiedCount": "被占用 {{count}}",
+        "pixelCount": "{{count}} px",
+        "zeroPixelCount": "0 px",
+        "status": {
+          "generated": "已生成",
+          "leaked": "漏边跳过",
+          "occupied": "被占用",
+          "skipped": "未生成"
+        },
+        "emptyHint": "批量生成一次后，这里会告诉你每个区域现在是“已生成”“漏边跳过”还是“未生成”。边界主路看这里补哪块边；区域粗稿主路看这里哪些区还要手修。"
+      },
+      "manualView": {
+        "title": "手修与视图",
+        "brushWidth": "修边宽度约 {{width}}px",
+        "displayScale": "显示比例 {{scale}}x",
+        "maskOpacity": "遮罩透明度 {{opacity}}",
+        "hideMask": "隐藏遮罩",
+        "showMask": "显示遮罩",
+        "hideBoundary": "隐藏边界",
+        "showBoundaryDebug": "边界调试",
+        "hideSelectedOutline": "隐藏选区描边",
+        "showSelectedOutline": "显示选区描边",
+        "hideForbiddenZone": "隐藏禁区",
+        "showForbiddenZone": "显示禁区",
+        "focusSeedTrace": "聚焦种子描边",
+        "hideSeedStatus": "隐藏种子状态",
+        "showSeedStatus": "显示种子状态",
+        "focusUnmatchedSeed": "聚焦未独立种子",
+        "hidePartitionPreview": "隐藏分区铺色",
+        "showPartitionPreview": "显示分区铺色",
+        "hideSupportCandidates": "隐藏细线候选",
+        "showSupportCandidates": "显示细线候选",
+        "enableSupportSnap": "吸附细线候选",
+        "disableSupportSnap": "吸附关闭",
+        "supportHint": "细线候选只辅助沿底图长线描边；它不会自动写入边界图，也不能替代手绘闭合边界。",
+        "autoSnapToContour": "自动贴合当前红线到细线轮廓",
+        "referenceLayer": "参考层",
+        "referenceShown": "显示中",
+        "referenceHidden": "已隐藏",
+        "referenceOpacity": "参考透明度 {{opacity}}",
+        "clearReference": "清除参考图",
+        "finalBoundaryHint": "红线就是最终参与区域分割的边界：边界图本体与手工补边会合成同一份障碍数据；擦除只从最终红线里扣掉。",
+        "rgbValue": "rgb({{value}})",
+        "undoAdjustments": "撤销微调",
+        "redoAdjustments": "重做微调",
+        "clearMask": "清空",
+        "clearBoundaryImage": "清空边界图",
+        "clearAdjustmentLayer": "清空微调层"
+      },
+      "regions": {
+        "title": "区域",
+        "add": "新增",
+        "seedValue": "seed {{seed}}",
+        "seedStatus": {
+          "independent": "独立",
+          "unmatched": "未独立",
+          "pendingTrace": "待描"
+        },
+        "pathCount": "路径 {{count}}",
+        "diagnosticNoExport": "诊断区，不导出",
+        "duplicateColor": "颜色重复"
+      },
+      "selectedRegion": {
+        "title": "当前区域细节",
+        "typeLabel": "类型：",
+        "typeDiagnostic": "诊断临时区域（仅工具页）",
+        "typeFormal": "正式区域",
+        "regionLabel": "区域：",
+        "seedLabel": "种子：",
+        "purposeLabel": "用途：",
+        "purposeDiagnostic": "只服务样本引导、魔棒和锁链修边；保存时会自动从正式遮罩/通路图导出中排除。",
+        "purposeFormal": "遮罩负责点击和高亮；通行路径图只表达规则连通关系。",
+        "truthLevelLabel": "真相级别：",
+        "truthDiagnostic": "诊断样本。可用于验证方向，但不能替代正式区域真相。",
+        "truthAuthoritative": "显式真相。主链直接消费当前区域结果。",
+        "truthBootstrap": "启发起点。需要继续锁链微调或升格为显式真相。",
+        "sharedPrintedRuntime": "这个印刷区当前同时承接运行时区域：{{names}}。",
+        "missingAuthoritativeGuide": "当前仍缺显式指引：{{names}}。",
+        "runtimeOnlyGuideBlocker": "这里卡住的原因不是没继续画，而是当前工具保存的指引目标仍绑定 `regionIds`；像 {{names}} 这种仅运行时缺口，现模型还不能直接落进工作区权威指引文件。",
+        "removePendingCandidate": "移除待补条目",
+        "recordPendingCandidate": "记录待补条目",
+        "metadataOnlyNote": "只写工作区元数据，不会直接改正式区域权威指引文件。",
+        "sourceLabel": "来源",
+        "sourcePlaceholder": "例如：蓟镇裁图 PNG + 原图局部标注",
+        "noteLabel": "备注",
+        "notePlaceholder": "记录为什么它属于这个印刷区，以及还缺哪一步正式证据。",
+        "saveGuideCandidatesOnly": "仅保存指引候选",
+        "unsetAuthoritativeTruth": "取消显式真相",
+        "setAuthoritativeTruth": "设为显式真相",
+        "authoritativeTruthNote": "显式真相会被主链直接消费，并随保存自动落到当前工作区。",
+        "diagnosticTruthNote": "诊断临时区域不写入正式显式真相；北京样本继续用工具内指引验证方向。"
+      },
+      "passages": {
+        "title": "通路",
+        "description": "在地图上点通路边，或从一个区域中心拖到另一个中心建边。左侧只编辑当前选中的通路。",
+        "autoFillByAdjacency": "按邻近补全",
+        "summary": "中心 {{centers}} / 通路 {{passages}}",
+        "empty": "暂无通路。先生成区域，再用“按邻近补全”；特殊通路可直接在地图上拖线补。",
+        "travelWidthSummary": "移 {{travelCost}} / 宽 {{width}}"
+      }
     }
   }
 }

@@ -15,6 +15,8 @@ import type { QidahenCore, QidahenPlunderSource } from './types';
 interface QidahenPendingTargetChoiceOption {
     id: string;
     label: string;
+    labelKey?: string;
+    labelParams?: Record<string, string | number>;
     value: QidahenPendingTargetChoiceValue;
 }
 
@@ -99,10 +101,12 @@ const canUseAttackerCavalryPlunderDefenderDeck = (
 const buildPendingTargetCavalryPlunderChoiceOption = (
     id: string,
     label: string,
+    labelKey: string,
     source: QidahenPlunderSource,
 ): QidahenPendingTargetChoiceOption => ({
     id,
     label,
+    labelKey,
     value: buildPendingTargetAttackerCavalryPlunderChoiceValue(source),
 });
 
@@ -118,19 +122,31 @@ export const buildPendingTargetChoiceOptions = (
         {
             id: 'rear-guard',
             label: '断后结算',
+            labelKey: 'battle.pendingTargetChoice.rearGuard',
             value: buildPendingTargetRearGuardChoiceValue(),
         },
         {
             id: 'rout',
             label: '溃败结算',
+            labelKey: 'battle.pendingTargetChoice.rout',
             value: buildPendingTargetRoutChoiceValue(),
         },
     ];
 
     if (canUseAttackerCavalryPlunder(core, pending)) {
-        options.unshift(buildPendingTargetCavalryPlunderChoiceOption('cavalry-plunder-attacker', '骑兵劫掠己方牌堆', 'attacker'));
+        options.unshift(buildPendingTargetCavalryPlunderChoiceOption(
+            'cavalry-plunder-attacker',
+            '骑兵劫掠己方牌堆',
+            'battle.pendingTargetChoice.cavalryPlunderAttacker',
+            'attacker',
+        ));
         if (canUseAttackerCavalryPlunderDefenderDeck(core, pending)) {
-            options.unshift(buildPendingTargetCavalryPlunderChoiceOption('cavalry-plunder-defender', '骑兵劫掠守方牌堆', 'defender'));
+            options.unshift(buildPendingTargetCavalryPlunderChoiceOption(
+                'cavalry-plunder-defender',
+                '骑兵劫掠守方牌堆',
+                'battle.pendingTargetChoice.cavalryPlunderDefender',
+                'defender',
+            ));
         }
     }
 
