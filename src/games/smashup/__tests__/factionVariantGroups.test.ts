@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import {
+    getFactionMeta,
     getFactionVariantGroupById,
     getPreferredFactionVariant,
     getVisibleFactionVariantGroups,
@@ -50,5 +51,13 @@ describe('SmashUp faction variant groups', () => {
 
         expect(groups.map((group) => group.groupId)).not.toContain(SMASHUP_FACTION_IDS.HULUWAWA);
         expect(getPreferredFactionVariant(SMASHUP_FACTION_IDS.HULUWAWA, 'zh-CN', ['titans'])).toBeUndefined();
+    });
+
+    it('keeps shapeshifters on a dedicated icon instead of reusing frankenstein', () => {
+        expect(getFactionMeta(SMASHUP_FACTION_IDS.SHAPESHIFTERS)?.icon).toBeTruthy();
+        expect(getFactionMeta(SMASHUP_FACTION_IDS.FRANKENSTEIN)?.icon).toBeTruthy();
+        expect(getFactionMeta(SMASHUP_FACTION_IDS.SHAPESHIFTERS)?.icon).not.toBe(
+            getFactionMeta(SMASHUP_FACTION_IDS.FRANKENSTEIN)?.icon,
+        );
     });
 });
