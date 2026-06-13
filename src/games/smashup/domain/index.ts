@@ -2016,20 +2016,21 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             return payload?.sourceId === 'smashup_reaction_choose';
         });
 
-        if (state.sys.interaction?.current) {
-            return undefined;
-        }
-
         const hasLiveScoringOrReactionFrame = Boolean(
             getSmashUpReactionSession(state)
             || getScoringSession(state)?.currentBaseRef,
         );
 
-        // factionSelect 鑷姩鎺ㄨ繘 check
+        // factionSelect -> startTurn 不应被起手重抽 Prompt 卡住。
+        // 选秀完成后先离开选秀阶段，后续再由 startTurn 等待重抽交互收口。
         if (phase === 'factionSelect') {
             if (!core.factionSelection) {
                 return isFactionDraftReadyToStart ? { autoContinue: true, playerId: pid } : undefined;
             }
+        }
+
+        if (state.sys.interaction?.current) {
+            return undefined;
         }
 
         // startTurn 鑷姩鎺ㄨ繘鍒?playCards
