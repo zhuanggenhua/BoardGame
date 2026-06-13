@@ -16,7 +16,7 @@ const entry: GameManifestEntry = {
     bestPlayers: [3],
     ai: {
         capture: true,
-        localAi: false,
+        localAi: true,
         remoteAi: false,
     },
     criticalImages: [

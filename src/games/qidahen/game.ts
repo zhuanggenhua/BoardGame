@@ -4,7 +4,9 @@ import {
     createRematchSystem,
     createUndoSystem,
 } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { createGameEngine } from '../../engine/adapter';
+import { qidahenAiRuntime } from './ai';
 import { QidahenDomain } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
 
@@ -33,5 +35,7 @@ export const engineConfig = createGameEngine({
     maxPlayers: 3,
     commandTypes: Object.values(QIDAHEN_COMMANDS),
 });
+
+registerGameAiRuntime(qidahenAiRuntime);
 
 export default engineConfig;
