@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { unzipSync, zipSync } from 'fflate';
 import defaultRegionMaskRegionsData from '../../games/qidahen/data/region-mask-regions.json';
@@ -5550,6 +5551,7 @@ const buildSubsetAssignments = ({
 };
 
 const QidahenRegionMaskTool: React.FC = () => {
+    const { t } = useTranslation('game-qidahen');
     const bgCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const boundarySourceReferenceCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -18689,7 +18691,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     }}
                                                     data-testid={`qidahen-passage-delete-${passage.id}`}
                                                     className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-stone-700 text-stone-400 transition hover:border-rose-400 hover:text-rose-200"
-                                                    aria-label="删除路径"
+                                                    aria-label={t('devtools.regionMaskTool.deletePathAria', { defaultValue: '删除路径' })}
                                                 >
                                                     <X size={14} />
                                                 </button>
@@ -18703,7 +18705,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 const toRegion = regions.find((region) => region.id === selectedPassage.to);
                                 return (
                                     <div className="rounded-xl border border-amber-500/35 bg-amber-500/8 px-3 py-3">
-                                        <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">当前通路</div>
+                                        <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">{t('devtools.regionMaskTool.currentPassage.title', { defaultValue: '当前通路' })}</div>
                                         <div className="mt-1 text-sm font-black text-stone-100">
                                             {fromRegion?.name ?? selectedPassage.from} ↔ {toRegion?.name ?? selectedPassage.to}
                                         </div>
@@ -18715,12 +18717,16 @@ const QidahenRegionMaskTool: React.FC = () => {
                                         >
                                             {PASSAGE_BOUNDARY_TYPES.map((boundaryType) => (
                                                 <option key={boundaryType.id} value={boundaryType.id}>
-                                                    {boundaryType.label} 路 {boundaryType.note}
+                                                    {t('devtools.regionMaskTool.boundaryOption', {
+                                                        defaultValue: '{{label}} 路 {{note}}',
+                                                        label: boundaryType.label,
+                                                        note: boundaryType.note,
+                                                    })}
                                                 </option>
                                             ))}
                                         </select>
                                         <label className="mt-2 block text-xs font-black uppercase tracking-[0.12em] text-stone-300">
-                                            移动代价
+                                            {t('devtools.regionMaskTool.travelCostLabel', { defaultValue: '移动代价' })}
                                             <input
                                                 type="number"
                                                 min={1}
@@ -18735,9 +18741,19 @@ const QidahenRegionMaskTool: React.FC = () => {
                                             data-testid={`qidahen-passage-note-${selectedPassage.id}`}
                                             className="mt-2 rounded-md border border-stone-800 bg-stone-900/75 px-2 py-2 text-xs leading-5 text-stone-300"
                                         >
-                                            <span className="font-black text-stone-100">当前边界/移动规则：</span>
-                                            {selectedPassageBoundaryMeta.label} · {selectedPassageBoundaryMeta.note}
-                                            <div className="mt-1 text-stone-400">移动代价 {selectedPassage.travelCost} / 战场宽度 {selectedPassageBoundaryMeta.width}</div>
+                                            <span className="font-black text-stone-100">{t('devtools.regionMaskTool.boundaryRuleLabel', { defaultValue: '当前边界/移动规则：' })}</span>
+                                            {t('devtools.regionMaskTool.boundaryRuleValue', {
+                                                defaultValue: '{{label}} · {{note}}',
+                                                label: selectedPassageBoundaryMeta.label,
+                                                note: selectedPassageBoundaryMeta.note,
+                                            })}
+                                            <div className="mt-1 text-stone-400">
+                                                {t('devtools.regionMaskTool.boundaryRuleStats', {
+                                                    defaultValue: '移动代价 {{travelCost}} / 战场宽度 {{battleWidth}}',
+                                                    travelCost: selectedPassage.travelCost,
+                                                    battleWidth: selectedPassageBoundaryMeta.width,
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -18756,7 +18772,9 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 className={'inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border px-3 text-sm font-black transition active:translate-y-px ' + (formalRegionSaveBlocked ? 'cursor-not-allowed border-rose-500/55 bg-rose-500/10 text-rose-100 opacity-80' : 'border-amber-400 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25')}
                             >
                                 <Save size={16} />
-                                {formalRegionSaveBlocked ? '正式成果待验收' : '保存工作区'}
+                                {formalRegionSaveBlocked
+                                    ? t('devtools.regionMaskTool.saveFormalPending', { defaultValue: '正式成果待验收' })
+                                    : t('devtools.regionMaskTool.saveWorkspace', { defaultValue: '保存工作区' })}
                             </button>
                         ) : (
                             <button
@@ -18765,29 +18783,51 @@ const QidahenRegionMaskTool: React.FC = () => {
                                 data-testid="qidahen-show-advanced-from-footer"
                                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-stone-700 px-3 text-xs font-black text-stone-300 transition hover:border-stone-500"
                             >
-                                显示高级调试
+                                {t('devtools.regionMaskTool.showAdvancedDebug', { defaultValue: '显示高级调试' })}
                             </button>
                         )}
                         {showAdvancedWorkbench && formalRegionSaveBlocked ? (
                             <div data-testid="qidahen-formal-save-guard" className="mt-2 rounded-md border border-rose-500/35 bg-rose-500/10 px-2 py-1.5 text-xs leading-5 text-rose-100">
-                                正式工作区不能保存 {boundaryQualityReport.normality.state} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。
+                                {t('devtools.regionMaskTool.formalSaveGuard', {
+                                    defaultValue: '正式工作区不能保存 {{state}} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。',
+                                    state: boundaryQualityReport.normality.state,
+                                })}
                             </div>
                         ) : null}
                         <div className="mt-2 text-xs leading-5 text-stone-500">
-                            当前工作区：{dataOutputDir}
+                            {t('devtools.regionMaskTool.currentWorkspace', {
+                                defaultValue: '当前工作区：{{path}}',
+                                path: dataOutputDir,
+                            })}
                         </div>
                     </div>
                 </aside>
 
                 <main className="flex h-screen min-w-0 flex-1 flex-col bg-stone-950">
                     <div className="shrink-0 border-b border-stone-800 px-6 py-4 text-sm text-stone-400">
-                        当前区域：<span className="font-bold text-stone-100">{selectedRegion?.name ?? '未选择'}</span>
+                        {t('devtools.regionMaskTool.currentRegion', { defaultValue: '当前区域：' })}<span className="font-bold text-stone-100">{selectedRegion?.name ?? t('devtools.regionMaskTool.unselectedRegion', { defaultValue: '未选择' })}</span>
                         <span className="ml-3 font-mono text-xs text-stone-500">{selectedRegion?.id}</span>
                         <span className="ml-4 text-xs text-stone-500">
-                            模式：{mode === 'wand' ? '魔棒' : mode === 'chain' ? '锁链' : mode === 'paint' ? '区域修正' : mode === 'erase' ? '区域擦除' : mode === 'barrier' ? '边界修正' : '通路编辑'}
+                            {t('devtools.regionMaskTool.modeSummary', {
+                                defaultValue: '模式：{{mode}}',
+                                mode: mode === 'wand'
+                                    ? t('devtools.regionMaskTool.mode.wand', { defaultValue: '魔棒' })
+                                    : mode === 'chain'
+                                        ? t('devtools.regionMaskTool.mode.chain', { defaultValue: '锁链' })
+                                        : mode === 'paint'
+                                            ? t('devtools.regionMaskTool.mode.paint', { defaultValue: '区域修正' })
+                                            : mode === 'erase'
+                                                ? t('devtools.regionMaskTool.mode.erase', { defaultValue: '区域擦除' })
+                                                : mode === 'barrier'
+                                                    ? t('devtools.regionMaskTool.mode.barrier', { defaultValue: '边界修正' })
+                                                    : t('devtools.regionMaskTool.mode.path', { defaultValue: '通路编辑' }),
+                            })}
                         </span>
                         <span className="ml-4 text-xs text-stone-500">
-                            路径：{passages.length}
+                            {t('devtools.regionMaskTool.pathCount', {
+                                defaultValue: '路径：{{count}}',
+                                count: passages.length,
+                            })}
                         </span>
                     </div>
                     <div ref={viewportRef} className="grid min-h-0 flex-1 place-items-center overflow-auto px-4 py-4">
@@ -18875,7 +18915,7 @@ const QidahenRegionMaskTool: React.FC = () => {
                                     setPathDragStartId(null);
                                     setPathDraftPoint(null);
                                 }}
-                                aria-label="通行路径图"
+                                aria-label={t('devtools.regionMaskTool.graphAria', { defaultValue: '通行路径图' })}
                             >
                                 <rect
                                     x="0"
@@ -18910,7 +18950,10 @@ const QidahenRegionMaskTool: React.FC = () => {
                                                     stroke="#241012"
                                                     strokeWidth="4"
                                                 >
-                                                    禁止描边：{rect.label}
+                                                    {t('devtools.regionMaskTool.forbiddenBoundaryLabel', {
+                                                        defaultValue: '禁止描边：{{label}}',
+                                                        label: rect.label,
+                                                    })}
                                                 </text>
                                             </g>
                                         ))}

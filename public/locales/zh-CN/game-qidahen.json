@@ -72,5 +72,83 @@
       "noExtraChoices": "这个剧本没有额外前置选择，确认后可直接进入棋盘。",
       "confirm": "确认并进入棋盘"
     }
+  },
+  "devtools": {
+    "runtimePreview": {
+      "eyebrow": "七大恨运行时预览",
+      "title": "临时工作区只读消费桥",
+      "descriptionPrefix": "这里直接读取临时工作区里的",
+      "descriptionBetween": "和",
+      "descriptionSuffix": "，用运行时方式预览区域、中心点、通路和边界规则。不写正式七大恨数据。",
+      "workspaceBadge": "工作区={{workspace}}",
+      "stats": "中心 {{nodes}} / 通路 {{edges}} / 缺中心 {{unresolved}} / 共享印刷区 {{sharedPrinted}} / 缺权威指引 {{missingGuide}} / 候选 {{candidates}}",
+      "loadedAt": "最近读取：{{label}}",
+      "backToEditor": "回到工具编辑",
+      "refresh": "重新读取",
+      "openReadyWorkspace": "打开现成可用成果",
+      "mapSectionTitle": "主地图 + 区域 mask + 运行时通路叠层",
+      "loading": "正在读取工作区...",
+      "mapAlt": "七大恨主地图",
+      "reviewTitle": "预览口径",
+      "reviewIntro": "这页只证明“临时工作区成果能被运行时方式消费”。",
+      "reviewNote": "它不把当前区域粗稿或旁路工作区升级成正式边界真相源。",
+      "editCurrentWorkspace": "去当前工作区继续编辑",
+      "formalSharedPrinted": {
+        "title": "正式共图块审计",
+        "description": "这里直接按正式运行时合同统计共享印刷区，不依赖当前工作区是否只载入局部区域。",
+        "note": "当前最重要的是把“缺权威指引”的正式红灯直接暴露出来。",
+        "summary": "正式共享印刷区：{{count}}；缺权威指引：{{missing}}",
+        "runtime": "运行时：{{names}}",
+        "missingGuide": "缺权威指引：{{names}}",
+        "guideComplete": "权威指引已覆盖当前运行时映射"
+      },
+      "sharedPrinted": {
+        "title": "共享印刷区",
+        "description": "当前工作区里，若一个印刷图块同时命中多个运行时区域，这里会直接列出来。",
+        "note": "这是运行时/印刷区分层真相，不代表正式印刷数据已经拆开。",
+        "candidateSummary": "当前工作区已记录运行时专属指引候选：{{count}} 条。",
+        "empty": "当前工作区没有载入共享印刷区的多运行时样本。",
+        "runtime": "运行时：{{names}}",
+        "missingGuide": "缺权威指引：{{names}}",
+        "guideComplete": "权威指引已覆盖当前运行时映射",
+        "pendingCandidates": "工作区待补候选：{{names}}"
+      },
+      "currentPassagesTitle": "当前通路",
+      "currentPassagesEmpty": "还没有读到可预览的区域图。",
+      "currentPassages": {
+        "travelCost": "移动代价 {{value}}",
+        "battleWidth": "战场宽度 {{value}}"
+      }
+    },
+    "regionMaskTool": {
+      "deletePathAria": "删除路径",
+      "currentPassage": {
+        "title": "当前通路"
+      },
+      "boundaryOption": "{{label}} 路 {{note}}",
+      "travelCostLabel": "移动代价",
+      "boundaryRuleLabel": "当前边界/移动规则：",
+      "boundaryRuleValue": "{{label}} · {{note}}",
+      "boundaryRuleStats": "移动代价 {{travelCost}} / 战场宽度 {{battleWidth}}",
+      "saveFormalPending": "正式成果待验收",
+      "saveWorkspace": "保存工作区",
+      "showAdvancedDebug": "显示高级调试",
+      "formalSaveGuard": "正式工作区不能保存 {{state}} 的区域成果。先导出验收包逐区看图，并完成 5/5 人工验收；临时工作区仍可保存进度。",
+      "currentWorkspace": "当前工作区：{{path}}",
+      "currentRegion": "当前区域：",
+      "unselectedRegion": "未选择",
+      "modeSummary": "模式：{{mode}}",
+      "mode": {
+        "wand": "魔棒",
+        "chain": "锁链",
+        "paint": "区域修正",
+        "erase": "区域擦除",
+        "barrier": "边界修正",
+        "path": "通路编辑"
+      },
+      "pathCount": "路径：{{count}}",
+      "graphAria": "通行路径图",
+      "forbiddenBoundaryLabel": "禁止描边：{{label}}"
+    }
   }
 }

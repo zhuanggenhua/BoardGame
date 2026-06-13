@@ -72,5 +72,83 @@
       "noExtraChoices": "This scenario has no extra pregame picks. Confirm to enter the board.",
       "confirm": "Confirm and enter board"
     }
+  },
+  "devtools": {
+    "runtimePreview": {
+      "eyebrow": "Qidahen Runtime Preview",
+      "title": "Read-Only Workspace Runtime Bridge",
+      "descriptionPrefix": "This page reads",
+      "descriptionBetween": "and",
+      "descriptionSuffix": "directly from the workspace to preview regions, centers, passages, and boundary rules at runtime without overwriting formal Qidahen data.",
+      "workspaceBadge": "workspace={{workspace}}",
+      "stats": "Centers {{nodes}} / Passages {{edges}} / Missing centers {{unresolved}} / Shared printed regions {{sharedPrinted}} / Missing authoritative guides {{missingGuide}} / Candidates {{candidates}}",
+      "loadedAt": "Last loaded: {{label}}",
+      "backToEditor": "Back to editor",
+      "refresh": "Reload",
+      "openReadyWorkspace": "Open ready-made workspace",
+      "mapSectionTitle": "Main map + region mask + runtime passage overlay",
+      "loading": "Loading workspace...",
+      "mapAlt": "Qidahen main map",
+      "reviewTitle": "Preview scope",
+      "reviewIntro": "This page only proves that workspace output can be consumed by the runtime.",
+      "reviewNote": "It does not promote the current rough draft or detour workspace into formal boundary truth.",
+      "editCurrentWorkspace": "Resume editing this workspace",
+      "formalSharedPrinted": {
+        "title": "Formal Shared Printed Audit",
+        "description": "This audits shared printed regions against the formal runtime contract, regardless of whether the current workspace only loaded a subset of regions.",
+        "note": "The priority here is to expose any formal missing authoritative-guide blockers directly.",
+        "summary": "Formal shared printed regions: {{count}}; missing authoritative guides: {{missing}}",
+        "runtime": "Runtime: {{names}}",
+        "missingGuide": "Missing authoritative guides: {{names}}",
+        "guideComplete": "Authoritative guides cover the current runtime mapping"
+      },
+      "sharedPrinted": {
+        "title": "Shared Printed Regions",
+        "description": "If one printed region hits multiple runtime regions in the current workspace, it is listed here directly.",
+        "note": "This reflects runtime/printed layering truth and does not mean the formal printed data has already been split.",
+        "candidateSummary": "Recorded runtime-only guide candidates in this workspace: {{count}}.",
+        "empty": "No multi-runtime shared printed samples are loaded in the current workspace.",
+        "runtime": "Runtime: {{names}}",
+        "missingGuide": "Missing authoritative guides: {{names}}",
+        "guideComplete": "Authoritative guides cover the current runtime mapping",
+        "pendingCandidates": "Workspace candidates to fill: {{names}}"
+      },
+      "currentPassagesTitle": "Current Passages",
+      "currentPassagesEmpty": "No previewable region graph has been loaded yet.",
+      "currentPassages": {
+        "travelCost": "Travel cost {{value}}",
+        "battleWidth": "Battle width {{value}}"
+      }
+    },
+    "regionMaskTool": {
+      "deletePathAria": "Delete passage",
+      "currentPassage": {
+        "title": "Current Passage"
+      },
+      "boundaryOption": "{{label}} route {{note}}",
+      "travelCostLabel": "Travel cost",
+      "boundaryRuleLabel": "Current boundary / movement rule:",
+      "boundaryRuleValue": "{{label}} · {{note}}",
+      "boundaryRuleStats": "Travel cost {{travelCost}} / Battle width {{battleWidth}}",
+      "saveFormalPending": "Formal output pending review",
+      "saveWorkspace": "Save workspace",
+      "showAdvancedDebug": "Show advanced debug",
+      "formalSaveGuard": "The formal workspace cannot save region output while the normality state is {{state}}. Export the review bundle, inspect each region, and finish all 5/5 manual approvals first; the temporary workspace can still save progress.",
+      "currentWorkspace": "Current workspace: {{path}}",
+      "currentRegion": "Current region:",
+      "unselectedRegion": "Unselected",
+      "modeSummary": "Mode: {{mode}}",
+      "mode": {
+        "wand": "Magic wand",
+        "chain": "Chain",
+        "paint": "Region refine",
+        "erase": "Region erase",
+        "barrier": "Boundary refine",
+        "path": "Passage edit"
+      },
+      "pathCount": "Paths: {{count}}",
+      "graphAria": "Passage graph",
+      "forbiddenBoundaryLabel": "Forbidden boundary area: {{label}}"
+    }
   }
 }

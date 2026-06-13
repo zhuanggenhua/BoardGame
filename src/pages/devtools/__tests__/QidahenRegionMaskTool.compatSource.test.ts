@@ -38,6 +38,8 @@ describe('QidahenRegionMaskTool compatibility source guards', () => {
         expect(source).toContain('data-testid={`qidahen-runtime-guide-candidate-note-${row.runtimeRegionId}`}');
         expect(source).toContain('data-testid="qidahen-save-authoritative-guides-only"');
         expect(source).toContain('仅保存 guide 候选');
+        expect(source).toContain("t('devtools.regionMaskTool.boundaryRuleLabel'");
+        expect(source).toContain("t('devtools.regionMaskTool.modeSummary'");
     });
 
     it('所有保存入口都会走共享 workspace payload builder，而不是继续各自手拼匿名 save request', () => {
