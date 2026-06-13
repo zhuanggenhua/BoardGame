@@ -321,6 +321,25 @@ const saveTestIdScreenshot = async (page: Page, testId: string, targetPath: stri
     }
 };
 
+const setBoundarySourceInputFiles = async (page: Page, filePath: string) => {
+    const input = page.locator('input[data-testid="qidahen-boundary-source-input"]');
+    const count = await input.count();
+    let lastError: unknown = null;
+    for (let index = count - 1; index >= 0; index -= 1) {
+        try {
+            await input.nth(index).setInputFiles(filePath);
+            return;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    if (lastError) {
+        throw lastError;
+    }
+    throw new Error('missing qidahen-boundary-source-input');
+};
+
 const switchToPureBoundaryView = async (page: Page) => {
     const maskToggle = page.getByRole('button', { name: '隐藏 Mask', exact: true });
     if (await maskToggle.count() > 0) {
@@ -2642,7 +2661,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou']);
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 1000);
 
@@ -2669,7 +2688,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou'], { includeUiContamination: true });
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 100);
         for (const rect of REAL_MAP_FORBIDDEN_UI_RECTS) {
@@ -2717,7 +2736,7 @@ test.describe('七大恨区域制图工具', () => {
         await expandWorkbenchIfCollapsed(page);
         await expect.poll(async () => (await getCanvasOpaqueBounds(page, BG_CANVAS_TEST_ID)).opaquePixels).toBeGreaterThan(900000);
         const sourcePath = await createRealMapDrawnBoundarySourcePng();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await expect(page.getByText(/底图差分/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 1000);
@@ -2774,7 +2793,7 @@ test.describe('七大恨区域制图工具', () => {
         expect(beforeImportStats.opaquePixels).toBeGreaterThan(1000);
 
         const unchangedSourcePath = path.resolve(process.cwd(), 'public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png');
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(unchangedSourcePath);
+        await setBoundarySourceInputFiles(page, unchangedSourcePath);
         const failureMessage = page.getByText(/导入带底图描线图失败：没有抽出可用边界像素，已保留当前边界图/u);
         await expect(failureMessage).toBeVisible({ timeout: 30000 });
         await expect(page.getByText(`当前边界图像素：${beforeImportStats.opaquePixels.toLocaleString()}`, { exact: false })).toBeVisible();
@@ -2797,9 +2816,10 @@ test.describe('七大恨区域制图工具', () => {
         await page.goto(getWorkspaceRoute(workspaceName), { waitUntil: 'domcontentloaded' });
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
+        await expandWorkbenchIfCollapsed(page);
         await expect.poll(async () => (await getCanvasOpaqueBounds(page, BG_CANVAS_TEST_ID)).opaquePixels).toBeGreaterThan(900000);
         const sourcePath = await createRealMapCompleteBoundarySourcePng();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await expect(page.getByText(/底图差分/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 5000);
@@ -2897,7 +2917,7 @@ test.describe('七大恨区域制图工具', () => {
         const candidatePath = await candidateDownload.path();
         expect(candidatePath).not.toBeNull();
         const sourcePath = await createRealMapAcceptedBoundarySourcePng(candidatePath!);
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 5000);
         await expect(page.getByTestId('qidahen-closed-seed-hit-count')).toHaveText('5');
@@ -3142,8 +3162,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou', 'song-jin'], { includeOpenNoiseLine: true });
-        await page.getByTestId('qidahen-import-boundary-source').click();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await waitForBoundaryDraftPixels(page, 200);
         await expect(page.getByTestId('qidahen-boundary-closure-diagnostics')).toBeVisible();
@@ -3289,8 +3308,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng(['jinzhou', 'song-jin'], { includeOpenNoiseLine: true });
-        await page.getByTestId('qidahen-import-boundary-source').click();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible({ timeout: 30000 });
         await expect(page.getByRole('button', { name: '短线辅助', exact: true })).toHaveCount(0);
         await expect(page.getByTestId('qidahen-open-boundary-count')).toHaveText('1');
@@ -3344,8 +3362,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng();
-        await page.getByTestId('qidahen-import-boundary-source').click();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible();
         await waitForBoundaryDraftPixels(page, 100);
 
@@ -3375,8 +3392,7 @@ test.describe('七大恨区域制图工具', () => {
 
         await expect(page.getByText('七大恨地图编辑器')).toBeVisible({ timeout: 30000 });
         const sourcePath = await createSyntheticBoundarySourcePng();
-        await page.getByTestId('qidahen-import-boundary-source').click();
-        await page.getByTestId('qidahen-boundary-source-input').setInputFiles(sourcePath);
+        await setBoundarySourceInputFiles(page, sourcePath);
         await expect(page.getByText(/已从带底图描线图抽取边界图/u)).toBeVisible();
         await expect(page.getByText(/已载入参考层/u)).toBeVisible();
         await expect(page.getByTestId('qidahen-clear-boundary-source-reference')).toBeVisible();
