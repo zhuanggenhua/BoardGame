@@ -42,6 +42,8 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
     },
 };
 
+const ENABLE_CENTERED_SELECTED_OUTLINE = true;
+
 const readMaskRegionIdAt = (
     hitmap: Uint8ClampedArray,
     width: number,
@@ -126,8 +128,8 @@ const blendPixel = (
     pixels[offset + 3] = Math.round(outAlpha * 255);
 };
 
-const pixelIsNearSelectedMask = (
-    selectedMask: Uint8Array,
+const pixelIsNearMask = (
+    mask: Uint8Array,
     width: number,
     height: number,
     x: number,
@@ -147,7 +149,7 @@ const pixelIsNearSelectedMask = (
             if (nextX < 0 || nextX >= width) {
                 continue;
             }
-            if (selectedMask[(nextY * width) + nextX] !== 0) {
+            if (mask[(nextY * width) + nextX] !== 0) {
                 return true;
             }
         }
@@ -155,9 +157,41 @@ const pixelIsNearSelectedMask = (
     return false;
 };
 
-const applySelectedHalo = (
-    pixels: Uint8ClampedArray,
+const selectedPixelTouchesOutsideMask = (
     selectedMask: Uint8Array,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+    radius: number,
+) => {
+    if (selectedMask[(y * width) + x] === 0) {
+        return false;
+    }
+
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+        const nextY = y + offsetY;
+        if (nextY < 0 || nextY >= height) {
+            return true;
+        }
+        for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+            if ((offsetX * offsetX) + (offsetY * offsetY) > radius * radius) {
+                continue;
+            }
+            const nextX = x + offsetX;
+            if (nextX < 0 || nextX >= width) {
+                return true;
+            }
+            if (selectedMask[(nextY * width) + nextX] === 0) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+};
+
+const getSelectedOutlineBounds = (
     width: number,
     height: number,
     bounds: { left: number; top: number; right: number; bottom: number },
@@ -168,17 +202,30 @@ const applySelectedHalo = (
         selectedTone.outerStrokeRadius ?? 0,
         selectedTone.outerGlowRadius ?? 0,
     );
-    if (maxRadius <= 0) {
+    return {
+        maxRadius,
+        left: Math.max(0, bounds.left - maxRadius),
+        top: Math.max(0, bounds.top - maxRadius),
+        right: Math.min(width - 1, bounds.right + maxRadius),
+        bottom: Math.min(height - 1, bounds.bottom + maxRadius),
+    };
+};
+
+const applyLegacySelectedHalo = (
+    pixels: Uint8ClampedArray,
+    selectedMask: Uint8Array,
+    width: number,
+    height: number,
+    bounds: { left: number; top: number; right: number; bottom: number },
+) => {
+    const selectedTone = REGION_MASK_OVERLAY_TONES.selected;
+    const outlineBounds = getSelectedOutlineBounds(width, height, bounds);
+    if (outlineBounds.maxRadius <= 0) {
         return;
     }
 
-    const left = Math.max(0, bounds.left - maxRadius);
-    const top = Math.max(0, bounds.top - maxRadius);
-    const right = Math.min(width - 1, bounds.right + maxRadius);
-    const bottom = Math.min(height - 1, bounds.bottom + maxRadius);
-
-    for (let y = top; y <= bottom; y += 1) {
-        for (let x = left; x <= right; x += 1) {
+    for (let y = outlineBounds.top; y <= outlineBounds.bottom; y += 1) {
+        for (let x = outlineBounds.left; x <= outlineBounds.right; x += 1) {
             const index = (y * width) + x;
             if (selectedMask[index] !== 0) {
                 continue;
@@ -188,26 +235,91 @@ const applySelectedHalo = (
             if (
                 selectedTone.outerFill
                 && selectedTone.outerFillRadius
-                && pixelIsNearSelectedMask(selectedMask, width, height, x, y, selectedTone.outerFillRadius)
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerFillRadius)
             ) {
                 blendPixel(pixels, offset, selectedTone.outerFill);
             }
             if (
                 selectedTone.outerGlow
                 && selectedTone.outerGlowRadius
-                && pixelIsNearSelectedMask(selectedMask, width, height, x, y, selectedTone.outerGlowRadius)
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerGlowRadius)
             ) {
                 blendPixel(pixels, offset, selectedTone.outerGlow);
             }
             if (
                 selectedTone.outerStroke
                 && selectedTone.outerStrokeRadius
-                && pixelIsNearSelectedMask(selectedMask, width, height, x, y, selectedTone.outerStrokeRadius)
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerStrokeRadius)
             ) {
                 blendPixel(pixels, offset, selectedTone.outerStroke);
             }
         }
     }
+};
+
+const applyCenteredSelectedOutline = (
+    pixels: Uint8ClampedArray,
+    selectedMask: Uint8Array,
+    width: number,
+    height: number,
+    bounds: { left: number; top: number; right: number; bottom: number },
+) => {
+    const selectedTone = REGION_MASK_OVERLAY_TONES.selected;
+    const outlineBounds = getSelectedOutlineBounds(width, height, bounds);
+    if (outlineBounds.maxRadius <= 0) {
+        return;
+    }
+
+    const innerStrokeRadius = Math.max(1, selectedTone.innerStrokeRadius ?? 1);
+
+    for (let y = outlineBounds.top; y <= outlineBounds.bottom; y += 1) {
+        for (let x = outlineBounds.left; x <= outlineBounds.right; x += 1) {
+            const index = (y * width) + x;
+            const offset = index * 4;
+            if (selectedMask[index] !== 0) {
+                if (selectedPixelTouchesOutsideMask(selectedMask, width, height, x, y, innerStrokeRadius)) {
+                    blendPixel(pixels, offset, selectedTone.stroke);
+                }
+                continue;
+            }
+
+            if (
+                selectedTone.outerFill
+                && selectedTone.outerFillRadius
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerFillRadius)
+            ) {
+                blendPixel(pixels, offset, selectedTone.outerFill);
+            }
+            if (
+                selectedTone.outerGlow
+                && selectedTone.outerGlowRadius
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerGlowRadius)
+            ) {
+                blendPixel(pixels, offset, selectedTone.outerGlow);
+            }
+            if (
+                selectedTone.outerStroke
+                && selectedTone.outerStrokeRadius
+                && pixelIsNearMask(selectedMask, width, height, x, y, selectedTone.outerStrokeRadius)
+            ) {
+                blendPixel(pixels, offset, selectedTone.outerStroke);
+            }
+        }
+    }
+};
+
+const applySelectedHalo = (
+    pixels: Uint8ClampedArray,
+    selectedMask: Uint8Array,
+    width: number,
+    height: number,
+    bounds: { left: number; top: number; right: number; bottom: number },
+) => {
+    if (ENABLE_CENTERED_SELECTED_OUTLINE) {
+        applyCenteredSelectedOutline(pixels, selectedMask, width, height, bounds);
+        return;
+    }
+    applyLegacySelectedHalo(pixels, selectedMask, width, height, bounds);
 };
 
 export const buildRegionMaskOverlayPixels = (
@@ -237,22 +349,27 @@ export const buildRegionMaskOverlayPixels = (
             }
 
             const tone = REGION_MASK_OVERLAY_TONES[toneKey];
-            const innerStrokeRadius = Math.max(1, tone.innerStrokeRadius ?? 1);
             const offset = (y * width + x) * 4;
+            if (toneKey === 'selected') {
+                pixels[offset] = tone.fill[0];
+                pixels[offset + 1] = tone.fill[1];
+                pixels[offset + 2] = tone.fill[2];
+                pixels[offset + 3] = tone.fill[3];
+                selectedMask[(y * width) + x] = 1;
+                selectedBounds.left = Math.min(selectedBounds.left, x);
+                selectedBounds.top = Math.min(selectedBounds.top, y);
+                selectedBounds.right = Math.max(selectedBounds.right, x);
+                selectedBounds.bottom = Math.max(selectedBounds.bottom, y);
+                continue;
+            }
+
+            const innerStrokeRadius = Math.max(1, tone.innerStrokeRadius ?? 1);
             const isBorder = touchesOtherRegionWithinRadius(hitmap, width, height, x, y, regionId, innerStrokeRadius);
             const color = isBorder ? tone.stroke : tone.fill;
             pixels[offset] = color[0];
             pixels[offset + 1] = color[1];
             pixels[offset + 2] = color[2];
             pixels[offset + 3] = color[3];
-
-            if (toneKey === 'selected') {
-                selectedMask[(y * width) + x] = 1;
-                selectedBounds.left = Math.min(selectedBounds.left, x);
-                selectedBounds.top = Math.min(selectedBounds.top, y);
-                selectedBounds.right = Math.max(selectedBounds.right, x);
-                selectedBounds.bottom = Math.max(selectedBounds.bottom, y);
-            }
         }
     }
 

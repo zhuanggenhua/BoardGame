@@ -62,8 +62,12 @@ const countVisiblePixelsOutsideMask = (
     return count;
 };
 
+const readAlphaAt = (pixels: Uint8ClampedArray, width: number, x: number, y: number) => (
+    pixels[((y * width) + x) * 4 + 3]
+);
+
 describe('Qidahen region mask overlay', () => {
-    it('选中态会向区域外扩一圈描边与光圈，避免视觉上只剩内缩边框', () => {
+    it('选中态会沿真实轮廓两侧出线，避免视觉上只剩内缩边框', () => {
         const width = 7;
         const height = 7;
         const { hitmap, colorKey } = createRegionHitmap('jinzhou');
@@ -75,7 +79,8 @@ describe('Qidahen region mask overlay', () => {
         );
 
         expect(countVisiblePixelsOutsideMask(pixels, colorKey, hitmap, width, height)).toBeGreaterThan(0);
-        expect(pixels[((3 * width) + 3) * 4 + 3]).toBeGreaterThan(0);
+        expect(readAlphaAt(pixels, width, 1, 3)).toBeGreaterThan(0);
+        expect(readAlphaAt(pixels, width, 2, 3)).toBeGreaterThan(readAlphaAt(pixels, width, 3, 3));
     });
 
     it('选中态会跨过较宽的 mask 黑缝向外补描边，不再只贴在区域内部', () => {
