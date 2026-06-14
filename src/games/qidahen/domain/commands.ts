@@ -1,24 +1,286 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import type { QidahenCommand, QidahenCore } from './types';
+import { hasUpgradableArmament } from './armamentLowFidelity';
+import {
+    getQidahenDriveTigerConsentSelectionForCore,
+    getQidahenDiplomacySelectionForCore,
+    getQidahenFortificationMaintenanceSelectionForCore,
+    getQidahenHandLimitDiscardSelectionForCore,
+    getQidahenInternalDispatchSelectionForCore,
+    getQidahenKhanEdictSelectionForCore,
+    getQidahenMaShiTradeSelectionForCore,
+    getQidahenPendingTargetActionForCore,
+    getQidahenPostBattleSelectionForCore,
+    getQidahenRecruitSelectionForCore,
+} from './interactionSelectionAccessors';
+import {
+    hasRemainingFactionAction,
+} from './factionActionWindow';
+import { getCurrentFactionId } from './factionTurnAccessors';
 
 export const QIDAHEN_COMMANDS = {
     SELECT_REGION: 'SELECT_REGION',
     CONFIRM_PREVIEW_ACTION: 'CONFIRM_PREVIEW_ACTION',
+    SELECT_WHEEL_MOVE: 'SELECT_WHEEL_MOVE',
+    EXECUTE_WHEEL_MOVE: 'EXECUTE_WHEEL_MOVE',
+    SELECT_PAYMENT_CARD: 'SELECT_PAYMENT_CARD',
+    SELECT_HAND_LIMIT_DISCARD_CARD: 'SELECT_HAND_LIMIT_DISCARD_CARD',
+    SELECT_SUN_YUANHUA_TECH_CARD: 'SELECT_SUN_YUANHUA_TECH_CARD',
+    SELECT_GAO_DI_DISPATCH_CARD: 'SELECT_GAO_DI_DISPATCH_CARD',
+    RESOLVE_HAND_LIMIT_DISCARD: 'RESOLVE_HAND_LIMIT_DISCARD',
+    RESOLVE_SUN_YUANHUA_TECH: 'RESOLVE_SUN_YUANHUA_TECH',
+    RESOLVE_GAO_DI_DISPATCH: 'RESOLVE_GAO_DI_DISPATCH',
+    RESOLVE_INTERNAL_DISPATCH: 'RESOLVE_INTERNAL_DISPATCH',
+    EXECUTE_SELECTED_ACTION: 'EXECUTE_SELECTED_ACTION',
+    EXECUTE_ACTION: 'EXECUTE_ACTION',
+    RESOLVE_PENDING_ACTION: 'RESOLVE_PENDING_ACTION',
+    RESOLVE_POST_BATTLE_DECISION: 'RESOLVE_POST_BATTLE_DECISION',
+    RESOLVE_KHAN_EDICT_CHOICE: 'RESOLVE_KHAN_EDICT_CHOICE',
+    RESOLVE_DIPLOMACY_CHOICE: 'RESOLVE_DIPLOMACY_CHOICE',
+    RESOLVE_MA_SHI_TRADE_CHOICE: 'RESOLVE_MA_SHI_TRADE_CHOICE',
+    RESOLVE_DRIVE_TIGER_CONSENT: 'RESOLVE_DRIVE_TIGER_CONSENT',
+    RESOLVE_RECRUIT_CHOICE: 'RESOLVE_RECRUIT_CHOICE',
+    RESOLVE_FORTIFICATION_MAINTENANCE: 'RESOLVE_FORTIFICATION_MAINTENANCE',
+    RESOLVE_SCENARIO_CHARACTER_CHOICE: 'RESOLVE_SCENARIO_CHARACTER_CHOICE',
+    RESOLVE_SCENARIO_ARMAMENT_CHOICE: 'RESOLVE_SCENARIO_ARMAMENT_CHOICE',
 } as const;
+
+const hasPendingScenarioChoices = (state: MatchState<QidahenCore>): boolean => (
+    state.core.pendingScenarioCharacterChoices.length > 0
+    || state.core.pendingScenarioArmamentChoices.length > 0
+);
+
+const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
+    state.sys.interaction?.current != null
+    || state.sys.interaction?.isBlocked === true
+    || state.core.sunYuanhuaTechSelection != null
+    || state.core.gaoDiDispatchSelection != null
+);
+
+const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): boolean => (
+    core.factionActionUsed
+    && hasRemainingFactionAction(core)
+    && core.lastFactionActionId === actionId
+);
 
 export function validate(
     state: MatchState<QidahenCore>,
     command: QidahenCommand,
 ): ValidationResult {
+    if (command.type.startsWith('SYS_')) {
+        return { valid: true };
+    }
+    const currentInteraction = state.sys.interaction?.current;
     switch (command.type) {
         case QIDAHEN_COMMANDS.SELECT_REGION:
             return state.core.regions.some((region) => region.id === command.payload.regionId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownRegion' };
         case QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION:
+            if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
+                return { valid: false, error: 'actionAlreadyUsed' };
+            }
+            if (wouldRepeatLastFactionAction(state.core, command.payload.actionId)) {
+                return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
+            }
             return command.payload.actionId.length > 0
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
+                return { valid: false, error: 'wheelAlreadyUsed' };
+            }
+            return state.core.wheelMoveChoices.some((choice) => choice.id === command.payload.moveId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownWheelMove' };
+        case QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || state.core.wheelActionUsed) {
+                return { valid: false, error: 'wheelAlreadyUsed' };
+            }
+            return state.core.wheelMoveChoices.some((choice) => choice.id === command.payload.moveId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownWheelMove' };
+        case QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
+                return { valid: false, error: 'actionAlreadyUsed' };
+            }
+            return state.core.handCards.some((card) => (
+                card.id === command.payload.cardId
+                && card.faction === getCurrentFactionId(state.core)
+                && card.status !== 'disabled'
+            ))
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        case QIDAHEN_COMMANDS.SELECT_HAND_LIMIT_DISCARD_CARD:
+            return getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction)
+                ?.candidateCardIds.includes(command.payload.cardId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        case QIDAHEN_COMMANDS.SELECT_SUN_YUANHUA_TECH_CARD:
+            return state.core.sunYuanhuaTechSelection?.candidateCardIds.includes(command.payload.cardId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        case QIDAHEN_COMMANDS.SELECT_GAO_DI_DISPATCH_CARD:
+            return state.core.gaoDiDispatchSelection?.candidateCardIds.includes(command.payload.cardId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownPaymentCard' };
+        case QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD:
+            {
+                const selection = getQidahenHandLimitDiscardSelectionForCore(state.core, currentInteraction);
+                return !!selection
+                    && selection.selectedCardIds.length >= selection.requiredDiscardCount
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+            }
+        case QIDAHEN_COMMANDS.RESOLVE_SUN_YUANHUA_TECH:
+            if (!state.core.sunYuanhuaTechSelection) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            if (command.payload.choiceId === 'skip') {
+                return { valid: true };
+            }
+            return state.core.sunYuanhuaTechSelection.selectedCardIds.length >= state.core.sunYuanhuaTechSelection.requiredCardCount
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+        case QIDAHEN_COMMANDS.RESOLVE_GAO_DI_DISPATCH:
+            if (!state.core.gaoDiDispatchSelection) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            if (command.payload.choiceId === 'skip') {
+                return { valid: true };
+            }
+            return state.core.gaoDiDispatchSelection.selectedCardId != null
+                && state.core.gaoDiDispatchSelection.candidates.some((candidate) => candidate.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+        case QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH:
+            return getQidahenInternalDispatchSelectionForCore(state.core, currentInteraction)
+                ?.candidates.some((candidate) => candidate.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION:
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
+                return { valid: false, error: 'actionAlreadyUsed' };
+            }
+            if (wouldRepeatLastFactionAction(state.core, state.core.selectedActionId)) {
+                return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
+            }
+            if (
+                state.core.selectedActionId === 'upgrade-armament'
+                && !hasUpgradableArmament(state.core, getCurrentFactionId(state.core))
+            ) {
+                return { valid: false, error: 'noUpgradableArmament' };
+            }
+            return state.core.selectedPaymentCardIds.length >= state.core.payment.required && state.core.payment.required > 0
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+        case QIDAHEN_COMMANDS.EXECUTE_ACTION: {
+            if (hasPendingScenarioChoices(state)) {
+                return { valid: false, error: 'pendingScenarioChoices' };
+            }
+            if (hasBlockingSelection(state) || !hasRemainingFactionAction(state.core)) {
+                return { valid: false, error: 'actionAlreadyUsed' };
+            }
+            const action = state.core.actionChoices.find((choice) => choice.id === command.payload.actionId);
+            if (!action) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            if (wouldRepeatLastFactionAction(state.core, command.payload.actionId)) {
+                return { valid: false, error: 'sameActionConsecutivelyNotAllowed' };
+            }
+            const currentFactionId = getCurrentFactionId(state.core);
+            if (action.id === 'upgrade-armament' && !hasUpgradableArmament(state.core, currentFactionId)) {
+                return { valid: false, error: 'noUpgradableArmament' };
+            }
+            const payableCards = state.core.handCards.filter((card) => card.faction === currentFactionId && card.status !== 'disabled');
+            return payableCards.length >= action.cost
+                ? { valid: true }
+                : { valid: false, error: 'paymentIncomplete' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION:
+            return getQidahenPendingTargetActionForCore(state.core, currentInteraction)
+                ? { valid: true }
+                : { valid: false, error: 'noPendingAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_POST_BATTLE_DECISION:
+            return getQidahenPostBattleSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownPostBattleChoice' };
+        case QIDAHEN_COMMANDS.RESOLVE_KHAN_EDICT_CHOICE:
+            return getQidahenKhanEdictSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_DIPLOMACY_CHOICE:
+            return getQidahenDiplomacySelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_MA_SHI_TRADE_CHOICE:
+            return getQidahenMaShiTradeSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.troopCount === command.payload.troopCount)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_DRIVE_TIGER_CONSENT:
+            return getQidahenDriveTigerConsentSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE:
+            return getQidahenRecruitSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
+            if (
+                command.payload.attritionPriority != null
+                && command.payload.attritionPriority !== 'highest-level'
+                && command.payload.attritionPriority !== 'lowest-level'
+            ) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            return getQidahenFortificationMaintenanceSelectionForCore(state.core, currentInteraction)
+                ?.choices.some((choice) => choice.id === command.payload.choiceId)
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE: {
+            const group = state.core.pendingScenarioCharacterChoices.find((choice) => choice.id === command.payload.groupId);
+            if (!group) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            const selectedIds = Array.from(new Set(command.payload.characterIds));
+            if (selectedIds.length !== group.count) {
+                return { valid: false, error: 'paymentIncomplete' };
+            }
+            return selectedIds.every((characterId) => group.characterIds.includes(characterId))
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
+        case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE: {
+            const group = state.core.pendingScenarioArmamentChoices.find((choice) => choice.id === command.payload.groupId);
+            if (!group) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            const selectedIds = Array.from(new Set(command.payload.armamentIds));
+            if (selectedIds.length !== group.count) {
+                return { valid: false, error: 'paymentIncomplete' };
+            }
+            return selectedIds.every((armamentId) => group.armamentIds.includes(armamentId))
+                ? { valid: true }
+                : { valid: false, error: 'unknownAction' };
+        }
         default:
             return { valid: false, error: 'unknownCommand' };
     }

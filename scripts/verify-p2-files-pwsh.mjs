@@ -186,9 +186,9 @@ md += `\n`;
 md += `## 详细结果\n\n`;
 md += `完整结果见 \`evidence/p2-verification-results.json\`\n`;
 
-writeFileSync('evidence/p2-full-verification.md', md);
+writeFileSync('evidence/_shared/p2-full-verification.md', md);
 
 console.log(`\n✅ 验证完成！`);
 console.log(`- 无需恢复: ${report.summary.noRestore} 个文件`);
 console.log(`- 需要恢复: ${report.summary.needsRestore} 个文件`);
-console.log(`- 报告已保存到 evidence/p2-full-verification.md`);
+console.log(`- 报告已保存到 evidence/_shared/p2-full-verification.md`);

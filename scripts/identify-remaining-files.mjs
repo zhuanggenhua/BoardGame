@@ -149,8 +149,8 @@ for (const [dir, files] of sortedDirs) {
   output.push('');
 }
 
-writeFileSync('evidence/phase-h-remaining-files-detailed.md', output.join('\n'));
-console.log('\n✅ Detailed list written to evidence/phase-h-remaining-files-detailed.md');
+writeFileSync('evidence/_shared/phase-h-remaining-files-detailed.md', output.join('\n'));
+console.log('\n✅ Detailed list written to evidence/_shared/phase-h-remaining-files-detailed.md');
 
 // 输出简单列表
 writeFileSync('tmp/phase-h-remaining-files.txt', remaining.join('\n'));

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 
-const filePath = 'evidence/giant-ants-complex-audit-2026-02-22.md';
+const filePath = 'evidence/smashup/giant-ants-complex-audit-2026-02-22.md';
 const content = readFileSync(filePath, 'utf-8');
 
 const oldText = `## 仍需关注的架构级差距（非本轮回归缺陷）

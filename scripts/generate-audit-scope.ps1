@@ -111,8 +111,8 @@ foreach ($group in $moduleGroups) {
 }
 
 # 保存文件
-$md | Out-File -FilePath evidence/audit-scope-complete.md -Encoding UTF8
-Write-Host "✅ 已生成完整审查范围文档: evidence/audit-scope-complete.md"
+$md | Out-File -FilePath evidence/_shared/audit-scope-complete.md -Encoding UTF8
+Write-Host "✅ 已生成完整审查范围文档: evidence/_shared/audit-scope-complete.md"
 
 # 同时导出 CSV
 $files | Export-Csv -Path tmp/all-files-changes.csv -NoTypeInformation -Encoding UTF8

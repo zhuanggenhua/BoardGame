@@ -1,342 +1,1097 @@
-> 状态提示（2026-06-05）：本文件汇总的是历史批次的事实、结论与残余风险；其中出现的 `当前状态`、`进行中`、`长期任务` 等表述，默认只代表写入当时，不自动等于当前对话目标。除非用户当轮明确点名，否则仅作历史 findings 参考。
-
-# Findings: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-31）
+# Findings: 七大恨 UI 指导图生图修正（2026-05-13）
 
 ## 已确认事实
+- 2026-06-13 12:12 +08：当前《七大恨》如果还把 `QidahenRegionSummary`、`QidahenPieceLocation` 与 `QidahenYearCardSlot` 继续当成 `types.ts` 对外成立的正式核心子形状合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已把这三条从 `export interface/type` 收回为文件内 `interface/type`；[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 当前已改成通过 `QidahenCore['regions'][number]` 本地取型；[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 当前已改成通过 `QidahenPiece['location']` 本地取型；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前已改成通过 `QidahenCore['yearCards'][number]` 本地取型；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这些 public type seam 不再回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 626 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 types owner 下 3 条单一 type caller 的核心子形状壳，不是去误碰移动规则、棋子逻辑或纪年卡 UI 语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 12:12 +08：当前《七大恨》如果还把 `ExecuteSelectedActionCommand` 与 `ExecuteActionCommand` 继续当成 `types.ts` 对外成立的正式 execute 命令接口合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已把这两条接口从 `export interface` 收回为文件内 `interface`；[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前也已改成通过 `Extract<QidahenCommand, { type: 'EXECUTE_SELECTED_ACTION' | 'EXECUTE_ACTION' }>` 在本地构造 `QidahenSelectedActionExecuteCommand`，不再从 types owner 额外 import 这两条类型壳；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这两条 public type seam 不再回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 626 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 types owner 下两条单一 type caller 的 execute 命令接口壳，不是去误碰 `QidahenCommand` 聚合、selected-action 语义或 command builder 业务逻辑。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 12:12 +08：补做新一轮低外部 caller 扫描后，当前 `ExternalCount <= 1` 的残余只剩 `getQidahenAttackRuleConfig`、`createQidahenInteractionSystem`、`resolveQidahenRuntimeRegionIds`、`QidahenBattleMode`、`QidahenBattleRollPhase`、`QidahenDriveTigerConsentChoice`、`QidahenFortificationMaintenanceChoice` 7 条。按当前证据，它们更像正式规则 helper、正式系统装配入口，或仍直接挂在 battle/interaction 合同上的字段类型，不再满足“生产零外部 caller 类型壳 / 假公共桥 / 原始外露 seam”的同一删除测试口径。结论：当前暂无新的安全下一刀，后续若再推进，必须先证明其中某条已经失去正式 leverage，而不是因为 caller 数少就机械继续收。
+- 2026-06-13 12:01 +08：当前《七大恨》如果还把 `QidahenAttackCommitmentInput` 与 `QidahenEffectiveAttackCommitmentInput` 继续当成 `attackRules.ts` 对外成立的正式承诺兵力输入合同，结论已经落后于当前源码真相。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 当前已把这两条接口从 `export interface` 收回为文件内 `interface`，继续只在同文件服务 `computeQidahenCommittedTroops(...)` 与 `computeQidahenEffectiveCommittedTroops(...)`；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这两条 public type seam 不再回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 625 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 attack-rules owner 下两条生产零外部 caller 的输入接口壳，不是去误碰承诺兵力 cap 计算、attack helper 行为或 battle 规则语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change；同时 `getQidahenAttackRuleConfig` 当前仍是正式规则 helper，没有被误判成同类浅 seam。
+- 2026-06-13 11:56 +08：当前《七大恨》如果还把 `QidahenPendingScenarioCharacterChoice` 与 `QidahenPendingScenarioArmamentChoice` 继续当成 `types.ts` 对外成立的正式场景待决项子形状合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已把这两条接口从 `export interface` 收回为文件内 `interface`；[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 当前已改成通过 `QidahenCore['pendingScenarioCharacterChoices'][number]` 与 `QidahenCore['pendingScenarioArmamentChoices'][number]` 在本地取型，不再从 types owner 额外 import 这两条类型壳；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 scenarioChoiceState 不再要求这条 public type seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 625 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 types owner 下两条零生产外部 caller 的场景待决项子形状壳，不是去误碰剧本选择规则、待决项内容或 scenario 结算语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 11:48 +08：当前《七大恨》如果还把 `QidahenChronologyCharacterAvailability` 继续当成 `characterChronologyConfig` 对外成立的正式人物年份可用性类型合同，结论已经落后于当前源码真相。现态证据是：[characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 当前已把这条类型从 `export type` 收回为文件内 `type`；[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 当前也已改成通过 `ReturnType<typeof getChronologyCharacterAvailabilityForYear>` 在本地取型，不再从 config owner 额外 import 这条类型壳；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 chronology state 不再要求这条 public type seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 624 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 chronology-config owner 对外暴露的一条零生产外部 caller 类型壳，不是去误碰年份顺序、人物出场规则或 season 业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change；同时 `resolveQidahenRuntimeRegionIds` 当前仍是规则区到 runtime 区映射 helper，没有被误判成同类浅 seam。
+- 2026-06-13 11:38 +08：当前《七大恨》如果还把 `ResolveScenarioCharacterChoiceCommand`、`ResolveScenarioArmamentChoiceCommand`、`ScenarioCharacterChoiceResolvedEvent` 与 `ScenarioArmamentChoiceResolvedEvent` 继续当成 `types.ts` 对外成立的正式接口合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已把这 4 条场景命令/事件接口从 `export interface` 收回为文件内 `interface`，继续只在同文件服务 `QidahenCommand`、`QidahenEvent` 与 `QidahenCommandMap`；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这 4 条零外部 caller interface 不再以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 624 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `types.ts` 下 4 条 zero-external scenario command/event shell，不是去误碰 `QidahenCommand`、`QidahenEvent`、`QidahenCommandMap` 的正式导出面或任何业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 11:34 +08：当前《七大恨》如果还把 `QidahenAttackActionId` 与 `QidahenWheelPositionId` 继续当成 `attackRules` / `wheelRules` 对外成立的正式联合协议，结论已经落后于当前源码真相。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 当前已删除 `export type QidahenAttackActionId`，并把 `QidahenAttackRuleConfig.id`、`QidahenAttackCommitmentInput.actionId` 与 `getQidahenAttackRuleConfig()` 参数直接内联为 `'raid' | 'wheel-dispatch' | 'drive-tiger'`；[wheelRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelRules.ts) 当前也已把 `QidahenWheelPositionId` 从 `export type` 收回为文件内 `type`，继续只服务 wheel-rules owner 内部配置与读取；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这两个零外部 caller 联合别名不再以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是两条 zero-external union seam，不是去误碰进攻规则内容、轮盘 immediate effect 配置或任何业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 11:29 +08：当前《七大恨》如果还把 `factionDisplayNameById` 继续当成 `factionLabelSemantics` 对外成立的正式势力中文名表 seam，结论已经落后于当前源码真相。现态证据是：[factionLabelSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionLabelSemantics.ts) 当前已把 `factionDisplayNameById` 从 `export const` 收回为文件内 `const`，并继续只保留更窄正式 helper `getFactionDisplayName()`、`toFactionLabel()` 与 `getRegionControlLabel()`；[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 当前已改成在两个 pending scenario builder 内直接通过 `getFactionDisplayName(factionId)` 组装 `factionName`，不再要求 caller 传入整张表；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前已去掉对原始表的 import 与传参；[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前也已把人物“回到人物牌堆/叛逃进入人物牌堆”的文案统一改成通过 `getFactionDisplayName()` 生成；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 setup、season 与 scenario-choice caller 不再允许 `factionDisplayNameById` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 faction-label owner 对外暴露的原始中文名表 seam，不是去误碰控制标签语义、剧本待选项结构、季节结算规则或任何业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 11:20 +08：当前《七大恨》如果还把 `QIDAHEN_RULE_REGION_CONFIGS` 与 `QIDAHEN_LOGICAL_RULE_REGION_IDS` 继续当成 `regionConfig` 对外成立的正式逻辑规则区真相 seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 当前已把这两份集合从 `export const` 收回为文件内 `const`，并新增更窄正式 helper `getQidahenLogicalRuleRegionConfigs()` 与 `isQidahenLogicalRuleRegionId()`；[regionRuleSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionRuleSemantics.ts) 当前已改成通过 `isQidahenLogicalRuleRegionId(preferredRegionId)` 判断偏好逻辑规则区，不再直接读取原始 Set；[runtimeRegionRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeRegionRules.ts) 当前也已改成通过 `getQidahenLogicalRuleRegionConfigs()` 生成逻辑规则区运行时壳层，不再自己拼原始数组与 Set；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住这两处 caller 不再允许 `QIDAHEN_RULE_REGION_CONFIGS / QIDAHEN_LOGICAL_RULE_REGION_IDS` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 logical-rule-region owner 对外暴露的原始数组与 id 集合 seam，不是去误碰运行时区域刷新、逻辑规则区映射、边界代价刷新或任何规则语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 11:05 +08：当前《七大恨》如果还把 `QIDAHEN_TROOP_KIND_LABELS` 继续当成 `troopStacks` 对外成立的正式兵种标签表 seam，结论已经落后于当前源码真相。现态证据是：[troopStacks.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopStacks.ts) 当前已把 `QIDAHEN_TROOP_KIND_LABELS` 从 `export const` 收回为文件内 `const`，并新增更窄正式 helper `getQidahenTroopKindLabel()`；[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts) 当前也已改成通过 `getQidahenTroopKindLabel(bestCandidate.phase)` 生成“额亦都指定某兵种先掷”的文案，不再直读原始标签表；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 battle-roll caller 不再允许 `QIDAHEN_TROOP_KIND_LABELS` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 troop-kind label owner 对外暴露的原始文案表 seam，不是去误碰兵种等级钳制、部队栈构造、掷骰 math 或 battle 规则语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:56 +08：当前《七大恨》如果还把 `QIDAHEN_FORTIFICATION_CONFIGS` 继续当成 `regionConfig` 对外成立的正式城防配置数组 seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 当前已把 `QIDAHEN_FORTIFICATION_CONFIGS` 从 `export const` 收回为文件内 `const`，并新增更窄正式 helper `getQidahenFortificationConfigs()`；[initialCoreSeeds.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSeeds.ts) 当前也已改成通过 `getQidahenFortificationConfigs()` 构建初始城防列表，不再直读原始配置数组；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 也已同步改走该 getter；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 `initialCoreSeeds` 与外部测试都不再允许 `QIDAHEN_FORTIFICATION_CONFIGS` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 fortification-config owner 对外暴露的原始配置数组 seam，不是去误碰城防维护费、依赖区、优先级排序、初始城防状态或支付规则语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:52 +08：当前《七大恨》如果还把 `QIDAHEN_WHEEL_MOVE_CHOICES` 继续当成 `wheelMoves` 对外成立的正式轮盘选项数组 seam，结论已经落后于当前源码真相。现态证据是：[wheelMoves.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoves.ts) 当前已把 `QIDAHEN_WHEEL_MOVE_CHOICES` 从 `export const` 收回为文件内 `const`，并新增更窄正式 helper `getQidahenWheelMoveChoices()`；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前也已改成通过 `getQidahenWheelMoveChoices()` 填充 `wheelMoveChoices` 初始状态，不再直读原始轮盘数组；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住开局 owner 只能走 `getQidahenWheelMoveChoices()`，不再允许 `QIDAHEN_WHEEL_MOVE_CHOICES` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 623 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 wheel-move owner 对外暴露的原始配置数组 seam，不是去误碰轮盘选项内容、行动轮摘要、轮盘选项选择或轮盘执行规则。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:42 +08：当前《七大恨》如果还把 `QIDAHEN_YEAR_SEQUENCE` 继续当成 `characterChronologyConfig` 对外成立的正式年份数组 seam，结论已经落后于当前源码真相。现态证据是：[characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 当前已把 `QIDAHEN_YEAR_SEQUENCE` 从 `export const` 收回为文件内 `const`，并新增更窄正式 helper `getQidahenMaxChronologyYearIndex()`；[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前也已改成通过 `getQidahenMaxChronologyYearIndex()` 计算新年推进上界，不再直读原始年份数组；与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，显式锁住 season owner 只能走 `buildYearCardSlots / getFactionOrderForYearIndex / getYearLabelByIndex / getQidahenMaxChronologyYearIndex` 这组正式 helper，不再允许 `QIDAHEN_YEAR_SEQUENCE` 以 public seam 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 617 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 chronology-config owner 对外暴露的原始数组 seam，不是去误碰年份顺序、年份文案、纪年卡预览、人物可用性或 season-resolution 业务规则。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:32 +08：当前《七大恨》如果还把 `getQidahenInternalDispatchSelectionFromInteractionData` 继续当成 `interactionSelectionAccessors` 对外成立的 raw data seam，结论已经落后于当前源码真相。现态证据是：[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 当前已把这条 internal-dispatch data-reader 从 `export function` 收回为文件内 `const`；[turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 当前已改成通过 `getQidahenInternalDispatchSelectionFromInteraction(state.sys.interaction?.current)` 读取正式 seam，而 [turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 当前也已改成通过本地 `asQidahenInteractionSelectionCarrier(...)` 适配 `payload.interactionData` 后，再走 `getQidahenInternalDispatchSelectionFromInteraction(...)` 正式 seam。到当前为止，[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 已不存在任何 `export function getQidahen*FromInteractionData(...)` 残留；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这条 internal-dispatch raw data-reader 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 617 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `interactionSelectionAccessors` family 最后一条“只给 external builder / resolver 把 `interactionData` 再转手一遍”的 raw data 读桥，不是去误碰 internal-dispatch 的候选生成、选项展示、事件解析或状态写回业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:23 +08：当前《七大恨》如果还把 `getQidahenDiplomacySelectionFromInteractionData`、`getQidahenRecruitSelectionFromInteractionData`、`getQidahenWheelDispatchSelectionFromInteractionData`、`getQidahenMaShiTradeSelectionFromInteractionData`、`getQidahenKhanEdictSelectionFromInteractionData`、`getQidahenDriveTigerConsentSelectionFromInteractionData`、`getQidahenFortificationMaintenanceSelectionFromInteractionData`、`getQidahenPendingTargetActionFromInteractionData` 与 `getQidahenPostBattleSelectionFromInteractionData` 继续当成 `interactionSelectionAccessors` 对外成立的 raw data seam，结论已经落后于当前源码真相。现态证据是：[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 当前已把这 9 条 raw `interactionData` 读桥都从 `export function` 收回为文件内 `const`，并把正式对外 seam 收口到 `QidahenInteractionSelectionCarrier = Pick<InteractionDescriptor, 'data'>` 与 `getQidahen*FromInteraction(...)`；[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) / [pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts) 当前也都已改成通过本地 `asQidahenInteractionSelectionCarrier(...)` 把 `payload.interactionData` 适配成 carrier，再调用正式 interaction seam，而不再直接点名这些 data-reader。与此同时 `getQidahenInternalDispatchSelectionFromInteractionData(...)` 因为仍被 [turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 与 [turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 两处正式 consumer 挂着，这轮明确保留。正式入口与交互语义保持不变，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这 9 条 raw data-reader 以 `export function` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 616 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 interaction-selection owner 内一组“只给单一事件处理器把 `payload.interactionData` 再转手一遍”的 data 读桥，不是去误碰外交、征兵、调度、马市、大汗令、驱虎、防线维护、待决目标或战后选择的运行时选择语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:08 +08：当前《七大恨》如果还把 `QidahenSiegeState`、`QidahenCityState`、`QidahenBattleRollStage`、`QidahenRouteLine`、`QidahenLogEntry`、`QidahenScenarioFactionPreset`、`QidahenInternalDispatchCandidate`、`QidahenGaoDiDispatchCandidate` 继续当成 `types.ts` 对外成立的独立子形状合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已把这 8 条嵌套子形状都从 `export interface` 收回为文件内 `interface`，因为当前树里它们都只被更外层导出接口包裹，并没有任何正式外部 caller；外层正式合同当前保持不变：`QidahenRegionSummary` 继续引用 `QidahenSiegeState / QidahenCityState`，`QidahenBattleRolls` 继续引用 `QidahenBattleRollStage`，`QidahenCore` 继续引用 `QidahenRouteLine / QidahenLogEntry`，`QidahenScenarioPreset` 继续引用 `QidahenScenarioFactionPreset`，`QidahenInternalDispatchSelection / QidahenGaoDiDispatchSelection` 继续引用各自 candidate 子形状。与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这 8 条嵌套子形状回流为导出接口。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 616 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 types owner 内一组“只给更外层正式合同拼接内部字段结构、零外部 caller”的假公共状态壳，不是去误碰区域状态、围城状态、掷骰 stage、路线日志、剧本预设、内部调度或高第调度的运行时数据结构语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 10:03 +08：当前《七大恨》如果还把 `QidahenPendingBattleTargetKind` 与 `QidahenTurnPhase` 继续当成 `types.ts` 对外成立的联合协议，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已删除这 2 条导出联合别名，因为当前树里它们都只在同文件给字段声明转手，并没有任何正式外部 caller；同文件当前已把 `QidahenPendingTargetAction.targetKind`、`QidahenWheelDispatchCandidate.targetKind` 与 `QidahenPostBattleSelection.targetKind` 直接指向 `'region' | 'siege-attacker' | 'siege-reinforce'`，并把 `QidahenCore.turnPhase` 直接内联为完整阶段联合。与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这 2 条导出联合别名桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 614 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 core state owner 内 2 条“只给同文件字段声明转手联合语义”的导出壳，不是去误碰 pending-battle targetKind 语义、turnPhase 阶段语义或任何交互流程、状态写回、battle / action-window / season-resolution 业务规则。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 09:58 +08：当前《七大恨》如果还把 `QidahenDiplomacyMarkerSide`、`QidahenGaoDiDispatchMode`、`QidahenHandCardKind` 继续当成 `types.ts` 对外成立的标量协议，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已删除这 3 条导出标量别名，因为当前树里它们都只在同文件给字段声明转手，并没有任何正式外部 caller；同文件当前已把 `QidahenRegionSummary.diplomacyMarkerSide` 直接指向 `'friendly' | 'vassal' | null`，把 `QidahenGaoDiDispatchCandidate.mode` 直接指向 `'troops' | 'population'`，把 `QidahenHandCard.cardKind` 直接指向 `'unknown' | 'event' | 'armament' | 'tactic' | 'silver'`。与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这 3 条导出别名桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 613 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 core state owner 内 3 条“只给同文件字段声明转手简单标量语义”的导出壳，不是去误碰外交标记语义、高第调度模式语义、手牌种类语义或任何交互流程、状态写回、battle / action-window 业务规则。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 09:52 +08：当前《七大恨》如果还把 `QidahenWheelDispatchProgress` 继续当成 `types.ts` 对外成立的 wheel-dispatch progress 合同，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已删除 `export type QidahenWheelDispatchProgress = QidahenWheelDispatchSelection;` 这条纯转手导出别名，因为当前树里它只在同文件给 `QidahenCore.wheelDispatchProgress` 字段声明转手，并没有任何正式外部 caller；同文件当前也已把 `wheelDispatchProgress` 字段直接指向真实选择形状 `QidahenWheelDispatchSelection | null`。与此同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步补上 source guard，不再允许这条 wheel-dispatch progress 导出别名桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 612 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 core state owner 内一条“只给同文件字段声明转手真实选择形状”的导出别名桥，不是去误碰 wheel-dispatch 选择数据结构、状态写回、交互流程或任何 battle / action-window 业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 09:38 +08：当前《七大恨》如果还把 `QidahenPendingBattleStateTransitionDependencies` 继续当成 `pendingBattleStateTransition / pendingBattleFlow` 对外成立的默认依赖形状合同，结论已经落后于当前源码真相。现态证据是：[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 当前已把这条 state-transition dependencies 类型桥收回为 owner 文件内私有，因为当前树里它只在同文件服务 `applyPendingActionResolutionToBattleFlowState(...)` 与 `applyPostBattleDecisionResolutionToBattleFlowState(...)` 的参数标注，并只剩 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 这一处 type caller 在挂；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前也已改成直接声明自己真正需要的本地 `QidahenPendingBattleFlowStateTransitionDependencies`，不再 type import 这条 dependencies 类型桥。与此同时 `QidahenPostBattleDecisionResolution` 仍继续被 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 正式消费，所以这条 post-battle decision 合同这轮明确保留。正式对外入口继续保留 `applyPendingActionResolutionToBattleFlowState(...)`、`applyPostBattleDecisionResolutionToBattleFlowState(...)` 与 battle-flow 三条正式 resolver，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 state-transition dependencies 类型桥以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-battle state-transition owner 与 battle-flow caller 之间一条“只给单一 type caller 承接默认依赖形状”的类型桥，不是去误碰 battle-flow 事件解析、post-battle decision 应用、胜负判定、行动窗口同步或 turn-advance 运行时语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 09:23 +08：当前《七大恨》如果还把 `pendingBattleStateTransition.ts` 里这条 `QidahenPendingActionResolution` 继续当成 `pendingBattleStateTransition / pendingBattleFlow` 对外成立的类型桥，结论已经落后于当前源码真相。现态证据是：[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 当前已把这条 pending-action resolution 类型桥收回为 owner 文件内私有，因为当前树里它只在同文件服务 `applyPendingActionResolutionToBattleFlowState(...)` 的参数标注，并只剩 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 这一处 type caller 在挂；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前也已改成直接声明自己真正需要的本地 `QidahenPendingBattleFlowResolution`，不再 type import 这条类型桥。补审边界里已明确区分：这里处理的是 `pendingBattleStateTransition.ts` 这条同名类型，不是 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里的本地类型；同时 `QidahenPendingBattleStateTransitionDependencies` 与 `QidahenPostBattleDecisionResolution` 当前仍分别承载 battle-state transition 依赖宿主与 post-battle decision 正式合同，这轮明确没动。正式对外入口继续保留 `applyPendingActionResolutionToBattleFlowState(...)` 与 `resolveQidahenPendingActionFromPayload(...)`，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 pending-action resolution 类型桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-battle state-transition owner 与 battle-flow caller 之间一条“只给单一 type caller 承接 pending-action 结算结果形状”的类型桥，不是去误碰 battle-flow 事件解析、post-battle decision 应用、胜负判定、行动窗口同步或 pending-target 运行时语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 09:17 +08：当前《七大恨》如果还把 `QidahenFortificationConfig` 继续当成 `regionConfig` 对外成立的 fortification-config 协议，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 当前已把这条 fortification-config 类型壳收回为文件内私有，因为当前树里它只在同文件给 `QIDAHEN_FORTIFICATION_CONFIGS` 做类型标注，并没有任何正式外部 type import；[initialCoreSeeds.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSeeds.ts) 等外部 caller 当前继续只消费 `QIDAHEN_FORTIFICATION_CONFIGS` 这条正式常量本体，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 fortification-config 类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 region-config owner 内一条“只给同文件 fortification 配置常量做标注、零正式外部 caller”的类型壳，不是去误碰城防维护、初始防线种子、依赖区关系或 rule-region 运行时语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 08:45 +08：当前《七大恨》如果还把 `interactionContracts.ts` 里这批 `...ChoiceValue` 接口继续当成对外成立的交互 choice payload 合同，结论已经落后于当前源码真相。现态证据是：[interactionContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionContracts.ts) 当前已把 `QidahenHandLimitDiscardChoiceValue`、`QidahenRecruitChoiceValue`、`QidahenDiplomacyChoiceValue`、`QidahenWheelDispatchChoiceValue`、`QidahenPostBattleChoiceValue`、`QidahenInternalDispatchChoiceValue`、`QidahenMaShiTradeChoiceValue`、`QidahenKhanEdictChoiceValue`、`QidahenDriveTigerConsentChoiceValue` 与 `QidahenFortificationMaintenanceChoiceValue` 都收回为文件内私有，因为当前树里它们只在同文件给各条 `...Interaction` alias 填 `SimpleChoiceData<...>` 泛型，并没有任何正式外部 import；与此同时 `QidahenPendingTargetChoiceValue` 仍继续被 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、[pendingTargetChoicePayload.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoicePayload.ts) 与 [pendingTargetChoiceOptions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceOptions.ts) 正式消费，所以这条 pending-target choice payload 合同这轮明确保留。正式对外入口继续保留各条 `...Interaction` alias，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `QidahenHandLimitDiscardChoiceValue` 以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 interaction-contract owner 内一组“只给同文件 exported interaction alias 提供 choice payload 泛型、零正式外部 caller”的纯类型壳，不是去误碰 Board 交互承接、turn-action builder、battle builder 或 pending-target payload 正式语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 08:22 +08：当前《七大恨》如果还把 `QidahenSelectedActionPreparationResult` 继续当成 `selectedActionPreparation / selectedActionExecution` 对外成立的类型桥，结论已经落后于当前源码真相。现态证据是：[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 当前已把这条 prepared-result 类型桥收回为 owner 文件内私有，因为当前树里它只在同文件服务 `prepareQidahenSelectedAction(...)` 的返回标注，并只剩 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 这一处 type caller 在挂；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前也已改成直接声明自己真正需要的本地 `QidahenPreparedSelectedActionResult`，不再 type import 这条 prepare 返回类型桥。正式对外入口继续保留 `prepareQidahenSelectedAction(...)` 与 `executeQidahenSelectedAction(...)`，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 prepared-result 类型桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selected-action preparation owner 与 execution caller 之间一条“只给单一 type caller 承接 prepare 返回形状”的类型桥，不是去误碰联姻诱降阻断、支付弃牌统计、军备选择或 follow-up / state-commit 运行时语义。补审边界：`QidahenChronologyCharacterAvailability` 当前仍是纪年人物可用性的 getter 返回合同，`QidahenPostBattleDecisionResolution` 与 `QidahenPendingBattleStateTransitionDependencies` 当前仍横跨多处 battle-state 过渡 caller，这三条这轮明确没动。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 08:13 +08：当前《七大恨》如果还把 `QidahenChronologyYearConfig` 继续当成 `characterChronologyConfig` 对外成立的 year-config 形状协议，结论已经落后于当前源码真相。现态证据是：[characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 当前已把这条 year-config 形状类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `QIDAHEN_CHRONOLOGY_YEAR_CONFIGS` 与 `getChronologyYearConfig(...)` 的标注，并没有任何正式外部 caller；当前 `src/games/qidahen` 内也没有任何对这条 year-config 形状的外部 type import。正式对外入口继续保留 `getYearLabelByIndex(...)`、`buildYearCardSlots(...)`、`getFactionOrderForYearIndex(...)` 与 `getChronologyCharacterAvailabilityForYear(...)` 这组函数入口，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 year-config 形状类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 chronology-config owner 内一条“只给同文件年表配置数组 / getter 标注用、没有任何正式外部 caller”的类型壳，不是去误碰纪年卡预览索引、年份顺序、派系行动顺序、人物可用性或年表展示文案的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 08:08 +08：当前《七大恨》如果还把 `QidahenSelectedActionFollowUpResult` 与 `QidahenSelectedActionStateCommitInput` 继续当成 `selectedActionFollowUp / selectedActionStateCommit` 对外成立的类型桥，结论已经落后于当前源码真相。现态证据是：[selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 当前已把 `QidahenSelectedActionFollowUpResult` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenSelectedActionFollowUp(...)` 的返回标注，并只剩 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 这一处 type caller 在挂；[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 当前也已把 `QidahenSelectedActionStateCommitInput` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `commitQidahenSelectedActionState(...)` 的输入标注，并只剩 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 这一处 type caller 在挂；当前 `selectedActionStateCommit.ts` 已本地声明 `QidahenSelectedActionStateCommitFollowUp`，`selectedActionExecution.ts` 也已直接声明自己真正需要的 `commitSelectedActionState(...)` 输入形状，不再 type import 这两条类型桥。正式对外入口继续保留 `resolveQidahenSelectedActionFollowUp(...)`、`commitQidahenSelectedActionState(...)` 与 `executeQidahenSelectedAction(...)`，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条 selected-action 类型桥回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selected-action follow-up owner 与 state-commit caller、state-commit owner 与 execution caller 之间两条“只给单一 type caller 承接结果/输入形状”的类型桥，不是去误碰 follow-up 日志、turnPhase 判定、支付弃牌写回、额外行动、驱虎吞狼 off-host guard 或 turn-advance 链路的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 08:02 +08：当前《七大恨》如果还把 `QidahenPendingActionResolution` 继续当成 `pendingTargetResolution` 对外成立的 pending-action 返回形状协议，结论已经落后于当前源码真相。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前已把这条 pending-action 返回形状类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolvePendingTargetActionByActionType(...)` 与相关 pending-target 结算 helper 的返回标注，并没有任何正式外部 caller；当前 `src/games/qidahen` 内也没有任何对这条类型壳的外部 type import。与此同时 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前继续只正式消费 [pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 自己的 battle-flow resolution 形状，并不依赖 `pendingTargetResolution.ts` 这条 owner 内部返回类型。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 pending-action 返回形状类型壳以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-target owner 内一条“只给同文件 pending-action 结算返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰 pending-target 解析、撤退损失、围城、通用 battle outcome、战后选择写回或抽牌结算的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:58 +08：当前《七大恨》如果还把 `PendingActionResolvedPayload` 与 `QidahenStructuredBattleCasualtyInput` 继续当成 `pendingBattleFlow / attackRules` 对外成立的中间形状协议，结论已经落后于当前源码真相。现态证据是：[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前已把 `PendingActionResolvedPayload` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenPendingActionFromPayload(...)` 的 payload 参数标注，并没有任何正式外部 caller；[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 当前也已把 `QidahenStructuredBattleCasualtyInput` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `computeQidahenStructuredBattleCasualties(...)` 的参数标注，并没有任何正式外部 caller。当前上层正式 consumer 继续只消费 `resolveQidahenPendingActionFromPayload(...)` 与 `computeQidahenStructuredBattleCasualties(...)` 函数入口，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条中间形状类型壳回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 611 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-battle owner 与 attack-rules owner 内两条“只给同文件正式入口参数标注用、没有任何正式外部 caller”的中间形状类型壳，不是去误碰 pending-action resolved 事件消费、战后写回、等级损伤估算或 casualty 规则的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:51 +08：当前《七大恨》如果还把 `QidahenCompatPieceTrainingDetailEntry` 继续当成 `troopCompat` 对外成立的 training detail 形状协议，结论已经落后于当前源码真相。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 当前已把这条 training detail 形状类型桥收回为 owner 文件内私有，因为当前树里它只在同文件服务 `buildCompatPieceTrainingDetails(...)`、`recordSpecialTroopTrainingDetail(...)` 与 `recordCompatPieceTrainingDetail(...)` 的参数标注，并只剩 [troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts) 这一处 type caller 在挂；当前 `troopTraining.ts` 也已改成直接声明自己真正需要的本地 `QidahenTroopTrainingDetailEntry`，不再 type import 这条 owner 内部形状。正式对外入口继续保留训练相关函数，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 training detail 形状类型桥以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 troop-compat owner 与 troop-training caller 之间一条“只给单一 type caller 承接训练明细 Map 形状”的类型桥，不是去误碰特殊兵训练升级、常备兵转特种兵、训练摘要文案或熊廷弼/毛文龙训练写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:46 +08：当前《七大恨》如果还把 `QidahenCompatPieceView` 继续当成 `troopCompat` 对外成立的 compat-piece view 协议，结论已经落后于当前源码真相。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 当前已把这条 compat-piece view 类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `expandSpecialTroopStacksToCompatPieces(...)`、`collapseCompatPiecesToSpecialTroopStacks(...)`、`sortCompatPiecesForSelection(...)`、`sortCompatPiecesForRemoval(...)` 等 compat-piece helper 的参数与返回标注，并没有任何正式外部 caller；当前 `src/games/qidahen` 内也没有任何对这条类型壳的外部 type import。正式对外入口继续保留 troop-compat 函数家族，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 compat-piece view 类型壳以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 troop-compat owner 内一条“只给同文件 compat-piece helper / 返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰特殊兵展开、compat piece 回折、部队移除排序、训练摘要或 casualty 选择的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:38 +08：当前《七大恨》如果还把 `QidahenNewYearResolution` 继续当成 `seasonResolution` 对外成立的 new-year 返回形状协议，结论已经落后于当前源码真相。现态证据是：[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前已把这条 new-year 返回形状类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenNewYear(...)` 的返回标注，并没有任何正式外部 caller；正式对外入口继续保留 `resolveQidahenNewYear(...)`，而 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 new-year 返回形状类型壳以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 season owner 内一条“只给同文件正式入口返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰新年摸牌、长城维护、朝鲜贡牌、年卡推进或年终摘要写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:30 +08：当前《七大恨》如果还把 `QidahenPendingAttackerRetreatResolution`、`QidahenPendingDefenderRetreatResolution`、`QidahenPendingSiegeAttackerBattleResolution` 与 `QidahenPendingGenericBattleOutcomeResolution` 继续当成 `pendingTargetResolution` 对外成立的 battle outcome 返回形状协议，结论已经落后于当前源码真相。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前已把这 4 条 battle outcome 返回形状类型壳都收回为 owner 文件内私有，因为当前树里它们只在同文件服务 `resolvePendingAttackerRetreatLoss(...)`、`resolvePendingDefenderRetreatLoss(...)`、`resolvePendingSiegeAttackerBattleOutcome(...)` 与 `resolvePendingGenericBattleOutcome(...)` 的返回标注，并没有任何正式外部 caller；正式对外入口继续保留 `resolvePendingTargetActionByActionType(...)`，而 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 4 条 battle outcome 返回形状类型壳以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-target owner 内 4 条“只给同文件 retreat / siege / generic outcome 结算返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰进攻撤退损失、守军撤退损失、围城攻方结算或通用战斗结算的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:25 +08：当前《七大恨》如果还把 `QidahenScenarioCharacterChoiceResolution` 与 `QidahenScenarioArmamentChoiceResolution` 继续当成 `scenarioChoiceState` 对外成立的剧本选择解析结果协议，结论已经落后于当前源码真相。现态证据是：[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 当前已把这两条剧本选择解析结果类型壳都收回为 owner 文件内私有，因为当前树里它们只在同文件服务 `resolveQidahenScenarioCharacterChoice(...)`、`resolveQidahenScenarioArmamentChoice(...)` 与 `resolveQidahenScenarioChoiceResolvedEvent(...)` 的返回标注，并没有任何正式外部 caller；正式对外入口继续保留 `resolveQidahenScenarioChoiceResolvedEvent(...)`，而 [resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条剧本选择解析结果类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 scenario-choice owner 内两条“只给同文件选择解析 / resolved-event 编排返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰剧本人物选择、剧本军备选择或初始派系写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 07:06 +08：当前《七大恨》如果还把 `QidahenPendingTargetChoiceOption` 继续当成 `pendingTargetChoiceOptions` 对外成立的 pending-target 选项形状协议，结论已经落后于当前源码真相。现态证据是：[pendingTargetChoiceOptions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceOptions.ts) 当前已把这条选项形状类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `buildPendingTargetCavalryPlunderChoiceOption(...)` 与 `buildPendingTargetChoiceOptions(...)` 的返回标注，并没有任何正式外部 caller；正式对外入口继续保留 `buildPendingTargetChoiceOptions(...)`，而 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 与 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条选项形状类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-target choice owner 内一条“只给同文件 helper / 返回数组标注用、没有任何正式外部 caller”的类型壳，不是去误碰骑兵避战、骑兵劫掠、断后结算或溃败结算的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 06:58 +08：当前《七大恨》如果还把 `QidahenMidyearResolution` 继续当成 `seasonResolution` 对外成立的 midyear 返回形状协议，结论已经落后于当前源码真相。现态证据是：[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前已把这条 midyear 返回形状类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenMidyear(...)` 的返回标注，并没有任何正式外部 caller；正式对外入口继续保留 `resolveQidahenMidyear(...)`，而 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 midyear 返回形状类型壳以 `export type` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 season owner 内一条“只给同文件正式入口返回标注用、没有任何正式外部 caller”的类型壳，不是去误碰 midyear 判定、败北标记、朝鲜贡牌或年中摸牌的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 06:47 +08：当前《七大恨》如果还把 `QidahenSelectedActionPreparedState` 继续当成 `selectedActionPreparation` 对外成立的 prepared-state 协议，结论已经落后于当前源码真相。现态证据是：[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 当前已把这条 prepared-state 接口收回为 owner 文件内私有，因为当前树里它只在同文件服务 `QidahenSelectedActionPreparationResult` 的 `kind: 'prepared'` 组合返回形状，并没有任何正式外部 caller；正式对外入口继续保留 `prepareQidahenSelectedAction(...)` 与 `QidahenSelectedActionPreparationResult`，而 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前继续只正式消费 `prepareQidahenSelectedAction(...)` 入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 prepared-state 类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selected-action preparation owner 内一条“只给同文件导出结果类型组合用、没有任何正式外部 caller”的类型壳，不是去误碰联姻诱降阻塞、军备选择、弃牌支付或回合标签更新的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 06:32 +08：当前《七大恨》如果还把 `QidahenResolvedEventReducerSpec` 继续当成 `resolvedEventReducers` 对外成立的 reducer 协议，结论已经落后于当前源码真相。现态证据是：[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前已把这条 reducer spec 接口收回为 owner 文件内私有，因为当前树里它只在同文件服务 `defineResolvedEventReducer(...)`、`QIDAHEN_RESOLVED_EVENT_REDUCERS` 与 `QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE` 的参数/集合标注，并没有任何正式外部 caller；正式对外入口继续只保留 `reduceQidahenResolvedEvent(...)`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 reducer spec 类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 resolved-event reducer owner 内一条“只给同文件 reducer registry / builder list 参数标注用、没有任何正式外部 caller”的类型壳，不是去误碰 `SUN_YUANHUA_TECH_RESOLVED`、`SELECTED_ACTION_EXECUTED`、`PENDING_ACTION_RESOLVED`、`POST_BATTLE_DECISION_RESOLVED` 或 action-window resolved family 的 resolved-event 归约语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 06:24 +08：当前《七大恨》如果还把 `QidahenDirectInputEventReducerSpec` 继续当成 `directInputEventReducers` 对外成立的 reducer 协议，结论已经落后于当前源码真相。现态证据是：[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前已把这条 reducer spec 接口收回为 owner 文件内私有，因为当前树里它只在同文件服务 `defineDirectInputEventReducer(...)`、`QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS` 与 `QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS_BY_EVENT_TYPE` 的参数/集合标注，并没有任何正式外部 caller；正式对外入口继续只保留 `reduceQidahenDirectInputEvent(...)`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前继续只正式消费这条入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 reducer spec 类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board + roomSetup = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 direct-input reducer owner 内一条“只给同文件 reducer registry / builder list 参数标注用、没有任何正式外部 caller”的类型壳，不是去误碰 `REGION_SELECTED`、`PREVIEW_ACTION_CONFIRMED`、`WHEEL_MOVE_EXECUTED` 或 selection-input family 的 direct-input 归约语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 05:01 +08：当前《七大恨》如果还把 `QidahenSelectedArmamentUpgradeExecutionResult` 继续当成 `armamentUpgradeResolution` 对外成立的结果合同，结论已经落后于当前源码真相。现态证据是：[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 当前已把这条结果接口收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenSelectedArmamentUpgradeExecution(...)` 的返回标注，并且只剩 [selectedActionExecutionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionResolution.ts) 这一处 type caller 在挂；`selectedActionExecutionResolution.ts` 当前也已改成直接声明自己真正需要的 `factions + lastSeasonSummary` 返回形状，不再 type import 这条结果接口。正式对外入口继续保留 `resolveQidahenSelectedArmamentUpgradeExecution(...)` 与 `resolveQidahenSelectedActionExecutionResolution(...)`。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条结果类型桥以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是军备升级 owner 与 execution-resolution owner 之间一条“只给单一 type caller 承接返回形状”的结果类型桥，不是去误碰军备升级或孙元化科技的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:55 +08：当前《七大恨》如果还把 [postBattleContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleContracts.ts) 继续当成独立 contracts owner，结论已经落后于当前源码真相。现态证据是：`QidahenPostBattleResolutionDependencies` 与 `QidahenPostBattleDecisionResolution` 当前都已并回 [postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts)；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 与 [pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 当前也已直接从真正 owner 读取 `QidahenPostBattleDecisionResolution`；旧 `postBattleContracts.ts` 已删除。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求旧 contracts 文件存在，而是显式锁住 post-battle 类型真相应由 `postBattleDecisionResolution.ts` 承接。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构收掉的是一整层“纯类型壳文件”，不是去误碰战后处理、围城、撤退、劫掠或抽牌写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:46 +08：当前《七大恨》如果还把 `QidahenSelectedActionExecutionResolutionDependencies` 与 `QidahenSelectedActionFollowUpDependencies` 继续当成 `selectedActionExecutionResolution / selectedActionFollowUp` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[selectedActionExecutionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionResolution.ts) 当前已把 `QidahenSelectedActionExecutionResolutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 execution-resolution 正式入口的依赖注入，并只被 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当作组合依赖桥使用；[selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 当前也已把 `QidahenSelectedActionFollowUpDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 follow-up 正式入口的依赖注入，并同样只被 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当作组合依赖桥使用；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已不再通过 `extends QidahenSelectedActionFollowUpDependencies, QidahenSelectedActionExecutionResolutionDependencies` 组合这两条外部接口，而是直接声明自己真正需要的 `buildSeasonSummary(...)`、`resolveGrantPardonExecution(...)` 与 `resolveSelectedArmamentUpgradeExecution(...)` 依赖形状。正式对外入口继续保留 `executeQidahenSelectedAction(...)`、`resolveQidahenSelectedActionExecutionResolution(...)` 与 `resolveQidahenSelectedActionFollowUp(...)`。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条依赖桥以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 execution 总线与下游 owner 之间两条“只给组合依赖拼接再转手”的类型桥，不是去误碰 execution-resolution、follow-up 或最终提交的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:41 +08：当前《七大恨》如果还把 `QidahenSelectionInputStateDependencies = QidahenHandLimitDiscardDependencies` 这条 exported alias bridge，和 `QidahenHandLimitDiscardDependencies` 这条 hand-limit-discard 依赖类型壳，继续当成 `selectionInputState / handLimitDiscard` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts) 当前已删除对 `QidahenHandLimitDiscardDependencies` 的 type import，并把原 `export type QidahenSelectionInputStateDependencies = QidahenHandLimitDiscardDependencies` 收回成 selection-input owner 文件内自持的本地 `interface`；[handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 当前已把 `QidahenHandLimitDiscardDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 hand-limit-discard 两条正式入口的默认依赖注入，并不再需要对外暴露给 selection-input 透传；正式对外入口继续保留 `reduceQidahenSelectionInputEvent(...)`、`resolveQidahenHandLimitDiscard(...)` 与 `resolveQidahenHandLimitDiscardInteractionChoice(...)`。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 alias bridge 以 `export type` 回流，也不再允许 hand-limit-discard 依赖类型壳以 `export interface` 回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selection-input 到 hand-limit-discard 之间两层“只负责把同一依赖形状换个名字再传一次”的薄桥，不是去误碰输入归约、弃牌完成或 turn-label 同步的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:34 +08：当前《七大恨》如果还把 `QidahenPendingBattleFlowDependencies` 与 `QidahenWheelMoveExecutionDependencies` 继续当成 `pendingBattleFlow / wheelMoveExecution` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前已把 `QidahenPendingBattleFlowDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 pending-battle flow 主入口与其内部状态推进编排的默认依赖注入，并没有任何正式生产 caller；[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 当前已把 `QidahenWheelMoveExecutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 wheel-move 执行入口的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这 2 条 owner 主入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 2 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-battle flow / wheel-move execution owner 内两条“只给同文件默认依赖注入转手、零正式生产 caller”的依赖类型壳，不是去误碰待决战斗流程、轮盘移动执行或相关结算的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:26 +08：当前《七大恨》如果还把 `QidahenCharacterActionWindowDependencies`、`QidahenScenarioChoiceStateDependencies`、`QidahenScenarioChoiceResolvedEventDependencies`、`QidahenSeasonResolutionDependencies`、`QidahenPendingTargetResolutionDependencies`、`QidahenActionWindowResolvedCommandDependencies` 与 `QidahenPendingBattleResolvedCommandDependencies` 继续当成 `characterActionWindow / scenarioChoiceState / seasonResolution / pendingTargetResolution / resolvedCommandEventBuilders` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 当前已把 `QidahenCharacterActionWindowDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务人物冲突与行动窗口副作用写回的默认依赖注入，并没有任何正式生产 caller；[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 当前已把 `QidahenScenarioChoiceStateDependencies` 与 `QidahenScenarioChoiceResolvedEventDependencies` 收回为 owner 文件内私有，因为当前树里它们只在同文件服务剧本选择 state / resolved-event 编排的默认依赖注入，并没有任何正式生产 caller；[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前已把 `QidahenSeasonResolutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 season-end 与 summary 入口的默认依赖注入，并没有任何正式生产 caller；[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前已把 `QidahenPendingTargetResolutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 pending-target resolution 主入口及其内部 battle / aftermath 编排的默认依赖注入，并没有任何正式生产 caller；[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 当前也已把 `QidahenActionWindowResolvedCommandDependencies` 与 `QidahenPendingBattleResolvedCommandDependencies` 收回为 owner 文件内私有，因为当前树里它们只在同文件服务 resolved-command builder family 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这些 owner 主入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 7 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + roomSetup + Board = 605 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是人物行动窗口、剧本选择、season、pending-target 与 resolved-command builder owner 内一组“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰人物冲突、剧本选择、季节结算、待决目标处理或 resolved-command 拼装的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:19 +08：当前《七大恨》如果还把 `QidahenSpecialRuleStateDependencies`、`QidahenTurnLabelDependencies`、`QidahenVictoryResolutionDependencies` 与 `QidahenTurnAdvanceDependencies` 继续当成 `specialRuleState / turnLabelState / victoryResolution / turnAdvance` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 当前已把 `QidahenSpecialRuleStateDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `syncQidahenSpecialRuleState(...)` 的默认依赖注入，并没有任何正式生产 caller；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 当前已把 `QidahenTurnLabelDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `updateQidahenTurnLabel(...)` 的默认依赖注入，并没有任何正式生产 caller；[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 当前已把 `QidahenVictoryResolutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `applyQidahenVictoryStatus(...)` 的默认依赖注入，并没有任何正式生产 caller；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 当前已把 `QidahenTurnAdvanceDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `advanceQidahenTurnIfReady(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这 4 条 owner 主入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 4 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 594 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 turn-flow owner 内一组“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰特殊规则状态、turn-label、胜负判定或回合推进的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:15 +08：当前《七大恨》如果还把 `QidahenPreviewActionConfirmedDependencies`、`QidahenRegionSelectedDependencies`、`QidahenPendingBattleCommittedTroopsDependencies` 与 `QidahenCharacterChronologyStateDependencies` 继续当成 `previewActionReducer / regionSelectionReducer / pendingBattleCommittedTroops / characterChronologyState` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 当前已把 `QidahenPreviewActionConfirmedDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `reduceQidahenPreviewActionConfirmed(...)` 的默认依赖注入，并没有任何正式生产 caller；[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 当前已把 `QidahenRegionSelectedDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `reduceQidahenRegionSelected(...)` 的默认依赖注入，并没有任何正式生产 caller；[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 当前已把 `QidahenPendingBattleCommittedTroopsDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `applyQidahenPendingBattleCommittedTroops(...)` 的默认依赖注入，并没有任何正式生产 caller；[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 当前已把 `QidahenCharacterChronologyStateDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `syncQidahenCharacterChronologyState(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这 4 条 owner 主入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 4 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 preview-action / region-selection / pending-battle committed-troops / character-chronology-state owner 内一组“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰预览确认、区域误点回退、待决战斗承诺兵力或人物年代同步的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 04:10 +08：当前《七大恨》如果还把 `QidahenSelectedActionPreparationDependencies` 与 `QidahenSelectedActionStateCommitDependencies` 继续当成 `selectedActionPreparation / selectedActionStateCommit` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 当前已把 `QidahenSelectedActionPreparationDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `prepareQidahenSelectedAction(...)` 的默认依赖注入，并没有任何正式生产 caller；[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 当前也已把 `QidahenSelectedActionStateCommitDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `commitQidahenSelectedActionState(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这两条 owner 主入口。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 2 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selected-action preparation / state-commit owner 内一组“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰选牌支付、联姻诱降阻断、bonus faction action、支付状态清空、待决目标写回或回合推进的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:59 +08：当前《七大恨》如果还把 `QidahenSelectedActionExecutionDependencies` 与 `QidahenSelectedActionSelectionFollowUpResolutionDependencies` 继续当成 `selectedActionExecution / selectedActionSelectionFollowUpResolution` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已把 `QidahenSelectedActionExecutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `executeQidahenSelectedAction(...)` 的默认依赖注入，并没有任何正式生产 caller；[selectedActionSelectionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionSelectionFollowUpResolution.ts) 当前也已把 `QidahenSelectedActionSelectionFollowUpResolutionDependencies` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenSelectedActionSelectionFollowUpResolution(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续保留这两条 resolver。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 2 条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 selected-action execution / selection-follow-up owner 内一组“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰行动执行主链、征兵/驱虎/马市/大汗令后续生成或状态提交的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:55 +08：当前《七大恨》如果还把 `QidahenStructuredBattleCasualtyResult`、`QidahenSelectedActionExecutionResolutionResult`、`QidahenSelectedActionSelectionFollowUpResolutionResult` 与 `QidahenSelectedActionPendingFollowUpResolutionResult` 继续当成 `attackRules / selectedAction*Resolution` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 当前已把 `QidahenStructuredBattleCasualtyResult` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `computeQidahenStructuredBattleCasualties(...)` 的返回类型标注；[selectedActionExecutionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionResolution.ts)、[selectedActionSelectionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionSelectionFollowUpResolution.ts) 与 [selectedActionPendingFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPendingFollowUpResolution.ts) 当前也已把各自 result 类型收回为 owner 文件内私有，因为当前树里它们都只在同文件服务正式 resolver 的返回类型标注，并没有任何正式生产 caller；正式对外入口继续保留这些 resolver 与 battle-casualty 函数。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 4 条 result 类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 attack-rules / selected-action resolution owner 内一组“只给同文件返回类型标注用、零正式生产 caller”的类型壳，不是去误碰战斗损伤、军备升级、招安、征兵/驱虎/马市/大汗令后续生成或待决目标构造的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:47 +08：当前《七大恨》如果还把 `QidahenGrantPardonExecutionResult`、`QidahenArtilleryTrainingResult` 与 `QidahenTroopTrainingResult` 继续当成 `grantPardonExecution / troopTraining` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 当前已把 `QidahenGrantPardonExecutionResult` 收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenGrantPardonExecution(...)` 的返回类型标注，并没有任何正式生产 caller；[troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts) 当前也已把 `QidahenArtilleryTrainingResult` 与 `QidahenTroopTrainingResult` 收回为 owner 文件内私有，因为当前树里它们只在同文件服务 `trainArtilleryStacksToLevel(...)`、`trainSpecialTroopsOneStepForFaction(...)` 与 `trainTroopsOneStepForFactionWithLimit(...)` 的返回类型标注，并没有任何正式生产 caller；正式对外入口继续保留上面这些函数。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 3 条 result 类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 grant-pardon / troop-training owner 内一组“只给同文件返回类型标注用、零正式生产 caller”的类型壳，不是去误碰赐印招安、火炮训练、单步训练、限量训练或免费训练写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:39 +08：当前《七大恨》如果还把 `QidahenFortificationMaintenanceDependencies` 继续当成 `fortificationMaintenance` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 当前已把这条 fortification-maintenance 依赖类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenFortificationMaintenanceInteractionChoice(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续只剩 `resolveQidahenFortificationMaintenanceInteractionChoice(...)`。[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts)、[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 与 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前仍继续直接消费这条正式入口；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 fortification-maintenance owner 内一条“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰城防维持的减兵、年终结算、胜负判定或兵棋同步业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:34 +08：当前《七大恨》如果还把 `QidahenGrantPardonExecutionDependencies` 继续当成 `grantPardonExecution` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 当前已把这条 grant-pardon 依赖类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenGrantPardonExecution(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续只剩 `resolveQidahenGrantPardonExecution(...)`。[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前仍继续直接消费这条正式入口；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条依赖类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 grant-pardon owner 内一条“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰赐印招安的目标判定、城市守军转移、兵力回写或季节总结文案的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:27 +08：当前《七大恨》如果还把 `QidahenLimitedTroopTrainingOptions` 继续当成 `troopTraining` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts) 当前已把这条 limited-training 参数类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `trainTroopsOneStepForFactionWithLimit(...)` 的参数标注，并没有任何正式生产 caller；正式对外入口继续保留 `trainArtilleryStacksToLevel(...)`、`trainSpecialTroopsOneStepForFaction(...)` 与 `trainTroopsOneStepForFactionWithLimit(...)`。[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 当前仍继续直接消费 `trainTroopsOneStepForFactionWithLimit(...)` 这条正式入口；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条参数类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 troop-training owner 内一条“只给同文件正式入口参数标注用、零正式生产 caller”的类型壳，不是去误碰熊廷弼免费训练、轮盘征兵训练将或部队升级写回的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:23 +08：当前《七大恨》如果还把 `QidahenActionWindowEntryStateOptions` 继续当成 `actionWindowEntryState` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts) 当前已把这条 entry-state 参数类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `buildQidahenActionWindowEntryState(...)` 的参数标注，并没有任何正式生产 caller；正式对外入口继续只剩 `buildQidahenActionWindowEntryState(...)`。[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 与 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 当前仍继续直接消费这条正式入口；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条参数类型壳以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 action-window entry-state owner 内一条“只给同文件正式入口参数标注用、零正式生产 caller”的类型壳，不是去误碰初始核心 setup、换人主流程或行动窗口默认状态字段的业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:16 +08：当前《七大恨》如果还把 `QidahenActionWindowChoiceDependencies` 继续当成 `actionWindowChoices` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 当前已把这条 choice 依赖类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenRecruitInteractionChoice(...)`、`resolveQidahenDriveTigerConsentInteractionChoice(...)`、`resolveQidahenMaShiTradeInteractionChoice(...)`、`resolveQidahenKhanEdictInteractionChoice(...)` 与 `resolveQidahenDiplomacyInteractionChoice(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续只剩这 5 条 action-window choice 入口函数。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条依赖类型壳以 `export` 形态回流；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前覆盖的 choice 交互链仍保持通过。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 action-window choice owner 内一条“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰征召军队、驱虎吞狼同意、马市贸易、大汗令箭、外交雇佣的规则语义或正式接线。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:13 +08：当前《七大恨》如果还把 `QidahenActionWindowDispatchDependencies` 继续当成 `actionWindowDispatch` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 当前已把这条 dispatch 依赖类型壳收回为 owner 文件内私有，因为当前树里它只在同文件服务 `resolveQidahenGaoDiDispatchChoice(...)`、`resolveQidahenInternalDispatchInteractionChoice(...)` 与 `resolveQidahenWheelDispatchInteractionChoice(...)` 的默认依赖注入，并没有任何正式生产 caller；正式对外入口继续只剩这 3 条调度入口函数。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条依赖类型壳以 `export` 形态回流；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前覆盖的调度交互链仍保持通过。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 dispatch owner 内一条“只给同文件默认依赖注入转手、零正式生产 caller”的类型壳，不是去误碰高第调度、王化贞内部调度、轮盘调度进攻的规则语义或正式接线。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 03:06 +08：当前《七大恨》如果还把 `QidahenArmamentUpgradeResolutionDependencies / QidahenSunYuanhuaTechResolutionResult / QidahenSunYuanhuaTechResolvedEventDependencies / resolveQidahenSunYuanhuaTech(...)` 继续当成 `armamentUpgradeResolution` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 当前已把这组 `SunYuanhua tech` 内部 resolution family 收回为 owner 文件内私有，因为当前树里它们只在同文件服务 `resolveQidahenSelectedArmamentUpgradeExecution(...)` 与 `resolveQidahenSunYuanhuaTechResolvedEvent(...)` 的本地依赖注入，并没有任何正式生产 caller；正式对外入口继续只剩 `resolveQidahenSelectedArmamentUpgradeExecution(...)` 与 `resolveQidahenSunYuanhuaTechResolvedEvent(...)`。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这组内部 seam 以 `export` 形态回流；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前覆盖的孙元化科技链仍保持通过。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 434 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是军备升级 owner 内一条“只给同文件 execution / resolved-event 默认依赖转手、零正式生产 caller”的内部 seam，不是去误碰孙元化弃牌打科技的规则语义、弃牌/升级结果或 resolved-event 正式收口逻辑本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:52 +08：当前《七大恨》如果还把 `QidahenAdjacentRuntimeRegion / getQidahenAdjacentRuntimeRegions(...)` 继续当成 `movement` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 当前已把这组相邻区 helper family 收回为文件内私有，因为当前树里它们只在同文件服务 BFS 可达搜索流程，并没有任何正式生产 caller；[movementRules.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/movementRules.test.ts) 当前也已不再直读内部相邻区列表，而是改成通过正式入口 `findQidahenReachableRuntimeRegions(...)` 去验证水路开闭后的运行时可达结果；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 helper family 以 `export` 形态回流。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + movementRules = 449 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 movement owner 内一条“只给同文件可达搜索转手、却被测试直接偷读”的内部 seam，不是去误碰水路开放、围城联通、移动预算或可达搜索的规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:39 +08：当前《七大恨》如果还把 `createQidahenCoreForScenario(...)` 与 `createQidahenCoreForScenarioWithSelections(...)` 继续当成 `initialCoreSetup` 对外成立的 seam，结论已经落后于当前源码真相。现态证据是：[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前已删除这两条测试便利壳，owner 真正保留的正式开局入口只剩 `createInitialCore(...)`；测试 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前已直接改为消费 `createInitialCore(...)` 并显式传入 `resolveChoiceGroups = false`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条壳以 `export const` 或文件内 `const` 的形式回流。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构退休的是两条“只给测试图省事、但不属于正式运行时边界”的便利壳，不是去误碰正式 setup 语义、剧本应用顺序、待决选择生成或开局 piece 同步逻辑本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:33 +08：当前《七大恨》如果还把 `QIDAHEN_MOVEMENT_PROFILES` 继续当成 `movement` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 里的这组移动配置当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `QIDAHEN_MOVEMENT_PROFILE_BY_ID` 与 `getQidahenMovementProfile(...)`，并没有任何正式外部 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `movement.ts` 把这组移动配置常量继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + movementRules = 449 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 movement owner 内一组“只给同文件 map/getter 转手的常量表暴露面”，不是去误碰移动预算、通道代价、水路开放或可达搜索的规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:27 +08：当前《七大恨》如果还把 `QIDAHEN_SCENARIO_PRESETS` 与 `QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS` 继续当成 `scenarioPresets / scenarioRuntimeRegionPresets` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[scenarioPresets.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioPresets.ts) 里的 `QIDAHEN_SCENARIO_PRESETS` 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `getQidahenScenarioPreset(...)`；[scenarioRuntimeRegionPresets.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioRuntimeRegionPresets.ts) 里的 `QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS` 当前也已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `applyQidahenScenarioRuntimeRegionPreset(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两组常量表继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 scenario owner 内两组“只给同文件 getter / apply 入口转手的常量表暴露面”，不是去误碰剧本 preset 内容、起始 runtime 区覆盖内容或开局规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:22 +08：当前《七大恨》如果还把 `resolveQidahenScenarioCharacterChoice(...)` 与 `resolveQidahenScenarioArmamentChoice(...)` 继续当成 `scenarioChoiceState` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里这两条剧本选择解析 helper 当前都已收回为文件内私有 `const`，因为当前树里它们只在同文件服务 `resolveQidahenScenarioChoiceResolvedEvent(...)` 的 resolved-event 编排，并没有任何正式外部 caller；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 继续只正式消费 `resolveQidahenScenarioChoiceResolvedEvent(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `scenarioChoiceState.ts` 把这两条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 scenario-choice owner 内两条“只给同文件 resolved-event 入口转手的暴露面”，不是去误碰剧本人物选择、剧本军备选择或 resolved-event 写回的规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:16 +08：当前《七大恨》如果还把 `isMercenaryCompatPiece(...)`、`normalizeStackPieceIds(...)`、`collapsePiecesToSpecialTroopStacks(...)`、`expandSpecialTroopStacksToPieces(...)`、`assignPieceIdsToStacks(...)` 与 `syncRegionPieceIds(...)` 继续当成 `troopCompat` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 里这批 compat piece / pieceId sync helper 当前都已收回为文件内私有 `const`，因为当前树里它们只在同文件服务 `syncRegionsPieceIds(...)`、`syncPiecesFromRegions(...)`、`syncRegionsSpecialTroopsFromPieces(...)`、`getRegularTroopCount(...)` 与 `removeMercenarySpecialTroops(...)` 等 compat pipeline，并没有任何正式外部 caller；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 继续只正式消费 `syncRegionsPieceIds(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `troopCompat.ts` 把这批 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 compat owner 内部一批“只给同文件 piece / pieceId pipeline 转手的暴露面”，不是去误碰 compat piece 回折、pieceId 分配、地图 piece 同步或雇佣兵过滤的规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 02:00 +08：当前《七大恨》如果还把 `resolvePendingSiegeReinforcementAction(...)`、`resolvePendingBattleWithoutDefenders(...)`、`resolvePendingMarriageSubjugationAction(...)`、`resolvePendingMarriageSubjugationTargetAction(...)`、`resolvePendingCavalryPlunderAction(...)`、`applyPendingTargetAftermathAdjustments(...)`、`resolvePendingAttackerRetreatLoss(...)`、`resolvePendingDefenderRetreatLoss(...)`、`resolvePendingCapturedBattleFollowup(...)`、`finalizePendingBattleOutcome(...)`、`resolvePendingSiegeAttackerBattleOutcome(...)` 与 `resolvePendingGenericBattleOutcome(...)` 继续当成 `pendingTargetResolution` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里这批 pending-target battle / aftermath helper 当前都已收回为文件内私有 `const`，因为当前树里它们只在同文件服务 `resolvePendingTargetActionByActionType(...)` 与其内部 battle outcome / aftermath 编排，并没有任何正式外部 caller；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 继续只正式消费 `resolvePendingTargetActionByActionType(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `pendingTargetResolution.ts` 把这批 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-target owner 内部一批“只给同文件主入口/子入口转手的 battle / aftermath 暴露面”，不是去误碰 battle outcome、围城增援、联姻诱降、骑兵劫掠、败退损失或 aftermath 写回的规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 01:41 +08：当前《七大恨》如果还把 `resolvePendingBattleTargetAction(...)` 继续当成 `pendingTargetResolution` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里的这条 battle target coordinator 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `resolvePendingTargetActionByActionType(...)`，并没有任何外部正式 caller；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 继续只正式消费 `resolvePendingTargetActionByActionType(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `pendingTargetResolution.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 pending-target owner 内部一条“只给同文件主入口转手的 coordinator 暴露面”，不是去误碰 battle prelude、守军为空分支、撤退/后处理或待决目标正式结算语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 01:41 +08：当前《七大恨》如果还把 `normalizeSpecialTroopStack(...)` 继续当成 `troopCompat` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 里的这条标准化 helper 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 compat 展开、pieceId 同步等流程，并没有任何外部正式 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `troopCompat.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 compat owner 内部一条“只给同文件展开/同步流程转手的 helper 暴露面”，不是去误碰 stack 兵种推断、pieceId 规范化或 compat piece 展开/回折语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 01:18 +08：当前《七大恨》如果还把 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 继续当成 `interactionBuilders` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 里的这组 runtime builder 聚合当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS`、`QIDAHEN_RUNTIME_INTERACTION_BUILDERS_BY_SOURCE_ID`、`getRegisteredQidahenRuntimeInteractionSourceIds()` 与 `buildQidahenRuntimeInteractionFromBuilders(...)`，并没有任何外部正式 caller；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 继续只正式消费 registry owner 暴露的两个正式入口；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `interactionBuilders.ts` 把这组聚合常量继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 runtime interaction owner 内部一条“只给同文件 source-id/build-map getter 转手的聚合常量暴露面”，不是去误碰 interaction source 顺序或 runtime interaction 构建语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 01:18 +08：当前《七大恨》如果还把 `computeQidahenCombatPower(...)` 继续当成 `attackRules` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 里的这条战力估算 helper 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `computeQidahenStructuredBattleCasualties(...)`，并没有任何外部正式 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `attackRules.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是进攻规则 owner 内部一条“只给同文件结构化损伤流程转手的 helper 暴露面”，不是去误碰进攻规则、结构化损伤或 fallback 战力估算语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:58 +08：当前《七大恨》如果还把 `QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIGS` 继续当成 `wheelRules` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[wheelRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelRules.ts) 里的这组轮盘即时效果配置当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `QIDAHEN_WHEEL_IMMEDIATE_EFFECT_CONFIG_BY_ID` 与 `getQidahenWheelImmediateEffectConfig(...)`，并没有任何外部正式 caller；[wheelImmediateEffect.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelImmediateEffect.ts) 继续只正式消费 `getQidahenWheelImmediateEffectConfig(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `wheelRules.ts` 把这组配置常量继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是轮盘规则 owner 内部一条“只给同文件 map/getter 转手的配置常量暴露面”，不是去误碰轮盘即时效果或轮盘执行语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:58 +08：当前《七大恨》如果还把 `addDefeatMarkerToCharacters(...)` 继续当成 `defeatMarkerState` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[defeatMarkerState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/defeatMarkerState.ts) 里的这条人物加标记 helper 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `syncFactionCharactersToDefeatMarkerCount(...)` 与 `addDefeatMarkerToFaction(...)`，并没有任何外部正式 caller；[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 继续只正式消费 `addDefeatMarkerToFaction(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `defeatMarkerState.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是失败标记 owner 内部一条“只给同文件流程转手的 helper 暴露面”，不是去误碰失败标记分配顺序、中期检定或派系加标记语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:44 +08：当前《七大恨》如果还把 `QIDAHEN_CHRONOLOGY_YEAR_CONFIGS` 继续当成 `characterChronologyConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 里的这组年表配置当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `getChronologyYearConfig(...)` 及其下游 getter，并没有任何外部正式 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `characterChronologyConfig.ts` 把这组配置常量继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是人物年表 owner 内部一条“只给同文件 getter 转手的配置常量暴露面”，不是去误碰纪年顺序、人物可用集或纪年卡预览语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:44 +08：当前《七大恨》如果还把 `isLowFidelityUpgradeableArmament(...)` 继续当成 `armamentLowFidelity` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[armamentLowFidelity.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentLowFidelity.ts) 里的这条升级判定 helper 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `upgradeLowFidelityArmament(...)` 与 `hasUpgradableArmament(...)`，并没有任何外部正式 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `armamentLowFidelity.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是军备升级 owner 内部一条“只给同文件流程转手的 helper 暴露面”，不是去误碰升级上限、优先选择或卡牌映射语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:35 +08：当前《七大恨》如果还把 `QIDAHEN_ATTACK_RULE_CONFIGS` 继续当成 `attackRules` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 里的这组进攻规则配置当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `QIDAHEN_ATTACK_RULE_CONFIG_BY_ID` 与 `getQidahenAttackRuleConfig(...)` 的 map/fallback，并没有任何外部正式 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `attackRules.ts` 把这组配置常量继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是进攻规则 owner 内部一条“只给同文件 map/fallback 转手的配置常量暴露面”，不是去误碰进攻规则、战力估算或结构化损伤语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:26 +08：当前《七大恨》如果还把 `buildStructuredCombatUnitsFromStacks(...)` 继续当成 `battleRollMath` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts) 里的这条结构化部队组装 helper 当前已收回为文件内私有 `const`，因为当前树里它只在同文件服务 `buildCombatUnits(...)` 与 `buildCommittedBattleUnits(...)`，并没有任何外部正式 caller；与此同时，[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 继续只正式消费 `createQidahenStructuredBattleRolls(...)`，[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 继续只正式消费 `computeQidahenCavalryPlunderCounterPower(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `battleRollMath.ts` 把这条 helper 继续以 `export const` 暴露出去。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 battle-roll owner 内部一条“只给同文件流程转手的 helper 暴露面”，不是去误碰 battle 规则、pending-target 结算或棋盘正式入口。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:13 +08：当前《七大恨》如果还把 `QidahenCommand / QidahenEvent` 继续当成正式 `domain` barrel 对外成立的 type surface，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export 这两条类型；真正的完整类型 owner 继续留在 [types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts)，而棋盘 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前仍只正式通过 barrel 读取 `QidahenCommandMap / QidahenCore / QidahenCasualtyPriority`；当前 worktree 下没有任何文件再从 `./domain` / `../domain` barrel 读取 `QidahenCommand / QidahenEvent`，测试与域内实现都直接从 `./types` 或 `../domain/types` 读取这两条类型真相；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 把这两条类型继续挂在正式 barrel 上。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `domain` 对外类型面里两条零 barrel caller 的公开口，不是去误碰棋盘仍正式依赖的类型 seam。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-13 00:04 +08：当前《七大恨》如果还把这一组 interaction resolver 继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export `resolveQidahenInternalDispatchInteractionChoice(...)`、`resolveQidahenWheelDispatchInteractionChoice(...)`、`resolveQidahenDiplomacyInteractionChoice(...)`、`resolveQidahenDriveTigerConsentInteractionChoice(...)`、`resolveQidahenKhanEdictInteractionChoice(...)`、`resolveQidahenMaShiTradeInteractionChoice(...)`、`resolveQidahenRecruitInteractionChoice(...)`、`resolveQidahenFortificationMaintenanceInteractionChoice(...)` 与 `resolveQidahenHandLimitDiscardInteractionChoice(...)`；真正的 owner 继续留在 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 与 [handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts)，并继续被 [resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts)、[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 与 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 直接消费；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前已改成直接从 `../domain/actionWindowDispatch`、`../domain/actionWindowChoices` 与 `../domain/fortificationMaintenance` 读取对应 resolver；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 顺手暴露这组 resolver。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `actionWindowDispatch / actionWindowChoices / fortificationMaintenance / handLimitDiscard` 这组 resolver 的测试专用 barrel 暴露面，不是去误碰运行时 resolver owner 本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:55 +08：当前《七大恨》如果还把 `getQidahenDirectedPassageRule(...)`、`getQidahenAdjacentRuntimeRegions(...)` 与 `QIDAHEN_MOVEMENT_PROFILES` 继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export 前两条测试 helper 与零正式外部 caller 的 `QIDAHEN_MOVEMENT_PROFILES`；真正的 owner 继续留在 [movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts)，并继续被 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 与 [pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts) 直接消费；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前只继续通过 barrel 读取真正的正式棋盘 seam `findQidahenReachableRuntimeRegions(...)` 与 `getQidahenMovementProfile(...)`；[movementRules.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/movementRules.test.ts) 当前已改成直接从 `../domain/movement` 读取两条测试 helper，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 顺手暴露这组 helper。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + movementRules = 449 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `movement` family 里“只给测试读或根本没有正式外部 caller”的 barrel 暴露面，不是去误碰棋盘还在消费的 reachability / movement-profile 正式 seam。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:47 +08：当前《七大恨》如果还把 `getActionChoicesForFaction(...)` 继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export 这条行动列表 getter；真正的 owner 继续留在 [factionActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionActionWindow.ts)，并继续被 [actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts)、[commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts) 与 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 直接消费；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 与 [commands.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/commands.test.ts) 当前已改成直接从 `../domain/factionActionWindow` 读取 `getActionChoicesForFaction(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 继续 re-export 这条行动列表 getter。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是正式 `domain` 对外面里一条“只给测试读、却顺手暴露出去”的行动列表 getter，不是去误碰 `factionActionWindow` owner 本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:42 +08：当前《七大恨》如果还把 `dispatchSelectionBuilders` 家族继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 barrel re-export `dispatchSelectionBuilders`；真正的 owner 继续留在 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)，并继续被 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 与 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 直接消费；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 与 [commands.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/commands.test.ts) 当前已改成直接从 `../domain/dispatchSelectionBuilders` 读取 helper；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 继续 barrel re-export 这组调度 helper。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是正式 `domain` 对外面里一组“只给测试读、却顺手暴露出去”的调度 helper 公开面，不是去误碰 dispatch builder owner 本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:32 +08：当前《七大恨》如果还把 `QIDAHEN_SCENARIO_PRESETS / getQidahenScenarioPreset(...)` 继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export 这组剧本 preset truth；真正的 owner 继续留在 [scenarioPresets.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioPresets.ts)，并继续被 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 与 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 直接消费；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前已改成直接从 `../domain/scenarioPresets` 读取 `getQidahenScenarioPreset(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 继续 barrel re-export 这组 preset truth。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是正式 `domain` 对外面里一组“只给测试读、却顺手暴露出去”的剧本 preset 真相公开面，不是去误碰剧本 preset owner 本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:27 +08：当前《七大恨》如果还把 `createQidahenCoreForScenario(...)` 与 `createQidahenCoreForScenarioWithSelections(...)` 继续当成正式 `domain` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已停止 re-export 这两条测试专用构造器；真正的运行时开局入口仍是 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 里的 `createInitialCore(...)`，并继续由 `QidahenDomain.setup(...)` 直连；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 当前已改成直接从 `../domain/initialCoreSetup` 读取测试 helper；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `index.ts` 把这两条测试构造器继续暴露成正式 public surface。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是正式 `domain` 对外面里一组“只给测试用、却伪装成运行时入口”的测试构造器暴露面，不是去误碰开局 owner 本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:18 +08：当前《七大恨》如果还把 `getMercenaryTroopCount(...)` 继续当成 `troopCompat` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 里的这条 compat 计数 helper 当前已收回为文件内私有 `const`，因为当前树里它只给同文件 `hasNonMercenaryTroops(...)` 转手，并没有任何外部生产 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 helper 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `troopCompat` owner 内部“只给同文件正式入口转手的 compat 计数浅壳”，不是去误碰 compat piece 语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:13 +08：当前《七大恨》如果还把 `getQidahenDirectedTravelCost(...)` 继续当成 `movement` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 里的这条 travel-cost 便利壳当前已正式退休，因为当前树里它没有任何生产 caller，只剩 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 re-export 与 [movementRules.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/movementRules.test.ts) 的测试引用；当前测试已改成直接读取 `getQidahenDirectedPassageRule(...)` 的 `usable / travelCost` 真相，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，不再允许 `movement.ts` 或 `index.ts` 保留这条旧导出。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + movementRules = 449 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `movement` owner 内部一条零生产 consumer 的便利壳，不是去误碰移动规则语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:08 +08：当前《七大恨》如果还把 `getQidahenHandLimitDiscardSelectionFromInteractionData(...)` 继续当成 `interactionSelectionAccessors` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 里的这条 data helper 当前已收回为文件内私有 `const`，因为当前树里它只给同文件 `getQidahenHandLimitDiscardSelectionFromInteraction(...)` 转手，并没有任何外部生产 caller；与此同时，`getQidahenHandLimitDiscardSelectionFromInteraction(...)` 继续保留为正式 interaction 读取入口，`Board / commands` 这组真实 consumer 不变。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这条 helper 继续以 `export function` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `interactionSelectionAccessors` owner 内部“只给同文件正式入口转手的 interaction-data 薄壳”，不是去误碰手牌上限交互语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:58 +08：当前《七大恨》如果还把 `isQidahenCapitalRuntimeRegion(...)` 与 `isQidahenSouthOfWallRuntimeRegion(...)` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这两条字段判定当前都已正式退休，因为当前树里它们只剩 [pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts) 这一处生产 caller；当前 `pendingTargetActionBuilder.ts` 已直接读取 `const targetRuleRegionConfig = resolveQidahenRuleRegionConfig(targetRuntimeRegionId);`，并在同文件内承接 `targetRuleRegionConfig.capitalOf != null` 与 `targetRuleRegionConfig.tags.includes('south-of-wall')` 这两条联姻诱降禁用区判定；与此同时，`isQidahenKoreaRuntimeRegionId(...)` 继续保留，因为它仍承接独立韩国运行区 list 真相。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这两条浅壳继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig -> pendingTargetActionBuilder` 联姻诱降禁用区判定链里的两条字段浅壳，不是去误碰待决目标结算语义或韩国运行区判定本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 23:14 +08：当前《七大恨》如果还把 `getQidahenScenarioCharacterChoiceGroupId(...)`、`getQidahenScenarioArmamentChoiceGroupId(...)`、`getResolvedQidahenScenarioCharacterChoiceIds(...)` 与 `getResolvedQidahenScenarioArmamentChoiceIds(...)` 继续当成 `scenarioChoiceState` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的这 4 条 helper 当前都已收回为文件内私有 `const`，因为当前树里它们只在同文件服务 `applyQidahenScenarioPresetToFactionState(...)`、`buildPendingQidahenScenarioCharacterChoices(...)` 与 `buildPendingQidahenScenarioArmamentChoices(...)`，并没有任何外部生产 caller；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这 4 条 helper 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `scenarioChoiceState` owner 内部“只给同文件正式入口转手的 exported helper 浅壳”，不是去误碰剧本 setup、pending choice 生成或 resolved-event 语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:44 +08：当前《七大恨》如果还把 `getNeutralGarrisonTroops(...)` 继续当成 `battleState` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts) 里的这条 helper 当前已收回为文件内私有实现，因为当前树里它只剩 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 这一处外部生产 caller；当前 `pendingTargetResolution.ts` 已直接承接 `battleRegion.controller === 'neutral' && battleRegion.troops <= 0 ? Math.max(0, Math.min(battleRegion.population, QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS)) : 0` 这条中立守军 fallback，而 battleState 内部入口继续复用同文件私有 helper。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `getNeutralGarrisonTroops(...)` 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `battleState -> pendingTargetResolution` pending-target 结算链里的中立守军 fallback 浅壳，不是去误碰 battleState 快照语义或 pending-target 结算语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:37 +08：当前《七大恨》如果还把 `getPendingActionAttackerPositionRegionId(...)` 继续当成 `battleState` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts) 里的这条 helper 当前已收回为文件内私有实现，因为当前树里它只剩 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 这一处外部生产 caller；当前 `pendingTargetResolution.ts` 已直接承接 `pendingTargetAction.attackerPositionRegionId ?? pendingTargetAction.sourceRegionId` 这条 fallback，而 battleState 内部快照入口继续复用同文件私有 helper。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `getPendingActionAttackerPositionRegionId(...)` 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `battleState -> pendingTargetResolution` pending-target 结算链里的字段 fallback 浅壳，不是去误碰 battleState 快照语义或 pending-target 结算语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:32 +08：当前《七大恨》如果还把 `getQidahenInitialSpecialTroops(...)` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这条 getter 当前已正式退休，因为当前树里它只剩 [initialCoreSeeds.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSeeds.ts) 这一处生产 caller；当前 `initialCoreSeeds.ts` 已直接读取 `regionConfig.initialSpecialTroops`，并在同文件内完成 `pieceIds` 克隆，而不再通过 `regionConfig` getter 转手。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `getQidahenInitialSpecialTroops(...)` 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig -> initialCoreSeeds` seed 链里的初始特种兵浅壳，不是去误碰特种兵内容语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:11 +08：当前《七大恨》如果还把 `getQidahenCapitalOwner(...)`、`getQidahenPrestigeCardBonus(...)` 与 `getQidahenPrestigeCardBonusUnlock(...)` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这三条 getter 当前都已正式退休，因为当前树里它们只剩 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 这一处生产 caller；当前 `victoryResolution.ts` 已直接读取 `resolveQidahenRuleRegionConfig(...).capitalOf / prestigeCardBonus / prestigeCardBonusUnlock`，而正式胜利/威望判定入口继续保留，对外生产 caller 不变。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这三条浅壳继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig -> victoryResolution` 胜利判定链里的三条字段浅壳，不是去误碰首都失守判胜或威望牌解锁语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:06 +08：当前《七大恨》如果还把 `getQidahenKoreaTributeCards(...)` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这条 getter 当前已正式退休，因为当前树里它只剩 [koreaTributeRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/koreaTributeRules.ts) 这一处生产 caller；当前 `koreaTributeRules.ts` 已直接读取 `resolveQidahenRuleRegionConfig(regionId).tributeCards`，而 `getEffectiveKoreaTributeCardsForFaction(...)` 这条正式朝贡规则入口继续保留，对外生产 caller 不变。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `getQidahenKoreaTributeCards(...)` 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig -> koreaTributeRules` 朝贡链里的纯字段浅壳，不是去误碰朝贡规则语义本体或 `jin-amin` 角色修正逻辑。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 22:03 +08：当前《七大恨》如果还把 `getQidahenInitialTroops(...)`、`getQidahenInitialPopulation(...)` 与 `getQidahenInitialNote(...)` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这三条 getter 当前都已正式退休，因为当前树里它们只剩 [initialCoreSeeds.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSeeds.ts) 这一处生产 caller；当前 `initialCoreSeeds.ts` 已直接读取 `regionConfig.initialTroops / initialPopulation / initialNote`，并在同文件内显式承接 `isQidahenKoreaRuntimeRegionId(region.id) ? 0 : regionConfig.initialPopulation` 这条韩国地区初始人口规则。与此同时，`getQidahenInitialSpecialTroops(...)` 继续保留，因为它仍承接“初始特种兵堆栈克隆”的当前真相。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许这三条浅壳继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig -> initialCoreSeeds` seed 链里的三条纯字段浅壳，不是去误碰 `initialController`、`special troops clone` 或韩国地区判定语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:56 +08：当前《七大恨》如果还把 `QIDAHEN_KOREA_RUNTIME_REGION_IDS` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的这条韩国运行区列表常量当前已收回为文件内私有 `const`，因为当前树里没有任何外部生产 caller，它只给同文件 `isQidahenKoreaRuntimeRegionId(...)` 提供判定列表；而 `isQidahenKoreaRuntimeRegionId(...)` 这条正式韩国地区判定入口继续保留，对外生产 caller 不变。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再允许 `QIDAHEN_KOREA_RUNTIME_REGION_IDS` 继续以 `export const` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig` owner 内“只给同文件判定入口服务的内部列表常量”，不是去误碰韩国地区判定语义本体或其正式业务 consumer。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:46 +08：当前《七大恨》如果还把 `getQidahenRuleRegionTags(...)`、`QIDAHEN_RULE_REGION_CONFIG_BY_ID`、`QIDAHEN_MAINTENANCE_TARGET_REGION_IDS` 与 `QIDAHEN_FORTIFICATION_CONFIG_BY_ID` 继续当成 `regionConfig` 对外成立的 public seam，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 里的 `getQidahenRuleRegionTags(...)` 当前已正式退休，因为当前生产源码里没有任何 caller；`QIDAHEN_RULE_REGION_CONFIG_BY_ID` 当前已收回为文件内私有 map，只继续服务 `resolveQidahenRuleRegionConfig(...)`；零 consumer 的 `QIDAHEN_MAINTENANCE_TARGET_REGION_IDS` 与 `QIDAHEN_FORTIFICATION_CONFIG_BY_ID` 当前也都已删除。[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已同步改成读取仍然成立的 `QIDAHEN_FORTIFICATION_CONFIGS`，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再允许这几条遗留公开口继续存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `regionConfig` owner 内部已经零 consumer 的遗留公开口，不是去误碰逻辑区映射、防线配置或区域标签语义本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:35 +08：当前《七大恨》如果还把 `getPreferredNonSiegedControlledRuntimeRegion(...)`、`getPreferredControlledRuntimeRegion(...)` 与 `computeQidahenCommittedTroops(...)` 继续当成需要对外暴露的 public seam，结论已经落后于当前源码真相。现态证据是：[regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts) 里的前两条 helper 当前都已收回为文件内私有实现，因为当前树里没有任何外部 consumer，它们只给同文件 `getPreferredSelectedRegionIdForFaction(...)` 转手；[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 里的 `computeQidahenCommittedTroops(...)` 当前也已收回为文件内私有实现，因为当前树里没有任何外部 consumer，它只给同文件 `computeQidahenEffectiveCommittedTroops(...)` 转手；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求这三条浅壳继续以 `export` 形式存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是“单文件正式入口转手的 exported 浅壳”，不是去误碰 region-selection 偏好规则或 attack cap 规则本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:22 +08：当前《七大恨》如果还把 `reduceQidahenPreviewActionConfirmed(...)` 继续当成需要对外暴露的 reducer seam，结论已经落后于当前源码真相。现态证据是：[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 里这条 reducer 当前已收回为文件内私有 helper，因为当前树里没有任何外部 consumer，它只被同文件 `resolveQidahenPreviewActionConfirmedEvent(...)` 在 actionId 合法性判定后单点调用；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求这条 reducer 浅壳继续以 `export` 形式存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 direct-input reducer family 的 exported 浅壳，不是去误碰 `PREVIEW_ACTION_CONFIRMED` 的正式 event-owner 语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:19 +08：当前《七大恨》“手牌牌面都没”不是资源缺失，也不是 `Board` 没渲染预览组件，而是 [src/games/qidahen/ui/cardAtlas.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/cardAtlas.ts) 之前明确把三势力手牌预览主动降级成统一牌背。现态证据是：`qidahenMingHandPreview / qidahenMongolHandPreview / qidahenJinHandPreview` 当前已恢复为各自 atlas 牌面；对应 [src/games/qidahen/__tests__/Board.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/Board.test.ts) 与 [src/games/qidahen/__tests__/payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已追平为 atlas 断言，`Board.test + payment-selection.test = 503 passed`，`node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts = 26 passed`。最新桌面证据图 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) 里已经能直接看到四张大明手牌的真实牌面。结论：当前这条用户反馈已被本轮修正，不再是 blocker。
+- 2026-06-12 21:19 +08：当前《七大恨》“剧本 UI 遮挡主界面”有源码与截图双重证据，且“剧本应该有单独选择页”属于新能力，不应伪装成小样式修补直接闷改。现态证据是：[src/games/qidahen/Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前仍把 `core.scenarioLabel`、`pendingScenarioCharacterChoices`、`pendingScenarioArmamentChoices` 和“剧本待决项未确认前，轮盘与势力行动暂不开放”这整块 UI 常驻在地图右上角；最新桌面证据图 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) 也显示它仍然压住了主地图与右上角区域。针对这条新能力，本轮已正式新建并验证 OpenSpec change：[openspec/changes/add-qidahen-pregame-scenario-screen/](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/openspec/changes/add-qidahen-pregame-scenario-screen/proposal.md)，`openspec validate add-qidahen-pregame-scenario-screen --strict --no-interactive` 已通过。结论：当前真正还没完成的不是“有没有 spec”，而是“spec 已建，但前置选择页实现尚未开始”；按仓库规则，必须等这条 proposal 审核/批准后再进生产实现。
+- 2026-06-12 21:15 +08：当前《七大恨》如果还把 `getQidahenMaShiTradeSelectionFromCurrentAction(...)`、`getQidahenRecruitSelectionFromCurrentAction(...)`、`getQidahenKhanEdictSelectionFromCurrentAction(...)` 继续当成需要对外暴露的 public seam，结论已经落后于当前源码真相。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 里这三条 `FromCurrentAction(...)` 当前都已收回为文件内私有 helper，因为当前树里没有任何外部 consumer，它们只给同文件的 `getQidahenMaShiTradeSelectionForCore(...)`、`getQidahenRecruitSelectionForCore(...)`、`getQidahenKhanEdictSelectionForCore(...)` 转手；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求这三条浅壳继续以 `export` 形式存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 `selectionBuilders` getter family 的 exported 浅壳，不是再去误碰征兵、马市贸易或大汗令箭的正式业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:10 +08：当前《七大恨》如果还把 `getQidahenDriveTigerConsentDispatchSelectionForCore(...)` 继续当成 dispatch builder 对外成立的 public seam，或者继续把 `dispatchSelectionBuilders.ts` 反向依赖 accessor 读取纯 core host 值当成合理结构，结论已经落后于当前源码真相。现态证据是：[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 里的 `getQidahenDriveTigerConsentDispatchSelectionForCore(...)` 当前已正式退休，因为它只被 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 单点消费；同时同文件的 `getQidahenCurrentWheelDispatchSelectionForCore(...)` 现在已直接读取 `state.wheelDispatchProgress`，不再为了读一笔纯 core host 值去反向调用 accessor mirror。对应的 `drive-tiger-consent` core-only 重建逻辑当前已收回 accessor owner 内部私有 helper，并继续直接复用 `buildDriveTigerDispatchSelection(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再要求这条 consent 浅壳继续以 `export` 形式存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构收掉的是“单一 consumer 的 exported 浅壳 + 无效反向依赖”，不是再去误碰 `wheelDispatchProgress` 或 `drive-tiger-consent` 的正式业务语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 21:03 +08：当前《七大恨》如果还把 `getQidahenCurrentDiplomacyProgressForCore(...)` 当成对外 public seam，结论已经落后于当前源码真相。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 里的 `getQidahenCurrentDiplomacyProgressForCore(...)` 现在已收回为文件内私有实现，因为当前树里没有外部 consumer，它只服务同文件里的 `getQidahenCurrentDiplomacySelectionForCore(...)` 与 `getQidahenDiplomacySelectionForCore(...)` 两条 public getter；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求它继续以 `export` 形式存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构继续收掉的是 getter family 的 exported 浅壳，不是再去误碰外交进行中状态的正式宿主语义。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 20:58 +08：当前《七大恨》如果还把 `getQidahenWheelPositionDispatchSelectionForCore(...)`、`getQidahenWheelAttackDiplomacySelectionForCore(...)`、`getQidahenKhanEdictInitialDiplomacySelectionForCore(...)` 继续当成需要对外暴露的正式 public seam，结论已经落后于当前源码真相。现态证据是：[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 里的 `getQidahenWheelPositionDispatchSelectionForCore(...)` 现在已正式退休，因为它原本只是 `getQidahenCurrentWheelDispatchSelectionForCore(...)` 的 exported 纯别名壳；同样，[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 里的 `getQidahenWheelAttackDiplomacySelectionForCore(...)` 与 `getQidahenKhanEdictInitialDiplomacySelectionForCore(...)` 当前也已收回为文件内私有实现，因为它们只服务 `getQidahenCurrentDiplomacyProgressForCore(...)` 的初始外交进度重建，没有外部 consumer。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已同步追平 source guard，不再要求这 3 条浅壳继续以 `export` 形态存在。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 442 passed`，`npm run typecheck` 通过。结论：这轮必要重构收掉的是 exported 浅壳，不是再去误碰 `diplomacyProgress / wheelDispatchProgress` 或 `pendingTargetAction / postBattleSelection` 这些正式状态边界。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 20:37 +08：当前《七大恨》`basic-flow` 主链剩余红灯已经证明不是生产规则又回坏了，而是 [e2e/qidahen-basic-flow.e2e.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/e2e/qidahen-basic-flow.e2e.ts) 里三类旧运行态口径同时过期。第一类是待结算/战后 E2E 还在走旧的“点 UI fallback”路径；当前 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 的按钮点击在没有 active pending interaction id 时会退到 `RESOLVE_PENDING_ACTION`，但 fallback 分支只发 payload、不再携带旧 `choiceId`，因此注入型 E2E 若继续直接点这些按钮，就会被当前运行态判成“非法的选择值”。这轮因此已把相关用例统一改成：保留当前 UI 可见性断言，但真正结算改为显式发 `RESOLVE_PENDING_ACTION`，并在需要时显式带 `retreatLossMode / committedTroops / attackerCasualtyPriority`。第二类是骑兵分支 payload 名已经切到当前命令合同：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前正式字段是 `attackerCavalryPlunder / attackerCavalryPlunderSource / defenderCavalryEvasion / defenderCavalryEvasionRegionId`，因此旧的 `plunderSource / cavalryEvasionTargetId` 口径已经失效。第三类是轮盘外交当前源区/候选区要跟实际运行图谱走，不能再硬写旧候选目标。收口后实跑 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts` 已为 `26 passed`。边界：这轮没有改生产逻辑，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 08:11 +08：当前《七大恨》若还把 `drive-tiger-consent` 阶段的调度来源继续断言到 `getQidahenCurrentWheelDispatchSelectionForCore(...)` 或 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 里的 `getWheelDispatchSelection(...)`，结论已经落后于当前源码真相。现态证据是：[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 的 `getQidahenWheelDispatchSelectionForCore(...)` 当前只在 `dispatch-targeting` 活跃时返回镜像，而 `getQidahenDriveTigerConsentSelectionForCore(...)` 在 `drive-tiger-consent` 下会通过 `dispatchSelection` 承接真实来源区、来源动作与候选目标。因此这轮不需要再改生产逻辑，真实缺口只是旧测试口径还停在 consent 前的历史 getter：当前已把 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 中 6 处旧断言统一改成 `getDriveTigerConsentSelection(... )?.dispatchSelection` / `getQidahenDriveTigerConsentSelectionForCore(... )?.dispatchSelection`。验证结果：`payment-selection + compatSource + commands = 442 passed`，`Board + payment-selection + compatSource + commands = 599 passed`，`npm run typecheck` 通过。边界：这轮没有新增生产代码，没有重跑 E2E、截图或 OpenSpec spec/change。
+- 2026-06-12 02:19 +08：当前《七大恨》如果还把 `drive-tiger -> dispatch-targeting` 这条重建链记成“accept 分支显式保住 `selectedActionId: 'drive-tiger'`，所以 getter 就靠它重建”，结论已经被当前源码真相纠正。现态证据是：[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 的 accept 分支虽然仍会先写 `selectedActionId: 'drive-tiger'`，但它紧接着就会经过 `syncFactionActionWindow(acceptedState, responderFactionId)`，因此这不是跨 action-window 后还能稳定留下来的正式真相源；当前真正承接这条重建语义的是 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 的 `const shouldRebuildDriveTigerDispatchSelection = state.lastFactionActionId === 'drive-tiger' && !state.wheelActionUsed;`，随后直接 `buildDriveTigerDispatchSelection(state, getCurrentFactionId(state), state.selectedRegionId)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已把 source guard 锁到 `lastFactionActionId === 'drive-tiger'`，而 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 的 off-host guard 仍继续覆盖 `wheel-dispatch` 与 `drive-tiger`。结论：这条线当前正式成立的不是“selectedActionId 保住了宿主真相”，而是“`lastFactionActionId` 负责跨 action-window 记住上一笔动作语义，`shouldKeepRebuiltWheelDispatchSelectionOffHost` 负责误点重建时不重新宿主化”。证据沿用当前已存在的串行门禁记录：定向 `eslint` 通过，`compatSource + payment-selection + commands = 439 passed`，`npm run typecheck` 通过。边界：这轮没有新增生产代码，没有重跑 E2E、截图或 OpenSpec spec/change；formal review 当前以 `2.143` 为准。
+- 2026-06-12 02:11 +08：当前《七大恨》如果还把 `drive-tiger` 这条 residual 继续记成“普通 `wheel-dispatch` 的 off-host guard 已经打通，所以驱虎吞狼同意后进入 `dispatch-targeting` 的误点重建也会自然成立”，结论已经被本轮真实验证纠正。现态证据是：仅把 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 的 off-host guard 扩到 `selectionSourceActionId === 'drive-tiger'` 还不够，因为 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 的 `resolveQidahenDriveTigerConsentInteractionChoice(...)` 在 accept 后若不显式保留 `selectedActionId: 'drive-tiger'`，`getQidahenCurrentWheelDispatchSelectionForCore(...)` 就不能稳定重建这条等待态，旧的驱虎吞狼回归也会整片掉。当前 production 真相已经同时补齐两点：一是在 `drive-tiger` 同意分支显式写回 `selectedActionId: 'drive-tiger'`；二是在 `rebuiltSelection` 分支把 `shouldKeepRebuiltWheelDispatchSelectionOffHost` 扩成 `selectionSourceActionId === 'wheel-dispatch' || selectionSourceActionId === 'drive-tiger'`，使驱虎吞狼同意后进入 `dispatch-targeting` 的 off-host 等待态，在误点重建时也继续保持 `core.wheelDispatchSelection === null`。同步 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已新增真实回归，锁住“驱虎吞狼同意后误点重建 dispatch-targeting 时，不会把可派生调度态写回宿主”；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增 source guard，锁住 reducer 分支当前必须同时覆盖 `wheel-dispatch` 与 `drive-tiger`。验证结果：定向 `eslint` 通过，`payment-selection + compatSource + commands = 439 passed`，`Board + payment-selection + compatSource + commands = 596 passed`，`npm run typecheck` 通过。结论：当前 `wheelDispatchSelection` 的 off-host 语义已经正式延伸到 `drive-tiger -> dispatch-targeting` 这条重建链，但这仍不等于整个宿主本体已退休；至少 `khan-edict / 显式无法等价重建` 这类正式宿主语义还在。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 01:49 +08：当前《七大恨》如果还把 `regionSelectionReducer.ts` 这条 residual 记成“`REGION_SELECTED` 已有 `wheelDispatchSelection` carry，所以普通 `wheel-dispatch` 的误点重建不会再把等待态写回宿主”，结论已经被本轮真实验证纠正。现态证据是：在 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 的 `rebuiltSelection` 分支里，旧写法 `nextState.wheelDispatchSelection || wheelDispatchSelectionCarry ? rebuiltSelection : null` 会把“当前本来是 off-host、但这次 `SELECT_REGION` 事件带了 interaction carry”的普通 `wheel-dispatch` 误重宿主化；当前 production 真相已改成 `shouldKeepRebuiltWheelDispatchSelectionOffHost = nextState.wheelDispatchSelection == null && selectionSourceActionId === 'wheel-dispatch'`，并据此在重建 `dispatch-targeting` 时继续保持 `wheelDispatchSelection: null`。同步 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已把失败样本换成真实 off-host 场景：宁远起手、误点只有步兵的友方区后回退到锦州，现已证明 `targeting.wheelDispatchSelection === null`、`rebound.wheelDispatchSelection === null`，同时 `getWheelDispatchSelection(...)` 仍能读到正确当前源区；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增 source guard 锁住这条分支。验证结果：定向 `eslint` 通过，`payment-selection + commands + compatSource = 437 passed`，`Board + payment-selection + commands + compatSource = 594 passed`，`npm run typecheck` 通过。结论：当前 `wheelDispatchSelection` 的 off-host 语义不只要在同步层和 runtime builder 成立，也必须在 `REGION_SELECTED` 误点重建分支成立；否则 interaction carry 会把本来允许 off-host 的普通轮盘调度又写回宿主。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 01:40 +08：当前《七大恨》如果把 `turnActionInteractionBuilders.ts` 这条 wheel-dispatch runtime builder 继续抽象成“既然已有 `getQidahenCurrentWheelDispatchSelectionForCore(...)`，那就该彻底改成单一 getter”，结论已经被本轮真实验证证伪。现态证据是：一旦把 [turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 的 `buildQidahenWheelDispatchInteraction(...)` 强行收成只读 `getQidahenCurrentWheelDispatchSelectionForCore(state.core)`，`payment-selection.test.ts` 会立即回归出 14 条失败、`commands.test.ts` 也会多 1 条失败，症状包括：`drive-tiger-consent` 被误顶成 `qidahen:dispatch-targeting`、驱虎吞狼同意命令校验回退成 `unknownAction`、以及在 core 残留旧 `wheelDispatchSelection` 时丢掉“当前 interaction 快照优先”的正式语义。当前 production 真相只能是：该 builder 只在 `turnPhase === 'dispatch-targeting'` 下运行，并按 `getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current) ?? getQidahenCurrentWheelDispatchSelectionForCore(state.core)` 读取等待态；也就是说，这里需要兼容的不是“历史包袱”，而是两种同时成立的正式真相源：`当前 interaction 快照` 与 `普通 wheel-dispatch 的可派生 current getter`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，把这条双入口 owner 语义锁成 current truth。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands = 436 passed`，`npm run typecheck` 通过。结论：这里之所以“需要兼容”，不是一开始没想清楚，而是直到把 `wheelDispatchSelection` 的 off-host guard 推进到 production 以后，才暴露出这条 runtime builder 还必须同时守住 interaction-preferred 与 current-getter fallback 两层职责；若后续还要继续收宿主，也必须先明确哪条链是“快照优先”，哪条链才允许“纯 getter 重建”。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 01:35 +08：当前《七大恨》如果还把 `wheelDispatchSelection` 的这条 residual 记成“只要给 `syncQidahenCurrentCoreSelections(...)` 补一个 off-host guard 就够了，runtime interaction builder 不需要跟进”，结论已经落后于当前源码真相。现态证据是：[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 当前确实已新增 `shouldKeepWheelDispatchSelectionOffHost`，使 `state.wheelDispatchSelection == null && wheelDispatchSelection?.sourceActionId === 'wheel-dispatch'` 时不再把普通 `dispatch-targeting` 等待态重新镜像回 `core.wheelDispatchSelection`；但如果 [turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 继续只读 `getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current)` 这条 interaction-or-host mirror accessor，普通 `wheel-dispatch` 一旦 off-host，就会直接断掉 `qidahen:dispatch-targeting` runtime interaction 重建链。当前 production 真相已经是：`buildQidahenWheelDispatchInteraction(...)` 只在 `turnPhase === 'dispatch-targeting'` 下才回退到 `getQidahenCurrentWheelDispatchSelectionForCore(state.core)`，并继续优先吃当前 interaction 快照；这样普通 `wheel-dispatch` 可派生等待态能保持 off-host，而 `drive-tiger-consent` 又不会被误顶成普通轮盘调度 interaction。同步 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 也已把普通 `wheel-dispatch` 正向断言收口到 getter 口径，不再把宿主字段当成唯一真相。验证结果：定向 `eslint` 通过，`payment-selection + commands + compatSource = 435 passed`，`Board + payment-selection + commands + compatSource = 592 passed`，`npm run typecheck` 通过。结论：`2.138` 识别出的同步层 residual 当前已经正式落地到 production，并补齐了与之配套的 runtime interaction builder owner；但这仍不是 `wheelDispatchSelection` 宿主本体退休完成，因为 `drive-tiger / khan-edict / 显式无法等价重建` 的正式宿主语义还在。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 01:07 +08：当前《七大恨》如果把 `wheelDispatchSelection` 的更深 residual 继续记成“getter 还不够、resolved 写回还没拆、所以宿主本体哪里都可能是问题”，结论已经开始跑在当前源码真相前面。现态证据是：[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 的 `syncQidahenCurrentCoreSelections(...)` 当前仍会无条件取 `getQidahenCurrentWheelDispatchSelectionForCore(state)` 并直接写回 `wheelDispatchSelection`；但 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 已经正式区分“必须显式宿主”和“可留在 host 外”的 `dispatch-targeting` 等待态，会按 `shouldPersistExplicitWheelDispatchSelectionForWheelState(...)` 决定写 `wheelDispatchSelection` 还是 `null`；同时 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 的 `getQidahenCurrentWheelDispatchSelectionForCore(...)` 当前在 `dispatch-targeting` 下仍能基于轮盘位置、选区与 movement profile 派生当前调度选择，而 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 也只是把这条 getter 结果当成正式推进 gate。结论：当前更准确的 residual 不是“wheelDispatchSelection 还普遍需要 host”，而是 `syncQidahenCurrentCoreSelections(...)` 仍会把本来允许 off-host 的可派生等待态重新宿主化；下一刀若继续，应优先补这层 off-host guard，而不是回头再补 `REGION_SELECTED` carry seam。边界：这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E、截图或 OpenSpec spec/change。
+- 2026-06-12 00:54 +08：当前《七大恨》如果还把 `REGION_SELECTED` 的 direct-input carry 记成“只对外交成立、轮盘调度仍停在 getter/core mirror 回退”，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 的 `RegionSelectedEvent.payload` 当前已新增 `qidahenWheelDispatchSelection?: QidahenWheelDispatchSelection | null`；[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 的 `buildQidahenRegionSelectedEvent(...)` 当前不仅会携带 `qidahenDiplomacySelection`，还会优先从当前 `qidahen:dispatch-targeting` interaction 读取 `getQidahenWheelDispatchSelectionFromInteraction(currentInteraction)`，若当前 interaction 是 `qidahen:drive-tiger-consent`，则会继续从 `getQidahenDriveTigerConsentSelectionFromInteraction(currentInteraction)?.dispatchSelection` 抽出同一份调度快照并塞入 `qidahenWheelDispatchSelection`；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前也已把 `event.payload.qidahenWheelDispatchSelection ?? null` 显式透传给 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)，而后者现在会先认 `wheelDispatchSelectionCarry`，再回退到 `getQidahenCurrentWheelDispatchSelectionForCore(nextState)`。同步 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已新增两条真实链路回归：一条证明 `dispatch-targeting` 时清空 `core.wheelDispatchSelection` 后，重新点地图仍能进入 `resolve-pending`；另一条证明 `drive-tiger-consent` 时清空同一 host 后，重新点地图仍能把源区锁回 `jinzhou`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands = 434 passed`，`Board + payment-selection + commands + compatSource = 591 passed`，`npm run typecheck` 通过。结论：`REGION_SELECTED` 的 direct-input carry 当前已经对称覆盖外交与 wheel-dispatch 地图重选链，但这仍不是 `wheelDispatchSelection` 宿主退休完成；`actionWindowDispatch.ts` 的正式 resolved 写回与显式 host 语义还在。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 00:37 +08：当前《七大恨》如果把 `REGION_SELECTED` 这条 direct-input carry infra 记成“已经整段成立，下一步可以直接跳到 `wheelDispatchSelection` 宿主退休”，结论已经开始跑在源码真相前面。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 的 `RegionSelectedEvent.payload` 当前只有 `qidahenDiplomacySelection?: QidahenDiplomacySelection | null`，还没有 `qidahenWheelDispatchSelection`；[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 的 `buildQidahenRegionSelectedEvent(...)` 当前也只从 `state.sys.interaction?.current` 提取 `getQidahenDiplomacySelectionFromInteraction(...)`，没有消费 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 已存在的 `getQidahenWheelDispatchSelectionFromInteraction(...)`；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前只把 `event.payload.qidahenDiplomacySelection ?? null` 透传给 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)，而后者函数签名当前也只显式承接 `diplomacySelectionCarry`，其 `drive-tiger-consent` 与 `dispatch-targeting` 两段重建链仍分别直接读取 `nextState.wheelDispatchSelection` 与 `getQidahenCurrentWheelDispatchSelectionForCore(nextState)`。结论：`2.135` 切掉的是外交这半段硬依赖，不等于整条 `REGION_SELECTED` carry infra 已完成；当前 direct-input carry 仍是“外交已前移到 event carry、轮盘调度仍留在 current getter/core mirror 回退”的半对称状态。边界：这轮只是 formal review 翻正，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-12 00:22 +08：当前《七大恨》如果还把“外交多步续建在 `SELECT_REGION` 时必须硬读 `core.diplomacySelection` 才能继续”当成现态，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 的 `RegionSelectedEvent.payload` 当前已增加可选 `qidahenDiplomacySelection` carry；[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 现在会在 `SELECT_REGION` 建事件时，从 `state.sys.interaction?.current` 读取 `qidahen:diplomacy` 快照并塞入 event；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 与 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 已同步改成优先消费这份 event carry，再回退到 `getQidahenCurrentDiplomacySelectionForCore(nextState)`；同时 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已新增真实链路回归，证明即使手工清空 `core.diplomacySelection`，只要当前 interaction 还在，重新点地图仍能保住 `resolvedSteps / remainingTargetCount` 并继续重建外交目标选择。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands = 432 passed`，`npm run typecheck` 通过。结论：这轮已经把 `REGION_SELECTED` 对外交进行中宿主的第一段硬依赖切掉，但还不能虚报 `diplomacySelection` 宿主已退休；因为 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 的 `resolveQidahenDiplomacyInteractionChoice(...)` 继续态仍会写回 `core.diplomacySelection`，而 `khan-edict -> diplomacy-choice` 的初始 interaction 也还没有新的正式真相源。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 00:13 +08：当前《七大恨》如果还把 `diplomacySelection / wheelDispatchSelection` 在 production 里继续叫成 `derived`，结论已经落后于当前源码真相。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前已把旧 `getQidahenDerivedDiplomacySelectionForCore(...)` 拆成 `getQidahenWheelAttackDiplomacySelectionForCore(...) + getQidahenCurrentDiplomacySelectionForCore(...)`；[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 当前也已把旧 `getQidahenDerivedWheelDispatchSelectionForCore(...)` 拆成 `getQidahenWheelPositionDispatchSelectionForCore(...) + getQidahenCurrentWheelDispatchSelectionForCore(...)`；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 已把 `syncQidahenDerivedCoreSelectionMirrors(...)` 翻正为 `syncQidahenCurrentCoreSelections(...)`；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 与 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 也都已同步改成消费 `current` 口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + Board = 588 passed`，`npm run typecheck` 通过。结论：这轮已经把错误抽象从实现层面拆开，但还没有虚报“宿主退休”；下一步应该继续做真正的 runtime owner 迁移，而不是再围绕 `derived` 名字打补丁。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-12 00:06 +08：当前《七大恨》如果还把 `diplomacySelection / wheelDispatchSelection` 一起记成“剩余 derived mirror 宿主，下一刀继续退休即可”，结论已经开始跑在源码真相前面。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 的 `getQidahenDerivedDiplomacySelectionForCore(...)` 虽然还能派生 `wheel-attack` 初始外交选择，但 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 的 `resolveQidahenDiplomacyInteractionChoice(...)` 在多步外交继续态里仍会把 `resolvedSteps / remainingTargetCount` 等运行中进度写回 `core.diplomacySelection`，而 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 也仍基于这份进行中状态重建外交候选；同时 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 的 `getQidahenDerivedWheelDispatchSelectionForCore(...)` 在 `drive-tiger-consent` 下仍直接认 `core.wheelDispatchSelection`，而 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 也还通过 `shouldPersistExplicitWheelDispatchSelectionForWheelState(...)` 判断哪些目标集必须显式回写 `core.wheelDispatchSelection`。结论：这两个字段当前都不是“纯镜像残留”，而是不同类型的正式进行中宿主；formal residual 应翻正为 `multi-step progress host = diplomacySelection`、`explicit targeting host = wheelDispatchSelection`、`runtime pending host = pendingTargetAction / postBattleSelection`，不能再机械沿“剩余 derived mirror”口径直接开删。边界：这轮只是 formal review 翻正，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 23:35 +08：当前《七大恨》如果还把“驱虎吞狼同意等待态必须继续挂在 `core.driveTigerConsentSelection` 上，由 entry/derived/resolution 各处一起清空兜底”当成现态，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 已从 `QidahenCore` 删除该字段；[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 的 `getQidahenDriveTigerConsentSelectionForCore(...)` 已删除 `readCore` 宿主回退，当前只先认 `getQidahenDriveTigerConsentSelectionFromInteraction(interaction)`，若 interaction 未显式携带快照，才在 `drive-tiger-consent` 活跃阶段通过 `wheelDispatchSelection` 派生同意等待态；[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts)、[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts)、[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts)、[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 与 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 也都已删掉对该宿主字段的清空/写回；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、[commands.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/commands.test.ts)、[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 与 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“显式消费 `QidahenDriveTigerConsentSelection | null` 或 getter / interaction data”的口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + Board = 588 passed`，`npm run typecheck` 通过。结论：`driveTigerConsentSelection` 这条 runtime pending host 宿主已正式跨过退休门槛；当前 `runtime pending host family` 剩余正式宿主已收缩到 `pendingTargetAction / postBattleSelection`，`derived mirror family` 则剩 `diplomacySelection / wheelDispatchSelection`。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 23:32 +08：当前《七大恨》如果还把 `internalDispatchSelection` 记成“必须继续挂在 `core` 上、由 entry/derived/resolution 各处一起清空的正式宿主字段”，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 已从 `QidahenCore` 删除该字段；[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 的 `getQidahenInternalDispatchSelectionForCore(...)` 继续直接按 `turnPhase === 'internal-dispatch-choice' + selectedRegionId + 王化贞在场` 派生内部调度选择；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 已停止回写该镜像；[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts)、[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 与 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 也都已删掉对该宿主字段的清空/写回；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、[commands.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/commands.test.ts)、[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 与 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“显式消费 `QidahenInternalDispatchSelection | null` 或 getter / interaction data”的口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + Board = 588 passed`，`npm run typecheck` 通过。结论：`internalDispatchSelection` 这条 derived mirror 宿主已正式跨过退休门槛；当前 `derived mirror family` 剩余正式宿主已收缩到 `diplomacySelection / wheelDispatchSelection`。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 23:12 +08：当前《七大恨》如果因为 `fortificationMaintenanceSelection` 已退休、`action-window / dispatch / pending-battle` 的几组 consumer fallback 已统一，就把 `core / sys.interaction` seam 直接记成“基本完成宿主退休”，结论已经开始跑在当前源码真相前面。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 里的 `QidahenCore` 当前仍正式持有 `diplomacySelection / driveTigerConsentSelection / internalDispatchSelection / wheelDispatchSelection / pendingTargetAction / postBattleSelection` 这 6 个交互镜像宿主；[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts) 进入行动窗口时仍统一清空它们；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 仍持续回写 `diplomacySelection / internalDispatchSelection / wheelDispatchSelection` 并归零 `driveTigerConsentSelection`；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 仍把 `pendingTargetAction / postBattleSelection` 与多条 `ForCore(...)` selection 当成正式推进 gate；[turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 也仍通过这些宿主/selector 去构建等待玩家输入。与此同时，[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 已能直接从 `payload.interactionData` 解析外交、轮盘调度、内部调度、驱虎吞狼同意与新年防线维护输入。结论：当前剩余 residual 已可正式分成两类 family，`derived mirror family = diplomacy / internalDispatch / wheelDispatch`，`runtime pending host family = driveTigerConsent / pendingTargetAction / postBattleSelection`；后续若继续，正确切法应是按 family 推动宿主退休，而不是继续只记“再统一几个 fallback”。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 22:43 +08：当前《七大恨》如果还把“新年防线维护等待态需要 `core.fortificationMaintenanceSelection` 这个宿主字段兜底”当成现态，就已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 已从 `QidahenCore` 删除该字段；[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 里的 `getQidahenFortificationMaintenanceSelectionForCore(...)` 已删除 `readCore` 回退，当前只再认 `getQidahenFortificationMaintenanceSelectionFromInteraction(interaction)`，否则在 `season-resolution + wheel-new-year` 活跃 phase 下本地派生默认维护选择；[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts)、[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 与 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 也都已删掉该宿主字段的清空/写回；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 只再把它作为独立 UI 选择数据透传，不再塞回 `displayCore`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts)、[commands.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/commands.test.ts)、[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts)、[movementRules.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/movementRules.test.ts) 与 [Board.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/Board.test.ts) 已追平到 interaction-first 口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + Board + movementRules = 599 passed`，`npm run typecheck` 通过。结论：`fortificationMaintenanceSelection` 这条 host-mirror seam 已正式跨过宿主退休门槛；后续若继续推进，应回到 `driveTigerConsentSelection / pendingTargetAction / postBattleSelection` 这些仍保留 core mirror 或 phase gate 语义的更深 residual，而不是回头再碰已退休的防线维护宿主。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:54 +08：当前《七大恨》如果还把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里 `pending-action resolved payload / pending-target interaction / post-battle interaction` 这 3 条入口的 `interaction/payload state ?? get...ForCore(state)` 继续记成彼此独立的 consumer fallback，结论已经落后于当前源码真相。现态证据是：当前该文件已新增私有 helper `getQidahenPendingBattleInteractionState(...)`，并把 `resolveQidahenPendingActionFromPayload(...)`、`resolveQidahenPendingTargetInteractionChoice(...)` 与 `resolveQidahenPostBattleInteractionChoice(...)` 里原本分散的 `payload.pendingTargetAction ?? getQidahenPendingTargetActionForCore(state)`、`interactionPendingTargetAction ?? getQidahenPendingTargetActionForCore(state)`、`interactionSelection ?? getQidahenPostBattleSelectionForCore(state)` 同形 fallback 全部统一收回到该 helper；而部队投入预处理、battle rolls 构造、pendingTargetAction 结算与 post-battle decision 结算的正式业务语义都仍保留在各自入口与下层 resolution owner 内，没有被抽平成“共享 pending-battle 规则”。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已显式锁定这 3 条入口必须通过共享 helper 读取 interaction/core 状态，不再各自手写 fallback。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 592 passed`，`npm run typecheck` 通过。结论：这轮推进收掉的是 pending-battle flow owner 内部的重复 mirror consumer 入口，不是修改 pending-action battle resolution 或 post-battle decision 规则本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:50 +08：当前《七大恨》如果还把 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里 `高第弃牌调度 / 王化贞免费调度 / 轮盘调度进攻` 这 3 条 resolver 的 `interactionSelection ?? core/derived selection` 继续记成彼此独立的 consumer fallback，结论已经落后于当前源码真相。现态证据是：当前该文件已新增私有 helper `getQidahenActionWindowDispatchSelection(...)`，并把 `resolveQidahenGaoDiDispatchChoice(...)`、`resolveQidahenInternalDispatchInteractionChoice(...)` 与 `resolveQidahenWheelDispatchInteractionChoice(...)` 里原本分散的 `interactionSelection ?? state.gaoDiDispatchSelection`、`interactionSelection ?? getQidahenInternalDispatchSelectionForCore(state)`、`interactionSelection ?? dependencies.getDerivedWheelDispatchSelectionForCore(state)` 同形 fallback 全部统一收回到该 helper；而高第弃牌调度的部队/人口转移、王化贞免费调度的状态回写、轮盘进攻生成 `pendingTargetAction` 的正式业务语义都仍保留在各自 resolver 本体内，没有被抽平成“共享 dispatch 规则”。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已显式锁定这 3 条 resolver 必须通过共享 helper 读取 selection，不再各自手写 fallback。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 592 passed`，`npm run typecheck` 通过。结论：这轮推进收掉的是 action-window dispatch owner 内部的重复 mirror consumer 入口，不是修改高第、王化贞或轮盘调度的规则本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:41 +08：当前《七大恨》如果还把 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里 `征召军队 / 驱虎吞狼同意 / 马市贸易 / 大汗令箭 / 外交雇佣` 这 5 条 resolver 的 `interactionSelection ?? get...ForCore(state)` 继续记成彼此独立的 consumer fallback，结论已经落后于当前源码真相。现态证据是：当前该文件已新增私有 helper `getQidahenActionWindowInteractionSelection(...)`，并把 `resolveQidahenRecruitInteractionChoice(...)`、`resolveQidahenDriveTigerConsentInteractionChoice(...)`、`resolveQidahenMaShiTradeInteractionChoice(...)`、`resolveQidahenKhanEdictInteractionChoice(...)` 与 `resolveQidahenDiplomacyInteractionChoice(...)` 里重复的 `interactionSelection ?? get...ForCore(state)` 同形 fallback 全部统一收回到该 helper；而每条链真正的正式业务语义，例如建军落点、驱虎同意后的抽牌与指挥调度、大汗令箭转入外交/征兵训练、外交多步 resolvedSteps 仲裁，都仍保留在各自 resolver 本体内，没有被抽平。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已显式锁定这 5 条 resolver 必须通过共享 helper 读取 selection，不再各自手写 fallback。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 594 passed`，`npm run typecheck` 通过。结论：这轮推进收掉的是 action-window choice owner 内部的重复 mirror consumer 入口，不是修改征召、外交、驱虎或大汗令箭规则本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:33 +08：当前《七大恨》这条 `core / sys.interaction` host-mirror accessor seam，如果还把 `driveTigerConsent / fortificationMaintenance` 记成完全留在旧手写仲裁里的例外，而把统一 helper 只限于 `wheel / pending / postBattle` 三条 getter，结论已经落后于当前源码真相。现态证据是：当前 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 里的私有 helper `getQidahenInteractionSelectionMirrorForCore(...)` 已扩成 `isActive + preferInteraction` 统一 owner；`getQidahenWheelDispatchSelectionForCore(...)`、`getQidahenPendingTargetActionForCore(...)` 与 `getQidahenPostBattleSelectionForCore(...)` 继续用它承接 interaction-first mirror；`getQidahenDriveTigerConsentSelectionForCore(...)` 的“直接 consent selection mirror”与“drive-tiger dispatch mirror”前半段现在也已改走同一 helper，但后半段仍保留基于被指挥方与调度候选的特殊派生；`getQidahenFortificationMaintenanceSelectionForCore(...)` 的“显式 selection mirror”前半段同样已收回 helper，同时保留 `season-resolution + wheel-new-year` gate 与无显式 selection 时的默认新年防线维护合成。这轮中途还实际暴露并修回了一处真实回归：若不先守住 active gate，fortification 默认合成会在非新年阶段误生成交互并挡住所有命令；当前已补回显式 gate，说明这轮改变仍严格限于 accessor owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 594 passed`，`npm run typecheck` 通过。结论：这轮推进收掉的已不只是“三条同形 getter 分叉”，而是把 `driveTigerConsent / fortificationMaintenance` 的显式 mirror 前半段也统一到同一 helper，同时保留它们各自真正还承接业务语义的后半段。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:18 +08：当前《七大恨》这条 `core / sys.interaction` host-mirror seam，如果还把 `getQidahenWheelDispatchSelectionForCore(...)`、`getQidahenPendingTargetActionForCore(...)` 与 `getQidahenPostBattleSelectionForCore(...)` 分别记成三条独立 accessor 兼容逻辑，结论已经落后于当前源码真相。现态证据是：当前 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 已新增私有 helper `getQidahenInteractionSelectionMirrorForCore(...)`，并把这三条完全同形的 `turnPhase + interaction ?? core` 读取逻辑统一收回到同一 owner；与此同时，[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已显式锁定这三条 getter 必须通过该 helper 读取，而 `getQidahenDriveTigerConsentSelectionForCore(...)` 仍保留 `core.driveTigerConsentSelection / interactionSelection / wheelDispatchSelection` 三层仲裁，不允许误降成纯薄壳。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 258 passed`，`payment-selection = 336 passed`，`npm run typecheck` 通过。结论：这轮推进收掉的是“三条同形 host-mirror 读取分叉”的重复 owner，不是移除 `core` 镜像字段，更不是改 battle / dispatch / post-battle 业务本体。边界：这轮没有重跑 E2E，没有刷新截图，也没有新建或更新 OpenSpec spec/change。
+- 2026-06-11 22:06 +08：当前《七大恨》如果还把 `core / sys.interaction` 这条正式 residual 讲成“再删几个 `ForCore(...)` getter 就差不多了”，结论已经落后于当前源码真相。现态证据是：新流程与项目规则都已明确要求“等待玩家输入”应走 `sys.interaction`，不应存放在 `core`；但当前 [types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 里 `QidahenCore` 仍正式持有 `diplomacySelection / driveTigerConsentSelection / fortificationMaintenanceSelection / internalDispatchSelection / wheelDispatchSelection / pendingTargetAction / postBattleSelection`；[actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts) 仍在每轮入口统一清空这批字段；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 仍持续回写 `diplomacySelection / internalDispatchSelection / wheelDispatchSelection`；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)、[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 仍把这批字段当成正式宿主、回退来源或 phase gate；而 [turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 已直接从 `payload.interactionData` 读取外交、轮盘调度、内部调度、驱虎吞狼同意和新年防线维护选择数据。结论：当前真正没退休的是 `core` 上这批交互镜像宿主本身，而不是几个 accessor 名字；后续若继续推进，必须先把“derived mirror”和“仍承接运行时仲裁的镜像”分层，不能继续用“getter 清理”概括这条债。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 21:57 +08：当前《七大恨》如果还把“同文件私有默认依赖壳”继续记成当前树里仍有很多同级 residual 可盲拆，结论已经开始跑在当前源码真相前面。现态证据是：`rg -n "const QIDAHEN_[A-Z0-9_]+DEPENDENCIES:" src/games/qidahen/domain` 当前已无命中；`rg -n "const\\s+[A-Za-z0-9_]*Dependencies\\b|const\\s+[A-Z0-9_]+_DEPENDENCIES\\b" src/games/qidahen/domain` 当前也无命中；而 domain 内现存命中只剩各正式 owner 主入口自己写的 `dependencies: Qidahen... = {` 默认参数口径，不再存在“同文件私有 `const` 壳再转一次”的同级 residual。结论：这条实施线在当前树里已经基本收空；如果还要继续推进，必须重新锁新的同级安全 seam，不能把 battle、season、character、post-battle 这些正式业务入口上的默认参数继续误记成旧壳。同步补记 OpenSpec 当前态：本轮没有新建或更新这条 residual seam 的 spec/change；当前 worktree 虽有 [openspec/changes/refactor-qidahen-printed-region-topology/](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/openspec/changes/refactor-qidahen-printed-region-topology/proposal.md)，但它属于另一条“印刷地图拓扑分层”变更，不是本轮新建，也不是当前这条收口线的 spec。这轮没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 21:50 +08：当前《七大恨》如果还把后续 residual 继续讲成“还有几条 `QIDAHEN_*_DEPENDENCIES` 可以顺着机械退休”，结论已经落后于当前源码真相。现态证据是：当前重新全文检索 [domain 目录](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain) 后，`const QIDAHEN_.*DEPENDENCIES` 与 `dependencies: ... = QIDAHEN_...` 已没有命中，说明这条默认依赖壳 residual family 已被当前树收完；但 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 里的 `getQidahenWheelDispatchSelectionForCore(...)` 当前仍保留 `interaction -> core.wheelDispatchSelection` 双口径回退，`getQidahenDriveTigerConsentSelectionForCore(...)` 当前仍在 `core.driveTigerConsentSelection / interaction snapshot / wheelDispatchSelection host` 三层之间仲裁；与此同时，[turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 继续消费这些 `ForCore(...)` getter，而 [coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 仍把 `diplomacySelection / internalDispatchSelection / wheelDispatchSelection` 写回 `core` 镜像。结论：当前下一类正式 residual 已切到 `core / sys.interaction` host-mirror seam，不再是默认依赖壳；后续若继续推进，必须先重新锁“哪些 getter 仍承接 host/mirror 仲裁、哪些只是兼容镜像”，不能再机械套上一批薄壳退休模板。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 21:46 +08：当前《七大恨》如果还把 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里的 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 记成“pending-target resolution 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 已删除；[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里 `resolvePendingTargetActionByActionType(...)` 当前已直接写成 `dependencies: QidahenPendingTargetResolutionDependencies = {`，并在默认参数里内联 `getPendingActionAttackerPositionRegionId`、`materializeNonSiegedCityActionSourceRegion`、`getSurvivingCommittedSpecialTroops`、`applyCommittedTroopRemovalToRegion`、`refreshRuntimeRegionRules`、`getActionRuleDisplayRegionName`、`buildPostBattleSelection`、`toFactionLabel`、`getRegionControlLabel`、`applyCasualtyPriorityToRegion`、`pruneUnsupportedRetreatArtillery`、`addTroopsToFriendlyBesiegedCityInterior`、`isQidahenKoreaRuntimeRegionId`、`getCommittedCavalryTroopStacks`、`getSpecialTroopCount`、`computeQidahenCavalryPlunderCounterPower`、`getFactionDrawPileCount`、`drawFromFactionPile`、`addFactionHandCards`、`buildDrawnHandCards`、`findAutoDefenderRetreatRegion`、`computeStructuredDefenderRout`、`getSurvivingDefenderRetreatSpecialTroops`、`computeStructuredAttackerRout`、`computeRetreatLoss`、`isQidahenCityRuntimeRegion`、`takePreferredCityGarrison`、`getDefenderCavalryEvasion`、`subtractSpecialTroopStacks`、`resolvePendingBattleMode`、`getPendingActionDefenderForceSnapshot`、`getNeutralGarrisonTroops`、`getEffectivePendingDefenderTroops`、`getPendingActionSourceForceSnapshot`、`getCommittedArtilleryTroopCount`、`computeQidahenStructuredBattleCasualties`、`applyCasualtiesToSpecialStacks` 与 `addDefeatMarkerToFaction` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 回流，并锁定 pending-target resolution 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingTargetResolution.ts = pending-target resolution owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:37 +08：当前《七大恨》如果还把 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 里的 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 记成“character-action window 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 已删除；[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 里 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` 与 `applyQidahenCharacterActionWindowEffects(...)` 当前都已直接写成 `dependencies: QidahenCharacterActionWindowDependencies = {`，并在默认参数里内联 `resolveMingCharacterConflict`、`resolveNurhaciRemovedByYuanChonghuan`、`resolveJinHuangtaijiConflict`、`resolveJinDaisanConflict`、`hasActiveCharacter`、`materializeNonSiegedCityActionSourceRegion`、`getArmamentLevel`、`refreshRuntimeRegionRules`、`buildQidahenSunYuanhuaTechSelection`、`buildGaoDiDispatchSelection` 与 `getActionRuleDisplayRegionName` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 回流，并锁定 character-action window 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts = character-action window owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:36 +08：当前《七大恨》如果还把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里的 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 记成“pending-battle flow 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 已删除；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里 `resolveQidahenPendingActionFromPayload(...)`、`resolveQidahenPendingTargetInteractionChoice(...)` 与 `resolveQidahenPostBattleInteractionChoice(...)` 当前都已直接写成 `dependencies: QidahenPendingBattleFlowDependencies = {`，并在默认参数里内联 `applyRequestedCommittedTroops`、`createQidahenStructuredBattleRolls`、`resolvePendingTargetActionByActionType`、`resolveQidahenPostBattleDecisionByChoice`、`getFactionIdByPlayerId`、`getCurrentFactionId`、`applyQidahenVictoryStatus`、`syncFactionActionWindow` 与 `advanceQidahenTurnIfReady` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 回流，并锁定 pending-battle flow 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle flow owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:29 +08：当前《七大恨》如果还把 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里的 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES` 记成“action-window choice 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES` 已删除；[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里 `resolveQidahenRecruitInteractionChoice(...)`、`resolveQidahenDriveTigerConsentInteractionChoice(...)`、`resolveQidahenMaShiTradeInteractionChoice(...)`、`resolveQidahenKhanEdictInteractionChoice(...)` 与 `resolveQidahenDiplomacyInteractionChoice(...)` 当前都已直接写成 `dependencies: QidahenActionWindowChoiceDependencies = {`，并在默认参数里内联 `applyQidahenVictoryStatus`、`advanceQidahenTurnIfReady`、`updateQidahenTurnLabel`、`buildSeasonSummary`、`getFactionDrawPileCount`、`drawFromFactionPile`、`addFactionHandCards`、`buildDrawnHandCards`、`materializeNonSiegedCityActionSourceRegion`、`refreshRuntimeRegionRules`、`getEffectiveHomelandController`、`toFactionLabel` 与 `getActionRuleDisplayRegionName` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES` 回流，并锁定 action-window choice 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowChoices.ts = action-window choice owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:20 +08：当前《七大恨》如果还把 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里的 `QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES` 记成“action-window dispatch 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES` 已删除；[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里 `resolveQidahenGaoDiDispatchChoice(...)`、`resolveQidahenInternalDispatchInteractionChoice(...)` 与 `resolveQidahenWheelDispatchInteractionChoice(...)` 当前都已直接写成 `dependencies: QidahenActionWindowDispatchDependencies = {`，并在默认参数里内联 `materializeNonSiegedCityActionSourceRegion`、`applyCommittedTroopRemovalToRegion`、`refreshRuntimeRegionRules`、`buildSeasonSummary`、`updateQidahenTurnLabel`、`applyQidahenVictoryStatus`、`advanceQidahenTurnIfReady` 与 `getQidahenDerivedWheelDispatchSelectionForCore` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES` 回流，并锁定 action-window dispatch 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowDispatch.ts = action-window dispatch owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:15 +08：当前《七大恨》如果还把 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 里的 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 记成“season-resolution 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 已删除；[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 里 `resolveQidahenMidyear(...)` 与 `resolveQidahenNewYear(...)` 当前都已直接写成 `dependencies: QidahenSeasonResolutionDependencies = {`，并在默认参数里内联 `drawFromFactionPile`、`addFactionHandCards` 与 `applyChronologyCharactersForYear` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 回流，并锁定 season-resolution 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `seasonResolution.ts = season-resolution owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:07 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 记成“scenario-choice state 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 已删除；[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里 `buildPendingQidahenScenarioCharacterChoices(...)`、`buildPendingQidahenScenarioArmamentChoices(...)`、`resolveQidahenScenarioCharacterChoice(...)` 与 `resolveQidahenScenarioArmamentChoice(...)` 当前都已直接写成 `dependencies: QidahenScenarioChoiceStateDependencies = {`，并在默认参数里内联 `getCharacterNameById` 与 `getArmamentNameById` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 回流，并锁定 scenario-choice state 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = scenario-choice state owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 21:05 +08：当前《七大恨》如果还把这条线讲成“新游戏框架/对象模型根本没立住，所以应该先整体重构再谈 residual seam”，结论已经落后于当前源码真相。现态证据是：[types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 当前已经正式存在单棋子对象 `QidahenPiece`，并在 `QidahenCore` 内明确分出 `nextPieceSerial / pieces / mapTokens`；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 当前 `syncQidahenCorePieceCollections(...)` 已把 `regions pieceIds -> pieces -> regions specialTroops -> mapTokens` 收成单一路径；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 初始化当前也是先落 `mapTokens: []`，再统一走 `syncQidahenCorePieceCollections(baseCore)`；而 [game.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/game.ts) 与 [commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts) 也已经证明 `createInteractionSystem()` 与 `state.sys.interaction?.current` 是真实接入状态。结论：按 `create-new-game` 新流程，这条线当前已不再卡在“单棋子对象不存在 / mapTokens 冒充正式真相 / 交互系统未接入”这类一票否决门禁；真正剩余的正式债已经收窄为 `core`/`sys.interaction` 历史镜像尚未完全收净，以及 `domain` owner 文件内默认依赖壳的继续收口。同步补记：为避免顶层 evidence 锚点继续撞号，本轮已把 `specialRuleState` 的 formal review 编号从重复占用的 `2.110` 校正为 `2.112`；这是文档锚点修正，不改变事实内容。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 21:00 +08：当前《七大恨》如果还把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES` 记成“armament-upgrade 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES` 已删除；[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里 `resolveQidahenSelectedArmamentUpgradeExecution(...)` 与 `resolveQidahenSunYuanhuaTech(...)` 当前都已直接写成 `dependencies: QidahenArmamentUpgradeResolutionDependencies = {`，并在默认参数里内联 `buildSeasonSummary` 与 `upgradeLowFidelityArmament` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES` 回流，并锁定 armament-upgrade 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentUpgradeResolution.ts = armament-upgrade owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:55 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES` 记成“scenario-choice resolved-event 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES` 已删除；[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里 `resolveQidahenScenarioChoiceResolvedEvent(...)` 当前已直接写成 `dependencies: QidahenScenarioChoiceResolvedEventDependencies = {`，并在默认参数里内联 `getFactionIdByPlayerId`、`resolveQidahenScenarioCharacterChoice`、`resolveQidahenScenarioArmamentChoice` 与 `updateQidahenTurnLabel` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES` 回流，并锁定 scenario-choice resolved-event 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = scenario-choice resolved-event owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:48 +08：当前《七大恨》如果还把 [pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里的 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 记成“pending-battle committed-troops 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 已删除；[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里 `applyRequestedCommittedTroops(...)` 当前已直接写成 `dependencies: QidahenPendingBattleCommittedTroopsDependencies = {`，并在默认参数里内联 `getPendingActionSourceForceSnapshot` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 回流，并锁定 pending-battle committed-troops 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleCommittedTroops.ts = pending-battle committed-troops owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:39 +08：当前《七大恨》如果还把 guide compat 讲成“做新游戏自然会有的一层长期兼容”，结论已经落后于当前源码真相。现态证据是：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 当前已把**工具内部工作区元数据**分名到 `region-authoritative-guides.workspace.json`，load 路由只在它不存在时才 fallback 去读旧的 `region-authoritative-guides.json`，并把那份旧文件按 legacy workspace metadata 解释；save 路由当前也只会写回 `.workspace.json`，且写入结构固定为 `regionIds + runtimeGuideCandidates`。[mapGraph.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/mapGraph.ts) 运行时当前仍只从正式 `region-authoritative-guides.json` 读取 guide 真相；[QidahenRegionMaskTool.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/pages/devtools/QidahenRegionMaskTool.tsx) 当前界面文案也已明确“只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`”。结论：现在之所以还要兼容，不是因为《七大恨》业务规则或新游戏框架天然复杂，而是因为更早一版工具曾把**工作区元数据**错存到正式文件名下，且两边 JSON 结构根本不是一套，所以当前 compat 只能被定性为 `region-mask devtools storage seam` 的 legacy-read adapter；它不是领域层长期双真相。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 20:39 +08：当前《七大恨》如果还把 [specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 里的 `QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 记成“special-rule 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 已删除；[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 里 `syncQidahenSpecialRuleState(...)` 当前已直接写成 `dependencies: QidahenSpecialRuleStateDependencies = {`，并在默认参数里内联 `syncQidahenCorePieceCollections` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 回流，并锁定 special-rule 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `specialRuleState.ts = special-rule owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:44 +08：当前《七大恨》如果还把 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 里的 `QIDAHEN_VICTORY_RESOLUTION_DEPENDENCIES` 记成“victory-resolution 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_VICTORY_RESOLUTION_DEPENDENCIES` 已删除；[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 里 `applyQidahenVictoryStatus(...)` 当前已直接写成 `dependencies: QidahenVictoryResolutionDependencies = {`，并在默认参数里内联 `syncQidahenSpecialRuleState` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_VICTORY_RESOLUTION_DEPENDENCIES` 回流，并锁定 victory-resolution 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `victoryResolution.ts = victory-resolution owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:38 +08：当前《七大恨》如果还把 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 里的 `QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES` 记成“selected-action state-commit 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES` 已删除；[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 里 `commitQidahenSelectedActionState(...)` 当前已直接写成 `dependencies: QidahenSelectedActionStateCommitDependencies = {`，并在默认参数里内联 `applyQidahenVictoryStatus` 与 `advanceQidahenTurnIfReady` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES` 回流，并锁定 state-commit 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionStateCommit.ts = selected-action state-commit owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:38 +08：当前《七大恨》如果还把 [selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 里的 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES` 记成“selected-action preparation 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES` 已删除；[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 里 `prepareQidahenSelectedAction(...)` 当前已直接写成 `dependencies: QidahenSelectedActionPreparationDependencies = {`，并在默认参数里内联 `updateQidahenTurnLabel`、`resolveSelectedArmamentIdFromCards` 与 `buildSeasonSummary` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES` 回流，并锁定 preparation 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionPreparation.ts = selected-action preparation owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 20:29 +08：当前《七大恨》如果还把 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 里的 `QIDAHEN_TURN_ADVANCE_DEPENDENCIES` 记成“turn-advance 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_TURN_ADVANCE_DEPENDENCIES` 已删除；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 里 `advanceQidahenTurnIfReady(...)` 当前已直接写成 `dependencies: QidahenTurnAdvanceDependencies = {`，并在默认参数里内联 `syncQidahenDerivedCoreSelectionMirrors`、`updateQidahenTurnLabel` 与 `getQidahenDerivedWheelDispatchSelectionForCore` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_TURN_ADVANCE_DEPENDENCIES` 回流，并锁定 turn-advance 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `turnAdvance.ts = turn-advance owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:43 +08：当前《七大恨》如果还把 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 里的 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 记成“selected-action 执行入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 已删除；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 里 `executeQidahenSelectedAction(...)` 当前已直接写成 `dependencies: QidahenSelectedActionExecutionDependencies = {`，并在默认参数里内联 `prepareQidahenSelectedAction`、`buildSeasonSummary`、`resolveQidahenGrantPardonExecution`、`resolveQidahenSelectedArmamentUpgradeExecution` 与 `commitQidahenSelectedActionState` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 回流，并锁定 selected-action 执行入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionExecution.ts = selected-action 执行 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:40 +08：当前《七大恨》如果还把 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 里的 `QIDAHEN_TURN_LABEL_DEPENDENCIES` 记成“turn-label 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_TURN_LABEL_DEPENDENCIES` 已删除；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 里 `updateQidahenTurnLabel(...)` 当前已直接写成 `dependencies: QidahenTurnLabelDependencies = {`，并在默认参数里内联 `applyQidahenCharacterActionWindowEffects`、`syncQidahenCorePieceCollections` 与 `syncQidahenDerivedCoreSelectionMirrors` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_TURN_LABEL_DEPENDENCIES` 回流，并锁定 turn-label 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `turnLabelState.ts = turn-label owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:40 +08：当前《七大恨》如果还把 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 记成“11 条 `...FromInteractionData(...)` 各自独立维护一份 interaction-data 读取壳”，结论已经落后于当前源码真相。现态证据是：当前文件内已新增私有 `readQidahenInteractionSelectionField(...)`，统一承接 `interactionData -> sourceId + selectionKey -> typed selection` 这条重复读取壳；`getQidahenDiplomacySelectionFromInteractionData(...)`、`getQidahenHandLimitDiscardSelectionFromInteractionData(...)`、`getQidahenRecruitSelectionFromInteractionData(...)`、`getQidahenWheelDispatchSelectionFromInteractionData(...)`、`getQidahenInternalDispatchSelectionFromInteractionData(...)`、`getQidahenMaShiTradeSelectionFromInteractionData(...)`、`getQidahenKhanEdictSelectionFromInteractionData(...)`、`getQidahenDriveTigerConsentSelectionFromInteractionData(...)`、`getQidahenFortificationMaintenanceSelectionFromInteractionData(...)`、`getQidahenPendingTargetActionFromInteractionData(...)` 与 `getQidahenPostBattleSelectionFromInteractionData(...)` 当前都已改成直接消费这条共享 helper，不再各自重复展开 `sourceId + 字段读取` 壳。验证结果：定向 `eslint` 通过，`compatSource + commands + movementRules + payment-selection + Board = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `interactionSelectionAccessors.ts = interaction selection accessor owner`，文件内私有 `readQidahenInteractionSelectionField(...)` = 统一 interaction-data 读取壳；这轮属于文件内重复读取壳收口，不是业务规则变化。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:35 +08：当前《七大恨》如果还把 [characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 里的 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 记成“人物年表入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 已删除；[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 里 `applyChronologyCharactersForYear(...)` 当前已直接写成 `dependencies: QidahenCharacterChronologyStateDependencies = {`，并在默认参数里内联 `getChronologyCharacterAvailabilityForYear`、`createInitialCharacterStates` 与 `getCharacterNameById` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 回流，并锁定人物年表入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterChronologyState.ts = 人物年表 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:28 +08：当前《七大恨》如果还把 [handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 里的 `QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES` 记成“超限弃牌入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES` 已删除；[handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 里 `resolveQidahenHandLimitDiscard(...)` 与 `resolveQidahenHandLimitDiscardInteractionChoice(...)` 当前都已直接写成 `dependencies: QidahenHandLimitDiscardDependencies = {`，并在默认参数里内联 `updateQidahenTurnLabel` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES` 回流，并锁定超限弃牌入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `handLimitDiscard.ts = 超限弃牌 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:25 +08：当前《七大恨》如果还把 pending-target 的 `id / label / payload` 选项定义记成 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 各自内嵌的一套重复逻辑，结论已经落后于当前源码真相。现态证据是：[pendingTargetChoiceOptions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceOptions.ts) 当前已正式承接 `buildPendingTargetChoiceOptions(...)` 这条共享 owner，统一持有 `rear-guard / rout / cavalry-plunder / cavalry-evasion` 这组 choice 的 `id / label / value`；[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 当前只在共享选项之上补 `description / displayMode`；[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前也已只消费同一组共享选项，并把 UI 专属差异收口到 `getPendingTargetChoiceTestId(...)` 与 `getPendingTargetChoiceMinWidth(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已把 pending-target choice payload owner 锁到 `pendingTargetChoiceOptions.ts`，并禁止两侧 consumer 回流本地选项字面量；[Board.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/Board.test.ts) 也已追平到 `data-testid={getPendingTargetChoiceTestId(choice.id)}` 这条共享渲染真相。验证结果：定向 `eslint` 通过，`compatSource + commands + movementRules + payment-selection + Board = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingTargetChoiceOptions.ts = pending-target choice-definition 真相 owner`，这轮属于共享定义 owner 合并，不是业务规则变化。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 15:24 +08：当前《七大恨》如果还把 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 里的 `QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES` 记成“新年防线维护入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES` 已删除；[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 里 `resolveQidahenFortificationMaintenanceInteractionChoice(...)` 当前已直接写成 `dependencies: QidahenFortificationMaintenanceDependencies = {`，并在默认参数里内联 `resolveQidahenNewYear`、`syncQidahenCorePieceCollections`、`applyQidahenVictoryStatus` 与 `advanceQidahenTurnIfReady` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES` 回流，并锁定新年防线维护入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `fortificationMaintenance.ts = 新年防线维护 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 13:54 +08：当前《七大恨》如果还把 [grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 里的 `QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES` 记成“赐印招安入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES` 已删除；[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 里 `resolveQidahenGrantPardonExecution(...)` 当前已直接写成 `dependencies: QidahenGrantPardonExecutionDependencies = {`，并在默认参数里内联 `buildSeasonSummary`、`materializeNonSiegedCityActionSourceRegion`、`addTroopsToFriendlyBesiegedCityInterior`、`removeTroopsFromNonSiegedCityStateRegion` 与 `refreshRuntimeRegionRules` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES` 回流，并锁定赐印招安入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `grantPardonExecution.ts = 赐印招安 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 09:34 +08：当前《七大恨》如果还把 [postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 里的 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 记成“战后结算入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 已删除；[postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 里 `resolvePostBattleDecision(...)` 当前已直接写成 `dependencies: QidahenPostBattleResolutionDependencies = {`，并在默认参数里内联 `toFactionLabel`、`getActionRuleDisplayRegionName`、`getFactionDrawPileCount`、`getSurvivingCommittedSpecialTroops`、`applyCommittedTroopRemovalToRegion`、`applyCasualtyPriorityToRegion`、`getRegionControlLabel`、`refreshRuntimeRegionRules`、`materializeNonSiegedCityActionSourceRegion`、`drawFromFactionPile`、`buildDrawnHandCards`、`addFactionHandCards`、`drawKoreaCardsForFaction` 与 `getEffectiveKoreaTributeCardsForFaction` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 回流，并锁定战后结算入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `postBattleDecisionResolution.ts = 战后结算 owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:59 +08：当前《七大恨》如果还把 pending-target 里的骑兵避战/骑兵劫掠可用性判定记成 `Board.tsx` 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 各自内嵌的一套重复逻辑，结论已经落后于当前源码真相。现态证据是：[pendingTargetChoiceAvailability.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceAvailability.ts) 当前已正式承接 `getDefenderCavalryEvasionRetreatChoices(...)`、`canUseAttackerCavalryPlunder(...)` 与 `canUseAttackerCavalryPlunderDefenderDeck(...)` 这组共享 owner；[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 与 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前都已改成直接消费这组 helper，不再各自本地重写一份。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式要求两侧 consumer 直接 import `pendingTargetChoiceAvailability`，禁止 `Board.tsx` 回流本地同名 helper，并把 `region tag` 那条 guard 校正到 `pendingTargetChoiceAvailability.ts` 当前 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + movementRules + payment-selection + Board = 600 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingTargetChoiceAvailability.ts = pending-target 骑兵 choice availability 真相 owner`，这轮属于共享判定 owner 合并，不是业务规则变化。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 09:01 +08：当前《七大恨》如果还把 [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 里的 `QIDAHEN_POST_BATTLE_SELECTION_DEPENDENCIES` 记成“战后选择入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_POST_BATTLE_SELECTION_DEPENDENCIES` 已删除；[postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 里 `buildPostBattleSelection(...)` 当前已直接写成 `dependencies: QidahenPostBattleSelectionDependencies = {`，并在默认参数里内联 `toFactionLabel` 与 `getActionRuleDisplayRegionName` 这组展示依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_POST_BATTLE_SELECTION_DEPENDENCIES` 回流，并锁定战后选择入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `postBattleSelectionBuilder.ts = 战后选择 owner + 直接在主入口默认参数内承接展示依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:57 +08：当前《七大恨》如果还把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的 `QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES` 记成“孙元化科技 resolved-event 入口仍应保留的一层同文件默认依赖壳”，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES` 已删除；[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里 `resolveQidahenSunYuanhuaTechResolvedEvent(...)` 当前已直接写成 `dependencies: QidahenSunYuanhuaTechResolvedEventDependencies = {`，并在默认参数里内联 `getFactionIdByPlayerId`、`resolveQidahenSunYuanhuaTech`、`buildSeasonSummary`、`applyQidahenVictoryStatus`、`syncFactionActionWindow` 与 `advanceQidahenTurnIfReady` 这组真实 owner 依赖，不再经由同文件私有 `const` 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES` 回流，并锁定 resolved-event 入口默认参数内联依赖的当前写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentUpgradeResolution.ts = 孙元化科技 resolved-event owner + 直接在主入口默认参数内承接依赖`，其中这条文件内私有默认依赖壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:51 +08：当前《七大恨》如果还把 [armamentLowFidelity.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentLowFidelity.ts) 里的 `buildUpgradedArmamentResult(...)` 记成“因为有两处调用位点，所以当前不该继续收”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `buildUpgradedArmamentResult(...)` 已删除；[armamentLowFidelity.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentLowFidelity.ts) 里 `upgradeLowFidelityArmament(...)` 当前已直接内联 `const targetIndex = (() => {`、`const upgradedArmament = {` 与 `index === targetIndex ? upgradedArmament : { ...armament }` 这套结果组装路径，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const buildUpgradedArmamentResult = (` 回流，并锁定升级结果组装的当前直连写法。验证结果：`compatSource + commands + payment-selection = 431 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentLowFidelity.ts = 低保真军备升级 owner + 直接在 upgradeLowFidelityArmament(...) 内承接结果组装`，其中这条文件内私有升级结果组装壳已退休；同时也正式补正了 `2.75` 那条把它只按“双调用位点”排除的旧静态判断，因为这两处调用本质上都属于同一真实 owner `upgradeLowFidelityArmament(...)` 的私有结果组装路径。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:48 +08：当前《七大恨》如果还把 `capital / south-of-wall / city / korea` 这组基础 region tag 语义记成各 consumer 自己拆 tag 的局部判定，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 当前已继续承接 `isQidahenCapitalRuntimeRegion(...)` 与 `isQidahenSouthOfWallRuntimeRegion(...)`，并与原有 `isQidahenCityRuntimeRegion(...) / isQidahenKoreaRuntimeRegionId(...)` 一起形成基础区域语义 owner；[pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts) 当前已不再本地 `targetConfig.tags.includes('capital' | 'korea' | 'south-of-wall')`，而是直接消费这些 helper；[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 当前也已不再通过 `getQidahenRuleRegionTags(...)` 读取 `city / korea`，而是直接消费 `isQidahenCityRuntimeRegion(...) / isQidahenKoreaRuntimeRegionId(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已新增 source guard，显式锁定新 helper 导出与两侧 consumer 不得继续直拆 tag。验证结果：定向 `eslint` 通过，`compatSource + commands + movementRules + payment-selection = 438 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `regionConfig.ts = 基础 region tag 语义真相 owner`，这轮属于继续收口单一真相，不是规则变化。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:38 +08：当前《七大恨》如果还把“某个 runtime 区是否属于城市区”记成 battle / action-source / movement / post-battle 各模块自己维护的局部判定，结论已经落后于当前源码真相。现态证据是：[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 当前已正式承接 `isQidahenCityRuntimeRegion(...)`，规则口径就是 `resolveQidahenRuleRegionConfig(regionId).tags.includes('city')`；[actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts)、[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts)、[pendingBattleCombatSupport.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCombatSupport.ts)、[postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts)、[cityInteriorTroopTransfer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/cityInteriorTroopTransfer.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)、[pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts)、[postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts)、[regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts) 与 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前都已改成直接消费这条 owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“关键 consumer 必须直连 `regionConfig`，旧本地 city 判定壳不得回流”的 current truth。验证结果：定向 `eslint` 通过，`compatSource + commands + movementRules + payment-selection = 437 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `regionConfig.ts = city-runtime 判定真相 owner`，这条推进属于跨模块 owner 合并，不是业务规则变化；同时也正式补正了较早 `2.81 / 2.84` 那种“这还只是 action-source 本地 gate”的旧边界。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 08:36 +08：当前《七大恨》如果还把 [mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 里的 `getMapArmyImageSrcForPiece(...)` 记成“文件内继续保留一层给 `buildMapArmyTokensForRegion(...)` 单点消费的 piece-image 契约转手壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `getMapArmyImageSrcForPiece(...)` 已删除；[mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 里 `buildMapArmyTokensForRegion(...)` 当前已直接写成 `imageSrc: getMapArmyImageSrc(region.controller, {`，并内联传入 `id: piece.sourceStackId,`、`label: piece.label,`、`faction: piece.faction,`、`troopKind: piece.troopKind,`、`level: piece.level`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const getMapArmyImageSrcForPiece = (` 回流，并锁定 piece-image 直连 `getMapArmyImageSrc(...)` 的当前写法；验证时也顺手追平了一条已落后于当前源码的 `pendingBattleCombatSupport` import guard。验证结果：`compatSource + commands + payment-selection = 430 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `mapTokens.ts = map token 图标 owner + 直接消费 getMapArmyImageSrc(...)`，其中这条文件内私有 piece-image 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 07:50 +08：当前《七大恨》如果把 [battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 与 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 这批“只剩几个本地 helper”的候选，继续记成“当前树里也许还能再锁到下一条安全 seam”，结论已经开始跑在当前源码真相前面。现态证据是：`getCityBesiegePlunderPopulationCap(...)` 直接承接围城掠夺人口规则；`withTrimmedPieceIds(...)` 与 `getQidahenPieceRotationDegForLevel(...)` 直接承接 pieceIds 裁剪与 piece 朝向语义；`buildDiplomacyChoicesForTarget(...)` 与 `resolveDiplomacyChoice(...)` 则分别承接外交候选装配与外交结算本体。结论：`2.86` 之后继续补扫这批 battle / piece / diplomacy helper，当前仍没有新的“单 caller + 纯转手 + 已有真实 owner + 无额外 gate/仲裁/业务语义”的四门槛安全 seam。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 05:05 +08：当前《七大恨》如果把 [selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts)、[runtimeRegionRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeRegionRules.ts)、[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)、[pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts)、[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts)、[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts)、[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts)、[regionConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionConfig.ts) 与 [characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 这批“外形偏薄”的候选，继续记成“当前树里大概率还能顺手掉出新的安全 seam”，结论已经开始跑在当前源码真相前面。现态证据是：这批 helper 要么直接承接选择态同步、手牌超限流程、胜利条件、runtime-region 刷新、dispatch 候选排序、battle-flow summary、结构化 battle-roll、战力计算或 chronology representative 规则；要么像 `cloneRegionConfigSpecialTroops(...)` 这样虽像克隆壳，但与 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 的 `cloneSpecialTroopStacksAsPieces(...)` 合同并不等价，不能机械并回现有 owner。结论：`2.85` 之后继续补扫这批 selection / dispatch / battle-roll / chronology 候选，当前仍没有新的“单 caller + 纯转手 + 已有真实 owner + 无额外 gate/仲裁/业务语义”的四门槛安全 seam。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 04:55 +08：当前《七大恨》如果还把 [pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里的 `getQidahenCommandingFactionId(...)` 记成“文件内继续保留一层给 `getQidahenCharacterCommittedTroopLimit(...)` 单点消费的 commanding-faction 三元转手壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `getQidahenCommandingFactionId(...)` 已删除；[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里 `getQidahenCharacterCommittedTroopLimit(...)` 当前已直接写成 `const commandingFactionId = actionId === 'drive-tiger' ? 'ming' : attackerFactionId;`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const getQidahenCommandingFactionId = (` 回流，并锁定 commanding-faction 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 429 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleCommittedTroops.ts = committed-troops owner + 直接在角色兵力上限入口内联 drive-tiger commanding-faction 判定`，其中这条文件内私有单 caller 三元转手壳已退休。同时也要正式补正：formal review `2.84` 那条“当前树仍没有新的安全下一刀”只代表上一轮静态复核结论，现已被这轮重新锁到的当前源码证据推翻。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:28 +08：当前《七大恨》如果还把 [troopStacks.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopStacks.ts) 里的 `normalizeScenarioTroopLevel(...)` 记成“文件内继续保留一层给 `buildFactionTroopStack(...)` 与 `buildArtilleryTroopStack(...)` 消费的 troop-level 重复规范化壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `normalizeScenarioTroopLevel(...)` 已删除；[troopStacks.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopStacks.ts) 里 `buildFactionTroopStack(...)` 当前已直接写成 `id: \`${factionId}-${sourceId}-${troopKind}-lv${clampTroopLevel(level)}\`` 与 `level: clampTroopLevel(level)`，`buildArtilleryTroopStack(...)` 当前也已直接写成 `id: \`${factionId}-${sourceId}-regular-artillery-lv${clampTroopLevel(level)}\`` 与 `level: clampTroopLevel(level)`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const normalizeScenarioTroopLevel = (` 回流，并锁定 troop-level 规范化的当前直连写法。验证结果：`compatSource + commands + payment-selection = 429 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `troopStacks.ts = troop-stack owner + 直接消费 clampTroopLevel(...)`，其中这条文件内私有重复壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:24 +08：当前《七大恨》如果还把 [movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 里的 `toRuntimeRegionId(...)` 记成“文件内继续保留一层给 `findRuntimeRegion(...)` 与 `getQidahenDirectedPassageRule(...)` 消费的 runtime-region 主键转手壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `toRuntimeRegionId(...)` 已删除；[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 里 `findRuntimeRegion(...)` 当前已直接写成 `const runtimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionId);`，`getQidahenDirectedPassageRule(...)` 当前也已直接写成 `const toRuntimeId = resolveQidahenPrimaryRuntimeRegionId(toId);`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const toRuntimeRegionId = (` 回流，并锁定这两条 runtime-region 主键映射的当前直连写法。验证结果：`compatSource + commands + payment-selection = 429 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `movement.ts = movement owner + 直接消费 resolveQidahenPrimaryRuntimeRegionId(...)`，其中这条文件内私有单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:17 +08：当前《七大恨》如果把 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts)、[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts) 与 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 这 3 条“长得像重复 owner 判定”的候选，继续记成“当前树里还能顺着安全再收一刀”的状态，结论已经开始跑在当前源码真相前面。现态证据是：`actionSourceRegionState.ts` 本地 `isQidahenCityRuntimeRegion(...)` 当前在 `getNonSiegedCityActionSourceSnapshot(...)` 与 `materializeNonSiegedCityActionSourceRegion(...)` 两处消费，已经不是文件内单 caller 壳；`movement.ts` 本地 `isCityRuntimeRegion(...)` 当前也已有 3 处消费，分别服务 `isCityWaterRouteEnabled(...)` 与 `getQidahenDirectedPassageRule(...)` 的 `touchesCity` 判门，承接的是 movement 自己的局部语义；`interactionSelectionAccessors.ts` 本地 `getFactionIdByPlayerId(...)` 虽然与 [factionTurnAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionTurnAccessors.ts) 同名，但合同并不相同，前者未命中返回 `null`，后者默认回退 `'ming'`，而 `getQidahenDriveTigerConsentSelectionForCore(...)` 当前正依赖 `commanderFactionId == null` 这条 guard。结论：这 3 条候选当前都不满足“单 caller + 纯转手 + 已有真实 owner + 无额外 gate/仲裁/业务语义”的四门槛；本轮更准确的 current truth 是 `2.79` 之后当前树仍没有新的安全下一刀。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 03:16 +08：当前《七大恨》如果还把 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 里的 `advanceWheelPosition(...)` 记成“文件内继续保留一层给 `resolveQidahenWheelMoveExecuted(...)` 单点消费的轮盘位置推进壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `advanceWheelPosition(...)` 已删除；[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 里 `resolveQidahenWheelMoveExecuted(...)` 当前已直接写成 `const currentWheelPositionIndex = Math.max(0, wheelSectorOrder.indexOf(state.actionWheelPosition));` 与 `const nextWheelPosition = wheelSectorOrder[` 的直连推进，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const advanceWheelPosition = (` 回流，并锁定轮盘位置推进的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `wheelMoveExecution.ts = 轮盘执行 owner + 直接消费 wheelSectorOrder 索引推进的入口`，其中这条文件内私有单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:11 +08：当前《七大恨》如果还把 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 里的 `buildCharacterActionWindowTriggerKey(...)`、`buildCharacterActionWindowProgressKey(...)` 与 `parseCharacterActionWindowHandledEffectIds(...)` 记成“文件内继续保留 3 层给 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` 单点消费的 trigger/progress 字符串壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前这 3 条 helper 已删除；[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 里 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` 当前已直接写成 triggerKey 拼接、`!progressKey?.startsWith(...)` 判门解析和 `lastCharacterActionWindowTriggerKey: \`${triggerKey}|${[...handledEffectIds].sort().join(',')}\`,` 回写，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止这 3 条 helper 回流，并锁定 trigger/progress 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts = 人物行动前效果 owner + 直接消费 trigger/progress 字符串合同的入口`，其中这 3 条文件内私有单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:06 +08：当前《七大恨》如果还把 [mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 里的 `getMapTokenBaseId(...)` 记成“文件内继续保留一层给 `syncQidahenMapTokensFromRegions(...)` 单点消费的旧 id 映射转手壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `getMapTokenBaseId(...)` 已删除；[mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 里 `syncQidahenMapTokensFromRegions(...)` 当前已直接写成 `const baseId = legacyMapTokenBaseIdByRegion[region.id] ?? region.id;`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const getMapTokenBaseId = (` 回流，并锁定 `const baseId = legacyMapTokenBaseIdByRegion[region.id] ?? region.id;` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `mapTokens.ts = map-token sync owner + 直接消费 legacyMapTokenBaseIdByRegion 的 base-id 映射入口`，其中这条文件内私有单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 03:09 +08：当前《七大恨》如果还把 [commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts) 里的本地 `hasUpgradableArmament(...)` 和记成“命令校验层继续保留一层低保真军备升级判定重复壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts) 已直接 `import { hasUpgradableArmament } from './armamentLowFidelity';`；本地旧 `QIDAHEN_ARMAMENT_LOW_FIDELITY_MAX_LEVEL = 2` 与 `const hasUpgradableArmament = (` 当前都已删除，不再重写同一套 `level > 0 && level < 2` 判定。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式要求 `commands.ts` 直接 import `hasUpgradableArmament`，并禁止旧常量与本地重复 helper 回流。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentLowFidelity.ts = 低保真军备升级判定 owner`，`commands.ts = 直接消费该 owner 的命令校验层`；这条重复判定壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:58 +08：当前《七大恨》如果把“全域低命中 helper 扫描”误解成“当前树里应该还会顺手掉出几条安全薄壳”，结论已经开始跑在当前源码真相前面。现态证据是：这轮把静态复核范围扩大到 [regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts)、[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts)、[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts) 与 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 这批低命中文件后，可以确认：`getPreferredSelectedRegionIdForFaction(...)` 当前不是单 caller；`selectChronologyRepresentativeCharacterIds(...)`、`resolveDiplomacyChoice(...)`、`buildPendingTargetChoiceOptions(...)`、`getBattleRollArmamentBonus(...)`、`buildPendingTargetActionFromWheelDispatchChoice(...)` 等候选虽命中次数低，但本体都承接正式业务语义，不是纯转手壳。结论：`2.75` 那条“当前暂无新的安全下一刀”在扩大到全域低命中 helper 复核后仍然成立；后续若继续推进，默认应先停在“当前暂无新的安全下一刀”的 current truth，而不是把“低命中”误当成“可安全退休”。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 02:54 +08：当前《七大恨》如果还把 `2.74` 之后的当前树记成“顺着文件内私有 helper 还可以继续安全退休一批薄壳”，结论已经开始跑在当前源码真相前面。现态证据是：重新核对 [commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts)、[armamentLowFidelity.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentLowFidelity.ts)、[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 与 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 后，可以确认：`hasPendingScenarioChoices / hasBlockingSelection / wouldRepeatLastFactionAction` 当前都是 `validate(...)` 内多分支 gate helper；`commands.ts` 本地 `hasUpgradableArmament(...)` 已承接 `upgrade-armament` 执行门禁；`buildUpgradedArmamentResult(...)` 已是双调用位点；`getCityBesiegePlunderPopulationCap(...)` 承接正式战后人口规则；`withTrimmedPieceIds(...)` 承接 pieceIds 裁切合同；`buildPendingTargetActionFromWheelDispatchChoice(...)` 承接 pending-target 语义装配；`actionSourceRegionState.ts` 本地 `isQidahenCityRuntimeRegion(...)` 也已有双调用位点。结论：在最近 `2.72 / 2.73 / 2.74` 这批文件内安全薄壳退休之后，当前树里已暂未再发现新的“单 caller + 纯转手 + 已有真实 owner + 无额外 gate/仲裁/业务语义”的安全 residual seam；后续若继续推进，默认应先停在“当前暂无新的安全下一刀”的 current truth，而不是为了推进硬收仍带正式语义的 helper。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 03:00 +08：当前《七大恨》如果还把 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 里的 `createQidahenPieceId(...)` 记成“文件内继续保留一层给 `assignPieceIdsToStacks(...)` 单点消费的 piece-id 字符串模板壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `createQidahenPieceId(...)` 已删除；[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 里 `assignPieceIdsToStacks(...)` 当前已直接写成 `nextPieceIds.push(\`qidahen-piece-\${serial}\`);`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const createQidahenPieceId = (` 回流，并锁定 `nextPieceIds.push(\`qidahen-piece-\${serial}\`);` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `troopCompat.ts = piece-id sync owner + 直接消费 qidahen-piece 字符串模板的 assignPieceIdsToStacks 入口`，其中这条文件内私有单 caller 模板壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:52 +08：当前《七大恨》如果还把 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里的 `formatGaoDiDispatchAmountLabel(...)` 记成“文件内继续保留一层给 `resolveGaoDiDispatch(...)` 单点消费的调度数量标签壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `formatGaoDiDispatchAmountLabel(...)` 已删除；[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里 `resolveGaoDiDispatch(...)` 当前已直接写成 `const dispatchAmountLabel = choice.mode === 'troops' ? ... : ...` 来生成高第调度数量标签，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const formatGaoDiDispatchAmountLabel = (` 回流，并锁定 `const dispatchAmountLabel = choice.mode === 'troops'` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowDispatch.ts = 高第调度结算 owner + 直接消费调度数量标签格式化`，其中这条文件内私有单 caller 标签壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:49 +08：当前《七大恨》如果还把 [defeatMarkerState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/defeatMarkerState.ts) 里的 `getCharacterDefeatMarkerCount(...)` 记成“文件内继续保留一层给 `syncFactionCharactersToDefeatMarkerCount(...)` 单点消费的败绩标记求和壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `getCharacterDefeatMarkerCount(...)` 已删除；[defeatMarkerState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/defeatMarkerState.ts) 里 `syncFactionCharactersToDefeatMarkerCount(...)` 当前已直接写成 `const characterMarkerCount = nextFaction.characters.reduce(` 来计算角色败绩标记总数，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const getCharacterDefeatMarkerCount = (` 回流，并锁定 `const characterMarkerCount = nextFaction.characters.reduce(` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `defeatMarkerState.ts = defeat-marker state owner + 直接消费角色败绩标记求和`，其中这条文件内私有单 caller 求和壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:43 +08：当前《七大恨》如果还把 [battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts) 里的 `isRegionSiegeAttackerSource(...)` 记成“文件内继续保留一层给 `getRegionSiegeAttackerForceSnapshot(...)` 单点消费的 siege-attacker 判门壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `isRegionSiegeAttackerSource(...)` 已删除；[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts) 里 `getRegionSiegeAttackerForceSnapshot(...)` 当前已直接写成 `region.siegeState?.attackerFactionId === factionId ? ... : null`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const isRegionSiegeAttackerSource = (` 回流，并锁定 `region.siegeState?.attackerFactionId === factionId` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `battleState.ts = battle-state owner + 直接消费 siegeState.attackerFactionId 的围城攻击方快照入口`，其中这条文件内私有单 caller 判门壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:36 +08：当前《七大恨》如果还把 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 里的 `buildDirectInputCommandEvents(...)` 与 `buildSelectedActionCommandEvents(...)` 记成“registry 后继续保留两层 direct-input / selected-action 分流 wrapper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 仍正式持有真实 command-event helper owner `buildQidahenRegionSelectedEvent(...)`、`buildQidahenPreviewActionConfirmedEvent(...)`、`buildQidahenWheelMoveSelectedEvent(...)`、`buildQidahenWheelMoveExecutedEvent(...)`、`buildQidahenPaymentCardSelectedEvent(...)`、`buildQidahenHandLimitDiscardCardSelectedEvent(...)`、`buildQidahenSunYuanhuaTechCardSelectedEvent(...)`、`buildQidahenGaoDiDispatchCardSelectedEvent(...)` 与 `buildQidahenSelectedActionExecutedEvent(...)`；但旧 `buildDirectInputCommandEvents(...)` 与 `buildSelectedActionCommandEvents(...)` 当前都已删除。文件内新增的 `buildSingleCommandEvents<TCommand>(buildEvent)` 与 `buildCoreStatefulCommandEvents<TCommand>(buildEvent)` 当前只承担“把已由 registry 选中的命令交给对应 event helper”这一层更窄职责，不再重复做 direct-input / selected-action 分流；`QIDAHEN_COMMAND_EVENT_BUILDERS` 里的对应 entry 也已分别改成按命令类型直连这两条 generic helper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止旧两层 wrapper 回流，并锁定 `buildSingleCommandEvents<TCommand>(...)`、`buildCoreStatefulCommandEvents<TCommand>(...)` 与 registry 的直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `commandEventBuilders.ts = registry + 更窄 generic helper + 真实 command-event helper owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:33 +08：当前《七大恨》如果还把 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 里的 `withActionRuleRegionName(...)` 记成“文件内继续保留一层给 `materializeNonSiegedCityActionSourceRegion(...)` 单点消费的 region-name 转手壳也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `withActionRuleRegionName(...)` 已删除；[actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 里 `materializeNonSiegedCityActionSourceRegion(...)` 当前已直接在两个返回分支内写成 `name: getActionRuleRegionNameById(region.id, region.name)`，不再经由中间 helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `const withActionRuleRegionName = (` 回流，并继续锁定 `name: getActionRuleRegionNameById(region.id, region.name),` 的当前直连写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionSourceRegionState.ts = action-source owner + 直接消费 getActionRuleRegionNameById(...)`，其中这条文件内私有单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:33 +08：当前《七大恨》如果把 `2.69` 那条“当前暂无新的安全 residual seam”当成永久结论，当前也已经不符合最新源码真相。现态证据是：`2.69` 当时对 `resolved-command` 同级 registry 后残口与已排除 family 的判断本身仍成立，但那次静态复核漏掉了 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 里 `withActionRuleRegionName(...)` 这条文件内私有薄壳；本轮重新系统筛查后已补锁并实际收口。结论：当前正确口径应改为“上一轮没有再发现新的同级 registry 后薄壳，但当前树随后又补发现并收掉了一条文件内私有安全 residual”；后续若继续推进，仍必须回到当前树重新找证据，不能把某一轮静态普查结果当永久边界。
+- 2026-06-11 02:26 +08：当前《七大恨》如果还把 `resolved-command` 这条实施线记成“删掉 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 后还可以顺着继续退休同级薄壳”，结论已经开始跑在当前源码真相前面。现态证据是：重新核对 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 后，可以确认当前还保留的 generic helper 只剩 `buildSingleResolvedCommandEvents<TCommand>(...)` 与 `buildStatefulResolvedCommandEvents<TCommand>(...)`，但两者都已是多命令类型共享消费，不再满足这条实施线要求的 `单 caller`。同时重新对照 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)、[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts)、[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts)、[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts)、[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 与 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 后，也可以确认此前已排除的 `selection / interaction / battle` 候选仍承接正式业务语义或仍是多 caller。结论：在最近这批 `resolved-command` 安全薄壳退休后，当前树里已暂未再发现新的“单 caller + 纯转手 + 已有真实 owner + 无额外 gate/仲裁/业务语义”的安全 residual seam；后续若继续推进，默认应先停在“当前暂无新的安全下一刀”的 current truth，而不是为了推进硬收正式 seam。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 02:23 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里的 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 记成“pending-action 这条 registry 后面继续保留一层单点 generic helper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 已删除；[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里 `commandTypes: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION]` 的 `buildEvents` 已直接内联成 `(state, command, random, timestamp) => [buildQidahenPendingActionResolvedEvent(state, command, random, timestamp)]`，不再经由中间 generic helper 再转一次。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：显式禁止 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 与 `buildPendingActionResolvedCommandEvents(...)` 回流，并锁定 `RESOLVE_PENDING_ACTION` 的 registry 内联写法。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = registry + 真实 pending-action resolved-event helper owner`，这条最后的 random-stateful 单点 generic helper 壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:18 +08：当前《七大恨》如果还把 `guide compat` 记成“新游戏天然会有一层正式兼容”或“领域层长期需要两套 guide 文件并存”的旧叙事，结论已经不符合当前源码真相。现态证据是：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 当前已经把**工具内部工作区元数据**分名到 `region-authoritative-guides.workspace.json`，load 路由只在它不存在时才 fallback 去读旧的 `region-authoritative-guides.json`，并把那份旧文件按 legacy workspace metadata 解释；save 路由当前也只会写回 `.workspace.json`，且写入结构固定为 `regionIds + runtimeGuideCandidates`。[mapGraph.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/mapGraph.ts) 运行时当前仍只从正式 `region-authoritative-guides.json` 读取 guide 真相；[QidahenRegionMaskTool.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/pages/devtools/QidahenRegionMaskTool.tsx) 当前界面文案也已明确“只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`”。结论：现在之所以还要兼容，不是因为《七大恨》业务规则或新游戏框架天然复杂，而是因为更早一版工具曾把**工作区元数据**错存到正式文件名下，且两边 JSON 结构根本不是一套，所以当前 compat 只能被定性为 `region-mask devtools storage seam` 的 legacy-read adapter；它不是领域层长期双真相。这轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 02:11 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里的 `buildGaoDiDispatchResolvedCommandEvents(...)`、`buildInternalDispatchResolvedCommandEvents(...)`、`buildFortificationMaintenanceResolvedCommandEvents(...)`、`buildDriveTigerConsentResolvedCommandEvents(...)`、`buildRecruitResolvedCommandEvents(...)`、`buildMaShiTradeResolvedCommandEvents(...)`、`buildKhanEdictResolvedCommandEvents(...)` 与 `buildDiplomacyResolvedCommandEvents(...)` 记成“registry 后面继续保留 8 条 generic alias wrapper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 仍正式持有这些真实 resolved-event helper owner；但 8 条旧 alias wrapper 当前都已删除。`QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS` 对应 `buildEvents` 当前已经直接内联 `buildSingleResolvedCommandEvents<ResolveGaoDiDispatchCommand>(...)` 与 `buildStatefulResolvedCommandEvents<...>(...)` 去绑定真实 helper，不再保留“先起 alias 名，再交给 registry”这层中间常量。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：不再要求源码保留这 8 条 alias wrapper，而是显式锁定 registry 内联 generic helper 的直连形态。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = registry + generic helper + 真实 resolved-event helper owner`，其中 `高第调度 / 内部调度 / 筑城维护 / 驱虎 / 征召 / 马市贸易 / 大汗令箭 / 外交` 这 8 条 registry 后 alias 薄壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:02 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里的 `buildPendingBattleResolvedCommandEvents(...)` 与 `buildScenarioChoiceResolvedCommandEvents(...)` 记成“registry 后面继续保留两条 multi-command wrapper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 仍正式持有真实 helper owner `buildQidahenPendingActionResolvedEvent(...)`、`buildQidahenPostBattleDecisionResolvedEvent(...)`、`buildQidahenScenarioCharacterChoiceResolvedEvent(...)` 与 `buildQidahenScenarioArmamentChoiceResolvedEvent(...)`；但两条旧 multi-command wrapper 当前都已删除。`pending-battle` 这条当前已拆成 `buildPendingActionResolvedCommandEvents(...)` + `buildPostBattleDecisionResolvedCommandEvents(...)` 两个按命令类型绑定的 registry entry，其中 `RESOLVE_PENDING_ACTION` 通过新 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 直连；`scenario-choice` 这条当前也已拆成 `buildScenarioCharacterChoiceResolvedCommandEvents(...)` + `buildScenarioArmamentChoiceResolvedCommandEvents(...)` 两个按命令类型绑定的 registry entry，不再保留 `if + ternary` 分流。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：不再要求源码保留两条旧 multi-command wrapper，而是显式锁定 `buildRandomStatefulResolvedCommandEvents<TCommand>(...)` 与拆开的 registry 直连。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = 逐命令类型 registry 直连 generic helper / 真实 helper owner`；`pending-battle / scenario-choice` 两条 multi-command wrapper 已经退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:12 +08：当前《七大恨》如果还把 [characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 里的 `getChronologyPreviewIndex(...)` 记成“继续保留一层只把 `getChronologyYearConfig(yearIndex).previewIndex` 再包一次的 preview accessor 也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 仍正式持有 chronology config owner `QIDAHEN_CHRONOLOGY_YEAR_CONFIGS / getYearLabelByIndex / buildYearCardSlots / getFactionOrderForYearIndex / getChronologyCharacterAvailabilityForYear`；而旧 `getChronologyPreviewIndex(...)` 当前已删除。`buildYearCardSlots(...)` 现态已直接写成 `qidahenChronologyPreview(getChronologyYearConfig(yearIndex).previewIndex)` 与 `qidahenChronologyPreview(getChronologyYearConfig(yearIndex + 1).previewIndex)`，不再经由中间 preview-index wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：不再要求源码保留 `export const getChronologyPreviewIndex = (`，而是显式锁定 `buildYearCardSlots(...)` 直连 `getChronologyYearConfig(...).previewIndex`。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterChronologyConfig.ts = chronology config owner + year-card preview 直连 consumer`，其中 `preview-index` 这条单 caller 转手壳已退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 01:55 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里的 `buildGaoDiDispatchResolvedCommandEvents(...)`、`buildInternalDispatchResolvedCommandEvents(...)`、`buildFortificationMaintenanceResolvedCommandEvents(...)`、`buildDriveTigerConsentResolvedCommandEvents(...)`、`buildRecruitResolvedCommandEvents(...)`、`buildMaShiTradeResolvedCommandEvents(...)`、`buildKhanEdictResolvedCommandEvents(...)` 与 `buildDiplomacyResolvedCommandEvents(...)` 记成“registry 后面继续保留 8 条重复命令类型判门 wrapper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 仍正式持有这些 resolved-event helper owner；但 8 条旧 wrapper 当前都已不再保留显式函数体。`高第调度` 这条已经改成 `buildSingleResolvedCommandEvents<ResolveGaoDiDispatchCommand>(buildQidahenGaoDiDispatchResolvedEvent)`；其余 7 条需要 `state` 的 resolved-command builder，当前都已统一改成 `buildStatefulResolvedCommandEvents<TCommand>(buildEvent)` generic helper 直连真实 resolved-event helper，不再重复判 `command.type`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：不再要求源码保留 8 条旧 wrapper，而是显式锁定 `buildStatefulResolvedCommandEvents<TCommand>(...)` / `buildSingleResolvedCommandEvents<TCommand>(...)` 与 registry 对真实 helper 的直连绑定。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = registry + generic builder helper + 真实 resolved-event helper owner`；这 8 条最薄的 action-window / dispatch 重复判门 wrapper 已经退休。这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 01:48 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里的 `buildHandLimitDiscardResolvedCommandEvents(...)` 与 `buildSunYuanhuaTechResolvedCommandEvents(...)` 记成“registry 后面继续保留两条重复命令类型判门 wrapper 也无所谓”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 仍正式持有真实 helper owner `buildQidahenHandLimitDiscardResolvedEvent(...)` 与 `buildQidahenSunYuanhuaTechResolvedEvent(...)`；而旧 `buildHandLimitDiscardResolvedCommandEvents(...)` 与 `buildSunYuanhuaTechResolvedCommandEvents(...)` 当前都已删除。文件内新增的 `buildSingleResolvedCommandEvents<TCommand>(buildEvent)` 当前只承担“把已由 registry 选中的命令交给对应 resolved-event helper”这一层更窄职责，不再重复做 `command.type` 判门；`QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS` 里的 `RESOLVE_HAND_LIMIT_DISCARD` 与 `RESOLVE_SUN_YUANHUA_TECH` 两条 `buildEvents` 当前也已分别直连 `buildSingleResolvedCommandEvents<ResolveHandLimitDiscardCommand>(buildQidahenHandLimitDiscardResolvedEvent)` 与 `buildSingleResolvedCommandEvents<ResolveSunYuanhuaTechCommand>(buildQidahenSunYuanhuaTechResolvedEvent)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径：不再要求源码保留两条旧 wrapper，而是显式锁定 `buildSingleResolvedCommandEvents<TCommand>(...)` 与 registry 对真实 helper 的直连绑定。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = registry + resolved-event helper owner`，其中 `hand-limit discard / 孙元化科技` 这两条最薄的重复判门 wrapper 已退休为 registry 直连 helper；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 02:08 +08：当前《七大恨》如果还把 `selection / interaction / battle` 这批候选继续记成“还能顺着再退休几条单 caller 薄壳”，结论已经开始跑在当前源码真相前面。现态证据是：重新核对 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 与 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 后，可以确认 `FromCurrentAction / ForCore / FromWheel` 这批入口当前仍承接 turn-phase gate、interaction/derived selection 仲裁、`wheelPositionId -> movementProfileId` 解释，以及 source-region 锚点推导，不是纯参数转手；[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 里若干 `FromInteraction(...)` 虽然看起来像包装层，但当前仍被 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、命令链、resolved-command builder 和测试多处共享消费，不满足“单 caller”；[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 的 `resolveQidahenPreviewActionConfirmedEvent(...)` 仍有 action / wheel 分支；[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts)、[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 与 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里看起来较小的 helper，这轮复核后也都仍是“多 caller”或“仍承接正式业务语义”的状态。结论：在最近 `2.57 / 2.58 / 2.59` 这批安全薄壳退休后，当前树里这轮暂未再发现新的“单 caller + 纯转手 + 已有真实 owner + 无额外语义”的安全 residual seam；后续若继续推进，默认应先停在“当前暂无新的安全下一刀”的 current truth，而不是硬收仍带正式语义的入口。本轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 01:36 +08：当前《七大恨》如果又把 `setup / pieces / mapTokens / guide compat` 混回“样板开局 + 手写显示层 + 长期双真相 compat”的旧叙事，结论已经落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已把 `QidahenDomain.setup(...)` 收口为 `roomSetup -> createInitialCore` 的正式入口；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前虽然先构建 `baseCore`，但会立即执行 `syncQidahenCorePieceCollections(baseCore)`，因此 `pieces: [] / mapTokens: []` 只是同步前暂存态，不是最终 runtime 真相；[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 当前继续把 `regions -> pieceIds -> pieces -> regions summary -> mapTokens` 统一收在 `syncQidahenCorePieceCollections(...)`；[mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 与 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前也继续只承担显示派生与渲染消费，不反向承担领域真相。与此同时，工具侧 compat 也仍只属于旧工作区读取兜底：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 当前已把 workspace metadata 分到 `region-authoritative-guides.workspace.json`，并只在读路径保留对旧 `region-authoritative-guides.json` 的 legacy fallback；[mapGraph.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/mapGraph.ts) 运行时仍只读取正式 authoritative guide truth；[QidahenRegionMaskTool.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/pages/devtools/QidahenRegionMaskTool.tsx) 当前界面文案也继续明确“只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`”。结论：当前更准确的 owner/边界关系仍是 `setup = roomSetup -> domain.setup -> createInitialCore`、`mapTokens = regions/pieces 的单向显示派生`、`guide compat = region-mask devtools storage seam 的 legacy-read adapter`；后续主 residual 不应再落回这三类已校正问题。本轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 01:14 +08：当前《七大恨》如果还把 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 里的 `buildResolvedCommandEvents` 记成“继续保留一层把 `state / command / random / timestamp` 转给 `buildQidahenResolvedCommandEvents(...)` 的 command-event 薄桥也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 仍正式持有真实 owner `buildQidahenResolvedCommandEvents(...)`；而旧 `buildResolvedCommandEvents` 当前已删除。[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前也已把 resolved-command 那组 `commandTypes` 的 `buildEvents` 直连到 `buildQidahenResolvedCommandEvents`，不再经由中间 wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不再要求保留 `buildResolvedCommandEvents`、registry 直接锁真实 owner”的口径。验证结果：`compatSource + commands + payment-selection + Board = 590 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = resolved-command builder owner`，`commandEventBuilders.ts = command-event registry 直连该 owner 的 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 01:15 +08：当前《七大恨》如果还把 [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 里的 `getPlunderPopulationCap(...)` 记成“继续保留一层只把 `getPostBattlePlunderPopulationCap(targetRegion, battleMode, mode)` 再包一次的文件内 helper 也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 仍正式持有真实 owner `buildPostBattleSelection(...)`；而旧 `getPlunderPopulationCap(...)` 当前已删除，`addPlunderChoice(...)` 已直接写成 `const plunderPopulationCap = getPostBattlePlunderPopulationCap(targetRegion, battleMode, choice.mode);`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不再要求保留 `const getPlunderPopulationCap = (`、直接锁当前直连口径”的形态。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `postBattleSelectionBuilder.ts = 战后处理选择 owner + 劫掠人口上限规则 owner 直连 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 01:09 +08：当前《七大恨》如果还把 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 里的 `getActionRuleRegionName(...)` 记成“继续保留一层只把 `getActionRuleRegionNameById(region.id, region.name)` 再包一次的文件内 helper 也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 仍正式持有真实 owner `withActionRuleRegionName(...)`、`getNonSiegedCityActionSourceSnapshot(...)` 与 `materializeNonSiegedCityActionSourceRegion(...)`；而旧 `getActionRuleRegionName(...)` 当前已删除，`withActionRuleRegionName(...)` 已直接写成 `name: getActionRuleRegionNameById(region.id, region.name),`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不再要求保留 `const getActionRuleRegionName = (`、直接锁当前直连口径”的形态。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionSourceRegionState.ts = 非围城城市行动源 owner + 区域名规则 owner 直连 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 01:08 +08：当前《七大恨》如果还把 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 里的 `reduceQidahenRegionSelectedEvent(...)` 记成“继续保留一层把 `event.payload.regionId / event.timestamp` 转给真实 owner 的 direct-input event wrapper 也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 仍正式持有真实 owner `reduceQidahenRegionSelected(...)`，并已把默认依赖直接收回该主入口参数位；而旧 `reduceQidahenRegionSelectedEvent(...)` 当前已删除。[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前也已把 `['REGION_SELECTED']` 路由改成直接调用 `reduceQidahenRegionSelected(state, event.payload.regionId, event.timestamp)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不再要求保留 `reduceQidahenRegionSelectedEvent(...)`、direct-input route 直接锁真实 owner”的口径。验证结果：`compatSource + commands + payment-selection + Board = 590 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `regionSelectionReducer.ts = region-selected 规则 owner`，`directInputEventReducers.ts = REGION_SELECTED route 直连该 owner 的 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 00:57 +08：当前《七大恨》如果还把 [specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 里的 `getHanseongController(...)` 记成“继续保留一层只把 `getQidahenRuleRegionController(state, 'shou-cheng')` 再包一次的文件内 helper 也算合理”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 仍正式持有真实 owner `getQidahenRuleRegionController(...)` 与 `syncQidahenSpecialRuleState(...)`；而旧 `getHanseongController(...)` 当前已删除，`syncQidahenSpecialRuleState(...)` 已直接写成 `const hanseongController = getQidahenRuleRegionController(syncedState, 'shou-cheng');`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不再要求保留 `const getHanseongController = (`、直接锁当前直连口径”的形态。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `specialRuleState.ts = 特殊规则 owner + 汉城控制方直连规则 owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 00:34 +08：当前《七大恨》如果还把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的 `QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES.applyVictoryStatus`，以及 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES.updateTurnLabel` 继续记成“需要保留一层 `(state) => ...` state-only 闭包接线才算安全”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 仍正式持有真实 owner `applyQidahenVictoryStatus(...)`；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 仍正式持有真实 owner `updateQidahenTurnLabel(...)`；而 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 与 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 当前都已把对应 dependencies object 里的同名槽位改成直连真实 owner，不再保留只做参数原样转手的 state-only 闭包。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `victoryResolution.ts / turnLabelState.ts = 规则 owner`，`armamentUpgradeResolution.ts / scenarioChoiceState.ts = 直连这些 owner 的 resolved-event consumer/default-dependencies 装配层`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 00:29 +08：当前《七大恨》如果还把 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里的 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES.getEffectiveHomelandController` 记成“需要保留一层 `(state, regionId) => getEffectiveHomelandController(state, regionId)` 闭包接线才算安全”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 [regionRuleSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionRuleSemantics.ts) 仍正式持有真实 owner `getEffectiveHomelandController(...)`；而 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 当前已把默认依赖对象里的同名槽位改成直连 `getEffectiveHomelandController`，不再保留那层只做参数原样转手的闭包。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“action-window choice dependencies 不再保留这层纯转手壳”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `regionRuleSemantics.ts = homeland-controller 规则 owner`，`actionWindowChoices.ts = 直连该 owner 的 consumer/default-dependencies 装配层`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 00:24 +08：当前《七大恨》如果还把 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 记成“仍需靠 `(state) => applyQidahenCharacterActionWindowEffectsWithFocus(state).state` 这层闭包壳回塞 character-action-window owner”的旧形态，结论已经落后于当前源码真相；这条 current truth 同时也覆盖了 00:13 那条“只保留 withFocus、删除 state-only 公开入口”的中间态。现态证据是：当前 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 已补回 `applyQidahenCharacterActionWindowEffects(...)` 作为“返回纯 state”的正式公开 owner，并直接返回 `applyQidahenCharacterActionWindowEffectsWithFocus(state, dependencies).state`；而 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 当前也已把 `QIDAHEN_TURN_LABEL_DEPENDENCIES.applyCharacterActionWindowEffects` 改成直接绑定 `applyQidahenCharacterActionWindowEffects`，不再保留 `(state) => ...WithFocus(state).state` 这层闭包。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“turnLabel 直连 state-only owner、characterActionWindow 保留 state-only 正式入口”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts = character-action-window owner + state-only 正式公开入口`，`turnLabelState.ts = turn-label owner + 直连 character-action-window owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-11 00:20 +08：当前《七大恨》如果把 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 与 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 里那批 `ForCore / FromCurrentAction / FromWheel` 入口继续记成“下一批可以机械退休的单 caller 纯转手壳”，结论会再次落后于当前源码真相。现态证据是：`getQidahenInternalDispatchSelectionForCore(...)` 当前仍承接 `internal-dispatch-choice`、当前派系必须是大明、以及王化贞是否在场这组三重 gate，然后才调用 `buildWangHuazhenInternalDispatchSelection(...)`；`buildWheelDispatchSelectionFromWheel(...)` 当前仍承接 `wheelPositionId -> movementProfileId` 的轮盘位置解释，以及 `getPreferredDispatchSelectedRegionIdForFaction(...)` 这层源区锚点推导，然后才调用 `buildWheelDispatchSelection(...)`；`getQidahenDerivedWheelDispatchSelectionForCore(...)` 当前仍承接 `drive-tiger-consent` 持久选择复用、`dispatch-targeting` gate 与 interaction/host selection 仲裁。与此同时，[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 里的 `getQidahenMaShiTradeSelectionFromCurrentAction(...)`、`getQidahenRecruitSelectionFromCurrentAction(...)`、`getQidahenKhanEdictSelectionFromCurrentAction(...)` 继续承接各自 action-phase gate；`getQidahenDerivedDiplomacySelectionForCore(...)` 继续承接“已持久化外交选择优先，否则只在 `diplomacy-choice + wheel-attack` 下派生轮盘外交”的状态派生；`getQidahenDiplomacySelectionForCore(...)` 继续承接 interaction selection 与 derived selection 的仲裁，不是纯转手。并且这些入口当前仍被 [coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts)、[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 与 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 多处正式 consumer 共享使用。结论：这批入口当前仍是“从 core/action/wheel 状态派生可交互 selection”的正式 seam，不是下一刀可直接退休的 residual；若继续正式实施，应只筛真正满足“单 caller + 纯转手 + 已有更深 owner”的薄壳。本轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-11 00:13 +08：这条现在只能当历史中间态，不能再当当前源码真相。它当时成立的部分是：旧 `applyQidahenCharacterActionWindowEffects(...)` 一度被删掉，只剩 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` 作为公开入口；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 一度直接通过 `applyQidahenCharacterActionWindowEffectsWithFocus(state).state` 消费这条 owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当时也追平到这套口径。后续当前真相已被 00:24 覆盖：`characterActionWindow.ts` 重新保留 `withFocus + state-only` 双入口，`turnLabelState.ts` 改成直连 state-only owner，当前正式口径应以后续 00:24 与 formal review `2.52` 为准，而不是继续引用本条。
+- 2026-06-10 23:35 +08：当前《七大恨》如果还把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 与 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 resolved-event dependencies object 记成“仍需靠一层闭包再补默认依赖才能调用真实 owner”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES.resolveSunYuanhuaTech` 已直接绑定 `resolveQidahenSunYuanhuaTech`；`QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES.resolveScenarioCharacterChoice / resolveScenarioArmamentChoice` 也都已直接绑定各自真实 owner，不再保留那层只为补 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES / QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 存在的闭包壳。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“event-dependencies 直连真实 owner、旧闭包回塞形态不得回流”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentUpgradeResolution.ts / scenarioChoiceState.ts = resolved-event owner + event-dependencies 直连真实 owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:34 +08：当前《七大恨》如果还把 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 记成“仍需显式回塞 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 才能调用 chronology owner”的旧形态，结论已经落后于当前源码真相。现态证据是：[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 当前已新增文件内私有 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES`，并让 `applyChronologyCharactersForYear(...)` 通过默认参数直接承接这组私有依赖；而 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前只通过 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 直连 `applyChronologyCharactersForYear`，不再本地混挂 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES`、`getChronologyCharacterAvailabilityForYear`、`createInitialCharacterStates`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“chronology owner 主入口默认参数承接私有依赖、season 入口显式回塞形态不得回流”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterChronologyState.ts = chronology 规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`，`seasonResolution.ts = season owner + chronology owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:27 +08：当前《七大恨》如果还把 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 记成“action-window / pending-battle resolved-command builder caller 仍需显式回塞两组私有依赖常量”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `buildQidahenInternalDispatchResolvedEvent(...)`、`buildQidahenFortificationMaintenanceResolvedEvent(...)`、`buildQidahenDriveTigerConsentResolvedEvent(...)`、`buildQidahenRecruitChoiceResolvedEvent(...)`、`buildQidahenMaShiTradeChoiceResolvedEvent(...)`、`buildQidahenKhanEdictChoiceResolvedEvent(...)`、`buildQidahenDiplomacyChoiceResolvedEvent(...)` 都已通过默认参数直接承接 `QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES`；同时 `buildQidahenPendingActionResolvedEvent(...)` 与 `buildQidahenPostBattleDecisionResolvedEvent(...)` 也都已通过默认参数直接承接 `QIDAHEN_PENDING_BATTLE_RESOLVED_COMMAND_DEPENDENCIES`。对应 builder caller 当前只保留命令类型判门与 helper 调用，不再显式传两组私有依赖常量。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“源码不得回流 caller 显式回塞形态”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = resolved-command builder owner + 文件内私有默认依赖 const + helper 默认参数承接`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:22 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `resolveQidahenScenarioChoiceResolvedEvent(...)` 记成“仍需显式回塞 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 才能调用人物/军备结算 owner”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `resolveQidahenScenarioCharacterChoice(...)` 与 `resolveQidahenScenarioArmamentChoice(...)` 都已通过默认参数直接承接 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`，而 `resolveQidahenScenarioChoiceResolvedEvent(...)` 当前只保留 `SCENARIO_CHARACTER_CHOICE_RESOLVED / SCENARIO_ARMAMENT_CHOICE_RESOLVED` 分支判断、真实 owner 调用、action log 与 `updateQidahenTurnLabel(...)` 收口，不再显式传这组私有依赖常量。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“源码不得回流 `                QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES,` 这类显式回塞形态”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = scenario-choice 规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:21 +08：当前《七大恨》如果还把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的 `resolveQidahenSunYuanhuaTechResolvedEvent(...)` 记成“仍需显式回塞 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES` 才能调用科技结算 owner”的旧形态，结论已经落后于当前源码真相。现态证据是：当前 `resolveQidahenSunYuanhuaTech(...)` 已通过默认参数直接承接 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES`，而 `resolveQidahenSunYuanhuaTechResolvedEvent(...)` 当前只保留科技选择读取、派系定位、真实 owner 调用以及 summary/log/turn-flow 收口，不再显式传这组私有依赖常量。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“源码不得回流 `        QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES,` 这类显式回塞形态”的口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentUpgradeResolution.ts = 军备升级/孙元化科技规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:20 +08：当前《七大恨》如果把 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 的 `resolveQidahenSunYuanhuaTechResolvedEvent(...)`、[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 的 `resolveQidahenPreviewActionConfirmedEvent(...)`、[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 的 `resolveQidahenScenarioChoiceResolvedEvent(...)`、以及 [pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts) 的 `resolveQidahenPendingBattleInteractionEvent(...)` 继续记成“下一批可直接退休的 compat 壳”，结论会再次落后于当前源码真相。现态证据是：`resolveQidahenSunYuanhuaTechResolvedEvent(...)` 当前仍负责 `sunYuanhuaTechSelection` 读取、科技结算、season summary/action log 回写，以及 `applyQidahenVictoryStatus(...) -> syncFactionActionWindow(...) -> advanceQidahenTurnIfReady(...)` 收口；`resolveQidahenPreviewActionConfirmedEvent(...)` 当前仍承接“动作预览确认 / 轮盘位置选择”正式分流，并在动作确认分支里调用 `reduceQidahenPreviewActionConfirmed(...)` 与 `updateQidahenTurnLabel(...)`；`resolveQidahenScenarioChoiceResolvedEvent(...)` 当前仍承接剧本人物/军备两类 resolved event 的 family route、分支判断、log 与 turn label 收口；`resolveQidahenPendingBattleInteractionEvent(...)` 当前仍承接 pending-target/post-battle 两类 interaction source 的 family route、payload 读取、choiceId 解析与下游 owner 分发。结论：这 4 条入口当前仍是正式 owner，不是单 caller 的纯 payload 转手壳；如果继续正式实施，下一刀必须重新回到当前树找真正的“单 caller + 纯转手 + 已有更深 owner” residual。本轮只是 formal review current truth 补审，没有新增生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-10 23:08 +08：当前《七大恨》如果还把 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 与 [handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 里的公开入口记成“函数体继续直接硬绑私有默认依赖常量”的旧 owner 形态，结论已经落后于当前源码真相。现态证据是：当前 `resolveQidahenFortificationMaintenanceInteractionChoice(...)` 已通过默认参数直接承接 `QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES`，并在函数体内统一改成消费 `dependencies`；当前 `resolveQidahenHandLimitDiscard(...)` 与 `resolveQidahenHandLimitDiscardInteractionChoice(...)` 也都已通过默认参数直接承接 `QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES`，并在 interaction choice 入口里把 `dependencies` 继续直传给真正的 discard owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“主入口默认参数承接私有依赖、旧硬绑常量调用形态不得回流”的当前口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `fortificationMaintenance.ts / handLimitDiscard.ts = 各自规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:04 +08：当前《七大恨》如果还把 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 里的 `resolveQidahenGaoDiDispatchChoice(...)`、`resolveQidahenInternalDispatchInteractionChoice(...)`、`resolveQidahenWheelDispatchInteractionChoice(...)` 记成“主入口继续在函数体里直接硬绑 `QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES`”的旧形态，结论已经落后于当前源码真相。现态证据是：当前这 3 条入口都已直接成为通过默认参数承接私有依赖的真实 owner 主入口，函数体内统一改成消费 `dependencies`，不再直接硬绑文件内私有默认依赖常量。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“主入口默认参数承接私有依赖、旧 dispatch wrapper 不得回流”的当前口径，并额外锁住 `resolveQidahenWheelDispatchInteractionChoice(...)` 通过 `dependencies.getDerivedWheelDispatchSelectionForCore(state)`、`dependencies.updateTurnLabel(...)` 收口。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowDispatch.ts = dispatch 规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`，外围 caller 直接消费真实 owner；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:08 +08：当前《七大恨》如果还把 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 记成“resolved-event route 仍应保留的一层 action-window family 包装壳”，结论已经落后于当前源码真相。现态证据是：当前 [resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 已直接承接 `GAO_DI_DISPATCH_RESOLVED / INTERNAL_DISPATCH_RESOLVED / FORTIFICATION_MAINTENANCE_RESOLVED / DRIVE_TIGER_CONSENT_RESOLVED / RECRUIT_CHOICE_RESOLVED / MA_SHI_TRADE_CHOICE_RESOLVED / KHAN_EDICT_CHOICE_RESOLVED / DIPLOMACY_CHOICE_RESOLVED` 这 8 类 route，并直接把 payload 转给 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 与 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 的真实 owner；旧 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 已删除。验证结果：`compatSource = 84 passed`，组合回归 `601 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedEventReducers.ts = resolved-event family route owner`，`actionWindowDispatch.ts / actionWindowChoices.ts / fortificationMaintenance.ts = 各自规则 owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:01 +08：当前《七大恨》如果还把 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 里的 `resolveQidahenSelectedActionExecutedEvent(...)`，以及 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 里的 `resolveQidahenWheelMoveExecutedEvent(...)` 记成“resolved/direct-input route 仍应保留的正式事件包装壳”，结论已经落后于当前源码真相。现态证据是：当前 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 已只保留真实执行主入口 `executeQidahenSelectedAction(...)` 与文件内私有默认依赖 `const`；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前已把 `SELECTED_ACTION_EXECUTED` 直接路由到 `executeQidahenSelectedAction(...)`。同时 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 已只保留真实执行主入口 `resolveQidahenWheelMoveExecuted(...)`；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前已把 `WHEEL_MOVE_EXECUTED` 直接路由到 `resolveQidahenWheelMoveExecuted(...)`。验证结果：`compatSource = 84 passed`，组合回归 `601 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionExecution.ts / wheelMoveExecution.ts = 各自 execution owner`，`resolvedEventReducers.ts / directInputEventReducers.ts = route consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 23:00 +08：当前《七大恨》如果还把 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里的 `resolveQidahenRecruitInteractionChoice(...)`、`resolveQidahenDriveTigerConsentInteractionChoice(...)`、`resolveQidahenMaShiTradeInteractionChoice(...)`、`resolveQidahenKhanEdictInteractionChoice(...)`、`resolveQidahenDiplomacyInteractionChoice(...)` 记成“外层公开 wrapper + 内层真实 owner”的双层入口，结论已经落后于当前源码真相。现态证据是：当前这 5 条入口都已直接成为真实 owner 主入口，并统一通过默认参数承接文件内私有 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES`；原先只负责转手到私有 owner 的 5 条公开薄壳均已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“旧 wrapper 不得回流、真实 owner 主入口通过默认参数承接私有依赖”的当前口径，同时顺手修掉了测试里 `directInputEventReducersSource` 漏读导致的 source guard 自坏点。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowChoices.ts = choice 规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`，外围 caller 直接消费真实 owner；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 22:52 +08：当前《七大恨》如果还把 [selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 里的 `prepareQidahenSelectedActionForExecution(...)`，以及 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 里的 `commitQidahenSelectedActionStateForExecution(...)` 记成“selected-action execution 仍应保留的正式 public seam”，结论已经落后于当前源码真相。现态证据是：当前这两个文件都已只保留真实 owner 主入口与文件内私有默认依赖 `const`，对应 2 条 `ForExecution(...)` wrapper 已全部删除；`prepareQidahenSelectedAction(...)` 与 `commitQidahenSelectedActionState(...)` 当前都已改成通过默认参数直接承接私有依赖。[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前也已改成在 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 里直连这两条真实 owner 主入口，不再经过额外 execution 薄壳。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“旧 2 条 wrapper 不得回流、真实 owner 主入口通过默认参数承接私有依赖”的当前口径。验证结果：`compatSource + commands + payment-selection = 428 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionPreparation.ts / selectedActionStateCommit.ts = 各自规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`，`selectedActionExecution.ts = 真实 owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 22:49 +08：当前《七大恨》如果还把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里的 `resolveQidahenPendingBattleResolvedEvent(...)` 记成“pending-battle resolved-event 仍应保留的一条总桥接入口”，结论已经落后于当前源码真相。现态证据是：当前 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已只保留 `resolveQidahenPendingActionFromPayload(...)`、`resolveQidahenPendingTargetInteractionChoice(...)` 与 `resolveQidahenPostBattleInteractionChoice(...)` 这 3 条真实 owner 入口，旧总桥接壳已删除；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前也已把 `PENDING_ACTION_RESOLVED` 直接路由到 `resolveQidahenPendingActionFromPayload(...)`，把 `POST_BATTLE_DECISION_RESOLVED` 直接路由到 `resolveQidahenPostBattleInteractionChoice(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“旧总桥接壳不得回流、resolved-event route 必须直连真实 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle flow owner`、`resolvedEventReducers.ts = resolved-event route consumer`，pending-battle 这两类 resolved event 已直接连接真实 owner；这轮没有重跑 E2E，也没有刷新截图。额外边界是：formal review 更早位置有些 residual 已过时，例如 `selectedActionExecutedEventBridge.ts` 这类旧桥在当前树里已经不存在，后续下一刀必须先回到当前磁盘真相重锁，不能机械沿旧审查文本继续拆。
+- 2026-06-10 22:37 +08：当前《七大恨》如果还把 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 里的 `updateQidahenTurnLabelForTurnFlow(...)`、`advanceQidahenTurnIfReadyForTurnFlow(...)`、`applyQidahenVictoryStatusForTurnFlow(...)` 记成“turn-flow 仍应保留的正式 public seam”，结论已经落后于当前源码真相。现态证据是：当前这 3 个文件都已只保留真实 owner 主入口与文件内私有默认依赖 `const`，对应 3 条 `ForTurnFlow(...)` wrapper 已全部删除；而且为修掉删壳后暴露出来的循环依赖初始化时序问题，`updateQidahenTurnLabel(...)`、`advanceQidahenTurnIfReady(...)`、`applyQidahenVictoryStatus(...)` 当前也都已改成 `export function` 形式承接默认参数。外围 caller 现已全部追平为直连真实 owner，包括 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts)、[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts)、[handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts)、[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts)、[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)、[scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts)、[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts)、[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts)、[selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts)。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“旧 3 条 wrapper 不得回流”的当前口径。验证结果：`payment-selection + compatSource = 336 passed`，`compatSource = 84 passed`，组合回归 `601 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `turnLabelState.ts / turnAdvance.ts / victoryResolution.ts = 各自规则 owner + 文件内私有默认依赖 const + 主入口默认参数承接`，外围 caller 直接连接真实 owner；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 22:24 +08：当前《七大恨》如果还把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里的 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 记成“pending-battle interaction handler / resolved-command builder / domain root 仍应直接消费的正式 public surface”，结论已经落后于当前源码真相。现态证据是：当前 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已把这组默认依赖常量从对外 surface 收口为文件内私有 `const`，并由 `resolveQidahenPendingActionFromPayload(...)`、`resolveQidahenPendingTargetInteractionChoice(...)`、`resolveQidahenPostBattleInteractionChoice(...)` 的默认参数直接承接；[pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts) 当前也已不再显式传入 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`，只直连两条真实 interaction choice owner；[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 当前已只直连 `applyRequestedCommittedTroops` 与 `createQidahenStructuredBattleRolls` 两个真正需要的 battle helper，不再借整组 flow dependencies；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已不再 re-export 这组常量；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 与 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 已追平到这条新真相。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle flow owner + default dependency owner`，`pendingBattleInteractionEventHandlers.ts = interaction consumer`，`resolvedCommandEventBuilders.ts = battle helper consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 22:14 +08：当前《七大恨》如果还把 formal review `2.33` 记成“pending-battle flow 依赖仍外露，所以这是当前 next seam”，结论已经落后于当前源码真相。现态证据是：当前 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts)、[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 才共同构成了还未继续收口的 turn-flow residual。三者当前都已经是“真实 owner 主入口 + 文件内私有默认依赖 `const`”，但仍分别保留 `updateQidahenTurnLabelForTurnFlow(...)`、`advanceQidahenTurnIfReadyForTurnFlow(...)`、`applyQidahenVictoryStatusForTurnFlow(...)` 这 3 条只负责回塞默认依赖的 wrapper；而且外围 caller 仍广泛依赖这 3 条 wrapper，[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也仍明确锁着这 3 条 seam 与对应私有依赖常量。结论：当前更准确的 owner 关系应更新为 `turnLabelState.ts / turnAdvance.ts / victoryResolution.ts = 各自规则 owner + 私有默认依赖 const + ForTurnFlow wrapper`，而不是继续把 pending-battle 那条线误记成当前 residual。边界：这轮是 formal review current truth 校正，没有改生产代码，也没有重跑 `eslint` / `vitest` / `typecheck`、E2E 或截图。
+- 2026-06-10 22:11 +08：当前《七大恨》如果还把 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 里的 `applyQidahenCharacterActionWindowEffectsWithFocusForTurnFlow(...)` 记成“character-action-window owner 仍应保留的一条正式 turn-flow seam”，结论已经落后于当前源码真相。现态证据是：当前 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 已不再导出这条 `ForTurnFlow(...)` 壳，只保留 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` 与 `applyQidahenCharacterActionWindowEffects(...)` 两条真实 owner 入口，并继续由文件内私有 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 通过主入口默认参数直接承接；[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 当前已改成直接 import/消费 `applyQidahenCharacterActionWindowEffectsWithFocus(...)`；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 当前也已改成通过 `applyQidahenCharacterActionWindowEffectsWithFocus(state).state` 直连 owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“旧 `WithFocusForTurnFlow(...)` seam 不再保留、consumer 直接连接真实 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts = character-action-window owner + default dependency owner`，`regionSelectionReducer.ts / turnLabelState.ts = 真实 owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 22:08 +08：当前《七大恨》如果还把 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 里的 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES`，以及 [postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 里的 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 记成“battle flow 或 domain root 仍应直接消费的正式 public surface”，结论已经落后于当前源码真相。现态证据是：当前 [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 已新增文件内私有 `QIDAHEN_POST_BATTLE_SELECTION_DEPENDENCIES`，让 `buildPostBattleSelection(...)` 直接持有 `toFactionLabel / getActionRuleDisplayRegionName` 这组展示依赖；当前 [postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 已把 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 从对外 `export const` 收口为文件内私有 `const`，并由 `resolvePostBattleDecision(...)` 主入口默认参数直接承接；当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 也已把 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 从对外 `export const` 收口为文件内私有 `const`，并由 `resolvePendingTargetActionByActionType(...)` 主入口默认参数直接承接，同时退出对 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 的反向依赖；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前已改成只直连 `resolvePendingTargetActionByActionType(...)` 与 `resolveQidahenPostBattleDecisionByChoice(...)`，不再外部直传这两组常量；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已不再 re-export 这两组依赖常量；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“owner 保留私有默认依赖 `const`，battle flow 只消费真实 owner 入口，domain root 不再对外暴露这两组常量”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingTargetResolution.ts = pending-target resolution owner + default dependency owner`，`postBattleDecisionResolution.ts = post-battle resolution owner + default dependency owner`，`postBattleSelectionBuilder.ts = post-battle selection owner + local display dependency owner`，`pendingBattleFlow.ts = battle flow consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:59 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)` 记成“剧本选择 resolved-event owner 仍应保留的正式 public seam”，结论已经落后于当前源码真相。现态证据是：当前这条 seam 已翻正为 `resolveQidahenScenarioChoiceResolvedEvent(...)`；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前也已同步直连新名；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolved-event owner 直连正式语义入口，不再保留过时 `ForTurnFlow` public seam”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = 剧本选择 resolved-event owner`、`resolvedEventReducers.ts = route consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:58 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 记成“initial-core setup 或其他外部 caller 仍应直接消费的正式 public surface”，结论已经落后于当前源码真相。现态证据是：当前 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 已把这组默认依赖从 `export const` 收口为文件内私有 `const`，并让 `buildPendingQidahenScenarioCharacterChoices(...)` 与 `buildPendingQidahenScenarioArmamentChoices(...)` 通过默认参数直接承接；`applyQidahenScenarioPresetToFactionState(...)` 当前也已删除无效 `dependencies` 参数，因为该入口函数体本身并不消费这组依赖；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前已改成只通过两条正式待决项构造入口消费剧本选择 owner，不再外部直传 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`，并以显式 `undefined, scenarioSelections` 调用避开依赖参数位；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不得再导出这组默认依赖常量，但必须保留私有 `const` 并由 owner 默认入口直传；preset 入口不得再声明无效依赖参数；setup consumer 不得再直传该常量”的当前口径。对应这刀已实际跑过的验证结果是：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = scenario-choice state owner + default dependency owner + setup entry owner + resolved-event consumer seam`，`initialCoreSetup.ts = setup consumer`，这组默认依赖常量不再属于正式对外 surface；这条是 formal review 补录，不是新 production 改动，这轮也没有重跑 E2E 或刷新截图。
+- 2026-06-10 21:55 +08：当前《七大恨》如果还把 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 里的 `resolveQidahenGameOverForTurnFlow(...)` 记成“victory owner 仍应保留的一条正式 turn-flow seam”，结论已经落后于当前源码真相。现态证据是：当前这条函数已经删除；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `isGameOver` 已直接读取 `state.victoryStatus?.winnerFactionId` 并返回 `winner: state.factions[winnerFactionId].playerId`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“`index.ts` 直接承接 game-over 最末映射、`victoryResolution.ts` 不再保留单 caller seam”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `victoryResolution.ts = 胜利状态 owner`、`index.ts = domain root game-over 末端映射 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:46 +08：当前《七大恨》如果还把 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 里的 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 记成“fortification-maintenance 或其他外部 caller 仍应直接消费的正式 public surface”，结论已经落后于当前源码真相。现态证据是：当前 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 已把这组默认依赖从 `export const` 收口为文件内私有 `const`，并继续只给 `resolveQidahenMidyearWithSeasonDependencies(...)` 与 `resolveQidahenNewYearWithSeasonDependencies(...)` 在 owner 内直传使用；[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 当前也已改成只通过 `resolveQidahenNewYearWithSeasonDependencies(...)` 这条正式新年结算入口消费 season owner，不再外部直传 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“不得再导出这组默认依赖常量，但必须保留私有 `const` 并由 season owner 默认入口直传，外部 caller 不再直传该常量”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `seasonResolution.ts = season resolution owner + default dependency owner + season entry wrapper owner`，`fortificationMaintenance.ts = new-year interaction consumer`，这组默认依赖常量不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:35 +08：当前《七大恨》如果还把 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts)、[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts)、[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 与 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 里的默认依赖常量一概记成“owner 保留私有 `const` + 各自 `ForTurnFlow(...)` wrapper 仍在”，结论已经落后于当前源码真相。现态证据是：当前 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 已删除 `applyQidahenCharacterActionWindowEffectsForTurnFlow(...)`，只剩 `applyQidahenCharacterActionWindowEffectsWithFocusForTurnFlow(...)`；[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 已改成通过 `applyQidahenCharacterActionWindowEffectsWithFocusForTurnFlow(state).state` 消费；[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 则已把 `QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 收口为文件内私有 `const`，并让 `syncQidahenSpecialRuleState(...)` 主入口默认参数直接承接，旧 `syncQidahenSpecialRuleStateForTurnFlow(...)` 已删除；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 与 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 现在也都已直连 `syncQidahenSpecialRuleState(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已明确锁住这条当前真相。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts = owner + with-focus turn-flow seam`、`specialRuleState.ts = owner + 主入口默认依赖承接`、`turnLabelState.ts / turnAdvance.ts / victoryResolution.ts = 外围 consumer 或剩余 turn-flow seam`，对应默认依赖常量都不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:27 +08：当前《七大恨》如果还把 [selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts)、[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts)、[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts)、[armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的默认依赖常量记成“selected-action execution 仍应直接消费的正式 public surface”，结论已经落后于当前源码真相。现态证据是：这 4 个 owner 文件都已把对应 `QIDAHEN_*_DEPENDENCIES` 从 `export const` 收口为文件内私有 `const`；其中 [selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 与 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 继续保留 `prepareQidahenSelectedActionForExecution(...)`、`commitQidahenSelectedActionStateForExecution(...)` 这两条 execution 专用 wrapper，而 [grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 与 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 则已直接由 `resolveQidahenGrantPardonExecution(...)`、`resolveQidahenSelectedArmamentUpgradeExecution(...)` 在主入口默认参数里承接默认依赖；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前也已改成只直连这 4 条真实 owner 入口，不再越层直接 import 默认依赖常量；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“owner 保留私有默认依赖 `const`，selected-action execution 只消费真实 owner 主入口 / 必要 wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionExecution.ts = execution 总线 owner + 4 条真实 owner 入口 consumer`，这 4 组默认依赖常量都不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:23 +08：当前《七大恨》如果还把 [pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里的 `applyQidahenRequestedCommittedTroops(...)` 记成“committed-troops owner 仍应保留的一层正式 public wrapper”，结论已经落后于当前源码真相。现态证据是：当前 `applyRequestedCommittedTroops(...)` 已在主入口默认参数里直接承接私有 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES`，旧单 caller wrapper `applyQidahenRequestedCommittedTroops(...)` 已删除；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前也已改成直接消费 `applyRequestedCommittedTroops(...)`，不再经额外 wrapper 中转；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“保留私有默认依赖 `const` 与主入口默认参数，但不再要求保留单 caller wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`payment-selection = 336 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleCommittedTroops.ts = committed-troops owner + 主入口默认依赖 consumer`，`applyQidahenRequestedCommittedTroops(...)` 不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:14 +08：当前《七大恨》如果还把 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 里的 `QIDAHEN_REGION_SELECTED_DEPENDENCIES` 与 `reduceQidahenRegionSelectedEventForDirectInput(...)`，以及 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 里的 `QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES` 与 `resolveQidahenWheelMoveExecutedEventForDirectInput(...)` 记成“仍是合理的 direct-input 默认依赖 owner”，结论已经落后于当前源码真相。现态证据是：当前 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 已删除这层只给 `reduceQidahenRegionSelectedEvent(...)` 自己转手的默认依赖常量壳与额外 wrapper，改为直接在事件入口参数默认值里承接 `applyQidahenCharacterActionWindowEffectsWithFocusForTurnFlow`、`updateQidahenTurnLabelForTurnFlow` 与 `resolveQidahenWheelDispatchInteractionChoice`；当前 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 也已删除那层只给 `resolveQidahenWheelMoveExecutedEvent(...)` 自己转手的默认依赖常量壳与额外 wrapper，改为直接在事件入口参数默认值里承接抽牌、年中结算、胜利状态与回合推进 helper；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前也已改成直连这两个真实 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“direct-input reducer 直连真实 owner 事件入口，不再要求保留单独默认依赖壳与 `ForDirectInput` wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`payment-selection = 336 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `regionSelectionReducer.ts = region-selected owner + direct-input 入口直接 consumer`，`wheelMoveExecution.ts = wheel-move execution owner + direct-input 入口直接 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:14 +08：当前《七大恨》如果还把 [pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 里的 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 记成“committed-troops owner 仍应对外暴露的正式默认依赖常量”，结论已经落后于当前源码真相。现态证据是：当前 [pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 已把这组默认依赖从 `export const` 收口为文件内私有 `const`，并新增正式 wrapper `applyQidahenRequestedCommittedTroops(...)` 只在 owner 内直传使用；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前也已改成只消费这条正式 wrapper，不再越层直接拿默认依赖常量；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已追平到“不得再导出这组默认依赖常量，但必须保留私有 `const` 与正式 wrapper，且 flow owner 只能直连 wrapper”的当前口径。验证结果：定向 `eslint` 通过，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleCommittedTroops.ts = committed-troops owner + default-wrapper owner`，`QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:02 +08：当前《七大恨》如果还把 [selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts) 里的 `QIDAHEN_SELECTION_INPUT_STATE_DEPENDENCIES` 与 `reduceQidahenSelectionInputEventForDirectInput(...)`，以及 [previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 里的 `QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES` 与 `resolveQidahenPreviewActionConfirmedEventForDirectInput(...)` 记成“仍是合理的 direct-input 默认依赖 owner”，结论已经落后于当前源码真相。现态证据是：当前 [selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts) 已删除这层只给 `reduceQidahenSelectionInputEvent(...)` 自己转手的默认依赖常量壳与额外 wrapper，改为直接在主入口参数默认值里承接 `updateQidahenTurnLabelForTurnFlow`；当前 [previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 也已删除那层只给 `resolveQidahenPreviewActionConfirmedEvent(...)` 自己转手的默认依赖常量壳与额外 wrapper，改为直接在主入口参数默认值里承接 `updateQidahenTurnLabelForTurnFlow`；[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前也已改成直连这两个真实 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“direct-input reducer 直连真实 owner 入口，不再要求保留单独默认依赖壳与 `ForDirectInput` wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectionInputState.ts = selection-input owner + direct-input 入口直接 consumer`，`previewActionReducer.ts = preview-action reducer owner + direct-input 入口直接 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 21:02 +08：当前《七大恨》如果还把 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 里的 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 记成“selected-action execution owner 仍应对外暴露的正式默认依赖常量”，结论已经落后于当前源码真相。现态证据是：当前 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 已把这组默认依赖从 `export const` 收口为文件内私有 `const`，并继续只给 `resolveQidahenSelectedActionExecutedEvent(...)` 直传使用；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到“不得再导出这组默认依赖常量，但必须保留私有 `const` 并由 resolved-event 入口直传”的当前口径。验证结果：定向 `eslint` 通过，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionExecution.ts = selected-action execution owner + resolved-event 入口 direct consumer`，`QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 不再属于正式对外 surface；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:55 +08：当前《七大恨》如果还把 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 里的 `QidahenScenarioChoiceResolvedEventDependencies / QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES`，以及 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 里的 `QidahenActionWindowResolvedEventDependencies / QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES` 记成“仍是合理的 resolved-event 依赖 owner”，结论已经落后于当前源码真相。现态证据是：当前 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 已删除这层只给 `resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)` 自己转手的依赖常量壳，直接调用 `getFactionIdByPlayerId(...)`、`resolveQidahenScenarioCharacterChoice(...)`、`resolveQidahenScenarioArmamentChoice(...)`、`updateQidahenTurnLabelForTurnFlow(...)` 并直传 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`；当前 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 也已删除那层只给 `resolveQidahenActionWindowResolvedEvent(...)` 自己转手的依赖常量壳，改为直接调用各条真实 action-window choice owner 与 `getFactionIdByPlayerId(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolved-event 入口直连真实 owner helper，不再要求保留自包依赖常量壳”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = 剧本选择规则 owner + resolved-event 入口直接 consumer`，`actionWindowResolvedEvents.ts = action-window resolved-event family owner + 真实 choice helper 直接 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:42 +08：当前《七大恨》如果还把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 里的 `QidahenPendingBattleResolvedEventDependencies / QIDAHEN_PENDING_BATTLE_RESOLVED_EVENT_DEPENDENCIES`，以及 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 里的 `QidahenSunYuanhuaTechResolvedEventDependencies / QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES` 记成“仍是合理的 resolved-event 依赖 owner”，结论已经落后于当前源码真相。现态证据是：当前 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已删除这层只给 `resolveQidahenPendingBattleResolvedEvent(...)` 自己转手的依赖常量壳，直接调用 `resolveQidahenPendingActionFromPayload(...) / resolveQidahenPostBattleInteractionChoice(...)` 并直传 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`；当前 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 也已删除那层只给 `resolveQidahenSunYuanhuaTechResolvedEvent(...)` 自己转手的依赖常量壳，改为直接调用 `resolveQidahenSunYuanhuaTech(...)`、`applyQidahenVictoryStatusForTurnFlow(...)`、`buildSeasonSummary(...)` 与 `advanceQidahenTurnIfReadyForTurnFlow(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolved-event 入口直连真实 owner helper，不再要求保留自包依赖常量壳”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle flow owner + resolved-event 入口直接 consumer`，`armamentUpgradeResolution.ts = 军备/孙元化科技 owner + resolved-event 入口直接 consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:30 +08：当前《七大恨》如果还把 [pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 记成“继续本地维护共享 season summary helper”，结论已经落后于当前源码真相。现态证据是：当前 [pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 已改成直接 `import { buildSeasonSummary } from './seasonSummaryBuilder';`，不再本地声明同名 helper；[seasonSummaryBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonSummaryBuilder.ts) 继续作为共享 season summary owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已锁到“pendingBattleStateTransition 直连 owner、旧内联 helper 不得回流”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `seasonSummaryBuilder.ts = shared season summary owner`，`pendingBattleStateTransition.ts = battle-flow state transition consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:24 +08：当前《七大恨》如果还把 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts)、[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts)、[directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts)、[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 里那 4 条 public seam 记成“仍应顶着 `FromRegistry` 旧 public 名”，结论已经落后于当前源码真相。现态证据是：当前 `buildQidahenCommandEventsFromRegistry(...)` 已翻正为 `buildQidahenCommandEvents(...)`，`buildQidahenResolvedCommandEventsFromRegistry(...)` 已翻正为 `buildQidahenResolvedCommandEvents(...)`，`reduceQidahenDirectInputEventFromRegistry(...)` 已翻正为 `reduceQidahenDirectInputEvent(...)`，`reduceQidahenResolvedEventFromRegistry(...)` 已翻正为 `reduceQidahenResolvedEvent(...)`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已全部改成消费新 public seam 名；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已同步锁到新名。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为“这 4 条 public seam 都已经回到真实 owner 语义，不再借旧 registry 时代的 public 名伪装自己仍是 registry route”；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:18 +08：当前《七大恨》如果还把 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 记成“interaction bridge 的 resolver list 与总入口真相仍应单独挂在外围 registry 文件”，结论已经落后于当前源码真相。现态证据是：当前 [interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 已自己承接 `QIDAHEN_INTERACTION_EVENT_RESOLVERS`、`resolveQidahenInteractionEvent(...)`、`payload: readQidahenResolvedPayload(event)` 与顺序遍历；[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 与 [pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts) 当前继续承接各自 family handler 本体；[interactionResolutionPayload.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolutionPayload.ts) 当前继续承接 payload truth；旧 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `interactionSystem.ts` 直接承接 resolver list 与总入口、payload/handler owner 保持独立。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `interactionSystem.ts = interaction resolver list truth owner + interaction total route consumer`，`interactionResolutionPayload.ts = payload truth owner`，`turnActionInteractionEventHandlers.ts / pendingBattleInteractionEventHandlers.ts = family handler body owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 20:13 +08：当前《七大恨》如果还把 [runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 记成“runtime sync 的 source 顺序与按 sourceId 查 builder 真相仍应单独挂在外围 registry 文件”，结论已经落后于当前源码真相。现态证据是：当前 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 已自己承接 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS`、`QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS`、`QIDAHEN_RUNTIME_INTERACTION_BUILDERS_BY_SOURCE_ID`、`getRegisteredQidahenRuntimeInteractionSourceIds()` 与 `buildQidahenRuntimeInteractionFromBuilders(...)`；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 当前也已直接从 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 消费这条真实 owner；旧 [runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 builder owner 直接承接 source 顺序与按 sourceId 查表入口、`runtimeInteractions.ts` 不再 import 旧薄壳。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `interactionBuilders.ts = runtime interaction builder list owner + source-order truth owner + sourceId lookup owner`，`runtimeInteractions.ts = runtime sync seam consumer`；这轮没有重跑 E2E，也没有刷新截图。边界：`interactionResolverRegistry.ts` 当前仍自持 `QIDAHEN_INTERACTION_EVENT_RESOLVERS` 与 `resolveQidahenInteractionEvent(...)`，不是这轮同性质的单 caller route 薄壳。
+- 2026-06-10 18:29 +08：当前《七大恨》如果还把 [directInputEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerRegistry.ts) 与 [resolvedEventReducerRegistryMap.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistryMap.ts) 记成“direct-input / resolved-event registry route 仍应单独挂在外围 map 文件”，结论已经落后于当前源码真相。现态证据是：当前 [directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 已自己承接 `QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS`、`QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS_BY_EVENT_TYPE` 与 `reduceQidahenDirectInputEventFromRegistry(...)`；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 已自己承接 `QIDAHEN_RESOLVED_EVENT_REDUCERS`、`QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE` 与 `reduceQidahenResolvedEventFromRegistry(...)`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已直接消费这两个真实 owner；旧 [directInputEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerRegistry.ts) 与 [resolvedEventReducerRegistryMap.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistryMap.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 reducers owner 直接承接 registry map 真相、`index.ts` 不再 import 旧薄壳。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `directInputEventReducers.ts = direct-input reducer family owner + event-type registry owner`，`resolvedEventReducers.ts = resolved-event reducer family owner + event-type registry owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 18:16 +08：当前《七大恨》如果还把 [actionWindowResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventDependencies.ts) 记成“action-window resolved-event 默认依赖仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：当前新 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 已自己承接 `QidahenActionWindowResolvedEventDependencies / QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES`、`QidahenActionWindowResolvedEvent` 与 `resolveQidahenActionWindowResolvedEvent(...)`；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前也已直接从 [actionWindowResolvedEvents.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEvents.ts) 消费真实 owner；旧 [actionWindowResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventDependencies.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“旧 reader 允许空源、新 owner 承接 family 入口与 dependency const、reducers 直连新 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowResolvedEvents.ts = action-window resolved-event family owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 18:05 +08：当前《七大恨》如果还把 [scenarioChoiceResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventDependencies.ts) 记成“scenario-choice resolved-event 默认依赖与 wrapper 仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：当前 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 已自己承接 `QidahenScenarioChoiceStateDependencies / QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`、`applyQidahenScenarioPresetToFactionState(...)`、`buildPendingQidahenScenarioCharacterChoices(...)`、`buildPendingQidahenScenarioArmamentChoices(...)`、`QidahenScenarioChoiceResolvedEventDependencies / QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES` 与 `resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)`；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前已直接从 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 消费 setup 侧入口与 state dependency const；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前也已直接从 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 消费 `resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)`；旧 [scenarioChoiceResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventDependencies.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 现态也已显示 formal residual 转移：测试仍要求旧文件存在，并要求 [resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 继续 import 旧文件，但当前真实代码已经改成直连 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts)。结论：当前更准确的 owner 关系已经更新为 `scenarioChoiceState.ts = scenario-choice state 规则本体 + setup 侧入口 owner + resolved-event default dependency owner + resolved-event public wrapper owner`；这轮没有改生产代码，也没有跑测试，所以这次补的是 formal review current truth，不是新实现验证。
+- 2026-06-10 17:47 +08：当前《七大恨》如果还把 [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 记成“pending-battle flow 默认依赖仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：这轮 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已自己承接 `QidahenPendingBattleFlowDependencies / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`，并继续作为 pending-battle flow owner，同时承接 `resolveQidahenPendingActionFromPayload(...) / resolveQidahenPendingTargetInteractionChoice(...) / resolveQidahenPostBattleInteractionChoice(...)`；[pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts)、[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 与 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前都已直接从 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 消费真实 owner；旧 [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `pendingBattleFlow.ts` 自持 dependency const、3 个 consumer 不再 import 旧 dependency 壳。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle flow 规则本体 + default dependency owner + public flow entry owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 16:25 +08：当前《七大恨》如果还把 [pendingBattleResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventDependencies.ts) 记成“pending-battle resolved-event 默认依赖与 wrapper 仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：这轮 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已自己承接 `QidahenPendingBattleResolvedEventDependencies / QIDAHEN_PENDING_BATTLE_RESOLVED_EVENT_DEPENDENCIES`，并继续作为 pending-battle flow owner，同时承接 `resolveQidahenPendingBattleResolvedEventWithDependencies(...)`；[resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前已直接从 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 消费新 wrapper；旧 [pendingBattleResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventDependencies.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `pendingBattleFlow.ts` 自持 resolved-event dependency interface + const + wrapper、`resolvedEventReducers.ts` 不再 import 旧 dependency 壳。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleFlow.ts = pending-battle 规则本体 + resolved-event default dependency owner + resolved-event public wrapper owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 15:40 +08：当前《七大恨》如果还把 [seasonResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolutionDependencies.ts) 记成“season 默认依赖、chronology 依赖常量与年中 / 新年 wrapper 仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：这轮 [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 已自己承接 `QidahenSeasonResolutionDependencies / QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES / QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES`，并继续作为 season 规则 owner，同时承接 `resolveQidahenMidyearWithSeasonDependencies(...) / resolveQidahenNewYearWithSeasonDependencies(...)` 两条 wrapper；[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 与 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 当前都已直接消费真实 owner；旧 [seasonResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolutionDependencies.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `seasonResolution.ts` 自持 chronology/season 依赖常量与两条 wrapper、`wheelMoveExecution.ts / fortificationMaintenance.ts` 不再 import 旧 dependency 壳。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `seasonResolution.ts = season 规则本体 + chronology 默认依赖 owner + season 默认依赖 owner + public wrapper owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 15:17 +08：当前《七大恨》如果还把 [armamentUpgradeResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolutionDependencies.ts) 与 [grantPardonExecutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecutionDependencies.ts) 记成“升级军备 / 赐印招安默认依赖仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：这轮 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 已自己承接 `QidahenArmamentUpgradeResolutionDependencies / QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES`，并继续作为“升级军备 + 孙元化科技升级”规则 owner；[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 已自己承接 `QidahenGrantPardonExecutionDependencies / QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES`；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 与 [sunYuanhuaTechResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventDependencies.ts) 当前都已直接消费真实 owner；旧两个 dependency 文件当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `selectedActionExecution.ts / sunYuanhuaTechResolvedEventDependencies.ts` 不再 import 旧 dependency 壳、而是直接消费真实 owner。验证结果：`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `armamentUpgradeResolution.ts = 升级军备规则本体 + 孙元化科技升级规则本体 + default dependency owner`，`grantPardonExecution.ts = 赐印招安规则本体 + default dependency owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 15:07 +08：当前《七大恨》如果还把 [actionWindowResolvedCommandDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedCommandDependencies.ts) 与 [pendingBattleResolvedCommandDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedCommandDependencies.ts) 记成“resolved-command 默认依赖仍应单挂在外围 dependency 文件”，结论已经落后于当前源码真相。现态证据是：这轮 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 已自己承接 `QidahenActionWindowResolvedCommandDependencies / QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES` 与 `QidahenPendingBattleResolvedCommandDependencies / QIDAHEN_PENDING_BATTLE_RESOLVED_COMMAND_DEPENDENCIES`；[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 和 [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 继续作为被直接消费的真实 owner；旧两个 dependency 文件当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把对应 reader 改成允许空源，并锁住 `resolvedCommandEventBuilders.ts` 不再 import 旧 dependency 壳、而是自己承接两组 dependency interface + const。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = resolved-command builder body + builder list owner + action-window/pending-battle 默认依赖 owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 14:43 +08：当前《七大恨》如果还把 [turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts) 记成“继续保留 turn-flow family wrapper / default dependency owner 的正式宿主”，结论已经落后于当前源码真相。现态证据是：这轮 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts)、[turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts)、[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts)、[victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts)、[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 都已各自承接 `ForTurnFlow(...)` wrapper 与对应 dependency const；[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts)、[handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts)、[pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)、[scenarioChoiceResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventDependencies.ts)、[selectedActionPreparationDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparationDependencies.ts)、[selectedActionStateCommitDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommitDependencies.ts)、[selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts)、[sunYuanhuaTechResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventDependencies.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 与 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前都已直接消费这些 owner；旧 `turnFlowOrchestration.ts` 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把 `readTurnFlowOrchestrationSource()` 改成允许空源，并锁住 5 个真实 owner 自持 turn-flow wrapper 的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，组合回归 `601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `characterActionWindow.ts / turnLabelState.ts / specialRuleState.ts / victoryResolution.ts / turnAdvance.ts = turn-flow wrapper owner`，`turnFlowOrchestration.ts = 已退休浅壳`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 14:35 +08：当前《七大恨》如果还把 resolved-command builder 的 contract 记成继续由 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 这层 builder 列表 owner 自持，结论已经落后于当前源码真相。现态证据是：这轮新增 [resolvedCommandEventBuilderContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilderContracts.ts)，正式承接 `QidahenResolvedCommandEventBuilder / QidahenResolvedCommandEventBuilderSpec`；[resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 当前已退回只保留各族 resolved-command builder 本体与 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS`，不再本地定义 contract；[resolvedCommandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilderRegistry.ts) 当前也已直接 import `QidahenResolvedCommandEventBuilder`，不再从 builder list 反推类型。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“contract owner 独立、builder 文件不再混挂协议层定义、registry 直接消费 contract owner”的当前口径；同时把这轮串行验证里继续暴露出的 `turnLabelState / turnAdvance / victoryResolution / characterActionWindow` 相关 source guard 漂移一并追到当前 worktree 真相。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilderContracts.ts = resolved-command builder contract owner`，`resolvedCommandEventBuilders.ts = resolved-command builder body + builder list owner`，`resolvedCommandEventBuilderRegistry.ts = resolved-command registry truth owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 14:20 +08：当前《七大恨》如果还把 command-event builder 的 contract 记成继续由 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 这层 builder 列表 owner 自持，结论已经落后于当前源码真相。现态证据是：这轮新增 [commandEventBuilderContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderContracts.ts)，正式承接 `QidahenCommandEventBuilder / QidahenCommandEventBuilderSpec`；[commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前已退回只保留三族 builder 本体与 `QIDAHEN_COMMAND_EVENT_BUILDERS`，不再本地定义 contract；[commandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderRegistry.ts) 当前也已直接 import `QidahenCommandEventBuilder`，不再从 builder list 反推类型。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“contract owner 独立、builder 文件不再混挂协议层定义、registry 直接消费 contract owner”的当前口径。串行主回归途中还暴露出 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 缺失 `getQidahenDerivedWheelDispatchSelectionForCore` 导入，这条只影响门禁基线的阻塞已一并补齐。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `commandEventBuilderContracts.ts = command-event builder contract owner`，`commandEventBuilders.ts = command-event builder body + builder list owner`，`commandEventBuilderRegistry.ts = command-event registry truth owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 13:54 +08：当前《七大恨》如果还把 [turnActionChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionChoiceOrchestration.ts) 记成“继续保留 turn-action choice public seam 与默认依赖装配 owner”，结论已经落后于当前源码真相。现态证据是：这轮 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts)、[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts)、[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts)、[handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 都已各自承接 `WithDependencies(...)`、default dependency const 与 public wrapper；[actionWindowResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventDependencies.ts)、[turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 与 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前都已直接消费真实 owner；旧 `turnActionChoiceOrchestration.ts` 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“旧 orchestration reader 允许空源、consumer 直连 owner、4 个 owner 自持 public wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowDispatch.ts / actionWindowChoices.ts / fortificationMaintenance.ts / handLimitDiscard.ts = 规则本体 + default dependency owner + public wrapper owner`，`turnActionChoiceOrchestration.ts = 已退休浅壳`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 13:31 +08：当前《七大恨》如果还把 runtime interaction builder 的 contract 记成 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 这层 registry 聚合壳自己应继续持有的正式接口，结论已经落后于当前源码真相。现态证据是：这轮新增 [runtimeInteractionBuilderContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderContracts.ts)，正式承接 `QidahenRuntimeInteractionBuilder / QidahenRuntimeInteractionBuilderSpec`；[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 当前已退回只保留 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 聚合出口，不再自持 builder contract；[turnActionInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBuilders.ts) 与 [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 当前都已显式按 `QidahenRuntimeInteractionBuilderSpec` 标注 family builder truth；[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前也已直接 import `QidahenRuntimeInteractionBuilder`，不再反向从 builder list 推导类型。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“builder contract owner 独立、builder 聚合层只组合列表、registry 直接消费 contract owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `runtimeInteractionBuilderContracts.ts = runtime interaction builder contract owner`，`turnActionInteractionBuilders.ts / battleInteractionBuilders.ts = family builder truth owner`，`interactionBuilders.ts = builder list combiner`，`runtimeInteractionBuilderRegistry.ts = registry truth owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 13:29 +08：当前《七大恨》如果还把 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 记成“继续同时承担 direct-input 事件识别、依赖装配与本地 `switch (event.type)` route”，结论已经落后于当前源码真相。现态证据是：新 [directInputEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducers.ts) 当前已经正式承接 `QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS` 这张 direct-input family reducer list；新 [directInputEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerRegistry.ts) 当前已显式派生 `QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS_BY_EVENT_TYPE` 并导出 `reduceQidahenDirectInputEventFromRegistry(...)`；[selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)、[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 当前都已各自承接默认 dependency const 与 `WithDependencies(...)` wrapper；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已退回只直接消费 `reduceQidahenDirectInputEventFromRegistry(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“direct-input registry truth + owner-held default dependencies + index direct consumer”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `directInputEventReducers.ts = direct-input family entry truth owner`，`directInputEventReducerRegistry.ts = direct-input registry truth owner`，4 个 direct-input owner 文件各自承接默认 dependencies 与 wrapper，`index.ts = direct-input route consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 13:09 +08：当前《七大恨》如果还把 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 记成“继续保留 resolved-event total route seam consumer”，结论已经落后于当前源码真相。现态证据是：production 内部对 `resolveQidahenResolvedEventForTurnFlow(...)` 的正式消费当前已经归零；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 这轮已直接调用 [resolvedEventReducerRegistryMap.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistryMap.ts) 的 `reduceQidahenResolvedEventFromRegistry(...)`；旧 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“旧 registry reader 允许空源，index 直连 resolved-event registry map”的当前口径，并把 direct-input 等既有 registry 化断言一并校正到当前 worktree 真相。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedEventReducers.ts = family reducer truth owner`，`resolvedEventReducerRegistryMap.ts = event-type registry truth owner + resolved-event route owner`，`index.ts = resolved-event route consumer`，`resolvedEventReducerRegistry.ts = 已退休浅桥`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:42 +08：当前《七大恨》如果还把 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 记成“继续保留 resolved-command route seam consumer”，结论已经落后于当前源码真相。现态证据是：production 内部对 `buildQidahenResolvedCommandEvents(...)` 的正式调用当前只剩 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 一处，而这轮已经改成直接调用 [resolvedCommandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilderRegistry.ts) 的 `buildQidahenResolvedCommandEventsFromRegistry(...)`；旧 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“旧 bridge reader 允许空源，command-event builder 直连 resolved-command registry”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = resolved-command builder body + builder list owner`，`resolvedCommandEventBuilderRegistry.ts = resolved-command route owner`，`commandEventBuilders.ts = resolved-command route consumer`，`resolvedCommandBridge.ts = 已退休浅桥`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:39 +08：12:35 那条 command-event 记录现在只能当中间态，不能继续充当《七大恨》当前正式真相。现态证据是：[src/games/qidahen/domain/commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前已经新增 `QidahenCommandEventBuilderSpec` 与三族 `commandTypes` 列表，正式承接 command-event builder spec/catalog 真相；[src/games/qidahen/domain/commandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderRegistry.ts) 当前已显式派生 `QIDAHEN_COMMAND_EVENT_BUILDERS_BY_COMMAND_TYPE`，并由 `buildQidahenCommandEventsFromRegistry(...)` 统一按 `command.type` 查表，不再只是 route wrapper；[src/games/qidahen/domain/index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前继续保持 `execute(...)` 直接消费 registry。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“builder spec/catalog truth + registry map truth + index direct consumer”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `commandEventBuilders.ts = command-event builder body owner + builder spec/catalog owner`，`commandEventBuilderRegistry.ts = command-event registry truth owner`，`index.ts = execute caller consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:35 +08：当前《七大恨》如果还把 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 记成“仍保留 `buildQidahenCommandEvents(...)` 这层 execute 命令事件 public thin wrapper”，结论已经落后于当前源码真相。现态证据是：`buildQidahenCommandEvents(...)` 当前已从 `index.ts` 删除；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `execute(...)` 已直接调用 [commandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderRegistry.ts) 的 `buildQidahenCommandEventsFromRegistry(...)`；而 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 与 `commandEventBuilderRegistry.ts` 继续分别承接 builder 本体与 route 真相。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“index 直接消费 registry，不再导出 wrapper”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `commandEventBuilders.ts = command-event builder body owner + builder list owner`，`commandEventBuilderRegistry.ts = command-event route owner`，`index.ts = execute caller consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:29 +08：当前《七大恨》如果还把 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 记成“继续同时承担 execute command-event route、selected-action/direct-input builder 本体与 builder 列表真相”，结论已经落后于当前源码真相。现态证据是：新 [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前已经正式承接 `QidahenCommandEventBuilder`、`QIDAHEN_COMMAND_EVENT_BUILDERS`、`buildQidahenSelectedActionExecutedEvent(...)` 以及 `REGION_SELECTED / PREVIEW_ACTION_CONFIRMED / WHEEL_MOVE_SELECTED / WHEEL_MOVE_EXECUTED / PAYMENT_CARD_SELECTED / HAND_LIMIT_DISCARD_CARD_SELECTED / SUN_YUANHUA_TECH_CARD_SELECTED / GAO_DI_DISPATCH_CARD_SELECTED` 这组 direct-input builder 本体；新 [commandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderRegistry.ts) 当前已直接 import `QIDAHEN_COMMAND_EVENT_BUILDERS` 并导出 `buildQidahenCommandEventsFromRegistry(...)`；而 `index.ts` 当前已退回只保留 `buildQidahenCommandEvents(...)` 这条 execute seam，并在内部只委托 `buildQidahenCommandEventsFromRegistry(state, command, random, timestamp)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“index 只消费 registry，builder 本体下沉到独立 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `commandEventBuilders.ts = command-event builder body owner + builder list owner`，`commandEventBuilderRegistry.ts = command-event registry owner`，`index.ts = execute total route seam consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:22 +08：当前《七大恨》如果还把 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 记成“继续同时承担 resolved-event 总入口和 `event.type -> family reducer` 路由真相”，结论已经落后于当前源码真相。现态证据是：新 [resolvedEventReducers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducers.ts) 当前已经正式承接 `QIDAHEN_RESOLVED_EVENT_REDUCERS` 这张 family reducer 列表真相；新 [resolvedEventReducerRegistryMap.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistryMap.ts) 当前已直接 import 这张列表并派生 `QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE`，同时导出 `reduceQidahenResolvedEventFromRegistry(...)`；而 `resolvedEventReducerRegistry.ts` 当前已退回只保留 `QidahenResolvedEventReductionResult / QIDAHEN_RESOLVED_EVENT_UNHANDLED / handledResolvedEvent(...) / resolveQidahenResolvedEventForTurnFlow(...)`，并在最外层只调用 `reduceQidahenResolvedEventFromRegistry(state, event)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“registry 只消费 registry map，family route 真相下沉到独立 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedEventReducers.ts = family reducer truth owner`，`resolvedEventReducerRegistryMap.ts = event-type registry truth owner`，`resolvedEventReducerRegistry.ts = resolved-event total route seam consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 12:14 +08：当前《七大恨》如果还把 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 记成“scenario-choice setup 仍需要独立 orchestration 壳”，结论已经落后于当前源码真相。现态证据是：resolved-event 入口早已并到 [scenarioChoiceResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventDependencies.ts) 后，旧文件当前只剩 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 一个 caller，而且内部也只是把 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 转手传给 `applyQidahenScenarioPresetToFactionState(...)`、`buildPendingQidahenScenarioCharacterChoices(...)`、`buildPendingQidahenScenarioArmamentChoices(...)`。这轮已经把 setup caller 直连到了 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 与 [scenarioChoiceStateDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceStateDependencies.ts)，旧 `scenarioChoiceOrchestration.ts` 当前已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“setup caller 直连 state owner，旧 orchestration reader 允许空源”的当前口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup = 95 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `initialCoreSetup.ts = scenario-choice setup caller`，`scenarioChoiceState.ts = setup/runtime 共用 state owner`，`scenarioChoiceStateDependencies.ts = state dependency truth owner`，`scenarioChoiceOrchestration.ts = 已退休浅桥`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 11:56 +08：当前《七大恨》如果还把 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 记成“继续同时承担 resolved payload 读取、turn-action/pending-battle handler 本体，以及 interaction resolver registry 列表真相”，结论已经落后于当前源码真相。现态证据是：新 [interactionResolutionPayload.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolutionPayload.ts) 当前已经正式承接 `QidahenResolvedPayload / QidahenInteractionResolutionContext / readQidahenResolvedPayload(...) / getQidahenResolvedChoiceId(...)`；新 [turnActionInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionEventHandlers.ts) 当前直接承接 `手牌上限弃牌 / 征召 / 外交 / 轮盘调度 / 内部调度 / 马市贸易 / 大汗令箭 / 驱虎吞狼 / 新年维护` 这组 turn-action interaction handler 本体；新 [pendingBattleInteractionEventHandlers.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionEventHandlers.ts) 当前直接承接 `待结算目标 / 战后处理` 两条 pending-battle interaction handler 本体；而 `interactionResolverRegistry.ts` 当前已退回只保留 `QIDAHEN_INTERACTION_EVENT_RESOLVERS` 与 `resolveQidahenInteractionEvent(...)` 这条总入口。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“payload truth / family handler body / registry truth 分层”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `interactionResolutionPayload.ts = payload truth owner`，`turnActionInteractionEventHandlers.ts / pendingBattleInteractionEventHandlers.ts = family handler body owner`，`interactionResolverRegistry.ts = registry truth owner + interaction total route consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 11:43 +08：当前《七大恨》如果还把 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 记成“继续同时承担 resolved-command 总路由、builder 列表真相和具体 resolved-event builder 本体”，结论已经落后于当前源码真相。现态证据是：`resolvedCommandBridge.ts` 当前已经退回只保留 `buildQidahenResolvedCommandEvents(...)` 这条总路由 consumer，并直接调用 [resolvedCommandEventBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilderRegistry.ts) 的 `buildQidahenResolvedCommandEventsFromRegistry(...)`；新 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 当前直接承接整批 resolved-command builder 本体与 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS` builder 列表真相，而 `resolvedCommandEventBuilderRegistry.ts` 则显式派生 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS_BY_COMMAND_TYPE` 并按 `command.type` 做路由查表。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“主桥只保留 route，builder truth / registry truth 下沉到新 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `resolvedCommandEventBuilders.ts = resolved-command builder body owner + builder catalog owner`，`resolvedCommandEventBuilderRegistry.ts = registry truth owner`，`resolvedCommandBridge.ts = resolved-command total route consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 11:33 +08：当前《七大恨》如果还把 `action-window resolved-event` 这条线记成“[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 继续本地维护 8 条 event 的 payload 分发本体，而 [actionWindowResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventDependencies.ts) 只承接依赖常量”，结论已经落后于当前源码真相。现态证据是：`actionWindowResolvedEventDependencies.ts` 当前已经直接导出 `resolveQidahenActionWindowResolvedEventWithDependencies(...)`，并在 owner 内承接 `GAO_DI_DISPATCH_RESOLVED / INTERNAL_DISPATCH_RESOLVED / FORTIFICATION_MAINTENANCE_RESOLVED / DRIVE_TIGER_CONSENT_RESOLVED / RECRUIT_CHOICE_RESOLVED / MA_SHI_TRADE_CHOICE_RESOLVED / KHAN_EDICT_CHOICE_RESOLVED / DIPLOMACY_CHOICE_RESOLVED` 这 8 条 resolved-event 的 payload 分发本体；而 `resolvedEventReducerRegistry.ts` 当前继续保留 resolved-event 总 route 与 `handledResolvedEvent(...)` 收口，但已不再本地声明 `type QidahenActionWindowResolvedEvent = ...`，也不再本地维护 `resolveQidahenActionWindowResolvedEvent(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“registry 只保留 route，action-window resolved-event entry 已并回 owner”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowResolvedEventDependencies.ts = action-window resolved-event dependency owner + event entry owner`，`resolvedEventReducerRegistry.ts = resolved-event total route owner + action-window owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 11:27 +08：当前《七大恨》runtime interaction 这条线已经不该再被记成“仍依赖 side-effect registry bootstrap”。现态证据是： [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 当前只公开组合后的 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS`，不再顶层执行 `registerQidahenRuntimeInteractionBuilder(...)`；[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前已直接 import 这张 builder list，并在同文件内显式派生 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS` 与 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS_BY_SOURCE_ID`；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 当前也已删除 `import './interactionBuilders';`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“runtime sync 消费显式 registry truth，不再依赖 side-effect bootstrap”的当前口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `interactionBuilders.ts = runtime interaction builder list owner`，`runtimeInteractionBuilderRegistry.ts = explicit registry truth owner`，`runtimeInteractions.ts = sync seam consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 11:15 +08：当前《七大恨》如果把 runtime interaction 这条线记成“已经只剩 `syncQidahenRuntimeInteractionState(...)` 一个同步 seam，所以正式结构已经收完”，结论仍然过早。现态证据是： [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 虽然当前只保留 `syncQidahenSpecificInteraction(...) + syncQidahenRuntimeInteractionState(...)`，但同文件仍必须保留 `import './interactionBuilders';` 这条 side-effect import，才能让 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 顶层的 `registerQidahenRuntimeInteractionBuilder(...)` 循环把 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 注册进 [runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 的可变 `sourceIds[] + Map`；而真正的正式 consumer [interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 与 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前都只消费 `syncQidahenRuntimeInteractionState(...)`，本身看不到 bootstrap 何时完成。结论：这不是 compat 问题，而是 runtime sync 这条线的 builder owner、registry state owner 与 bootstrap 触发点仍分散在三处，单一真相还没闭合；下一步若继续实施，应优先收 `runtimeInteractions + interactionBuilders + runtimeInteractionBuilderRegistry`。边界：这轮只补 formal review current truth，没有新增生产改动，也没有跑 `eslint / vitest / typecheck / E2E`。
+- 2026-06-10 11:07 +08：当前《七大恨》如果还把 pending-battle resolved-event 这条线记成“[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 继续直接绑 `pendingBattleFlow + dependency const`”，结论已经落后于当前源码真相。现态证据是：已新增 [pendingBattleResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventDependencies.ts)，当前直接持有 `QIDAHEN_PENDING_BATTLE_RESOLVED_EVENT_DEPENDENCIES`，并集中装配 `resolveQidahenPendingActionFromPayload / resolveQidahenPostBattleInteractionChoice / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`；而 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前只 import `./pendingBattleResolvedEventDependencies`，继续保留 resolved-event route 与 `PENDING_ACTION_RESOLVED / POST_BATTLE_DECISION_RESOLVED` 两个 case 的 route 收口，但已不再本地直接 import `./pendingBattleFlow` 或 `./pendingBattleFlowDependencies`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“registry 只消费新 owner，pending-battle flow 依赖绑定下沉到新文件”的当前口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `pendingBattleResolvedEventDependencies.ts = pending-battle resolved-event dependency owner`，`resolvedEventReducerRegistry.ts = resolved-event route owner + pending-battle event owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:52 +08：当前《七大恨》如果还把 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 记成“selected-action family 仍保留 leverage 的 event entry owner”，结论已经落后于当前源码真相。现态证据是：这轮直接复核调用面后，生产代码里只剩 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 一个 caller，而旧文件内部只剩 `resolveQidahenSelectedActionExecutedEventWithDependencies(...)` 的纯转手。当前已追平到新的单一真相：`selectedActionExecutionDependencies.ts` 继续由 [src/games/qidahen/domain/selectedActionExecutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionDependencies.ts) 持有 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES`，并在同文件内直接导出 `resolveQidahenSelectedActionExecutedEventWithDependencies(...)`；[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前已直接消费这个 execution owner；旧 `selectedActionOrchestration.ts` 当前已删除；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“旧文件 reader 允许空源、registry 直接锁住 selected-action execution 入口”的 current truth。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：`selectedActionOrchestration.ts` 已不再属于仍保留 leverage 的顶层 orchestration，当前更准确的 owner 关系是 `selectedActionExecutionDependencies.ts = selected-action execution dependency owner + resolved-event entry owner`，`selectedActionOrchestration.ts = 已退休浅桥`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:37 +08：当前《七大恨》如果还把 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 记成“pending-battle family 仍保留 leverage 的 orchestration owner”，结论已经落后于当前源码真相。现态证据是：这轮直接复核调用面后，生产代码里只剩 [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 一个 caller，而旧文件内部只剩两条 generic 绑定 wrapper。当前已追平到新的单一真相：`QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 继续由 [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 持有，并在同文件内直接绑定 `resolvePendingTargetActionByActionType(...) + QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 与 `resolvePostBattleDecision(...) + QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES`；旧 `pendingBattleOrchestration.ts` 当前已删除；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“旧文件 reader 允许空源、pending-battle flow owner 直接锁住两条绑定”的 current truth。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：`pendingBattleOrchestration.ts` 已不再属于 `1.60` 那组“仍保留 leverage 的顶层 orchestration”，当前更准确的 owner 关系是 `pendingBattleFlowDependencies.ts = pending-battle flow dependency owner`，`pendingBattleOrchestration.ts = 已退休浅桥`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:34 +08：当前《七大恨》如果还把 `action-window resolved-event` 这条线记成“resolved-event 总路由和这组底层依赖常量继续一起挂在 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 里”，结论已经落后于当前源码真相。现态证据是：已新增 [actionWindowResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventDependencies.ts)，当前直接持有 `QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES`，并集中导入 `getFactionIdByPlayerId / resolveQidahenGaoDiDispatchChoice / resolveQidahenInternalDispatchInteractionChoice / resolveQidahenFortificationMaintenanceInteractionChoice / resolveQidahenDriveTigerConsentInteractionChoice / resolveQidahenRecruitInteractionChoice / resolveQidahenMaShiTradeInteractionChoice / resolveQidahenKhanEdictInteractionChoice / resolveQidahenDiplomacyInteractionChoice`；而 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前只 import `./actionWindowResolvedEventDependencies`，继续保留 `type QidahenActionWindowResolvedEvent`、`resolveQidahenActionWindowResolvedEvent(...)` 与 8 条 action-window resolved case 的 route，但已不再本地声明 `QidahenActionWindowResolvedEventDependencies` interface 或 `QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES` const。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“registry 只消费新 owner，turnActionChoiceOrchestration import 与 dependency const 下沉到新文件”的当前口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `actionWindowResolvedEventDependencies.ts = action-window resolved-event dependency owner`，`resolvedEventReducerRegistry.ts = resolved-event route owner + action-window event owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:26 +08：当前《七大恨》如果还把 `compatSource.test.ts` 记成已经自然对齐 `pendingBattleFlowDependencies` 当前 owner，结论仍然落后于这轮修正前的工作树真相。现态证据是：这轮开跑整份 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 时，文件先因为一处重复 reader 声明直接 transform 失败；修完后再跑既定 5 文件套件，又继续暴露出 `battle roll helper / factionActionWindow` 两个断言块的 reader 缺失或错绑，导致整套 `601` 门禁下出现 `ReferenceError`。当前已追平到新的单一真相： [pendingBattleFlowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlowDependencies.ts) 才是 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 的正式 owner，负责集中装配 `battleRollMath / pendingBattleCommittedTroops / factionActionWindow / factionTurnAccessors / pendingBattleOrchestration / turnFlowOrchestration`；[pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前只保留 `resolveQidahenPendingTargetAction / resolveQidahenPostBattleDecision` 两条高层 wrapper，不应再被 source guard 误判为持有 `pendingBattleCommittedTroops`；[interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 当前也继续只消费 `./pendingBattleFlow` 与 `./pendingBattleFlowDependencies`，不再回连 `pendingBattleOrchestration`。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：这轮真正修掉的不是运行时 pending-battle 逻辑，而是 `compatSource` 对 `pendingBattleFlowDependencies` 当前 owner 的静态门禁失真；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:12 +08：当前《七大恨》如果还把 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 记成继续挂在 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 里，和 `resolveQidahenPendingTargetAction / resolveQidahenPostBattleDecision / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 三层编排混在一起，结论已经落后于当前源码真相。现态证据是：已新增 [pendingTargetResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolutionDependencies.ts)，当前直接持有 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES`，并集中导入 `materializeNonSiegedCityActionSourceRegion / computeQidahenStructuredBattleCasualties / getPendingActionAttackerPositionRegionId / getPendingActionDefenderForceSnapshot / getPendingActionSourceForceSnapshot / resolvePendingBattleMode / computeQidahenCavalryPlunderCounterPower / addTroopsToFriendlyBesiegedCityInterior / addDefeatMarkerToFaction / getRegionControlLabel / toFactionLabel / getFactionDrawPileCount / drawFromFactionPile / addFactionHandCards / buildDrawnHandCards / pendingBattleCombatSupport 全组 helper / buildPostBattleSelection / QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES / getActionRuleDisplayRegionName / refreshRuntimeRegionRules / getSpecialTroopCount / subtractSpecialTroopStacks`；而 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前只 import `./pendingTargetResolutionDependencies` 与 `resolvePendingTargetActionByActionType(...)`，继续保留 `resolveQidahenPendingTargetAction / resolveQidahenPostBattleDecision / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 这组高层入口，不再本地内联 pending-target 依赖常量；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已追平到从新文件 re-export `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 的 current truth。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“pendingBattleOrchestration 只保留 wrapper / flow，新 owner 承接 pending-target dependency const”的新口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `pendingTargetResolutionDependencies.ts = pending-target resolution dependency owner`，`pendingBattleOrchestration.ts = pending-battle orchestration + pending-target owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 10:04 +08：当前《七大恨》如果还把 `SUN_YUANHUA_TECH_RESOLVED` 这条线记成“resolved-event 路由与底层依赖常量都继续混挂在 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 里”，结论已经落后于当前源码真相。现态证据是：已新增 [sunYuanhuaTechResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventDependencies.ts)，当前直接持有 `QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES`，并集中导入 `resolveQidahenSunYuanhuaTech / QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES / buildSeasonSummary / applyQidahenVictoryStatusForTurnFlow / advanceQidahenTurnIfReadyForTurnFlow`；而 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前只 import `./sunYuanhuaTechResolvedEventDependencies`，继续保留 `case 'SUN_YUANHUA_TECH_RESOLVED'` 的 route、日志与 `syncFactionActionWindow(...)` 收口，但已不再本地声明这组 dependency interface/const。同步验证时还修正了一个运行时 blocker： [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前必须从 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) import `resolvePendingTargetActionByActionType(...)`，不能误从 `pendingTargetResolutionDependencies.ts` 取不存在的运行时导出，否则 `payment-selection` 会在 pending-battle 链直接报 `is not a function`。验证结果：定向 `eslint` 通过，定向 `compatSource` 两条相关断言 `2 passed / 82 skipped`，`commands + payment-selection = 344 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `sunYuanhuaTechResolvedEventDependencies.ts = 孙元化科技 resolved-event dependency owner`，`resolvedEventReducerRegistry.ts = resolved-event route owner + 孙元化科技 owner consumer`；边界是整份 `compatSource.test.ts` 当前仍有 10 条与本轮无关的旧断言红灯，所以这次只证明相关 current slice 已回绿。
+- 2026-06-10 09:49 +08：当前《七大恨》如果还把 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 记成继续挂在 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 里，和 `pending-target / post-battle / pending-battle-flow` 三层编排混在一起，结论已经落后于当前源码真相。现态证据是：已新增 [postBattleResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolutionDependencies.ts)，当前直接持有 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES`，并集中导入 `materializeNonSiegedCityActionSourceRegion / toFactionLabel / getRegionControlLabel / getFactionDrawPileCount / drawFromFactionPile / buildDrawnHandCards / addFactionHandCards / drawKoreaCardsForFaction / getEffectiveKoreaTributeCardsForFaction / getSurvivingCommittedSpecialTroops / applyCommittedTroopRemovalToRegion / applyCasualtyPriorityToRegion / getActionRuleDisplayRegionName / refreshRuntimeRegionRules`；而 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前只 import `./postBattleResolutionDependencies`，继续保留 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES / resolveQidahenPendingTargetAction / resolveQidahenPostBattleDecision / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 这组高层入口，不再本地内联战后决议依赖常量；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已追平到从新文件 re-export `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 的 current truth。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“pendingBattleOrchestration 只保留编排，新 owner 承接 post-battle resolution dependency const”的新口径。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `postBattleResolutionDependencies.ts = post-battle resolution dependency owner`，`pendingBattleOrchestration.ts = pending-battle orchestration + post-battle owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 09:43 +08：当前《七大恨》如果还把 `scenario-choice resolved-event` 这条子依赖记成“继续挂在 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 里，和 setup + resolved-event 双入口编排混在一起”，结论已经落后于当前源码真相。现态证据是：已新增 [scenarioChoiceResolvedEventDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventDependencies.ts)，当前直接持有 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES`，并集中导入 `getFactionIdByPlayerId / resolveQidahenScenarioCharacterChoice / resolveQidahenScenarioArmamentChoice / updateQidahenTurnLabelForTurnFlow`；而 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 当前只 import `./scenarioChoiceResolvedEventDependencies`，继续保留 setup + resolved-event 双入口 leverage，但已不再本地内联 resolved-event dependency const。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“scenarioChoiceOrchestration 只保留高层入口，新 owner 承接 scenario-choice resolved-event 依赖常量”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `scenarioChoiceResolvedEventDependencies.ts = scenario-choice resolved-event dependency owner`，`scenarioChoiceStateDependencies.ts = scenario-choice state dependency owner`，`scenarioChoiceOrchestration.ts = setup + resolved-event entry owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 09:37 +08：当前《七大恨》如果还把 `character action window` 这条子依赖记成“继续挂在 [turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts) 里，和 turn-flow 总编排混在一起”，结论已经落后于当前源码真相。现态证据是：已新增 [characterActionWindowDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindowDependencies.ts)，当前直接持有 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES`，并集中导入 `resolveMingCharacterConflict / resolveNurhaciRemovedByYuanChonghuan / resolveJinHuangtaijiConflict / resolveJinDaisanConflict / hasActiveCharacter / materializeNonSiegedCityActionSourceRegion / getArmamentLevel / refreshRuntimeRegionRules / buildQidahenSunYuanhuaTechSelection / buildGaoDiDispatchSelection / getActionRuleDisplayRegionName`；而 [turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts) 当前只 import `./characterActionWindowDependencies`，已不再本地内联这组人物行动窗口底层 helper 绑定。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“turnFlowOrchestration 只保留 turn-flow wrapper，新 owner 承接人物行动窗口依赖常量”的新口径，并顺带纠正了已领先到 `selectedActionExecutionDependencies.ts` 的旧 source-guard 断言。验证结果：定向 `eslint` 通过，`compatSource = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `characterActionWindowDependencies.ts = character-action-window dependency owner`，`turnFlowOrchestration.ts = turn-flow family orchestration + character-action-window owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 09:34 +08：当前《七大恨》如果还把 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 记成同时承接 `selected-action preparation / state-commit / execution` 三组 dependency const 的正式 owner，结论已经落后于当前源码真相。现态证据是：已新增 [selectedActionPreparationDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparationDependencies.ts)，当前直接持有 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES`；已新增 [selectedActionStateCommitDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommitDependencies.ts)，当前直接持有 `QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES`；已新增 [selectedActionExecutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionDependencies.ts)，当前直接持有 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES`，并统一消费前两组 owner 再接上 `grantPardonExecutionDependencies / armamentUpgradeResolutionDependencies`；而 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 当前只 import `resolveQidahenSelectedActionExecutedEventWithDependencies(...)`，已收成纯 `SELECTED_ACTION_EXECUTED` event 入口。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到这条单一真相。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系已经更新为 `selectedActionPreparationDependencies.ts = preparation owner`、`selectedActionStateCommitDependencies.ts = state-commit owner`、`selectedActionExecutionDependencies.ts = execution owner`、`selectedActionOrchestration.ts = event entry owner`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 09:10 +08：当前《七大恨》如果还把 `turnActionDependencies.ts` 记成同时承接 `action-window dispatch / action-window choice / fortification-maintenance / hand-limit-discard` 这四组 turn-action family 依赖的正式 owner，结论已经再次落后于当前源码真相。现态证据是：[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 当前已直接持有 `QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES`；[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 当前已直接持有 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES`；[fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 与 [handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 当前也分别直接持有各自 dependency const；[turnActionChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionChoiceOrchestration.ts) 已改成直接从这些 owner 取依赖对象；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前则已直接从 [seasonResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolutionDependencies.ts) 消费 `resolveQidahenMidyearWithSeasonDependencies(...)`。旧 `turnActionDependencies.ts` 当前已正式删除，source guard 也已追平到“该文件应为空源”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：`08:26` 那条“`turnActionDependencies.ts` 仍保留 turn-action dependency owner 身份”的结论只是一段过渡态；当前更准确的 owner 关系已经更新为“turn-action family 依赖回到各自规则 owner，season family 依赖留在 `seasonResolutionDependencies.ts`，`turnActionDependencies.ts` = 已退休”。
+- 2026-06-10 09:09 +08：当前《七大恨》如果还把 `grant-pardon` 这条动作的依赖绑定记成“继续挂在 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 里，和 selected-action 顶层编排混在一起”，结论已经落后于当前源码真相。现态证据是：已新增 [grantPardonExecutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecutionDependencies.ts)，当前直接持有 `QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES`，并直接导入 `materializeNonSiegedCityActionSourceRegion`、`addTroopsToFriendlyBesiegedCityInterior`、`removeTroopsFromNonSiegedCityStateRegion`、`refreshRuntimeRegionRules` 与 `buildSeasonSummary`；而 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 当前只 import `./grantPardonExecutionDependencies`，已不再本地内联这组底层 helper 绑定。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“selectedActionOrchestration 只保留编排，新 owner 承接赐印招安依赖常量”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `grantPardonExecutionDependencies.ts = grant-pardon dependency owner`，`selectedActionOrchestration.ts = selected-action family orchestration + grant-pardon owner consumer`；这轮没有重跑 E2E，也没有刷新截图。
+- 2026-06-10 08:56 +08：当前《七大恨》如果还把 execute command-event 这条线记成“`commandEventBridge.ts` 已恢复为正式 owner，`index.ts` 只剩薄委托入口”，结论已经再次落后于当前源码真相。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前直接持有 `QidahenCommandEventBuilder`、`QidahenSelectedActionExecuteCommand`、`getAutoPaymentCardIds(...)`、`buildQidahenSelectedActionExecutedEvent(...)`、`buildResolvedCommandEvents(...)`、`buildDirectInputCommandEvents(...)`、`buildSelectedActionCommandEvents(...)`、`QIDAHEN_COMMAND_EVENT_BUILDERS` 与 `buildQidahenCommandEvents(...)`，已经成为 execute command-event 的当前正式 owner；而 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 当前已正式删除，不再作为生产入口的一部分。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“execute 命令事件组装应并回 index，commandEventBridge.ts 退休后不再单独存在”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真实 E2E `26 passed (1.8m)`；[test-results/playwright-artifacts/.last-run.json](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/playwright-artifacts/.last-run.json) 当前是 `"status": "passed"`，共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 08:54:10 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 08:55:19 +08）。结论：`08:47` 的 `commandEventBridge.ts = 暂时恢复 owner` 只是一段过渡态；当前更准确的 owner 关系已经更新为 `index.ts = execute command-event owner + direct-input reducer entry`，`commandEventBridge.ts = 已退休`。
+- 2026-06-10 08:47 +08：当前《七大恨》如果还把 execute 入口这条线说成“只是兼容期双边并存”或“新游戏天然会遇到的兼容问题”，结论已经偏离当前源码真相。现态证据是：[commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 当前直接持有 `QidahenCommandEventBuilder`、`QidahenSelectedActionExecuteCommand`、`getAutoPaymentCardIds(...)`、`buildQidahenSelectedActionExecutedEvent(...)`、`buildDirectInputCommandEvents(...)`、`buildSelectedActionCommandEvents(...)`、`QIDAHEN_COMMAND_EVENT_BUILDERS` 与 `buildQidahenCommandEvents(...)`，已经重新成为 execute command-event 的正式 owner；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只 import `buildQidahenCommandEvents` 并在 `execute(...)` 内做薄委托，已不再本地持有这些 builder 本体。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已补齐缺失 reader 并追平到这条 current truth。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：这轮真实根因不是“需要兼容”，而是 owner 文件一度从工作树磁盘漂没，导致正式审查、source guard、生产入口三边失配；当前更准确的 owner 关系已经恢复为 `commandEventBridge.ts = execute command-event owner`，`index.ts = execute 薄入口 + direct-input reducer entry`。
+- 2026-06-10 08:26 +08：当前《七大恨》如果还把 `turnActionDependencies.ts` 记成同时持有 `turn-action choice` 与 `season / chronology` 两簇依赖的正式 owner，结论已经落后于当前源码真相。现态证据是：已新增 [seasonResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolutionDependencies.ts)，当前直接承接 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES / QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES / resolveQidahenMidyearWithSeasonDependencies(...)`；而 [turnActionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionDependencies.ts) 当前只通过新 owner 消费 season 依赖，自身继续承接 `action-window dispatch / action-window choice / fortification-maintenance / hand-limit-discard` 这组 turn-action family 依赖。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `seasonResolutionDependencies.ts = season / chronology dependency owner`，`turnActionDependencies.ts = turn-action dependency owner + season owner consumer`。
+- 2026-06-10 08:18 +08：当前《七大恨》如果还把剩余 `commandEventBridge / resolvedCommandBridge / turnActionChoiceOrchestration / scenarioChoiceOrchestration / runtimeInteractionBuilderRegistry / selectedActionOrchestration / turnFlowOrchestration / pendingBattleOrchestration` 这一批顶层文件统称成“还没删完的浅壳”，结论已经过时。现态证据是： [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 已统一承接 `resolved / direct-input / selected-action` 三族命令事件路由；[resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 已统一承接 `selection / action-window / pending-battle / scenario-choice` 这组 resolved-command builder 与相邻 snapshot/battle-roll 组装；[turnActionChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionChoiceOrchestration.ts) 当前同时服务 direct-input、live interaction、resolved-event 三个入口；[scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 当前同时服务 setup 与 runtime resolved-event；[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 则同时持有注册真相与 source 顺序真相。结论：当前这批顶层模块已不再属于“单一 caller + 纯一次转手”的同类浅壳，formal residual 不能继续按“见名就删”推进，后续必须改审更窄的 family 内部 seam 或 dependency owner。
+- 2026-06-10 07:58 +08：当前《七大恨》如果还把 `07:50 directInputEventReducerBridge.ts 退休` 与 `07:53 actionWindowResolvedEventBridge.ts 退休` 记成“只有代码门禁绿、真页面流程还没重新追平”，结论已经落后于当前工作树真相。现态证据是：已按既定链路实跑 `node scripts/infra/run-e2e-command.mjs ci e2e/qidahen-basic-flow.e2e.ts`，结果为 `26 passed (1.6m)`；[test-results/playwright-artifacts/.last-run.json](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/playwright-artifacts/.last-run.json) 当前为 `"status": "passed"`；共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 07:56:24 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 07:57:24 +08），且两张图已人工核看仍是《七大恨》真实 Board / HUD 画面。结论：当前最新几笔浅壳退休后的切片，不只是 `eslint + vitest + typecheck` 绿，真实 E2E 与截图证据也已重新追平。
+- 2026-06-10 07:53 +08：当前《七大恨》如果还把 `actionWindowResolvedEventBridge.ts` 记成 action-window resolved-event 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [actionWindowResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventBridge.ts) 在当前生产代码里只有 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 一个 caller，而它承接的也只是 `高第调度 / 内部调度 / 新年维护 / 驱虎吞狼同意 / 征召 / 马市贸易 / 大汗令箭 / 外交` 这组 action-window resolved-event 到 choice resolver 的纯 payload 分发逻辑。当前这部分本体已直接收回 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts)，并正式删除 `actionWindowResolvedEventBridge.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“action-window resolved-event 本体回到 resolvedEventReducerRegistry，不再 import `actionWindowResolvedEventBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `resolvedEventReducerRegistry.ts = resolved-event route + action-window resolved-event owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:50 +08：当前《七大恨》如果还把 `directInputEventReducerBridge.ts` 记成 direct-input event reducer 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [directInputEventReducerBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerBridge.ts) 在当前生产代码里只有 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 一个 caller，而它承接的也只是 `REGION_SELECTED / PREVIEW_ACTION_CONFIRMED / WHEEL_MOVE_EXECUTED / 各类 selection-input event` 到现有 owner 的纯委托与依赖装配逻辑。当前这部分本体已直接收回 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)，并正式删除 `directInputEventReducerBridge.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“direct-input event reducer 本体回到 index，不再 import `directInputEventReducerBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `index.ts = direct-input reducer entry + domain root`，而不是继续保留单一 caller子桥。
+- 2026-06-10 07:43 +08：当前《七大恨》如果还把 `postBattleResolution.ts` 记成 battle-aftermath 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [postBattleResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolution.ts) 在当前生产代码里只承接 `QidahenPostBattleResolutionDependencies / QidahenPostBattleDecisionResolution` 这组共享 contracts，再把 `buildPostBattleSelection / resolvePostBattleDecision` 转手 re-export；真正的 build/resolve owner 一直是 [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 与 [postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts)，而 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前也已经具备直接连接这两份 owner 的全部依赖。这轮已新增 [postBattleContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleContracts.ts) 承接共享 contracts，把 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts)、[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts)、[postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts)、[postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 与 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 全部追平到“contracts 独立、build/resolve 直连双 owner”的新结构，并正式删除 `postBattleResolution.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到 `postBattleContracts owner` 的新 source guard。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `postBattleContracts.ts = shared contracts owner`，`postBattleSelectionBuilder.ts / postBattleDecisionResolution.ts = 实际 build/resolve owner`，而不是继续保留一层 `contracts + re-export` 聚合壳。
+- 2026-06-10 07:45 +08：当前《七大恨》如果还把 `turnActionInteractionBridge.ts` 记成 turn-action interaction 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [turnActionInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBridge.ts) 在当前生产代码里只有 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 一个 caller，而它承接的也只是 `手牌上限弃牌 / 征召 / 外交 / 轮盘调度 / 内部调度 / 马市贸易 / 大汗令箭 / 驱虎吞狼 / 新年维护` 这组 turn-action interaction payload 到 choice resolver 的纯桥接逻辑。当前这部分本体已直接收回 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts)，并正式删除 `turnActionInteractionBridge.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“turn-action interaction 本体回到 registry，不再 import `turnActionInteractionBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `interactionResolverRegistry.ts = interaction payload read + turn-action/pending-battle interaction owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:41 +08：当前《七大恨》如果还把 `pendingBattleInteractionBridge.ts` 记成待结算/战后交互这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [pendingBattleInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionBridge.ts) 在当前生产代码里只有 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 一个 caller，而它承接的也只是 `待结算目标 / 战后处理` 两条 interaction resolved payload 到 domain resolver 的纯桥接逻辑。当前这部分本体已直接收回 [interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts)，并正式删除 `pendingBattleInteractionBridge.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“pending-battle interaction 本体回到 registry，不再 import `pendingBattleInteractionBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `interactionResolverRegistry.ts = turn-action + pending-battle interaction owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:37 +08：当前《七大恨》正式架构审查顶部如果同时保留两条 `1.53`，那只是审查材料自身出现了重复记账，不代表源码里真的存在两套 owner 真相。现态证据是：[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 与 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前都明确锁定 `SUN_YUANHUA_TECH_RESOLVED` 已由 registry 内联承接；[resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 与同测试当前也明确锁定 `pending-battle resolved-command` 已收回聚合层；[commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 则承接最新 `direct-input command-event` 收口。因此 formal review 顶部同时出现“`1.53` 孙元化科技”和“`1.53` pending-battle”时，冲突点在文档而不在生产代码。这轮已删除 [qidahen-architecture-review-2026-06-08.md](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/evidence/qidahen/qidahen-architecture-review-2026-06-08.md) 里重复的孙元化科技补审条目，保留当前单一编号链 `1.54 directInput -> commandEventBridge.ts`、`1.53 pending-battle -> resolvedCommandBridge.ts`。结论：当前正式审查的单一真相已经恢复，但这轮只修文档，没有新增生产改动，也没有重跑 ESLint/Vitest/typecheck/E2E。
+- 2026-06-10 07:32 +08：当前《七大恨》如果还把 `directInputEventBridge.ts` 记成基础 direct-input command-event 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [directInputEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventBridge.ts) 在当前生产代码里只有 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 一个 caller，而它承接的也只是 `SELECT_REGION / CONFIRM_PREVIEW_ACTION / SELECT_WHEEL_MOVE / EXECUTE_WHEEL_MOVE / SELECT_PAYMENT_CARD / SELECT_HAND_LIMIT_DISCARD_CARD / SELECT_SUN_YUANHUA_TECH_CARD / SELECT_GAO_DI_DISPATCH_CARD` 这组基础输入命令到事件的纯桥接逻辑。当前这部分本体已直接收回 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts)，并正式删除 `directInputEventBridge.ts`；同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“基础 direct-input command-event 本体回到 `commandEventBridge.ts`，不再 import `directInputEventBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前更准确的 owner 关系是 `commandEventBridge.ts = resolved + direct-input + selected-action command-event owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:27 +08：当前《七大恨》如果还把 `pendingBattleResolvedCommandBridge.ts` 记成 pending-battle resolved-command 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [pendingBattleResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedCommandBridge.ts) 在当前生产代码里只有 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 一个 caller，而它持有的也只是 `PENDING_ACTION_RESOLVED / POST_BATTLE_DECISION_RESOLVED` 两条 command -> resolved-event 映射与相邻 `pendingTargetAction` fallback / battle-roll 组装。当前这部分本体已直接收回 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts)，并正式删除 `pendingBattleResolvedCommandBridge.ts`；同文件继续统一承接 `手牌上限弃牌 / 孙元化科技 / action-window / pending-battle / scenario-choice` 这组 resolved-command 分发。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“pending-battle resolved-command 本体回到 `resolvedCommandBridge.ts`，不再 import `pendingBattleResolvedCommandBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 07:25:30 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 07:26:30 +08）。结论：当前 pending-battle resolved-command 这条线更准确的 owner 关系是 `resolvedCommandBridge.ts = resolved-command 聚合 owner + pending-battle command-event owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:16 +08：当前《七大恨》如果还把 `selectedActionCommandBridge.ts` 记成 selected-action execute command-event 这条线必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：旧 [selectedActionCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionCommandBridge.ts) 在当前生产代码里只有 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 一个 caller，而它持有的也只是 `getAutoPaymentCardIds(...) + buildQidahenSelectedActionExecutedEvent(...)` 这组只服务 `EXECUTE_SELECTED_ACTION / EXECUTE_ACTION -> SELECTED_ACTION_EXECUTED` 的桥接逻辑。当前这部分本体已直接收回 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts)，并正式删除 `selectedActionCommandBridge.ts`；同文件继续统一承接 `resolved / direct-input / selected-action` 三类命令事件分发。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“selected-action command-event 本体回到 `commandEventBridge.ts`，不再 import `selectedActionCommandBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前 selected-action execute command-event 这条线更准确的 owner 关系是 `commandEventBridge.ts = route + selected-action command-event owner`，而不是继续保留单一 caller 子桥。
+- 2026-06-10 07:11 +08：当前《七大恨》如果还把 `scenarioChoiceResolvedEventBridge.ts` 记成 scenario-choice family 里必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：这层 bridge 在当前生产代码里只有 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 一个 caller，而 orchestration 本身已经本地持有 `getFactionIdByPlayerId / resolveScenarioCharacterChoice / resolveScenarioArmamentChoice / updateTurnLabel` 全部依赖绑定；旧 bridge 只是在这些依赖之上再包一层 `currentFactionId + actionLog + updateTurnLabel` 的纯转手。当前这部分本体已直接收回 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts)，并正式删除 `scenarioChoiceResolvedEventBridge.ts`；[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 与 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 继续只依赖 orchestration 单入口。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolved-event 本体回到 orchestration，不再 import `scenarioChoiceResolvedEventBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前 scenario-choice family 更准确的 owner 关系是 `scenarioChoiceOrchestration.ts = setup wrapper + resolved-event owner`，而不是继续保留一层单一 caller bridge。
+- 2026-06-10 07:05 +08：当前《七大恨》如果还把 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 记成“必须长期维持 `selection / action-window / pending-battle / scenario-choice` 四个子 bridge 才是正确分层”，结论已经落后于当前源码真相。现态证据是：当前 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 仍在承接 `resolved / direct-input / selected-action` 三类命令事件路由，所以它不是这轮该删的对象；真正满足“单一调用方 + 纯 command->resolved-event 映射”的浅壳，是旧 [selectionResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionResolvedCommandBridge.ts)。这轮已把 `手牌上限弃牌 / 孙元化科技` 两条无状态 resolved-event 组装直接收回 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts)，并正式删除 `selectionResolvedCommandBridge.ts`；而 [actionWindowResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedCommandBridge.ts) 与 [pendingBattleResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedCommandBridge.ts) 继续分别持有 interaction snapshot / pending-battle 依赖的真实 builder truth。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolved-command 聚合层直接持有这两条简单映射，不再 import `selectionResolvedCommandBridge`”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前 resolved-command 这条线更准确的 owner 关系是“聚合层只下沉有真实依赖的子族”，不是机械固定四个子 bridge。
+- 2026-06-10 07:04 +08：当前《七大恨》如果还把 `actionWindowResolvedEventOrchestration.ts` 记成 action-window resolved-event 链必须保留的一层正式 owner，结论已经落后于当前源码真相。现态证据是：这层文件删除前只有 [resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 一个 caller，自身只负责把 [actionWindowResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventBridge.ts)、[turnActionChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionChoiceOrchestration.ts) 与 [factionTurnAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionTurnAccessors.ts) 绑成一份 `QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES` 后再转手调用；当前这份依赖绑定已直接并入 `resolvedEventReducerRegistry.ts`，registry 现已直连 bridge 处理 `GAO_DI_DISPATCH_RESOLVED / INTERNAL_DISPATCH_RESOLVED / FORTIFICATION_MAINTENANCE_RESOLVED / DRIVE_TIGER_CONSENT_RESOLVED / RECRUIT_CHOICE_RESOLVED / MA_SHI_TRADE_CHOICE_RESOLVED / KHAN_EDICT_CHOICE_RESOLVED / DIPLOMACY_CHOICE_RESOLVED` 这组事件，原 orchestration 壳已删除。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前 action-window resolved-event 这条链已经从“registry -> orchestration 壳 -> bridge”收成“registry -> bridge”，浅壳退休成立；边界是这轮没有重跑 E2E。
+- 2026-06-10 06:56 +08：当前《七大恨》如果还把 `postBattleResolution.ts` 记成“已经直接持有战后 build/resolve 全实现的单一 owner”，结论就已经与当前磁盘不符。现态证据是：[postBattleResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolution.ts) 当前只保留 `QidahenPostBattleResolutionDependencies / QidahenPostBattleDecisionResolution` 这组 contracts 与 `postBattleSelectionBuilder / postBattleDecisionResolution` 的 re-export；[postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts) 当前承接战后选项构造；[postBattleDecisionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolution.ts) 当前承接战后决议结算；[pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前仍是一半从聚合壳取 `buildPostBattleSelection(...)`，一半直连 `postBattleDecisionResolution.ts` 取 `resolvePostBattleDecision(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也显式锁着这 3 个文件的当前分工。可引用的现有验证结果是：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 06:51:03 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 06:52:09 +08）。结论：当前 battle-aftermath 这条线还不能记成“单一 owner 已完成”，更准确的现态是 `contracts 壳 + 双 owner + caller 半聚合半直连`。
+- 2026-06-10 06:32 +08：当前《七大恨》如果还保留 `selectedActionFollowUpResult.ts` 这种“接口几乎等于实现、只倒一次手”的浅壳，follow-up family 的 locality 就会继续被无意义拉薄。现态证据是：删除前 [selectedActionFollowUpResult.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResult.ts) 只是在 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 与 [selectedActionFollowUpLogText.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpLogText.ts) / [selectedActionFollowUpStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpStateTransition.ts) 之间做一次中转；删除后，`QidahenSelectedActionFollowUpResult` 输出接口与最终结果组装已回到 `selectedActionFollowUp.ts`，而 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 也已改成直接依赖 follow-up owner。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过。结论：当前 follow-up 输出合同只保留单一 owner，不再保留浅壳中转文件。
+- 2026-06-10 06:27 +08：当前《七大恨》selected-action family 里如果还允许 `selectedActionBranchResolution.ts` 这种**无调用方平行副本**继续挂着，后续 formal review 和真实 owner 就会持续分叉。现态证据是：删除前 [selectedActionBranchResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionBranchResolution.ts) 与 [selectedActionExecutionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionResolution.ts) 承接的是同一组 `upgrade-armament / grant-pardon` 分支执行语义，而当前真正被 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 与 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 消费的只有 `selectedActionExecutionResolution.ts`。这轮已正式删除 `selectedActionBranchResolution.ts`，并用全文检索确认 `selectedActionBranchResolution / resolveQidahenSelectedActionBranchResolution / QidahenSelectedActionBranchResolution` 在 `src/ + evidence + 长期材料` 中均无残留引用，`npm run typecheck` 也已通过。结论：当前 selected-action 分支执行只保留单一 owner，不再保留平行副本。
+- 2026-06-10 06:22 +08：当前《七大恨》`selectedActionFollowUp` 这条线如果不先以**当前磁盘真相**为准，而继续引用“另一个摘要里出现过的文件名”，正式架构审查就会跑偏。现态证据是：`src/games/qidahen/domain/` 当前实际存在的是 [selectedActionSelectionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionSelectionFollowUpResolution.ts)、[selectedActionPendingFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPendingFollowUpResolution.ts) 与 [selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts)；后者当前直接 import 前两者并只做聚合；当前 `src/games/qidahen/domain/` 下并不存在 `selectedActionChoiceFollowUp.ts / selectedActionPendingTargetFollowUp.ts` 这两个并行正式 owner 文件。结论：当前 formal review 必须继续按 `selection / pending` 两份 resolution owner 记账，而不能把不存在的文件名误当成当前生产结构。
+- 2026-06-10 06:16 +08：当前《七大恨》如果还把 `selectedActionFollowUp` 这条 residual 记成“只是旧命名文件没改干净”，结论已经落后于当前源码真相。现态证据是：正式 owner 已翻成 [selectedActionSelectionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionSelectionFollowUpResolution.ts) 与 [selectedActionPendingFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPendingFollowUpResolution.ts)，[selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts) 当前已只保留 `selection + pending` 聚合壳；当前 `src/games/qidahen/domain/` 下也不存在 `selectedActionChoiceFollowUp.ts / selectedActionPendingTargetFollowUp.ts` 这两个并行正式 owner 文件；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到新文件名、新函数名和新 source-guard 口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 06:15:20 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 06:16:21 +08）。结论：`selectedActionFollowUp family` 当前已经从“正式审查锁定 residual”推进到“实现 + source guard + 既定验证链全部追平”；这轮没有新建 OpenSpec spec/change。
+- 2026-06-10 05:48 +08：当前《七大恨》如果还把 `selected-action` 的剩余架构问题记成“高层 orchestrator 还可以继续拆薄壳”或“follow-up 只是几个 actionId 分支，不值得单独 owner 化”，结论已经落后于当前源码真相。现态证据是：[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已经稳定形成 `prepare -> executionResolution -> followUp -> stateCommit` family；而 [selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts) 仍同时混挂 `征召军队 / 马市贸易 / 大汗令箭 / 驱虎吞狼` 这组选择态 builder 与 `raid / marriage-subjugation` 这组待决目标 builder，还顺带改写 `selectedRegionId / lastSeasonSummary`；[selectedActionFollowUpResult.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResult.ts) 又同时承接 `actionLogText` 与 `turnPhase / wheelDispatchSelection` 裁定。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前还显式锁着这两份文件里的旧 if/else 结构，所以这条 residual 的正确推进方式不是停止不动，而是后续实施时同步翻正 source guard。结论：当前最深的 formal residual 已收窄到 `selectedActionFollowUp` family，不是再回头拆高层薄壳。
+- 2026-06-10 05:46 +08：当前《七大恨》如果还把 `selected-action owner` 与 `孙元化科技 resolved-event owner` 记成“虽然都已经独立，但各自本地重建同一份军备升级依赖包也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [armamentUpgradeResolutionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolutionDependencies.ts) 当前已正式承接 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES`，把 `buildSeasonSummary / upgradeLowFidelityArmament` 这组 `armamentUpgradeResolution` 真正消费的共享依赖收成单一 owner；[selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 与 [sunYuanhuaTechResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventOrchestration.ts) 当前都已改成统一消费这份共享依赖，不再各自本地声明同形 dependency object。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径。验证结果：定向 `eslint` 通过，定向 `compatSource` 两条相关断言 `2 passed / 82 skipped`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:45:06 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:46:07 +08）。结论：这轮真正收掉的是 `armament upgrade resolution dependencies` 这条共享 glue seam，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 05:40 +08：当前《七大恨》如果还把 `scenario-choice setup owner` 与 `scenario-choice resolved-event owner` 记成“虽然已经拆开，但各自本地重建同一份 state 依赖包也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [scenarioChoiceStateDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceStateDependencies.ts) 当前已正式承接 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`，把 `getCharacterNameById / getArmamentNameById` 这组 scenario-choice state 依赖收成单一 owner；[scenarioChoiceSetupOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceSetupOrchestration.ts) 与 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 当前都已改成统一消费这份共享依赖，不再各自本地声明 `const QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES = { ... }`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已追平到这条新口径，并把 runtime interaction builder 相关旧门禁翻到当前 `interactionBuilders.ts` 只做 registry 聚合、`turnActionInteractionBuilders.ts / battleInteractionBuilders.ts` 分别持有实际 builder truth 的现态。验证结果：定向 `eslint` 通过，定向 `compatSource` 两条相关断言 `2 passed / 82 skipped`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:39:10 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:40:17 +08）。结论：这轮真正收掉的是 `scenario-choice state dependencies` 这条共享 glue seam，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 05:29 +08：当前《七大恨》如果还把 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 记成“虽然已经拆出 `dispatchSelectionBuilders.ts`，但继续保留一个 dispatch compat 出口也无所谓”，结论已经落后于当前源码真相。现态证据是：`selectionBuilders.ts` 当前已彻底删除 `from './dispatchSelectionBuilders'` 这层中转出口，不再继续 re-export `高第 / 王化贞内部调度 / 轮盘调度 / 大汗令箭调度 / 驱虎吞狼调度` 这组 dispatch family；正式 dispatch consumer 当前继续直连 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts)，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前也已补上反向 source guard，显式锁住 `selectionBuilders.ts` 不得再出现 `from './dispatchSelectionBuilders'` 或那组 dispatch re-export 名称。验证结果：定向 `eslint` 通过，定向 `compatSource` 相关断言 `1 passed / 83 skipped`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:27:54 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:28:54 +08）。结论：这轮真正收掉的是 `selectionBuilders -> dispatchSelectionBuilders` 这条残留 compat seam，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 05:23 +08：当前《七大恨》如果还把 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 记成“同时挂着 dispatch family 与 action-window selection 也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 当前已正式承接 `王化贞内部调度 / 高第调度 / 轮盘调度 / 大汗令箭调度 / 驱虎吞狼调度` 这组 dispatch family builder 与偏好规则；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前已收窄为只承接 `马市贸易 / 征召军队 / 外交雇佣 / 大汗令箭选择` 这组 action-window selection owner，并只保留 dispatch re-export 兼容；新增 [selectionDisplayAnchor.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionDisplayAnchor.ts) 当前已统一承接共享 region display anchor 解析；[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts)、[turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts)、[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 等消费者当前都已直连新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到这条新口径。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:20:53 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:21:58 +08）。结论：这轮真正收掉的是 `dispatch family` 的 owner 聚焦与共享 display anchor helper，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 05:22 +08：上一条 `scenario-choice setup / resolved-event` 分层记录里那个“当前整份 compatSource 仍有 7 条旧红灯”的边界，已经不再符合当前源码真相。现态证据是：[dispatchSelectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/dispatchSelectionBuilders.ts) 当前已清掉 6 个无用 import 告警；整份 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 当前已恢复 `84 passed`；`compatSource + roomSetup + commands + Board + payment-selection` 当前已恢复 `601 passed`；`npm run typecheck` 通过；真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；共享截图也已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:20:53 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:21:58 +08）。结论：当前这条线已经不是“scenario-choice 分层成立，但全量 source guard 还没回绿”的状态，而是 `scenario-choice` 分层落地后，整份 source guard、核心单测和既定 E2E 链也都已重新锁回全绿。
+- 2026-06-10 05:15 +08：当前《七大恨》如果还把 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 记成“同时服务开局 setup 包装和 scenario-choice resolved-event 也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [scenarioChoiceSetupOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceSetupOrchestration.ts) 当前已正式承接 `applyQidahenScenarioPresetToFactionStateForSetup / buildPendingQidahenScenarioCharacterChoicesForSetup / buildPendingQidahenScenarioArmamentChoicesForSetup` 这组 setup 入口包装；原 [scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 当前已收窄为只承接 `SCENARIO_CHARACTER_CHOICE_RESOLVED / SCENARIO_ARMAMENT_CHOICE_RESOLVED` 这组 resolved-event owner；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前也已只消费 setup owner，不再继续依赖 resolved-event owner 文件。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“setup / resolved-event 应走不同 orchestration owner”的新口径。验证结果：定向 `eslint` 通过，定向 `compatSource` 三条相关断言 `3 passed / 81 skipped`，`roomSetup.test.ts = 11 passed`，`npm run typecheck` 通过。补充边界：当前整份 `compatSource.test.ts` 在这个 worktree 里仍有 7 条既有 source-guard 红灯，集中在 `dispatchSelectionBuilders / regionSelectionPreferences / movementProfileTroopSelection / characterActionWindow / characterPresenceAccessors / actionSourceRegionState / battleState` 这组 residual，不是这次 scenario-choice 分层新打出来的红灯。结论：这轮真正收掉的是 `scenario-choice setup / resolved-event` 的高层 owner 混挂，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 05:04 +08：当前《七大恨》如果还把 [pendingBattleResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventBridge.ts) 记成“同时挂着 `PENDING_ACTION_RESOLVED` 与 `POST_BATTLE_DECISION_RESOLVED` 也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [pendingActionResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingActionResolvedEventOrchestration.ts) 当前已正式承接 `待决行动已确认` 这条 resolved-event 的高层依赖装配与 turn-flow 收口；新增 [postBattleDecisionResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleDecisionResolvedEventOrchestration.ts) 当前已正式承接 `战后决策已确认` 这条 resolved-event；[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前也已分别消费这两个 owner；旧 [pendingBattleResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventBridge.ts) 已删除，不再继续把两种语义不同的 resolved-event 混挂在一个 bridge 里。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“pending-action / 战后决策 resolved-event 应由不同 owner 承接”的新口径。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 05:02:49 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 05:03:52 +08）。结论：这轮真正收掉的是 `pending-action / 战后决策` 这组 resolved-event 的 owner 聚焦，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 04:53 +08：当前《七大恨》如果还把 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 记成“自己同时持有 selection / action-window / pending-battle / scenario-choice 四组 resolved-command builder 也无所谓”，结论已经落后于当前源码真相。现态证据是：[resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 当前已只保留 `QidahenResolvedCommandEventBuilder` registry 与 4 条聚合委托，分别消费 [selectionResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionResolvedCommandBridge.ts)、[actionWindowResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedCommandBridge.ts)、[pendingBattleResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedCommandBridge.ts)、[scenarioChoiceResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedCommandBridge.ts) 四个子 bridge，不再继续本地定义 `buildQidahenPendingActionResolvedEvent / buildQidahenPostBattleDecisionResolvedEvent / buildQidahenInternalDispatchResolvedEvent` 这类 builder 本体；同时 [pendingBattleResolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedCommandBridge.ts) 当前也已把 `pendingTargetAction` fallback 追平到 `interaction + core` 双来源，避免只在 interaction 里重复取同一个值。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“resolvedCommandBridge 只做聚合，真实 builder truth 留在四个子 bridge”的新口径。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 84 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 04:51:54 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 04:52:55 +08）。结论：这轮真正收掉的是 resolved-command 聚合层 truth，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 04:35 +08：当前《七大恨》如果还把 `selectedActionOrchestration.ts` 记成“同时挂着 `SELECTED_ACTION_EXECUTED` 和 `SUN_YUANHUA_TECH_RESOLVED` 也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [sunYuanhuaTechResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventOrchestration.ts) 当前已正式承接 `SUN_YUANHUA_TECH_RESOLVED` 这条 resolved-event 的高层依赖装配与 turn-flow 收口；原 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 当前已收窄为只承接 `SELECTED_ACTION_EXECUTED` 这条 selected-action event glue，不再继续混挂孙元化科技 resolved-event；[resolvedEventReducerRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedEventReducerRegistry.ts) 当前也已分别消费 `selectedActionOrchestration + sunYuanhuaTechResolvedEventOrchestration` 两条 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平到“selected-action / 孙元化科技 resolved-event 应由不同 orchestration owner 承接”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 04:34:01 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 04:35:01 +08）。结论：这轮真正收掉的是 selected-action / 孙元化科技这组 resolved-event 的 owner 聚焦，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 04:06 +08：当前《七大恨》如果还把 direct-input 入口记成“一个 `directInputEventBridge.ts` 同时混着 command builder 和 reducer bridge 也无所谓”，结论已经落后于当前源码真相。现态证据是：新增 [directInputEventReducerBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerBridge.ts) 当前已正式承接 `REGION_SELECTED / PREVIEW_ACTION_CONFIRMED / WHEEL_MOVE_EXECUTED / selection-input` 这组 direct-input event-to-core reducer bridge，并统一持有 `QIDAHEN_SELECTION_INPUT_STATE_DEPENDENCIES / QIDAHEN_REGION_SELECTED_DEPENDENCIES / QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES / QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES`；原 [directInputEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventBridge.ts) 当前已收窄为只承接 `SELECT_REGION / CONFIRM_PREVIEW_ACTION / SELECT_WHEEL_MOVE / EXECUTE_WHEEL_MOVE / SELECT_PAYMENT_CARD / SELECT_HAND_LIMIT_DISCARD_CARD / SELECT_SUN_YUANHUA_TECH_CARD / SELECT_GAO_DI_DISPATCH_CARD` 这组 direct-input command-to-event builder；[commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 当前继续只消费 command 侧 bridge，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已改成只消费 reducer 侧 bridge。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“双桥分层”新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 04:03:42 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 04:04:44 +08）。结论：这轮真正收掉的是 direct-input 入口桥的职责分层，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。
+- 2026-06-10 03:59 +08：这条记录现在只能当作 direct-input 高层收口的**中间态**，不能再当当前源码真相。它当时成立的部分只有两点：1）[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已退出 direct-input switch，只保留 `return reduceQidahenDirectInputEvent(state, event) ?? state;` 薄委托；2）[directInputEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventBridge.ts) 已先收进 `SELECT_REGION / CONFIRM_PREVIEW_ACTION / SELECT_WHEEL_MOVE / EXECUTE_WHEEL_MOVE / SELECT_PAYMENT_CARD / SELECT_HAND_LIMIT_DISCARD_CARD / SELECT_SUN_YUANHUA_TECH_CARD / SELECT_GAO_DI_DISPATCH_CARD` 这一组 direct-input command-to-event builder。真正的当前源码真相已经在 2026-06-10 04:06 +08 进一步翻正：新增 [directInputEventReducerBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/directInputEventReducerBridge.ts) 后，`REGION_SELECTED / PREVIEW_ACTION_CONFIRMED / WHEEL_MOVE_EXECUTED / selection-input` 这组 event-to-core reducer bridge 与 `QIDAHEN_SELECTION_INPUT_STATE_DEPENDENCIES / QIDAHEN_REGION_SELECTED_DEPENDENCIES / QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES / QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES` 已全部迁入 reducer 侧 owner；[commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 当前继续只消费 command 侧 bridge，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“双桥分层”口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection + Board + roomSetup = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`。结论：03:59 这条只代表“高层入口已收口”，当前真正成立的是 04:06 的 command/reducer 双桥职责分层，不是单一 `directInputEventBridge` 继续混挂两侧职责。
+- 2026-06-10 03:36 +08：当前《七大恨》如果还把 execute 入口记成“resolved command 已下沉，但其余基础选择事件仍适合直接留在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里手搓”，结论已经落后于当前源码真相。现态证据是：新增 [commandEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBridge.ts) 当前已统一承接 `SELECT_REGION / CONFIRM_PREVIEW_ACTION / SELECT_WHEEL_MOVE / EXECUTE_WHEEL_MOVE / SELECT_PAYMENT_CARD / SELECT_HAND_LIMIT_DISCARD_CARD / SELECT_SUN_YUANHUA_TECH_CARD / SELECT_GAO_DI_DISPATCH_CARD / EXECUTE_SELECTED_ACTION / EXECUTE_ACTION` 这整组命令到事件桥，并把 [resolvedCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandBridge.ts) 与 [selectedActionCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionCommandBridge.ts) 作为更窄子 bridge 收进同一条 execute 入口桥；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除整段命令 switch，只保留 `const commandEvents = buildQidahenCommandEvents(...)` 与 `return commandEvents ?? [];`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“execute 命令到事件桥应由独立 commandEventBridge 承接”的新口径。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 03:34:35 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 03:35:44 +08）。结论：这轮真正收掉的是 execute 入口桥一致性，不是 dependency const 名义重构，也没有新建 OpenSpec spec/change。
+- 2026-06-10 03:32 +08：当前《七大恨》如果还把 guide metadata compat 记成“新游戏天然需要的一层双合同兼容”，结论就是错的。现态证据是：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 当前已把工作区内部 metadata 文件正式拆成 `region-authoritative-guides.workspace.json`，并把正式 authoritative truth file 保持为 `region-authoritative-guides.json`；load 路由当前先读 `.workspace.json`，只有它不存在时才 fallback 去读旧的撞名文件；save 路由当前只写 `.workspace.json`；运行时 [mapGraph.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/mapGraph.ts) 仍只从正式 `region-authoritative-guides.json` 读取 authoritative guide truth；[QidahenRegionMaskTool.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/pages/devtools/QidahenRegionMaskTool.tsx) 文案也已明确“只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`”。结论：现在这层 compat 只是给**旧工作区错存文件**准备的 legacy-read adapter，不是正式 runtime 规则层，也不是新游戏流程允许长期保留的双真相设计。根因应直接定性为：当时没有先把“正式 authoritative truth”和“工具内部 workspace metadata”从文件名与 JSON shape 两层一起分开。 
+- 2026-06-10 03:20 +08：当前《七大恨》如果还把 `scenario choice` 这条线记成“setup 走 initialCoreSetup、runtime 走 scenarioChoiceOrchestration，各自绑一份依赖也只是薄壳”，结论已经落后于当前源码真相。现态证据是：[scenarioChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceOrchestration.ts) 当前已新增 `applyQidahenScenarioPresetToFactionStateForSetup(...)`、`buildPendingQidahenScenarioCharacterChoicesForSetup(...)`、`buildPendingQidahenScenarioArmamentChoicesForSetup(...)`，把 `getCharacterNameById / getArmamentNameById` 这组 scenario-choice 共享依赖装配统一收进同一 owner；[initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 当前已退出对 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 的直接依赖装配，不再本地声明重复的 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`，而是直接消费 orchestration 暴露的 setup wrapper；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard，明确 setup/runtime 两条入口当前共用同一份 scenario-choice owner。验证结果：定向 `eslint` 通过，`compatSource + roomSetup = 95 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`。结论：当前真正值得 owner 化的是“scenario choice 在 setup/runtime 双入口重复绑同一份依赖”的 glue，而不是把它继续视为两边各自合理的薄接线。 
+- 2026-06-10 03:06 +08：当前《七大恨》这轮流程状态已经锁定为“完整跑通且有截图证据”，不能再按前一轮“只有半截截图、E2E 非 0 未收口”的旧结论表述。现态证据是：已重新执行 `node scripts/infra/run-e2e-command.mjs ci e2e/qidahen-basic-flow.e2e.ts`，结果为 `26 passed (1.6m)`；[test-results/playwright-artifacts/.last-run.json](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/playwright-artifacts/.last-run.json) 当前已写明 `"status": "passed"` 且 `failedTests` 为空。共享截图证据当前位于 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（`2026-06-10 03:01:14 +08`）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（`2026-06-10 03:02:18 +08`）；两张图都已人工核看为真实《七大恨》Board/HUD 画面。结论：当前切片不再存在“E2E 成败未锁定”的 blocker，这轮补的是既定验证链真相，不是新的 gameplay 规则改动，也没有新建 OpenSpec spec/change。
+- 2026-06-10 03:02 +08：当前《七大恨》如果还把 turn-action choice 这一层记成“只是几处薄 wrapper，没必要单独 owner”，结论已经落后于当前源码真相。现态证据是：新 [turnActionChoiceOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionChoiceOrchestration.ts) 当前已正式承接 `高第调度 / 手牌上限弃牌 / 征召军队 / 内部调度 / 驱虎吞狼同意 / 马市贸易 / 大汗令箭 / 防线维护 / 外交雇佣 / 轮盘调度` 这整组“已绑定 turnActionDependencies 的公共 resolver”；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已退出 9 条 public wrapper，本地只保留薄 re-export 与 `QIDAHEN_REGION_SELECTED_DEPENDENCIES` 对轮盘调度 resolver 的直接消费；[turnActionInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBridge.ts) 与 [actionWindowResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventOrchestration.ts) 也都已改成共用这条新 owner，不再重复把 `QIDAHEN_ACTION_WINDOW_*` / `QIDAHEN_HAND_LIMIT_*` 依赖绑三遍；[turnActionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionDependencies.ts) 当前则已删除两条只会再次包一层的重复 helper，只剩 dependency object 与 `resolveQidahenMidyearWithTurnActionDependencies(...)`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection = 420 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 601 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 03:01:14 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 03:02:18 +08）。补充：E2E 中途一次 `heavy-task guard` 红灯不是业务回归，而是同命令残留 PID 与失效 guard 锁；`heavy-task-guard status` 已清理失效锁，随后定向停掉残留 `run-e2e-command` 进程并按原命令复跑即恢复全绿。结论：当前真正值得 owner 化的是“多入口重复绑定同一份 turn-action 依赖”的 glue，而不是高层还剩几个 const。 
+- 2026-06-10 02:47 +08：当前《七大恨》如果还把 runtime interaction 的 source 顺序表记成 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 自己应继续持有的本地清单，就已经落后于当前源码真相。现态证据是：[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前已新增 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS` 与 `getRegisteredQidahenRuntimeInteractionSourceIds()`，并在 `registerQidahenRuntimeInteractionBuilder(...)` 首次见到某个 `sourceId` 时锁住顺序；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 当前已删除本地 `Object.freeze([...])` source 列表，改成直接 `getRegisteredQidahenRuntimeInteractionSourceIds().reduce(...)`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“顺序真相属于 registry owner，不属于 runtime sync 壳层”的新口径。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`。补充说明：这次 E2E 通过，但共享板面截图文件未在本轮重写，当前仍沿用 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 02:33:05 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 02:34:07 +08）。结论：这轮修的是 runtime sync 的重复顺序真相，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。 
+- 2026-06-10 02:45 +08：当前《七大恨》如果还把 `runtime sync` 记成“runtimeInteractions.ts 仍在本地手写 source 顺序表，所以这条 seam 还没正式收口”，结论已经落后于当前源码真相。现态证据是：[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 当前已通过 `getRegisteredQidahenRuntimeInteractionSourceIds().reduce(...)` 消费 registry owner 的顺序真相，不再本地声明 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS`；[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前正式持有 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS`、`registerQidahenRuntimeInteractionBuilder(...)`、`getRegisteredQidahenRuntimeInteractionSourceIds()` 与 `buildQidahenRuntimeInteractionFromRegistry(...)`；[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 当前只保留 builder 列表和注册循环。同步重核 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts)、[previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 与 [selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts) 后，也确认高层剩余 `QIDAHEN_SELECTION_INPUT_STATE_DEPENDENCIES / QIDAHEN_REGION_SELECTED_DEPENDENCIES / QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES / QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES` 目前都只是薄接线，不应机械升级成下一条 formal residual。验证结果：`compatSource.test.ts = 84 passed`。结论：当前更真实的阶段是“runtime sync 旧 residual 已过期，高层只剩薄接线壳”，后续若继续推进，必须重新找到新的共享语义 owner，而不是因为 `index.ts` 还剩几个 dependency const 就继续拆。 
+- 2026-06-10 02:34 +08：当前《七大恨》这轮如果只看 `compatSource.test.ts` 就把 `runtimeInteractionBuilderRegistry` 记成“已经正式稳定收口”，结论仍然不完整；真正的阻塞是 runtime builder 注册初始化方向错了，导致更宽测试一 import 域入口就直接报 `Cannot access 'QIDAHEN_RUNTIME_INTERACTION_BUILDERS_BY_SOURCE_ID' before initialization`。现态证据是：[runtimeInteractionBuilderRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractionBuilderRegistry.ts) 当前已只保留 `registerQidahenRuntimeInteractionBuilder(...)` 与 `buildQidahenRuntimeInteractionFromRegistry(...)` 本体，不再内部 side-effect `import './interactionBuilders'`；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 当前已在真正的 runtime consumer 入口显式 side-effect 加载 `interactionBuilders`，从而切断 `runtimeInteractionBuilderRegistry -> interactionBuilders -> runtimeInteractionBuilderRegistry` 的初始化循环；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到“注册 side-effect 应留在 runtime consumer，而不是 registry owner 内部”的新真相。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 428 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 02:33:05 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 02:34:07 +08）。结论：这轮修的是 runtime builder 初始化方向，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。 
+- 2026-06-10 02:21 +08：当前《七大恨》如果还把 `interactionResolverRegistry.ts` 记成“必须继续本地承接整串 turn-action / action-window interaction sourceId 分支与依赖装配”的正式入口，就已经落后于源码真相。现态证据是：新 [turnActionInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionInteractionBridge.ts) 当前已正式承接 `hand-limit-discard / recruit / diplomacy / wheel-dispatch / internal-dispatch / ma-shi-trade / khan-edict / drive-tiger-consent / fortification-maintenance` 这一整组 interaction 解析与 `turnActionDependencies` 接线；[interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 当前只保留 `readResolvedPayload(...)`、`resolveQidahenTurnActionInteractionEvent(...)` 与 [pendingBattleInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionBridge.ts) 的 registry 编排，不再本地展开那 9 条 handler。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增并追平这条 source guard。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 84 passed`，`compatSource + commands + payment-selection = 428 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 02:03:05 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 02:04:10 +08）。结论：这轮修的是 interaction bridge 分层，不是 gameplay 规则回退，也没有新建 OpenSpec spec/change。 
+- 2026-06-10 02:05 +08：当前《七大恨》这轮后续收口里新出现的红灯，不是业务逻辑回归，而是 `compatSource.test.ts` 对当前源码真相的 3 处过期断言外加高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里 1 条死 import。现态证据是：`pending-action/post-battle flow state transition` 这条断言当时直接报 `seasonResolutionSource is not defined`；另外两条 source guard 仍在要求高层 `index.ts` 直接持有 `regionRuleSemantics / actionSourceRegionState` 接线，但当前真实消费点已经下沉到 [turnActionDependencies.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnActionDependencies.ts)、[turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts) 与 [actionWindowResolvedEventOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventOrchestration.ts)。当前已删掉 `index.ts` 的未使用 import，并把 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 追平到这些 owner 真相。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 83 passed`，`compatSource + commands + payment-selection = 427 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`。结论：这轮补的是测试与接线真相，不是 gameplay 规则修复，也没有新建 OpenSpec spec/change。 
+- 2026-06-10 01:32 +08：当前《七大恨》这轮最终需要修通的，不是新的业务规则回归，而是上一轮 owner 收口后高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 暴露出的 2 个真实运行时漏依赖。现态证据是：高层 `index.ts` 当前已直接 `import { applyCommittedTroopRemovalToRegion } from './pendingBattleCombatSupport'`，并且 `QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION` 执行链已改成通过 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 暴露的 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES.applyRequestedCommittedTroops(...)` 与 `.createStructuredBattleRolls(...)` 收口，而不是继续调用高层已退出的本地符号。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到当前 `pendingBattleOrchestration / selectedActionOrchestration / scenarioChoiceOrchestration / pendingBattleResolvedEventBridge` owner 结构。验证结果：`compatSource.test.ts = 83 passed`，`compatSource + commands + payment-selection = 427 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed`；最新共享截图为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-10 01:31:01 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-10 01:32:03 +08）。结论是：当前切片已重新回到真 E2E 绿基线；这轮修的是高层漏依赖，不是规则语义回退，也没有新建 OpenSpec spec/change。 
+- 2026-06-10 01:29 +08：当前《七大恨》如果还把 `pendingBattle` 这组 battle/post-battle 依赖装配记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 应继续持有的 glue，就已经落后于源码真相。现态证据是：新 [pendingBattleOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleOrchestration.ts) 当前已正式承接 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES / QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES / QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 与 `resolveQidahenPendingTargetAction(...) / resolveQidahenPostBattleDecision(...)`；[pendingBattleInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionBridge.ts) 与 [pendingBattleResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventBridge.ts) 当前都已直接消费新 owner；高层 `index.ts` 已删除这组 pending-battle import glue，并退出对应过期 import。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到新 owner 关系，不再要求 `index.ts` 保留 battle math / battle state / post-battle / city-transfer / korea-tribute / defeat-marker / faction-action-window 这批过期 import 形状。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 83 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 600 passed`，`npm run typecheck` 通过。结论是：当前 formal residual 已继续离开这组 pending-battle orchestration glue；下一条 seam 仍需重新按当前 orchestrator / bridge 真相复核。这轮没有重跑 E2E。 
+- 2026-06-10 01:03 +08：当前《七大恨》如果还把 `SELECTED_ACTION_EXECUTED / SUN_YUANHUA_TECH_RESOLVED` 的 selected-action / armament / turn-flow 依赖装配记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 应继续持有的 glue，就已经落后于源码真相。现态证据是：新 [selectedActionOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionOrchestration.ts) 当前已正式承接 `QIDAHEN_GRANT_PARDON_EXECUTION_DEPENDENCIES / QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES / QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES / QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES / QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES / QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_EVENT_DEPENDENCIES`，并导出 `resolveQidahenSelectedActionExecutedEventForTurnFlow(...)` 与 `resolveQidahenSunYuanhuaTechResolvedEventForTurnFlow(...)`；高层 `index.ts` 当前已删除对应本地 dependency object，事件 case 也已改成直接消费新 owner wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已明确锁住这条 owner 边界。验证结果：`compatSource.test.ts = 83 passed`，`compatSource + commands + payment-selection = 427 passed`，`npm run typecheck` 通过。结论是：当前 formal residual 已继续离开这组 selected-action event glue；下一条 seam 需要重新按当前更外层 orchestrator / bridge 真相复核。这轮没有重跑 E2E。 
+- 2026-06-10 00:54 +08：当前《七大恨》如果还把“回合推进/回合标签/人物行动窗口/特殊规则/胜利收口胶水仍滞留高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)”记成正式 residual，就已经落后于源码真相。现态证据是：新 [turnFlowOrchestration.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnFlowOrchestration.ts) 当前已正式承接 `applyQidahenCharacterActionWindowEffectsWithFocusForTurnFlow / updateQidahenTurnLabelForTurnFlow / syncQidahenSpecialRuleStateForTurnFlow / applyQidahenVictoryStatusForTurnFlow / advanceQidahenTurnIfReadyForTurnFlow / resolveQidahenGameOverForTurnFlow`；高层 `index.ts` 当前已退出对应依赖装配与 wrapper。本轮还顺手暴露并修掉一条真实运行时缺口： [characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 当前已直接消费 [characterConflictState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterConflictState.ts)，高层 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 已缩到只剩 `getChronologyCharacterAvailabilityForYear / createInitialCharacterStates / getCharacterNameById`，不再继续注入人物冲突 helper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已把这两条 owner 关系锁住。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 600 passed`，`npm run typecheck` 通过。结论是：当前 formal residual 已继续离开这组 high-level turn-flow glue；下一条 seam 需要重新按当前高层 orchestrator/bridge 真相复核。这轮没有重跑 E2E。 
+- 2026-06-10 00:13 +08：当前《七大恨》如果还把 `character ability semantics` 记成“仍滞留高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的正式 residual”，就已经落后于源码真相。现态证据是：新 [characterAbilitySemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterAbilitySemantics.ts) 当前已正式承接 `getAttackerDeckPlunderHandBonus / isSunYuanhuaEnabled / hasJinDefeatLossImmunity`；[selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts)、[postBattleResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolution.ts)、[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前都已直接消费新 owner；高层 `index.ts` 当前既没有这 3 个本地 helper，也不再通过 dependencies 注入它们。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已经锁住这条边界。验证结果：`compatSource.test.ts = 83 passed`，`compatSource + commands + payment-selection = 427 passed`，`npm run typecheck` 通过。结论是：正式审查里的 `1.21` 已经过期，不能再把这条 seam 当作下一步；下一条 formal residual 必须重新按当前全域代码真相复核。这轮没有重跑 E2E。 
+- 2026-06-09 23:06 +08：当前《七大恨》如果还把轮盘即时效果规则记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里顺手塞的一块 helper，就已经落后于源码真相。现态证据是：新 [wheelImmediateEffect.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelImmediateEffect.ts) 当前已正式承接 `applyQidahenWheelImmediateEffect(...)`，并自持 fallback 目标区、抽牌、人口/部队增量、炮兵训练、summary 与 actionLog 这整组轮盘即时效果语义；[wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 已直接导入新 owner，`QidahenWheelMoveExecutionDependencies` 也不再声明 `applyWheelImmediateEffect`；高层 `index.ts` 当前既没有本地 `applyWheelImmediateEffect(...)`，也不再通过 `QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES` 注入这条规则。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已锁住这条新 owner 边界。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 599 passed`，`npm run typecheck` 通过。结论是：轮盘即时效果这条 seam 当前已经完成 owner 化；下一条 formal residual 需要重新回到更高层 orchestrator / bridge seam 复核，而不是继续把这块规则留在高层记账。 
+- 2026-06-09 22:52 +08：当前《七大恨》如果还把 `selectedAction pending-target follow-up seam` 记成“高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 仍在通过 dependencies interface 把 `getMarriageSubjugationBlockedReason(...) / buildPendingTargetAction(...)` 往下游注”，就已经落后于源码真相。现态证据是：[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 当前已直接 import [pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts) 的 `getMarriageSubjugationBlockedReason(...)`；[selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts) 当前已直接 import 同一 owner 的 `buildPendingTargetAction(...)`；[selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 的依赖合同已经缩到只剩 `buildSeasonSummary`；高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已删除这两条 helper 的 selectedAction 注入接线。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，显式锁住 builder owner 直供下游。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 426 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.9m)`；最新共享截图为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-09 22:50:26 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-09 22:51:39 +08）。结论是：已锁定的 `selectedAction pending-target` residual 当前已经完成；下一层 residual 需要重新按当前高层 orchestrator/bridge 真相审计，不能继续沿 22:35 那条旧结论惯性推进。 
+- 2026-06-09 22:51 +08：当前《七大恨》如果还把 `selectedAction pending-target follow-up seam` 记成“仍滞留高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的正式 residual”，就已经落后于源码真相。现态证据是： [pendingTargetActionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetActionBuilder.ts) 当前已正式承接 `computeMarriageSubjugationPayCost / getMarriageSubjugationBlockedReason / buildPendingTargetAction`；[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 已直接导入 `getMarriageSubjugationBlockedReason(...)`；[selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts) 已直接导入 `buildPendingTargetAction(...)`；高层 `index.ts` 当前既没有这 3 个本地 helper 定义，也不再通过 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES / QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 注入它们。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已经锁住这条新 owner 边界。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 599 passed`，`npm run typecheck` 通过。结论是：这条 seam 当前已经完成 owner 化，不应继续作为 formal residual；下一条 residual 需要重新回到更高层 orchestrator / bridge seam 复核，而不是沿 `1.18` 旧结论继续记账。 
+- 2026-06-09 22:36 +08：当前《七大恨》如果还把“进入行动窗口时的默认状态装配”记成 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts) 与 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 各自顺手写的一坨初始化字段，就已经落后于源码真相。现态证据是：新 [actionWindowEntryState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowEntryState.ts) 已正式承接 `buildQidahenActionWindowEntryState(...)`；当前 `initialCoreSetup` 已改成通过它装配开局 `selectedActionId / selectedPaymentCardIds / recruitSelection / diplomacySelection / payment / actionChoices` 等字段，`turnAdvance` 也已改成通过同一 owner 装配换人后的 action-window entry state，不再复制一份同形状态。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，并追平 3 条旧断言。验证结果：定向 `eslint` 通过，`compatSource + commands + payment-selection = 426 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.9m)`，最新共享截图为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-09 22:35:08 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-09 22:36:24 +08）。结论是：`initialCoreSetup + turnAdvance` 共用的 action-window entry seam 当前已经完成 owner 化；下一层 residual 仍应继续锁在已识别的 `selectedAction pending-target follow-up seam`，而不是再回头把这批入口字段当作散落初始化细节。 
+- 2026-06-09 22:35 +08：当前《七大恨》如果把 `selectedAction` 整条线记成“已经完全 owner 化，高层只剩纯接线”，就已经落后于源码真相。现态证据是：`SELECTED_ACTION_EXECUTED` 主流程虽然已经通过 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts)、[selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts)、[selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts)、[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 拆成 owner，但高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前仍本地持有 `computeMarriageSubjugationPayCost / getMarriageSubjugationBlockedReason / buildPendingTargetAction`，并继续通过 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES` 与 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 注给下游 `selectedActionPreparation / selectedActionFollowUpResolution`。这 3 个函数现在仍在算联姻支付、阻断原因、突袭 fallback、边界宽度、攻击压力、待结算摘要与 `pendingTargetAction` payload，不是纯依赖桥。结论是：当前真正的正式 residual 应锁到 `selectedAction pending-target follow-up seam`，而不是继续误记成“已全部收口”或“又出了 compat”；同时现有 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也还没有显式锁住这条后续边界。边界：这轮只有 formal review 落档，没有新增生产代码，也没有重跑门禁。 
+- 2026-06-09 22:28 +08：当前《七大恨》如果还把“朝鲜贡牌增益”和“败北标记应用”记成 `seasonResolution + index` 相邻位置里的两坨局部 helper，就已经落后于源码真相。现态证据是：新 [koreaTributeRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/koreaTributeRules.ts) 已正式承接 `getEffectiveKoreaTributeCardsForFaction(...)`；新 [defeatMarkerState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/defeatMarkerState.ts) 已正式承接 `addDefeatMarkerToCharacters / addDefeatMarkerToFaction / syncFactionCharactersToDefeatMarkerCount / listMarkedCharacters / getMidyearDefeatMarkerRoll`；[seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前已改为直接消费 [handCardState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handCardState.ts) 的 `drawKoreaCardsForFaction(...)`，不再本地复制朝鲜抽牌 helper；高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前也已删除本地 `getEffectiveKoreaTributeCardsForFaction(...)` 与 `addDefeatMarkerToFaction(...)`。结论是：`seasonResolution` 这条线当前已经不只是“owner 已成立但旁边还有共用 helper 没处理”，而是这组相邻规则胶水也已经分别回到 `handCardState / koreaTributeRules / defeatMarkerState` 三个更准确的 owner；后续 residual 应重新回到更高层 orchestrator / bridge seam，而不是继续围着 season 拆小函数。验证结果：定向 `eslint` 通过，`compatSource + roomSetup + commands + Board + payment-selection = 598 passed`，`npm run typecheck` 通过。 
+- 2026-06-09 22:21 +08：当前《七大恨》这条线已经没有“缺少截图或流程没跑完”这种未锁定前提。现态证据是：剧本运行时区域预设 truth 已正式下沉到 [scenarioRuntimeRegionPresets.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioRuntimeRegionPresets.ts)，[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 里剩余 5 条旧 owner 断言已追平到 `seasonResolution.ts + scenarioRuntimeRegionPresets.ts`，高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 3 个真实漏依赖 `isQidahenKoreaRuntimeRegionId / getQidahenKoreaTributeCards / addDefeatMarkerToCharacters` 也已补齐。验证结果已经覆盖静态门禁、规则单测和真 UI 链路：`compatSource + commands + payment-selection = 424 passed`，`npm run typecheck` 通过，真 E2E `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.8m)`。最新共享截图已经刷新为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png)（2026-06-09 22:17:48 +08）与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)（2026-06-09 22:18:59 +08）。结论：当前这轮不是“还有东西阻塞无法推进”，而是已完成并拿到了最新真实截图证据。 
+- 2026-06-09 22:19 +08：当前《七大恨》如果还把 `seasonResolution` 记成“刚拆出文件，但 `index.ts` 其实还在自己做年中/新年结算”，就已经落后于当前源码真相。现态证据是： [seasonResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/seasonResolution.ts) 当前已正式承接 `resolveQidahenMidyear / resolveQidahenNewYear / addDefeatMarkerToCharacters`，并直接消费 `getQidahenEffectiveVpByFaction / countQidahenControlledRuntimeRegions / buildYearCardSlots / getFactionOrderForYearIndex / getYearLabelByIndex / QIDAHEN_YEAR_SEQUENCE`；高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前对 season 只剩 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES` 装配与 `resolveMidyear / resolveNewYear` 接线。这里最容易误判的两条高层残留 `getEffectiveKoreaTributeCardsForFaction(...)` 与 `addDefeatMarkerToFaction(...)`，当前都不应再记成 season owner 回退，因为前者还被 [postBattleResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolution.ts) 的战后占领朝鲜抽牌链复用，后者还被 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 的败北标记结算链复用。结论是：这条线当前的正确定性是“season owner 已成立，剩余相邻 helper 属于跨 seam 规则胶水”，不是“season compat 还没收干净”。验证结果：`compatSource + roomSetup + commands + Board + payment-selection = 597 passed`，`compatSource + commands = 88 passed`，`npm run typecheck` 通过。 
+- 2026-06-09 21:35 +08：当前《七大恨》如果把这轮出现的“兼容问题”理解成运行时又重新长出一套旧 `setup` / 旧区域初始化链，就已经偏离当前源码真相。现态证据是：真正失败的只有 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 里 3 条旧 source guard，它们仍在假设 `getScenarioPlayableFactionIds(...)`、`cloneSpecialTroopStacksAsPieces(...)` 与开局部队栈构造 helper 应继续留在高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)，而当前真实 owner 已是 [initialCoreSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/initialCoreSetup.ts)。这轮已只追平这 3 条门禁断言，没有改业务实现；补证后 `compatSource.test.ts = 79 passed`，`compatSource + roomSetup + commands + Board + payment-selection = 596 passed`，`npm run typecheck` 通过。结论是：这次 compat 红灯属于“静态门禁口径落后于当前 owner 结构”，不是正式运行时双真相回潮；正式 residual 不应因此回退去重新争论 `setup` 单一真相。 
+- 2026-06-09 20:29 +08：当前《七大恨》如果还把“势力中文名 / 控制标签 / 友好附庸标签”看成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[troopStacks.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopStacks.ts) 各自顺手维护的一层浅文案，就已经落后于源码真相。现态证据是：新 [factionLabelSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionLabelSemantics.ts) 已正式承接 `factionDisplayNameById / getFactionDisplayName / toFactionLabel / getRegionControlLabel`；高层 `index.ts` 当前已删除本地 `factionDisplayNameById / toFactionLabel / getRegionControlLabel`，builder 当前已删除本地 `toFactionLabel`，`troopStacks.ts` 当前已删除本地 `factionDisplayNameById`，统一改成消费新 owner。这里收的不是“三行中文 map 本身”，而是当前已经同时服务于部队栈标签、区域控制标签、外交/战后/围城摘要、以及剧本待决项势力名的同一条显示语义。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `index / selectionBuilders / troopStacks` 不得回流本地标签 helper。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 246 passed`，覆盖剧本待决项 / 外交雇佣 / 劫掠 / 联姻诱降的定向 `payment-selection` grep 为 `4 passed`，`npm run typecheck` 通过。结论是：这条 faction-label seam 当前也已完成 owner 化；后续 residual 不能再把它当成散落在各文件里的本地显示细节。 
+- 2026-06-09 20:17 +08：当前《七大恨》如果还把 `movement profile` 下的兵种过滤与 committed stack 截取看成 `selectionBuilders / battleRollMath / pendingBattleCombatSupport / index` 各自可以带一份的小 helper，就已经落后于源码真相。现态证据是：新 [movementProfileTroopSelection.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movementProfileTroopSelection.ts) 已正式承接 `isTroopKindAllowedForMovementProfile(...)` 与 `takeCommittedSpecialTroopStacks(...)`；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts)、[pendingBattleCombatSupport.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCombatSupport.ts) 当前都已统一消费新 owner，并删除本地 helper。中途真实红灯不是“兼容架构又有根本问题”，而是第三条 seam 落地后 [pendingBattleCombatSupport.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCombatSupport.ts) 漏掉了 `isTroopKindAllowedForMovementProfile / sortCompatPiecesForSelection / QidahenTroopKind` import，外加 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 还沿用“`index.ts` 必须保留无用 import”这条旧断言；两者现在都已追平。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 244 passed`，`cityState` 相关 5 条 `payment-selection` 用例通过，`骑兵避战|劫掠` 相关 11 条用例通过，`npm run typecheck` 通过。结论是：这条 movement-profile seam 当前也已完成 owner 化；正式 residual 不能再把它记成“还在多点重复实现”，若继续扩范围，必须重新给出新的同级 seam 证据。 
+- 2026-06-09 20:06 +08：当前《七大恨》如果还把 `selectionBuilders.ts` 里的区位偏好、调度支援目标和常规征兵落点判定看成 builder 自己的本地职责，就已经落后于当前源码真相。现态证据是：`selectionBuilders.ts` 此前本地复制的 `isRegionUnderSiege / canPlaceRegularTroopsInRegion / isRegionAvailableForNonDispatchAction / isOwnSiegedCityReinforcementTarget / isFriendlyDispatchSupportTarget / getPreferredRegularTroopPlacementRegion`，以及与其配套的 `isRegionControlledByFaction / isRegionFriendlyToFaction`，现在都已改成直接消费 [regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts) 与 [battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)；builder 本地副本和 `getRegularTroopPlacementSnapshot(...)` 已删除。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住这组区位规则不得回流 builder 本地。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 243 passed`，两条直击 `cityState` 调度来源的 `payment-selection` 用例通过，`马市贸易|大汗令箭` 相关 grep 套件 `27 passed`，`npm run typecheck` 通过。结论是：这组区位偏好规则当前也已退出 builder 本地重复实现；后续 residual 不能再把它们记成 “selectionBuilders 私有逻辑”。 
+- 2026-06-09 19:58 +08：当前《七大恨》如果还把“非围城城市行动源快照 / 实体化”记成下一条待做 residual，就已经落后于当前源码真相。现态证据是：新 [actionSourceRegionState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionSourceRegionState.ts) 已正式承接 `getNonSiegedCityActionSourceSnapshot(...)` 与 `materializeNonSiegedCityActionSourceRegion(...)`，并内部持有只服务这条 seam 的区名语义 glue；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)、[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts)、[regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts)、[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 当前都已统一追平到同一 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增 `readActionSourceRegionStateSource()` 与 action-source source guard，显式锁住 battle/high-level/builder 不得回流本地实现。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 242 passed`，直击 action-source 的 4 条 `payment-selection` 用例通过，`npm run typecheck` 通过。结论是：`1.09` 那条 seam 当前已经完成 owner 化；正式 residual 不能再惯性沿着它继续推进，而应先停在当前基线，重新判断是否存在新的同级 seam。边界：这轮没有重跑整份 `payment-selection.test.ts` 全量，也没有重跑 E2E。 
+- 2026-06-09 19:28 +08：当前《七大恨》如果把 residual 直接收口成“只剩浅标签映射，不值得继续正式重构”，也已经不够准确。重新全域复核 [src/games/qidahen/domain/](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain) 后，更接近源码真相的结论是：下一条真正值得继续收的 seam，已经重新锁到“非围城城市行动源快照 / 实体化”这组 helper。现态证据是：正式 `getNonSiegedCityActionSourceSnapshot(...)` 当前已由 [battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts) 导出，并被 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts)、[regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts)、[grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 直接消费；但 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前仍本地复制一份同形 `getNonSiegedCityActionSourceSnapshot(...)` 与 `materializeNonSiegedCityActionSourceRegion(...)`，高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 也仍本地保留 `materializeNonSiegedCityActionSourceRegion(...)` 并把它注入多条 action/battle resolution 依赖。结论是：下一刀如果继续推进，正确对象应是这组 action source helper，而不是优先硬拆 `factionDisplayNameById / toFactionLabel` 这类浅展示文案。边界：这轮只补 formal review，没有新增实现，也没有重跑门禁。 
+- 2026-06-09 18:50 +08：当前《七大恨》如果还把 `getArmamentLevel(...)` 记成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts)、[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts) 各自本地维护的一条小读取 helper，就已经落后于源码真相。现态证据是：新 [armamentStateAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentStateAccessors.ts) 已正式承接军备等级读取；上述 3 个 consumer 当前都已删除本地定义，并统一消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `armamentStateAccessors` 为军备等级读取 truth owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 241 passed`，`payment-selection` 中直接命中的 4 条炮兵科技/步骑铁甲战斗链用例通过，`npm run typecheck` 通过。结论是：armament level seam 当前也已退出多点重复实现；继续按当前源码真相看，剩余更像 `factionDisplayNameById` 这类浅标签映射，以及 `YEAR_SEQUENCE / QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS` 这类单点配置，不值得为了“继续重构”硬拆。 
+- 2026-06-09 18:23 +08：当前《七大恨》如果还把 `hasActiveCharacter(...)` 记成各规则模块各自本地维护的一条小 helper，就已经落后于源码真相。现态证据是：新 [characterPresenceAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterPresenceAccessors.ts) 已正式承接人物在场判定；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)、[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts)、[factionActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionActionWindow.ts)、[movement.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/movement.ts)、[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts)、[regionRuleSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionRuleSemantics.ts)、[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前都已删除对应本地定义，并统一消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `characterPresenceAccessors` 为人物在场判定 truth owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 240 passed`，`payment-selection` 中直接命中的 4 条人物在场相关用例通过，`movementRules.test.ts = 7 passed`，`npm run typecheck` 通过。结论是：character presence seam 当前也已退出各模块本地重复实现；后续 residual 更像 `getArmamentLevel(...)` 这组跨模块重复读取，而不是再把 `hasActiveCharacter(...)` 记成散落 helper。 
+- 2026-06-09 17:18 +08：当前《七大恨》如果还把“行动规则区名显示 + 蒙古本土归属判定”记成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 与 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 各自本地维护的一组 helper/常量，就已经落后于源码真相。现态证据是：新 [regionRuleSemantics.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionRuleSemantics.ts) 已正式承接 `ACTION_RULE_REGION_NAME_OVERRIDES`、5 组蒙古本土区域集合、`getActionRuleRegionNameById(...)`、`getActionRuleDisplayRegionName(...)`、`getPreferredLogicalRegionDisplayName(...)` 与 `getEffectiveHomelandController(...)`；高层 `index.ts` 与 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前已删除对应本地重复实现，并统一消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `regionRuleSemantics` 为这组规则 truth owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 239 passed`，`payment-selection` 中直接命中的 3 条蒙古本土/逻辑区显示用例通过，`npm run typecheck` 通过。结论是：这组 region rule semantics 当前也已退出高层与 selection builder 的双边重复实现；后续 residual 需要重新按当前源码真相审计，而不是继续把这组规则记成 `index` 或 builder 的本地职责。补充结论：`YEAR_SEQUENCE / getYearLabelByIndex(...)` 与 `QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS` 当前仍是单点消费，`factionDisplayNameById` 虽有重复但过浅，这轮都不构成值得继续下刀的同级 seam。 
+- 2026-06-09 16:03 +08：当前《七大恨》如果还把 `qidahenArmamentCatalog / initialArmamentLevelsByFaction / createInitialArmamentStates / getArmamentNameById` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地军备目录 truth，就已经落后于源码真相。现态证据是：新 [armamentCatalogState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentCatalogState.ts) 已正式承接这组军备目录、各势力初始军备等级、初始军备状态构造与名字读取；高层 `index.ts` 当前已删除对应本地定义，并改成让 `createFactionState(...)` 与 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 统一消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `armamentCatalogState` 为军备目录 truth owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 238 passed`，`payment-selection` 中直接命中的 3 条军备/剧本初始化用例通过，`npm run typecheck` 通过。结论是：armament catalog truth 这层当前也已退出高层；后续 residual 应重新按当前源码真相审计其它仍留在高层的 truth/helper seam，而不是再把军备目录记成 `index` 职责。 
+- 2026-06-09 14:14 +08：当前《七大恨》如果还把 `QIDAHEN_CHRONOLOGY_YEAR_CONFIGS / getChronologyPreviewIndex / getFactionOrderForYearIndex / getChronologyCharacterAvailabilityForYear` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地纪年配置 truth，就已经落后于源码真相。现态证据是：新 [characterChronologyConfig.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyConfig.ts) 已正式承接 `QidahenChronologyCharacterAvailability`、`QidahenChronologyYearConfig`、`QIDAHEN_CHRONOLOGY_YEAR_CONFIGS` 与 3 条 chronology accessor；高层 `index.ts` 当前已删除对应本地 type/config/accessor 定义，并改成让 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES`、`buildYearCardSlots(...)` 与 `resolveNewYear()` 统一消费新 owner；[characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 也已改成直接 import 新 owner 的 `QidahenChronologyCharacterAvailability`，不再复制一份规则类型。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `characterChronologyConfig` 为纪年配置 truth owner，并追平一条已经过期的 `filterFactionOrderForScenario` 高层 import 断言。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 237 passed`，`payment-selection` 中直接命中的人物冲突/年代启用 7 条用例通过，`npm run typecheck` 通过。结论是：chronology config truth 这层当前也已退出高层；后续 residual 若继续沿同一条人物年代链推进，应只剩 `YEAR_SEQUENCE / getYearLabelByIndex / buildYearCardSlots` 这组年份标签与纪年卡展示语义，而不是再把纪年配置 truth 记成 `index` 职责。 
+- 2026-06-09 13:17 +08：当前《七大恨》如果还把 `InitialCharacterSeed / initialCharacterSeedsByFaction / createInitialCharacterStates / getCharacterNameById` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地人物录入/名字读取真相，就已经落后于源码真相。现态证据是：新 [characterCatalogState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterCatalogState.ts) 已正式承接这组人物种子与名字读取逻辑；高层 `index.ts` 当前已删除对应本地定义，并改成让 `createFactionState(...)`、人物败退标记同步、`QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES` 与 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES` 统一消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `characterCatalogState` 为人物种子/名字读取 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 236 passed`，`payment-selection` 中直接命中的人物冲突/年代启用 7 条用例通过。结论是：人物 catalog 这层当前已退出高层；后续 residual 应继续按当前源码真相审 `getChronologyCharacterAvailabilityForYear(...)` 与 `QIDAHEN_CHRONOLOGY_YEAR_CONFIGS` 这条 chronology 配置 truth，而不是再把人物种子/名字读取记成 `index` 职责。 
+- 2026-06-09 12:57 +08：当前《七大恨》如果还把 `applyChronologyCharactersForYear(...)` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地年代启用主流程，就已经落后于源码真相。现态证据是：新 [characterChronologyState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterChronologyState.ts) 已正式承接 `QidahenCharacterChronologyStateDependencies`、`selectChronologyRepresentativeCharacterIds(...)` 与 `applyChronologyCharactersForYear(...)`；高层 `index.ts` 当前已删除本地 chronology helper，只保留 `getChronologyCharacterAvailabilityForYear / createInitialCharacterStates / getCharacterNameById` 与 4 条冲突 owner 的依赖装配；`resolveNewYear()` 当前也已改成通过 `applyChronologyCharactersForYear(..., QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES)` 消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `characterChronologyState` 为纪年人物启用主流程 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 235 passed`，`payment-selection` 中直接命中的人物冲突/年代启用 7 条用例通过，`npm run typecheck` 通过。结论是：chronology 主流程这层当前已退出高层；后续 residual 应继续按当前源码真相审 `getChronologyCharacterAvailabilityForYear / createInitialCharacterStates / getCharacterNameById` 这组配置/种子读取 seam，而不是再把 `applyChronologyCharactersForYear` 记成 `index` 职责。 
+- 2026-06-09 12:45 +08：当前《七大恨》如果还把 `resolveMingCharacterConflict / resolveNurhaciRemovedByYuanChonghuan / resolveJinHuangtaijiConflict / resolveJinDaisanConflict` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地 helper，就已经落后于源码真相。现态证据是：新 [characterConflictState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterConflictState.ts) 已正式承接这 4 条人物冲突/克制规则与 `JIN_BEILE_CHARACTER_IDS`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除对应本地 helper 和常量，只保留 `applyChronologyCharactersForYear(...)` 与 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 对新 owner 的消费接线；[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 也已改成用 `typeof resolve...` 声明依赖合同。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `characterConflictState` 为单一 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 234 passed`，`payment-selection` 中直接命中的人物冲突/年代启用 7 条用例通过，`npm run typecheck` 通过。结论是：人物冲突规则这层当前已退出高层；后续 residual 应继续按当前源码真相审 `applyChronologyCharactersForYear(...)` 及其周边名字/初始人物读取 seam，而不是回头再把这 4 条 helper 记成 `index` 职责。 
+- 2026-06-09 12:12 +08：当前《七大恨》如果还把下一层 residual 写成“人物系统整体还没分层”或“先抽通用 `hasActiveCharacter`”，就已经偏离现态源码真相。当前重新核对 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 与 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 后，更准确的正式结论是：高层真正还适合继续收出去的，是 `resolveMingCharacterConflict / resolveNurhaciRemovedByYuanChonghuan / resolveJinHuangtaijiConflict / resolveJinDaisanConflict` 这 4 条“人物年代启用 + 同场冲突/克制移除” helper。现态证据是：它们现在只有两类真实消费面，一类是 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里的 `applyChronologyCharactersForYear(...)` 年代启用收口，另一类是 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES` 注入到 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 的四个 handled effect 分支；相反 `hasActiveCharacter` 当前仍广泛服务家乡控制、劫掠奖励、行动判定和战斗派生，仓内多个模块也各自持有 character presence 判定，因此不属于同一窄 seam。结论是：按新流程继续推进时，下一刀最正确对象应是独立 `character chronology/conflict owner`，而不是先做更宽的 character presence 抽象或把 `createInitialCharacterStates / getCharacterNameById` 整体打包重做。这轮只补 formal review 文档，没有新增实现，也没有重跑门禁。 
+- 2026-06-09 12:00 +08：当前《七大恨》如果还把“熊廷弼免费训练”记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地角色效果 helper，就已经落后于源码真相。现态证据是：[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 已正式新增 `resolveQidahenXiongTingbiFreeTraining(...)`，并直接承接 `selected runtime region` 优先、候选区排序、`trainTroopsOneStepForFactionWithLimit(...)` 调用、caller note 与 `logText` 装配；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `resolveXiongTingbiFreeTraining(...)` 与对应依赖注入。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，显式锁住这条熊廷弼专属训练编排应留在 `characterActionWindow` owner，不再挂在高层。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 232 passed`，`payment-selection` 里熊廷弼直接命中的 3 条用例通过，`npm run typecheck` 通过。结论是：熊廷弼免费训练这条角色窗口编排当前已退出高层；后续 residual 应继续按当前源码真相审其它仍留在高层的角色/季节/初始化 thin seam，而不是继续把这条角色专属训练链记成 `index` 职责。 
+- 2026-06-09 11:28 +08：当前《七大恨》如果还把 `WHEEL_MOVE_SELECTED / PAYMENT_CARD_SELECTED / HAND_LIMIT_DISCARD_CARD_SELECTED / SUN_YUANHUA_TECH_CARD_SELECTED / GAO_DI_DISPATCH_CARD_SELECTED / HAND_LIMIT_DISCARD_RESOLVED` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的零散本地 helper 或旧的 `handLimitDiscard -> index` 直连口径，就已经落后于源码真相。现态证据是：新 [selectionInputState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionInputState.ts) 已正式承接 `buildQidahenSunYuanhuaTechSelection / reduceQidahenSelectionInputEvent`、四组 toggle helper，以及 `HAND_LIMIT_DISCARD_RESOLVED -> resolveQidahenHandLimitDiscard(...)` 的统一入口；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已只保留 `QIDAHEN_SELECTION_INPUT_STATE_DEPENDENCIES` 注入与 `reduceQidahenSelectionInputEvent(...)` 调用，不再本地维护选牌/轮盘选择 helper，也不再把这条 resolved 事件写成旧 alias 直连。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，显式锁住 selectionInputState 为这组纯输入选择事件 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 232 passed`，`payment-selection` 里孙元化/手牌上限直接命中的 3 条用例通过，`npm run typecheck` 通过。结论是：selection input 这条线当前已退出高层；后续 residual 应继续按当前源码真相审计其它仍留在高层的 thin case / helper seam，而不是继续围着 `HAND_LIMIT_DISCARD_RESOLVED` 的旧收口口径打转。 
+- 2026-06-09 09:23 +08：当前《七大恨》如果还把剧本预设应用、待决项构建和确认写回 helper 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地职责，就已经落后于源码真相。现态证据是：新 [scenarioChoiceState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceState.ts) 已正式承接 `applyQidahenScenarioPresetToFactionState / buildPendingQidahenScenarioCharacterChoices / buildPendingQidahenScenarioArmamentChoices / resolveQidahenScenarioCharacterChoice / resolveQidahenScenarioArmamentChoice`，统一持有 `groupId / resolved ids / pending choice / resolution` 真相；而 [scenarioChoiceResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventBridge.ts) 当前也已退成只保留 `currentFactionId + actionLog + updateTurnLabel` 的纯 bridge。[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已不再本地维护 `applyScenarioPresetToFactionState / getScenario*GroupId / getResolvedScenario*Ids / buildPendingScenario*Choices / resolveScenario*Choice` 这组 helper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，显式锁住 `scenarioChoiceState.ts` 为单一 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 231 passed`，`payment-selection` 里剧本待决项直接命中的 4 条正式命令用例通过，`npm run typecheck` 通过。结论是：scenario 这条线当前不只退出了高层 resolved-event case，也退出了高层 preset/pending/resolution helper；后续 residual 需要重新审计其它真正还留在高层的 thin case / helper seam。 
+- 2026-06-09 08:51 +08：当前《七大恨》如果还把 `SCENARIO_CHARACTER_CHOICE_RESOLVED / SCENARIO_ARMAMENT_CHOICE_RESOLVED` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地 `resolution + actionLog + updateTurnLabel` case，就已经落后于源码真相。现态证据是：新 [scenarioChoiceResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioChoiceResolvedEventBridge.ts) 已正式承接这两条 scenario resolved-event 的收口；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已新增 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES`，并把两条 case 统一收成 `return resolveQidahenScenarioChoiceResolvedEvent(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住新 bridge 为唯一入口 owner。验证结果：定向 `eslint` 通过，`compatSource.test.ts = 61 passed`，`payment-selection` 中剧本待决项直接命中的 4 条正式命令用例通过，`npm run typecheck` 通过。边界：这轮没有重跑整份 `payment-selection.test.ts` 全量，也没有重跑 E2E。结论是：scenario resolved-event 这组入口当前已退出高层；并且同轮复核还证明 `WHEEL_MOVE_EXECUTED` 早已由 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 承接，所以“下一步继续收 `WHEEL_MOVE_EXECUTED`”这条 residual 口径已经过时，后续必须重新审计当前真正剩余的高层 thin case / helper seam。 
+- 2026-06-09 08:36 +08：当前《七大恨》如果还把 [e2e/qidahen-basic-flow.e2e.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/e2e/qidahen-basic-flow.e2e.ts) 记成“完整 full-run 虽然能过，但自身 lint debt 还没清掉”，就已经落后于最新真相。现态证据是：该文件残留的 `@typescript-eslint/no-explicit-any` 已清到 `0 warning`，`npx eslint e2e/qidahen-basic-flow.e2e.ts --no-cache` 直接通过；随后按既定链路补跑 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts "桌面端显示真实地图并保持轮盘/手牌/牌堆布局"` 得到 `1 passed`，再重跑完整 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts` 得到 `26 passed`。最新 [test-results/playwright-artifacts/.last-run.json](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/playwright-artifacts/.last-run.json) 时间戳为 `2026-06-09 08:36:45` 且内容为 `"status": "passed"`；截图证据已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) `08:35:14`、[qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png) `08:36:17`、[qidahen-board-midyear-defeat-markers-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-midyear-defeat-markers-current.png) `08:36:13`、[qidahen-board-marriage-subjugation-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-marriage-subjugation-current.png) `08:36:11`。结论是：这份单文件当前既不是运行态 blocker，也不是 lint blocker；仓内虽已有 [openspec/changes/refactor-qidahen-printed-region-topology](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/openspec/changes/refactor-qidahen-printed-region-topology) 目录，但不是本轮新增 spec/change。 
+- 2026-06-09 08:37 +08：当前《七大恨》如果把“为什么现在要兼容 guide 文件”理解成 gameplay 或正式 runtime 自然需要两套 authoritative guide 结构，就已经落后于源码真相。现态证据是：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 当前已经把工具内部工作区 metadata 文件正式拆成 `region-authoritative-guides.workspace.json`，并只为旧工作区读取保留对旧同名 `region-authoritative-guides.json` 的 fallback；[src/pages/devtools/QidahenRegionMaskTool.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/pages/devtools/QidahenRegionMaskTool.tsx) 当前也已把 `runtimeGuideCandidates` 归到工作区 metadata，并在界面上明确写出“只写工作区 metadata，不会直接改正式 `region-authoritative-guides.json`”。结论是：这条 compat 的真实根因不是业务规则需要双结构，而是早期没有先分开“正式 authoritative guide 产物”和“工具内部工作区 metadata”这两层，导致内部 metadata 曾经撞用了正式文件名。现在保留兼容读取，是为了让旧工作区还能回读已保存的显式 truth / runtime-only guide 候选，再逐步迁到新的 workspace 文件名；它应被归类为工具链产物边界修补，不应再被表述成《七大恨》新游戏流程本身天然合理的长期兼容层。 
+- 2026-06-09 06:57 +08：当前《七大恨》若还把 `GAO_DI_DISPATCH_RESOLVED / INTERNAL_DISPATCH_RESOLVED / FORTIFICATION_MAINTENANCE_RESOLVED / DRIVE_TIGER_CONSENT_RESOLVED / RECRUIT_CHOICE_RESOLVED / MA_SHI_TRADE_CHOICE_RESOLVED / KHAN_EDICT_CHOICE_RESOLVED / DIPLOMACY_CHOICE_RESOLVED` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地 payload 分发 case，就已经落后于源码真相。现态证据是：新 [actionWindowResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowResolvedEventBridge.ts) 已正式承接这 8 条 action-window resolved-event 的 `event.payload.*` 解包、`getFactionIdByPlayerId(...)` 调用与下游 callback 分发；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已新增 `QIDAHEN_ACTION_WINDOW_RESOLVED_EVENT_DEPENDENCIES` 并把这 8 条 case 统一收成 `return resolveQidahenActionWindowResolvedEvent(...)`，不再本地手写 `choiceId / troopCount / attritionPriority / selection` 分发。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住新 bridge 为唯一入口 owner。验证结果：定向 `eslint` 通过，`compatSource + commands + Board = 230 passed`，`payment-selection` 中高第/王化贞/征召军队/马市贸易/大汗令箭/驱虎吞狼/外交雇佣 7 条直接命中用例通过，`npm run typecheck` 通过。边界：这轮没有重跑整份 `payment-selection.test.ts` 全量，也没有重跑 E2E。结论是：action-window resolved-event 这簇入口当前已退出高层，formal residual 继续收窄到 `WHEEL_MOVE_EXECUTED` 与 `SCENARIO_*_CHOICE_RESOLVED` 等剩余高层事件桥。 
+- 2026-06-09 06:46 +08：当前《七大恨》这条实施线若还把 blocker 写成“完整 `qidahen-basic-flow.e2e.ts` 仍不稳定”或“没有真实截图证据”，就已经落后于本轮最新真相。现态证据是：按既定正式链路连续两次实跑 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts`，结果都为 `26 passed`；最新 [test-results/playwright-artifacts/.last-run.json](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/playwright-artifacts/.last-run.json) 也已回到 `"status": "passed"`。同时，真实截图产物已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) `06:42:23`、[qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png) `06:43:53`、[qidahen-board-midyear-defeat-markers-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-midyear-defeat-markers-current.png) `06:43:49`、[qidahen-board-marriage-subjugation-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-marriage-subjugation-current.png) `06:43:45`，并且抽查后都不是空图。当前真正需要区分开的，是“full-run 运行态”与“E2E 文件 lint debt”这两个层次：`playwright.config.ts + selectedActionFollowUp.ts + selectedActionFollowUpResult.ts + selectedActionStateCommit.ts + compatSource.test.ts` 的定向 `eslint --max-warnings 0` 当前通过，但若把 [e2e/qidahen-basic-flow.e2e.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/e2e/qidahen-basic-flow.e2e.ts) 一并纳入同命令，现态会因文件内既有 `@typescript-eslint/no-explicit-any` `74 warnings` 失败。结论是：本轮最新 residual 已不再是 full-run 运行态阻塞，而是 E2E 文件自身的旧 lint debt；另外，仓内虽已有 [openspec/changes/refactor-qidahen-printed-region-topology](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/openspec/changes/refactor-qidahen-printed-region-topology) 目录，但不是本轮新增，也没有把这次收口挂进去。 
+- 2026-06-09 06:42 +08：按 `.codex/skill/create-new-game/SKILL.md` 的正式架构审查清单回看，《七大恨》当前真正的架构状态必须拆成两层来写。第一层是对象模型门禁：这层已经通过，因为 [types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts) 里 `QidahenPiece / QidahenSpecialTroopStack.pieceIds / core.pieces / core.mapTokens` 已经把“正式单对象 / 兼容摘要 / 显示派生”三层分开，而 [coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 也已用 `syncQidahenCorePieceCollections / syncQidahenDerivedCoreSelectionMirrors` 把 pieces 同步与 selection mirror 收成独立 owner，所以现在不能再把《七大恨》记成“还没立对象层，必须先重做框架”的阻断态。第二层才是当前即时工程 residual：高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 剩余的 resolved-event entry consolidation 还没统一，包括 `WHEEL_MOVE_EXECUTED / GAO_DI_DISPATCH_RESOLVED / INTERNAL_DISPATCH_RESOLVED / FORTIFICATION_MAINTENANCE_RESOLVED / DRIVE_TIGER_CONSENT_RESOLVED / RECRUIT_CHOICE_RESOLVED / MA_SHI_TRADE_CHOICE_RESOLVED / KHAN_EDICT_CHOICE_RESOLVED / DIPLOMACY_CHOICE_RESOLVED / SCENARIO_*_CHOICE_RESOLVED` 这一簇。结论是：按新流程补审后，《七大恨》当前要防的工程错误已经从“对象粒度做错”转成“高层 reducer 长期兼任事件桥与 owner 分发”。这轮只更新 formal review 文档，没有新增实现，也没有重跑门禁。 
+- 2026-06-09 06:33 +08：当前《七大恨》若还把 `SUN_YUANHUA_TECH_RESOLVED` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地厚 case，就已经落后于源码真相。现态证据是：新 [sunYuanhuaTechResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/sunYuanhuaTechResolvedEventBridge.ts) 已正式承接 `state.sunYuanhuaTechSelection` guard、`getFactionIdByPlayerId(...)`、`resolveSunYuanhuaTech(...)` 调用，以及 `selectedRegionId / 多类 waiting selection 清空 / lastSeasonSummary / actionLog / applyVictoryStatus / syncFactionActionWindow / advanceTurnIfReady` 这整段 resolved-event state assembly；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已改成 `return resolveQidahenSunYuanhuaTechResolvedEvent(state, event, QIDAHEN_SUN_YUANHUA_TECH_RESOLVED_DEPENDENCIES)`，不再本地持有 `const currentFactionId = ...`、`const resolution = resolveQidahenSunYuanhuaTech(...)` 与后续 `applyVictoryStatus(...)` 大块。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增 source guard，显式锁住 `SUN_YUANHUA_TECH_RESOLVED` 应由独立 event owner 承接。验证结果：定向 `eslint` 通过，`compatSource=59 passed`，`commands=8 passed`，`Board=162 passed`，`payment-selection` 里孙元化相关 5 条定向回归通过，`npm run typecheck` 通过。边界：整份 `payment-selection.test.ts` 在当前本机 Node 24 环境下全量单文件复跑仍会 OOM，所以这轮不能把它表述成 `336 passed`；也没有重跑 E2E。结论是：`SUN_YUANHUA_TECH_RESOLVED` 这条厚入口当前已退出高层，formal residual 继续收窄到其余 `resolved-event` 薄桥一致性。 
+- 2026-06-09 06:28 +08：当前《七大恨》若还把 `actionLogText / turnPhase / wheelDispatchSelection` 的最终装配记成 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 的本地厚块，就已经落后于源码真相。现态证据是：新 [selectedActionFollowUpResult.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResult.ts) 已正式承接 `buildQidahenSelectedActionFollowUpResult()` 与 `QidahenSelectedActionFollowUpResult` 类型本体，而 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 当前只保留 `resolveQidahenSelectedActionFollowUpResolution(...)` 和 `buildQidahenSelectedActionFollowUpResult(...)` 的薄接线；[selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 也已改为直接从新 owner import follow-up result 类型。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁：`selectedActionFollowUp.ts` 不再持有 `const actionLogText = resolution.recruitSelection` 与 `turnPhase: resolution.khanEdictSelection`，这些真相已转移到新 owner。验证结果：定向 `eslint` 通过，`compatSource = 58 passed`，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 这条线的 follow-up owner 现在更接近纯总线/adapter，后续正式 residual 不该再围着 `selectedActionFollowUp` 的最终结果装配打转，而应继续看更外层事件入口一致性或剩余高层 resolved-event 收口。 
+- 2026-06-09 06:28 +08：当前《七大恨》若把这轮完整单文件 E2E 失败直接归因为 `selectedActionFollowUp` 业务回归，也与真相不符。现态证据是：三条原本在 full-run 中报红的用例 `守方骑兵可在真实 Board 待结算中选择避战目标`、`大汗令箭选择外交雇佣后会进入外交目标选择，并可同时放友好标记与建立雇佣军`、`联姻诱降失败时会在真实 Board 上改控并只留下 1 个转阵营部队` 已分别用同一正式链路 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts "<用例名>"` 单独复跑通过；但完整 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts` 两次复跑仍不稳定，失败位点漂移到 `轮盘调度增援围城`、`轮盘跨过年中与新年`、`手机横屏布局` 等不同用例，并出现 `qidahen-board` 不可见超时、Chromium `GPU process exited unexpectedly`、`page.screenshot: Target page, context or browser has been closed`、`Received fatal exception 0xe0000008` 等浏览器/GPU 崩溃证据。这说明当前 blocker 更接近 full-run 运行态/截图链稳定性，而不是本轮 follow-up owner 下沉直接把某条规则链打坏。结论是：当前不能宣称整份 E2E 已回绿，但也不能把这轮代码改动误记成稳定业务回归；后续若要继续收口，优先该看 full-run 浏览器/GPU 稳定性。 
+- 2026-06-09 06:23 +08：当前《七大恨》若还把 `REGION_SELECTED` 或 `character-action-window` 记成“高层 owner 缺失的正式 blocker”，就已经落后于源码真相。现态证据是：新 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 已正式承接 `REGION_SELECTED` 的 selection rebuild / dispatch retargeting orchestration，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前 `case 'REGION_SELECTED'` 只剩 `reduceQidahenRegionSelected(..., QIDAHEN_REGION_SELECTED_DEPENDENCIES)` 这层薄接线；[characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 也已正式承接 `triggerKey/progressKey`、林丹呼图克图影响判定与人物自动效果状态机，而高层当前只通过 `applyQidahenCharacterActionWindowEffectsWithFocus(...)` / `applyQidahenCharacterActionWindowEffects(...)` 消费它。与此同时，[selectedActionExecutedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutedEventBridge.ts) 与 [previewActionConfirmedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionConfirmedEventBridge.ts) 已证明 `SELECTED_ACTION_EXECUTED / PREVIEW_ACTION_CONFIRMED` 也都退出了高层 payload 桥。按当前源码真相，下一层更准确的正式 residual 应转向 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 仍本地直解 payload 并直接分发的 resolved-event 入口一致性，尤其是仍在本地完成 `summary/actionLog/applyVictoryStatus/advanceTurnIfReady` 收口的 `SUN_YUANHUA_TECH_RESOLVED`，以及 `WHEEL_MOVE_EXECUTED / *_CHOICE_RESOLVED / *_DISPATCH_RESOLVED / SCENARIO_*_CHOICE_RESOLVED` 这簇事件入口薄桥的一致性。本轮只是正式补审，没有新增实现，也没有重跑测试。 
+- 2026-06-09 06:19 +08：当前《七大恨》若还把 `PREVIEW_ACTION_CONFIRMED` 的 `actionId` payload 判定与 `actionWheelPosition` fallback 记成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 本地 reducer 职责，就已经落后于源码真相。现态证据是：新 [previewActionConfirmedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionConfirmedEventBridge.ts) 已正式承接 `PreviewActionConfirmedEvent` 的 `actionId` payload、`getActionChoiceById(...)` 判定，以及 fallback 到 `actionWheelPosition` 的薄桥；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已改成 `return resolveQidahenPreviewActionConfirmedEvent(state, event, QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES)`，不再本地直解 `event.payload.actionId`。同步 [previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 继续只保留 `selectedActionId / selectedPaymentCardIds / payment` 这组预览确认薄层写链，没有重新吞入动作执行主流程。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平新真相。验证结果：定向 `eslint` 通过，`npm run typecheck` 通过；Vitest 采用安全入口分别跑 `compatSource=58`、`payment-selection=336`、`commands=8`、`Board=162`，合计 `564 passed`。结论是：`PREVIEW_ACTION_CONFIRMED` 当前也已经退出了一层事件 payload/guard 桥，后续正式 residual 不该再回到 preview/selected-action 这两条已收口入口，而应继续看其余事件桥一致性或更深的 bus/orchestrator seam。 
+- 2026-06-09 06:12 +08：当前《七大恨》若还把 `SELECTED_ACTION_EXECUTED` 的 `event.payload.playerId / actionId / cardIds` 解包记成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 本地 reducer 职责，就已经落后于源码真相。现态证据是：新 [selectedActionExecutedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutedEventBridge.ts) 已正式承接 `SelectedActionExecutedEvent` payload 解包，并把结果统一转交 `executeQidahenSelectedAction(...)`；而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已改成 `return resolveQidahenSelectedActionExecutedEvent(state, event, QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES)`，不再本地直读 `event.payload.playerId / actionId / cardIds`。这轮还顺手证实一个更深的兼容风险已经被真正切断：如果桥文件直接 import `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES`，会形成 `bridge -> index -> bridge` 初始化环并把依赖注成 `undefined`；当前通过改成参数注入已保住 bridge owner 同时去掉循环依赖。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平新真相。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 这条线当前又退出了一层事件 payload 桥，后续正式 residual 应继续看更外层事件入口一致性或继续压薄主执行 bus，而不是把 payload 解析混回 `index.ts`。 
+- 2026-06-09 06:07 +08：当前《七大恨》若还把 `selectedActionExecution` / `selectedActionFollowUp` 的依赖拼装建立在 `as` 强转之上，就已经落后于源码真相。现态证据是：[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已将 `QidahenSelectedActionExecutionDependencies` 直接声明为 `selectedActionFollowUp + selectedActionExecutionResolution` 的真实依赖组合，并删除 `const followUpDependencies = dependencies as ...`；[selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 也已删除 `const resolutionDependencies = dependencies as ...`，直接以当前依赖合同调用 `resolveQidahenSelectedActionFollowUpResolution(...)`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁，显式锁住这两处隐藏强转不得回流。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 相关总线当前已不再依赖隐式 widening；后续正式 residual 应继续看这两层是否仍有不可替代的协调价值，而不是再容忍“先强转再调用”的隐式接线。 
+- 2026-06-09 06:05 +08：当前《七大恨》若还把 `recruit / ma-shi-trade / khan-edict / drive-tiger / raid | marriage-subjugation` 的 follow-up 分支 resolution 记成 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 本地厚块，就已经落后于源码真相。现态证据是：新 [selectedActionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpResolution.ts) 已正式承接 `buildRecruitSelection / buildMaShiTradeSelection / buildKhanEdictSelection / buildDriveTigerDispatchSelection`、`pendingTargetAction` 生成、`selectedRegionId` 回写，以及 `征召军队 / 马市贸易` 空目标时的 `buildSeasonSummary(...)` fallback；而 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 当前只保留 `actionLogText`、`turnPhase` 与 `wheelDispatchSelection` 的最终结果装配。[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 也已把依赖合同收敛为 `extends QidahenSelectedActionFollowUpDependencies, QidahenSelectedActionExecutionResolutionDependencies`，不再需要 `dependencies as ...` cast。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把 `selectionBuilders` seam 的 source guard 从旧 `selectedActionFollowUp.ts` 追平到新 owner。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 这条线的 follow-up 分支 resolution 当前已退出主 follow-up owner，后续正式 residual 应继续锁在 `selectedActionExecution.ts` 这条总线还能否进一步只保留更窄编排，而不是再把分支判断混回 `selectedActionFollowUp.ts`。 
+- 2026-06-09 05:58 +08：当前《七大恨》若还把 `upgrade-armament / grant-pardon` 的动作专属分支调度记成 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 本地条件块，就已经落后于源码真相。现态证据是：新 [selectedActionExecutionResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutionResolution.ts) 已正式承接 `resolveQidahenSelectedActionExecutionResolution()`，在 owner 内统一调度 `resolveSelectedArmamentUpgradeExecution()` 与 `resolveGrantPardonExecution()`；而 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已删除本地 `if (actionId === 'upgrade-armament')` 与 `if (actionId === 'grant-pardon')`，只保留 `prepare -> executionResolution -> follow-up -> state-commit` 四段总线。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁，显式锁住 `selectedActionExecutionResolution.ts` 持有动作专属分支，而 `selectedActionExecution.ts` 不得再回流对应条件块。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 主执行文件当前已进一步逼近纯总线/adapter，后续正式 residual 应继续判断这层薄总线是否还有进一步收窄空间，而不是再围着动作专属条件分支继续拆。 
+- 2026-06-09 05:49 +08：当前《七大恨》若还把 `upgrade-armament` 的升级摘要/军备回写和孙元化弃牌科技确认链记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地分支，就已经落后于源码真相。现态证据是：新 [armamentUpgradeResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentUpgradeResolution.ts) 已正式承接 `resolveQidahenSelectedArmamentUpgradeExecution()` 与 `resolveQidahenSunYuanhuaTech()`，而 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已将依赖合同收窄为 `resolveSelectedArmamentUpgradeExecution(...)` 一条 owner 调用，不再本地拼 `upgradedArmamentLine`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 也已删除本地 `resolveSunYuanhuaTech` 并改成通过 `QIDAHEN_ARMAMENT_UPGRADE_RESOLUTION_DEPENDENCIES` 调新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁，显式锁住 `armamentUpgradeResolution` 为新真相。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 564 passed`，`npm run typecheck` 通过。结论是：军备升级 resolution 当前已退出高层总线，后续正式 residual 不该再围着 `upgrade-armament / 孙元化科技` 打转，而应继续锁回 `selectedActionExecution` 更薄的动作总线接线。 
+- 2026-06-09 05:30 +08：当前《七大恨》若还把 `currentFactionCardIds / spentCardIds / selectedArmamentId / paidHandCards / 联姻诱降阻断` 这组执行前置准备记成 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 本地厚块，就已经落后于源码真相。现态证据是：新 [selectedActionPreparation.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPreparation.ts) 已正式承接 `getFactionIdByPlayerId`、`getActionChoiceById`、`currentFactionCardIds / spentCardIds / spentCardCount`、`resolveSelectedArmamentIdFromCards`、`paidHandCards`、初始 `nextFactions` 扣牌弃牌，以及 `marriage-subjugation` 阻断时的 `buildSeasonSummary + actionLog + updateTurnLabel` 收口；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已删除本地 `const currentFactionCardIds = ...`、`const spentCardIds = ...`、`const selectedArmamentId = ...` 与 `const marriageSubjugationBlockedReason = ...`，改成通过 `const preparation = dependencies.prepareSelectedAction(...)` 进入后续 `grant-pardon / follow-up / state-commit` 三段委托。同步 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已新增 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES` 并把 `prepareSelectedAction` 接到 `prepareQidahenSelectedAction(...)`，而 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已显式锁住 `selectedActionPreparation.ts` 持有前置主流程、`selectedActionExecution.ts` 不得再回流上述本地定义。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 当前又退出了一层执行前置准备 owner，主执行文件现态更接近 `prepare -> grant-pardon -> follow-up -> state-commit` 总线，后续正式 residual 应优先继续锁到 `upgrade-armament` 本地分支，而不是再把准备层混写回主 owner。 
+- 2026-06-09 05:35 +08：当前《七大恨》若还把低保真军备升级链记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的本地 helper 杂糅，就已经落后于源码真相。现态证据是：新 [armamentLowFidelity.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/armamentLowFidelity.ts) 已正式承接 `isLowFidelityUpgradeableArmament / upgradeLowFidelityArmament / hasUpgradableArmament / resolveSelectedArmamentIdFromCards`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `QIDAHEN_ARMAMENT_LOW_FIDELITY_MAX_LEVEL`、`buildUpgradedArmamentResult`、`upgradeLowFidelityArmament`、`hasUpgradableArmament` 与 `resolveSelectedArmamentIdFromCards`；孙元化科技入口和 `SELECTED_ACTION_EXECUTED` 都改为直接消费新 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁，显式锁住低保真军备 helper 不得回流高层；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 也已补显式 `QidahenArmamentId` 类型依赖。验证结果：定向 `eslint` 通过，`compatSource + commands + Board + payment-selection = 564 passed`，`npm run typecheck` 通过。结论是：低保真军备当前已形成独立 owner，后续正式 residual 不该再围着这组 helper 打转，而应继续锁回 `selectedActionExecution` 剩余动作总线/前置判断编排。 
+- 2026-06-09 05:27 +08：当前《七大恨》这轮 `selectedActionFollowUp` 收口之后，完整单文件 E2E 不能再被记成“仍有稳定功能回归未解”。现态证据是：在 [D:\gongzuo\webgame\BoardGame\.worktrees\qidahen](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen) 直接重跑 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts` 已恢复 `26 passed (2.3m)`，此前 full-run 唯一红点“联姻诱降失败时会在真实 Board 上改控并只留下 1 个转阵营部队”未再复现；同时最新截图证据已刷新到 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) `2026-06-09 05:23:07`、[qidahen-board-action-flow-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-action-flow-current.png) `2026-06-09 05:23:12`、[qidahen-board-marriage-subjugation-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/temp/qidahen-board-marriage-subjugation-current.png) `2026-06-09 05:24:31`。结论是：当前更合理归因仍是先前一次 full-run 下的页面显示/时序抖动，而不是本轮 owner 收口直接把 `pendingTargetAction` 真相弄丢；若继续推进，下一刀应回到 `selectedActionExecution` 剩余总线编排，而不是围着这条已复绿的 E2E 偶发继续扩改。 
+- 2026-06-09 05:21 +08：当前《七大恨》若还把 `bonusFactionActionAvailable / bonusFactionActionUsed / payment / discardPileCount / pendingTargetAction / lastSeasonSummary / actionLog` 这组执行后终态提交写链记成 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 本地厚块，就已经落后于源码真相。现态证据是：新 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 已正式承接 `hasRemainingFactionAction`、`buildPaymentState(actionId, 0)`、`syncFactionActionWindow(executedState, currentFactionId)` 与最终 `advanceTurnIfReady(...)` 这一整组终态提交编排；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前则已删除本地 `hasHuangtaijiBonus / usedBonusFactionAction / executedState` 写链，只保留 `commitSelectedActionState(...)` 委托。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁：既锁 `selectedActionExecution.ts` 调用 `commitSelectedActionState(`，也显式锁住新 owner 持有 `hasRemainingFactionAction,`、`payment: buildPaymentState(actionId, 0),` 与 `return dependencies.advanceTurnIfReady(syncFactionActionWindow(...))`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`SELECTED_ACTION_EXECUTED` 当前又退出了一层终态提交 owner，后续正式 residual 应继续收窄到前置判断与多段委托之间是否还能进一步压深，而不是再把终态提交 glue 混写回主 owner。 
+- 2026-06-09 05:11 +08：当前《七大恨》若还把 `recruit / ma-shi-trade / khan-edict / drive-tiger / raid | marriage-subjugation` 的 follow-up selection rebuild、`pendingTargetAction` 生成与 `turnPhase` 选择记成 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 本地厚块，就已经落后于源码真相。现态证据是：当前 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 已通过 `resolveQidahenSelectedActionFollowUp(...)` 委托到新 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts)；后者已正式承接 `buildRecruitSelection / buildMaShiTradeSelection / buildKhanEdictSelection / buildDriveTigerDispatchSelection`、`buildPendingTargetAction`、`selectedRegionId` 回写、`turnPhase` 决策与 action log 文案拼装。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁：既要求 `selectedActionExecution.ts` 调用 `resolveQidahenSelectedActionFollowUp(`，也显式要求 `selectedActionFollowUp.ts` 持有 `recruitSelection / driveTigerDispatchSelection / pendingTargetAction / turnPhase` 这组主流程。结论是：`SELECTED_ACTION_EXECUTED` 当前已不再完整持有 follow-up rebuild 本体，后续正式 residual 应继续收窄到 `selectedActionExecution.ts` 的终态提交尾段，而不是再把 follow-up owner 混写回主执行 owner。 
+- 2026-06-09 05:07 +08：当前《七大恨》若还把 `grant-pardon` 这条完整动作规则链留在 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 里和其他动作共混，就仍然是在让 `SELECTED_ACTION_EXECUTED` 同时承担“动作总线”和“具体动作结算 owner”双职责。现态证据是：新 [grantPardonExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/grantPardonExecution.ts) 已正式承接 `赐印招安` 的源区筛选、接收区优先级、`cityState`/顶层兵力迁移、势力兵力回写与摘要生成；[selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 当前已删除本地 `grantPardonSourceRegion` 与后续 region/faction 写链，只保留 `resolveGrantPardonExecution(...)` 委托；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 也已把原来 4 条 `grant-pardon` 局部 helper 注入收窄为 1 条 owner 委托。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁：`SELECTED_ACTION_EXECUTED` 的 source guard 现在明确要求 `grantPardonExecution.ts` 持有 `赐印招安` 主流程，而不是再要求 `selectedActionExecution.ts` 自己包含 `grantPardonSourceRegion`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`grant-pardon` 已退出总执行 owner，`SELECTED_ACTION_EXECUTED` 现在更接近动作总线；后续若继续重构，剩余更值得收的是其余动作共享的 `selection rebuild / pendingTargetAction / turnPhase` 编排，而不是再把单独动作链塞回主 owner。 
+- 2026-06-09 05:00 +08：当前《七大恨》若还把 [previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 当成动作执行 owner，或者让 `PREVIEW_ACTION_CONFIRMED` 再次吞入 `grant-pardon / pendingTargetAction / applyVictoryStatus / advanceTurnIfReady` 这组执行编排，就会重新引入 preview/execute 双真相。现态证据是：当前 [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 已继续作为 `SELECTED_ACTION_EXECUTED` 正式 owner；本轮重写后的 `previewActionReducer.ts` 只保留 `selectedActionId: actionId`、`selectedPaymentCardIds: []` 与 `payment: buildPaymentState(actionId)` 这组预览确认薄层写链；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应 `QIDAHEN_PREVIEW_ACTION_CONFIRMED_DEPENDENCIES` 也已收窄成只有 `updateTurnLabel`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 新增门禁，显式禁止 preview owner 再出现 `grantPardonSourceRegion`、`pendingTargetAction`、`applyVictoryStatus`、`advanceTurnIfReady`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 564 passed`，`npm run typecheck` 通过。结论是：`PREVIEW_ACTION_CONFIRMED` 现已正式回到预览确认薄层，不再与 `SELECTED_ACTION_EXECUTED` 共享执行编排；后续若继续重构，主残余应继续锁在 `SELECTED_ACTION_EXECUTED` 的高层执行本体。 
+- 2026-06-09 04:51 +08：当前《七大恨》若还把下一层 residual 记成 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `PREVIEW_ACTION_CONFIRMED` reducer orchestration，或者把新 [previewActionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/previewActionReducer.ts) 当成已成立 owner，就已经和源码真相错位。现态证据是：命令链里 `CONFIRM_PREVIEW_ACTION -> PREVIEW_ACTION_CONFIRMED` 只携带 `actionId / playerId`，而 `EXECUTE_ACTION / EXECUTE_SELECTED_ACTION -> SELECTED_ACTION_EXECUTED` 才携带 `actionId / cardIds / playerId`，真正承接弃牌、征兵/贸易/令箭预选、`grant-pardon` 写链、`pendingTargetAction` 入口与 `applyVictoryStatus + advanceTurnIfReady` 收口的厚块，当前仍在 `case 'SELECTED_ACTION_EXECUTED'`。对应 `case 'PREVIEW_ACTION_CONFIRMED'` 当前只是 `getActionChoiceById(...) ? reduceQidahenPreviewActionConfirmed(...) : actionWheelPosition fallback` 的薄入口；现在新加的 `previewActionReducer.ts` 实际上是把 `SELECTED_ACTION_EXECUTED` 那段执行编排错切到了 preview 事件上，而且这组改动还没有跑 `eslint / vitest / typecheck`，因此不能纳入正式结构真相。结论是：当前真正下一刀应锁到 `SELECTED_ACTION_EXECUTED` 高层执行编排，而不是继续沿 `PREVIEW_ACTION_CONFIRMED` 错对象推进；`previewActionReducer.ts` 与对应接线目前只能记为未验证且对象错位的实验态。 
+- 2026-06-09 04:38 +08：当前《七大恨》若还把 `REGION_SELECTED` 的 selection rebuild / dispatch retargeting 编排记成高层 `index.ts` 本地块，就已经落后于当前源码真相。现态证据是：新 [regionSelectionReducer.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionReducer.ts) 已正式承接 `reduceQidahenRegionSelected()` 与 `QidahenRegionSelectedDependencies`，直接串起 `applyCharacterActionWindowEffectsWithFocus`、`buildRecruitSelection`、`buildGaoDiDispatchSelection`、`buildWangHuazhenInternalDispatchSelection`、`buildMaShiTradeSelection`、`buildKhanEdictSelection`、`buildDiplomacySelection`、`buildWheelDispatchSelection` 与 `resolveQidahenWheelDispatchInteractionChoice`。对应 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只剩 `QIDAHEN_REGION_SELECTED_DEPENDENCIES` 与 `return reduceQidahenRegionSelected(...)` 薄接线；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增对应 source guard，并把 `selectionBuilders` 旧断言追平到当前 `regionSelectionReducer` 真相。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 562 passed`，`npm run typecheck` 通过。结论是：当前最深 residual 已继续外移，不应再把 `REGION_SELECTED` 算作高层未拆块；该条当时把下一刀临时记成了 `PREVIEW_ACTION_CONFIRMED`，但这一点已由 `2026-06-09 04:51 +08` 更正为 `SELECTED_ACTION_EXECUTED` 高层执行编排。 
+- 2026-06-09 04:36 +08：当前《七大恨》若还把 `WHEEL_MOVE_EXECUTED` 记成高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 本地 reducer orchestration，就已经落后于当前源码真相。现态证据是：新 [wheelMoveExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoveExecution.ts) 已正式承接 `wheelSectorOrder / advanceWheelPosition / resolveQidahenWheelMoveExecuted()`，并在 owner 内直接串联跨格摸牌、年中/新年结算入口、外交/雇佣入口、轮盘进攻/调度入口以及 `applyVictoryStatus + advanceTurnIfReady` 收口；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只剩 `QIDAHEN_WHEEL_MOVE_EXECUTION_DEPENDENCIES` 与 `return resolveQidahenWheelMoveExecuted(...)` 的薄接线，不再本地保留 `wheelSectorOrder / advanceWheelPosition` 与整段 `WHEEL_MOVE_EXECUTED` 主流程；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平门禁：新增 `wheelMoveExecution` owner guard，并把旧的 “`buildWheelDispatchSelectionFromWheel / shouldPersistExplicitWheelDispatchSelectionForWheelState` 必须由 index import” 口径修正为“由 `selectionBuilders` 持有、由 `wheelMoveExecution` 消费”。验证结果：定向 `eslint` 通过，`compatSource = 55 passed`，`compatSource + payment-selection + commands + Board = 561 passed`，`npm run typecheck` 通过，`qidahen-basic-flow.e2e.ts = 26 passed (2.6m)`，共享截图刷新到 `2026-06-09 04:32:47 / 04:34:23`。结论是：当前真正更值得继续收口的高层残余，不再是 `WHEEL_MOVE_EXECUTED`，而是此前已锁定的 `REGION_SELECTED` reducer 级 selection rebuild / dispatch retargeting orchestration。 
+- 2026-06-09 04:28 +08：当前《七大恨》如果还把高层 residual 只写成“更外层 entry glue / public glue”，信息粒度已经不够。现态证据是：`characterActionWindow / actionWindowChoices / actionWindowDispatch / selectionBuilders / coreDerivedState` 这些 owner 已经存在，但 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `case 'REGION_SELECTED'` 仍在同一 reducer 分支里直接串联 `applyCharacterActionWindowEffectsWithFocus`、`buildRecruitSelection`、`buildGaoDiDispatchSelection`、`buildWangHuazhenInternalDispatchSelection`、`buildMaShiTradeSelection`、`buildKhanEdictSelection`、`buildDiplomacySelection`、`buildWheelDispatchSelection` 与 `resolveQidahenWheelDispatchInteractionChoice`。这说明当前更准确的 residual 已经不是“哪几个 helper 还没抽”，而是 `REGION_SELECTED` 的 selection rebuild / dispatch retargeting orchestration 仍滞留高层 reducer。对应 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已锁住深层 owner 真相，但还没有一条门禁去声明 `REGION_SELECTED` orchestration 的 owner 边界，也侧面证明这块尚未正式收口。结论是：后续若继续按新流程推进，下一刀应优先把 `REGION_SELECTED` reducer orchestration 收成独立 seam，而不是继续泛化成“public glue 还比较厚”。本轮只是正式补审，没有新增实现，也没有重跑测试。 
+- 2026-06-09 04:22 +08：当前《七大恨》若还把 `syncCorePieceCollections / syncDerivedCoreSelectionMirrors` 记成高层 `index.ts` 本地同步链，就已经落后于当前源码真相。现态证据是：新 [coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 已正式直接承接 `syncQidahenCorePieceCollections()` 与 `syncQidahenDerivedCoreSelectionMirrors()`，内部直接消费 `syncRegionsPieceIds / syncPiecesFromRegions / syncRegionsSpecialTroopsFromPieces / syncQidahenMapTokensFromRegions` 以及 `getQidahenInternalDispatchSelectionForCore / getQidahenDerivedDiplomacySelectionForCore / getQidahenDerivedWheelDispatchSelectionForCore`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地两段同步链，只剩 import 后供 `turnLabel / fortificationMaintenance / specialRuleState / turnAdvance / setup` 这些更外层入口做依赖装配。对应 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平门禁：新增 `core derived sync glue` owner guard，并把旧的 `pieceId` / `map token` 断言从 `index.ts` 追到 `coreDerivedState.ts`。验证结果：`compatSource = 54 passed`，`compatSource + payment-selection + commands + Board = 560 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论是：当前正式 residual 又继续外移了一层，已不应再把 `core piece collections / selection mirrors` 记成高层本地块，而应继续看更外层 entry dependency composition / public glue。 
+- 2026-06-09 04:15 +08：当前《七大恨》若还把 `wheel-dispatch` 的 selection derivation / persistence 判定写成 `index.ts` 本地残口，就已经落后于源码真相。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前已正式直接承接并导出 `buildWheelDispatchSelection / buildWheelDispatchSelectionFromWheel / getQidahenDerivedWheelDispatchSelectionForCore / shouldPersistExplicitWheelDispatchSelectionForWheelState / buildKhanEdictDispatchSelection / buildDriveTigerDispatchSelection`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地 `getActionRulePathLabel / serializeWheelDispatchSelectionForPersistenceCheck / shouldPersistExplicitWheelDispatchSelectionForWheelState`，只保留 import 后的更外层 entry glue 调用。对应 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平，开始显式锁 `buildWheelDispatchSelection` 导出与 persistence owner 真相。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 559 passed`，`npm run typecheck` 通过，`qidahen-basic-flow.e2e.ts = 26 passed (2.5m)`，共享截图刷新到 `2026-06-09 04:12:16 / 04:13:49`。结论是：当前更真实 residual 已不再是 `wheel-dispatch` selection derivation，而是 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 剩余更外层的 entry dependency composition / reducer glue。 
+- 2026-06-09 04:14 +08：当前《七大恨》正式架构审查若还要求 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 必须继续 import `getRegionSiegeAttackerForceSnapshot`，就是把旧结构当成真相了。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 已直接消费 `getRegionSiegeAttackerForceSnapshot(region, factionId)` 来承接 `wheel-dispatch` selection derivation，而 `index.ts` 当前只保留 `resolvePendingBattleMode / getBattleRegionSnapshot / getNonSiegedCityActionSourceSnapshot / getPendingActionSourceForceSnapshot / getPendingActionDefenderForceSnapshot / getEffectivePendingDefenderTroops` 这些仍由更外层 entry glue 直接使用的 battleState seam。对应过时门禁已在 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 追平：不再把 `getRegionSiegeAttackerForceSnapshot` 绑死到 `index.ts` import，而是改锁 `selectionBuilders.ts` 直接消费。验证结果：`compatSource = 53 passed`，`compatSource + payment-selection + commands + Board = 559 passed`，定向 `eslint` 通过，`npm run typecheck` 通过。结论是：当前更准确的正式 residual 不再是“battle snapshot 还黏在 index”，而是 `wheel-dispatch` 之外剩余更外层的 entry dependency composition / selection persistence。 
+- 2026-06-09 03:54 +08：当前《七大恨》action-window dispatch / choice 这层正式 residual，已经不该再包含 `wheel-dispatch` 目标锁定链。现态证据是：[actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 已进一步正式承接 `resolveQidahenWheelDispatchInteractionChoice` 与其内部 `buildPendingTargetActionFromWheelDispatchChoice`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `wheel-dispatch` choice 本体，只保留 `resolveQidahenWheelDispatchInteractionChoiceWithDependencies(...)` 这层薄接线；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已把 `actionWindowDispatch` 门禁扩到 `wheel-dispatch`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 559 passed`，`npm run typecheck` 通过。结论是：当前真正仍值得继续收口的 residual，已经不在 action-window choice / dispatch 本体，而要继续外移到 `wheel-dispatch` selection derivation 与更外层 entry glue；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:50 +08：基于当前代码态补跑既定运行链后，可把 action-window choice 这层正式 residual 进一步锁成只剩 `resolveQidahenWheelDispatchInteractionChoice` 一条。证据不只来自静态门禁：`compatSource + payment-selection + commands + Board = 559 passed`、定向 `eslint` 通过、`npm run typecheck` 通过、`qidahen-basic-flow.e2e.ts = 26 passed (2.6m)`；共享截图也已刷新到 `2026-06-09 03:48:00 / 03:49:36`。因此现在这层范围不能再把 `diplomacy` 算回高层本地 residual。 
+- 2026-06-09 03:47 +08：当前《七大恨》action-window choice 这层正式 residual，已经不该再包含 `diplomacy`。现态证据是：[actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 已进一步正式承接 `resolveQidahenDiplomacyInteractionChoice` 与其内部 `resolveDiplomacyChoice` 本体，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `diplomacy` choice 本体，只保留 `resolveQidahenDiplomacyInteractionChoiceWithDependencies(...)` 这层薄接线；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已把原本覆盖 `recruit / drive-tiger / ma-shi-trade / khan-edict` 的 `actionWindowChoices` 门禁扩到 `diplomacy`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 559 passed`，`npm run typecheck` 通过。结论是：当前真正仍滞留高层本地本体的 action-window choice seam，已进一步收窄到只剩 `resolveQidahenWheelDispatchInteractionChoice` 一条；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:38 +08：基于当前代码态（`actionWindowChoices.ts` 已承接 `recruit / drive-tiger / ma-shi-trade / khan-edict`）补跑既定验证链后，可证明 action-window choice 这层正式 residual 已进一步稳定在 `resolveQidahenDiplomacyInteractionChoice / resolveQidahenWheelDispatchInteractionChoice` 两条。证据不只来自静态审查：`compatSource + payment-selection + commands + Board = 559 passed`、定向 `eslint` 通过、`npm run typecheck` 通过、`qidahen-basic-flow.e2e.ts = 26 passed (2.6m)`；共享截图也已刷新到 `2026-06-09 03:32:36 / 03:34:10`。因此，当前这层残余已经可以按“只剩 diplomacy / wheel-dispatch 两条高层本地本体”来判断，而不能再把 `recruit` 算回未收口范围。 
+- 2026-06-09 03:34 +08：当前《七大恨》action-window choice 这层正式 residual，已经不该再包含 `recruit`。现态证据是：新 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 已进一步正式承接 `resolveQidahenRecruitInteractionChoice`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `recruit` choice 本体，只保留 `resolveQidahenRecruitInteractionChoiceWithDependencies(...)` 这层薄接线；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已把原本只锁 `drive-tiger / ma-shi-trade / khan-edict` 的 `actionWindowChoices` 门禁扩到 `recruit`。验证结果：定向 `eslint` 通过，`compatSource + payment-selection + commands + Board = 559 passed`，`npm run typecheck` 通过。结论是：当前真正仍滞留高层本地本体的 action-window choice seam，已进一步收窄到 `resolveQidahenDiplomacyInteractionChoice / resolveQidahenWheelDispatchInteractionChoice` 两条；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:29 +08：当前《七大恨》action-window choice 这层正式 residual，已经不该再被泛写成“`drive-tiger / ma-shi-trade / khan-edict / recruit / diplomacy / wheel-dispatch` 都还在 `index.ts` 本地实现”。现态证据是：新 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 已正式承接 `QidahenActionWindowChoiceDependencies / resolveQidahenDriveTigerConsentInteractionChoice / resolveQidahenMaShiTradeInteractionChoice / resolveQidahenKhanEdictInteractionChoice`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只保留 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES` 与这 3 条薄 wrapper，不再持有这三条 choice 本体；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已经有对应 source guard，锁住 `actionWindowChoices` 是这三条 choice 的正式 owner。由此可证明：当前真正仍滞留高层本地本体的 action-window choice seam，只剩 `resolveQidahenRecruitInteractionChoice / resolveQidahenDiplomacyInteractionChoice / resolveQidahenWheelDispatchInteractionChoice` 三条，而不是整组 choice 都还没拆。这轮只是补正式架构审查，没有新增实现、没有重跑测试，也没有新增截图证据。 
+- 2026-06-09 03:23 +08：当前《七大恨》`高第/王化贞` 的 action-window dispatch resolution / event orchestration seam，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [actionWindowDispatch.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowDispatch.ts) 已正式承接 `QidahenActionWindowDispatchDependencies / resolveGaoDiDispatch / resolveInternalDispatch / resolveQidahenGaoDiDispatchChoice / resolveQidahenInternalDispatchInteractionChoice`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `resolveGaoDiDispatch / resolveInternalDispatch / formatTroopTransferDetails / formatGaoDiDispatchAmountLabel`，只保留 `QIDAHEN_ACTION_WINDOW_DISPATCH_DEPENDENCIES` 与两个薄接线 wrapper；同时这轮已把 owner 的 victory/turn 依赖接法追平到当前真相，不再直接调用 `applyQidahenVictoryStatus / advanceQidahenTurnIfReady`，而是改走 `dependencies.applyVictoryStatus / dependencies.advanceTurnIfReady`，避免绕开现有 `syncSpecialRuleState / syncDerivedCoreSelectionMirrors` 注入边界。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已退休旧的“调度摘要 helper 留在 index”门禁，改为锁住 `actionWindowDispatch` 直接消费 `troopCompat.formatTroopTransferDetails(...)`。验证结果：`compatSource + payment-selection + commands + Board = 558 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 residual 已不应再把 `高第/王化贞` 调度结算记成高层本地块，而应继续收窄到更外层的 public thin wrapper / entry dependency composition；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:13 +08：当前《七大恨》`map token` 这条棋盘渲染 glue，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 已正式承接 `controlMarkerByFaction / diplomacyMarkerImageByFaction / legacyMapTokenBaseIdByRegion / mapTokenOffsetByRole / getMapArmyImageSrc / getMapArmyImageSrcForPiece / buildMapArmyTokensForRegion / syncQidahenMapTokensFromRegions()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 token 坐标/图标生成链，只保留 `syncCorePieceCollections()` 内对 `syncQidahenMapTokensFromRegions(regions, pieces)` 的 owner 调用。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已补门禁，显式锁住 `clampMapTokenCoordinate / getMapTokenBaseId / getMapTokenPoint / getMapArmyImageSrc / getMapArmyImageSrcForPiece / buildMapArmyTokensForRegion / syncMapTokensFromRegions` 不再回流高层。验证结果：`compatSource + commands + Board + payment-selection = 557 passed`，定向 ESLint 通过，`npm run typecheck` 通过，`qidahen-basic-flow.e2e.ts = 26 passed (2.6m)`，共享截图已刷新到 `2026-06-09 03:11/03:12`。结论是：当前 residual 已不应再把 map token 这条棋盘渲染 glue 记成高层本地块，而应继续收窄到 interaction/public thin wrapper 与剩余 resolution/orchestration seam。 
+- 2026-06-09 03:28 +08：当前《七大恨》`高第` 选择构建与通用调度来源偏好 helper，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 当前已正式新增并承接 `buildGaoDiDispatchSelection()` 与 `getPreferredDispatchSelectedRegionIdForFaction()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地同名定义，只保留从 `selectionBuilders` import 后供 `characterActionWindow`、`wheel-dispatch`、`drive-tiger`、`khan-edict` 与 `REGION_SELECTED` 重建链消费。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已新增静态门禁，显式锁住 `index.ts` 不再本地维护这两条 selection seam，并要求 owner 直接消费 `getRegionSiegeAttackerForceSnapshot(region, factionId)` 与 `getMovableTroopCountForProfile(sourceSnapshot, movementProfileId)`。验证结果：`compatSource + payment-selection + commands + Board = 556 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 residual 已不应再把 `高第` 选择构建与通用调度来源偏好记成高层本地 helper，而应继续收窄到 `高第/王化贞` 的 resolution / event orchestration seam；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:18 +08：当前《七大恨》前端加载/E2E 的真实炸点，已经不该再被混记成“高层 seam 未拆完”。现态证据是：[src/games/qidahen/domain/index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当时漏掉了 `getQidahenPrestigeBonusByFaction` 的 domain barrel re-export，导致 [src/games/qidahen/Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 页面加载时报 `The requested module '/src/games/qidahen/domain/index.ts' does not provide an export named 'getQidahenPrestigeBonusByFaction'`。本轮已补齐该 re-export，并把 [src/games/qidahen/__tests__/compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 对应 source guard 追平；验证结果是 `compatSource + commands + Board + payment-selection = 555 passed`，`eslint` 通过，`npm run typecheck` 通过，`qidahen-basic-flow.e2e.ts = 26 passed (2.5m)`，共享截图已刷新到 `2026-06-09 02:55/02:56`。结论是：当前功能链和截图链已回绿；后续若继续做正式 residual 判断，必须从“当前入口是否还存在真实运行阻塞”重新锁定，而不能把已修通的 barrel 漏导出继续和架构 seam 混写。 
+- 2026-06-09 03:11 +08：当前《七大恨》`character-action-window` 这条高层本地状态机，已不该再被记成“owner 文件不存在、整段本体仍滞留在 `index.ts`”的状态。现态证据是：新增的 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 已正式承接 `QidahenCharacterActionWindowDependencies / buildCharacterActionWindowTriggerKey / buildCharacterActionWindowProgressKey / parseCharacterActionWindowHandledEffectIds / findLindanHutuktuInfluenceTarget / applyQidahenCharacterActionWindowEffectsWithFocus / applyQidahenCharacterActionWindowEffects`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地整段人物自动效果状态机，只保留 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES`、两个薄 wrapper 与 `QIDAHEN_TURN_LABEL_DEPENDENCIES` 对该 owner 的消费。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 owner 门禁，不再错误要求 `characterActionWindow.ts` 保留旧字符串 `熊廷弼免费训练`，而是改锁当前真实 owner 合同 `log-xiong-tingbi-training-` 与 `text: trainingResolution.logText,`。验证结果：`compatSource + commands + Board + payment-selection = 555 passed`，`npm run typecheck` 通过。结论是：当前 residual 已不应再把 `character-action-window` 记成 blocker，而应继续收窄到更外层的 public thin wrapper / entry dependency composition；本轮没有重跑 E2E，也没有新增截图证据。 
+- 2026-06-09 03:05 +08：当前《七大恨》更高价值的正式 residual，已经不该再被泛写成“还剩一些 entry glue”，而应明确锁到 `character-action-window` 这条高层本地状态机。现态证据是：仓内当前仍不存在 [characterActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/characterActionWindow.ts) 这个 owner 文件；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 仍本地持有 `buildCharacterActionWindowTriggerKey / buildCharacterActionWindowProgressKey / parseCharacterActionWindowHandledEffectIds / findLindanHutuktuInfluenceTarget / applyCharacterActionWindowEffectsWithFocus / applyCharacterActionWindowEffects` 这整段人物自动效果状态机；而且它现在同时卡在两条高层入口上，一条是 `REGION_SELECTED` reducer 分支直接调用 `applyCharacterActionWindowEffectsWithFocus(...)`，另一条是 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 仍通过依赖注入反向消费 `applyCharacterActionWindowEffects(...)`。结论是：最近已收口的 `fortification-maintenance / hand-limit-discard / special-rule / piece-sync` 不应再被混记成“高层普遍未拆”；但《七大恨》现在也还不能宣称高层 entry glue 已薄到只剩 public wrapper，因为 `character-action-window` 仍是下一刀最明确的正式 blocker。本轮只是补正式架构审查真相，没有新增实现，也没有重跑 E2E。 
+- 2026-06-09 02:33 +08：当前《七大恨》`fortification-maintenance` 这条 public interaction seam，已不该再被记成“仍由 `index.ts` 本地维护新年维护 resolve 本体”的状态。现态证据是：新增的 [fortificationMaintenance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/fortificationMaintenance.ts) 已正式承接 `QidahenFortificationMaintenanceDependencies` 与 `resolveQidahenFortificationMaintenanceInteractionChoice()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `const newYearResolution = resolveNewYear(` 到 `log-new-year` 这段本体，只保留 `QIDAHEN_FORTIFICATION_MAINTENANCE_DEPENDENCIES` 与薄 wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已补 owner 门禁，锁住 `index.ts` 不再本地维护这条 interaction choice 本体；同时顶层无用 import 已删掉，不再靠死 import 撑 seam。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 public interaction seam 已进一步离开高层 `index.ts`，剩余更高价值 residual 继续收窄到 `character-action-window` 与其余更厚的 entry glue。 
+- 2026-06-09 02:25 +08：当前《七大恨》piece-sync 这条中层 glue，已不该再被记成“仍由 `index.ts` 本地维护 pieces<->regions 回折 helper”的状态。现态证据是：[troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 当前已直接导出 `syncPiecesFromRegions()` 与 `syncRegionsSpecialTroopsFromPieces()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地同名定义，只保留更高一层 `syncCorePieceCollections()` 来组合 `syncRegionsPieceIds + syncPiecesFromRegions + syncRegionsSpecialTroopsFromPieces + syncMapTokensFromRegions`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平门禁，锁住 `index.ts` 不再本地维护这两条 helper，并删掉两个会逼着代码保留死 import 的旧断言。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 `syncCorePieceCollections` 下面真正已完成的 piece/region 回折层，已经继续离开高层 `index.ts`；剩余更高价值 residual 继续收窄到 map-token sync 与更外层 public seam。 
+- 2026-06-09 02:23 +08：当前《七大恨》`hand-limit-discard` 这条等待态链，已不该再被记成“仍由 `index.ts` 本地维护手牌上限弃牌 resolve 与 interaction choice 解析”的状态。现态证据是：新增的 [handLimitDiscard.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/handLimitDiscard.ts) 已正式承接 `QidahenHandLimitDiscardDependencies`、`resolveQidahenHandLimitDiscard()` 与 `resolveQidahenHandLimitDiscardInteractionChoice()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `resolveHandLimitDiscard` 与 `resolveQidahenHandLimitDiscardInteractionChoice` 本体，只保留 `QIDAHEN_HAND_LIMIT_DISCARD_DEPENDENCIES`、内部薄 wrapper 和公开薄 wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已补 owner 门禁，显式锁住 `const selection = state.handLimitDiscardSelection;` 与 `log-hand-limit-resolved` 这段正式真相必须留在新 owner。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 residual 已不应再把 hand-limit-discard 等待态记成 blocker，而应继续收窄到 `index.ts` 里剩余更厚的 entry glue，例如 character-action-window 与其余 interaction/public seam。 
+- 2026-06-09 02:18 +08：当前《七大恨》special-rule 这条 region-controller glue，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：[specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 当前已直接导出 `getQidahenRuleRegionController()`，内部自持 `resolveQidahenPrimaryRuntimeRegionId / resolveQidahenRuntimeRegionIds` 这组 rule->runtime region controller 判定；`syncQidahenSpecialRuleState()` 也已改为直接调用 owner 内部的 `getHanseongController()`，不再通过 `QidahenSpecialRuleStateDependencies` 反向注入该 helper。[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地 `const getQidahenRuleRegionController = (`，只保留从 owner import 该 helper 供城防维护链复用；`QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 现已收窄到只剩 `syncCorePieceCollections`。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，锁住 `index.ts` 不再本地维护这条 helper，`specialRuleState.ts` 当前必须直接导出它。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 special-rule owner 已继续脱离高层 `index.ts`，后续更高价值 residual 应继续收窄到 `syncCorePieceCollections` 这一最后依赖与更外层 public seam。 
+- 2026-06-09 02:16 +08：当前《七大恨》`syncSpecialRuleState` 这层 special-rule glue，已不该再被记成“仍由 `index.ts` 本地维护汉城归属判定与 prestige 解锁同步”的状态。现态证据是：新增的 [specialRuleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/specialRuleState.ts) 已正式承接 `QidahenSpecialRuleStateDependencies`、`getHanseongController()` 与 `syncQidahenSpecialRuleState()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `getHanseongController` 与 `syncSpecialRuleState` 本体，只保留 `QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES`、薄 wrapper `syncSpecialRuleState(...)` 与 `QIDAHEN_VICTORY_RESOLUTION_DEPENDENCIES` 的消费。这轮真正收住的不是业务逻辑 bug，而是迁移末梢的两个结构 blocker：`QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 已挪到 `syncCorePieceCollections` 之后，`QIDAHEN_VICTORY_RESOLUTION_DEPENDENCIES` 也已改成惰性调用 `syncSpecialRuleState: (state) => syncSpecialRuleState(state)`，因此模块初始化 TDZ 已消失；同时 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已删掉一条把合法 region-preference import 误判成“index 本地维护”的过时断言。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 turn/victory 主线剩余结构债，已不应再包含 `syncSpecialRuleState`，而应继续收窄到更外层 public seam。 
+- 2026-06-09 02:12 +08：当前《七大恨》region-selection 这条 turn-state glue，已不该再被记成“仍主要由 `index.ts` 本地维护”的状态。现态证据是：新增的 [regionSelectionPreferences.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/regionSelectionPreferences.ts) 已正式承接 `canPlaceRegularTroopsInRegion()`、`isRegionAvailableForNonDispatchAction()`、`getPreferredRegularTroopPlacementRegion()`、`getPreferredSelectedRegionIdForFaction()` 与 `getPreferredActionWindowSelectedRegionIdForFaction()`；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 当前也已直接 import 并消费该 owner，不再通过 `QidahenTurnAdvanceDependencies` 反向注入这条 helper。中途实际撞到的 blocker 不是业务逻辑，而是两处结构漏点：`getMarriageSubjugationBlockedReason()` 还在用已迁走但未导出的 `isRegionUnderSiege`，以及 `QIDAHEN_SPECIAL_RULE_STATE_DEPENDENCIES` 过早直接引用 `syncCorePieceCollections` 触发 TDZ。现已按最小修法补齐：`isRegionUnderSiege` 已导出回收复用，special-rule 依赖已改成惰性 wrapper，并把 opening selected-region import 改成 alias，追平 `compatSource` 对 `index.ts` 的静态门禁。验证结果：`compatSource + commands + Board + payment-selection = 554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 turn/victory 主线剩余结构债，已不应再把 region-selection owner 本体记成 blocker，而应继续收窄到 `syncSpecialRuleState` 与更外层 public seam。 
+- 2026-06-09 02:03 +08：当前《七大恨》`beginHandLimitDiscardIfNeeded` 这层换人后手牌上限收口，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 当前已直接内聚 `const beginHandLimitDiscardIfNeeded = (`，由 `turnAdvance` owner 自己承接超上限手牌候选计算、自动弃牌回写，以及进入 `hand-limit-discard` 等待态时的 selection/action log 收口；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地同名 helper，`QIDAHEN_TURN_ADVANCE_DEPENDENCIES` 当前也不再继续注入这条依赖。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，显式锁住 `turnAdvance.ts` 应直接持有这条 helper。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 554 passed`，`npm run typecheck` 通过。结论是：当前 turn/victory 主线剩余的结构债，已不应再包含 `beginHandLimitDiscardIfNeeded`，而应继续收窄到 `getPreferredActionWindowSelectedRegionIdForFaction / syncSpecialRuleState` 与更外层 public seam。 
+- 2026-06-09 01:59 +08：当前《七大恨》turnAdvance 这层主流程，已不该再被记成“仍由 `index.ts` 本地持有 scenario preset / wheel move 数据依赖”的状态。现态证据是：新增的 [scenarioPresets.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/scenarioPresets.ts) 已正式承接 `QIDAHEN_SCENARIO_PRESETS / getQidahenScenarioPreset()`；新增的 [wheelMoves.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/wheelMoves.ts) 已正式承接 `QIDAHEN_WHEEL_MOVE_CHOICES / getQidahenWheelMoveById() / buildQidahenWheelMoveSummary()`；[turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 当前已直接 import 这两个 owner，不再通过 `QidahenTurnAdvanceDependencies` 反向索取 `getScenarioOpeningFactionOrder / buildWheelMoveSummary`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地 `QIDAHEN_SCENARIO_PRESETS / getQidahenScenarioPreset / getScenarioOpeningFactionOrder / wheelMoveChoices / buildWheelMoveSummary` 定义，只保留对新 owner 的消费与 barrel re-export。验证结果：`compatSource + commands + payment-selection = 392 passed`，`Board = 162 passed`，合计定向基线 `554 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 turnAdvance 的数据源 owner 已继续离开高层 `index.ts`，后续更高价值残余应继续看 `turnLabelState / beginHandLimitDiscardIfNeeded / getPreferredActionWindowSelectedRegionIdForFaction` 这组仍挂在 entry 上的 turn-state glue。 
+- 2026-06-09 01:56 +08：当前《七大恨》`updateTurnLabel` 这层回合标签收口，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [turnLabelState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnLabelState.ts) 已正式承接 `updateQidahenTurnLabel()`、`buildTurnLabel()`、`isFactionActionTurnComplete()`、`getCurrentFactionId()` 与 `applyCharacterActionWindowEffects / syncCorePieceCollections / syncDerivedCoreSelectionMirrors` 这组依赖注入；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `updateTurnLabel` 编排本体，只保留 `QIDAHEN_TURN_LABEL_DEPENDENCIES` 与 `updateQidahenTurnLabel(...)` 薄 wrapper。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已把过时断言追平到当前 owner 真相，不再错误要求 `index.ts` 继续直接 import `isFactionActionTurnComplete`，而是由 `turnLabelState` owner 门禁单独锁住这条消费链。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 554 passed`，`npm run typecheck` 通过。结论是：当前真正剩余的 turn/victory 结构债，已不应再把 `updateTurnLabel` 记成 `turnAdvance` 仍注入的局部 helper，而应继续收窄到 `syncSpecialRuleState / beginHandLimitDiscardIfNeeded / getPreferredActionWindowSelectedRegionIdForFaction` 与更外层 public seam。 
+- 2026-06-09 01:45 +08：当前《七大恨》真正的换人主流程，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [turnAdvance.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/turnAdvance.ts) 已正式承接 `advanceQidahenTurnIfReady()`、等待态阻塞判定、`getActiveFactionTurnOrder()` 顺位计算、新一轮 `selectedWheelMoveId / selectedActionId / actionChoices / payment` 重置以及 `轮到 X 行动` action log 追加；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只剩 `QIDAHEN_TURN_ADVANCE_DEPENDENCIES` 与 `advanceTurnIfReady(...)=advanceQidahenTurnIfReady(...)` 薄 wrapper，不再本地保留 `const factionTurnOrder = ...`、`const nextFactionId = ...` 等换人编排本体；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增 source guard。验证结果：`compatSource + commands + Board + payment-selection = 553 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前真正剩余的 turn/victory 结构债，已不应再泛写成“主流程仍在 index 里”，而应继续收窄到 `turnAdvance` 仍注入的 `syncSpecialRuleState / beginHandLimitDiscardIfNeeded / updateTurnLabel / getPreferredActionWindowSelectedRegionIdForFaction` 这批局部 helper 与更外层 public seam。 
+- 2026-06-09 01:44 +08：当前《七大恨》victory 这层高层 helper，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [victoryResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/victoryResolution.ts) 已正式承接 `countQidahenControlledRuntimeRegions()`、`getQidahenPrestigeBonusByFaction()`、`getQidahenEffectiveVpByFaction()` 与 `applyQidahenVictoryStatus()`，并在 owner 内部收拢 prestige / military / hegemony winner 判定与 prestige card bonus gate；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `countControlledRuntimeRegions / canApplyPrestigeCardBonus / getQidahenPrestigeBonusByFaction / getQidahenEffectiveVpByFaction / findPrestigeWinner / findMilitaryWinner / findHegemonyWinner`，只保留 `applyVictoryStatus()` 薄 wrapper 和 `syncSpecialRuleState` 依赖注入；同时本轮已补齐两个中间态漏点，`countControlledRuntimeRegions(...)` 残留调用已改为 `countQidahenControlledRuntimeRegions(...)`，`getQidahenEffectiveVpByFaction` 也已在 domain barrel 恢复导出。验证结果：`compatSource + commands + Board + payment-selection = 552 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 victory owner 已正式离开高层 `index.ts`，后续更高价值残余应继续看 `advanceTurnIfReady` 与更外层 public seam，而不是再把 victory 判定本身记成未收口。 
+- 2026-06-09 01:30 +08：当前《七大恨》turn/action-window 这组高层 helper，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [factionActionWindow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionActionWindow.ts) 已正式承接 `getActionChoicesForFaction()`、`getActionChoiceById()`、`getDefaultActionIdForFaction()`、`buildPaymentState()`、`buildTurnLabel()`、`hasRemainingFactionAction()`、`isFactionActionTurnComplete()` 与 `syncFactionActionWindow()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `defaultActionIdByFaction / upgradeArmamentActionChoice / actionChoiceCatalog / buildPaymentState / buildTurnLabel / hasRemainingFactionAction / isFactionActionTurnComplete / syncFactionActionWindow` 定义，并改为直接 import 新 owner；[commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts)、[Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx)、[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 也已追平到 `factionTurnAccessors + factionActionWindow` 单一真相。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 552 passed`，`npm run typecheck` 通过。结论是：当前 action-window 规则 owner 已继续离开高层 `index.ts`，后续更高价值残余应继续看 `advanceTurnIfReady / applyVictoryStatus` 这类真正的 turn/victory 主流程编排。 
+- 2026-06-09 01:29 +08：当前《七大恨》scenario/faction turn-order 这层 helper，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [factionTurnOrder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionTurnOrder.ts) 已正式承接 `getScenarioPlayableFactionIds()`、`filterFactionOrderForScenario()` 与 `getActiveFactionTurnOrder()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地同名定义，只保留 `getScenarioOpeningFactionOrder()` 与 `getFactionOrderForYearIndex()` 这类更贴近当前文件上下文的薄组合位点。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 552 passed`，`npm run typecheck` 通过。结论是：当前 turn-order 访问层已继续离开高层 `index.ts`，后续更高价值残余应继续看 `advanceTurnIfReady / applyVictoryStatus` 这种真正的主流程编排层。 
+- 2026-06-09 01:19 +08：当前《七大恨》pending battle flow 依赖里那层 faction turn accessors，已不该再被记成“仍由 `index.ts` 本地维护”的状态。现态证据是：新增的 [factionTurnAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/factionTurnAccessors.ts) 已正式承接 `QIDAHEN_FACTION_ORDER`、`getFactionIdByPlayerId()` 与 `getCurrentFactionId()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地同名定义，改为直接 import 新 owner，并继续供 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`、turn/action-window 逻辑与事件处理链复用。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 551 passed`，`npm run typecheck` 通过。结论是：当前 faction/player 映射这层访问逻辑已正式退出高层 `index.ts`，后续更高价值的残余应继续看 `getActiveFactionTurnOrder / syncFactionActionWindow / advanceTurnIfReady / applyVictoryStatus`。 
+- 2026-06-09 01:11 +08：当前《七大恨》pending battle flow 对 `pendingTargetResolution / postBattleResolution` 的消费方式，已不该再被记成“由 `index.ts` 本地薄 wrapper 直接桥接”的状态。现态证据是：新增的 [pendingBattleResolutionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolutionBridge.ts) 已正式承接 `resolveQidahenPendingTargetAction()` 与 `resolveQidahenPostBattleDecision()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `resolvePendingTargetAction()`，并让 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 直接接 `resolveQidahenPendingTargetAction / resolveQidahenPostBattleDecision`；`QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES / QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES` 也已提升为 export，供 bridge 在 owner 内持有。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 551 passed`，`npm run typecheck` 通过。结论是：当前 battle flow 到 target/post-battle resolution 的高层桥接已继续退出 `index.ts`，剩余结构债不应再把这两条薄 wrapper 记作未收口。 
+- 2026-06-09 01:08 +08：当前《七大恨》pending battle committed-troops 这条线已经不该再被记成“虽然 owner 接上了，但 committed-troops 规则 helper 与依赖常量还挂在高层 `index.ts`”的状态。现态证据是：[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 现在已经正式新增并承接 `getQidahenCharacterCommittedTroopLimit()`、`getMovableTroopCountForProfile()` 与 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES`；其中 dependency 常量只剩 `getPendingActionSourceForceSnapshot` 这一条最小依赖。[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已删除本地 `getQidahenCharacterCommittedTroopLimit`、`getMovableTroopCountForProfile` 和 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES` 定义，改为直接 import 新 owner。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平 source guard。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 551 passed`，`npm run typecheck` 通过。结论是：当前 committed-troops 子链已经继续离开高层 `index.ts`，下一层正式 residual 更像是 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 本体与 turn/action-window 高层 helper seam。 
+- 2026-06-09 01:01 +08：当前《七大恨》pending battle committed troop 这条线已不该再被记成“新 owner 文件已建，但主入口还没接”的半迁移状态。现态证据是：[pendingBattleCommittedTroops.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleCommittedTroops.ts) 已正式承接 `applyRequestedCommittedTroops()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前已新增 `QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES`，并让 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES.applyRequestedCommittedTroops` 与 `RESOLVE_PENDING_ACTION` 命令路径的 committed troop 预处理统一改走 `applyQidahenRequestedCommittedTroops(..., QIDAHEN_PENDING_BATTLE_COMMITTED_TROOPS_DEPENDENCIES)`；本地 `const applyRequestedCommittedTroops = (` 已删除。[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已补 committed troop owner 门禁，锁住 `index.ts` 不得回流这条 helper。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 committed troop 预处理已正式退出高层 domain entry，本轮剩余结构债不应再把“死文件未接线”算作 blocker。 
+- 2026-06-09 00:58 +08：当前《七大恨》正式架构审查里关于 pending battle resolved event 的结论，直到这轮才真正和源码守卫锁成同一份真相。现态证据是：[pendingBattleResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventBridge.ts) 当前已经自己导入 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已不再保留 `resolveQidahenPostBattleInteractionChoice()` public thin wrapper，resolved-event case 只剩 `return resolveQidahenPendingBattleResolvedEvent(state, event);`；[payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 也已改为直接从 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 取 post-battle owner 并显式传依赖；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 则改成锁住“index 不再 re-export post-battle wrapper / bridge 自持依赖装配”。验证结果：定向 ESLint 通过，`compatSource + commands + Board + payment-selection = 551 passed`，`npm run typecheck` 通过。结论是：当前 pending battle resolved event 这条线已经不只是 owner 存在，而是 formal review、直接测试消费者与静态 source guard 都追到了同一 owner 结构。 
+- 2026-06-09 00:54 +08：当前《七大恨》pending battle resolved event 入口已不该再被记成“高层 reducer 自己手写 `PENDING_ACTION_RESOLVED / POST_BATTLE_DECISION_RESOLVED` 两段分支”的状态。现态证据是：新增的 [pendingBattleResolvedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleResolvedEventBridge.ts) 现在已经正式承接这两类 resolved event 的分流，并在 bridge 内统一路由到 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts)；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前只保留 `resolveQidahenPendingBattleResolvedEvent(state, event, QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES)` 这一个调用位点，不再本地直接编排 pending battle flow owner。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：pending battle 这组旧 domain resolved event 分支判断已继续离开高层 reducer，后续不应再把这两段 case 记成 `index.ts` 仍在直接承接的主债。 
+- 2026-06-09 00:48 +08：当前《七大恨》interaction resolver registry 已不该再被记成“仍然散在 interactionSystem.ts 本地”的状态。现态证据是：[interactionResolverRegistry.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionResolverRegistry.ts) 已正式新增 `resolveQidahenInteractionEvent()`，由它单独承接 `readResolvedPayload()`、resolved payload/handler 类型、`getResolvedChoiceId()`、`handledInteractionResolution()`、全量等待态 resolver handler 与统一的 `QIDAHEN_INTERACTION_RESOLUTION_HANDLERS`；[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 当前只剩 `INTERACTION_EVENTS.RESOLVED` 事件遍历、调用 registry owner、按返回 core 更新 `nextState` 并执行 `syncQidahenRuntimeInteractionState()` 这一层；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已锁住 `interactionSystem.ts` 不再直接持有 `readResolvedPayload`、`QidahenInteractionResolutionContext` 与 `QIDAHEN_INTERACTION_RESOLUTION_HANDLERS`。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前更高价值的正式 residual 已继续外移到 runtime interaction sync、其余等待态桥接一致性与 public thin wrapper 收缩，而不是 resolver registry 本身仍是主债。 
+- 2026-06-09 00:45 +08：当前《七大恨》pending battle bridge 已不该再被记成“interaction system 已经不直连 owner，但 bridge 仍要由高层手工传依赖装配”的半收口状态。现态证据是：[pendingBattleInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionBridge.ts) 现在已经自己导入 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`，并在 bridge 内直接调用 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 的 pending-target / post-battle owner；[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 当前只负责把解析后的 payload 交给 `resolveQidahenPendingBattleInteractionEvent()`，不再手工传 pending battle flow 依赖装配。同时 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里已经没有仓内真实消费方的 `resolveQidahenPendingTargetInteractionChoice()` public thin wrapper 也已删除，说明 pending-target 这条 public 高层壳当前已不再是正式入口。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 residual 已经继续外移，后续不应再把 pending battle 依赖装配或 pending-target 空转 public seam 记成 `index.ts` 仍在承接的主债。 
+- 2026-06-09 00:41 +08：当前《七大恨》pending-battle interaction bridge 已不该再被记成“仍然直接混在 interactionSystem.ts 里”的状态。现态证据是：[pendingBattleInteractionBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleInteractionBridge.ts) 已正式新增 `resolveQidahenPendingBattleInteractionEvent()`，由它单独承接 `QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID / QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID` gate、`getQidahenPendingTargetActionFromInteractionData()` / `getQidahenPostBattleSelectionFromInteractionData()` 读取、choice 解析，以及分别转交 `resolveQidahenPendingTargetInteractionChoice()` / `resolveQidahenPostBattleInteractionChoice()`；[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 当前只剩一个 `resolveQidahenPendingBattleBridgeInteractionEvent` 做 registry 接线；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已锁住 `interactionSystem.ts` 不再直接持有 pending-battle 两条 handler 与对应 flow resolver 调用。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前更高价值的正式 residual 已继续外移到 resolver registry / runtime sync 与其余等待态 bridge 的一致性 seam，而不是 pending-battle 两条 interaction handler 仍是主债。 
+- 2026-06-09 00:35 +08：当前《七大恨》pending battle flow 这组 interaction bridge 已不该再被记成“post-battle 直连 owner，但 pending-target 还绕高层 wrapper”的半收口状态。现态证据是：[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 现在已经和 post-battle 一样，直接从 [pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 导入 `resolveQidahenPendingTargetInteractionChoice`，并显式传 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 pending-target 同名导出仍存在，但当前只剩 public thin wrapper 角色，不再是 interaction bridge 的真实 owner。同步 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已追平到当前真实结构：一方面锁住 interaction bridge 对 pending-target 直连 `pendingBattleFlow`，另一方面确认 `pendingBattleFlow` 现在是 `flow owner + state transition owner adapter`，summary/reset glue 已继续留在 [pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts)。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前这条 residual 已经继续外移，后续不应再把 pending-target interaction bridge 回流高层 wrapper 当成未收口事实。 
 
-- 2026-06-06 当前 live 复核新增事实：我本轮直接重跑了 `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts + src/games/dicethrone/__tests__/character-catalog-status.test.ts + src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts + src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts`，结果为 `4 files / 97 passed`。这不是沿用文档旧口径，而是当前代码现状复核；同时 `src/games/dicethrone/domain/core-types.ts` 与 `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 也已直接证明 `zhanshujia / cursed_pirate` 当前确实不再保留 `implementation_in_progress`。因此本轮对“规则都实施了吗 / 技能是不是要重录 / 审计也是吗”的回答可以继续固定为：规则实现已落地，不需要整套重录，审计 closeout 已完成。
-- 2026-06-06 最新最终口径：本节下文若再出现“继续挂 `implementation_in_progress` / 审计 hold / completion audit 未封版”的表述，默认都只代表 2026-06-06 更早批次的阶段记录；当前权威结论以前三条 closeout 事实为准。
-- 2026-06-06 最新新增事实：本轮 closeout 已完成，`implementation_in_progress` 的旧 hold 口径已失效。`src/games/dicethrone/domain/core-types.ts` 已移除 `zhanshujia / cursed_pirate` 的目录徽标，`src/games/dicethrone/__tests__/character-catalog-status.test.ts` 现已显式锁定 `gunslinger / samurai / treant / ninja / zhanshujia / cursed_pirate` 都不再保留 `implementation_in_progress`。这说明当前对外结论已经不是“最终审计未封版继续挂标”，而是“这两名新英雄已完成 closeout，目录完成态已生效”。
-- 2026-06-06 最新新增事实：本轮最新静态权威结果已更新为 `npx vitest run src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts src/games/dicethrone/__tests__/character-catalog-status.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-intake.test.ts src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-mechanics.test.ts --configLoader native` -> `4 files / 97 passed`；同时 `npx tsc --noEmit --pretty false` 与 `npx eslint e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 也都通过。这说明当前不只是“有几条代表链是绿的”，而是 closeout、目录状态、intake、mechanics 四组收口门禁已同时打绿。
-- 2026-06-06 最新新增事实：latest full-file E2E 权威整跑仍以本地日志 `temp/dicethrone-intake-full-run-2026-06-06-pass2.log` 为准，结果为 `80 passed (20.3m)`。我随后又重新发起过一轮整文件复跑，但 30 分钟超时窗口内没有自然收口，因此当前最稳口径仍应引用这份已完成日志，而不是把那次超时误记成业务回退。
-- 2026-06-06 最新新增事实：对“规则都实施了吗 / 技能是不是要重录 / 审计也是”的当前权威回答已切换为：
-  - 规则实现已落地。
-  - 不需要整套重录。
-  - 审计 closeout 已完成；当前剩余只是文档同步，不再是实现或审计 hold。
-- 2026-06-06 最新新增事实：战术家 / 咒缚海盗自身的 `i18n` raw-text warning 当前已经清空，不再是这批新英雄的 remaining。当前已把 `zhanshujia` 与 `cursed_pirate` 四个英雄源码文件里的能力效果描述、手牌效果描述、升级替换说明与 human 面能力名/描述全部切到 i18n key，并补齐中英文 locale。最新 `npm run i18n:check` 虽然仍因仓库其它 DiceThrone 历史债失败，但输出里已不再包含 `src/games/dicethrone/heroes/zhanshujia/**` 或 `src/games/dicethrone/heroes/cursed_pirate/**`。这说明当前若还要保留 `implementation_in_progress`，原因已经不能再归结为“这两个英雄自己的 i18n 还没收干净”，而只能回到最终审计 gate。
-- 2026-06-06 最新新增事实：最终 closeout 分组现在也有了独立代码门禁，而不再只是审计 prose 对对象做人工归桶。新增 `src/games/dicethrone/__tests__/zhanshujia-cursed-pirate-closeout.test.ts` 后，当前已显式锁定：战术家 `9 / 9` 玩家板对象与 `15` 张专属手牌、咒缚海盗双面 `18 / 18` 玩家板对象与 `16 / 16` 专属手牌、以及 `诅咒金币 / 火药桶 / 双面续结` 这些最终 closeout 桶，都必须完整纳入审计分组，不能再留“其实还有对象没入矩阵”的 residual。与 `closeout + intake + mechanics + character-catalog-status` 一起复跑后的最新静态结果为 `4 files / 97 passed`。这说明当前连 family closeout gate 也已被代码锁住，不再需要把“是否允许摘标”继续保留为当前 blocker。
-- 2026-06-06 最新新增事实：`implementation_in_progress` 的摘标边界现在又多了一层自动化 contract，而不再只靠 evidence 文本。新增 `src/games/dicethrone/__tests__/character-catalog-status.test.ts` 后，当前已显式锁定：`gunslinger / samurai / treant / ninja` 不应继续保留 `implementation_in_progress`，`zhanshujia / cursed_pirate` 在最终审计 gate 封版前继续保留。相关验证已通过 `npx vitest run src/games/dicethrone/__tests__/character-catalog-status.test.ts --configLoader native`（`1 file / 2 passed`）以及与 `character-catalog-i18n.test.ts` 组合复跑（`2 files / 4 passed`）。这说明当前“哪些英雄应该挂标、哪些已经摘标”已经进入代码门禁，不再只是历史文档口径。
-- 2026-06-06 最新新增事实：`implementation_in_progress` 当前保留的真实原因，已经不再是“规则尚未实施”或“human 面尚未接线”，而是 DiceThrone intake workflow 里的最终审计门禁尚未封版。按 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 逐项回看，当前数据录入 / 机制 / 资源 / 上传 / E2E 都已进入可复述通过态；唯一继续 `hold` 的是双面 face-by-face completion audit、family 级 `L4` 合法复用边界与最终 verdict。因此现在对“规则都实施了吗 / 技能是不是还要重录 / 审计也是吗”的正确回答应固定为：实现层面已大幅落地，不需要整套重录，但审计门禁仍未封版，所以徽标继续保留。
-- 2026-06-06 最新新增事实：family 级 `L4` 合法复用登记已开始由自动化合同直接守门，而不再只留在审计 prose。`zhanshujia-cursed-pirate-intake.test.ts` 现已新增 6 条静态合同：除咒缚海盗的 `奖励骰五类 dispatch seam`、`诅咒金币 direct/continuation/双面差异 seam`、`火药桶 writer seam` 外，又补上战术家的 `升级 replace shell`、`复合升级 variant seam`、`奖励骰主阶段/防御/额外进攻 seam`。连同 `zhanshujia-cursed-pirate-mechanics.test.ts` 一起重跑后，当前权威静态计数已更新为 `2 files / 90 passed`。这说明战术家与咒缚海盗的主要 family remaining 都已从“缺少自动化合法复用 proof”继续收窄到“最终 verdict 与徽标是否允许收口”，而不是还缺某条 seam 的实现。
-- 2026-06-06 最新新增事实：`e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 现已从先前的 `71` / `78` 条阶段继续扩到 `80` 条，并由 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 真整跑到 `80 passed (20.3m)`。前一轮“full-file 在 70 条附近挂住、看起来像 soak/route preload 风险”的判断，当前已确认主要是命令超时窗口过短；尾段 `10` 条分组也已独立 `10 passed`。这说明当前 intake 的主 blocker 已不再是整份 full-file 稳定性，而是 family / 双面 completion audit 与 `L4` 合法复用登记。
-- 2026-06-06 新增事实：咒缚海盗奖励骰 family 现在又多了一层机制级负向证据，而不再只停在“正向命中分支已跑通”。最新回归已证明：`起锚` 的骷髅分支只施加 `休战`、非骷髅默认分支只 `draw 1`；`抽筋剥皮` 在弯刀数不足 `3` 时只累计攻击伤害而不会误施加 `火药桶`；`死亡印记` 的纯弯刀盘面不会串写 `draw / 诅咒金币`；`瞭望台` 的弯刀查看手牌分支确认后不会误弃牌；`虚张声势` 也已补齐机制层三分支，分别锁定 `弯刀 -> 2 点伤害`、`战利品 -> 抽 2`、`骷髅 -> 火药桶`。当前整份 `zhanshujia-cursed-pirate-mechanics.test.ts` 已更新为 `76 passed`。这说明奖励骰 family 的 remaining 已继续收窄到 family final verdict 与合法复用登记，而不是“默认分支还没落地”。
-- 2026-06-06 新增事实：`凋零 / 休战` 当前都已拿到第二条不同攻击来源的 live consumer 直证，而不再只锁在 `灵魂突刺 / 弯刀突刺`。新增的两条定向 direct E2E 都复用 `死亡吐息` 真实入口：一条证明 Guest 持有 `凋零 1` 时，`breath-of-death-small` 会把 Host 伤害从 `7` 压到 `6`（`Host HP 50 -> 44`）；另一条证明 Guest 持有 `休战 1` 时，同一 `breath-of-death-small` 攻击链会阻断攻击伤害、保留 `凋零 / 火药桶` 状态写入，并在阶段结束清理 `休战`。这说明当前剩余已从“还缺第二条来源直证”收敛为状态 family verdict 的封版与合法复用登记。
-- 2026-06-06 新增事实：human 面 `判决指令 / 无情劫掠` 的 continuation 当前也不再只锁定 accept path。新增两条机制回归已证明：当海盗选择“不获得诅咒金币”时，`判决指令` 仍会继续施加 `休战` 并结算 `7` 点不可防御伤害，`无情劫掠` 仍会继续施加 `休战 + 火药桶` 并保留 `12` 点主伤害收口。当前整份 `zhanshujia-cursed-pirate-mechanics.test.ts` 已更新为 `70 passed`。这说明 `诅咒金币 family` 的 `continuation writer` 子段现在已有 accept / decline 双路径硬证据。
-- 2026-06-06 新增事实：`火药桶 family` 的 `upkeep transfer` 当前也不再只靠对象级 E2E 证明“转交给已持有者时原桶爆炸”。新增机制回归已直接锁定：`upkeep-powder-keg` 选择把火药桶转交给 `P2` 且 `P2` 预持有火药桶时，会同时移除 `P1` 旧桶、对 `P2` 结算 `3` 点 direct damage、并把 `P2` 的新桶保持在 `1` 层。当前整份 `zhanshujia-cursed-pirate-mechanics.test.ts` 已更新为 `71 passed`。这说明 `火药桶 family` 的 `upkeep transfer` 子段现在已有机制层硬证据。
-- 2026-06-04 新增事实：咒缚海盗 human 面剩余 3 个对象不再是运行时缺口。`点燃炸药` 已修正为 `preDefense` 下同时落 `火药桶 + 伤害`；`判决指令` 与 `无情劫掠` 已改为本地 choice continuation，诅咒金币选择完成后会继续结算 `休战 / 火药桶 / 伤害`。相关验证已由定向三条机制测试、`mechanics + intake + ninja regression` 组合回归，以及 `tsc` 共同锁定。
-- 2026-06-04 新增事实：`无情劫掠` 的真实入口 direct E2E 现已通过，说明这条链当前不再被 `pendingAttack` 残留或攻击链不收口阻断。验证命令为 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应通过人类面 ultimate 槽位触发并结算无情劫掠的诅咒金币续结链"`，结果 `1 passed`。
-- 2026-06-04 新增事实：`做好标记` 的真实入口 direct E2E 现已通过，但当前有效证据来自 legacy globalSetup + `prebuilt + BG_VITE_FORCE_INLINE=1` 绕过路径，而不是 `run-e2e-single.mjs` 的托管 runtime。根因不是业务链红灯，而是 E2E 旧断言把“奖励骰结算状态出现”误写成“`bonus-die-overlay` 一定可见”；修正为“优先点击真实确认伤害按钮，否则走权威 `SKIP_BONUS_DICE_REROLL` 收口”后，用例已回到业务位点并转绿。
-- 2026-06-04 新增事实：`嘿，老兄` 的真实入口 direct E2E 现已通过，说明人类面最后一条防御对象也已拿到当前有效 direct E2E 证据；其真实收口为 `Host HP 48 / Guest HP 48 / Guest CP 6 / Guest cursedCoin 1`。
-- 2026-06-04 新增事实：此前一次出现的 `MatchRoomWithAudio.tsx` 动态导入失败，目前未在最小前端反馈环中复现。独立 Vite 直接请求 `/@vite/client`、`/src/pages/MatchRoomWithAudio.tsx` 与 `/src/pages/MatchRoom.tsx` 均返回 `200`，因此这更像当时特定 runtime/冷启动波动，而不是当前源码静态编译就会稳定触发的前端红灯。
-- 战术家与咒缚海盗当前不是“完整完成”，而是 L1 静态接入、资源链、真实入口 E2E 与一批 L2 机制通过；战略防御、送你们去喂鱼、手牌选择、瞭望台三分支、作战室奖励骰展示、占得上风勋章分支、起锚骷髅分支、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、深海潜行完整真实攻击入口、4 人无情诅咒火药桶链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链，以及火药桶维持阶段爆炸链都已有代表性真实入口截图链，但全流程仍受复杂交互未逐项 L3/L4 限制。
-- 战争贩子 II 勋章专门链此前未锁定的真实根因有两层：E2E 场景只改了 `abilityLevels` 没把 `war-monger` 真替换成升级后的能力定义；正式领域链则在勋章分支先写入 `extraAttackInProgress`、当前攻击稍后才于防御阶段收口时，没有把下一阶段切回 `offensiveRoll`。两层现都已修复，并分别由 E2E 与机制测试锁定。
-- 资源链已经闭合：上传前 `assets:check` 发现 24 个本轮 DiceThrone 新资源缺远端，随后 `assets:upload` 成功上传；两名英雄的玩家板、提示板、手牌图、骰子、状态图集以及 Common 背景/头像远端 HEAD 均为 200。
-- 真实入口双玩家 E2E 已通过：战术家和咒缚海盗可在真实在线选角入口被两名玩家选择，并能进入对局；截图证明双方玩家板、提示板、HUD、骰区与代表手牌 atlas 可见。
-- `通用牌索引` 当前也已拿到真实 UI 证据，而不再只是 intake test 的静态断言：开局双玩家 E2E 现已给 Host/Guest 手牌同时注入各自的 `card-unexpected`，并在同一条真实用例里等待两边 common 卡图加载完成、断言可见后再截图；因此 `05-host-zhanshujia-hand-card-atlas.png` 与 `06-guest-cursed-pirate-hand-card-atlas.png` 现在同时证明了战术家 slot 32 与咒缚海盗 slot 33 的通用牌 atlas 运行时落点。
-- 战术家 `军刀突刺` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `fist` 槽位在 3 军刀盘面下会解析为 `sabre-thrust-3`，点击后先留在 `offensiveRoll`，再由 Host 推进到 Guest 的 `still-wet-behind-ears` 防御阶段；随后把 Guest 防御骰固定成全战利品面后，服务器状态断言 `Host HP=50 / Guest HP=46`，说明基础 `3 军刀 -> 4 伤害` 主链已经在真实 UI 里闭环。
-- 战术家 `军刀突刺 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `fist` 槽位在升级场景下会解析为 `sabre-thrust-2-3`，点击后同样先留在 `offensiveRoll`，再由 Host 推进到 Guest 的 `still-wet-behind-ears` 防御阶段；随后把 Guest 防御骰固定成全战利品面后，服务器状态断言 `Host HP=50 / Guest HP=45 / Guest bind=1`，说明升级后的 `5` 点伤害与“三同值施加紧缚”已经在真实 UI 中闭环。
-- 战术家 `地毯式轰炸 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `chi` 槽位在 `4 旗帜 + 1 军刀` 盘面下会解析为 `carpet-bombing-2-strategy`，点击后会在无 `pendingAttack` 的前提下真实完成 `Host 战术优势=3` 与 `抽 2 张牌`，且抽到的 `战略防御！ / 占得上风！` 会真实进入手牌区。这说明升级旗帜分支的 `grantToken + drawCard(2)` 已在真实 UI 中闭环。
-- 战术家 `战略转移 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `calm` 槽位在 `4 勋章 + 3 勋章` 同时满足时不会自动走主分支，而是会先弹出“选择发动变体” modal；Host 显式选择 `战略转移 II（4个勋章）` 后，才会创建 `strategic-shift-2-main` 攻击链，并在推进后收口到 `Host 战术优势=5 / Guest bind=1 / Guest HP=45`。这说明升级主分支的 `grantToken + bind + unblockable damage` 已在真实 UI 中闭环。
-- 战术家 `摇鼓运动 II` 现在也已拿到对象级 L3 代表链：新的真实入口 E2E 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会直接解析为 `drum-movement-2-main`，点击并推进后会自然打开 Guest 的 `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器状态断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`，说明主分支的 `grantToken + bind + 7 伤害` 已在真实 UI 中闭环。
-- 历史上确实有过整份 `e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 在同一轮托管 isolated runtime 下 `26 passed (11.3m)` 的记录，但这已经不能当当前结论复述。最新整文件回归没有形成“当前全绿”证据：最新一次整跑在最前两条开局/选角用例就被 online room / frontend runtime 不稳定拦住，现象包括 `page.goto ... waitUntil "commit" timeout`、`chrome-error://chromewebdata/`、`localStorage/sessionStorage Access is denied`，随后 26 条全部 `skipped`，并伴随前端服务异常退出 `code=3221226505`。
-- 本轮已新增 `scripts/infra/diagnose-dicethrone-room-entry.ts`，把环境反馈环收窄到 `create -> join -> seed -> goto room -> wait character selection`。它已经证明：当前 isolated single-worker DiceThrone 诊断并不只是 `Board.tsx` 首取慢，而是会在真正进房前随机撞启动期 OOM。
-- 上述最小探针在两种 runtime 下都已打到可复述的环境证据：
-  - `bundle` runtime：`vite-with-logging` 前端进程异常退出，同时 `bundle-runner e2e-game-single` 在启动期 `Fatal JavaScript out of memory`。
-  - `tsx` runtime：Vite 与游戏服务分别出现 `Zone Allocation failed - process out of memory`。
-  - 因此当前不能再把 DiceThrone 验证噪音单纯表述成“房间冷启动慢”或“只是一条用例 flake”。
-- `waitForFrontendAssets(hostPage, 30000)` 在 DiceThrone setup 里现在只能算 best-effort 诊断，不能当硬门禁：即使 runtime manager 已把 `/__ready`、`/@vite/client`、`/src/main.tsx` 纳入健康检查，Playwright `page.request.get('/@vite/client')` 仍可能单独挂死 30 秒；这能证明环境不稳，但不能直接推出后续业务链一定失败。
-- 新增的 `占得上风 / 起锚` 对象级真实入口都已单跑通过：前者通过循环重置最小主阶段手牌场景直到命中勋章分支，确认战术优势从 `0 -> 4`；后者同样命中骷髅分支，确认对目标真实写入 `休战 1`。这两条不再适合继续留在“独立对象待补”里。
-- 当前能确认的新通过证据是三条 `咒缚` 对象链都已单跑收口：`咒缚` 维持阶段自伤、对手未发起攻击时施加火药桶、火药桶维持阶段爆炸链均已通过真实入口定点 E2E。
-- `火药桶` upkeep 代表链当前不再依赖 `primeHarnessRandomQueue(...)`。新的结论是：online 服的 upkeep bonus die 不能稳定受前端 harness 随机队列控制；但在 isolated runtime 侧，`prebuilt + BG_VITE_FORCE_INLINE=1` 且不启 `BG_VITE_FORCE_CONFIG_INLINE` 已被证明能绕开启动期 `howler` / OOM 组合噪音，把定点验证重新带回真实业务位点。
-- `反制措施 / 你还嫩了点` 当前已经拿到新的运行证据：旧红根因确实是测试把 `ADVANCE_PHASE` 发给了错误玩家，而不是领域逻辑未实现。修正为 `反制措施 -> Host / playerId '0'`、`你还嫩了点 -> Guest / playerId '1'` 后，定点 E2E 已再次 `1 passed`。
-- 对 `反制措施 / 你还嫩了点` 的静态复核结果现已被新的运行证据补强，而不是被推翻：`rules.ts` 的 `canAdvancePhase(defensiveRoll)`、`flowHooks.ts` 的 `defensiveRoll` 退出逻辑，以及现有 mechanics tests 都表明 `setupDefenseEvidenceScenario(...)` 的 direct `defensiveRoll + pendingAttack + rollConfirmed` 注入结构在合同上仍是自洽的；当前最新通过也说明首个真实修点不是这条注入结构，而是结束防御命令发给了错误玩家。
-- 战术家 `9 张升级牌` 当前也已拿到代表性真实入口证据，而不再只是 L2 映射：新 E2E 已证明升级牌从真实手牌用 `PLAY_UPGRADE_CARD` 打出后，会把 `war-monger` 的 `abilityLevels` 从 `1 -> 2`，把 `upgradeCardByAbilityId['war-monger'].cardId` 写成 `upgrade-zhanshujia-war-monger-2`，手牌归 0、CP 从 `5 -> 3`，且升级牌不会误入弃牌堆，而是保留在升级槽位。
-- 战术家 `战争贩子` 本体现在也已拿到对象级 L3 代表链：新 E2E 已证明真实攻击入口会先出现奖励骰覆盖层，并在关闭覆盖层、由防守方完成防御收口后，Host 真实回到额外进攻 `offensiveRoll`。这说明基础 `rollDie` 分支与 `postDamage -> extra offensive roll` 链都不再只停留在 mechanics test。
-- 战术家 `地毯式轰炸` 现在也已拿到对象级 L3 代表链：新的 4 人真实入口 E2E 已证明该链会先进入 `targetingRoll`，完成目标骰投掷/确认后，若命中 `5/6` 会真实弹出 `dt-defender-choice`，随后再进入 `selectPlayer` 双敌选择覆盖层；最终可只命中敌队两名玩家，不会把队友混入候选，且服务器状态断言 `player0Hp=46 / player2Hp=46 / player3Hp=50`。
-- `run-e2e-single.mjs` 当前必须串行跑。同一轮并行定点 run 会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，这属于验证基础设施边界，不应误记成业务对象红灯。
-- E2E 截图前等待图片真实加载完成是必要门禁。本轮上传前曾暴露“DOM 存在但图片未从远端加载完成”的空面板风险；`waitForBoardImageReady` 将证据从“元素出现”提升到“图片已加载且可见”。
-- 咒缚海盗运行时现已同时接入咒缚面 `player-board` 与人类面 `human-player-board` 两张玩家板底图；`HeroState.playerBoardFace` 已参与主玩家板与攻击特写选图，海盗的一生咒缚面治疗 3 与普通面获得 1 诅咒金币分支均有 L2 证据。
-- `无情诅咒` 的 4 人真实入口当前已不再是未验证高风险项。`42-45` 已同时证明：目标骰 `5/6` 的选敌归属正确、Host 会收到火药桶选择 modal、选择 `施加给 P2, P4` 后双敌方会真实落桶。
-- `诅咒卡牌` 现在也有对象级 L3 代表链：真实入口会展示“诅咒卡牌：选择结算效果” modal，且“受 4 伤害抽 3”分支能回写 HP、手牌与弃牌落点。
-- `封舱` 现在也有对象级 L3 代表链：真实入口可以证明打牌前手牌、打牌后其余手牌进入弃牌堆，以及重抽 4 张新手牌的闭环，不再只是机制测试通过。
-- `分点给我` 现在也有对象级 L3 代表链：真实入口可以证明源卡进入弃牌堆，且目标玩家真实获得 1 层火药桶，不再只是共享 `grantStatus` 合同外推。
-- `亡灵之爪` 现在也有对象级 L3 代表链：真实入口可以证明 Guest 通过 `calm` 槽位发动后，Host 在保留 3 层诅咒金币的同时从 50 HP 降到 39 HP，说明 8 点不可防御主伤害与按金币层数追加的 direct 伤害都已走通。
-- `诅咒金币` 现在也有对象级 L3 代表链：真实入口可以证明 Guest 从 `discard` 推进回合后，Host 在进入 `upkeep` 时从 50 HP 降到 47 HP，且 3 层诅咒金币不被移除，说明维持阶段掉血与状态保留都已走通。
-- `火药桶` 现在也有对象级 L3 代表链：真实入口可以证明 Guest 从 `discard` 推进回合后，Host 在进入 `upkeep` 时从 50 HP 降到 47 HP，且火药桶从 1 层移除到 0，说明维持阶段 1-2 爆炸分支已走通。
-- 战术家 `制胜高地` 现在也有对象级 L3 代表链：真实入口可以证明 Host 通过 `ultimate` 槽位触发后，Guest 获得 `锁定 1 / 紧缚 1`，且 Host 的战术优势上限从 5 升到 6 并补满到 6。
-- 战术家 `战术优势` 现在也有对象级 L3 代表链：真实入口可以证明 Host 通过被动按钮进入 `selectStatus -> selectTargetStatus` 双阶段交互，并在消耗 4 层战术优势后，把自己身上的 `紧缚` 真实转移给 Guest。
-- 战术家 `紧缚` 现在也有对象级 L3 代表链：真实入口截图 `64-66` 已证明 Guest 在额外进攻投掷里先支付 `1CP` 再重投，并在离开 `offensiveRoll` 后清掉自己身上的 `紧缚`。这条链最新单跑为 `1 passed`。
-- 战术家 `伴装撤退` 现在已有对象级 L3 代表链：之前失败的根因不是业务未实现，而是测试错误地直接派发基础 ID `soul-stab`，绕开了真实已解析为 `soul-stab-3` 的攻击槽位。改为点击真实 `data-resolved-ability-id="soul-stab-3"` 槽位后，Host 已能在自然打开的 `defensiveRoll` 里从真实手牌打出 `伴装撤退`，并收口到“攻击者获得 `紧缚 1`、防守方获得 `3` 点护盾、源卡进入弃牌堆”。
-- 战术家 `脱战` 现在也已有对象级 L3 代表链：不再走 `direct state injection -> defensiveRoll` 捷径，而是复用真实 `soul-stab-3` 攻击链自然打开防御窗口。当前真实 run 已证明 Host 能从真实手牌打出 `脱战`，并完成奖励骰分支结算；本次截图链命中的是军刀分支，收口结果为攻击者 HP `50 -> 48`，且源卡进入弃牌堆。
-- 对象级彻底审计已开始回收第一批“可合法复用”的 shared/representative 条目，而不是继续把所有 shared 对象一律算作未收口。当前已明确登记的首批对象包括：`反制措施 II`（复用基础反制措施的同一 defensive slot + custom action 链）、`凋零`（复用深海潜行 / 啜呼已证实的真实状态链）和 `劫掠`（复用深海潜行同一 `cursed-pirate-steal-one-cp` custom action 链）。
-- 对象级彻底审计的第二批可保守登记对象，已经收窄到“没有私有 resolver、没有 choice/奖励骰/额外阶段，只由通用 `grantStatus / grantToken / damage` 组合而成”的条目。当前新增可登记对象为：`摇鼓运动`、`战略转移`、`死亡吐息`。它们的共同点是：共享入口仍是玩家板攻击链，共享消费点仍是 `CombatAbilityManager -> effects.ts` 的通用 effect 消费，剩余差异仅是参数值，不再包含独立交互链。
-- 在进一步收紧口径后，又可以继续保守登记一批“纯共享手牌 immediate 链 / 纯共享 effect 组合”对象：`包夹侧翼`、`开拓战场`、`伏击`、`灵魂指令`、`坏血病`、`休战`（手牌）。这些条目都没有私有 `customAction`，也不依赖 `rollDie`、奖励骰、额外阶段或升级替换；它们复用的只是已被现有真实入口截图证明的通用 `grantToken / grantStatus / damage` 消费链，或真实手牌 immediate 写入链。
-- 进一步往下筛后，又确认了一类可以严格收口但不放宽标准的对象：它们虽然没有自己的独立截图链，但已经在别的已通过真实入口里被显式消费成前置条件，而且剩余差异只在 L2 已锁住的参数/附带条件。当前新增命中的对象是：`包夹侧翼 II`、`休战` 状态本体、`灵魂突刺`。其中 `灵魂突刺` 后续已继续升级为独立 direct E2E，不应再按“仅 representative”理解。
-- `implementation_in_progress` 仍应保留，但当前更准确的原因已经不是“战术家高优先对象还没补齐”或“整份 intake E2E 仍红”。真实剩余门禁是：对象级彻底审计里仍有一批 `L1/L2 shared` 或仅有 `representative` 结论的对象，尚未逐对象登记合法复用依据，或尚未补独立 L3/L4 / `scoped-debt` 结论。
+- 2026-06-09 00:34 +08：当前《七大恨》pending battle flow 的 `summary/reset/action-log` glue 已不该再挂在 `pendingBattleFlow.ts` 自己名下。现态证据是：[pendingBattleStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleStateTransition.ts) 已正式新增 `applyPendingActionResolutionToBattleFlowState()` 与 `applyPostBattleDecisionResolutionToBattleFlowState()`，由它单独承接 `buildSeasonSummary()`、pending/post-battle summary、`turnPhase` / `selectedRegionId` / 等待态清空 / `lastSeasonSummary` / `actionLog` / `applyVictoryStatus()` / `syncFactionActionWindow()` / `advanceTurnIfReady()` 收口；[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 当前只保留 payload/selection 读取与下层 resolution owner 调用；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已锁住 `pendingBattleFlow.ts` 不再本地保留 `buildSeasonSummary`、`buildPendingActionResolutionSummary`、`buildPostBattleDecisionSummary`、`dependencies.applyVictoryStatus({` 与 `actionLog: [`。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前更高价值的正式 residual 已继续外移到 `interactionSystem / pendingBattleFlow / postBattleResolution` 之间更外层的 bridge/orchestrator seam，而不是 `pendingBattleFlow.ts` 这组 state-transition glue 仍是主债。 
+- 2026-06-09 00:25 +08：当前《七大恨》pending-action 交互包装层也不该再记在高层 `index.ts` 账上。现态证据是：[pendingBattleFlow.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingBattleFlow.ts) 已新增 `resolveQidahenPendingTargetInteractionChoice()`，由 owner 自己统一承接 `normalizePendingTargetInteractionPayload()`、当前 `pendingTargetAction` 读取、`applyRequestedCommittedTroops()` 预处理以及 `createStructuredBattleRolls()` 预构 battle rolls；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的同名导出当前只剩薄 wrapper，不再本地维护 payload 归一化、当前待结算读取和 battle roll 预构；`QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES` 也已补出 `createStructuredBattleRolls`。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 pending battle flow 主线又向高层退出了一步，后续 residual 不应再把 `resolveQidahenPendingTargetInteractionChoice()` 视为 `index.ts` 自己的 orchestration。 
+- 2026-06-09 00:21 +08：当前《七大恨》正式架构审查主文档已经追平到最新 worktree 真相，不应再停在 `0.40` 那种“battle coordinator 已回绿，但 target-action 顶层路由仍在高层”的旧判断。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式承接 `resolvePendingMarriageSubjugationTargetAction()` 与 `resolvePendingTargetActionByActionType()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `resolvePendingTargetAction()` 当前只剩 thin wrapper + `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 装配；同轮 `noDefenderResolution` 早退也已补回 `applyPendingTargetAftermathAdjustments()`，不再让守方骑兵避战接兵在 owner 内出现“战场扣掉了、撤退区没写回”的漏口。复核结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过；本轮没有重跑 E2E。结论是：当前更高价值的正式 residual 已继续外移到 `pendingBattleFlow / postBattleSelection / resolvePostBattleDecision` 外围，而不是 `index.ts` 里这条 target-action router 仍是主债。 
+- 2026-06-09 00:19 +08：当前《七大恨》`resolvePendingTargetAction()` 已不该再被记成“只剩一个很薄的高层 router 壳”。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已新增 `resolvePendingTargetActionByActionType()`，由 owner 自己统一计算 `sourceRemovalRegionId`，并顺序编排 `resolvePendingSiegeReinforcementAction()`、`resolvePendingBattleTargetAction()`、`resolvePendingMarriageSubjugationTargetAction()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 当前 `resolvePendingTargetAction()` 只剩一个把参数和 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES` 转给 owner 的薄 wrapper，不再本地手写三段 resolution 串联。验证结果：`compatSource + commands + Board + payment-selection = 551 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 pending target 主债已经继续离开高层 `index.ts` 路由本体；后续 residual 不应再把这条线记成“高层还在直接串 siege/battle/marriage 三段 target-action”。 
+- 2026-06-09 00:14 +08：当前《七大恨》`resolvePendingTargetAction()` 已不该再被记成“battle 分支下沉了，但 `marriage-subjugation` 目标区扫描和结果拼装还留在高层”。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已新增 `resolvePendingMarriageSubjugationTargetAction()`，由 owner 自己承接 `runtimeRegions` 过滤、目标区命中、`resolvePendingMarriageSubjugationAction()` 内层调用与 `refreshRuntimeRegionRules()` 收口；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `resolvePendingTargetAction()` 现只负责按顺序路由 `resolvePendingSiegeReinforcementAction()`、`resolvePendingBattleTargetAction()`、`resolvePendingMarriageSubjugationTargetAction()`，不再本地 `map` 目标区并维护 `factions/logText/regions`。同轮还确认了一条 battle 真回归与根因：`resolvePendingBattleTargetAction()` 原先在 `noDefenderResolution` 早退时绕过了 `applyPendingTargetAftermathAdjustments()`，导致“守方骑兵避战从战场扣掉了，但没写回撤退目标区”这条症状出现；现已在 owner 内补回同一条 aftermath 链。验证结果：`compatSource + commands + Board + payment-selection = 550 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 pending target 主线已进一步逼近“高层只做路由”的正式形态；后续 residual 不应再把 marriage target action 或 no-defender aftermath 漏回 `index.ts`。 
+- 2026-06-08 23:59 +08：当前《七大恨》battle roll seam 已不该再被记成“新文件已建但主入口还没接”。现态证据是：[battleRollMath.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleRollMath.ts) 已正式承接 `createQidahenStructuredBattleRolls()`、`computeQidahenCavalryPlunderCounterPower()` 与对应 `buildCombatUnits / rollBattleStage / getEiduPriorityPhase` helper；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地 `createStructuredBattleRolls()`、`getCavalryPlunderCounterPower()` 与整块 battle roll helper，并改为直接消费新 owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已新增静态门禁锁住这条 owner 边界。结论是：当前真正剩余的高价值结构债已继续收窄到 `resolvePendingTargetAction()` battle coordinator / state glue 与 `postBattleSelection / resolvePostBattleDecision` 更高层 orchestration，而不是 battle roll 仍卡在双宿主半迁移状态。 
+- 2026-06-08 23:57 +08：`0.39` 里那条“generic outcome owner 已迁出但调用侧还没收绿”的过渡态，当前已经正式回到可验证绿基线。现态证据是：[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:7752) 已不再保留未消费的 `attackerRetreatEffectText` 高层过渡变量，[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:7911) `siege-attacker` 分支也不再向一个不存在的外层变量赋值；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts:485) 到 [compatSource.test.ts:542](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts:542) 已把 4 条旧 helper 断言改成“旧 retreat/captured/finalize helper 只允许内聚在 `pendingTargetResolution`，不再要求 `index.ts` 直接编排”，同时 [compatSource.test.ts:263](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts:263) 也已追平 `troopStacks` import 面缩窄后的现态。验证结果：`compatSource + commands + Board + payment-selection = 549 passed`，定向 ESLint 通过，`npm run typecheck` 通过。结论是：当前 battle coordinator 主线已不再停在“generic owner 落地后又把调用层炸红”的假收口；后续正式 residual 应继续聚焦更深一层 orchestration / state glue，而不是继续把 `0.39` 那批残变量/旧断言当成主 blocker。 
+- 2026-06-08 23:40 +08：当前《七大恨》battle coordinator 的真实现态已经比 `0.38` 更往前，但不能再沿用 `547 passed` 的旧绿基线。现态证据是：[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts:1017) 已正式新增 `resolvePendingGenericBattleOutcome()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8400) 普通 battle 分支已通过 `const genericBattleOutcome = resolvePendingGenericBattleOutcome(...)` 收口，说明 generic outcome owner 已继续下沉；但同一文件 [index.ts:56](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:56) 到 [index.ts:61](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:61) 仍残留 4 个未使用导入，[index.ts:8173](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8173)、[index.ts:8391](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8391)、[index.ts:8393](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8393) 仍残留 3 个未使用局部变量；定向验证里 `npm run typecheck` 通过，但 `eslint` 因这 7 个 warning 失败，`payment-selection.test.ts` 也新增 1 条真实行为回归：`城市守军守城避战后若仍有城外部队，攻方打赢野战会继续进入城战待结算` 当前是 `expected 0, received 1`。结论是：当前真正剩余的高价值结构债已不再是“generic outcome 还没 owner”，而是 generic owner 落地后高层调用壳还没收干净，并且 `city hold defense -> continued city battle` 这条规则链出现了新的回归。 
+- 2026-06-08 23:27 +08：当前《七大恨》纯战斗 casualty math 也已经不该再记在高层 `index.ts` 账上。现态证据是：[attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 已正式新增 `computeQidahenCombatPower()` 与 `computeQidahenStructuredBattleCasualties()`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已删除本地 `computeStructuredBattleCasualties()` 与遗留 `computeCombatPower()`，改成直接消费 `attackRules` owner；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已锁住这条下沉。结论是：当前真正剩余的高价值结构债已继续收窄到 `resolvePendingTargetAction()` battle coordinator / state glue，而不是再把 casualty 公式和 outcome glue 混成一整块残口。 
+- 2026-06-08 23:23 +08：当《七大恨》主 battle coordinator 已经把通用 follow-up / finalize 迁出后，`siege-attacker` 这种看起来“只是一个 targetKind 分支”的特殊 outcome 也不该继续卡在高层 resolver 里。本轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式新增 `resolvePendingSiegeAttackerBattleOutcome()`，把解围成功时的进驻选择、解围失败时的攻方撤退损失与战败标记、以及围城军 state/log 收束从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 迁出，整链验证回到 `547 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，不应把 `siege-attacker` 当成“等 casualty math 一起处理”的例外；只要 outcome 已可独立闭合，就应和普通 battle 一样先退出高层 coordinator。 
+- 2026-06-08 23:18 +08：当前《七大恨》正式架构审查里，`postBattleResolution.ts` 与 `pendingTargetResolution.ts` 已经不该再被记成“只是外围 helper”。现态证据是：[postBattleResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleResolution.ts) 已正式承接 `buildPostBattleSelection()` 与 `resolvePostBattleDecision()`；[pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式承接 `resolvePendingSiegeReinforcementAction()`、`resolvePendingBattleWithoutDefenders()`、`resolvePendingMarriageSubjugationAction()`、`resolvePendingCavalryPlunderAction()`、`applyPendingTargetAftermathAdjustments()`、`resolvePendingAttackerRetreatLoss()`、`resolvePendingDefenderRetreatLoss()`、`resolvePendingCapturedBattleFollowup()` 与 `finalizePendingBattleOutcome()`；[compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已锁住 `battle outcome` 最终日志与 `region state/note synthesis` 归 `pendingTargetResolution` owner。结论是：当前真正剩余的高价值结构债已进一步收窄到 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里的 `computeStructuredBattleCasualties()` 与 `resolvePendingTargetAction()` battle coordinator seam，而不是再泛写成“战后 follow-up / finalize 还没迁出”。 
+- 2026-06-08 23:16 +08：当《七大恨》`resolvePendingTargetAction()` 已经把 outcome follow-up 从主 battle 块里拆出去后，下一刀最稳的不是立刻硬拆 casualty math，而是继续把 casualty 之后那层“最终日志 + region state/note synthesis”整体收成 owner。本轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式新增 `finalizePendingBattleOutcome()`，把 `cityHoldDefense` 非夺取场景、`city` 模式等待占领场景、普通野战尾段 `applyCasualtyPriorityToRegion(...)` 与整段 battle log 拼装从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 迁出，整链验证回到 `546 passed + eslint + typecheck`。结论是：后续继续拆这条 seam 时，`casualty math` 与 `state/log finalize` 应继续分层推进；只要结果已算出，就应优先把“如何写回 region、如何落日志”的后半段先退出高层 resolver。 
+- 2026-06-08 23:11 +08：当《七大恨》同时存在 2 人与 3 人剧本时，全局玩家人数入口不能继续分散手写在 `manifest / engineConfig / roomSetup` 三处。当前这条 framework seam 已按正式实现收口： [roomSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/roomSetup.ts) 已新增 `QIDAHEN_PLAYER_OPTIONS / QIDAHEN_MIN_PLAYERS / QIDAHEN_MAX_PLAYERS` 并直接从剧本人数组导出；[manifest.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/manifest.ts) 与 [game.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/game.ts) 现都共用这条单一来源。结论是：`丁卯胡乱下` 不再停在“房间与 setup 允许 2 人，但 engine admission 仍固定 3 人”的框架裂口里；后续若再出现分叉，应直接视为回流手写真相，而不是新的领域需求。 
+- 2026-06-08 23:10 +08：当《七大恨》`resolvePendingTargetAction()` 已经先拆出 no-defender、cavalry-plunder 与 aftermath 这类短链后，下一刀不一定只能继续啃 casualty math，本轮实证证明还可以先把“获胜后的守军撤退损失”和“captured 后续分流”这两段 battle outcome orchestration 独立收成 owner。当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式新增 `resolvePendingDefenderRetreatLoss()` 与 `resolvePendingCapturedBattleFollowup()`，把守军撤退判定/损失与“继续攻城还是进入 post-battle selection”从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 迁出，整链验证回到 `545 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，正确顺序应继续优先识别这种“战斗结果已知后可独立决策的 outcome follow-up seam”，而不是过早把剩余 battle 数学和最终 region state synthesis 绑成必须整段一起迁的单块。 
+- 2026-06-08 23:04 +08：当前《七大恨》`setup` 已不再是“样板 core + 手写 mapTokens”。[roomSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/roomSetup.ts) 现在正式承接剧本、预选人物/军备、允许人数与参战势力解析；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `QidahenDomain.setup()` 已直接消费这些解析结果并落到 `createInitialCore()`；[roomSetup.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/roomSetup.test.ts) 已锁住非默认剧本待决项、全量预选直落 core 与 `丁卯胡乱下` 二人座位收口。结论是：新流程要求的 setup 正式入口已经成立，后续不应再把《七大恨》描述成“还在吃手写 mapTokens 样板开局”。 
+- 2026-06-08 23:04 +08：当前《七大恨》setup/framework 仍有一条正式裂口，不能因为 `domain.setup(['0','1'], ...)` 已能建二人核心就误判为“多剧本 setup 已完全单一真相”。现态证据是：[manifest.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/manifest.ts) 已声明 `playerOptions: [2, 3]`，[roomSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/roomSetup.ts) 已允许 `dingmao-rebellion-1627` 为 2 人，[roomSetup.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/roomSetup.test.ts) 已证明 `domain.setup` 能正确初始化二人剧本，但 [game.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/game.ts) 的 `engineConfig` 仍固定 `minPlayers/maxPlayers = 3/3`。结论是：当前裂口不在 setup builder 本身，而在 `manifest / roomSetup / engine admission` 三处准入真相还没统一。 
+- 2026-06-08 23:04 +08：guide metadata 那条所谓 compat，当前正确归因应是 **devtools 存储 contract 迁移残口**，不是《七大恨》领域对象模型要求两套正式结构并存。现态证据是：[vite.config.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/vite.config.ts) 已把工作区 metadata 正式拆到 `region-authoritative-guides.workspace.json`，保存路径也只写这个内部文件；正式 authoritative truth file 仍是 `region-authoritative-guides.json`，运行时 [mapGraph.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/ui/mapGraph.ts) 只按 array 结构读取它；load 路由当前只在 `.workspace.json` 不存在时才 fallback 兼容旧撞名文件。结论是：这条 compat 的当前角色是 legacy-read adapter，而不是继续让工作区 metadata 伪装成正式 truth file。 
+- 2026-06-08 22:57 +08：当 `resolvePendingTargetAction()` 已经拆出若干独立前置子链和 aftermath 写回链后，下一刀不该只盯 `targetKind` 或统一写回，还要继续优先找 battle 入口里那些“入口早、依赖闭合、返回形态稳定”的短路链。《七大恨》这轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已新增 `resolvePendingCavalryPlunderAction()`，正式把骑兵劫掠这条快速收口链从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 高层主流程移出，整链验证回到 `542 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，正确策略应继续优先识别这类 battle 短路链，而不是因为它们仍在 battle 入口里，就误以为只能等整段主战斗结算一起外提。 
+- 2026-06-08 22:52 +08：当《七大恨》`resolvePendingTargetAction()` 已经拆出若干独立前置子链后，真正剩下的高耦合残口往往不是某个单点判断，而是“结算后统一写回”的共享后处理链。这轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式承接 `applyPendingTargetAftermathAdjustments()`，把 source-loss 写回、避战接兵和败退接兵从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 迁出，整链验证回到 `541 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，不应只盯前半段 battle 决策分支，也要优先识别这种“多个 battle 结果共用的一段 after-effect 写回链”；它们往往是高层 resolver 持续膨胀的真正来源。 
+- 2026-06-08 22:47 +08：当《七大恨》`resolvePendingTargetAction()` 里同时混着 battle 子链和非 battle 支付/转控子链时，拆分顺序不该被“battle 更显眼”绑死。只要某条非 battle 子链已经具备单独输入、稳定副作用和单一返回面，也应优先收成 owner。这轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式承接 `resolvePendingMarriageSubjugationAction()`，把 `联姻诱降` 的支付守住/转控链从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 迁出，整链验证回到 `540 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，不应机械按“只有 battle 才算主干”推进；像支付、转控、纯 source-loss 写回这类副作用自洽链，同样是高价值的 owner 收口目标。 
+- 2026-06-08 22:43 +08：当《七大恨》`resolvePendingTargetAction()` 已经开始按子分支下沉时，下一刀最稳的不一定是“再挑一条 targetKind”，也可以是“同一 battle 入口里最先短路返回的快速收口分支”。这轮实证已经成立：当前 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 已正式承接 `resolvePendingBattleWithoutDefenders()`，把 `effectiveDefenderTroops <= 0 && battleRegionSnapshot.troops <= 0` 这条快速 resolve 从 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 移出，整链验证回到 `539 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，除了按 `targetKind` 切，也应优先识别这种“分支入口早、依赖闭合、返回形态稳定”的短路链；这类分支比直接硬拆整段主战斗结算更适合作为下一刀 owner 收口。 
+- 2026-06-08 22:39 +08：当《七大恨》当前正式 residual 已经收窄到 `resolvePendingTargetAction()` 主体，但整段 battle resolver 仍过大、依赖面仍广时，下一刀不应硬拆整个 battle 主流程；更稳的正式切口，是先把其中**自洽、非战斗、无后续 post-battle 分支**的 `siege-reinforce` resolve 单独收成 owner。这轮实证已经成立：当前新增 [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts)，正式承接 `resolvePendingSiegeReinforcementAction()` 与 `QidahenPendingTargetResolutionDependencies`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应 `if (pendingTargetAction.targetKind === 'siege-reinforce')` 内联块已删除，整链验证回到 `538 passed + eslint + typecheck`。结论是：后续继续拆 `resolvePendingTargetAction()` 时，应优先按“可独立成立的 battle/非 battle 子分支”逐刀收口，而不是一次性把整段 resolver 粗暴外提，导致依赖面失控。 
+- 2026-06-08 22:28 +08：当《七大恨》这轮 owner 收口后的静态门禁、类型门禁都已回绿，但 `node scripts/infra/run-e2e-single.mjs ci e2e/qidahen-basic-flow.e2e.ts` 仍在 isolated runtime 中途因动态 import / 前端服务异常退出失败时，不能把这个失败直接归因成业务回归。这轮实证已经成立：同一条既定 E2E 链在 `$env:NODE_OPTIONS='--max-old-space-size=8192'` 与 `$env:PW_E2E_SERVICE_REUSE='shared-single'` 的最小 fallback 下恢复 `26 passed`，并同步刷新真实截图 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) `2026-06-08 22:24:04`、[qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png) `2026-06-08 22:25:45`。结论是：当前 blocker 属于这条 E2E 启动链的运行时稳定性，而不是《七大恨》pending-action/post-battle owner 收口本身撕裂了正式流程；后续如果 isolated runtime 再抖，默认应先复用这条同链路 fallback，不应把“isolated 启动失败”误报成领域逻辑回归。 
+- 2026-06-08 22:18 +08：当正式架构审查已经把 residual 收窄到 `pendingTargetAction -> postBattleSelection -> postBattleDecision` 整簇时，继续先拆 `summary` 小 helper 只会制造浅接口；真正更稳的第一刀，是先把这条 seam 底下独立度更高的 battle state/source snapshot 层抽成单独 owner。《七大恨》这轮实证已经成立：当前已新增 [battleState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleState.ts)，正式承接 `resolvePendingBattleMode / getBattleRegionSnapshot / getNonSiegedCityActionSourceSnapshot / getFriendlyReceivingRegionSnapshot / getCityPopulationState / getPostBattlePlunderPopulationCap / getPendingActionSourceForceSnapshot / getPendingActionDefenderForceSnapshot / getEffectivePendingDefenderTroops` 等底层 helper，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除；整链验证回到 `536 passed + eslint + typecheck`。结论是：后续继续拆 pending-action/post-battle seam 时，应优先继续分 battle state/source snapshot、pure battle math 与 orchestration 三层，再审真正高层的 `pendingBattleFlow`；不要把 battle 底层快照层和战后总结层混成一条“都叫 battle helper”的泛残口。 
+- 2026-06-08 21:51 +08：当 `committed troop cap` 已经下沉到 [attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts) 之后，继续把 `dieSidesByTroopLevel / getTroopDieSides / getBattleResolutionTroopCount` 留在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)，就会让 battle helper owner 继续停在半截：一部分战斗 math 已有专用 seam，另一部分仍散落在高层 domain 主文件。这轮正式收口已经成立：当前 `attackRules.ts` 已正式承接 `getQidahenTroopDieSides()` 与 `getQidahenBattleResolutionTroopCount()`，而 `index.ts` 对应本地定义已删除。结论是：后续继续审 battle helper 时，必须先把“pure battle math”与“battle snapshot / neutral garrison / post-battle semantics”分层；前者应尽量回到 `attackRules`，后者才有资格继续留在高层 battle seam。 
+- 2026-06-08 21:46 +08：当训练 seam 已从 `index.ts` 退出后，如果后续正式架构审查还继续把 residual 写成“围城/动作总结 helper 还很多”，就已经太粗了。《七大恨》这轮补审已确认：当前 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 更具体的下一层 owner 候选，是 `buildPendingActionResolutionSummary()`、`buildPostBattleDecisionSummary()`、`buildPostBattleSelection()`、`resolvePostBattleDecision()`、`resolvePendingTargetAction()` 这一整簇 pending-action battle/post-battle 逻辑。证据是：`resolvePendingTargetAction()` 在 [index.ts:6631](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:6631) 驱动后，立刻在 [index.ts:6646](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:6646) 组合 pending-action summary；`resolvePostBattleDecision()` 在 [index.ts:6741](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:6741) 驱动后，立刻在 [index.ts:6742](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:6742) 组合 post-battle summary；而 `buildPostBattleSelection()` 又在 battle resolution 内部 4 处 outcome 分支反复回调。结论是：后续继续拆这条线时，不能先把 `summary`/`note` 小 helper 机械外提；真正应按同一个 owner 审的，是 pending action 的战斗解析、战后交互描述、战后选择结算与总结拼装整条 seam。 
+- 2026-06-08 21:45 +08：当《七大恨》里“默认承诺兵力 cap”已经下沉到 [attackRules.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/attackRules.ts)，但 `index.ts` 仍保留一层 `computeEffectiveCommittedTroops()` 本地 wrapper 去拼 `characterCommittedTroopLimit`，那这条 seam 仍然停在“owner 看起来变深了，实际 caller 还在本地重复 orchestrate” 的半迁移状态。这轮正式收口已经成立：当前 `attackRules.ts` 已新增 `computeQidahenEffectiveCommittedTroops()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 本地 wrapper 已删除；caller 现在只负责读取 `getQidahenCharacterCommittedTroopLimit()`，再把结果交给 owner 统一计算。结论是：后续继续审 battle helper 时，不能只看“有没有独立文件”，还要继续看 caller 是否仍在本地拼同一层 cap 逻辑；只要拼装逻辑还留在 caller，本质上就还没真正下沉。 
+- 2026-06-08 21:41 +08：把训练 helper 抽成独立 owner 之后，连 caller sourceId 命名也必须一起退出，否则 seam 还是会被伪装成“已分层但仍偷偷知道上层故事”。《七大恨》这轮正式重构已经成立：当前 [troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts) 的 `trainTroopsOneStepForFactionWithLimit()` 已不再硬编码 `${region.id}-xiong-tingbi`，而是改成 caller 显式传 `upgradedRegularTroopSourceId`；熊廷弼调用位点则在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 自己决定该 sourceId。结论是：后续继续审 owner 分层时，不能只查 `note/log` 文案是否还混在 helper 里，还要继续查 helper 是否偷偷写死了 caller 专属命名、id 生成或历史角色标签；这些也是 caller 语义，不能因为它们长得像技术字段就继续留在中立 owner。 
+- 2026-06-08 21:36 +08：当一组训练 helper 已经被抽成独立 owner 后，真正需要持续盯的不是“文件有没有搬出去”，而是新 owner 的合同是否还偷带 caller 语义。《七大恨》这轮正式重构已经成立：当前已新增 [troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts)，正式承接 `trainArtilleryStacksToLevel / trainSpecialTroopsOneStepForFaction / trainTroopsOneStepForFactionWithLimit`；这批 helper 的返回值已收窄成 `specialTroops / trainedCount / trainedDetails / targetLevel` 这类纯训练结果，而“轮盘征兵训练将 …”“部队经熊廷弼免费训练后提升 1 级”“毛文龙免费训练东江部队 1 次”这类 caller 级 `note` 文案已经留在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 各自调用位点。结论是：后续继续审训练链时，不能只看“有没有新文件”，还要继续检查 `troopTraining` 是否保持 caller-agnostic；只要有人把 caller 文案、日志或 sourceId 命名再塞回 helper 合同，这条 seam 就会重新变浅。 
+- 2026-06-08 21:33 +08：`trainArtilleryStacksToLevel / trainSpecialTroopsOneStepForFaction / trainTroopsOneStepForFactionWithLimit` 这组三条训练 helper 在当前代码态里已经不再是“index 本地 helper + caller 文案混写”残口，而是已落到新的 [troopTraining.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopTraining.ts) owner：helper 只返回 `specialTroops / trainedCount / trainedDetails / targetLevel`，而“轮盘征兵训练将 …”“部队经熊廷弼免费训练后提升 1 级”“毛文龙免费训练东江部队 1 次”这类 caller 级 `note` 文案已经留在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 各自调用位点。当前 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 也已补上对应静态门禁。结论是：这条 seam 的当前正式风险已从“生产实现还没拆”转成“后续是否有人把 caller 文案重新塞回 helper 合同”；再审训练链时，重点不该再是机械搬函数，而是检查 `troopTraining` 合同是否继续保持 caller-agnostic。 
+- 2026-06-08 21:26 +08：当 `selectionBuilders.ts` 和 `index.ts` 仍各自保留 `hasNonMercenaryTroops()`，而同组“正规军计数 / 炮兵计数 / 去雇佣军 / stack 相减 / 给区域加一组部队栈”逻辑也还留在 `index.ts` 时，当前真实问题已经不是“某个 helper 以后也许能复用”，而是 pure troop stack/count seam 仍在多个高层文件里分叉。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已正式承接 `hasNonMercenaryTroops / getRegularTroopCount / getArtilleryTroopCount / subtractSpecialTroopStacks / addSpecialTroopStacksToRegion / removeMercenarySpecialTroops`；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 本地重复 helper 已删除，[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义也已删除；整链验证回到 `531 passed + E2E 26 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，除了 `troopStacks` 那类构造/clamp seam 外，还要单独识别“pure stack/count arithmetic”这类对象；只要它不直接携带 caller 级 note/log/规则编排，就应优先回到 `troopCompat` 这条中立 owner。 
+- 2026-06-08 21:21 +08：当同一组训练 helper 一边已经只依赖 `region / factionId / artilleryMaxLevel / maxTroops` 这类局部参数、看起来像可独立成 seam，另一边却仍把“轮盘征兵训练”“熊廷弼免费训练”这类 caller 专属 note 文案直接写进返回的 `region.note`，那当前真实问题就不再是“要不要再搬几个 helper”，而是训练合同本身仍混着局部变换与 caller 编排语义。《七大恨》这轮正式补审已经确认：`trainArtilleryStacksToLevel / trainSpecialTroopsOneStepForFaction / trainTroopsOneStepForFactionWithLimit` 当前定义集中在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 一处，调用稳定落在轮盘征兵、毛文龙、熊廷弼 3 条写链；其中毛文龙调用位点还会在拿到 `trainingResult.region` 后再次覆写 note。结论是：后续若继续推进，正确第一刀不是把这 3 个 helper 原样机械外提，而是先把“训练结果对象”与“caller 级 note/log 文案”裁成单一真相，再决定是否抽成 `troopTraining.ts` 一类新 owner。 
+- 2026-06-08 21:14 +08：当 `index.ts` 里那组 helper 同时服务剧本 preset、训练、征召和战斗相关写链时，它们的正确 owner 不应再是高层 domain 主文件，也不应硬塞进 `troopCompat.ts`。这轮《七大恨》实证已经成立：当前已新增 [troopStacks.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopStacks.ts)，正式承接 `QIDAHEN_TROOP_KIND_LABELS / clampTroopLevel / getRegularTroopKindForFaction / buildRegularTroopStack / buildFactionTroopStack / buildArtilleryTroopStack / buildMercenaryTroopStack`；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除，定向验证回到 `531 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，不能只问“是不是 troop 相关”，而要继续区分它到底是共享 stack builder/clamp、compat piece/snapshot seam，还是高层 orchestration；前两类都应有各自 owner，只有最后一类才应留在高层 domain 文件。 
+- 2026-06-08 21:13 +08：当 `pieceId` 同步链和“给区域加一组特殊部队栈”的 merge helper 还留在 `index.ts` 时，即使它们不再直接参与规则判断，domain 主文件仍然在兼任写层工具仓库。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已继续承接 `assignPieceIdsToStacks()`、`syncRegionPieceIds()`、`syncRegionsPieceIds()` 与 `addSpecialTroopStackToRegion()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除；整链验证仍保持 `530 passed + E2E 26 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，不只要识别“纯 compat / snapshot clone”，还要继续识别“纯写层同步链”这类对象；它们同样应优先下沉到中立 owner，而不是长期混在 domain 主文件里。 
+- 2026-06-08 21:03 +08：当 `troopCompat.ts` 已经吃掉 `index.ts` 里绝大多数纯 compat 变换、排序、升级与 training-detail seam 后，后续正式架构审查如果还继续把 residual 描述成“还有 helper 没切完”，就已经不够精确了。《七大恨》这轮实证已经成立：当前 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 里更像共享工具壳的，是 `addSpecialTroopStackToRegion / getRegularTroopKindForFaction / normalizeScenarioTroopLevel / buildRegularTroopStack / buildFactionTroopStack / buildArtilleryTroopStack / buildMercenaryTroopStack / clampTroopLevel` 这一簇“部队栈构造/等级钳制” helper；而 `trainArtilleryStacksToLevel / trainSpecialTroopsOneStepForFaction / trainTroopsOneStepForFactionWithLimit` 已经直接绑定训练规则编排。结论是：后续继续推进时，正确动作不是按命名继续机械地下沉所有 troop helper，而是先把“共享构造 helper”与“高层 orchestration”分层裁清，再决定新的 owner；否则会在“高层文件继续兼任工具仓库”和“把规则编排错误地下沉成工具壳”之间来回摇摆。 
+- 2026-06-08 21:02 +08：当 `index.ts` 里的 helper 只是在做 `runtime region -> piece-safe snapshot` 克隆，而没有直接参与规则判断时，继续把这组三段留在 domain 主文件，只会让 `index.ts` 长期兼任中立 snapshot owner。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已继续承接 `cloneCityStateAsPieceSnapshot()`、`cloneSiegeStateAsPieceSnapshot()` 与 `cloneRuntimeRegionAsPieceSnapshot()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除；整链验证仍保持 `530 passed + E2E 26 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，除了“纯 compat / piece 变换”外，还应单独识别“纯 snapshot clone”这类对象；这类 helper 也应优先下沉到中立 owner，而不是长期留在 domain 主文件。 
+- 2026-06-08 20:54 +08：当训练摘要已经迁出 `buildCompatPieceTrainingDetails()` 与 `recordCompatPieceTrainingDetail()` 两个 helper 后，如果 `index.ts` 仍保留 `Map<string, { label; count; targetLevel }>` 的内联 shape 和直接 `trainedDetailEntries.set(...)`，那仍然是半迁移状态。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已新增 `QidahenCompatPieceTrainingDetailEntry` 与 `recordSpecialTroopTrainingDetail()`，并让 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 两处 `trainedDetailEntries` 和熊廷弼训练里那次 direct `set(...)` 全部改成统一吃这条 seam；正式回归仍保持 `530 passed`。结论是：后续继续审 `index.ts` 残余训练 helper 时，不应只看“有没有把 helper 名迁出去”，还要继续检查 entry shape、聚合 key 和 direct map mutation 是否仍残留在高层文件里。 
+- 2026-06-08 20:47 +08：当 `selectionBuilders.ts` 与 `index.ts` 同时需要“高等级优先 / 低等级优先”的 compat piece 排序语义时，在 `index.ts` 本地继续保留一套 `sortCompatPiecesForSelection / sortCompatPiecesForRemoval`，只会让中立 seam 再次分叉。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 的 `sortCompatPiecesForSelection()` 已扩成可选 `casualtyPriority`，并新增 `sortCompatPiecesForRemoval()` 与 `upgradeCompatPieceToLevel()`；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 仍可不传第二参继续吃既有“高等级优先、pieceOrder 正序”语义，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 原本那组本地排序/升级 helper 已删除。正式回归仍保持 `530 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，应优先看它是不是“selection / domain 都要的 compat 操作”，若是，就继续往中立 seam 收；只有当 helper 已经绑定训练日志、围城语义或 casualty 业务结果格式时，才继续留在高层 owner。 
+- 2026-06-08 20:53 +08：当 `index.ts` 里剩下的 helper 已经只负责“部队栈 -> piece snapshot”或“训练摘要字符串聚合”这类纯 compat / piece 变换时，继续把它们留在 `index.ts` 只会让 domain 文件长期兼任中立变换 owner。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已继续承接 `expandSpecialTroopStacksToPieces()`、`buildCompatPieceTrainingDetails()` 与 `recordCompatPieceTrainingDetail()`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除；整链验证仍保持 `530 passed + E2E 26 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，不能只看“是不是还跟 troop/piece 有关”，而要继续区分它到底是纯 compat / piece 变换，还是已经绑定到具体规则语义；前者仍应下沉到中立 owner，后者才有理由留在 domain 主文件。 
+- 2026-06-08 20:47 +08：当 `selectionBuilders.ts` 与 `index.ts` 同时需要“高等级优先 / 低等级优先”的 compat piece 排序语义时，在 `index.ts` 本地继续保留一套 `sortCompatPiecesForSelection / sortCompatPiecesForRemoval`，只会让中立 seam 再次分叉。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 的 `sortCompatPiecesForSelection()` 已扩成可选 `casualtyPriority`，并新增 `sortCompatPiecesForRemoval()` 与 `upgradeCompatPieceToLevel()`；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 仍可不传第二参继续吃既有“高等级优先、pieceOrder 正序”语义，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 原本那组本地排序/升级 helper 已删除。正式回归仍保持 `530 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，应优先看它是不是“selection / domain 都要的 compat 操作”，若是，就继续往中立 seam 收；只有当 helper 已经绑定训练日志、围城语义或 casualty 业务结果格式时，才继续留在高层 owner。 
+- 2026-06-08 20:43 +08：对《七大恨》这条当前主线，真正能判断“现在还能不能继续推进、能不能直接交付”的，不是某一条静态门禁短暂回绿，而是最新代码态下整条既定验证链是否同时回绿。这轮实证已经补齐：`compatSource + commands + Board + payment-selection = 530 passed`、定向 ESLint 通过、`npm run typecheck` 通过、既定 E2E `26 passed`，并且最新共享截图已刷新为 [qidahen-board-desktop-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png) 与 [qidahen-board-mobile-landscape-current.png](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png)。结论是：后续再遇到“某条旧静态断言过时”这类假红灯，必须用整链复验来判断是否真阻塞推进；只靠单测红绿或单文件 diff，不足以代表当前主线状态。 
+- 2026-06-08 20:42 +08：当 `index.ts` 里剩下的 helper 已经只是 `some/filter/collapse/clone` 这类纯 compat troop 变换时，把它们继续留在 `index.ts` 并不会增加 domain leverage，只会让中立 owner 停在半迁移状态。《七大恨》这轮实证已经成立：当前 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 已继续承接 `someCompatPieces / filterCompatPiecesToSpecialTroopStacks / collapsePiecesToSpecialTroopStacks / cloneSpecialTroopStacksAsPieces`，而 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 对应本地定义已删除；正式回归仍保持 `530 passed`。结论是：后续继续审 `index.ts` 残余 helper 时，应优先区分“纯 compat 变换”与“高层 domain 规则/派生态 helper”；前者应继续向中立 owner 收，后者才有理由留在 `index.ts`。 
+- 2026-06-08 20:37 +08：当 `troopCompat.ts` 已经成为 `selection / interaction` 的中立 helper owner 后，若 `index.ts` 里那批同类 compat troop helper 继续本地维护，正式架构审查和静态门禁就会开始和真实代码态分叉。《七大恨》这轮实证已经成立：当前 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已直接从 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts) 导入 `inferTroopKindForStack / normalizeStackPieceIds / normalizeSpecialTroopStack / expandSpecialTroopStacksToCompatPieces / collapseCompatPiecesToSpecialTroopStacks / countCompatPieces / mergeSpecialTroopStackGroupsAsPieces / getMercenaryTroopCount / getSpecialTroopCount`，而本地重复定义已删除；唯一红灯只是 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 里还有一条旧断言仍把 `index.ts` 当 owner。把这条门禁改成“`troopCompat.ts` 是 owner，`index.ts` 是 consumer”后，定向正式回归已回到 `530 passed`。结论是：后续继续补正式架构审查时，不能只盯生产实现，也要同步审静态门禁是否仍在描述旧 owner 关系；否则会出现“实现已更深，审查仍停在上一层”的假红灯。 
+- 2026-06-08 20:30 +08：当 runtime interaction 的 `sync` 已经收成 registry，但 `interaction bridge` 仍在 `interactionSystem.ts` 里手写一长串 `sourceId -> accessor -> resolver` 分支时，这条链的编排深度仍然是不对称的，后续每加一条等待态就会继续复制样板代码。《七大恨》这轮实证已经成立：当前 [interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 已新增 `QidahenInteractionResolutionHandler`、`QIDAHEN_INTERACTION_RESOLUTION_HANDLERS` 与统一的 `handled/unhandled` 结果协议；原先 11 段 `if (resolvedPayload.sourceId === ...)` 已改成内部 resolver registry 循环，`recruit / diplomacy / wheelDispatch / internalDispatch / 马市贸易 / 大汗令箭 / 驱虎吞狼 / 新年维护 / 待结算 / 战后处理` 现在都走同一层 bridge 编排协议。对应静态门禁提升到 `compatSource + Board + commands + payment-selection = 527 passed`，既定 E2E `26 passed` 继续全绿。结论是：后续继续收 runtime interaction seam 时，不只要盯 builder/sync，也要同步检查 interaction bridge 是否仍在手写 source 分支；若仍是显式长串，就还没真正数据化。 
+- 2026-06-08 20:29 +08：当 `selection` 层与 `interaction` 层都开始共用同一批 compat troop helper 时，继续把 helper 挂在 `selectionBuilders.ts` 内部，会让 `interactionBuilders.ts` 为了 troop truth 反向依赖 selection owner，模块边界仍然是浅的。《七大恨》这轮实证已经成立：当前已新增 [troopCompat.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/troopCompat.ts)，把 `expand/collapse/count/merge/formatTroopTransferDetails` 这批 compat troop helper 正式迁到中立 owner；[selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 与 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 现在都直接从这条 seam 取值。对应正式门禁现为 `compatSource + Board + commands + payment-selection = 528 passed`。结论是：后续继续清理 `single-piece truth` 时，不只要统一口径，还要继续把“多层共享但仍寄生在单个业务文件里的 helper”迁到中立 owner，否则结构还是浅的。 
+- 2026-06-08 20:18 +08：当 `selection` 层与 `interaction` 层都需要回答“这次动作里有多少骑兵/部队摘要长什么样”时，真正稳定的正式收法不是让两边各自重写一套 stack-first 小逻辑，而是让两边共用 compat piece 口径的 troop helper。《七大恨》这轮实证已经成立：当前 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 新增 `countCompatTroopsByKind()`，并把 [formatTroopTransferDetails()](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 收成 piece-first；[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 的骑兵避战/劫掠判定也已统一改吃同一条 helper。对应正式门禁现为 `compatSource + Board + commands + payment-selection = 526 passed`。结论是：后续继续清理 `single-piece truth` 时，应优先寻找“多层 helper 同时需要 troop truth，却仍各自数聚合栈”的位置，把它们继续收成共享 seam，而不是再容忍局部 stack-first 口径长期并存。 
+- 2026-06-08 20:16 +08：如果 `interaction sourceId` 只是“拆到中立 owner + TypeScript union 命名存在”，但 builder / sync / interaction bridge 仍把参数写成裸 `string`，或者 `getInteractionSourceId()` 只是把任意字符串强转成 union，那么这条 seam 依然只是静态命名变漂亮了，运行时合同并没有真正收紧。《七大恨》这轮实证已经成立：当前 [interactionSources.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSources.ts) 新增私有 `QIDAHEN_INTERACTION_SOURCE_IDS` 白名单与 `isQidahenInteractionSourceId()`，`getInteractionSourceId()` 改为真实白名单校验；[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 的 builder spec 与 adapter seam 已把 `sourceId` 收成 `QidahenInteractionSourceId`；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 的 source 顺序表和 sync helper 也都改成显式 union；[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 现在会先用 `isQidahenInteractionSourceId()` 校验 event payload / interactionData 里的 `sourceId`。同时 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 尾部对 `getInteractionSourceId` 的回流 re-export 已正式删除。对应门禁提升到 `compatSource + Board + commands + payment-selection = 524 passed`，`typecheck` 与既定 E2E `26 passed` 继续全绿。结论是：后续再审 runtime interaction source seam 时，必须同时检查 `owner`、`静态类型` 和 `运行时白名单校验` 三层；少任一层都不能算真正收口。 
+- 2026-06-08 20:13 +08：当同一文件里已经出现 compat piece helper，但相邻的摘要 helper 或交互判定 helper 仍直接消费 `specialTroops` 聚合栈时，`single-piece truth` 其实还没有真正进入共享 helper 层。《七大恨》当前实证很明确：一方面 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 已有 `expandSpecialTroopStacksToCompatPieces() / takeCommittedSpecialTroopStacks() / countCompatPieces()`，但 [formatTroopTransferDetails()](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 仍直接 `for (const stack of movedSpecialTroops)` 拼接 `stack.count / stack.level`；另一方面 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 的骑兵避战/劫掠判定仍直接对 `specialTroops` 做 `.some / .filter / .reduce`。结论是：后续正式收口不能只盯 reducer 写链和 compat 回折出口，还要继续把 `selection / interaction` 这类共享 helper 统一拉回 compat piece 或更高层 shared helper 口径，否则同一份部队真相会在不同层里继续分叉。 
+- 2026-06-08 20:06 +08：`single-piece truth` 的残口不只在正式写链，也会藏在共享摘要 helper 里。像调度/撤回/围城增援统一复用的 [formatTroopTransferDetails()](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts)，如果继续直接按 `stack.count/level` 拼接文案，就等于把聚合栈又固化成了摘要层真相。《七大恨》这轮实证是：当前已改成先走 `expandSpecialTroopStacksToCompatPieces(movedSpecialTroops)`，再按原来源聚合后输出同一文案；正式回归保持 `compatSource + Board + commands + payment-selection = 524 passed`。结论是：后续清理 `single-piece truth` 时，不只要盯 reducer 写链，也要持续把共享摘要 helper 拉回 compat piece 口径。 
+- 2026-06-08 20:05 +08：当 `interactionSelectionAccessors.ts` 同时承担 accessor owner、`QIDAHEN_*_INTERACTION_SOURCE_ID` 常量和 `getInteractionSourceId()` helper 时，builder / interactionSystem / runtime sync 仍会为了“身份常量”反向依赖 accessor owner，模块边界还是浅的。《七大恨》这轮实证已经成立：新增 [interactionSources.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSources.ts) 后，`sourceId` 常量与 interaction source 读取 helper 已正式迁到中立 owner；[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 只剩 selection snapshot / core accessor；[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts)、[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 与 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 全部改为直接从中立 owner 取 sourceId。对应门禁提升到 `compatSource + Board + commands + payment-selection = 523 passed`，`typecheck` 与既定 E2E `26 passed` 继续全绿。结论是：interaction 身份常量不该继续挂在 accessor 文件里；后续若再拆 runtime interaction 边界，应默认把 `identity owner` 和 `selection accessor owner` 分开审，而不是混成一个模块职责。 
+- 2026-06-08 19:49 +08：即使正式写链已经大多切到 compat piece，若 compat piece 的最终回折出口还要再绕一层独立 `mergeSpecialTroopStacks()`，代码里就仍然保留着一个“先回 stack-first helper 再收口”的旧抽象壳。《七大恨》这轮实证很直接：当前 [collapseCompatPiecesToSpecialTroopStacks()](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已直接完成 grouped values 的 `withTrimmedPieceIds + count>0` 收口，而 `mergeSpecialTroopStacks()` 已删除；对应静态门禁和 4 份正式回归合计 `522 passed`。结论是：`single-piece truth` 这条线不只要避免新的 direct-stack 写链，也要持续删除“compat piece 最后又回到 stack helper”的旧抽象壳。 
+- 2026-06-08 19:24 +08：当 builder 模块对外暴露的是整个 registry shape，consumer 就仍要知道 `{ sourceId, buildInteraction }` 这套内部编排协议，depth 还不够。更深的正式收法是把 registry 降回实现细节，只给外部一个更窄的 adapter seam。《七大恨》这轮实证已经成立：当前 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 新增 `QIDAHEN_RUNTIME_INTERACTION_SOURCE_IDS` 与 `buildQidahenRuntimeInteractionForSource()`，而原 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 已退回模块内部；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 只需按 sourceId 列表 reduce，并通过单一 adapter 取 interaction。对应定向门禁保持 `520 passed`。结论是：当前 external seam 比“暴露 registry 结构”更深了一层，后续若继续推进，应继续缩减单个 builder 私有 helper 的泄漏，而不是再把 registry shape 暴露回去。 
+- 2026-06-08 19:01 +08：当 builder 模块已经拆出 contract、sync 也已独立成 owner 后，若 individual builder 和 builder type 仍保持导出，它对外就还是“半公开工厂仓库”，而不是单一 registry seam。《七大恨》这轮实证很清楚：把 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 里的 `QidahenRuntimeInteractionBuilder` / `QidahenRuntimeInteractionBuilderSpec` 改成模块私有，再把 11 条 `buildQidahen...Interaction()` 全部私有化后，[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 仍能直接从 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 推导类型和编排，门禁也继续保持 `compatSource + Board + commands + payment-selection = 520 passed`，`typecheck` 与既定 E2E `26 passed` 全绿。结论是：在这种 registry-owner 结构里，稳定的 builder 暴露面不该是“registry + individual builders + builder type 都开着”，而应优先收成 registry 单出口。 
+- 2026-06-08 18:53 +08：当一个模块对外公开 11 个 builder 函数，但真实正式 consumer 只有一个 registry 使用者时，这个模块的 interface 仍然是浅的，因为调用方真正获得 leverage 的并不是逐个函数名，而是“有哪些 interaction 参与同步”这条组合清单。《七大恨》当前实证很直接：仓内正式 `./interactionBuilders` import 只剩 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts)，它真实消费的是 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` 与 callback 类型；11 个 `buildQidahen...Interaction()` 本身没有外部正式 consumer。结论是：当前下一层正式重构目标不应再盯 sync 文件，而应把 builder 模块继续收成更深的 seam，例如让 individual builder 函数退回实现细节、把真正的外部 interface 收窄到 registry 或更高层 adapter。 
+- 2026-06-08 18:53 +08：当前这些“compat”并不是同一种东西，必须拆开看。`runtime interaction` 这条 compat 本质是**半迁移 compat**：owner 已迁、consumer/import seam 或公开面还没同批迁完；而 region-mask 工具那条 compat 本质是**存储 contract compat**：内部 workspace metadata 和正式 `region-authoritative-guides.json` 用了同名文件，却不是同一 JSON 结构。前者的正式门禁应是“owner 与 consumer 一起迁，或旧入口只保留显式过渡 seam”；后者的正式门禁应是“内部工作区文件永远不复用正式 authoritative 文件名”。这两类问题若继续混说成“为什么新游戏需要兼容”，后面就会反复误判真因。 
+- 2026-06-08 18:46 +08：当 runtime interaction 已经拆出 builder 与 sync，但 builder 文件本身还继续定义 `ChoiceValue` / `InteractionDescriptor` 契约类型时，模块分层仍然是浅的，因为协议层和实现层还绑在一起。《七大恨》这轮实证很直接：把这些 `Qidahen*ChoiceValue` 与 `Qidahen*Interaction` 类型正式拆到新文件 [interactionContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionContracts.ts) 后，[interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 只剩 builder 实现与 registry，[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 继续只做 sync orchestration；对应门禁也保持 `compatSource + Board + commands + payment-selection = 519 passed`，`typecheck` 与既定 E2E `26 passed` 全绿。结论是：对这类 runtime 交互层，稳定分层不该停在“builder 移出 runtime 文件”，而应继续收成 `contract / builder-registry / sync` 三层。 
+- 2026-06-08 18:44 +08：当 sync seam 已经从 builder 文件里拆出来，但仍手写一长串 `sourceId -> builder -> nextState` 串联时，它依旧是浅接口，只是把重复从“大文件里混着放”变成了“小文件里顺序展开”。《七大恨》这轮进一步证明，更稳的正式收法是**把这层编排本身也数据驱动化**：当前 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 已新增 `QIDAHEN_RUNTIME_INTERACTION_BUILDERS` registry，下沉 `sourceId + buildInteraction` 对位；[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 现在只保留通用 `syncQidahenSpecificInteraction()` 与基于 registry 的 `reduce()`；静态门禁也已锁住 sync 文件不得再回流 11 段显式串联。验证结果提升到 `519 passed`，对应 ESLint 与 `npm run typecheck` 全绿。结论是：runtime sync seam 现在不只是模块边界更清楚，连 orchestration 也从显式流程脚本收成了 builder owner 提供的可组合数据面；下一步真正该继续看的，是 builder 模块里仍未私有化的辅助逻辑，而不是再回退到手写串联。 
+- 2026-06-08 18:33 +08：当一个 runtime 模块对外真正有 leverage 的接口已经只剩同步入口，而 builder 只被内部 orchestration 自用时，最稳的正式收法不是继续把三层职责留在一个文件里，而是**直接把 builder 整体迁到独立实现模块，让原文件只保留 sync seam**。《七大恨》这轮实证已经成立：当前已新增 [interactionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionBuilders.ts) 承接 `Qidahen...ChoiceValue / Qidahen...Interaction` 与全部 `buildQidahen...Interaction()`；新的 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 只保留 `syncQidahenSpecificInteraction()` 与 `syncQidahenRuntimeInteractionState()`，并直接组合 `interactionBuilders + interactionSelectionAccessors`；对应静态门禁也已改成锁住 builder 不得回流。验证结果回到 `517 passed`，定向 ESLint 与 `npm run typecheck` 全绿。结论是：runtime interaction seam 的第一层正式分深已经落地，后续真正该继续看的不再是旧 compat，而是 `interactionBuilders.ts` 里的契约暴露面是否还可以继续收窄。 
+- 2026-06-08 18:30 +08：当某批 interaction source type guard 在运行时只剩一个 consumer，而且这个 consumer 已经可以直接通过 `getQidahen*FromInteraction()` 自证 sourceId 时，继续把 guard 留在 `runtimeInteractions.ts` 里，只会让 builder 文件多承担一层与构建无关的公开面。《七大恨》这轮实证很直接：仓库内 `isQidahen*Interaction` 只剩 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 在用，而 Board 改成“accessor 直接读 snapshot + 只保存 interactionId”后，`runtimeInteractions.ts` 删掉整串 guard、[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 移除 barrel 出口，门禁仍保持 `compatSource + Board + commands + payment-selection = 516 passed`，`typecheck` 和既定 E2E `26 passed` 继续全绿。结论是：这类纯 source 判别职责不该继续挂在 runtime builder 文件里；后续若再审 `runtimeInteractions.ts` 公开面，应默认优先删这类 consumer 可自证的识别壳，而不是先恢复它。 
+- 2026-06-08 18:23 +08：当前《七大恨》里真正需要继续审查的，已经不是“compat 为什么还存在”，而是 **`runtimeInteractions.ts` 现在只剩单一 sync seam，却仍是浅模块**。现态证据很明确：1）旧 accessor compat 已在 `18:16` 那轮退休，[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 已成为 interaction selection accessor 的唯一正式出口；2）仓内对 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 的正式 import 现在主要只剩 [interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts:29)、[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:19) 与定向测试继续拿 `syncQidahenRuntimeInteractionState()`；3）同文件里那批 `buildQidahen...Interaction()` 当前基本只被本文件内部的 `syncQidahenRuntimeInteractionState()` 串行调用，没有外部正式 consumer；4）但文件头部仍同时定义 `Qidahen...ChoiceValue` / `Qidahen...Interaction` 契约类型，中段是 builder 实现，尾部是 sync orchestration。结论是：`runtimeInteractions.ts` 当前不是“兼容债没想好”，而是**单一 seam 已浮现，但契约层、实现层和编排层还没继续分深**；下一步正确方向应是围绕 runtime interaction contract / builder / sync 的再分层，而不是恢复旧 compat。 
+- 2026-06-08 17:37 +08：当《七大恨》这类新游戏重构已经把 accessor owner 正式迁到中立模块，且主 consumer seam 也已直连新 owner 后，剩下的 compatibility 若只体现在旧 seam 文件尾部的显式 re-export，它的本质就不再是“一开始没考虑好所以不得不长期兼容”，而是**旧入口退休前的单一过渡职责**。当前实证已经很清楚：1）[interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 已正式持有 `handLimitDiscard / recruit / diplomacy / wheelDispatch / internalDispatch / maShiTrade / khanEdict / driveTigerConsent / fortificationMaintenance / pendingTarget / postBattle` 这批 selection accessor owner；2）[commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts)、[interactionSystem.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSystem.ts) 与 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 已直接从新模块取主 accessor，`commands.test.ts` 还静态锁住 `commands.ts` 不得再 `from './runtimeInteractions'`；3）[runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts:1010) 当前只剩 `diplomacy / wheelDispatch / pendingTarget / postBattle` 这 4 条 accessor 与少量 sourceId/`...ForCore` 的显式过渡 re-export。对应门禁也已回到 `514 passed`，定向 ESLint 与 `npm run typecheck` 全绿。结论是：现在应把 compat 明确标记成“待退休旧入口”，而不是再把它描述成合理长期需求；下一步正确动作是审计全仓是否还有旧路径消费者，然后删掉这层过渡出口。 
+- 2026-06-08 17:12 +08：当《七大恨》已经把一批 accessor owner 正式迁到中立模块，但仓库里仍存在旧 consumer 入口或循环装载路径时，最稳的中间态不是把 owner 再搬回去，而是**让旧入口只保留显式 re-export 过渡 seam**。这轮实证就在 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts)：把未使用的 migrated accessor import 全删掉，只在文件尾部 `export { ... } from './interactionSelectionAccessors'`，结果是 owner 继续留在 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts)，但旧 consumer seam 不再掉到 `undefined`；对应门禁也从 `commands.test.ts 7 passed, 1 failed` 和 `payment-selection 99 failed` 恢复到 `commands 8 passed`、`payment-selection + Board + commands + compatSource = 513 passed`。这说明“显式 re-export 过渡 seam”本身是正式重构允许的中间态，但它必须被标成过渡职责，后续目标仍应是迁光 consumer、退休旧出口。 
+- 2026-06-08 17:06 +08：当《七大恨》把 `diplomacy / wheelDispatch / pendingTarget / postBattle` 这批 accessor owner 从 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 往 [interactionSelectionAccessors.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/interactionSelectionAccessors.ts) 拆时，真正危险的不只是“有没有把函数搬过去”，而是**consumer import seam 是否和 owner 一起迁移**。当前实证已经很硬：`interactionSystem.ts` 与 `index.ts` 已开始直连新模块，但 [commands.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts:4) 仍经由 `runtimeInteractions.ts` 期待拿到 `getQidahenPendingTargetActionFromInteraction / getQidahenPostBattleSelectionFromInteraction / getQidahenDiplomacySelectionFromInteraction`；结果是 `compatSource.test.ts` 还能 `8 passed`，`typecheck` 也仍通过，但 `commands.test.ts` 已在 [commands.ts:236](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commands.ts:236) 命中 `TypeError: ... is not a function`，整份 [payment-selection.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/payment-selection.test.ts) 也因此炸到 `99 failed`。结论是：后续正式审查不能只写“owner 已迁出 runtime”，还必须单列一条门禁：旧 consumer 入口必须同步切换或由旧 owner 显式 re-export 过渡，否则就是典型的“静态绿、运行时红”假收口。 
+- 2026-06-08 16:41 +08：像 `diplomacy` 这种“runtime 文件里自己比较 `interactionSelection / coreSelection`，domain 文件里又保留另一套 derived builder / resolver 链”的等待态，真正的正式收法不是继续在 runtime 里加 tie-break，而是**把 builder / derived getter / runtime getter 一起下沉成 shared seam**。这轮《七大恨》的实证是：只要 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 自己继续保留 `getQidahenDiplomacySelectionForCore()`，它就仍在维护一层“哪套 selection 更真”的局部裁定；一旦改成由 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 统一承接 `buildDiplomacySelection() + getQidahenDerivedDiplomacySelectionForCore() + getQidahenDiplomacySelectionForCore()`，再让 runtime builder、domain mirror、resolver fallback 与 Board 共用这条入口，runtime builder 自身这层双真相就能被正式消掉。更准确的后续审查口径应是：`diplomacy` 当前 residual 已从“runtime/domain 双 builder”收窄到“历史 host/mirror 仍未彻底退休”，不能再和 16:09 之前那种 blocker 描述混写。 
+- 2026-06-08 16:09 +08：当同一等待态在 `runtimeInteractions.ts` 里保留一套“`interaction snapshot` 和 `core host` 谁更新就吃谁”的比较逻辑，而在 `index.ts` 里又保留另一套正式 builder / derived getter / resolver 收口链时，这不是合理的“需要兼容旧数据”场景，而是**双 builder 真相还没收成共享 seam**。《七大恨》当前的 `diplomacy` 就是这种状态：一边是 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 的 `getQidahenDiplomacySelectionForCore()`，另一边是 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `getQidahenDerivedDiplomacySelectionForCore()`、`buildDiplomacySelection()` 与 `resolveQidahenDiplomacyInteractionChoice()`。只要这两边都在，runtime 层就还在自己做“哪套更真”的裁定，后续每补一条比较规则都只是在加 compat debt。更稳的正式收法不是继续加 `interaction vs core` tie-break，而是像 `internalDispatch` 那样把 builder/getter 下沉到共享模块，再让 runtime builder 与 domain mirror 共用同一条入口。 
+- 2026-06-08 15:54 +08：对《七大恨》这类“domain 里已经有正式 selection builder，但 runtime builder 仍在文件内直接抓 `core.*Selection`”的中间态，真正该收的不是继续把 `core` 留着当兜底，而是**把 selection builder 下沉成共享入口，再让 runtime builder 与 domain mirror 一起共用它**。这轮 `internalDispatch` 的实证是：只要 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 自己继续直读 `core.internalDispatchSelection`，它就仍在维护第二套真相；一旦改成 `interaction snapshot -> getQidahenInternalDispatchSelectionForCore()`，并让 [selectionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectionBuilders.ts) 承担共享 builder，runtime builder 自身这层分叉就能被正式消掉。更准确的后续审查口径应是：`internalDispatch` 当前 residual 已从“runtime builder 另算一套”收窄到“历史 host/mirror 仍未彻底退休”，不能再和之前同一种 blocker 描述混写。 
+- 2026-06-08 15:26 +08：正式架构审查再补到当前代码态后，`driveTigerConsent / fortificationMaintenance` 已经不该继续被算进 runtime builder 主 blocker 集合。当前 [runtimeInteractions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/runtimeInteractions.ts) 的这两条 getter 都已经先做 phase gate，再按 `core host -> interaction snapshot -> derived` 续建；我现跑的 3 条最小门禁也已证明：离开对应等待态后，仅残留 legacy host 不会再误重开 interaction，而 host 清空但 interaction 仍在时，`驱虎吞狼同意` 仍可按当前 snapshot 重建。结论是：当前 runtime builder 的主要 residual 应继续集中在 `diplomacy / internalDispatch / wheelDispatch / pendingTarget / postBattle`，而不是把这两条也继续混成同级 blocker。 
+- 2026-06-08 15:26 +08：Board 分层里的 consumer seam 也应从正式 blocker 列表里移除。当前 [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 已把 `ActionsZone` 对 `internalDispatch / maShiTrade / khanEdict / driveTigerConsent / fortificationMaintenance` 的读取收成外层显式 props，不再允许子组件内部重新 `const fooSelection = core.fooSelection`。这意味着“外层已经 interaction-first，子组件再把 selection 拉回历史宿主”这条回流点当前已被门禁锁住，后续正式架构审查不应继续把它和 domain/runtime builder seam 混在一起。 
+- 2026-06-08 15:26 +08：`single-piece truth` 这条主线也多了一条应从 blocker 列表中移除的残口：`assignPieceIdsToStacks()` compat 出口已不再 direct-stack merge。当前 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 这层在补齐缺失 `pieceIds` 后，会直接回折成 `cloneSpecialTroopStacksAsPieces(normalizedStacks)`；结合 [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 的静态门禁，这说明 `pieceId` 同步出口本身已经脱离 stack-first merge 口径。更准确的当前结论应是：`pieces` 仍未成为 primary write layer，但 compat 出口自身已经不是未收口残口。 
+- 2026-06-08 15:12 +08：等待态 consumer seam 的一个高频回流点，不是外层 Board 没有派生值，而是**外层已经算出 interaction-first / getter-derived selection，传进子组件后又在子组件体里重新 `const fooSelection = core.fooSelection`**。这样代码表面上像“displayCore 已经注入派生态”，实际 `ActionsZone` 这类子组件仍然可以偷偷把 `internalDispatch / maShiTrade / khanEdict / driveTigerConsent / fortificationMaintenance` 拉回历史宿主。更稳的正式收法是：凡是已经在 `QidahenBoard` 外层统一派生好的 selection，一律作为显式 props 继续往下传，子组件内部不得再自行从 `core` 重新取同名字段；否则 consumer seam 会在组件分层处重新分叉。 
+- 2026-06-08 14:54 +08：`wheelDispatchSelection` 这类等待态并不是“要么全部 derived，要么全部显式 host”这么简单。当前更稳的正式口径是：**只有当 selection 能从 source-anchored persisted state 唯一重建时，才允许 host-null derived path；否则就保留显式 selection host。** 这轮《七大恨》的围城续攻就是反例：一旦状态锚到 `selection.sourceRegionId`，再跑普通 [buildWheelDispatchSelectionFromWheel](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8043) 就会把 `山海关围城军` 误降成 `宁远`。现在 [shouldPersistExplicitWheelDispatchSelectionForWheelState](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8062) 已把这个判断正式写成门禁：重建结果一旦与当前 selection 不同，就说明它不是可唯一派生对象，必须保留 explicit host。这个规则比“围城续攻特判”更贴近正式架构方向，因为它锁的是可重建性，而不是某个具体玩法名。 
+- 2026-06-08 14:42 +08：`wheelDispatchSelection` 这类等待态的风险现在已经不只是“runtime builder 还读不读 `core`”，而是 **derived mirror 本身是否把不同规则语义混成了一种可重建对象**。当前 [getQidahenDerivedWheelDispatchSelectionForCore](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:5911) 在 `turnPhase='dispatch-targeting'` 且 host 为空时，会直接用 [buildWheelDispatchSelectionFromWheel](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:8043) 派生 selection；这对普通轮盘调度成立，但会把围城续攻这种本应保留 [buildSiegeContinueDispatchSelection](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts:7815) 显式语义的场景误降成普通来源区。当前最小门禁已经证明了这一点：围城续攻测试期望 `sourceRegionName='山海关围城军'`，实际退成 `宁远`，并且战后撤回原始来源区的选项一起消失。结论是：后续正式收 `wheelDispatch` 时，不能只问“能不能从 wheel phase 重建”，还必须先判断“这条等待态是否真的可由 wheel 状态唯一派生”；围城续攻显然不是。 
+- 2026-06-08 13:57 +08：像 `diplomacy / wheelDispatch / pending / postBattle` 这类等待态，如果 `runtimeInteractions.ts` 的 builder、pending choice helper、Board 面板与地图高亮各自手写一份 `core.host ?? interaction snapshot`，即使每一处都“看起来差不多”，它们也会在 phase 门禁、空值语义和残留 host 收口上逐渐漂成多套真相。更稳的收法不是继续在每个消费点修分支，而是先抽 `...ForCore(core, interaction)` 统一 accessor，把“当前 phase 是否成立”与“该等待态此刻允许从哪里续建”变成单一函数，再让 builder 与 Board 一起共用。这样后续如果继续把 host 写入口往外迁，至少 consumer/builder 两侧已经不会再各自维护第二套判定。 
+- 2026-06-08 13:34 +08：当 `runtimeInteractions.ts` 的 builder 正式加上“只有当前等待态才允许用 legacy host / interaction snapshot 续建”的 phase 门禁后，最先炸掉的往往不是正式运行时，而是旧的 `apply(core, command)` 测试夹具。原因很直接：很多老 battle/cityState 用例只手工塞了 `pendingTargetAction / postBattleSelection / diplomacySelection / wheelDispatchSelection`，却没有同时声明对应 `turnPhase`；`stateOf(core)` 如果原样走 `syncQidahenRuntimeInteractionState()`，validate 会因为 current interaction 根本没建出来而统一报 `false`。更稳的做法不是把生产 builder 再放松回 host-only，而是只在测试 helper 里把这种 `turnPhase='action-window' + 单个 legacy wait host` 的旧夹具自动补到对应 phase，再统一经 runtime mirror 重建。这样兼容债被限制在测试层，正式域逻辑仍保持“离开等待态后不得凭残留 host 重开 interaction”的不变量。 
+- 2026-06-08 13:18 +08：正式架构审查不是“文档补了就算完成”，还必须再回到**当前真实门禁**校对一次。`internalDispatch` 这轮就是例子：补审文档本身停在“builder seam 继续推进”，但真实代码态又在 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 多收了一层 getter/状态机门禁，导致稳定基线从 `483` 变成 `484 passed`。结论是：后续凡是做《七大恨》正式补审，都要把“审查结论 + 当前代码态 + 定向门禁数字”一起锁成同一个时间点；否则计划文档很容易继续引用过时基线，进而误判自己是在补审，还是已经进入下一批实现。 
+- 2026-06-08 13:07 +08：像 `internalDispatchSelection` 这种“领域层已经有派生 getter，resolver 也已支持 interaction snapshot，但 runtime interaction builder 还在直读 `core`”的中间态，真正的残口不在 reducer，而在 **runtime builder 没有跟上同一套真相入口**。只要 `buildQidahenInternalDispatchInteraction()` 继续只认 `core.internalDispatchSelection`，`syncQidahenRuntimeInteractionState()` 在 host 字段被清空时就会把等待态直接掉没，即使当前 interaction 自己已经带着完整 snapshot。更稳的收法是让 runtime builder 至少与其它 migrated waits 一样，优先吃 live `core`，但在当前等待态内允许回退读 `interactionData`；这样才能证明 builder seam 开始从 host-only 往单一真相推进。 
+- 2026-06-08 13:02 +08：对仍然 `core-hosted builder` 的等待态，不能写“先篡改 `core.pendingTargetAction / postBattleSelection`，再沿旧 interactionId 发 `SYS_INTERACTION_RESPOND`”这类测试来证明 snapshot-first。因为 pipeline 入口会先跑 `domain.normalizeRuntimeState()`，而《七大恨》当前的 `syncQidahenRuntimeInteractionState()` 会按最新 `core` 重新生成 `sys.interaction.current`；这意味着一旦你先把 host 字段改脏，运行时交互本体会先被 stale core 重建，旧 interactionId 直接失效。结论是：在 `pendingTargetAction / postBattleSelection` 的 runtime builder 仍未迁离 `core` 之前，这类“stale core 但 response 仍应吃旧 interaction snapshot”的 full-pipeline 测试本身就是错位门禁，不该继续当实现 bug 报红。 
+- 2026-06-08 12:26 +08：正式架构审查里，不能把“interaction consumer 已经迁到 `sys.interaction`”误判为“runtime builder 也已经单宿主”。这轮失败尝试已经证明：`diplomacy` 的合法最新选择在多步阶段仍可能只存在 `core.diplomacySelection`，而 `pendingTargetAction / postBattleSelection` 的 runtime builder 也仍是 core-only。结论是：后续审查与实施必须单列 `runtimeInteractions.ts` 这一层 seam，不能只看 Board / validate / resolver 已不再双读就报绿。 
+- 2026-06-08 12:26 +08：工具内部 workspace metadata 与正式 `region-authoritative-guides.json` 撞同名、却承载不同 JSON 结构，这种“需要兼容”的局面不是合理需求，而是单一真相分层失败造成的自造兼容债。真正该固定的不变量是：正式导出 truth、工作区内部 metadata、runtime-only guide candidate 必须从一开始就分独立文件名、独立 schema、独立 load 路由；不能再靠同名 JSON 后期猜结构补兼容。 
+- 2026-06-08 10:57 +08：对《七大恨》这类“等待态 builder 已共享，但 reducer/Board 仍靠 `core.*Selection != null` 判断自己是否还处在该等待态”的中间态，真正的伪收口点不在 runtime interaction，而在**字段存在性被偷偷当成状态机门禁**。只要 `REGION_SELECTED`、行动禁用态或面板渲染还拿 `core.recruitSelection / maShiTradeSelection / khanEdictSelection` 是否非空当判断，历史字段就仍然是运行时状态机的一部分，哪怕 resolver/runtime builder 已经能从派生口径工作。更稳的收法是先把“当前是否仍在该等待态”统一收成共享 getter，再用回归直接锁“手工清空历史字段后仍可点地图重建”。这样才能证明等待态判断真的已经从历史字段存在性上松开。 
+- 2026-06-08 10:57 +08：`khan-edict` 还暴露了另一种更深的真相缺口：当等待态需要保住“前一个合法来源区”时，`turnPhase + selectedActionId + 当前点到的 regionId` 仍然不够，还必须把 `preferredSourceRegionId` 这种锚点也一并纳入共享 builder。否则字段一清空，点到敌区后 builder 会合法地回退到“另一块更优蒙古控制区”，看起来像还能重建，实际上已经丢了原等待态语义。结论是：这类等待态从 `core` 宿主迁出时，不能只迁显式 choice 本体，还要一起迁它依赖的重建锚点。 
+- 2026-06-08 10:16 +08：对《七大恨》这类“等待态 consumer seam 已 interaction-first，但 runtime builder 还在直接抓 `core.*Selection`”的中间态，真正危险的不只是字段还没删，而是**同一等待态被两套 builder 同时解释**：一套在 domain `syncDerivedCoreSelectionMirrors()` 里按 `turnPhase + selectedActionId + selectedRegionId` 派生，另一套在 `runtimeInteractions.ts` 里直接把当前 `core.*Selection` 当真相。只要这两套还并存，就会出现“resolver / Board / command 门禁已经靠派生口径工作，但 runtime interaction 仍会因为历史字段为空而掉选择”的假收口。对这种问题，最稳的正式收法不是继续给 runtime 补字段兜底，而是先把 selection builder 抽成共享模块，再让 `mirror / runtime builder / resolver fallback` 共用 `FromCurrentAction + ForCore` 两层 accessor。这样当前历史字段即便还在，也只剩兼容壳，不再继续承载第二套 builder 真相。 
+- 2026-06-08 09:42 +08：等待态的正式迁移不能只盯 reducer / runtime bridge；Board 自己保留的 `core.someSelection` 读口和旧 `RESOLVE_*` 命令门禁，也是同一条历史宿主链的一部分。《七大恨》这次的 `maShiTrade / khanEdict / driveTigerConsent` 证明，哪怕 interaction seam 与 resolver-snapshot 回归都已存在，只要行动 rail 禁用态、等待态面板或旧命令 validate/reduce 还在直接碰 `core.*Selection`，这条等待态就还没真正从历史宿主上松开。对这种中间态，最稳的推进顺序是：先把 Board 残余读口改成当前 interaction/派生变量，再补一条“字段为空时旧命令仍能收口”的回归，最后再去碰写入起点。这样可以把剩余 blocker 继续收窄，而不会在写入口迁移前把 UI/旧命令一起带炸。 
+- 2026-06-08 09:24 +08：对“消费侧已 interaction-first，但写入起点还没迁离 `core`”这类剩余 blocker，最稳的收法不是继续到处判 `core.someSelection == null`，而是补一个 `ForCore` 派生 accessor，把“当前等待态是否成立”统一收成 `turnPhase + selectedRegionId + 最小规则前提` 的函数，再让人物窗口入口、`SELECT_REGION` 重建、resolver 与 Board 高亮都共用它。《七大恨》这次的 `internalDispatchSelection` 证明，只要还保留“窗口前手工写字段 + 切区时手工重写字段”两套写法，历史宿主字段就会长期留在正式链上；而一旦先收成统一派生镜像，再加一条“旧命令在字段为空时仍可只靠 interaction current 收口”的门禁，就能把这条等待态继续往单宿主推进，而不必一次性删完所有兼容字段。 
+- 2026-06-08 08:40 +08：即使 `commands.ts/validate()` 已 interaction-first，旧 `RESOLVE_*` 命令执行链也可能继续偷偷依赖 live `core` 宿主，因为 `execute()` 生成的 resolved event 默认只带 `choiceId`，真正 reduce 时仍要回头读 `core.*Selection / pendingTargetAction / postBattleSelection`。这轮《七大恨》证明，命令层的正式收口不只要校验 interaction current，还要把 interaction snapshot 一并装进 event payload，再让 reducer 优先消费 payload snapshot；否则一旦后续开始清空历史宿主字段，旧命令链会先于 UI/bridge 回归炸掉。 
+- 2026-06-08 08:01 +08：对已迁移等待态来说，只让 `validate()` 和 interaction bridge 认 `sys.interaction` 还不够；如果 Board 仍保留 `?? core.*Selection` 或按钮仍能直接 `dispatch(旧 RESOLVE_命令)`，运行时正式宿主其实还是双轨。《七大恨》这次的新年防线维护链证明，season-choice 这类看似简单的按钮等待态也必须把三层一起收紧：1）interaction accessor 支持直接从 `interactionData` 提取 snapshot；2）resolver 可直接吃 snapshot，而不是硬依赖 live `core` 字段；3）Board 不再保留 `?? core` UI fallback 和旧命令旁路。少任何一层，都还不是完整的 interaction-first seam。 
+- 2026-06-08 07:08 +08：`mapTokens` 单出口问题如果只盯“有没有重复 `syncMapTokensFromRegions(...)`”会漏掉更深的真相分叉：某条链可能已经不再手工写 `mapTokens`，但如果它绕过了统一 `syncCorePieceCollections()`，仍然会出现 `regions` 已变、`pieces` 还停在旧状态的假收口。《七大恨》这次的新年维护链就是这种情况，正确修法不是单删 `mapTokens` 字段，而是把整条结算收口重新送回 `regions -> pieces -> summary -> mapTokens` 的统一出口。 
+- 2026-06-08 07:20 +08：正式架构审查如果不按当前代码态重核，很容易把“已经被清掉的消费侧残口”和“仍然存在的写入侧残口”混成同一个 blocker。以《七大恨》当前态为例，`commands.ts/validate()` 对 migrated waits 已经是 interaction-first，这条 seam 的主要问题不再是双读 fallback，而是 `core.*Selection / pendingTargetAction / postBattleSelection` 等历史字段仍保留在 `core`，等待态生成/写入起点也尚未完全迁离 `core`。正式审查里如果继续把旧“双读”写成 blocker，会直接误导后续优先级。 
+- 2026-06-08 07:20 +08：`mapTokens` 的“单出口”不能只看主链是否已经收进 `syncCorePieceCollections()`，还要机械核对仓库里是否残留其它显式 `syncMapTokensFromRegions(...)`。当前《七大恨》就是这种情况：统一出口已经建立，但年序刷新链仍保留一处手工同步，所以正确结论只能是“主出口已收敛，但单出口尚未完成”，不能过早把这条线报绿。 
+- 2026-06-08 06:38 +08：`single-piece truth` 的残口不只会出现在“大函数直接改 `stack.count`”，也会藏在很小的规则判断里。像“有没有大明结构化部队”“当前投入里哪些是骑兵”“守方能避战撤走哪些骑兵”这类判定，只要继续直接对 `stack` 做 `some/filter`，正式语义仍然是 stack-first。对这类残口，正确收法不是补更多 `stack.troopKind` 约定，而是抽 compat piece predicate helper，让判断层也回到单对象口径。 
+- 2026-06-08 06:31 +08：`single-piece truth` 不只要求写链按 compat piece 跑，战斗主读链也不能继续把 `stack.count/level` 当正式语义源。像 `buildCombatUnits()`、`buildCommittedBattleUnits()`、`pruneUnsupportedRetreatArtillery()` 这种高频 helper，如果仍直接按 stack 读战斗单位和撤退炮兵，会把 `specialTroops` 又偷偷抬回正式规则语义层。对这类残口，正确收法是“先展开 compat piece，再按规则需要回聚合成战斗单位或摘要”，而不是继续直接消费 stack。 
+- 2026-06-08 06:31 +08：把战斗单位从 compat piece 回聚合时，真正稳定的聚合键不是 `sourceStackId`，而是规则上真正参与战斗计算的 `faction + troopKind + level`。这说明《七大恨》当前很多保留 stack 壳层的地方，本质只是兼容显示/摘要需要；一旦进入正式战斗判定，语义分组应该回到“规则属性相同的一批对象”，而不是“历史上原来塞在同一个 stack 的一批对象”。 
+- 2026-06-08 06:24 +08：`commands.ts/validate()` 这条 seam 的正式完成标准，不是“Board 和 resolver 已经从 interaction 读了，所以命令层以后再说”，而是命令门禁自身也必须不再把 migrated waits 当 `core` 真相。只有当 `validate()` 对 `pendingTargetAction / postBattleSelection / recruitSelection / diplomacySelection / driveTigerConsentSelection / fortificationMaintenanceSelection` 等等待态也只认 `state.sys.interaction?.current`，interaction 单宿主才算从 UI 一直贯通到命令入口。 
+- 2026-06-08 06:24 +08：旧测试 harness 还大量使用 `apply(core, command)`，并不等于正式代码就必须永远保留 `core.*Selection` fallback。更稳的收法是像这轮这样把测试 helper 的 `stateOf(core)` 统一改成 `syncQidahenRuntimeInteractionState()` 自动补 runtime mirror，让历史 core 夹具继续能跑，同时把“正式等待态宿主”明确钉死在 `sys.interaction`，而不是反过来让命令层长期兼容两套真相。 
+- 2026-06-08 06:24 +08：这轮验证全绿后，`commands.ts` 已不再是“interaction-first 只是 UI/bridge 表面成立”的 blocker；《七大恨》当前更真实的剩余 blocker 又收窄了一层，只剩 `pieces` 尚未提升为 primary write layer，以及少量 reducer `direct-stack` 组合残口。后续若继续推进，应优先收这两条，而不是再回头给已迁移等待态补新的 `core.*Selection` 旁路。 
+- 2026-06-08 06:10 +08：`wheelDispatchSelection` 这类等待态如果不把“我是从 wheel-dispatch / drive-tiger / khan-edict 哪条正式链来的”直接写进 selection 本体，运行时 resolver 迟早会重新去偷看 `selectedActionId`。这次 `drive-tiger` 回归炸掉的事实已经证明：只要来源真相仍挂在外层临时状态上，interaction 单宿主就只是表面成立。正确收法是让 `wheelDispatchSelection` 自带 `sourceActionId`，再让 pending-target 生成与 selection rebuild 都只认 selection 自身。 
+- 2026-06-08 06:10 +08：`recruit / diplomacy / wheelDispatch` 这三组 seam 的正式完成标准，不是“Board 上看起来已经从 interaction 读了”，而是三层必须同时同源：1）Board 不再 `interaction ?? core` 双读；2）interaction bridge 能直接从 `interactionData` 命中并把 snapshot 传给 resolver；3）resolver 就算 `core.*Selection = null` 也仍能靠 snapshot 完成收口。少任何一层，都还是半迁移。 
+- 2026-06-08 05:50 +08：`postBattleSelection` 当前最值钱的残口，不只是 Board 还在 `interaction ?? core` 双读，而是 post-battle resolver 自己也默认要求 `state.postBattleSelection` 仍留在 core 宿主上。只要 interaction bridge 的 `SYS_INTERACTION_RESOLVED` 仍把 `interactionData` 当可有可无附带物，就算 UI 已经显示的是 interaction，也还不是真正的 interaction-first。对这种 seam，正确收法是让 resolver 至少能直接吃 interaction snapshot，再把 Board 的 UI 旁路一起拔掉。 
+- 2026-06-08 05:50 +08：这轮同时也证明了另一个边界：`commands.ts/validate()` 现在之所以还不能一起硬切成 post-battle interaction-only，不是因为规则上还离不开 core，而是因为现有大量 `apply(core, RESOLVE_POST_BATTLE_DECISION)` 测试 harness 仍直接手工构造 `core.postBattleSelection`。这属于“命令/测试入口还在历史宿主上”，不等于运行时 UI/interaction bridge 也必须继续双宿主。下一步若继续推进单宿主，要先决定是迁这批 harness，还是先换下一条等待态收运行时消费链。 
+- 2026-06-08 05:24 +08：只把 battle/upkeep/training 等高频正式写链切成 piece-first 还不够；如果 reducer 内部剩余“existing + incoming” 的组合并兵分支仍直接 `mergeSpecialTroopStacks([...])`，对象级身份依然会在围城增援、非围城 cityState 并回、战后撤回围城这些边界点被重新压回聚合栈语义。对这类残口，正确修法不是继续补 `pieceIds` 断言，而是先抽统一的 `mergeSpecialTroopStackGroupsAsPieces()`，让多批来源在回到摘要层前先走一遍 compat piece 视图。 
+- 2026-06-08 05:24 +08：围城增援链最值得锁的不是 `attackerTroops +2` 这种数量结果，而是 `siegeState.attackerSpecialTroops[*].pieceIds` 必须与 `resolved.pieces[location='siege-attacker']` 完全同源。只有把这条对象级断言补上，才能证明“高第弃牌调度 / 王化贞内部调度 / 战后撤回围城”这些分支真的是把原棋子搬进围城军，而不是战后又重生了一批新 piece。 
+- 2026-06-08 05:06 +08：现在再把《七大恨》说成“对象层完全没建立，所以一律不准继续深化规则”已经不准确了。更真实的架构结论是：`QidahenPiece`、`pieceIds`、compat piece helper、`piece-derived mapTokens`、以及 `sys.interaction` mirror 这批正式骨架都已经在，项目已跨过“零对象层”的 blocker；但 `pieces` 仍由 `regions` 回构、等待态仍是 `core -> interaction mirror` 双宿主、剩余 direct-stack merge 位点仍会稀释对象级保证，所以它也绝不是“已经完成 single-piece architecture”。正确定性应是“可继续重构、但未完成收口的正式中间态”。 
+- 2026-06-08 05:06 +08：这条中间态结论会直接改变实施门禁。后续允许继续推进的，只能是两类动作：1）继续把 reducer 残余 direct-stack 组合并兵改成经由 piece 视图回折；2）继续把 `core.*Selection / pendingTargetAction / postBattleSelection` 从 history mirror 推到 `sys.interaction` 单宿主。任何“再加一条直接改 `specialTroops.count` 的新规则”“再往 `core` 塞一个等待态字段”的做法，都会逆着当前正式架构线走。 
+- 2026-06-08 04:52 +08：只把高频写链切到 compat piece 还不够；如果统一同步出口仍把 reducer 里写出来的原始 `specialTroops` 直接外露，`pieces` 依旧只是事后镜像。把 `syncCorePieceCollections()` 改成 `regions -> pieces -> regions summary`，至少能先把对外暴露的 `specialTroops` 明确降成 piece-derived 兼容汇总，为后面真正把 `pieces` 提成正式真相层打基础。
+- 2026-06-08 04:46 +08：如果 battle/upkeep/training 这些正式写链已经按 compat piece 跑，但核心计数 helper 仍直接依赖 `stack.count`，那本质上还是“双口径真相”：规则修改靠对象级，规则判断靠聚合栈。把 `getSpecialTroopCount / getMovableTroopCountForProfile` 这一层也切到 compat piece，才能避免以后出现“写完对象级状态，但读路径还在读旧聚合语义”的隐性倒挂。
+- 2026-06-08 04:41 +08：即使某条规则表面上是在“整栈删除雇佣军”，只要它仍直接按 `stack.id/label` filter 删正式写层，就还是在绕开对象级合同。更稳的口径是先把 mercenary 展开成 compat piece，删除后再回折；这样后续就算一栈里混入 fallback pieceIds、cityState 合流或多来源 stack，也不会再把“删掉的是谁”留给偶然的栈形态决定。
+- 2026-06-08 04:33 +08：像“守城避战收入城中最多 2 部队”这类规则，真正的风险不在最后 `cityState.troops = 2` 对不对，而在“收入城中的到底是哪两枚”。如果 helper 继续按 stack 半拆，`cityState.specialTroops` 与 `core.pieces[location=city]` 很容易在部分收入时失去同一身份。
+- 2026-06-08 04:33 +08：守方骑兵避战若仍靠 `filter(stack.troopKind !== 'cavalry')` 从战场扣减，只要后续引入同级多 stack、fallback pieceIds 或对象级回放，战场残军与避战撤军就会再度脱钩。对这种“整体撤走一类对象”的规则，正式口径仍应是先明确撤走的是哪批 `pieceIds`，再用 subtraction 回折。
+- 2026-06-08 04:24 +08：训练链的对象级风险比耗损链更隐蔽，因为表面上 stack `id/level/count` 会看起来“完全正确”，但只要升级是通过直接拆 `stack.count` 完成，`pieceIds` 就会在“剩余栈”和“升级后新栈”之间重叠或串号。对《七大恨》这类会反复升级/降级/迁移的棋子，训练 helper 也必须和 battle / upkeep 一样先展开 compat piece，再回折兼容栈。
+- 2026-06-08 04:24 +08：`熊廷弼` 这类“限额升级前 N 个部队”的能力，真正需要锁住的不是 summary 文案，而是“到底哪几个 piece 被升了级”。当前最稳定的正式口径是按 compat piece 原顺序逐个吃掉限额；如果这类 helper 继续停在 stack 级分裂，后续对象级回放、旋转、撤退都会出现不可解释的身份漂移。
+- 2026-06-08 04:13 +08：`single-piece truth` 的非战斗残口和 battle 残口本质一样：只要 `applyUpkeepAttritionToRegion()` 还直接按 `stack.count` 扣栈，新年/围城/城内守军耗损就会重新退回“聚合栈是真相，pieces 只是事后同步”。因此单棋子重构不能只盯 battle；年中/新年/围城这类摘要型 helper 也必须共用同一条 compat piece bridge。
+- 2026-06-08 04:13 +08：像“移除：大明低级步兵 x2、大明精锐步兵 x1”这类摘要文本，正确真相源不应是“删改完 stack 以后再比较 count 差值”，而应是“本次被选中移除的那批 piece”。只有让 `removedDetails` 直接从 removed compat pieces 分组汇总，摘要顺序和对象级删除才不会再次分叉。
+- 2026-06-08 04:03 +08：把 `specialTroops` 从正式写入层收回时，最容易漏掉的不是 battle 本身，而是“同栈内的对象顺序语义”。《七大恨》当前兼容栈存在两种不同但都真实的默认顺序：承伤/溃败沿旧 `withTrimmedPieceIds` 语义属于“裁尾”，而调兵/投入沿 `takeCommittedSpecialTroopStacks` 语义属于“取头”。如果 piece-first helper 只做一个统一排序，会立刻把对象级期望翻面。
+- 2026-06-08 04:03 +08：一旦 piece-first 写路径开始把 `pieceIds` 正式保留到 surviving stack，上层很多旧测试会因为“对象深比较要求无额外字段”而伪红。这类红灯不应通过删掉 `pieceIds` 回退实现，而应把测试改成接受正式对象字段，并在关键位点补真正依赖 `pieceIds` 的新断言。
+- 2026-06-08 03:46 +08：对《七大恨》这类“等级决定贴图朝向”的对象级显示链，`piece.id` 真相接通后，测试仍可能因为旧朝向常量而假绿。这里实际暴露出的残口是：样板开局里 `city-region-25` 与 `city-region-28-jizhen` 的等级 1 步兵已经正确渲染成 `rotationDeg: 90`，但测试仍在断言 `0`。结论是：只要把棋子显示语义从“栈图片”推进到“按单棋子等级派生 rotation”，所有直接断言 `rotationDeg` 的旧样板回归都必须逐条按真实等级复核，不能沿用旧默认角度。
+- 2026-06-08 03:36 +08：只把 `mapTokens` 的图像来源切到 `pieces` 还不够；如果 token `id` 仍按 `region + index` 生，UI/E2E 看到的依然不是稳定对象。对《七大恨》这类后续要做旋转、单体承伤、对象级断言的棋子，army token id 至少也要带上 `piece.id`，否则显示层仍在偷偷保留一套假身份。
+- 2026-06-08 03:36 +08：单棋子真相除了“迁移不重生”以外，还必须覆盖“降级不重生”。`rout` 这类规则位点若只断言 stack id 从 `lv2` 变成 `lv1`，还不能证明是同一枚棋子受损；只有把 `pieceIds` 一起锁住，才能证明这是对象级降级，不是删除旧栈再造新栈。
+- 2026-06-08 03:27 +08：`single-piece truth` 这条线真正该锁的不是“pieces 数组存在”，而是 `region.specialTroops[].pieceIds -> core.pieces[].id -> 后续迁移后的 stack.pieceIds` 必须始终是同一批身份。只要这三层里任一层还会在移动/占领后重生 id，就仍然是派生镜像，不是正式单棋子真相。
+- 2026-06-08 03:27 +08：对《七大恨》当前实现，最小但足够硬的证据位点正好有两个：`setup()` 后 stack 与 pieces 直接对齐；以及“占领空区后把已投入部队搬入目标区”时目标区继承同一批 `pieceIds`。这两个位点一前一后，刚好能拦住“只在初始化有 id、但迁移后又重生”的假收口。
+- 2026-06-08 03:05 +08：`pendingTargetAction` 和前几条 seam 的关键差异在于，它不是纯 button choice，而是“按钮语义 + 本地参数 + execute 阶段随机 battle rolls”的组合。正式迁移时不能直接把 `SYS_INTERACTION_RESPOND` 当成无状态桥接；必须在 game-specific interaction bridge 里消费 `value + mergedValue`，并利用 hook 上下文里的 `random` 重新生成 `battleRolls`，否则会把旧 `execute(..., _random)` 这条正式随机入口静默丢掉。
+- 2026-06-08 03:05 +08：对这种“旧命令仍有大量测试/调用点、但 UI 已切 interaction”的等待态，正式 seam 不能用“要么全新协议、要么一次性删旧命令”这种二选一思路。`allowedCommands: [RESOLVE_PENDING_ACTION] + 单一收口 helper` 才是当前仓库能承受的稳定过渡：interaction 负责正式等待态与 UI 契约，旧命令入口继续可跑，但两边最终都落到同一份 reducer helper。
+- 2026-06-08 03:05 +08：当 `wheelDispatchSelection -> pendingTargetAction -> postBattleSelection` 形成连续 interaction 链时，`sys.interaction.current` 在前一条选择结束后并不应该短暂清空，而会立即切到下一条等待态。这意味着旧断言里“respond 后 current 必为空”的假设已经不成立；正式真相应改为校验 `sourceId` 是否切换到了下一条 expected interaction。
+- 2026-06-08 02:41 +08：`postBattleSelection` 证明了一件事：对《七大恨》当前这批历史等待态，优先迁的不是“所有还挂在 core 上的字段”，而是“已经天然符合某一种 engine interaction 原语”的那部分。`postBattleSelection` 本身就是 button choice，因此能直接用 simple-choice 正式收掉；相反 `pendingTargetAction` 仍携带投入兵力、溃败模式、避战、劫掠来源、损伤优先级等参数，继续硬塞 simple-choice 只会制造下一层伪装抽象。
+- 2026-06-08 02:41 +08：当 reducer case 本身已经很长时，继续把 interaction bridge 的正式收口逻辑内联复制进 case 里，会迅速把“旧命令入口”和“新 interaction 入口”变成两份实现。`resolveQidahenPostBattleInteractionChoice()` 和前一轮的 `resolveQidahenWheelDispatchInteractionChoice()` 说明，正式 seam 应优先抽成“单一收口 helper”，再让旧 reducer 事件与新 bridge 共用。
+- 2026-06-08 02:26 +08：`wheelDispatchSelection` 和 `diplomacySelection / recruitSelection` 属于同一类等待态问题：只把“旧 `core.*Selection` 还能在 reducer 里重建”当成完成还不够，runtime interaction 还必须显式接上 `sourceId + allowedCommands + bridge resolver` 三件套。否则 Board 看起来像已经正式挂到 `sys.interaction`，但真正的收口仍可能分裂成“按钮走 interaction、地图走旧 reducer 分支”的半迁移状态。
+- 2026-06-08 02:26 +08：对《七大恨》这类“按钮可选、地图也可直点”的等待态，`SELECT_REGION` 不是交互外的旁路，而是 interaction 合同的一部分。`SimpleChoiceSystem` 默认门禁会先拦命令，因此凡是 UI 文案写着“可继续点地图高亮区”的等待态，都必须在 runtime interaction 侧同步声明 `allowedCommands: [SELECT_REGION]`。
+- 2026-06-08 02:26 +08：`wheelDispatchSelection` 真正需要抽成统一 helper 的不是 UI 渲染，而是“由目标 choice 进入 `pendingTargetAction`”这一步语义。只有 reducer 的 `REGION_SELECTED` 与 interaction bridge 的 `SYS_INTERACTION_RESPOND` 共用同一份 `resolveQidahenWheelDispatchInteractionChoice()`，才能避免两条入口日后漂成两套调度结算规则。
+- 2026-06-08 02:04 +08：`diplomacySelection` 在 pipeline 下点地图不生效，根因不是 reducer 没重建目标，而是 `SimpleChoiceSystem` 的白名单门禁先把 `SELECT_REGION` 拦掉了。最小 harness 已证实：`EXECUTE_WHEEL_MOVE` 后 `qidahen:diplomacy` interaction 正常生成，但接着 `SELECT_REGION city-region-22` 会直接得到 `success=false / error=请先完成当前选择 / events=[]`。
+- 2026-06-08 02:04 +08：对《七大恨》这类“simple-choice 挂起时仍允许地图继续选区”的等待态，正式真相不能只停在 `core.*Selection` 还能 rebuild；runtime interaction 还必须同步声明 `allowedCommands: [SELECT_REGION]`。否则 UI 看起来像“可继续点地图”，但 pipeline 会在 domain execute 前直接拒绝。
+- 2026-06-08 02:04 +08：`recruitSelection` 也存在同类 latent bug。虽然现有收口测试只覆盖 `SYS_INTERACTION_RESPOND`，但仓库里原本就有“进入选择面板后点逻辑区宁远/辽东/蓟镇会重建目标区”的 reducer 语义，因此把 `SELECT_REGION` 同步补进 `qidahen:recruit` 白名单是合同对齐，不是额外扩需求。
+- 七大恨主地图素材已经包含大量固定 UI：行动轮盘、检查/年中/新年框、朝鲜牌库/弃牌、纪年卡位、野战/攻城流程轨、区域名与地图边界。
+- UI 指导生成图不应重复强调这些固定内容；真正需要数字 UI 设计的是玩家当前要操作和决策的动态对象。
+- 七大恨是卡牌驱动游戏，手牌、当前焦点卡、卡牌类型/代价/效果摘要、当前目标与最小命令应比年份/阶段 chip 更重。
+- 生成图可以看，但必须先做降采样总览或局部裁图；不得直接打开超大原图。
+- `boardgame-ui-imagegen` 是通用 skill，只能写规则拆解、素材所有权、直接操控、看图自检等通用方法；七大恨专属内容必须留在 `design-system/games/qidahen.md`。
 
-## 当前结论
+## 2026-05-16 实施阶段现状审计
 
-- 可以说：战术家与咒缚海盗已完成资源上传、远端回查、真实入口双玩家 E2E，以及代表性开局展示/手牌 atlas 截图核验。
-- 可以说：旧防御链 `反制措施 / 你还嫩了点` 已在 `prebuilt + inline Vite` 绕过路径下恢复通过，且根因已锁定为 E2E 测试命令玩家写反。
-- 不能说：两个英雄已完整完成、机制已全量 L3/L4、整份 intake 当前全绿，或可以移除 `implementation_in_progress`。
+- 冻结设计入口是 `temp/qidahen-ui-imagegen-review/final-design.png`；它的稳定结构是：顶部一行薄玩家状态、左上轮盘本体为交互对象、轮盘下方唯一纪年卡位、右侧 `朝鲜牌库 + 朝鲜弃牌 + 具体动作 rail`、底部完整居中的 `牌库 + 手牌 + 弃牌` 簇。
+- `final-design.png` 当前展示的是势力行动支付态：右侧 rail 直接列出 `突袭作战 / 征召军队 / 赐印招安 / 驱虎吞狼` 叶子动作，当前选中 `赐印招安 3`，因此底部中上方才出现 `需弃 3 / 已选 0`。这符合“先选动作，再显示支付态”。
+- 当前 `src/games/qidahen/Board.tsx` 与冻结设计冲突明显：
+  - 顶部仍是通用房间栏 `对局 / 房间号 / 回合`，不是薄玩家状态带。
+  - 左侧单独做了 `当前年度 / 行动轮盘 / 势力状态` 三块面板，重复了版图已有轮盘与纪年区。
+  - 右侧做了 `待处理 / 战斗 / 行动记录` 三连板，属于冻结设计明确禁止的大侧栏。
+  - 底部仍是“手牌 + 右侧确认/取消 + 单独结束行动按钮”的旧操作台，而不是完整居中的 `牌库 + 手牌 + 弃牌` 簇。
+  - 中央地图上还有“拖拽地图 · 滚轮/双指缩放 · 点击区域”提示和区域详情按钮，这些都不是冻结设计主态的一部分。
+- 当前 `src/games/qidahen/domain/index.ts` 里的占位数据也偏旧流程：年份写成 `崇祯十六年 1643`，动作轮盘位置、手牌标题和日志内容都不是本轮冻结设计展示的七大恨 UI 切片；要同步改成更贴近规则和设计的占位态。
+- `src/games/qidahen/criticalImageResolver.ts` 目前仍把三张 `player-aid-*` 科技/军备进度表作为 warm 图预载，但素材清单已标明它们更适合作为参考素材，不是当前主界面必须资源。若本轮 UI 不使用，应考虑移出主加载链。
+- `src/games/summonerwars/ui/MapContainer.tsx` 与共享 `MobileBoardShell.tsx` 提供了成熟的横屏地图壳、缩放/拖拽与移动端主舞台处理方式，可借鉴其“主舞台不被 HUD 挤碎”的结构，但七大恨不能照搬其侧栏/HUD 组织。
 
-## 后续风险
+## 2026-05-16 实施阶段首轮落地结论
 
-- 若要继续推进“官方双面咒缚海盗完整实现”，下一步不再是补人类面底图本身，而是证明 normal 面是否会在真实流程中自动切换，以及它是否存在与咒缚面不同的完整技能语义；当前只能证明两张底图都已接入运行时，不能把这一步外推成双面机制已完成。
-- 多人目标、隐藏信息查看、手牌弃置、跨玩家双步选择、目标页奖励骰选择、深海潜行完整攻击入口、作战室奖励骰展示、干票大的奖励骰分支、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、4 人无情诅咒火药桶链、诅咒卡牌选择链、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪追加直伤链、诅咒金币维持阶段掉血链与火药桶维持阶段爆炸链已有代表性 E2E 证据；后续若对外承诺“完全可玩”，剩余工作重点已从“继续证明这些代表链是否能跑通”转为“把其余对象逐项补到真实入口交互链、或在审计中登记共享链合法复用/明确冻结”。
-- 当前不能把 `无情诅咒` 单链通过外推成“所有 4 人 DiceThrone online readiness 都已稳定”。现阶段更准确的口径是：这条新英雄 intake 的高风险 4 人链已收口，但通用多人房冷启动与 frontend runtime 仍有明显波动；历史上的整份 intake `26 passed` 只是一轮旧通过记录，最新整跑已被环境不稳定取代，更不能外推成多人基线已做完重复 soak。
-- 当前也不能把“旧防御链已恢复”外推成“整份 intake 当前全绿”。更准确的口径是：这条旧红业务链已经恢复，剩余阻塞回到对象级彻底审计与 runtime 稳定性，而不是 `反制措施 / 你还嫩了点` 仍未实现。
-- 对战术家防御响应牌，真实入口策略现在已经同时被 `伴装撤退 / 脱战` 验证：应复用正式攻击链，让响应窗口自然打开，再证明从真实手牌打出目标响应牌；不应继续沿用 direct state injection 把房间瞬间切到 `defensiveRoll` 的捷径。
-- 战术家对象级高优先缺口现已清空：`紧缚` 已由 `64-66` 真实入口链补齐，`伴装撤退` 已由 `67-68` 真实防御响应手牌链补齐，`脱战` 已由 `69-71` 真实防御响应手牌链补齐。当前剩余风险回到整批 intake 级别的“复杂交互 UI 尚未逐项 L3/L4 全覆盖”，不是这三个对象仍未落地。
-- `虚张声势` 先前不能保守外推的原因已经解除：它带独立 `rollDie` 三分支入口，但现在已补到真实手牌打出 + 奖励骰覆盖层 + 弯刀分支收口的对象级 direct E2E，因此不再属于“只能 shared 外推”的对象。
-- `诱饵` 先前不能保守外推的原因现在也已经解除：它带 attack modifier 时序 hook，但最新 direct E2E 已证明 Guest 先通过真实 `soul-stab-3` 攻击入口建立攻击链，再从真实手牌打出 `诱饵` 后，会在仍处于 `offensiveRoll` 时把 Host HP 直接从 `50 -> 48`，同时源卡进入弃牌堆、Guest CP 从 `5 -> 4`；这条链同时证明它当前不会走 `pendingAttack.bonusDamage / attackModifierBonusDamage` 写入。
-- `军刀突刺 II` 先前不能保守外推的原因现在也已经解除：它既带升级替换，又带私有 `customActionId=zhanshujia-bind-if-three-kind`，不能只靠基础 `军刀突刺` 或 mechanics test 外推；最新 direct E2E 已证明升级后的真实玩家板槽位、伤害提升与三同值紧缚写入会在同一条攻击链里闭环。
-- `地毯式轰炸 II` 先前也不能完全保守外推：虽然旗帜分支只由共享 `grantToken + drawCard` 组成，但它仍挂在升级后的复合能力 `variants` 上，不能只用 4 人主分支或 L2 配置映射证明；最新 direct E2E 已证明升级后的真实玩家板槽位、无攻击链的即时结算形态，以及 `抽 2` 的手牌落点都在同一条真实链里闭环。
-- 因此，对象级高价值独立缺口已清空。`implementation_in_progress` 仍不能移除，因为剩余门禁已经回到 shared / representative 条目的逐对象合法复用登记、复杂交互 L3/L4 覆盖与 runtime 稳定性，而不是还有哪张单卡完全缺首条 direct E2E。
-- 对咒缚海盗 human 面而言，这个结论现在也成立得更彻底：`弯刀突刺 / 做好标记 / human-cursed / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠` 9 个对象都已拿到独立真实入口 direct E2E；当前真正剩余的是逐对象更高层级 completion audit、双面对象级重审计，以及整份 intake 的 soak 稳定性。
-- `点燃炸药 / 判决指令 / 无情劫掠` 这 3 个 human 面对象现在也不应继续挂在“独立 L2/L3 证据待补”的旧口径里：它们已经分别拿到 L2 机制证据，且 `无情劫掠` 已补独立 direct E2E，当前更准确的剩余项是对象级 completion audit、其余 human 面对象独立 L3/L4 与整批 soak 稳定性。
-- 2026-06-04 进一步新增事实：`点燃炸药` 与 `判决指令` 的独立真实入口 direct E2E 也已补齐，旧口径里“这两条仍待补 direct E2E”已经失效。当前 human 面高优先剩余项不再是这 3 个对象的首条真实入口缺失，而是人类面板新增真相源下的逐槽 completion audit、其余对象独立 L3/L4 与双面整体重审计。
-- 2026-06-04 进一步新增事实：咒缚海盗双面图面合同现在不再只写了 human 面。`咒缚海盗真相源表.md` 与 `咒缚海盗录入核对.md` 已同时显式记录咒缚面 / 人类面两套逐槽合同，因此“逐槽合同缺失”已不再是当前剩余项；真实剩余项已收窄为双面对象级重审计、remaining representative 条目的逐对象 L3/L4 与 soak 稳定性。
-- 2026-06-04 进一步新增事实：`死亡吐息` 现已拿到独立真实入口 direct E2E。旧 blocker 不是业务链未实现，而是测试夹具把“小顺子”误写成 `[1,2,3,5,6]` 非顺子盘面；修正为 `[1,2,3,4,6]` 后，定点命令已 `1 passed`，并收口到 `Host HP 50 -> 43 / Host powderKeg 1 / Host wither 1`。因此它不应再保留为“待 CPU 回落补证”的 representative 条目。
-- completion audit 最新结论之一是：对象审计文档里的 `grantStatus` 特例合同不应再保留 `L2 partial`。当前机制测试已经覆盖诅咒金币拒绝/上限/不可移除、火药桶维持与重叠、凋零减攻击伤害、休战阻伤与清理、紧缚 `1CP` 门禁与清理、锁定写入；对象矩阵与截图链也已经为这批状态消费者补齐 representative L3 的逐对象登记。
-- completion audit 最新结论之二是：对象审计文档里的 `奖励骰/随机` 合同也不应再保留 `L2 partial`。当前机制测试已覆盖作战室、死亡印记、战争贩子、战争贩子 II 勋章分支、干票大的、抽筋剥皮、啜呼、瞭望台三分支；现有定点 E2E 与截图链则已经补齐作战室、占得上风、起锚、战争贩子、战争贩子 II、干票大的、抽筋剥皮、死亡印记、啜呼、瞭望台、虚张声势的 representative L3。
-- 因此，`对象级 L3/L4 | partial` 的真实原因也已经变化：它不再主要表示“还有单对象首条 direct E2E 缺失”或“shared / representative 尚未登记”，而是表示“仍有一批对象只达到 representative L3、尚未逐对象独立补满 L3/L4”，再加上整份 intake runtime 仍缺少稳定重复通过/soak 证据。
-- runtime 侧的最新事实也已经收窄：
-  - `Online match: Can start a game successfully` 已在当前 isolated single-worker runtime 下通过。
-  - `Online 4-player room: create claim-seat join and start successfully` 也已通过。
-  - 所以现在的运行风险不再是“简单进房/开局稳定失败”，而是长跑 soak、更多对象和整份 intake 的连续稳定性。
-- 进一步分层后，剩余 `representative L3` 里最需要优先补独立 `L4` 的，是带明显交互窗/多步选择/跨阶段链的对象：
-  - 战术优势
-  - 反制措施 / 你还嫩了点
-  - 无情诅咒
-  - 深海潜行
-  - 瞭望台
-  - 啜呼
+- 当前 worktree 原本缺失 `public/assets/i18n/zh-CN/qidahen/**`，是页面图片全 404 的直接根因；不是 `OptimizedImage` 逻辑错误。本轮已同步资源并补命名别名，相关 URL 已返回 200。
+- 首轮实现后的桌面截图表明：结构方向基本正确，顶部薄状态、唯一纪年、右侧朝鲜区 + 叶子动作 rail、底部完整手牌簇都已落位。
+- 但截图同时证明它还不能宣称“贴近冻结稿完成”：
+  - 原始版图里左上说明字、左下 `七大恨 / KV`、右侧旧槽位和底部旧流程杂讯仍在；
+  - 手机横屏仍偏“桌面缩略版”，不够贴屏；
+  - 底部手牌仍是占位卡面，不是真实卡图/atlas 裁切结果。
+- 因此下一轮实施优先级应是：
+  - 卡面真相源接线
+  - 横屏壳层收口
+  - 原始版图噪声区进一步弱化
 
-# Findings: TDD 行为 seam 与测试结构重构（2026-05-16）
+## 2026-05-17 基础可玩链路重做结论
 
-## 已确认事实
+- 本轮确认旧左上轮盘问题的本质不是“某张图需要再修”，而是运行时把生成稿思路带进了前端实现：用模糊补丁遮真实主地图，再叠一个假轮盘组件，缺少规则驱动的基础流程验证。
+- 已删除运行时 `left-top-clean-patch-v2` 依赖，轮盘交互改为真实主地图轮盘上的前端 overlay。当前截图不再出现旧补丁图造成的糊层边界。
+- 底部牌区已改成 `牌库 | 横向手牌 | 弃牌`，手牌不再扇形排列；这比继续调 `HandFan` 更符合本轮布局合同。
+- 新增基础流程 E2E 证明：点击轮盘移动选择后，轮盘摘要和蒙古/后金手牌数变化；点击具体势力行动后，支付态按动作代价更新。
+- `create-new-game` skill 已补通用门禁：新游戏 Board/UI 初版不能只靠静态布局和 testid 收口，必须至少有一条基础玩家流程 E2E 证明玩家能操作且状态会变。
 
-- `expansionBaseAbilities.test.ts` 仍是典型的“按扩展来源聚合”的旧入口。里面原本把 `10th Anniversary`、Cthulhu 扩展、AL9000、Pretty Pretty 以及多条 stale regression 混在一起。现在至少 `10th Anniversary` 这块已经拆成 [bases/anniversary-bases.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/anniversary-bases.test.ts:1>)，说明这个旧壳还能继续按基地簇收缩，而不是只能整体保留。
-- `scoreBases-auto-continue.test.ts` 里还有一层明显的混层：它原本不仅测 `scoreBases` 自动推进，还塞了多条与 AI 候选枚举相关的通用交互测试。现在已经把 `optional multi / ordered multi / required empty / exact multi` 这 5 条迁到 [ai-interaction-choice-enumeration.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts:1>)，因此 `scoreBases-auto-continue.test.ts` 不再承担泛 AI 交互枚举职责。
-- `afterscoring-window-skip-base-clear.test.ts` 不是一个自然的单文件边界。里面原本混着 `base_greenhouse` / `base_tortuga` 的重复 happy-path、`base_the_mothership` / `base_pirate_cove` 的延迟清场链、`base_temple_of_goju_tiebreak` 的 finalize 语义，以及一组 `scoreBases` 收尾门禁。现在已经收成 [scoreBases-deferred-finalization.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-deferred-finalization.test.ts:1>)，并删掉了重复 happy-path 入口，说明这次处理的是系统最终化边界，不是改标题。
-- `afterScoring-rescoring.test.ts` 里那两条 `smashup_immediate_extra_minion` 其实不是 afterScoring 响应窗口合同，它们属于“立即额外打出”这条系统入口。把它们继续放在 afterScoring 响应窗口文件里，会让后续维护者误以为它们和 `smashup_reaction_choose` 是同一层边界。现在这两条已经并回 `abilities/immediate-extra-action.test.ts`，说明应该按“额外打出类型”而不是按“出现时机”来归类。
-- `turnTransitionInteractionBug.test.ts` 这次被拆开后，边界更清楚了：它原来混着两条不同的系统链，`startTurn/base_rlyeh` 和 `scoreBases/base_tortuga`。前者锁的是回合切换时 `base_rlyeh` prompt 能否被响应并恢复到 `playCards`，后者锁的是计分阶段 `base_tortuga afterScoring` 是否会暂停链路、等待亚军响应并在响应后恢复。把这两条链混在一份 `bug` 文件里，只会让后续继续把不同系统边界写进同一个入口。
-- `multi-base-afterscoring-bug.test.ts` 这轮确认了一个很容易误判的边界：名字里带 `bug`，内容却不是一次性复现壳。它真正锁的是 `scoreBases` 的多基地恢复语义: 当前基地进入 `afterScoring / Me First!` 交互后，后续基地计分不能丢；复杂链路里也不能重复计分、重复清场或提前结束。所以它的正确收口不是删，也不是并回派系，而是改成明确系统入口 `scoreBases-multi-base-chain-recovery.test.ts`。
-- `igor-rlyeh-double-trigger.test.ts` 也不是 `destroy-trigger-prompt-coexistence.test.ts` 的重复。后者锁的是“基地 prompt 与 Igor prompt 并存时不要伪装成双触发”，而这份锁的是更具体的 `base_rlyeh onTurnStart -> MINION_DESTROYED -> frankenstein_igor onDestroy` 真实链幂等性。对这类文件，真正的不变量是“某条系统链只触发一次”，不是“某次 bug 名字保留下来”。
-- `elder-things-ongoing.test.ts` 这轮证明了“ongoing”标签本身不能当边界。它内部同时放了：
-  - `elder_thing_dunwich_horror` 附着行动
-  - `elder_thing_the_price_of_power` 计分 special
-  - `elder_thing_elder_thing` 保护与 onPlay prompt
-  - `elder_thing_shoggoth` 打出限制与 onPlay
-  这些都不是跨派系共享机制，而是远古之物自己的一组能力合同。
-- 所以保留 `elder-things.test.ts` + `elder-things-ongoing.test.ts` 这对双入口，只会继续制造“远古之物的行为到底写回哪份”的维护分裂。正确动作是并回单一派系入口，而不是再给 ongoing 壳找理由。
-- `onDestroyAbilities.test.ts` 同样不是一个自然边界。它把：
-  - 共享 `onDestroy` 基础设施
-  - `robot_nukebot`
-  - `trickster_gremlin`
-  - `trickster_gremlin_pod`
-  - `bear_cavalry_general_ivan` 的弱 destroy 保护回归
-  全部挂在一个旧入口里。
-- 更糟的是，`General Ivan destroy 保护` 那两条里有一条实际上依赖非法目标 payload，另一条断言的也不是“没有 Ivan 时应被消灭”，而是“因为 Bear Necessities 本就不能打自己人，所以不会消灭”。这种测试不是稳定行为合同，继续机械搬运只会把噪声扩散到新文件里。
-- 这轮把 `onDestroy` 共享基础设施拆到 `abilities/on-destroy-mechanics.test.ts`，把机器人/诡术师 onDestroy 行为并回各自专项，并让 `onDestroyAbilities.test.ts` 退场，说明正确方向不是“给旧根目录文件换个名字”，而是：
-  - 共享机制留机制专项
-  - 派系行为回派系专项
-  - 弱测试直接淘汰，不为了凑数量继续保留假合同
-- `baseFactionOngoing.test.ts` 里的 `机器人 ongoing` 与 `巫师 ongoing` 也证明了另一个根因：旧大文件经常自带本地夹具前提。比如机器人 `Archive` 测试原先默认带着“机器人派系 + 非空牌库”，一旦并回 `robots.test.ts` 改用通用 helper，就会合法地抽不到牌。这个红灯不是实现坏了，而是旧大文件把业务前提藏在自己的状态工厂里。
-- 所以这类迁移不能只复制 `describe`。必须同时把旧文件里真正有意义的前提显式化，比如：
-  - `Archive` 相关测试需要显式给对应玩家提供牌库
-  - 需要依赖派系判定的测试要显式声明机器人派系，而不是吃 helper 默认的 `pirates/aliens`
-- 机器人这段迁移后，`baseFactionOngoing` 里还暴露出明显的历史复制噪声：`robot_microbot_archive` 的 Alpha/remote/enemy/self 几组测试在旧文件里重复了一遍。并回专项时只保留唯一语义版本，能直接减少未来“同一行为修两处”的测试碎裂。
-- `expansionOngoing.test.ts` 这轮也证明了“只把测试从一个文件搬到另一个文件”还不够。真正应该固化的是**每个派系只有一个自然入口**。只要 `Steampunks / Innsmouth / Miskatonic` 这种已经能按派系命名的簇还挂在扩展包聚合文件里，后续改实现时就还会出现“我该改专项文件还是改聚合文件”的双维护分裂。
-- 这次把 `Steampunks` 并回既有专项、再为 `Innsmouth` 与 `Miskatonic` 补建专项文件，最后删除 `expansionOngoing.test.ts`，说明正确的收口动作不是保留一个越来越短的旧壳，而是在每个尾项都有明确归宿后直接让旧壳退场。
-- `killer_plant_water_lily` 这轮把一个很典型的测试脆弱点钉死了：旧 `expansionOngoing.test.ts` 自带的本地 `makeState` 默认塞了牌库，所以“控制者回合开始抽 1 牌”在旧文件里天然满足前提；迁到共享 `helpers.makeState` 后，默认牌库是空的，测试却没有显式声明“牌库里有可抽卡”，于是看起来像实现坏了，实际是测试夹具把业务前提藏在旧 helper 里。
-- 这类问题不能只通过“把 expected 改绿”处理。真正该固化的不变量是：**凡是验证 draw/draw-if-available 这类行为的测试，都要显式写出牌库/弃牌堆前提，而不是依赖某个局部工厂函数的隐式默认值。** 这正是用户抱怨“每次重构都要改测试”的根因之一。
-- `ninja_hidden_ninja consumesNormalLimit` 这条红灯再次证明：fake prompt 夹具不是“更快的 seam”，而是另一套不受系统合同保护的伪实现。`SimpleChoiceSystem` 现在依赖 runtime prompt 上的 `availableOptions` 语义，手工塞一个只带 `options` / `data.sourceId` 的 current prompt，会在 `respondToPrompt(...)` 时直接炸在系统层。对这类业务交互，最稳的入口仍是能力 executor / 真实命令链产出的 prompt。
-- `trickster_brownie` 和 Hill 这两条一起说明，`control_change` 类 affect 没有单一“永远正确”的 controller 口径：Hill 需要看到变更后的 `toControllerId` 才能判断“现在由谁控制”；Brownie 在“被对手卡牌影响”这个语义上又需要知道受害方是谁，因此 `control_change` 分支应优先消费原始事件里的 `fromControllerId`。正确做法不是回滚全局 affect 修复，而是让具体能力在需要时读取 `affectEvent`。
-- 本地测试 helper 也要对齐真实 reducer。`triggerBrownieFromEvent(...)` 之前只把 `buildAffectRecords(...)` 的结果直接灌进 `fireTriggers(...)`，漏掉了 reducer 实际会传的 `affectEvent` 与 `affectBatchTargets`，导致测试无法覆盖到基于原始影响事件的 trigger 语义。这类 helper 如果比生产链少半截上下文，就会把“实现红灯”和“测试夹具失真”混在一起。
-- `bear_cavalry_bear_rides_you_pod_choose_base` 可以完全走公开行为链：`PLAY_ACTION` 已经会产出选随从 prompt，响应后真实进入选基地 prompt，再响应后真实进入 `choose_suppress`。这说明这条旧 `getInteractionHandler(...)` 并不是系统合同，而只是历史上为了方便断言候选列表留下的直调 seam。
-- `abilities/bear-cavalry.test.ts` 剩下的两条 `bear_cavalry_superiority_pod_talent` 更像低层合同：它们锁的是 runtime prompt 解析后的 `protect/draw` 分支如何写 metadata 与产出抽牌，而不是普通用户链。和 `bear_rides_you_pod_choose_base` 不同，这两条不值得为了“继续降命中数”硬迁。
-- `smashup.smoke.test.ts` 的 `major_ursa` 迁移证明普通业务三段链可以完全收回 prompt facade：`USE_TALENT` 先产出 `choose_destination`，选基地后真实进入 `smashup_reaction_choose`，响应后继续出现 `choose_minion`，最后再出现 `choose_base`。这条链不需要再靠 handler 直调和 continuationContext 手填来“补齐”。
-- 这也说明 `respondToPromptOption(...)` 的 `finalState` 是当前测试 seam 的权威入口；只要实现没坏，测试不应再自己调用 `postProcessSystemEvents(...)` 或手工接管 prompt 队列。
-- `pirates-ongoing.test.ts` 里“已取得触发资格后，即使先被其他 afterScoring 效果移走，仍可继续结算自己的移动”这一类场景，不属于“当前已经有 prompt 的普通 UI 链”，而是显式在测 afterScoring reaction session 的恢复与继续结算。这里用 `resolveSmashUpReactionChoice(...)` 比用 `getInteractionHandler('smashup_reaction_choose')` 更合适，因为它锁的是 reaction session 语义，不是 handler registry 出口。
-- `smashup.smoke.test.ts` 里 Hill give-minion -> counter 这条链暴露出一个真实实现问题，而不只是测试 seam 问题：旧测试手工 `resolveAffectedMinions(...)` 会把 `onMinionAffected` trigger 再排一次队，掩盖了真实命令链第一次消费 trigger 时其实拿到的是“控制权变更前”的随从快照。
-- `MINION_CONTROL_CHANGED` 的 affect 记录如果直接从变更前 `core` 取 `triggerMinion`，像 `ignobles_the_hill_that_strolls` 这种要求“现在由别人控制、但仍归你所有”的 `onMinionAffected(control_change)` 会被错误短路。这里真正该固化的合同是：`control_change` 类 affect trigger 看到的控制者必须是 `toControllerId`，否则公开行为测试只能继续靠手工补状态兜底。
-- 对这类真实反应链测试，`respondToPromptOption(...)` 的 `finalState` 已经包含后处理、trigger queue 与 reaction prompt。测试再自己 `resolveAffectedMinions(...)` / `maybeResolveReactionQueue(...)`，不是“更完整”，而是在重新实现一遍 pipeline，极易制造重复 trigger 或错过真实实现 bug。
-- 用户质疑“这么快，还是只改表象”成立为质量风险：仅拆文件名不能解决“重构实现就要跟着改测试”的根因。
-- 2026-05-16 13:48 复核：`ninja-hidden-ninja-interaction-bug.test.ts` 的价值不在删掉 `it.skip`，而在把旧复现恢复成真实命令入口。测试通过 `PLAY_ACTION` 进入 Me First! 响应窗口，断言业务 prompt 和候选手牌随从，而不是继续读 `sys.interaction.current`。
-- `wizard-archmage-zombie-interaction.test.ts` 进一步证明 skip 恢复不能只“取消 skip”：旧文件的 `autoRespond` 和 console 输出本身没有稳定测试价值；恢复后的不变量是“僵尸行动卡额外打出的弃牌堆大法师仍触发 onMinionPlayed 后处理，并给出额外行动”。这类断言能覆盖真实行为，且不会绑定 InteractionSystem 外壳。
-- `vampireBuffetE2E.test.ts` 是“不要为了数字复活重复测试”的例子：它是整文件 skip，且旧注释表明历史口径不再适用；当前行为已由 `newOngoingAbilities.test.ts` 和 `abilities/giant-ants.test.ts` 覆盖。删除这种入口比把过期测试改成 facade 更符合 TDD，因为它减少错误测试资产，而不是复制重复断言。
-- `wizard-archmage-debug.test.ts` 与 `steampunk-aggromotive-bug.test.ts` 说明 skip 治理还有一种正确动作：删除已被可运行测试取代的调试/旧错误描述文件。TDD 资产应该是当前可执行的不变量测试，不是历史 console 追踪或“当前错误行为”说明。
-- `igor-ondestroy-idempotency.test.ts` 的九命之屋块恢复后，skip 治理从“删重复”推进到“补组合不变量”：九命之屋 pendingSave 与 Igor onDestroy 的交互不应靠裸 `current/queue/data.sourceId` 统计，而应通过 `getPromptsBySourceId` 表达“有拯救 prompt、没有 Igor prompt、消灭事件暂缓”。
-- `interactionChainE2E.test.ts` 的 Alien Probe 红灯说明旧 skipped 用例可能在保护已经废弃的规则文本。恢复时必须回到当前卡牌规则和现有活跃测试，而不是为了保留旧标题继续测试牌库顶/底这种过期行为。
-- 对 skip 历史文件的处理标准进一步确认：只有能恢复为“真实命令/触发入口 + prompt facade + 最终行为断言”的，才算有效恢复；单纯把内部字段替换成 helper、或者移除 skip 而不跑通，不算 TDD seam 治理。
-- 当前根因是旧 SmashUp 交互测试直接依赖 InteractionSystem 内部结构：`sys.interaction`、`prompt.data.options`、手写 `SYS_INTERACTION_RESPOND`。
-- 已有正确方向是把高频交互测试收进 `helpers.ts` 的 prompt facade，再由结构门禁阻止新迁移文件回退到裸内部访问。
-- UI/手动验证测试也不应直读 current：如果目标是“出现 simple choice prompt”，就走 `getSimpleChoicePrompt`，不要用 `asSimpleChoice(sys.interaction.current)`。
-- Igor 系列回归证明真正的 seam 不只是 source/options：prompt 所属玩家、响应命令、current+queue 查询都应通过 facade 表达，否则 InteractionSystem 改外壳时仍会批量碎裂。
-- 可选 prompt 读取也需要 facade：`getOptionalSimpleChoicePrompt` 让响应窗口这类“可能没有当前 prompt”的测试不用继续绑定 `sys.interaction?.current` 存储位置。
-- 统一反应选择器测试应直接使用 `getReactionPrompt`；同样的 `smashup_reaction_choose` source 断言不应在每个 reaction queue 文件里重复展开内部 interaction 结构。
-- GameTestRunner 命令数组里的响应命令也要有 facade：`respondCommand` 集中系统响应命令形状，避免每个测试手写 `SYS_INTERACTION_RESPOND`。
-- 动态候选和多选约束同样属于测试 seam：`optionsGenerator`、`multi.min`、handler data 不能继续散落在业务测试里裸读 `interaction.data`，否则 prompt 外壳一改仍会批量碎裂。
-- 旧扫描表达式没有覆盖所有坏味道：`state.sys.interaction?.current`、`interaction.data.title` 这类隐式裸读也会造成实现结构重构时测试跟改，迁移时应主动一并收敛。
-- 不能把“降命中数”本身当目标：skipped 文件、注释中的历史实现条件、以及明确测系统内部 halt 合同的 setup，不应为了数字好看而改成 facade。
-- `runtimeEvidenceIssues.test.ts` 暴露出更深一层问题：有些旧测试不仅耦合内部结构，还存在“跑到某一步但没有证明标题声称的行为”的弱断言。Fledgling Vampire POD 用例标题要求 bury prompt，但旧代码只 `void getInteractionsFromMS`；补强后必须穿过统一 reaction prompt 才能证明真正的 bury source prompt。
-- `talentAbilities.test.ts` 说明“只验证 prompt 结构”的老测试也应走 facade：测试可以继续断言对手数量、取消选项与 Servitor 行动卡选择 prompt，但不需要知道 prompt 来自 `sys.interaction`、也不需要直接 import `INTERACTION_COMMANDS`。
-- `baseAbilityIntegrationE2E.test.ts` 说明“完整链路测试”也不等于可以裸读 InteractionSystem；它要证明的是从真实 trigger 路径最终出现某个业务 prompt，适合用 `getPromptsBySourceId` / `getSimpleChoicePrompt` 表达，而不是手工拼 current + queue。
+## 2026-05-17 轮盘本体交互返工结论
 
-## 本轮结论
+- 用户指出的错误成立：上一版 E2E 点击的是轮盘旁三枚按钮，不是轮盘本体或目标格，因此不能作为 UI 收口证据。
+- 正确交互拆解：以当前轮盘格为起点，`免费走 1 / 一名对手抽 2 走 2 / 所有对手抽 2 走 3` 应转化为轮盘本体上的 `+1/+2/+3` 目标格；点击目标格才触发对应 `SELECT_WHEEL_MOVE`。
+- 已删除 `qidahen-wheel-move-choices` 旁路按钮板；单元测试新增禁止该链路回流的静态门禁，E2E 新增 `toHaveCount(0)` 断言。
+- 当前截图显示轮盘本体直接承载目标格和摘要，未再出现独立三按钮菜单；这只能证明本轮旁路链路被纠正，仍不等于完整七大恨规则 UI 已完成。
+- 手牌区上一版“横排即可”的判断也过低。当前已补实体 dock、轻重叠、hover/selected/payable/disabled 态，使底部牌区更接近冻结稿与成熟卡牌游戏的操作密度。
 
-- `ninja-hidden-ninja-interaction-bug-repro.test.ts` 证明了“复现壳”和“现行回归”要按不变量去重，而不是按文件名区分。它虽然用了另一套 `GameTestRunner + makeTestCore` 壳，但锁的仍然只是：Me First! 窗口打出 `ninja_hidden_ninja` 后要创建 prompt，并记录 `specialLimitUsed`。这个不变量已经被 `ninja-hidden-ninja-interaction-bug.test.ts` 承接，所以正确动作是删壳，不是并回 `abilities/ninjas.test.ts` 再制造第三入口。
-- `pirate-cove-repeat-trigger-bug.test.ts` 则说明“看起来像 bug 修复文件”也可能只是基地专项的第二入口。它前两条都只是 `base_pirate_cove afterScoring` prompt 合同：非冠军有随从时生成 1 个 prompt、冠军不生成 prompt；这些已被 `baseAbilitiesPrompt.test.ts` 覆盖。第三条还是空 `TODO`，不能当有效资产。对这类文件，继续保留只会制造“好像还多一层保护”的假象。
-- 这两份删除共同强化了一条筛选标准：**如果旧文件不提供新的公开行为矩阵、只是在另一套夹具里重复现有合同，或者只剩空 TODO / 注释意图，就应直接删壳。** 否则后续重构时仍会出现“行为没变，但两三个地方都得同步修测试”的重复维护。
-- `mothership-scout-afterscore-bug.test.ts` 则落在另一类。它虽然名字像 bug 壳，但内容并不是“再测一次母舰 prompt 存在”这么浅，而是在锁 afterScoring 多段链的顺序不变量：基地 prompt 先结算，`alien_scout_return` / `pirate_first_mate_choose_base` 后续继续弹出，整条链收口前不提前清场换基地。这类用例不能因为文件名不好看就删；正确动作是把它改名成系统合同入口，而不是和前两份一样直接删除。
-- `ninja-special-limit-fix.test.ts` 进一步确认：**元数据合同也有归宿，不该单独漂在根目录。** 这 4 条用例锁的都是忍者特殊能力自己的 `specialLimitGroup` 声明和“不能再用共享 `ninja_special`”这一不变量，真实边界就在 `abilities/ninjas.test.ts` 的 `specialLimitGroup` 段，而不是另开一个根目录 `*-fix.test.ts`。
-- `alien-probe-bug.test.ts` 则是典型的“派系行为被历史 bug 名字掩盖”。它测的是 `alien_probe` 的公开行为矩阵：单对手直接看手牌并选随从、多对手先选对手、非随从卡禁用、无随从时直接结束、选中后对手弃牌。这个边界显然属于 `abilities/aliens.test.ts`，继续留根目录只会让“外星人能力改动到底去哪里补测试”再次分裂成两处。
-- 这两份收口共同强化了一个标准：**如果文件锁的是某张卡/某派系的公开行为，不管名字里叫 bug 还是 fix，都优先并回该派系专项；只有在它锁的是跨卡牌/跨基地/跨交互阶段的系统顺序不变量时，才保留为独立系统合同文件。**
-- `afterscoring-timing-verification.test.ts` 说明另一种应该直接删除的债：**占位壳**。文件名看起来像“时序验证”，实际内容只有 `expect(true).toBe(true)`，没有任何行为断言。像这种文件即使 CI 绿，也不能算覆盖；真正的时序不变量必须在已有真实链路测试里找到对应证据，否则就是假资产。
-- `pirate-cove-chain-fix.test.ts` 则再次证明，系统合同应该按“阶段边界”命名，而不是沿用某次 bug 名称。它真正锁的是 `scoreBases -> Me First! 窗口 -> afterScoring` 的门禁链：窗口打开时阻止 ADVANCE_PHASE、无人可响应时自动关闭、所有人 pass 后进入 afterScoring 交互。这个边界属于阶段/窗口系统，不属于海盗湾业务本身，所以正确动作不是删，也不是并回派系，而是改名成正式系统入口。
+## 2026-05-17 完成审计后的严格收口结论
 
-- `madness-mechanics.test.ts` 证明了另一种高维护成本旧壳：它看起来像“疯狂机制”文件，实际上混着两类完全不同的不变量。
-  - 一类是跨派系共享合同：`cthulhu_whispers_in_darkness`、`miskatonic_those_meddling_kids_pod`、`innsmouth_recruitment` 这几个能力都在锁“离阶段额外行动/额外随从必须标成 `playTiming: immediate`”。
-  - 另一类是派系自己的业务行为：`cthulhu_seal_is_broken`、`cthulhu_corruption`、`miskatonic_psychological_profiling`、`miskatonic_mandatory_reading`、`innsmouth_recruitment` 的真实出牌/结算链。
-  把这两类混在一个旧入口里，后续改实现时就会再次遇到“这是共享机制，还是某个派系自己的行为”的归属摇摆。
-- 这批正确的收口方式已经验证成立：共享时序合同单列成 `abilities/extra-play-timing-mechanics.test.ts`，派系行为并回 `abilities/cthulhu.test.ts`、`abilities/miskatonic.test.ts`、`abilities/innsmouth.test.ts`。这不是按文件名分类，而是按“不变量属于共享机制还是属于某个业务对象”分类。
-- `miskatonic_lost_knowledge` 也说明迁移时不能为了“全搬完”重复制造合同。ongoing talent 的 `TALENT_USED payload`、`TURN_STARTED reset` 之类基础设施，`talent-mechanics.test.ts` 已经有共享覆盖；专项文件只该保留它自己的行为入口，比如“抽疯狂卡 + 获得额外随从额度”。否则同一个底层合同又会分散到共享文件和派系文件里双维护。
-- 这批 seam 收口不是停在“把旧 helper 名字换一遍”。迁移后的关键链路已经改成：
-  - 真实 `PLAY_ACTION` / `runCommand(...)`
-  - 真实 prompt facade：`getSimpleChoicePrompt`、`getPromptOption`、`respondToPromptOption(s)`
-  - 真实 `finalState` / 业务事件断言
-  而不是 `postProcessSystemEvents(...)`、`lastMatchState`、局部 fake state 壳、手工后处理。
-- 本批最后一个红灯也再次说明“测试碎裂”和“实现坏了”要区分开：`cthulhu_corruption` 的失败不是行为回归，而是新测试里用到了 facade helper `getPromptOption(...)`，但文件顶部漏了 import。补齐 import 后，`cthulhu.test.ts` 单文件 `60 passed`，组合 `extra-play-timing-mechanics.test.ts + cthulhu.test.ts + miskatonic.test.ts + innsmouth.test.ts` 为 `110 passed`。这类收口值得记账，因为它说明拆层方案本身已经稳定，剩下的是普通接线错误，不是设计方向错了。
+- 第二轮审计发现：把 `+1/+2/+3` 做成轮盘上的圆形 HTML button 仍不够严格，视觉上仍像按钮，而不是点击轮盘格。
+- 已改为 SVG 扇区热区：目标元素是 `WheelMoveTarget` 生成的 `<g>`，内部为轮盘目标扇区 path 和短标记；E2E 断言目标元素 tagName 为 `g`，不再是 `button`。
+- 当前轮盘交互的可见对象是目标扇区高亮，而不是旁边菜单或圆形按钮。点击 `+3` 扇区后仍触发 `SELECT_WHEEL_MOVE` 并更新对手手牌数。
+- 对照大杀四方手牌区后提炼出的原则是：牌库/弃牌和手牌要形成一个物理操作簇，卡牌要有实体层级与状态反馈，而不是简单列表。当前七大恨已把底部区域合并为统一 dock，并给手牌补了 hover、选中、支付、禁用状态。
+- 仍需明确边界：本轮完成的是轮盘移动入口和基础手牌 dock 质感；完整拖拽出牌、移动端横屏最终适配、所有七大恨规则交互不在这条 E2E 的完成范围内。
 
-- `baseFactionOngoing.test.ts` 这轮不是只把一条定点红灯改绿，而是把两层 seam 都收正了：`ninja_hidden_ninja` 改回真实 special executor，Brownie helper 改回真实 reducer 触发形状；因此整文件 81 条现在一起通过，说明不是“改了一个假 prompt 又留下别的伪入口”。
-- `bear_cavalry.test.ts` 已继续减少 1 条普通业务 direct handler 命中；全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 统计从 `44` 降到 `43`。留下来的 `superiority_pod_talent`、`temple-firstmate-afterscore`、`titan_penguins_emperor_penguin_play` 更像应显式保留或谨慎审视的低层合同，而不是同类业务链债务。
-- Skeletons 迁移不是表象整理：新文件 19 个用例全部通过，并且没有禁用模式或裸内部交互访问。
-- `newFactionAbilities.test.ts` 已进一步收缩；当前旧大文件只剩 Samurai 与巨蚁相关测试债务。
-- `npm run test:structure` 已证明本轮新增/迁出文件符合结构门禁；旧大文件债务仍按 warning 保留，后续迁出时继续消化。
-- 本轮 Igor 小批次不是只改标线：`igor-big-gulp-two-igors.test.ts`、`igor-double-trigger-bug.test.ts`、`igor-two-igors-one-destroyed.test.ts` 已把 prompt source/options/player、响应命令与 current+queue 查询收进 helper；3 个目标文件禁用模式 0 命中，组合 4 tests passed。
-- `response-window-skip.test.ts` 进一步说明系统边界测试也可以降耦合：cancel 行为通过 `cancelPrompt` 表达，Hidden Ninja 子交互通过 prompt facade 读取，单文件 5 tests passed。
-- `reactionQueueOnTurnStart.test.ts` 已把 onTurnStart/onTurnEnd 统一反应 prompt 断言收进 `getReactionPrompt`；单文件 2 tests passed。
-- `robot-hoverbot-chain.test.ts` 已把命令数组响应和 live prompt options 读取收进 facade；单文件 3 tests passed。
-- `robotAbilities.test.ts` 已把 Microbot Reclaimer 的 source、multi、动态 options、handler data 与 optionIds 响应收进 facade；单文件 11 tests passed，目标文件禁用模式 0 命中。
-- `trickster-mark-of-sleep-self-target.test.ts` 已把 Mark of Sleep / POD 的 title/options/source 与响应命令收进 facade；单文件 9 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
-- `afterscoring-window-skip-base-clear.test.ts` 已把可迁移的 reaction prompt / immediate extra prompt / no prompt 断言收进 facade；单文件 15 tests passed。该文件剩余内部 current 命中属于系统状态构造，不把这类 setup 伪装成业务 seam。
-- `alien-scout-pod-afterscore.test.ts` 已把 afterScoring prompt 的 current+queue 查询、option 查找和 handler data 传递收进 facade；单文件 4 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
-- `expansionAbilities.test.ts` 不是只改表象：Bear Hug 的选择/响应、Ghost/Commission/Scrap Diving 的 prompt 出现性都从本地 current+queue 拼接、`.data.sourceId`、`.data.options`、手写系统响应命令迁到 prompt facade；单文件 32 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
-- `reactionQueueBaseAbilities.test.ts` 继续证明底层 reaction queue 测试也能降耦合：统一反应 prompt、options、handler data、无 prompt、真实基地 prompt 都通过 facade 表达；单文件 6 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
-- `frankensteinFaq.test.ts` 把 FAQ 行为链的两段 prompt 和响应命令收进 facade；测试仍验证 Blitzed 可移除 0 个指示物再消灭 0 战力随从、It’s Alive! 跳过后不遗留 pending 效果，但不再绑定 InteractionSystem 字段路径。
-- `reactionQueueBaseOptionalClockwise.test.ts` 说明 optional reaction 的 clockwise 轮转也不需要裸读 current：当前玩家、候选项、pass 后再轮转、旧 handler data 和清 current 过渡都可通过 facade/helper 表达。
-- `pirate-broadside-self-target.test.ts` 仍验证 Broadside 可选择自己/对手、基地过滤，以及 Saucy Wench 可消灭弱随从；但所有 prompt source/title/options 和响应命令都已收进 facade，不再裸读 `current.data`。
-- `wildlifePreserveProtection.test.ts` 不是只改描述：Seeing Stars 与 Unfathomable Goals 仍验证野生保护区会过滤/阻止行动卡效果，但测试不再依赖 prompt 存在于 `sys.interaction.current`、候选存在于 `data.options`、响应命令叫 `SYS_INTERACTION_RESPOND`；目标文件旧模式扫描 0 命中。
-- `buryEngine.test.ts` 是更直接的 seam 收敛：埋葬翻开窗口仍验证按 cardUid 选择埋葬牌并执行翻开效果，但测试不再知道系统响应命令常量或候选列表的内部字段路径。
-- `pirate-cove-repeat-trigger-bug.test.ts` 清的是主扫描之外的真实耦合：手工 current+queue 统计与 `(interaction.data as any).sourceId` 被收进 `getPromptsBySourceId`，冠军无交互断言改为同时覆盖 current + queue 的 `expectNoPrompt`。
-- `pirate-king-afterscoring-window.test.ts` 说明完整系统管线测试也不需要 import `InteractionSystem`：prompt 获取、选项查找、响应命令都可通过 facade 表达。
-- `promptE2E.test.ts` 是主债务下降批次：多个 prompt E2E 仍验证同一行为，但不再逐个知道 `interaction.current.data.sourceId` 或 current+queue 的拼接方式。
-- `afterScoring-rescoring.test.ts` 说明本轮不是只改断言文字：可选当前 prompt 读取和测试 setup 中放入 current prompt 的动作都通过 facade/helper 表达，目标文件对主禁用模式与隐式 `interaction.data` 裸读 0 命中，8 个真实链路用例仍通过。
-- `baseAbilities.test.ts` 的 ability runtime 测试现在仍验证 prompt continuation 可恢复 sequence，但断言不再靠 `asSimpleChoice(sys.interaction.current)` 和裸 `current.data`；这属于测试接口 seam，而不是改名。
-- `bigGulpDroneIntercept.test.ts` 清掉的是主计数之外的真实坏味道：直接读 `interaction.data.sourceId/options` 和手写 `INTERACTION_COMMANDS.RESPOND`。该文件仍覆盖 Big Gulp 选 Igor、Drone 防消灭、最终无 prompt，但测试只通过 facade 表达交互。
-- `robot-hoverbot-stable.test.ts` 迁移时暴露 helper 覆盖差异：`getPromptOptionById` 不适合历史 `data.options` 形状，`getPromptOption` 才是更稳的行为 seam。保留对 Hoverbot id 稳定性的专项断言是合理的，因为该文件本来就在锁“不应生成 timestamp id”的回归。
-- `cthulhu-chosen-display-mode.test.ts` 保留了神选者 UI bug 的行为证据：prompt 必须是 generic/button、选项不能带 `baseDefId`、多实例 queued prompt 也必须 button；这些断言现在通过 prompt facade 和 sourceId 查询表达，不再绑定 current/queue 的内部字段路径。
-- `robot-hoverbot-button-disabled.test.ts` 说明 Hoverbot 的“按钮可点” bug 也可以通过测试接口 seam 验证：title/source/options/optionsGenerator 不再从 `interaction.data` 裸读，而是通过 prompt facade 和 `getPromptHandlerData` 表达，行为断言仍保持原样。
-- `duplicateInteractionRespond.test.ts` 是系统边界回归，不应隐藏“重复同一命令对象”的测试意图；本轮只把系统响应命令常量收进 `respondCommand`，保留二次提交被拒绝和无二次副作用的行为断言。
-- `specialInteractionChain.test.ts` 的剩余耦合只在本地响应 helper；迁移到 `respondCommand` 后，24 条特殊交互代表链仍通过，同时业务测试不再知道系统响应命令常量。
-- `runtimeEvidenceIssues.test.ts` 不是简单改字段：Fledgling Vampire POD 复现现在明确证明 Big Gulp 目标选择后进入 `smashup_reaction_choose`，再选择 Fledgling 反应并出现 `vampire_fledgling_vampire_pod_bury_source`；Mi-go POD 复现也通过 prompt facade 读取 decline/counter prompt 和候选 minion，而不是裸读 `data.options`。
-- `talentAbilities.test.ts` 已把 Cthulhu Star Spawn / Servitor 的 prompt 结构断言和取消响应收进 prompt/command facade；20 条天赋测试仍通过，目标文件扩展扫描 0 命中。
-- `baseAbilityIntegrationE2E.test.ts` 已把基地能力完整链路中的 prompt existence、reaction queue 响应和 Shoggoth -> Asylum 二段 prompt 候选读取收进 facade；23 条集成链路测试仍通过，目标文件扩展扫描 0 命中。
-- `meFirst.test.ts` 说明响应窗口测试的根因不是文件名，而是行为端口过浅：Me First! 的 pass、打出 special、Mandatory Reading 二段选择和窗口恢复，现在都通过 `respondCommand`、`getSimpleChoicePrompt`、`getPromptOption` 与 `expectNoPrompt` 表达；测试仍验证响应窗口推进和最终状态，但不再绑定 `INTERACTION_COMMANDS.RESPOND`、`asSimpleChoice(current)` 或 options 存储位置。
-- `madnessPromptAbilities.test.ts` 说明旧 handler 桥接也能降耦合：测试仍可直接调用能力 handler 验证事件与最终状态，但 prompt source、候选 options、multi、handler data 与 respond command 需要经 facade 传递；这样后续 InteractionSystem 外壳重构时，不必逐个修改 Madness / Book of Iter / Thing on the Doorstep 的业务测试体。
-- `madnessAbilities.test.ts` 进一步确认“执行器直接调用 + handler 直接调用”的老测试不必继续散落 current/queue 结构：用本地过渡 helper 取最近 prompt、再通过共享 facade 读 source/options/handler data，可以保留旧测试的诊断价值，同时把实现存储形状隔离到一处。
-- `architecture-duplicate-processing.test.ts` 不是只改表象：测试仍验证 Big Gulp 消灭 Igor 后 `MINION_DESTROYED` 只后处理一次、Igor onDestroy 只出现一次，但测试体不再知道 active prompt 存在 `sys.interaction.current`、候选在 `data.options`、玩家响应命令叫 `INTERACTION_COMMANDS.RESPOND`，也不再手工拼 current+queue 统计业务 prompt。
-- `baseFactionOngoing.test.ts` 继续证明“不是只改表象”：同一文件里仍验证 Infiltrate 目标过滤、Hidden Ninja 手牌候选、Acolyte 打出 Gunfighter 后接 Cowboy 决斗、Flame Trap POD 双实例上下文、Mark of Sleep 玩家目标 prompt；变化是测试通过 facade 表达这些业务 prompt，而不是暴露 current/queue/data/options/RESPOND 存储细节。
-- `reactionQueueDestroyerId.test.ts` 说明 reaction queue 的测试 seam 不应停在“能拿到第一个 interaction”：业务断言是“选择某个 sourceDefId 的 reaction 后出现对应 POD play prompt，并保留 displayCard 预览上下文”。这可以通过 `getReactionPromptOptionBySourceDefId`、`getPromptsBySourceId` 与 prompt handler-data facade 表达，不需要测试体直接遍历 `data.options` 或 `data.sourceId`。
-- `zombieWizardAbilities.test.ts` 说明大批“创建 Prompt”类能力测试的维护成本来自重复绑定 current/data/sourceId；迁移后仍验证僵尸和巫师能力会创建正确业务 prompt、displayCard、以及 handler 直接消费后产生正确事件，但不再把 InteractionSystem 存储路径写进每个用例。
-- `cthulhuExpansionAbilities.test.ts` 进一步说明多步 handler 桥接测试也可以降耦合：Miskatonic 的“选择基地 -> 逐张行动卡选择”仍验证逐步 detach，但选择 prompt 通过 sourceId facade 查询；Recruit by Force / It Begins Again 仍验证 min=0、skip、handler 事件和状态结果，但不再从 `current.data.options/multi` 裸读。
-- `giantAntsPod.test.ts` 说明 POD 链路不是只能通过内部 current/options 验证：Ant Drone 防消灭、Ant Soldier 转移指示物、Gimme the Prize 双目标、We Will Rock You 基地选择、Who Wants to Live Forever 检索，都可以通过 prompt source、业务 option 和 `respondToPrompt` 表达。
-- `zombieInteractionChain.test.ts` 是对“只改表象”的直接校验：该文件原本 22 条僵尸交互链全部通过 `asSimpleChoice(sys.interaction.current)`、裸 `choice.options` 和手写系统响应命令推进；迁移后仍跑同样 22 条行为链，但测试体不再知道 InteractionSystem 的 current 存储位置或 RESPOND 常量。
-- 新增 `respondOptionsCommand` 是必要的接口补洞：多选 prompt 的空选择同样应通过 command facade 表达，否则单选响应被收口后，多选测试仍会因为命令 payload 结构重构而碎裂。
-- `elderThingsPod.test.ts` 说明 POD 回归里的 displayCard、对手响应、二段 destroy prompt、基地选择 prompt、可选跳过 prompt 都可以通过同一组 facade 表达；迁移后仍验证 Shoggoth 可消灭大于 6 力量随从、Price of Power 运行时基地选择和 Spreading Horror 拒绝路径，但不再绑定 current/data/options/RESPOND 存储形状。
-- `multi-base-afterscoring-bug.test.ts` 说明复杂 afterScoring 链路也不能例外：多基地计分、海盗王移动、托尔图加、海盗大副、便衣忍者、四人压力链都能用“当前业务 prompt + 业务 option + respondCommand”表达；测试仍覆盖重复计分防线，但不再把 `asSimpleChoice(current)` 和 `SYS_INTERACTION_RESPOND` 写进每个步骤。
-- `factionAbilities.test.ts` 这轮不是只改表象：Trickster / Pirates / Ninjas / Dinosaurs / Robots / Wizards / immediate extra action / Aliens 的旧测试仍验证原业务行为，但 prompt 获取、候选读取、动态 optionsGenerator、响应命令与无 prompt 断言已经统一走 prompt facade；目标文件旧内部耦合扫描 0 命中，46 条用例仍通过。
-- 清理 warning 时短暂删错 `matchState` 也反向证明了门禁价值：facade 迁移后测试失败点会集中在“是否有公开行为状态可传入 facade”，而不是到处追 `current.data` 字段；这类失败必须按语义恢复状态输入，不能为了 eslint 把行为断言削掉。
-- `shayuFactionAbilities.test.ts` 进一步暴露出另一类高维护成本结构：**按扩展包/组合包命名的多派系混装文件**。它虽然不是 `new*` / `misc` 这种显眼垃圾桶，但把鲨鱼、龙卷风、神话希腊三个完全独立的派系行为挂在一个 shayu 入口下，本质上仍然在冲淡行为边界。
-- `shayuComprehensiveBehavior.test.ts` 说明“综合审计补充”也不能天然豁免结构约束。文件里的 14 条用例可以清晰归到 3 个派系行为入口和 3 个基地行为入口，并不存在一个必须跨派系共住的共享机制；继续保留 shayu 入口，只会让后续补测试的人继续在“该进哪儿”上摇摆。
-- 这两类 shayu 文件的正确收口方式已经验证出来：
-  - 派系行为归位到 `abilities/sharks.test.ts`、`abilities/tornados.test.ts`、`abilities/mythic-greeks.test.ts`
-  - 基地行为归位到 `bases/the-deep-base.test.ts`、`bases/trailer-park-base.test.ts`、`bases/tornado-alley-base.test.ts`
-  - 删除 `shayuFactionAbilities.test.ts` 与 `shayuComprehensiveBehavior.test.ts` 旧入口，避免形成“已拆一部分，但旧入口还在”的双入口债务
-- 这次收口不是只换文件名。验证证据是：新增归宿组合 `vitest` 为 `35 passed`，eslint 0 errors，`npm run test:structure -- --all` OK，且两个旧入口 `Test-Path` 都为 `False`。也就是说，现在不是“旧文件还在，只是又复制了一份新文件”，而是行为边界和入口层级一起收正了。
-- `expansionAbilities.test.ts` 的 `Ghost` 段则暴露了另一种双入口债务：同一派系已经有 `abilities/ghosts.test.ts`，却还在扩展包聚合文件里保留完整业务簇。这样的结构会让后续改幽灵时再次面临“该改专项文件还是改扩展包文件”的分裂入口。
-- 这类双入口的正确处理不是新旧并存，而是把完整业务簇彻底并到现有专项入口，再让聚合文件只保留还没有自然归宿的扩展派系。`Ghost` 这步已经验证成立：`abilities/ghosts.test.ts` 现在承接 `ghost_ghost / ghost_seance / ghost_shady_deal / ghost_ghostly_arrival`，而 `expansionAbilities.test.ts` 不再混放幽灵业务测试。
-- 这一步的有效证据也不是“文件更整洁了”，而是：
-  - `npx vitest run abilities/ghosts.test.ts expansionAbilities.test.ts` -> `40 passed`
-  - `npx eslint ...` -> `0 errors`
-  - `npm run test:structure -- --all` -> `OK`
-  - `expansionAbilities.test.ts` 中已无 `Ghost` 业务 describe，只剩文件头注释曾经提到幽灵，随后也已同步清理
+## 2026-05-14 通用 skill 边界重构
 
-## 后续风险
+已按 `docs/ai-rules/ui-ux.md` 重新梳理通用 skill 的写法：
 
-- 迁完 Skeletons / Giant Ants / Samurai 还不能宣称整个测试框架重构完成；旧大文件退出新增入口只解决了一类测试垃圾桶问题。
-- 其他历史 SmashUp 测试仍含旧内部耦合；如果不继续迁，它们仍会在后续 InteractionSystem 重构时制造同步改测试成本。
-- 当前全 `src/games/smashup/__tests__` 仍有残余历史债务；虽然后续重点已不再是 shayu 入口，但仍要继续按小批次推进，不把局部 facade 收敛误报成整体完成。
+- 主界面只展示当前用户马上能决策或执行的元素，不把流程说明、实现分层或装饰标签放进主 UI。
+- 视觉态与触发方式分离：可用、armed、可落点、目标高亮来自规则/领域语义；拖拽、上滑、点击 armed 只是触发方式。
+- 商业卡牌/地图游戏默认直接操控优先：卡牌、单位、区域本身承担入口，按钮只作为 fallback 或防误触确认。
+- 素材已有信息拥有主出处，但地图会缩放/拖拽时，必要运行时摘要可以补偿离屏；摘要不能变成第二套完整系统。
+- 通用 skill 已扫描确认不包含七大恨专属词；七大恨的行动轮盘、朝鲜槽、纪年槽、手牌位置等保留在游戏专属规范。
 
-## 2026-05-16 15:20 补充发现：`newOngoingAbilities` 清空不是改表象
+## 2026-05-14 v12 降级与 v13 规则拆解修正
 
-- `newOngoingAbilities.test.ts` 的剩余债务不能只按“describe 移到别的文件”处理。真正的风险在于其中多条基地交互测试直接调用 `getInteractionHandler()`，一旦 handler 签名、InteractionSystem 响应事件外壳或 prompt 存储方式调整，测试会跟着批量碎裂。
-- 本批迁出把这些用例改成“业务触发 -> prompt facade 选 option -> `respondToPrompt` -> 断言目标业务事件”。这暴露了旧 handler 裸测隐藏的问题：完整响应链会包含系统事件，测试不应锁 `events.length === 1` 或 `events[0]`，而应查找 `CARDS_DISCARDED` / `MINION_DESTROYED` / `MINION_RETURNED` 这类业务事件。
-- `newOngoingAbilities.test.ts` 已删除后，`test:structure` warning 从两个旧泛名文件降到只剩 `newBaseAbilities.test.ts`。这说明 ongoing 垃圾桶已实际退出，但不是整体完成；下一段必须继续拆 `newBaseAbilities.test.ts`，否则基地能力测试仍会继续以旧泛名入口承载结构债务。
-- `newBaseAbilities.test.ts` 当前已经没有业务测试裸 prompt seam 命中；主要问题是旧泛名入口和“新增场景继续往 new* 垃圾桶堆”的协作信号。把它移动到 `bases/base-ability-contracts.test.ts` 不是最终理想结构，但能先消除 `new*` 入口与结构门禁 warning，同时保留 60 条现有基地合同测试绿灯。
-- 后续不应把 `bases/base-ability-contracts.test.ts` 当成新的垃圾桶。它只是承接已有基地合同的集合文件；新增或大改时仍应按基地族、扩展包或交互类型拆到更聚焦文件。
-- 继续拆分后，`base-ability-contracts.test.ts` 已删除，风险从“换名大垃圾桶”降为“少数较大的明确主题文件”。当前最大的是 `samurai-bases.test.ts`（约 707 行），其主题边界仍清晰；后续如果继续增长，应优先拆 Samurai POD 复用与 Sakura Garden 触发链，而不是再建泛名回归文件。
-- 进一步拆分 `samurai-bases.test.ts` 后，最大的剩余基地测试文件降到 `base-core-effects.test.ts`（约 556 行）。这次拆分不是改断言语义，而是按三类真实主题分流：Shogun's Palace 决斗抓牌、Sakura Garden 触发链、POD 基地复用合同。后续如果要继续压缩，应从 `base-core-effects.test.ts` 的 Field of Honor / Crypt / Workshop 子簇入手。
+用户指出 v12 的核心问题成立：它把 `手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合` 当成默认按钮墙，这是错误 UI 拆解。规则里的 `手牌行动（选 1 种执行）` 是规则容器，不应直接翻译成常驻主控件；七大恨的主 UI 应先显示手牌，玩家选择哪张牌，就由牌型和牌面效果进入对应后续交互。
 
----
+同步修正规范：
 
-# Findings: 反馈真实链路与 AI 自动反馈复核（2026-05-15）
+- `.windsurf/skills/boardgame-ui-imagegen/SKILL.md`：新增“规则术语到 UI 的转换”“规则到 UI 的映射规则”，明确规则章节名/流程名不自动等于按钮名。
+- `design-system/games/qidahen.md`：改为“主界面先表达手牌、选中牌、牌型和出牌后续”，不默认显示动作分类按钮墙或“结束回合”。
+- “素材已有信息不显示”已修正为：固定信息不做主 UI；但地图可缩放/拖拽时，必要运行时信息允许轻量摘要补偿离屏。
 
-## 已确认事实
+v13 生成图：
 
-- 本地真实用户反馈链路没有坏：E2E 已覆盖反馈弹窗提交、API 写入、后台 API 查询、后台页面列表与详情展示。
-- 生产只读查询显示最近 14 天有 45 条反馈记录；当前未收口项不是 0，而是 2 条。
-- 回写前未收口项：
-  - `6a05e66129cd213e03bfd82f`：`splendor | online-ai-watchdog | open`
-  - `6a005f68d5153682969e5c7d`：`smashup | feedback-modal | in_progress`
-- 最新 open AI 自动反馈的证据足够定位：`legal_action_command_failed:RESERVE_OPEN_CARD:gameNotStarted`，`stateSnapshot` 里已有 `legalActions` 与 `aiDecisionPreview`。
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_03654657a78d0d83016a05141dcadc8194b9398f9118cb9235.png
+temp/qidahen-ui-imagegen-review/v13-final.png
+```
 
-## 本轮结论
+v13 核对图：
 
-- “最近都没有反馈”不是反馈系统断流；更准确是生产仍有反馈，且本地真实提交链路已由 E2E 证明正常。
-- AI 自动反馈 payload 证据不需要重构；问题在 Splendor 未开局状态下 watchdog 仍尝试代 AI 发动作。
-- 已修复 watchdog pregame 边界与 Splendor AI legal actions 未开局门禁。
-- 规范已补强：反馈 `resolved` 不等待生产部署或未来不复发，部署/观察是后续发布状态。
-- 生产状态已回写：`6a05e66129cd213e03bfd82f` -> `resolved`，回写时间 `2026-05-15T15:38:58.914Z`。
-- 证据文档：
-  - `evidence/feedback-real-submission-e2e-2026-05-15.md`
-  - `evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-15.md`
+```text
+temp/qidahen-ui-imagegen-review/v13-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v13-crop-bottom-hand.jpg
+temp/qidahen-ui-imagegen-review/v13-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v13-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v13-crop-bottom-tracks.jpg
+temp/qidahen-ui-imagegen-review/v13-crop-top-status.jpg
+```
 
----
+v13 审计结论：
 
-# Findings: 线上 AI 自动反馈排查与修复（2026-05-13）
+- 保留：完整 2D 版图、左上行动轮盘、右侧朝鲜牌库/弃牌、右下纪年卡位、底部野战/城战流程轨。
+- 保留：顶部轻量摘要 `1619 / 大明 / 出牌 / 轮盘：未处理`。这是缩放/拖拽下的运行时可见性补偿，不是第二套轮盘。
+- 保留并放大：底部居中手牌 dock，5 张手牌可读，选中 `事件牌 A` 有焦点卡 inspector。
+- 保留：选中事件牌只出现 `打出` 与次级 `弃牌`，符合“打出事件牌执行内容”的规则入口。
+- 删除成功：没有行动记录、流程提示数字 HUD、AP/资源条、科技树、任务栏、第二轮盘、拆朝鲜面板、手牌行动按钮墙或高权重结束回合按钮。
+- 可接受残余：版图上方和底部仍能看到原素材自带的流程文字/轨道，这是地图素材固定内容，不是新增数字流程提示。
 
-## 已确认事实
+结论：v13 当前达标，可作为后续七大恨 Board UI 实现的指导图。核心方向是“底部居中手牌 + 选中牌触发短动作 + 必要状态摘要 + 完整 2D 版图”。
 
-- 用户本轮点名“线上反馈”和“AI 自动反馈”，按生产真源只读查询处理。
-- 本轮优先查 `reporterType=system`、`source=online-ai-watchdog`、`contactInfo=system:online-ai-watchdog`、`errorContext.source=online-ai-watchdog` 或内容前缀 `[system][online-ai-watchdog]` 的 `open/in_progress` 项。
-- 生产操作入口已确认：`ssh admin@8.148.71.102`，项目目录 `/home/admin/BoardGame`，Mongo 容器 `boardgame-mongodb`。
-- 生产回写/部署/重启不属于当前第一步；先只读。
+结论更新：v13 后续按用户反馈降级为“布局层级基本正确，但交互模式仍需修正”。问题是它仍偏向“选牌后点打出”的两步按钮流程，不符合商业卡牌游戏直接操控预期。
 
-## 待确认
+已修正新门禁：
 
-- 当前是否仍有系统 AI 自动反馈未收口。
-- 未收口项是否包含足够定位字段：`gameId`、`matchId`、`incidentKind`、`reason`、`stateSnapshot`、聚合 key 与时间窗口。
-- 若字段不足，重构目标应优先补“可诊断性”而不是猜业务规则。
+- 出牌主路径应参考 DiceThrone 这类商业卡牌交互：底部手牌可拖拽/上滑，或点击 armed 后落到出牌区/地图目标。
+- `打出`、`弃牌`、`确认` 这类按钮只能作为键鼠/触屏/无障碍 fallback 或最终防误触确认，不应成为默认主视觉入口。
+- 新一轮生图必须能看出拖起卡牌、合法落点高亮、出牌区吸附、目标反馈；如果画成固定按钮流程，判失败。
 
-## 本轮结论
+## 2026-05-14 v14 直接操控版审计结论
 
-- 生产当前 `open/in_progress = 7`，其中系统 AI 自动反馈 `6` 条，全部为 `smashup|online-ai-watchdog|force-end-turn-failed`。
-- 6 条最后发生时间均在 `2026-05-10`，集中在 `smashup_reaction_choose`、`elder_thing_*`、`wizard_neophyte` 与 active-turn `ADVANCE_PHASE` 恢复链路。
-- 旧反馈的 `stateSnapshot` 足以归类，但 `command_failed` 不足以定位真实业务拒绝原因；本轮已按用户口径重构诊断链。
-- 证据文档：`evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-13.md`。
+v14 生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0e4465abac734ced016a051adb11e4819387497e26b7226a76.png
+temp/qidahen-ui-imagegen-review/v14-final.png
+temp/qidahen-ui-imagegen-review/v14-prompt.md
+```
+
+v14 核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v14-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v14-crop-hand-drag.jpg
+temp/qidahen-ui-imagegen-review/v14-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v14-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v14-crop-bottom-tracks.jpg
+temp/qidahen-ui-imagegen-review/v14-crop-center-target.jpg
+```
+
+肉眼审计：
+
+- 达标：完整 2D 数字桌游屏幕保留，左上行动轮盘清楚且有 `当前` 状态；右侧朝鲜牌堆/弃牌、时间线、国势/战争轨仍在版图结构里。
+- 达标：底部居中手牌是主决策区，卡牌尺寸能看出 `事件 / 军备 / 战术 / 银两` 类型；不是角落小 chip，也不是铺满整屏的卡墙。
+- 达标：一张 `事件牌 A` 正在从手牌区被拖起，虚线轨迹、目标省份描边和 `选择目标` badge 明确表达“拖拽/落点/目标反馈”的商业卡牌直接操控模式。
+- 达标：没有 `手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合`，没有行动记录、流程说明条、第二轮盘、拆朝鲜面板、AP/资源条、数字战斗面板。
+- 注意：图中虚线箭头是当前拖拽反馈，不是规则流程提示；它对应当前交互，所以保留。
+
+结论：v14 当前可作为后续 Board UI 的指导图。后续实现应按这个方向做真实组件：底部手牌 dock、拖拽/armed、合法目标高亮、轻量状态 chip 和保留版图原生控件。
+
+结论更新：v14 后续按规则反查降级为可用参考但非最新最佳。缺失项包括：手牌上限、轮盘动作待处理状态、目标区域 `控制 / 人口 / 部队` 摘要、地图运行时 token。另一个风险是生成模型会改写固定轮盘文字。
+
+## 2026-05-14 v15/v16 规则溯源补强
+
+v15 生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0e4465abac734ced016a051f55263c81938625d29addfd94ba.png
+temp/qidahen-ui-imagegen-review/v15-final.png
+```
+
+v15 审计：补上了手牌数量上限、轮盘待处理状态、目标摘要和地图 token，但轮盘文字仍出现假动作名，不能达标。
+
+v16 生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0e4465abac734ced016a05221116a881938e6ec34ba1c7a8b5.png
+temp/qidahen-ui-imagegen-review/v16-final.png
+temp/qidahen-ui-imagegen-review/v16-prompt.md
+```
+
+v16 核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v16-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v16-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v16-crop-hand-drag.jpg
+temp/qidahen-ui-imagegen-review/v16-crop-target-info.jpg
+temp/qidahen-ui-imagegen-review/v16-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v16-crop-bottom-tracks.jpg
+```
+
+v16 肉眼结论：
+
+- 达标：`手牌 5/15` 对应检查手牌上限规则；底部手牌 dock 是当前决策主 UI。
+- 达标：事件/军备/战术/银两/牌背可读，对应势力牌类型；没有虚构具体卡名。
+- 达标：`事件牌 A` 被拖起，目标区域高亮、虚线轨迹和 `选择目标` 体现直接操控，不是按钮两步流程。
+- 达标：目标浮层 `控制 / 人口 / 部队` 对应地图区域决策所需信息。
+- 达标：`轮盘：待处理` 对应规则中“手牌行动及轮盘行动，顺序自定”的未处理状态。
+- 达标：地图上有控制标记、人口点和部队堆叠 token，不再只是空地图皮肤。
+- 达标：轮盘标签基本回到规则动作来源；不再是 v15 那种明显假动作名。
+- 达标：没有行动记录、流程说明、第二轮盘、拆朝鲜面板、数字战斗面板、`手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合` 按钮墙。
+
+结论：v16 是当前最新达标 UI 指导图。后续实现应以 v16 的规则溯源为准，而不是只照 v14 的视觉。
+
+结论更新：v16 后续按用户反馈降级为可用参考但不是最终最佳。它仍偏“直接拖牌即进入动作”，没有充分表达 `手牌行动（选 1 种执行）` 的动作模式先于弃牌支付；也缺少其他玩家状态摘要。
+
+## 2026-05-14 v17 动作先行与其他玩家状态
+
+用户指出两点成立：
+
+- 版图已经提示区域，不需要额外重复区域名 UI。
+- 玩家行动流程明确有 `手牌行动`，而且军备/势力行动的弃牌数量由动作决定，所以不能先弃牌再选择用途。正确顺序是先选动作模式，再支付弃牌。
+- 多人游戏必须能看到其他玩家状态，尤其手牌数、VP/纪年、等待/可响应状态。
+
+v17 生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0e4465abac734ced016a05d4b0d3bc8193aa83f25760960d11.png
+temp/qidahen-ui-imagegen-review/v17-final.png
+temp/qidahen-ui-imagegen-review/v17-prompt.md
+```
+
+v17 核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v17-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-action-payment.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-player-status.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-wheel-from-overview.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-board-state.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v17-crop-bottom-tracks.jpg
+```
+
+v17 肉眼结论：
+
+- 达标：右上玩家状态带显示蒙古、后金的手牌数、VP 和等待/可响应状态。
+- 达标：底部动作区标题为 `手牌行动`，模式选择 `事件 / 军备 / 势力` 清楚，且当前 `军备` 已选中。
+- 达标：`弃牌支付 0/1` 出现在军备模式选中之后，符合先选动作再支付代价。
+- 达标：军备牌被 armed/lifted，旁边有 `军备留场`，能看出军备牌不是普通弃牌。
+- 达标：地图区域名称来自版图自身，没有额外重复区域标签；地图 token 仍表达控制/人口/部队状态。
+- 达标：轮盘、右侧朝鲜牌堆、底部战斗/国势轨仍保留；没有行动记录、第二轮盘、数字战斗面板、结束回合巨按钮。
+
+结论：v17 是当前最新最佳 UI 指导图。后续实现应以 v17 的“动作模式 -> 支付 -> 目标/留场”交互链为准。
+
+## 2026-05-13 生成图审计结论（已判失败）
+
+生成图源文件：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_02330224f1d3aa92016a03cda0b5148190a103f4559b01abf4.png
+```
+
+核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/overview-1600.jpg
+temp/qidahen-ui-imagegen-review/crop-bottom-hand.jpg
+temp/qidahen-ui-imagegen-review/crop-left-wheel.jpg
+temp/qidahen-ui-imagegen-review/crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/crop-center-target.jpg
+```
+
+主要 UI 元素来源映射与问题：
+
+- 顶部 `1619 / 大明 / 检查手牌`：实现必要状态，轻量 chip，保留。
+- 左上行动轮盘：素材已有职责，只作为版图内容出现，未生成第二轮盘，保留。
+- 朝鲜牌库/弃牌与纪年卡槽：素材已有职责，在原图区域内呈现，未拆成独立面板，保留。
+- 手牌区 4 张可读手牌 + 左侧焦点卡：当前决策，卡牌驱动游戏核心 UI 的层级方向正确，但具体卡名/效果不合格。
+- `手牌行动 / 执行事件 / 势力行动 / 结束回合`：规则动作与当前命令，短标签，保留。
+- 当前目标面板与山东高亮：当前决策/目标确认，字段仅 `控制 / 人口 / 部队`，保留。
+- 右上 + / - / 重置 / 聚焦：地图实现必要工具，轻量，保留。
+
+失败点：
+
+- `募兵练军 / 修筑城防 / 粮草调运 / 离间计 / 精兵突袭` 在 `src/games/qidahen/rule/七大恨规则.md` 中找不到，属于生成模型按题材臆造的具体卡名。
+- 左侧焦点卡和手牌卡片写了具体效果句，但没有真实卡牌清单或素材来源支撑。
+- 因为本轮目标是 UI 指导稿，卡牌区域可以展示结构与轻重，但不能编造卡名/卡效。
+
+结论：当前图不达标。下一轮 prompt 必须把卡牌改成规则已有类别或通用占位，例如 `事件牌 A`、`军备牌 B`、`战术牌 C`、`银两牌`，并禁止生成具体卡名和具体效果句。
+
+## 2026-05-13 第二轮生成图审计结论（仍判失败）
+
+生成图源文件：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_02330224f1d3aa92016a03d1c9433881908505f9c5fe518cee.png
+```
+
+核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v2-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v2-crop-bottom-hand.jpg
+temp/qidahen-ui-imagegen-review/v2-crop-left-wheel.jpg
+temp/qidahen-ui-imagegen-review/v2-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v2-crop-center-target.jpg
+temp/qidahen-ui-imagegen-review/v2-crop-card-ui.jpg
+```
+
+主要观察：
+
+- 地图结构、行动轮盘、朝鲜牌库/弃牌、纪年卡位、底部流程轨没有被拆成独立面板；这一点比前几轮正确。
+- 卡牌区已经改成 `事件牌 A / 军备牌 B / 战术牌 C / 银两牌`，没有再编造具体卡名；这一点正确。
+- 卡牌作为当前决策的权重基本够，不再只是小 chip；这一点方向正确。
+
+失败点：
+
+- 顶部状态写的是 `检查手牌`，但底部主操作已经是 `手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合`。这把不同阶段混在同一张指导图里，违反“单一当前状态”。
+- `当前目标` 面板在没有具体卡牌/势力行动来源时偏重，应降级为小 tooltip；否则它会暗示当前卡牌已经有目标选择需求，但图里没有来源。
+
+结论：第二轮仍不达标。下一轮必须固定当前状态为 `手牌行动`，顶部不得出现 `检查手牌`，卡牌/按钮/目标浮层必须属于同一个当前阶段。
+
+已落地修正规则：
+
+- `.windsurf/skills/boardgame-ui-imagegen/SKILL.md`：新增“单一当前状态 / 阶段一致 / 目标浮层来源”门禁。
+- `design-system/games/qidahen.md`：新增七大恨 UI 指导图阶段一致规则。
+- 下一轮 prompt：`temp/qidahen-ui-imagegen-review/v3-prompt.md`。
+
+## 2026-05-13 v3 生成图审计结论（达标）
+
+生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_061b88b49a464470016a0483771cf88194803a8a6192abdf64.png
+temp/qidahen-ui-imagegen-review/v3-final.png
+```
+
+核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v3-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v3-crop-left-wheel.jpg
+temp/qidahen-ui-imagegen-review/v3-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v3-crop-bottom-hand.jpg
+temp/qidahen-ui-imagegen-review/v3-crop-card-ui.jpg
+temp/qidahen-ui-imagegen-review/v3-crop-center-target.jpg
+```
+
+UI 元素来源映射：
+
+- 顶部 `1619 / 大明 / 手牌行动`：实现必要状态，轻量 chip，保留。
+- 左上行动轮盘：素材已有职责，只保留为版图内容；未生成第二轮盘，保留。
+- 朝鲜牌库/弃牌与纪年卡位：素材已有职责，仍在原地图位置；未拆独立面板，保留。
+- 手牌区 4 张可读手牌 + 左侧焦点卡：当前决策。只使用 `事件牌 A / 军备牌 B / 战术牌 C / 银两牌` 这类规则类别占位，没有编造具体卡名，保留。
+- `手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合`：规则动作，与顶部 `手牌行动` 状态一致，保留。
+- 选区小面板 `控制 / 人口 / 部队`：当前选中目标的轻量 tooltip，没有编造数字，保留。
+- 右上地图工具：实现必要工具，轻量，保留。
+
+达标点：
+
+- 单一当前状态成立：全图围绕 `手牌行动`，不再出现 `检查手牌`。
+- 卡牌是主决策 UI，尺寸可读，不再被缩成无意义 chip。
+- 没有行动记录、流程提示、第二轮盘、独立朝鲜面板、数字战斗面板或全宽底栏。
+- 固定版图 UI 没有被重绘成独立 HUD；底部战斗/计分轨仍可见。
+- 没有未来源化的具体卡名/卡效。
+
+结论更新：v3 后续被用户否定，原因成立。它仍然太像“版图生图 + HUD”，不能作为最终 UI 指导图收口。
+
+## 2026-05-13 v6 生成图审计结论（达标）
+
+生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_061b88b49a464470016a048be57b708194b4048e72bf7bdd24.png
+temp/qidahen-ui-imagegen-review/v6-final.png
+```
+
+核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v6-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-top-status.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-inspector.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-hand-dock.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-action-panel.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-target-tooltip.jpg
+temp/qidahen-ui-imagegen-review/v6-crop-static-board-zones.jpg
+```
+
+UI 元素来源映射：
+
+- 顶部 `1619 / 大明 / 手牌行动`：实现必要状态，轻量 chip，保留。
+- 低对比地图背景：素材已有职责，只作为空间参照，不再抢主视觉，保留。
+- 左侧 `事件牌 A` inspector：当前决策，组件边界清楚，保留。
+- 底部手牌 dock：当前决策，4 张卡分别为 `事件牌 A / 军备牌 B / 战术牌 C / 银两牌`，没有具体假卡名/假效果，保留。
+- 动作面板 `手牌行动 / 执行事件 / 升级军备 / 势力行动 / 结束回合`：规则动作，与当前状态一致，保留。
+- 选区 tooltip `控制 / 人口 / 部队`：当前目标轻量提示，无数字，无战况编造，保留。
+- 右上地图工具：实现必要状态/工具，保留。
+
+达标点：
+
+- 画面读起来是 React/Figma UI mockup，不再只是漂亮版图生图。
+- 组件边界清楚：inspector、hand dock、button group、tooltip、map controls 都能对应实现模块。
+- 地图被压成低对比背景，固定轮盘/朝鲜/纪年/战斗轨不再被重复 UI 化。
+- 单一状态成立：全图围绕 `手牌行动`，没有 `检查手牌` 或流程混杂。
+- 没有行动记录、流程提示、第二轮盘、拆朝鲜面板、数字战斗面板、AP/资源/科技/任务/editor UI。
+- 没有未来源化具体卡名、卡效、区域数值或战况。
+
+结论：v6 达到本轮“UI 指导图”标准，可作为后续 Board 实现的视觉与组件层级参考。
+
+结论更新：v6 后续被用户指出不符合“2D 数字桌游界面”方向，原因成立。v6 过度把地图压成灰暗背景，像通用组件 demo，不像七大恨游戏 UI。
+
+## 2026-05-13 旧图目录对比与 v8 结论
+
+用户指定旧图目录：
+
+```text
+D:\codex-home\generated_images\019e175a-a721-7602-b50e-c01f9e98cc26
+```
+
+已生成 contact sheet：
+
+```text
+temp/qidahen-ui-imagegen-review/old-folder-019e175a/contact-sheet.jpg
+```
+
+对比结论：
+
+- 旧图 03/04/06 一类图的优点是：2D 完整数字桌游界面、地图可读、行动轮盘清楚、右侧朝鲜和纪年槽位完整、手牌/动作区与版图融合。
+- 旧图的问题是：行动记录常驻、流程提示过重、具体卡名/效果多为模型编造、部分重复解释已有控件。
+- v6 的错误是反向过度修正：把地图压成低对比背景，做成通用 React 组件 demo，丢掉了七大恨作为 2D 地图桌游的主体界面感。
+
+已补充规范：
+
+- 默认必须是 2D 正交/近正交数字桌游界面，不做 3D、电影感、海报或桌面场景渲染。
+- 左上行动轮盘是必要版图 UI，必须清楚可见；不能裁掉、弱化或替换成普通状态条。
+- 七大恨合格方向是“真实历史桌游数字版界面”：地图可读且是主舞台，UI 组件清楚并融入游戏。
+
+v8 生成图：
+
+```text
+temp/qidahen-ui-imagegen-review/v8-final.png
+```
+
+v8 核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v8-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v8-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v8-crop-hand-action.jpg
+temp/qidahen-ui-imagegen-review/v8-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v8-crop-center-map.jpg
+```
+
+v8 审计结论：
+
+- 2D 数字桌游界面方向正确。
+- 行动轮盘清楚可见。
+- 地图可读，右侧朝鲜牌库/弃牌、纪年卡槽、底部轨道保留。
+- 顶部状态为 `手牌行动`，没有 `检查手牌` 和流程条。
+- 没有行动记录、第二轮盘、拆朝鲜面板、数字战斗面板。
+- 卡牌仍用规则类别占位，没有具体假卡名/卡效。
+
+结论：v8 是目前最接近旧目录优势且修掉已知问题的版本。
+
+## 2026-05-13 旧会话 prompt 对比结论
+
+已解析旧会话：
+
+```text
+D:\codex-home\sessions\2026\05\11\rollout-2026-05-11T22-04-37-019e175a-a721-7602-b50e-c01f9e98cc26.jsonl
+```
+
+质量下降的直接原因不是 imagegen 单次随机波动，而是 prompt 方向被我连续带偏：
+
+- 早期较好的图使用的 prompt 明确要求 `actual playable game board screen`、`main map stage occupies about 72-78%`、`行动轮盘区 top-left large circular action wheel`、`Korea deck/discard zones`、`bottom hand/action rail`。这些指令虽然夹带了行动记录、AP、流程提示等错误，但保证了“完整 2D 桌游 UI 屏幕”的骨架。
+- 后续纠偏过头，把“不要重复已有静态素材 UI”误写成 `Use almost no HUD`、`Map is 90%+ of visual weight`、`tiny chips only`、`No full hand card wall`。这会让生成模型把真正需要玩家操作的卡牌和动作也缩成装饰，界面失去可玩性。
+- 再后续又把“UI 指导图要能指导实现”误写成过强的 React/Figma 组件稿方向，导致地图被压暗、行动轮盘弱化，画面变成通用组件 demo，而不是七大恨 2D 数字桌游界面。
+- 正确修正不是继续减 UI，而是回到旧图 03/04/06 的骨架：完整 2D 桌游屏幕、地图可读、行动轮盘清楚、右侧朝鲜/纪年槽位清楚、手牌/焦点卡/动作区可读；只删除旧图里的行动记录、流程提示、AP、假卡名/假卡效和重复解释控件。
+
+## 2026-05-13 v9 生成图审计结论（已降级）
+
+生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0d0efaae9ceff12c016a049d7422148190ba10c8001b8c8789.png
+temp/qidahen-ui-imagegen-review/v9-final.png
+```
+
+核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v9-overview-1400.jpg
+temp/qidahen-ui-imagegen-review/v9-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v9-crop-hand-dock.jpg
+temp/qidahen-ui-imagegen-review/v9-crop-action-selector.jpg
+temp/qidahen-ui-imagegen-review/v9-crop-right-slots.jpg
+temp/qidahen-ui-imagegen-review/v9-crop-center-map.jpg
+```
+
+规则来源核对：
+
+- 规则明确写：玩家行动流程包含“执行一次手牌行动及轮盘行动，执行顺序由玩家自行决定”。
+- 规则明确写：`手牌行动（选 1 种执行）`，选项为 `执行事件 / 升级军备 / 势力行动`。
+- 规则明确写：势力牌分为事件、军备、战术以及银两；因此 v9 中的 `事件牌 / 军备牌 / 战术牌 / 银两牌` 属于合法类别占位。
+
+达标点：
+
+- 2D 数字桌游界面成立，不是 3D 场景或通用组件 demo。
+- 左上行动轮盘清楚可见，并保留为必要版图 UI。
+- 底部居中手牌 dock 是主决策区，卡牌可读，不再被缩成角落 chip。
+- `手牌行动` 已分成选择层与执行层：`执行事件 / 升级军备 / 势力行动` 是选择组，`执行` 是单独确认按钮，`结束回合` 为次级按钮。
+- 右侧朝鲜牌库/弃牌、右下纪年卡位和底部战斗/计分轨保留在版图结构内。
+- 没有行动记录、流程提示条、AP/科技树/任务栏、第二轮盘、拆朝鲜面板或数字战斗面板。
+
+残余注意：
+
+- 这是 UI 指导图，不是最终实现截图；地图和卡牌细节仍是概念化占位。
+- 后续实现时应按真实素材坐标替换生成图中的概念地图与卡牌占位。
+
+结论更新：v9 后续按用户反馈降级为未达标。它虽然比 v8 更接近规则拆解，但底部操作台仍不够像旧参考图那样连续、饱满、用户友好；后续改为批量生成候选。
+
+## 2026-05-14 批量候选对比与 v12 结论
+
+用户要求不要逐张慢改，先对比旧参考图和当前图，再多生成候选。已生成并查看：
+
+```text
+temp/qidahen-ui-imagegen-review/v10A-final.png
+temp/qidahen-ui-imagegen-review/v10B-final.png
+temp/qidahen-ui-imagegen-review/v10C-final.png
+temp/qidahen-ui-imagegen-review/v12-final.png
+temp/qidahen-ui-imagegen-review/v12-comparison-sheet.jpg
+```
+
+对比结论：
+
+- 旧参考图的优势不是“元素更多”，而是底部是一整套连续操作台：手牌、手牌上限、动作选择、轮盘状态、辅助区形成一个可玩的数字桌游控制面。
+- v9 的问题是底部虽然有手牌，但仍偏空、偏碎，手牌/焦点/动作关系不够像完整操作台。
+- v10A 比 v9 更饱满，但手牌仍偏左。
+- v10B 的手牌居中和焦点卡更好，但焦点卡过高，且选中动作与选中卡有潜在不一致。
+- v10C 的居中操作台最好，但生成了不该出现的资源/令牌小图标。
+- v12 综合 v10B/C 优点：底部居中手牌、焦点事件牌、`执行事件` 选中状态、`执行` 按钮、`轮盘行动 未执行` 和 `结束回合` 分层明确，没有日志/资源图标/流程条。
+
+v12 生成图：
+
+```text
+D:\codex-home\generated_images\019e1eca-9ef6-70d2-adf1-382a3ad13b9d\ig_0d0efaae9ceff12c016a04a6975f588190a815f1c858cda507.png
+temp/qidahen-ui-imagegen-review/v12-final.png
+```
+
+v12 核对图：
+
+```text
+temp/qidahen-ui-imagegen-review/v12-overview-900.jpg
+temp/qidahen-ui-imagegen-review/v12-crop-bottom.jpg
+temp/qidahen-ui-imagegen-review/v12-crop-hand-center.jpg
+temp/qidahen-ui-imagegen-review/v12-crop-wheel.jpg
+temp/qidahen-ui-imagegen-review/v12-crop-right.jpg
+temp/qidahen-ui-imagegen-review/v12-comparison-sheet.jpg
+```
+
+v12 达标点：
+
+- 手牌位于底部居中，5 张手牌横排可读，`手牌 7/7` 清楚。
+- 焦点卡是 `事件牌 A`，选中手牌也是事件牌，动作选择为 `执行事件`，执行按钮为 `执行`，规则动作链一致。
+- `轮盘行动 未执行` 在底部左侧作为状态 chip，未生成第二轮盘解释面板。
+- `结束回合` 位于右侧且明显次于手牌与执行动作。
+- 行动轮盘、朝鲜牌库/弃牌、纪年卡位、底部战斗/计分轨均保留。
+- 没有行动记录、流程说明、AP/资源条、科技树、任务栏、编辑器、独立朝鲜面板或数字战斗面板。
 
 ---
 
@@ -390,7 +1145,7 @@
 
 ## Skill 优化
 
-- 已补强 `.codex/skill/create-new-game/SKILL.md`：新增“规则 PDF 转 Markdown 与可行性评估”前置阶段。
+- 已补强 `.windsurf/skills/create-new-game/SKILL.md`：新增“规则 PDF 转 Markdown 与可行性评估”前置阶段。
 - 新门禁要求 PDF→MD、素材盘点、压缩/manifest/远端检查、可行性分析完成后，才进入正式游戏骨架阶段。
 
 ---
@@ -791,7 +1546,7 @@
 
 ## Addendum（2026-05-04）：SmashUp `69f7ac9d...` 重复 special 候选定位
 
-- `69f7ac9d9ec13b96d710fded` 不是旧的 `stale private overlay` 型问题，生产快照有两个更具体的特征：
+- `69f7ac9d9ec13b96d710fded` 不是旧的 `stale private 叠层稿` 型问题，生产快照有两个更具体的特征：
   - `smashup_reaction_choose` 同一 prompt 中重复出现 `activate_special:titan:titan_2_wizards_arcane_protector:3`
   - `progressMarker` 中的旧 interaction id 与 `stateSnapshot.interaction.shared.id` 不同，说明 watchdog recovery 已推进过一次，但同类 visible interaction 又重开并最终落成 `blocker_persisted`
 - 本地最小修复没有去碰更大范围 transport 分支，而是先直接收口最可证的 runtime 出口：
@@ -1396,11 +2151,11 @@
 - Cowboys 决斗链此前还存在一处 UI 文案层的 i18n 断裂：
   - `Board.tsx` 顶部决斗横幅与卡名已经跟随 locale 渲染
   - 但 `src/games/smashup/domain/duel.ts` 的阶段标题、跳过按钮、Pinkerton 数量按钮仍是硬编码中文
-  - 同时 `Board.tsx` 里用于手牌/基地/随从直点交互的快捷按钮没有复用 `PromptOverlay` 的 i18n 解析
+  - 同时 `Board.tsx` 里用于手牌/基地/随从直点交互的快捷按钮没有复用 `Prompt叠层稿` 的 i18n 解析
   - 结果就是英文 locale 下会出现“英文横幅 + 中文交互标题/按钮”的混搭
 - 本轮修复后：
   - `PromptOption` 新增 `labelKey / labelParams`
-  - `PromptOverlay.tsx` 支持把整句 `ui.xxx` 直接解析成翻译文本
+  - `Prompt叠层稿.tsx` 支持把整句 `ui.xxx` 直接解析成翻译文本
   - `Board.tsx` 的 hand/base/minion 快捷按钮也统一走同一套 label 解析
   - `duel.ts` 的 `Pinkerton / duel card / Deputy / Run 'Em Off` 相关提示全部改成 locale key
   - 复跑 Cowboys 浏览器 E2E 后，决斗横幅、阶段提示与跳过按钮已经统一成同一语言，不再混搭
@@ -1606,7 +2361,7 @@
   - `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/wangling_base.webp`
 
 ## 2026-04-24 Workflow 强化补记（通用 + SmashUp）
-- 已更新 `.codex/skill/data-entry-workflow/SKILL.md`：
+- 已更新 `.windsurf/skills/data-entry-workflow/SKILL.md`：
   - 新增“长期任务连续执行模式”强制门禁（S0→S4 连续推进，不得中间收口）；
   - 明确 `continue` 的默认语义是“推进下一批执行”，不是重复汇报。
 - 已更新 `docs/games/smashup/workflows/smashup-faction-implementation.md`：
@@ -2017,7 +2772,7 @@
   1. 批量派系重审时，没有把“当前批次未清空不得停”写成项目内硬门禁；
   2. E2E 场景真值与 `reaction session` 审计维度还没被现有 workflow 明确提升到强制级。
 - 已回写到项目内 skill / workflow：
-  - `.codex/skill/data-entry-workflow/SKILL.md`
+  - `.windsurf/skills/data-entry-workflow/SKILL.md`
   - `docs/games/smashup/workflows/smashup-faction-implementation.md`
   - `docs/ai-rules/testing-audit.md`
 - 新增的强制点：
@@ -2284,7 +3039,7 @@
 ## 2026-05-10 Treant/Ninja 重来关键发现
 - `e2e/dicethrone` 下通过 `../src/...` 引入的是 `e2e/src` 旧快照，不是项目真实 `src`；新英雄 token ID 在旧快照中不存在，会把注入 token 写成 `undefined: 1`。新增机制 E2E 必须用 `../../src/...` 或直接使用稳定字面量。
 - DiceThrone 被动面板旧点击处理只处理 `rerollDie` / `drawCard`，没有派发 `custom` 被动动作；因此树精生命源泉在 UI 上可用但点击无效。修复点是 Board 的 `handlePassiveActionClick`。
-- Display-only 奖励骰在截图中可能表现为骰子/粒子展示而非完整居中弹窗；证据必须同时看状态变化截图，不能只用 `bonus-die-overlay` locator 断言冒充完成。
+- Display-only 奖励骰在截图中可能表现为骰子/粒子展示而非完整居中弹窗；证据必须同时看状态变化截图，不能只用 `bonus-die-叠层稿` locator 断言冒充完成。
 
 ## 2026-05-12 重审结果
 
@@ -2378,2465 +3133,933 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
 
-## 2026-05-14 23:38 +08 Twister 反馈复盘：审计维度仍缺“可选否定路径”
-
-- 反馈 `6a055d1429cd213e03bfd3e9` 暴露的根因不是移动方向、阈值或入口字段，而是“你可以”语义只测了成功路径。
-- 原 shayu 全面审计的失误：把 `tornados_twister` / `tornados_monster_tornado` 的 push/pull 成功路径当成完整规则证据，没有要求“合法候选存在但玩家选择跳过”的否定路径。
-- 新增通用不变量：凡文案包含“你可以 / 可以选择 / 至多 / 任意数量 / may / up to / any number”，成功路径与拒绝路径是两个独立验收项；合法候选存在时必须证明 skip/空选后权威状态不变。
-- 已固化位置：
-  - `docs/ai-rules/testing-audit.md`
-  - `.codex/skill/add-new-faction/SKILL.md`
-  - `.codex/skill/smashup-faction-addition/SKILL.md`
-  - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`
-- 后续同类审计禁止只写“能移动/能消灭/能拿牌”，必须同时写“能不做且状态不变”或明确说明该效果是强制效果。
-
-## 2026-05-15 Twister 后 shayu 再审计发现
-
-- 已按完整技能流程矩阵重新覆盖 shayu 三派系 39 张卡 + 6 张基地，共 45 对象。
-- 本轮重点复核 Twister 反馈暴露的“可选否定路径”不变量：合法候选存在时，玩家仍必须能拒绝执行，且 finalState 不应发生对应移动/消灭/改变。
-- 三条全链路抽查覆盖不同机制家族：Twister skip、Athena/Trade Winds 多步排序交换、Gone with the Wind afterScoring 延迟清场。
-- 当前未发现新的实现错误；也未发现需要在 Twister 可选否定路径之外再新增规范维度的第二类缺口。
-- 结论边界：这是 post-Twister 完整技能流程再审计和代表性全链路抽查完成，不表示每个对象都新增了一条独立 E2E；逐对象证据等级以 `evidence/smashup/smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 矩阵为准。
-
-## 2026-05-15 shayu 长描述复杂对象抽样发现
-
-- 抽样对象：`sharks_megalodon`、`mythic_greeks_argonaut`、`sharks_blood_in_the_water`、`tornados_not_in_kansas`、`mythic_greeks_favor_of_dionysus`。
-- 新发现的真实实现缺口集中在 `mythic_greeks_argonaut`：
-  - 旧入口缺少 `playAsAction`，不能在随从额度耗尽但行动额度可用时按卡面“改为打出这张牌”。
-  - 旧 Argonaut onPlay 手写触发 Odysseus / Heracles / Spartan，漏掉 Jason 的 onActionPlayed 能力。
-- 已修复并补证据：`playAsAction` 贯通类型、校验、reducer、UI dispatch；Argonaut onPlay 可从 Odysseus prompt 继续串 Jason base prompt。
-- 其余抽样对象未发现新的 blocker；本轮证据落在 `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
-
-## 2026-05-15 审计规范根因升级
-
-- 本次 Argonaut 漏审代表的根因不是单卡特例，而是通用审计方法缺口：旧矩阵按“对象级 pass”核销，没有强制把真相源文本逐句/逐子句拆开验证。
-- 影响边界是所有游戏：任何卡牌、技能、Token、状态、按钮、装备、基地、角色能力只要一段描述里包含多个语义，就可能被主效果测试掩盖掉第二句/例外/替代入口/额外触发。
-- 已固化不变量：规则文本必须拆成 `C1/C2/C3...` 子句；每个子句都要映射到实现入口、共享消费点、状态写入/消耗点和证据。任一子句缺证据，整对象不得写 `passed`。
-- 已更新落点：`docs/ai-rules/testing-audit.md`、`.codex/skill/add-new-faction/SKILL.md`、`.codex/skill/smashup-faction-addition/SKILL.md`，并回写 shayu 旧 evidence 失效结论。
-
-## 2026-05-16 TDD 行为 seam 发现
-
-- “拆测试文件”本身不是有效重构；有效点是让测试只通过稳定 helper facade 观察 prompt 与响应，避免实现重构时因为 `sys.interaction.current`、`prompt.data.options`、内部 command 字符串变化而批量改业务测试。
-- 旧 `newFactionAbilities.test.ts` 的最后剩余块暴露了同一类耦合：决斗链、Ronin/Yokai/Code of Bushido 等用例直接读取内部 prompt 结构。已迁出到 `abilities/samurai.test.ts` 并改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`expectNoPrompt`。
-- `npm run test:structure` 会扫描删除 diff，所以旧大文件被删除后仍能报告“旧内容含债务”的 warning；这不是新入口残留。后续判断是否还有新增入口，应同时看实际文件存在性与聚焦目录扫描。
-- `archmageE2E.test.ts` 这类“没有 prompt”的测试同样不应断言 `sys.interaction.current` 的字段路径；`expectNoPrompt` 才是稳定行为合同。后续可优先批量处理同类纯 no-prompt 断言，风险低、收益明确。
-- `turnCycle.test.ts` 证明同类收敛可以按文件小步推进：先跑基线，再替换 no-prompt 断言，再跑单文件与结构门禁。不要在一个大批次里混改 prompt 响应、无 prompt、队列顺序与业务断言。
-- `specialInteractionChain.test.ts` 暴露另一类低风险收敛：测试已经通过 `asSimpleChoice` 表达“我要一个简单选择”，但仍从 `sys.interaction.current` 取原始字段。应统一改为 `getSimpleChoicePrompt`，把内部存储路径藏进 helper。
-- `killer-plant-pod-verification.test.ts` 说明响应链也可以小步迁移：当测试已经使用 `testRunner.runCommand` 和标准 MatchState 时，优先复用 `respondToPrompt`，不要继续裸写 `SYS_INTERACTION_RESPOND`。
-- `shayuEntryConsumption.test.ts` 属于“审计型行为测试”，也应避免裸读 prompt data；审计结论要落在“有哪个语义 prompt / 没有二次 prompt / options 不含旧入口对象”，这些可通过 facade 表达，不需要绑 InteractionSystem 存储路径。
-- `promptSystem.test.ts` / `promptResponseChain.test.ts` 属于底层集成测试，但“没有活跃交互”仍是行为合同，不是必须裸读 `sys.interaction.current` 的理由；保留 queue 断言可作为额外底层细节，但主合同应走 `expectNoPrompt`。
-- `reactionQueueOrdering.test.ts` 暴露了更底层的一类耦合：测试在验证 reaction choice 时同时知道 prompt sourceId、options 存储位置、以及“清掉 current 后直接调用 resolver”的内部形态。本轮把 source/options 读取迁到 facade，并把清 prompt 细节收进 `withoutCurrentPrompt` helper；这比改断言文案更接近 TDD 规范里的“深模块、小接口”。
-- `baseAbilityIntegration.test.ts` 的二段 Mushroom Kingdom POD 测试证明 facade 不能只包 `current`，因为业务行为经常表现为“当前 prompt + 队列里的后续 prompt”。`getSimpleChoicePrompt(state, sourceId)` 应按 sourceId 在 current + queue 中查找，这样测试表达的是“出现了目标语义 prompt”，不是“它恰好排在 queue[0]”。
-- 少数历史测试仍直接调用旧 interaction handler；过渡期应使用 `getPromptHandlerData(prompt)`，让 handler 所需 data 形状集中在 helper，而不是散落在测试文件里。
-- `wizard-neophyte-actionlog.test.ts` 说明“只把 sourceId 断言换成 helper”还不够；真正会在实现重构时反复碎裂的是测试体手写系统响应命令。应优先把这类 `INTERACTION_COMMANDS.RESPOND` 改为 `respondToPrompt`，让测试只表达“选择 to_hand / play_extra”。
-- `ninja-hidden-ninja-no-minions.test.ts` 与 `temple-firstmate-afterscore.test.ts` 说明低风险 sourceId 收敛也有价值：业务测试不需要知道 prompt 当前存在于 `current` 字段，只需要断言目标业务 prompt 可观察。
-- `pirate-broadside-d1-audit.test.ts` 暴露 audit 文件验证口径差异：普通 `npm test` 会默认排除 `*audit*.test.ts`，这类文件必须用 `vitest.config.audit.ts` 或对应 audit 脚本验证，不能把 “No test files found” 误读成业务失败。
-- `scoringEligibleLock.test.ts` 说明 option 查找也应走 facade；测试要表达“选 source/target 语义选项”，不应依赖 `current.data.options.find(...)` 的存储路径。
-- `wizard-neophyte-ongoing.test.ts` 进一步确认 ongoing 目标基地这类二段 prompt 不应在测试体里暴露“当前交互 + options”形状；二段交互同样可以通过 `getSimpleChoicePrompt` + `respondToPrompt` 表达。
-- `ninja-hidden-ninja-interaction-bug-repro.test.ts` 说明历史复现测试里的注释也会固化内部结构语言；可在不丢失故障语义的前提下改成“当前 prompt 为空/目标 prompt 不存在”。
-- reaction queue 的 onBaseRevealed / onMinionDiscardedFromBase / onMinionPlayed 小文件都只是在证明“出现统一反应选择”；这类测试应直接用 `getReactionPrompt`，不要每个文件重复知道统一反应 prompt 的内部 sourceId 存放路径。
-- `pirate-cove-chain-fix.test.ts` 说明旧泛名文件不只要“改走 facade”，还必须遵守结构门禁的净删减约束；在旧泛名文件里新增本地 helper 即使语义正确，也会继续制造旧入口体量，应优先内联或迁出到聚焦文件。
-- `turnTransitionInteractionBug.test.ts` 说明 `runner.run` 重放命令序列不是必须手写系统响应命令；当上一拍已经拿到真实 MatchState，后续响应应优先用 `respondToPrompt(state, optionId, playerId)`，测试表达“玩家选择 skip”，不表达系统命令 payload 形状。
-- `duplicateInteractionRespond.test.ts` 属于底层防重复响应回归，但消费后“没有活跃 prompt”仍可以用 `expectNoPrompt` 表达；只有“重复同一命令被拒绝”这个行为需要保留命令重放。
-- `elder-thing-multi-select.test.ts` 是底层 simple-choice 多选合同测试，`multi` 本身仍可作为系统合同字段断言；但 options/source/target 这些通用读取应走 facade，避免游戏测试继续依赖 `data` 存储层。
-- `turnCycle.test.ts` 的蘑菇王国 / Invisible Ninja 段落证明“直接调用 handler”的过渡测试也可以减少耦合：handler lookup 用 `getPromptSourceId(prompt)`，handler data 用 `getPromptHandlerData(prompt)`，这样未来 prompt 外壳调整时不用改测试体。
-- `igor-big-gulp-double-trigger.test.ts` / `igor-rlyeh-double-trigger.test.ts` 说明“查某个业务 prompt 是否只出现一次”不应由测试体手工拼 `current + queue` 完成；已新增 `getPromptsBySourceId`，把队列存储形状集中到 helper。
-- `shoggoth-destroy-choice.test.ts` 说明直接调用旧 handler 的多步测试也能降耦合：用 `withoutCurrentPrompt` 表达“引擎调用 handler 前已清 current”，用 `getPromptHandlerData` 传递旧 handler data，不在测试体展开 `sys.interaction.current` 的结构。
-- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 暴露旧泛名文件的结构门禁风险：即使是正确的 facade 替换，只要净新增内容也会被 `test:structure` 拦截；旧泛名文件只能净删减或等量替换，最终仍应迁入聚焦测试。
-- `madMonsterPartyPreventedDestroy.test.ts` 说明“包含 A prompt、不包含 B prompt”也应直接通过 sourceId facade 表达，不应先暴露完整 interaction 列表再手工 map。
-- `audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts` 与 `choice-audit-fixes.test.ts` 再次确认 audit 文件需要 `vitest.config.audit.ts` 验证；普通 `npm test` 的 `No test files found` 是配置排除，不是业务失败。
-- `choice-audit-fixes.test.ts` 证明旧 handler 桥接测试的本地 `clearCurrentInteraction` 应统一替换为 `withoutCurrentPrompt`，否则同一个内部清理细节会在多个 audit/回归文件重复散落。
-- `wildlifePreserveProtection.test.ts` 补充证明“保护效果测试”也能降耦合：动作卡创建 prompt、选择目标、候选过滤和决斗 skip 错误提示都可通过 facade 表达，不需要测试体知道 InteractionSystem 的字段路径。
-- `buryEngine.test.ts` 进一步确认“响应命令形状”也是高价值 seam：测试只表达玩家选择哪张埋葬牌翻开，不表达 `INTERACTION_COMMANDS.RESPOND` 与 `payload.optionId` 的底层拼装。
-- `pirate-cove-repeat-trigger-bug.test.ts` 说明全量主计数不是唯一指标：`(interaction.data as any).sourceId` 这类隐式裸读也会在 prompt 外壳重构时碎裂，迁移时应主动一起清。
-- `pirate-king-afterscoring-window.test.ts` 进一步把系统响应命令生成集中到 helper；后续 `InteractionSystem` 命令字符串或 payload 结构变化时，不应再逐个改业务测试。
-- `promptE2E.test.ts` 说明历史 “E2E” 命名的 Vitest 行为测试也应使用 prompt facade；测试名称强调完整链路，不代表可以绑定内部 prompt 存储路径。
-- 当前全 `src/games/smashup/__tests__` 仍有 626 条旧内部耦合命中，说明本轮只是持续迁移的一段，不是整体完成。后续应按文件簇推进：先低风险 no-prompt，再 prompt source/options，再响应命令，最后处理确实属于底层 InteractionSystem 合同测试的少数例外。
-- `promptSystem.test.ts` / `promptResponseChain.test.ts` 说明不能机械追求扩展扫描 0 命中：普通“玩家响应某 option”的命令形状应改为 `respondCommand`，但 AI fallback 返回 `RESPOND/CANCEL`、`INTERACTION_EVENTS.RESOLVED` 常量这类测试目标本身就是系统合同，应保留直断言并在计划里标明为有意例外。
-- `reactionQueueOrdering.test.ts` 暴露另一类小而重要的 seam：测试需要构造带 `continuationContext` 的 prompt 时，不应在测试体里直接写 `interaction.data`。`withPromptHandlerData` 把这种注入集中到 helper，后续 prompt 外壳调整时只改一处。
-- `tortuga-pirate-king-flowhalted-fix.test.ts` 说明即便测试对象是 flowHalted 与交互状态守卫，也可以把“无活跃 prompt / 有活跃 prompt”的断言写成 `expectNoPrompt` / `getFirstPrompt`；注释里反复写内部路径会继续固化错误的测试接口习惯。
-- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 与 `pirate-broadside-d1-audit.test.ts` 继续印证：审计/反馈回归测试也不应手写 `INTERACTION_COMMANDS.RESPOND`。这类测试的稳定接口是“玩家选择某 optionId”，不是系统命令 payload 结构。
-- `elder-thing-multi-select.test.ts` 说明即便测试目标是 `createSimpleChoice` 的 multi 合同，也不需要在测试体里绑定 `data.multi` 的存储路径；`getPromptMulti` 能保留“multi 配置正确”这个行为断言，同时隔离 prompt 外壳变化。
-- `alien-scout-no-duplicate-scoring.test.ts` 是典型“长命令序列回归”：即使命令数组需要精确表达 afterScoring 选择顺序，也应通过 `respondCommand` 表达选择 option 的行为，避免把系统响应命令结构散落在回归脚本里。
-- `audit-d11-d12-d14-dino-rampage.test.ts` 说明 audit 文件里如果已经使用 `GameTestRunner`，响应当前 prompt 可优先用 `runner.resolveInteraction`；测试仍能表达“选择某个 minion/base option”，但不用知道 `SYS_INTERACTION_RESPOND` 命令字符串和 payload 外壳。
-- `alienAuditFixes.test.ts` 说明本地测试 helper 也要一起治理：如果文件内自定义 `respondInteraction` 仍手写系统命令，后续实现重构仍会批量改测试。应让本地 helper 调用共享 facade，例如 `respondToPrompt`。
-- `afterscoring-window-skip-base-clear.test.ts` 说明“构造特殊系统状态”也不必在测试体里反复写 `sys.interaction.current`；`withCurrentPrompt` / `withoutCurrentPrompt` / `withPromptHandlerData` 可以保留测试意图，同时隔离 InteractionSystem 存储形状。
-- `scoreBases-auto-continue.test.ts` 说明 AI 行为测试也不能继续把 command 外壳散在断言里：如果测试目标是“AI 选择了哪个 option”，应通过 `respondCommand` / `getRespondCommandOptionId` 表达，而不是逐个手写 `SYS_INTERACTION_RESPOND`。同一文件的 `multi_base_scoring` prompt 读取也已从 `asSimpleChoice(sys.interaction.current)` 改为按 sourceId 查询的 prompt facade。
-- resolution frame 这类 setup 元数据也应 helper 化；`withPromptResolutionFrameId` 让测试表达“这个 prompt 属于哪个 frame”，不直接依赖 current prompt 的存储路径。
-- `elderThingAbilities.test.ts` 说明“派系能力单测”也不应因为是旧 handler 桥接就裸取 `matchState.sys.interaction.current.data`；handler data 可以通过 `getPromptHandlerData(prompt)` 传递，source/target/option/响应命令都能通过 facade 表达。
-- 清理未使用变量时必须按失败用例回看变量是否后续被断言读取；本轮机械把 `events` 改成 `_events` 曾造成短暂红灯，后续类似 lint cleanup 只能针对真正未使用的局部变量做最小替换。
-- `ongoingE2E.test.ts` 说明“完整 Prompt 链 E2E”也不应裸读 current：链路仍验证 Shanghai 选随从、选基地、移动落地，但测试只通过 `getSimpleChoicePrompt` / `getPromptOption` / `respondCommand` 表达玩家选择，不再绑定 InteractionSystem 的存储字段。
-- POD/afterScoring prompt source 断言同样应走 `getPromptSourceId`；测试目标是“创建了 Buccaneer/First Mate 的业务 prompt”，不是“sourceId 恰好存在 data.sourceId 字段”。
-- `query6Abilities.test.ts` 进一步说明“只改 sourceId 读取”还不够：同一个普通业务测试里通常同时散落 prompt source、options、multi、无 prompt 和响应命令形状；一次有效 seam 收敛应把这些一起收进 facade。
-- 不能机械把“无某类事件”升级成“无 prompt”。`wizard_portal` 的全行动卡分支正是“无抽牌事件，但必须创建排序 prompt”；后续给无事件分支补 `expectNoPrompt` 前，必须先读测试名和规则语义。
-- `respondCommand(...)` 可以保留命令序列测试的时间戳和玩家选择语义，同时去掉 `INTERACTION_COMMANDS.RESPOND` / `payload.optionId` 的手写外壳；这比仅替换 import 更接近 TDD 的稳定行为端口。
-- `baseAbilitiesPrompt.test.ts` 说明旧 handler 桥接并不必暴露 `interaction.data`：测试仍可直接调用 handler 验证 stale-state 回归，但 handler data 应通过 `getPromptHandlerData(prompt)` 获取，这样 prompt 外壳变化时不会批量改测试体。
-- 二段 prompt 不应通过 `queue[0]` 证明；`getSimpleChoicePrompt(state, sourceId)` 能表达“出现了目标业务 prompt”，同时隐藏 current/queue 的存储位置。
-- 基地 prompt 的 title/player/options/source 都属于可观察 prompt 合同，应该通过 facade 断言；测试不需要知道这些字段目前在 `data` 还是展开在 prompt 顶层。
-- `igor-ondestroy-idempotency.test.ts` 说明“统计某 sourceId 的 prompt 数量”应直接使用 `getPromptsBySourceId`，不要在测试体里重复拼 `current + queue`；这类重复代码是实现外壳重构时的高频碎裂点。
-- 跳过块不是降计数对象。若命中只存在于 `it.skip` 历史场景，默认记录为历史债务，不为了漂亮数字去改没有运行验证价值的代码。
-- `ongoingTalent.test.ts` 说明 runtime prompt 链也能按稳定行为端口表达：Zeppelin/Hideout/Pixie 的多步链仍直接调用旧 handler 验证 stale-state 与链式交互，但 prompt 查找、options 和 handler data 都不再暴露 current/queue/data 形状。
-- 对 `autoResolveIfSingle` 这类 prompt 配置，测试应兼容顶层 prompt 与 handler data 两种外壳读取；重点是“该业务 prompt 是否单选自动解析”，不是字段住在哪一层。
-- 只把 `newBaseAbilities.test.ts` 移到 `base-ability-contracts.test.ts` 会变成换名不换本质；有效治理必须继续检查文件是否仍是“多个业务对象共用一个大容器”。本轮继续把 `base-ability-contracts`、`samurai-bases`、`base-core-effects` 与 `first-minion-bases` 拆到业务对象/行为簇文件，才算避开“只改表象”。
-- `first-minion-bases.test.ts` 的拆分说明“机制相似”不必然等于“同一测试文件”：实验工坊带旧持久化队列恢复与大法师联动，集会场只是首随从临时力量合同；放在一起会让后续任一基地重构时误扫另一类规则。按具体基地拆开更符合 TDD 的稳定行为边界。
-- 拆分后的判断标准不是行数本身，而是是否还存在旧入口、裸 prompt seam、skip 死代码、或跨业务对象的大杂烩。当前目标扫描为 0 命中，`bases` 目录全量 101 tests passed；后续再拆应先证明文件内确实混有独立业务边界，不能为了压行数制造碎片化测试。
-- `base-scoring-effects.test.ts` 是“按机制粗分”仍然不够的例子：4 个 afterScoring 基地互不共享规则语义，后续任一基地改规则都不应让维护者扫完整计分集合。拆成鬼屋/刚柔流寺庙/大图书馆/仪式场所文件后，测试边界更接近卡牌对象。
-- `interaction-base-abilities.test.ts` 暴露重复入口问题：鬼屋 AL9000 已有自己的基地文件，集合里又有一份交互测试。正确处理不是保留两个入口，而是把交互分支合并到鬼屋文件，并删除集合入口。
-- 将旧 `respondToPrompt` 直接替换为 `runCommand(respondCommand(...))` 会让测试走完整管线，也会暴露夹具不完整的问题。`rlyeh-base.test.ts` / `ninja-dojo-base.test.ts` 的红灯说明测试夹具必须包含真实玩家字段，否则不是业务断言，而是在后处理阶段因假状态崩掉。
-- 测试数减少不一定代表覆盖下降：本轮 `bases` 从 101 到 100，是合并了鬼屋 AL9000 的重复“多手牌产生 prompt”覆盖；单手牌自动弃、响应弃指定手牌、空手牌不触发仍保留。后续审计测试数量变化时要先分辨“重复覆盖合并”与“行为分支丢失”。
-- 对同一主题链路也要继续问“变体是否属于同一业务对象”。`samurai-sakura-garden-bases.test.ts` 最初可解释为 Sakura Garden 触发链，但普通版与 POD 版来自不同卡池/复用口径，拆成 `sakura-garden-base.test.ts` 与 `sakura-garden-pod-base.test.ts` 后，后续维护者能直接定位目标变体。
-- 不要把“跨对象交互”误判为“必须同文件”。普通 Sakura Garden 与 `samurai_honor_the_fallen` 的顺序属于普通基地合同；POD Sakura Garden 与 `samurai_samurai_chan_pod` 的顺序属于 POD 变体合同。测试可以保留交互链，但文件归属应落到被验证的基地变体。
-- `laboratorium-base.test.ts` 的进一步拆分说明，同一张基地牌也可能有两类维护频率不同的测试：基础规则合同应留在短文件里；线上反馈/旧持久化队列恢复这种高上下文回归应独立成文件，避免基础规则重构时被历史队列细节拖住。
-- 对 `bases` 目录的验证不能再依赖单次大并发 Vitest 结果：本机两次全目录跑法都在 worker fork 阶段 OOM。可靠证据是分批精确文件验证，每批 6 个文件，覆盖 `bases/*.ts` 实际文件树并全部通过。后续若目录继续增长，应优先沉淀脚本化分批验证，而不是反复用会 OOM 的单命令。
-- `pod-base-reuse.test.ts` 说明“复用合同”也容易变成横向垃圾桶。POD 复用测试应跟随对应普通基地/派系上下文，例如 Cowboys POD 放回 `cowboys-bases.test.ts`，Vikings POD 进一步随 `drakkar` / `longhouse` 拆分，而不是单独维护一个跨派系 POD 集合。
-- 合并集合后要警惕制造新的集合文件：把 Vikings POD 全部并回 `vikings-bases.test.ts` 后，该文件立刻变成 Drakkar + Longhouse 的混合入口。正确收敛是继续按具体基地拆成 `drakkar-base.test.ts` 与 `longhouse-base.test.ts`。
-
-## 2026-05-16 14:15 +08 afterScoring skip 治理补充发现
-
-- `base_miskatonic_university_base` 当前注册点是 `onMinionPlayed`，不是 afterScoring；旧 `miskatonic-scout-afterscore.test.ts` 的前提已过期，恢复它会制造错误规则合同。
-- `wizard-academy-scout-afterscore.test.ts` 使用旧 `wizard_academy` / `wizard_academy_reorder` 口径；当前有效 sourceId 是 `base_wizard_academy`，且可直接通过 `ADVANCE_PHASE` 后的真实 prompt 链验证。
-- 真实 afterScoring 链路的稳定测试 seam 是：`ADVANCE_PHASE` 进入计分 → `getReactionPrompt` / `getSimpleChoicePrompt(sourceId)` 读取业务 prompt → 选择 option → 最终状态断言；不需要测试体读取 `sys.interaction.current` / `data.options`。
-- `newOngoingAbilities.test.ts` 说明旧泛名大文件可以继续做“净删减式”收敛：不往里新增场景，只把现有业务断言迁到 facade，结构门禁会保留旧泛名债务 warning 但不阻断。
-- `base_rlyeh` 无目标分支暴露一个重要边界：不是所有“无交互”都等价于“有 matchState 且无 prompt”。如果能力执行在无交互时不返回 matchState，测试应保留 `matchState` 不存在这个行为合同，不能强行套 prompt facade。
-- `getFirstPrompt` 适合只关心“下一条业务 prompt 的 options 合同”而不关心 sourceId 的测试；若测试实际要锁 sourceId，应优先用 `getSimpleChoicePrompt(state, sourceId)`。
-- `expansionOngoing.test.ts` 进一步证明本轮不是只改标线：Steampunk/Killer Plant/Innsmouth/Miskatonic 的业务测试仍验证候选过滤、二段 prompt、stale-state 防重复、POD 链路与最终事件，但测试体不再直接知道 prompt 在 `sys.interaction.current`、后续 prompt 在 `queue[0]`、候选在 `data.options` 或 handler data 就是 `interaction.data`。
-- 无交互分支有两种稳定合同：能力可能返回一个无 prompt 的 matchState，也可能完全不返回 matchState。后续迁移不能机械套 `expectNoPrompt(result.matchState!)`；应先确认该用例原本保护的是“无活跃 prompt”还是“无后续 matchState”。
-- `expansionBaseAbilities.test.ts` 说明扩展基地测试的高频脆弱点不只在 sourceId：stale handler 回归、reaction queue 后续 prompt、scoring session continuationContext 都曾直接绑定 `interaction.data` / `queue[0]`。这些应通过 `getPromptHandlerData` 和 sourceId prompt 查询表达，测试目标才是“出现哪个业务 prompt / 选择哪个业务 option / 是否保留 continuation 语义”，而不是 InteractionSystem 存储形状。
-- `PromptOverlay.interactions.test.tsx` 说明 UI 组件测试同样不应直接 import 系统响应常量；如果测试目标是“点击按钮提交某 option”，稳定合同应是 `respondCommand(optionId)` 生成的命令语义，而不是 `INTERACTION_COMMANDS.RESPOND` 的字符串和 payload 外壳。
-- `vampiresPod.test.ts` 说明 POD 复杂交互链不是只能裸读 `sys.interaction.current` 或 `queue`：Big Gulp 目标、Fledgling 反应、Nine Lives save/decline、The Count / Dinner Date / Wolf Pact 后续 prompt 都可以通过 prompt facade 表达。这样实现内部把 prompt 从 current 移到 queue、调整 data 外壳或改响应命令字符串时，业务测试不应批量碎裂。
-- “不是表象”的最低判断标准：不是看命中数下降多少，而是业务测试是否还能用稳定语义端口表达行为。有效迁移应同时满足三点：测试名/断言仍描述业务行为；测试体不裸读 prompt 存储结构；验证仍跑过原行为链。`vampiresPod.test.ts` 本批满足该标准，但全目录仍有 465 条旧耦合命中，不能宣称整体完成。
-- `newBaseAbilities.test.ts` 证明旧大文件里最脆的是“业务链 + 系统外壳”混写：同一测试既在证明 Drakkar/Longhouse/Cowboys/Samurai 的业务效果，又手写 `SYS_INTERACTION_RESPOND` 和 `prompt.data.options`。本轮把这些集中到 prompt/command facade 后，测试仍验证抽牌、埋葬、决斗、POD 复用和 reaction choose 顺序，但不再绑定 InteractionSystem 的字段位置。
-- reaction queue 选择应按“选择哪个 sourceDefId 的反应”表达，而不是让每个测试手工知道 current prompt、triggerQueue、option.value.triggerId 和 RESPOND 命令外壳。`resolveReactionPromptBySource` 这类本地小 helper 是合理过渡；若后续多个文件重复出现，应再上提到共享 helper。
-- 旧泛名文件即使命中清零，结构债务仍存在。`newBaseAbilities.test.ts` 当前 prompt seam 目标扫描为 0，但 `test:structure` 仍提示旧泛名文件债务，后续目标应是按基地/派系/能力簇迁出，而不是继续把新场景塞回这个文件。
-- `interactionChainE2E.test.ts` 是最能说明“不是只改表象”的文件：它仍然逐步验证 2-4 步真实交互链、循环链、直点链和 stale move 回归，但测试体不再直接知道 prompt 存在 `sys.interaction.current`、响应命令叫 `INTERACTION_COMMANDS.RESPOND`、选项存在 `choice.options`。这正是 TDD 规范里的“行为通过稳定接口验证”。
-- `smashup.smoke.test.ts` 进一步证明不能用“只改表层”来收口：该文件仍保留 133 条 smoke 行为断言，覆盖泰坦天赋、基地触发、reaction choose、AI 响应、Pecos Bill 决斗和 Fort Titanosaurus 等链路；变化是测试体不再裸读 `state.sys.interaction.current.data`、`queue[0].data`、`prompt.data.options` 或手写 `SYS_INTERACTION_RESPOND`。这能减少后续 InteractionSystem prompt 外壳重构时同步改测试的范围。
-- reaction choose 的稳定 seam 应表达“选择哪个 sourceDefId 的反应”。`getReactionPromptOptionBySourceDefId` 比每个测试手写 `triggerQueue` map + `current.data.options.find(...)` 更符合 TDD 的行为接口原则。
-- 旧 handler 桥接不是一律删掉；当测试仍在验证业务事件和最终状态时，可以保留 handler 调用，但 prompt source/options/handler data 必须走 facade。这样保留诊断价值，同时把内部 prompt data 形状收敛到 helper。
-- 可选后续 prompt 不能机械替换为强制 facade。Ghost The Dead Rise 的链路里，弃牌后可能因弃牌堆候选不合格而没有下一步 prompt；原测试允许这一点。迁移时必须用 `getOptionalSimpleChoicePrompt` 保留“可能有，也可能没有”的行为合同。
-- 对“跳过第二步”这类链路，保留一个 `getPromptOptions(...).some(id === 'skip')` 的断言比完全删掉临时 `choice` 更好；它证明 UI/交互确实给出了跳过选项，而不只是命令能被硬发出去。
-- `shayuComprehensiveBehavior.test.ts` 说明“审计行为测试”也不是只能裸读内部 prompt：L2 仍验证 Megalodon 目标过滤、Mako/血腥水域额外随从限制、Shark Reef 放指示物、Hades 回收行动牌、Twister/Monster Tornado 可选跳过等业务行为，但 source/options/player/无 prompt 断言已经通过 facade 表达。
-- “只改表象”的判定应看断言是否仍绑定内部外壳。`shayuComprehensiveBehavior.test.ts` 本批不是把 38 个命中改成等价字符串，而是把 prompt 外壳读取集中到 `chooseOptionBySource` 与共享 helper；后续 InteractionSystem 调整 `current/queue/data/options` 时，这类业务测试应只需要改 helper。
-- 剩余 53 条不能机械清零：`promptSystem.test.ts` 中 AI fallback/event 常量属于底层合同候选，`igor-ondestroy-idempotency.test.ts` 的 4 条在 `it.skip` 历史块，audit 文件需要专用配置验证。后续应先分类，再迁移，不能为了漂亮数字改无运行价值或本来应保留的底层合同断言。
-- `audit-d1-alien-crop-circles.test.ts` 暴露出测试数据工厂本身也是 TDD seam：手写随从对象少了 `attachedActions`，导致 audit 在领域 reduce 中红灯。修这种不是“为了测试改实现”，而是把测试夹具收回 `makeMinion` 这个领域对象工厂，避免以后领域字段增加时每个测试各自碎裂。
-- audit 文件迁移要先用 `vitest.config.audit.ts` 建红/绿基线。普通 `npm test` 默认不覆盖 audit；如果不跑专用配置，既看不到真实红灯，也无法证明 facade 迁移没有破坏审计行为。
-- 当前剩余 40 条里，多数来自 `.skip` 旧复现文件；这些不应按普通可运行测试处理。后续真正需要治理的是：一类是恢复/重写为可运行行为测试，一类是归档为历史债务，一类是 `promptSystem.test.ts` 这种底层合同例外。
-- `promptSystem.test.ts` 是本轮“不要机械清零”的明确例子：AI fallback 测试目标就是确认无可选项时返回 `RESPOND` emergency skip 或 `CANCEL`，这里直接断言 `INTERACTION_COMMANDS` 属于底层系统合同，不是业务测试偷读实现细节。
-- `.skip` 旧复现文件不能只做 facade 替换。它们现在没有运行价值，若要治理，应先决定是否仍代表真实需求，再重写成当前测试框架可运行的行为测试；否则迁移内部字段只是把死代码刷干净。
-- 旧 `test-alien-scout-afterscore.test.ts` 的核心意图已经由活跃的 `alien-scout-pod-afterscore.test.ts` 覆盖：基础版 `alien_scout` 与 POD 版都会创建 `alien_scout_return`，同时还有两个侦察兵并存和 stale handler 场景。后续处理该 skip 文件应偏向归档/删除前确认，而不是复制同义测试。
-- 规范文档里的示例也会反向塑造测试习惯。`docs/testing-best-practices.md` 底部如果继续把 `getInteractionsFromMS` 列为“检查交互”的默认工具，即使前文写了 facade 门禁，后续仍容易被复制出旧 seam。快速参考必须与门禁保持一致：默认 facade，低层枚举只留给系统契约测试。
-- 性能优化不能再用“提交 skip”表达。文档中的慢速测试建议应改成“缩小运行范围/专用配置”，而不是 `it.skip`；E2E 里的动态 `test.skip()` 只允许作为环境前置失败保护，不能掩盖业务链路失败。
-- 本轮 broad scan 的“剩余 40”已经不再代表活跃普通业务测试旧 seam：36 条属于 skip 历史文件，3 条属于 `promptSystem.test.ts` 系统合同，1 条属于 helper 兼容重导出。后续指标应改成“恢复/归档 skip 历史文件数量”，而不是继续追求 prompt coupling 数字清零。
-- helper 重导出也是测试 seam 的一部分：即使没有业务测试直接裸读，只要 `auditUtils` 继续暴露 `getInteractionsFromMS`，新审计测试仍可能复制低层枚举路线。删除未使用的兼容出口比继续在文档里解释“别用它”更可靠。
-- 全 audit 失败不能被包装成本轮失败或通过：本轮删除出口的验证证据是“无外部引用 + 结构门禁通过”；额外 audit 红灯暴露的是既有规则/注册债务，应单独按业务对象修复，不能为了证明 TDD seam 而顺手改 expected 或白名单。
-- `.skip` 历史文件不能机械改成“不 skip”。`elder-thing-multi-select-integration.test.ts` 原实现依赖不存在的 Runner 形状，真正的恢复方式是重新锁定行为入口：真实 `PLAY_MINION` 命令链 + prompt facade + 最终事件/状态断言。这样才是在补测试接口，而不是把死代码改活。
-- 对“多选”这类交互，不一定要测试 `data.multi` 的内部字段。更稳定的行为证据是：第一步候选包含所有合法目标，第二步不再包含已选目标，最终只消灭被选的两个随从。
-- `test-alien-scout-afterscore.test.ts` 说明历史 bug 复现的标题通常比旧实现更有价值。旧实现绑定过期 Runner 和内部 `interaction.data`，但真实不变量是“移除 special tag 后 afterScoring trigger 仍创建回手 prompt，选择回手会改变权威状态”。恢复时应保留这个不变量，丢掉旧外壳。
-
-## 2026-05-16 16:25 补充发现：Field of Honor 不是压行数问题
-
-- `field-of-honor-base.test.ts` 最初看起来是“单一基地文件”，但实际混合了四类维护频率不同的行为：基础 `onMinionDestroyed` 合同、FAQ batch、`robot_microbot_guard` 真实命令链、缺 `destroyerId` 的后处理兜底。后两类属于消灭事件管线回归，不应和基础基地合同绑在一个文件里。
-- 仅把 `field-of-honor-base.test.ts` 拆小仍然不够；真正的旧 seam 是测试体直接调 `processDestroyTriggers`。这个函数属于 reducer 内部后处理流程，后续参数、返回结构或调用位置调整时，业务测试会被迫跟改。
-- 新增 `resolveDestroyedMinions` 的价值在于把测试语言改成“这些随从被消灭，由当前玩家结算”，而不是“调用 reducer 的某个内部函数并手写 `MINION_DESTROYED` 事件外壳”。这符合 TDD 的公开行为 seam 方向。
-- 同类问题不能只修 Field of Honor。`base_crypt` 的 FAQ batch 用例也直接调 `processDestroyTriggers`；本轮同步迁到 `resolveDestroyedMinions`，否则会留下同一类重构碎裂点。
-- 工具验证也要防“表象”：并行跑分批测试和结构门禁会触发本机 Node/Vitest OOM，不能把 OOM 当业务失败或成功。低并发分批 + 失败文件单独复跑，才是当前 `bases` 目录可复查的验证方式。
-
-## 2026-05-16 16:40 补充发现：后处理入口比文件名更关键
-
-- `processDestroyTriggers` 的裸调用不是单个 Field of Honor 问题，而是整棵 SmashUp 测试树的重构碎裂点。只拆目录或换文件名不能降低后续 reducer 参数/返回结构调整时的测试维护成本。
-- `resolveDestroyedMinions` 应作为普通业务测试的稳定端口：测试输入是被消灭随从的业务事实，测试输出是产生的业务事件与最终状态；测试体不需要知道后处理函数名、参数顺序或 reducer 文件位置。
-- helper 层保留 `processDestroyTriggers` 是合理的过渡边界；业务测试扫描应排除 helper 层并确保普通测试不再直接 import reducer 内部后处理函数。
-- 下一批不能机械追求 `process*Triggers` 全清零。当前 `processMoveTriggers` / `processAffectTriggers` / `processReturnToHandTriggers` 命中集中在 `reactionQueueOrdering.test.ts` 与 `smashup.smoke.test.ts`；应先区分“业务测试误用内部入口”和“底层 reducer/系统合同测试”，前者上移到 facade，后者可保留但要明确命名为底层合同。
-
-## 2026-05-16 16:50 补充发现：底层合同测试不应为了数字清零而隐藏意图
-
-- `smashup.smoke.test.ts` 的后处理调用属于普通业务链路：它要证明硕大圆石、漫游山岭巨人、时间盒子的可观察行为，因此应通过 `resolveMovedMinions` / `resolveAffectedMinions` / `resolveCardsReturnedToHand` 表达业务触发。
-- `reactionQueueOrdering.test.ts` 的后处理调用属于底层系统合同：测试名和断言都直接针对 `sourceEventId`、`frameId`、`counterChangeKind`、`counterDelta`。把这些调用包进业务 facade 反而会模糊测试目的。
-- `processDeckInspectionTriggers` 当前也只在 `reactionQueueOrdering.test.ts` 中出现，且断言 deck-inspected 的 `sourceEventId` / `frameId`；这和 move/affect 一样应保留为底层合同测试。
-- 后续扫描指标必须分两类看：普通业务测试裸调后处理入口应清零；明确命名的后处理合同测试可保留低层调用，但要有精确测试通过作为证据。
-
-## 2026-05-16 16:58 补充发现：同一文件不能只收一半 seam
-
-- `smashup.smoke.test.ts` 先收掉后处理函数裸调后，硕大圆石链路仍在用 `current ?? queue[0]` 和 `prompt.data` 推进。只做到这一步仍会在 InteractionSystem 外壳重构时碎裂。
-- 对同一业务链路，正确收敛应同时覆盖触发入口和 prompt 读取/handler data：后处理通过 `resolveMovedMinions` 表达，prompt 通过 sourceId facade 查询，handler data 通过 `getPromptHandlerData` 传递。
-- 文件级扫描比全局大数字更有执行价值：`smashup.smoke.test.ts` 的目标裸 prompt 模式已经 0 命中，说明该文件对当前几类高频 seam 已阶段性收口。
-
-## 2026-05-16 17:02 补充发现：不要把 current 为空偷换成无 prompt
-
-- `scoreBases-auto-continue.test.ts` 中 Hoverbot sourceId 裸读可以直接迁到 prompt facade，因为测试目标就是“出现 robot_hoverbot prompt”。
-- 同文件另一处 `resolved.state.sys.interaction?.current === undefined` 不能机械替换为 `expectNoPrompt`。后者还要求 queue 为空，语义更强；除非确认该用例真正要保护“完全无 prompt”，否则会把测试合同扩大。
-- 因此 seam 治理也要保持 TDD 粒度：只迁移等价的观察接口，不因为 helper 更方便就改变原行为断言范围。
-
-## 2026-05-16 17:05 补充发现：存在性断言也应走 facade
-
-- `afterscoring-response-window-execution.test.ts` 的 `queue.length > 0 || current` 虽然只是存在性判断，但仍绑定 InteractionSystem 存储形状。等价行为表达是 `getSimpleChoicePrompt(state)`。
-- 对“有交互”这类测试，若不关心 sourceId，使用无 sourceId 的 prompt facade 比硬猜 sourceId 更稳；若测试名要求具体业务 prompt，再补 sourceId 断言。
-
-## 2026-05-16 17:14 补充发现：先看文件内既有语义再升级断言
-
-- `turnCycle.test.ts` 已有多处 `expectNoPrompt`，因此把同文件一处 `current === undefined` 改为 `expectNoPrompt` 符合同一文件的既有合同语义。
-- 这和 `scoreBases-auto-continue.test.ts` 不同：后者没有证据表明 queue 也应为空，所以不能机械升级。迁移前先看同文件已有 helper 用法，是避免过度断言的低成本判断。
-
-## 2026-05-16 17:18 补充发现：可选 reaction 结果要保留可选语义
-
-- `baseAbilityIntegrationE2E.test.ts` 的 `maybeResolveReactionQueue` 用例原本允许返回 `undefined`；迁移时不能强制要求一定有 state。
-- 等价迁移方式是 `if (resolved) expectNoPrompt(resolved.state)`，既隐藏 prompt 存储结构，又不改变“无 reaction 结果也可接受”的原合同。
-
-## 2026-05-16 17:20 补充发现：数量断言应指向业务 prompt，不是 queue 容器
-
-- `igor-two-igors-one-destroyed.test.ts` 的核心不变量是“只触发一个 Igor onDestroy prompt”。直接断言 queue 长度为 0 只是当前存储形状的副作用。
-- `getPromptsBySourceId(state, 'frankenstein_igor')` 能同时覆盖 current 与 queue，断言也更贴近测试标题；这类替换比单纯 `expectNoPrompt` 更符合业务语义。
-
-## 2026-05-16 17:30 补充发现：表象扫描要落到分层边界
-
-- `multi-base-afterscoring-bug.test.ts` 说明“无 prompt”是业务可观察结果，不应写成 `current` 是否存在或 `queue` 长度；`expectNoPrompt` 失败时还能暴露剩余 sourceId，比裸断言更利于定位。
-- `afterscoring-window-skip-base-clear.test.ts` 的 `queue = []` 不是断言，而是测试状态构造。把它收进 `withOnlyCurrentPrompt` / `withoutQueuedPrompts` 后，后续 InteractionSystem 内部队列字段变化时，只需改 helper，不需要逐个改业务用例。
-- `promptSystem.test.ts` 与 `promptResponseChain.test.ts` 已经有 `expectNoPrompt` 时，再补 `sys.interaction.queue === []` 只是在重复绑定内部存储形状；删掉这类断言不会降低行为覆盖，反而减少重构碎裂点。
-- 当前剩余扫描命中应保留分类：`reactionQueueOrdering.test.ts` 直接验证 `sourceEventId` / `frameId` / `counterChangeKind`，属于后处理系统合同；`bases/base-contract-helpers.ts` 是 helper 层封装点。把这两类也包成高层业务 facade，反而会丢失底层合同测试的表达力。
-
-## 2026-05-16 17:35 补充发现：options 也是 prompt 合同的一部分
-
-- `choice.options` 看起来比 `sys.interaction.current` 温和，但仍然把业务测试绑到 prompt 对象字段名。`getPromptOptions` 已经同时兼容 `prompt.options` 与 `prompt.data.options`，普通测试应默认走它。
-- 这批改动没有削弱业务断言：Alien Invasion 仍验证受保护随从不进候选，Laseratops POD 仍验证按印制力量过滤，Cthulhu Chosen 仍验证 generic yes/no 按钮，Block the Path POD 仍验证可选派系组合。
-- 对 option 枚举类测试，稳定接口不是“数组存在于哪里”，而是“候选集合包含/不包含哪些业务值”。后续新增 prompt 测试时，应优先用 `getPromptOptions` / `getPromptOption` / `getPromptOptionByCardUid` 这类 helper。
-
-## 2026-05-16 17:40 补充发现：handler seam 先收参数签名，再决定是否黑盒化
-
-- `baseAbilitiesPrompt.test.ts` 的 stale prompt 用例是在刻意构造“prompt 创建后目标已离场”的边界状态，短期内直接改成真实命令链可能会丢失这个诊断入口。
-- 但每个用例都手写 `getInteractionHandler('具体 id')`、`getPromptHandlerData(interaction)`、`dummyRandom` 和时间戳参数，会让 handler 签名重构时成片修改测试。把这些集中到 `resolvePromptAgainstCore` 是比“直接改成 E2E”更稳的中间层。
-- 后续判断 handler 直调时应先问：测试目标是 handler 注册/参数合同、stale 边界处理，还是普通用户行为？前两类可保留低层入口但要收拢签名；普通用户行为才应迁到命令链或 prompt respond facade。
-
-## 2026-05-16 17:45 补充发现：共享 facade 比文件内小 helper 更能防回潮
-
-- `resolvePromptAgainstCore` 如果只留在 `baseAbilitiesPrompt.test.ts`，其他文件仍会继续复制 `getInteractionHandler` + `getPromptHandlerData` + 参数顺序。上提为 `resolvePromptViaRegisteredHandler` 后，后续迁移有统一落点。
-- `reactionQueueDestroyerId.test.ts` 是较好的第二个样本：它仍然保留“先走 reaction queue，再确认 displayCard 上下文”的业务断言，但不再知道 `smashup_reaction_choose` handler 的位置参数。
-- 共享 helper 的边界是“已有 prompt 对象，需要按注册 handler 解析”；没有 prompt 对象、专门测试注册表行为、或直接测试 reducer/保护过滤的文件，不应被强行塞进这个 helper。
-
-## 2026-05-16 17:50 补充发现：reaction queue 可以收 prompt seam，但保留后处理合同
-
-- `reactionQueueOrdering.test.ts` 里同时存在两类测试：一类是“用户选择哪个 reaction prompt”的响应链，适合走 `resolvePromptViaRegisteredHandler`；另一类是 `process*Triggers` 给 queued trigger stamped `frameId/sourceEventId`，这属于底层合同，不能为了扫描好看而隐藏。
-- `reactionQueueBaseOptionalClockwise.test.ts` 的关键行为是 optional trigger 按顺时针玩家轮转。迁移到共享 helper 后，测试仍验证 playerId 轮转与可选项集合，只是不再知道 reaction handler 的参数顺序。
-- 对 reaction queue 后续治理，扫描指标应拆成两列：prompt 响应 seam 可持续迁移；后处理 frame/source 合同保留直接低层入口并要求测试名明确。
-
-## 2026-05-16 17:55 补充发现：小派系文件适合先清 prompt handler seam
+## 2026-05-15 七大恨 UI 生图与素材 intake 发现
 
-- `abilities/cthulhu.test.ts` 和 `elderThingAbilities.test.ts` 都是明确已有 prompt 对象、随后只为选择一个 option 而直调 handler 的模式，适合直接迁到 `resolvePromptViaRegisteredHandler`。
-- 迁移后业务断言没有变：`special_madness` 仍验证抽牌/返回事件，`elder_thing_mi_go` 仍验证对手抽疯狂卡与施法者抽牌；变化只是不再绑定 handler 注册表和位置参数。
-- `getPromptHandlerData` 不需要绝对清零。用于传 handler 参数时应被 facade 接管；用于验证 `displayCard`、`continuationContext`、`autoRefresh` 这类 prompt 合同时可以保留，但测试名和断言必须说明其合同意义。
+- 用户点名的 `httpcloud3steamusercontentcomugc1622941169714156910E3CA280242072D48980B4B5AA52EC8F0271C5412.jpg` 是蒙古玩家规则参考卡，能反推玩家实际高层入口与规则分组；这类提示板必须进入数据录入与 UI/UX 拆解，不能按普通插图处理。
+- `player-aid-*` 当前实际更像三势力科技/军备进度表；`rules-reference-sheet-*` 和 `scenario-setup-sheet-*` 的序号命名不利于后续引用，应按势力与用途重命名。
+- v26 生图验证的有效 UI 方向：主界面只保留当前轮次高层入口；子分支不常驻；底部手牌横排为核心决策区；牌库/弃牌和公共牌堆需要分开放且有点击 affordance。
+- 生图失败的通用原因已沉淀：没有做 UI 元素溯源矩阵时，模型容易把固定版图信息、流程提示、日志、计分提醒、弃牌/支付面板误升为主 UI。
 
-## 2026-05-16 18:00 补充发现：旧泛名文件不能继续承接“顺手治理”
+## 2026-05-15 七大恨轮盘交互与按钮密度发现
 
-- `choice-audit-fixes.test.ts` 即使只是 facade 迁移，也会触发测试结构门禁，因为旧泛名文件出现净新增内容。这类文件不能继续作为当前测试治理的落点。
-- 正确处理方式是迁出为聚焦文件，例如本轮的 `elder-thing-choice-goju-tiebreak.test.ts`。这样既保留原有 10 条审计回归，又不继续强化 `*-fixes` 大杂烩。
-- 无 prompt 对象的 handler-level 合同测试不能强塞进 `resolvePromptViaRegisteredHandler`。`base_temple_of_goju_tiebreak` 当前直接构造 `iData`，说明它验证的是 handler 边界；后续若要升层，应先补真实 prompt 构造或命令链，而不是伪造 prompt facade。
-
-## 2026-05-16 18:08 补充发现：普通业务 prompt 响应应优先走命令链
+- v26 的核心缺陷不是素材缺失，而是没有模拟前端流程：`转动轮盘` 只是一个大入口，图中看不出点击后如何选择轮盘移动方式。
+- 规则给出的轮盘选择应先在轮盘附近选择移动方式：`免费 1 格`、`指定对手抽 2 / 前进 2`、`所有对手抽 2 / 前进 3`；转动完成后才进入当前轮盘格动作执行态。
+- UI 规范落点：按钮可见本体应紧凑，触控命中区可透明放大；不能把 44px 命中区误画成大红 CTA 或厚重按钮板。
+- v27 证明“轮盘旁展开三选项”交互方向成立，但固定轮盘文字被生成模型改成假动作名，不能作为合格稿。
+- v28 修正后保留规则轮盘文字、轮盘旁三选项、横向手牌、牌库/弃牌分离和朝鲜堆可点击。该图适合指导布局与交互层级；真实实现必须使用真实轮盘素材/文本层，不得从生成图提取规则文字。
 
-- `shoggoth-destroy-choice.test.ts` 原先每个用例都要知道 handler 名、handler 参数顺序、prompt data 存储位置，以及“调用 handler 前要先清 current”。这不是表象耦合，而是测试直接复刻 InteractionSystem 内部执行步骤。
-- `respondToPromptOption(...)` 把业务测试接口提升到“玩家选择某个可见选项”。以后 handler 签名、`prompt.data` 结构、current 清理时机变化时，普通业务测试只需要维护 helper，不应成片改用例。
-- `turnCycle.test.ts` 暴露出另一个内部耦合：旧测试手动 handler 响应后还要手动 `advanceSmashUpReactionSession`。真实 `SYS_INTERACTION_RESPOND` 管线会自动续出下一个 prompt，因此业务测试应断言“下一个 prompt 出现”，而不是继续模拟内部 resume 步骤。
-- 分层口径更新：普通业务链路优先 `respondToPromptOption` / `respondToPrompt`；刻意验证 stale prompt、handler 边界或无 prompt 对象的测试才使用 `resolvePromptViaRegisteredHandler` 或更低层入口，并且测试名要表达其合同性质。
-
-## 2026-05-16 18:14 补充发现：runtime prompt 也不能默认直调 handler
-
-- Alien Scout 和 Microbot Reclaimer 都属于 ability runtime prompt，但普通“玩家选择一个选项”的测试仍应通过 `SYS_INTERACTION_RESPOND` 跑完整管线。否则测试会绕过事件后处理、状态应用和 prompt 续接，只验证 runtime handler 函数本身。
-- stale prompt 不必退回直接 handler。`withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` 可以明确表达“旧 prompt 尚在，但权威 core 已变化”，再通过真实响应命令验证不会重复回手；这比手动传 `getPromptHandlerData(oldPrompt)` 更贴近实际运行态。
-- `robotAbilities.test.ts` 剩余的 `getPromptHandlerData(prompt)` 属于动态 `optionsGenerator` 刷新合同：测试要证明弃牌堆变化后候选重新计算，不是要解析 handler。后续扫描不能把所有 `getPromptHandlerData` 等同看待，必须区分“传 handler 参数”与“prompt contract 数据输入”。
-- 空多选跳过也应走 `respondToPromptOptions(state, [])`。这补齐了 `respondToPromptOption` 只能处理单个可见选项的空选择场景，避免多选能力继续手写 handler value 数组。
+## 2026-05-15 七大恨手牌行动与支付顺序发现
 
-## 2026-05-16 18:18 补充发现：强行命令链化会掩盖低层合同
+- 用户指出 v28 的手牌行动入口仍有空间和流程误导：`手牌行动` 是按钮，但不应占据底部手牌区域；底部只应承载手牌、牌库、弃牌和动作已选后的支付反馈。
+- 规则原文确认关键顺序：玩家行动流程为检查手牌上限、转动轮盘、执行一次手牌行动及轮盘行动；手牌行动为三选一；势力行动与军备的弃牌数由已选动作/具体势力行动决定。
+- 因此 UI 不能先让玩家弃牌再选择用途。正确顺序是：打开 `手牌行动` -> 选 `执行事件 / 升级军备 / 势力行动` -> 若为势力行动再选具体行动 -> 计算并显示 `需弃 N / 已选 M` -> 玩家从手牌选择支付。
+- 通用生图 skill 已补强：动作入口与实体区分离、变动代价必须先选动作再支付、手牌 row 不承载高层动作按钮、生成后检查“是否违反先选动作再支付”。
+- v29 修正方向：右侧 action rail 展开 `手牌行动`，`势力行动` 和具体势力行动列表留在右侧；底部横向手牌只显示卡牌、牌库、弃牌和 `赐印招安 3` 已选后的支付反馈。
 
-- `abilities/pirates-ongoing.test.ts` 的 First Mate afterScoring 用例手工构造 scoring session 与 reaction session，当前并没有 visible prompt 可供 `SYS_INTERACTION_RESPOND` 响应。把它硬改成 `respondToPromptOption` 会红灯，说明这是 session/handler 合同测试，不是普通用户交互链。
-- 这类用例可以保留 `getInteractionHandler`，但必须在计划中归类为有意低层例外；否则扫描数字会误导下一轮继续强改，导致测试语义被破坏。
-- 相比之下，`pirate_full_sail_choose_minion` 的“完成”响应可以通过真实 ability 触发先拿到 prompt，再走 `respondToPromptOption`。判断标准不是 handler 名是否存在，而是当前测试是否能以公开 prompt/命令链表达同一行为。
-- `getInteractionHandler('pirate_buccaneer_move')` 这种“已注册”断言本身就是注册表合同。它不应该被 prompt facade 替换；要减少重构碎裂，应把这类合同测试集中、命名清楚，而不是伪装成业务测试。
+## 2026-05-15 七大恨 v30 文案与配重发现
 
-## 2026-05-16 18:22 补充发现：用 finalState 取代 handler events + applyEvents
+- 用户指出的本质问题不是“按钮名再改一下”，而是通用 skill 仍可能把规则描述、卡牌类型、评审说明直接翻译成 UI 可见文字。
+- 通用 skill 已抽象补强：禁止在全局 skill 固定某个游戏名或某个游戏按钮；项目已有 UI 参考改为“按机制检索相近 Board”，不再点名具体游戏；`手牌行动` 等七大恨词从通用 skill 中移除。
+- 新增文案门禁：按钮只写短动作词，卡牌/棋子/区域优先靠图面、图标、边框、可用态表达；解释句、规则摘要、类型说明默认不进主界面。
+- 新增布局门禁：生图后必须看左右/上下配重。侧边 rail 要窄而贴边，不能让右侧牌堆 + action rail 形成厚侧栏；底部手牌必须居中。
+- v30 看图结论：卡牌未再被大号 `事件/军备/战术/银两` 标签覆盖；`手牌行动` 和分支保留在右侧窄 rail；底部只放横向手牌、牌库/弃牌、支付 badge；支付出现在 `赐印招安 3` 选中之后。左侧轮盘/纪年卡与右侧朝鲜堆/action rail 形成基本配重。
 
-- `zombieWizardAbilities.test.ts` 原 `zombie_mall_crawl` 用例先直调 runtime handler，再手动 `applyEvents` 到 core。这样测试知道了“handler 返回事件、调用方负责应用事件”的内部分工。
-- 改为 `respondToPromptOption` 后，测试直接从 `finalState.core` 观察弃牌堆和牌库结果，合同更接近玩家响应后的权威状态；这比单纯把 handler 调用包一层更稳定。
-- `zombie_outbreak_choose_base` 同理：测试关心的是选中空基地后获得受限随从额度，而不是 runtime handler 的 value 参数形状。响应接口应表达“选择 baseIndex=1 的 prompt option”。
-- 该文件剩余 `getPromptHandlerData(current)?.displayCard` 是 prompt 展示合同，和传 handler 参数不同；这类断言可以保留，但后续如果大量出现，应考虑增加 `getPromptDisplayCard` 之类更窄的 facade。
+## 2026-05-15 23:20 +08 七大恨动作语义去重与手牌完整簇居中修正
 
-## 2026-05-16 18:25 补充发现：stale 回归可以用旧 prompt + 新 core 表达
+- 之前的错误不是用户没说清，而是我把“规则父级分类”当成了“必须显示的 UI 动作”。具体表现是：事件牌已经足以表示“执行事件”，却仍想额外显示同义按钮；具体势力行动已足够消歧，却仍让 `手牌行动/势力行动` 父级残留。
+- 规则原文明确支持顺序约束：先选择具体动作，再根据动作计算弃牌数；因此“先弃牌再选用途”的 UI 模拟是错的。
+- v32 已证明只删父级还不够：即便右侧只剩具体势力行动，若 `牌库 + 手牌 + 弃牌` 没有作为一个中间簇居中，画面仍会偏心，尤其牌库贴左下时会把底部决策区读成角落摆件。
+- 通用 skill 已补硬门禁：父级词必须在可见文案白名单中被删除；完整手牌簇要按整体验收；侧栏不参与底部居中计算。
+- v33 验证了新的验收口径：右侧只保留具体动作，父级标签删除；底部牌库、手牌、弃牌作为完整簇居中，解决 v32 牌库贴左下的问题。后续实现仍需以真实素材/文本层为准，不能从生成图提取规则文字。
 
-- `frankenstein_angry_mob` 原测试通过 `resolveCurrentPromptHandlerWithCore` 把旧 prompt data 和新 core 手动喂给 handler。这个模式能测 stale，但把测试绑死在 handler 参数和“handler 返回事件后谁来 resolveInteraction”的内部分工上。
-- 改为 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` 后，测试仍然表达同一个 stale 不变量：用户看到的是旧二段 prompt，但权威状态里目标手牌已经离开。响应走真实命令，断言不产生塞回牌库和加指示物事件。
-- 这给 stale 类回归一个可复用模板：先通过真实链路拿旧 prompt，再把 prompt 挂到变化后的 match state 上响应。除非测试目标就是 handler 函数本身，否则不需要 runtime handler 直调。
-- live 分支同样应从 `finalState` 或 emitted business events 观察结果，不要手动 `resolveInteraction` 拼出下一步 prompt。
+## 2026-05-15 23:36 +08 七大恨风格漂移与顶部肥大问题
 
-## 2026-05-16 18:28 补充发现：bug 复现文件也应优先验证真实链路
+- 风格漂移根因：prompt/skill 只说“克制、原图风格”，但没有要求提取原始素材的风格不变量，也没有把“高精奇幻/手游皮肤/厚金属 UI”列为失败项。生成模型会自动把扫描版图重绘成更精致的游戏皮肤。
+- 顶部变肥根因：只要求显示玩家状态，没有给顶部摘要高度预算；模型把玩家状态做成大玩家卡/大纹章，压住地图。
+- 通用修正：`boardgame-ui-imagegen` 增加“源素材风格锁定”和“顶部摘要高度预算”，要求顶部一行优先、两行封顶，风格漂移时布局正确也不通过。
+- 七大恨专属修正：明确原始扫描版图、低饱和、细墨线、轻 叠层稿 是风格真相源；顶部玩家摘要是薄状态签，不是导航栏或玩家卡。
+- v34 修正了顶部肥大与 叠层稿 过重问题，但仍属于 imagegen 重绘近似图；v35 使用真实地图底图，适合作为实现风格锚点。
 
-- `igor-big-gulp-double-trigger.test.ts` 原测试名和代码都把复现写成 `execute -> handler -> processDestroyMoveCycle`，这会让后续 reducer/handler 拆分重构时测试同步碎裂。
-- 改成 `runCommand(PLAY_ACTION)` + `respondToPromptOption` 后，测试仍覆盖同一个用户可见不变量：Big Gulp 消灭 Igor 后，只出现一个 Igor onDestroy prompt。底层 destroy cycle 是否仍叫 `processDestroyMoveCycle` 不再影响测试体。
-- 历史 bug 文件里的 `console.log` 不是证据；能用 prompt facade 和最终 prompt 数量断言表达时，应删掉调试输出，避免把排障痕迹当长期测试接口。
-- 低层后处理函数仍需要合同测试，但应集中在像 `reactionQueueOrdering.test.ts` 这类明确验证 frame/source 的文件，而不是散落在业务 bug 复现里。
+## 2026-05-16 00:34 +08 七大恨父级动作重复与尺寸误判
 
-## 2026-05-16 18:47 补充发现：live 响应下“无事发生”有两种完全不同的语义
-
-- `expansionOngoing.test.ts` 暴露出一个之前容易混淆的点：从 direct handler 迁到 `SYS_INTERACTION_RESPOND` 后，`events.length === 0` 不再稳定等价于“业务上什么都没发生”。命令链至少可能产出 `SYS_INTERACTION_RESOLVED`，而 live 校验还可能在进入 runtime handler 之前就直接拒绝响应。
-- 具体分层应拆成两类：
-  - `live` 刷新后该选项已经失效：应断言 `optionsGenerator` 刷新结果不再包含该 option，随后 `respondToPromptOption(...)` 返回 `success=false` / `无效的选择`。`steampunk_mechanic_target` 被 `ornate_dome` 封锁就是这种情况。
-  - 该 option 仍可点击，但 runtime 恢复阶段发现权威状态已变化：应断言响应成功收口，但不会产生业务事件，且最终权威状态未发生目标变化。`steampunk_mechanic_target` / `steampunk_change_of_venue_choose_base` 的“手牌已空”就是这种情况。
-- 这意味着后续治理不能机械把旧 handler 测试里的 `expect(events).toHaveLength(0)` 平移过来；需要先判断失效发生在“响应前的 live 候选重验”还是“响应后的 runtime 业务检查”。
-- 对业务测试而言，更稳的断言落点是“关键业务事件是否出现”和 `finalState.core` 是否变化，而不是总事件数组长度。总长度会被系统事件污染，继续拿它做断言只会把新管线的合理行为误判成回归。
-- `killer_plant_venus_man_trap_search` 的成功路径进一步证明：一旦测试目标只是“玩家从 prompt 里选一张牌后发生什么”，即便它是 runtime prompt，也应该直接走 `respondToPromptOption(...)`。测试只关心 `MINION_PLAYED` 的业务载荷，不该知道 `getAbilityRuntimePromptHandler(...)` 的存在。
-
-## 2026-05-16 19:06 补充发现：最终状态断言比手动 applyEvents 更接近真实合同
-
-- `miskatonic_mandatory_reading_draw` 原先两条测试用 `getInteractionHandler(...)` 取事件，再手动 `applyEvents(state, result.events)` 验证结果。这实际上把“handler 只吐事件、调用方再 reduce”也写进了测试合同。
-- 改成 `respondToPromptOption(...)` 后，测试可以直接看 `result.finalState.core`。这更接近真实用户响应后的权威状态，也减少未来 reducer / pipeline 分工调整时的连锁改测成本。
-- “选择跳过” 这类命令链测试不应继续断言 `events.length === 0`。更稳的表达是“不产生目标业务事件”，例如这里明确断言没有 `MADNESS_DRAWN` 与 `PERMANENT_POWER_ADDED`，从而避开 `SYS_INTERACTION_RESOLVED` 一类系统事件噪音。
-- `madnessAbilities.test.ts` 这一批迁完后，文件内剩余 low-level 入口已经更清晰：`miskatonic_those_meddling_kids_pod_mode` 是 off-phase immediate 合同，`responseValidationMode` 是 live prompt contract；`miskatonic_mandatory_reading_draw` 不再伪装成 handler-level 测试。
-
-## 2026-05-16 21:26 补充发现：半迁移残留比旧直调更危险
-
-- `madnessAbilities.test.ts` 这次红灯证明，“已经把主要逻辑改成 prompt 响应，但还留着两行 `getInteractionHandler(...)` 断言”是比纯旧测试更差的状态：它让测试看起来像在走真实链，实际却同时绑定两套 seam，一旦 import 被清掉就直接 ReferenceError。
-- 这类残留必须尽快收成单一入口。对 `miskatonic_those_meddling_kids_pod_mode` 来说，真正要保留的是“off-phase 额外行动仍标成 `immediate`”这个合同，不是“注册表里有个同名 handler 变量”。
-- `base_nine_lives_intercept` 的三条旧测试进一步说明：即使交互本身来自 replacement/保护链，只要玩家最终看到的是业务 prompt，就仍然应该通过“触发真实销毁 -> 产出 prompt -> 响应 prompt”表达。直接敲 handler 会把 continuationContext、位置参数和事件外壳一起锁进测试。
-- “目标随从已失效时不应再移动旧目标” 这种 stale 场景也不需要保留直调。更稳的做法是先走真实 destroy 链拿到 prompt，再替换响应时的 `core` 去模拟目标失效；这样锁住的是“响应时二次校验必须阻止旧目标复活”，不是 handler 的裸输入形状。
-- 这批收口后，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中从 `42` 降到 `38`。下降本身不是目标，但它说明剩余项更集中在明确的系统合同、注册表合同和 stale/baseDefId 合同，而不是业务链测试伪装成低层测试。
-
-## 2026-05-16 21:41 补充发现：stale/baseDefId 合同也不等于必须直调 handler
-
-- `base_mushroom_kingdom` 这两条 Deep Roots / Infiltrate 测试再次说明：哪怕你最终想验证的是“保护过滤如何看待基地能力归因”，只要业务上先出现的是 prompt，就应该先走真实 `triggerBaseAbilityWithMS(...)` 和 `respondToPromptOption(...)`。真正的合同是 move 事件的 reason 与保护系统归因，不是 `continuationContext.mushroomBaseIndex` 的位置参数怎么传。
-- `igor-rlyeh-double-trigger.test.ts` 过去把“base_rlyeh 选择消灭 Igor”拆成 `getInteractionHandler('base_rlyeh')` + `processDestroyMoveCycle(...)` 两段，实质是在手工重放真实命令链。改成真实 prompt 响应后，测试更直接表达“选中 Igor 后，只应出现一个 `frankenstein_igor` prompt”，也更不容易因为系统后处理顺序调整而大面积碎裂。
-- `base_temple_of_goju_tiebreak` 的 tie-break 选择也不需要显式碰 handler。对业务测试来说，`triggerBaseAbility('base_temple_of_goju')` 先产出平局 prompt，再通过 `respondToPromptOption(...)` 选中某个并列最强随从，已经足够覆盖“玩家选择后正确放牌库底”。
-- `pirate_buccaneer_move` 是更有代表性的例子：这两条测试确实在锁 `resolveLiveBaseIndex(...)` 的 `baseDefId` 语义，但也可以通过“先让 replacement prompt 真实出现，再在 stale core 上响应”来表达。这样测试保留了 `BASE_CLEARED` / `baseDefId` 漂移的真实语义，却不再把 handler 存在性、value 形状和位置参数顺序写进断言。
-- 冗余的“业务文件里顺手断一下 handler 已注册”现在也更清楚该往哪里删。`abilities/pirates-ongoing.test.ts` 和 `smashup.smoke.test.ts` 的几条注册断言去掉后，没有损失真实行为覆盖；注册存在性本来就该由 `abilityInteractionRegistry.test.ts` 这类专门合同文件承担。
-- 到这一步，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中已降到 `29`。剩余项的性质比之前清楚很多：注册表合同、prompt 系统合同、runtime prompt 非法值拒绝合同，以及少量明确的 score-session / stale / resolve-time 二次校验合同。
-
-## 2026-05-16 19:16 补充发现：多选 prompt 也应直接表达为 optionIds 响应
-
-- `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的旧测试把“多选 prompt -> 传 value 数组给 handler”当成合同，这会把选项值形状和 handler 参数顺序一起锁死。
-- 对业务测试来说，更稳的接口是：先从真实 prompt 里拿到候选 option ids，再用 `respondToPromptOptions(...)` 响应。这样测试表达的是“玩家勾选了这些可见选项”，不是“内部 handler 期望什么 value 数组”。
-- 这类用例的“跳过”也不该再靠 direct handler 传空数组推断，而应显式走 `respondToPromptOptions(state, [])`。这样才能覆盖真实命令链里 min=0、多选收口、系统事件附带等行为。
-
-## 2026-05-16 19:17 补充发现：链式基地能力与行动卡链没有本质区别
-
-- `base_mushroom_kingdom_pod` 这条链说明：基地能力产生的 prompt，和行动卡/随从能力产生的 prompt，在测试 seam 上不应区别对待。只要用户真的能看到 prompt，就应该优先走 `respondToPromptOption(...)`，而不是因为它来自 base ability 就保留 direct handler。
-- 同一个文件里残留的未使用 helper、草稿命令数组和未使用 import，也会掩盖真实剩余债务。顺手清掉这些死代码，有助于后续判断“还有哪些 direct handler 是真的必须保留的”。
-
-## 2026-05-16 19:21 补充发现：命令链测试要按业务事件断言，不能假定事件数组只剩业务事件
-
-- `trickster_pixie_pod` 迁到 `respondToPromptOption(s)` 后，测试第一次红灯不是行为错，而是旧断言继续假设 `events` 数组只包含 `POWER_COUNTER_ADDED` / `ONGOING_DETACHED`。真实命令链会附带 `SYS_INTERACTION_RESOLVED`。
-- 这再次证明：对业务测试而言，正确断言应该是“数组包含目标业务事件”或直接看 `finalState.core`，而不是 `toEqual([唯一业务事件])`。否则每次把 direct handler 换回命令链，测试都会因为系统事件噪音假红。
-- `trickster_hideout_pod_swap` 也说明单选 prompt 不需要知道 value 结构如何喂给 handler。测试只要表达“玩家在 swap prompt 里选了 hand/deck 的哪张卡”，其余由 facade 承担。
-
-## 2026-05-16 19:29 补充发现：要断言响应后的最终状态，入口也必须是完整 matchState
-
-- `madnessPromptAbilities.test.ts` 的 `cthulhu_madness_unleashed` “跳过”用例第一次改完后红灯，不是业务错，而是还在用 `execPlayAction(...)` 这类“只适合拿事件”的入口，随后却拿响应结果去断言 `finalState.core`。
-- 这说明测试接口分层不只体现在“怎么 respond prompt”，还体现在“从哪个入口拿 state”。只要测试目标是玩家响应后的权威最终状态，就应从 `execPlayActionWithMatch(...)`、`runCommand(...)` 这类保留完整 matchState 的入口开始。
-- `miskatonic_book_of_iter_the_unseen` 也再次证明：普通业务测试不应该保留“handler 返回事件，再由测试手动 applyEvents”的合同。改成真实 prompt 响应后，测试直接看 `resolve.finalState.core`，更接近真实调用方职责。
-- `miskatonic_thing_on_the_doorstep` 的并列最高力量场景说明，哪怕是 special 触发出来的 prompt，只要用户能看到并点击，就应优先走 `getFirstPrompt` / `getPromptOptions` / `respondToPromptOption(...)`；不需要继续裸读 `sys.interaction` 或直调 handler。
-
-## 2026-05-16 19:36 补充发现：一个文件里也要把“普通业务链”和“低层例外”分开治理
-
-- `expansionBaseAbilities.test.ts` 很适合当样本：同一个文件里同时存在两类 direct handler。
-  - `base_mermaid_pool`、`base_ossuary`、`base_arena`、`base_the_asylum`、`base_miskatonic_university_base` 这类“已有真实 prompt、用户只是点选项”的测试，应该迁到 `respondToPromptOption(...)`。
-  - `base_land_of_balance` / `base_sheep_shrine` / `base_the_pasture` 的 stale 回归，以及 `smashup_reaction_choose` 的 queued reaction 测试，则仍然在验证“旧 prompt + 新 core”或 reaction/session 合同，不能机械一刀切。
-- 同一文件里混着两类入口时，最好按“是否存在真实可点击 prompt”和“测试标题是否在锁 stale/reaction/baseDefId/frame/source 合同”来拆，而不是按文件名整体判断要不要命令链化。
-- `base_arena` 与 `base_miskatonic_university_base` 的红灯再次证明：从 direct handler 迁到命令链后，原先的 `events.length === 1/2` 和固定事件下标几乎都会失效。更稳的写法是按业务事件类型 `find/filter`，因为 `SYS_INTERACTION_RESOLVED` 这类系统事件属于正常副产物。
-- `base_the_asylum` 的两段链说明，多段 prompt 也不该继续用“先拿 option.value，再手动调下一层 handler”的方式写。更稳的合同是“第一次点击哪个可见手牌选项，第二次点击哪个可见随从选项”，最后直接看 `finalState.core` 与关键业务事件。
-
-## 2026-05-16 19:44 补充发现：同一份 stale 回归也可以继续复用真实 respond 语义
-
-- `interactionChainE2E.test.ts` 的熊骑兵 4 条 stale 回归说明，哪怕测试框架是 `GameTestRunner` 本地 `respond(...)`，也仍然可以沿用“旧 prompt + 新 core + 真实响应命令”的治理口径，不需要回退到 direct handler。
-- 这里暴露出的关键差异不是业务语义，而是 helper 返回形状：`GameTestRunner` 的 `run(...)` 结果要看 `steps[0]?.success` 与 `finalState`，不能把别处 `respondToPromptOption(...)` 的 `success/events/finalState` 直返结构照搬过来。
-- 这意味着后续迁 stale 回归时，要先分清“测试语义层”与“测试 runner 结果层”。语义层统一走真实 prompt respond；结果层按文件现有 runner 断言，不要为了统一外观再造一套多余桥接。
-
-## 2026-05-16 19:49 补充发现：stale 回归不等于必须保留 direct handler
-
-- `expansionBaseAbilities.test.ts` 的 `base_land_of_balance`、`base_sheep_shrine`、`base_the_pasture`、`base_innsmouth_base_choose_card`、`base_cat_fanciers_alley`、`base_inventors_salon` 再次证明：只要用户真实会看到旧 prompt，再响应时只是权威 core 已变化，这类 stale 回归就应该优先写成 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` + `respondToPromptOption(...)`。
-- direct handler 只应该留给两类场景：没有可见 prompt 的低层 session/registry 合同，或者像 `base_greenhouse` 这样明确在锁 scoring-session / replacement follow-up / deferred action 写入位置的合同。把普通 stale 也留在 direct handler，只会继续把 handler 参数顺序、`getPromptHandlerData`、时间戳和随机源写死在测试体里。
-- 这一批还进一步确认：命令链版 stale 回归不该再说 `events.length === 0`。正确口径是“响应成功，但目标业务事件没有发生”。这样既保留 stale 不变量，也不会把 `SYS_INTERACTION_RESOLVED` 之类系统事件误报成失败。
-
-## 2026-05-16 19:52 补充发现：冒烟测试里的普通 titan prompt 也不该例外
-
-- `smashup.smoke.test.ts` 的 `titan_sphinx_start_turn`、`titan_sphinx_after_scoring`、`titan_sphinx_talent` 原先虽然在“冒烟测试”里，但本质上仍是普通业务 prompt：真实 trigger 已经创建 prompt，用户只是点一张卡。把这类用例继续写成 `getInteractionHandler(...)` + `getPromptHandlerData(...)` + 手动 reduce，只是在冒烟文件里重复锁死内部执行分工。
-- 改成 `respondToPromptOption(...)` 后，断言直接落到 `finalState.core`，说明“冒烟测试”与“能力专项测试”在 seam 选择上不该双标。只要测试目标是用户点击 prompt 后的权威状态，就应优先走真实响应命令。
-- 当前全仓剩余 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 还有 76 条，但成分已经比前几轮更纯：一部分是注册表/系统合同，一部分是 `smashup.smoke.test.ts` 这类还未分簇的 titan 业务链。下一轮继续推进时，优先拿“已有真实 prompt、只差一步点击”的小簇，而不是先去碰明显的 registry/session 合同。
-
-## 2026-05-16 20:06 补充发现：有些 prompt 响应的关键合同不在 events，而在 finalState.core
-
-- `titan_pirates_the_kraken_talent` 暴露出一个更细的分层点：prompt handler 不只会返回业务事件，还可能同步写入 `state.core` 里的元状态。这条能力在响应时除了发出 `PERMANENT_POWER_ADDED`，还会通过 `schedulePowerModifierUntilNextTurnStart(...)` 把 `timedPowerModifiers` 写进 core。
-- 因此，像 Kraken 这种“当前先加减力量，未来某个 `TURN_STARTED` 再回退”的能力，如果测试只做 `afterCommand + response.events.reduce(...)`，会看到当下 debuff 生效，但会丢失未来回退所需的元状态，随后误判成“不会恢复”。
-- 可复用口径应是：
-  - 若 prompt 响应只吐业务事件、不写额外状态元数据，可以继续根据需要用 `afterCommand + response.events.reduce(...)` 或 `resolved.finalState.core`。
-  - 若 prompt 响应还会写 `timedPowerModifiers`、queued reaction bookkeeping、session / replacement metadata 等状态元数据，测试必须优先以 `resolved.finalState.core` 作为权威后态，再做后续事件推进验证。
-- `titan_kaiju_gorgodzolla_draw` 也再次证明，回到真实 `respond` 命令后，系统层事件 `SYS_INTERACTION_RESOLVED` 会自然进入事件流。业务测试不应再假设“响应事件数组只包含业务事件”，而应改成“包含关键业务事件 + 最终权威状态正确”。
-- 这一轮把 `Mergacon play/talent` 一并收掉后，全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 命中从 72 降到 66，说明 `smashup.smoke.test.ts` 里仍有不少“普通 prompt 冒烟用例”可继续按同样思路收敛。
-
-## 2026-05-16 20:13 补充发现：旧 handler 时代的“手喂 timestamp”通常不是业务合同
-
-- `titan_time_travelers_time_box_play` 改到真实 `respondToPromptOption(...)` 后，`enteredAt` 不再等于旧测试直调 handler 时传进去的 `113`，而是回到命令链自己的时间口径（当前表现为 `0`）。这说明测试原先锁住的是“我给 handler 传了什么 timestamp”，不是用户可见行为。
-- 对这类 prompt 业务测试，更稳的断言应该是：
-  - 泰坦是否到了对的基地；
-  - 计数 / 标记 / 所有权 / 力量修正等公开状态是否正确；
-  - 必要时是否产生了关键业务事件。
-  不应继续把 `enteredAt`、本地手传 `timestamp`、`continuationContext` 细节当成业务合同，除非测试目标明确是底层 frame / session / audit 元数据。
-- `titan_super_spies_moon_zero_three` 这条还进一步说明：两段 prompt 链在走真实 `respond` 后，不必再由测试手动 `postProcessSystemEvents(...)` 拼接中间状态。只要当前链路没有刻意在测底层 post-process 顺序，直接观察每次 `respond` 返回的 `finalState` 更稳。
-- `titan_magical_girls_walking_castle` 的多选链则证明，多段 prompt 也不必保留“拿 option.value 数组喂给 handler”的写法。测试应表达“玩家点了哪几个可见 option id”，而不是“内部 handler 接收什么 value 结构”。
-- 本轮继续把 `walking_castle`、`time_box_play`、`moon_zero_three`、`megabot_move` 收掉后，全仓命中从 66 降到 60；剩余 `smashup.smoke.test.ts` 里的 direct handler 已进一步集中到 `creampuff_man`、`major_ursa`、`rainboroc`、`very_large_boulder`、`hill_that_strolls` 这些多段链和少量显式合同点。
-
-## 2026-05-16 20:18 补充发现：二段 prompt 链不需要手工“保活当前 prompt”
-
-- `titan_ghosts_creampuff_man_discard` -> `titan_ghosts_creampuff_man_play` 这条链原测试在第一段 handler 后，先手工 `reduce(events)` 出新 core，再用 `withCurrentPrompt(...)` 把第二段 prompt 挂回状态。这其实又把“handler 返回什么 state、测试如何把 prompt 挂回 current”写成了合同。
-- 改成真实 `respondToPromptOption(...)` 后，第一段响应返回的 `finalState` 自己就带着第二段 prompt。更稳的表达是直接从 `discardResolved.finalState` 读取下一段 prompt，而不是继续手工拼 `withCurrentPrompt(...)`。
-- `titan_itty_critters_rainboroc` 同样说明：若第一段响应已经在真实命令链里把 deck/discard 和下一段 prompt 都推进好了，就不该再手动 `reduce(events)` 出一个 `afterShuffle` 再拿旧 state 喂给第二段 handler。业务测试应直接观察每段 `finalState.core`。
-- 这类二段链的本质合同是“第一次点击哪个可见候选，第二次点击哪个可见候选，最终公开状态如何变化”，不是“测试如何帮命令链补状态”。继续手工保活 prompt / 手工拼 core，只会让重构时又碎一片测试。
-- 本轮把 `creampuff_man` 与 `rainboroc` 也收掉后，全仓命中从 60 降到 56，`smashup.smoke.test.ts` 内只剩 `major_ursa`、`very_large_boulder`、`hill_that_strolls` 这几簇普通多段链，以及两条显式合同断言。
-
-## 2026-05-16 22:03 补充发现：真实 prompt 链测试仍然必须满足能力自身的触发资格
-
-- `titan_penguins_emperor_penguin_play` 的 resolve-time recheck 红灯证明了一点：把测试从 direct handler 迁到真实 trigger/response 链后，旧测试里那些“之前被直调 handler 绕过去的前置条件”都会重新变成真门槛。
-- Emperor Penguin 在 `onTurnStart` 创建 special prompt 的真实资格不是“set-aside 有 titan 就行”，而是“当前没有己方 live titan，且至少有一个基地已有 3 个己方随从”。如果测试不摆出这个局面，`fireTriggers(...)` 根本不会产出 `titan_penguins_emperor_penguin_play`。
-- 这类用例的正确写法不是回退到 direct handler，而是分两层状态：
-  - `promptCore` 负责满足真实触发资格，证明 prompt 确实会出现；
-  - `staleCore` 负责在响应前引入状态漂移，证明 resolve-time 的二次合法性检查会把原本可点的旧 prompt 拦下来。
-- 对 Emperor Penguin 来说，真正稳定的合同是：`trigger` 负责基于公开资格创建 prompt，`resolve` 再通过 `canControllerPlayTitan(...)` 拒绝“当前已存在另一只己方 live titan”的 stale 响应。这个合同能抗重构；“测试手动给 handler 喂 continuation/timestamp”不能。
-- 复跑后全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 已降到 24。剩余条目里，`abilityInteractionRegistry.test.ts`、`promptSystem.test.ts`、`promptResponseChain.test.ts` 基本都属于应保留的系统/注册表合同；`bear_cavalry_superiority_pod_talent` 与 `steampunk_mechanic` 更像低层能力合同，是否继续迁要按价值判断，不该为了数字继续硬改。
-
-## 2026-05-16 22:08 补充发现：要防的是“新增回流”，不只是继续手工清旧债
-
-- 这轮重新检查 `scripts/infra/testing-structure-guard.mjs` 后可以确认，之前门禁只拦 prompt 内部结构耦合（`sys.interaction.current`、`prompt.data.options`、手写 `SYS_INTERACTION_RESPOND` 等），还没有拦“业务测试重新写回 `getInteractionHandler/getAbilityRuntimePromptHandler` 直调”。
-- 只继续人工把旧文件改绿，不把这层规则固化进 guard，后面任何新 bugfix 测试都可能再次走最省事的 handler 直调，把 seam 债务写回来。那样数字会反复，规范也等于没落地。
-- 更稳的策略是两层：
-  - 继续把明显的普通业务链迁回真实 `trigger -> prompt -> respond`；
-  - 同时用 `test:structure` 阻止新增业务测试再引入 direct handler 直调。
-- direct handler 不该被全禁。当前复核后，真正合理的保留面有三类：
-  - 注册表合同：例如 `abilityInteractionRegistry.test.ts`
-  - Prompt / response chain 系统合同：例如 `promptSystem.test.ts`、`promptResponseChain.test.ts`
-  - 少量明确登记的低层能力合同：这类合同也不必继续在测试体里直接摸注册表 API，可以再包一层 helper
-- 这说明“测试稳定性”不是把所有底层合同都藏起来，而是把业务 seam 和底层 seam 分层清楚，并用门禁保证新增代码只能走对的那层。
-
-## 2026-05-16 22:21 补充发现：低层合同也应该有稳定入口
-
-- `abilities/bear-cavalry.test.ts` 与 `expansionOngoing.test.ts` 证明了一点：即使测试目标本来就属于低层合同，也没必要在测试体里每次重复 `getInteractionHandler/getAbilityRuntimePromptHandler -> handler!(...)` 这套注册表样板。
-- 更稳的做法是把“按 sourceId 取已注册 handler 并执行”也收进 `helpers.ts`，让测试显式表达自己在走“registered contract helper”，而不是继续散落注册表细节。
-- 这样做有两个直接收益：
-  - 后续如果 handler 获取方式、签名适配或错误消息调整，低层合同测试只需要改 helper，不会再在多个文件碎裂。
-  - 结构门禁可以继续收紧，不再给某些业务文件做文件级 allowlist；只要它们走 helper，就能同时保留低层合同与统一入口。
-- 完成这一步后，SmashUp 测试里 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 已只剩 22 处，全部集中在：注册表合同、prompt 系统合同，以及 `helpers.ts` 自己。说明“业务层 raw handler 查询”已经从文件层面清空。
-
-## 2026-05-16 22:26 补充发现：系统合同也该把“存在性样板”抽到 helper
-
-- `promptResponseChain.test.ts` 和 `promptSystem.test.ts` 里剩下的 raw handler 查询，本质已经不是业务耦合，而是重复的“某 sourceId 是否有已注册 continuation handler/runtime prompt handler”样板。
-- 这类样板继续散在系统合同测试里，问题不在今天会不会红，而在以后如果查找策略、报错文本、fallback 顺序调整，又会同时碎在多处系统合同文件里。
-- 把它们进一步收进 `helpers.ts` 后，系统合同仍然保留自己的测试语义：
-  - 有的场景要断言“interaction handler 一定存在”
-  - 有的场景要断言“runtime prompt handler 一定存在”
-  - 有的场景要断言“任意一种 prompt continuation contract 至少存在一种”
-  但这些语义不再和底层注册表读取样板绑在一起。
-- 完成这一步后，SmashUp 测试里的 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 已降到 11，而且这 11 处全部都合理：
-  - `abilityInteractionRegistry.test.ts` 的 9 处：它本来就在测注册表 API 自己
-  - `helpers.ts` 的 2 处：作为单一查找函数，是系统级唯一出口
-- 这意味着“业务测试直调 handler”与“系统合同散落查找样板”两类债务都已经清掉了，剩下的是应保留的注册表语义本身。
-
-## 2026-05-16 22:35 补充发现：`resolvePromptViaRegisteredHandler(...)` 也是耦合，不该被当成“已经抽象了所以没事”
-
-- 这一轮检查后可以确认，之前只盯 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 仍然不够，因为 `resolvePromptViaRegisteredHandler(...)` 本质上也是“按 prompt.sourceId 找 registered handler 然后直接喂 value/data”。
-- 如果业务测试继续大量依赖这个 helper，那么实现重构时虽然不再碎在注册表 API 名字上，仍然会碎在“registered handler 是真实入口”这个假设上。对用户来说，这和“改代码就要改测试”没有本质区别。
-- 更准确的分层应是：
-  - 真实点击路径：`respondToPromptOption(...)` / `respondToPromptOptions(...)`
-  - 低层合同：`invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`
-  - 系统/反应队列/注册表合同：允许继续用 `resolvePromptViaRegisteredHandler(...)` 或注册表 API，但文件本身要承担“我在测系统合同”的命名与责任
-- `elder-thing-choice-goju-tiebreak.test.ts` 很能说明这个分层：
-  - 大多数 destroy / deckbottom / 二段选择都是用户真实会点击的链，应迁回 `respondToPromptOption(...)`
-  - 只有“强行提交一个正常 UI 根本不会给出的非法 destroy choice”这种用例，才是真的低层合同，应该显式走 contract helper
-- 迁完这一批后，`resolvePromptViaRegisteredHandler(` 已从分散业务文件收缩到 15 条，而且都集中在 `baseAbilitiesPrompt.test.ts` 与 `reactionQueue*.test.ts` 这类更接近 prompt/base/system contract 的文件。这才是下一轮真正该审的边界。
-
-## 2026-05-16 22:50 补充发现：reaction queue 系统合同里，只要“当前 prompt 已经真实存在”，也不该继续直调 registered handler
-
-- `reactionQueueBaseOptionalClockwise.test.ts`、`reactionQueueOrdering.test.ts`、`reactionQueueBaseAbilities.test.ts` 与 `reactionQueueDestroyerId.test.ts` 这一轮共同证明：即使文件名本身属于 reaction queue / system contract，只要当前状态里已经有真实 `smashup_reaction_choose` prompt，测试就应该优先走 `respondToPromptOption(...)` / `respondToPrompt(...)`，而不是 `resolvePromptViaRegisteredHandler(...)`。
-- 真正需要保留低层入口的，不是“这个文件在测 reaction queue”，而是“当前没有真实 prompt，或测试明确在锁 reaction session / registered continuation 的内部合同”。例如已经存在的 `resolveSmashUpReactionChoice(...)` 场景，仍然是在测 session 继续执行，不应为了表面统一再强行包成普通点击链。
-- 这轮两个红灯也进一步验证了旧断言的问题不在行为，而在测试仍假设 `events[0] === TRIGGER_CONSUMED`。一旦回到真实 respond 命令，`SYS_INTERACTION_RESOLVED` 进入事件流是正常副产物；系统合同同样要按“包含关键系统/业务事件”断言，不能再锁固定下标。
-- `reactionQueueDestroyerId.test.ts` 还补强了一个边界：当 reaction queue 先弹 `smashup_reaction_choose`，后续进入 `vampire_mad_monster_party_pod_play` / `vampire_buffet_pod_play` 这类业务 prompt 时，测试真正想证明的是 destroyerId/预览上下文是否保留，而不是“registered handler 直接返回了什么 state 形状”。
-- 迁完这批后，`resolvePromptViaRegisteredHandler(` 已只剩 `helpers.ts` 里的 helper 定义 1 处。说明这条 seam 已经从“测试体到处可见的执行入口”收缩成“仅保留一个显式低层工具”，后续是否继续保留它，已经变成 helper API 设计问题，而不是业务测试债务。
-
-## 2026-05-16 22:58 补充发现：没有调用方的测试桥接 helper 也属于债务，不该因为“只是 helper”就继续保留
-
-- `resolvePromptViaRegisteredHandler(...)` 清到只剩 helper 定义本体后，继续保留它已经没有测试价值，只会向后续维护者暗示“这里还有一条可接受的 handler 直调捷径”。这种死 helper 会让债务在未来回流，比删掉更危险。
-- `callHandler(...)` 与 `resolveCurrentPromptHandlerWithCore(...)` 也是同类问题。即使它们当前没有直接污染测试体，只要 helper 和文档还在，就会继续把“手工喂 handler / 手工换 core 再跑 continuation”包装成一种被认可的测试方法。
-- 这类死 seam 的正确收口方式不是给它们写“仅限特殊情况”注释，而是直接删除代码出口、删掉转发导出、改掉文档示例。否则测试规范嘴上说“优先真实 trigger -> prompt -> respond”，代码库却还在提供反方向的现成入口。
-- 审计/规范层也要同步收口。`docs/testing-best-practices.md` 如果还把 `callHandler` 写在推荐工具表里，后面再有人照着文档写回旧模式，并不算他个人失误，而是规范本身口径不一致。
-
-## 2026-05-16 23:05 补充发现：`resolveAbility(...)` 里也混着很多本可回到真实命令入口的业务测试
-
-- `ninja_infiltrate_pod talent` 和 `ancient_egyptians_plague_of_locusts onPlay` 这两个样本说明，`resolveAbility(...)` 不是天然就代表“底层合同”。很多时候它只是历史上写测试更省事，于是直接绕过了 `USE_TALENT` / `PLAY_ACTION` 的验证、命令形状和后处理。
-- 这种绕过会漏掉真实命令口径里的门禁与 payload 语义。`ancient_egyptians_plague_of_locusts` 改回 `PLAY_ACTION` 时第一次红灯，暴露的正是旧测试完全绕开的真实约束：行动牌命令需要 `targetBaseIndex`，不是随手塞个 `baseIndex` 就能代表真实入口。
-- 同理，`ninja_infiltrate_pod` 用 `USE_TALENT` 改回真实命令后，测试直接观察 `finalState.core`，不再需要“执行器吐事件，再由测试手工 reduce”。这更接近用户路径，也更能在命令验证/后处理/最终状态任何一层回归时及时暴露真问题。
-- 因此后续治理 `resolveAbility(...)` 时，优先级不该按“这个文件里有多少命中”排，而要先挑那些本质上只是玩家出牌/用天赋/发动 special 的业务样本；系统合同、注册表语义或纯执行器单元边界另算。
-
-## 2026-05-16 23:17 补充发现：`resolveAbility(...)` 的 onPlay prompt 业务链和执行器时序合同要分开看
-
-- `ancient_egyptians_mummy_strength` 与 `special_madness` 这两组继续证明：只要用户真实入口是“打出一张行动卡”，测试就不该从 `resolveAbility(...)` 起步，即使后面还要经历多段 prompt。正确 seam 仍是 `PLAY_ACTION -> prompt -> respond -> finalState`。
-- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 之前甚至自建了一套 `GameTestRunner + systems` 来模拟 RESPOND 链，这类夹具越重，越说明测试已经偏离公开入口。改回 `runCommand(...)` 后，用例照样能覆盖“目标优先选择 + 最终 tempPowerModifier 生效”，而且系统壳层少了很多。
-- `special_madness` 则补了另一层边界：不是所有 `resolveAbility(...)` 都该一锅端。像 `special_madness` 这种标准 onPlay 行动卡，应迁回真实 `PLAY_ACTION`；但 `wizard_time_loop`、`killer_plant_insta_grow` 这种主要在锁 `off-phase` / `playTiming=immediate` 的用例，更接近执行器/时序合同，不该因为也叫 `onPlay` 就机械替换。
-- 这轮还说明了一个好处：把 `special_madness` 改回 `PLAY_ACTION` 后，能直接证明命令层允许把疯狂牌当行动打出，并继续进入真实 prompt；这比“executor 自己会不会吐出 prompt”更接近用户行为合同。
-
-## 2026-05-16 23:31 补充发现：`reduce` 验证也不该默认豁免旧执行器入口
-
-- `innsmouth_recruitment` 这条补了一个之前容易放过的角落：测试标题写的是“状态正确（reduce 验证）”时，很容易被误当成“那就允许从 `resolveAbility(...)` 起步吧”。这其实不成立。
-- 只要验证的业务事实仍是“玩家打出行动卡 -> 选择 prompt -> 事件流喂给 reducer 后状态正确”，入口就应该是真实 `PLAY_ACTION`。`reduce` 只决定最终断言方式，不决定前半段可以绕过命令层。
-- 这条旧写法里还手工补了一个 `ACTION_PLAYED` 事件，进一步说明测试已经脱离真实管线。改回 `runCommand(PLAY_ACTION)` 后，`ACTION_PLAYED` 与后续 `MADNESS_DRAWN / LIMIT_MODIFIED` 都来自同一条真实事件流，reduce 合同反而更可信。
-- 这也给后续筛选一个更明确的信号：同一 describe 里如果大多数用例已经用 `execPlayAction/runCommand`，只剩个别“状态验证 / reduce 验证”还单独走 `resolveAbility(...)`，这通常就是优先可收的旧 seam。
-
-## 2026-05-16 23:37 补充发现：`onPlay` 里“自动分支”同样应该回到真实命令入口
-
-- `ninja_infiltrate` 这组补了另一个容易被误分类的角落：有些旧用例不是 prompt 点击链，而是“单目标自动执行”或“无目标直接无事发生”。这类场景也不该因此留在 `resolveAbility(...)`。
-- 只要真实用户入口仍然是“打出行动卡”，即使后续没有 prompt，测试入口也应该是 `PLAY_ACTION`。自动分支是否发生、是否产生 `ONGOING_DETACHED`、是否完全无事发生，都应该由真实命令链自己给出答案。
-- 这组红灯也再次说明了分层收益：切回 `PLAY_ACTION` 后没有暴露能力实现 bug，只有测试体自己少引了 `expectNoPrompt`。这种红灯说明迁移方向是对的，问题在测试壳层，不在业务行为。
-- 因此后续筛选时，不要只挑“会弹 prompt”的 `resolveAbility(...)`；像 `ninja_infiltrate` 这种混有 prompt 分支、自动分支、空分支的 onPlay 能力，往往更值得整组一起迁，这样同一能力的三种路径就不会继续分裂在两套入口上。
-
-## 2026-05-16 23:55 补充发现：真实命令链会把“卡型假设”和“玩家壳层假设”一起揪出来
-
-- `trickster_pixie_pod` 这一轮证明，很多旧 `resolveAbility(...)` 测试不只是绕过了命令层，还顺手绕过了“这张牌在真实世界里到底是什么卡型”。旧测试把 Pixie 直接塞给 executor，看不出它作为融合牌在手里必须是 `type: 'fusion'`，也看不出随从面与战术面的公开入口其实不同。
-- 把 Pixie 改回真实命令后，两个红灯都不是能力实现 bug：
-  - 第一条红灯是牌根本不在手里，说明旧测试把“已打出后状态”冒充成了“出牌入口”。
-  - 第二条红灯是把融合牌当普通 minion 去走 `PLAY_MINION + playAsAction`，而真实公开入口应该是 `PLAY_ACTION`。
-- 同时，旧断言里把可选随从顺序写死成 `['pixie-1', 'ally-a']` 也暴露了另一个内部耦合：真实命令链插入已打出随从后，候选顺序变成实现细节，业务上真正该锁的是“这两个目标都出现”，不是数组顺序。
-- `trickster_mark_of_sleep` 这条则补了另一类深层问题：只要还在手工拼 `matchState` 或用半残缺的 player override，很多 reducer/pipeline 必经字段问题就永远不会暴露。切到真实 `runCommand(PLAY_ACTION)` 后，`player.discard is not iterable` 这种夹具缺损立刻浮出来，说明旧测试连完整玩家壳层都没走到。
-- 这进一步说明“以后改代码不用频繁改测试”的关键不只是 facade 名字统一，而是：
-  - 业务测试入口必须是真实命令
-  - 测试数据必须满足真实出牌前置
-  - 断言必须锁业务集合/最终状态，而不是内部顺序或 executor 中间形状
-
-## 2026-05-17 00:01 补充发现：同一个能力在不同文件重复出现，也不能拿“别处已经测过”当继续保留旧 seam 的理由
-
-- `miskatonic_lost_knowledge` 在 `ongoingTalent.test.ts` 里其实早就有一套更接近真实 `USE_TALENT` 的测试，但 `madnessAbilities.test.ts` 里仍保留了 `resolveAbility(...)` 版本。这个状态本身就是风险：同一能力一半文件走公开入口，一半文件走旧执行器入口，后续重构时照样会碎。
-- 这说明测试治理不能只看“这个行为是否已经 somewhere 被覆盖”。如果当前文件里的测试目标也是普通玩家业务链，就仍然应该回到同一条公开入口，否则重复覆盖只是在重复旧 seam。
-- 这轮把 `miskatonic_lost_knowledge` 收回 `USE_TALENT` 后，留下的 `baseIndex: undefined` 反而更清楚地暴露成“没有稳定公开入口的低层合同”。这种场景可以保留，但要显式地让它成为例外，而不是混在业务 talent 测试里假装同层。
-- 因此后续筛选剩余 `resolveAbility(...)` 时，一个实用判断标准是：
-  - 如果这个用例描述的是“玩家打牌 / 点 talent / 激活 special 后发生什么”，即使别的文件已经覆盖过，也应该收回公开入口。
-  - 只有当用例刻意制造真实 UI/命令层不会给出的上下文时，才保留为低层合同。
-
-## 2026-05-17 00:06 补充发现：很多旧 talent 测试连“对象必须先上场”这个公开前置都绕过了
-
-- `miskatonic_librarian_pod` 这条说明，旧 `resolveAbility(...)` 测试还有一种隐形耦合：它跳过的不只是命令壳层，而是整个“卡必须先进入合法区域才能激活能力”的业务前置。
-- 旧写法里，图书管理员还在手牌里，就直接把 `cardUid/defId` 喂给 talent executor；真实接口里这根本不成立，正确流程必须是 `PLAY_MINION -> USE_TALENT -> prompt -> respond`。
-- 这种前置如果继续被测试绕开，后续无论是：
-  - `talent` 只能对场上对象开放
-  - 先上场才有 `baseIndex / controller / suppression / response window` 等上下文
-  - 卡离场后不能再点 `talent`
-  都很难被及时测出。
-- 所以后续处理剩余 `resolveAbility(...)` 时，要额外问一句：这个测试有没有把“对象已在正确 zone”也一起绕开？如果答案是有，那它比普通 seam 更应该优先收回公开入口。
-
-## 2026-05-17 00:25 补充发现：同样叫 `special`，也要先分清“有没有公开命令入口”
-
-- `ninja_acolyte` 这一轮证明，`special` 不是天然只能留在执行器层。领域层已经提供了 `ACTIVATE_SPECIAL`，而且它覆盖了成功路径、prompt 链和一部分阻止路径；这类测试继续直调 `resolveAbility(...)`，本质上就是绕开公开接口。
-- 但 `ninja_hidden_ninja` 同时证明，不能机械把所有 `special` 都改成 `ACTIVATE_SPECIAL`。当前公开命令的校验前提是“场上存在该随从/泰坦”，而 Hidden Ninja 是手牌 action special，直接喂 `ACTIVATE_SPECIAL` 只会稳定得到“基地上没有该随从”。
-- 这说明 `special` 也要分层：
-  - 有公开命令的：优先锁 `ACTIVATE_SPECIAL`
-  - 没公开命令的：显式保留为执行器/时序合同
-  - 不能因为它们共享一个 ability tag，就假装属于同一层测试入口
-- `ninja_acolyte` 的阻止路径还暴露了另一个重要区别：切回公开命令后，“同基地已使用同组 special”不再表现为“执行成功但 0 事件”，而是更靠前的命令校验失败。对测试治理来说，这反而更稳定，因为它锁的是调用者真正能观察到的接口行为。
-- 因此后续看剩余 `resolveAbility(...)` 不能只问“是不是业务行为”，还要再问一层：**这个行为在领域层是否已有稳定公开命令/API？** 有就收回，没有就保留，并把原因写清。
-
-## 2026-05-17 00:36 补充发现：真实出牌命令会揭穿“牌已经不在手里”与“打出后还剩不剩候选牌”的假设
-
-- `ghost_make_contact_pod` 的旧测试说明，直调执行器很容易制造一种假的业务世界：牌明明已经不在手里，测试仍然能“打出”。一旦回到 `PLAY_ACTION`，这种假设会立刻暴露成命令层失败。
-- `ghost_make_contact` 还补了另一点：真实命令链不会只给你“那 1 个业务事件”，它还会带上 `ACTION_PLAYED` 等系统事件。测试如果继续断言固定事件数量，锁的就不是用户行为，而是旧执行器壳层。
-- `miskatonic_field_trip` 的第一次迁移红灯更有代表性：旧测试默认“打出这张牌后还能继续从手里选牌”，但真实世界里如果手牌只剩它自己，打出后手里就空了，根本不会出现选择 prompt。也就是说，**prompt 是否出现本身依赖于真实出牌后的 live hand state**，不能靠 executor 预先假定。
-- 这把后续筛选标准又收紧了一层：
-  - 不仅要问“有没有公开命令入口”
-  - 还要问“这个测试是否偷偷绕过了卡必须先在手里/场上、以及执行后 live state 会变化”这类真实前置
-- 对 TDD 而言，这是更有价值的 seam：测试不是去保护“执行器被怎么调”，而是保护“调用者从真实入口进入后，系统是否还能看到该看到的 live 状态和 prompt”。
-
-## 2026-05-17 01:00 补充发现：真实出牌入口会改变合法性本身，旧 executor 测试不能继续拿来当业务事实
-
-- `steampunk_mechanic` 这轮证明，旧 `resolveAbility('...onPlay')` 测试不只是绕过命令层，还绕过了“机械师本人已经上场”这个事实。`cthulhu_complete_the_ritual` 的 `requireOwnMinion` 约束在旧 executor 测试里不成立，但切回真实 `PLAY_MINION` 后立刻成立，因为机械师自己就是那个己方随从。
-- 这类差异不能靠“继续保留旧断言”糊过去。只要真实用户入口会让合法性变化，测试就必须改写为公开行为断言，否则它保护的是旧夹具世界，不是游戏规则。
-- `innsmouth_return_to_the_sea` 进一步说明，afterScoring special action 的公开入口不只是“phase=scoreBases + 有 response window”这么简单；`canCardBePlayedInResponseWindow()` 还依赖 `scoringEligibleBaseIndices`。旧 executor 直调完全绕开了这层门禁，所以看不出少了这份真实前置。
-- `miskatonic_things_best_not_known_pod` 也坐实了同一原则：beforeScoring special action 已有稳定公开入口，正确 seam 不是 `resolveAbility('special')`，而是 Me First! 响应窗口里的 `PLAY_ACTION`。切回真实入口后，测试能同时覆盖响应窗口合法性、目标基地门禁和后续疯狂卡/临时战力链。
-- `miskatonic_librarian_pod` 则补了另一层前置：旧 talent executor 测试把“图书管理员必须先上场”绕没了。真实 `PLAY_MINION -> USE_TALENT` 会让“对象所在 zone 是否正确”也纳入保护范围，这比直接喂 `talent` executor 更接近真正稳定的测试接口。
-
-## 2026-05-17 01:06 补充发现：当真实公开入口已经稳定时，测试应优先锁“额度沉淀后的公开状态”，不是内部事件裸数组
-
-- `killer_plant_blossom` 这条把另一类浅 seam 暴露得很清楚：旧测试虽然没有 mock，但它仍然只锁了 executor 返回的 3 条 `LIMIT_MODIFIED`，本质上还是把测试绑在“内部能力函数直接吐什么事件”上。
-- 切回真实 `PLAY_ACTION` 后，更稳定的行为断言其实是两层：
-  - 命令真的成功把这张行动打出：`ACTION_PLAYED`、手牌移除、进入弃牌、`actionsPlayed` 增加
-  - 额外同名随从额度真的沉淀进公开玩家状态：`sameNameMinionRemaining === 3`、`sameNameMinionDefId === null`
-- 这比只看事件数组更接近调用者会依赖的合同。后续如果 `grantContextualExtraMinion` 的内部拼装方式重构了，但公开额度状态和出牌行为不变，这类测试就不该跟着改。
-- 同时，这轮也把 `expansionOngoing.test.ts` 的边界划清了：剩下 5 处 `resolveAbility(` 都只是“能力已注册”的存在性合同，不再属于“业务行为 seam 过浅”的同类问题。后续继续治理时，不应该为了清零 grep 结果去硬改这些注册断言。
-
-## 2026-05-17 01:19 补充发现：beforeScoring special 回到真实入口后，会把“假基地 fixture”和“旧失败语义”一起揭穿
-
-- `elder_thing_the_price_of_power` 这轮证明，beforeScoring special 虽然早就有稳定公开入口，但只把测试从 `resolveAbility(...)` 换成 `PLAY_ACTION` 还不够；测试夹具也必须满足真实计分链前置。默认 `makeBase()` 产出的 `test_base` 没有合法 `vpAwards`，一旦 `FlowSystem` 在 response window 结束后继续推进 `scoreOneBase`，测试就会炸在 `buildBaseRankings(baseDef.vpAwards)`。
-- 这说明 beforeScoring / afterScoring 响应窗口测试不该再把“假基地也能跑完整 scoreBases”当默认前提。只要真实链路会继续进入计分，base fixture 就必须是实际注册过、可计分的 base def，例如 `base_the_jungle`、`base_temple_of_goju`。
-- 同一轮还暴露出另一条更重要的分层事实：`对手在此基地无随从` 不是命令层非法。真实公开行为是“卡可以在达标基地被打出，但能力本身结算为空”；也就是 `ACTION_PLAYED` 仍发生，只是没有 `REVEAL_HAND` 和 `POWER_COUNTER_ADDED`。旧 executor 测试把这条场景误写成“没有可执行的响应目标”，本质上是在保护旧壳层的预过滤，不是在保护玩家能观察到的规则结果。
-- 因此后续治理剩余 `resolveAbility(...)` 时，要额外问两句：
-  - 真实入口结束后会不会继续推进到更深的 pipeline（计分、reaction queue、afterEvents）？如果会，fixture 必须一并升级。
-  - 旧测试断言的“失败”到底是规则真失败，还是旧 helper/executor 提前帮它挡掉了？如果是后者，就应该改成公开行为断言，而不是把真实命令重新改坏去迎合旧测试。
-
-## 2026-05-17 01:26 补充发现：一旦某个文件里同时存在“真实出牌链”和“旧 onPlay executor 链”，就应该优先把同一能力簇整组收回同一入口
-
-- `elderThingAbilities.test.ts` 这轮很典型：`elder_thing_mi_go` 的第一条测试已经在走 `PLAY_MINION`，但后两条“对手选抽 Madness / 对手拒绝后我方抽牌”还停在 `resolveAbility('elder_thing_mi_go', 'onPlay')`。这种半迁移状态本身就是债务，因为同一能力簇被拆成两套入口，后续重构时还是会碎。
-- 把这两条补齐后，测试真正锁住的是同一条公开链：`PLAY_MINION -> elder_thing_mi_go prompt -> 对手响应 -> 最终事件/状态`。这样无论 prompt 如何继续由 runtime program 驱动，业务测试都不再依赖 executor 直接返回的中间壳。
-- `elder-thing-choice-goju-tiebreak.test.ts` 则补了另一个模式：哪怕测试文件主目标是历史 bug 回归，只要其中那条 helper 本质上是在模拟“打出这张随从后的 onPlay 选择链”，也不该继续保留 fake `matchState + resolveAbility(...)`。把共享 helper 收回真实 `PLAY_MINION`，比单改某 1 条断言更值，因为整组 6 条行为测试一起摆脱了旧入口。
-- 这也说明筛剩余 `resolveAbility(...)` 时，不只看单个命中条数。若某文件里已经存在同能力的真实命令样本，而剩余命中还在测同一能力的后续分支，这种“半迁移簇”应该优先处理，收益通常比新开一个完全陌生的文件更高。
-
-## 2026-05-17 01:39 补充发现：低层 ability 合同也需要统一测试接口，否则“保留例外”本身会继续碎
-
-- 这轮证明，问题不只在“哪些业务测试还没回到真实命令链”，还在于那些**确实不该走公开命令**的 low-level/off-phase 合同，如果继续在测试体里裸写：
-  - `const executor = resolveAbility(...)`
-  - `expect(executor).toBeDefined()`
-  - `executor!({...})`
-  仍然是在把注册表 API 暴露给每个测试文件。
-- 对这类例外场景，正确做法不是继续散着写 `resolveAbility(...)`，而是集中到一个显式 helper。这样测试语义会从“我自己去注册表摸执行器”变成“我刻意调用一个低层能力合同入口”。
-- 因此新增 `invokeRegisteredAbilityContract(...)` 的价值不是改名字，而是补了一层稳定测试接口：
-  - 业务链：`runCommand(...)`
-  - prompt continuation/runtime metadata：`respondToPrompt...` / `invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`
-  - 低层 ability executor 合同：`invokeRegisteredAbilityContract(...)`
-- 这层分工能减少下一轮重构的测试 churn。后续如果 `abilityRegistry` 的内部查找、program 包装或 executor 形状调整，低层合同测试只需要在 helper 层适配，不必继续批量扫每个测试文件。
-- 最新裸 `resolveAbility(` 分布也因此更干净：剩下的主要是注册表存在性断言、少量未迁移的低层合同，以及 `helpers.ts` 自己的唯一查找点；“每个文件都各自摸一次 executor”的模式已经明显收敛。
-
-## 2026-05-17 01:46 补充发现：局部“能力已注册”断言是另一类噪音，应优先删除而不是继续换壳保留
-
-- `baseFactionOngoing.test.ts` 和 `expansionOngoing.test.ts` 这轮进一步说明，很多残余 `resolveAbility(` 已经不是“测试接口不统一”，而是单纯的**局部重复存在性断言**。
-- 这类断言的问题不只是 grep 数字难看，而是会制造错误信号：看起来像“这个文件还在测 low-level executor”，实际上它只是重复了一遍 `abilityRegistry.test.ts` 已经覆盖的存在性合同。
-- 对这类重复断言，正确动作通常是删除，而不是：
-  - 把 `resolveAbility(...)` 换成另一种存在性 helper
-  - 或者在每个业务文件里继续保留一条“顺手测一下已注册”
-- 这样做的好处有两层：
-  - 业务文件只留下真正属于该行为簇的不变量
-  - 剩余裸 `resolveAbility(` 的分布就更接近“真实还需要保留的注册表/属性合同”，不再混入局部噪音
-- 这轮之后，全仓裸 `resolveAbility(` 只剩：
-  - `abilityRegistry.test.ts`：注册表本体合同
-  - `properties/coreProperties.test.ts`：属性/一致性合同
-  - `helpers.ts`：唯一的 low-level contract 入口查找点
-- 这比“把所有地方都改成某个 helper 但仍然到处做存在性断言”更符合 TDD seam 收敛目标，因为它减少的是测试资产噪音本身，而不是只换一个调用壳。
-
-## 2026-05-17 01:50 补充发现：属性测试里的“局部已注册断言”也属于噪音，除非它本身就在测注册表属性
-
-- `coreProperties.test.ts` 里最后那条 `resolveAbility('...','onPlay')` 业务外观上看像“Property 5: onPlay 能力触发”的前置保护，实质上仍是局部重复存在性断言。
-- 它和 `abilityRegistry.test.ts` 的区别不在文件名，而在合同焦点：
-  - `abilityRegistry.test.ts` 测的是“注册/解析 API 本身是否一致”，所以保留 `resolveAbility(...)` 是合理的。
-  - `coreProperties.test.ts` 的 `Property 5` 真正该测的是“从公开出牌命令进入后是否产生公开事件/行为”，不是“这些 defId 有没有注册”。
-- 因此同样是 `resolveAbility(...)`，不能一刀切全删，也不能因为写在 property 文件里就自动合理。判断标准应回到测试正在保护的合同是不是“注册表本体/属性”。
-- 这也补强了筛选规则：如果一条断言只是为了让本文件“顺手确认能力存在”，但真正行为断言已经通过 `PLAY_MINION` / `PLAY_ACTION` / `USE_TALENT` 覆盖，那么这条断言优先删除，而不是换壳保留。
-- 到这一步后，裸 `resolveAbility(` 的剩余 9 处终于都落在了明确合理的位置：
-  - `abilityRegistry.test.ts`：5
-  - `coreProperties.test.ts`：3
-  - `helpers.ts`：1
-
-## 2026-05-17 01:56 补充发现：统一测试标准如果只写文档，不写门禁，回归速度会很快
-
-- 这轮把 `resolveAbility(...)` 的分层口径继续往前推了一步：不再只是“当前仓里已经收干净”，而是通过 `testing-structure-guard.mjs` 明确禁止**未来新增**的业务测试回退到裸 `resolveAbility(...)`。
-- 这个门禁的价值不在于追求 grep 清零，而在于固定一条稳定路径：
-  - 公开行为：真实命令入口
-  - low-level ability executor 合同：`invokeRegisteredAbilityContract(...)`
-  - 注册表/属性合同：少量白名单测试文件
-- 如果不把这层固化成脚本，后续任何新 bug 修复都可能因为“直调 executor 最快”而重新把旧 seam 带回来；文档很难抵抗这种短期便利。
-- 同一原则也适用于调试日志：一旦回归测试已经稳定，`console.log` 留在业务测试里就是噪音。它不会增加合同强度，只会污染输出、掩盖真正的失败信号。
-
-## 2026-05-17 02:25 补充发现：去掉调试日志不等于“只改表象”，关键在于把打印承载的信息升格为合同
-
-- `wizard-neophyte-actionlog.test.ts` 这轮说明，很多日志表面上在“看 ActionLog”，实质上只是把链路信息打印出来让人肉判断。
-- 真正的收口方式不是删日志后留一句 `expect(success).toBe(true)`，而是把日志里承载的关键观察点提炼成合同：
-  - ActionLog kind 序列
-  - 响应后的手牌/牌库结果
-  - 交互暂停点与恢复点
-  - afterScoring 响应后基地替换与随从迁移结果
-- `turnTransitionInteractionBug.test.ts` 还暴露了另一类假象：旧测试名说“托尔图加 prompt 会出现”，但原场景里根本没有合法的其他基地目标，所以即使打印很多 phase / prompt 信息，也锁不住真正的 afterScoring 暂停合同。
-- 把这种场景改成“确实有合法目标”的真实链路后，测试保护的就不再是“某次打印看起来合理”，而是：
-  - `scoreBases` 必须暂停
-  - prompt sourceId / playerId 必须正确
-  - 响应后才允许进入下一回合
-  - 替换基地与移动结果必须正确落地
-- 这类改法比单纯清 grep 更重要，因为它直接减少了“重构一下测试就全碎”的根因：测试不再依赖人工阅读日志或偶然的中间状态。
-
-## 2026-05-17 02:38 补充发现：audit 测试也要区分“失败信息载体”和“真实业务红灯”，不能把两者混为一谈
-
-- `interactionDefIdAudit.test.ts` 这轮最后 4 处 `console.log` 的本质不是“普通调试日志”，而是拿控制台当失败清单载体。把它们删掉后，如果只是改成 `expect(violations).toEqual([])`，可读性会倒退；正确做法是把违规明细直接提升为断言消息。
-- audit 文件的稳定接口应是：
-  - 成功时静默通过
-  - 失败时直接给出可复制的违规清单
-  - 不依赖额外控制台输出让人肉拼装信息
-- `npm run test:games:audit -- <file>` 在这个仓里不能当“单文件定点验证”使用，因为脚本本身固定带 `run src/games --config vitest.config.audit.ts`，追加文件参数后依然会把整套 audit include 跑起来。要隔离目标文件，必须改用更窄入口：`node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native <file>`。
-- 这次定点验证还说明，日志清理完成后暴露出的红灯是**真实审计结果**，不是改造副作用：
-  - `src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 当前仍稳定报出 `vampires.ts` 两处 option 组缺 `minionDefId/baseDefId`
-  - 说明原来 `console.log` 只是把这些问题打印出来，不是测试逻辑的一部分
-- 因此后续处理 audit 文件时，也要沿用同一原则：
-  - “去掉 `console`”不是终点
-  - 要把控制台承载的信息升格成失败消息、结构化断言或证据文本
-  - 然后把剩下的红灯当成真实代码问题逐条处理
-
-## 2026-05-17 02:41 补充发现：interaction option 的可渲染元数据不能再只靠通用 `defId/baseIndex` 猜出来
-
-- `vampire_heavy_drinker` 这两组红灯说明，旧 option value 里虽然已经有 `defId` 和 `baseIndex`，但这对新的统一审计口径还不够。
-- 现在的 interaction 元数据分层已经更明确：
-  - `defId` 适合保留作历史兼容或通用 card identity
-  - `minionDefId` / `baseDefId` 才是明确告诉 UI 和审计“这里展示的是随从/基地本体”
-- 这类补字段不是表面修饰，因为它直接影响两件事：
-  - Prompt/UI 是否能稳定判断该按哪种实体卡模式渲染
-  - 审计脚本是否能在不猜测上下文的前提下验证 option shape
-- 同时，这轮也证明对老链路的兼容策略应该是“补强 shape，再让 resolver 向前兼容”，而不是一次性把所有消费端都改成只认新字段：
-  - option value 新增 `minionDefId/baseDefId`
-  - `onResolve` 先读 `minionDefId`，读不到再 fallback `defId`
-- 这类过渡方式更适合当前仓的治理节奏：可以先把交互 option 合同收紧，再逐步清理下游对旧字段名的依赖，而不用一口气改完所有能力文件。
-
-## 2026-05-17 02:59 补充发现：interaction metadata audit 里最值得优先收的，不是文件最多的那批，而是“规则已经很清楚但代码没写准”的那批
-
-- `interactionTargetTypeAudit` 这轮证明，一个 audit 批次是否值得先收，不看命中数大小，先看规则是否单义：
-  - 纯按钮分支却写成 `generic`
-  - 同一 `sourceId` 同时充当 `base` 和 `minion`
-  - 确实保留 `generic` 却没有登记理由
-  这三类都属于“规范已经明确，代码只是没写准”，因此投入小、收益高。
-- `interactionDisplayModeAudit` 这轮也出现了同样的分层：
-  - “按钮缺 `displayMode` / 基地卡面缺 `displayMode`”是纯声明错误，适合先收
-  - “显式 card displayMode 但 value 缺可渲染 id”则是更深一层的数据 shape 约束，适合按文件簇推进
-- `buildMinionTargetOptions(...)` 的统一补强收益很高，因为它不是为了 grep 好看，而是把“任何场上随从直选 option 都应该显式带 `minionDefId/baseDefId`”固化进共享出口。这样后面修 `aliens`、`titans`、`tricksters` 时，不必每次重新发明一套 value shape。
-- `base_mermaid_pool` 这类 `value: candidate` 还暴露了另一个事实：AST 审计不是运行时。只要 option value 不是字面量，审计就可能看不到实际字段，即使运行时对象已经有 `minionDefId`。这类场景要么改成字面量对象，要么调整审计器；两者不是一回事，不能混着算“都修过了”。
-- 当前 `interactionDisplayModeAudit` 只剩 1 条失败、9 个点位，说明这一批已经从“规则散乱”进入“剩余个别文件还没跟上统一 shape”的阶段。下一步再打，就该按剩余文件簇收，不该回头再修已经绿掉的声明类问题。
-
-## 2026-05-17 03:11 补充发现：interaction metadata audit 想长期稳，不该只认“value 必须是字面量对象”
-
-- 这轮把 `interactionDisplayModeAudit.test.ts` 接到共享 `TypeScript Program + TypeChecker` 后，之前剩余 9 个红点里大部分直接消失，证明它们不是业务 shape 真缺，而是审计器只会看 `value: { ... }` 的表面结构。
-- 最典型的几类误判源已经明确：
-  - `value: { ... } satisfies SomeChoiceValue`
-  - `value: card` / `value: choice` / `value: action`
-  - helper 返回的 card option，但 helper 自己没有把 renderable contract 写进类型
-- 这里的本质不是“让测试更聪明一点”，而是把审计口径改成真正接近 UI/runtime 的合同层：
-  - 如果 `TypeScript` 已经能证明该 value 带 `defId/minionDefId/baseDefId`，audit 不该继续把它判红
-  - 如果 value 只是按钮 payload，哪怕 prompt `targetType` 是 `minion`，也不该为了“看起来像某个实体交互”去硬标 `card`
-- 同时这轮也暴露出另一条反模式：**skip/yes/no 这类控制分支不应伪装成实体 target shape**。
-  - `bear_cavalry_commission_move_minion` 之前拿 `{ minionUid: '__skip__', baseIndex }` 冒充跳过分支，会把 button 语义污染进 minion contract
-  - 正确做法是显式 `skip: true`，handler 直接识别控制语义
-- 因而后续统一测试标准可以更明确：
-  - 审计器优先识别真实类型合同，而不是鼓励到处把 `value` 改写成更丑的字面量
-  - 真正的业务修复只针对 shape 漏洞本身，例如漏 `minionDefId`、错把按钮写成 `card`、helper 没声明 renderable contract
-
-## 2026-05-17 03:22 补充发现：测试结构门禁也要避免“禁得太宽”，否则会反过来鼓励绕规则
-
-- 这轮给 `testing-structure-guard.mjs` 增加“禁止业务测试直接导入 registry/handler”时，第一次实现把 `from '../domain/abilityRegistry'` 整体判成违规，结果立即误伤了很多只是在做：
-  - `clearRegistry()`
-  - 类型导入
-  - 其它合法 setup/contract API
-- 这说明测试门禁本身也要遵守和业务规则一样的原则：**只固化真正的不变量，不要把模块表象直接写成禁令。**
-- 真正该拦的是：
-  - `resolveAbility`
-  - `getInteractionHandler`
-  - `getAbilityRuntimePromptHandler`
-  - `console.log/warn/error/debug`
-- 不该拦的是“任何碰过这个模块的人”。否则结果会变成：
-  - 工程师为了绕门禁改 import 写法
-  - 或者把合法 setup 搬到更隐蔽的位置
-  - 而不是减少测试对实现细节的耦合
-- 这条经验后面值得继续沿用：凡是给测试体系加 guard，都要优先按**具体坏入口**下刀，而不是按整个文件、整个模块或整个目录一刀切。
-
-## 2026-05-17 03:31 补充发现：把能力簇从巨型泛名文件迁到独立文件，价值不在“文件更小”，而在“同一簇只保留一套行为入口”
-
-- `Aliens` 这轮迁移后更清楚地证明了一点：**同一个派系能力簇，最好在同一文件里统一走一套公开行为 seam。**
-  - `alien_invader` / `alien_collector` / `alien_supreme_overlord` / `alien_disintegrator` / `alien_crop_circles` 全部收进 `abilities/aliens.test.ts` 后，这个文件只需要理解：
-    - 真实出牌命令
-    - prompt facade
-    - 响应命令
-  - 不再需要在 `factionAbilities.test.ts` 这种巨型文件里跨很多派系上下文切换。
-- 这类迁移减少 churn 的关键，不是“describe 被挪了位置”，而是下面两个结构变化：
-  - 同一能力簇的 helper 可以本地化，例如 `execPlayMinion(...)` / `execPlayAction(...)`
-  - 同一能力簇的业务词汇、前置状态、prompt 断言都能收在一个边界里，不必跟别的派系共用一团越来越泛的上下文
-- 反过来说，巨型测试文件真正危险的地方也更明确了：
-  - 某一簇逻辑想改成真实 `PLAY_ACTION`
-  - 另一簇还停在旧 helper 或历史入口
-  - 最后同一个文件里同时出现 3 套入口、4 套夹具口径
-  这样就算 grep 命中清零，后续重构照样会碎。
-- 因此后续继续拆 `factionAbilities.test.ts` 时，优先级不该按“哪段最短最好搬”排，而该按：
-  - 哪个能力簇已经能自然收敛到单一公开行为入口
-  - 哪个能力簇当前仍混用真实出牌链和历史夹具
-  - 哪个能力簇拆出来后能立刻减少上下文切换与重复 helper
-
-## 2026-05-17 03:37 补充发现：并不是每次都该新开一个专项文件，已有“单主题文件”通常是更好的吸收点
-
-- `Dinosaurs` 这一轮和 `Aliens` 不同：`abilities/dinosaurs.test.ts` 早就存在，而且它已经是一个主题明确的恐龙专项文件。
-- 这说明“降低测试 churn”的正确动作不总是“把某段从大文件挪到一个新文件”，而是先判断有没有现成的稳定归宿：
-  - 如果已有文件本身主题单一、边界清楚，就优先并进去
-  - 只有在没有合适归宿时，才新开 `abilities/<faction>.test.ts`
-- 这样做的好处比机械新建文件更实际：
-  - 避免同一派系被拆成 `dinosaurs.test.ts`、`dino-actions.test.ts`、`dino-ongoing.test.ts` 三四份，最后又形成新的碎片化
-  - 让“同一派系的行为 seam”尽量集中，后续找测试、补回归、读上下文都更稳定
-- 这也给后面的迁移提供了一个更明确的判断标准：
-  - 先看是否已有单主题专项文件
-  - 再看迁入后会不会破坏它的单主题边界
-  - 只有两者都不满足时，才考虑新开文件
-
-## 2026-05-17 03:49 补充发现：当历史泛名文件被压到只剩 1-2 个尾项时，剩下的问题已经不再是“拆不拆”，而是“这些尾项各自应该归哪类文件”
-
-- 这轮连续迁出海盗、巫师、机器人和“立即额外行动”后，`factionAbilities.test.ts` 只剩：
-  - `ghost extra timing audit`
-  - `ninja_seeing_stars`
-- 这说明一个阶段已经切换了：
-  - 之前的问题是“巨型泛名文件太大，很多能力簇混在一起”
-  - 现在的问题是“只剩极少数没有自然归宿的尾项”
-- 这两类问题的处理策略不一样：
-  - 在“大杂烩阶段”，优先按能力簇批量迁出
-  - 在“尾项阶段”，优先判断测试本质是什么，再决定归宿
-- 这轮里最典型的是“立即额外行动”：
-  - 它虽然历史上挂在 `factionAbilities.test.ts`
-  - 但本质上根本不是某个派系，而是一个跨能力共享交互
-  - 正确做法不是把它塞到某个派系文件里，而是单独起一个语义准确的文件
-- 因此后续收尾时，判断维度应该进一步从“按派系拆”升级为“按行为类别归位”：
-  - 派系能力 -> `abilities/<faction>.test.ts`
-  - 共享交互链 / 共用能力机制 -> 语义化的 cross-cutting 文件
-  - audit / contract / metadata 断言 -> audit 或 contract 文件
-- 这也解释了为什么 `ghost extra timing audit` 不该机械塞进某个派系能力文件：它更像一条额外回合/额外出牌时机合同审计，而不是普通 faction ability 示例。
-
-## 2026-05-17 03:54 补充发现：删除历史泛名文件的前提，不是“内容变少了”，而是“每一条残留都已经找到语义更准确的归宿”
-
-- `factionAbilities.test.ts` 这一轮能真正删除，不是因为它只剩两条测试，而是因为这两条已经都能明确回答“我到底属于什么”：
-  - `ninja_seeing_stars` -> 忍者派系专项文件
-  - `ghost_ghostly_arrival off-phase immediate` -> 幽灵能力块里的时机合同断言
-- 这个判断很关键。否则很容易出现另一种假收口：
-  - 先把大文件拆薄
-  - 剩几条“不好归类”的尾项
-  - 然后为了追求“文件数变少”直接删掉或随便塞进某个不太相关的文件
-  - 结果是表面上整理了，真实语义反而更乱
-- 所以“能不能删历史壳文件”的最低标准应该是：
-  - 原文件中的每一类测试都已经在别处有更准确的归位
-  - 新归位后的文件名、上下文、helper 和断言语义比原来更清晰
-  - 删除后不会让人失去查找入口，只会让入口更准确
-
-## 2026-05-17 04:04 补充发现：`第N批` 这类命名本身就是测试脆弱性的信号，它按迁移历史分组，而不是按行为边界分组
-
-- `query6Abilities.test.ts` 这一轮被彻底删除后，这个问题更清楚了：
-  - 文件里原来同时混着海盗、忍者、巫师、外星人
-  - 它们唯一的共同点不是共享行为、共享夹具或共享合同
-  - 而只是“曾经在同一批次被补进去”
-- 这种按历史批次分组的文件会自然制造三种 churn：
-  - 改某个派系能力时，需要先在一个和它没语义关系的大杂烩里找上下文
-  - 同一文件里会慢慢并存多套 helper、不同入口风格和不同断言口径
-  - 后续重构某个派系的公开 seam 时，容易顺手牵动别的无关派系用例
-- 所以判断“这个文件是不是该退场”时，可以再加一条很硬的信号：
-  - 如果文件名或组织方式主要描述的是“迁移批次 / 历史来源 / 杂项集合”
-  - 而不是“派系 / 行为类别 / 合同边界”
-  - 那它大概率就不是长期稳定的测试归宿
-- `query6Abilities.test.ts` 的正确收口方式也印证了前面的原则：
-  - 忍者 -> `abilities/ninjas.test.ts`
-  - 海盗 -> `abilities/pirates-ongoing.test.ts`
-  - 巫师 -> `abilities/wizards.test.ts`
-  - 外星人 -> `abilities/aliens.test.ts`
-  - 真正减少未来重构成本的，不是“把测试挪走”，而是“让每份专项文件只维护一套可复用的行为入口和业务词汇”
-
-## 2026-05-17 04:09 补充发现：即使不是“多派系混装”，同一派系的双入口并存也会制造测试 churn
-
-- `robotAbilities.test.ts` 这一轮删除后，暴露出的不是“批次混装”问题，而是另一种更隐蔽的坏结构：
-  - 根目录已经有 `robotAbilities.test.ts`
-  - 同时又已经存在 `abilities/robots.test.ts`
-  - 两个文件都在维护机器人派系的真实出牌行为
-- 这种“双入口同主题”会带来另一类维护成本：
-  - 改机器人行为时，不确定该去哪个文件补回归
-  - 两边容易长出不同的 helper 口径和不同的断言风格
-  - 后续重构同一派系时，经常需要同步改两边，哪怕它们测的是相近合同
-- 所以判断“要不要继续收口”时，不能只看是不是多派系混装；还要看有没有：
-  - 同一派系在两个位置各维护一部分普通行为测试
-  - 其中一个位置已经明显是更准确、更长期的专项入口
-- 这轮机器人的正确动作不是“保留两个入口各管一半”，而是：
-  - 把 `robot_microbot_reclaimer / fixer` 统一并回 `abilities/robots.test.ts`
-  - 删除旧的根目录 `robotAbilities.test.ts`
-  - 让机器人派系重新只保留一个普通行为入口
-
-## 2026-05-17 04:19 补充发现：除了“多派系混装”和“同派系双入口”，还要继续清理“根目录单派系旧入口”
-
-- `ghostsAbilities.test.ts` 这轮说明，测试 churn 的另一种来源不是内容混装，而是**入口层级不一致**：
-  - 一部分幽灵测试已经在更准确的专项或扩展文件里
-  - 另一部分普通行为还挂在根目录 `ghostsAbilities.test.ts`
-  - 结果就是同一派系的测试入口分散在“根目录旧命名”和“语义更准确的专项文件”两套层级
-- 这种结构的坏处和双入口类似，但更隐蔽：
-  - 读代码的人会先误以为根目录文件仍是当前主入口
-  - 后续补幽灵回归时，不容易第一时间判断该进 `abilities/ghosts.test.ts` 还是继续往旧根目录文件里堆
-  - 即使行为 seam 没变，文件层级分裂也会放大“改一次要同步找两三处”的维护成本
-- 所以现在筛选旧测试入口时，应该至少看三种信号，而不是只看“大不大”：
-  - 是否是按批次/杂项组织的历史混装文件
-  - 是否是同一派系双入口并存
-  - 是否是根目录单派系旧入口，而专项目录里其实已经存在更长期的归宿
-- `ghostsAbilities.test.ts` 的正确收口方式不是继续挂一个“幽灵旧入口”，而是：
-  - 普通派系行为 -> `abilities/ghosts.test.ts`
-  - 时机/扩展合同 -> 继续留在更准确的专项文件，例如 `expansionAbilities.test.ts`
-  - 这样后续重构 `ghost_make_contact` 一类普通行为时，只需要维护一个清晰入口
-
-## 2026-05-17 07:40 补充发现：`代表性玩法` 这类跨多派系抽样文件，本质上仍是混装壳，只是名字比“第 N 批”更像业务
-
-- `shayuFactionAbilities.test.ts` 这轮说明，混装文件不一定写着“第6批 / 杂项 / 临时”才算坏结构：
-  - 它表面上写的是“三派系代表性玩法”
-  - 但内部仍同时维护鲨鱼、龙卷风、神话希腊三套不同业务词汇、不同触发链和不同基地合同
-  - 这和按批次混装的根因一致：共享的不是行为边界，只是“当时顺手放在一起”
-- 这类文件比 `query6Abilities.test.ts` 更隐蔽，因为名字听起来像“业务聚合”：
-  - 容易让人误以为这是一个合理的长期入口
-  - 但后续改任一派系时，仍会被迫进入一份跨派系上下文的大文件
-  - 单派系重构也更容易顺手碰坏别的派系抽样
-- 所以现在判断一个测试文件是否该退场，信号应再补一条：
-  - 如果文件通过“代表性玩法 / 抽样复审 / 综合行为”把多个派系揉在一起
-  - 但这些派系之间并无共同 seam、共同夹具或共同合同
-  - 那它仍然属于应该拆回派系专项文件的历史壳
-- `shayuFactionAbilities.test.ts` 的正确收口方式验证了这一点：
-  - 鲨鱼 -> `abilities/sharks.test.ts`
-  - 龙卷风 -> `abilities/tornados.test.ts`
-  - 神话希腊 -> `abilities/mythic-greeks.test.ts`
-  - 真正长期稳定的入口，仍然应该按派系或明确行为边界组织，而不是按“代表性抽样集合”组织
-
-## 2026-05-17 08:01 补充发现：从聚合文件迁测试时，真正该一起迁走的往往不只是 `describe`，还包括“本地事件回放 seam”
-
-- `Killer Plants` 这轮暴露出另一个容易被忽略的脆弱点：
-  - 表面上是 `expansionAbilities.test.ts` 和 `abilities/killer-plants.test.ts` 双入口并存
-  - 更深一层是旧段落里还在靠本地 `applyEvents(state, events)` 手推 reducer，再去验证最终状态
-- 这种写法的问题不只是“helper 多一层”：
-  - 业务命令链已经给了 `result.finalState`
-  - 测试却再自己重放一遍事件
-  - 后续只要 reducer 顺序、补充事件或中间实现细节变动，测试就会比真实用户链更早碎掉
-- 所以迁移专项文件时，判断是否真的减少 churn，应该同时看两件事：
-  - 是否消掉了“聚合文件 + 专项文件”双入口
-  - 是否把能直接用 `finalState` 表达的不变量，从本地事件回放迁回真实命令结果
-- 这轮里 `killer_plant_insta_grow` / `killer_plant_weed_eater` 并入 `abilities/killer-plants.test.ts` 后，顺手把相关状态断言都优先写成：
-  - `PLAY_ACTION` / `PLAY_MINION`
-  - 直接看 `runCommand(...).finalState`
-  - 只在确实需要锁低层合同（例如 off-phase immediate metadata）时保留能力合同入口
-- 这比单纯“文件换地方”更接近用户要的目标：以后重构实现时，测试更依赖公开行为结果，而不是事件回放细节。
-
-## 2026-05-17 08:06 补充发现：扩展聚合文件一旦只剩单个派系尾项，就应该继续追到“同派系只留一个普通行为入口”
-
-- `Bear Cavalry` 这轮证明，`expansionAbilities.test.ts` 的问题不只是“大”，而是它还在和 `abilities/bear-cavalry.test.ts` 并行维护同一派系的普通行为。
-- 这类双入口即使文件都不算大，也会继续制造 churn：
-  - 改 `bear_cavalry_bear_hug` 时不知道该先进哪个文件
-  - tie-choice 回归、额外随从交互和其它熊骑兵保护/移动回归被拆在两套上下文里
-  - 后续只要 helper 或断言风格调整，同一派系就要跨两个文件同步
-- 所以扩展聚合文件进入“尾项阶段”后，优先级应该变成：
-  - 先看尾项是否已经有现成专项归宿
-  - 如果有，就继续并回专项文件
-  - 只有没有稳定归宿时，才保留在聚合入口或考虑新开专项文件
-- 这轮把 `bear_cavalry_bear_hug` 和 `bear_cavalry_commission` 并回 `abilities/bear-cavalry.test.ts` 后，`expansionAbilities.test.ts` 明显变得更接近“真正没归宿的剩余项”，而不是继续承担同派系双入口。
-
-## 2026-05-17 08:14 补充发现：当聚合文件已经只剩“每个尾项都有明确归宿”时，最干净的动作就是整文件退场
-
-- `expansionAbilities.test.ts` 这一轮已经走到这个阶段：
-  - `steampunk_scrap_diving` 有明确的 Steampunks 行为归宿
-  - `cthulhu_complete_the_ritual` 也已经有 `abilities/cthulhu.test.ts` 这个专项文件，只是之前少了一段打出约束
-- 这种情况下继续保留一个只剩 1-2 个 describe 的历史聚合文件，没有长期价值：
-  - 它不再提供真正的共享上下文
-  - 只会让“应该去哪个文件补回归”再次变模糊
-- 所以这里的正确动作不是把旧文件压到更小，而是：
-  - 给缺少专项归宿的能力补上专项文件或补齐现有专项文件
-  - 然后直接删除旧聚合入口
-- 这也进一步说明，测试整理的终点不该是“所有旧文件都还在，只是更短”，而应该是：
-  - 同一能力/派系/行为边界只保留一个自然入口
-  - 历史聚合壳在不再承载独特价值时直接退场
-
-## 2026-05-17 08:14 补充发现：`ongoing` 聚合文件也要区分“共享机制合集”与“其实已经有专项归宿的派系段落”
-
-- `expansionOngoing.test.ts` 这一轮的幽灵段证明，`ongoing` 聚合文件并不天然合理。
-- 关键要看里面的段落是否已经满足两件事：
-  - 该派系已经有自己的专项文件
-  - 这些 ongoing/低层合同仍然属于同一派系的自然语义边界，而不是跨派系共享机制
-- `Ghosts` 就符合这个条件：
-  - `ghosts.test.ts` 已经是当前幽灵专项入口
-  - `ghost_incorporeal`、`ghost_make_contact` 的显式控制权事件与 detach affect 合同，本质上都仍是幽灵派系语义
-  - 继续留在 `expansionOngoing.test.ts` 只会制造第二入口
-- 所以下一步拆 `expansionOngoing` 时，优先级也不该按“哪段最短”排，而该按：
-  - 哪些段落已经有稳定专项文件可承接
-  - 哪些段落仍然只是在历史聚合文件里寄居，没有独特的跨派系理由
-
-## 2026-05-17 09:00 补充发现：按“扩展包”把多个派系普通行为混在一起，本质上和按批次混装没有区别
-
-- `cthulhuExpansionAbilities.test.ts` 这轮再次说明，文件名里带不带“expansion”不重要，关键还是它是不是稳定行为边界。
-- 这份文件内部同时维护：
-  - 印斯茅斯普通行动
-  - 米斯卡塔尼克普通行动
-  - 克苏鲁之仆普通行动
-  它们共享的并不是同一套 prompt 机制、同一套夹具或同一条业务链，只是“都来自同一个扩展盒”。
-- 这种组织方式会继续制造和 `query6Abilities.test.ts` 一样的 churn：
-  - 改 `innsmouth_new_acolytes` 时还得进一个混有另外两派系语义的大文件
-  - 同一派系已经有专项文件时，会出现“普通行为到底写回专项还是写回扩展包壳”的第二入口
-  - 后续想统一某个派系的 helper 或断言风格时，不得不跨文件同步
-- 所以“扩展包聚合”不能自动视为合理边界。只要其中的测试已经能自然归到：
-  - `abilities/cthulhu.test.ts`
-  - `abilities/innsmouth.test.ts`
-  - `abilities/miskatonic.test.ts`
-  那就应该直接并回各自专项，而不是继续保留一个“因为同扩展所以先混着”的旧壳。
-
-## 2026-05-17 09:45 补充发现：`ongoing` 大文件迁到共享 helper 后，最容易漏掉的是“手牌/牌库存在性”这类旧默认前提
-
-- 这轮把 `baseFactionOngoing.test.ts` 的整段 `诡术师 ongoing` 并回 `abilities/tricksters.test.ts` 后，第一波红灯不是实现行为坏了，而是测试状态工厂换了：
-  - `trickster_brownie_pod` 期待“抽 1 张牌”
-  - `trickster_pay_the_piper` 期待“对手弃 1 张牌”
-  - 但共享 `helpers.makeState(...)` 默认不给玩家手牌/牌库，而旧 `baseFactionOngoing.test.ts` 的本地 `makeState(...)` 默认两边都塞了牌。
-- 这说明旧大文件的脆弱性不只在“用了内部 prompt 字段”，还在于**它把资源存在性前提偷偷烘焙进本地状态工厂**：
-  - 抽牌测试其实依赖“牌库非空”
-  - 弃牌测试其实依赖“对手手牌非空”
-  - 这些如果不显式写出来，后续只要统一 helper、统一玩家默认派系、统一最小状态，测试就会看起来像“实现回归”
-- 因而后续的统一测试标准应再补一条更具体的不变量：
-  - 凡测试标题声称“抽牌 / 弃牌 / 随机弃牌 / 洗回后抽牌 / 手牌不足时弃全部”
-  - 测试体内必须显式提供对应的 `deck` / `hand` 前提
-  - 不能继续依赖某个旧文件局部 `makeState(...)` 的隐藏默认值。
-- 这类迁移的价值也因此更明确：真正降低 churn 的不是“把 `trickster_*` 从一个文件挪到另一个文件”，而是**让专项文件自己完整声明业务前提**，以后重构测试 helper 时不会再被旧默认值牵着走。
-
-## 2026-05-17 09:54 补充发现：当历史壳文件已经只剩单一派系合同时，正确动作通常不是保留“技术主题名”，而是直接并回派系专项并删壳
-
-- `baseFactionOngoing.test.ts` 这轮最后剩下的内容，表面上还叫“基础派系 ongoing/special”，但实质已经只剩：
-  - 忍者 ongoing / special 合同
-  - `ninja_acolyte` 额外打出 `cowboys_gunfighter` 的续链
-- 这说明“技术主题名”本身也可能变成历史噪音：
-  - 文件名看起来像 shared mechanism
-  - 但实际测试边界已经收缩成单一派系
-  - 继续保留只会制造“忍者 special 到底看专项还是看旧技术壳”的第二入口
-- 这类文件的处理标准可以更明确：
-  - 如果它里面已经不再承载多个派系共享机制
-  - 也不再承载一个真正跨派系的 contract 集合
-  - 那就应该并回派系专项，而不是因为名字里有 `ongoing` / `special` / `baseFaction` 就继续保留
-- 这轮 `ninjas.test.ts` 也进一步验证了另一个点：
-  - 把旧文件测试并回专项时，不必拘泥于“必须全改成共享 helper”
-  - 更重要的是把原本分散在旧文件里的默认手牌、默认牌库、默认派系、默认 turn meta 变成专项文件自己可读、可改、可验证的显式 helper
-  - 这样以后重构的是“一个派系的一套显式前提”，不是“很多文件各自藏着一点默认值”
-
-## 2026-05-17 09:54 补充发现：`pirates-ongoing.test.ts` 当前更像命名遗留，不像优先级最高的混装壳
-
-- 快速复核 `pirates-ongoing.test.ts` 的开头后，当前看到的是：
-  - `pirate_king beforeScoring`
-  - `pirate_first_mate afterScoring`
-  - 以及同一派系相关的 action / response 行为
-- 这和之前的 `query6Abilities.test.ts`、`factionAbilities.test.ts`、`baseFactionOngoing.test.ts` 不一样：
-  - 至少从当前结构看，它还没有明显把多派系或多种无关共享机制揉在一起
-  - 问题更像“文件名仍带 ongoing”，而不是“内容边界已经错了”
-- 因此后续优先级应该继续坚持“先拆真混装壳，再处理纯命名遗留”：
-  - 只因为名字旧，不足以成为下一刀
-  - 只有当文件内容也证明它在混放多个不该共存的行为边界时，才值得继续拆
-
-## 2026-05-17 10:05 补充发现：`talent` 不是一个天然测试边界，真正稳定的边界是“派系行为”与“共享机制合同”
-
-- `talentAbilities.test.ts` 这轮证明，按能力类型统一收口也会形成新的混层壳。文件里原本同时放着：
-  - `miskatonic_professor`
-  - `cthulhu_star_spawn`
-  - `cthulhu_servitor`
-  - `standing stones` 双天赋名额
-  - 压制下的手动发动
-  - `execute` 与 `validate` 的 talentUsed 边界
-- 这些内容共享的只是一层“都和 talent 有关”的技术标签，不共享同一套业务词汇、同一条用户入口，也不共享同一类断言目标。
-- 真正长期稳定的拆法是两层：
-  - 派系 talent 行为 -> 回到对应 `abilities/<faction>.test.ts`
-  - `execute/validate/base rule` 这类共享合同 -> 单独放 `talent-mechanics.test.ts`
-- 这样做比保留一个 `talentAbilities` 总入口更稳，因为以后重构 talent 运行时：
-  - 改教授或星之眷族的业务效果，只会动派系专项
-  - 改 `talentUsed`、`standing stones`、压制规则，只会动机制合同
-  - 不再出现“实现改一层，三个不相干派系测试一起抖”的情况
-- 这轮还进一步说明一个判断标准：
-  - 像 `execute 层不负责 talentUsed 校验` 这种断言，不该挂在某个派系文件里冒充派系行为
-  - 但也不该继续和多个派系行为混放在技术主题总入口里
-  - 最准确的落点是显式机制文件，因为它锁的是系统边界，不是牌面业务
-
-## 2026-05-17 10:19 补充发现：`ongoing talent` 也不是天然边界，真正稳定的是“共享合同”和“派系专项”两层
-
-- `ongoingTalent.test.ts` 这轮把另一个相同问题暴露得更彻底：文件名听起来像一个合理专题，但里面同时放着：
-  - `miskatonic_lost_knowledge`
-  - `steampunk_zeppelin`
-  - `innsmouth_sacred_circle`
-  - `trickster_hideout_pod`
-  - `trickster_pixie_pod`
-  - 以及一层 ongoing talent validate / reset / payload 合同
-- 这说明“按能力实现形态命名”本身不等于稳定边界。只要测试里还混着不同派系业务词汇和共享系统规则，它仍然是旧壳。
-- 这轮还确认了一个更重要的 seam 判断：
-  - 旧文件里像 `zeppelin 无目标 -> ABILITY_FEEDBACK`、`sacred_circle 无同名 -> ABILITY_FEEDBACK` 这类断言，其实是锁 `execute` 内层路径
-  - 一旦回到真实 `runCommand` / validate 入口，公开合同是“直接拒绝”
-  - 对这类场景，稳定测试应优先保护公开入口结果，而不是内层事件长相
-- 所以后续筛文件时，除了看“是否多派系混装”，还要额外看：
-  - 文件是否把一批原本应由 `runCommand`/公开命令入口定义的行为，写成了 `execute` 层的技术主题断言
-  - 如果是，就要把共享 validate/reduce 合同提纯出来，把派系行为并回专项，并顺手把旧 seam 收正到真实公开入口
-
-## 2026-05-17 11:01 补充发现：`prompt` 主题文件最容易制造“看起来在测交互，其实在测测试壳”的假边界
-
-- `madness-prompt-mechanics.test.ts` 这轮把这个问题暴露得很直接：
-  - 文件名像是在测“疯狂 prompt 机制”
-  - 但内容其实是 `cthulhu_madness_unleashed`、`miskatonic_it_might_just_work`、`miskatonic_book_of_iter_the_unseen`、`miskatonic_thing_on_the_doorstep`
-  - 它们并不共享一套稳定的业务边界，只是历史上都碰到了 prompt
-- 这类文件的真正问题不是“跨派系”四个字本身，而是它会把测试入口偷偷换成壳层 helper：
-  - `postProcessSystemEvents(...)`
-  - `lastMatchState`
-  - `getLastPrompt(...)`
-  - `getLastPromptsBySourceId(...)`
-  - 这些都不是用户行为入口，而是旧测试为了追 prompt 方便自己搭出来的旁门
-- 一旦把业务测试绑到这些壳层入口，后续重构 prompt 队列、后处理时序、matchState 包装或 interaction 存储位置时，测试就会先碎；这正是“改代码就得顺手改测试”的根因之一。
-- 这轮的正确收口不是“把 prompt 文件拆散”，而是把测试重新钉回公开行为：
-  - 打牌仍从 `PLAY_ACTION / runCommand(...)` 进入
-  - prompt 只通过 facade 读取：`getSimpleChoicePrompt`、`respondToPromptOption(...)`、`respondToPromptOptions(...)`
-  - 最终状态只通过 `finalState` 或特定合同的真实事件归约验证
-- `miskatonic_thing_on_the_doorstep` 还补了一条很关键的细化：
-  - special 合同的最终状态不能偷懒读 `result.matchState?.core`
-  - 必须看该合同实际发出的事件如何归约到 `state`
-  - 这次显式改成 `result.events.reduce((core, event) => reduce(core, event), state)`，说明“真状态出口”也要按合同类型选对，不能继续吃旧壳默认值
-- 因此后续统一测试标准可以更硬一些：
-  - 只要文件名或段落名主要描述的是 `prompt / interaction / dialog` 这类表现层壳，而不是派系行为或共享系统合同，就要先怀疑它是不是历史测试壳
-  - 只要业务测试还在读 `lastMatchState / postProcessSystemEvents` 这种二次包装，就说明 seam 还没真正收回公开入口
-
-## 2026-05-17 11:03 补充发现：`postProcessSystemEvents` 不能一概视为坏味道，关键要区分“业务借壳”还是“系统合同”
-
-- 这轮继续扫剩余命中后，边界已经更清楚了：
-  - `elder-things.test.ts` 里的 `lastMatchState + getLastInteractions()` 明显属于业务借壳
-  - `ongoingE2E.test.ts` 里 `pirate_shanghai` 那一小段也属于业务借壳，因为它只是想证明业务 prompt 出现
-  - 但同文件后半段的 `buccaneer_pod replacement`、`first_mate_pod afterScoring`，以及 `wizard-portal-d45.test.ts`、`reactionQueueBaseAbilities.test.ts` 这类场景，本身就在锁后处理/队列/去重/response window 合同
-- 这说明后续不能把“还在用 `postProcessSystemEvents`”当成统一整改信号。
-- 更准确的判断标准应该是：
-  - 如果测试真正想证明的是“某张牌/某个派系行为会产生 prompt / 目标选择 / 最终状态变化”，那它不该再借 `lastMatchState` 或手搓 interaction 壳，应该回到 `runCommand(...).finalState` 或 `post.matchState` 上的 facade
-  - 如果测试真正想证明的是“后处理器本身如何派生事件、如何去重、如何恢复 reaction session、如何在 replacement/afterScoring 中接管状态”，那保留 `postProcessSystemEvents(...)` 是合理的，因为它就是被测对象
-- 因此现在的优先级不再是“继续把所有 `postProcessSystemEvents` 命中消灭掉”，而是：
-  - 先继续拔掉业务测试里的借壳 seam
-  - 明确保留系统合同测试对 `postProcessSystemEvents` 的直测入口
-  - 避免为了数字好看，把系统测试也硬改成业务 facade，反而丢失真正的基础设施覆盖
-
-## 2026-05-17 11:09 补充发现：`prompt.data.options` 这种残留壳即使只剩一处，也值得清掉，因为它会把“选第一个合法项”重新绑回内部结构
-
-- `smashup.smoke.test.ts` 这轮剩下的最后一处 `prompt?.data?.options?.[0]?.id` 很小，但问题性质和之前一样：
-  - 测试真正想表达的是“对当前 prompt 取默认首项继续反应链”
-  - 它并不关心 prompt 底层字段名、存储位置或未来是否继续挂在 `data.options`
-- 只要这种兜底还在，后续一旦 facade/helper 已经演进，但某处业务测试还偷偷绕回裸字段，重构 prompt 外壳时就会留下零散脆点。
-- 所以统一标准可以再明确一条：
-  - 即使测试只是“随手拿第一个选项”
-  - 也应该通过 `getPromptOptions(prompt)` 这种 facade 表达
-  - 不应该因为逻辑简单就回退到 `prompt.data.options`
-- 这条清掉后，当前 `src/games/smashup/__tests__`（排除 helper）里已经没有裸 `prompt.data.options` 读取命中，说明这条 seam 至少在业务测试层面已经基本收净了。
-
-## 2026-05-17 11:17 补充发现：`<Faction>Pod.test.ts` 这类根目录单派系旧入口，本质上和之前的 `ghostsAbilities.test.ts` / `robotAbilities.test.ts` 是同一类双入口债务
-
-- `giantAntsPod.test.ts` 这轮再次证明，测试 churn 不只来自“跨派系混装”，也来自“同一派系的 POD 行为还挂在根目录旧入口，而普通/专项行为已经在 `abilities/` 里继续演化”。
-- 这种结构会制造几个具体问题：
-  - 改巨蚁 POD 行为时，不确定该补在 `abilities/giant-ants.test.ts` 还是继续往 `giantAntsPod.test.ts` 堆
-  - 同一派系的 helper、命名、断言风格会在两个文件里继续漂移
-  - 后续如果要统一这个派系的前提工厂、prompt facade、反应链断言，仍然得跨两个入口同步改
-- 这轮还确认了一个更细的迁移原则：
-  - 当专项文件已经承接了同派系的一部分 POD/非 POD 行为时，不应该把旧根目录文件整份机械复制过去
-  - 应先核对专项文件里已经有什么，再只补缺失的行为簇
-  - 否则“并回专项”会退化成“把重复测试从一个文件复制到另一个文件”
-- 所以后续筛这类文件时，判断标准可以更明确：
-  - 只要根目录文件本质上仍是单派系业务入口
-  - 且 `abilities/<faction>.test.ts` 已经存在并正在承担该派系的长期专项职责
-  - 就应优先考虑并回专项并删掉旧根目录入口，而不是保留两份“一个测 POD、一个测别的”分治结构
-
-## 2026-05-17 11:27 补充发现：`elderThingsPod.test.ts` 进一步证明，POD 旧入口不是天然独立边界，关键仍要看专项文件是否已经存在且能承接
-
-- `elderThingsPod.test.ts` 这轮和 `giantAntsPod.test.ts` 属于同一类问题：
-  - 文件名看起来像“POD 专项”
-  - 但它并不在锁一套跨派系共享 POD 机制
-  - 本质上仍是在测远古之物自己的业务行为，只是历史上挂在根目录旧入口
-- 更关键的是，它还夹了一段 `elder_things (base): Elder Thing`：
-  - 这不是 POD 独特合同
-  - 只是基础版 FAQ 的重复覆盖
-  - 如果机械整份并回，只会把重复合同一起复制到专项文件里
-- 因此判断“该不该并回专项”时，不能按旧文件名或 `describe` 分组机械迁：
-  - 先看 `abilities/elder-things.test.ts` 是否已经是远古之物的长期自然入口
-  - 再看旧文件里哪些段是真正缺失的 POD 行为
-  - 对已经被基础版或专项现有用例覆盖的 FAQ/重复段，不应再搬第二遍
-- 删除旧文件后 `elder-things.test.ts` 单文件 `53 passed`，说明现在不是靠根目录旧文件托底；远古之物派系已经真正收成单入口。
-
-## 2026-05-17 11:33 补充发现：`vampiresPod.test.ts` 说明并回专项时不必把“低层合同”误判成“必须保留旧入口”
-
-- `vampiresPod.test.ts` 主体仍然是吸血鬼 POD 业务行为，和 `elderThingsPod/giantAntsPod` 一样，本质是第二入口债。
-- 但它比前两份多一处容易误判的内容：`resolveOnPlay('vampire_wolf_pact_pod_action')`。
-  - 这确实是低层合同
-  - 但它依然是吸血鬼 Wolf Pact POD 自己的专项合同
-  - 并不因此需要继续把整份文件留在根目录
-- 这说明后续筛文件时，判断标准要再细一层：
-  - “含有少量低层合同” 不等于 “必须保留旧入口文件”
-  - 真正要看的是这些低层合同是否仍属于同一派系/同一专项边界
-  - 如果属于，就应跟该派系其它行为一起收进单一专项文件，而不是让旧文件靠少量低层断言继续存活
-- `vampiresPod.test.ts` 删除后 `abilities/vampires.test.ts` 单文件 `19 passed`，进一步证明吸血鬼现在已经能在一个入口里同时承接普通行为、afterScoring 合同和 POD 合同。
-
-## 2026-05-17 11:42 补充发现：`interactionChain` 这类旧文件名也可能只是“业务第二入口 + 自建运行壳”，并不天然代表系统合同
-
-- `zombieInteractionChain.test.ts` 这轮把另一个误判源钉死了：
-  - 文件名里带 `interactionChain`
-  - 文件内部也确实有一套自建 `GameTestRunner` / `buildSystems` / `makeFullMatchState`
-  - 但主体内容并不是在锁通用 InteractionSystem 合同，而是在逐条验证僵尸派系自己的业务链
-- 这说明“看起来很底层”不等于“应该保留成独立旧文件”。
-  - 如果测试真正关注的是 `zombie_grave_digger`、`zombie_lord`、`zombie_tenacious_z`、`zombie_theyre_coming_to_get_you` 这些牌面行为
-  - 那么旧的自建 runner/系统壳只是历史测试入口，不是稳定边界
-- 正确动作不是继续留一个 `interactionChain` 旧壳，而是把业务链收回派系专项：
-  - 普通命令链回 `runCommand + makeMatchState`
-  - prompt 继续走 facade
-  - 只有确实属于该派系的低层 queue 合同，例如 `zombie_overrun` 的 onTurnStart 自收口，才一起留在同一专项文件里
-- 这个判断标准比“只要用了 `collectTriggers/maybeResolveReactionQueue` 就算系统合同”更准确。关键看它锁的是共享基础设施，还是某个派系自己的业务不变量。
-
-## 2026-05-17 11:47 补充发现：`FAQ` 标签也不是天然边界，很多时候只是“同派系历史补丁入口”
-
-- `frankensteinFaq.test.ts` 这轮进一步确认，文件名里带 `Faq` 不等于它就是一个该独立存在的知识库文件。
-- 它里面的三条合同：
-  - `frankenstein_blitzed`
-  - `frankenstein_uberserum`
-  - `frankenstein_its_alive`
-  都是弗兰肯斯坦派系自己的行为边界，没有跨派系共享的 FAQ 基础设施可言。
-- 这类文件长期保留的坏处和之前那些 `Pod / InteractionChain / ExpansionAbilities` 一样：
-  - 同一派系行为继续分散在两个入口
-  - 后续改实现时，不知道该先改专项还是改 FAQ 壳
-  - 测试风格和 helper 使用会继续分叉
-- 所以后续遇到 `*Faq.test.ts` 时，判断标准也应统一：
-  - 看它是在维护共享 FAQ 规则，还是只是在堆某一派系的历史补丁回归
-  - 如果是后者，就应并回对应专项，而不是因为“FAQ”三个字继续让旧入口存活
-
-## 2026-05-17 11:51 补充发现：`verification` 小壳也不该因为“只剩两条低层测试”就单独保留
-
-- `steampunk-pod-verification.test.ts` 这轮证明，根目录历史壳不一定体量大才有问题。
-- 即使只剩 2 条测试，如果它们本质上仍属于：
-  - `steampunk_ornate_dome`
-  - `steampunk_escape_hatch`
-  这类现成专项边界，就不该继续让一个 `verification` 壳单独活着。
-- 否则长期后果还是一样：
-  - 同一派系/同一能力的低层合同分散在两个文件
-  - 改实现时得同时想“专项改哪边，验证壳改哪边”
-  - 文件命名还会误导人以为这是独立的通用验证层
-- 所以后续筛文件时，还应补一条细化标准：
-  - 根目录里那种只剩 1-3 条派系低层合同的小文件，并不会因为“很短”就天然合理
-  - 只要它们已经有明确专项归宿，就应继续并回专项，避免长期留着一堆历史小壳
-
-## 2026-05-17 11:54 补充发现：历史文件名与当前卡牌名脱节时，更应尽快并回专项
-
-- `bearCavalry-youre-screwed-pod-breakpoint.test.ts` 这轮暴露了另一类维护风险：
-  - 文件名还是旧历史口径
-  - 实际测的却是 `bear_cavalry_bearing_down_pod`
-  - 这种“名字和被测对象都脱节”的小壳，比普通第二入口更容易误导后续维护
-- 它的长期坏处不只是双入口：
-  - 新人或后续 agent 很难从文件名猜到真正被测卡牌
-  - 想补 `bearing_down_pod` 合同时，不容易想到这个历史文件
-  - 结果就是专项文件和旧壳继续分裂演化
-- 因而后续筛文件时，还可以再加一条优先级规则：
-  - 如果根目录历史文件名已经不能准确反映当前被测卡牌/能力
-  - 但内容又只是某个派系现有专项里的少量合同
-  - 那它应比普通第二入口更优先被并回专项
-
-## 2026-05-17 12:01 补充发现：带跨派系场景素材的测试，也可能仍然只是单派系第二入口
-
-- `wizard-neophyte-ongoing.test.ts` 这轮说明，不能因为测试里用了别派系卡牌，就误判成“跨派系共享机制文件”。
-- 它的两条测试虽然借了：
-  - `zombie_overrun` 这个 ongoing 行动卡
-  - `wizard_summon` 这个 standard 行动卡
-  来构造对比场景，但真正想锁定的不是僵尸行为，也不是 ongoing 通用系统，而是 `wizard_neophyte` 自己这条业务不变量：
-  - 额外打出牌库顶行动卡时，如果是 ongoing，要先出现基地选择
-  - 如果是普通 action，则不该额外出现基地选择
-- 这类文件如果继续挂在根目录，会制造一种假象：
-  - 看起来像“ongoing 交互 bug 专题”
-  - 实际上只是巫师学徒的两条派系行为合同
-  - 后续改学徒实现时，仍然得在 `abilities/wizards.test.ts` 和这个根目录 bug 壳之间来回找
-- 因此筛文件标准还应再补一条：
-  - **场景里出现跨派系素材，不等于边界就是跨派系**
-- 判断归属时要看“是谁的公开行为在变”，而不是看测试里借了谁做陪衬
-- 如果真正变化的是某张牌/某个派系自己的行为分支，就应并回那个专项入口
-
-## 2026-05-17 12:04 补充发现：`display-mode` 这类 UI 标签文件，很多时候只是既有专项块的尾部显示合同
-
-- `cthulhu-chosen-display-mode.test.ts` 这轮说明，文件名里带 `display-mode`，不等于它应该长期独立存在。
-- 这份文件锁的并不是一套跨派系 UI 框架规则，而是 `cthulhu_chosen_confirm` 这一条已存在于 `cthulhu.test.ts` 专项块中的具体交互合同：
-  - target type 是 `generic`
-  - yes/no 选项是 `displayMode: 'button'`
-  - option value 里不能带 `baseDefId`
-  - 多实例排队时第二个 prompt 也保持同样的显示约束
-- 这说明后续筛 `display-mode` / `target-type` / `button` 这类文件时，要先问：
-  - 它是在锁一个共享渲染规则，还是只是在给某张牌现有专项块补 UI 选项合同？
-  - 如果后者对应的业务专项已经存在，就应把显示合同并回那个专项块，而不是再留一个根目录 bug 壳
-- 更深一层的判断标准是：
-- **显示合同的归属，仍然取决于“哪个业务 sourceId 在产生这些选项”**
-- 不是取决于它看起来更像 UI 还是更像 gameplay
-- 对 `cthulhu_chosen_confirm` 这种明确 sourceId，最稳的入口仍是 `cthulhu.test.ts` 自己
-
-## 2026-05-17 12:12 补充发现：不是所有根目录旧壳都该“并回专项”，有些应该直接删除
-
-- `wizard-archmage-discard-play.test.ts` 这轮确认了另一种历史测试债：
-  - 文件名看起来像业务回归
-  - 但文件体内其实是临时注册一个 `test_archmage_discard_play` 的 `DiscardPlayProvider`
-  - 再用自建 `GameTestRunner` 去喂 `fromDiscard: true`
-- 这类文件的核心问题不是“它属于哪个派系专项”，而是：
-  - 它锁的不是现行公开入口
-  - 而是一条测试为了模拟场景自己搭出来的 provider 壳
-  - 一旦真实业务已经有等价覆盖，这类文件继续存在只会让维护者误以为它还在保护某个独立合同
-- 这轮可以提炼出一个新的筛选标准：
-  - 如果旧文件的业务语义已经被真实现行链路覆盖
-  - 而它额外提供的只是“测试专用 provider / runner / fake source”
-  - 那正确动作往往不是“并回某个专项”，而是直接删除这个壳
-- 对应到这次具体证据：
-  - “从弃牌堆打出大法师应获得额外行动”已有真实 `zombie_they_keep_coming` 链路覆盖
-- “从手牌打出大法师应获得额外行动”已有 `archmageE2E` 覆盖
-- 所以 `wizard-archmage-discard-play.test.ts` 不再提供独立业务价值，只是在重复一份测试内临时 provider
-
-## 2026-05-17 12:13 补充发现：跨派系真实链路回归，仍然可以并回“被验证的那张牌”的专项
-
-- `wizard-archmage-zombie-interaction.test.ts` 和 `wizard-neophyte-ongoing.test.ts` 一起把一个标准钉得更清楚了：
-  - 场景里借用了别派系真实能力，不代表这条测试就必须挂在根目录或做成“跨派系专题”
-  - 关键要看真正被验证的是谁的公开行为
-- 这次 `wizard-archmage-zombie-interaction` 里：
-  - 僵尸行动卡 `zombie_they_keep_coming` 只是触发路径
-  - 真正要锁的是 `wizard_archmage` 在 `MINION_PLAYED` 后是否获得额外行动
-  - 所以它更适合落回 `wizards.test.ts` 的 `wizard_archmage` 专项块
-- 同时也要和上一条发现配套看：
-- 若测试只是借测试专用 provider / runner 去伪造“从弃牌堆打出”，那种壳应直接删
-- 若测试走的是真实现行链路，只是跨派系触发了另一张牌的行为，那么仍然应优先并回“被验证那张牌”的专项文件
-
-## 2026-05-17 12:20 补充发现：专项文件变大后，测试隔离污染会伪装成“迁移后红灯”
-
-- `killer-plant-pod-verification.test.ts` 这轮给了一个新的经验教训：
-  - 文件能不能并回，不只要看业务边界对不对
-  - 还要看目标专项文件里有没有局部 `beforeEach` / 注册表重置，把后续新增段带进半初始化状态
-- 这次第一次并回后出现的 3 条红灯，不是行为合同错，也不是实现坏了：
-  - 根因是 `killer-plants.test.ts` 前半段的 `beforeEach` 只执行 `registerKillerPlantAbilities()`
-  - 后面新加的 POD 段需要的是完整 `initAllAbilities()` 环境
-  - 结果就是 `General Ivan POD`、部分 POD 回合开始增益、以及 `venus_man_trap_pod` 相关链路看起来像“迁移后坏了”，实质是测试夹具被前面段落污染
-- 这可以沉淀成一条更具体的测试标准：
-  - 当把一批测试并回大型专项文件后，如果红灯只集中在新段，先查专项文件内是否存在局部注册表/能力初始化收窄
-  - 不要第一时间把它当实现回归或把并回动作回滚
-  - 先把新段自己的初始化边界补齐，再判断剩余红灯是否真是实现问题
-
-## 2026-05-17 14:08 补充发现：`AL9000` 是可以整段抽离的自然边界
-
-- `base_greenhouse` / `base_secret_garden` / `base_inventors_salon` 三段原本就在 `expansionBaseAbilities.test.ts` 里连续出现
-- 它们共享同一类 afterScoring / scoring-session seam，所以不需要再人为拆成三个散文件，也不该继续挂在“expansion”大壳里
-- 抽到 `bases/al9000-bases.test.ts` 后，旧文件可以整段删除，不需要保留过渡 wrapper
-- 同时，`base_mountains_of_madness` 证明了另一条标准：
-  - 如果已经有现成专项文件，只是覆盖过浅，就优先补深现有文件
-  - 不要再在大壳里保留第二份同基地合同
-
-## 2026-05-17 14:45 补充发现：基地类测试继续按 helper 合同和专项归宿收口
-
-- `makeBase(defId, minions)` 的 shared helper 合同是固定的；把对象当第二参传入会把 `minions` 当成数组以外的值，直接炸成 `base.minions is not iterable`。这说明测试迁移时不能只“长得像以前能跑”，要同时校准 helper 签名。
-- `base_plateau_of_leng` 适合独立成 `bases/plateau-of-leng-base.test.ts`：它的即时分支和同名随从额度本身就是一组稳定基地合同，不需要继续挂在 `expansionBaseAbilities.test.ts` 里混测。
-- `base_fairy_ring` 的非首次打出回归不需要继续占用 `expansionBaseAbilities.test.ts`，因为 `abilities/fairies.test.ts` 已经有更完整的上位覆盖；旧段应该删除而不是并回两个入口。
-- 这轮证明“有更好的上位替代就不用考虑旧壳”不是口号，而是可以直接落到文件裁剪上的规则：重复段删掉，独立合同落到自己的专项文件里。
-
-## 2026-05-17 14:53 补充发现：`expansionBaseAbilities.test.ts` 可以整体退场
-
-- `base_the_asylum`、`base_innsmouth_base`、`base_miskatonic_university_base` 都有了自己的基地专项文件，说明 `expansionBaseAbilities.test.ts` 不再是“唯一入口”，只是历史聚合壳。
-- `base_mountains_of_madness`、`base_plateau_of_leng` 也已经在独立基地文件里有更清晰的专项合同，所以旧聚合入口没有剩余独占价值。
-- 将 `expansionBaseAbilities.test.ts` 整体删除，比继续保留一个只剩尾部注释的聚合壳更符合当前测试结构：新行为进专项，旧聚合入口直接退场。
-- 这一轮也验证了一个简单原则：只要各子簇已经有更好的上位替代，旧聚合测试就不要为了“看起来完整”而继续存活。
-
-## 2026-05-18 补充发现：`无候选自动分支` 不等于 `完全无浮层收口`
-
-- `Monkey See, Monkey Do` 这轮把一个很容易写错的证据口径暴露得很清楚：
-  - 业务语义是“没有行动候选时，不创建选择 prompt”
-  - 但真实 UI 仍可能进入公开展示队列 / spotlight overlay
-- 这两件事不能混成一句“自动收口且无浮层”：
-  - `choice prompt` 是否创建，决定的是候选选择合同有没有被误实现
-  - `spotlight/reveal overlay` 是否出现，属于展示链路本身的真实 UI 行为
-- 如果把两者混写，会产生两个风险：
-  - 把一个正确的 reveal overlay 误报成实现缺陷
-  - 反过来，也可能因为看到 overlay 消失，就误以为“没有错误创建选择 prompt”
-- 这轮可以沉淀出一个更稳的截图/证据标准：
-  - 对“无候选自动分支”，要分别写清
-  - 有没有该分支专属的选择 prompt
-  - 有没有进入其它合法的展示态/公开态/队列态
-  - 最终权威状态有没有误产生候选副作用（例如多摸牌、多进手牌、残留 interaction）
-- 换句话说：
-  - “没有选择 prompt” 只是一个局部结论
-  - 不是“整个页面完全没有任何浮层/队列/UI 动效”的同义词
-
-## 2026-05-18 补充发现：Portal Room 的 shared extra-turn queue 不能只靠 2P 浏览器链外推
-
-- `Portal Room` 之前最容易被误读成“已经彻底收口”的地方，是 `queue_extra_turn_after_current_turn`：
-  - 浏览器 scoped L3 已经证明了 2P 下赢家接受后，额外回合会真实开始并结束，再回到原顺位
-  - 但这并不能自然推出 3P 及以上顺位下的 `returnToPlayerIndex` 也一定正确
-  - 也不能自然推出多条 `pendingExtraTurns` 并存时会严格按队列顺序消费
-- 这类边界本质上是 shared extra-turn queue 合同，不是新的浏览器问题位点：
-  - 风险点在 `TURN_ENDED` 如何消费 `pendingExtraTurns`
-  - 以及 `activeExtraTurn.completedExtraTurn -> returnToPlayerIndex` 是否仍保持正确
-- 因此这轮正确动作不是再造一条 E2E，而是补 L2 锚点：
-  - 3P 下，当前玩家结束回合 -> 赢家额外回合 -> 结束后回到“原本下一位玩家”
-  - 多条 `pendingExtraTurns` 并存时，先消费队首，保留队尾，再在后续正常回合结束时启动第二条额外回合
-- 这轮定向复跑 `Portal Room` 测试簇 `5 passed` 后，可以更准确地收紧口径：
-  - `Portal Room` 的浏览器 scoped L3 仍然只覆盖 2P 单页/多客户端两条真实链
-  - 但 shared queue 的 3P return 与 FIFO 消费，已经不该继续算作隐性 residual
-- 这也再次说明一个长期审计原则：
-  - scoped L3 负责证明“真实入口是否按用户看到的方式走通”
-  - 更长顺位、多队列、跨 frame 的共享调度语义，往往应由 L2/shared contract 明确锁死，不能等价替换成“浏览器主链已经通过”
-- 2026-05-18 补充发现：`Missing Uplink` 的“额外回合结束”也属于 shared turn-boundary 合同，不该继续挂在 residual 里。本轮新增 `电子猿：丢失中继在额外回合结束时也应按拥有者实例数抽牌`，用 `activeExtraTurn={playerId:'0',returnToPlayerIndex:1,reason:'base_portal_room'}` 的夹具锁定 `onTurnEnd` 仍按 ownerId 聚合两张实例抽 `draw-a/draw-b`，最终 deck 留 `draw-c`。定向复跑 `... -t "丢失中继|Missing Uplink"` 结果 `6 passed / 189 skipped`；由此，`owner_turn_end_draw_one_per_instance` 的 residual 只剩更广 multi-client 浏览器视角，不再把额外回合结束误算成缺口。
-
-## 2026-05-18 补充发现：`Monkey on Your Back` 不能只靠“附着后天赋链已绿”冒充 attached-action 入口已闭合
-
-- `cyborg_apes_monkey_on_your_back` 这轮暴露出的证据空洞很具体：
-  - 现有 scoped L3 已证明“附着后的天赋 prompt 只列另一玩家低力量随从，并把本行动放到底”
-  - 但这并不自然推出“真实从手牌打出时，本行动也确实允许附着到敌方宿主”
-- 这两个问题属于同一个对象，但不是同一条 atom：
-  - `choose_other_player_low_power_minion_here` / `bottom_this_action_after_destroy` 证明的是附着后的 talent 链
-  - `attach_to_any_minion` 证明的是 attached action 自身的真实目标入口
-- 如果只看后者的 L2，再加上前者的 scoped L3，很容易误把对象级结论写得过满：
-  - 看起来像是 `Monkey on Your Back` 整条本地浏览器链都已闭合
-  - 实际上还缺“敌方宿主可作为真实附着目标”的直接浏览器证据
-- 这轮新增 E2E `电子猿-Monkey on Your Back-真实入口可附着到敌方随从` 后，证据口径才完整：
-  - `before` 图同屏可见己方宿主、敌方宿主和底部手牌里的 `Monkey on Your Back`
-  - `after` 图里只有右侧敌方宿主出现紫色附着图标且力量 `2 -> 3`
-  - 左侧己方 `Jumper` 仍是 `2` 且没有附着图标
-  - 状态断言进一步锁定：`interaction.current==null`、`hand` 移除 `monkey-attach-hand`、敌方宿主 `attachedActions` 含该 uid、己方宿主不含该 uid
-- 更稳的审计原则是：
-  - “对象里另一条后续链已 scoped L3” 不等于 “前置入口 atom 也自动变成 scoped L3”
-  - 对 attached action / extra play / afterScoring 这类多段链路，入口 atom 和后续 atom 必须分别找各自的真实证据
-- 由此，这轮只把 `cyborg_apes_monkey_on_your_back.attach_to_any_minion` 提升为 `L2 / scoped L3`
-- 但不外推宿主离场、多客户端视角或 forged target payload；这些仍应继续保留在较低层级或 shared contract
-
-## 2026-05-18 补充发现：`Cyberback` 的负例浏览器真相不是“非法牌/非法宿主不会出现”，而是“出现了也不会沿这条链结算”
-
-- 这轮 `Cyberback` 暴露的是一个典型的对象级误读：
-  - 单测和代码阅读都能证明 `Going Bananas`、敌方 `Cyberback`、己方普通随从不合法
-  - 但这不等于真实 UI 就一定把它们完全藏掉
-- 真实页面恰好相反：
-  - 弃牌面板里会同时显示 `Going Bananas` 和 `Cyberevolution`
-  - 所以旧口径“普通行动在 UI 中不会出现，因此无需 browser L3”是错的
-- 这里真正要验证的浏览器语义分两层：
-  - 点击普通基地行动时，不会偷偷通过 `Cyberback` 的弃牌入口结算到任何宿主
-  - 选中合法持续行动后，敌方 `Cyberback` 与己方普通随从都不会成为真实结算目标，最终只有己方 `Cyberback` 成功附着
-- 这轮新增 E2E 后，证据链才完整：
-  - 第一张图直接看到弃牌面板里同时有 `Going Bananas` 和 `Cyberevolution`
-  - 第二张图里选中 `Cyberevolution` 后，只有己方 `Cyberback` 所在基地保持高亮，其余基地被置灰
-  - 第三张图里最终只有左侧己方 `Cyberback` 拿到 `Cyberevolution` 附着和绿色 `+4`
-  - 状态断言进一步证明：
-    - 点 `Going Bananas` 后服务端权威状态完全不变
-    - 点敌方 `Cyberback` / 己方普通随从后也不结算
-    - 直到点己方 `Cyberback` 才真正把 `cyberback-valid-discard` 从 discard 移到 `attachedActions`
-- 这轮沉淀出的审计原则很重要：
-  - “validator 会拒绝” 不能直接替代 browser 证据
-  - “真实 UI 里看不到入口” 必须先用页面真相确认，不能靠代码路径脑补
-  - 对负例链，真正有价值的 scoped L3 往往不是“不可见”，而是“用户实际点了也不会沿错误链结算”
-- 由此，`cyborg_apes_cyberback.reject_non_ongoing_or_non_minion_action` 和 `reject_enemy_or_non_cyberback_target` 现在都可以升到 `L2 / scoped L3`
-- 但 forged discard / forged target payload 仍只是 L2/shared contract，不应被这条浏览器负例顺势外推成全部安全边界都已闭合
-
-## 2026-05-18 补充发现：`Baboom` 不能再被长期状态误记成“只验证过最早那条单合法行动分支”
-
-- 这轮发现的不是 `Baboom` 玩法实现缺口，而是长期状态口径落后于审计文档：
-  - atom/object 行已经明确写到 `skip` 收口和“多合法行动可选第二张且只执行所选项”
-  - 但根仓库 `progress.md / findings.md` 和 long-term state 还停在最早那条 `电子猿-Baboom-真实天赋给出可跳过的立即额外行动并只能打到自己身上`
-- 这里容易再犯的误判有两个：
-  - 把“出现了可跳过 prompt”误当成已经证明 `skip` 分支真正闭合
-  - 把“曾经验证过唯一合法行动自动附着”误外推成“多合法候选时也不会后台默认第一张”
-- 本轮重新核对多合法行动截图后，可以把这条浏览器真相写死：
-  - prompt 图里底部同屏可见 `Cyberevolution` 与 `Juiced Up` 两张合法候选，说明真实 UI 不是“只保留默认第一张”
-  - `Juiced Up` 在 prompt 中已被真实选中，resolved 图里中央显示 `Juiced Up` 带“已打出！”标记，Baboom 旁出现紫色附着图标和绿色 `+3`
-  - 底部 `Cyberevolution` 仍留在手牌区，因此这条链不是“选了第二张但后台仍顺手把第一张也打了”
-- 它沉淀出的审计口径是：
-  - `Baboom` 的 scoped L3 现在至少覆盖三条不同浏览器分支：
-    - 单合法行动自动附着到 Baboom 自己
-    - 显式点击 `放弃这次额外战术` 后直接收口
-    - 多合法行动时允许真实选择第二张，并且只执行所选项
-  - 这三条分支闭合后，`Baboom` 当前 residual 只该继续留在审计文档已经写出的外层边界：
-    - 多 `Baboom`
-    - 多 target prompt
-    - 多客户端视角
-- 换句话说，后续如果再看到 long-term state 只写“Baboom scoped L3 = 最早那条单合法行动分支”，那已经不是当前真相，应该视为过时口径
-
-## 2026-05-18 补充发现：`Baboom` 的 `this minion` 还包括“同名 twin 身份不能串台”
-
-- `Baboom` 之前剩下的“多 Baboom residual”本质上不是数量问题，而是宿主身份问题：
-  - 如果同基地再放一只同名 `Baboom`
-  - extra action 不能因为“同名、同基地、都是合法 attached host”就被误附着到另一只身上
-- 这条边界只有浏览器真链能真正说明白：
-  - 第一张图里同一基地两只 `Baboom` 同屏可见，下方那只带高亮和“已用”标记，说明当前 prompt 是由一只具体宿主发起
-  - 第二张图里只有下方发动天赋的 `Baboom` 旁出现紫色附着图标和绿色 `+4`
-  - 上方另一只同名 `Baboom` 没有拿到附着行动，也没有出现错误力量增幅
-- 这说明 `Baboom` 这条语义的真正不变量是：
-  - `on this minion` 不只是“不是别的己方随从”
-  - 还必须是“就是发动这次天赋的那张具体卡实例”
-- 所以这轮之后，`Baboom` 不该再把“多 Baboom”继续挂成 residual：
-  - 单合法行动自动附着
-  - 显式 skip 收口
-  - 多合法行动选择第二张
-  - 同基地 twin 身份不串台
-  这四条浏览器分支现在都已经闭合
-- 继续保留为外层边界的只剩：
-  - 多 target prompt
-  - 多客户端视角
-
-## 2026-05-18 补充发现：`Baboom` 不能继续把“多客户端视角”留在对象 residual
-
-- `Baboom` 这里最后一条容易被根状态漏掉的，不是玩法实现本身，而是 prompt 归属的对象级浏览器真相：
-  - 单页链已经证明了 `skip`、多合法行动第二张选择、以及 twin 身份不串台；
-  - 但 evidence 2026-05-18 又补上了多客户端链，明确证明 `smashup_immediate_extra_action` 只出现在发动者页面，另一页不会被错误镜像到 prompt 或 waiting overlay。
-- 这条补证的意义不是“再多一张图”，而是把对象级 residual 真正收空：
-  - Host 页会真实看到 `立刻打出一张额外战术，或放弃这次机会`、候选卡面与 `放弃这次额外战术` 按钮；
-  - Guest 页中央没有任何同链标题、按钮或额外行动交互入口；
-  - Host 点击 skip 后，两页都会一起回到正常出牌态，且权威状态不会偷偷把行动附着到 `Baboom` 或同基地其他随从。
-- 所以后续如果再把 `Baboom` 写成“当前只剩多客户端视角没回根状态”，那已经不是当前真相，而是 evidence 后续 finding 没有同步回根状态和长期 JSON。
-
-## 2026-05-18 补充发现：`Copycat` 不能再被对象级证据拼装冒充“trigger surface 已绿”
-
-- `Copycat` 最容易被误判的地方，是把这些东西机械拼起来：
-  - 选择敌方随从已绿
-  - metadata 只写本体已绿
-  - 复制 `Baboom` 的 talent 已绿
-  - 复制 `Furious George` 的 power 已绿
-  然后就顺势说“Copycat 的代理面都差不多了”
-- 这个结论是不够的，因为 `discard trigger` 是另一类 surface：
-  - 它依赖被摧毁当刻的 `triggerMinion.metadata`
-  - 它会跨过 `Bacta immediate extra` 与后续 `optional recover` 两层真实链
-  - 它还会碰到 `owner/controller` 分离这类最容易串语义的地方
-- `Copycat -> Jumper` 这条浏览器真相的价值就在这里：
-  - 真实顺序不是“Jumper trigger 直接冒出来”
-  - 而是先出现 `Bacta immediate extra minion`，玩家跳过后，才进入 `Copycat` 代理出来的 `optional recover` 反应窗口
-  - 最终回手的是 `Copycat` 本体，而且回到 owner 手牌，不是 controller 手牌
-- 所以这条链证明的不是一个孤立回手结果，而是三件事同时成立：
-  - copied trigger 确实被代理出来了
-  - 它没有插队破坏原本的 immediate extra 顺序
-  - 它没有把原生 `Jumper` 的 owner/controller 语义带歪
-- 这轮之后，`shapeshifters_copycat.proxy_current_supported_surfaces` 不该再被说成“只有 talent/power surface 有 scoped L3”
-- 现在更准确的口径是：
-  - choose surface：已 scoped L3
-  - metadata-write surface：已 scoped L3
-  - talent surface：已 scoped L3
-  - power surface：已 scoped L3
-  - trigger surface：已 scoped L3
-  - 剩下的只是更广的完整动态复制 runtime 和未显式适配的其它 copied trigger family
-
-## 2026-05-18 补充发现：`Do Over / Doctor When` 不能再把 `skip extra` 误记成“只验证过 returned card 会回手或会重打”
-
-- 这两条 atom 先前最容易被误读成：
-  - `specificCardUid` 合同已经锁住 returned 本体
-  - returned `Jumper / Time Raider` 也都能真实再次打出
-  - 所以 `skip extra` 大概只剩理论上的 UI 边界
-- 这个口径现在已经过时，因为本轮重新看的真实截图证明了更具体的不变量：
-  - `Do Over` 点击“放弃这次额外随从”后，`Portal Room` 仍为空，returned `Jumper` 继续留在手牌，没有被后台偷偷打回基地。
-  - `Doctor When` 点击“放弃这次额外随从”后，场上只剩 `Doctor When`，returned `Time Raider` 继续留在手牌，而且中央没有残留第二层 extra prompt。
-- 这说明这两条 effect atom 的 scoped L3 不该再只描述成“returned-card specific prompt/replay 已绿”。
-- 更准确的长期口径应该是：
-  - `time_travelers_do_over.may_play_returned_minion_again` 已同时覆盖 returned-card specific 与 `skip extra` 真实收口。
-  - `time_travelers_doctor_when.may_play_returned_minion_again` 已同时覆盖 returned-card specific 与 `skip extra` 真实收口。
-- 所以后续如果再把 `Do Over / Doctor When skip-extra` 挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Time Box.counter_from_card_returned_to_hand` 不能再只靠场上回手分支代表全部浏览器证据
-
-- `Time Box` 这条 atom 的自然语言是 `from play or discard pile`，因此只看 `Primate Park -> attached action -> CARD_TRANSFERRED from play` 并不能自然推出 `discard -> owner hand` 的真实入口也已经闭合。
-- 它真正高风险的地方在于：
-  - `Jumper` recover 本身有 owner/controller 分离；
-  - recover 前面还串着 `Bacta immediate extra skip`；
-  - recover 之后 Time Box 的 reaction 与第 5 枚计数进场 prompt 必须回到 owner 页，而不是 controller 页。
-- 本轮重新看的多客户端截图已经把这条真链写死：
-  - `Jumper` 的 optional recover 先出现在 controller 页；
-  - recover 完成后，owner 页出现 `Time Box` 的 reaction；
-  - 随后 owner 页中央再出现 `时间盒子：是否移除全部计数器并打出到一个基地？`
-- 这说明 `time_travelers_time_box.counter_from_card_returned_to_hand` 的浏览器 scoped L3 现在至少覆盖两类回手来源：
-  - `CARD_TRANSFERRED from play`
-  - `CARD_RECOVERED_FROM_DISCARD` 且带 owner/controller split 的多客户端链
-- 因而后续不应再把“discard-recover owner/controller split”继续挂成这条 atom 的本地 residual；剩下的只该是更广多人局或其它回手家族。
-
-## 2026-05-18 补充发现：`From Q With Love` 不能再只把根状态停在 exact-2 主链
-
-- 这条对象先前在根状态里最容易被误读成：
-  - 已有“抽三张并从投影手牌中准确弃两张”的主链 scoped L3
-  - L2 也补过 `projectedHand.length===1/0`
-  - 所以剩下只是理论上的短候选可见性边界
-- 这个口径现在已经落后，因为本轮重新看的浏览器截图已经把两个端点都补成了真实入口证据：
-  - `projectedHand.length===1` 时，中央 discard prompt 只剩 1 张候选卡，不会错误要求第二张；收口后右下弃牌堆角标变成 `弃牌(2)`。
-  - `projectedHand.length===0` 时，中央完全没有 discard prompt、按钮或候选卡，而本行动自己正常进弃牌堆，右下角标变成 `弃牌(1)`。
-- 这说明 `super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 的根状态不该再只写“exact-2 主链已绿”。
-- 更准确的长期口径应该是：
-  - exact-2 主链已 scoped L3；
-  - `projectedHand.length===1` 的单候选真实入口也已 scoped L3；
-  - `projectedHand.length===0` 的无 prompt 真实入口也已 scoped L3。
-- 所以后续如果再把 `From Q With Love` 的短候选或空投影手牌挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Flying Monkey` 不能继续让根状态停在“只看过移动分支”
-
-- 这条对象先前在根状态里最容易被误读成：
-  - 正向移动宿主分支已有 scoped L3；
-  - `skip` 只是 handler/L2 的补充边界；
-  - 所以根状态继续把 `skip` 挂在 residual 也无伤大雅。
-- 这个口径现在已经失效，因为本轮重新看的浏览器截图已经把 `skip` 写成了真实入口事实：
-  - afterScoring prompt 中央明确同时给出目的地 `秘密火山总部` 与 `跳过（照常进入弃牌堆）`，说明不是伪造 handler 分支。
-  - 点击 `skip` 后中央 prompt 完整消失，两座基地都回到新回合常态布局，没有残留“再选基地”或“宿主仍在原地等待”的半收口态。
-- 这说明 `cyborg_apes_flying_monkey.after_scoring_move_instead_discard` 与 `destroy_attached_action_after_move` 的根状态不该再只写“正向移动已绿”。
-- 更准确的长期口径应该是：
-  - 正向移动分支已 scoped L3；
-  - `skip -> 按正常计分清场 -> 宿主/本行动进弃牌` 的真实入口也已 scoped L3。
-- 所以后续如果再把 `Flying Monkey skip` 挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Portal Room` 不能再只把根状态停在“额外回合已启动”
-
-- `Portal Room` 之前最容易被误报完成的地方，是把：
-  - `activeExtraTurn` 已正确置上
-  - 浏览器也确实进入了额外回合
-  直接等价成“额外回合生命周期已经闭合”。
-- 这在当前状态已经不够，因为本轮重新看的真实截图又补了一层更关键的不变量：
-  - extra turn 启动图里左上已经切到 `回合2 / 出牌阶段`，说明当前回合结束后确实进入了额外回合。
-  - 最终收口图里当前玩家高亮已回到原顺位玩家，中央没有残留 prompt，且 `Faceless City` 仍保留在左侧，说明这条链已经真实走完 `pending -> active -> completed -> returnToPlayerIndex`。
-- 这说明 `base_portal_room.queue_extra_turn_after_current_turn` 的根状态不该再只写“额外回合会启动”。
-- 更准确的长期口径应该是：
-  - 2P 浏览器主链已覆盖接受后启动额外回合；
-  - 同一条浏览器链也已覆盖额外回合结束后恢复到原顺位玩家。
-- 所以后续如果再把“额外回合结束并回原顺位”挂回 `Portal Room` 的本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Portal Room` 不能把“赢家页独占选择权”继续只留在长期 JSON 或 atom 行里
-
-- `Portal Room` 还有另一条很容易被根状态漏掉的对象级真相，不是 extra-turn queue，而是 `optional_choice_owner_is_winner`：
-  - 浏览器主链已经不只证明“P0 自己是赢家时可以点传送门”；
-  - 多客户端证据还明确证明了 `winner != currentPlayer` 时，真正拿到这条 afterScoring 选择权的是赢家页，不是当前回合玩家页。
-- 这条语义如果不单独回根状态，很容易被后续误缩成“shared ownerPlayerId 合同已修”：
-  - 但 shared/L2 只能说明 trigger owner 应该是谁；
-  - 真正用户可见的对象级事实是：Guest 赢家页会出现 `传送门 / 跳过` 与可交互按钮，而 Host 当前回合玩家页只显示等待赢家响应，没有同一条选择权。
-- 这和 `queue_extra_turn_after_current_turn` 是两件事，不能互相代替：
-  - 一个证明“谁来决定要不要额外回合”；
-  - 一个证明“决定之后额外回合何时启动、何时结束并回到原顺位”。
-- 所以后续如果再把 `Portal Room` 写成“根状态只承认 2P 生命周期已闭合，赢家页归属仍主要在 evidence/长期 JSON”，那已经不是当前真相，而是 completion-audit 没把对象级多客户端主链回写完整。
-
-## 2026-05-18 补充发现：`Into the Time Slip` 不能再只把根状态停在 borrowed minion 分支
-
-- 这条对象先前在根状态里最容易被误读成：
-  - borrowed minion 会回到 owner hand 的浏览器主链已绿；
-  - 其它 `a card in play` family 大概只剩 L2 补充语义。
-- 这个口径现在已经过时，因为本轮重新看的截图证明 `Into the Time Slip` 的真实入口已经扩到了两类场上行动牌：
-  - base ongoing：`Portal Room` 上方的 `Stasis Field` 本体在 prompt 图里直接可见，收口图里则完全消失。
-  - attached action：宿主身上的白色行动牌本体与紫色附着角标在 prompt 图里仍在，收口图里一起消失。
-- 这说明 `time_travelers_into_the_time_slip.choose_one_in_play_card` 与 `return_to_owner_hand` 的根状态不该再只写“borrowed minion 的 owner/controller 分离已绿”。
-- 更准确的长期口径应该是：
-  - borrowed minion 分支已 scoped L3；
-  - base ongoing 分支也已 scoped L3；
-  - attached action 分支也已 scoped L3。
-- 所以后续如果再把 `Into the Time Slip` 的 base ongoing 或 attached action 本地浏览器边界挂回 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`1.21 Gigawatts` 不能再只把根状态停在双按钮主链和单一牌种自动分支
-
-- 这条对象先前在根状态里最容易被误读成：
-  - 双按钮 prompt 主链已 scoped L3；
-  - 单一牌种自动分支也已 scoped L3；
-  - 所以空弃牌堆大概只剩 L2 的 feedback 语义。
-- 这个口径现在已经过时，因为本轮重新看的截图证明空弃牌堆已经补成了真实入口证据：
-  - toast locator 图里直接可见 `弃牌堆中没有符合条件的卡牌`。
-  - 收口图里顶部 toast 仍在，但中央完全没有“行动 / 仆从”按钮 prompt。
-  - 同一张收口图里右下弃牌堆已经能看到 `1.21 Gigawatts` 本体，说明本行动自己也按正常链进了 discard。
-- 这说明 `time_travelers_1_21_gigawatts.choose_card_type` 与 `shuffle_selected_type_to_deck` 的根状态不该再只写“双按钮主链 + 单一牌种自动分支”。
-- 更准确的长期口径应该是：
-  - 双按钮主链已 scoped L3；
-  - 单一牌种自动分支已 scoped L3；
-  - 空弃牌堆 feedback 的真实入口也已 scoped L3。
-- 所以后续如果再把 `1.21 Gigawatts` 的空弃牌堆本地浏览器边界挂回 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Moon Zero Three` 不能再把 `Time Box` rail 切换竞争留在 evidence 里、却让根状态停在更早的 special 口径
-
-- `Moon Zero Three.special_summon_condition` 这条对象在根状态里先前最容易被误读成：
-  - 已有单合法/单非法基地的真实 special 主链；
-  - 已有 armed cancel 的浏览器分支；
-  - 多合法基地并存、controller/owner 分离也已有 L2；
-  - 所以剩下只是笼统的“其他 Titan special 竞争窗口”。
-- 这个口径现在已经落后，因为审计文档 2026-05-18 的 finding #117 已经把最直接的本地竞争链写成了真实浏览器事实：
-  - `Moon Zero Three` armed 时，`Monkey Lab` 高亮、带敌方 `Jumper` 的 `Portal Room` 被置灰。
-  - 切到 `Time Box` 后，两座基地都恢复为合法落点，说明高亮集合真实跟随 `selectedSetAsideTitanUid` 切换刷新。
-  - 最终由 `Time Box` 真实落到原本对 `Moon Zero Three` 非法的 `Portal Room`，而 `Moon Zero Three` 继续留在牌库旁。
-- 这条浏览器链证明的不只是“UI 能切换高亮”，而是两层不变量同时成立：
-  - UI 层不会残留前一个 Titan 的旧合法目标集合；
-  - 命令层 `validateTitanSpecialActivation()` 也不会让第二个 Titan 在第一个已进场后继续伪装成可发动。
-- 所以这轮之后，更准确的长期口径应该是：
-  - `super_spies_moon_zero_three.special_summon_condition` 已覆盖单合法/单非法、armed cancel、本地 `Moon Zero Three vs Time Box` rail 切换竞争。
-  - 剩余 residual 只该继续保留更广 shared contract 的跨窗口 / 跨来源 special 排序问题。
-- 如果后续还把这条本地 rail 切换链挂成 `Moon Zero Three` 的对象级 residual，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Secret Volcano Headquarters` 不能再让根状态继续引用那条已失效的旧 scoped L3
-
-- `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 这条对象当前最危险的不是实现回退，而是**旧完成证明已经失效，但根状态还保留着未加纠偏标记的早期 scoped L3 记录**。
-- 审计文档已经把这件事说得很明确：
-  - 2026-05-17 那条旧 E2E 当时的夹具实际误配成了 `base_monkey_lab / breakpoint 20`。
-  - 因此旧的 `Secret Volcano Headquarters scoped L3` 结论不能继续直接引用。
-  - 当前有效口径必须切到 finding #125：scene truth 纠偏、`eventStream` 两条 `REVEAL_DECK_TOP(viewerPlayerId='all')`、浏览器 `reveal-overlay` 可见、两次 dismiss 后回到无浮层桌面。
-- 这说明根状态里原先那种“某日 1 passed，所以对象已 scoped L3”的简写已经不够了，因为它把**失效证据**和**现行证据**混在了一起。
-- 更准确的长期口径应该是：
-  - 旧 scoped L3 证据已失效，不能再引用。
-  - 当前 `Secret Volcano Headquarters` 的 scoped L3 以审计文档修订后的新 scene-truth 与 overlay 证据为准。
-  - `RevealOverlay` 在自动计分链中的 `queueMicrotask` 竞态修复，是这条对象当前完成口径的一部分，不是旁枝注释。
-- 所以后续如果再拿旧的 `before-end-turn / scored-with-revealed-minion-only` 那条记录充当 `Secret Volcano Headquarters` 的完成证明，应视为引用了过期证据，而不是在描述当前真相。
-
-## 2026-05-18 补充发现：一整组变形者 optional search/choice 已不能再让根状态只停在“选择候选分支已绿”
-
-- 这轮确认到的不是新的实现红灯，而是一类很整齐的**根状态落后模式**：
-  - `Faceless City`
-  - `G.E.L.F.`
-  - `Really?`
-  - `Transmogrify`
-  - `Doppelganger`
-  - `Mitosis`
-  这些对象在长期状态 JSON 和审计文档里都已经补上了 `skip` 的真实浏览器证据，但根 `progress.md / findings.md` 还容易让人误读成“只验证过选第二张候选”的那一半。
-- 这组对象共享的风险点其实是同一个：
-  - 文字语义里都有 `may` / `optional search` / `optional choice`
-  - 最容易被“状态断言通过”偷换成“显式放弃也没问题”
-  - 真正要证明的是**玩家真实点击 skip / 放弃后，prompt 会不会直接收口，而不是偷偷把候选打出、加进手牌，或继续进入第二层选择**
-- 这轮之后，根状态应该同时承认下面这些浏览器真相：
-  - `Faceless City` 点击 `跳过搜寻` 后，同名搜索层直接消失，手牌不增，牌库顺序保持原样。
-  - `G.E.L.F.` 点击 `放弃这次选择` 后，`The Vats` 仍为空，没有候选被偷偷打回原基地。
-  - `Really?` 点击 `放弃这次选择` 后，不会进入第二层基地选择，两座基地都继续空场。
-  - `Transmogrify` 点击 `放弃这次选择` 后，牌库搜索层直接收口，原基地不会被偷偷补进候选随从。
-  - `Doppelganger` 在 `Bacta immediate extra skip` 之后进入自身 search，再点 `放弃这次选择` 后，搜索层直接收口，原基地继续空场。
-  - `Mitosis` 点击 `放弃这次选择` 后，目标基地仍只保留原目标，两张同名手牌都继续留在手里，不会被半路打上场。
-- 所以这轮之后，更准确的长期口径应该是：
-  - 这六条对象都不再只靠“选择候选”的 scoped L3 支撑 optional 语义。
-  - 它们各自的 `skip` / `放弃这次选择` 分支也都已经补到真实浏览器链。
-  - 剩下的 residual 只该继续保留更广的随机顺序、forged late-deck/discard、POD alias 或 shared search 合同，而不是把本地 `skip` 分支继续挂着不放。
-- 如果后续再把这批对象中的任意一条写成“只有选择候选那一半已绿，skip 还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
-
-## 2026-05-18 补充发现：一整组自动分支/空选分支也不能再让根状态只停在“主链已绿”
-
-- 这轮继续确认到另一类很整齐的根状态落后模式：
-  - `Operative`
-  - `Repeater Perfect`
-  - `Time Raider`
-  - `Spy`
-  - `For My Eyes Only`
-  这些对象在长期状态 JSON 里都已经承认了自动分支或空选/空牌库端点，但根 `progress.md / findings.md` 还容易让人误读成“只有正常选择/重排主链已绿”。
-- 这组对象共享的风险点也很一致：
-  - 不变量不是最终 `deck/hand/discard` 结果本身；
-  - 真正要证明的是**真实入口在只剩 1 个候选、0 个候选、或 0 勾选时，会不会错误弹出 prompt、残留 overlay、继续进入第二层，或者偷偷改状态**。
-- 这轮之后，根状态应该同时承认下面这些浏览器真相：
-  - `Operative` 第一层 0 勾选玩家后会直接收口且不 reveal 任意牌库顶；第二层 0 勾选展示牌后也会直接收口且不改任一玩家牌库顶顺序。
-  - `Repeater Perfect` 弃牌堆只剩 1 张行动时，会自动把它放到牌库顶，不弹 `time_travelers_repeater_perfect_choose`。
-  - `Time Raider` 弃牌堆只剩 1 张牌时，会自动把它放到牌库底，不弹 `time_travelers_time_raider_choose`。
-  - `Spy` 牌库只剩 1 张时，会自动查看且不弹 `super_spies_spy_reorder`；牌库为空时，也不会创建任何空的 reorder prompt。
-  - `For My Eyes Only` 牌库只剩 1 张时，会自动查看且不弹 `super_spies_for_my_eyes_only_reorder`；牌库为空时，也不会创建任何空的 reorder prompt。
-- 所以这轮之后，更准确的长期口径应该是：
-  - 这批对象都不再只靠“正常选择/重排主链”的 scoped L3 支撑完成口径。
-  - 它们各自的自动分支、空选分支或空牌库无 prompt 分支，也都已经补到真实浏览器链。
-  - 剩下的 residual 只该继续保留更广的 inspect 来源、多人视角、随机顺序或 shared transport/overlay 合同，而不是把这些本地自动/空选端点继续挂着不放。
-- 如果后续再把这批对象中的任意一条写成“只有主链已绿，单候选自动/空选/空牌库还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
-
-## 2026-05-18 补充发现：`Spy` 不能继续把“多客户端私有重排页归属”留在 evidence 里
-
-- `Spy` 当前根状态最容易漏掉的一层，不是单页顶三重排是否能改对顺序，而是私有 inspect/reorder prompt 的页归属：
-  - 单页主链已经证明了 `Spy` 会查看自己牌库顶三张并允许 top/bottom 重排；
-  - 单卡自动与空牌库无 prompt 端点也已经补齐；
-  - 但 evidence 2026-05-18 又补上了更关键的一条多客户端对象级事实：这条私有 prompt 只应该出现在行动玩家页面。
-- 这里真正要证明的是：
-  - Host 从手牌真实打出 `Spy` 后，只有 Host 页会看到 `间谍：将这几张牌按任意顺序放回牌库顶/底` 和 `Spy / Operative / Mole` 三张私有顶牌本体；
-  - Guest 页既不该镜像出 reorder prompt，也不该泄露任何 inspect 信息；
-  - Host 选完非默认 top/bottom 后，两页都应回到普通出牌态，不残留 prompt 或 waiting overlay。
-- 所以后续如果再把 `Spy` 写成“根状态只承认单页顶三主链 + 单卡自动/空牌库端点，多客户端私有归属仍主要在 evidence 里”，那已经不是当前真相，而是 completion-audit 没把对象级 owner-only inspect 链回写完整。
-
-## 2026-05-18 补充发现：`Time Box.play_at_five_and_clear` 不能再让根状态只停在“别的图集里 special 进场过”
-
-- `time_travelers_time_box.play_at_five_and_clear` 这条对象在根状态里最容易被误读成：
-  - alien/shared 侧已经有过一次 special 进场浏览器链；
-  - yuanhou 这边又已经补了 `turn-start -> 4->5 -> skip`；
-  - `discard-recover owner/controller split` 也已经补过；
-  - 所以 “第 5 枚计数后真实进场并清零” 大概已经可以自然外推。
-- 这个口径现在已经不够，因为审计文档 2026-05-18 的 finding #128 明确把缺口钉在了 **yuanhou 自身 counter source 的真实连通性** 上：
-  - `Primate Park` 回手链会不会先进入 `smashup_reaction_choose`；
-  - `Time Box` 会不会被真实推到第 5 枚计数；
-  - 玩家选基地后会不会真实落场并把计数清零；
-  - 原计分链会不会继续正常收口。
-- 这条 finding 还顺手纠正了一类很危险的假阳性：
-  - `smashup_reaction_choose` 里的 `时间盒子` 选项与 rail 上同名 Titan 卡会重名；
-  - 直接点 DOM 容易误中 rail 弹详情；
-  - 所以“页面上点到了一个叫时间盒子的东西”不能自动当成真链通过，必须按 interaction option id 响应当前 reaction。
-- 这轮之后，更准确的长期口径应该是：
-  - `time_travelers_time_box.play_at_five_and_clear` 已不再只靠 alien/shared 侧 special 进场旁证。
-  - 它在 yuanhou 自身 `Primate Park -> 回手 -> 第 5 枚计数 -> 进场 prompt -> 选基地 -> 清零计数` 这条浏览器链上，也已经补到 scoped L3。
-  - 剩下的 residual 只该继续保留更广 counter 来源、多人局与 Titan special 竞争窗口，而不是再把“真实进场并清零”挂回本地缺口。
-- 如果后续再把 `Time Box.play_at_five_and_clear` 写成“special 进场主链早就有了，所以 yuanhou 侧不用单独证明”，那已经不是当前真相，而是根状态落后于审计文档。
-
-## 2026-05-18 补充发现：`Time Box.counter_from_turn_start` 不能继续只留在旧单页 scoped L3 或 atom 行里
-
-- `time_travelers_time_box.counter_from_turn_start` 当前还有一层很容易被根状态漏掉的对象级真相：
-  - 旧长期状态已经承认过单页 `P1 end turn -> P0 startTurn -> Moon Zero Three 已在场 -> Time Box 4->5 -> rail 入口 -> skip`；
-  - 但 2026-05-18 的审计文档又补上了更关键的多客户端 owner-only 主链，而这层如果不单独回根状态，就很容易又被误缩回“单页已绿”。
-- 这里真正要证明的不是“第 5 枚计数 prompt 语义大概没问题”，而是：
-  - 回合开始时，只有 owner 页面拿到这条 `smashup_reaction_choose` 选择权；
-  - 非 owner 页面不会错误出现同一条 prompt 或 waiting overlay；
-  - owner 页响应后，才会继续进入真实的 `时间盒子：是否移除全部计数器并打出到一个基地？` 进场 prompt，并在 skip 后让两页一起收口。
-- 这条补证还顺手纠正了一个很危险的旧误判：
-  - 真实入口不是一个文本叫“时间盒子”的普通按钮；
-  - 页面可见的是 rail/Titan 上的 `可触发` badge；
-  - 测试层必须按 live `interaction option id` 响应当前 `smashup_reaction_choose`，否则会把点到同名 Titan 卡面详情的假阳性误当成真链。
-- 所以后续如果再把 `Time Box.counter_from_turn_start` 写成“根状态只承认旧单页 4->5 链，多客户端 owner-only 回合开始响应仍主要在 evidence 里”，那已经不是当前真相，而是 completion-audit 没把对象级多客户端主链回写完整。
-
-## 2026-05-18 补充发现：`Live and Let Chum` 不能再让根状态只停在未受保护 destroy 主链
-
-- `super_spies_live_and_let_chum.destroy_selected_minion` 这条对象在根状态里最容易被误读成：
-  - 已经有 beforeScoring 真实入口；
-  - 已经证明过选择低力量随从后会真实摧毁到 owner discard；
-  - 所以 `Shell Game` 保护宿主这类分支大概只是共享 destroy/protection 合同，不值得单独再写。
-- 这个口径现在已经不够，因为审计文档 2026-05-18 的 finding #143 已经把真正的浏览器缺口补掉了：
-  - 玩家在 beforeScoring 的真实 prompt 里，确实能选到受 `Shell Game` 保护的低力量宿主；
-  - 选中后 destroy 会被保护过滤，不会发出 `MINION_DESTROYED(shell-host)`；
-  - 基地总力量不会因为这次 protected-no-op 被错误拉低，而是继续按原 `4 vs 11` 结算；
-  - 计分完成后依然会正常翻新到 `The Nexus`。
-- 这条浏览器链的意义不只是给 `Live and Let Chum` 多补一张图，而是把两个对象的长期口径一起改正：
-  - `super_spies_live_and_let_chum.destroy_selected_minion` 不再只靠未受保护 destroy 主链支撑完成口径；
-  - `shapeshifters_shell_game.protect_attached_host_from_destroy` 也不再只靠 `Bacta` 来源的 protected-continue 支撑 source-family L3。
-- 所以这轮之后，更准确的长期口径应该是：
-  - `Live and Let Chum` 已同时覆盖未受保护 destroy->owner discard->计分变化，和受保护 destroy-no-op->按原力量继续计分这两条 source-family 浏览器分支。
-  - `Shell Game` 已同时覆盖 `Bacta` 与 `Live and Let Chum` 两个 destroy 来源下的真实入口表现。
-  - 剩下的 residual 只该继续保留更广 destroy family 的死亡触发连锁与 shared L4 时序，而不是把这条 protected-no-op scoring 再挂回本地缺口。
-- 如果后续再把 `Live and Let Chum` 写成“只审过未受保护 destroy 主链，受保护分支还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
-
-## 2026-05-18 补充发现：一组 response-window 对象不能继续只待在 evidence/JSON 里
-
-- 这轮继续扫到的根状态落后，不是实现缺陷，而是同一类 completion-audit 漏同步：
-  - `The Base Is Not Enough`
-  - `Time Is Fleeting`
-  - `Wormhole`
-  - `Mindraker`
-- 这四条如果只留在 `evidence` 和长期 JSON、却不进根 `progress.md / findings.md`，后续最容易产生两种误读：
-  - 把已经补过的真实入口 scoped L3 当成“还只是 L2”。
-  - 把已经被纠偏或被 L2 收紧的兄弟边界，重新挂回对象级 residual。
-- 当前应当固化的真相分别是：
-  - `The Base Is Not Enough` 已经不是“resolveSpecial 直接调用会给临时控制”这么浅。真实 beforeScoring 响应窗口里，`Primate Park 20/20` 时只会列出低力量 `Jumper / Time Raider`，不会把 5 力 `Silverback` 混进候选；收口后记分板到 `3:2`、基地翻新为 `The Nexus`，说明控制变化真实写进了本次计分。
-  - `Time Is Fleeting` 已经不只是一条单页弃牌堆换基地主链。它现在还明确覆盖了“赢家不是当前回合玩家时，只有赢家页面拿到弃牌堆基地选择权”的多客户端边界；同时单候选自动分支与同窗 `Wormhole` 多 special 排序，已经由后续 L2 收紧，不该再继续挂成对象级 residual。
-  - `Wormhole` 已经不只是一条“选一个己方随从洗回牌库”的 UI 主链。当前浏览器链证明的是“任意数量己方随从”的多选真实入口，而长期 JSON 已经明确纠偏：`optionIds: []` 的空选不是 bug，不应再被误判成对象级缺口。
-  - `Mindraker` 已经不是“代码里有 restriction 就算完成”。真实计分窗口里，`Mindraker + Mole + Going Bananas` 同时在场时，restriction 会把唯一候选行动直接封死，随后基地正常计分翻新、没有残留交互，这条 restriction 已经走到了 scoped L3。
-- 这组对象的共同不变量是：只要规则文本的第一入口在 response window，就不能让根状态只记 L2 或只记 handler/shared contract。
-- 所以后续如果再把这四条写成“对象级还没真正补浏览器”或“某些已纠偏的边界仍待处理”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`It's Astounding / Time Box talent / Mimic` 也不能继续只停在 evidence/JSON
-
-- 这三条的根状态落后模式和上面不同：它们不是 response-window 权限问题，而是对象级浏览器证据已经闭合，但根状态还在沿用更早的浅口径。
-- `It's Astounding` 当前最容易被误读成“只是 discard-action-extra-play 共享合同已审，或只证明了从弃牌堆能打出一张行动”。这已经不够准确，因为当前真实入口明确走通了三段链：
-  - 从弃牌堆选中 `Going Bananas`
-  - 继续进入 `Going Bananas` 的基地目标 prompt
-  - 只有在 `Monkey Lab / Portal Room` 目标按钮完全隐藏后才算真正收口
-  也就是说，这条证据证明的不是“弃牌堆行动被拿起来了”，而是被选行动的后续目标链也真实结算并收口。此前“状态断言通过但结果图仍残留目标按钮”的假收口已经被 finding #44 修正，不应再被根状态漏掉。
-- `Time Box talent` 当前最容易被误读成“旧 alien 套件里的 special/talent 图能跑通，所以 yuanhou 这边不用单独记”。这同样过时，因为长期 JSON 已经明确修订：
-  - 旧白卡图只保留为历史限制记录
-  - 现在真正承担 talent 视觉证据的是 yuanhou 自身图集下那条 `Portal Room` 真实天赋链
-  根状态如果不跟进，就会继续误导后续审计去引用已经降级的旧图集证据。
-- `Mimic` 当前最容易被误读成“L2 已 clean，UI 只是数字展示”。这也不对。它真正要证明的是：
-  - 旁边有一只被加成到有效 5、但印刷仍是 2 的对照随从时，`Mimic` 不会误跳到 `+5`
-  - 只有当真正印刷 5 力的随从进场后，它才会动态跳到 `+5`
-  这条浏览器证据把 printed power 与 effective power 的可见层差异钉死了，不能继续被根状态压成“对象级 clean L2”。
-- 这组三条的共同不变量是：当浏览器证据已经补到“共享合同之外的对象级真相”时，根状态必须显式承认这个对象级边界，而不是继续借早期共享合同或旧图集旁证代写。
-- 所以后续如果再把这三条写成“共享合同已绿即可”或“对象级只到 L2”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Permit to Kill / Discards Are Forever / Clyde 2.0 / The Nexus` 也不能继续只待在长期 JSON
-
-- 这轮继续扫到一批典型的“长期 JSON 已记住，但根状态没显式承认”的对象：
-  - `Permit to Kill`
-  - `Discards Are Forever`
-  - `Clyde 2.0`
-  - `The Nexus`
-- 这四条如果继续只待在长期 JSON，后续最容易出现的误读是：
-  - 把它们重新当成“只做过 L2 或只做过单页链”的对象。
-  - 忘掉它们其实已经补过多玩家顺序、多客户端归属或 skip 这类对象级浏览器边界。
-- 当前应当固化的真相分别是：
-  - `Permit to Kill` 已经不只是一条三人局“看两张非随从并排序”的主链。长期 JSON 已明确记住四人局真实浏览器链：`P1 -> P2 -> P3` 的排序 prompt 会依次出现并逐次收口，因此不应再回到“会不会只处理第一个其他玩家”的旧疑点。
-  - `Discards Are Forever` 已经不只是一条无 prompt 的 L2 reveal/mill 语义。真实手牌入口 scoped L3 已经证明“双人局每位玩家都只 reveal 到首个随从为止，并把所有展示牌一起弃掉”，而空牌库、首张即随从、三人 turnOrder 这些兄弟边界也已被后续 L2 收紧。
-  - `Clyde 2.0` 已经不只是在 JSON 里写过“Host 页面有按钮”。多客户端真实链证明的是：离场行动的处置选择权在 Clyde 控制者页面，而非行动拥有者、当前回合玩家或 Guest 页；并且 `收入手牌 / 进入弃牌堆` 两个分支都走到了真实收口。
-  - `The Nexus` 已经不只是一条“赢家可从基地弃牌堆选基地”的主链。它还明确补了对象级 skip 浏览器分支：赢家点击 `跳过（照常抽新基地）` 后，会按 `baseDeck[0]` 正常翻新，不会残留在响应窗口。
-- 这四条的共同不变量是：**只要对象级浏览器证据已经覆盖了多玩家顺序、多客户端归属或显式 skip，根状态就必须承认这些边界，不应让它们继续藏在长期 JSON 里。**
-- 所以后续如果再把这四条写成“还只做到 L2”“还没证明多玩家/多客户端/skip”或“只是长期 JSON 里提过一下”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Juiced Up / Monkey Lab / The Vats / Time Raider / Repeater Perfect / Monkey on Your Back` 也不能继续只停在长期 JSON
-
-- 这轮继续扫到另一类根状态落后：对象级主链 scoped L3 已经在长期 JSON 里写得很清楚，但根 `progress.md / findings.md` 还容易只保留它们的兄弟边界，或者只顺带提到其中一半。
-- 这批对象的风险点分别是：
-  - `Juiced Up / Monkey Lab` 很容易被误压成“只是 ongoing power modifier 的数字会算”。
-  - `The Vats` 很容易被误压成“shared static restriction 已绿”。
-  - `Time Raider / Repeater Perfect` 很容易因为后来补了单候选自动与空弃牌 feedback，就把原本的多候选主链忘回长期 JSON 里。
-  - `Monkey on Your Back` 很容易只记住“敌方宿主可附着”或“附着后天赋可选目标”其中一半，而丢掉对象级完整主链。
-- 当前应当固化的真相分别是：
-  - `Juiced Up` 已经不是抽象的 modifier。真实页面上，宿主先带 1 张附着行动时再贴 `Juiced Up`，会立刻出现绿色 `+4`，说明它把本卡也算进宿主上的行动总数。
-  - `Monkey Lab` 也不是纯数字断言。真实页面上，同一宿主从 1 张 attached action 增到 2 张时，基地加成会从绿色 `+1` 动态跳到 `+2`，说明它确实按“该随从自己身上的 attached action 数量”实时重算。
-  - `The Vats` 已经不是只靠 shared restriction 合同。真实普通出牌入口里，同名随从所在基地会被阻断/置灰，而同一张手牌仍可改打到别的基地并正常收口。
-  - `Time Raider` 的对象级浏览器证据不只剩单候选自动沉底和空弃牌 feedback；它原本的多候选主链也已经闭合，真实 prompt 会同时列出 minion 与 action 候选，并允许选择 `Time Walk` 进牌库底。
-  - `Repeater Perfect` 也不只剩单行动自动顶牌与空弃牌 feedback；它的主链 scoped L3 已经证明真实 prompt 只列行动、不列随从，并允许选择第二张 `Time Walk` 放到牌库顶。
-  - `Monkey on Your Back` 的对象级主链现在至少有两半都已经闭合：
-    - 手牌入口可真实附着到敌方宿主，而不是只在状态里“看似附着”；
-    - 附着后天赋能真实选择另一玩家低力量随从，并把本行动放到牌库底。
-- 这批对象的共同不变量是：**当对象级主链 scoped L3 已经成立时，根状态不能只保留后补的自动分支、空分支或共享合同旁证。**
-- 所以后续如果再把这批对象中的任意一条写成“只有共享合同已绿”“只有自动/空分支已补”“对象级主链还没回到根状态”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Cellular Bonding` 不能继续只散落在旧 evidence 细节与长期 JSON 里
-
-- `Cellular Bonding` 当前最容易被根状态误压成两种过时口径：
-  - 只记得 2026-05-16 那条“复制 `Missing Uplink` 后回合结束抽牌”的 trigger-surface scoped L3。
-  - 或者反过来，只顺手提到 2026-05-17 的某一条 talent/protection/power finding，却没有把对象级主链显式承认出来。
-- 这两种写法都不够，因为 `shapeshifters_cellular_bonding` 真正已经闭合的是一组连续对象级事实，而不是一条孤立 surface：
-  - 前置入口不是“随便选个 live attached action”。
-  - 而是先真实附着到宿主，再只允许从**同宿主的另一张旧附着行动**里选择复制对象。
-  - metadata 也不是“只要最后 state 对了就算完”，而是只允许写回当前这张 `Cellular Bonding` 真实附着着的宿主。
-- 在这个前置链之上，当前对象级浏览器真相已经至少同时承认五个代理面：
-  - trigger-surface：复制 `Missing Uplink` 后真实结束回合抽牌。
-  - talent-surface：复制 `Monkey on Your Back` 后真实选择另一玩家低力量随从，并把本卡放到底。
-  - afterScoring-surface：复制 `Flying Monkey` 后真实移动宿主并摧毁本行动。
-  - protection-surface：复制 `Shielding` 后，在原护盾离场时仍保护宿主其他行动，且自己不会错误自保。
-  - power-surface：复制 `Splice as Nice` 后，即使原始 `Splice` 已离场，也仍由 copied metadata 保留持续 `+2`。
-- 这条对象的长期口径因此必须明确区分两件事：
-  - 已经 scoped L3 的，是“当前显式接入的 copied surfaces 与真实入口链”。
-  - 仍然没有被外推完成的，才是“完整动态复制 runtime”与更广的跨派系/未显式适配 surface。
-- 更直接地说：
-  - 后续如果再把 `Cellular Bonding` 写成“只做过一条 trigger/talent 的浏览器链”
-  - 或者把它重新挂回“对象级主链还没进根状态”
-  - 那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Genetic Shift` 不能继续只停在长期 JSON 的一条 scoped L3 记录里
-
-- `Genetic Shift` 当前最容易被根状态误压成一句过浅的话：
-  - “有过一条无目标模式选择的浏览器链”
-  - 然后对象级细节就又消失了
-- 这个口径不够，因为审计文档已经把它拆成三个明确 atom，而且它们各自承认的真相并不相同：
-  - `choose_mode` 证明的不是数值结果，而是**真实入口方式**。
-    - Board 对普通无目标行动不是“一点即打出”。
-    - 而是先选中手牌，再二次点击，随后才进入 `基因转变：选择强化模式` prompt。
-  - `all_own_minions_plus_one` 证明的是 all 分支只按 controller=self 给己方全体加 `+1`。
-  - `single_own_minion_plus_three` 证明的是 single 分支只允许己方单体候选，敌方 `Baboom` 既不会出现在候选里，也不会被误加成。
-- 也就是说，这条对象级浏览器证据真正闭合的不是抽象的“二选一能点”：
-  - 而是“真实无目标入口 + all 己方全体过滤 + single 己方单体过滤”三件事同时成立。
-- 所以这轮之后，更准确的根状态口径应该是：
-  - `Genetic Shift` 已经有对象级 scoped L3，但范围明确限定在无目标真实入口和 all/single 两个模式分支。
-  - direct target 快捷入口与 forged/late target 负例仍继续留在 L2/shared 守门，不应被顺手外推成浏览器已全绿。
-- 如果后续再把 `Genetic Shift` 写成“只有一条泛化 scoped L3”或“对象级根状态仍空白”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Shielding / Furious George / Splice as Nice / Missing Uplink` 不能继续只留在 atom 行、旧 finding 或单条边界补丁里
-
-- 这四条当前的根状态落后有一个共同模式：
-  - 审计文档与长期 JSON 其实已经把对象级主链写得很清楚；
-  - 但根状态里仍然很容易只看到某条局部补丁，比如 extra-turn L2、组合链里的旁证，或者某个共享 modifier 合同。
-- 分别看这四个对象，当前真正需要被根状态承认的真相是：
-  - `Shielding` 不能只写成“保护合同已绿”。
-    - 它的对象级浏览器真相至少同时包含：
-    - onPlay 真实清掉宿主上的对手旧行动；
-    - 后续对手行动来临时，宿主本体不受影响；
-    - `Shielding` 自身可离场，但宿主上的其他己方行动继续被保护。
-  - `Furious George` 不能只写成“动态算力公式正确”。
-    - 它真正闭合的是：真实 attached action 进入宿主后，左上绿色力量提示会随自身行动数从 `+1` 动态跳到 `+2`，而不是靠别的直接加力来源碰巧算对。
-  - `Splice as Nice` 也不能只写成“共享 ongoing modifier 已绿”。
-    - 它真正闭合的是：真实手牌入口附着到宿主后，本卡真实留在 `attachedActions`，宿主左上立即出现绿色 `+2`。
-  - `Missing Uplink` 不能只让根状态记住“额外回合结束也要抽牌”的那条 L2。
-    - 它当前已经有对象级 scoped L3：真实结束回合时，两张实例的额外抽牌会和正常回合结束抽牌一起收口；
-    - 而牌库不足洗弃牌、多 owner 混挂、额外回合结束继续按 owner 聚合，才是后续补进去的 shared/L2 收紧。
-- 这批对象的共同不变量是：
-  - 当对象级主链 scoped L3 已经成立时，根状态不能只留“某条边界后来补过”或“共享合同本身是绿的”。
-  - 必须显式承认对象本体在真实入口里的可见链路，否则后续审计很容易把它们重新误记成“只有实现/L2 正确，浏览器主链还空着”。
-- 如果后续再把这四条中的任意一条写成“只有共享合同或单条边界已补”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Bacta / Going Bananas / Primate Park / Copycat choose+metadata` 不能继续只靠零散旁证挂在根状态里
-
-- 这四组对象当前的根状态落后，不是因为没有证据，而是因为证据被拆散到了不同位置：
-  - `Bacta` 的真实入口分支主要留在长期 JSON。
-  - `Going Bananas` 容易只在 `Shielding` 或 `It's Astounding` 的组合链里被顺带提到。
-  - `Primate Park` 的真实响应入口容易只留在 atom/object 行与旧 finding。
-  - `Copycat` 的 choose/metadata 前置链又容易被后来的 trigger-surface 盖过去。
-- 当前根状态必须显式承认的真相分别是：
-  - `Bacta` 不能只写成“Shell Game 保护时仍给 extra”。
-    - 它真正闭合的是三条对象级来源分支：
-    - 受保护目标；
-    - 未保护己方目标；
-    - 未保护敌方目标且 extra 机会真实归 owner。
-  - `Going Bananas` 不能只写成“某条组合链里看过清行动”。
-    - 它真正闭合的是：真实先选基地，然后只清该基地的其他玩家 `base ongoing + attached action`，己方行动和别的基地不被误伤。
-  - `Primate Park` 不能只写成“afterScoring base choice 合同已绿”。
-    - 它真正闭合的是：赢家真实点击响应入口后，prompt 只列“这里”的 attached action，多选后分别回各自 owner 手牌，而跨基地行动不会混进候选。
-  - `Copycat` 也不能只靠后来的 `Jumper trigger` 来代表整个对象。
-    - choose/metadata 这两层前置链本身已经有 scoped L3：
-    - 真实入口只允许选另一玩家随从；
-    - copied metadata 只写到 `Copycat` 本体，不写到别的 live minion。
-- 这批对象的共同不变量是：
-  - 当对象级浏览器证据已经覆盖了真实入口、目标归属或 owner/controller 语义时，根状态不能只保留后续链、共享合同或组合链里的旁证。
-  - 必须把对象本体在真实入口里已经闭合的范围单独写出来，否则后续很容易再把它们误记成“只有某条兄弟链做过浏览器验证”。
-- 如果后续再把这四组对象写成“只有零散事实、没有对象级主链承认”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：一组变形者 optional search/choice 不能让根状态只承认 `skip`，却忘掉主链 scoped L3
-
-- 这批对象在根状态里当前最容易出现一种新的落后方式：
-  - `Faceless City / G.E.L.F. / Really? / Transmogrify / Doppelganger`
-  - 已经补了真实 `skip` 分支
-  - 但对象本体原先的“选择候选并真实结算”主链，反而又没有被显式承认
-- 这会导致另一个误读：
-  - 看起来像这批对象现在只证明了“可以放弃”
-  - 却没明确承认它们各自原本已经闭合的真实主链
-- 当前根状态必须显式承认的真相分别是：
-  - `Faceless City` 不只是 `跳过搜寻` 会收口。
-    - 它还已经证明多同名候选时可真实选择第二张收入手牌，并带着剩余牌库收口。
-  - `G.E.L.F.` 不只是 `放弃这次选择` 后不偷打候选。
-    - 它还已经证明天赋会先把自身洗回牌库，再只列合格候选，并把所选随从直接额外打回原基地。
-  - `Really?` 不只是第一层 discard search 可以 skip。
-    - 它还已经证明可从弃牌堆两张候选里选第二张，并在后续基地选择里打到别的合法基地。
-  - `Transmogrify` 不只是 deck search 可以 skip。
-    - 它还已经证明两张合格候选里可真实选第二张，过大候选被排除，且所选随从会打回原基地。
-  - `Doppelganger` 不只是 search 可以 skip。
-    - 它还已经证明在 `Bacta immediate extra skip` 之后，自己的 search 主链会真实出现，且所选候选会打回原基地。
-- 这批对象的共同不变量是：
-  - optional search/choice 的对象级根状态必须同时承认“选择候选结算主链”和“显式 skip 收口分支”。
-  - 只写其中一半，都会让后续审计把对象重新误读成“另一半还没补浏览器证据”。
-- 如果后续再把这批对象写成“只承认 skip，主链没进根状态”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`Mitosis / Operative / Spy / For My Eyes Only / 1.21 Gigawatts` 不能让根状态只剩端点边界
-
-- 这批对象当前最容易出现的根状态落后，是另一种“只记住后来补的端点，却忘了主链”的模式：
-  - `Mitosis` 只剩 `skip`
-  - `Operative` 只剩两层 `0 勾选`
-  - `Spy / For My Eyes Only` 只剩单卡自动与空牌库无 prompt
-  - `1.21 Gigawatts` 只剩单一牌种自动与空弃牌堆 feedback
-- 这会把对象级真相压扁成“边界都补了，但主链似乎不重要”，这是不对的。
-- 当前根状态必须显式承认的主链分别是：
-  - `Mitosis` 不只是“可以放弃同名手牌选择”。
-    - 它还已经证明先选己方目标，再从同名手牌候选里真实选第二张，并把所选同名随从直接额外打回目标基地。
-  - `Operative` 不只是“两层空选都会收口”。
-    - 它还已经证明第一层多选玩家、第二层只展示被查看的顶牌、最终只把所选玩家的所选顶牌放到底。
-  - `Spy` 不只是单卡自动和空牌库无 prompt。
-    - 它还已经证明真实随从进场后，会进入顶三张 inspect/reorder prompt，并按非默认 top/bottom 顺序完成收口。
-  - `For My Eyes Only` 不只是单卡自动和空牌库无 prompt。
-    - 它还已经证明无目标行动二次点击后，会进入顶五张 inspect/reorder prompt，并按非默认 top/bottom 顺序完成收口。
-  - `1.21 Gigawatts` 不只是单一牌种自动和空弃牌堆 feedback。
-    - 它还已经证明弃牌堆同时有两类牌时，会真实出现“行动 / 仆从”按钮 prompt，并只把所选牌种洗回 deck。
-- 这批对象的共同不变量是：
-  - 当对象级主链 scoped L3 已经存在时，根状态不能只保留“后来补的端点边界”。
-  - 否则后续审计会错误地把这些对象重新理解成“主链还没正式承认，只是若干边缘分支绿了”。
-- 如果后续再把这批对象写成“只有边界端点已补”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
-
-## 2026-05-18 补充发现：`ISI / Secret Agent / The Spy Who Ditched Me` 不能继续只留在长期 JSON、旧 finding 或 shared 残项里
-
-- 这三组对象当前的根状态缺口不是“还没证据”，而是对象级真相已经在审计文档与长期 JSON 里闭合，但根状态仍容易只留下某一条旧主链、某个 shared 修复，或一条局部端点。
-- `ISI's Swingin' Pad` 不能继续只写成“P0 赢家可重排自己牌库顶三张”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 真实入口来自计分后的 `smashup_reaction_choose` 响应窗口；
-    - `winner != currentPlayer` 时，只有赢家页面能拿到 `ISI` 选择权与后续重排 prompt；
-    - `让过` 分支点击后会真实清掉旧 reaction frame，不再残留 stale `smashup_reaction_choose`；
-    - 短牌库 2 张仍可重排这条边界已由同对象 L2 锁定。
-  - 所以后续如果再把 `ISI` 写成“只剩多客户端或 optional pass 没回根状态”，那已经不是当前真相，而是根状态落后。
-- `Secret Agent` 不能继续只停在“queued trigger 根因修了”或“单页两手牌二选一那条 scoped L3”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 行动玩家真实打出行动后，弃手牌选择权会回到行动玩家本人，且候选只来自该行动结算后的剩余手牌；
-    - 多客户端下只有行动玩家页面出现 prompt，非目标页不出现错误 waiting overlay；
-    - 多客户端 `2/1/0` 剩余手牌三条真实浏览器分支都已闭合，而且刚打出的 `Stasis Field` 会继续附着在 `Portal Room`，不会被误移走。
-  - 所以后续如果再把 `Secret Agent` 写成“对象级主链还没回到根状态”或“1/0 手分支只是 L2 没进浏览器证据”，那已经不是当前真相。
-- `The Spy Who Ditched Me` 也不能继续只剩“shared overlay residual 已修”或“施放者页 reveal 过一条”。
-  - 它当前真正已经闭合的对象级真相是：
-    - `each_other_player_discards_minion` 的多客户端主链里，目标玩家只在自己页面拿到弃随从 prompt，Host 非目标页没有错误 waiting overlay；
-    - `reveal_no_minion_hand` 的真实入口里，没有随从的其他玩家只会向施放者页私有展示手牌，而且 reveal 关闭后，另一位有随从玩家的 discard prompt 仍然保留并能继续收口；
-    - 旧 Host/非目标页 waiting overlay 已明确归类为 shared optimistic transport/playerView 根因，不应再作为这张卡自己的 residual 继续占位。
-  - 所以后续如果再把 `The Spy Who Ditched Me` 写成“只修过 shared overlay，还没对象级主链承认”，同样已经不是当前真相。
-- 这三组对象共同说明一条 completion-audit 不变量：
-  - 当对象级 scoped L3 已经覆盖“当前页/非当前页归属”“optional pass 清理”“私有 reveal 与并存 prompt”“自动分支 2/1/0”这类真实浏览器语义时，根状态不能再只保留 shared 修复、旧单链或长期 JSON 条目。
-  - 否则后续审计会把已经闭合的对象再次误记成“根状态仍空着”。
-
-## 2026-05-18 补充发现：`From Q With Love / Secret Volcano Headquarters` 不能让根状态只剩边界补丁或旧证据纠偏
-
-- 这两组对象当前的根状态落后方式比较隐蔽：
-  - `From Q With Love` 已经补了短候选与空投影手牌，但 exact-2 主链反而没有被根状态单独承认。
-  - `Secret Volcano Headquarters` 已经补了“旧 scoped L3 失效、改用新 scene-truth”的纠偏，但当前有效主链也还没有被根状态单独承认。
-- `From Q With Love` 不能继续只写成“投影手牌只剩 1 张 / 0 张时怎么收口”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 真实入口先抽 3 张；
-    - discard prompt 来自“旧手牌 + 新抽牌 - 本牌”的投影手牌，而不是 live hand 任意选择；
-    - prompt 会同时列出旧手牌与新抽牌的候选，但不会把本牌自身混回候选；
-    - 选择两张后，只把这两张送入 discard，其余未选牌继续留手。
-  - 所以后续如果再把 `From Q With Love` 写成“根状态只补了短候选/空投影手牌，exact-2 主链还没回填”，那已经不是当前真相。
-- `Secret Volcano Headquarters` 也不能继续只写成“旧 E2E 夹具误配、现在要以新 finding 为准”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 真实结束回合后会按 turnOrder 真实发出两条 `REVEAL_DECK_TOP(viewerPlayerId='all')`；
-    - `reveal-overlay` 会真实出现在页面中央，并与计分后的 VP / 换基地状态并存，而不是只在 `eventStream` 或 state 里存在；
-    - dismiss 两次后 overlay 会完全消失，桌面真实收口到替换后的 `Portal Room`，且只有展示出的随从会进入这次计分链。
-  - 所以后续如果再把 `Secret Volcano Headquarters` 写成“根状态只有旧证据失效修订，没有当前有效主链承认”，同样已经不是当前真相。
-- 这两组对象共同说明另一条 completion-audit 不变量：
-  - 根状态不能只承认“后来补的边界端点”或“旧证据失效后的纠偏”，却遗漏当前已经有效的对象级主链。
-  - 否则后续审计会错误地把对象理解成“周边都补了，但真正主链还没正式承认”。
-
-## 2026-05-18 补充发现：`Time Walk / Stasis Field` 不能继续只作为别的链路里的卡名旁证存在
-
-- 这两组对象当前的根状态缺口不在 evidence，而在表述层：
-  - `Time Walk` 在长期 JSON 和审计文档里已经是对象级 scoped L3，但根状态里仍容易只以 `Time Raider` 候选、`It's Astounding` 弃牌堆行动、或 shared `banked-extra-play` 合同的形式出现。
-  - `Stasis Field` 也类似，根状态里已经在 `Secret Agent`、`Into the Time Slip`、`Portal Room` 这些兄弟链里反复出现它的卡面或 uid，但对象本体的三段主链还没有被单独承认。
-- `Time Walk` 不能继续只写成“额度加 1”或者“后续某张 `Jumper / Juiced Up` 链里出现过”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 真实入口会先抽 2 张；
-    - 本牌自己会沉到底牌库，而不是进 discard；
-    - 授予的是本回合 banked extra minion / extra action 额度，不会额外起 immediate prompt；
-    - 这两次 banked extra 会在同一回合里被真实消费掉，而不是只停在 toast 或 state 数字。
-  - 所以后续如果再把 `Time Walk` 写成“只有 shared 合同或别的链路旁证，没有对象级主链承认”，那已经不是当前真相。
-- `Stasis Field` 也不能继续只写成“在别的链里能看到它留在基地上或被回手”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 真实手牌入口可以把它贴到目标基地并进入 `ongoingActions`；
-    - 该基地即使已经达断点，也会被真实压住，不发生本该在回合结束时发生的计分与替换；
-    - 到拥有者自己下一个回合开始时，它会自动离场并进入 owner discard。
-  - 所以后续如果再把 `Stasis Field` 写成“只是某些兄弟链里顺带出现过，没有对象级主链承认”，同样已经不是当前真相。
-- 这两组对象共同说明另一条 completion-audit 不变量：
-  - 根状态不能让一张卡长期只以“兄弟链旁证”或“shared 合同示例”形式存在。
-  - 当对象本体的整条真实浏览器链已经闭合时，必须单独承认它自己的主链，否则后续审计会错误地以为它还没从旁证升级成对象级完成。
-
-## 2026-05-18 补充发现：`Do Over / Doctor When` 不能让根状态只剩 `skip extra`
-
-- 这两组对象当前的根状态落后也很典型：
-  - `skip extra` 在 2026-05-18 已经补回根状态；
-  - 但对象本体的 returned-card 主链反而还没有被单独承认。
-- `Do Over` 不能继续只写成“点击放弃后 returned `Jumper` 会留在手里”。
-  - 它当前真正已经闭合的对象级真相是：
-    - `return_own_minion` 真实入口会先把 `Jumper` 从基地回到手牌；
-    - 接着进入 specific-card extra prompt；
-    - 该 prompt 只允许刚返回的 `jumper-a`，不会把同名手牌诱饵混进候选；
-    - 选择后会把 `jumper-a` 真实打回原基地并完整收口。
-  - 所以后续如果再把 `Do Over` 写成“根状态只补了 skip extra，returned-card 主链还没对象级承认”，那已经不是当前真相。
-- `Doctor When` 也不能继续只写成“可以 skip extra”。
-  - 它当前真正已经闭合的对象级真相是：
-    - 第一层 prompt 会真实列出“另一个己方随从”候选，`Doctor When` 自身不会混进候选；
-    - 选择 `Time Raider` 回手后，会进入 returned-card extra prompt；
-    - extra prompt 只允许刚返回的 `raider-a`，不会把同名手牌诱饵混进来；
-    - 选择后 `Time Raider` 会真实打回 `Portal Room` 并收口。
-  - 所以后续如果再把 `Doctor When` 写成“只有 may/skip 边界已补、主链还没回根状态”，同样已经不是当前真相。
-- 这两组对象共同说明另一条 completion-audit 不变量：
-  - 根状态不能只承认 returned-card 链的后半段端点，比如 skip extra；
-  - 当前半段 `return` 和后半段 `specific-card replay` 都已经在真实浏览器链里闭合时，必须把整条 returned-card 主链一起承认，否则会把对象重新误解成“主链未审，只补了端点”。
-
-## 2026-05-18 补充发现：`Mole` 不能让根状态只承认 `Mindraker` 负链
-
-- `Mole` 当前的根状态落后点已经很具体，不是实现没修，而是 completion-audit 还停在旧口径：
-  - evidence 对象行早就把 `super_spies_mole.grant_special_action` 写成了 `L2 / scoped L3`；
-  - 但根状态实际上只显式承认了 `super_spies_mole.respect_mindraker` 这条“被 restriction 封死后不弹 prompt”的负向浏览器链。
-- 这已经不是当前真相，因为 evidence finding #131 又把真正高风险的正向链补实了：
-  - 真实计分响应窗口里会先出现 `选择一个反应动作`；
-  - 玩家可真实点击 `内鬼特殊能力` 进入 `立刻打出一张额外战术，或放弃这次机会` prompt；
-  - 当前夹具下唯一合法候选是 `Going Bananas`，点击后不会再错误弹第二层基地选择 prompt，而是按“唯一合法基地”自动收口；
-  - 最终 `The Vats` 被 `The Nexus` 替换，记分板到 `3:1`，且 `Going Bananas / Mole / anchor` 与被清理的目标行动、目标随从都进入对应 discard。
-- 这条新 finding 还顺手纠偏了旧正向夹具的噪音来源：
-  - 旧版 P0 deck 为空，计分后的 draw 会把刚进弃牌的 `Going Bananas / Mole / Jumper` 洗回再抽走；
-  - 所以浏览器末态曾经容易把“行动已正确结算”误读成“行动没进弃牌或结果异常”；
-  - 现在给 P0 deck 补了 `mole-draw-a/mole-draw-b` 两张稳定抽牌后，这层 reshuffle 噪音已经被隔离，不该再拿旧末态继续怀疑正向链没闭合。
-- 所以后续如果再把 `Mole` 写成“根状态已经承认对象级 Mole 浏览器链，只剩 Mindraker 之类边界”，那也是错的；更准确的表述应是：
-  - `super_spies_mole.grant_special_action` 的正向 special 主链与 `super_spies_mole.respect_mindraker` 的负向 restriction 主链，现在都已经闭合；
-  - 根状态必须同时承认这两条链，不能继续只保留负链，让正链只停在 evidence 里。
-
-## 2026-05-18 补充发现：`For My Eyes Only` 不能再把多客户端私有顶五归属留在 evidence 里
-
-- `For My Eyes Only` 当前的根状态落后模式，和刚补完的 `Spy` 基本同型，只是对象还没同步到根状态：
-  - 根状态已经承认了单页顶五主链；
-  - 也承认了牌库只剩 1 张时自动查看、牌库为空时不弹 prompt；
-  - 但 evidence finding #149 又补上了更关键的一层对象级事实：多客户端下，这条私有顶五 inspect/reorder prompt 只应该出现在行动玩家页面。
-- 这已经不是当前根状态，因为真实多客户端链已经把风险点说死了：
-  - Host 真实双击打出 `For My Eyes Only` 后，中央会进入 `只为我的眼睛：选择牌库顶/牌库底顺序` prompt，并直接看到 `Spy / Operative / Mole / Secret Agent / Jumper` 五张 inspected 顶牌本体和非默认顶/底顺序按钮；
-  - Guest 页只保留公共 `For My Eyes Only 已打出!` spotlight，不会镜像出 `只为我的眼睛` 私有 prompt、五张 inspected 顶牌卡面或任何顶/底顺序按钮；
-  - Host 完成非默认 top/bottom 选择后，Host/Guest 两页都会收口到正常出牌态，不残留 waiting overlay 或私有按钮残影。
-- 这条新 finding 还把一个容易混淆的边界说清了：
-  - Guest 仍然可以看到公共“已打出” spotlight；
-  - 但这不等于 Guest 拿到了私有 inspect 信息或 reorder 控制权。
-  - 所以后续口径必须区分“公共出牌展示可见”和“私有顶牌信息泄露/私有 prompt 镜像”这两层，不要再把它们混成一句“Guest 看到了点什么”。
-- 所以后续如果再把 `For My Eyes Only` 写成“根状态只承认单页主链和单卡/空牌库端点，多客户端私有归属仍主要在 evidence 或长期 JSON”，那已经不是当前真相；更准确的表述应是：
-  - `super_spies_for_my_eyes_only.inspect_self_top_five` / `reorder_top_bottom_inspected_cards` 现在已经同时承认单页顶五主链、短牌库端点、空牌库端点，以及 2P owner-only 私有顶五页归属；
-  - 当前剩余边界只应继续保留更广多人局、其它 inspect 来源或 shared transport/spotlight 收口时序，而不是再把对象级多客户端主链挂回 residual。
-
-## 2026-05-18 补充发现：`Operative` 不能再把多客户端两层 prompt 归属留在 evidence 里
-
-- `Operative` 当前的根状态落后模式与 `Spy / For My Eyes Only` 有一半相同、另一半更细：
-  - 根状态已经承认了单页正常主链；
-  - 也承认了第一层 `0` 勾选玩家和第二层 `0` 勾选展示牌这两条端点；
-  - 但 evidence finding #144 又补上了更关键的一层对象级事实：双人联机下，`Operative` 的两层 prompt 都只应该出现在行动玩家页面。
-- 这已经不是当前根状态，因为真实多客户端链已经把双层控制权说死了：
-  - Host 打出 `Operative` 后，第一层 `密探：选择要查看牌库顶牌的玩家` prompt 只出现在 Host 页；
-  - Guest 页既没有第一层 prompt，也没有 waiting overlay；
-  - Host 在第一层只勾选 `玩家1` 后，第二层只出现 Guest 的 `Jumper` 顶牌本体，不夹带 Host 顶牌；
-  - Host 完成第二层选择后，Host/Guest 两页都会收口，而服务端只把 Guest 顶牌放到底，不误改 Host 牌库。
-- 这条新 finding 还说明一个容易被忽略的验收点：
-  - `Operative` 不是只有“谁能看到 prompt”这一层；
-  - 还要证明第二层展示集合没有串台，以及最终 deck 改写只落在被选中的玩家上。
-  - 否则就算 Guest 没拿到按钮，也可能仍有“Host 看到错牌 / 改错 deck”这类对象级漏项。
-- 所以后续如果再把 `Operative` 写成“根状态只承认单页主链和两层空选端点，多客户端非当前视角仍主要在 evidence 或长期 JSON”，那已经不是当前真相；更准确的表述应是：
-  - `super_spies_operative.choose_players_to_reveal` / `bottom_any_revealed_cards` 现在已经同时承认单页主链、两层 `0` 勾选端点，以及 2P owner-only 双层 prompt 页归属；
-  - 当前剩余边界只应继续保留 `>2` 玩家更广 turnOrder/UI 与 shared transport，而不是再把双人联机这条对象级主链挂回 residual。
-# Findings: DiceThrone 战术家与咒缚海盗新增英雄接入（2026-05-30）
-
-## 2026-05-30 16:48:43
-
-- 本轮使用项目 `add-new-faction` workflow，并按 DiceThrone 专用 `dicethrone-hero-intake` 执行；完整完成口径包含数据录入、资源链、机制、审计、E2E、上传与远端回查。
-- 当前工作区有大量非本轮未提交改动，必须定向编辑 DiceThrone 新英雄相关文件，不做回滚、清理或全局整理。
-- 本批次新英雄为战术家（`zhanshujia`）与咒缚海盗（建议代码 ID `cursed_pirate`，素材目录 `cursed`）。
-- 素材目录已存在：`public/assets/i18n/zh-CN/dicethrone/images/zhanshujia/` 与 `public/assets/i18n/zh-CN/dicethrone/images/cursed/`。
-- 战术家状态图只包含 `战术优势.png`、`紧缚.png`；用户已说明锁定/守护是既有 token，需复用 `STATUS_IDS.TARGETED` 与 `TOKEN_IDS.PROTECT`，不能新增同义 token。
-- 咒缚海盗状态图包含 `凋零.png`、`休战.png`、`炸药.png`、`诅咒金币.png`；图面称呼中“炸药桶/火药桶”需要以主图和提示板核对后统一文案。
-- 现有 DiceThrone 英雄注册点包括：`src/games/dicethrone/domain/core-types.ts`、`src/games/dicethrone/domain/ids.ts`、`src/games/dicethrone/domain/characters.ts`、`src/games/dicethrone/domain/index.ts`、`src/games/dicethrone/heroes/index.ts`、`src/games/dicethrone/ui/cardAtlas.ts`、`src/games/dicethrone/criticalImageResolver.ts`、`public/locales/{zh-CN,en}/game-dicethrone.json`。
-- `src/games/dicethrone/ui/assets.ts` 旧头像索引已有 `cursed_pirate: 8`，但这不代表咒缚海盗已完成接入；不得覆盖老头像共享合同。
-
-## 2026-05-30 17:20
-
-- 咒缚海盗代码 ID 使用 `cursed_pirate`，素材目录通过 `CHARACTER_ASSET_DIR` / `CHARACTER_DIR_MAP` 映射到 `cursed`；卡图 atlas 注册、关键图片预加载、玩家板/提示板/骰子都必须走这个分流，不能创建 `images/cursed_pirate` 并复制第二套素材。
-- 战术家新增状态图集只包含 `tactical_advantage` 与 `bind`；锁定/守护继续复用旧定义和旧图标。
-- 咒缚海盗状态图集 frameId 使用 `wither`、`parley`、`powder_keg`、`cursed_coin`；源文件 `炸药.png` 在运行时统一命名为火药桶 / `powder_keg`。
-- 当前英雄专属手牌未录入，两个英雄 `cards.ts` 仅接入通用牌。继续推进前必须先裁完整单卡，不能凭整张 `手牌.png` 或 slot 猜测牌名/费用/升级目标。
-- 当前机制是 L1/L2 混合：基础骰面触发、简单伤害、简单施加状态可运行；战术优势多选、紧缚成本/移除、诅咒金币差异上限/不可移除/维持伤害、火药桶投骰/转交/重叠爆炸、凋零伤害修正、休战阻止伤害、防御技能精确 resolver 都未收口。
-
-## 2026-05-30 17:48
-
-- 战术优势已从“被动入口部分”推进到 L2 机制：6 个主动动作均有执行路径与单测证据。锁定继续复用 `STATUS_IDS.TARGETED`，守护继续复用 `TOKEN_IDS.PROTECT`，转移状态复用既有 `transfer-status` 交互。
-- 紧缚的真实合同应拆成两条：额外进攻投掷前的 1CP 门禁，以及进攻掷骰阶段退出清理。当前两条均已接入并由机制测试覆盖。
-- 诅咒金币的差异上限必须通过 `getTokenStackLimit(state, playerId, STATUS_IDS.CURSED_COIN)` 读取，不能只看 token 定义上的 `stackLimit: 5`；普通 `grantStatus`、条件/default grantStatus、reducer 上限裁剪均应走这条动态上限。
-- 诅咒金币的 `removable: false` 同时意味着 `REMOVE_STATUS` 不移除、`TRANSFER_STATUS` 不转移；当前 execute 层测试已覆盖。
-- 凋零不是目标侧受伤修正，而是伤害来源身上的出伤修正；因此伤害计算管线需要收集 source player 的 `onDamageDealt` 状态，并只在攻击伤害语义下生效。
-- 休战只阻止持有者通过进攻投掷阶段造成的攻击伤害，不应阻止直接伤害；阶段退出清理与阻伤是两条独立机制，均需保留测试证据。
-- 仍不得宣称两个英雄完成：火药桶完整投骰/爆炸/转交/重叠爆炸、防御 resolver、专属手牌逐卡录入、E2E、上传和远端回查仍是未完成门禁。
-
-## 2026-05-30 18:00
-
-- 制胜高地的“上限提升 1”和“获得至上限”不能用固定 `grantToken(5)` 表达；必须先写入玩家自身的 `tokenStackLimits[TACTICAL_ADVANTAGE]`，再按新上限补足当前 token 数。
-- 死亡印记的“先获得 2CP”可以复用通用 `gain-cp` custom action，已作为独立 preDefense 效果落地；但弯刀分支的“不可防御伤害”仍不能由当前 `bonusDamage` 证明，必须继续保留为 pending。
-- 亡灵之爪的诅咒金币附加伤害不是固定 1 点，而是按每名对手身上的诅咒金币层数分别计算；当前实现已改为 custom action 对所有对手按层数发 `damageScope: direct` 的 `DAMAGE_DEALT`。
-- 火药桶不应因为其它咒缚海盗机制已补而顺手实现：当前图文/核对文档仍缺爆炸伤害数值和 6 点转交选择细节，按“图片优先，不猜数值”规则继续保留未实现。
-
-## 2026-05-30 18:05
-
-- 灵魂突刺的“三同值施加火药桶”可以独立实现，但这不等于火药桶机制已完成。当前实现只负责在满足三同值时授予火药桶；若目标已有火药桶时应如何爆炸，仍归属火药桶重叠爆炸 pending 项。
-- 深海潜行的“偷取 1CP”和“对手弃 1”必须拆开验收：偷 CP 是确定资源转移，已 L2；弃牌需要手牌候选/选择或自动弃牌规则，当前没有足够交互实现，继续 pending。
-
-## 2026-05-30 18:15
-
-- 死亡印记的弯刀分支不能继续用 `bonusDamage` 混入普通攻击修正，因为这样无法证明“不可防御伤害”语义。当前已给 `rollDie` 条件分支补 `unblockableDamage`，直接产出带 `unblockable: true` 的 `DAMAGE_DEALT`，让每个弯刀面独立造成 2 点不可防御攻击伤害。
-- 战争贩子的“立即额外进攻投掷阶段”与晕眩的额外攻击阶段流转同构，但来源不是状态。当前已通过 `zhanshujia-war-monger-extra-offensive-roll` 产出 `EXTRA_ATTACK_TRIGGERED`，并让 `resolvePostAttackFollowUp` 识别已有额外进攻事件后把下一阶段改回 `offensiveRoll`。
-- 深海潜行弃牌不能在没有交互合同时硬写成随机弃牌。现有 DiceThrone `dt:card-interaction` 只支持 `selectDie/modifyDie/selectPlayer/selectStatus/selectTargetStatus`，没有从目标玩家手牌选择并弃置的正式入口；因此“对手弃 1”仍应保留 pending，等补手牌选择交互或确认随机弃牌规则后再实现。
-
-## 2026-05-30 18:28
-
-- 深海潜行“对手弃 1”已按规则文本的控制权语义实现为目标玩家自选弃牌，而不是随机弃牌，也不是攻击方替对手选牌。新增 `selectHandCard` 只扩展 DiceThrone 既有 `dt:card-interaction` 最小分支，`RESOLVE_INTERACTION.selectedCardIds` 只允许交互所有者从自己手牌中选择。
-- 前端手牌弃置交互必须只给交互所有者显示；否则会把对手手牌选择权或可见信息泄露给攻击方。当前 Board 对 `selectHandCard` 加了 owner gate，Overlay 仅渲染 `interaction.playerId` 的手牌。
-- 这只收口深海潜行弃牌的 L2/L3 前置交互合同，不代表火药桶、咒缚被动、防御 resolver 或专属手牌完成。
-
-## 2026-05-30 18:35
-
-- 咒缚玩家板明确写着“在你的维持阶段受到 4 伤害（此伤害不能以任何方式被减少或防止）”，因此自伤 4 可以独立实现为 `DAMAGE_DEALT(direct, unblockable=true)`，不需要等待火药桶完整机制。
-- 咒缚的另一句“如果一名对手在其进攻投掷阶段未造成一次攻击，则对该对手施加火药桶”不能用 `lastResolvedAttackDamage` 这类当前回合单点字段替代。它需要明确追踪每名对手自己的 offensiveRoll 是否造成过一次攻击，否则容易把“造成 0 伤害的攻击”“未选择攻击”“直接伤害”等情况混在一起。
-
-## 2026-05-30 18:47
-
-- 战术家反制措施可以作为独立 L2 防御 resolver 收口：当前规则只依赖防御骰面计数，能通过 `getActiveDice` + `getPlayerDieFace` 从战术家自己的骰面合同直接得到军刀、旗帜、勋章数量，不需要额外 UI 决策。
-- 战术家反制措施的三条子句必须分开记录证据：每组 2 军刀造成 1 反击伤害；每个旗帜防止 1 伤害；每个勋章获得 1 战术优势。只证明其中一条不等于防御技能完成。
-- 咒缚海盗你还嫩了点也可以作为独立 L2 防御 resolver 收口：弯刀、战利品、骷髅三类骰面都能从咒缚海盗自己的骰面合同直接计数；弯刀+骷髅的诅咒金币是组合条件，不应拆成“任一面出现即施加”。
-- 这次防御 resolver 收口不改变火药桶的阻塞状态：咒缚海盗防御只会施加诅咒金币，不需要推断火药桶爆炸伤害或转交规则；火药桶仍因图面缺爆炸伤害数值与转交选择细节保持 pending。
-- 当前“防御 resolver 未实现”的旧口径已经失效，后续剩余机制缺口应集中写为：火药桶完整机制、无情诅咒至多两名对手施加火药桶，以及英雄专属手牌逐卡录入。
-
-## 2026-05-30 18:55
-
-- 诅咒金币“海盗可选择不获得金币”不能只在单个技能里特判；状态可能来自普通 `grantStatus`、条件/default `grantStatus`、奖励骰状态施加、咒缚海盗 custom resolver 或 `selectPlayer` 交互授予状态，因此必须收敛到统一状态施加 helper。
-- 当前统一 helper 的边界是：只有目标角色为咒缚海盗本人且状态为诅咒金币时才生成选择；其他角色收到诅咒金币仍直接施加并遵守 3 层动态上限，咒缚海盗本人接受时遵守 5 层动态上限，拒绝时权威状态不变。
-- 当前“诅咒金币可选择不获得”的旧口径已经失效，后续剩余机制缺口应集中写为：火药桶完整机制、无情诅咒至多两名对手施加火药桶，以及英雄专属手牌逐卡录入。
-
-## 2026-05-30 19:13
-
-- 咒缚“对手在其进攻投掷阶段未造成一次攻击”不应按伤害量判断；只要对手在 offensiveRoll 发起过 `ATTACK_INITIATED`，即视为本阶段已经发起攻击，后续是否被防止、闪避、护盾抵消或造成 0 净伤害，都不能触发“未发起攻击”的火药桶惩罚。
-- 该判断需要 core 追踪而不是读取 `lastResolvedAttackDamage`：攻击可能在防御阶段或后续 autoContinue 才结算，且成功攻击也可能造成 0 净掉血；`offensiveRollAttackMadeThisTurn` 只记录攻击发起事实，回合切换清理。
-- 当前“咒缚未造成攻击追踪”的旧口径已经失效，后续剩余机制缺口应集中写为：火药桶完整机制、无情诅咒至多两名对手施加火药桶，以及英雄专属手牌逐卡录入。
-
-## 2026-05-30 19:36
-
-- 无情诅咒的“至多两名对手”不能实现成自动选择全部对手；规则里的“至多”要求在合法候选存在时仍允许跳过或空选，因此必须创建玩家选择而不是直接 `grantStatus`。
-- 2v2 下“对手”必须按队伍关系取敌队成员，不能简单取除自己外的所有玩家；否则会把队友列入火药桶候选。当前 `getOpponents` + mask choice 只列 P2/P4（玩家 1 的两名敌队对手），不列队友 P3。
-- 当前“无情诅咒至多两名对手施加火药桶”的旧缺口已经失效，后续剩余机制缺口应集中写为：火药桶完整投骰/爆炸/转交/重叠爆炸，以及英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
-
-## 2026-05-30 19:45
-
-- 咒缚海盗提示板本地图片已经足够裁定火药桶缺口：图面标题是“炸药桶”，但运行时代码沿用 `STATUS_IDS.POWDER_KEG` / 火药桶命名；规则文本明确为维持阶段投 1 骰，1-2 爆炸，3-5 无事发生，6 可传给任意玩家，爆炸时移除并造成 3 点独立来源的不可防御伤害。
-- 重复获得不是“因为堆叠上限 1 所以忽略新状态”。图面写明新收到者已有炸药桶时，原先那个炸药桶立即爆炸；因此共享状态施加 helper 必须在 `POWDER_KEG` 已存在时先产生爆炸事件，再施加新桶，最终仍保留 1 层。
-- 火药桶维持阶段 6 点转交需要玩家选择，不能自动转给固定对手；当前实现按图面“任意玩家”列出全部玩家。选择自己时保持原状态，选择其他玩家时从原持有者移除并给目标施加火药桶；若目标已有火药桶，会触发上面的重复获得爆炸合同。
-- 当前“火药桶完整投骰/爆炸/转交/重叠爆炸”的旧缺口已经失效，后续剩余缺口集中为英雄专属手牌逐卡录入、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查。
-
-## 2026-05-30 22:46
-
-- 两名新英雄不能继续复用 `TREANT_NINJA_COMMON_ATLAS_INDEX` 的全部位置：战术家与咒缚海盗的 `card-unexpected` 图面分别在 slot 32 与 slot 33，而树精/忍者合同为 slot 37。当前已改成新英雄各自的通用牌索引映射，未反向修改树精/忍者共享合同。
-- 专属手牌已从“未裁图/未录入”推进为 L1：战术家 slot 17-31、咒缚海盗 slot 17-32 均有完整单卡裁图、`card.id`、费用、类型、时机、正文、`previewRef.index` 和文档记录。
-- 战术家的多个升级牌是单张物理牌内的复合升级子区，例如战略转移 II、开拓战场 II、摇鼓运动 II、地毯式轰炸 II。后续 L2 必须按“一张升级卡替换一个基础技能，内部 variants 同类取最高”建模，不能拆成多张 runtime card。
-- 当前专属手牌代码只对少量确定简单效果做了 L2 入口，其余复杂响应窗、目标选择、对手支付、手牌查看/弃牌、翻面条件、至多三名目标等均必须继续标为未收口，不能用 L1 静态录入替代机制完成。
-
-## 2026-05-31 09:23
-
-- 战术家升级牌的核心缺口已从“没有运行时升级语义”推进到 L2：9 张升级牌现在都通过 `replaceAbility` 指向基础技能 ID，而不是拆成新 runtime card，也不是只保留静态描述。
-- 复合升级的正确运行时落点已经落在能力定义内部 `variants`：战略转移 II、开拓战场 II、摇鼓运动 II、地毯式轰炸 II 的下半区都作为同一基础技能的附加触发分支建模，符合旧英雄“同卡复合子技能 / 同类取最高”的合同。
-- 反制措施 II/III 不是新建两套防御 resolver，而是同一个 `zhanshujia-countermeasures-defense` 读取升级参数调整“每组军刀”伤害；这避免了同一防御逻辑分叉后不同步。
-- 军刀突刺 II 的“三同值施加紧缚”应读取当前主骰盘最大重复数；不能把它误实现成“3 个军刀”或“3 个同面符号”。当前 `zhanshujia-bind-if-three-kind` 按骰值重复数判定。
-- 战争贩子 II 的额外进攻投掷阶段只在勋章奖励骰分支触发，不能沿用基础战争贩子“攻击收口后额外进攻”口径直接自动触发。当前通过 `zhanshujia-war-monger-2-roll` 在勋章分支生成 `CARD_DRAWN` 与 `EXTRA_ATTACK_TRIGGERED`。
-- 仍不能把战术家专属手牌整体说成完成：被攻击后响应牌、战略防御选择 1 名玩家、地毯式轰炸 II 在多人局精确选择 2 名不同对手仍缺 L2/L3 证据。
-
-## 2026-05-31 09:38
-
-- 战术家被攻击后响应牌可以复用现有防御阶段出牌合同：`playCondition.phase = defensiveRoll` + `requireIsRoller` 表达“只能在自己被攻击后打出”，不需要新增响应窗口类型。
-- 脱战的军刀分支与圣骑士赦免同构：使用 `rollDie` 的 `bonusDamage`，在没有后续 damage 动作时由效果系统收口为对当前攻击者的独立 `DAMAGE_DEALT`；旗帜分支使用 `grantDamageShield(3)`，勋章分支复用 `TOKEN_IDS.PROTECT`。
-- 伴装撤退不应按默认对手猜攻击者；在 `pendingAttack` 防御上下文中，`getSelectedCombatOpponentId` 会把防御者的 opponent 解析为真实攻击者，因此 `grantStatus(opponent, bind)` 能定位到攻击者。
-- 作战室不能用骰面分支表达，因为图面要求按“骰值”一半向上取整，战术家骰面里 1/2/3 都是军刀但结果不同；因此必须走 custom action 读取实际 `random.d(6)` 数值。
-- 战略防御是“选择 1 名玩家”，目标集合应为全体玩家而不是自己或对手；当前用 `selectPlayer` + `tokenGrantConfig(PROTECT)` 复用既有交互结算合同。
-- 现在战术家专属行动牌剩余 L2 缺口已缩小：脱战、伴装撤退、作战室、战略防御已 L2；仍不能宣称战术家全收口，因为地毯式轰炸 II 多人精确目标交互、E2E、审计和上传仍缺。
-
-## 2026-05-31 09:49
-
-- 地毯式轰炸 / 地毯式轰炸 II 的“两名不同对手”不能用 `allOpponents` 自动结算近似。该语义在 2v2 下要求玩家从敌队两名成员中精确选择，不能把队友混入候选，也不能默认替玩家选择。
-- `selectCount: 2` 只能表达最多选择 2 名，不能表达“必须选满 2 名”。当前新增 `minSelectCount` 后，UI 确认按钮、命令校验与执行层都按同一数量合同拒绝不足选择，避免“看起来可确认但 resolver 不结算”的双重真相。
-- 对手不足 2 名时，图面“两名不同对手”的前提不存在；此时不创建无法满足的必选交互，而是按现有对手直接结算，避免 1v1 被卡在永远选不满 2 名的 prompt。
-- 这次只收口战术家地毯式轰炸家族的 L2 多目标语义。当时咒缚海盗复杂专属手牌、对象级审计、真实入口 E2E、资源上传与远端 HEAD 回查仍是未完成门禁；后续 E2E、上传与 HEAD 已在 2026-05-31 12:44 收口。
-
-## 2026-05-31 10:03
-
-- 咒缚海盗专属手牌不能继续被整体写成“复杂手牌待 L2”。10:03 当时应分成已收口与仍缺口两类：诅咒卡牌、封舱、抽筋剥皮、干票大的、送你们去喂鱼、啜呼已具备 L2 行为证据；赎金、瞭望台、海盗的一生当时仍待补。后续赎金、瞭望台与海盗的一生已在 10:11、10:34、13:08 分别补齐 L2 证据。
-- 干票大的这类“打出卡牌后再获得 CP”的 custom action 必须按事件顺序考虑卡牌费用。由于 custom action 读取的是出牌前 state，直接用当前 CP +2 会覆盖 `CARD_PLAYED` 扣费后的 CP；正确口径是按源卡费用推导扣费后 CP，再 +2。
-- 送你们去喂鱼的“至多 3 名不同对手”与无情诅咒“至多 2 名对手”共享 bitmask 选择模型，但对象语义仍需独立证据。当前已补该卡自己的跳过路径与 2v2 不列队友证据，不能只借无情诅咒代表链。
-- 啜呼的选择权属于目标玩家，不属于出牌者；目标接受火药桶和改为投骰是两条不同分支。当前两条都已覆盖，且 3-6 分支同时施加火药桶和凋零。
-
-## 2026-05-31 10:11
-
-- 赎金是两段选择链，不是简单的“选择骰子后立刻重掷”。第一选择权属于出牌者，第二选择权属于目标对手；如果省掉第二段支付选择，就会丢掉规则里的“除非支付 2CP”语义。
-- 赎金第二段必须携带稳定上下文：出牌者、目标对手、被选骰子。当前用数值编码在 choice value 中传递，避免第二段 handler 靠当前对手、当前骰池或第一个骰子猜目标。
-- 赎金支付分支要按已扣除卡牌费用后的状态结算，因为第二段选择发生在出牌 pipeline 之后；与干票大的不同，这里读取到的是 post-card-play state，不需要额外补扣源卡费用。
-
-## 2026-05-31 10:34
-
-- 瞭望台的三个骰面分支必须分开验收：弯刀只产生信息查看，不应改变权威状态；战利品的弃牌选择权属于目标玩家；骷髅是随机弃牌，不能实现成目标自选或出牌者选择。
-- 当前 DiceThrone 没有独立“查看对手手牌”的专用事件/UI 合同。为避免自造隐藏信息系统，弯刀分支先落成出牌者 simple-choice 确认，选项参数携带目标当前手牌列表；这能证明信息链不会改状态，但真实 UI/E2E 仍需后续核对展示是否合格。
-- 海盗的一生旧阻塞结论已失效：当前代码已补 `HeroState.playerBoardFace`，并已把咒缚面 `player-board` 与 normal 面 `human-player-board` 一并接入正式资源链和 UI 选图。咒缚面治疗 3 与普通面获得 1 诅咒金币均有 L2 测试；但仍不能把“底图已接入”误报成官方 human/normal 面完整机制已完成。
-
-## 2026-05-31 13:38
-
-- 真实入口交互证据新增两条代表链：战术家“战略防御”覆盖 `selectPlayer` 玩家选择覆盖层与守护落点，咒缚海盗“送你们去喂鱼”覆盖 simple-choice 火药桶选择弹窗与火药桶状态落点。
-- 这两条 E2E 不是全量 L3/L4 收口。它们当时只能把“没有任何复杂交互 UI 证据”的风险缩窄为“已有两条代表链”；手牌选择已在 14:12 补代表性 L3，瞭望台三分支与作战室奖励骰代表链已在后续补齐，防御响应等仍需逐项真实入口证据。
-- `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 当前为 3 passed；新增截图位于 `test-results/evidence-screenshots/dicethrone/zhanshujia-cursed-pirate-intake.e2e/真实入口应展示并结算战略防御与送你们去喂鱼的交互-UI/`。
-
-## 2026-05-31 14:12
-
-- 手牌选择交互已从 L2 推进到代表性 L3：`selectHandCard` 真实入口截图显示“选择 1 张手牌弃置”和“作战室！”，确认后服务器状态断言该牌进入弃牌堆。
-- `InteractionOverlay` 暴露并修复一处证据级 UI 问题：手牌候选若只有 `cards.*` i18n key，旧 UI 会直接显示 raw key；现在通过 `t()` 翻译，E2E 断言锁住“作战室”可见。
-- 这仍不是全量 L3/L4 收口。当时隐藏信息查看、奖励骰选择、防御响应等复杂交互仍需要逐项真实入口证据；后续瞭望台三分支与作战室奖励骰代表链已补，`implementation_in_progress` 继续保留。
-
-## 2026-05-31 14:37
-
-- 瞭望台弯刀分支的隐藏信息查看不能把 `card.id` 当成玩家可读信息。查看手牌属于给玩家展示隐藏信息，UI 必须显示本地化卡名；内部 ID 只能作为代码定位证据。
-- simple-choice 的 `labelParams` 不会自动翻译插值内容；如果领域层把 `cards.*.name` key 放进参数，`ChoiceModal` 必须在渲染前翻译这些参数，否则仍会在按钮中暴露 raw key。
-- 瞭望台弯刀查看手牌只应展示信息，不应改变权威手牌。当前 E2E 用真实打牌入口触发弯刀分支，确认后断言目标手牌仍为原两张，避免把“弹窗出现”误当成完整行为证明。
-- 这次只把瞭望台弯刀查看手牌推进到代表性 L3；当时奖励骰选择、防御响应仍不能借此宣称全量 L3/L4 完成。后续作战室奖励骰代表链已补。
-
-## 2026-05-31 15:32
-
-- 瞭望台三分支真实入口 L3 已补齐：弯刀查看手牌、战利品目标自选弃牌、骷髅随机弃牌都有真实打出瞭望台后的截图与状态断言。
-- 在线对局的服务端随机不能靠浏览器 `__BG_TEST_HARNESS__.random.setQueue` 稳定控制；当前 E2E 改为真实打出后检测实际分支，未命中目标分支则重置场景重试，避免把假随机当真实入口证据。
-- 战利品分支必须证明选择权在目标玩家手里；截图 `15-host-crows-nest-loot-discard-choice.png` 显示目标玩家的“选择 1 张手牌弃置”弹窗，`16-host-crows-nest-loot-discarded.png` 证明弃牌落点。
-- 骷髅分支必须证明不是玩家自选弃牌；截图 `17-host-crows-nest-skull-random-discarded.png` 与状态断言证明随机弃牌后手牌剩 1、弃牌 1。
-- 这仍不是全量完成：奖励骰展示链已在 15:55 补作战室代表证据，防御响应链与深海潜行完整真实攻击入口仍未逐项 L3/L4，`implementation_in_progress` 继续保留。
-
-## 2026-05-31 15:55
-
-- 作战室奖励骰展示链已补真实入口代表证据：不是直接伪造 `pendingBonusDiceSettlement`，而是通过 Host 真实打出作战室触发奖励骰特写。
-- 截图 `18-host-war-room-bonus-die-spotlight.png` 显示奖励骰特写与“作战室：获得 3 战术优势”，证明新英雄奖励骰文案能被真实 UI 展示。
-- 截图 `19-host-war-room-tactical-advantage-applied.png` 保留关闭特写后回到棋盘状态；服务器状态断言战术优势至少 1。
-- 这只收口奖励骰展示的代表链，不等于战争贩子、死亡印记、干票大的、抽筋剥皮等逐对象奖励骰分支全量 L3。
-
-## 2026-05-31 16:41
-
-- 防御响应链可以用在线对局的真实 `defensiveRoll -> ADVANCE_PHASE -> resolveAttack` 阶段入口证明 UI/结算闭环，但这不是完整自然攻击链；因此证据口径应写成“真实防御阶段入口 L3”，不能扩写成“完整攻击入口 L4”。
-- 战术家反制措施的代表骰组军刀/军刀/旗帜/勋章同时覆盖三条子句：1 点反击、1 点防伤、1 个战术优势。服务器断言攻击者 HP 49 与战术家战术优势 1，能证明防御 resolver 被正式攻击结算消费。
-- 咒缚海盗你还嫩了点的代表骰组弯刀/战利品/骷髅/骷髅/骷髅同时覆盖四条子句：1 点反击、+1CP、防止 6 点伤害、弯刀+骷髅施加诅咒金币。服务器断言攻击者 HP 49、防御者 HP 50、防御者 CP 6、攻击者诅咒金币 1，能证明防伤和状态施加没有只停在事件层。
-- 本轮把选角等待从 120 秒提升到 240 秒，是因为冷启动时 DiceThrone 模块加载曾超过原等待窗口；同一文件整跑 4 passed 后说明这是测试基础设施稳定性调整，不是业务逻辑修复。
-
-## 2026-06-01 14:10
-
-- `无情诅咒` 的 4 人真实入口当前仍不是领域实现 blocker，而是多人房间冷启动 blocker。两次新探针都没跑到业务断言，统一死在角色选择页前的“正在准备对局 / 加载游戏模块...”。
-- 因此这条链当前最稳的可保留产物不是新 E2E 本体，而是多人 setup helper 的可复用增强：`setupDTOnlineMatchWithPlayers(...)` 现在除了 `characterSelectionTimeout`、`skipCharacterSelectionWait` 外，也支持 `skipImageGate`，便于后续继续压缩四人房间冷启动噪音。
-- 这次失败进一步确认了 4 人 `merciless-curse` 的正确技术拆分：先锁 `offensiveRoll -> targetingRoll` 真进入，再锁目标骰 `5/6` 的选目标归属，最后才接 `preDefense` 的火药桶选择。直接把“点终极后立刻弹火药桶 modal”写成正式用例，会继续把房间冷启动问题和目标骰链问题混在一起。
-- 由于在线探针没有稳定通过，当前不能把 4 人 `merciless-curse` UI 证据记为新增完成项；仓库里也不应保留这条红灯测试。
-
-## 2026-06-01 15:37
-
-- `无情诅咒` 的 4 人真实入口已从“完全无 UI 证据”推进到“`targetingRoll` 代表链已过”。当前稳定通过的最小真实链是：
-  - 4 名玩家真实进房、真实选角、真实开局；
-  - 注入到 `targetingRoll`；
-  - 目标骰 `5` 时由防守队队长选择敌队目标；
-  - 目标骰 `6` 时由进攻方选择敌队目标。
-- 这次收口证明先前的 blocker 判断已经变化：多人房间 readiness 不再完全阻塞 `merciless-curse`，因为并发等待选角页后，`targetingRoll` 探针已经能稳定进入真实选择 UI。当前剩余缺口收窄为：`preDefense` 火药桶选择与最终结算尚未并入同一真实链。
-- 双人选角页另有一个长跑时才暴露的 setup 波动：页面偶发落回首页，但底部仍保留“重连进入”房间浮条。这不是业务未实现，而是房间恢复入口没被 helper 利用。现在 `waitForCharacterSelection(...)` 已优先消费这个浮条回房。
-- 整份 intake E2E 的长跑稳定性仍不能视为发布级：整文件串跑一次出现 `test API` 端口 `ECONNREFUSED 127.0.0.1:20100`，另一次出现 `战争贩子 II` 勋章分支 18 次随机未命中；两条分别单跑都通过，因此当前应记为 soak 风险 / 随机性风险，而不是把它们误判成这轮 `merciless-curse` 改动造成的固定红灯。
-
-## 2026-06-01 16:45
-
-- 4 人 `merciless-curse` 当前的主 blocker 仍是 setup / 选角页 readiness，而不是火药桶领域链：
-  - 两次重新单跑都统一失败在 `waitForCharacterSelection(...)`。
-  - 最终页面文本一致停在 `正在准备对局... / 加载游戏模块...`。
-  - 说明本轮无法重新跑到 `44/45` 那段火药桶 modal 断言，因此不能把后续状态链当作已验证。
-- 首页掉回不是唯一噪音：
-  - 其中一次玩家页直接落回站点首页，没有 `重连进入` 浮条。
-  - 已在 intake 用例本地补“掉首页就重进房间 URL”的最小救援。
-  - 但救援生效后，下一次仍然卡在加载游戏模块，因此当前更顽固的真阻塞仍是多人房间冷启动 readiness。
-- 火药桶 modal 后置断言的更稳妥口径已确定，但尚未重新验证：
-  - 选择 `施加给 P2, P4` 后，不应再强锁“必须立刻进入 defensiveRoll”。
-  - 更稳的真相应先看：
-    - `sys.interaction.current` 是否清空；
-    - `players['1'/'3'].statusEffects.powder_keg` 是否落桶；
-  - 若 phase 已自然推进到 `defensiveRoll`，再补 `countermeasures`。
-  - 这套更窄断言已写进当前 E2E 草稿，但因为 setup blocker，本轮还没有新的通过证据。
-
-## 2026-06-01 17:55
-
-- 当前 4 人 DiceThrone 冷启动 blocker 已确认不是当前 intake 用例私有问题，而是通用 online MatchRoom 路径上的 readiness 问题：仓库现成基线 `Online 4-player room: create claim-seat join and start successfully` 在同一 isolated runtime 下也会失败，并且失败形态与当前 intake 完全一致。
-- 这次新增的 helper 诊断把问题进一步收窄了：
-  - `player 0` 停在正确房间 URL，而不是掉回首页。
-  - 页面文本固定为 `正在准备对局... / 加载游戏模块...`。
-  - 没有 `pageerror` / `console.error`。
-  - `MatchLoadTrace` 为空。
-- 上述组合说明：当前阻塞点比 `MatchRoom` 组件内部状态还更早。因为一旦 `MatchRoom` 真正开始执行，至少会写入 `__BG_MATCH_LOAD_TRACE__`；现在 trace 为空，更像是 `/play/:gameId/match/:matchId` 的 route-level `React.lazy(() => import('./pages/MatchRoomWithAudio'))` fallback 长时间未完成。
-- 因此这轮修法的正确方向不是继续在 `merciless-curse` 领域逻辑上猜，而是先把 route/module 冷启动与 4 人房间 readiness 分离成基础设施问题：
-  - 通用 helper 现在已统一记录 `playerId/matchId/url/body/diagnostics/trace`；
-  - 并在正式进房前做浏览器侧 `import('/src/pages/MatchRoomWithAudio.tsx')` 预热，尝试把 lazy route 的冷编译前移。
-- 预热不是空操作。至少有一次长跑里，`merciless-curse` 4 人真实链已经重新推进到 Host 的 `技能结算选择` modal，按钮包括 `施加给 P2` / `施加给 P4` / `施加给 P2, P4`。这证明：
-  - 当前 4 人 setup 不是绝对阻塞；
-  - `44` 这段火药桶选择 UI 能再次被真实跑到；
-  - 真正未收口的剩余位点已收窄为 `44 -> 45` modal 后置状态链与 route/module 冷启动稳定性。
-- `44 -> 45` 的断言口径这次继续变得更接近真相：
-  - 不再依赖可能挂住的服务端 `get-state` 轮询；
-  - 改为看 Host 页本地 harness 是否满足：
-    - `sys.interaction.current` 清空；
-    - `P2/P4` 各落 1 层火药桶；
-    - modal 隐藏；
-  - phase 允许为 `targetingRoll / preDefense / defensiveRoll`，只有自然推进到 `defensiveRoll` 才额外要求 `countermeasures`。
-- 但这还不能写成“已通过”。原因很具体：
-  - 一次长跑虽然已经回到真实 `44` modal，却在整条 420s 用例里超时，没有形成新的通过证据；
-  - 随后另一次又回到 `player 0` 卡 `加载游戏模块...` 的旧形态。
-- 当前最稳结论：
-  - `merciless-curse` 的 4 人真实入口现在处于“业务位点已可偶发打穿，但 setup/readiness 仍不稳定”的阶段；
-  - 当前不能宣称 `45-four-player-merciless-curse-powder-keg-applied` 已收口；
-  - 剩余主 blocker 仍是通用 4 人 online route/module 冷启动与房间 readiness，而不是已确认的领域实现错误。
-
-## 2026-06-01 18:42
-
-- 4 人 `merciless-curse` 的 `preDefense` 真实链现在已经拿到稳定通过证据，不再只是“偶发打到 44 modal”：
-  - 单条用例 `4 人真实入口应先进入 targetingRoll，并按 5/6 把无情诅咒的目标选择权交给正确玩家` 已通过；
-  - 真实截图链已连续覆盖 `42 -> 44 -> 45 -> 43`，其中 `45-four-player-merciless-curse-powder-keg-applied.png` 证明火药桶 modal 后的落桶状态链已真正通过。
-- 这次收口同时证伪了之前两个过窄判断：
-  - `setupDTOnlineMatchWithPlayers(...)` 的 4 人路径不是“route lazy-load 太慢”这么单一。还有一个更直接的结构性问题：Host 进房后先等选角页，再去 join 其他玩家。对 `joinPlayerIds.length > 1` 的房间，这会把 Host 永远卡在 loading。现在已改成：先让所有玩家 join，再并发等待角色选择页。
-  - `defenderCaptainPage` 选完目标后，Host 并不是“没有收到下一段交互”；之前是测试把等待条件写得过窄，错误要求 `interaction.data.sourceAbilityId === 'merciless-curse'`。实际截图已证明 Host 会直接拿到 `技能结算选择` modal。
-- `ChoiceModal` 相关的最终红灯也不是业务问题，而是测试选择器问题：
-  - Playwright strict mode 会把 `施加给 P2` 同时匹配到 `施加给 P2` 和 `施加给 P2, P4`；
-  - 现已改为精确正则匹配，避免再把按钮文本前缀重叠误判成业务失败。
-- 当前最可信的新结论：
-  - `merciless-curse` 的 4 人真实入口已经覆盖：
-    - `targetingRoll` 队伍目标选择归属；
-    - `preDefense` 火药桶 modal；
-    - 选择 `施加给 P2, P4` 后的落桶状态链。
-  - 因此这条链当前不再是新增英雄 intake 的未验证高风险项。
-- 仍未被这次通过自动外推的范围：
-  - 这不等于所有 4 人/多人 DiceThrone online 冷启动问题都彻底解决；
-  - 也不等于战术家与咒缚海盗全量复杂交互都已逐项 L3/L4 收口；
-  - `implementation_in_progress` 仍应保留，后续还要继续按对象级审计与残余复杂交互推进。
-
-## 2026-06-01 23:45
-
-- 战术家 `紧缚` 当前最可信的问题已经从“业务链可能卡在 `CONFIRM_ROLL` 后收口”收窄成“两层独立噪音”：
-  - 第一层是测试场景噪音：默认起手牌会让 `afterRollConfirmed` 响应窗介入，`advance-phase-button` 在无已选技能时还会先弹 `confirmSkip`。如果不先排掉这两层，就会把“仍在等待响应/仍在等确认跳过”误判成 `bind` 没有在 phase exit 被清理。
-  - 第二层是当前 isolated runtime 的通用 2 人 online 加载 blocker：真实进房前或进房后会卡在 `正在准备对局... / 加载游戏模块...`，并出现 `Failed to fetch dynamically imported module: /src/games/dicethrone/game.ts`。
-- 因此本轮已做的改动只是在收窄噪音，不是新增业务通过证据：
-  - `setupBindOffensiveRollScenario(...)` 现在清空双方默认手牌/弃牌，避免 `afterRollConfirmed` 响应牌污染链路。
-  - `紧缚` 用例现在显式处理 `confirmSkip`，并改用 Guest 页本地 harness 断言 `phase/main2 + bind/0`，不再依赖服务端轮询。
-  - `preloadDTMatchRouteModule(...)` 已降为 best-effort；预热超时不再直接短路 setup。
-- 这几条修改都不能外推成 `紧缚` 已通过：
-  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` 仍未拿到新的 `64-66` 通过截图。
-  - 对照基线 `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online match: Can start a game successfully"` 同样失败，说明 blocker 不是 `紧缚` 对象私有，也不是当前 intake 文件独有。
-- 当前最稳结论：
-  - 不能把 `紧缚` 写成业务未实现。
-  - 也不能把 `紧缚` 回写成 `L2/L3 representative passed`。
-  - 下一步必须先恢复当前 isolated runtime 下 `dicethrone/game.ts` 的通用在线加载，再回到 `64-66` 的真实入口证据链。
-
-- 战术家 `战术优势` 的 `C5` 守护已从“默认给自己”修正为真实 `selectPlayer` 选人交互，和 `战略防御` 同型；定点机制测试已通过，故该子句不应继续保留 `partial` 口径。
-
-## 2026-06-03 11:29
-
-- 上面这段关于 `紧缚` 的 blocker 结论已过时，需要以本轮复核为准：
-  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` 已重新打到 `1 passed`。
-  - `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` 已整份 `39 passed`。
-- 因此当前不能再把 `紧缚` 记成“必须先恢复 2 人 online 加载后才能回写证据”的对象。
-- 当前更准确的口径是：
-  - `紧缚` 的 `64-66` 真实入口链已恢复为可用证据。
-  - 整份 intake E2E 当前全绿，但这仍不足以移除 `implementation_in_progress`。
-  - 主要剩余风险是对象级彻底审计、representative L3 到逐对象 L3/L4 的收口边界，以及长跑/soak 稳定性。
-
-## 2026-06-03 本轮图面对照
-
-- 咒缚海盗人类面不是“同技能换底图”，而是独立技能文本。
-- 直接对照 `player-board.png` 与 `人类面板.png` 后，已可确认：
-  - 咒缚面当前对象是 `灵魂突刺 / 死亡印记 / 死亡吐息 / 灵魂指令 / 深海潜行 / 亡灵之爪 / 你还嫩了点 / 无情诅咒`。
-  - 人类面图面改成 `弯刀突刺 / 做好标记 / 点燃炸药 / 判决指令 / 走跳板 / 惊魂动魄` 等另一套对象。
-  - 被动 `咒缚` 也不是同语义：人类面写的是“回合结束移除 1 个诅咒金币；若没有可移除金币则翻面”，不再是咒缚面的 upkeep 自伤 + 对手未攻击施桶。
-- 因此当前仓库只能说：
-  - 人类面底图、运行时选图、以及 `海盗的一生` 的 `playerBoardFace` 分支已经接入。
-  - normal 面 9 个技能对象已全部接入运行时，但对象级重审计和剩余补证尚未完成。
-- 结论：
-- “规则都实施了”目前不能成立。
-- “技能是不是要重录”更准确的答案是：不需要整套重录。当前该做的是按你新加入的人类面板继续逐槽复核、补 face-by-face 审计和 family 级 `L4` 封版，而不是把整套双面技能推翻重做。
-- “审计也是”答案是要继续做，而且现有审计只能保留为咒缚面主体 + human 面已接入阶段的证据，不能再充当官方双面完整实现证明；你这次新增的人类面板仍意味着图面合同和双面 completion audit 要继续按新素材逐槽回填。
-
-## 2026-06-04 口径纠偏
-
-- 如果后文仍把咒缚海盗开局写成咒缚面，该口径已失效；真实开局应为 human 面并自带 3 个诅咒金币。
-- 如果后文仍把诅咒金币 upkeep 写成“所有持有者都按层掉血”，该口径也已失效；当前只影响非海盗持有者。
-- 当前 human 面并不是“完全没做”：
-  - `弯刀突刺 / 做好标记 / 咒缚 / 走跳板 / 点燃炸药 / 判决指令 / 惊魂动魄 / 嘿，老兄 / 无情劫掠`
-  - 上述 9 个对象都已进入运行时能力集。
-  - 其中 `human-cursed / cutlass-stab / make-your-mark / walk-the-plank / astonishing / human-still-wet-behind-ears` 已有 L2 测试。
-- `惊魂动魄 / human-cursed` 也已经不是“只有 L2”：
-  - `惊魂动魄` 现已补独立真实入口 direct E2E，且真实根因已锁定为“移除诅咒金币 choice 后攻击链未收口”，不是 UI 假问题。
-  - `human-cursed` 现已补两条独立真实入口 direct E2E，分别锁定“有币时移除 1 层并保持 human 面”与“无币时翻回咒缚面并切换能力集”。
-- `走跳板` 现也已补独立真实入口 direct E2E，证明 human 面 `lotus` 槽位会先进入结算方式选择，再在弃牌分支中自然打开对手手牌选择弹窗并完成弃牌收口。
-- `弯刀突刺 / 做好标记 / 点燃炸药 / 判决指令 / 惊魂动魄 / human-cursed / 走跳板 / 嘿，老兄 / 无情劫掠` 现都已拿到独立真实入口 direct E2E，不应再继续挂在“独立补证待补”的旧口径里；当前真正剩余的是逐对象更高层级证据、human 面图面合同逐槽补记，以及双面对象级重审计。
+- 根因不是用户描述不清，而是 UI 拆解时没有先跑“叶子动作优先”模拟：事件牌已经等价于执行事件、`突袭作战` 已经等价于具体势力行动时，继续显示 `手牌行动/势力行动/执行事件` 就是在重复规则树。
+- `手牌行动` 是规则/提示板上的父级概念，只有未展开时可作为进入手牌分组的入口；一旦进入事件牌、军备牌或具体势力行动层，父级词必须从可见文案白名单删除。
+- `转动轮盘/轮盘行动` 也应按同样原则处理：主入口不能只停在“轮盘行动”，未转动时应能在轮盘旁看到 `免费 1 格 / 对手抽 2 前进 2 / 全员抽 2 前进 3` 这类叶子选择。
+- “顶部轻量”被误用成“压得越小越好”。正确规范是合理一到两行、可读、可点、不肥；如果文字小到总览看不清，和顶部变成肥导航一样都不达标。
+- v36 非 imagegen 中间稿已废弃，不再作为最终设计稿、规范或实现依据。
+
+## 2026-05-16 09:34 +08 v38 失败与 v39 修正结论
+
+- 用户指出我此前使用的自造边缘术语不是 UI 规范，这个批评成立。规范不应发明这类词，也不应把“靠边”理解成所有控件都必须找边缘位置。
+- v38 的真实失败点是控件价值审计缺失：右上地图工具没有当前操作价值，却占据右侧外沿，导致朝鲜牌库/弃牌和具体行动 rail 被迫向下、向内挤。这类问题不能靠再压缩按钮解决，应该删掉或折叠低频工具。
+- 通用 skill 的修正不写七大恨特例，只固化通用不变量：每个控件必须能回答来源、当前用途、可见性层级、删除损失；答不上来就删掉或折叠。实体本体能操作时，优先在实体上做 hover/selected/current 态，不另做说明按钮。
+- 七大恨专项的修正落在 `design-system/games/qidahen.md`：轮盘本体就是轮盘交互；当前最终稿不显示地图工具；右侧上方给朝鲜牌库/弃牌，下面才是具体行动 rail；纪年卡只保留一处；计分/战斗轨只安静保留，不做数字 HUD。
+- v39 看图结论：当前可作为最终 UI 设计稿。它删除了右上地图工具，轮盘有本体选中态，朝鲜牌库/弃牌未被挤压，具体行动不带父级标签，底部完整手牌簇居中，顶部玩家 chip 密度合理，风格比前几版更接近原始扫描版图。
+
+## 2026-05-16 10:10 +08 三源裁决矩阵发现
+
+- 本轮根因不是用户描述不清，而是生图拆解曾把三类来源混用：规则书、玩家提示卡和核心素材都看了部分信息，但没有强制落成每个 UI 元素的来源矩阵。
+- 正确分工必须固定为：规则书裁决行为真值、动作顺序、代价、目标和结算；玩家提示卡/帮助卡裁决玩家入口层级、速查分组和常查信息；核心素材裁决空间归属、实体本体、已有 UI 所有权和视觉风格。
+- 玩家提示卡不是风格锚点。若生成图因为提示卡变成另一套卡片皮肤，仍然失败；七大恨这类图的风格必须来自主地图/主棋盘/玩家面板/卡牌/token 等核心素材。
+- 提示卡上的高层词只说明玩家理解分组，不自动成为可见按钮。当前层已有事件牌、具体势力行动、轮盘扇区、单位或区域时，父级词必须从可见文案白名单删除。
+- 通用 `boardgame-ui-imagegen` 已补 `可见 UI 溯源矩阵` 门禁：每个 UI 元素必须写清规则依据、提示卡依据、核心素材依据、当前用途、删除损失和可见层级；答不上来就删除或折叠。
+
+## 2026-05-16 10:20 +08 v40 风格漂移与基线生成修正
+
+- v40 失败信号成立：它虽然按三源矩阵写了 prompt，但仍是纯文生图，导致模型重新生成了地图和卡牌。结果不是保留上一版视觉语言，而是换成更浅、更普通的扫描地图皮肤。
+- 根因是通用 skill 对风格漂移的处理没有明确“交付形式不得擅自切换”：我把非 imagegen 中间稿误当成最终设计稿路径，这是错误方向。
+- 已修正通用门禁：用户明确要“设计稿 / 重新生成”时，默认交付 imagegen 设计稿；若要改用代码拼贴、运行截图或其他制作方法，必须先获得用户当轮明确同意。
+- v41 使用 v39 生成图承接视觉风格的做法已降级为错误示范。正确下一步应以主地图、真实卡牌/牌背、玩家面板等核心素材作为风格基线，再用上一版只参考布局密度和控件删减。
+- v43-v46 非 imagegen 中间稿路线已废弃，不再作为最终设计稿、规范或实现依据。
+
+## 2026-05-16 12:06 +08 v48 imagegen 设计稿结论
+
+- v47 失败点明确：轮盘和手牌卡面生成了可读的假规则文本。设计稿即使布局达标，也不能让假文本进入规则真相源。
+- v48 修正重点是把轮盘格与卡牌内部文本降级为视觉纹理，只保留必要数字 UI 文案。当前轮盘为本体选中态，右侧只显示具体动作，底部手牌簇居中，支付反馈顺序正确。
+- v48 仍需注意：它是生成设计稿，不是运行截图；后续 1:1 实现时必须用真实素材替换生成图里的版图文字和卡牌纹理，规则文本以规则/数据文件为准。
+
+## 2026-05-16 13:02 +08 v51 微调收敛发现
+
+- 用户这轮指出的关键不是继续重构，而是“微调就是微调”。通用 skill 已补不变量：主体达标时，假文字、局部轻重或尺寸问题只能作为局部修正项，不能触发换构图、换风格或重排 UI。
+- v50 的布局方向成立，但仍保留轮盘/卡面假文字风险；这种问题不应通过重做一套布局解决，而应要求固定素材与卡面内部文字弱化为不可裁决纹理。
+- v51 验证了窄修方向：顶部低矮，轮盘本体有选中态，纪年卡在轮盘下，右侧朝鲜牌库/弃牌位于具体行动上方，底部手牌簇居中，支付反馈只在 `赐印招安 3` 已选之后出现。
+- v51 仍是 imagegen 设计稿，不是规则真相源。后续实现必须用真实地图、真实卡牌/牌背和规则数据复现其布局、密度、选中态与支付顺序，不能从图中提取生成文字。
+
+## 2026-05-16 13:18 +08 v39/v51 对比与 skill 缺口
+
+- v51 不应继续作为最终基线。它虽然保住了布局和禁用词，但相比用户此前认为“差不多”的 v39，设计成熟度下降：手牌从有图面/角标/点数/资源点的真实卡牌感，退成灰色模糊占位；右侧行动按钮去掉了图标和更明确的点击质感；整体更安全但更像烟测稿。
+- v39 的主要优势是“可复现 UI 组件感”：手牌、牌堆、右侧按钮、顶部玩家 chip、轮盘选中态都像真实前端要实现的组件。它的问题是轮盘/地图/卡牌文字更容易被误当真，不能直接作为规则文本来源。
+- 正确下一轮不应以 v51 为质量基线，而应以 v39 的组件完成度为质量基线，以 v48/v50 的父级词删除、支付顺序和假文字弱化为约束。
+- skill 原缺口：只写了“保留布局/风格/删减项”，没有写“保留被认可候选的设计成熟度”。这会诱导模型用模糊、空白、低细节去解决假文字问题。已补通用 `质量基线` 门禁和七大恨专项“假文字修正不能牺牲卡牌完成度”。
+
+## 2026-05-16 13:32 +08 v52 微调方式修正
+
+- 用户的判断成立：应直接拿 v39 prompt 微调，而不是围绕 v51 继续修。v39 prompt 已经包含正确的 UI/UX 主干，只需要删掉无用元素、约束假文字和保留组件完成度。
+- v52 证明该路线更合理：它保留 v39 的手牌完成度和右侧按钮质感，同时保持 v48/v50 后续修正出的父级词删除、支付顺序和无地图工具。
+- 后续若继续微调，应以 `v52-final.png` 或 v39 的组件质量作为参考；不得回到 v51 的灰卡/低细节方向。
+
+## 2026-05-16 13:43 +08 v53 轮盘窄修结论
+
+- v52 的剩余风险集中在左上轮盘扇区内部仍有可读生成文字。这个问题应该只修轮盘内部，不应影响已经达标的手牌和右侧按钮。
+- v53 采用更窄 prompt 后达成目标：轮盘扇区变为士兵图标/纹理，行动选择仍通过轮盘本体选中态表达；没有新增轮盘按钮或说明面板。
+- v53 保留 v39/v52 的组件质量：手牌有插画、角标、点数/资源点，右侧具体行动有图标和选中态，牌库/弃牌/朝鲜堆都像可点击对象。
+- 后续实现提醒不变：生成图中的地图地名、卡牌内容和轮盘内部图样不是规则真相源；真正实现用真实素材和数据层复现布局与状态。
+
+## 2026-05-16 14:05 +08 通用视觉一致性根因
+
+- 本轮根因不是某个七大恨提示词写少了，而是通用 skill 只约束了“删什么、放哪里”，没有要求生图前建立“组件族如何共用同一套视觉语言”。因此模型会把牌库、弃牌、行动按钮、选中态、卡牌分别生成成几套不同风格。
+- `v39` 相对更好，是因为它有较强组件完成度；但它本身也不够统一，不能整体当作风格答案，只能拆出优点：卡牌完成度、按钮点击感、布局密度。
+- `v54` 证明视觉一致性合同有效改善了牌堆/按钮/手牌的统一程度，但也暴露出新门禁：动作按钮图标必须有来源，否则模型会发明突兀图标。
+- 通用 skill 已补：视觉一致性合同、组件族复用表、候选图优缺点拆分、连续失败复盘门禁、动作按钮图标来源门禁。这些是给其他游戏复用的通用方法，不含七大恨专属词。
+- `v55` 当前更符合新门禁：动作 rail 不再使用无来源图标，选中态回到统一小圆点/边框/底色；仍提醒后续实现必须使用真实素材，不从生成图提取固定文字。
+
+## 2026-05-16 14:40 +08 通用 skill 去特化根因
+
+- 用户最新反馈的核心不是“再改某个 prompt”，而是通用 skill 仍在被某次失败经验牵着走。即使没有显式游戏名，若把某一局部裁决、某版生成图优缺点或某个当前游戏动作层级写成全局默认，也是在特殊处理单个游戏。
+- 正确修法不是继续追加失败条款，而是把 skill 压缩为可执行产线：输入真相源 -> 三源裁决 -> UI 溯源矩阵 -> 风格一致性合同 -> 布局/交互合同 -> prompt -> 三轮自迭代 -> 看图验收。
+- 通用 skill 现在只保留不变量：所有可见 UI 元素必须有来源、用途和删除损失；风格必须来自核心素材；提示卡决定入口层级但不决定皮肤；候选图只能提供布局/密度/组件完成度参考；游戏专属词必须移出通用 skill。
+- 这次重构后的最低证据是：`quick_validate` 通过，并且当前游戏专属词、旧候选版本号和此前误用术语扫描无命中。
+
+## 2026-05-16 14:50 +08 最终稿冻结结论
+
+- 用户确认“就这样”后，正确动作不是继续生成或继续重构，而是冻结当前通过验收的设计稿、保存稳定入口，并记录这次收敛依据。
+- 这条应作为通用流程门禁：用户已接受某版时，除非发现新的通用根因，否则不再把单个游戏局部问题写入通用 skill，也不继续随机迭代。
+- v56 当前可交付依据：总体风格贴近真实素材；布局保持已认可基线；轮盘、纪年卡、朝鲜堆、行动 rail、顶部状态、底部手牌簇的位置和层级稳定；无已删除的父级词、日志、流程条、地图工具或重复控件回流。
+- 后续实现仍以真实素材和规则数据为真相源：生成图用于 1:1 复现布局、层级、组件密度和选中/支付状态，不从图中提取版图文字、卡面文字或规则文本。
+## 2026-05-17 12:30 +08 七大恨 UI 实现发现
+
+- 用户布局图不是灵感参考，而是坐标合同：左上轮盘、顶部玩家、右上朝鲜、右中具体动作、左中纪年卡、底部抽牌/手牌/弃牌必须各自落位。
+- “轮盘一模一样”的可执行落点不是继续手绘 SVG 轮盘，而是复用真实主棋盘轮盘区域作为 UI 本体，再叠命中和选中反馈。
+- 底部失败根因不是单个间距值，而是抽牌、手牌、弃牌没有被当成一个完整实体簇验收；应按整个底部簇贴底和中心线核对。
+- 当前 E2E 标准 npm 入口受 worktree 依赖缺失影响：缺 `node_modules/playwright/cli.js`。在不安装依赖、不清共享端口的前提下，主仓库 Playwright CLI + 隔离端口 + `PW_SERVER_RUNTIME=ts-loader` 可完成真实链路验证。
+- `qidahen` 的共享 `FabMenu` 来自全局 HUD，不属于本轮 UI 白名单；若不屏蔽，会在教程页右下角留下聊天/设置悬浮球，污染截图。已在 `GameHUD` 里对 `qidahen` 隐藏，并在 E2E 里断言 `fab-menu` 不存在。
+
+## 2026-06-08 11:29 +08 七大恨 selection 单一真相补审
+
+- 本轮确认的真实根因不是 builder 缺失，而是 selection 真相分裂：
+  - 运行时已经能从当前等待态与 interaction 快照重建 `recruit / maShiTrade / khanEdict`
+  - 但宿主层仍通过 `syncDerivedCoreSelectionMirrors()` 把三条 selection 写回 `core`
+  - 同时大量测试继续正向断言 `core.*Selection`，导致“正式逻辑已迁出，宿主兼容壳还在”
+- 这次正式修法成立的原因：
+  - 先统一生产代码读取口：
+    - Board / resolver / runtime builder 已改为 getter 或 interaction snapshot
+  - 再统一测试读取口：
+    - `payment-selection` 正向断言全部改读 getter
+  - 最后才删除 `syncDerivedCoreSelectionMirrors()` 的三条 mirror 写回
+- 本轮得到的新不变量：
+  - `recruitSelection / maShiTradeSelection / khanEdictSelection` 的正式来源必须是“当前等待态 + selection builder / interaction snapshot”，不是 `core` mirror。
+  - 若后续再出现“为了兼容测试/旧 UI 临时把 selection 写回 core”的做法，应视为重新引入双真相。
+- 当前仍允许保留的宿主镜像只限尚未迁完的等待态，例如 `internalDispatchSelection`；不能把这条例外外推回三条已收口 selection。
+
+## 2026-06-08 11:49 +08 七大恨 selection legacy 读口清理发现
+
+- 本轮确认的残口比“mirror 写回”更隐蔽：即使 `syncDerivedCoreSelectionMirrors()` 已经停写三条字段，只要正式 getter 仍允许回退到 `state.recruitSelection / maShiTradeSelection / khanEdictSelection`，旧宿主字段依然可能通过残留值重新进入正式读取链。
+- `Board.tsx` 也存在同类问题：局部面板和 action rail 仍直接读 `core.maShiTradeSelection / core.khanEdictSelection`，这会把“interaction-first + getter”重新拉回双真相。
+- 这轮之后新增的不变量应明确为两层：
+  - 三条已收口 selection 不允许再 mirror 回 `core`
+  - 三条已收口 selection 也不允许再从 `core` legacy 字段读回正式链
+- 新回归的意义：
+  - 不只是验证“等待态存在时还能重建”
+  - 还验证“等待态已经结束后，哪怕有人把旧字段塞回 core，runtime interaction 也不会被重新拉起”
+- 下一层正式目标已更清楚：
+  - 可以继续对 `diplomacySelection / wheelDispatchSelection / internalDispatchSelection / driveTigerConsentSelection / fortificationMaintenanceSelection / postBattleSelection / pendingTargetAction` 逐条做同样的“写回停掉 + 读口停掉”拆解
+  - 不应再把《七大恨》的重构主线拉回 printed/runtime 共区兼容层
+
+## 2026-06-08 12:00 +08 七大恨 diplomacy / wheelDispatch 优先级残口
+
+- 本轮确认的具体残口不是“完全还没迁”，而是优先级不对：
+  - `resolveQidahenDiplomacyInteractionChoice()` 明明已拿到 `interactionSelection`，仍先读 `state.diplomacySelection`
+  - `resolveQidahenWheelDispatchInteractionChoice()` 明明已拿到 `interactionSelection`，仍先读 `state.wheelDispatchSelection`
+- 这类残口的风险和前一轮不同：
+  - 它不一定导致“没有 interaction 时还能误重开”
+  - 但会导致 `core` 中的 stale selection 在有 snapshot 的情况下仍覆盖真实当前等待态
+- 新增回归已经证明的点：
+  - 对 wheelDispatch：即使 core 中塞回错误来源区和空候选，resolver 仍会按 interaction snapshot 锁定真实目标并生成 `pendingTargetAction`
+  - 对 diplomacy：即使 core 中塞回错误目标区，resolver 仍会按 interaction snapshot 对真实目标区执行外交并保留正确后续进度
+- 当前更深的 blocker 也更清楚了：
+  - `buildQidahenDiplomacyInteraction()` 和 `buildQidahenWheelDispatchInteraction()` 仍直接从 `state.core.*Selection` 生成 runtime interaction
+  - 所以下一轮若继续收这两条，重点不再是 resolver，而是 runtime interaction 的构建起点与正式宿主迁移
+
+## 2026-06-08 12:11 +08 七大恨 runtime interaction 起点继续降 core
+
+- 本轮确认的一条可安全推进路线成立：
+  - 对 `diplomacy / wheelDispatch`，完整“单宿主重建器”还没抽出来
+  - 但可以先让 runtime interaction 在 `core` 清空后继续沿当前 interaction data 续建
+- 这条路线的价值：
+  - 它不依赖立刻改写 `buildDiplomacySelection()` 那套过程态 builder
+  - 但已经把 runtime interaction 从 `core-only` 降成了 `core + interaction-data fallback`
+  - 因而能直接压缩 `core` 字段作为正式宿主的强依赖程度
+- 新增回归已经证明：
+  - `wheelDispatch`: 当前目标选择 interaction 挂着时，清空 `core.wheelDispatchSelection` 后再同步，interaction 不会掉线
+  - `diplomacy`: 当前外交 interaction 挂着时，清空 `core.diplomacySelection` 后再同步，interaction 不会掉线
+- 下一层真正难点仍没变：
+  - 想把这两条从 `core first + interaction fallback` 继续推进到单宿主，需要抽出可重建 `source/target/remainingTargetCount/resolvedSteps/candidates` 的正式 getter 或专用重建器
+  - 若不做这层，`core` 仍然是创建新 interaction 时的首选来源，只是已经不是唯一来源
+
+## 2026-06-08 18:10 +08 七大恨 accessor owner 绿基线复核
+
+- 当前最重要的新事实不是又发现了新的 compat 例外，而是旧坏态证据已经失效：
+  - 先前排查里出现过的 `getQidahenDriveTigerConsentSelectionForCore is not a function`
+  - 以及后续那批 `payment-selection` 红灯
+  - 当前都已不可复现
+- 现态可证实的不变量是：
+  - `interactionSelectionAccessors.ts` 仍是这批 selection accessor 的正式 owner
+  - `commands.ts / interactionSystem.ts / index.ts` 主 consumer seam 仍直连新 owner
+  - `runtimeInteractions.ts` 尾部 compat re-export 仍只是过渡出口，而不是主读口
+- 因而下一步的判断门禁应该更新为：
+  - 不能再把“旧坏态曾出现过”当作继续兼容的直接理由
+  - 若要继续保留 compat seam，必须给出当前代码态下新的运行时依赖证据
+  - 若要继续拆 seam，也必须先在 `514 passed + eslint + typecheck` 的绿基线上做最小实验
+
+## 2026-06-08 18:16 +08 七大恨 compat seam 第一刀已落地
+
+- 当前又多了一个已证实的不变量：
+  - `runtimeInteractions.ts` 不再需要充当 moved accessor 的 compat re-export 出口
+  - 直接删除这层 `export ... from './interactionSelectionAccessors'` 后，当前定向门禁仍保持全绿
+- 这说明先前那条“尾部 compat re-export 可能还必须保留”的判断，至少在当前代码态下已经过时。
+- 现阶段剩余的 `runtimeInteractions.ts` 职责应被重新界定为：
+  - runtime interaction builder
+  - runtime interaction sync
+  - interaction type guard
+  - 而不是 accessor owner 的过渡再出口
+- 因而后续若继续收 `runtimeInteractions.ts` 的公开面，应该优先针对这些正式职责继续拆，而不是再回头为 moved accessor 恢复 compat 桥。
+
+## 2026-06-09 20:02 +08 七大恨 pending battle committed/rout seam 当前结论
+
+- 当前结论：
+  - `pendingBattleCombatSupport.ts` 现在已经成为 committed special troop 选取、rout 伤害、自动守军撤退、骑兵避战与撤退损失这组 helper 的正式 owner；`index.ts` 不再本地维护这批实现。
+  - 本轮真正暴露的问题不是 battle 逻辑回归，而是 `compatSource.test.ts` 有两条 source guard 已落后于源码真相：
+    - `characterActionWindow` 已改为直接依赖“非围城行动源快照” owner（`actionSourceRegionState`），不再从 `battleState` 取旧 helper；
+    - `selectionBuilders` 当前只消费 `getEffectiveHomelandController / getPreferredLogicalRegionDisplayName`，不再要求导入 `getActionRuleRegionNameById`。
+  - 这两条门禁修正后，当前 battle retreat / cavalry evasion / city-hold follow-up 的 5 条定向行为测试、source guard、eslint 与 typecheck 均已通过。
+- 当前限制：
+  - 本轮没有跑 E2E 真链路，因此没有新的截图证据；若用户要“流程截图”，仍需沿既定 E2E 截图链补取，不能用 devtool 页面或静态预览代替。
+
+## 2026-06-09 20:06 +08 七大恨真实流程截图链当前结论
+
+- 当前结论：
+  - 《七大恨》真实流程截图链已经补齐，不再是“只有定向单测，没有正式页面截图”的状态。
+  - 首次 `run-e2e-single` 没能进入 Playwright，本轮确认的真实阻塞不是用例逻辑，而是统一重任务预算文件 `global-heavy-budget.mjs` 对 `e2e` 组要求 `1.5GB` 空闲内存；当前机器当时只有约 `0.83GB`。
+  - 在不改 E2E 用例、不改业务代码的前提下，采用脚本已预留的更窄官方覆盖值 `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.75` 后，`e2e/qidahen-basic-flow.e2e.ts` 已整文件通过，结果为 `26 passed (1.8m)`。
+  - 新截图证据已落盘：
+    - 共享桌面图：`test-results/evidence-screenshots/_shared/qidahen-board-desktop-current.png`，时间 `2026-06-09 20:04:08`
+    - 共享手机横屏图：`test-results/evidence-screenshots/_shared/qidahen-board-mobile-landscape-current.png`，时间 `2026-06-09 20:05:16`
+    - 过程图还包括 action flow、post battle、cavalry evasion、khan edict 等 temp 图
+- 当前限制：
+  - 这轮解决的是“真实流程与截图证据缺失”问题，不等于《七大恨》所有 domain seam 都已收口；后续若继续实施，主线仍应回到 battle/post-battle 高层编排残口，而不是重复证明截图链。
+
+## 2026-06-09 20:19 +08 七大恨 pending battle support 当前进一步收口结论
+
+- 当前结论：
+  - `pendingBattleCombatSupport.ts` 现在已经不只是 committed/rout/cavalry evasion support owner，还继续承接了 `applyCasualtyPriorityToRegion`、`applyCommittedTroopRemovalToRegion`、`pruneUnsupportedRetreatArtillery` 与 `takePreferredCityGarrison`。
+  - `index.ts` 当前已经不再本地维护这组 region casualty/garrison helper；battle/post-battle 两条依赖注入链都改吃 support owner。
+  - 这轮顺手确认了一个更窄的真实关系：`pendingBattleCombatSupport.ts` 不需要再本地复制 movement-profile troop 过滤逻辑，现已直接消费 `movementProfileTroopSelection` owner。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts = 74 passed`
+    - battle retreat / 骑兵避战 / 城战续攻城 5 条定向行为用例通过
+    - `npm run typecheck` 通过
+- 当前限制：
+  - 高层 battle/post-battle 还没有完全清空；像 `addTroopsToFriendlyBesiegedCityInterior`、控制标签文案、部分 runtime-region refresh glue 仍在 `index.ts`，是否继续拆要按 caller 集合和语义纯度再判断，不能机械搬函数。
+
+## 2026-06-09 20:26 +08 七大恨围城城市内外转兵 seam 当前结论
+
+- 当前结论：
+  - `cityInteriorTroopTransfer.ts` 现在已经成为“被围城市城内/城外部队转移”这对 helper 的正式 owner；`index.ts` 不再本地维护这两条实现。
+  - 这条 seam 的真实消费面当前很窄，只命中 `grantPardonExecution.ts` 与 `pendingTargetResolution.ts`，因此下沉成立，不是为了拆文件而拆文件。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts = 75 passed`
+    - `赐印招安 cityState 转兵` + `battle retreat / 守城续战` 4 条定向行为用例通过
+    - `npm run typecheck` 通过
+- 当前限制：
+  - 这轮收掉的是窄簇 city transfer seam，不等于 `index.ts` 剩余高层 glue 已经都有明确 owner；后续若继续推进，应先证明 `refreshRuntimeRegionRules` 或控制标签文案簇具备同样的单 owner 条件。
+
+## 2026-06-09 20:49 +08 七大恨正式架构审查基线复核
+
+- 当前结论：
+  - 这轮正式补审确认：先前关于《七大恨》对象模型与开局链的裁定，当前代码态仍然成立，没有因为后续 seam 下沉而失效。
+  - [roomSetup.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/roomSetup.ts) 仍是剧本、预选人物、预选军备与可玩人数的正式开局真相；[index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `QidahenDomain.setup()` 仍通过 `readQidahenScenarioId(...)` 与 `createInitialCore(...)` 进入正式初始化，而不是吃旧样板。
+  - [types.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/types.ts)、[coreDerivedState.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/coreDerivedState.ts) 与 [mapTokens.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/mapTokens.ts) 维持的层级也没回退：`QidahenPiece / core.pieces[]` 仍是正式单棋子对象层，`mapTokens` 仍是显示派生层。
+  - [Board.tsx](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/Board.tsx) 当前 army token 仍按方块棋子渲染，并保留 `rotationDeg`；这和“棋子是独立对象、地图只是显示派生”的正式口径一致。
+  - 最近补上的 `seasonSummaryBuilder` 与 `runtimeRegionRules` 相关 source guard 当前也已经回到绿基线；本轮没有再发现“审查材料说 owner 已迁，但静态门禁还锁旧壳”的分叉。
+- 当前验证结果：
+  - `compatSource.test.ts` 当前为 `78 passed`
+  - `compatSource + commands + Board` 当前为 `248 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 这轮补的是 formal review 基线，不是新的 production seam；因此它只能证明“setup / 单对象 / mapTokens 分层 / 最近 owner 门禁”这几条正式前提仍成立。
+  - 后续若继续重构，正式 residual 仍应留在高层 orchestrator / bridge seam，而不是把已经裁定过的对象模型问题重新打开。
+
+## 2026-06-09 20:50 +08 七大恨运行时区域规则刷新 seam 当前结论
+
+- 当前结论：
+  - `runtimeRegionRules.ts` 现在已经成为“运行时区域重建 + 逻辑规则区回补 + 关隘破坏后边界刷新 + controlLabel 重算”这条共享链的正式 owner；`index.ts` 不再本地维护这组实现。
+  - 这条 seam 的 caller 集合当前足够清楚：`actionWindowChoices / actionWindowDispatch / characterActionWindow / grantPardonExecution / pendingTargetResolution / postBattleResolution / createInitialCore` 都只通过 `refreshRuntimeRegionRules` 这条窄接口消费它，而不是各自接触内层 boundary/logical-region helper。
+  - 本轮顺手确认了一个更准确的边界：`troopCompat` 里的 `cloneCityStateAsPieceSnapshot / cloneSiegeStateAsPieceSnapshot / mergeSpecialTroopStackGroupsAsPieces` 现在已经不是 `index.ts` 的直接消费项，而是被 `runtimeRegionRules` 接走；对应 source guard 也必须跟着当前 owner 结构更新。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts = 78 passed`
+    - `commands.test.ts + payment-selection.test.ts = 422 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.7m)`
+- 当前限制：
+  - 这轮收掉的是“运行时区域规则刷新”共享簇，不等于 `index.ts` 剩余初始化/年结算高层簇都已有明确 owner；后续若继续推进，仍要先证明 `createRuntimeRegionSummaries / createInitialFortifications` 等剩余簇具备同样清楚的 caller 集合与语义边界。
+
+## 2026-06-09 21:05 +08 七大恨初始核心种子 seam 当前结论
+
+- 当前结论：
+  - `initialCoreSeeds.ts` 现在已经成为“场景玩家映射 + 初始势力种子 + 初始防线 + 初始运行时区域摘要”这条开局 truth 的正式 owner；`index.ts` 不再本地维护这组 helper。
+  - 这条 seam 的 caller 集合当前很窄且稳定：只有 `createInitialCore()` 直接消费它，因此这次下沉是把初始化 truth 从高层编排里抽走，而不是把共享 orchestrator 强行拆细。
+  - 本轮顺手确认了两个当前源码真相：
+    - `runtimeRegionRules` 里的 `getQidahenStatefulRegionDisplayName()` 现在已经只需要由 `initialCoreSeeds` 消费，`index.ts` 不再需要直接 import
+    - `armamentCatalogState.createInitialArmamentStates()` 的直接 caller 现在也变成了 `initialCoreSeeds`，不再要求 `index.ts` 继续持有这条初始化依赖
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts = 79 passed`
+    - `commands.test.ts + payment-selection.test.ts = 423 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.6m)`
+    - 共享桌面图时间 `2026-06-09 21:03:23`
+    - 共享手机横屏图时间 `2026-06-09 21:04:24`
+- 当前限制：
+  - 这轮收掉的是初始化 truth 簇，不等于 `createInitialCore()` 剩余的 scenario preset、年份卡、待决选择装配都已经具备单独 owner 条件；后续若继续推进，仍要先证明它们不是单次装配细节，而是真正稳定的共享语义边界。
+
+## 2026-06-09 21:16 +08 七大恨纪年年份标签与纪年卡展示语义当前结论
+
+- 当前结论：
+  - `characterChronologyConfig.ts` 现在已经不只承接纪年配置 truth，也继续承接了 `QIDAHEN_YEAR_SEQUENCE / getYearLabelByIndex / buildYearCardSlots` 这组年份标签与纪年卡展示语义；`index.ts` 不再本地维护这组展示 helper。
+  - 这条 seam 的 caller 集合当前也足够清楚：`createInitialCore()` 和 `resolveNewYear()` 只消费 `buildYearCardSlots / getYearLabelByIndex / QIDAHEN_YEAR_SEQUENCE`，而不再保留自己的年份副本。
+  - 本轮唯一真实红灯不是业务逻辑，而是 source guard 落后于当前源码真相：
+    - `compatSource.test.ts` 还要求 `index.ts` 包含 `getChronologyPreviewIndex`
+    - `compatSource.test.ts` 还把 `characterChronologyConfig.ts` 的类型 import 锁成不含 `QidahenCore` 的旧形状
+  - 这两条过期门禁现已追平后，当前门禁状态为：
+    - `compatSource.test.ts + commands.test.ts + payment-selection.test.ts = 423 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.6m)`
+    - 共享桌面图时间 `2026-06-09 21:14:07`
+    - 共享手机横屏图时间 `2026-06-09 21:15:08`
+- 当前限制：
+  - 这轮收掉的是年份标签与纪年卡展示 truth，不等于 `createInitialCore()` 剩余的 scenario preset、待决项和年结算装配都已经具备同样稳定的单 owner 边界。
+  - 后续若继续推进，必须先证明剩余内容不是单次装配细节；否则应停在当前绿基线，而不是机械继续拆。
+
+## 2026-06-09 21:49 +08 七大恨手牌构造与抽牌语义当前结论
+
+- 当前结论：
+  - `handCardState.ts` 现在已经成为《七大恨》“初始手牌构造 + 抽牌卡面实例化 + 势力牌堆扣牌 + 手牌数回写 + 朝鲜牌堆摸牌”这组共享手牌语义的正式 owner；`initialCoreSetup.ts` 与 `index.ts` 不再本地维护这些 helper。
+  - 这条 seam 的 caller 集合当前足够清楚且跨模块成立：
+    - `initialCoreSetup.ts` 负责开局手牌构造；
+    - `index.ts` 负责轮盘即时效果和年中流程里的抽牌收口；
+    - `actionWindowChoices / postBattleResolution / pendingTargetResolution / wheelMoveExecution` 都继续通过依赖装配消费同一组 helper。
+  - 这说明本轮收掉的不是“两个文件里各有一点重复文案”，而是已经同时服务开局、行动窗口、战后处理、待结算处理和轮盘抽牌的同一条共享语义。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts + commands.test.ts + payment-selection.test.ts = 424 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.7m)`
+    - 共享桌面图时间 `2026-06-09 21:47:43`
+    - 共享手机横屏图时间 `2026-06-09 21:48:49`
+- 当前限制：
+  - 这轮收掉的是共享手牌/牌堆语义，不等于 `initialCoreSetup.ts` 里剩余的 scenario runtime region preset 或其它单次装配块都已经自动具备相同 owner 条件。
+  - 后续若继续推进，仍要先证明剩余内容是稳定共享真相，而不是单次装配细节。
+
+## 2026-06-09 23:09 +08 七大恨 wheelImmediateEffect seam 当前结论
+
+- 当前结论：
+  - `wheelImmediateEffect.ts` 现在已经成为《七大恨》“轮盘即时效果结算”这条共享语义的正式 owner；`wheelMoveExecution.ts` 直接消费它，`index.ts` 不再本地维护 `applyWheelImmediateEffect` 本体。
+  - 这条 seam 的 caller 集合当前清楚且足够窄：
+    - `wheelMoveExecution.ts` 负责在轮盘行动执行链中调用即时效果 owner；
+    - `wheelImmediateEffect.ts` 自持区域挑选、征兵/人口增减、轮盘抽牌、炮兵训练与摘要落盘；
+    - `turnAdvance.ts` 继续单独承接“换到下一势力行动”的编排，不再需要 `index.ts` 同时夹带区域偏好 helper。
+  - 本轮真实红灯不是业务逻辑，而是 `compatSource.test.ts` 的 source guard 落后于当前源码真相：
+    - 两条断言仍把 `trainArtilleryStacksToLevel` 锁在旧的多行 import 形态；
+    - 一条断言仍要求 `index.ts` 继续 import `regionSelectionPreferences`，与当前 `turnAdvance` owner 结构不符。
+  - 这三条过期门禁已追平后，当前门禁状态为：
+    - `compatSource.test.ts = 82 passed`
+    - `compatSource + commands + payment-selection = 426 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.9m)`
+    - 共享桌面图时间 `2026-06-09 23:07:30`
+    - 共享手机横屏图时间 `2026-06-09 23:08:46`
+- 当前限制：
+  - 这轮收掉的是 wheel immediate effect 共享结算语义，不等于 `index.ts` 剩余所有 orchestrator / bridge 接线都已经自然具备独立 owner 条件。
+  - 后续若继续推进，仍要先证明下一刀命中的是真正共享语义，而不是高层单次装配 glue。
+
+## 2026-06-09 23:26 +08 七大恨 selectedAction 命令桥接 seam 当前结论
+
+- 当前结论：
+  - `selectedActionCommandBridge.ts` 现在已经成为《七大恨》`EXECUTE_ACTION / EXECUTE_SELECTED_ACTION -> SELECTED_ACTION_EXECUTED` 这条命令桥接语义的正式 owner；`index.ts` 不再本地维护 `getAutoPaymentCardIds(...)` 与两条 selected-action 事件构造。
+  - 这条 seam 的 caller / consumer 关系当前足够清楚：
+    - 高层 [index.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/index.ts) 的 `execute(...)` 当前只负责在两条命令 case 下调用 `buildQidahenSelectedActionExecutedEvent(...)`；
+    - 新 [selectedActionCommandBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionCommandBridge.ts) 自持自动支付卡选择与 `SELECTED_ACTION_EXECUTED` payload 组装；
+    - 事件落地后仍由既有 [selectedActionExecutedEventBridge.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecutedEventBridge.ts) / [selectedActionExecution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionExecution.ts) 承接，不存在执行 owner 回流。
+  - 本轮真实红灯不是业务逻辑，而是 `compatSource.test.ts` 里“`getActionChoiceById` 仍应留在 `index.ts`”这条旧 source guard 落后于当前源码真相；该 guard 现已追平。
+  - 当前门禁状态为：
+    - `compatSource.test.ts = 82 passed`
+    - `compatSource + commands + payment-selection = 426 passed`
+    - `npm run typecheck` 通过
+    - `e2e/qidahen-basic-flow.e2e.ts = 26 passed (1.6m)`
+    - 共享桌面图时间 `2026-06-09 23:23:52`
+    - 共享手机横屏图时间 `2026-06-09 23:24:53`
+- 当前限制：
+  - 这轮收掉的是 selectedAction 命令桥接，不等于整个 `execute(...)` 大 switch 已具备一次性整体 owner 化条件。
+  - 后续若继续推进，仍要按 formal review 的结论，优先看下一条是否真是稳定共享语义，而不是为了压缩 switch 机械搬 case。
+
+## 2026-06-10 02:03 +08 七大恨 turn-action 依赖装配 seam 当前结论
+
+- 当前结论：
+  - `turnActionDependencies.ts` 现在已经成为《七大恨》`seasonResolution / handLimitDiscard / actionWindowDispatch / actionWindowChoices / fortificationMaintenance` 这组 turn-action 共享依赖装配的正式 owner；`interactionResolverRegistry.ts` 与 `index.ts` 不再共同托管这层 glue。
+  - 这条 seam 的 caller / consumer 关系当前已经足够清楚：
+    - `interactionResolverRegistry.ts` 只负责 resolved payload 解析、source gate 与 resolver handler loop，并直接消费 `turnActionDependencies.ts` 暴露的 dependency object；
+    - `index.ts` 只保留 public wrapper 与高层调用，不再继续持有这组 turn-action dependency const；
+    - `actionWindowChoices.ts / actionWindowDispatch.ts / handLimitDiscard.ts / fortificationMaintenance.ts / seasonResolution.ts` 继续各自承接低层业务规则，不存在规则 owner 回流到 `index.ts`。
+  - 这说明本轮收掉的不是“把几行 import 搬了位置”，而是把 resolver registry 对 public `index.ts` 的反向依赖切断，并把 turn-action 接线真相收成了单一宿主。
+  - 本轮真实需要追平的是 source guard，而不是业务回归：
+    - `compatSource.test.ts` 过去仍要求 `index.ts` / `interactionResolverRegistry.ts` 保留旧的 turn-action dependency owner 口径；
+    - 当前已改为锁 `turnActionDependencies.ts` 与 `actionWindowResolvedEventOrchestration.ts` 这组新的正式 owner 结构。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource.test.ts = 83 passed`
+    - `compatSource + roomSetup + commands + Board + payment-selection = 600 passed`
+    - `npm run typecheck` 通过
+    - 本轮没有重跑 E2E
+- 当前限制：
+  - 这轮收掉的是 turn-action 依赖装配，不等于 `index.ts`、等待态 bridge、runtime sync 与 orchestration 剩余高层壳都已经天然具备下一刀 owner 条件。
+  - 后续若继续推进，必须先重新以当前 worktree 真相复核下一条 residual；不能继续沿旧的 registry/index source guard 结论惯性推进。
+
+## 2026-06-10 02:17 +08 七大恨 resolved command payload seam 当前结论
+
+- 当前结论：
+  - `resolvedCommandBridge.ts` 现在已经成为《七大恨》action-window / pending-battle / scenario-choice 这组 `RESOLVE_* -> *_RESOLVED` payload bridge 的正式 owner；`index.ts` 不再本地维护 interaction current selection 回读与 pending-battle resolved payload 组装。
+  - 这条 seam 的 caller / consumer 关系当前已经足够清楚：
+    - 高层 `index.ts` 的 `execute(...)` 当前只负责命令路由，并直接调用 `buildQidahenInternalDispatchResolvedEvent(...)`、`buildQidahenPendingActionResolvedEvent(...)`、`buildQidahenPostBattleDecisionResolvedEvent(...)` 等 builder；
+    - 新 `resolvedCommandBridge.ts` 自持 interaction current 里的 selection 回读、`pendingTargetAction` 回读与 `battleRolls` 组装；
+    - 事件落地后仍分别由既有 `actionWindowResolvedEventOrchestration.ts / pendingBattleResolvedEventBridge.ts / scenarioChoiceOrchestration.ts` 承接，不存在 reduce owner 回流到 `index.ts`。
+  - 这说明本轮收掉的不是“把几段对象字面量挪了个文件”，而是把 execute 高层里同类 resolved payload builder 统一收成单一桥接宿主。
+  - 本轮真实需要追平的是 source guard，而不是业务回归：
+    - `compatSource.test.ts` 之前还允许 `index.ts` 继续内联 `getQidahen...SelectionFromInteraction(...)` 与 pending-battle payload 组装；
+    - 当前已改为锁 `resolvedCommandBridge.ts` 承接这组真相。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource + commands = 92 passed`
+    - `compatSource + roomSetup + commands + Board + payment-selection = 601 passed`
+    - `npm run typecheck` 通过
+    - 本轮没有重跑 E2E
+- 当前限制：
+  - 这轮收掉的是 execute 侧 resolved payload bridge，不等于 resolved-event reduce 侧 orchestration、runtime sync 或其它 public wrapper 已经自动具备同样稳定的 owner 条件。
+  - 后续若继续推进，必须先重新以当前 worktree 真相复核下一条 residual；不能继续沿旧 execute payload 形状惯性推进。
+
+## 2026-06-10 02:34 +08 七大恨 resolved-event reduce seam 当前结论
+
+- 当前结论：
+  - `resolvedEventReducerRegistry.ts` 现在已经成为《七大恨》`SUN_YUANHUA_TECH_RESOLVED / action-window resolved / scenario choice resolved / SELECTED_ACTION_EXECUTED / pending-battle resolved` 这组高层 reduce route 的正式 owner；`index.ts` 不再本地维护这串 resolved-event case 分发。
+  - 这条 seam 的 caller / consumer 关系当前已经足够清楚：
+    - 高层 `index.ts` 的 `reduce(...)` 当前先调用 `resolveQidahenResolvedEventForTurnFlow(...)`，命中就直接返回，不再自己知道每条 resolved event 对应哪一个 orchestration/bridge；
+    - 新 `resolvedEventReducerRegistry.ts` 自持这组高层 route，并分别转交 `selectedActionOrchestration / actionWindowResolvedEventOrchestration / scenarioChoiceOrchestration / pendingBattleResolvedEventBridge`；
+    - 低层业务 owner 没有回流到 `index.ts`，高层只是从“手写 case 分发”改成“单一 registry 入口”。
+  - 这说明本轮收掉的不是“把几条 case 挪到旁边文件”，而是把 resolved-event reduce 侧的路由真相收成了单一宿主。
+  - 本轮真实需要追平的是 source guard，而不是业务回归：
+    - `compatSource.test.ts` 之前还允许 `index.ts` 继续直连 `resolveQidahenActionWindowResolvedEventForTurnFlow(...)`、`resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)`、`resolveQidahenSelectedActionExecutedEventForTurnFlow(...)` 与 `resolveQidahenPendingBattleResolvedEvent(...)`；
+    - 当前已改为锁 `resolvedEventReducerRegistry.ts` 承接这组 route 真相。
+  - 当前门禁状态：
+    - `eslint` 通过
+    - `compatSource + commands = 92 passed`
+    - `compatSource + roomSetup + commands + Board + payment-selection = 601 passed`
+    - `npm run typecheck` 通过
+    - 本轮没有重跑 E2E
+- 当前限制：
+  - 这轮收掉的是 reduce 侧 resolved-event registry，不等于 `runtimeInteractions.ts` 的 runtime sync、选择输入壳层或其余 dependency wrapper 已经自动具备下一刀 owner 条件。
+  - 后续若继续推进，必须先重新以当前 worktree 真相复核下一条 residual；不能继续沿旧 resolved-event case 形状惯性推进。
+
+## 2026-06-10 06:41 +08 七大恨 selected-action / post-battle 壳层补审
+
+- 当前结论：
+  - `selectedActionExecutedEventBridge.ts` 已确认只是把 `SELECTED_ACTION_EXECUTED` 的 `event.payload.*` 与依赖对象原样转手给 `executeQidahenSelectedAction(...)` 的浅桥接，没有独立语义，也没有额外 caller leverage；因此已正式退休。
+  - `postBattleResolution.ts` 之前存在“文件名是 resolution owner，但真正实现散在 `postBattleSelectionBuilder.ts` 与 `postBattleDecisionResolution.ts`”的名义 owner / 真实 owner 分裂；当前已把战后选择构造与战后决议实现收回同一文件，并删除两个旁支实现文件。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是浅桥接和壳层分裂，不是新的业务规则，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找“名义 owner 与真实 owner 分裂”或“只转手 payload/依赖对象”的残口，而不是为了继续删文件机械收口。
+
+## 2026-06-10 06:45 +08 七大恨 pending/post-battle resolved-event 壳层补审
+
+- 当前结论：
+  - `pendingActionResolvedEventOrchestration.ts` 与 `postBattleDecisionResolvedEventOrchestration.ts` 都已确认只是把 resolved event 的 `payload/timestamp` 转手给 `pendingBattleFlow` 真 owner，并复用 `QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES`；没有独立规则语义，也没有额外 caller leverage。
+  - 当前已由 `resolvedEventReducerRegistry.ts` 直接承担这两条 resolved-event 到 `pendingBattleFlow` 的转交，这两个壳层文件已正式退休。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 resolved-event 浅壳，不是 battle rule 本体，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找 caller 已开始绕过、或只剩参数转手的小壳，不把“事件文件名里有 orchestration”直接当成应删证据。
+
+## 2026-06-10 06:49 +08 七大恨 scenario-choice setup wrapper 补审
+
+- 当前结论：
+  - `scenarioChoiceSetupOrchestration.ts` 已确认只是给 setup 侧三条 scenario-choice 调用补 `ForSetup` 命名，并统一塞入 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`；没有独立规则语义，也没有独立 caller leverage。
+  - 当前已由 `scenarioChoiceOrchestration.ts` 统一同时承接 runtime resolved-event wrapper 与 setup wrapper，`scenarioChoiceSetupOrchestration.ts` 已正式退休。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + roomSetup + commands + payment-selection + Board = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 setup 命名壳，不是 scenario-choice state 本体，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找“共享 orchestration 已存在、旁边只剩 setup/runtime 命名壳”的残口，不把所有 setup 封装都机械等同于应删。
+
+## 2026-06-10 06:53 +08 七大恨 selected-action follow-up resolution 补审
+
+- 当前结论：
+  - `selectedActionFollowUpResolution.ts` 已确认只有一个真正调用方 `selectedActionFollowUp.ts`，自身只做两段 follow-up 结果聚合与 `selectedRegionId` 收口，没有独立业务规则。
+  - 当前已由 `selectedActionFollowUp.ts` 统一直接承接 selection/pending follow-up 聚合，`selectedActionFollowUpResolution.ts` 已正式退休。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 follow-up 聚合壳，不是 selected-action 低层规则本体，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找“单一调用方 + 纯聚合/类型转手”的壳层，不把所有 result type 文件机械等同于应删。
+
+## 2026-06-10 06:58 +08 七大恨 preview-action event 壳层补审
+
+- 当前结论：
+  - `previewActionConfirmedEventBridge.ts` 已确认只有一个真正调用方 `directInputEventReducerBridge.ts`，自身只做 preview-action event 到 reducer 语义的两条分支分流，没有独立依赖装配或额外 caller leverage。
+  - 当前已由 `previewActionReducer.ts` 统一同时承接 preview reducer 语义与 event 级分流，`previewActionConfirmedEventBridge.ts` 已正式退休。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 preview event 壳，不是 direct-input reduce 总路由本体，也没有重跑 E2E。
+  - 当前没有足够证据说明 `commandEventBridge.ts` 也属于同一类型浅壳；后续必须重新看它是否还在承接真实命令事件路由，而不是类比式继续删。
+
+## 2026-06-10 07:02 +08 七大恨 scenario-choice resolved command 子桥补审
+
+- 当前结论：
+  - `scenarioChoiceResolvedCommandBridge.ts` 已确认只有一个真正调用方 `resolvedCommandBridge.ts`，自身不持有依赖装配，也不回读 interaction/state，只做两种 scenario-choice command 到 resolved event 的改壳。
+  - 当前已由 `resolvedCommandBridge.ts` 统一直接承接这两条改壳语义，`scenarioChoiceResolvedCommandBridge.ts` 已正式退休。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 resolved-command 子桥壳，不是整个 `resolvedCommandBridge.ts` 主路由 owner，也没有重跑 E2E。
+  - 后续若继续推进，仍应先确认 `selectionResolvedCommandBridge.ts` 或 `commandEventBridge.ts` 是否还承载真实路由语义，不能因为同属 command 层就类比式继续删。
+
+## 2026-06-10 10:48 +08 七大恨 action-window resolved-command dependency owner 补审
+
+- 当前结论：
+  - `resolvedCommandBridge.ts` 在当前真相里仍是 resolved-command 总路由 owner，但其中 action-window 这组 `selection snapshot accessor` 之前还直接混挂在文件内，没有独立 dependency owner。
+  - 当前已新增 `actionWindowResolvedCommandDependencies.ts`，把 `内部调度 / 新年维护 / 驱虎吞狼同意 / 征召 / 马市贸易 / 大汗令箭 / 外交` 这组 accessor 绑定收成单独 owner；`resolvedCommandBridge.ts` 继续只保留 route 与 event builder，并通过 `QIDAHEN_ACTION_WINDOW_RESOLVED_COMMAND_DEPENDENCIES` 消费。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+- 已修改：
+  - `src/games/qidahen/domain/selectedActionPreparation.ts`
+  - `src/games/qidahen/domain/selectedActionStateCommit.ts`
+  - `src/games/qidahen/domain/selectedActionExecution.ts`
+  - `src/games/qidahen/domain/resolvedEventReducers.ts`
+  - `src/games/qidahen/domain/selectedActionPreparationDependencies.ts`
+  - `src/games/qidahen/domain/selectedActionStateCommitDependencies.ts`
+  - `src/games/qidahen/domain/selectedActionExecutionDependencies.ts`
+  - `src/games/qidahen/__tests__/compatSource.test.ts`
+  - `evidence/qidahen/qidahen-architecture-review-2026-06-08.md`
+  - `task_plan.md`
+  - `findings.md`
+  - `progress.md`
+- 本轮推进内容：
+  - 直接把 selected-action 三层默认依赖壳并回真实 owner：`selectedActionPreparation.ts` 现在自持 `QIDAHEN_SELECTED_ACTION_PREPARATION_DEPENDENCIES`，`selectedActionStateCommit.ts` 现在自持 `QIDAHEN_SELECTED_ACTION_STATE_COMMIT_DEPENDENCIES`。
+  - `selectedActionExecution.ts` 当前已同时承接 `QIDAHEN_SELECTED_ACTION_EXECUTION_DEPENDENCIES` 与 `resolveQidahenSelectedActionExecutedEventWithDependencies(...)`，不再通过独立 execution dependency 壳中转。
+  - `resolvedEventReducers.ts` 已直接改为 import `selectedActionExecution.ts`；3 个 `selectedAction*Dependencies.ts` 文件当前已删除。
+  - `compatSource.test.ts` 已追平这条新真相：3 个旧 dependency reader 允许空源，selected-action 3 个 owner 自持 dependency const，resolved-event reducer 直连 execution owner。
+- 已完成验证：
+  - `npx eslint src/games/qidahen/domain/selectedActionPreparation.ts src/games/qidahen/domain/selectedActionStateCommit.ts src/games/qidahen/domain/selectedActionExecution.ts src/games/qidahen/domain/resolvedEventReducers.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0`
+  - 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1`
+  - 当前为 `84 passed`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1`
+  - 当前为 `601 passed`
+  - `npm run typecheck`
+  - 通过
+- 当前结论：
+  - 《七大恨》selected-action 这条线当前已形成“preparation owner + state-commit owner + execution owner（兼 resolved-event wrapper）+ resolved-event reducer direct consumer”的单一真相。
+  - 当前绿基线继续稳定，但本轮仍没有新增 E2E 证据。
+
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 action-window resolved-command 的 dependency 混装，不是整个 `resolvedCommandBridge.ts` 主路由，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找“总路由保留，但更窄 dependency owner 仍混挂”的 residual；不能因为同在 command 层，就把 `commandEventBridge.ts` 机械当成下一刀。
+
+## 2026-06-10 10:58 +08 七大恨 pending-battle resolved-command dependency owner 补审
+
+- 当前结论：
+  - `resolvedCommandBridge.ts` 在当前真相里仍是 resolved-command 总路由 owner，但其中 pending-battle 这组 `getter + battle-roll glue` 之前还直接混挂在文件内，没有独立 dependency owner。
+  - 当前已新增 `pendingBattleResolvedCommandDependencies.ts`，把 `待决行动 / 战后决策` 这组 getter 与 flow glue 绑定收成单独 owner；`resolvedCommandBridge.ts` 继续只保留 route 与 event builder，并通过 `QIDAHEN_PENDING_BATTLE_RESOLVED_COMMAND_DEPENDENCIES` 消费。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮收掉的是 pending-battle resolved-command 的 dependency 混装，不是整个 `resolvedCommandBridge.ts` 主路由，也没有重跑 E2E。
+  - 后续若继续推进，仍应优先找“总路由保留，但更窄 dependency owner 仍混挂”的 residual；不能因为同在 command 层，就把高层 route 文件机械当成下一刀。
+
+## 2026-06-10 11:32 +08 七大恨 resolved-command 主桥 residual 补审
+
+- 当前结论：
+  - `resolvedCommandBridge.ts` 现在虽然已经退出 action-window / pending-battle dependency 混装，但还没有形成更深一层的单一真相。
+  - 当前文件仍同时混装三类职责：resolved-command 总路由 `buildQidahenResolvedCommandEvents(...)`、builder 列表真相 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS`、以及一整批具体 `buildQidahen...ResolvedEvent(...)` 本体。
+  - 这批具体 builder 当前正式外部 caller 基本不存在，主要仍是 `resolvedCommandBridge.ts` 自己的包装器在消费；`index.ts` 正式依赖的仍只有总路由入口。
+- 当前门禁状态：
+  - 本轮是 review-only，没有新增 `eslint / vitest / typecheck / E2E` 结果。
+- 当前限制：
+  - 这条 residual 不能被误读成“应该恢复旧子桥壳”；真正该审的是 builder truth 与 route consumer 是否要继续分层。
+  - 在没锁定新 seam 前，本轮不应直接把 review 伪装成实现完成。
+
+## 2026-06-10 11:40 +08 七大恨 resolved-command 主桥 builder truth 收口
+
+- 当前结论：
+  - `resolvedCommandBridge.ts` 当前已不再混装 resolved-command 总路由、builder 列表真相与具体 builder 本体。
+  - 新的正式单一真相已经分层为：
+    - `resolvedCommandEventBuilders.ts` 承接具体 resolved-event builder 与 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS`
+    - `resolvedCommandEventBuilderRegistry.ts` 承接 `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS_BY_COMMAND_TYPE`
+    - `resolvedCommandBridge.ts` 只保留 `buildQidahenResolvedCommandEvents(...)` 这条 route seam consumer
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection = 428 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是真正的 builder truth / registry truth 分层，不是回退到旧的多子桥壳。
+
+## 2026-06-10 11:48 +08 七大恨 pending-battle resolved-event 入口收口
+
+- 当前结论：
+  - `resolvedEventReducerRegistry.ts` 当前已不再本地分发 pending-battle resolved-event 的 payload 细节。
+  - 新的正式单一真相已经分层为：
+    - `pendingBattleResolvedEventDependencies.ts` 承接 `QIDAHEN_PENDING_BATTLE_RESOLVED_EVENT_DEPENDENCIES` 与 `resolveQidahenPendingBattleResolvedEventWithDependencies(...)`
+    - `resolvedEventReducerRegistry.ts` 只保留 pending-battle 两个 case 的 route consumer
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是 pending-battle resolved-event entry，不是把整个 resolved-event registry 再拆成旁支壳。
+
+## 2026-06-10 12:06 +08 七大恨 scenario-choice resolved-event 入口收口
+
+- 当前结论：
+  - `resolvedEventReducerRegistry.ts` 当前已不再承接 scenario-choice resolved-event 的 turn-flow 收口本体。
+  - 新的正式单一真相已经分层为：
+    - `scenarioChoiceResolvedEventDependencies.ts` 承接 `QIDAHEN_SCENARIO_CHOICE_RESOLVED_EVENT_DEPENDENCIES` 与 `resolveQidahenScenarioChoiceResolvedEventForTurnFlow(...)`
+    - `scenarioChoiceOrchestration.ts` 只保留 setup wrapper
+    - `resolvedEventReducerRegistry.ts` 只保留 scenario-choice 两个 case 的 route consumer
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是 scenario-choice resolved-event entry，不是把 scenario setup wrapper 也并回同一个大文件。
+
+## 2026-06-10 15:14 +08 七大恨人物行动窗口 dependency 壳退休
+
+- 当前结论：
+  - `characterActionWindow.ts` 当前已不再需要独立的 `characterActionWindowDependencies.ts` 来回塞默认依赖。
+  - 新的正式单一真相已经收口为：
+    - `characterActionWindow.ts` 承接人物行动窗口规则本体
+    - `characterActionWindow.ts` 同时承接 `QIDAHEN_CHARACTER_ACTION_WINDOW_DEPENDENCIES`
+    - turn-flow 侧仍直接消费 `characterActionWindow.ts` 暴露的 wrapper，不再经额外 dependency 壳中转
+  - 同轮已修掉一个真实运行时 blocker：`grantPardonExecution.ts` 已补回 `getNonSiegedCityActionSourceSnapshot(...)` 缺失导入，赐印招安链不再因未定义调用把 `payment-selection` 一起打红。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是人物行动窗口 default dependency owner，不是重新改 turn-flow 顶层分层，也没有新建 OpenSpec spec/change。
+
+## 2026-06-10 15:21 +08 七大恨剧本选择 dependency 壳退休
+
+- 当前结论：
+  - `scenarioChoiceState.ts` 当前已不再需要独立的 `scenarioChoiceStateDependencies.ts` 来回塞默认依赖。
+  - 新的正式单一真相已经收口为：
+    - `scenarioChoiceState.ts` 承接剧本选择规则本体
+    - `scenarioChoiceState.ts` 同时承接 `QIDAHEN_SCENARIO_CHOICE_STATE_DEPENDENCIES`
+    - setup 侧与 resolved-event 侧都已直连 `scenarioChoiceState.ts`，不再经额外 dependency 壳中转
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是剧本选择 default dependency owner，不是重新改 setup / resolved-event 顶层语义，也没有新建 OpenSpec spec/change。
+
+## 2026-06-10 15:40 +08 七大恨 season dependency 壳退休
+
+- 当前结论：
+  - `seasonResolution.ts` 当前已不再需要独立的 `seasonResolutionDependencies.ts` 来回塞默认依赖、chronology 依赖常量和 season wrapper。
+  - 新的正式单一真相已经收口为：
+    - `seasonResolution.ts` 承接 season 规则本体
+    - `seasonResolution.ts` 同时承接 `QIDAHEN_CHARACTER_CHRONOLOGY_STATE_DEPENDENCIES`
+    - `seasonResolution.ts` 同时承接 `QIDAHEN_SEASON_RESOLUTION_DEPENDENCIES`
+    - `seasonResolution.ts` 同时承接 `resolveQidahenMidyearWithSeasonDependencies(...)` 与 `resolveQidahenNewYearWithSeasonDependencies(...)`
+  - `wheelMoveExecution.ts` 与 `fortificationMaintenance.ts` 都已直连 `seasonResolution.ts`，不再经额外 dependency 壳中转。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是 season default dependency / wrapper owner，不是重新改 wheel 或 season-resolution 顶层语义，也没有新建 OpenSpec spec/change。
+
+## 2026-06-10 16:27 +08 七大恨 pending-target / post-battle dependency 壳退休
+
+- 当前结论：
+  - `pendingTargetResolution.ts` 与 `postBattleDecisionResolution.ts` 当前已不再需要独立的 `pendingTargetResolutionDependencies.ts`、`postBattleResolutionDependencies.ts` 来回塞默认依赖。
+  - 新的正式单一真相已经收口为：
+    - `pendingTargetResolution.ts` 承接 pending-target 规则本体
+    - `pendingTargetResolution.ts` 同时承接 `QIDAHEN_PENDING_TARGET_RESOLUTION_DEPENDENCIES`
+    - `postBattleDecisionResolution.ts` 承接 post-battle 决议规则本体
+    - `postBattleDecisionResolution.ts` 同时承接 `QIDAHEN_POST_BATTLE_RESOLUTION_DEPENDENCIES`
+    - `pendingBattleFlowDependencies.ts` 与 `index.ts` 都已直连这两个真实 owner，不再经额外 dependency 壳中转
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource = 84 passed`
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是 pending-target / post-battle default dependency owner，不是重新改 pending-battle 主流程语义，也没有新建 OpenSpec spec/change。
+
+## 2026-06-10 18:24 +08 七大恨 guide metadata 撞名兼容的正式结论
+
+- 当前结论：
+  - 《七大恨》制图工具里“需要兼容旧 guide 文件”不是因为正式 guide 真相和工具工作区 metadata 本来就该共用一套 schema。
+  - 当前真正的单一真相分层已经是：
+    - `src/games/qidahen/data/region-authoritative-guides.json` 只承接正式运行时地区 guide 条目数组
+    - `region-authoritative-guides.workspace.json` 只承接工作区编辑态的 `regionIds / runtimeGuideCandidates`
+  - `vite.config.ts` 里仍保留的 fallback，只是在兼容旧工作区曾把这两种职责撞在同名 `region-authoritative-guides.json` 上的历史快照。
+- 当前限制：
+  - 这轮只补 formal review，没有改生产代码，也没有新增门禁验证。
+  - 因而这轮解决的是“为什么需要兼容”的正式归因问题，不是已经完成旧工作区迁移或 fallback 退役。
+
+## 2026-06-10 18:35 +08 七大恨 public seam 命名翻正两批 current truth
+
+- 当前结论：
+  - 《七大恨》当前又收掉了两批“owner 已自持、但 public 名仍停在 `WithDependencies`”的过时 seam。
+  - `resolved-event` 侧现在已翻正为：
+    - `resolveQidahenSunYuanhuaTechResolvedEvent(...)`
+    - `resolveQidahenSelectedActionExecutedEvent(...)`
+    - `resolveQidahenPendingBattleResolvedEvent(...)`
+  - `direct-input` 侧现在已翻正为：
+    - `resolveQidahenPreviewActionConfirmedEventForDirectInput(...)`
+    - `resolveQidahenWheelMoveExecutedEventForDirectInput(...)`
+  - `resolvedEventReducers.ts` 与 `directInputEventReducers.ts` 当前都已直连翻正后的 public seam，不再消费旧 `...WithDependencies` 名称。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这次收口的是 public seam 命名与 reducers 接线，不是一次性推进整批 interaction choice family。
+
+## 2026-06-10 20:15 +08 七大恨 direct-input seam / helper 退休三批正式补审
+
+- 当前结论：
+  - 《七大恨》这轮补正式架构审查时，又确认了三批已经成立的 current truth：
+    - `regionSelectionReducer.ts` 与 `selectionInputState.ts` 的 direct-input public seam 已翻正为 `...ForDirectInput`
+    - `handLimitDiscard.ts` 与 `fortificationMaintenance.ts` 里只做默认依赖回塞的单 caller helper 已退休
+    - `actionWindowDispatch.ts` 里三条 dispatch `...WithDependencies` helper 已退休
+  - 这三批的共同结构结论都是：
+    - 真实 owner 已自持依赖或语义；
+    - consumer 已改为直连正式 public seam；
+    - `compatSource.test.ts` 也已追平 source guard，不再把旧壳继续当单一真相。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这轮先完成的是“正式架构审查补录 + 绿基线确认”，不是继续扩展到下一批 interaction-choice 实现改动。
+
+## 2026-06-10 20:21 +08 七大恨 action-window choices 五条 exported helper 已退休
+
+- 当前结论：
+  - 《七大恨》这轮继续往实现线推进后，确认 [actionWindowChoices.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/actionWindowChoices.ts) 里 5 条 exported `...WithDependencies` 已经不是独立语义入口，而只是单 caller 的默认依赖回塞壳。
+  - 当前正式单一真相已经收成：
+    - `resolveQidahenDiplomacyInteractionChoice(...)`
+    - `resolveQidahenRecruitInteractionChoice(...)`
+    - `resolveQidahenDriveTigerConsentInteractionChoice(...)`
+    - `resolveQidahenMaShiTradeInteractionChoice(...)`
+    - `resolveQidahenKhanEdictInteractionChoice(...)`
+    - 以上 5 条 public seam 直接承接 `QIDAHEN_ACTION_WINDOW_CHOICE_DEPENDENCIES`
+  - `compatSource.test.ts` 也已追平 source guard，不再把这 5 条 exported helper 继续当成必须存在的当前真相。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这轮收掉的是 `actionWindowChoices.ts` 里的 exported helper 壳，不代表整个 action-window family 已全部收完。
+
+## 2026-06-10 20:27 +08 七大恨 resolved-command builder family 的 exported helper 已退休
+
+- 当前结论：
+  - 《七大恨》这轮继续往实现线推进后，确认 [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 里一组 `buildQidahen*ResolvedEvent(...)` helper 已经不是正式对外接口，而只是同文件 builder family 的内部拼装件。
+  - 当前正式单一真相已经收成：
+    - 对外公开的仍是 `buildQidahenResolvedCommandEvents(...)`
+    - `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS` / `QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS_BY_COMMAND_TYPE` 继续承接 resolved-command route 真相
+    - 那批 `buildQidahen*ResolvedEvent(...)` helper 已退休为私有 helper，不再作为 exported surface 暴露
+  - `compatSource.test.ts` 也已追平 source guard，不再把这批 helper 继续当成必须存在的对外导出。
+- 当前门禁状态：
+  - `eslint` 通过
+  - `compatSource + commands + payment-selection + Board + roomSetup = 601 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这轮收掉的是 `resolvedCommandEventBuilders.ts` 里的 exported helper 壳，不代表 resolved-command family 已全部收完。
+
+## 2026-06-13 05:15 +08 七大恨 selected-action follow-up 内部 helper 文件已并回 owner
+
+- 当前结论：
+  - 《七大恨》这轮继续沿“owner 自持 -> consumer 只连正式合同 -> source guard 追平”的同一标准，下钻到 [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts)。
+  - 当前已确认原先的 [selectedActionFollowUpLogText.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpLogText.ts) 与 [selectedActionFollowUpStateTransition.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUpStateTransition.ts) 都只被 `selectedActionFollowUp.ts` 单一消费，不承接正式外部 caller。
+  - 当前正式单一真相已经收成：
+    - `selectedActionFollowUp.ts` 继续承接正式 public seam `resolveQidahenSelectedActionFollowUp(...)`
+    - `QidahenSelectedActionFollowUpResult` 继续保留为对外正式 follow-up 返回合同，供 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 消费
+    - `QidahenSelectedActionFollowUpResolutionResult` 已降为文件内私有内部结果
+    - 日志文本拼装与状态过渡拼装 helper 已并回 `selectedActionFollowUp.ts`，不再以独立文件形式暴露
+  - `compatSource.test.ts` 也已追平 source guard，不再把这两个内部 helper 文件继续当成当前真相的一部分。
+- 当前门禁状态：
+  - `npx eslint src/games/qidahen/domain/selectedActionFollowUp.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0` 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `605 passed`
+  - `npm run typecheck` 通过
+- 当前限制：
+  - 本轮没有重跑 E2E，也没有刷新截图。
+  - 这轮收掉的是 `selectedActionFollowUp` 的单 caller 内部 helper 文件，不代表 `selectedActionStateCommit` 或 `pendingBattleStateTransition` 这类仍有正式外部 consumer 的合同已经可以一起机械私有化。
+
+## 2.56 当前态再校正：selected-action follow-up 的两段 resolution helper 已并回 owner（2026-06-13 05:34 +08）
+
+- `2.55` 之后继续按当前树 residual 下钻，当前锁定的新浅壳都在 `selected-action follow-up` 这一组：
+  - [selectedActionPendingFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionPendingFollowUpResolution.ts)
+  - [selectedActionSelectionFollowUpResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionSelectionFollowUpResolution.ts)
+- 当前实改后的正式 owner 关系：
+  - [selectedActionFollowUp.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionFollowUp.ts) 当前继续持有真正 public seam `resolveQidahenSelectedActionFollowUp(...)`
+  - 上述两个 helper 文件当前都已退休，selection follow-up 与 pending follow-up 两段 resolution 逻辑已收成 `selectedActionFollowUp.ts` 文件内私有 helper
+  - `QidahenSelectedActionFollowUpResult` 当前继续作为正式对外合同保留，供 [selectedActionStateCommit.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/selectedActionStateCommit.ts) 消费
+  - [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再要求保留 `selectedActionPendingFollowUpResolution.ts` / `selectedActionSelectionFollowUpResolution.ts` 这两个独立文件
+- 这条推进的结构意义是：
+  - 这次没有改 selected-action follow-up 的业务语义，也没有改 `selectedActionStateCommit.ts` 要吃的正式返回合同，只是把两段只剩单 caller 的 resolution helper 回并到真实 owner；
+  - 删除的是“只服务同一个 owner 文件的内部 resolution 拼装件”，不是把仍有正式外部 consumer 的 follow-up 返回合同一起私有化；
+  - 因而旧的“这两个 resolution helper 文件继续独立存在也算合理分层”结论，当前已经不再符合 worktree 真相。
+- 当前验证结果：
+  - `npx eslint src/games/qidahen/domain/selectedActionFollowUp.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0` 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `605 passed`
+  - `npm run typecheck` 通过
+
+## 2.57 当前态再校正：pending-target choice 的 availability helper 已并回 options owner（2026-06-13 05:44 +08）
+
+- `2.56` 之后继续按当前树 residual 下钻，当前锁定的新浅壳在 `pending-target choice` 这一组：
+  - [pendingTargetChoiceAvailability.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceAvailability.ts)
+- 当前实改后的正式 owner 关系：
+  - [pendingTargetChoiceOptions.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetChoiceOptions.ts) 当前继续持有真正 public seam `buildPendingTargetChoiceOptions(...)`
+  - `pendingTargetChoiceAvailability.ts` 当前已退休，骑兵避战退路、攻方骑兵劫掠可用性、劫掠守方牌堆可用性三段逻辑已收成 `pendingTargetChoiceOptions.ts` 文件内私有 helper
+  - [battleInteractionBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/battleInteractionBuilders.ts) 当前继续只消费正式入口 `buildPendingTargetChoiceOptions(...)`
+  - [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再要求保留 `pendingTargetChoiceAvailability.ts` 这个独立文件
+- 这条推进的结构意义是：
+  - 这次没有改 pending-target choice 的按钮值语义，也没有改 battle interaction builder 的正式输入输出，只是把一层只剩单 caller 的 availability helper 回并到真实 owner；
+  - 删除的是“只服务同一个 options owner 文件的内部可用性判定件”，不是把仍有正式外部 consumer 的 pending-target runtime interaction 入口一起私有化；
+  - 因而旧的“`pendingTargetChoiceAvailability.ts` 继续独立存在也算合理分层”结论，当前已经不再符合 worktree 真相。
+- 当前验证结果：
+  - `npx eslint src/games/qidahen/domain/pendingTargetChoiceOptions.ts src/games/qidahen/domain/battleInteractionBuilders.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0` 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `605 passed`
+  - `npm run typecheck` 通过
+
+## 2.58 当前态再校正：post-battle selection builder 已并回 pending-target resolution owner（2026-06-13 05:58 +08）
+
+- `2.57` 之后继续按当前树 residual 下钻，当前锁定的新浅壳在 `pending-target / post-battle` 交界：
+  - [postBattleSelectionBuilder.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/postBattleSelectionBuilder.ts)
+- 当前实改后的正式 owner 关系：
+  - [pendingTargetResolution.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/pendingTargetResolution.ts) 当前继续持有真正 public seam `resolvePendingTargetActionByActionType(...)`
+  - `postBattleSelectionBuilder.ts` 当前已退休，`buildPostBattleSelection(...)` 已收成 `pendingTargetResolution.ts` 文件内私有 helper
+  - `pendingTargetResolution` 内部 `dependencies.buildPostBattleSelection(...)` 接线仍保留，外层 caller 不需要跟着改调用协议
+  - [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再要求保留 `postBattleSelectionBuilder.ts` 这个独立文件
+- 这条推进的结构意义是：
+  - 这次没有改 pending-target battle 后续选择的业务语义，也没有改 pending-target resolve 对外入口，只是把一层只剩单 caller 的 post-battle selection helper 回并到真实 owner；
+  - 删除的是“只服务同一个 pending-target resolution owner 文件的内部拼装件”，不是把仍有正式外部 consumer 的 pending-target resolve owner 一起私有化；
+  - 因而旧的“`postBattleSelectionBuilder.ts` 继续独立存在也算合理分层”结论，当前已经不再符合 worktree 真相。
+- 当前验证结果：
+  - `npx eslint src/games/qidahen/domain/pendingTargetResolution.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0` 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `605 passed`
+  - `npm run typecheck` 通过
+
+## 2.59 当前态再校正：command-event builder contracts 已并回各自 owner（2026-06-13 06:12 +08）
+
+- `2.58` 之后继续按当前树 residual 下钻，当前锁定的新浅壳都在 `command-event builder` 这一组：
+  - [commandEventBuilderContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilderContracts.ts)
+  - [resolvedCommandEventBuilderContracts.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilderContracts.ts)
+- 当前实改后的正式 owner 关系：
+  - [commandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/commandEventBuilders.ts) 当前继续持有真正 public seam `buildQidahenCommandEvents(...)`
+  - [resolvedCommandEventBuilders.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/domain/resolvedCommandEventBuilders.ts) 当前继续持有真正 public seam `buildQidahenResolvedCommandEvents(...)`
+  - 上述两份 contracts 文件当前都已退休，builder 所需的 `...EventBuilder` / `...EventBuilderSpec` 类型已分别收成各自 owner 文件内私有类型
+  - [compatSource.test.ts](D:/gongzuo/webgame/BoardGame/.worktrees/qidahen/src/games/qidahen/__tests__/compatSource.test.ts) 已追平 source guard，不再要求保留这两份 contracts 文件
+- 这条推进的结构意义是：
+  - 这次没有改 command route 或 resolved-command route 的业务语义，也没有改两条正式 public seam，只是把两层只剩单 caller 的 builder contracts 纯类型桥回并到真实 owner；
+  - 删除的是“只服务同一个 builder owner 文件的纯类型桥”，不是把仍有正式外部 consumer 的 command / resolved-command route 一起私有化；
+  - 因而旧的“这两份 builder contracts 文件继续独立存在也算合理分层”结论，当前已经不再符合 worktree 真相。
+- 当前验证结果：
+  - `npx eslint src/games/qidahen/domain/commandEventBuilders.ts src/games/qidahen/domain/resolvedCommandEventBuilders.ts src/games/qidahen/__tests__/compatSource.test.ts --max-warnings 0` 通过
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/compatSource.test.ts src/games/qidahen/__tests__/payment-selection.test.ts src/games/qidahen/__tests__/commands.test.ts src/games/qidahen/__tests__/Board.test.ts src/games/qidahen/__tests__/roomSetup.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 `605 passed`
+  - `npm run typecheck` 通过

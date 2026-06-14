@@ -149,8 +149,8 @@
 
 ### 总览文档
 - `evidence/audit-results-complete.md` - 完整审计结果汇总
-- `evidence/audit-scope-complete.md` - 完整审计范围
-- `evidence/p0-audit-final.md` - P0 审计最终报告
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/p0-audit-final.md` - P0 审计最终报告
 
 ---
 

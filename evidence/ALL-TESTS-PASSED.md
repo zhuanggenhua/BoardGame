@@ -196,10 +196,10 @@
 
 ## 📚 证据文档
 
-1. ✅ `evidence/POD-AUDIT-COMPLETE.md` - POD commit 审计完整总结
+1. ✅ `evidence/_shared/POD-AUDIT-COMPLETE.md` - POD commit 审计完整总结
 2. ✅ `evidence/POD-FINAL-FAILURES-ANALYSIS.md` - 最终失败详细分析
 3. ✅ `evidence/POD-AUDIT-FINAL-SUMMARY.md` - 审计工作最终总结
-4. ✅ `evidence/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑 bug 修复文档
+4. ✅ `evidence/dicethrone/GAME-LOGIC-BUGS-FIXED.md` - 游戏逻辑 bug 修复文档
 5. ✅ `evidence/ALL-TESTS-PASSED.md` - 所有测试通过文档（本文档）
 
 ---

@@ -130,7 +130,7 @@ Test Files  1 passed (1)
 
 ## 相关文档
 
-- `evidence/smashup-multi-base-duplicate-events-fix.md` - 延迟事件补发位置调整
+- `evidence/smashup/smashup-multi-base-duplicate-events-fix.md` - 延迟事件补发位置调整
 - `evidence/smashup-multi-base-duplicate-scoring-fix.md` - 重复计分修复
-- `evidence/smashup-multi-base-infinite-loop-fix.md` - 无限循环修复
+- `evidence/smashup/smashup-multi-base-infinite-loop-fix.md` - 无限循环修复
 - `evidence/smashup-multi-base-scoring-all-fixes-summary.md` - 所有修复总结

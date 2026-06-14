@@ -3,43 +3,31 @@
 import type { GameClientManifestEntry, GameClientRuntimeModule } from './manifest.client.types';
 import { ManifestGameThumbnail } from '../components/lobby/thumbnails';
 
-import manifest0 from './archview/manifest';
-import Thumbnail0 from './archview/thumbnail';
+import manifest0 from './cardia/manifest';
+import Thumbnail0 from './cardia/thumbnail';
 
-import manifest1 from './assetslicer/manifest';
-import Thumbnail1 from './assetslicer/thumbnail';
+import manifest1 from './dicethrone/manifest';
+import Thumbnail1 from './dicethrone/thumbnail';
 
-import manifest2 from './audiobrowser/manifest';
-import Thumbnail2 from './audiobrowser/thumbnail';
+import manifest2 from './fantasyrealms/manifest';
+import Thumbnail2 from './fantasyrealms/thumbnail';
 
-import manifest3 from './cardia/manifest';
-import Thumbnail3 from './cardia/thumbnail';
+import manifest3 from './qidahen/manifest';
+import Thumbnail3 from './qidahen/thumbnail';
 
-import manifest4 from './dicethrone/manifest';
-import Thumbnail4 from './dicethrone/thumbnail';
+import manifest4 from './smashup/manifest';
+import Thumbnail4 from './smashup/thumbnail';
 
-import manifest5 from './fantasyrealms/manifest';
-import Thumbnail5 from './fantasyrealms/thumbnail';
+import manifest5 from './splendor/manifest';
+import Thumbnail5 from './splendor/thumbnail';
 
-import manifest6 from './fxpreview/manifest';
-import Thumbnail6 from './fxpreview/thumbnail';
+import manifest6 from './summonerwars/manifest';
+import Thumbnail6 from './summonerwars/thumbnail';
 
-import manifest7 from './qidahen/manifest';
-import Thumbnail7 from './qidahen/thumbnail';
+import manifest7 from './tictactoe/manifest';
+import Thumbnail7 from './tictactoe/thumbnail';
 
-import manifest8 from './smashup/manifest';
-import Thumbnail8 from './smashup/thumbnail';
-
-import manifest9 from './splendor/manifest';
-import Thumbnail9 from './splendor/thumbnail';
-
-import manifest10 from './summonerwars/manifest';
-import Thumbnail10 from './summonerwars/thumbnail';
-
-import manifest11 from './tictactoe/manifest';
-import Thumbnail11 from './tictactoe/thumbnail';
-
-const loadRuntime3 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime0 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([
         import('./cardia/game'),
         import('./cardia/Board'),
@@ -50,17 +38,17 @@ const loadRuntime3 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial3 = async () => {
+const loadTutorial0 = async () => {
     const tutorialModule = await import('./cardia/tutorial');
     return tutorialModule.default;
 };
 
-const loadCriticalImageResolver3 = async () => {
+const loadCriticalImageResolver0 = async () => {
     const resolverModule = await import('./cardia/criticalImageResolver');
     return resolverModule.default ?? resolverModule.cardiaCriticalImageResolver;
 };
 
-const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime1 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./dicethrone/game'),
         import('./dicethrone/Board'),
@@ -75,17 +63,17 @@ const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial4 = async () => {
+const loadTutorial1 = async () => {
     const tutorialModule = await import('./dicethrone/tutorial');
     return tutorialModule.default;
 };
 
-const loadCriticalImageResolver4 = async () => {
+const loadCriticalImageResolver1 = async () => {
     const resolverModule = await import('./dicethrone/criticalImageResolver');
     return resolverModule.default ?? resolverModule.diceThroneCriticalImageResolver;
 };
 
-const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime2 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([
         import('./fantasyrealms/game'),
         import('./fantasyrealms/Board'),
@@ -96,7 +84,7 @@ const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime3 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([
         import('./qidahen/game'),
         import('./qidahen/Board'),
@@ -107,12 +95,12 @@ const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadCriticalImageResolver7 = async () => {
+const loadCriticalImageResolver3 = async () => {
     const resolverModule = await import('./qidahen/criticalImageResolver');
     return resolverModule.default ?? resolverModule.qidahenCriticalImageResolver;
 };
 
-const loadRuntime8 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./smashup/game'),
         import('./smashup/Board'),
@@ -127,17 +115,17 @@ const loadRuntime8 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial8 = async () => {
+const loadTutorial4 = async () => {
     const tutorialModule = await import('./smashup/tutorial');
     return tutorialModule.default;
 };
 
-const loadCriticalImageResolver8 = async () => {
+const loadCriticalImageResolver4 = async () => {
     const resolverModule = await import('./smashup/criticalImageResolver');
     return resolverModule.default;
 };
 
-const loadRuntime9 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([
         import('./splendor/game'),
         import('./splendor/Board'),
@@ -148,17 +136,17 @@ const loadRuntime9 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial9 = async () => {
+const loadTutorial5 = async () => {
     const tutorialModule = await import('./splendor/tutorial');
     return tutorialModule.default;
 };
 
-const loadCriticalImageResolver9 = async () => {
+const loadCriticalImageResolver5 = async () => {
     const resolverModule = await import('./splendor/criticalImageResolver');
     return resolverModule.default ?? resolverModule.splendorCriticalImageResolver;
 };
 
-const loadRuntime10 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime6 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule, latencyModule, runtimeAdapterModule] = await Promise.all([
         import('./summonerwars/game'),
         import('./summonerwars/Board'),
@@ -173,17 +161,17 @@ const loadRuntime10 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial10 = async () => {
+const loadTutorial6 = async () => {
     const tutorialModule = await import('./summonerwars/tutorial');
     return tutorialModule.default;
 };
 
-const loadCriticalImageResolver10 = async () => {
+const loadCriticalImageResolver6 = async () => {
     const resolverModule = await import('./summonerwars/criticalImageResolver');
     return resolverModule.default ?? resolverModule.summonerWarsCriticalImageResolver;
 };
 
-const loadRuntime11 = async (): Promise<GameClientRuntimeModule> => {
+const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule, latencyModule] = await Promise.all([
         import('./tictactoe/game'),
         import('./tictactoe/Board'),
@@ -196,7 +184,7 @@ const loadRuntime11 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
-const loadTutorial11 = async () => {
+const loadTutorial7 = async () => {
     const tutorialModule = await import('./tictactoe/tutorial');
     return tutorialModule.default;
 };
@@ -204,23 +192,29 @@ const loadTutorial11 = async () => {
 const entry0: GameClientManifestEntry = {
     manifest: manifest0,
     thumbnail: <Thumbnail0 />,
+    loadRuntime: loadRuntime0,
+    loadTutorial: loadTutorial0,
+    loadCriticalImageResolver: loadCriticalImageResolver0,
 };
 
 const entry1: GameClientManifestEntry = {
     manifest: manifest1,
     thumbnail: <Thumbnail1 />,
+    loadRuntime: loadRuntime1,
+    loadTutorial: loadTutorial1,
+    loadCriticalImageResolver: loadCriticalImageResolver1,
 };
 
 const entry2: GameClientManifestEntry = {
     manifest: manifest2,
     thumbnail: <Thumbnail2 />,
+    loadRuntime: loadRuntime2,
 };
 
 const entry3: GameClientManifestEntry = {
     manifest: manifest3,
     thumbnail: <Thumbnail3 />,
     loadRuntime: loadRuntime3,
-    loadTutorial: loadTutorial3,
     loadCriticalImageResolver: loadCriticalImageResolver3,
 };
 
@@ -236,49 +230,23 @@ const entry5: GameClientManifestEntry = {
     manifest: manifest5,
     thumbnail: <Thumbnail5 />,
     loadRuntime: loadRuntime5,
+    loadTutorial: loadTutorial5,
+    loadCriticalImageResolver: loadCriticalImageResolver5,
 };
 
 const entry6: GameClientManifestEntry = {
     manifest: manifest6,
     thumbnail: <Thumbnail6 />,
+    loadRuntime: loadRuntime6,
+    loadTutorial: loadTutorial6,
+    loadCriticalImageResolver: loadCriticalImageResolver6,
 };
 
 const entry7: GameClientManifestEntry = {
     manifest: manifest7,
     thumbnail: <Thumbnail7 />,
     loadRuntime: loadRuntime7,
-    loadCriticalImageResolver: loadCriticalImageResolver7,
-};
-
-const entry8: GameClientManifestEntry = {
-    manifest: manifest8,
-    thumbnail: <Thumbnail8 />,
-    loadRuntime: loadRuntime8,
-    loadTutorial: loadTutorial8,
-    loadCriticalImageResolver: loadCriticalImageResolver8,
-};
-
-const entry9: GameClientManifestEntry = {
-    manifest: manifest9,
-    thumbnail: <Thumbnail9 />,
-    loadRuntime: loadRuntime9,
-    loadTutorial: loadTutorial9,
-    loadCriticalImageResolver: loadCriticalImageResolver9,
-};
-
-const entry10: GameClientManifestEntry = {
-    manifest: manifest10,
-    thumbnail: <Thumbnail10 />,
-    loadRuntime: loadRuntime10,
-    loadTutorial: loadTutorial10,
-    loadCriticalImageResolver: loadCriticalImageResolver10,
-};
-
-const entry11: GameClientManifestEntry = {
-    manifest: manifest11,
-    thumbnail: <Thumbnail11 />,
-    loadRuntime: loadRuntime11,
-    loadTutorial: loadTutorial11,
+    loadTutorial: loadTutorial7,
 };
 
 export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
@@ -290,10 +258,6 @@ export const GAME_CLIENT_MANIFEST: GameClientManifestEntry[] = [
     entry5,
     entry6,
     entry7,
-    entry8,
-    entry9,
-    entry10,
-    entry11,
 ];
 
 export const GAME_CLIENT_MANIFEST_BY_ID: Record<string, GameClientManifestEntry> = Object.fromEntries(

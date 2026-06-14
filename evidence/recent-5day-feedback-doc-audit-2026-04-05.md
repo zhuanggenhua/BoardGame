@@ -30,7 +30,7 @@
 | `69ce7d74094b1acda250f97c` | `smashup` | `closed` | 间接证据 | `temp/feedback-triage-smashup.md`、`temp/feedback-writeback-action-list.md` |
 | `69ce7bbf094b1acda250f93e` | `smashup` | `resolved` | 间接证据 | `temp/feedback-triage-smashup.md`、`temp/feedback-writeback-action-list.md` |
 | `69ce7ac2094b1acda250f933` | `smashup` | `resolved` | 直接证据 | `evidence/feedback-smashup-cowboys-open-recheck-2026-04-04.md`，并在 `temp/feedback-triage-smashup.md` 中挂接 |
-| `69ce7589094b1acda250f8c6` | `smashup` | `resolved` | 间接证据 | `temp/feedback-triage-smashup.md` 指向 `evidence/smashup-ancient-egyptians-audit-2026-03-29.md` |
+| `69ce7589094b1acda250f8c6` | `smashup` | `resolved` | 间接证据 | `temp/feedback-triage-smashup.md` 指向 `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md` |
 | `69ce7358094b1acda250f8ab` | `smashup` | `closed` | 直接证据 | `evidence/feedback-final-five-closeout-2026-04-04.md`、`evidence/feedback-open-writeback-2026-04-04.md` |
 | `69ce7167094b1acda250f8a9` | `smashup` | `resolved` | 直接证据 | `evidence/feedback-smashup-cowboys-open-recheck-2026-04-04.md`，并在 `temp/feedback-triage-smashup.md` 中挂接 |
 | `69ce6e10094b1acda250f862` | `smashup` | `closed` | 直接证据 | `evidence/feedback-recent-5day-missing-six-closeout-2026-04-05.md` |

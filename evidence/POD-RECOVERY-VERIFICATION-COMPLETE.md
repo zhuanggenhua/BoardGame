@@ -169,10 +169,10 @@ fix: POD 审计第二阶段 - 调试日志 + 隐身模式 + 游戏逻辑修复
 
 - `evidence/POD-RECOVERY-FINAL-STATUS.md` - 最终恢复状态
 - `evidence/POD-RECOVERY-AND-STEALTH-MODE-COMPLETE.md` - 恢复 + 隐身模式
-- `evidence/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目报告
+- `evidence/_shared/POD-AUDIT-MISSING-ITEMS.md` - 遗漏项目报告
 - `evidence/POD-AUDIT-RECOVERY-PHASE-2.md` - 第二阶段恢复报告
-- `evidence/rematch-button-debug.md` - 再来一局按钮排查指南
-- `evidence/rematch-button-debug-logs-added.md` - 调试日志说明
+- `evidence/dicethrone/rematch-button-debug.md` - 再来一局按钮排查指南
+- `evidence/_shared/rematch-button-debug-logs-added.md` - 调试日志说明
 
 ## 总结
 

@@ -290,7 +290,7 @@ describe('Monk 技能完整覆盖测试', () => {
         it.skip('rollDie=莲花: 基础6伤害+获得闪避Token', () => {
             // TODO: Test infrastructure issue - GameTestRunner doesn't handle interactive choices correctly
             // The fix for CHOICE_REQUESTED break is correct, but the test needs to be rewritten
-            // See evidence/session-3-conclusion.md for details
+            // See evidence/dicethrone/session-3-conclusion.md for details
             // 进攻骰: [1,1,1,3,4] -> 3拳+1掌+1太极
             // 防御骰: [1,1,1,1] -> 4拳 (meditation 反伤 4)
             // rollDie: 6 -> 莲花 (二选一)
@@ -341,7 +341,7 @@ describe('Monk 技能完整覆盖测试', () => {
         it.skip('rollDie=莲花: 基础6伤害+获得净化Token', () => {
             // TODO: Test infrastructure issue - GameTestRunner doesn't handle interactive choices correctly
             // The fix for CHOICE_REQUESTED break is correct, but the test needs to be rewritten
-            // See evidence/session-3-conclusion.md for details
+            // See evidence/dicethrone/session-3-conclusion.md for details
             // 进攻骰: [1,1,1,3,4] -> 3拳+1掌+1太极
             // 防御骰: [1,1,1,1] -> 4拳 (meditation 反伤 4)
             // rollDie: 6 -> 莲花 (二选一)

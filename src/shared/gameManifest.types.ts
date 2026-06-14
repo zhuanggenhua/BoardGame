@@ -60,6 +60,7 @@ export interface GameManifestAiSupport {
 }
 
 export type GameStatusTag = 'under_construction';
+export type GameAiSupportProfile = GameManifestAiSupport;
 
 export interface GameManifestEntry {
     id: string;

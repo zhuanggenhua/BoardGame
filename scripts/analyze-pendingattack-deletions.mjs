@@ -196,9 +196,9 @@ for (const [file, items] of Object.entries(byFile)) {
 }
 
 // 写入报告
-writeFileSync('evidence/pendingattack-deletions-detailed.md', report, 'utf-8');
+writeFileSync('evidence/_shared/pendingattack-deletions-detailed.md', report, 'utf-8');
 
-console.log('✅ 报告已生成: evidence/pendingattack-deletions-detailed.md\n');
+console.log('✅ 报告已生成: evidence/_shared/pendingattack-deletions-detailed.md\n');
 
 // 输出摘要
 console.log('📊 分类摘要:');
@@ -209,7 +209,7 @@ for (const [category, items] of Object.entries(categories)) {
 }
 
 console.log('\n🎯 下一步:');
-console.log('  1. 阅读 evidence/pendingattack-deletions-detailed.md');
+console.log('  1. 阅读 evidence/_shared/pendingattack-deletions-detailed.md');
 console.log('  2. 逐个审查每处删除');
 console.log('  3. 标记需要恢复的代码');
 console.log('  4. 创建恢复清单');

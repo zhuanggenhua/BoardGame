@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "winston": "^3.11.0",
-    "winston-daily-rotate-file": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/winston": "^2.4.4"
-  }
-}

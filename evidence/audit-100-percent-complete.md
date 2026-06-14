@@ -235,8 +235,8 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
 
 ### 审计报告
 
-1. ✅ `evidence/p0-audit-complete.md` - P0 审计完成报告
-2. ✅ `evidence/p0-restoration-complete.md` - P0 恢复完成报告
+1. ✅ `evidence/_shared/p0-audit-complete.md` - P0 审计完成报告
+2. ✅ `evidence/_shared/p0-restoration-complete.md` - P0 恢复完成报告
 3. ✅ `evidence/p0-restoration-final-status.md` - P0 恢复最终状态
 4. ✅ `evidence/p1-audit-complete.md` - P1 审计完成报告
 5. ✅ `evidence/p2-audit-complete.md` - P2 审计完成报告（分批）
@@ -247,12 +247,12 @@ grep -n "attack_already_initiated" src/games/dicethrone/domain/commandValidation
 ### 深度审计报告
 
 9. ✅ `evidence/p2-ultimate-shield-immunity-loss.md` - Ultimate 护盾免疫丢失分析
-10. ✅ `evidence/HONEST-AUDIT-CONCLUSION.md` - 诚实的审计结论
+10. ✅ `evidence/dicethrone/HONEST-AUDIT-CONCLUSION.md` - 诚实的审计结论
 11. ✅ `evidence/DEEP-REAUDIT-ANALYSIS.md` - 深度重新审计分析
 12. ✅ `evidence/pendingattack-deletions-summary.md` - pendingAttack 删除总结
-13. ✅ `evidence/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md` - Ultimate 护盾免疫验证
-14. ✅ `evidence/DEEP-AUDIT-COMPLETE.md` - 深度审计完成报告
-15. ✅ `evidence/VALIDATION-FIX-COMPLETE.md` - 验证逻辑修复完成报告
+13. ✅ `evidence/dicethrone/ULTIMATE-SHIELD-IMMUNITY-VERIFIED.md` - Ultimate 护盾免疫验证
+14. ✅ `evidence/_shared/DEEP-AUDIT-COMPLETE.md` - 深度审计完成报告
+15. ✅ `evidence/dicethrone/VALIDATION-FIX-COMPLETE.md` - 验证逻辑修复完成报告
 16. ✅ `evidence/FINAL-DEEP-AUDIT-SUMMARY.md` - 深度审计最终总结
 17. ✅ `evidence/AUDIT-100-PERCENT-COMPLETE.md` - 审计 100% 完成报告（本文档）
 

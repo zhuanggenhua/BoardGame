@@ -8,6 +8,16 @@ import ts from 'typescript'
 import localeHashPlugin from './plugins/vite-locale-hash.ts'
 import assetHashPlugin from './plugins/vite-asset-hash.ts'
 import publicFileHashPlugin from './plugins/vite-public-file-hash.ts'
+import {
+  normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta,
+  readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat,
+} from './src/games/qidahen/regionAuthoritativeGuideFormats.ts'
+import type {
+  QidahenRegionMaskLoadPayload,
+  QidahenRegionMaskSavePayload,
+  QidahenRegionMaskSaveResult,
+} from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
+import { normalizeQidahenRegionMaskSaveScope } from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
 import { readyCheckPlugin } from './vite-plugins/ready-check.ts'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
@@ -26,6 +36,24 @@ const ANDROID_BUILD_PRUNE_PATHS = [
   'assets/common/audio/registry.json',
   'assets/common/audio/phrase-mappings.zh-CN.json',
 ]
+const QIDAHEN_REGION_MASK_SAVE_ROUTE = '/devtools/qidahen-region-mask/save'
+const QIDAHEN_REGION_MASK_LOAD_ROUTE = '/devtools/qidahen-region-mask/load'
+const QIDAHEN_REGION_MASK_DEFAULT_OUTPUT_DIR = path.resolve(configDir, 'src/games/qidahen/data')
+const QIDAHEN_REGION_MASK_WORKSPACE_ROOT = path.resolve(configDir, 'temp/devtools/qidahen-region-mask-workspaces')
+const QIDAHEN_REGION_MASK_OUTPUT_FILES = {
+  mask: 'region-mask.png',
+  regions: 'region-mask-regions.json',
+  graph: 'region-graph.json',
+} as const
+const QIDAHEN_REGION_MASK_INTERNAL_FILES = {
+  boundaryMask: 'region-boundary-mask.png',
+  barrierAdd: 'region-boundary-add.png',
+  barrierRemove: 'region-boundary-remove.png',
+  boundarySourceReference: 'region-boundary-source-reference.png',
+  authoritativeMask: 'region-authoritative-guides.png',
+  authoritativeWorkspaceMeta: 'region-authoritative-guides.workspace.json',
+} as const
+const QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE = 'region-authoritative-guides.json'
 const IOS_EMBEDDED_PRUNE_PATHS = [
   'assets/i18n',
   'assets/common/audio',
@@ -196,6 +224,257 @@ const createAndroidDistPrunePlugin = (mode: string) => ({
   },
 })
 
+const readRequestBody = (req: NodeJS.ReadableStream, maxBytes = 20 * 1024 * 1024) => new Promise<string>((resolve, reject) => {
+  const chunks: Buffer[] = []
+  let size = 0
+
+  req.on('data', (chunk: Buffer | string) => {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    size += buffer.byteLength
+    if (size > maxBytes) {
+      reject(new Error('请求体过大'))
+      return
+    }
+    chunks.push(buffer)
+  })
+  req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+  req.on('error', reject)
+})
+
+const parsePngDataUrl = (value: unknown): Buffer => {
+  if (typeof value !== 'string') {
+    throw new Error('缺少 maskPngDataUrl')
+  }
+  const match = /^data:image\/png;base64,(.+)$/u.exec(value)
+  if (!match) {
+    throw new Error('maskPngDataUrl 必须是 PNG data URL')
+  }
+  return Buffer.from(match[1], 'base64')
+}
+
+const toPngDataUrl = (buffer: Buffer) => `data:image/png;base64,${buffer.toString('base64')}`
+
+const sanitizeQidahenWorkspaceKey = (value: string) => (
+  value
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80)
+)
+
+const toDisplayRelativePath = (targetPath: string) => {
+  const relative = path.relative(configDir, targetPath)
+  if (!relative || relative.startsWith('..')) {
+    return targetPath.replace(/\\/g, '/')
+  }
+  return relative.replace(/\\/g, '/')
+}
+
+const resolveQidahenRegionMaskOutputConfig = (requestUrl?: string) => {
+  const envOverride = process.env.QIDAHEN_REGION_MASK_OUTPUT_DIR?.trim()
+  if (envOverride) {
+    const outputDir = path.resolve(configDir, envOverride)
+    return {
+      outputDir,
+      outputDirRelative: toDisplayRelativePath(outputDir),
+      workspaceKey: null,
+    }
+  }
+
+  const parsedUrl = requestUrl ? new URL(requestUrl, 'http://127.0.0.1') : null
+  const workspaceKey = sanitizeQidahenWorkspaceKey(parsedUrl?.searchParams.get('workspace') ?? '')
+  if (workspaceKey) {
+    const outputDir = path.join(QIDAHEN_REGION_MASK_WORKSPACE_ROOT, workspaceKey)
+    return {
+      outputDir,
+      outputDirRelative: toDisplayRelativePath(outputDir),
+      workspaceKey,
+    }
+  }
+
+  return {
+    outputDir: QIDAHEN_REGION_MASK_DEFAULT_OUTPUT_DIR,
+    outputDirRelative: 'src/games/qidahen/data',
+    workspaceKey: null,
+  }
+}
+
+const createQidahenRegionMaskDevtoolsPlugin = () => ({
+  name: 'qidahen-region-mask-devtools-save',
+  apply: 'serve' as const,
+  configureServer(server: { middlewares: { use: (route: string, handler: (req: NodeJS.ReadableStream & { method?: string; url?: string }, res: NodeJS.WritableStream & { statusCode?: number; setHeader?: (name: string, value: string) => void }, next: () => void) => void) => void } }) {
+    const send = (res: NodeJS.WritableStream & { statusCode?: number; setHeader?: (name: string, value: string) => void }, statusCode: number, payload: string | object) => {
+      res.statusCode = statusCode
+      res.setHeader?.('Content-Type', typeof payload === 'string' ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8')
+      res.write(typeof payload === 'string' ? payload : JSON.stringify(payload))
+      res.end()
+    }
+
+    server.middlewares.use(QIDAHEN_REGION_MASK_LOAD_ROUTE, (req, res) => {
+      if (req.method !== 'GET') {
+        send(res, 405, '只允许 GET 读取区域数据')
+        return
+      }
+
+      try {
+        const outputConfig = resolveQidahenRegionMaskOutputConfig(req.url)
+        const maskPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.mask)
+        const regionsPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.regions)
+        const graphPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.graph)
+        const boundaryMaskPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask)
+        const barrierAddPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd)
+        const barrierRemovePath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove)
+        const boundarySourceReferencePath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference)
+        const authoritativeMaskPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask)
+        const authoritativeWorkspaceMetaPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta)
+        const authoritativeLegacyMetaPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_FORMAL_AUTHORITATIVE_GUIDE_FILE)
+
+        if (!fs.existsSync(maskPath) || !fs.existsSync(regionsPath) || !fs.existsSync(graphPath)) {
+          send(res, 404, '尚未保存区域数据')
+          return
+        }
+
+        const authoritativeGuideMeta = fs.existsSync(authoritativeWorkspaceMetaPath)
+          ? normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta(JSON.parse(fs.readFileSync(authoritativeWorkspaceMetaPath, 'utf8')))
+          : fs.existsSync(authoritativeLegacyMetaPath)
+            ? readQidahenRegionMaskAuthoritativeWorkspaceMetaCompat(JSON.parse(fs.readFileSync(authoritativeLegacyMetaPath, 'utf8')))
+            : null
+
+        const loadPayload: QidahenRegionMaskLoadPayload = {
+          ok: true,
+          outputDir: outputConfig.outputDirRelative,
+          maskPngDataUrl: toPngDataUrl(fs.readFileSync(maskPath)),
+          boundaryMaskPngDataUrl: fs.existsSync(boundaryMaskPath) ? toPngDataUrl(fs.readFileSync(boundaryMaskPath)) : null,
+          barrierHints: {
+            addPngDataUrl: fs.existsSync(barrierAddPath) ? toPngDataUrl(fs.readFileSync(barrierAddPath)) : null,
+            removePngDataUrl: fs.existsSync(barrierRemovePath) ? toPngDataUrl(fs.readFileSync(barrierRemovePath)) : null,
+          },
+          boundarySourceReferencePngDataUrl: fs.existsSync(boundarySourceReferencePath) ? toPngDataUrl(fs.readFileSync(boundarySourceReferencePath)) : null,
+          authoritativeGuides: authoritativeGuideMeta
+            ? {
+                maskPngDataUrl: fs.existsSync(authoritativeMaskPath) ? toPngDataUrl(fs.readFileSync(authoritativeMaskPath)) : null,
+                ...authoritativeGuideMeta,
+              }
+            : null,
+          regions: JSON.parse(fs.readFileSync(regionsPath, 'utf8')),
+          graph: JSON.parse(fs.readFileSync(graphPath, 'utf8')),
+        }
+        send(res, 200, loadPayload)
+      } catch (error: unknown) {
+        send(res, 500, error instanceof Error ? error.message : '读取失败')
+      }
+    })
+
+    server.middlewares.use(QIDAHEN_REGION_MASK_SAVE_ROUTE, (req, res) => {
+      if (req.method !== 'POST') {
+        send(res, 405, '只允许 POST 保存区域数据')
+        return
+      }
+
+      void readRequestBody(req)
+        .then((body) => {
+          const outputConfig = resolveQidahenRegionMaskOutputConfig(req.url)
+          const payload = JSON.parse(body) as QidahenRegionMaskSavePayload
+          const saveScope = normalizeQidahenRegionMaskSaveScope(payload.saveScope)
+
+          if ((saveScope === 'all' || saveScope === 'regions') && payload.regions == null) {
+            throw new Error('缺少 regions')
+          }
+          if ((saveScope === 'all' || saveScope === 'graph') && payload.graph == null) {
+            throw new Error('缺少 graph')
+          }
+          if (saveScope === 'boundary' && payload.boundaryMaskPngDataUrl == null) {
+            throw new Error('缺少 boundaryMaskPngDataUrl')
+          }
+          if (saveScope === 'authoritative-guides' && payload.authoritativeGuides?.maskPngDataUrl == null) {
+            throw new Error('缺少 authoritativeGuides.maskPngDataUrl')
+          }
+          if (saveScope === 'all' && (payload.regions == null || payload.graph == null)) {
+            throw new Error('缺少 regions 或 graph')
+          }
+
+          fs.mkdirSync(outputConfig.outputDir, { recursive: true })
+          if (saveScope === 'all' || saveScope === 'regions') {
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.mask),
+              parsePngDataUrl(payload.maskPngDataUrl),
+            )
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.regions),
+              `${JSON.stringify(payload.regions, null, 2)}\n`,
+              'utf8',
+            )
+          }
+          if (saveScope === 'all' || saveScope === 'graph') {
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.graph),
+              `${JSON.stringify(payload.graph, null, 2)}\n`,
+              'utf8',
+            )
+          }
+          if (saveScope === 'all' || saveScope === 'boundary') {
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask),
+              parsePngDataUrl(payload.boundaryMaskPngDataUrl),
+            )
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd),
+              parsePngDataUrl(payload.barrierHints?.addPngDataUrl),
+            )
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove),
+              parsePngDataUrl(payload.barrierHints?.removePngDataUrl),
+            )
+            const boundarySourceReferenceOutputPath = path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference)
+            if (typeof payload.boundarySourceReferencePngDataUrl === 'string' && payload.boundarySourceReferencePngDataUrl.length > 0) {
+              fs.writeFileSync(
+                boundarySourceReferenceOutputPath,
+                parsePngDataUrl(payload.boundarySourceReferencePngDataUrl),
+              )
+            } else if (fs.existsSync(boundarySourceReferenceOutputPath)) {
+              fs.rmSync(boundarySourceReferenceOutputPath, { force: true })
+            }
+          }
+          if (saveScope === 'all' || saveScope === 'regions' || saveScope === 'authoritative-guides') {
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask),
+              parsePngDataUrl(payload.authoritativeGuides?.maskPngDataUrl),
+            )
+            fs.writeFileSync(
+              path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta),
+              `${JSON.stringify(normalizeQidahenRegionMaskAuthoritativeWorkspaceMeta({
+                regionIds: payload.authoritativeGuides?.regionIds,
+                runtimeGuideCandidates: payload.authoritativeGuides?.runtimeGuideCandidates,
+              }), null, 2)}\n`,
+              'utf8',
+            )
+          }
+
+          const saveResult: QidahenRegionMaskSaveResult = {
+            ok: true,
+            outputDir: outputConfig.outputDirRelative,
+            files: [
+              ...(saveScope === 'all' || saveScope === 'regions' ? [QIDAHEN_REGION_MASK_OUTPUT_FILES.mask, QIDAHEN_REGION_MASK_OUTPUT_FILES.regions] : []),
+              ...(saveScope === 'all' || saveScope === 'graph' ? [QIDAHEN_REGION_MASK_OUTPUT_FILES.graph] : []),
+            ],
+            internalFiles: saveScope === 'all'
+              ? Object.values(QIDAHEN_REGION_MASK_INTERNAL_FILES)
+              : saveScope === 'boundary'
+                ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference]
+                : saveScope === 'regions' || saveScope === 'authoritative-guides'
+                  ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta]
+                  : [],
+          }
+          send(res, 200, saveResult)
+        })
+        .catch((error: unknown) => {
+          send(res, 400, error instanceof Error ? error.message : '保存失败')
+        })
+    })
+  },
+})
+
 const createIosEmbeddedDistPrunePlugin = (mode: string) => ({
   name: 'ios-embedded-dist-prune',
   apply: 'build' as const,
@@ -333,6 +612,7 @@ export default defineConfig(({ mode }) => {
       assetHashPlugin(),
       publicFileHashPlugin(),
       readyCheckPlugin(),
+      createQidahenRegionMaskDevtoolsPlugin(),
       createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
       createIosBuildMetaPlugin(mode, backendUrl, env),
       createAndroidDistPrunePlugin(mode),

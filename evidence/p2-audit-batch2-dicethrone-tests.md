@@ -101,7 +101,7 @@
 
 ## 相关文档
 
-- `evidence/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
 - `evidence/p2-audit-progress.md` - P2 审计进度跟踪
 
 ---

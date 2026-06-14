@@ -1,0 +1,275 @@
+import { getCurrentFactionId } from './factionTurnAccessors';
+import { type QidahenMovementProfileId } from './movement';
+import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
+import {
+    buildDriveTigerDispatchSelection,
+    buildGaoDiDispatchSelection,
+    buildKhanEdictDispatchSelection,
+    buildWangHuazhenInternalDispatchSelection,
+    buildWheelDispatchSelection,
+    getPreferredDispatchSelectedRegionIdForFaction,
+    getQidahenCurrentWheelDispatchSelectionForCore,
+    getQidahenInternalDispatchSelectionForCore,
+} from './dispatchSelectionBuilders';
+import {
+    buildDiplomacySelection,
+    buildQidahenDiplomacyProgress,
+    buildKhanEdictSelection,
+    buildMaShiTradeSelection,
+    buildRecruitSelection,
+    getQidahenCurrentDiplomacySelectionForCore,
+    getQidahenKhanEdictSelectionForCore,
+    getQidahenMaShiTradeSelectionForCore,
+    getQidahenRecruitSelectionForCore,
+} from './selectionBuilders';
+import { resolveQidahenWheelDispatchInteractionChoice } from './actionWindowDispatch';
+import { applyQidahenCharacterActionWindowEffectsWithFocus } from './characterActionWindow';
+import { updateQidahenTurnLabel } from './turnLabelState';
+import type { QidahenCore } from './types';
+
+interface QidahenRegionSelectedDependencies {
+    applyCharacterActionWindowEffectsWithFocus: (
+        state: QidahenCore,
+    ) => { state: QidahenCore; forcedSelectedRegionId: string | null };
+    updateTurnLabel: (
+        state: QidahenCore,
+    ) => QidahenCore;
+    resolveQidahenWheelDispatchInteractionChoice: (
+        state: QidahenCore,
+        choiceId: string,
+        timestamp: number,
+        interactionSelection?: ReturnType<typeof getQidahenCurrentWheelDispatchSelectionForCore>,
+    ) => QidahenCore;
+}
+
+export const reduceQidahenRegionSelected = (
+    state: QidahenCore,
+    regionId: string,
+    timestamp: number,
+    diplomacySelectionCarry: ReturnType<typeof getQidahenCurrentDiplomacySelectionForCore> = null,
+    wheelDispatchSelectionCarry: ReturnType<typeof getQidahenCurrentWheelDispatchSelectionForCore> = null,
+    dependencies: QidahenRegionSelectedDependencies = {
+        applyCharacterActionWindowEffectsWithFocus: applyQidahenCharacterActionWindowEffectsWithFocus,
+        updateTurnLabel: updateQidahenTurnLabel,
+        resolveQidahenWheelDispatchInteractionChoice,
+    },
+): QidahenCore => {
+    const actionWindowEffect = state.turnPhase === 'action-window'
+        ? dependencies.applyCharacterActionWindowEffectsWithFocus(state)
+        : { state, forcedSelectedRegionId: null };
+    const nextState = actionWindowEffect.state;
+    let selectedRegionId = regionId;
+    const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
+    if (recruitSelection) {
+        const rebuiltRecruitSelection = buildRecruitSelection(
+            nextState,
+            selectedRegionId,
+            getCurrentFactionId(nextState),
+        );
+        selectedRegionId = rebuiltRecruitSelection?.targetRegionId ?? selectedRegionId;
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId,
+            turnPhase: rebuiltRecruitSelection ? 'recruit-choice' : 'action-window',
+            recruitSelection: null,
+        });
+    }
+    if (nextState.gaoDiDispatchSelection) {
+        const rebuiltGaoDiDispatchSelection = buildGaoDiDispatchSelection(
+            nextState,
+            selectedRegionId,
+            nextState.gaoDiDispatchSelection.selectedCardId,
+        );
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: rebuiltGaoDiDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            turnPhase: rebuiltGaoDiDispatchSelection ? 'gao-di-dispatch-choice' : 'action-window',
+            gaoDiDispatchSelection: rebuiltGaoDiDispatchSelection,
+        });
+    }
+    const internalDispatchSelection = getQidahenInternalDispatchSelectionForCore(nextState);
+    if (internalDispatchSelection) {
+        const rebuiltInternalDispatchSelection = buildWangHuazhenInternalDispatchSelection(
+            nextState,
+            selectedRegionId,
+        );
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: rebuiltInternalDispatchSelection?.sourceRegionId ?? selectedRegionId,
+            turnPhase: rebuiltInternalDispatchSelection ? 'internal-dispatch-choice' : 'action-window',
+        });
+    }
+    const maShiTradeSelection = getQidahenMaShiTradeSelectionForCore(nextState);
+    if (maShiTradeSelection) {
+        const rebuiltMaShiTradeSelection = buildMaShiTradeSelection(nextState, selectedRegionId);
+        selectedRegionId = rebuiltMaShiTradeSelection?.targetRegionId ?? selectedRegionId;
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId,
+            turnPhase: rebuiltMaShiTradeSelection ? 'ma-shi-trade-choice' : 'action-window',
+            maShiTradeSelection: null,
+        });
+    }
+    const khanEdictSelection = getQidahenKhanEdictSelectionForCore(nextState);
+    if (khanEdictSelection) {
+        const rebuiltKhanEdictSelection = buildKhanEdictSelection(
+            nextState,
+            getCurrentFactionId(nextState),
+            selectedRegionId,
+            khanEdictSelection.preferredSourceRegionId,
+        );
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: rebuiltKhanEdictSelection?.sourceRegionId ?? selectedRegionId,
+            turnPhase: rebuiltKhanEdictSelection ? 'khan-edict-choice' : 'action-window',
+            khanEdictSelection: null,
+        });
+    }
+    const diplomacySelection = diplomacySelectionCarry ?? getQidahenCurrentDiplomacySelectionForCore(nextState);
+    if (diplomacySelection) {
+        const rebuiltDiplomacySelection = buildDiplomacySelection(
+            nextState,
+            getCurrentFactionId(nextState),
+            selectedRegionId,
+            diplomacySelection.source,
+            diplomacySelection.sourceRegionId,
+            diplomacySelection.preferredSourceRegionId,
+            {
+                remainingTargetCount: diplomacySelection.remainingTargetCount,
+                resolvedSteps: diplomacySelection.resolvedSteps,
+            },
+        );
+        const carryRequiresDiplomacyProgressHost = !!diplomacySelectionCarry
+            && (
+                diplomacySelectionCarry.resolvedSteps.length > 0
+                || diplomacySelectionCarry.remainingTargetCount < diplomacySelectionCarry.maxTargetCount
+                || rebuiltDiplomacySelection?.targetRegionId != null
+            );
+        const rebuiltDiplomacyProgress = nextState.diplomacyProgress
+            ?? (carryRequiresDiplomacyProgressHost
+                ? buildQidahenDiplomacyProgress(diplomacySelectionCarry)
+                : null);
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: rebuiltDiplomacySelection?.targetRegionId ?? selectedRegionId,
+            turnPhase: rebuiltDiplomacySelection ? 'diplomacy-choice' : 'action-window',
+            diplomacyProgress: rebuiltDiplomacySelection ? rebuiltDiplomacyProgress : null,
+        });
+    }
+    if (nextState.handLimitDiscardSelection) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: nextState.selectedRegionId,
+            turnPhase: 'hand-limit-discard',
+        });
+    }
+    if (nextState.sunYuanhuaTechSelection) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: nextState.selectedRegionId,
+            turnPhase: 'sun-yuanhua-tech-choice',
+        });
+    }
+    if (nextState.turnPhase === 'season-resolution') {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: nextState.selectedRegionId,
+            turnPhase: nextState.turnPhase,
+        });
+    }
+    if (nextState.pendingTargetAction) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: nextState.pendingTargetAction.targetRuntimeRegionId,
+            turnPhase: 'resolve-pending',
+        });
+    }
+    const wheelDispatchSelection = wheelDispatchSelectionCarry ?? getQidahenCurrentWheelDispatchSelectionForCore(nextState);
+    if (
+        nextState.turnPhase === 'drive-tiger-consent'
+        && wheelDispatchSelection?.sourceActionId === 'drive-tiger'
+    ) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: wheelDispatchSelection.sourceRegionId,
+            turnPhase: 'drive-tiger-consent',
+        });
+    }
+    if (nextState.postBattleSelection) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: nextState.postBattleSelection.targetRuntimeRegionId,
+            turnPhase: 'post-battle-decision',
+        });
+    }
+    if (!wheelDispatchSelection) {
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: actionWindowEffect.forcedSelectedRegionId ?? selectedRegionId,
+        });
+    }
+
+    const chosenTargetRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+    const chosenTarget = wheelDispatchSelection.candidates.find((candidate) => (
+        candidate.targetRuntimeRegionId === chosenTargetRuntimeRegionId
+        || candidate.targetRegionId === selectedRegionId
+    ));
+    if (chosenTarget) {
+        return dependencies.resolveQidahenWheelDispatchInteractionChoice(
+            nextState,
+            chosenTarget.targetRuntimeRegionId,
+            timestamp,
+            wheelDispatchSelection,
+        );
+    }
+
+    const attackerFactionId = wheelDispatchSelection.attackerFactionId;
+    const movementProfileId = wheelDispatchSelection.movementProfileId as QidahenMovementProfileId;
+    const selectionSourceActionId = wheelDispatchSelection.sourceActionId ?? 'wheel-dispatch';
+    const rebuiltSelection = selectionSourceActionId === 'khan-edict'
+        ? buildKhanEdictDispatchSelection(
+            nextState,
+            attackerFactionId,
+            selectedRegionId,
+            wheelDispatchSelection.preferredSourceRegionId,
+        )
+        : selectionSourceActionId === 'drive-tiger'
+            ? buildDriveTigerDispatchSelection(
+                nextState,
+                getCurrentFactionId(nextState),
+                selectedRegionId,
+                wheelDispatchSelection.preferredSourceRegionId,
+            )
+            : buildWheelDispatchSelection(
+                nextState,
+                attackerFactionId,
+                movementProfileId,
+                getPreferredDispatchSelectedRegionIdForFaction(
+                    nextState,
+                    attackerFactionId,
+                    movementProfileId,
+                    selectedRegionId,
+                ),
+                wheelDispatchSelection.preferredSourceRegionId,
+                selectionSourceActionId,
+            );
+    if (rebuiltSelection) {
+        const shouldKeepRebuiltWheelDispatchSelectionOffHost = nextState.wheelDispatchProgress == null
+            && (
+                selectionSourceActionId === 'wheel-dispatch'
+                || selectionSourceActionId === 'drive-tiger'
+            );
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: rebuiltSelection.sourceRegionId,
+            turnPhase: 'dispatch-targeting',
+            wheelDispatchProgress: shouldKeepRebuiltWheelDispatchSelectionOffHost ? null : rebuiltSelection,
+            pendingTargetAction: null,
+        });
+    }
+
+    return dependencies.updateTurnLabel({
+        ...nextState,
+        selectedRegionId,
+    });
+};

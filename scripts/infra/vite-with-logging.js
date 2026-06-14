@@ -142,8 +142,18 @@ function resolveMaxOldSpaceSizeArg(defaultMb = 8192) {
   return `--max-old-space-size=${resolved}`;
 }
 
+function resolveNodeMemoryArgs() {
+  const args = [resolveMaxOldSpaceSizeArg()];
+  const semiSpaceMb = Number.parseInt(process.env.BG_NODE_MAX_SEMI_SPACE_SIZE?.trim() || '', 10);
+  if (Number.isFinite(semiSpaceMb) && semiSpaceMb > 0) {
+    args.push(`--max-semi-space-size=${semiSpaceMb}`);
+  }
+  return args;
+}
+
 log(`Vite 入口: ${viteEntry}`);
 log(`Vite 参数: ${viteArgs.join(' ')}`);
+log(`Vite Node 参数: ${resolveNodeMemoryArgs().join(' ')}`);
 
 if (shouldForceInline) {
   const reason = 'BG_VITE_FORCE_INLINE=1';
@@ -154,7 +164,7 @@ if (shouldForceInline) {
 
   try {
     vite = spawn(process.execPath, [
-      resolveMaxOldSpaceSizeArg(),
+      ...resolveNodeMemoryArgs(),
       viteEntry,
       ...viteArgs,
     ], withWindowsHide({

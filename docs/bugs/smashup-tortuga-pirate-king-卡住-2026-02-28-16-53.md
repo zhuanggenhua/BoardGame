@@ -245,7 +245,7 @@ if (state.sys.flowHalted && state.sys.interaction.current) {
 
 ## 相关文档
 
-- `docs/bugs/smashup-tortuga-pirate-king-卡住-analysis.md` - 之前的分析（2026/2/28 16:16）
+- `docs/bugs/smashup/smashup-tortuga-pirate-king-卡住-analysis.md` - 之前的分析（2026/2/28 16:16）
 - `docs/bugs/smashup-tortuga-无法结束回合-analysis.md` - 便衣忍者相关问题
 - `docs/interaction-refresh-flow.md` - 交互刷新机制
 - `docs/interaction-ui-modes.md` - UI 渲染模式

@@ -58,8 +58,8 @@
     - 用例：`giant_ant_we_are_the_champions 应该走统一 afterScoring trigger`
   - `src/games/smashup/__tests__/afterScoring-window-multi-round.test.ts`
     - 用例：`两个玩家都有 afterScoring 卡牌，支持多轮响应`
-  - `evidence/smashup-we-are-the-champions-timing-fix.md`
-  - `evidence/smashup-response-window-complete.md`
+  - `evidence/smashup/smashup-we-are-the-champions-timing-fix.md`
+  - `evidence/smashup/smashup-response-window-complete.md`
 - 结论：
   - “双方都是冠军却只触发一次”的核心风险点，当前已有直接测试和专项 evidence 覆盖；缺的是反馈 ID 级 closeout，而不是实现缺口。
 
@@ -76,7 +76,7 @@
     - 用例：`walks the real RESPOND chain with target-first selection without throwing a command exception`
   - `src/games/smashup/__tests__/newOngoingAbilities.test.ts`
     - 用例：`Mummy Strength 先选随从，再按所选随从所在基地是否有埋葬牌决定 +4 或 +2`
-  - `evidence/smashup-ancient-egyptians-audit-2026-03-29.md`
+  - `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md`
     - 明确写出旧结论失效，并把时序修正为 `target-first`
 - 结论：
   - 这条反馈应视为历史错误实现 / 理解争议已被专项审计和回归测试彻底澄清，因此按 `closed` 收口合理。
@@ -107,7 +107,7 @@
   - 这条更像“埋葬后的展示位置 / 表现理解”问题，而不是当前引擎把牌蒸发。
   - 古埃及埋葬牌在实现上会进入基地的 `buriedCards` / 埋葬条带，不会以普通明置在场战术的样式继续留在台面。
 - 直接证据：
-  - `evidence/smashup-ancient-egyptians-audit-2026-03-29.md`
+  - `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md`
     - 明确审计了 `Bury this card` 必须落到基地，且旧“离手但没进任何 buriedCards、等于蒸发”的问题已被修正
   - `src/games/smashup/__tests__/buryEngine.test.ts`
     - 多条用例覆盖埋葬牌进入 / 离开 `buriedCards` 链路

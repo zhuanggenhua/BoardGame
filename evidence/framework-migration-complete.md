@@ -143,7 +143,7 @@ BoardBridge → Board 组件
 
 - `evidence/framework-migration-remove-test-route.md` - 第一阶段：删除 /test 路由
 - `evidence/framework-migration-phase2-complete.md` - 第二阶段：迁移测试文件
-- `evidence/framework-migration-verification.md` - 验证脚本修复
+- `evidence/_shared/framework-migration-verification.md` - 验证脚本修复
 - `evidence/framework-migration-route-fix-success.md` - 路由修复成功
 - `evidence/framework-migration-timeout-analysis.md` - 超时问题分析
 - `evidence/framework-migration-timeout-root-cause.md` - 超时根本原因

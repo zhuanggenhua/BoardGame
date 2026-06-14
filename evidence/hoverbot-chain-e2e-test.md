@@ -34,7 +34,7 @@
 
 ### 1. 连续打出两个盘旋机器人后最终场面
 
-![最终场面](assets/hoverbot-chain-e2e/01-final-state.png)
+![最终场面](smashup/assets/hoverbot-chain-e2e/01-final-state.png)
 
 审查结论：
 
@@ -44,7 +44,7 @@
 
 ### 2. 第二个盘旋读取到新的牌库顶
 
-![第二个盘旋读取新牌库顶](assets/hoverbot-chain-e2e/02-second-hoverbot-sees-new-deck-top.png)
+![第二个盘旋读取新牌库顶](smashup/assets/hoverbot-chain-e2e/02-second-hoverbot-sees-new-deck-top.png)
 
 审查结论：
 
@@ -54,7 +54,7 @@
 
 ### 3. 交互不会一闪而过
 
-![交互持续存在](assets/hoverbot-chain-e2e/03-interaction-persists.png)
+![交互持续存在](smashup/assets/hoverbot-chain-e2e/03-interaction-persists.png)
 
 审查结论：
 
@@ -64,7 +64,7 @@
 
 ### 4. 选择跳过后的场面
 
-![跳过后场面](assets/hoverbot-chain-e2e/04-skip-option.png)
+![跳过后场面](smashup/assets/hoverbot-chain-e2e/04-skip-option.png)
 
 审查结论：
 
@@ -74,7 +74,7 @@
 
 ### 5. 牌库顶是行动卡时不创建交互
 
-![行动卡不创建交互](assets/hoverbot-chain-e2e/05-action-card-no-interaction.png)
+![行动卡不创建交互](smashup/assets/hoverbot-chain-e2e/05-action-card-no-interaction.png)
 
 审查结论：
 

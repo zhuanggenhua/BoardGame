@@ -282,6 +282,7 @@ export const GameHUD = ({
     const isTutorial = mode === 'tutorial';
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
+    const suppressGlobalFab = _gameId === 'qidahen';
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
@@ -1249,12 +1250,14 @@ export const GameHUD = ({
                 />
             )}
             <SeatEmoteOverlay events={seatEmoteEvents} />
-            <FabMenu
-                isDark={true}
-                items={items}
-                position="bottom-right"
-                zIndex={GAME_HUD_FAB_Z_INDEX}
-            />
+            {!suppressGlobalFab ? (
+                <FabMenu
+                    isDark={true}
+                    items={items}
+                    position="bottom-right"
+                    zIndex={GAME_HUD_FAB_Z_INDEX}
+                />
+            ) : null}
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (

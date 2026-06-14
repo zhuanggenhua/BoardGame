@@ -52,7 +52,7 @@
 
 **状态**：❌ 测试缺失，功能存在
 
-**详细报告**：`evidence/p2-temple-firstmate-verification.md`
+**详细报告**：`evidence/smashup/p2-temple-firstmate-verification.md`
 
 **验证结果**：
 - ✅ `base_temple_of_goju` 和 `pirate_first_mate` 仍然存在
@@ -88,7 +88,7 @@
 
 **步骤**：
 1. 创建测试文件：`src/games/smashup/__tests__/temple-firstmate-afterscore.test.ts`
-2. 实现 3 个测试用例（见 `evidence/p2-temple-firstmate-verification.md`）
+2. 实现 3 个测试用例（见 `evidence/smashup/p2-temple-firstmate-verification.md`）
 3. 运行测试验证
 4. 如果测试失败，分析原因并修复
 

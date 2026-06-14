@@ -98,6 +98,6 @@ events.push(createDisplayOnlySettlement('0', dice, 'volley'));
    - 验证 UI 显示完整性
 
 ## 相关文档
-- 代码修复详情：`evidence/volley-fix-final.md`
+- 代码修复详情：`evidence/dicethrone/volley-fix-final.md`
 - 审计缺口分析：`evidence/bonus-die-display-audit-gap-analysis.md`
 - 多骰显示模式总结：`evidence/multi-dice-display-pattern-summary.md`

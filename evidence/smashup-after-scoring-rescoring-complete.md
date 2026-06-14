@@ -124,9 +124,9 @@ if (state.sys.afterScoringInitialPowers) {
 ### 3. 证据文档创建 ✅
 
 **文档列表**：
-1. `evidence/smashup-after-scoring-re-scoring-rule.md` - 规则分析
-2. `evidence/smashup-after-scoring-re-scoring-implementation.md` - 实现文档
-3. `evidence/smashup-after-scoring-rescoring-test-created.md` - 测试创建文档
+1. `evidence/smashup/smashup-after-scoring-re-scoring-rule.md` - 规则分析
+2. `evidence/smashup/smashup-after-scoring-re-scoring-implementation.md` - 实现文档
+3. `evidence/smashup/smashup-after-scoring-rescoring-test-created.md` - 测试创建文档
 4. `evidence/smashup-after-scoring-rescoring-complete.md` - 完成总结（本文档）
 
 ## 实现特性
@@ -268,8 +268,8 @@ npm run test:e2e -- smashup-after-scoring
 ## 相关文档
 
 - `evidence/smashup-after-scoring-window-final-summary.md` - After Scoring 响应窗口实现总结
-- `evidence/smashup-after-scoring-re-scoring-rule.md` - 重新计分规则分析
-- `evidence/smashup-after-scoring-re-scoring-implementation.md` - 重新计分实现文档
-- `evidence/smashup-after-scoring-rescoring-test-created.md` - 测试创建文档
+- `evidence/smashup/smashup-after-scoring-re-scoring-rule.md` - 重新计分规则分析
+- `evidence/smashup/smashup-after-scoring-re-scoring-implementation.md` - 重新计分实现文档
+- `evidence/smashup/smashup-after-scoring-rescoring-test-created.md` - 测试创建文档
 - `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` - 单元测试文件
 - `src/games/smashup/domain/index.ts` - 核心实现文件

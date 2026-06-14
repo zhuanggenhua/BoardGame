@@ -90,7 +90,7 @@ export function playSound(key: SoundKey): void {
 ## 相关文档
 
 - `evidence/dicethrone-attack-sound-volume-zero-analysis.md` - 初步分析（误判为 volume 问题）
-- `evidence/dicethrone-attack-sound-interrupted-by-phase-change.md` - 根因分析和修复方案
+- `evidence/dicethrone/dicethrone-attack-sound-interrupted-by-phase-change.md` - 根因分析和修复方案
 
 ## 修复时间
 

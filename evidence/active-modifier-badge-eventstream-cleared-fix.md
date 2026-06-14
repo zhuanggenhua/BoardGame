@@ -157,5 +157,5 @@ EventStream 不是只增长的，它可能在以下情况下被清空：
 
 ## 相关文档
 
-- `evidence/active-modifier-badge-cursor-double-advance-fix.md`：首次挂载问题修复
+- `evidence/dicethrone/active-modifier-badge-cursor-double-advance-fix.md`：首次挂载问题修复
 - `evidence/active-modifier-badge-eventstream-cleared-fix.md`：本文档（EventStream 被清空问题修复）

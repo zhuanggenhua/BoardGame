@@ -181,4 +181,4 @@
 
 - `evidence/p1-audit-progress.md` - P1 审计进度
 - `evidence/audit-results-complete.md` - 完整审计结果
-- `evidence/audit-report-smashup.md` - SmashUp 审计报告
+- `evidence/_shared/audit-report-smashup.md` - SmashUp 审计报告

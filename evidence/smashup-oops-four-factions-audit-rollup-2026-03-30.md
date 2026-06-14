@@ -7,8 +7,8 @@
 - `Samurai`
 
 ## 单派系 evidence
-- `evidence/smashup-ancient-egyptians-audit-2026-03-29.md`
-- `evidence/smashup-vikings-audit-2026-03-29.md`
+- `evidence/smashup/smashup-ancient-egyptians-audit-2026-03-29.md`
+- `evidence/smashup/smashup-vikings-audit-2026-03-29.md`
 - `evidence/smashup-cowboys-audit-2026-03-30.md`
 - `evidence/smashup-samurai-audit-2026-03-30.md`
 - 浏览器交互留证：`evidence/smashup-oops-faction-gameplay-e2e-test.md`

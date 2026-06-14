@@ -51,7 +51,7 @@
 - **默认值**：默认开启（显示响应窗口）
 
 ## 详细报告
-- **autoResponse 恢复详情**：`evidence/POD-AUTORESPONSE-RECOVERY.md`
+- **autoResponse 恢复详情**：`evidence/dicethrone/POD-AUTORESPONSE-RECOVERY.md`
 - **完整恢复状态**：`evidence/POD-RECOVERY-FINAL-STATUS.md`
 
 ## 下一步建议
@@ -70,5 +70,5 @@
 
 ## 相关文件
 - `src/games/dicethrone/Board.tsx` - 主要修改文件
-- `evidence/POD-AUTORESPONSE-RECOVERY.md` - autoResponse 恢复详情
+- `evidence/dicethrone/POD-AUTORESPONSE-RECOVERY.md` - autoResponse 恢复详情
 - `evidence/POD-RECOVERY-FINAL-STATUS.md` - 完整恢复状态报告

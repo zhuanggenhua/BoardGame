@@ -26,6 +26,7 @@ export interface Room {
     isLocked?: boolean;
     publicSetupSummary?: {
         enabledExpansions?: string[];
+        scenarioId?: string;
     };
 }
 
@@ -90,6 +91,38 @@ export const resolveRoomExpansionLabel = (
         });
     }
     return expansionId;
+};
+
+export const resolveRoomScenarioLabel = (
+    t: RoomLabelTranslator,
+    gameName: string | undefined,
+    scenarioId: string,
+): string => {
+    const normalizedGameName = gameName?.trim().toLowerCase();
+    if (normalizedGameName !== 'qidahen') {
+        return scenarioId;
+    }
+
+    if (scenarioId === 'post-sarhu-1619') {
+        return t('setup.scenario.postSarhu1619', {
+            ns: 'game-qidahen',
+            defaultValue: scenarioId,
+        });
+    }
+    if (scenarioId === 'shanhaiguan-1622') {
+        return t('setup.scenario.shanhaiguan1622', {
+            ns: 'game-qidahen',
+            defaultValue: scenarioId,
+        });
+    }
+    if (scenarioId === 'dingmao-rebellion-1627') {
+        return t('setup.scenario.dingmaoRebellion1627', {
+            ns: 'game-qidahen',
+            defaultValue: scenarioId,
+        });
+    }
+
+    return scenarioId;
 };
 
 export const shouldPromptExitActiveMatch = (activeMatchID: string | null, targetMatchID: string) => (

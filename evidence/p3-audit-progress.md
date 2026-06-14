@@ -214,7 +214,7 @@
 ## 相关文档
 
 - `evidence/audit-priority-definition.md` - 优先级定义
-- `evidence/audit-scope-complete.md` - 完整审计范围
-- `evidence/p0-audit-progress.md` - P0 审计进度
+- `evidence/_shared/audit-scope-complete.md` - 完整审计范围
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度
 - `evidence/p1-audit-progress.md` - P1 审计进度
 - `evidence/p2-audit-progress.md` - P2 审计进度

@@ -30,7 +30,7 @@
 ## 修复文件
 
 - ✅ `src/games/smashup/domain/baseAbilities.ts` - 母舰基地和刚柔流寺庙的 afterScoring 能力
-- ✅ `docs/bugs/smashup-mothership-afterscoring.md` - 详细 bug 文档
+- ✅ `docs/bugs/smashup/smashup-mothership-afterscoring.md` - 详细 bug 文档
 - ✅ `docs/bugs/smashup-afterscoring-summary.md` - 本总结文档
 
 ## 测试建议

@@ -54,4 +54,4 @@ $env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'; npm run test:e2e:ci:file -- e2e/temp-dic
   - 枪手 / 武士的手牌预览继续使用原 `ability-cards` atlas
   - 运行时和预加载都不再依赖 `hand-cards-atlas`
   - 规格回到和老角色一致的 atlas 契约
-- 逐 slot 的全量人工复核见 `evidence/dicethrone-gunslinger-samurai-card-preview-audit-2026-04-04.md`。
+- 逐 slot 的全量人工复核见 `evidence/dicethrone/dicethrone-gunslinger-samurai-card-preview-audit-2026-04-04.md`。

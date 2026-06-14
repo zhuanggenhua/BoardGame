@@ -323,10 +323,10 @@
 
 - `evidence/audit-priority-definition.md` - 优先级定义
 - `evidence/audit-tracking-overview.md` - 审计总览
-- `evidence/p0-audit-progress.md` - P0 审计进度
+- `evidence/_shared/p0-audit-progress.md` - P0 审计进度
 - `evidence/p1-audit-progress.md` - P1 审计进度
-- `evidence/audit-report-smashup.md` - SmashUp 审计报告
-- `evidence/audit-report-summonerwars.md` - SummonerWars 审计报告
-- `evidence/audit-report-engine-phase-e.md` - 引擎层审计报告
-- `evidence/audit-report-framework-phase-f.md` - 框架层审计报告
-- `evidence/audit-report-server-phase-g.md` - 服务端审计报告
+- `evidence/_shared/audit-report-smashup.md` - SmashUp 审计报告
+- `evidence/_shared/audit-report-summonerwars.md` - SummonerWars 审计报告
+- `evidence/_shared/audit-report-engine-phase-e.md` - 引擎层审计报告
+- `evidence/_shared/audit-report-framework-phase-f.md` - 框架层审计报告
+- `evidence/_shared/audit-report-server-phase-g.md` - 服务端审计报告
