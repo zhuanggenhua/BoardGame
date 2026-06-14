@@ -164,6 +164,10 @@ type QidahenRegionMaskDebugSnapshot = {
     isIsolatedWorkspace: boolean;
     dataOutputDir: string;
     persistedWorkspaceState: PersistedWorkspaceState;
+    showAdvancedWorkbench: boolean;
+    showFormalEmptyToolPanel: boolean;
+    showFormalEmptyWorkspaceGuide: boolean;
+    simplifiedBoundaryWorkflow: boolean;
     selectedRegionId: string | null;
     selectedRegionName: string | null;
     statusMessage: string;
@@ -219,6 +223,9 @@ type QidahenRegionMaskDebugSnapshot = {
 declare global {
     interface Window {
         __QIDAHEN_REGION_MASK_DEBUG__?: QidahenRegionMaskDebugSnapshot;
+        __QIDAHEN_REGION_MASK_DEBUG_ACTIONS__?: {
+            expandAdvancedWorkbench: () => void;
+        };
     }
 }
 
@@ -6571,6 +6578,14 @@ const QidahenRegionMaskTool: React.FC = () => {
         isIsolatedWorkspace,
         dataOutputDir,
         persistedWorkspaceState,
+        showAdvancedWorkbench,
+        showFormalEmptyToolPanel,
+        showFormalEmptyWorkspaceGuide: !isIsolatedWorkspace
+            && persistedWorkspaceState === 'empty'
+            && boundaryDraftPixelCount === 0
+            && barrierPixelCount === 0
+            && lastRegionGenerationResults.length === 0,
+        simplifiedBoundaryWorkflow,
         selectedRegionId: selectedRegion?.id ?? null,
         selectedRegionName: selectedRegion?.name ?? null,
         statusMessage,
@@ -6618,6 +6633,9 @@ const QidahenRegionMaskTool: React.FC = () => {
         persistedWorkspaceState,
         selectedRegion?.id,
         selectedRegion?.name,
+        showAdvancedWorkbench,
+        showFormalEmptyToolPanel,
+        simplifiedBoundaryWorkflow,
         statusMessage,
     ]);
     React.useEffect(() => {
@@ -6625,12 +6643,19 @@ const QidahenRegionMaskTool: React.FC = () => {
             return;
         }
         window.__QIDAHEN_REGION_MASK_DEBUG__ = debugSnapshot;
+        window.__QIDAHEN_REGION_MASK_DEBUG_ACTIONS__ = {
+            expandAdvancedWorkbench: () => {
+                setShowAdvancedWorkbench(true);
+                setShowFormalEmptyToolPanel(true);
+            },
+        };
         return () => {
             if (window.__QIDAHEN_REGION_MASK_DEBUG__ === debugSnapshot) {
                 delete window.__QIDAHEN_REGION_MASK_DEBUG__;
             }
+            delete window.__QIDAHEN_REGION_MASK_DEBUG_ACTIONS__;
         };
-    }, [debugSnapshot]);
+    }, [debugSnapshot, setShowAdvancedWorkbench, setShowFormalEmptyToolPanel]);
     const acceptancePackageReviewSignature = React.useMemo(() => (
         boundaryQualityReport.normality.regionCoverages
             .map((coverage) => `${coverage.regionId}:${coverage.currentSignature}`)

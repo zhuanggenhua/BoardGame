@@ -378,10 +378,10 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
           const payload = JSON.parse(body) as QidahenRegionMaskSavePayload
           const saveScope = normalizeQidahenRegionMaskSaveScope(payload.saveScope)
 
-          if ((saveScope === 'all' || saveScope === 'regions') && payload.regions == null) {
+          if ((saveScope === 'all' || saveScope === 'regions' || saveScope === 'boundary') && payload.regions == null) {
             throw new Error('缺少 regions')
           }
-          if ((saveScope === 'all' || saveScope === 'graph') && payload.graph == null) {
+          if ((saveScope === 'all' || saveScope === 'graph' || saveScope === 'boundary') && payload.graph == null) {
             throw new Error('缺少 graph')
           }
           if (saveScope === 'boundary' && payload.boundaryMaskPngDataUrl == null) {
@@ -395,7 +395,7 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
           }
 
           fs.mkdirSync(outputConfig.outputDir, { recursive: true })
-          if (saveScope === 'all' || saveScope === 'regions') {
+          if (saveScope === 'all' || saveScope === 'regions' || saveScope === 'boundary') {
             fs.writeFileSync(
               path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.mask),
               parsePngDataUrl(payload.maskPngDataUrl),
@@ -406,7 +406,7 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
               'utf8',
             )
           }
-          if (saveScope === 'all' || saveScope === 'graph') {
+          if (saveScope === 'all' || saveScope === 'graph' || saveScope === 'boundary') {
             fs.writeFileSync(
               path.join(outputConfig.outputDir, QIDAHEN_REGION_MASK_OUTPUT_FILES.graph),
               `${JSON.stringify(payload.graph, null, 2)}\n`,
@@ -461,7 +461,15 @@ const createQidahenRegionMaskDevtoolsPlugin = () => ({
             internalFiles: saveScope === 'all'
               ? Object.values(QIDAHEN_REGION_MASK_INTERNAL_FILES)
               : saveScope === 'boundary'
-                ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd, QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove, QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference]
+                ? [
+                    QIDAHEN_REGION_MASK_OUTPUT_FILES.mask,
+                    QIDAHEN_REGION_MASK_OUTPUT_FILES.regions,
+                    QIDAHEN_REGION_MASK_OUTPUT_FILES.graph,
+                    QIDAHEN_REGION_MASK_INTERNAL_FILES.boundaryMask,
+                    QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierAdd,
+                    QIDAHEN_REGION_MASK_INTERNAL_FILES.barrierRemove,
+                    QIDAHEN_REGION_MASK_INTERNAL_FILES.boundarySourceReference,
+                  ]
                 : saveScope === 'regions' || saveScope === 'authoritative-guides'
                   ? [QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeMask, QIDAHEN_REGION_MASK_INTERNAL_FILES.authoritativeWorkspaceMeta]
                   : [],
