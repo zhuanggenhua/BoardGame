@@ -228,10 +228,10 @@ export const GameListCard = ({
 
                 <div className="mt-0.5 flex items-center justify-between border-t border-parchment-cream pt-1">
                     <div className="flex items-center gap-1 overflow-hidden">
-                        {game.tags && game.tags.length > 0 ? (
-                            game.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className="text-[10px] font-bold text-parchment-light-text bg-parchment-cream px-1.5 py-0.5 rounded-[2px] whitespace-nowrap">
-                                    {t(`common:game_tags.${tag}`)}
+                        {chipLabels.length > 0 ? (
+                            chipLabels.slice(0, 2).map((label) => (
+                                <span key={label} className="text-[10px] font-bold text-parchment-light-text bg-parchment-cream px-1.5 py-0.5 rounded-[2px] whitespace-nowrap">
+                                    {label}
                                 </span>
                             ))
                         ) : (
