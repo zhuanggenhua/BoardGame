@@ -41,6 +41,7 @@
 - `game-ai-adaptation`
 - `game-audit-workflow`
 - `generated-design-implementation`
+- `merge-decision-package`
 - `merge-pr-workflow`
 - `smashup-faction-addition`
 - `sticker-imagegen`

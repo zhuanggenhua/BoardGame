@@ -7,6 +7,7 @@
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    addPowerCounter,
     destroyMinion,
     getMinionPower,
     buildMinionTargetOptions,
@@ -688,11 +689,15 @@ const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixieP
         const selections = (Array.isArray(value) ? value : [value]) as Array<{ minionUid?: string; baseIndex?: number }>;
         const valid = selections.filter(selection => selection.minionUid && selection.baseIndex !== undefined) as Array<{ minionUid: string; baseIndex: number }>;
         return {
-            events: valid.map(selection => ({
-                type: SU_EVENTS.POWER_COUNTER_ADDED,
-                payload: { minionUid: selection.minionUid, baseIndex: selection.baseIndex, amount: 1, reason: 'trickster_pixie_pod_minion' },
-                timestamp,
-            } as PowerCounterAddedEvent)),
+            events: valid.map(selection => (
+                addPowerCounter(
+                    selection.minionUid,
+                    selection.baseIndex,
+                    1,
+                    'trickster_pixie_pod_minion',
+                    timestamp,
+                ) as PowerCounterAddedEvent
+            )),
         };
     },
 });
@@ -721,20 +726,26 @@ const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<Trickst
 
         if (valid.length === 1) {
             return {
-                events: [{
-                    type: SU_EVENTS.POWER_COUNTER_ADDED,
-                    payload: { minionUid: valid[0].minionUid, baseIndex: valid[0].baseIndex, amount: 2, reason: 'trickster_pixie_pod_action' },
+                events: [addPowerCounter(
+                    valid[0].minionUid,
+                    valid[0].baseIndex,
+                    2,
+                    'trickster_pixie_pod_action',
                     timestamp,
-                } as PowerCounterAddedEvent],
+                ) as PowerCounterAddedEvent],
             };
         }
 
         return {
-            events: valid.slice(0, 2).map(selection => ({
-                type: SU_EVENTS.POWER_COUNTER_ADDED,
-                payload: { minionUid: selection.minionUid, baseIndex: selection.baseIndex, amount: 1, reason: 'trickster_pixie_pod_action' },
-                timestamp,
-            } as PowerCounterAddedEvent)),
+            events: valid.slice(0, 2).map(selection => (
+                addPowerCounter(
+                    selection.minionUid,
+                    selection.baseIndex,
+                    1,
+                    'trickster_pixie_pod_action',
+                    timestamp,
+                ) as PowerCounterAddedEvent
+            )),
         };
     },
 });

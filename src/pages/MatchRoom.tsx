@@ -8,6 +8,15 @@ import { MatchRoomBlockingGate } from './matchRoomBlockingState';
 import { MatchRoomPageShell } from './matchRoomPageShell';
 import { useMatchRoomPageModel } from './useMatchRoomPageModel';
 
+export {
+    buildStoredSeatValidationClearKey,
+    resolveMatchRoomRouteIdentity,
+    resolveSeatValidationPlayers,
+    resolveStoredSeatValidationClearDecision,
+    shouldUseTransportSeatValidationSnapshot,
+} from './matchRouteIdentity';
+export { OnlineManualFactionSelectionBridge } from './onlineManualFactionSelectionBridge';
+
 export const MatchRoom = () => {
     usePerformanceMonitor();
     const { playerID: debugPlayerID, setPlayerID } = useDebug();

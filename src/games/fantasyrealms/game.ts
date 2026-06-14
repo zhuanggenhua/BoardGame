@@ -1,8 +1,11 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
 import { createBaseSystems, createGameEngine } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { FantasyRealmsDomain } from './domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore, FantasyRealmsEvent } from './domain';
 import { isDuelVariant } from './domain/commands';
+import { getFantasyRealmsCardDisplayName } from './foundation';
+import { fantasyRealmsAiRuntime } from './ai';
 
 const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'] as const;
 
@@ -29,7 +32,7 @@ function formatFantasyRealmsActionEntry({
             timestamp,
             actorId: command.playerId,
             kind: command.type,
-            segments: [{ type: 'text', text: `查看焦点牌：${card.name}` }],
+            segments: [{ type: 'text', text: `查看焦点牌：${getFantasyRealmsCardDisplayName(card)}` }],
         } : null;
     }
 
@@ -54,7 +57,7 @@ function formatFantasyRealmsActionEntry({
             timestamp,
             actorId: command.playerId,
             kind: command.type,
-            segments: [{ type: 'text', text: `拿取公开弃牌：${card?.name ?? '未知卡牌'}` }],
+            segments: [{ type: 'text', text: `拿取公开弃牌：${getFantasyRealmsCardDisplayName(card) || '未知卡牌'}` }],
         };
     }
 
@@ -65,7 +68,7 @@ function formatFantasyRealmsActionEntry({
             timestamp,
             actorId: command.playerId,
             kind: command.type,
-            segments: [{ type: 'text', text: `弃掉手牌：${card?.name ?? '未知卡牌'}` }],
+            segments: [{ type: 'text', text: `弃掉手牌：${getFantasyRealmsCardDisplayName(card) || '未知卡牌'}` }],
         };
     }
 
@@ -87,5 +90,7 @@ export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCom
     maxPlayers: 6,
     commandTypes: ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'],
 });
+
+registerGameAiRuntime(fantasyRealmsAiRuntime);
 
 export default engineConfig;

@@ -1095,14 +1095,16 @@ export function registerBaseAbilities(): void {
         ) ?? false;
         if (ignored) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.TEMP_POWER_ADDED,
-                payload: {
-                    minionUid: ctx.minionUid,
-                    baseIndex: ctx.baseIndex,
-                    amount: 2,
-                    reason: '集会场：首个随从 +2 临时力量' },
-                timestamp: ctx.now } as SmashUpEvent] };
+            events: [
+                addTempPower(
+                    ctx.minionUid,
+                    ctx.baseIndex,
+                    2,
+                    '集会场：首个随从 +2 临时力量',
+                    ctx.now,
+                ) as SmashUpEvent,
+            ],
+        };
     }, {
         canTrigger: isFirstMinionPlayedAtBaseThisTurn });
 

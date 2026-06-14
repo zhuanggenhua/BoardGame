@@ -12,6 +12,7 @@ import {
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildSemanticOngoingAttachEvents,
     buildValidatedReturnEvents,
     buildAbilityFeedback,
     canControllerPlayTitan,
@@ -185,6 +186,7 @@ function findAttachedActionState(
 }
 
 function buildTransferAttachedActionEvents(
+    state: SmashUpCore,
     attached: AttachedActionState,
     sourcePlayerId: PlayerId,
     targetBaseIndex: number,
@@ -203,21 +205,17 @@ function buildTransferAttachedActionEvents(
             },
             timestamp,
         } as OngoingDetachedEvent,
-        {
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: attached.cardUid,
-                defId: attached.defId,
-                ownerId: attached.ownerId,
-                ...(attached.ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
-                targetType: 'minion',
-                targetBaseIndex,
-                targetMinionUid,
-                ...(attached.snapshot?.metadata ? { metadata: attached.snapshot.metadata } : {}),
-                ...(attached.snapshot?.talentUsed !== undefined ? { talentUsed: attached.snapshot.talentUsed } : {}),
-            },
-            timestamp,
-        } as OngoingAttachedEvent,
+        ...buildSemanticOngoingAttachEvents(state, {
+            cardUid: attached.cardUid,
+            defId: attached.defId,
+            ownerId: attached.ownerId,
+            ...(attached.ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
+            targetBaseIndex,
+            targetMinionUid,
+            ...(attached.snapshot?.metadata ? { metadata: attached.snapshot.metadata } : {}),
+            ...(attached.snapshot?.talentUsed !== undefined ? { talentUsed: attached.snapshot.talentUsed } : {}),
+            now: timestamp,
+        }),
     ];
 }
 
@@ -557,6 +555,7 @@ function createTransferSelfAbilityProgram(
             }
             return {
                 events: buildTransferAttachedActionEvents(
+                    state.core,
                     liveAttached,
                     context.playerId,
                     selected.baseIndex,
@@ -754,6 +753,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
         }
         return {
             events: buildTransferAttachedActionEvents(
+                state.core,
                 attached,
                 context.playerId,
                 context.targetBaseIndex,

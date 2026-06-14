@@ -231,28 +231,12 @@ function mythicHorsesRainbow(ctx: AbilityContext): AbilityResult {
 }
 
 function mythicHorsesSeastar(ctx: AbilityContext): AbilityResult {
-    const source = ctx.matchState.core.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
-    if (!source) return { events: [] };
-    if (source.talentUsed) return { events: [] };
     const hasMinionAtAnotherBase = ctx.matchState.core.bases.some((base, baseIndex) => (
         baseIndex !== ctx.baseIndex
         && base.minions.some(minion => minion.controller === ctx.playerId)
     ));
     if (!hasMinionAtAnotherBase) return { events: [] };
-    return {
-        events: [
-            buildMetadataUpdatedEvent(
-                ctx.cardUid,
-                ctx.baseIndex,
-                {
-                    mythicHorsesSeastarExtraTalent: true,
-                    mythicHorsesSeastarExtraTalentConsumed: false,
-                },
-                'mythic_horses_seastar',
-                ctx.now,
-            ),
-        ],
-    };
+    return { events: [grantContextualExtraMinion(ctx, 'mythic_horses_seastar', ctx.baseIndex)] };
 }
 
 function mythicHorsesSuperFutureSpaceArmorPower(ctx: AbilityContext): AbilityResult {

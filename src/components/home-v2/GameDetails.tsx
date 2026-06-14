@@ -87,7 +87,11 @@ function getPlayerLabel(game: GameConfig, t: HomeV2Translate) {
 }
 
 function getDetailBadgeLabels(game: GameConfig, t: HomeV2Translate) {
-    const badgeLabels = [getCategoryLabel(game, t), getPlayerLabel(game, t)];
+    const badgeLabels = [
+        ...(game.statusTag ? [t(`common:status_tags.${game.statusTag}`)] : []),
+        getCategoryLabel(game, t),
+        getPlayerLabel(game, t),
+    ];
     const tagKeys = game.tags ?? [];
     const supportedTagKeys = ['card_driven', 'dice_driven', 'combat', 'tactical', 'casual', 'ugc'];
 

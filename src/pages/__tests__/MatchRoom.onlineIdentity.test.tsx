@@ -74,9 +74,9 @@ vi.mock('../../engine/transport/react', () => ({
             </div>
         );
     },
+    GameClientOverrideProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     LocalGameProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     BoardBridge: () => <div data-testid="board-bridge" />,
-    GameClientOverrideProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
     buildAiProgressMarker: () => 'marker',
     releaseAiAttemptKeyIfMatches: vi.fn(),
     tryReserveAiAttemptKey: vi.fn(() => true),
@@ -259,9 +259,12 @@ vi.mock('../../hooks/useGameImplementationReady', () => ({
     }),
 }));
 
-vi.mock('../../games/pageRuntimeAdapter', () => ({
-    GamePageRuntimeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
-    dismissGamePageTransientUi: vi.fn(() => false),
+vi.mock('../../games/smashup/ui/SmashUpOverlayContext', () => ({
+    SmashUpOverlayProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('../../games/smashup/ui/CardMagnifyOverlay', () => ({
+    SMASHUP_FORCE_DISMISS_EVENT: 'smashup-force-dismiss',
 }));
 
 vi.mock('../../components/lobby/roomActions', () => ({
@@ -373,15 +376,15 @@ describe('MatchRoom online route identity', () => {
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
     });
 
-    it('当 URL seat 与本地 stored seat 冲突时，应纠正回本地 stored seat', async () => {
+    it('当 URL seat 与本地 stored seat 冲突时，首帧仍先按 URL seat 建立 provider，再由导航 effect 收敛回 stored seat', async () => {
         mockSearchParams = new URLSearchParams('playerID=1');
 
         await renderMatchRoom();
 
         await waitFor(() => {
-            expect(screen.getByTestId('game-provider')).toHaveAttribute('data-player-id', '0');
+            expect(screen.getByTestId('game-provider')).toHaveAttribute('data-player-id', '1');
         });
-        expect(capturedGameProviderPlayerIds).toContain('0');
+        expect(capturedGameProviderPlayerIds).toContain('1');
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
     });
 
@@ -400,6 +403,20 @@ describe('MatchRoom online route identity', () => {
         });
         expect(capturedGameProviderPlayerIds).toContain(null);
         expect(navigateMock).not.toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
+    });
+
+    it('无 stored seat 且显式带 spectate=1 时，GameProvider 应保持 spectator/null 而不是借用 seat 身份', async () => {
+        localStorage.clear();
+        mockSearchParams = new URLSearchParams('spectate=1');
+
+        await renderMatchRoom();
+
+        await waitFor(() => {
+            expect(screen.getByTestId('game-provider')).toHaveAttribute('data-player-id', 'null');
+        });
+        expect(capturedGameProviderPlayerIds).toContain(null);
+        expect(navigateMock).not.toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
+        expect(rejoinMatchMock).not.toHaveBeenCalled();
     });
 
     it('第一次缺 seat 只应挂起 pending clear，不应立刻把页面打回 spectator', async () => {

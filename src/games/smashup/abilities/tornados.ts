@@ -5,6 +5,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildSemanticOngoingAttachEvents,
     buildValidatedMoveEvents,
     createSkipOption,
     getMinionPower,
@@ -506,21 +507,17 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
         }
         const choice = value as MinionChoice;
         if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: context.cardUid,
-                defId: context.defId,
-                ownerId: context.ownerId,
-                ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
-                targetType: 'minion',
-                targetBaseIndex: choice.baseIndex,
-                targetMinionUid: choice.minionUid,
-                ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
-                ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
-            },
-            timestamp,
-        } as OngoingAttachedEvent);
+        events.push(...buildSemanticOngoingAttachEvents(context.matchState, {
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ownerId: context.ownerId,
+            ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+            targetBaseIndex: choice.baseIndex,
+            targetMinionUid: choice.minionUid,
+            ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+            ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+            now: timestamp,
+        }));
         return { events };
     },
 });

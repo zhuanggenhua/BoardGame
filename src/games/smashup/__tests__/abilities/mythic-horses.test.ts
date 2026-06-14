@@ -32,10 +32,12 @@ beforeAll(() => {
 });
 
 describe('Mythic Horses abilities', () => {
-    it('mythic_horses_seastar 有其他己方随从基地时授予自己本回合一次额外天赋', () => {
+    it('mythic_horses_seastar 有其他己方随从基地时授予这里一次额外随从', () => {
         const core = makeState({
             players: {
-                '0': makePlayer('0'),
+                '0': makePlayer('0', {
+                    hand: [makeCard('extra-minion', 'robot_microbot_alpha', 'minion', '0')],
+                }),
                 '1': makePlayer('1'),
             },
             bases: [
@@ -58,22 +60,15 @@ describe('Mythic Horses abilities', () => {
             defaultTestRandom,
         );
         expect(first.success, first.error).toBe(true);
-        expect(first.finalState.core.bases[0].minions[0]?.metadata?.mythicHorsesSeastarExtraTalent).toBe(true);
+        expect(first.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
 
         const second = runCommand(
             first.finalState,
-            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'seastar-1', baseIndex: 0 } },
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'extra-minion', baseIndex: 0 } },
             defaultTestRandom,
         );
         expect(second.success, second.error).toBe(true);
-        expect(second.finalState.core.bases[0].minions[0]?.metadata?.mythicHorsesSeastarExtraTalentConsumed).toBe(true);
-
-        const third = runCommand(
-            second.finalState,
-            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'seastar-1', baseIndex: 0 } },
-            defaultTestRandom,
-        );
-        expect(third.success).toBe(false);
+        expect(second.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('extra-minion');
     });
 
     it('mythic_horses_rainbow 有同基地己方其他随从时天赋抽 1 张牌', () => {

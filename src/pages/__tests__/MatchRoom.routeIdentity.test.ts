@@ -5,7 +5,7 @@ import {
     resolveSeatValidationPlayers,
     resolveStoredSeatValidationClearDecision,
     shouldUseTransportSeatValidationSnapshot,
-} from '../matchRouteIdentity';
+} from '../MatchRoom';
 
 describe('resolveMatchRoomRouteIdentity', () => {
     it('有 stored seat 且 URL 缺失时，仍保持 seat 身份而不是 spectator', () => {
@@ -41,7 +41,7 @@ describe('resolveMatchRoomRouteIdentity', () => {
         expect(result.statusPlayerID).toBe('1');
     });
 
-    it('当 URL seat 与本地 stored seat 冲突时，应以本地 stored seat 为准', () => {
+    it('当 URL seat 与本地 stored seat 冲突时，resolver 仍以本地 stored seat 为准', () => {
         const result = resolveMatchRoomRouteIdentity({
             isTutorialRoute: false,
             tutorialPlayerID: '0',

@@ -2,12 +2,13 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
-import { isMinionProtected, registerTrigger } from '../domain/ongoingEffects';
+import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { canStartDuel, startDuel } from '../domain/duel';
 import {
     addPowerCounter,
     addTempPower,
+    applySemanticMinionEffectBatch,
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
@@ -337,7 +338,12 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
                 createSkipOption('跳过（不消灭随从）', 'ui.samurai_yokai_attack_skip_option') as any,
                 ...buildMinionTargetOptions(
                     collectOwnMinions(context.matchState.core, context.playerId),
-                    { state: context.matchState.core, sourcePlayerId: context.playerId },
+                    {
+                        state: context.matchState.core,
+                        sourcePlayerId: context.playerId,
+                        sourceKind: 'action',
+                        semanticRole: 'reference',
+                    },
                 ) as any[],
             ],
             {
@@ -351,7 +357,12 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
             createSkipOption('跳过（不消灭随从）', 'ui.samurai_yokai_attack_skip_option') as any,
             ...buildMinionTargetOptions(
                 collectOwnMinions(state.core, context.playerId),
-                { state: state.core, sourcePlayerId: context.playerId },
+                {
+                    state: state.core,
+                    sourcePlayerId: context.playerId,
+                    sourceKind: 'action',
+                    semanticRole: 'reference',
+                },
             ) as any[],
         ],
     ),
@@ -361,21 +372,36 @@ const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext
         if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
-        if (isMinionProtected(state.core, target, selected.baseIndex, playerId, 'destroy')) {
-            return { events: [buildAbilityFeedback(playerId, 'feedback.target_protected', timestamp, undefined, 'warning')] };
-        }
-        return {
-            events: [
-                ...buildValidatedDestroyEvents(state, {
-                    minionUid: selected.minionUid,
-                    minionDefId: selected.defId,
-                    fromBaseIndex: selected.baseIndex,
+        const result = applySemanticMinionEffectBatch(
+            state,
+            [{ minion: target, baseIndex: selected.baseIndex }],
+            {
+                sourcePlayerId: playerId,
+                sourceKind: 'action',
+                effectType: 'destroy',
+                mode: 'apply',
+                feedbackPlayerId: playerId,
+                now: timestamp,
+                allBlockedMessageKey: 'feedback.target_protected',
+                buildEvents: ({ minion, baseIndex }) => buildValidatedDestroyEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: baseIndex,
                     destroyerId: playerId,
                     reason: 'samurai_yokai_attack',
                     now: timestamp,
                 }),
-                grantExtraMinion(playerId, 'samurai_yokai_attack', timestamp),
-                grantExtraAction(playerId, 'samurai_yokai_attack', timestamp),
+            },
+        );
+        return {
+            events: [
+                ...result.events,
+                ...(result.allowed.length > 0
+                    ? [
+                        grantExtraMinion(playerId, 'samurai_yokai_attack', timestamp),
+                        grantExtraAction(playerId, 'samurai_yokai_attack', timestamp),
+                    ]
+                    : []),
             ],
         };
     },
@@ -967,14 +993,19 @@ function buildCombatEnemyOptions(
     return buildMinionTargetOptions(
         base.minions
             .filter(minion => minion.controller !== sourcePlayerId && validControllers.has(minion.controller))
-            .filter(minion => !respectActionProtection || !isMinionProtected(state, minion, baseIndex, sourcePlayerId, 'action'))
             .map(minion => ({
                 uid: minion.uid,
                 defId: minion.defId,
                 baseIndex,
                 label: `${getCardDef(minion.defId)?.name ?? minion.defId}（力量 ${getMinionPower(state, minion, baseIndex)}）`,
             })),
-        { state, sourcePlayerId },
+        {
+            state,
+            sourcePlayerId,
+            sourceKind: respectActionProtection ? 'action' : undefined,
+            effectType: 'destroy',
+            respectActionProtection,
+        },
     );
 }
 

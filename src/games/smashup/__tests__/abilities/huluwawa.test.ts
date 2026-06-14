@@ -3,13 +3,16 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { getFactionCards } from '../../data/cards';
 import { getDiscardActionPlayOptions } from '../../domain/discardActionPlayability';
 import { getDiscardSpecialOptions } from '../../domain/discardSpecialAbilities';
+import { getEffectivePower } from '../../domain/ongoingModifiers';
 import { fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
+import { reduce } from '../../domain/reduce';
 import { getVisibleFactionMetadata } from '../../ui/factionMeta';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     applyEvents,
     getPromptOption,
+    getPromptOptions,
     getSimpleChoicePrompt,
     expectNoPrompt,
     invokeRegisteredInteractionHandlerContract,
@@ -527,6 +530,56 @@ describe('葫芦娃派系作者 PR 级行为合同', () => {
         const core = applyEvents(handled!.state.core, handled!.events);
         expect(core.timedPowerModifiers).toBeUndefined();
         expect(core.bases[0].minions[0].powerModifier).toBe(0);
+    });
+
+    it('六娃发动天赋后不应成为毛茸茸女王的控制目标', () => {
+        const queenUsed = runCommand(makeMatchState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 3,
+            bases: [makeBase('base_a', [
+                makeMinion('queen', 'kitty_cats_queen_fluffy', '0', 5),
+                makeMinion('liuwa', 'huluwawa_liu_wa', '1', 4, { powerModifier: -4 }),
+            ])],
+            baseDeck: [],
+            timedPowerModifiers: [{ minionUid: 'liuwa', amount: -4, expiresOnTurnNumber: 4, reason: 'huluwawa_liu_wa_talent' }],
+        }), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'queen', baseIndex: 0 },
+        } as any);
+
+        expect(queenUsed.success).toBe(true);
+        expectNoPrompt(queenUsed.finalState);
+        expect(queenUsed.events.some(event =>
+            event.type === SU_EVENTS.ABILITY_FEEDBACK
+            && ((event as any).payload?.feedbackKey === 'feedback.no_valid_targets'
+                || (event as any).payload?.messageKey === 'feedback.no_valid_targets')
+        )).toBe(true);
+    });
+
+    it('六娃发动天赋后到自己下个回合开始会恢复力量', () => {
+        const nextTurn = reduce(makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 3,
+            bases: [makeBase('base_a', [
+                makeMinion('liuwa', 'huluwawa_liu_wa', '1', 4, { powerModifier: -4 }),
+            ])],
+            baseDeck: [],
+            timedPowerModifiers: [{ minionUid: 'liuwa', amount: -4, expiresOnTurnNumber: 4, reason: 'huluwawa_liu_wa_talent' }],
+        }), {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '1', turnNumber: 4 },
+            timestamp: 2000,
+        } as any);
+
+        const liuwa = nextTurn.bases[0].minions.find(minion => minion.uid === 'liuwa');
+        expect(liuwa?.powerModifier).toBe(0);
+        expect(nextTurn.timedPowerModifiers).toBeUndefined();
+        expect(getEffectivePower(nextTurn, liuwa!, 0)).toBe(4);
     });
 
     it('二娃展示顶三张后可额外打出选中的真实仆从并清空交互', () => {

@@ -32,7 +32,11 @@ import { useToast } from '../contexts/ToastContext';
 import { isUiHintOnlyError, resolveCommandError } from '../engine/transport/errorI18n';
 import { playDeniedSound } from '../lib/audio/useGameAudio';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
-import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
+import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
+import {
+    resolveLocalMatchPlayerCount,
+    resolveSeatControllersFromSearchParams,
+} from '../engine/ai';
 
 // 闂備礁鎲￠崙褰掑垂閹惰棄鏋侀柕鍫濇偪閸︻厸鍋撻敐搴″箻婵℃彃鎲℃穱濠囶敍濡炶浜剧€规洖娲ㄩ、鍛存⒑閹稿海鈽夐柣妤€妫涢幑銏ゅ焵椤掆偓椤啴濡堕崼顐㈡濠电姭鍋撴い蹇撴绾惧ジ鏌涢弴銊ょ凹妞ゆ劘妫勯…鍧楁嚋閻㈤潧鈷岄梺绋块椤曨參骞忛锕€绀冩い蹇撴噺濞堛垽姊洪幐搴ｂ槈闁活剙銈搁崹鎯熼懡銈傛敵濠电娀娼уΛ娆撶叕椤掆偓闇夐柣妯硅閸炶櫣绱?Provider 婵犵數鍋為幐绋款嚕閸洘鍋傞悗锝庡枛缁€鍫⑩偓骞垮劚濞诧箓寮查幖浣圭厸濞达絽鎽滄晶宕囩磼?
 if (typeof window !== 'undefined') {
@@ -41,15 +45,6 @@ if (typeof window !== 'undefined') {
 }
 
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
-
-function getTestMatchRoomLoadingTitle(
-    t: (key: string, options?: Record<string, unknown>) => string,
-    gameTitle?: string,
-) {
-    return gameTitle
-        ? t('testMatchRoom.loading_with_game', { game: gameTitle })
-        : t('testMatchRoom.loading');
-}
 
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
@@ -96,9 +91,16 @@ export const TestMatchRoom: React.FC = () => {
         const p0Factions = searchParams.get('p0')?.split(',') || [];
         const p1Factions = searchParams.get('p1')?.split(',') || [];
         const seed = searchParams.get('seed') || '12345';
-        const numPlayers = parseInt(searchParams.get('numPlayers') || '2', 10);
+        const requestedPlayers = searchParams.get('players') ?? searchParams.get('numPlayers');
+        const numPlayers = resolveLocalMatchPlayerCount(requestedPlayers, gameConfig?.playerOptions);
         const skipFactionSelect = searchParams.get('skipFactionSelect') === 'true';
         const skipInitialization = searchParams.get('skipInitialization') === 'true';
+        const playerId = searchParams.get('playerID') || '0';
+        const seatControllers = resolveSeatControllersFromSearchParams({
+            numPlayers,
+            searchParams,
+            aiSupport: gameConfig?.ai,
+        });
         
         return {
             player0Factions: p0Factions,
@@ -107,8 +109,10 @@ export const TestMatchRoom: React.FC = () => {
             numPlayers,
             skipFactionSelect,
             skipInitialization,
+            playerId,
+            seatControllers,
         };
-    }, [searchParams]);
+    }, [gameConfig?.ai, gameConfig?.playerOptions, searchParams]);
 
     useEffect(() => {
         if (!gameId) return;
@@ -215,7 +219,7 @@ export const TestMatchRoom: React.FC = () => {
     if (!gameId || !gameConfig) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {t('testMatchRoom.missing_game_config')}
+                {'\u672a\u627e\u5230\u6e38\u620f\u914d\u7f6e'}
             </div>
         );
     }
@@ -235,13 +239,13 @@ export const TestMatchRoom: React.FC = () => {
     }
 
     if (loading) {
-        return <LoadingScreen title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />;
+        return <LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />;
     }
 
     if (!engineConfig || !WrappedBoard) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {t('testMatchRoom.game_load_failed')}
+                {'\u6e38\u620f\u52a0\u8f7d\u5931\u8d25'}
             </div>
         );
     }
@@ -249,8 +253,8 @@ export const TestMatchRoom: React.FC = () => {
     return (
         <>
             <SEO
-                title={t('testMatchRoom.seo_title', { game: gameConfig.title })}
-                description={t('testMatchRoom.seo_description', { game: gameConfig.title })}
+                title={`${gameConfig.title} - \u6d4b\u8bd5\u6a21\u5f0f`}
+                description={`${gameConfig.title} E2E \u6d4b\u8bd5\u6a21\u5f0f`}
                 noIndex
             />
             <div
@@ -260,7 +264,7 @@ export const TestMatchRoom: React.FC = () => {
                     background: gameConfig.theme?.background || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
                 } as React.CSSProperties}
             >
-                <GamePageRuntimeProvider gameId={gameId}>
+                <SmashUpOverlayProvider>
                     <GameModeProvider mode="test">
                         <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
                             <MobileBoardShell>
@@ -269,23 +273,24 @@ export const TestMatchRoom: React.FC = () => {
                                         config={engineConfig}
                                         numPlayers={testConfig.numPlayers}
                                         seed={testConfig.randomSeed}
-                                        playerId={fixedTestPlayerId ?? '0'}
+                                        playerId={testConfig.playerId}
                                         onCommandRejected={handleCommandRejected}
+                                        seatControllers={testConfig.seatControllers}
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
                                     >
                                         <GameHUD gameId={gameId} mode="test" />
                                         <BoardBridge
                                             board={WrappedBoard}
-                                            loading={<LoadingScreen anchor="container" title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />}
+                                            loading={<LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />}
                                         />
                                     </LocalGameProvider>
                                 ) : (
-                                    <LoadingScreen anchor="container" title={getTestMatchRoomLoadingTitle(t, gameConfig?.title)} />
+                                    <LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />
                                 )}
                             </MobileBoardShell>
                         </GameCursorProvider>
                     </GameModeProvider>
-                </GamePageRuntimeProvider>
+                </SmashUpOverlayProvider>
             </div>
         </>
     );

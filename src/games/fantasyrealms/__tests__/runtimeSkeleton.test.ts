@@ -496,3 +496,4 @@ describe('fantasyrealms runtime skeleton', () => {
         expect(engineConfig.maxPlayers).toBe(6);
     });
 });
+

@@ -4,12 +4,13 @@ const entry: GameManifestEntry = {
     id: 'fantasyrealms',
     type: 'game',
     enabled: true,
-    listed: false,
+    statusTag: 'under_construction',
     titleKey: 'games.fantasyrealms.title',
     descriptionKey: 'games.fantasyrealms.description',
     category: 'card',
     playersKey: 'games.fantasyrealms.players',
     icon: '🏰',
+    thumbnailPath: 'fantasyrealms/thumbnails/cover',
     allowLocalMode: true,
     playerOptions: [2, 3, 4, 5, 6],
     bestPlayers: [3, 4],
@@ -20,7 +21,7 @@ const entry: GameManifestEntry = {
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,
-        localAi: false,
+        localAi: true,
         remoteAi: false,
     },
 };

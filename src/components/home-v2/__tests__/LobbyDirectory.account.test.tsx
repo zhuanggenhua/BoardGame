@@ -102,7 +102,7 @@ describe('LobbyDirectory account entry', () => {
         );
 
         expect(html).toContain('data-testid="home-v2-account-entry"');
-        expect(html).toContain('登录');
+        expect(html).toContain('auth:menu.login');
         expect(html).not.toContain('data-testid="reward-points-badge"');
     });
 
@@ -129,5 +129,23 @@ describe('LobbyDirectory account entry', () => {
         expect(html).toContain('data-testid="reward-points-badge"');
         expect(html).toContain('书友甲');
         expect(html).toContain('12');
+    });
+
+    it('带实施中状态的游戏应在首页目录显示状态标签', () => {
+        const html = renderToStaticMarkup(
+            <OverviewSpread
+                games={[{
+                    ...buildGame(),
+                    id: 'fantasyrealms',
+                    statusTag: 'under_construction',
+                }]}
+                activeCategory="all"
+                onCategoryChange={() => undefined}
+                onGameClick={() => undefined}
+                onAccountClick={() => undefined}
+            />,
+        );
+
+        expect(html).toContain('common:status_tags.under_construction');
     });
 });

@@ -22,6 +22,7 @@ import {
     grantContextualExtraMinion,
     grantExtraMinion,
     grantExtraAction,
+    addPowerCounter,
     addTempPower,
     recoverCardsFromDiscard,
     buildValidatedMoveEvents,
@@ -1366,16 +1367,13 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     },
                     timestamp,
                 } as SmashUpEvent,
-                {
-                    type: SU_EVENTS.POWER_COUNTER_ADDED,
-                    payload: {
-                        minionUid: target.minion.uid,
-                        baseIndex: target.baseIndex,
-                        amount: 1,
-                        reason: 'base_the_asylum',
-                    },
+                addPowerCounter(
+                    target.minion.uid,
+                    target.baseIndex,
+                    1,
+                    'base_the_asylum',
                     timestamp,
-                } as SmashUpEvent,
+                ) as SmashUpEvent,
             ],
         };
     });

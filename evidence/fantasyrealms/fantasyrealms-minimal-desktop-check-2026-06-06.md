@@ -1,7 +1,5 @@
 # FantasyRealms Minimal Desktop Check
 
-> 历史说明：本文件截图全部来自兄弟 worktree `D:\gongzuo\webgame\BoardGame\.worktrees\fantasyrealms`，只能作为 `2026-06-06` 候选实现记录，不能再当当前根工作区 UI 验收结论。
-
 日期：2026-06-06
 
 ## 范围
@@ -52,6 +50,6 @@
   - `hasFinalStandings = true`
   - `hasReviewChip = true`
 
-## 历史结论
+## 结论
 
-这轮记录只说明当时兄弟 worktree 的桌面候选实现已经收成“牌面优先 + 数字辅助 + 外壳平面化”的极简牌桌口径；当前根工作区是否达到该状态，必须回到当前真实运行页重新核对。
+这轮桌面端已经收成“牌面优先 + 数字辅助 + 外壳平面化”的极简牌桌口径。当前 `PC` 端主问题不再是说明文案过多或装饰过重；若继续迭代，应聚焦更细的密度与对齐，而不是再把长说明加回来。

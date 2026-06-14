@@ -15,6 +15,14 @@ import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types'
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
+import {
+    filterSemanticMatchedRuntimeActions,
+    getSemanticActionControllerId,
+    matchesSemanticRuntimeDefId,
+    type SemanticControllerLens,
+    type SemanticRuntimeAction,
+    type SemanticRuntimeActionMatchOptions,
+} from './effectSemantics';
 
 // ============================================================================
 // 类型定义
@@ -46,9 +54,7 @@ export type PodVariantStrategy =
     | ModifierVariantPolicy
     | 'selfManaged';
 
-export type OngoingControllerLens =
-    | 'owner'
-    | 'sourceController';
+export type OngoingControllerLens = SemanticControllerLens;
 
 interface ModifierRegistrationOptions {
     variantPolicy?: ModifierVariantPolicy;
@@ -70,17 +76,9 @@ interface ModifierEntry {
     podStrategy: PodVariantStrategy;
 }
 
-export interface ModifierRuntimeAction {
-    uid?: string;
-    defId: string;
-    ownerId: PlayerId;
-    metadata?: Record<string, unknown>;
-}
+export type ModifierRuntimeAction = SemanticRuntimeAction;
 
-export interface RuntimeActionMatchOptions {
-    controllerLens?: OngoingControllerLens;
-    relationToTargetController?: 'any' | 'same' | 'different';
-}
+export type RuntimeActionMatchOptions = SemanticRuntimeActionMatchOptions;
 
 export interface RuntimeActionControlOptions {
     controllerLens?: OngoingControllerLens;
@@ -227,19 +225,14 @@ function normalizeDefId(defId: string): string {
 }
 
 export function matchesRuntimeDefId(defId: unknown, baseDefId: string): boolean {
-    return defId === baseDefId || defId === `${baseDefId}_pod`;
+    return matchesSemanticRuntimeDefId(defId, baseDefId);
 }
 
 export function getActionControllerId(
     action: ModifierRuntimeAction,
     lens: OngoingControllerLens = 'sourceController',
 ): PlayerId {
-    if (lens === 'owner') {
-        return action.ownerId;
-    }
-    return (typeof action.metadata?.sourceControllerId === 'string'
-        ? action.metadata.sourceControllerId
-        : action.ownerId) as PlayerId;
+    return getSemanticActionControllerId(action, lens);
 }
 
 function isEntityBackedModifierSource(defId: string): boolean {
@@ -859,32 +852,18 @@ export function getRegisteredModifierIds(): {
     };
 }
 
-function matchesTargetControllerRelation(
-    ctx: PowerModifierContext,
-    action: ModifierRuntimeAction,
-    options?: RuntimeActionMatchOptions,
-): boolean {
-    const relation = options?.relationToTargetController ?? 'any';
-    if (relation === 'any') {
-        return true;
-    }
-    const controllerId = getActionControllerId(action, options?.controllerLens);
-    if (relation === 'same') {
-        return controllerId === ctx.minion.controller;
-    }
-    return controllerId !== ctx.minion.controller;
-}
-
 function filterRuntimeMatchedActions(
     ctx: PowerModifierContext,
     actions: readonly ModifierRuntimeAction[],
     baseDefId: string,
     options?: RuntimeActionMatchOptions,
 ): ModifierRuntimeAction[] {
-    return actions.filter((action) => (
-        matchesRuntimeDefId(action.defId, baseDefId)
-        && matchesTargetControllerRelation(ctx, action, options)
-    ));
+    return filterSemanticMatchedRuntimeActions(
+        { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
+        actions,
+        baseDefId,
+        options,
+    ) as ModifierRuntimeAction[];
 }
 
 const powerModifierRuntimeHelpers: PowerModifierRuntimeHelpers = {

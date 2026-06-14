@@ -17,9 +17,19 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
 import { getSmashUpRelationToPlayer } from './teamMode';
-import { isMinionProtected, isMinionProtectedNonConsumable, type ProtectionType } from './ongoingEffects';
+import type { ProtectionType } from './ongoingEffects';
 import { collectBaseAbilityTriggers } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
+import {
+    buildProtectionSelfDestructEvent,
+    inferSemanticSourceKind,
+    isMinionTargetAllowed,
+    type MinionSemanticEffectType,
+    type MinionTargetSemanticOptions,
+    partitionMinionTargetsBySemantics,
+    type SemanticMinionTargetCandidate,
+    type SemanticTargetRole,
+} from './effectSemantics';
 import type {
     SmashUpCore,
     MinionOnBase,
@@ -48,6 +58,8 @@ import type {
     DeckReshuffledEvent,
     DeckReorderedEvent,
     AbilityFeedbackEvent,
+    OngoingAttachedEvent,
+    OngoingDetachedEvent,
     OngoingCardCounterChangedEvent,
     CardToDeckBottomEvent,
     TitanRemovedFromPlayEvent,
@@ -565,11 +577,28 @@ export function addPowerCounter(
     baseIndex: number,
     amount: number,
     reason: string,
-    now: number
+    now: number,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): PowerCounterAddedEvent {
     return {
         type: SU_EVENTS.POWER_COUNTER_ADDED,
-        payload: { minionUid, baseIndex, amount, reason },
+        payload: {
+            minionUid,
+            baseIndex,
+            amount,
+            reason,
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
+        },
         timestamp: now,
     };
 }
@@ -609,11 +638,28 @@ export function removePowerCounter(
     baseIndex: number,
     amount: number,
     reason: string,
-    now: number
+    now: number,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): PowerCounterRemovedEvent {
     return {
         type: SU_EVENTS.POWER_COUNTER_REMOVED,
-        payload: { minionUid, baseIndex, amount, reason },
+        payload: {
+            minionUid,
+            baseIndex,
+            amount,
+            reason,
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
+        },
         timestamp: now,
     };
 }
@@ -624,11 +670,28 @@ export function addTempPower(
     baseIndex: number,
     amount: number,
     reason: string,
-    now: number
+    now: number,
+    source?: {
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): TempPowerAddedEvent {
     return {
         type: SU_EVENTS.TEMP_POWER_ADDED,
-        payload: { minionUid, baseIndex, amount, reason },
+        payload: {
+            minionUid,
+            baseIndex,
+            amount,
+            reason,
+            ...(source?.sourcePlayerId !== undefined ? { sourcePlayerId: source.sourcePlayerId } : {}),
+            ...(source?.sourceCardUid !== undefined ? { sourceCardUid: source.sourceCardUid } : {}),
+            ...(source?.sourceDefId !== undefined ? { sourceDefId: source.sourceDefId } : {}),
+            ...(source?.sourceControllerId !== undefined ? { sourceControllerId: source.sourceControllerId } : {}),
+            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
+        },
         timestamp: now,
     };
 }
@@ -639,11 +702,30 @@ export function addPermanentPower(
     baseIndex: number,
     amount: number,
     reason: string,
-    now: number
+    now: number,
+    options?: {
+        expiresOnTurnNumber?: number;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    },
 ): PermanentPowerAddedEvent {
     return {
         type: SU_EVENTS.PERMANENT_POWER_ADDED,
-        payload: { minionUid, baseIndex, amount, reason },
+        payload: {
+            minionUid,
+            baseIndex,
+            amount,
+            reason,
+            ...(options?.expiresOnTurnNumber !== undefined ? { expiresOnTurnNumber: options.expiresOnTurnNumber } : {}),
+            ...(options?.sourcePlayerId !== undefined ? { sourcePlayerId: options.sourcePlayerId } : {}),
+            ...(options?.sourceCardUid !== undefined ? { sourceCardUid: options.sourceCardUid } : {}),
+            ...(options?.sourceDefId !== undefined ? { sourceDefId: options.sourceDefId } : {}),
+            ...(options?.sourceControllerId !== undefined ? { sourceControllerId: options.sourceControllerId } : {}),
+            ...(options?.sourceBaseIndex !== undefined ? { sourceBaseIndex: options.sourceBaseIndex } : {}),
+        },
         timestamp: now,
     };
 }
@@ -1711,6 +1793,8 @@ export function buildMinionTargetOptions(
         sourceDefId?: string;
         /** 显式来源类型；仅在无法提供 sourceDefId 时使用 */
         sourceKind?: 'action' | 'nonAction';
+        /** 查询语义角色；仅真正施加效果时使用 target 过滤 */
+        semanticRole?: SemanticTargetRole;
         /** 效果类型覆盖（可选，不传则自动检查 destroy + affect） */
         effectType?: MinionTargetEffectType;
         /** 是否额外尊重“行动卡保护”（如烟雾弹） */
@@ -1728,42 +1812,22 @@ export function buildMinionTargetOptions(
         sourcePlayerId,
         sourceDefId,
         sourceKind,
+        semanticRole = 'target',
         effectType,
         respectActionProtection = false,
     } = context;
-    const inferredActionSource = sourceKind === 'action'
-        || (sourceKind !== 'nonAction' && !!sourceDefId && getCardDef(sourceDefId)?.type === 'action');
-    const shouldRespectActionProtection = respectActionProtection || inferredActionSource;
-    const effectSourceKind: 'action' | 'nonAction' = inferredActionSource ? 'action' : 'nonAction';
-    const filteredCandidates = candidates.filter(c => {
+    const effectSourceKind = inferSemanticSourceKind(sourceKind, sourceDefId);
+    const semanticEffectType: MinionSemanticEffectType | undefined = effectType;
+    const filteredCandidates = semanticRole !== 'target' ? candidates : candidates.filter(c => {
         const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
         if (!minion) return false;
-        // 己方随从不做保护检查（保护只针对对手效果）
-        if (minion.controller === sourcePlayerId) return true;
-        if (shouldRespectActionProtection && isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'action', {
-            sourceKind: 'action',
-        })) {
-            return false;
-        }
-        // 对手随从：检查保护
-        if (effectType) {
-            // 指定了 effectType → 只检查该类型（非消耗型）+ affect（非消耗型广义保护）
-            if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, effectType, {
-                sourceKind: effectSourceKind,
-            })) return false;
-            if (effectType !== 'affect' && isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect', {
-                sourceKind: effectSourceKind,
-            })) return false;
-            return true;
-        }
-        // 未指定 effectType → 检查 destroy（全部）+ affect（仅非消耗型）
-        if (isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'destroy', {
+        return isMinionTargetAllowed(state, minion, c.baseIndex, {
+            sourcePlayerId,
             sourceKind: effectSourceKind,
-        })) return false;
-        if (isMinionProtectedNonConsumable(state, minion, c.baseIndex, sourcePlayerId, 'affect', {
-            sourceKind: effectSourceKind,
-        })) return false;
-        return true;
+            effectType: semanticEffectType ?? 'destroy',
+            respectActionProtection,
+            mode: 'preview',
+        });
     });
 
     return filteredCandidates.map((c, i) => {
@@ -1913,4 +1977,164 @@ export function buildAbilityFeedback(
         payload: { playerId, messageKey, messageParams, tone },
         timestamp: now,
     };
+}
+
+export function buildSemanticProtectionFeedback(
+    playerId: PlayerId,
+    blockedCount: number,
+    appliedCount: number,
+    now: number,
+    options?: {
+        allBlockedMessageKey?: 'feedback.all_protected' | 'feedback.target_protected';
+    },
+): AbilityFeedbackEvent[] {
+    if (blockedCount <= 0) return [];
+    return [
+        buildAbilityFeedback(
+            playerId,
+            appliedCount === 0
+                ? (options?.allBlockedMessageKey ?? 'feedback.all_protected')
+                : 'feedback.target_protected',
+            now,
+            undefined,
+            'warning',
+        ),
+    ];
+}
+
+export function applySemanticMinionEffectBatch<TMinion extends MinionOnBase>(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    candidates: readonly SemanticMinionTargetCandidate<TMinion>[],
+    options: MinionTargetSemanticOptions & {
+        buildEvents: (candidate: SemanticMinionTargetCandidate<TMinion>) => SmashUpEvent[];
+        feedbackPlayerId?: PlayerId;
+        now?: number;
+        allBlockedMessageKey?: 'feedback.all_protected' | 'feedback.target_protected';
+    },
+): {
+    events: SmashUpEvent[];
+    allowed: Array<SemanticMinionTargetCandidate<TMinion>>;
+    blocked: Array<SemanticMinionTargetCandidate<TMinion> & {
+        blockInfo: import('./effectSemantics').MinionTargetBlockInfo;
+    }>;
+} {
+    const core = 'core' in state ? state.core : state;
+    const partitioned = partitionMinionTargetsBySemantics(core, candidates, options);
+    const events = partitioned.allowed.flatMap((candidate) => options.buildEvents(candidate));
+
+    if (options.feedbackPlayerId && options.now !== undefined) {
+        events.push(...buildSemanticProtectionFeedback(
+            options.feedbackPlayerId,
+            partitioned.blocked.length,
+            events.length,
+            options.now,
+            { allBlockedMessageKey: options.allBlockedMessageKey },
+        ));
+    }
+
+    return {
+        events,
+        allowed: partitioned.allowed,
+        blocked: partitioned.blocked,
+    };
+}
+
+export function buildSemanticOngoingAttachEvents(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    params: {
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        sourcePlayerId?: PlayerId;
+        sourceKind?: 'action' | 'nonAction';
+        targetBaseIndex: number;
+        targetMinionUid?: string;
+        metadata?: Record<string, unknown>;
+        talentUsed?: boolean;
+        onBlockedSourceDestination?: 'discard' | 'hand';
+        now: number;
+    },
+): SmashUpEvent[] {
+    const core = 'core' in state ? state.core : state;
+    if (!params.targetMinionUid) {
+        return [{
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: {
+                cardUid: params.cardUid,
+                defId: params.defId,
+                ownerId: params.ownerId,
+                ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
+                targetType: 'base',
+                targetBaseIndex: params.targetBaseIndex,
+                ...(params.metadata ? { metadata: params.metadata } : {}),
+                ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+            },
+            timestamp: params.now,
+        } as OngoingAttachedEvent];
+    }
+
+    const minion = core.bases[params.targetBaseIndex]?.minions.find(
+        (candidate) => candidate.uid === params.targetMinionUid,
+    );
+    if (!minion) return [];
+
+    const sourcePlayerId = params.sourcePlayerId ?? params.ownerId;
+    const partitioned = partitionMinionTargetsBySemantics(
+        core,
+        [{ minion, baseIndex: params.targetBaseIndex }],
+        {
+            sourcePlayerId,
+            sourceKind: params.sourceKind ?? inferSemanticSourceKind(undefined, params.defId),
+            effectType: 'affect',
+            respectActionProtection: true,
+            mode: 'apply',
+        },
+    );
+
+    if (partitioned.blocked.length > 0) {
+        return [
+            ...buildSemanticProtectionFeedback(
+                sourcePlayerId,
+                partitioned.blocked.length,
+                0,
+                params.now,
+                { allBlockedMessageKey: 'feedback.target_protected' },
+            ),
+            ...(params.onBlockedSourceDestination
+                ? [{
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: {
+                        cardUid: params.cardUid,
+                        defId: params.defId,
+                        ownerId: params.ownerId,
+                        reason: `${params.defId}_blocked_attach`,
+                        destination: params.onBlockedSourceDestination,
+                        ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
+                    },
+                    timestamp: params.now,
+                } as OngoingDetachedEvent]
+                : []),
+            ...partitioned.blocked.flatMap(({ blockInfo }) => (
+                blockInfo.consumableSource
+                    ? [buildProtectionSelfDestructEvent(blockInfo.consumableSource, params.targetBaseIndex, params.now)]
+                    : []
+            )),
+        ];
+    }
+
+    return [{
+        type: SU_EVENTS.ONGOING_ATTACHED,
+        payload: {
+            cardUid: params.cardUid,
+            defId: params.defId,
+            ownerId: params.ownerId,
+            ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
+            targetType: 'minion',
+            targetBaseIndex: params.targetBaseIndex,
+            targetMinionUid: params.targetMinionUid,
+            ...(params.metadata ? { metadata: params.metadata } : {}),
+            ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+        },
+        timestamp: params.now,
+    } as OngoingAttachedEvent];
 }

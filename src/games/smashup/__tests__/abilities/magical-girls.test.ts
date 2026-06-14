@@ -95,6 +95,19 @@ describe('Magical Girls 代表性玩法行为', () => {
         expect(isMinionProtected(core, core.bases[0].minions[0], 0, '1', 'affect')).toBe(false);
     });
 
+    it('Fancy Suit Lad 会拦截其他玩家卡牌带来的减力量持续效果', () => {
+        const core = makeState({
+            bases: [makeBase('base_q_point', [
+                makeMinion('fancy', 'magical_girls_fancy_suit_lad', '0', 3),
+                makeMinion('ally', 'magical_girls_power_maid', '0', 3, {
+                    attachedActions: [{ uid: 'enemy-grump', defId: 'kitty_cats_grumpiness', ownerId: '1' }],
+                }),
+            ])],
+        });
+
+        expect(getEffectivePower(core, core.bases[0].minions[1], 0)).toBe(3);
+    });
+
     it('Rainbow Girl 与 Akihabara High 给同基地其他己方随从临时 +1', () => {
         const core = makeState({
             players: {

@@ -8,11 +8,14 @@ import { registerDiscardSpecialProvider } from '../domain/discardSpecialAbilitie
 import { buildBuryCardEvents } from '../domain/bury';
 import {
     addPowerCounter,
+    addPermanentPower,
+    removePowerCounter,
     addTempPower,
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
+    buildSemanticOngoingAttachEvents,
     buildValidatedMoveEvents,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
@@ -890,20 +893,15 @@ const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChamp
         const selected = value as MinionChoice;
         if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: context.sourceCardUid,
-                    defId: context.sourceDefId ?? 'world_champs_bewitched',
-                    ownerId: context.ownerId,
-                    ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
-                    targetType: 'minion',
-                    targetBaseIndex: selected.baseIndex,
-                    targetMinionUid: selected.minionUid,
-                    removeFromDiscard: true,
-                },
-                timestamp,
-            } as OngoingAttachedEvent],
+            events: buildSemanticOngoingAttachEvents(context.matchState, {
+                cardUid: context.sourceCardUid,
+                defId: context.sourceDefId ?? 'world_champs_bewitched',
+                ownerId: context.ownerId,
+                ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+                targetBaseIndex: selected.baseIndex,
+                targetMinionUid: selected.minionUid,
+                now: timestamp,
+            }),
         };
     },
 });
@@ -1320,65 +1318,72 @@ function buildDivaMirroredEvent(
     switch (event.type) {
         case SU_EVENTS.POWER_COUNTER_ADDED: {
             const payload = (event as PowerCounterAddedEvent).payload;
-            return {
-                type: SU_EVENTS.POWER_COUNTER_ADDED,
-                payload: {
-                    ...payload,
-                    minionUid: divaUid,
-                    baseIndex: divaBaseIndex,
-                    reason: 'world_champs_diva_copy_power_counter_added',
+            return addPowerCounter(
+                divaUid,
+                divaBaseIndex,
+                payload.amount,
+                'world_champs_diva_copy_power_counter_added',
+                event.timestamp ?? 0,
+                {
                     sourcePlayerId: divaControllerId,
                     sourceDefId: 'world_champs_diva',
                     sourceCardUid: divaUid,
                     sourceControllerId: divaControllerId,
                     sourceBaseIndex: divaBaseIndex,
                 },
-                timestamp: event.timestamp,
-            } as PowerCounterAddedEvent;
+            ) as PowerCounterAddedEvent;
         }
         case SU_EVENTS.POWER_COUNTER_REMOVED: {
             const payload = (event as PowerCounterRemovedEvent).payload;
-            return {
-                type: SU_EVENTS.POWER_COUNTER_REMOVED,
-                payload: {
-                    ...payload,
-                    minionUid: divaUid,
-                    baseIndex: divaBaseIndex,
-                    reason: 'world_champs_diva_copy_power_counter_removed',
+            return removePowerCounter(
+                divaUid,
+                divaBaseIndex,
+                payload.amount,
+                'world_champs_diva_copy_power_counter_removed',
+                event.timestamp ?? 0,
+                {
                     sourcePlayerId: divaControllerId,
                     sourceDefId: 'world_champs_diva',
                     sourceCardUid: divaUid,
                     sourceControllerId: divaControllerId,
                     sourceBaseIndex: divaBaseIndex,
                 },
-                timestamp: event.timestamp,
-            } as PowerCounterRemovedEvent;
+            ) as PowerCounterRemovedEvent;
         }
         case SU_EVENTS.TEMP_POWER_ADDED: {
             const payload = (event as TempPowerAddedEvent).payload;
-            return {
-                type: SU_EVENTS.TEMP_POWER_ADDED,
-                payload: {
-                    ...payload,
-                    minionUid: divaUid,
-                    baseIndex: divaBaseIndex,
-                    reason: 'world_champs_diva_copy_temp_power',
+            return addTempPower(
+                divaUid,
+                divaBaseIndex,
+                payload.amount,
+                'world_champs_diva_copy_temp_power',
+                event.timestamp ?? 0,
+                {
+                    sourcePlayerId: payload.sourcePlayerId,
+                    sourceCardUid: payload.sourceCardUid,
+                    sourceDefId: payload.sourceDefId,
+                    sourceControllerId: payload.sourceControllerId,
+                    sourceBaseIndex: payload.sourceBaseIndex,
                 },
-                timestamp: event.timestamp,
-            } as TempPowerAddedEvent;
+            ) as TempPowerAddedEvent;
         }
         case SU_EVENTS.PERMANENT_POWER_ADDED: {
             const payload = (event as PermanentPowerAddedEvent).payload;
-            return {
-                type: SU_EVENTS.PERMANENT_POWER_ADDED,
-                payload: {
-                    ...payload,
-                    minionUid: divaUid,
-                    baseIndex: divaBaseIndex,
-                    reason: 'world_champs_diva_copy_permanent_power',
+            return addPermanentPower(
+                divaUid,
+                divaBaseIndex,
+                payload.amount,
+                'world_champs_diva_copy_permanent_power',
+                event.timestamp ?? 0,
+                {
+                    expiresOnTurnNumber: payload.expiresOnTurnNumber,
+                    sourcePlayerId: payload.sourcePlayerId,
+                    sourceCardUid: payload.sourceCardUid,
+                    sourceDefId: payload.sourceDefId,
+                    sourceControllerId: payload.sourceControllerId,
+                    sourceBaseIndex: payload.sourceBaseIndex,
                 },
-                timestamp: event.timestamp,
-            } as PermanentPowerAddedEvent;
+            ) as PermanentPowerAddedEvent;
         }
         case SU_EVENTS.MINION_DESTROYED: {
             const payload = (event as MinionDestroyedEvent).payload;

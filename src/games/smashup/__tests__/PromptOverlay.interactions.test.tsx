@@ -261,7 +261,36 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.change(screen.getByTestId('prompt-card-search-input'), { target: { value: '禁卡' } });
 
         expect(screen.getAllByTestId('mock-card-preview')).toHaveLength(1);
-        expect(screen.getByText('显示 {{visible}} / {{total}}')).toBeInTheDocument();
+        expect(screen.getByText('ui.card_filter_result_count')).toBeInTheDocument();
+    });
+
+    it('间谍牌库重排面板启用纵向滚动上限，避免确认按钮掉出屏幕', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'spy-reorder',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '间谍：重排牌库',
+                sourceId: 'super_spies_spy_reorder',
+                targetType: 'generic',
+                inspectedCards: [
+                    { uid: 'deck-a', defId: 'super_spies_spy' },
+                    { uid: 'deck-b', defId: 'robot_microbot_alpha' },
+                    { uid: 'deck-c', defId: 'wizard_zap' },
+                ],
+                options: [
+                    { id: 'order-1', label: '方案一', value: { targetPlayerId: '0', topUids: ['deck-a'], bottomUids: ['deck-b', 'deck-c'] } },
+                    { id: 'order-2', label: '方案二', value: { targetPlayerId: '0', topUids: ['deck-b'], bottomUids: ['deck-a', 'deck-c'] } },
+                ],
+            },
+        };
+
+        const { container } = renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.getByRole('button', { name: 'ui.deck_reorder_confirm' })).toBeInTheDocument();
+        expect(container.querySelector('.max-h-\\[min\\(92vh\\2c 56rem\\)\\]')).toBeTruthy();
+        expect(container.querySelector('.overflow-y-auto')).toBeTruthy();
     });
 
     it('单排仍能放下时不应提前显示搜索框', () => {
@@ -383,7 +412,7 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
             </ToastProvider>,
         );
 
-        expect(screen.getByText('正在等待 {{player}}')).toBeInTheDocument();
+        expect(screen.getByText('ui.waiting_for_player')).toBeInTheDocument();
 
         rerender(
             <ToastProvider>
@@ -396,6 +425,6 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
             </ToastProvider>,
         );
 
-        expect(screen.queryByText('正在等待 {{player}}')).not.toBeInTheDocument();
+        expect(screen.queryByText('ui.waiting_for_player')).not.toBeInTheDocument();
     });
 });

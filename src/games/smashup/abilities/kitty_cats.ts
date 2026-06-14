@@ -8,6 +8,7 @@ import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import {
     addTempPower,
+    applySemanticMinionEffectBatch,
     buildAbilityFeedback,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
@@ -16,6 +17,7 @@ import {
     getMinionPower,
     grantContextualExtraAction,
 } from '../domain/abilityHelpers';
+import { isMinionTargetAllowed } from '../domain/effectSemantics';
 import type {
     MinionMetadataUpdatedEvent,
     MinionOnBase,
@@ -133,34 +135,46 @@ function buildTemporaryControlEvents(
     selected: MinionChoice,
     reason: string,
     timestamp: number,
+    sourceKind: 'action' | 'nonAction',
 ): SmashUpEvent[] {
     if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return [];
     const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
     if (!minion || minion.controller === playerId) return [];
-    return [
-        changeMinionController(
-            minion.uid,
-            minion.defId,
-            selected.baseIndex,
-            minion.owner,
-            minion.controller,
-            playerId,
-            playerId,
-            reason,
-            timestamp,
-        ),
-        buildMetadataUpdatedEvent(
-            minion.uid,
-            selected.baseIndex,
-            {
-                [TEMP_CONTROL_CONTROLLER_META]: minion.controller,
-                [TEMP_CONTROL_PLAYER_META]: playerId,
-                [TEMP_CONTROL_TURN_META]: state.core.turnNumber,
-            },
-            reason,
-            timestamp,
-        ),
-    ];
+    return applySemanticMinionEffectBatch(
+        state,
+        [{ minion, baseIndex: selected.baseIndex }],
+        {
+            sourcePlayerId: playerId,
+            sourceKind,
+            effectType: 'control',
+            respectActionProtection: sourceKind === 'action',
+            mode: 'apply',
+            buildEvents: ({ minion, baseIndex }) => [
+                changeMinionController(
+                    minion.uid,
+                    minion.defId,
+                    baseIndex,
+                    minion.owner,
+                    minion.controller,
+                    playerId,
+                    playerId,
+                    reason,
+                    timestamp,
+                ),
+                buildMetadataUpdatedEvent(
+                    minion.uid,
+                    baseIndex,
+                    {
+                        [TEMP_CONTROL_CONTROLLER_META]: minion.controller,
+                        [TEMP_CONTROL_PLAYER_META]: playerId,
+                        [TEMP_CONTROL_TURN_META]: state.core.turnNumber,
+                    },
+                    reason,
+                    timestamp,
+                ),
+            ],
+        },
+    ).events;
 }
 
 function findAttachedActionOwner(state: SmashUpCore, cardUid: string | undefined): PlayerId | undefined {
@@ -276,11 +290,19 @@ function queueTemporaryControlChoice(
     sourceId: string,
     maxPower: number,
     baseIndex?: number,
+    sourceKind: 'action' | 'nonAction' = 'nonAction',
 ): AbilityResult {
     const targets = collectMinions(ctx.matchState.core, (minion, index) => (
         minion.controller !== ctx.playerId
         && (baseIndex === undefined || index === baseIndex)
         && getMinionPower(ctx.matchState.core, minion, index) <= maxPower
+        && isMinionTargetAllowed(ctx.matchState.core, minion, index, {
+            sourcePlayerId: ctx.playerId,
+            sourceKind,
+            effectType: 'control',
+            respectActionProtection: sourceKind === 'action',
+            mode: 'preview',
+        })
     ));
     return queueMinionChoice(
         ctx,
@@ -313,11 +335,11 @@ function kittyCatsQueenFluffy(ctx: AbilityContext): AbilityResult {
 }
 
 function kittyCatsCatsPaw(ctx: AbilityContext): AbilityResult {
-    return queueTemporaryControlChoice(ctx, 'kitty_cats_cats_paw', 5);
+    return queueTemporaryControlChoice(ctx, 'kitty_cats_cats_paw', 5, undefined, 'action');
 }
 
 function kittyCatsCanHasCheeseburger(ctx: AbilityContext): AbilityResult {
-    return queueTemporaryControlChoice(ctx, 'kitty_cats_can_has_cheeseburger', 5, ctx.baseIndex);
+    return queueTemporaryControlChoice(ctx, 'kitty_cats_can_has_cheeseburger', 5, ctx.baseIndex, 'action');
 }
 
 function kittyCatsCatFight(ctx: AbilityContext): AbilityResult {
@@ -349,7 +371,7 @@ function kittyCatsWhiskers(ctx: AbilityContext): AbilityResult {
     const prompt = createSimpleChoice(
         `kitty_cats_whiskers_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
-        '威斯克：选择你的一个随从直到回合结束 +1 力量',
+        '威斯克：消灭你的一个随从并额外打出一个行动',
         buildMinionOptions(ctx.matchState.core, targets),
         {
             sourceId: 'kitty_cats_whiskers',
@@ -528,7 +550,19 @@ function handleTemporaryControl(sourceId: string) {
         _data: Record<string, unknown> | undefined,
         _random: RandomFn,
         timestamp: number,
-    ) => ({ state, events: buildTemporaryControlEvents(state, playerId, value as MinionChoice, sourceId, timestamp) });
+    ) => ({
+        state,
+        events: buildTemporaryControlEvents(
+            state,
+            playerId,
+            value as MinionChoice,
+            sourceId,
+            timestamp,
+            sourceId === 'kitty_cats_cats_paw' || sourceId === 'kitty_cats_can_has_cheeseburger'
+                ? 'action'
+                : 'nonAction',
+        ),
+    });
 }
 
 function handleHangInThere(
@@ -559,8 +593,7 @@ export function registerKittyCatsAbilities(): void {
 
     registerInteractionHandler('kitty_cats_mr_grumpers', (state, playerId, value, data, random, timestamp) =>
         handleTempPower(state, playerId, value, data, random, timestamp, -2, 'kitty_cats_mr_grumpers'));
-    registerInteractionHandler('kitty_cats_whiskers', (state, playerId, value, data, random, timestamp) =>
-        handleTempPower(state, playerId, value, data, random, timestamp, 1, 'kitty_cats_whiskers'));
+    registerInteractionHandler('kitty_cats_whiskers', handleDestroyForExtraAction);
     registerInteractionHandler('kitty_cats_muffin', handleTemporaryControl('kitty_cats_muffin'));
     registerInteractionHandler('kitty_cats_queen_fluffy', handleTemporaryControl('kitty_cats_queen_fluffy'));
     registerInteractionHandler('kitty_cats_cats_paw', handleTemporaryControl('kitty_cats_cats_paw'));

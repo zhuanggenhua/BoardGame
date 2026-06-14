@@ -20,7 +20,8 @@ import type {
 import {
     buildActionMinionTargetOptions, buildBaseTargetOptions, buildMinionTargetOptions, buildPlayerTargetOptions, getMinionPower,
     grantContextualExtraMinion, grantExtraMinion, shuffleBaseDeck,
-    buildAbilityFeedback, canControllerPlayTitan, getSetAsideTitansPlayableAs, playTitan, buildValidatedMoveEvents,
+    applySemanticMinionEffectBatch, buildAbilityFeedback, buildValidatedMoveEvents, buildValidatedReturnEvents,
+    canControllerPlayTitan, getSetAsideTitansPlayableAs, playTitan,
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
@@ -31,7 +32,7 @@ import {
     createPromptProgram,
     createStopProgram,
 } from '../domain/abilityRuntime';
-import { registerTrigger, registerBaseAbilitySuppression, isMinionProtected } from '../domain/ongoingEffects';
+import { registerTrigger, registerBaseAbilitySuppression } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getPlayerLabel } from '../domain/utils';
 
@@ -1657,38 +1658,41 @@ function buildCropCirclesReturnEvents(
     const base = core.bases[baseIndex];
     if (!base) return [];
     const selectedSet = new Set(selectedMinionUids);
-    const events: SmashUpEvent[] = [];
-    let protectedSkipped = 0;
-    for (const m of base.minions.filter(minion => selectedSet.has(minion.uid))) {
-        // 跳过受保护的对手随从
-        if (sourcePlayerId && m.controller !== sourcePlayerId && isMinionProtected(core, m, baseIndex, sourcePlayerId, 'affect', {
+    const selectedTargets = base.minions
+        .filter(minion => selectedSet.has(minion.uid))
+        .map(minion => ({ minion, baseIndex }));
+    if (!sourcePlayerId) {
+        return selectedTargets.flatMap(({ minion }) => buildValidatedReturnEvents(core, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: baseIndex,
+            toPlayerId: minion.owner,
+            sourcePlayerId,
+            reason: 'alien_crop_circles',
+            now: timestamp,
+        }) as MinionReturnedEvent[]);
+    }
+    return applySemanticMinionEffectBatch(
+        core,
+        selectedTargets,
+        {
+            sourcePlayerId,
             sourceKind: 'action',
-        })) {
-            protectedSkipped += 1;
-            continue;
-        }
-        events.push({
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: {
-                minionUid: m.uid,
-                minionDefId: m.defId,
+            effectType: 'return',
+            respectActionProtection: true,
+            mode: 'apply',
+            feedbackPlayerId: sourcePlayerId,
+            now: timestamp,
+            buildEvents: ({ minion }) => buildValidatedReturnEvents(core, {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
-                toPlayerId: m.owner,
+                toPlayerId: minion.owner,
                 sourcePlayerId,
                 reason: 'alien_crop_circles',
-            },
-            timestamp,
-        } as MinionReturnedEvent);
-    }
-    if (sourcePlayerId && protectedSkipped > 0) {
-        events.push(buildAbilityFeedback(
-            sourcePlayerId,
-            events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
-            timestamp,
-            undefined,
-            'warning',
-        ));
-    }
-    return events;
+                now: timestamp,
+            }) as MinionReturnedEvent[],
+        },
+    ).events;
 }
 

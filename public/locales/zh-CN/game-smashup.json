@@ -133,7 +133,7 @@
     "kitty_cats_mr_grumpers_title": "坏脾气先生：选择一个随从直到回合结束 -2 力量",
     "kitty_cats_cat_fight_title": "猫咪打架：选择你的一个随从，按其力量抽牌，然后消灭它",
     "kitty_cats_nine_lives_title": "九条命：消灭你的一个随从并额外打出一个行动",
-    "kitty_cats_whiskers_title": "威斯克：选择你的一个随从直到回合结束 +1 力量",
+    "kitty_cats_whiskers_title": "威斯克：消灭你的一个随从并额外打出一个行动",
     "kitty_cats_invisible_bicycle_minions_title": "隐形自行车：选择要移动的力量 2 或以下随从",
     "kitty_cats_invisible_bicycle_base_title": "隐形自行车：选择目标基地",
     "mythic_horses_teaching_power_order_title": "教学之力：按顺序选择其余展示牌放回牌库顶",
@@ -4644,7 +4644,7 @@
     },
     "kitty_cats_whiskers": {
       "name": "威斯克",
-      "abilityText": "天赋：打出一个额外的行动，并让你的一个仆从直到回合结束具有 +1 力量。"
+      "abilityText": "天赋：消灭你的一个仆从，并额外打出一个行动。"
     },
     "kitty_cats_queen_fluffy": {
       "name": "毛茸茸女王",
@@ -4684,7 +4684,7 @@
     },
     "mythic_horses_starlyte": {
       "name": "星耀",
-      "abilityText": "持续：你在同一基地的其他仆从具有 +1 力量。"
+      "abilityText": "持续：本仆从每有一个你在这里的其他仆从，就具有 +1 力量。"
     },
     "mythic_horses_pinkie": {
       "name": "粉琪",
@@ -4692,7 +4692,7 @@
     },
     "mythic_horses_seastar": {
       "name": "海星",
-      "abilityText": "如果你控制另一个在这里有仆从的基地，本回合你可以额外使用一次本仆从的能力。"
+      "abilityText": "如果你控制另一个有你仆从的基地，你可以在这里额外打出一个仆从。"
     },
     "mythic_horses_rainbow": {
       "name": "彩虹",
@@ -4716,7 +4716,7 @@
     },
     "mythic_horses_encouragement_power": {
       "name": "鼓舞之力",
-      "effectText": "打出到你的一个仆从上。\n持续：如果该仆从所在基地还有你的其他仆从，该仆从具有 +1 力量。"
+      "effectText": "打出到你的一个仆从上。\n持续：本仆从每有一个你在这里的其他仆从，就具有 +1 力量。"
     },
     "mythic_horses_adventure_power": {
       "name": "冒险之力",

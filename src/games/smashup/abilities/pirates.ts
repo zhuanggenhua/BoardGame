@@ -6,12 +6,12 @@
 
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, addTempPower, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions } from '../domain/abilityHelpers';
+import { destroyMinion, addTempPower, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import type { SmashUpEvent, MinionCardDef, SmashUpCore } from '../domain/types';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { registerTrigger, isMinionProtected } from '../domain/ongoingEffects';
+import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel, resolveLiveBaseIndex } from '../domain/utils';
@@ -846,30 +846,32 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
         if (destBase === undefined) return { events: [] };
         const base = state.core.bases[context.fromBase];
         if (!base) return { events: [] };
-        const events: SmashUpEvent[] = [];
-        let protectedSkipped = 0;
-        for (const minion of base.minions) {
-            if (minion.controller === context.playerId) continue;
-            const def = getCardDef(minion.defId);
-            if (def?.faction !== context.factionId) continue;
-            if (isMinionProtected(state.core, minion, context.fromBase, context.playerId, 'affect', {
-                sourceKind: 'action',
-            })) {
-                protectedSkipped += 1;
-                continue;
-            }
-            events.push(moveMinion(minion.uid, minion.defId, context.fromBase, destBase, 'pirate_sea_dogs', timestamp));
-        }
-        if (protectedSkipped > 0) {
-            events.push(buildAbilityFeedback(
-                context.playerId,
-                events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
-                timestamp,
-                undefined,
-                'warning',
-            ));
-        }
-        return { events };
+        return {
+            events: applySemanticMinionEffectBatch(
+                state,
+                base.minions
+                    .filter(minion => minion.controller !== context.playerId)
+                    .filter(minion => getCardDef(minion.defId)?.faction === context.factionId)
+                    .map(minion => ({ minion, baseIndex: context.fromBase })),
+                {
+                    sourcePlayerId: context.playerId,
+                    sourceKind: 'action',
+                    effectType: 'move',
+                    respectActionProtection: true,
+                    mode: 'apply',
+                    feedbackPlayerId: context.playerId,
+                    now: timestamp,
+                    buildEvents: ({ minion }) => buildValidatedMoveEvents(state, {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        fromBaseIndex: context.fromBase,
+                        toBaseIndex: destBase,
+                        reason: 'pirate_sea_dogs',
+                        now: timestamp,
+                    }),
+                },
+            ).events,
+        };
     },
 });
 

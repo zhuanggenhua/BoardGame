@@ -17,7 +17,7 @@ import {
     moveTitan,
 } from '../domain/abilityHelpers';
 import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
-import { isMinionProtected, registerTrigger } from '../domain/ongoingEffects';
+import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { canStartDuel, isMinionInActiveDuel, startDuel } from '../domain/duel';
 import { validateActionPlaySemantics, validateDeckTopRegularMinionPlaySemantics } from '../domain/playLegality';
@@ -970,7 +970,6 @@ const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptCont
     if (actionLikeNeedsPlayMinion(actionDef)) {
         const minionOptions = context.matchState.core.bases.flatMap((base, baseIndex) => (
             base.minions
-                .filter(minion => !isMinionProtected(context.matchState.core, minion, baseIndex, context.playerId, 'action'))
                 .filter(minion => validateActionPlaySemantics(context.matchState.core, context.playerId, {
                     defId: context.chosenCard.defId,
                     targetBaseIndex: baseIndex,
@@ -1111,7 +1110,6 @@ const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimeProm
     buildInteraction: (context) => {
         const minionOptions = context.matchState.core.bases.flatMap((base, baseIndex) => (
             base.minions
-                .filter(minion => !isMinionProtected(context.matchState.core, minion, baseIndex, context.playerId, 'action'))
                 .filter(minion => validateActionPlaySemantics(context.matchState.core, context.playerId, {
                     defId: context.chosenCard.defId,
                     targetBaseIndex: baseIndex,
@@ -1445,14 +1443,19 @@ function buildEnemyMinionOptions(
     return buildMinionTargetOptions(
         base.minions
             .filter(minion => minion.controller !== sourcePlayerId)
-            .filter(minion => !respectActionProtection || !isMinionProtected(state, minion, baseIndex, sourcePlayerId, 'action'))
             .map(minion => ({
                 uid: minion.uid,
                 defId: minion.defId,
                 baseIndex,
                 label: `${getCardDef(minion.defId)?.name ?? minion.defId}（力量 ${getMinionPower(state, minion, baseIndex)}）`,
             })),
-        { state, sourcePlayerId, effectType: 'destroy' },
+        {
+            state,
+            sourcePlayerId,
+            sourceKind: respectActionProtection ? 'action' : undefined,
+            effectType: 'destroy',
+            respectActionProtection,
+        },
     );
 }
 

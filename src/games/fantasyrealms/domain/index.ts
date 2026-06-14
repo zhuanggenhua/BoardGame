@@ -311,5 +311,6 @@ export {
 } from './scoring';
 
 export {
+    getDeckDrawCount,
     isDuelVariant,
 } from './commands';

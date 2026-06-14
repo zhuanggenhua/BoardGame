@@ -1,0 +1,4 @@
+interface:
+  display_name: "Merge Decision Package"
+  short_description: "Prepare plain-language keep-or-merge decisions for BoardGame"
+  default_prompt: "Use $merge-decision-package to produce a plain-language keep-or-merge decision package for the current BoardGame conflict."

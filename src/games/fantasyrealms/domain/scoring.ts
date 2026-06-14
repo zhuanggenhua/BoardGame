@@ -108,10 +108,6 @@ function isBookOfChanges(cardId: string): boolean {
     return cardId === 'artifact-book-of-changes';
 }
 
-function isIsland(cardId: string): boolean {
-    return cardId === 'flood-island';
-}
-
 function hasSourceCard(cards: readonly EffectiveCard[], sourceId: string): boolean {
     return cards.some((card) => card.sourceId === sourceId);
 }

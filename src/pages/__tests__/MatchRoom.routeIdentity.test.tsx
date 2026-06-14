@@ -318,9 +318,12 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         GameCursorProvider: ({ children }: any) => createElement('div', null, children),
     }));
 
-    vi.doMock('../../games/pageRuntimeAdapter', () => ({
-        GamePageRuntimeProvider: ({ children }: any) => createElement('div', null, children),
-        dismissGamePageTransientUi: () => false,
+    vi.doMock('../../games/smashup/ui/SmashUpOverlayContext', () => ({
+        SmashUpOverlayProvider: ({ children }: any) => createElement('div', null, children),
+    }));
+
+    vi.doMock('../../games/smashup/ui/CardMagnifyOverlay', () => ({
+        SMASHUP_FORCE_DISMISS_EVENT: 'smashup-force-dismiss',
     }));
 
     vi.doMock('../../components/lobby/roomActions', () => ({
@@ -403,11 +406,10 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         RematchProvider: ({ children }: any) => createElement('div', null, children),
     }));
 
-    const { MatchRoom } = await import('../MatchRoom');
-    const { OnlineManualSetupSelectionBridge } = await import('../onlineManualSetupSelectionBridge');
+    const { MatchRoom, OnlineManualFactionSelectionBridge } = await import('../MatchRoom');
     return {
         MatchRoom,
-        OnlineManualSetupSelectionBridge,
+        OnlineManualFactionSelectionBridge,
         clearMatchCredentialsSpy,
         gameModeSpy,
         gameProviderSpy,
@@ -625,7 +627,7 @@ describe('MatchRoom route identity integration', () => {
         };
 
         const {
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
         } = await loadMatchRoomWithOnlineMocks({
             gameClientStateRef,
             resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
@@ -652,10 +654,10 @@ describe('MatchRoom route identity integration', () => {
 
         const dispatchManualAiCommand = vi.fn();
         const { rerender } = render(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement(MountProbe),
         ));
@@ -675,10 +677,10 @@ describe('MatchRoom route identity integration', () => {
         };
 
         rerender(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement(MountProbe),
         ));
@@ -698,10 +700,10 @@ describe('MatchRoom route identity integration', () => {
         };
 
         rerender(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement(MountProbe),
         ));
@@ -733,7 +735,7 @@ describe('MatchRoom route identity integration', () => {
         };
 
         const {
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
         } = await loadMatchRoomWithOnlineMocks({
             gameClientStateRef,
             resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
@@ -746,10 +748,10 @@ describe('MatchRoom route identity integration', () => {
         } as const;
         const dispatchManualAiCommand = vi.fn(() => true);
         const { rerender } = render(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
         ));
@@ -779,10 +781,10 @@ describe('MatchRoom route identity integration', () => {
         };
 
         rerender(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
         ));
@@ -815,7 +817,7 @@ describe('MatchRoom route identity integration', () => {
         };
 
         const {
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
         } = await loadMatchRoomWithOnlineMocks({
             gameClientStateRef,
             resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
@@ -828,10 +830,10 @@ describe('MatchRoom route identity integration', () => {
         } as const;
         const dispatchManualAiCommand = vi.fn(() => true);
         const { rerender } = render(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
         ));
@@ -869,10 +871,10 @@ describe('MatchRoom route identity integration', () => {
         };
 
         rerender(createElement(
-            OnlineManualSetupSelectionBridge,
+            OnlineManualFactionSelectionBridge,
             {
                 seatControllers,
-                dispatchManualSetupCommand: dispatchManualAiCommand,
+                dispatchManualAiCommand,
             },
             createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child'),
         ));

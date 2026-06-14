@@ -71,13 +71,18 @@ import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy, resolve
 import type { AbilityContext } from './abilityRegistry';
 import { triggerActiveBaseAbility } from './baseAbilities';
 import { collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
-import { fireTriggers, collectTriggers, isMinionProtected, getConsumableProtectionSource } from './ongoingEffects';
+import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
 import { reduce } from './reduce';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildActionPlayedEvent } from './actionPlayEvent';
+import {
+    buildProtectionSelfDestructEvent,
+    getMinionTargetBlockInfo,
+    mapAffectTypeToMinionSemanticEffectType,
+} from './effectSemantics';
 import {
     createPendingActionResolution,
     maybeQueueActionCounterWindow,
@@ -855,31 +860,19 @@ export function filterProtectedDestroyEvents(
             && record.triggerMinionUid === minionUid
             && isActionAffectRecord(record),
         );
-        // 检查 destroy 保护和 action 保护
-        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'destroy', {
-            sourceKind: actionRecord ? 'action' : 'nonAction',
-        })) continue;
-        // 只有当来源是行动/融合牌时才判定 action 保护
         const actionSourcePlayerId = actionRecord
             ? resolveProtectionSourcePlayerId(workingCore, actionRecord) ?? rawSource
             : undefined;
-        const actionProtected = actionSourcePlayerId
-            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action', {
-                sourceKind: 'action',
-            })
-            : false;
-        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect', {
+        const blockInfo = getMinionTargetBlockInfo(workingCore, minion, fromBaseIndex, {
+            sourcePlayerId: effectiveSource,
+            actionProtectionSourcePlayerId: actionSourcePlayerId,
             sourceKind: actionRecord ? 'action' : 'nonAction',
+            effectType: 'destroy',
+            mode: 'apply',
         });
-        if (actionProtected || affectProtected) {
-            // 消耗型保护：发射自毁事件
-            const protType = actionProtected ? 'action' : 'affect';
-            const protectionSourcePlayerId = actionProtected && actionSourcePlayerId
-                ? actionSourcePlayerId
-                : effectiveSource;
-            const source = getConsumableProtectionSource(workingCore, minion, fromBaseIndex, protectionSourcePlayerId, protType);
-            if (source) {
-                appendEvent(buildProtectionSelfDestructEvent(source, fromBaseIndex, e.timestamp), sourceKey);
+        if (blockInfo.blocked) {
+            if (blockInfo.consumableSource) {
+                appendEvent(buildProtectionSelfDestructEvent(blockInfo.consumableSource, fromBaseIndex, e.timestamp), sourceKey);
             }
             continue;
         }
@@ -1046,28 +1039,6 @@ function resolveProtectionSourcePlayerId(core: SmashUpCore, record: AffectRecord
     return inferInPlayActionSourcePlayerId(core, record) ?? record.sourcePlayerId;
 }
 
-function buildProtectionSelfDestructEvent(
-    source: { uid: string; defId: string; ownerId: PlayerId; controllerId: PlayerId },
-    sourceBaseIndex: number | undefined,
-    timestamp?: number,
-): OngoingDetachedEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: source.uid,
-            defId: source.defId,
-            ownerId: source.ownerId,
-            reason: `${source.defId}_self_destruct`,
-            sourcePlayerId: source.controllerId,
-            sourceCardUid: source.uid,
-            sourceDefId: source.defId,
-            sourceControllerId: source.controllerId,
-            sourceBaseIndex,
-        },
-        timestamp,
-    };
-}
-
 function buildBlockedAttachedActionDiscardEvent(
     record: AffectRecord,
     event: SmashUpEvent,
@@ -1093,34 +1064,24 @@ function buildBlockedAttachedActionDiscardEvent(
     };
 }
 
-function resolveBlockedProtectionType(
+function resolveBlockedProtection(
     core: SmashUpCore,
     record: AffectRecord,
     targetMinion: import('./types').MinionOnBase,
-): 'move' | 'affect' | 'action' | undefined {
+): ReturnType<typeof getMinionTargetBlockInfo> | undefined {
     if (record.baseIndex === undefined) return undefined;
 
     const effectiveSourcePlayerId = resolveProtectionSourcePlayerId(core, record);
     if (!effectiveSourcePlayerId) return undefined;
 
-    const orderedChecks: Array<'move' | 'affect' | 'action'> = [];
-    if (record.affectType === 'return' || record.affectType === 'shuffle_into_deck') {
-        orderedChecks.push('move');
-    }
-    orderedChecks.push('affect');
-    if (isActionAffectRecord(record)) {
-        orderedChecks.push('action');
-    }
-
-    for (const protectionType of orderedChecks) {
-        if (isMinionProtected(core, targetMinion, record.baseIndex, effectiveSourcePlayerId, protectionType, {
-            sourceKind: isActionAffectRecord(record) ? 'action' : 'nonAction',
-        })) {
-            return protectionType;
-        }
-    }
-
-    return undefined;
+    const blockInfo = getMinionTargetBlockInfo(core, targetMinion, record.baseIndex, {
+        sourcePlayerId: effectiveSourcePlayerId,
+        actionProtectionSourcePlayerId: effectiveSourcePlayerId,
+        sourceKind: isActionAffectRecord(record) ? 'action' : 'nonAction',
+        effectType: mapAffectTypeToMinionSemanticEffectType(record.affectType),
+        mode: 'apply',
+    });
+    return blockInfo.blocked ? blockInfo : undefined;
 }
 
 export function filterProtectedAffectEvents(
@@ -1185,12 +1146,12 @@ export function filterProtectedAffectEvents(
             }
             if (record.baseIndex === undefined || !record.triggerMinion) continue;
 
-            const blockedProtectionType = resolveBlockedProtectionType(
+            const blockInfo = resolveBlockedProtection(
                 workingCore,
                 record,
                 record.protectionTargetMinion ?? record.triggerMinion,
             );
-            if (!blockedProtectionType) continue;
+            if (!blockInfo) continue;
 
             const effectiveSourcePlayerId = resolveProtectionSourcePlayerId(core, record);
 
@@ -1199,24 +1160,15 @@ export function filterProtectedAffectEvents(
                 extraEvents.push(buildProtectedTargetFeedback(effectiveSourcePlayerId, event.timestamp ?? Date.now()));
             }
 
-            if (effectiveSourcePlayerId) {
-                const protectionSource = getConsumableProtectionSource(
-                    workingCore,
-                    record.protectionTargetMinion ?? record.triggerMinion,
+            if (blockInfo.consumableSource) {
+                extraEvents.push(buildProtectionSelfDestructEvent(
+                    {
+                        ...blockInfo.consumableSource,
+                        controllerId: blockInfo.consumableSource.controllerId,
+                    },
                     record.baseIndex,
-                    effectiveSourcePlayerId,
-                    blockedProtectionType,
-                );
-                if (protectionSource) {
-                    extraEvents.push(buildProtectionSelfDestructEvent(
-                        {
-                            ...protectionSource,
-                            controllerId: protectionSource.controllerId,
-                        },
-                        record.baseIndex,
-                        event.timestamp,
-                    ));
-                }
+                    event.timestamp,
+                ));
             }
 
             if (blockedAttachCleanup) {
@@ -1298,8 +1250,13 @@ function isAttachedActionProtectedByHost(
                 action.uid !== targetAction.uid && matchesDefId(action.defId, 'cyborg_apes_shielding'),
             );
         }
-        return isMinionProtected(core, host, baseIndex, sourcePlayerId, 'action')
-            || isMinionProtected(core, host, baseIndex, sourcePlayerId, 'affect');
+        return getMinionTargetBlockInfo(core, host, baseIndex, {
+            sourcePlayerId,
+            actionProtectionSourcePlayerId: sourcePlayerId,
+            sourceKind: isActionAffectRecord(record) ? 'action' : 'nonAction',
+            effectType: 'affect',
+            mode: 'apply',
+        }).blocked;
     }
 
     return false;
@@ -1722,30 +1679,19 @@ export function filterProtectedMoveEvents(
             && record.triggerMinionUid === minionUid
             && isActionAffectRecord(record),
         );
-        if (isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'move', {
-            sourceKind: actionRecord ? 'action' : 'nonAction',
-        })) continue;
-        // 检查 'action' 和 'affect' 两种广义保护类型（与 filterProtectedDestroyEvents 对齐）
         const actionSourcePlayerId = actionRecord
             ? resolveProtectionSourcePlayerId(workingCore, actionRecord) ?? sourcePlayerId
             : undefined;
-        const actionProtected = actionSourcePlayerId
-            ? isMinionProtected(workingCore, minion, fromBaseIndex, actionSourcePlayerId, 'action', {
-                sourceKind: 'action',
-            })
-            : false;
-        const affectProtected = isMinionProtected(workingCore, minion, fromBaseIndex, effectiveSource, 'affect', {
+        const blockInfo = getMinionTargetBlockInfo(workingCore, minion, fromBaseIndex, {
+            sourcePlayerId: effectiveSource,
+            actionProtectionSourcePlayerId: actionSourcePlayerId,
             sourceKind: actionRecord ? 'action' : 'nonAction',
+            effectType: 'move',
+            mode: 'apply',
         });
-        if (actionProtected || affectProtected) {
-            // 消耗型保护：发射自毁事件
-            const protType = actionProtected ? 'action' : 'affect';
-            const protectionSourcePlayerId = actionProtected && actionSourcePlayerId
-                ? actionSourcePlayerId
-                : effectiveSource;
-            const source = getConsumableProtectionSource(workingCore, minion, fromBaseIndex, protectionSourcePlayerId, protType);
-            if (source) {
-                appendEvent(buildProtectionSelfDestructEvent(source, fromBaseIndex, e.timestamp), sourceKey);
+        if (blockInfo.blocked) {
+            if (blockInfo.consumableSource) {
+                appendEvent(buildProtectionSelfDestructEvent(blockInfo.consumableSource, fromBaseIndex, e.timestamp), sourceKey);
             }
             continue;
         }

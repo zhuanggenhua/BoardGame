@@ -208,13 +208,21 @@ export const FriendList = ({ onSelectFriend, activeFriendId }: FriendListProps) 
                                 </div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => acceptFriendRequest(req.id)}
+                                        onClick={() => {
+                                            void acceptFriendRequest(req.id).catch((error) => {
+                                                console.error('[FriendList] Failed to accept friend request:', error);
+                                            });
+                                        }}
                                         className="flex-1 flex items-center justify-center gap-1 bg-parchment-base-text text-parchment-card-bg py-1.5 rounded text-xs hover:bg-parchment-brown transition-colors"
                                     >
                                         <Check size={12} /> {t('common:accept')}
                                     </button>
                                     <button
-                                        onClick={() => rejectFriendRequest(req.id)}
+                                        onClick={() => {
+                                            void rejectFriendRequest(req.id).catch((error) => {
+                                                console.error('[FriendList] Failed to reject friend request:', error);
+                                            });
+                                        }}
                                         className="flex-1 flex items-center justify-center gap-1 bg-parchment-card-border/20 text-parchment-base-text py-1.5 rounded text-xs hover:bg-parchment-card-border/40 transition-colors"
                                     >
                                         <X size={12} /> {t('common:reject')}

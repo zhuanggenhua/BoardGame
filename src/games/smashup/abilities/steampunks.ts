@@ -7,7 +7,7 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
-import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
+import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, buildSemanticOngoingAttachEvents, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
@@ -81,25 +81,25 @@ function withSimulatedMatchState(
 }
 
 function buildReplayOngoingAttachedEvent(
+    state: MatchState<SmashUpCore> | SmashUpCore,
     context: Pick<SteampunkPromptContext, 'replayCardUid' | 'replayDefId' | 'replayOwnerId'>,
     sourcePlayerId: PlayerId,
     target:
         | { targetType: 'base'; targetBaseIndex: number }
         | { targetType: 'minion'; targetBaseIndex: number; targetMinionUid: string },
     timestamp: number,
-): SmashUpEvent {
+): SmashUpEvent[] {
     const ownerId = context.replayOwnerId ?? sourcePlayerId;
-    return {
-        type: SU_EVENTS.ONGOING_ATTACHED,
-        payload: {
-            cardUid: context.replayCardUid,
-            defId: context.replayDefId,
-            ownerId,
-            ...(ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
-            ...target,
-        },
-        timestamp,
-    } as SmashUpEvent;
+    return buildSemanticOngoingAttachEvents(state, {
+        cardUid: context.replayCardUid,
+        defId: context.replayDefId,
+        ownerId,
+        ...(ownerId !== sourcePlayerId ? { sourcePlayerId } : {}),
+        targetBaseIndex: target.targetBaseIndex,
+        ...(target.targetType === 'minion' ? { targetMinionUid: target.targetMinionUid } : {}),
+        onBlockedSourceDestination: 'discard',
+        now: timestamp,
+    });
 }
 
 function buildDiscardActionOptions(
@@ -771,7 +771,8 @@ const steampunkMechanicTargetPromptProgram = createPromptProgram<SteampunkPrompt
                     targetBaseIndex: selected.baseIndex,
                     timestamp,
                 }),
-                buildReplayOngoingAttachedEvent(
+                ...buildReplayOngoingAttachedEvent(
+                    state,
                     context,
                     playerId,
                     { targetType: 'base', targetBaseIndex: selected.baseIndex },
@@ -899,7 +900,8 @@ const steampunkChangeOfVenueChooseMinionPromptProgram = createPromptProgram<Stea
                     targetMinionUid: selected.minionUid,
                     timestamp,
                 }),
-                buildReplayOngoingAttachedEvent(
+                ...buildReplayOngoingAttachedEvent(
+                    state,
                     context,
                     playerId,
                     {
@@ -970,7 +972,8 @@ const steampunkChangeOfVenueChooseBasePromptProgram = createPromptProgram<Steamp
                     targetBaseIndex: selected.baseIndex,
                     timestamp,
                 }),
-                buildReplayOngoingAttachedEvent(
+                ...buildReplayOngoingAttachedEvent(
+                    state,
                     context,
                     playerId,
                     { targetType: 'base', targetBaseIndex: selected.baseIndex },

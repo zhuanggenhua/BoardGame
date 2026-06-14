@@ -21,6 +21,7 @@ import {
     peekDeckTop,
     buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, SmashUpEvent, DeckReorderedEvent, MinionCardDef, CardToDeckTopEvent, ActionCardDef, SmashUpCore } from '../domain/types';
@@ -661,40 +662,23 @@ function resolveWizardExternalActionPlay(params: {
         timestamp,
     }));
 
-    if (playMode === 'ongoing-base') {
+    if (playMode === 'ongoing-base' || playMode === 'ongoing-minion') {
         if (typeof targetBaseIndex !== 'number') {
             return { events: [], matchState: context.matchState };
         }
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: context.cardUid,
-                defId: context.defId,
-                ownerId: sourceCard.owner,
-                ...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
-                targetType: 'base',
-                targetBaseIndex,
-            },
-            timestamp,
-        } as SmashUpEvent);
-    }
-    if (playMode === 'ongoing-minion') {
-        if (typeof targetBaseIndex !== 'number' || !targetMinionUid) {
+        if (playMode === 'ongoing-minion' && !targetMinionUid) {
             return { events: [], matchState: context.matchState };
         }
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: context.cardUid,
-                defId: context.defId,
-                ownerId: sourceCard.owner,
-                ...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
-                targetType: 'minion',
-                targetBaseIndex,
-                targetMinionUid,
-            },
-            timestamp,
-        } as SmashUpEvent);
+        events.push(...buildSemanticOngoingAttachEvents(context.matchState, {
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ownerId: sourceCard.owner,
+            ...(sourceCard.owner !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+            targetBaseIndex,
+            ...(targetMinionUid ? { targetMinionUid } : {}),
+            onBlockedSourceDestination: 'discard',
+            now: timestamp,
+        }));
     }
 
     const appended = appendResolvedActionAbility({

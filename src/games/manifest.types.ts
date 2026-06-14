@@ -3,6 +3,7 @@ export type {
     GameManifestAiSupport,
     GameManifestEntry,
     GameManifestMobileDelivery,
+    GameStatusTag,
     GameManifestType,
     GameMobileBattlefieldZoom,
     GameMobileDeliveryMode,

@@ -3,7 +3,8 @@ import type { GameManifestEntry } from '../manifest.types';
 const entry: GameManifestEntry = {
     id: 'qidahen',
     type: 'game',
-    enabled: false,
+    enabled: true,
+    statusTag: 'under_construction',
     titleKey: 'games.qidahen.title',
     descriptionKey: 'games.qidahen.description',
     category: 'wargame',

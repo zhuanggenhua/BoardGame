@@ -163,6 +163,10 @@ function resolveGameBadgeKeys(game: Pick<GameConfig, 'category' | 'tags'>): stri
     return badgeKeys;
 }
 
+function resolveHomepageStatusBadgeKey(game: Pick<GameConfig, 'statusTag'>): string | null {
+    return game.statusTag ? `common:status_tags.${game.statusTag}` : null;
+}
+
 function resolveBadgeLabel(
     badgeKey: string,
     t: (key: string, options?: { defaultValue?: string }) => string,
@@ -192,6 +196,8 @@ function resolveBadgeLabel(
             return t('common:game_tags.card_driven');
         case 'common:game_tags.casual':
             return t('common:game_tags.casual');
+        case 'common:status_tags.under_construction':
+            return t('common:status_tags.under_construction');
         default:
             return badgeKey;
     }
@@ -538,7 +544,11 @@ export const OverviewSpread = ({
                 const summary = buildHomepageSummary(game, t);
                 const playerLabelText = buildPlayerLabel(game, t);
                 const isMostPopularGame = Boolean(mostPopularGameId) && mostPopularGameId.toLowerCase() === game.id.toLowerCase();
-                const badgeKeys = resolveGameBadgeKeys(game).filter((badgeKey, index, allKeys) => {
+                const statusBadgeKey = resolveHomepageStatusBadgeKey(game);
+                const badgeKeys = [
+                    ...(statusBadgeKey ? [statusBadgeKey] : []),
+                    ...resolveGameBadgeKeys(game),
+                ].filter((badgeKey, index, allKeys) => {
                     const label = resolveBadgeLabel(badgeKey, t);
                     return allKeys.findIndex((candidate) => resolveBadgeLabel(candidate, t) === label) === index;
                 });

@@ -146,6 +146,40 @@ describe('Kitty Cats abilities', () => {
         expect(restored.bases[0].minions.find(minion => minion.uid === 'enemy-small')?.controller).toBe('1');
     });
 
+    it('kitty_cats_cats_paw 不会把受行动保护的对手随从放进可选目标', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('paw-1', 'kitty_cats_cats_paw', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('enemy-protected', 'pirate_first_mate', '1', 4)],
+                    ongoingActions: [{ uid: 'wild-1', defId: 'dino_wildlife_preserve', ownerId: '1' }],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('enemy-open', 'pirate_first_mate', '1', 4)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'paw-1' } },
+            defaultTestRandom,
+        );
+        expect(played.success, played.error).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'kitty_cats_cats_paw');
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-protected')).toBe(false);
+        expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-open')).toBe(true);
+    });
+
     it('kitty_cats_nine_lives 消灭己方随从后授予额外行动额度', () => {
         const core = makeState({
             players: {
@@ -174,7 +208,7 @@ describe('Kitty Cats abilities', () => {
         expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
     });
 
-    it('kitty_cats_whiskers 天赋先授予额外行动，再给己方随从临时 +1', () => {
+    it('kitty_cats_whiskers 天赋先授予额外行动，再消灭一个己方随从', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -204,8 +238,8 @@ describe('Kitty Cats abilities', () => {
         const target = getPromptOption(prompt, option => option.value?.minionUid === 'ally-1', 'own minion');
         const resolved = respondToPrompt(used.finalState, target.id, '0', defaultTestRandom);
 
-        const ally = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1');
-        expect(getEffectivePower(resolved.finalState.core, ally!, 0)).toBe(4);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('ally-1');
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
     });
 
     it('kitty_cats_queen_fluffy 天赋临时控制力量 3 或以下随从', () => {

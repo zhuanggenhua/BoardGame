@@ -32,6 +32,11 @@ interface SocialContextType {
     getMessages: (userId: string, before?: string) => Promise<Message[]>;
 }
 
+type AuthenticatedFetchError = Error & {
+    status?: number;
+    payload?: unknown;
+};
+
 const SocialContext = createContext<SocialContextType | undefined>(undefined);
 const OPTIONAL_SOCIAL_FALLBACK: SocialContextType = {
     friends: [],
@@ -89,8 +94,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`${AUTH_API_URL}${path}`, { ...options, headers });
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || `Request failed: ${response.status}`);
+            const payload = await response.json().catch(() => ({ error: 'Unknown error' }));
+            const message = typeof payload?.error === 'string'
+                ? payload.error
+                : `Request failed: ${response.status}`;
+            const error = new Error(message) as AuthenticatedFetchError;
+            error.status = response.status;
+            error.payload = payload;
+            throw error;
         }
 
         return response.json();
@@ -269,15 +280,28 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     }, [authenticatedFetch]);
 
     const acceptFriendRequest = useCallback(async (requestId: string) => {
-        await authenticatedFetch(`/friends/accept/${requestId}`, { method: 'POST' });
+        try {
+            await authenticatedFetch(`/friends/accept/${requestId}`, { method: 'POST' });
+        } catch (error) {
+            if ((error as AuthenticatedFetchError)?.status !== 404) {
+                throw error;
+            }
+        }
         await refreshRequests();
         await refreshFriends();
     }, [authenticatedFetch, refreshRequests, refreshFriends]);
 
     const rejectFriendRequest = useCallback(async (requestId: string) => {
-        await authenticatedFetch(`/friends/reject/${requestId}`, { method: 'POST' });
+        try {
+            await authenticatedFetch(`/friends/reject/${requestId}`, { method: 'POST' });
+        } catch (error) {
+            if ((error as AuthenticatedFetchError)?.status !== 404) {
+                throw error;
+            }
+        }
         await refreshRequests();
-    }, [authenticatedFetch, refreshRequests]);
+        await refreshFriends();
+    }, [authenticatedFetch, refreshRequests, refreshFriends]);
 
     const deleteFriend = useCallback(async (userId: string) => {
         await authenticatedFetch(`/friends/${userId}`, { method: 'DELETE' });

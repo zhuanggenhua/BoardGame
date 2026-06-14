@@ -11,6 +11,7 @@ import {
     grantExtraMinion,
     moveMinion,
     getMinionPower,
+    applySemanticMinionEffectBatch,
     buildMinionTargetOptions,
     buildBaseTargetOptions,
     resolveOrPrompt,
@@ -30,7 +31,8 @@ import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionOnBase, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { registerProtection, registerTrigger, isMinionProtected } from '../domain/ongoingEffects';
+import { partitionMinionTargetsBySemantics } from '../domain/effectSemantics';
+import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -1772,9 +1774,17 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: fromBase } = value as { baseIndex: number };
         // 若没有任何可被移动的对手随从，则直接 fizzle（不再要求选择目标基地）
         const opponentMinions = state.core.bases[fromBase]?.minions.filter(m => m.controller !== playerId) ?? [];
-        const movable = opponentMinions.filter(m => !isMinionProtected(state.core, m, fromBase, playerId, 'affect', {
-            sourceKind: 'action',
-        }));
+        const movable = partitionMinionTargetsBySemantics(
+            state.core,
+            opponentMinions.map(minion => ({ minion, baseIndex: fromBase })),
+            {
+                sourcePlayerId: playerId,
+                sourceKind: 'action',
+                effectType: 'move',
+                respectActionProtection: true,
+                mode: 'preview',
+            },
+        ).allowed;
         if (movable.length === 0) {
             return {
                 state,
@@ -1804,37 +1814,32 @@ export function registerBearCavalryInteractionHandlers(): void {
         const { baseIndex: destBase } = value as { baseIndex: number };
         const ctx = (iData as any)?.continuationContext as { fromBase: number };
         if (!ctx) return undefined;
-        const events: SmashUpEvent[] = [];
-        let protectedSkipped = 0;
         // 移动所有对手随从（保护检查自动应用）
         const opponentMinions = state.core.bases[ctx.fromBase].minions.filter(m => m.controller !== playerId);
-        for (const m of opponentMinions) {
-            // 检查保护（手动检查，因为这里不是构建选项而是批量移动）
-            if (isMinionProtected(state.core, m, ctx.fromBase, playerId, 'affect', {
-                sourceKind: 'action',
-            })) {
-                protectedSkipped += 1;
-                continue;
-            }
-            events.push(...buildValidatedMoveEvents(state, {
-                minionUid: m.uid,
-                minionDefId: m.defId,
-                fromBaseIndex: ctx.fromBase,
-                toBaseIndex: destBase,
-                reason: 'bear_cavalry_youre_pretty_much_borscht',
-                now: timestamp,
-            }));
-        }
-        if (protectedSkipped > 0) {
-            events.push(buildAbilityFeedback(
-                playerId,
-                events.length === 0 ? 'feedback.all_protected' : 'feedback.target_protected',
-                timestamp,
-                undefined,
-                'warning',
-            ));
-        }
-        return { state, events };
+        return {
+            state,
+            events: applySemanticMinionEffectBatch(
+                state,
+                opponentMinions.map(minion => ({ minion, baseIndex: ctx.fromBase })),
+                {
+                    sourcePlayerId: playerId,
+                    sourceKind: 'action',
+                    effectType: 'move',
+                    respectActionProtection: true,
+                    mode: 'apply',
+                    feedbackPlayerId: playerId,
+                    now: timestamp,
+                    buildEvents: ({ minion }) => buildValidatedMoveEvents(state, {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        fromBaseIndex: ctx.fromBase,
+                        toBaseIndex: destBase,
+                        reason: 'bear_cavalry_youre_pretty_much_borscht',
+                        now: timestamp,
+                    }),
+                },
+            ).events,
+        };
     });
 
     // === POD 版本交互处理 ===

@@ -307,6 +307,8 @@ function createModeEnv(mode) {
         case 'ci':
             return createEnv({
                 NODE_OPTIONS: mergeNodeOptions('--max-old-space-size=8192'),
+                // 让 Vite 前端子进程可单独拿到更高堆上限，避免长链 E2E 在默认命令下因前端 OOM 假失败。
+                BG_NODE_MAX_OLD_SPACE_SIZE: '12288',
                 PW_SERVER_WATCH: 'false',
             });
         case 'critical':

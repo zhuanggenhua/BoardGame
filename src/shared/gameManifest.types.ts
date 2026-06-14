@@ -59,11 +59,14 @@ export interface GameManifestAiSupport {
     remoteAi: boolean;
 }
 
+export type GameStatusTag = 'under_construction';
+
 export interface GameManifestEntry {
     id: string;
     type: GameManifestType;
     enabled: boolean;
     listed?: boolean;
+    statusTag?: GameStatusTag;
     titleKey: string;
     descriptionKey: string;
     authorName?: string;

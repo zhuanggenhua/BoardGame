@@ -4,6 +4,7 @@ import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { resolveOnPlay, resolveSpecial } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
+import { buildSemanticOngoingAttachEvents } from './abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import type {
@@ -12,7 +13,6 @@ import type {
     MatchPhase,
     MinionCardDef,
     MinionPlayedEvent,
-    OngoingAttachedEvent,
     SmashUpCore,
     SmashUpEvent,
 } from './types';
@@ -441,19 +441,17 @@ export function resolvePendingActionExecution(
 
     const subtype = def.type === 'fusion' ? def.actionSubtype : def.subtype;
     if (subtype === 'ongoing') {
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: pending.cardUid,
-                defId: pending.defId,
-                ownerId: pending.ownerId,
-                sourcePlayerId: pending.playerId,
-                targetType: pending.targetMinionUid ? 'minion' : 'base',
-                targetBaseIndex,
-                targetMinionUid: pending.targetMinionUid,
-            },
-            timestamp: now,
-        } as OngoingAttachedEvent);
+        events.push(...buildSemanticOngoingAttachEvents(updatedState, {
+            cardUid: pending.cardUid,
+            defId: pending.defId,
+            ownerId: pending.ownerId,
+            sourcePlayerId: pending.playerId,
+            sourceKind: 'action',
+            targetBaseIndex,
+            targetMinionUid: pending.targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now,
+        }));
         runActionExecutor(resolveOnPlay(pending.defId), targetBaseIndex);
         return { state: updatedState, events };
     }

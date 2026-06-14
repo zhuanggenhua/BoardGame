@@ -7,6 +7,7 @@ import {
     buildBaseTargetOptions,
     buildValidatedCardToDeckBottomEvents,
     buildMinionTargetOptions,
+    buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
     changeMinionController,
@@ -2192,20 +2193,17 @@ const geeksRulesLawyerTargetPromptProgram = createPromptProgram<GeeksRulesLawyer
 
         const choice = value as GeeksRulesLawyerMinionChoice | undefined;
         if (typeof choice?.baseIndex !== 'number' || !choice?.minionUid) return { events: [] };
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: context.movedCardUid,
-                defId: context.movedDefId,
-                ownerId: context.movedOwnerId,
-                targetType: 'minion',
-                targetBaseIndex: choice.baseIndex,
-                targetMinionUid: choice.minionUid,
-                ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
-                ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
-            },
-            timestamp,
-        } as any);
+        events.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: context.movedCardUid,
+            defId: context.movedDefId,
+            ownerId: context.movedOwnerId,
+            ...(context.movedOwnerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
+            targetBaseIndex: choice.baseIndex,
+            targetMinionUid: choice.minionUid,
+            ...(sourceAction?.metadata ? { metadata: sourceAction.metadata } : {}),
+            ...(sourceAction?.talentUsed !== undefined ? { talentUsed: sourceAction.talentUsed } : {}),
+            now: timestamp,
+        }));
         return { events };
     },
 });

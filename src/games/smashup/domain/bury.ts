@@ -1,6 +1,6 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import type { SmashUpCore, SmashUpEvent, BuriedCardOnBase, MinionPlayedEvent, OngoingAttachedEvent } from './types';
+import type { SmashUpCore, SmashUpEvent, BuriedCardOnBase, MinionPlayedEvent } from './types';
 import { SU_EVENTS } from './types';
 import { registerInteractionHandler, type InteractionHandler } from './abilityInteractionHandlers';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -14,7 +14,7 @@ import {
 import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import { collectTriggers } from './ongoingEffects';
-import { buildMinionTargetOptions } from './abilityHelpers';
+import { buildMinionTargetOptions, buildSemanticOngoingAttachEvents } from './abilityHelpers';
 import { reduce } from './reducer';
 
 type UncoverChoiceValue = { cardUid: string; baseIndex: number } | { skip: true };
@@ -355,19 +355,16 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
             }
             resolvedActionTargetMinionUid = resolvedTarget.targetMinionUid;
             resolvedActionTargetBaseIndex = resolvedTarget.targetBaseIndex;
-            events.push({
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: buried.uid,
-                    defId: buried.defId,
-                    ownerId: buried.trueOwnerId,
-                    ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
-                    targetType: 'minion',
-                    targetBaseIndex: resolvedActionTargetBaseIndex,
-                    targetMinionUid: resolvedActionTargetMinionUid,
-                },
-                timestamp: now,
-            } as OngoingAttachedEvent);
+            events.push(...buildSemanticOngoingAttachEvents(currentState, {
+                cardUid: buried.uid,
+                defId: buried.defId,
+                ownerId: buried.trueOwnerId,
+                ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
+                targetBaseIndex: resolvedActionTargetBaseIndex,
+                targetMinionUid: resolvedActionTargetMinionUid,
+                onBlockedSourceDestination: 'discard',
+                now,
+            }));
         }
     }
 
@@ -448,20 +445,6 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
     const buried = (state.core.bases[ctx.baseIndex]?.buriedCards ?? []).find(card => card.uid === ctx.cardUid);
     if (!buried) return { state, events: [] };
 
-    const attach: OngoingAttachedEvent = {
-        type: SU_EVENTS.ONGOING_ATTACHED,
-        payload: {
-            cardUid: ctx.cardUid,
-            defId: ctx.defId,
-            ownerId: buried.trueOwnerId,
-            ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
-            targetType: 'minion',
-            targetBaseIndex,
-            targetMinionUid,
-        },
-        timestamp: now,
-    } as any;
-
     const events: SmashUpEvent[] = [
         buildActionPlayedEvent({
             playerId,
@@ -474,7 +457,16 @@ const handleUncoverOngoingPickTargetMinion: InteractionHandler = (state, playerI
             targetMinionUid,
             timestamp: now,
         }),
-        attach,
+        ...buildSemanticOngoingAttachEvents(state, {
+            cardUid: ctx.cardUid,
+            defId: ctx.defId,
+            ownerId: buried.trueOwnerId,
+            ...(buried.trueOwnerId !== playerId ? { sourcePlayerId: playerId } : {}),
+            targetBaseIndex,
+            targetMinionUid,
+            onBlockedSourceDestination: 'discard',
+            now,
+        }),
     ];
 
     let currentState = state;

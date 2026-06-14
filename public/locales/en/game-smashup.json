@@ -161,7 +161,7 @@
     "kitty_cats_mr_grumpers_title": "Mr. Grumpers: choose a minion to get -2 power until end of turn",
     "kitty_cats_cat_fight_title": "Cat Fight: choose one of your minions, draw cards equal to its power, then destroy it",
     "kitty_cats_nine_lives_title": "Nine Lives: destroy one of your minions and play an extra action",
-    "kitty_cats_whiskers_title": "Whiskers: choose one of your minions to get +1 power until end of turn",
+    "kitty_cats_whiskers_title": "Whiskers: destroy one of your minions and play an extra action",
     "kitty_cats_invisible_bicycle_minions_title": "Invisible Bicycle: choose minions of power 2 or less to move",
     "kitty_cats_invisible_bicycle_base_title": "Invisible Bicycle: choose the destination base",
     "mythic_horses_teaching_power_order_title": "Teaching Power: choose the order for the remaining revealed cards on top of your deck",
@@ -4680,7 +4680,7 @@
     },
     "kitty_cats_whiskers": {
       "name": "Whiskers",
-      "abilityText": "Talent: Play an extra action and give one of your minions +1 power until the end of the turn."
+      "abilityText": "Talent: Destroy one of your minions and play an extra action."
     },
     "kitty_cats_queen_fluffy": {
       "name": "Queen Fluffy",
@@ -4720,7 +4720,7 @@
     },
     "mythic_horses_starlyte": {
       "name": "Starlyte",
-      "abilityText": "Ongoing: Your other minions at this base have +1 power."
+      "abilityText": "Ongoing: This minion gains +1 power for each of your other minions here."
     },
     "mythic_horses_pinkie": {
       "name": "Pinkie",
@@ -4728,7 +4728,7 @@
     },
     "mythic_horses_seastar": {
       "name": "Seastar",
-      "abilityText": "If you control another base where you have minions, you may use this minion's ability one extra time this turn."
+      "abilityText": "If you control another base where you have minions, you may play an extra minion here."
     },
     "mythic_horses_rainbow": {
       "name": "Rainbow",
@@ -4752,7 +4752,7 @@
     },
     "mythic_horses_encouragement_power": {
       "name": "Encouragement Power",
-      "effectText": "Play on one of your minions.\nOngoing: If this minion's base has another of your minions, this minion has +1 power."
+      "effectText": "Play on one of your minions.\nOngoing: This minion gains +1 power for each of your other minions here."
     },
     "mythic_horses_adventure_power": {
       "name": "Adventure Power",

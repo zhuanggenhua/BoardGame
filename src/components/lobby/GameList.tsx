@@ -34,6 +34,7 @@ export const GameListCard = ({
     const title = resolveGameDisplayName(game, t, game.id);
     const categoryLabel = t(`common:category.${game.category}`);
     const chipLabels = Array.from(new Set([
+        ...(game.statusTag ? [t(`common:status_tags.${game.statusTag}`)] : []),
         categoryLabel,
         ...(game.tags?.slice(0, 1).map((tag) => t(`common:game_tags.${tag}`)) ?? []),
     ].filter(Boolean)));

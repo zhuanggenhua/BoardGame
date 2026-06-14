@@ -1003,7 +1003,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                     initial={{ scale: 0.96, y: 18 }}
                     animate={{ scale: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    className="w-full max-w-6xl rounded-xl border-2 border-slate-700 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.65)] overflow-hidden"
+                    className="w-full max-w-6xl max-h-[min(92vh,56rem)] overflow-y-auto rounded-xl border-2 border-slate-700 bg-slate-950 shadow-[0_20px_60px_rgba(0,0,0,0.65)]"
                 >
                         <div className="border-b border-slate-800 px-6 py-4">
                             <h2 className="text-center text-lg font-black tracking-tight text-amber-100 uppercase">
@@ -1014,13 +1014,13 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             </p>
                         </div>
 
-                        <div className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto]">
+                        <div className="grid items-start gap-4 px-5 py-5 lg:grid-cols-[1fr_auto]">
                             <div className="grid gap-4">
                                 {renderDeckReorderLane('top', deckReorderTopUids, t('ui.deck_reorder_top_empty'))}
                                 {renderDeckReorderLane('bottom', deckReorderBottomUids, t('ui.deck_reorder_bottom_empty'))}
                             </div>
 
-                            <div className="flex min-w-[13rem] flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
+                            <div className="flex min-w-[13rem] flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/80 p-4 lg:sticky lg:top-4">
                                 {isMyPrompt ? (
                                     <>
                                         <div className="rounded-md border border-slate-700 bg-slate-950/50 px-3 py-3">

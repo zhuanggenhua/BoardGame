@@ -17,6 +17,7 @@ import {
     matchesRuntimeDefId,
     getActionControllerId,
 } from '../domain/ongoingModifiers';
+import { filterSemanticMatchedRuntimeActions } from '../domain/effectSemantics';
 import type { BasePowerModifierContext, OngoingPowerModifierDefinition, PowerModifierContext } from '../domain/ongoingModifiers';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
@@ -502,32 +503,41 @@ function registerKaijuModifiers(): void {
 function registerKittyCatsModifiers(): void {
     // 悲哀：附着随从 -2 力量
     registerPowerModifier('kitty_cats_grumpiness', (ctx: PowerModifierContext) => {
-        const copies = ctx.minion.attachedActions.filter(action =>
-            matchesRuntimeDefId(action.defId, 'kitty_cats_grumpiness')
+        const copies = filterSemanticMatchedRuntimeActions(
+            { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
+            ctx.minion.attachedActions,
+            'kitty_cats_grumpiness',
+            {
+            semanticRole: 'target',
+            targetEffectType: 'affect',
+            },
         ).length;
         return copies * -2;
     }, { podStrategy: 'selfManaged' });
 
     // 发脾气：基地上其他玩家的随从 -1 力量
     registerPowerModifier('kitty_cats_hissy_fit', (ctx: PowerModifierContext) => {
-        return ctx.base.ongoingActions.reduce((total, action) => {
-            if (!matchesRuntimeDefId(action.defId, 'kitty_cats_hissy_fit')) return total;
-            return ctx.minion.controller !== getActionControllerId(action)
-                ? total - 1
-                : total;
-        }, 0);
+        return filterSemanticMatchedRuntimeActions(
+            { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
+            ctx.base.ongoingActions,
+            'kitty_cats_hissy_fit',
+            {
+                relationToTargetController: 'different',
+                semanticRole: 'target',
+                targetEffectType: 'affect',
+            },
+        ).length * -1;
     }, { podStrategy: 'selfManaged' });
 }
 
 function registerMythicHorsesModifiers(): void {
-    // 星耀：同基地其他己方随从 +1 力量
+    // 星辉：同基地每个其他己方随从都让自己 +1 力量
     registerPowerModifier('mythic_horses_starlyte', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId === 'mythic_horses_starlyte' || ctx.minion.defId === 'mythic_horses_starlyte_pod') {
+        if (ctx.minion.defId !== 'mythic_horses_starlyte' && ctx.minion.defId !== 'mythic_horses_starlyte_pod') {
             return 0;
         }
         return ctx.base.minions.filter(minion =>
-            (minion.defId === 'mythic_horses_starlyte' || minion.defId === 'mythic_horses_starlyte_pod')
-            && minion.controller === ctx.minion.controller
+            minion.uid !== ctx.minion.uid && minion.controller === ctx.minion.controller
         ).length;
     }, { podStrategy: 'selfManaged' });
 
@@ -541,7 +551,7 @@ function registerMythicHorsesModifiers(): void {
             : 0;
     }, { podStrategy: 'selfManaged' });
 
-    // 鼓舞之力：逐张附着牌按其 owner 判断“你的其他随从”，避免多 owner 附着时一次性放大。
+    // 鼓舞之力：每张附着牌分别按 owner 统计“其他己方随从”的数量。
     registerPowerModifier('mythic_horses_encouragement_power', (ctx: PowerModifierContext) => {
         return ctx.minion.attachedActions.reduce((total, action) => {
             if (
@@ -550,10 +560,10 @@ function registerMythicHorsesModifiers(): void {
             ) {
                 return total;
             }
-            const hasOtherOwnerMinion = ctx.base.minions.some(minion =>
+            const otherOwnerMinionCount = ctx.base.minions.filter(minion =>
                 minion.uid !== ctx.minion.uid && minion.controller === action.ownerId
-            );
-            return hasOtherOwnerMinion ? total + 1 : total;
+            ).length;
+            return total + otherOwnerMinionCount;
         }, 0);
     }, { podStrategy: 'selfManaged' });
 }

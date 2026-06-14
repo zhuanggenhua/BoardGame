@@ -1151,6 +1151,20 @@ describe('Pretty Pretty 猫咪与小马持续力量修正', () => {
         expect(getEffectivePower(state, other, 0)).toBe(4);
     });
 
+    it('kitty_cats_grumpiness 不会穿过行动保护继续降低目标力量', () => {
+        const target = makeMinion('target', 'test_minion', '1', 3, {
+            attachedActions: [{ uid: 'grumpy-1', defId: 'kitty_cats_grumpiness', ownerId: '0' }],
+        });
+        const base = {
+            defId: 'base_a',
+            minions: [target],
+            ongoingActions: [{ uid: 'wild-1', defId: 'dino_wildlife_preserve', ownerId: '1' }],
+        };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, target, 0)).toBe(3);
+    });
+
     it('kitty_cats_hissy_fit 只让同基地其他玩家随从 -1 力量', () => {
         const ownerMinion = makeMinion('own', 'test_minion', '0', 3);
         const enemyMinion = makeMinion('enemy', 'test_minion', '1', 4);
@@ -1165,15 +1179,32 @@ describe('Pretty Pretty 猫咪与小马持续力量修正', () => {
         expect(getEffectivePower(state, enemyMinion, 0)).toBe(3);
     });
 
-    it('mythic_horses_starlyte 给同基地其他己方随从 +1 但不加自己', () => {
+    it('kitty_cats_hissy_fit 不会穿过影响保护继续降低目标力量', () => {
+        const ownerMinion = makeMinion('own', 'test_minion', '0', 3);
+        const protectedEnemy = makeMinion('enemy', 'test_minion', '1', 4);
+        const base = {
+            defId: 'base_a',
+            minions: [ownerMinion, protectedEnemy],
+            ongoingActions: [
+                { uid: 'fit-1', defId: 'kitty_cats_hissy_fit', ownerId: '0' },
+                { uid: 'sup-1', defId: 'bear_cavalry_superiority', ownerId: '1' },
+            ],
+        };
+        const state = makeState({ bases: [base] });
+
+        expect(getEffectivePower(state, ownerMinion, 0)).toBe(3);
+        expect(getEffectivePower(state, protectedEnemy, 0)).toBe(4);
+    });
+
+    it('mythic_horses_starlyte 按同基地其他己方随从数量给自己加力量', () => {
         const starlyte = makeMinion('starlyte', 'mythic_horses_starlyte', '0', 5);
         const friend = makeMinion('friend', 'test_minion', '0', 3);
         const enemy = makeMinion('enemy', 'test_minion', '1', 4);
         const base = { defId: 'base_a', minions: [starlyte, friend, enemy], ongoingActions: [] };
         const state = makeState({ bases: [base] });
 
-        expect(getEffectivePower(state, starlyte, 0)).toBe(5);
-        expect(getEffectivePower(state, friend, 0)).toBe(4);
+        expect(getEffectivePower(state, starlyte, 0)).toBe(6);
+        expect(getEffectivePower(state, friend, 0)).toBe(3);
         expect(getEffectivePower(state, enemy, 0)).toBe(4);
     });
 
@@ -1192,18 +1223,20 @@ describe('Pretty Pretty 猫咪与小马持续力量修正', () => {
         expect(getEffectivePower(state, pinkieAlone, 1)).toBe(2);
     });
 
-    it('mythic_horses_encouragement_power 按每张附着牌 owner 判断是否有其他己方随从', () => {
+    it('mythic_horses_encouragement_power 按每张附着牌 owner 逐个统计其他己方随从数量', () => {
         const target = makeMinion('target', 'test_minion', '1', 3, {
             attachedActions: [
                 { uid: 'enc-0', defId: 'mythic_horses_encouragement_power', ownerId: '0' },
                 { uid: 'enc-1', defId: 'mythic_horses_encouragement_power', ownerId: '1' },
             ],
         });
-        const ownerZeroFriend = makeMinion('friend-0', 'test_minion', '0', 2);
-        const base = { defId: 'base_a', minions: [target, ownerZeroFriend], ongoingActions: [] };
+        const ownerZeroFriendA = makeMinion('friend-0a', 'test_minion', '0', 2);
+        const ownerZeroFriendB = makeMinion('friend-0b', 'test_minion', '0', 2);
+        const ownerOneFriend = makeMinion('friend-1', 'test_minion', '1', 2);
+        const base = { defId: 'base_a', minions: [target, ownerZeroFriendA, ownerZeroFriendB, ownerOneFriend], ongoingActions: [] };
         const state = makeState({ bases: [base] });
 
-        expect(getEffectivePower(state, target, 0)).toBe(4);
+        expect(getEffectivePower(state, target, 0)).toBe(6);
     });
 });
 

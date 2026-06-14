@@ -11,6 +11,7 @@ import {
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
+    buildSemanticOngoingAttachEvents,
     changeMinionController,
     createSkipOption,
     grantExtraAction,
@@ -2405,19 +2406,16 @@ function buildDiscardActionPlayEvents(params: {
         : (def as ActionCardDef | undefined)?.subtype;
     if (subtype === 'ongoing') {
         if (targetBaseIndex === undefined) return { state, events: [] };
-        events.push({
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: card.uid,
-                defId: card.defId,
-                ownerId: card.owner,
-                ...(card.owner !== playerId ? { sourcePlayerId: playerId } : {}),
-                targetType: targetMinionUid ? 'minion' : 'base',
-                targetBaseIndex,
-                targetMinionUid,
-            },
-            timestamp,
-        } as SmashUpEvent);
+        events.push(...buildSemanticOngoingAttachEvents(state, {
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            ...(card.owner !== playerId ? { sourcePlayerId: playerId } : {}),
+            targetBaseIndex,
+            ...(targetMinionUid ? { targetMinionUid } : {}),
+            onBlockedSourceDestination: 'discard',
+            now: timestamp,
+        }));
     }
 
     const executor = resolveOnPlay(card.defId);

@@ -10,6 +10,7 @@ import {
     grantContextualExtraMinion, grantExtraMinion, destroyMinion,
     buildMinionTargetOptions, buildAbilityFeedback,
     buildStandardDrawEvents,
+    addTempPower,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
@@ -228,17 +229,15 @@ function killerPlantInstaGrow(ctx: AbilityContext): AbilityResult {
 /** 野生食人花 onPlay：打出回合 -2 力量（回合结束自动清零） */
 function killerPlantWeedEater(ctx: AbilityContext): AbilityResult {
     // 使用临时力量修正（tempPowerModifier），回合结束时 TURN_STARTED 自动清零
-    const evt: SmashUpEvent = {
-        type: SU_EVENTS.TEMP_POWER_ADDED,
-        payload: {
-            minionUid: ctx.cardUid,
-            baseIndex: ctx.baseIndex,
-            amount: -2,
-            reason: 'killer_plant_weed_eater',
-        },
-        timestamp: ctx.now,
+    return {
+        events: [addTempPower(
+            ctx.cardUid,
+            ctx.baseIndex,
+            -2,
+            'killer_plant_weed_eater',
+            ctx.now,
+        ) as SmashUpEvent],
     };
-    return { events: [evt] };
 }
 
 /** Weed Eater POD onPlay：POD 版是持续能力，打出时没有原版的 -2 力量结算。 */
