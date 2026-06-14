@@ -187,10 +187,9 @@ const CARD_DIMENSIONS = {
 
 const BOTTOM_DOCK_INSET = 0;
 const HAND_CARD_SELECTED_LIFT = 26;
-const HAND_CARD_GAP = 10;
-const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 8;
-const HAND_INTERACTION_TRAY_WIDTH = 940;
-const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 14;
+const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;
+const HAND_INTERACTION_TRAY_WIDTH = 860;
+const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 10;
 const ACTIONS_DOCK_WIDTH = 420;
 const ACTIONS_DOCK_RIGHT = 80;
 const ACTIONS_DOCK_TOP = 276;
@@ -224,6 +223,13 @@ const polarToPoint = (center: number, radius: number, angleDeg: number) => {
         x: center + Math.cos(radians) * radius,
         y: center + Math.sin(radians) * radius,
     };
+};
+
+const getQidahenHandCardOverlapPx = (handCount: number): number => {
+    if (handCount <= 6) {
+        return 0;
+    }
+    return -Math.min(18 + Math.max(0, handCount - 7) * 12, 60);
 };
 
 const getAtlasFrame = (index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame => {
@@ -2575,6 +2581,7 @@ const HandCard: React.FC<{
     onClick?: () => void;
 }> = ({ card, locale, selected = false, stackIndex, totalCards, onClick }) => {
     const disabled = card.status === 'disabled';
+    const overlapPx = getQidahenHandCardOverlapPx(totalCards);
 
     return (
         <button
@@ -2592,6 +2599,7 @@ const HandCard: React.FC<{
                 zIndex: selected ? totalCards + 12 : stackIndex + 1,
                 boxShadow: selected ? '0 0 0 4px #f0d386, 0 18px 28px rgba(56,35,15,0.38)' : '0 8px 16px rgba(56,35,15,0.18)',
                 borderRadius: 7,
+                marginLeft: stackIndex === 0 ? 0 : overlapPx,
             }}
         >
             <CardPreviewFit
@@ -2657,10 +2665,10 @@ const HandZone: React.FC<{
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
                     width: 1310,
-                    maxWidth: 'calc(100vw - 320px)',
+                    maxWidth: 'calc(100vw - 300px)',
                 }}
             >
-                <div className="mx-auto flex min-w-max items-end justify-center" data-testid="qidahen-hand-row" style={{ gap: HAND_CARD_GAP }}>
+                <div className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row">
                     {currentHandCards.map((card, index) => {
                         const selectableForHandLimit = handLimitDiscardSelection?.candidateCardIds.includes(card.id) ?? false;
                         const sunYuanhuaSelection = core.sunYuanhuaTechSelection;

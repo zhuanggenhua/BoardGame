@@ -47,7 +47,7 @@ const REQUIRED_TEST_IDS = [
     '雇佣',
     '进攻',
     '调度',
-    '新年 &gt;&gt;&gt;',
+    '新年 >>>',
     '年中',
     'data-testid="qidahen-raid-intent"',
     'data-testid="qidahen-post-battle-selection"',
@@ -210,8 +210,8 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
         expect(boardSource).toContain('actionPaymentPreviewVisible');
-        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_WIDTH = 940;');
-        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 14;');
+        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_WIDTH = 860;');
+        expect(boardSource).toContain('const HAND_INTERACTION_TRAY_BOTTOM = BOTTOM_DOCK_HEIGHT + 10;');
         expect(boardSource).toContain('qidahen-hand-interaction-tray');
         expect(boardSource).toContain('data-ui-anchor="bottom-hand"');
         expect(boardSource).toContain('qidahen-action-payment-panel');
@@ -243,20 +243,19 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('width: MAP_REGION_TIP_WIDTH,');
     });
 
-    it('手牌区改为小间距直排并贴底，空间不足时走横向滚动而不是卡牌重叠', () => {
+    it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
         expect(boardSource).toContain('const HAND_CARD_SELECTED_LIFT = 26;');
-        expect(boardSource).toContain('const HAND_CARD_GAP = 10;');
-        expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 8;');
+        expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;');
+        expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (handCount: number): number => {');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
         expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
         expect(boardSource).toContain('className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"');
         expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
-        expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
+        expect(boardSource).toContain("maxWidth: 'calc(100vw - 300px)'");
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
-        expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center" data-testid="qidahen-hand-row" style={{ gap: HAND_CARD_GAP }}');
+        expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('hover:-translate-y-[18px]');
-        expect(boardSource).not.toContain('marginLeft: stackIndex === 0 ? 0 : overlapPx');
-        expect(boardSource).not.toContain('const getQidahenHandCardOverlapPx = (handCount: number): number => {');
+        expect(boardSource).toContain('marginLeft: stackIndex === 0 ? 0 : overlapPx');
     });
 
     it('地图 army token 会拆成可旋转的方块棋子，非部队图片 token 才保留数量徽标', () => {
