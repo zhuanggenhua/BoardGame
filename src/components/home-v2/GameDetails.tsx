@@ -41,6 +41,7 @@ import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageC
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
 import { resolveRoomExpansionLabel, resolveRoomScenarioLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
+import { ImplementationStatusRibbon } from '../game/framework';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
 import {
@@ -88,7 +89,6 @@ function getPlayerLabel(game: GameConfig, t: HomeV2Translate) {
 
 function getDetailBadgeLabels(game: GameConfig, t: HomeV2Translate) {
     const badgeLabels = [
-        ...(game.statusTag ? [t(`common:status_tags.${game.statusTag}`)] : []),
         getCategoryLabel(game, t),
         getPlayerLabel(game, t),
     ];
@@ -608,6 +608,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
     const categoryLabel = getCategoryLabel(game, t);
     const playerLabel = getPlayerLabel(game, t);
     const detailBadges = getDetailBadgeLabels(game, t);
+    const detailStatusLabel = game.statusTag ? t(`common:status_tags.${game.statusTag}`) : null;
     const recommendedPlayerCounts = getRecommendedPlayerCounts(game);
     const bestPlayerCountSet = new Set(
         (game.bestPlayers ?? [])
@@ -665,10 +666,16 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                 >
                     <div
                         data-testid="home-v2-detail-thumbnail"
-                        className={isCompactLandscape
+                        className={`${isCompactLandscape
                             ? 'h-[78px] w-[78px] max-w-full'
-                            : 'h-[clamp(210px,12.4vw,294px)] w-[clamp(210px,12.4vw,294px)]'}
+                            : 'h-[clamp(210px,12.4vw,294px)] w-[clamp(210px,12.4vw,294px)]'} relative overflow-hidden`}
                     >
+                        {detailStatusLabel ? (
+                            <ImplementationStatusRibbon
+                                label={detailStatusLabel}
+                                testId="home-v2-detail-status-ribbon"
+                            />
+                        ) : null}
                         <DetailGameThumbnail game={game} title={displayName} framed />
                     </div>
                     <div className="min-w-0">

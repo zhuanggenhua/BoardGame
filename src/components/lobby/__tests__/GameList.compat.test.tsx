@@ -58,4 +58,16 @@ describe('GameListCard compatibility sizing', () => {
         expect(thumb?.style.width).toBe('86px');
         expect(thumb?.style.height).toBe('86px');
     });
+
+    it('实施中游戏应复用通用斜向横幅', () => {
+        render(
+            <GameListCard
+                game={{ ...baseGame, id: 'fantasyrealms', statusTag: 'under_construction' }}
+                index={0}
+                onGameClick={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByTestId('game-list-status-ribbon-fantasyrealms-label')).toHaveTextContent('common:status_tags.under_construction');
+    });
 });

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
+import { ImplementationStatusRibbon } from '../game/framework';
 import { resolveGameDescription, resolveGameDisplayName } from './gameDetailsContent';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
@@ -33,8 +34,8 @@ export const GameListCard = ({
     const { t, i18n } = useTranslation(['lobby', 'common']);
     const title = resolveGameDisplayName(game, t, game.id);
     const categoryLabel = t(`common:category.${game.category}`);
+    const statusLabel = game.statusTag ? t(`common:status_tags.${game.statusTag}`) : null;
     const chipLabels = Array.from(new Set([
-        ...(game.statusTag ? [t(`common:status_tags.${game.statusTag}`)] : []),
         categoryLabel,
         ...(game.tags?.slice(0, 1).map((tag) => t(`common:game_tags.${tag}`)) ?? []),
     ].filter(Boolean)));
@@ -67,6 +68,12 @@ export const GameListCard = ({
                     className="relative w-[86px] shrink-0 overflow-hidden rounded-[18px] border border-[#6f4d32]/15 bg-[rgba(64,40,24,0.1)] shadow-[0_8px_18px_rgba(50,30,18,0.12)] transition-transform duration-200 group-hover:-translate-y-[1px]"
                     style={{ width: 86, height: 86, aspectRatio: '1 / 1' }}
                 >
+                    {statusLabel ? (
+                        <ImplementationStatusRibbon
+                            label={statusLabel}
+                            testId={`game-list-status-ribbon-${game.id}`}
+                        />
+                    ) : null}
                     <div className="absolute inset-[2px] overflow-hidden rounded-[14px] bg-[rgba(255,245,224,0.4)] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-cover [&_*img]:!object-center]">
                         {game.thumbnail ? (
                             game.thumbnail
@@ -140,6 +147,12 @@ export const GameListCard = ({
                             borderImageRepeat: 'round',
                         }}
                     >
+                        {statusLabel ? (
+                            <ImplementationStatusRibbon
+                                label={statusLabel}
+                                testId={`game-list-status-ribbon-${game.id}`}
+                            />
+                        ) : null}
                         <div className="absolute inset-[11%] overflow-hidden rounded-[6px]">
                             <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-contain [&_*img]:!object-center">
                                 {game.thumbnail ? (
@@ -199,6 +212,12 @@ export const GameListCard = ({
                 className="w-full mb-1.5 relative overflow-hidden rounded-sm bg-slate-900 ring-1 ring-black/5"
                 style={{ height: 0, paddingTop: LANDSCAPE_4X3_PADDING, aspectRatio: '4 / 3' }}
             >
+                {statusLabel ? (
+                    <ImplementationStatusRibbon
+                        label={statusLabel}
+                        testId={`game-list-status-ribbon-${game.id}`}
+                    />
+                ) : null}
                 <div className="absolute inset-0 w-full h-full transition-transform duration-500 group-hover:scale-110">
                     {game.thumbnail ? (
                         game.thumbnail

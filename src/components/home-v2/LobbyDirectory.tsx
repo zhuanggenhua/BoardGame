@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
+import { ImplementationStatusRibbon } from '../game/framework';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { sortGamesForLobbyDirectory } from './lobbyDirectorySorting';
 import { UserMenu } from '../social/UserMenu';
@@ -161,10 +162,6 @@ function resolveGameBadgeKeys(game: Pick<GameConfig, 'category' | 'tags'>): stri
         }
     }
     return badgeKeys;
-}
-
-function resolveHomepageStatusBadgeKey(game: Pick<GameConfig, 'statusTag'>): string | null {
-    return game.statusTag ? `common:status_tags.${game.statusTag}` : null;
 }
 
 function resolveBadgeLabel(
@@ -544,9 +541,8 @@ export const OverviewSpread = ({
                 const summary = buildHomepageSummary(game, t);
                 const playerLabelText = buildPlayerLabel(game, t);
                 const isMostPopularGame = Boolean(mostPopularGameId) && mostPopularGameId.toLowerCase() === game.id.toLowerCase();
-                const statusBadgeKey = resolveHomepageStatusBadgeKey(game);
+                const statusLabel = game.statusTag ? t(`common:status_tags.${game.statusTag}`) : null;
                 const badgeKeys = [
-                    ...(statusBadgeKey ? [statusBadgeKey] : []),
                     ...resolveGameBadgeKeys(game),
                 ].filter((badgeKey, index, allKeys) => {
                     const label = resolveBadgeLabel(badgeKey, t);
@@ -581,6 +577,12 @@ export const OverviewSpread = ({
                                     borderRadius: scaled(4),
                                 }}
                             >
+                                {statusLabel ? (
+                                    <ImplementationStatusRibbon
+                                        label={statusLabel}
+                                        testId={`home-v2-status-ribbon-${game.id}`}
+                                    />
+                                ) : null}
                                 {isMostPopularGame ? (
                                     <div
                                         data-testid={`home-v2-hot-badge-${game.id}`}

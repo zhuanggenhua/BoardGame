@@ -131,7 +131,7 @@ describe('LobbyDirectory account entry', () => {
         expect(html).toContain('12');
     });
 
-    it('带实施中状态的游戏应在首页目录显示状态标签', () => {
+    it('带实施中状态的游戏应在首页目录显示斜向覆盖横幅', () => {
         const html = renderToStaticMarkup(
             <OverviewSpread
                 games={[{
@@ -146,6 +146,7 @@ describe('LobbyDirectory account entry', () => {
             />,
         );
 
-        expect(html).toContain('common:status_tags.under_construction');
+        expect(html).toContain('data-testid="home-v2-status-ribbon-fantasyrealms"');
+        expect(html).toContain('data-testid="home-v2-status-ribbon-fantasyrealms-label"');
     });
 });
