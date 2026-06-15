@@ -1171,9 +1171,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                                   <div className="fr-live-endgame-rank-copy">
                                      <span className={`fr-live-endgame-rank-order fr-live-endgame-rank-order--${rankTone}`}>
                                         {t('progress.rank', { rank: index + 1 })}
-                                     </span>
-                                     <span className="fr-live-endgame-rank-name">
-                                         {player.name}
                                         {player.isWinner ? (
                                             <Crown
                                                 className="fr-live-endgame-rank-crown"
@@ -1181,6 +1178,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                                                 aria-label={t('score.badges.winner')}
                                             />
                                         ) : null}
+                                     </span>
+                                     <span className="fr-live-endgame-rank-name">
+                                         {player.name}
                                         {isReviewed ? <i className="fr-score-badge">{t('score.badges.reviewing')}</i> : null}
                                      </span>
                                  </div>
@@ -1707,7 +1707,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     top: 18px;
                     right: 18px;
                     z-index: 3;
-                    width: min(320px, 26vw);
+                    width: min(288px, 24vw);
                     pointer-events: none;
                 }
                 .fr-live-endgame-rail {
@@ -1799,9 +1799,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     gap: 6px;
                 }
                 .fr-live-endgame-rank-order {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
                     color: rgba(242, 234, 215, 0.64);
                     font-size: 12px;
                     font-weight: 700;
+                    line-height: 1;
                 }
                 .fr-live-endgame-rank-order--gold {
                     color: #ffd98a;
@@ -1823,8 +1827,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     font-weight: 700;
                 }
                 .fr-live-endgame-rank-crown {
-                    width: 1em;
-                    height: 1em;
+                    width: 1.08em;
+                    height: 1.08em;
                     color: #ffd98a;
                     filter: drop-shadow(0 0 6px rgba(255, 217, 138, 0.34));
                     flex: 0 0 auto;

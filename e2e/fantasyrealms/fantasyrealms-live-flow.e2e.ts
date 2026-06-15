@@ -895,6 +895,7 @@ test.describe('FantasyRealms live flow', () => {
             await expect(winnerRow).toBeVisible();
             await expect(winnerRow).toHaveAttribute('data-rank-tone', 'gold');
             await expect(winnerRow.getByLabel('胜者')).toBeVisible();
+            await expect(winnerRow.locator('.fr-live-endgame-rank-order').getByLabel('胜者')).toBeVisible();
             await expect(winnerRow.locator('[data-score-animation="count-up"]')).toHaveAttribute(
                 'data-target-score',
                 String(winnerStanding.score),
@@ -907,6 +908,17 @@ test.describe('FantasyRealms live flow', () => {
                 window.getComputedStyle(element).position
             ));
             expect(handZonePosition).not.toBe('fixed');
+            const endgameRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-endgame"]');
+            const overlappingCenterCardRight = await page.locator('.fr-card-button--live-center').evaluateAll((elements, railRect) => {
+                const rect = railRect as { top: number; bottom: number };
+                const overlappingCards = elements
+                    .map((element) => element.getBoundingClientRect())
+                    .filter((cardRect) => cardRect.top < rect.bottom && cardRect.bottom > rect.top);
+                return overlappingCards.length > 0
+                    ? Math.max(...overlappingCards.map((cardRect) => cardRect.right))
+                    : 0;
+            }, { top: endgameRect.y, bottom: endgameRect.y + endgameRect.height });
+            expect(overlappingCenterCardRight).toBeLessThanOrEqual(endgameRect.x - 8);
             await expect(page.getByTestId('fantasyrealms-endgame-reviewed-player')).toBeVisible();
             const rows = standingsRegion.locator('button[data-testid^="fantasyrealms-endgame-rank-"]');
             await expect(rows).toHaveCount(sortedStandings.length);

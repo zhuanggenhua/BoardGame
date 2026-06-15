@@ -1367,6 +1367,7 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-table-layout')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveAttribute('data-rank-tone', 'gold');
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toContainElement(screen.getByLabelText('胜者'));
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1').querySelector('.fr-live-endgame-rank-order')).toContainElement(screen.getByLabelText('胜者'));
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveTextContent('第二玩家');
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1').querySelector('[data-score-animation="count-up"][data-target-score="55"]')).not.toBeNull();
             expect(screen.queryByText('当前总分')).not.toBeInTheDocument();
