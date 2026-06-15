@@ -28,6 +28,33 @@ import type { RevealHandEvent, RevealDeckTopEvent } from '../domain/types';
 import type { EventStreamEntry } from '../../../engine/types';
 import { RevealOverlay, resolveRevealSuppressionRules } from '../ui/RevealOverlay';
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, options?: { defaultValue?: string; player?: string }) => {
+            if (options?.defaultValue) {
+                return options.defaultValue.replace('{{player}}', options.player ?? '');
+            }
+            if (key === 'ui.reveal_hand_title') {
+                return `${options?.player ?? ''} 的手牌`;
+            }
+            if (key === 'ui.reveal_deck_top_title') {
+                return `${options?.player ?? ''} 的牌库顶`;
+            }
+            if (key === 'ui.close') {
+                return '关闭';
+            }
+            if (key === 'ui.reveal_dismiss_hint') {
+                return '点击继续';
+            }
+            return key;
+        },
+    }),
+    initReactI18next: {
+        type: '3rdParty',
+        init: vi.fn(),
+    },
+}));
+
 vi.mock('../../../components/common/media/CardPreview', () => ({
     CardPreview: ({ alt, className, style }: { alt?: string; className?: string; style?: React.CSSProperties }) => (
         React.createElement('div', { 'data-card-preview': alt ?? 'preview', className, style })
