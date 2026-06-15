@@ -23,6 +23,8 @@ import type {
 } from '../storage';
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
+import diceThroneEngineConfig from '../../../games/dicethrone/game';
+import { createHeroMatchup, createQueuedRandom } from '../../../games/dicethrone/__tests__/test-utils';
 import { smashUpAiRuntime } from '../../../games/smashup/ai';
 import { splendorAiRuntime } from '../../../games/splendor/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
@@ -22527,6 +22529,79 @@ describe('GameTransportServer（离座与重连）', () => {
 
         expect(executeSpy).not.toHaveBeenCalled();
         expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('Dice Throne 服务端在 defensiveRoll 应允许防御方执行 ADVANCE_PHASE，避免把真人/AI 防御方误拒成 not_active_player', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const random = createQueuedRandom([2, 2, 2, 3, 6, 6, 6, 1, 1]);
+        const state = createHeroMatchup('ninja', 'samurai')(['0', '1'], random);
+
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.currentPlayerIndex = 0;
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 3;
+        state.core.rollConfirmed = true;
+        state.core.activatingAbilityId = 'stand-tall';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-4',
+            defenseAbilityId: 'stand-tall',
+            isDefendable: true,
+            damage: 6,
+            preDefenseResolved: true,
+            defenseResolved: false,
+            damageResolved: false,
+            attackDiceValues: [3, 2, 2, 6, 1],
+            attackDiceFaceCounts: {
+                ninja_katana: 4,
+                shuriken: 0,
+                mask: 1,
+            },
+        } as any;
+
+        await storage.createMatch('match-dicethrone-defensive-advance-server', {
+            initialState: {
+                G: state,
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'dicethrone',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'human' },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-dicethrone-defensive-advance-server');
+        const success = await serverInternal.executeCommandInternal(match, '1', 'ADVANCE_PHASE', {});
+
+        expect(success).toBe(true);
+        expect(match.lastCommandFailureReason).toBeNull();
+        expect(match.state.sys.phase).toBe('main2');
+        expect(match.state.core.pendingAttack).toBeNull();
     });
 
     it('online AI watchdog 遇到同一 AI 的链式可见交互时，应在单次恢复序列内持续消费直到收口', async () => {

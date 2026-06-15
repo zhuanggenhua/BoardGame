@@ -2709,7 +2709,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await saveScreenshot(page, MARRIAGE_SUBJUGATION_SCREENSHOT);
     });
 
-    test('轮盘跨过年中与新年时会显示结算摘要和防线状态', async ({ page }) => {
+    test('轮盘跨过年中与新年时会保留结算摘要，但不再把防线状态条塞回动作窗首屏', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
         await disableTutorial(page);
@@ -2722,7 +2722,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('[data-testid="qidahen-fortification-strip"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-fortification-strip"]')).toHaveCount(0);
         await page.waitForFunction(() => (window as Window & {
             __BG_TEST_HARNESS__?: {
                 state?: { isRegistered?: () => boolean };
@@ -2837,10 +2837,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('新年结算');
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('天命五年 1620');
-        await expect(page.locator('[data-testid="qidahen-fortification-shanhaiguan"]')).toContainText('完整');
-        await expect(page.locator('[data-testid="qidahen-fortification-jinzhou"]')).toContainText('完整');
-        await expect(page.locator('[data-testid="qidahen-fortification-ningyuan"]')).toContainText('完整');
-        await expect(page.locator('[data-testid="qidahen-fortification-inner-wall"]')).toContainText('完整');
+        await expect(page.locator('[data-testid="qidahen-fortification-strip"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
 
         await saveScreenshot(page, SEASON_FLOW_SCREENSHOT);

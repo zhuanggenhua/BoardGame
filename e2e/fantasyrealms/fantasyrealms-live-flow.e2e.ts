@@ -504,28 +504,36 @@ test.describe('FantasyRealms live flow', () => {
             const liveActionZoneSelector = '[data-testid="fantasyrealms-live-action-zone"]';
             const liveActionButtonSelector = '[data-testid="fantasyrealms-live-action-button"]';
             const liveStatusStripSelector = '[data-testid="fantasyrealms-live-status-strip"]';
+            const liveTableSelector = '[data-testid="fantasyrealms-live-table"]';
             const drawCore = drawStageCore();
             await injectCore(page, drawCore);
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
+            await expect(liveActionButton).toContainText('选择一张牌获取');
+            await expect(liveActionButton).toBeDisabled();
+            await expect(liveActionButton).toHaveAttribute('data-action-mode', 'select-discard');
             const initialStatusStripRect = await getLocatorRect(page, liveStatusStripSelector);
+            const initialLiveTableRect = await getLocatorRect(page, liveTableSelector);
+            const selectRequiredEvidencePath = getEvidenceScreenshotPath(testInfo, 'live-action-hand-zone-select-card-to-take-disabled');
+            await mkdir(dirname(selectRequiredEvidencePath), { recursive: true });
+            await page.screenshot({ path: selectRequiredEvidencePath, fullPage: false });
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();
             await expect(liveActionButton).toContainText('确认选择');
+            await expect(liveActionButton).toHaveAttribute('data-action-mode', 'confirm-take');
             await expect(page.locator('.fr-card-button--live-center.fr-card-button--armed .fr-live-card-state')).toHaveText('已选');
 
             const initialActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const initialActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
-            const statusStripRight = initialStatusStripRect.x + initialStatusStripRect.width;
             const statusStripBottom = initialStatusStripRect.y + initialStatusStripRect.height;
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'status-strip');
-            expect(initialActionZoneRect.x).toBeGreaterThanOrEqual(initialStatusStripRect.x);
-            expect(initialActionZoneRect.x + initialActionZoneRect.width).toBeLessThanOrEqual(statusStripRight);
-            expect(initialActionZoneRect.y).toBeGreaterThanOrEqual(initialStatusStripRect.y - 4);
-            expect(initialActionZoneRect.y + initialActionZoneRect.height).toBeLessThanOrEqual(statusStripBottom + 4);
+            const statusStripRight = initialStatusStripRect.x + initialStatusStripRect.width;
+            const liveTableRightThreshold = initialLiveTableRect.x + Math.round(initialLiveTableRect.width * 0.72);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
+            expect(initialActionZoneRect.x).toBeGreaterThanOrEqual(liveTableRightThreshold);
+            expect(initialActionZoneRect.x).toBeGreaterThan(statusStripRight);
+            expect(initialActionZoneRect.y).toBeGreaterThan(statusStripBottom + 120);
             expect(initialActionButtonRect.width).toBeGreaterThan(initialActionButtonRect.height);
-            expect(initialActionButtonRect.x + initialActionButtonRect.width).toBeLessThanOrEqual(statusStripRight);
-            expect(initialActionButtonRect.y + initialActionButtonRect.height).toBeLessThanOrEqual(statusStripBottom + 4);
+            expect(initialActionButtonRect.x).toBeGreaterThanOrEqual(initialActionZoneRect.x);
+            expect(initialActionButtonRect.y).toBeGreaterThanOrEqual(initialActionZoneRect.y - 4);
 
             const confirmTakeActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const confirmTakeActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
@@ -549,13 +557,15 @@ test.describe('FantasyRealms live flow', () => {
             const discardCore = discardStageCore();
             await injectCore(page, discardCore);
             await expect(liveActionButton).toContainText('弃牌');
+            await expect(liveActionButton).toHaveAttribute('data-action-mode', 'select-hand');
 
             const secondHandButton = page.getByRole('button', { name: /弃置手牌/ }).nth(1);
             await secondHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
             await expect(liveActionButton).toBeEnabled();
+            await expect(liveActionButton).toHaveAttribute('data-action-mode', 'confirm-discard');
             await expect(page.locator('.fr-card-button--live-hand.fr-card-button--armed .fr-live-card-state')).toHaveText('已选');
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'status-strip');
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
 
             const confirmDiscardActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const confirmDiscardActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
@@ -594,6 +604,7 @@ test.describe('FantasyRealms live flow', () => {
 
             await injectCore(page, nearEndMultiplayerDiscardCore());
             await expect(page.getByText('你的回合')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-button')).toHaveAttribute('data-action-mode', 'select-hand');
             await expect(page.getByText('9/10')).toBeVisible();
 
             const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
@@ -629,7 +640,50 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('左上牌库可真实完成摸2弃1链路', async ({ browser }, testInfo) => {
+    test('手牌区贴住桌面底边，主按钮悬停在右侧偏下', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const context = await browser.newContext();
+        await initContext(context, {
+            gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+            apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            skipImageGate: true,
+        });
+        const page = await context.newPage();
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await openFantasyRealmsTestPage(page, baseURL);
+            await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
+
+            await injectCore(page, nearEndMultiplayerDiscardCore());
+            await expect(page.getByText('你的回合')).toBeVisible();
+
+            const liveTableRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-table"]');
+            const handZoneRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-hand-zone"]');
+            const handRowRect = await getLocatorRect(page, '[data-testid="fantasyrealms-hand-row"]');
+            const actionZoneRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-action-zone"]');
+            const actionButtonRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-action-button"]');
+
+            const liveTableBottom = liveTableRect.y + liveTableRect.height;
+            const handRowBottom = handRowRect.y + handRowRect.height;
+            const handZoneBottom = handZoneRect.y + handZoneRect.height;
+
+            expect(handZoneRect.y).toBeGreaterThan(liveTableRect.y + Math.round(liveTableRect.height * 0.62));
+            expect(handZoneBottom).toBeGreaterThanOrEqual(liveTableBottom - 28);
+            expect(handRowBottom).toBeGreaterThanOrEqual(liveTableBottom - 28);
+            expect(actionZoneRect.x).toBeGreaterThan(handRowRect.x + Math.round(handRowRect.width * 0.68));
+            expect(actionButtonRect.y).toBeGreaterThan(liveTableRect.y + Math.round(liveTableRect.height * 0.68));
+
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'live-hand-zone-bottom-docked');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await page.screenshot({ path: evidencePath, fullPage: false });
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
+
+    test('右侧偏下主按钮可真实完成摸2弃1链路', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -656,7 +710,7 @@ test.describe('FantasyRealms live flow', () => {
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
-            await expect(liveActionZone).toHaveAttribute('data-anchor', 'status-strip');
+            await expect(liveActionZone).toHaveAttribute('data-anchor', 'right-lower-dock');
             await liveActionButton.click();
 
             await page.waitForFunction(() => {
@@ -671,7 +725,7 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('2人 duel 变体手牌已满7时，左上牌库只摸1并继续弃1', async ({ browser }, testInfo) => {
+    test('2人 duel 变体手牌已满7时，右侧偏下主按钮只摸1并继续弃1', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -710,7 +764,7 @@ test.describe('FantasyRealms live flow', () => {
             await firstHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
             await expect(liveActionButton).toBeEnabled();
-            await expect(liveActionZone).toHaveAttribute('data-anchor', 'status-strip');
+            await expect(liveActionZone).toHaveAttribute('data-anchor', 'right-lower-dock');
             await liveActionButton.click();
 
             await page.waitForFunction(() => {
@@ -833,6 +887,26 @@ test.describe('FantasyRealms live flow', () => {
 
             const standingsRegion = page.getByLabel('最终排名');
             await expect(standingsRegion).toBeVisible({ timeout: 10000 });
+            const winnerStanding = sortedStandings.find((standing) => standing.isWinner) ?? sortedStandings[0];
+            if (!winnerStanding) {
+                throw new Error('Expected at least one Fantasy Realms final standing');
+            }
+            const winnerRow = page.getByTestId(`fantasyrealms-endgame-rank-${winnerStanding.playerId}`);
+            await expect(winnerRow).toBeVisible();
+            await expect(winnerRow).toHaveAttribute('data-rank-tone', 'gold');
+            await expect(winnerRow.getByLabel('胜者')).toBeVisible();
+            await expect(winnerRow.locator('[data-score-animation="count-up"]')).toHaveAttribute(
+                'data-target-score',
+                String(winnerStanding.score),
+            );
+            await page.waitForTimeout(320);
+            const animationEvidencePath = getEvidenceScreenshotPath(testInfo, '计分动画进行中');
+            await mkdir(dirname(animationEvidencePath), { recursive: true });
+            await page.screenshot({ path: animationEvidencePath, fullPage: false });
+            const handZonePosition = await page.getByTestId('fantasyrealms-live-hand-zone').evaluate((element) => (
+                window.getComputedStyle(element).position
+            ));
+            expect(handZonePosition).not.toBe('fixed');
             await expect(page.getByTestId('fantasyrealms-endgame-reviewed-player')).toBeVisible();
             const rows = standingsRegion.locator('button[data-testid^="fantasyrealms-endgame-rank-"]');
             await expect(rows).toHaveCount(sortedStandings.length);
@@ -840,9 +914,19 @@ test.describe('FantasyRealms live flow', () => {
                 const row = page.getByTestId(`fantasyrealms-endgame-rank-${standing.playerId}`);
                 await expect(row).toBeVisible();
                 await expect(row).toContainText(`第 ${standing.rank} 名`);
+                if (standing.rank <= 3) {
+                    const rankTone = standing.rank === 1 ? 'gold' : standing.rank === 2 ? 'silver' : 'bronze';
+                    await expect(row).toHaveAttribute('data-rank-tone', rankTone);
+                }
                 await expect(row.locator('.fr-live-endgame-rank-score')).toHaveText(String(standing.score));
+                await expect(row.locator('[data-score-animation="count-up"]')).toHaveAttribute(
+                    'data-target-score',
+                    String(standing.score),
+                );
             }
-            await expect(standingsRegion.getByText('胜者')).toBeVisible();
+            const evidencePath = getEvidenceScreenshotPath(testInfo, '终局最终排名');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {
             await context.close().catch(() => {});
         }
@@ -1111,7 +1195,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择一张牌获取/);
 
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();
@@ -1166,7 +1250,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择一张牌获取/);
 
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();

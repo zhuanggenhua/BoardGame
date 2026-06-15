@@ -126,6 +126,33 @@ npm run dev:lite
 请先阅读 `https://github.com/zhuanggenhua/BoardGame` 这个仓库里的 `README.md`、`AGENTS.md` 和你认为必要的项目文档，然后一步一步告诉我怎样在本地启动这个项目并成功打开页面。
 ```
 
+### Figma MCP（协作者可选）
+
+如果你要让 Codex / OpenClaw 在这个项目里直接读写 Figma，可以直接在仓库内运行下面任一命令：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/infra/setup-figma-mcp.ps1
+```
+
+```bash
+npm run setup:figma:mcp
+```
+
+```bash
+npm run setup:figma:mcp:window
+```
+
+这个脚本会：
+
+- 自动定位当前协作者自己的 `CODEX_HOME`（优先 `CODEX_HOME`，其次 `D:\codex-home`，最后 `%USERPROFILE%\.codex`）
+- 把 `mcp_oauth_credentials_store` 固定成 `file`，避免网页登录成功但新会话吃不到登录态
+- 往对应的 `config.toml` 里补 `mcp_servers.figma`
+- 打开 `rmcp_client`
+- 直接调用 `codex mcp login figma`
+- 协作者只需要在浏览器里完成网页登录授权，不再手填 `FIGMA_OAUTH_TOKEN`
+
+执行完成后需要**重启 Codex / OpenClaw 会话**，当前会话不会自动出现 Figma 工具。
+
 ### 环境变量
 
 开发环境只需复制 `.env.example` 即可运行。核心变量：
@@ -215,6 +242,8 @@ npm run check:arch         # 架构检查
 node scripts/audio/generate_common_audio_registry.js  # 重新生成音频注册表
 npm run assets:download  # 从 R2 下载资源到本地（合作者 clone 后首次运行）
 npm run assets:upload    # 上传压缩资源到 R2（需配置 R2_* 环境变量）
+npm run setup:figma:mcp  # 给当前协作者补 Codex/OpenClaw 的 Figma MCP 配置
+npm run setup:figma:mcp:window # 打开独立终端并继续 Figma OAuth 登录
 
 git push --no-verify
 ```

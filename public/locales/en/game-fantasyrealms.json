@@ -78,7 +78,7 @@
     "inspectHandAria": "Inspect hand card {{name}}",
     "confirmTake": "Confirm",
     "confirmDiscard": "Confirm Discard",
-    "selectDiscardRequired": "Select discard",
+    "selectDiscardRequired": "Select a card to take",
     "selected": "Selected"
   },
   "focus": {

@@ -5,7 +5,9 @@ import {
     type GameSetupSelections,
 } from '../../shared/gameSetupOptions';
 import {
+    DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
     getDefaultSeatController,
+    normalizeAiMinimumActionDelayMs,
     normalizeSeatController,
     resolveLocalMatchPlayerCount,
 } from './seatControllers';
@@ -15,6 +17,7 @@ const STORAGE_PREFIX = 'local_ai_match_preferences:';
 
 export interface LocalMatchPreferences {
     numPlayers: number;
+    minimumActionDelayMs: number;
     seatControllers: Record<string, AiSeatController>;
     setupSelections: GameSetupSelections;
 }
@@ -47,6 +50,7 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
 
     return {
         numPlayers,
+        minimumActionDelayMs: DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
         seatControllers,
         setupSelections: getDefaultSetupSelections(gameManifest),
     };
@@ -72,8 +76,11 @@ export function normalizeLocalMatchPreferences(
     for (let index = 0; index < numPlayers; index += 1) {
         const playerId = String(index);
         const rawController = rawControllers[playerId];
-        if (rawController && typeof rawController === 'object' && !Array.isArray(rawController) && typeof rawController.type === 'string') {
-            seatControllers[playerId] = normalizeSeatController(rawController as AiSeatController, gameManifest.ai);
+        const rawControllerRecord = rawController && typeof rawController === 'object' && !Array.isArray(rawController)
+            ? rawController as Record<string, unknown>
+            : null;
+        if (rawControllerRecord && typeof rawControllerRecord.type === 'string') {
+            seatControllers[playerId] = normalizeSeatController(rawControllerRecord as AiSeatController, gameManifest.ai);
             continue;
         }
         seatControllers[playerId] = getDefaultSeatController(index, numPlayers, gameManifest.ai);
@@ -86,10 +93,16 @@ export function normalizeLocalMatchPreferences(
         gameManifest,
         rawSetupSelections,
     );
+    const minimumActionDelayMs = normalizeAiMinimumActionDelayMs(
+        typeof raw?.minimumActionDelayMs === 'number'
+            ? raw.minimumActionDelayMs
+            : undefined,
+    ) ?? defaults.minimumActionDelayMs;
 
     return {
         ...defaults,
         numPlayers,
+        minimumActionDelayMs,
         seatControllers,
         setupSelections,
     };

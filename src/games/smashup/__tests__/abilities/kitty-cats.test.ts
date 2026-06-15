@@ -240,6 +240,15 @@ describe('Kitty Cats abilities', () => {
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('ally-1');
         expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                sourceDefId: 'kitty_cats_whiskers',
+                reason: 'kitty_cats_whiskers',
+                sourceKind: 'nonAction',
+            }),
+        }));
     });
 
     it('kitty_cats_queen_fluffy 天赋临时控制力量 3 或以下随从', () => {

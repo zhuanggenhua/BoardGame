@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 import { expect, test } from '../framework';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
@@ -236,10 +236,10 @@ async function paySelectedAction(page: Page, count: number): Promise<void> {
     await confirmButton.click();
 }
 
-async function performUpgradeArmamentTurn(
+async function openUpgradeArmamentPaymentFlow(
     page: Page,
     options?: { selectSongjin?: boolean },
-): Promise<void> {
+): Promise<Locator> {
     if (options?.selectSongjin) {
         await clickMapRegion(page, 'songjin');
     }
@@ -248,6 +248,14 @@ async function performUpgradeArmamentTurn(
     await expect(actionButton).toBeVisible({ timeout: 15000 });
     await actionButton.click();
     await expect(page.getByTestId('qidahen-primary-action-current')).toContainText('升级军备', { timeout: 15000 });
+    return actionButton;
+}
+
+async function performUpgradeArmamentTurn(
+    page: Page,
+    options?: { selectSongjin?: boolean },
+): Promise<void> {
+    const actionButton = await openUpgradeArmamentPaymentFlow(page, options);
     await actionButton.click();
     await paySelectedAction(page, 2);
 }
@@ -316,19 +324,29 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await waitForActionWindow(host.page, '大明');
             await expectViewerPrivateHand(host.page, '大明');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02-第1轮开始-大明行动窗口.png');
-            await performUpgradeArmamentTurn(host.page, { selectSongjin: true });
+            const hostUpgradeActionButton = await openUpgradeArmamentPaymentFlow(host.page, { selectSongjin: true });
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02A-大明选中一级行动-主入口明文提示.png');
+            await hostUpgradeActionButton.click();
+            await expect(host.page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02B-大明弃牌确认条固定在手牌上方.png');
+            await paySelectedAction(host.page, 2);
 
-            await waitForActionWindow(mongol.page, '蒙古');
+            await waitForActionWindow(host.page, '蒙古');
             await expectViewerPrivateHand(host.page, '大明');
-            await expectViewerPrivateHand(mongol.page, '蒙古');
-            await captureEvidence(mongol.page, testInfo, '七大恨-完整首轮-03-大明结束后-蒙古行动窗口.png');
+            await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('蒙古', { timeout: 30000 });
+            await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
+            await expect(host.page.getByTestId('qidahen-map-region-tip')).toHaveCount(0);
+            await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-03-大明视角-蒙古行动中仍显示大明手牌.png');
             await performKhanEdictTurn(mongol.page);
 
-            await waitForActionWindow(jin.page, '后金');
+            await waitForActionWindow(host.page, '后金');
             await expectViewerPrivateHand(host.page, '大明');
-            await expectViewerPrivateHand(mongol.page, '蒙古');
-            await expectViewerPrivateHand(jin.page, '后金');
-            await captureEvidence(jin.page, testInfo, '七大恨-完整首轮-04-蒙古结束后-后金行动窗口.png');
+            await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('后金', { timeout: 30000 });
+            await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
+            await expect(host.page.getByTestId('qidahen-map-region-tip')).toHaveCount(0);
+            await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-04-大明视角-后金行动中仍显示大明手牌.png');
             await performUpgradeArmamentTurn(jin.page);
 
             await waitForActionWindow(host.page, '大明');

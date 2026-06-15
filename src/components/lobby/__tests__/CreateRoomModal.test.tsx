@@ -37,6 +37,9 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.occupiedSeatsHint') return '选择 AI 座位';
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
             if (key === 'createRoom.occupiedSeatUnit') return `seat-${options?.seat}`;
+            if (key === 'createRoom.aiThinkingTime') return 'AI 思考时长';
+            if (key === 'createRoom.aiThinkingTimeHint') return '按游戏单独记住';
+            if (key === 'createRoom.aiThinkingTimeSeconds') return `${options?.count} 秒`;
             if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
             if (key === 'setup.scenario.label') return '开局剧本';
             if (key === 'setup.scenario.postSarhu1619') return '剧本一：萨尔浒战后（1619）';
@@ -82,6 +85,7 @@ describe('CreateRoomModal AI default state', () => {
     it('有已保存 AI 偏好时，打开弹窗会恢复为开启', () => {
         const initialPreferences: LocalMatchPreferences = {
             numPlayers: 2,
+            minimumActionDelayMs: 1000,
             setupSelections: {},
             seatControllers: {
                 '0': { type: 'human' },
@@ -157,7 +161,7 @@ describe('CreateRoomModal AI default state', () => {
             enableAi: true,
             seatControllers: expect.objectContaining({
                 '0': { type: 'human' },
-                '1': { type: 'local-ai', difficulty: 'normal' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
             }),
         }));
     });
@@ -183,6 +187,7 @@ describe('CreateRoomModal AI default state', () => {
                 '1': {
                     type: 'local-ai',
                     difficulty: 'normal',
+                    minimumActionDelayMs: 1000,
                     manualSetupSelection: true,
                     manualFactionSelection: true,
                 },
@@ -198,6 +203,7 @@ describe('CreateRoomModal AI default state', () => {
             gameManifest,
             initialPreferences: {
                 numPlayers: 2,
+                minimumActionDelayMs: 1000,
                 setupSelections: {},
                 seatControllers: {
                     '0': { type: 'human' },
@@ -213,6 +219,7 @@ describe('CreateRoomModal AI default state', () => {
         const onConfirm = vi.fn();
         const initialPreferences: LocalMatchPreferences = {
             numPlayers: 2,
+            minimumActionDelayMs: 1000,
             setupSelections: {},
             seatControllers: {
                 '0': { type: 'human' },
@@ -233,7 +240,42 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             seatControllers: expect.objectContaining({
-                '1': { type: 'local-ai', difficulty: 'hard' },
+                '1': { type: 'local-ai', difficulty: 'hard', minimumActionDelayMs: 1000 },
+            }),
+        }));
+    });
+
+    it('会按当前游戏恢复并提交 AI 思考时长', () => {
+        const onConfirm = vi.fn();
+        const initialPreferences: LocalMatchPreferences = {
+            numPlayers: 2,
+            minimumActionDelayMs: 3000,
+            setupSelections: {},
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+            },
+        };
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest,
+            initialPreferences,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        const select = screen.getByTestId('create-room-ai-thinking-time-select');
+        expect(select).toHaveValue('3000');
+
+        fireEvent.change(select, { target: { value: '0' } });
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            minimumActionDelayMs: 0,
+            seatControllers: expect.objectContaining({
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 0 },
             }),
         }));
     });
@@ -263,9 +305,9 @@ describe('CreateRoomModal AI default state', () => {
             numPlayers: 4,
             seatControllers: {
                 '0': { type: 'human' },
-                '1': { type: 'local-ai', difficulty: 'normal' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
                 '2': { type: 'human' },
-                '3': { type: 'local-ai', difficulty: 'normal' },
+                '3': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 1000 },
             },
         }));
     });

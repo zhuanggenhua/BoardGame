@@ -108,6 +108,8 @@
     "check:jwt": "node scripts/check-jwt-config.mjs",
     "diagnose:auth": "node scripts/diagnose-auth.mjs",
     "debug:token": "node scripts/debug-token.mjs",
+    "setup:figma:mcp": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/infra/setup-figma-mcp.ps1",
+    "setup:figma:mcp:window": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/infra/setup-figma-mcp.ps1 -OpenWindow",
     "build:android:web": "node scripts/infra/vite-cli-safe.mjs build --mode android --config vite.config.ts --configLoader bundle",
     "build:ios:web": "node scripts/infra/vite-cli-safe.mjs build --mode ios --config vite.config.ts --configLoader bundle",
     "mobile:android:doctor": "node scripts/mobile/android.mjs doctor",

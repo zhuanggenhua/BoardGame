@@ -18,6 +18,8 @@ const REQUIRED_TEST_IDS = [
     'QIDAHEN_REGION_GRAPH_EDGES',
     'getQidahenDirectedPassage',
     'getQidahenRuntimeRegionIdsForPrintedRegionId',
+    'QIDAHEN_REGION_ID_BY_MASK_COLOR',
+    'qidahenRegionColorKey',
     'buildQidahenRuntimeRegionIdByPixel',
     'renderRegionOwnershipOverlay',
     "mainMap: 'qidahen/board/qidahen-main-map'",
@@ -64,6 +66,8 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-payment-confirm"',
     'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-turn-banner"',
+    'data-testid="qidahen-primary-action-next-step"',
+    'data-testid={`qidahen-action-state-${action.id}`}',
     'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
@@ -220,6 +224,16 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
     });
 
+    it('一级行动面板会把当前主入口写成明文提示，并把当前行动按钮标成固定主焦点', () => {
+        expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
+        expect(boardSource).toContain('当前主入口：先从下方动作栏选一个一级行动');
+        expect(boardSource).toContain('当前主入口：先点地图区域，再次点选中的行动按钮继续');
+        expect(boardSource).toContain('当前主入口：一级行动已完成，改点轮盘明文按钮推进回合');
+        expect(boardSource).toContain('qidahen-primary-action-next-step');
+        expect(boardSource).toContain('qidahen-action-state-${action.id}');
+        expect(boardSource).toContain("selected ? '当前' : '可选'");
+    });
+
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {
         expect(boardSource).toContain('actionPaymentPreviewVisible');
         expect(boardSource).toContain('const HAND_INTERACTION_TRAY_WIDTH = 860;');
@@ -248,11 +262,36 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
     });
 
+    it('主交互槽位激活时，被动状态块必须让位，不再跟主交互面板争抢右侧动作槽位', () => {
+        expect(boardSource).toContain('const suppressPassiveActionContext = showWheelNextStepBanner');
+        expect(boardSource).toContain('|| pendingTargetAction != null');
+        expect(boardSource).toContain('|| postBattleSelection != null;');
+        expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");
+        expect(boardSource).toContain('{showFortificationStrip ? (');
+        expect(boardSource).toContain('data-testid="qidahen-fortification-strip"');
+        expect(boardSource).toContain('!suppressPassiveActionContext && core.lastSeasonSummary ? (');
+        expect(boardSource).toContain('data-testid="qidahen-season-summary"');
+    });
+
     it('地图区域提示必须避开右侧交互槽位，不能再盖到动作区上', () => {
         expect(boardSource).toContain('const MAP_REGION_TIP_WIDTH = 252;');
         expect(boardSource).toContain('const MAP_REGION_TIP_ACTION_GAP = 20;');
         expect(boardSource).toContain('ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP');
         expect(boardSource).toContain('width: MAP_REGION_TIP_WIDTH,');
+    });
+
+    it('主交互进行中时，地图区域 tip 必须收成简版，不再把接边摘要和同图块切换条摊成第二焦点', () => {
+        expect(boardSource).toContain('compactRegionTip: boolean;');
+        expect(boardSource).toContain('const compactMapRegionTip = setupStagePending');
+        expect(boardSource).toContain('|| khanEdictSelection != null');
+        expect(boardSource).toContain('|| diplomacySelection != null');
+        expect(boardSource).toContain('compactRegionTip={compactMapRegionTip}');
+        expect(boardSource).toContain("const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;");
+        expect(boardSource).toContain("const focusedRegion = hoveredRegion ?? displaySelectedRegion;");
+        expect(boardSource).toContain('if (compactRegionTip && core.selectedRegionId) {');
+        expect(boardSource).toContain('{!compactRegionTip && activePassageSummary ? (');
+        expect(boardSource).toContain('{!compactRegionTip && activeMovementPreview ? (');
+        expect(boardSource).toContain('{!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (');
     });
 
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {

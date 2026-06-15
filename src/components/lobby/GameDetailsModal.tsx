@@ -910,6 +910,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             const normalizedPreferences = gameManifest
                 ? normalizeLocalMatchPreferences(gameManifest, {
                     numPlayers,
+                    minimumActionDelayMs: config.minimumActionDelayMs,
                     seatControllers,
                     setupSelections,
                 })

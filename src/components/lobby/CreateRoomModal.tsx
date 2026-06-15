@@ -18,8 +18,10 @@ import { UI_Z_INDEX } from '../../core';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
 import {
+    DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
     DEFAULT_LOCAL_AI_DIFFICULTY,
     isManualSetupSelectionEnabledForSeat,
+    normalizeAiMinimumActionDelayMs,
     createDefaultLocalMatchPreferences,
     normalizeLocalMatchPreferences,
     type LocalMatchPreferences,
@@ -57,6 +59,7 @@ const RETENTION_OPTIONS = [
 ] as const;
 
 const LOCAL_AI_DIFFICULTY_OPTIONS: AiDifficultyLevel[] = ['easy', 'normal', 'hard', 'expert'];
+const AI_MINIMUM_ACTION_DELAY_OPTIONS_MS = [0, 1000, 2000, 3000] as const;
 
 type CreateRoomVisualStyle = 'default' | 'home-v2';
 
@@ -66,6 +69,7 @@ export interface RoomConfig {
     ttlSeconds: number;
     password?: string;
     enableAi: boolean;
+    minimumActionDelayMs: number;
     seatControllers: Record<string, AiSeatController>;
     setupSelections: GameSetupSelections;
 }
@@ -86,11 +90,13 @@ function getEnabledAiController(
     gameManifest: GameManifestEntry,
     difficulty: AiDifficultyLevel,
     manualFactionSelection: boolean,
+    minimumActionDelayMs: number,
 ): AiSeatController {
     if (gameManifest.ai?.localAi) {
         return {
             type: 'local-ai',
             difficulty,
+            minimumActionDelayMs,
             ...(manualFactionSelection
                 ? {
                     manualSetupSelection: true,
@@ -103,6 +109,7 @@ function getEnabledAiController(
         return {
             type: 'remote-ai',
             providerId: 'astrbot',
+            minimumActionDelayMs,
             ...(manualFactionSelection
                 ? {
                     manualSetupSelection: true,
@@ -175,6 +182,32 @@ function applyManualFactionSelection(
             })();
     }
     return nextControllers;
+}
+
+function applyAiMinimumActionDelay(
+    seatControllers: Record<string, AiSeatController>,
+    numPlayers: number,
+    minimumActionDelayMs: number,
+): Record<string, AiSeatController> {
+    const nextControllers = forceHumanOwnerSeat({ ...seatControllers });
+    const normalizedDelayMs = normalizeAiMinimumActionDelayMs(minimumActionDelayMs)
+        ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+    for (let index = 1; index < numPlayers; index += 1) {
+        const playerId = String(index);
+        const controller = nextControllers[playerId];
+        if (!controller || controller.type === 'human') {
+            continue;
+        }
+        nextControllers[playerId] = {
+            ...controller,
+            minimumActionDelayMs: normalizedDelayMs,
+        };
+    }
+    return nextControllers;
+}
+
+function formatAiThinkingDelayLabel(seconds: number): string {
+    return `${seconds}`;
 }
 
 export const resolveSetupFieldOptions = (
@@ -299,6 +332,7 @@ export const CreateRoomModal = ({
     const [password, setPassword] = useState('');
     const [enableAi, setEnableAi] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState<AiDifficultyLevel>(DEFAULT_LOCAL_AI_DIFFICULTY);
+    const [aiMinimumActionDelayMs, setAiMinimumActionDelayMs] = useState(DEFAULT_AI_MINIMUM_ACTION_DELAY_MS);
     const [manualFactionSelection, setManualFactionSelection] = useState(false);
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
     const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
@@ -344,6 +378,8 @@ export const CreateRoomModal = ({
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
             : false;
+        const nextMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(nextPreferences.minimumActionDelayMs)
+            ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
 
         setRoomName('');
         setNumPlayers(nextPreferences.numPlayers);
@@ -351,8 +387,13 @@ export const CreateRoomModal = ({
         setPassword('');
         setEnableAi(shouldEnableAi);
         setAiDifficulty(inferredDifficulty);
+        setAiMinimumActionDelayMs(nextMinimumActionDelayMs);
         setManualFactionSelection(shouldManualFactionSelection);
-        setSeatControllers(nextSeatControllers);
+        setSeatControllers(applyAiMinimumActionDelay(
+            nextSeatControllers,
+            nextPreferences.numPlayers,
+            nextMinimumActionDelayMs,
+        ));
         setSetupSelections(normalizeExtendedSetupSelections({
             ...nextPreferences.setupSelections,
             ...normalizeSetupValuesForFields(
@@ -402,11 +443,16 @@ export const CreateRoomModal = ({
             const normalized = normalizeLocalMatchPreferences(gameManifest, {
                 numPlayers,
                 seatControllers: current,
+                minimumActionDelayMs: aiMinimumActionDelayMs,
                 setupSelections,
             }).seatControllers;
-            return forceHumanOwnerSeat(normalized);
+            return applyAiMinimumActionDelay(
+                forceHumanOwnerSeat(normalized),
+                numPlayers,
+                aiMinimumActionDelayMs,
+            );
         });
-    }, [gameManifest, numPlayers, setupSelections]);
+    }, [aiMinimumActionDelayMs, gameManifest, numPlayers, setupSelections]);
 
     const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
         setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
@@ -424,7 +470,12 @@ export const CreateRoomModal = ({
                     const nextControllers = forceHumanOwnerSeat({ ...existing });
                     const hasAiSeat = countAiSeats(nextControllers, numPlayers) > 0;
                     if (!hasAiSeat && numPlayers > 1) {
-                        nextControllers['1'] = getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection);
+                        nextControllers['1'] = getEnabledAiController(
+                            gameManifest,
+                            aiDifficulty,
+                            manualFactionSelection,
+                            aiMinimumActionDelayMs,
+                        );
                     }
                     return nextControllers;
                 });
@@ -448,7 +499,12 @@ export const CreateRoomModal = ({
             const nextControllers = forceHumanOwnerSeat({ ...current });
             const currentController = nextControllers[playerId];
             nextControllers[playerId] = currentController?.type === 'human'
-                ? getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection)
+                ? getEnabledAiController(
+                    gameManifest,
+                    aiDifficulty,
+                    manualFactionSelection,
+                    aiMinimumActionDelayMs,
+                )
                 : { type: 'human' };
             return nextControllers;
         });
@@ -464,12 +520,19 @@ export const CreateRoomModal = ({
         setSeatControllers((current) => applyManualFactionSelection(current, numPlayers, checked));
     };
 
+    const handleAiMinimumActionDelayChange = (value: number) => {
+        const nextDelayMs = normalizeAiMinimumActionDelayMs(value) ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+        setAiMinimumActionDelayMs(nextDelayMs);
+        setSeatControllers((current) => applyAiMinimumActionDelay(current, numPlayers, nextDelayMs));
+    };
+
     const handleConfirm = () => {
         const normalizedSeatControllers = enableAi
             ? forceHumanOwnerSeat(
                 normalizeLocalMatchPreferences(gameManifest, {
                     numPlayers,
                     seatControllers,
+                    minimumActionDelayMs: aiMinimumActionDelayMs,
                     setupSelections,
                 }).seatControllers,
             )
@@ -484,6 +547,7 @@ export const CreateRoomModal = ({
             ttlSeconds,
             password: password.trim(),
             enableAi,
+            minimumActionDelayMs: aiMinimumActionDelayMs,
             seatControllers: normalizedSeatControllers,
             setupSelections,
         });
@@ -784,6 +848,42 @@ export const CreateRoomModal = ({
                                                         </div>
                                                     )}
 
+                                                    <div className={isCompactHomeV2Layout ? 'space-y-[4px]' : 'space-y-1.5'}>
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
+                                                                {t('createRoom.aiThinkingTime')}
+                                                            </span>
+                                                            <span className={fieldHintClassName}>
+                                                                {t('createRoom.aiThinkingTimeHint')}
+                                                            </span>
+                                                        </div>
+                                                        <select
+                                                            value={aiMinimumActionDelayMs}
+                                                            onChange={(event) => handleAiMinimumActionDelayChange(Number(event.target.value))}
+                                                            className={clsx(
+                                                                inputClassName,
+                                                                'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat',
+                                                                isCompactHomeV2Layout && 'min-h-[24px] px-[8px] py-[4px] text-[7.5px]',
+                                                            )}
+                                                            style={{
+                                                                backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
+                                                            }}
+                                                            data-testid="create-room-ai-thinking-time-select"
+                                                        >
+                                                            {AI_MINIMUM_ACTION_DELAY_OPTIONS_MS.map((delayMs) => {
+                                                                const seconds = delayMs / 1000;
+                                                                return (
+                                                                    <option key={delayMs} value={delayMs}>
+                                                                        {t('createRoom.aiThinkingTimeSeconds', {
+                                                                            count: seconds,
+                                                                            defaultValue: `${formatAiThinkingDelayLabel(seconds)} 秒`,
+                                                                        })}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </div>
+
                                                     <div className={isCompactHomeV2Layout ? 'flex flex-wrap items-center gap-[6px]' : 'flex flex-wrap items-center gap-2'}>
                                                         <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
                                                             {t('createRoom.occupiedSeats')}
@@ -1041,6 +1141,35 @@ export const CreateRoomModal = ({
                                                         })}
                                                     </div>
                                                 )}
+
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <span className="text-xs font-bold text-parchment-base-text">
+                                                            {t('createRoom.aiThinkingTime')}
+                                                        </span>
+                                                        <span className="text-xs italic text-parchment-light-text">
+                                                            {t('createRoom.aiThinkingTimeHint')}
+                                                        </span>
+                                                    </div>
+                                                    <select
+                                                        value={aiMinimumActionDelayMs}
+                                                        onChange={(event) => handleAiMinimumActionDelayChange(Number(event.target.value))}
+                                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
+                                                        data-testid="create-room-ai-thinking-time-select"
+                                                    >
+                                                        {AI_MINIMUM_ACTION_DELAY_OPTIONS_MS.map((delayMs) => {
+                                                            const seconds = delayMs / 1000;
+                                                            return (
+                                                                <option key={delayMs} value={delayMs}>
+                                                                    {t('createRoom.aiThinkingTimeSeconds', {
+                                                                        count: seconds,
+                                                                        defaultValue: `${formatAiThinkingDelayLabel(seconds)} sec`,
+                                                                    })}
+                                                                </option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                </div>
 
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-xs font-bold text-parchment-base-text">

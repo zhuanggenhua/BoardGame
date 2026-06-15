@@ -1103,7 +1103,7 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10_000 });
             await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText(/摸牌|摸 2 张/);
-            await expect(page.getByTestId('fantasyrealms-live-deck-cue')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-visible-count', '0');
@@ -1471,8 +1471,7 @@ test.describe('FantasyRealms online basic flow', () => {
             }
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-status-strip').getByText('摸 2 张', { exact: true })).toBeVisible();
-            await expect(page.getByTestId('fantasyrealms-live-deck-cue')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             await expect(page.getByTestId('fantasyrealms-card-slot-empty')).toHaveCount(7);
@@ -1607,8 +1606,7 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             await expect(guest.page.getByText('你的回合')).toHaveCount(0);
             await expect(host.page.getByRole('button', { name: /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/ })).toBeVisible({ timeout: 10000 });
-            await expect(host.page.getByTestId('fantasyrealms-live-status-strip').getByText('摸 2 张', { exact: true })).toBeVisible();
-            await expect(host.page.getByTestId('fantasyrealms-live-deck-cue')).toHaveCount(0);
+            await expect(host.page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
             await expect(host.page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
             await expect(host.page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             await expect(host.page.getByTestId('fantasyrealms-card-slot-empty')).toHaveCount(7);

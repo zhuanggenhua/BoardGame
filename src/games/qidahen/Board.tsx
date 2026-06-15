@@ -74,7 +74,9 @@ import {
     getQidahenRuntimeRegionIdsForPrintedRegionId,
     QIDAHEN_REGION_GRAPH_EDGES,
     QIDAHEN_REGION_GRAPH_NODE_BY_ID,
+    QIDAHEN_REGION_ID_BY_MASK_COLOR,
     getQidahenBoundaryTypeMeta,
+    qidahenRegionColorKey,
 } from './ui/mapGraph';
 import { renderRegionOwnershipOverlay, type RegionMaskOverlayToneKey } from './ui/regionMaskOverlay';
 import { buildQidahenRuntimeRegionIdByPixel } from './ui/runtimeRegionOwnership';
@@ -270,6 +272,34 @@ const buildQidahenActionSecondStepHint = (
             return '二级：再次点当前行动进入弃牌，再确认升级军备。';
         default:
             return '二级：按右侧提示完成后续步骤。';
+    }
+};
+
+const buildQidahenPrimaryActionEntryText = (
+    core: QidahenCore,
+    selectedAction: QidahenActionChoice | null,
+): string => {
+    if (!selectedAction) {
+        return '当前主入口：先从下方动作栏选一个一级行动。';
+    }
+    if (core.factionActionUsed) {
+        return core.wheelActionUsed
+            ? '当前主入口：本席主流程已收口，等待后续结算。'
+            : '当前主入口：一级行动已完成，改点轮盘明文按钮推进回合。';
+    }
+    switch (selectedAction.id) {
+        case 'raid':
+        case 'marriage-subjugation':
+        case 'grant-pardon':
+        case 'drive-tiger':
+        case 'khan-edict':
+        case 'recruit':
+        case 'ma-shi-trade':
+            return '当前主入口：先点地图区域，再次点选中的行动按钮继续。';
+        case 'upgrade-armament':
+            return '当前主入口：再次点选中的行动按钮，进入弃牌与升级。';
+        default:
+            return '当前主入口：按下方选中的行动按钮继续。';
     }
 };
 
@@ -928,9 +958,10 @@ const MapSceneLayer: React.FC<{
     wheelDispatchSelection: QidahenWheelDispatchSelection | null;
     internalDispatchSelection: QidahenInternalDispatchSelection | null;
     pendingTargetAction: QidahenCore['pendingTargetAction'];
+    compactRegionTip: boolean;
     locale?: string;
     onSelectRegion: (regionId: string) => void;
-}> = ({ core, perspectiveFactionId, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, compactRegionTip, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const currentFactionId = perspectiveFactionId
         ?? QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer)
@@ -1007,7 +1038,7 @@ const MapSceneLayer: React.FC<{
         if (hoveredRegionId) {
             applyTone(hoveredRegionId, 'hovered');
         }
-        if (core.selectedRegionId) {
+        if (compactRegionTip && core.selectedRegionId) {
             applyTone(core.selectedRegionId, 'selected');
         }
         renderRegionOwnershipOverlay(canvas, runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
@@ -1016,6 +1047,7 @@ const MapSceneLayer: React.FC<{
         internalDispatchSelection?.candidates,
         pendingTargetAction?.targetRegionId,
         pendingTargetAction?.targetRuntimeRegionId,
+        compactRegionTip,
         core.regions,
         core.selectedRegionId,
         wheelDispatchSelection?.candidates,
@@ -1025,9 +1057,10 @@ const MapSceneLayer: React.FC<{
 
     const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId);
     const hoveredRegion = hoveredRegionId ? core.regions.find((region) => region.id === hoveredRegionId) : undefined;
-    const activeRegion = hoveredRegion ?? selectedRegion;
-    const activeSpecialTroopsSummary = activeRegion && activeRegion.specialTroops.length > 0
-        ? formatSpecialTroops(activeRegion.specialTroops)
+    const displaySelectedRegion = compactRegionTip ? selectedRegion : undefined;
+    const focusedRegion = hoveredRegion ?? displaySelectedRegion;
+    const focusedSpecialTroopsSummary = focusedRegion && focusedRegion.specialTroops.length > 0
+        ? formatSpecialTroops(focusedRegion.specialTroops)
         : null;
 
     const getRegionFromPointer = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1054,25 +1087,25 @@ const MapSceneLayer: React.FC<{
         }
     }, [getRegionFromPointer, onSelectRegion]);
 
-    const tipLeft = activeRegion
+    const tipLeft = focusedRegion
         ? Math.min(
             Math.min(STAGE_WIDTH - MAP_REGION_TIP_WIDTH - 18, ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP),
-            Math.max(18, MAP_COVER_LEFT + activeRegion.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE + 18),
+            Math.max(18, MAP_COVER_LEFT + focusedRegion.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE + 18),
         )
         : 0;
-    const tipTop = activeRegion
-        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, MAP_COVER_TOP + activeRegion.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE - 34))
+    const tipTop = focusedRegion
+        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, MAP_COVER_TOP + focusedRegion.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE - 34))
         : 0;
-    const focusRuntimeRegionIds = new Set(activeRegion?.runtimeRegionIds ?? selectedRegion?.runtimeRegionIds ?? [core.selectedRegionId]);
+    const focusRuntimeRegionIds = new Set(focusedRegion?.runtimeRegionIds ?? []);
     const runtimeRegionsById = new Map(
         core.regions
             .filter((region) => !region.isLogicalRegion)
             .map((region) => [region.id, region]),
     );
-    const selectedRuntimeRegionIds = new Set(selectedRegion?.runtimeRegionIds ?? (core.selectedRegionId ? [core.selectedRegionId] : []));
-    const sharedPrintedRuntimeOptions = activeRegion
+    const selectedRuntimeRegionIds = new Set(displaySelectedRegion?.runtimeRegionIds ?? (displaySelectedRegion?.id ? [displaySelectedRegion.id] : []));
+    const sharedPrintedRuntimeOptions = focusedRegion
         ? Array.from(new Set(
-            (activeRegion.isLogicalRegion ? activeRegion.runtimeRegionIds : [activeRegion.id])
+            (focusedRegion.isLogicalRegion ? focusedRegion.runtimeRegionIds : [focusedRegion.id])
                 .flatMap((runtimeRegionId) => getQidahenPrintedRegionIdsForRuntimeRegionId(runtimeRegionId))
                 .flatMap((printedRegionId) => getQidahenRuntimeRegionIdsForPrintedRegionId(printedRegionId)),
         ))
@@ -1106,12 +1139,12 @@ const MapSceneLayer: React.FC<{
             return from && to ? { edge, from, to, directedPassage: statePassage ?? directedPassage } : null;
         })
         .filter((item): item is NonNullable<typeof item> => item !== null);
-    const activePassageSummary = activeRegion
-        ? Object.entries(activeRegion.travelCostByRegionId)
+    const activePassageSummary = focusedRegion
+        ? Object.entries(focusedRegion.travelCostByRegionId)
             .map(([regionId, travelCost]) => {
                 const targetRegion = core.regions.find((region) => region.id === regionId);
-                const boundaryType = activeRegion.boundaryTypeByRegionId[regionId];
-                const battleWidth = activeRegion.movementCostByRegionId[regionId];
+                const boundaryType = focusedRegion.boundaryTypeByRegionId[regionId];
+                const battleWidth = focusedRegion.movementCostByRegionId[regionId];
                 const boundaryMeta = boundaryType ? getQidahenBoundaryTypeMeta(boundaryType) : getQidahenBoundaryTypeMeta('plain');
                 const boundaryLabel = boundaryMeta.label;
                 return {
@@ -1128,12 +1161,12 @@ const MapSceneLayer: React.FC<{
             .map((entry) => `${entry.regionName} ${entry.boundaryLabel} 移${entry.travelCost}/宽${entry.battleWidth ?? '-'}${entry.unitCap ? `/限${entry.unitCap}` : ''}`)
             .join(' · ')
         : '';
-    const activeMovementPreview = activeRegion && activeRegion.controller === currentFactionId
+    const activeMovementPreview = focusedRegion && focusedRegion.controller === currentFactionId
         ? (() => {
             const previewText = (['dispatch-infantry', 'dispatch-cavalry'] as const)
                 .map((profileId) => {
                     const profile = getQidahenMovementProfile(profileId);
-                    const reachable = findQidahenReachableRuntimeRegions(core, activeRegion.id, currentFactionId, profile.movementBudget)
+                    const reachable = findQidahenReachableRuntimeRegions(core, focusedRegion.id, currentFactionId, profile.movementBudget)
                         .slice(0, 3)
                         .map((region) => `${region.regionName}${region.usesCoast ? ' 水' : ''}`)
                         .join(' / ');
@@ -1270,7 +1303,7 @@ const MapSceneLayer: React.FC<{
                     aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
             </div>
-            {activeRegion ? (
+            {focusedRegion ? (
                 <div
                     className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                     data-testid="qidahen-map-region-tip"
@@ -1278,30 +1311,30 @@ const MapSceneLayer: React.FC<{
                         left: tipLeft,
                         top: tipTop,
                         width: MAP_REGION_TIP_WIDTH,
-                        borderColor: activeRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
-                        background: activeRegion.id === core.selectedRegionId ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                        borderColor: focusedRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
+                        background: focusedRegion.id === core.selectedRegionId ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
                         color: UI_STYLE.mapIvory,
                         boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
                         borderRadius: 3,
                     }}
                 >
-                    <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{activeRegion.name} · {activeRegion.controlLabel}</div>
+                    <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{focusedRegion.name} · {focusedRegion.controlLabel}</div>
                     <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.map.regionTroopsPopulation', {
-                            troops: activeRegion.troops,
-                            population: activeRegion.population,
+                            troops: focusedRegion.troops,
+                            population: focusedRegion.population,
                             defaultValue: '兵力 {{troops}} · 人口 {{population}}',
                         })}
                     </div>
-                    {activeSpecialTroopsSummary ? (
+                    {focusedSpecialTroopsSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                             {t('board.map.regionSpecialTroops', {
-                                summary: activeSpecialTroopsSummary,
+                                summary: focusedSpecialTroopsSummary,
                                 defaultValue: '特殊 {{summary}}',
                             })}
                         </div>
                     ) : null}
-                    {activePassageSummary ? (
+                    {!compactRegionTip && activePassageSummary ? (
                         <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                             {t('board.map.regionPassages', {
                                 summary: activePassageSummary,
@@ -1309,7 +1342,7 @@ const MapSceneLayer: React.FC<{
                             })}
                         </div>
                     ) : null}
-                    {activeMovementPreview ? (
+                    {!compactRegionTip && activeMovementPreview ? (
                         <div
                             className="mt-1 text-[11px]"
                             data-testid="qidahen-map-region-movement-preview"
@@ -1321,7 +1354,7 @@ const MapSceneLayer: React.FC<{
                             })}
                         </div>
                     ) : null}
-                    {sharedPrintedRuntimeOptions.length > 1 ? (
+                    {!compactRegionTip && sharedPrintedRuntimeOptions.length > 1 ? (
                         <div
                             className="pointer-events-auto mt-2 flex flex-wrap items-center gap-2"
                             data-testid="qidahen-shared-printed-runtime-switcher"
@@ -1754,7 +1787,7 @@ const ActionButton: React.FC<{
         data-testid={`qidahen-action-${action.id}`}
         title={action.detail}
         disabled={disabled}
-        className="relative inline-flex h-[52px] min-w-[146px] items-center justify-start overflow-hidden border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
+        className="relative inline-flex h-[52px] min-w-[146px] items-center justify-between gap-3 overflow-hidden border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
         onClick={onClick}
         style={{
             borderColor: UI_STYLE.mapInk,
@@ -1767,6 +1800,17 @@ const ActionButton: React.FC<{
         <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: selected ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)' }} />
         <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
         <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
+        <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black tracking-[0.08em]"
+            data-testid={`qidahen-action-state-${action.id}`}
+            style={{
+                background: selected ? 'rgba(246,213,168,0.18)' : 'rgba(210,183,117,0.14)',
+                color: selected ? '#f6d5a8' : UI_STYLE.mapGold,
+                boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+            }}
+        >
+            {selected ? '当前' : '可选'}
+        </span>
     </button>
 );
 
@@ -1814,6 +1858,7 @@ const ActionsZone: React.FC<{
         || core.pendingScenarioArmamentChoices.length > 0;
     const selectedAction = core.actionChoices.find((action) => action.id === core.selectedActionId) ?? core.actionChoices[0] ?? null;
     const primaryActionSecondStepHint = buildQidahenActionSecondStepHint(core, selectedAction);
+    const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedAction);
     const showWheelNextStepBanner = !pendingScenarioChoices
         && core.factionActionUsed
         && !core.wheelActionUsed
@@ -1831,6 +1876,19 @@ const ActionsZone: React.FC<{
         && pendingTargetAction == null
         && postBattleSelection == null
         && core.wheelMoveChoices.length > 0;
+    const suppressPassiveActionContext = showWheelNextStepBanner
+        || core.gaoDiDispatchSelection != null
+        || internalDispatchSelection != null
+        || recruitSelection != null
+        || maShiTradeSelection != null
+        || khanEdictSelection != null
+        || diplomacySelection != null
+        || driveTigerConsentSelection != null
+        || fortificationMaintenanceSelection != null
+        || wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+    const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
 
     return (
         <div
@@ -1887,6 +1945,18 @@ const ActionsZone: React.FC<{
                 </div>
                 <div className="mt-1 text-[11px]" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
                     {primaryActionSecondStepHint}
+                </div>
+                <div
+                    className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
+                    data-testid="qidahen-primary-action-next-step"
+                    style={{
+                        borderColor: 'rgba(232,200,133,0.2)',
+                        background: 'rgba(246,213,168,0.08)',
+                        color: UI_STYLE.mapIvory,
+                        borderRadius: 3,
+                    }}
+                >
+                    {primaryActionEntryText}
                 </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
@@ -1950,35 +2020,37 @@ const ActionsZone: React.FC<{
                     </div>
                 </div>
             ) : null}
-            <div
-                className="mb-3 flex flex-wrap items-center justify-end gap-2"
-                data-testid="qidahen-fortification-strip"
-            >
-                {core.fortifications.map((fortification) => (
-                    <div
-                        key={fortification.id}
-                        className="border-[2px] px-2 py-1 text-[11px] font-black leading-4"
-                        title={fortification.ruleNote}
-                        data-testid={`qidahen-fortification-${fortification.id}`}
-                        style={{
-                            borderColor: UI_STYLE.mapInk,
-                            background: fortification.ruined ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
-                            color: fortification.ruined ? '#f6d5a8' : UI_STYLE.mapIvory,
-                            boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-                            borderRadius: 3,
-                        }}
-                    >
-                        {t('board.actions.fortificationStatus', {
-                            label: fortification.label,
-                            status: fortification.ruined
-                                ? t('board.actions.fortification.ruined', { defaultValue: '破败' })
-                                : t('board.actions.fortification.intact', { defaultValue: '完整' }),
-                            defaultValue: '{{label}} · {{status}}',
-                        })}
-                    </div>
-                ))}
-            </div>
-            {core.lastSeasonSummary ? (
+            {showFortificationStrip ? (
+                <div
+                    className="mb-3 flex flex-wrap items-center justify-end gap-2"
+                    data-testid="qidahen-fortification-strip"
+                >
+                    {core.fortifications.map((fortification) => (
+                        <div
+                            key={fortification.id}
+                            className="border-[2px] px-2 py-1 text-[11px] font-black leading-4"
+                            title={fortification.ruleNote}
+                            data-testid={`qidahen-fortification-${fortification.id}`}
+                            style={{
+                                borderColor: UI_STYLE.mapInk,
+                                background: fortification.ruined ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                                color: fortification.ruined ? '#f6d5a8' : UI_STYLE.mapIvory,
+                                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                                borderRadius: 3,
+                            }}
+                        >
+                            {t('board.actions.fortificationStatus', {
+                                label: fortification.label,
+                                status: fortification.ruined
+                                    ? t('board.actions.fortification.ruined', { defaultValue: '破败' })
+                                    : t('board.actions.fortification.intact', { defaultValue: '完整' }),
+                                defaultValue: '{{label}} · {{status}}',
+                            })}
+                        </div>
+                    ))}
+                </div>
+            ) : null}
+            {!suppressPassiveActionContext && core.lastSeasonSummary ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
                     data-testid="qidahen-season-summary"
@@ -3689,6 +3761,22 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         dispatch(QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE, { groupId, armamentIds });
     }, [dispatch]);
 
+    const compactMapRegionTip = setupStagePending
+        || actionPaymentPreviewVisible
+        || handLimitDiscardSelection != null
+        || core.sunYuanhuaTechSelection != null
+        || core.gaoDiDispatchSelection != null
+        || internalDispatchSelection != null
+        || recruitSelection != null
+        || maShiTradeSelection != null
+        || khanEdictSelection != null
+        || diplomacySelection != null
+        || driveTigerConsentSelection != null
+        || fortificationMaintenanceSelection != null
+        || wheelDispatchSelection != null
+        || pendingTargetAction != null
+        || postBattleSelection != null;
+
     const selectRegion = React.useCallback((regionId: string) => {
         if (setupStagePending || pendingTargetAction != null || postBattleSelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null) {
             return;
@@ -3728,6 +3816,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 wheelDispatchSelection={wheelDispatchSelection}
                 internalDispatchSelection={internalDispatchSelection}
                 pendingTargetAction={pendingTargetAction}
+                compactRegionTip={compactMapRegionTip}
                 locale={locale}
                 onSelectRegion={selectRegion}
             />

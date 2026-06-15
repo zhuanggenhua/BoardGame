@@ -492,7 +492,10 @@ describe('FantasyRealms Board foundation', () => {
             expect(scoreStrip).toContainElement(scoreBand);
             expect(within(statusStrip).getByText('你的回合')).toBeInTheDocument();
             expect(within(statusStrip).getByLabelText('结束进度')).toHaveTextContent(/^\d+\/\d+$/);
-            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('选择弃牌');
+            expect(within(statusStrip).queryByText('摸牌')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('选择一张牌获取');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toBeDisabled();
             expect(screen.queryByText('公开弃牌堆')).not.toBeInTheDocument();
         });
     });
@@ -662,8 +665,11 @@ describe('FantasyRealms Board foundation', () => {
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
             }));
 
-            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('摸牌');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('选择一张牌获取');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toBeDisabled();
             expect(screen.getByTestId('fantasyrealms-live-deck')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
             expect(screen.queryByText('回合')).not.toBeInTheDocument();
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
@@ -749,9 +755,9 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('摸 2 张');
             expect(screen.getByTestId('fantasyrealms-live-deck')).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
-            expect(screen.getByText('摸 2 张')).toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
+            expect(screen.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'right-lower-dock');
             expect(screen.queryByTestId('fantasyrealms-hand-empty-note')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             expect(screen.getAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(7);
@@ -792,16 +798,17 @@ describe('FantasyRealms Board foundation', () => {
             }), { dispatch });
 
             const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
-            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('摸牌');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('选择一张牌获取');
+            expect(screen.getByTestId('fantasyrealms-live-action-button')).toBeDisabled();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
 
             fireEvent.click(discardButton);
 
-            const actionButton = screen.getByTestId('fantasyrealms-live-action-button');
+            const actionButton = screen.getAllByTestId('fantasyrealms-live-action-button')[0]!;
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
             expect(actionZone).toBeInTheDocument();
-            expect(actionZone).toHaveAttribute('data-anchor', 'status-strip');
+            expect(actionZone).toHaveAttribute('data-anchor', 'right-lower-dock');
             expect(actionButton).toHaveTextContent('确认选择');
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
             expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[2]!.id });
@@ -828,7 +835,7 @@ describe('FantasyRealms Board foundation', () => {
             const actionButton = screen.getByTestId('fantasyrealms-live-action-button');
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
             expect(actionZone).toBeInTheDocument();
-            expect(actionZone).toHaveAttribute('data-anchor', 'status-strip');
+            expect(actionZone).toHaveAttribute('data-anchor', 'right-lower-dock');
             expect(actionButton).toHaveTextContent('确认弃置');
             expect(actionButton).toBeEnabled();
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
@@ -917,6 +924,7 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(screen.getByTestId('fantasyrealms-live-action-button')).toHaveTextContent('摸牌');
             expect(screen.getByTestId('fantasyrealms-live-deck')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByText('0/10')).toBeInTheDocument();
             expect(screen.getByText('当前总分')).toBeInTheDocument();
             expect(screen.queryByText(/当前为 3 人基础版/)).not.toBeInTheDocument();
@@ -1357,21 +1365,25 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-live-topbar')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-score-strip')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-table-layout')).not.toBeInTheDocument();
-            expect(screen.getAllByText('胜者')).toHaveLength(1);
-            expect(screen.getByText('当前对局已结束，由 第二玩家 获胜。')).toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveAttribute('data-rank-tone', 'gold');
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toContainElement(screen.getByLabelText('胜者'));
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveTextContent('第二玩家');
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1').querySelector('[data-score-animation="count-up"][data-target-score="55"]')).not.toBeNull();
             expect(screen.queryByText('当前总分')).not.toBeInTheDocument();
             expect(screen.queryByText('第 3 回合 · 玩家1')).not.toBeInTheDocument();
             expect(screen.getAllByText('最终排名')).toHaveLength(1);
             const standings = screen.getByLabelText('最终排名');
             expect(standings).toBeInTheDocument();
             expect(within(standings).getByText('第 1 名')).toBeInTheDocument();
-            expect(within(standings).getByText('第二玩家')).toBeInTheDocument();
-            expect(within(standings).getByText('55')).toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveAttribute('data-rank-tone', 'gold');
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-0')).toHaveAttribute('data-rank-tone', 'silver');
+            expect(screen.getByTestId('fantasyrealms-endgame-rank-2')).toHaveAttribute('data-rank-tone', 'bronze');
+            expect(standings.querySelector('[data-score-animation="count-up"][data-target-score="55"]')).not.toBeNull();
             expect(screen.getByTestId('fantasyrealms-endgame-reviewed-player')).toHaveTextContent('测试玩家的终局手牌');
         });
     });
 
-    it('终局时可从右上排名切换查看其他玩家手牌', () => {
+    it('终局时可从结算排名切换查看其他玩家手牌', () => {
         withViewport(1024, 768, () => {
             render(
                 <Board

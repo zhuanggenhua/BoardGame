@@ -78,7 +78,7 @@
     "inspectHandAria": "查看手牌 {{name}}",
     "confirmTake": "确认选择",
     "confirmDiscard": "确认弃置",
-    "selectDiscardRequired": "选择弃牌",
+    "selectDiscardRequired": "选择一张牌获取",
     "selected": "已选"
   },
   "focus": {

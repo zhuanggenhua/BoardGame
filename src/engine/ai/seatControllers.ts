@@ -19,7 +19,7 @@ function sanitizeOptionalId(value: string | undefined): string | undefined {
     return trimmed ? trimmed : undefined;
 }
 
-function sanitizeMinimumActionDelayMs(value: number | undefined): number | undefined {
+export function normalizeAiMinimumActionDelayMs(value: number | undefined): number | undefined {
     if (value === undefined) return undefined;
     if (!Number.isFinite(value)) return undefined;
     return Math.max(0, Math.min(Math.round(value), MAX_AI_MINIMUM_ACTION_DELAY_MS));
@@ -65,8 +65,8 @@ export function resolveAiMinimumActionDelayMs(
         return 0;
     }
 
-    return sanitizeMinimumActionDelayMs(controller.minimumActionDelayMs)
-        ?? sanitizeMinimumActionDelayMs(defaultMinimumActionDelayMs)
+    return normalizeAiMinimumActionDelayMs(controller.minimumActionDelayMs)
+        ?? normalizeAiMinimumActionDelayMs(defaultMinimumActionDelayMs)
         ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
 }
 
@@ -105,7 +105,7 @@ export function normalizeSeatController(
         if (!aiSupport?.localAi) {
             return { type: 'human' };
         }
-        const minimumActionDelayMs = sanitizeMinimumActionDelayMs(controller.minimumActionDelayMs);
+        const minimumActionDelayMs = normalizeAiMinimumActionDelayMs(controller.minimumActionDelayMs);
         return {
             type: 'local-ai',
             ...(sanitizeOptionalId(controller.policyId) ? { policyId: sanitizeOptionalId(controller.policyId) } : {}),
@@ -126,7 +126,7 @@ export function normalizeSeatController(
 
     const providerId = sanitizeOptionalId(controller.providerId) ?? DEFAULT_REMOTE_PROVIDER_ID;
     const fallbackPolicyId = sanitizeOptionalId(controller.fallbackPolicyId);
-    const minimumActionDelayMs = sanitizeMinimumActionDelayMs(controller.minimumActionDelayMs);
+    const minimumActionDelayMs = normalizeAiMinimumActionDelayMs(controller.minimumActionDelayMs);
 
     return {
         type: 'remote-ai',

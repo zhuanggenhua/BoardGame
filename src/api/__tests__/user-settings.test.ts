@@ -71,6 +71,7 @@ describe('user-settings api', () => {
             empty: false,
             settings: {
                 numPlayers: 3,
+                minimumActionDelayMs: 2000,
                 seatControllers: { '1': { type: 'local-ai' } },
                 setupSelections: { expansions: ['titans'] },
             },
@@ -92,6 +93,7 @@ describe('user-settings api', () => {
     it('updateLocalMatchPreferences 请求成功', async () => {
         const settings = {
             numPlayers: 4,
+            minimumActionDelayMs: 3000,
             seatControllers: {
                 '1': { type: 'local-ai', policyId: 'opening-v1' },
                 '2': { type: 'human' },

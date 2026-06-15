@@ -1302,6 +1302,7 @@ export const Right = ({ game }: RightProps) => {
         try {
             writeLocalMatchPreferences(game, stripAiSeatsFromLocalMatchPreferences({
                 numPlayers: config.numPlayers,
+                minimumActionDelayMs: config.minimumActionDelayMs,
                 seatControllers: config.seatControllers,
                 setupSelections: config.setupSelections,
             }));
