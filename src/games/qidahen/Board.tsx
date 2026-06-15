@@ -1,3 +1,5 @@
+// @asset-pipeline-allow
+// 区域命中蒙版需要直接读静态 png 像素生成运行时命中表，不走玩家可见贴图渲染链路。
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CardPreviewRef } from '../../core/types';
