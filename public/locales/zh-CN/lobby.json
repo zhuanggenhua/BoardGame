@@ -2143,6 +2143,9 @@
     "occupiedSeatUnit": "{{seat}} 号位",
     "aiPlayerName": "AI {{seat}} 号位",
     "aiManualFactionSelection": "玩家选择 AI 派系",
+    "qidahenInMatchSetupTitle": "局内完成剧本投票与前置项",
+    "qidahenInMatchSetupDescription": "创建房间时只决定人数与 AI。进入棋盘后，再按联机席位完成剧本介绍、投票、人物与军备前置。",
+    "qidahenPregameMovedInMatch": "这里不再预设剧本，也不会代投。正式联机房间会先进入局内剧本介绍与投票页，再继续人物、军备前置。",
     "confirm": "确认创建"
   },
   "socket": {
@@ -2175,5 +2178,11 @@
     "steps": {
       "setup": "正在准备教学场景…"
     }
+  },
+  "testMatchRoom": {
+    "gameConfigMissing": "未找到游戏配置",
+    "loadingWithGame": "正在加载 {{game}}...",
+    "loadingFallback": "正在加载...",
+    "gameLoadFailed": "游戏加载失败"
   }
 }

@@ -3198,7 +3198,10 @@ const QidahenScenarioVoteScreen: React.FC<{
                                         clipPath: UI_SURFACE.smallCutCorner,
                                     }}
                                 >
-                                    战局 {option.orderNo}
+                                    {t('board.scenarioVote.orderBadge', {
+                                        orderNo: option.orderNo,
+                                        defaultValue: '战局 {{orderNo}}',
+                                    })}
                                 </div>
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="text-[18px] font-black leading-7">{option.label}</div>

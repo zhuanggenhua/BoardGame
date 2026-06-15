@@ -126,6 +126,9 @@
       },
       "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Faction action {{factionStatus}}",
       "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
+      "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
+      "primaryActionLabel": "Primary action",
+      "primaryActionEmpty": "Not selected",
       "wheelNextStepTitle": "Next: click a wheel button to advance the turn",
       "wheelNextStepHint": "Do not click the painted wheel directly. Use the explicit button below.",
       "directExecute": "Execute",
@@ -201,6 +204,40 @@
       "postBattle": {
         "summary": "{{summary}} · Commit {{committedTroops}}"
       }
+    },
+    "setup": {
+      "eyebrow": "In-match setup",
+      "title": "Finish scenario character, armament, and faction setup first",
+      "description": "This step is completed inside the match. Confirm your faction's setup items first, then proceed to the live board.",
+      "characterLabel": "Characters",
+      "pickCount": "Choose {{count}} item(s)",
+      "confirmCharacter": "Confirm characters",
+      "armamentLabel": "Armaments",
+      "confirmArmament": "Confirm armaments",
+      "waiting": "Waiting for other players to finish the setup items for their factions."
+    },
+    "scenarioVote": {
+      "eyebrow": "In-match scenario vote",
+      "title": "Read the scenario briefing, then vote for this match",
+      "description": "Online rooms no longer preset a scenario during room creation. All seats must finish the in-match briefing and vote before character and armament setup begins.",
+      "playerCount": "{{count}}-player room",
+      "unavailableForPlayerCount": "Unavailable for the current {{count}}-player room; supports {{supported}} players",
+      "voteCount": "{{count}} vote(s)",
+      "supportedPlayers": "Supports {{count}} players",
+      "orderBadge": "Scenario {{orderNo}}",
+      "myVote": "Your vote is in",
+      "seatStatusTitle": "Current vote by seat",
+      "you": "You",
+      "host": "Host",
+      "pendingVote": "No vote yet",
+      "tiebreakNote": "Resolution happens as soon as every seat confirms. If votes tie, the host vote of {{hostFactionName}} breaks the tie.",
+      "actionTitle": "This seat",
+      "changeableHint": "You have already submitted a vote. Until every seat has voted, you can still change or withdraw it.",
+      "selectHint": "Select one scenario briefing card first, then confirm your vote.",
+      "spectatorHint": "Spectator view only shows the current vote shape and does not provide a proxy voting entry.",
+      "noDraft": "No scenario selected yet",
+      "confirm": "Confirm vote",
+      "clear": "Withdraw vote"
     }
   },
   "battle": {
@@ -244,6 +281,7 @@
         "title": "Shared Printed Regions",
         "description": "If one printed region hits multiple runtime regions in the current workspace, it is listed here directly.",
         "note": "This reflects runtime/printed layering truth and does not mean the formal printed data has already been split.",
+        "previewHint": "This thumbnail only shows how runtime ownership splits one printed region into multiple subregions. It does not mean the formal printed data has already been split.",
         "candidateSummary": "Recorded runtime-only guide candidates in this workspace: {{count}}.",
         "empty": "No multi-runtime shared printed samples are loaded in the current workspace.",
         "runtime": "Runtime: {{names}}",

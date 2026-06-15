@@ -2143,6 +2143,9 @@
     "occupiedSeatUnit": "Seat {{seat}}",
     "aiPlayerName": "AI Seat {{seat}}",
     "aiManualFactionSelection": "Player chooses AI factions",
+    "qidahenInMatchSetupTitle": "Finish scenario voting and setup in match",
+    "qidahenInMatchSetupDescription": "Room creation now only decides player count and AI seats. After entering the board, each online seat completes scenario briefing, voting, character setup, and armament setup in match.",
+    "qidahenPregameMovedInMatch": "This screen no longer presets a scenario or votes on anyone's behalf. Formal online rooms first enter the in-match scenario briefing and voting page, then continue to character and armament setup.",
     "confirm": "Create Room"
   },
   "socket": {
@@ -2175,5 +2178,11 @@
     "steps": {
       "setup": "Preparing tutorial scenario..."
     }
+  },
+  "testMatchRoom": {
+    "gameConfigMissing": "Game configuration not found",
+    "loadingWithGame": "Loading {{game}}...",
+    "loadingFallback": "Loading...",
+    "gameLoadFailed": "Failed to load game"
   }
 }

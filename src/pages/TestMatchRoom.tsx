@@ -219,7 +219,7 @@ export const TestMatchRoom: React.FC = () => {
     if (!gameId || !gameConfig) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {'\u672a\u627e\u5230\u6e38\u620f\u914d\u7f6e'}
+                {t('testMatchRoom.gameConfigMissing', { defaultValue: '未找到游戏配置' })}
             </div>
         );
     }
@@ -239,13 +239,19 @@ export const TestMatchRoom: React.FC = () => {
     }
 
     if (loading) {
-        return <LoadingScreen title={gameConfig ? `\u6b63\u5728\u52a0\u8f7d ${gameConfig.title}...` : '\u6b63\u5728\u52a0\u8f7d...'} />;
+        return (
+            <LoadingScreen
+                title={gameConfig
+                    ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                    : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+            />
+        );
     }
 
     if (!engineConfig || !WrappedBoard) {
         return (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-                {'\u6e38\u620f\u52a0\u8f7d\u5931\u8d25'}
+                {t('testMatchRoom.gameLoadFailed', { defaultValue: '游戏加载失败' })}
             </div>
         );
     }
@@ -281,11 +287,23 @@ export const TestMatchRoom: React.FC = () => {
                                         <GameHUD gameId={gameId} mode="test" />
                                         <BoardBridge
                                             board={WrappedBoard}
-                                            loading={<LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />}
+                                            loading={(
+                                                <LoadingScreen
+                                                    anchor="container"
+                                                    title={gameConfig
+                                                        ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                                        : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                                                />
+                                            )}
                                         />
                                     </LocalGameProvider>
                                 ) : (
-                                    <LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />
+                                    <LoadingScreen
+                                        anchor="container"
+                                        title={gameConfig
+                                            ? t('testMatchRoom.loadingWithGame', { game: gameConfig.title, defaultValue: '正在加载 {{game}}...' })
+                                            : t('testMatchRoom.loadingFallback', { defaultValue: '正在加载...' })}
+                                    />
                                 )}
                             </MobileBoardShell>
                         </GameCursorProvider>

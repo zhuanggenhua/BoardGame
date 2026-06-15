@@ -358,7 +358,9 @@ function HomeV2ReviewsPanel({
                                 <div className={`flex items-center justify-between ${compact ? 'gap-[10px]' : 'gap-[16px]'}`}>
                                     <div className={compact ? 'truncate text-[10px] font-bold text-[#3f2718]' : 'truncate text-[clamp(15px,1.06vw,18px)] font-bold text-[#3f2718]'}>{review.user.username}</div>
                                     <div className={`${compact ? 'text-[8.5px]' : 'text-[clamp(12px,0.88vw,14px)]'} shrink-0 font-semibold ${review.isPositive ? 'text-[#315c27]' : 'text-[#8a3f2a]'}`}>
-                                        {review.isPositive ? '推荐' : '不推荐'}
+                                        {review.isPositive
+                                            ? t('lobby:homeV2.reviews.recommend', { defaultValue: '推荐' })
+                                            : t('lobby:homeV2.reviews.not_recommend', { defaultValue: '不推荐' })}
                                     </div>
                                 </div>
                                 {review.content ? (
@@ -1488,11 +1490,11 @@ export const Right = ({ game }: RightProps) => {
             }
 
             if (!result.success) {
-                toast.error({
-                    kind: 'i18n',
-                    key: result.error === 'forbidden' ? 'error.destroyForbidden' : 'error.destroyNetwork',
-                    ns: 'lobby',
-                });
+                if (result.error === 'forbidden') {
+                    toast.error({ kind: 'i18n', key: 'error.destroyForbidden', ns: 'lobby' });
+                } else {
+                    toast.error({ kind: 'i18n', key: 'error.destroyNetwork', ns: 'lobby' });
+                }
                 return;
             }
 
