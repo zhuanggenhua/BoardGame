@@ -1,6 +1,7 @@
 param(
     [string]$ConfigPath,
     [string]$CodexHome,
+    [switch]$Login,
     [switch]$SkipLogin,
     [switch]$OpenWindow,
     [switch]$DryRun
@@ -12,23 +13,15 @@ $ErrorActionPreference = "Stop"
 function Resolve-CodexHome {
     param([string]$ExplicitCodexHome)
 
-    if ($ExplicitCodexHome) {
-        return $ExplicitCodexHome
-    }
-    if ($env:CODEX_HOME) {
-        return $env:CODEX_HOME
-    }
-    if (Test-Path "D:\codex-home") {
-        return "D:\codex-home"
-    }
+    if ($ExplicitCodexHome) { return $ExplicitCodexHome }
+    if ($env:CODEX_HOME) { return $env:CODEX_HOME }
+    if (Test-Path "D:\codex-home") { return "D:\codex-home" }
     return (Join-Path $env:USERPROFILE ".codex")
 }
 
 function Resolve-CodexCli {
     $command = Get-Command codex -ErrorAction SilentlyContinue
-    if ($command) {
-        return "codex"
-    }
+    if ($command) { return "codex" }
 
     if ($env:CODEX_CLI_PATH -and (Test-Path $env:CODEX_CLI_PATH)) {
         return $env:CODEX_CLI_PATH
@@ -39,103 +32,143 @@ function Resolve-CodexCli {
         $candidate = Get-ChildItem -Path $openAiBinRoot -Recurse -Filter codex.exe -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
-        if ($candidate) {
-            return $candidate.FullName
+        if ($candidate) { return $candidate.FullName }
+    }
+
+    throw "codex CLI was not found."
+}
+
+function Get-SectionStartIndex {
+    param(
+        [string[]]$Lines,
+        [string]$SectionName
+    )
+
+    $target = "[$SectionName]"
+    for ($i = 0; $i -lt $Lines.Count; $i++) {
+        if ($Lines[$i] -eq $target) {
+            return $i
         }
     }
 
-    throw "未找到 codex CLI。请先确认 Codex 已安装，且 'codex' 命令可用。"
+    return -1
 }
 
-function Set-OrAppendSectionBlock {
-    param(
-        [string]$Content,
-        [string]$SectionName,
-        [string]$Block
-    )
+function Get-FirstSectionIndex {
+    param([string[]]$Lines)
 
-    $escapedSection = [Regex]::Escape($SectionName)
-    $pattern = '(?ms)^\[' + $escapedSection + '\]\s*\r?\n.*?(?=^\[[^\]]+\]\s*$|\z)'
-    if ([Regex]::IsMatch($Content, $pattern)) {
-        return [Regex]::Replace($Content, $pattern, $Block)
-    }
-
-    $trimmed = $Content.TrimEnd()
-    if ([string]::IsNullOrWhiteSpace($trimmed)) {
-        return $Block.TrimEnd() + [Environment]::NewLine
-    }
-
-    return $trimmed + [Environment]::NewLine + [Environment]::NewLine + $Block.TrimEnd() + [Environment]::NewLine
-}
-
-function Set-OrAppendKeyInSection {
-    param(
-        [string]$Content,
-        [string]$SectionName,
-        [string]$Key,
-        [string]$ValueExpression
-    )
-
-    $escapedSection = [Regex]::Escape($SectionName)
-    $sectionPattern = '(?ms)^\[' + $escapedSection + '\]\s*\r?\n(?<body>.*?)(?=^\[[^\]]+\]\s*$|\z)'
-
-    if ([Regex]::IsMatch($Content, $sectionPattern)) {
-        $match = [Regex]::Match($Content, $sectionPattern)
-        $body = $match.Groups["body"].Value
-        $escapedKey = [Regex]::Escape($Key)
-        $keyPattern = '(?m)^' + $escapedKey + '\s*=.*$'
-        if ([Regex]::IsMatch($body, $keyPattern)) {
-            $newBody = [Regex]::Replace($body, $keyPattern, "$Key = $ValueExpression", 1)
-        } else {
-            $bodyTrimmed = $body.TrimEnd()
-            if ([string]::IsNullOrWhiteSpace($bodyTrimmed)) {
-                $newBody = "$Key = $ValueExpression" + [Environment]::NewLine
-            } else {
-                $newBody = $bodyTrimmed + [Environment]::NewLine + "$Key = $ValueExpression" + [Environment]::NewLine
-            }
+    for ($i = 0; $i -lt $Lines.Count; $i++) {
+        if ($Lines[$i] -match '^\[[^\]]+\]$') {
+            return $i
         }
-
-        $replacement = "[$SectionName]" + [Environment]::NewLine + $newBody
-        return [Regex]::Replace($Content, $sectionPattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $replacement }, 1)
     }
 
-    $sectionBlock = "[$SectionName]" + [Environment]::NewLine + "$Key = $ValueExpression" + [Environment]::NewLine
-    return Set-OrAppendSectionBlock -Content $Content -SectionName $SectionName -Block $sectionBlock
+    return $Lines.Count
+}
+
+function Get-RootKeyIndex {
+    param(
+        [string[]]$Lines,
+        [string]$Key
+    )
+
+    $target = "^\s*{0}\s*=" -f [Regex]::Escape($Key)
+    $firstSectionIndex = Get-FirstSectionIndex -Lines $Lines
+
+    for ($i = 0; $i -lt $firstSectionIndex; $i++) {
+        if ($Lines[$i] -match $target) {
+            return $i
+        }
+    }
+
+    return -1
+}
+
+function Get-KeyIndexInSection {
+    param(
+        [string[]]$Lines,
+        [int]$SectionStartIndex,
+        [string]$Key
+    )
+
+    if ($SectionStartIndex -lt 0) { return -1 }
+
+    $keyPattern = "^\s*{0}\s*=" -f [Regex]::Escape($Key)
+    for ($i = $SectionStartIndex + 1; $i -lt $Lines.Count; $i++) {
+        if ($Lines[$i] -match '^\[[^\]]+\]$') {
+            break
+        }
+        if ($Lines[$i] -match $keyPattern) {
+            return $i
+        }
+    }
+
+    return -1
 }
 
 function Set-OrAppendRootKey {
     param(
-        [string]$Content,
+        [string[]]$Lines,
         [string]$Key,
         [string]$ValueExpression
     )
 
-    $escapedKey = [Regex]::Escape($Key)
-    $keyPattern = '(?m)^' + $escapedKey + '\s*=.*$'
-    if ([Regex]::IsMatch($Content, $keyPattern)) {
-        return [Regex]::Replace($Content, $keyPattern, "$Key = $ValueExpression", 1)
+    $updatedLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in $Lines) {
+        [void]$updatedLines.Add($line)
     }
 
-    $lines = @()
-    if (-not [string]::IsNullOrEmpty($Content)) {
-        $lines = [System.Collections.Generic.List[string]]::new()
-        foreach ($line in ($Content -split '\r?\n')) {
-            $lines.Add($line)
-        }
-    } else {
-        $lines = [System.Collections.Generic.List[string]]::new()
+    $keyIndex = Get-RootKeyIndex -Lines $Lines -Key $Key
+    $newLine = ('{0} = {1}' -f $Key, $ValueExpression)
+    if ($keyIndex -ge 0) {
+        $updatedLines[$keyIndex] = $newLine
+        return ,$updatedLines.ToArray()
     }
 
-    $insertIndex = $lines.Count
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^\[') {
-            $insertIndex = $i
-            break
-        }
+    $insertIndex = Get-FirstSectionIndex -Lines $Lines
+    $updatedLines.Insert($insertIndex, $newLine)
+    return ,$updatedLines.ToArray()
+}
+
+function Set-OrAppendKeyInSection {
+    param(
+        [string[]]$Lines,
+        [string]$SectionName,
+        [string]$Key,
+        [string]$ValueExpression
+    )
+
+    $updatedLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in $Lines) {
+        [void]$updatedLines.Add($line)
     }
 
-    $lines.Insert($insertIndex, "$Key = $ValueExpression")
-    return (($lines -join [Environment]::NewLine).TrimEnd() + [Environment]::NewLine)
+    $sectionStart = Get-SectionStartIndex -Lines $Lines -SectionName $SectionName
+    if ($sectionStart -lt 0) {
+        [void]$updatedLines.Add("")
+        [void]$updatedLines.Add("[$SectionName]")
+        [void]$updatedLines.Add(('{0} = {1}' -f $Key, $ValueExpression))
+        return ,$updatedLines.ToArray()
+    }
+
+    $keyIndex = Get-KeyIndexInSection -Lines $Lines -SectionStartIndex $sectionStart -Key $Key
+    $newLine = ('{0} = {1}' -f $Key, $ValueExpression)
+    if ($keyIndex -ge 0) {
+        $updatedLines[$keyIndex] = $newLine
+        return ,$updatedLines.ToArray()
+    }
+
+    $insertIndex = $sectionStart + 1
+    while ($insertIndex -lt $updatedLines.Count -and [string]::IsNullOrWhiteSpace($updatedLines[$insertIndex])) {
+        $insertIndex++
+    }
+
+    while ($insertIndex -lt $updatedLines.Count -and $updatedLines[$insertIndex] -notmatch '^\[[^\]]+\]$') {
+        $insertIndex++
+    }
+
+    $updatedLines.Insert($insertIndex, $newLine)
+    return ,$updatedLines.ToArray()
 }
 
 function New-BackupPath {
@@ -149,7 +182,7 @@ function Invoke-OpenWindow {
         [string]$ScriptPath,
         [string]$ResolvedCodexHome,
         [string]$ResolvedConfigPath,
-        [switch]$SkipLoginFlag,
+        [switch]$LoginFlag,
         [switch]$DryRunFlag
     )
 
@@ -161,14 +194,14 @@ function Invoke-OpenWindow {
         "-ConfigPath", $ResolvedConfigPath
     )
 
-    if ($SkipLoginFlag) {
-        $argumentList += "-SkipLogin"
-    }
-    if ($DryRunFlag) {
-        $argumentList += "-DryRun"
-    }
+    if ($LoginFlag) { $argumentList += "-Login" }
+    if ($DryRunFlag) { $argumentList += "-DryRun" }
 
     Start-Process powershell.exe -ArgumentList $argumentList
+}
+
+if ($Login -and $SkipLogin) {
+    throw "-Login and -SkipLogin cannot be used together."
 }
 
 $resolvedCodexHome = Resolve-CodexHome -ExplicitCodexHome $CodexHome
@@ -177,70 +210,76 @@ if (-not $ConfigPath) {
 }
 
 if ($OpenWindow) {
-    Invoke-OpenWindow -ScriptPath $PSCommandPath -ResolvedCodexHome $resolvedCodexHome -ResolvedConfigPath $ConfigPath -SkipLoginFlag:$SkipLogin -DryRunFlag:$DryRun
+    Invoke-OpenWindow -ScriptPath $PSCommandPath -ResolvedCodexHome $resolvedCodexHome -ResolvedConfigPath $ConfigPath -LoginFlag:$Login -DryRunFlag:$DryRun
     [ordered]@{
         codexHome = $resolvedCodexHome
         configPath = $ConfigPath
         launchedWindow = $true
+        loginRequested = [bool]$Login
         nextSteps = @(
-            "已打开独立 PowerShell 窗口。",
-            "窗口里会继续执行 Figma MCP 配置与网页登录授权。"
+            "Opened a separate PowerShell window.",
+            "Use -Login only when re-authorization is required."
         )
     } | ConvertTo-Json -Depth 5
     return
 }
 
-$codexCli = Resolve-CodexCli
-$configDir = Split-Path -Parent $ConfigPath
-if (-not (Test-Path $configDir) -and -not $DryRun) {
-    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-}
-
-$existingContent = ""
+$existingLines = @()
 if (Test-Path $ConfigPath) {
-    $existingContent = Get-Content -Raw $ConfigPath
+    $existingLines = Get-Content -LiteralPath $ConfigPath
 }
 
-$figmaBlock = "[mcp_servers.figma]" + [Environment]::NewLine + 'url = "https://mcp.figma.com/mcp"' + [Environment]::NewLine
+$updatedLines = $existingLines
+$updatedLines = Set-OrAppendRootKey -Lines $updatedLines -Key "mcp_oauth_credentials_store" -ValueExpression '"file"'
+$updatedLines = Set-OrAppendKeyInSection -Lines $updatedLines -SectionName "features" -Key "rmcp_client" -ValueExpression "true"
+$updatedLines = Set-OrAppendKeyInSection -Lines $updatedLines -SectionName "mcp_servers.figma" -Key "url" -ValueExpression '"https://mcp.figma.com/mcp"'
 
-$updatedContent = Set-OrAppendRootKey -Content $existingContent -Key "mcp_oauth_credentials_store" -ValueExpression '"file"'
-$updatedContent = Set-OrAppendSectionBlock -Content $updatedContent -SectionName "mcp_servers.figma" -Block $figmaBlock
-$updatedContent = Set-OrAppendKeyInSection -Content $updatedContent -SectionName "features" -Key "rmcp_client" -ValueExpression "true"
-
+$originalText = [string]::Join([Environment]::NewLine, $existingLines)
+$updatedText = [string]::Join([Environment]::NewLine, $updatedLines)
+$configChanged = ($originalText -ne $updatedText)
 $backupPath = $null
-if ($existingContent -ne $updatedContent -and -not $DryRun -and (Test-Path $ConfigPath)) {
-    $backupPath = New-BackupPath -Path $ConfigPath
-    Copy-Item -LiteralPath $ConfigPath -Destination $backupPath -Force
-}
+if (-not $DryRun -and $configChanged) {
+    $configDir = Split-Path -Parent $ConfigPath
+    if (-not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    }
 
-if (-not $DryRun) {
-    Set-Content -LiteralPath $ConfigPath -Value $updatedContent -Encoding UTF8
+    if (Test-Path $ConfigPath) {
+        $backupPath = New-BackupPath -Path $ConfigPath
+        Copy-Item -LiteralPath $ConfigPath -Destination $backupPath -Force
+    }
+
+    Set-Content -LiteralPath $ConfigPath -Value $updatedLines -Encoding utf8
 }
 
 $loginAttempted = $false
 $loginSucceeded = $false
-if (-not $DryRun -and -not $SkipLogin) {
+if (-not $DryRun -and $Login) {
     $loginAttempted = $true
-    Write-Host "已写入 Figma MCP 配置，准备启动 Codex OAuth 登录。"
-    Write-Host "如果浏览器弹出授权页，直接按提示登录并授权即可。"
+    $codexCli = Resolve-CodexCli
+    Write-Host "Figma MCP config is written. Starting Codex OAuth login."
+    Write-Host "After browser authorization succeeds, Codex stores file-backed credentials for future sessions."
     & $codexCli mcp login figma
     if ($LASTEXITCODE -eq 0) {
         $loginSucceeded = $true
     } else {
-        throw "Codex OAuth 登录失败，退出码：$LASTEXITCODE"
+        throw "Codex OAuth login failed with exit code: $LASTEXITCODE"
     }
 }
 
+$credentialsPath = Join-Path $resolvedCodexHome ".credentials.json"
 [ordered]@{
     codexHome = $resolvedCodexHome
     configPath = $ConfigPath
-    configChanged = ($existingContent -ne $updatedContent)
+    configChanged = $configChanged
     backupPath = $backupPath
+    credentialStoreFilePresent = (Test-Path $credentialsPath)
     loginAttempted = $loginAttempted
     loginSucceeded = $loginSucceeded
     dryRun = [bool]$DryRun
     nextSteps = @(
-        "重启 Codex / OpenClaw 会话，让新的 MCP 配置和 OAuth 登录态生效。",
-        "重启后重新发起 Figma 任务，确认工具列表里已经出现 use_figma / get_metadata / get_screenshot。"
+        "Default mode does not repeat Figma OAuth login; existing file-backed credentials are reused by new Codex / OpenClaw sessions.",
+        "If authorization was never completed or tools are still unavailable, rerun this script with -Login once.",
+        "After config or auth changes, restart Codex / OpenClaw and check for use_figma / get_metadata / get_screenshot."
     )
 } | ConvertTo-Json -Depth 5

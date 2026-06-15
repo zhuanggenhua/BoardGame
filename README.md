@@ -128,7 +128,9 @@ npm run dev:lite
 
 ### Figma MCP（协作者可选）
 
-如果你要让 Codex / OpenClaw 在这个项目里直接读写 Figma，可以直接在仓库内运行下面任一命令：
+这个仓库自带 Figma MCP 接入脚本，**仓库内脚本和文档才是协作者接入的真相源**；`CODEX_HOME` / `D:\codex-home` 里只保存每位协作者自己的 Codex 配置和 OAuth 凭据。
+
+如果你要让 Codex / OpenClaw 在这个项目里直接读写 Figma，优先在仓库内运行下面的项目命令：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/infra/setup-figma-mcp.ps1
@@ -142,16 +144,29 @@ npm run setup:figma:mcp
 npm run setup:figma:mcp:window
 ```
 
+如果是**首次授权**、**凭据失效**，或者你明确想重新走一次网页登录，再使用下面命令：
+
+```bash
+npm run setup:figma:mcp:login
+```
+
+```bash
+npm run setup:figma:mcp:window:login
+```
+
 这个脚本会：
 
 - 自动定位当前协作者自己的 `CODEX_HOME`（优先 `CODEX_HOME`，其次 `D:\codex-home`，最后 `%USERPROFILE%\.codex`）
 - 把 `mcp_oauth_credentials_store` 固定成 `file`，避免网页登录成功但新会话吃不到登录态
 - 往对应的 `config.toml` 里补 `mcp_servers.figma`
 - 打开 `rmcp_client`
-- 直接调用 `codex mcp login figma`
+- 默认**不**重复触发网页登录；已有文件态 OAuth 凭据会被后续新会话复用
+- 只有追加 `-Login` 或使用 `setup:figma:mcp:login` / `setup:figma:mcp:window:login` 时，才会调用 `codex mcp login figma`
 - 协作者只需要在浏览器里完成网页登录授权，不再手填 `FIGMA_OAUTH_TOKEN`
 
 执行完成后需要**重启 Codex / OpenClaw 会话**，当前会话不会自动出现 Figma 工具。
+
+更完整的协作者接入说明见 [docs/infra/figma-mcp.md](docs/infra/figma-mcp.md)。
 
 ### 环境变量
 
@@ -243,7 +258,9 @@ node scripts/audio/generate_common_audio_registry.js  # 重新生成音频注册
 npm run assets:download  # 从 R2 下载资源到本地（合作者 clone 后首次运行）
 npm run assets:upload    # 上传压缩资源到 R2（需配置 R2_* 环境变量）
 npm run setup:figma:mcp  # 给当前协作者补 Codex/OpenClaw 的 Figma MCP 配置
-npm run setup:figma:mcp:window # 打开独立终端并继续 Figma OAuth 登录
+npm run setup:figma:mcp:login # 首次授权或凭据失效时重新走一次网页登录
+npm run setup:figma:mcp:window # 打开独立终端执行仓库内 Figma MCP 接入脚本
+npm run setup:figma:mcp:window:login # 打开独立终端并继续 Figma OAuth 登录
 
 git push --no-verify
 ```
