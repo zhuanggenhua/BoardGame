@@ -60,6 +60,21 @@ export interface QidahenScenarioChoiceSelections {
     armamentChoiceSelections?: Partial<Record<string, QidahenArmamentId[]>>;
 }
 
+export interface QidahenScenarioVoteOption {
+    scenarioId: QidahenScenarioId;
+    label: string;
+    supportedPlayerCounts: number[];
+    intro: string;
+    overview: string;
+}
+
+export interface QidahenScenarioVoteState {
+    playerCount: number;
+    hostPlayerId: PlayerId;
+    options: QidahenScenarioVoteOption[];
+    votes: Record<PlayerId, QidahenScenarioId | null>;
+}
+
 export interface QidahenFactionState {
     id: QidahenFactionId;
     playerId: PlayerId;
@@ -566,6 +581,7 @@ interface QidahenPendingScenarioArmamentChoice {
 
 export interface QidahenCore {
     playerIds: PlayerId[];
+    scenarioVote: QidahenScenarioVoteState | null;
     scenarioId: QidahenScenarioId;
     scenarioLabel: string;
     pendingScenarioCharacterChoices: QidahenPendingScenarioCharacterChoice[];
@@ -788,7 +804,14 @@ interface ResolveScenarioArmamentChoiceCommand extends Command<'RESOLVE_SCENARIO
     };
 }
 
+interface CastScenarioVoteCommand extends Command<'CAST_SCENARIO_VOTE'> {
+    payload: {
+        scenarioId: QidahenScenarioId | null;
+    };
+}
+
 export type QidahenCommand =
+    | CastScenarioVoteCommand
     | SelectRegionCommand
     | ConfirmPreviewActionCommand
     | SelectWheelMoveCommand
@@ -999,7 +1022,15 @@ interface ScenarioArmamentChoiceResolvedEvent extends GameEvent<'SCENARIO_ARMAME
     };
 }
 
+interface ScenarioVoteCastEvent extends GameEvent<'SCENARIO_VOTE_CAST'> {
+    payload: {
+        playerId: PlayerId;
+        scenarioId: QidahenScenarioId | null;
+    };
+}
+
 export type QidahenEvent =
+    | ScenarioVoteCastEvent
     | RegionSelectedEvent
     | PreviewActionConfirmedEvent
     | WheelMoveSelectedEvent
@@ -1025,6 +1056,7 @@ export type QidahenEvent =
     | ScenarioArmamentChoiceResolvedEvent;
 
 export interface QidahenCommandMap extends Record<string, unknown> {
+    CAST_SCENARIO_VOTE: CastScenarioVoteCommand['payload'];
     SELECT_REGION: SelectRegionCommand['payload'];
     CONFIRM_PREVIEW_ACTION: ConfirmPreviewActionCommand['payload'];
     SELECT_WHEEL_MOVE: SelectWheelMoveCommand['payload'];

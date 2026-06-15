@@ -34,6 +34,7 @@ type SuperheroesPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    cardUid: string;
 };
 
 type CardChoice = {
@@ -67,6 +68,7 @@ type BurstContinuationContext = {
     fromBaseIndex: number;
     toBaseIndex: number;
     toBaseDefId?: string;
+    sourceControllerId: PlayerId;
 };
 
 type MildManneredCitizenPromptChoice = {
@@ -362,7 +364,7 @@ const notReallyDeadPromptProgram = createPromptProgram<SuperheroesPromptContext,
         ),
         (state) => [createSkipOption(), ...buildSmallMinionDiscardOptions(state.core, context.playerId)],
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choices = Array.isArray(value) ? value as CardChoice[] : [];
         const selected = choices.filter((choice) => !choice.skip && choice.cardUid && choice.defId);
         if (selected.length === 0) return { events: [] };
@@ -400,7 +402,7 @@ const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext, Sma
         ),
         (state) => [createSkipOption(), ...buildDiscardMinionOptions(state.core, context.playerId)],
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choices = Array.isArray(value) ? value as CardChoice[] : [];
         const selected = choices.filter((choice) => !choice.skip && choice.cardUid && choice.defId);
         if (selected.length === 0) return { events: [] };
@@ -416,6 +418,10 @@ const goldenAgePromptProgram = createPromptProgram<SuperheroesPromptContext, Sma
                 cardUid: choice.cardUid!,
                 defId: choice.defId!,
                 ownerId: playerId,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.cardUid,
+                sourceDefId: 'superheroes_golden_age',
+                sourceControllerId: context.playerId,
                 reason: 'superheroes_golden_age',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -656,19 +662,26 @@ const mildManneredCitizenPromptProgram = createPromptProgram<
             destroyerId: playerId,
             reason: 'superheroes_mild_mannered_citizen',
             now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'superheroes_mild_mannered_citizen',
+            sourceControllerId: playerId,
+            sourceBaseIndex: context.baseIndex,
         });
+        const destroySucceeded = destroyEvents.some((event) => event.type === SU_EVENTS.MINION_DESTROYED);
         const player = state.core.players[playerId];
         const deck = player?.deck ?? [];
         const eligible = buildSuperheroesDeckSearchCandidates(deck, (power) => power >= 5);
-        const searchResult = runMildManneredCitizenSearch({
-            matchState: state,
-            playerId,
-            now: timestamp,
-            core: state.core,
-            baseIndex: context.baseIndex,
-            deck,
-            eligible,
-        });
+        const searchResult = destroySucceeded
+            ? runMildManneredCitizenSearch({
+                matchState: state,
+                playerId,
+                now: timestamp,
+                core: state.core,
+                baseIndex: context.baseIndex,
+                deck,
+                eligible,
+            })
+            : { events: [], matchState: state };
         return {
             events: [...destroyEvents, ...searchResult.events],
             matchState: searchResult.matchState,
@@ -758,6 +771,7 @@ function goldenAgeOnPlay(ctx: AbilityContext): AbilityResult {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        cardUid: ctx.cardUid,
     });
     return {
         events: result.events,
@@ -811,19 +825,26 @@ function radioactiveExposureOnPlay(ctx: AbilityContext): AbilityResult {
         destroyerId: ctx.playerId,
         reason: 'superheroes_radioactive_exposure',
         now: ctx.now,
+        sourcePlayerId: ctx.playerId,
+        sourceDefId: 'superheroes_radioactive_exposure',
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
     });
+    const destroySucceeded = destroyEvents.some((event) => event.type === SU_EVENTS.MINION_DESTROYED);
     const deck = ctx.state.players[ctx.playerId]?.deck ?? [];
     const eligible = buildSuperheroesDeckSearchCandidates(deck, (power) => power > thresholdPower);
-    const searchResult = runRadioactiveExposureSearch({
-        matchState: ctx.matchState,
-        playerId: ctx.playerId,
-        now: ctx.now,
-        core: ctx.state,
-        baseIndex: ctx.baseIndex,
-        deck,
-        eligible,
-        thresholdPower,
-    });
+    const searchResult = destroySucceeded
+        ? runRadioactiveExposureSearch({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            core: ctx.state,
+            baseIndex: ctx.baseIndex,
+            deck,
+            eligible,
+            thresholdPower,
+        })
+        : { events: [], matchState: ctx.matchState };
 
     return {
         events: [...destroyEvents, ...searchResult.events],
@@ -907,6 +928,7 @@ function superheroesTheBurstTrigger(ctx: TriggerContext): AbilityResult {
         fromBaseIndex: ctx.sourceBaseIndex,
         toBaseIndex: ctx.baseIndex,
         toBaseDefId: ctx.state.bases[ctx.baseIndex]?.defId,
+        sourceControllerId: promptPlayerId,
     } satisfies BurstContinuationContext;
 
     return {
@@ -1030,6 +1052,11 @@ export function registerSuperheroesInteractionHandlers(): void {
                 toBaseDefId: continuation.toBaseDefId,
                 reason: 'superheroes_the_burst',
                 now: timestamp,
+                sourcePlayerId: continuation.sourceControllerId,
+                sourceDefId: continuation.minionDefId,
+                sourceControllerId: continuation.sourceControllerId,
+                sourceBaseIndex: continuation.fromBaseIndex,
+                sourceKind: 'nonAction',
             }),
         };
     });

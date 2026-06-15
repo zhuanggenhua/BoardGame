@@ -80,6 +80,19 @@ const buildQidahenHandLimitDiscardResolvedEvent = (
     timestamp,
 });
 
+const buildQidahenScenarioVoteCastEvent = (
+    command: Extract<QidahenCommand, { type: 'CAST_SCENARIO_VOTE' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'SCENARIO_VOTE_CAST',
+    payload: {
+        playerId: command.playerId,
+        scenarioId: command.payload.scenarioId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
 const buildQidahenSunYuanhuaTechResolvedEvent = (
     command: ResolveSunYuanhuaTechCommand,
     timestamp: number,
@@ -400,6 +413,12 @@ const buildQidahenScenarioArmamentChoiceResolvedEvent = (
 });
 
 const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEventBuilderSpec[] = [
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE],
+        buildEvents: buildSingleResolvedCommandEvents<Extract<QidahenCommand, { type: 'CAST_SCENARIO_VOTE' }>>(
+            buildQidahenScenarioVoteCastEvent,
+        ),
+    },
     {
         commandTypes: [QIDAHEN_COMMANDS.RESOLVE_HAND_LIMIT_DISCARD],
         buildEvents: buildSingleResolvedCommandEvents<ResolveHandLimitDiscardCommand>(

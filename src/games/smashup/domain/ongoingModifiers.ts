@@ -16,6 +16,9 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
 import {
+    countSemanticControlledMinionCandidates,
+    countSemanticControlledRuntimeActions,
+    countSemanticMatchedMinionCandidates,
     filterSemanticMatchedRuntimeActions,
     getSemanticActionControllerId,
     matchesSemanticRuntimeDefId,
@@ -38,6 +41,8 @@ export interface PowerModifierContext {
     baseIndex: number;
     /** 随从所在基地 */
     base: BaseInPlay;
+    /** 当前正在计算的修正来源 defId；用于 POD/base 共享规则的精确来源收口 */
+    modifierSourceDefId?: string;
 }
 
 /** 力量修正函数：返回力量增减值（正数=加，负数=减） */
@@ -56,9 +61,12 @@ export type PodVariantStrategy =
 
 export type OngoingControllerLens = SemanticControllerLens;
 
+export type ModifierExceptionAuditTag = 'legacySelfManaged';
+
 interface ModifierRegistrationOptions {
     variantPolicy?: ModifierVariantPolicy;
     podStrategy?: PodVariantStrategy;
+    exceptionAuditTag?: ModifierExceptionAuditTag;
 }
 
 export interface PowerModifierDefinition extends ModifierRegistrationOptions {
@@ -74,6 +82,8 @@ interface ModifierEntry {
     modifier: PowerModifierFn;
     /** POD 变体注册策略 */
     podStrategy: PodVariantStrategy;
+    /** 受审计的 legacy 例外标签 */
+    exceptionAuditTag?: ModifierExceptionAuditTag;
 }
 
 export type ModifierRuntimeAction = SemanticRuntimeAction;
@@ -86,10 +96,35 @@ export interface RuntimeActionControlOptions {
     includeMinionAttachments?: boolean;
 }
 
+export interface RuntimeMinionCountOptions {
+    controllerId?: PlayerId;
+    excludeSelf?: boolean;
+}
+
 export interface PowerModifierRuntimeHelpers {
     matchesRuntimeDefId(defId: unknown, baseDefId: string): boolean;
     getActionControllerId(action: ModifierRuntimeAction, lens?: OngoingControllerLens): PlayerId;
     getMinionAttachmentCount(ctx: PowerModifierContext): number;
+    countMinionsOnBaseControlledBy(
+        ctx: PowerModifierContext,
+        controllerId: PlayerId,
+        options?: { excludeSelf?: boolean },
+    ): number;
+    countMinionsOnBaseMatchingRuntimeDefId(
+        ctx: PowerModifierContext,
+        baseDefId: string,
+        options?: RuntimeMinionCountOptions,
+    ): number;
+    countMinionsInPlayControlledBy(
+        ctx: PowerModifierContext,
+        controllerId: PlayerId,
+        options?: { excludeSelf?: boolean },
+    ): number;
+    countMinionsInPlayMatchingRuntimeDefId(
+        ctx: PowerModifierContext,
+        baseDefId: string,
+        options?: RuntimeMinionCountOptions,
+    ): number;
     countMinionAttachmentsMatchingRuntimeDefId(
         ctx: PowerModifierContext,
         baseDefId: string,
@@ -157,6 +192,7 @@ interface BreakpointModifierEntry {
     sourceDefId: string;
     modifier: BreakpointModifierFn;
     podStrategy: PodVariantStrategy;
+    exceptionAuditTag?: ModifierExceptionAuditTag;
 }
 
 export interface BreakpointModifierDefinition extends ModifierRegistrationOptions {
@@ -168,6 +204,7 @@ interface BasePowerModifierEntry {
     defId: string;
     modifier: BasePowerModifierFn;
     podStrategy: PodVariantStrategy;
+    exceptionAuditTag?: ModifierExceptionAuditTag;
 }
 
 export interface BasePowerModifierDefinition extends ModifierRegistrationOptions {
@@ -190,6 +227,12 @@ export interface CustomBreakpointModifierDefinition extends ModifierRegistration
     sourceDefId: string;
     runtimeIdentity?: 'entity' | 'actionFamily' | 'synthetic';
     compute: (ctx: BreakpointModifierContext, helpers: PowerModifierRuntimeHelpers) => number;
+}
+
+export interface ModifierExceptionAuditSnapshot {
+    powerModifierIds: string[];
+    breakpointModifierIds: string[];
+    basePowerModifierIds: string[];
 }
 
 // ============================================================================
@@ -314,6 +357,7 @@ function getFilteredPowerModifierContext(
         minion: filteredMinion,
         baseIndex,
         base: filteredBase,
+        modifierSourceDefId: sourceDefId,
     };
 }
 
@@ -375,6 +419,7 @@ export function registerPowerModifier(
         sourceDefId,
         modifier,
         podStrategy: getPodStrategy(sourceDefId, options),
+        exceptionAuditTag: options?.exceptionAuditTag,
     });
 }
 
@@ -385,6 +430,7 @@ export function registerPowerModifiers(
         registerPowerModifier(definition.sourceDefId, definition.modifier, {
             variantPolicy: definition.variantPolicy,
             podStrategy: definition.podStrategy,
+            exceptionAuditTag: definition.exceptionAuditTag,
         });
     }
 }
@@ -404,6 +450,7 @@ export function registerBasePowerModifier(
         defId,
         modifier,
         podStrategy: getPodStrategy(defId, options),
+        exceptionAuditTag: options?.exceptionAuditTag,
     });
 }
 
@@ -414,6 +461,7 @@ export function registerBasePowerModifiers(
         registerBasePowerModifier(definition.defId, definition.modifier, {
             variantPolicy: definition.variantPolicy,
             podStrategy: definition.podStrategy,
+            exceptionAuditTag: definition.exceptionAuditTag,
         });
     }
 }
@@ -644,6 +692,7 @@ export function registerBreakpointModifier(
         sourceDefId,
         modifier,
         podStrategy: getPodStrategy(sourceDefId, options),
+        exceptionAuditTag: options?.exceptionAuditTag,
     });
 }
 
@@ -654,6 +703,7 @@ export function registerBreakpointModifiers(
         registerBreakpointModifier(definition.sourceDefId, definition.modifier, {
             variantPolicy: definition.variantPolicy,
             podStrategy: definition.podStrategy,
+            exceptionAuditTag: definition.exceptionAuditTag,
         });
     }
 }
@@ -852,6 +902,27 @@ export function getRegisteredModifierIds(): {
     };
 }
 
+export function getModifierExceptionAuditSnapshot(): ModifierExceptionAuditSnapshot {
+    const powerModifierIds = modifierRegistry
+        .filter((entry) => entry.exceptionAuditTag === 'legacySelfManaged')
+        .map((entry) => entry.sourceDefId)
+        .sort();
+    const breakpointModifierIds = breakpointModifierRegistry
+        .filter((entry) => entry.exceptionAuditTag === 'legacySelfManaged')
+        .map((entry) => entry.sourceDefId)
+        .sort();
+    const basePowerModifierIds = [...basePowerModifiers.values()]
+        .filter((entry) => entry.exceptionAuditTag === 'legacySelfManaged')
+        .map((entry) => entry.defId)
+        .sort();
+
+    return {
+        powerModifierIds,
+        breakpointModifierIds,
+        basePowerModifierIds,
+    };
+}
+
 function filterRuntimeMatchedActions(
     ctx: PowerModifierContext,
     actions: readonly ModifierRuntimeAction[],
@@ -866,10 +937,60 @@ function filterRuntimeMatchedActions(
     ) as ModifierRuntimeAction[];
 }
 
+function getScopedExactRuntimeDefId(
+    ctx: PowerModifierContext,
+    baseDefId: string,
+): string | undefined {
+    if (!ctx.modifierSourceDefId) return undefined;
+    return normalizeDefId(ctx.modifierSourceDefId) === normalizeDefId(baseDefId)
+        ? ctx.modifierSourceDefId
+        : undefined;
+}
+
 const powerModifierRuntimeHelpers: PowerModifierRuntimeHelpers = {
     matchesRuntimeDefId,
     getActionControllerId,
     getMinionAttachmentCount: (ctx) => ctx.minion.attachedActions.length,
+    countMinionsOnBaseControlledBy: (ctx, controllerId, options) => (
+        countSemanticControlledMinionCandidates(
+            ctx.base.minions.map((minion) => ({ minion, baseIndex: ctx.baseIndex })),
+            controllerId,
+            { excludeMinionUid: options?.excludeSelf ? ctx.minion.uid : undefined },
+        )
+    ),
+    countMinionsOnBaseMatchingRuntimeDefId: (ctx, baseDefId, options) => (
+        countSemanticMatchedMinionCandidates(
+            ctx.state,
+            ctx.base.minions.map((minion) => ({ minion, baseIndex: ctx.baseIndex })),
+            baseDefId,
+            {
+                controllerId: options?.controllerId,
+                exactDefId: getScopedExactRuntimeDefId(ctx, baseDefId),
+                excludeMinionUid: options?.excludeSelf ? ctx.minion.uid : undefined,
+                semanticRole: 'material',
+            },
+        )
+    ),
+    countMinionsInPlayControlledBy: (ctx, controllerId, options) => (
+        countSemanticControlledMinionCandidates(
+            ctx.state.bases.flatMap((base, baseIndex) => base.minions.map((minion) => ({ minion, baseIndex }))),
+            controllerId,
+            { excludeMinionUid: options?.excludeSelf ? ctx.minion.uid : undefined },
+        )
+    ),
+    countMinionsInPlayMatchingRuntimeDefId: (ctx, baseDefId, options) => (
+        countSemanticMatchedMinionCandidates(
+            ctx.state,
+            ctx.state.bases.flatMap((base, baseIndex) => base.minions.map((minion) => ({ minion, baseIndex }))),
+            baseDefId,
+            {
+                controllerId: options?.controllerId,
+                exactDefId: getScopedExactRuntimeDefId(ctx, baseDefId),
+                excludeMinionUid: options?.excludeSelf ? ctx.minion.uid : undefined,
+                semanticRole: 'material',
+            },
+        )
+    ),
     countMinionAttachmentsMatchingRuntimeDefId: (ctx, baseDefId, options) => (
         filterRuntimeMatchedActions(ctx, ctx.minion.attachedActions, baseDefId, options).length
     ),
@@ -884,25 +1005,13 @@ const powerModifierRuntimeHelpers: PowerModifierRuntimeHelpers = {
         filterRuntimeMatchedActions(ctx, ctx.base.ongoingActions, baseDefId, options)
             .reduce((total, action) => total + mapper(action), 0)
     ),
-    countActionsOnBaseControlledBy: (ctx, controllerId, options) => {
-        const lens = options?.controllerLens ?? 'sourceController';
-        const includeBaseOngoings = options?.includeBaseOngoings ?? true;
-        const includeMinionAttachments = options?.includeMinionAttachments ?? true;
-        let total = 0;
-        if (includeBaseOngoings) {
-            total += ctx.base.ongoingActions.filter(
-                (action) => getActionControllerId(action, lens) === controllerId,
-            ).length;
-        }
-        if (includeMinionAttachments) {
-            for (const minion of ctx.base.minions) {
-                total += minion.attachedActions.filter(
-                    (action) => getActionControllerId(action, lens) === controllerId,
-                ).length;
-            }
-        }
-        return total;
-    },
+    countActionsOnBaseControlledBy: (ctx, controllerId, options) => (
+        countSemanticControlledRuntimeActions(ctx.base, controllerId, {
+            controllerLens: options?.controllerLens,
+            includeBaseOngoings: options?.includeBaseOngoings,
+            includeMinionAttachments: options?.includeMinionAttachments,
+        })
+    ),
     hasMinionOnBaseControlledBy: (base, controllerId) => (
         base.minions.some((minion) => minion.controller === controllerId)
     ),

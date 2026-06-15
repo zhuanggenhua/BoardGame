@@ -12,6 +12,7 @@ import {
     getQidahenAllowedPlayerCounts,
     getQidahenPregameChoiceFields,
     QIDAHEN_PREGAME_CHOICE_FIELDS,
+    QIDAHEN_SCENARIO_SETUP_OPTIONS,
     QIDAHEN_SCENARIO_SETUP_FIELD,
     readQidahenScenarioId,
     type QidahenPregameChoiceField,
@@ -90,7 +91,7 @@ const resolveScenarioLabel = (
     scenarioId: ReturnType<typeof readQidahenScenarioId>,
     t: (key: string, options?: Record<string, unknown>) => string,
 ): string => {
-    const labelKey = QIDAHEN_MANIFEST.setupOptions?.scenario?.options?.find((option) => option.value === scenarioId)?.labelKey;
+    const labelKey = QIDAHEN_SCENARIO_SETUP_OPTIONS.find((option) => option.value === scenarioId)?.labelKey;
     if (!labelKey) {
         return scenarioId;
     }
@@ -223,7 +224,7 @@ export function QidahenPregameScenarioGate({
                                 value={draftScenarioId}
                                 onChange={(event) => handleScenarioChange(event.target.value)}
                             >
-                                {QIDAHEN_MANIFEST.setupOptions?.scenario?.options?.map((option) => (
+                                {QIDAHEN_SCENARIO_SETUP_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {t(option.labelKey.replace('games.qidahen.', ''), { defaultValue: option.value })}
                                     </option>

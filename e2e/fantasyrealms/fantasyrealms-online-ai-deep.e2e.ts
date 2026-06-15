@@ -14,6 +14,8 @@ import {
     waitForFantasyRealmsBoard,
 } from './helpers/fantasyrealmsOnlineAi';
 
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
+
 test.describe('FantasyRealms online AI flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
 
@@ -45,8 +47,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+            await page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -119,7 +121,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(finalSummary.eventStreamNextId).not.toBeNull();
             expect(finalSummary.eventStreamNextId!).toBeGreaterThan(seat5TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-two-refreshes-same-round');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -217,7 +219,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterAiSummary.eventStreamNextId).not.toBeNull();
             expect(currentState.sys?.eventStream?.nextId ?? 0).toBeLessThan(afterAiSummary.eventStreamNextId ?? 0);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -251,8 +253,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             const initialTurn = initialSummary.turn ?? 1;
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+            await page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -307,7 +309,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
             ).toBe(true);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-ai-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -395,7 +397,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterAiSummary.eventStreamNextId).not.toBeNull();
             expect(currentState.sys?.eventStream?.nextId ?? 0).toBeLessThan(afterAiSummary.eventStreamNextId ?? 0);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -431,8 +433,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 const beforeTurn = beforeSummary.turn ?? 0;
 
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+                await page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
                 await expect.poll(async () => {
                     const summary = await readOnlineAiStateSummary(matchId, page);
@@ -487,7 +489,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                     || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
                 ).toBe(true);
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
                 return afterAiSummary;
             };
 
@@ -538,8 +540,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 const beforeTurn = beforeSummary.turn ?? 0;
 
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+                await page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
                 await expect.poll(async () => {
                     const summary = await readOnlineAiStateSummary(matchId, page);
@@ -590,7 +592,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
                 expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
                 return afterAiSummary;
             };
 
@@ -662,7 +664,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(afterFirstAiSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(afterFirstAiSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-during-second-take-discard-branch');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -700,8 +702,8 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 const beforeTurn = beforeSummary.turn ?? 0;
 
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
-                await liveActionButton.click();
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+                await page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
                 await expect.poll(async () => {
                     const summary = await readOnlineAiStateSummary(matchId, page);
@@ -752,7 +754,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
                 expect(aiTurnSummary.eventStreamNextId).not.toBeNull();
                 expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(aiTurnSummary.eventStreamNextId!);
                 await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(liveActionButton).toContainText('抓一张牌');
+                await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
                 return afterAiSummary;
             };
 
@@ -833,7 +835,7 @@ test('6人在线房里同一轮高人数 AI 链里连续刷新两次后，仍不
             expect(beforeDeepCompleteSummary.eventStreamNextId).not.toBeNull();
             expect(finalSummary.eventStreamNextId!).toBeGreaterThanOrEqual(beforeDeepCompleteSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-refresh-after-two-rounds-second-branch');
             await mkdir(dirname(evidencePath), { recursive: true });

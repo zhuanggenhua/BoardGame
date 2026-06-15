@@ -283,7 +283,7 @@ describe('CreateRoomModal AI default state', () => {
         expect(passwordInput).toHaveAttribute('autocomplete', 'new-password');
     });
 
-    it('七大恨切到剧本二后会显示房间预选字段，并把选择写入 setupSelections', () => {
+    it('七大恨建房页不再提供剧本预选，而是只提示局内完成剧本介绍、投票与前置项', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -294,33 +294,19 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
-            target: { value: 'shanhaiguan-1622' },
-        });
-
         expect(screen.getByTestId('qidahen-pregame-choice-fields')).toBeInTheDocument();
-
-        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:character:0'), {
-            target: { value: 'ming-xiong-tingbi' },
-        });
-        fireEvent.change(screen.getByTestId('qidahen-pregame-choice-shanhaiguan-1622:ming:armament:1'), {
-            target: { value: 'long-barreled-musket' },
-        });
+        expect(screen.getByTestId('qidahen-pregame-choice-inline-note')).toBeInTheDocument();
+        expect(screen.queryByText('开局剧本')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
-            setupSelections: expect.objectContaining({
-                scenario: 'shanhaiguan-1622',
-                'shanhaiguan-1622:ming:character:0': 'ming-xiong-tingbi',
-                'shanhaiguan-1622:jin:character:0': 'jin-eidu',
-                'shanhaiguan-1622:jin:character:1': 'jin-amin',
-                'shanhaiguan-1622:ming:armament:0': 'cavalry-armor',
-                'shanhaiguan-1622:ming:armament:1': 'long-barreled-musket',
-            }),
+            setupSelections: {
+                qidahenInMatchScenarioVote: 'enabled',
+            },
         }));
     });
 
-    it('七大恨默认剧本会自动锁到三人房，而不是沿用 manifest 的最小人数', () => {
+    it('七大恨默认人数会按 bestPlayers 落到三人房，并带局内剧本投票模式提交', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -336,12 +322,12 @@ describe('CreateRoomModal AI default state', () => {
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             numPlayers: 3,
             setupSelections: expect.objectContaining({
-                scenario: 'post-sarhu-1619',
+                qidahenInMatchScenarioVote: 'enabled',
             }),
         }));
     });
 
-    it('七大恨切到丁卯胡乱后会自动收敛到二人房并带着二人配置提交', () => {
+    it('七大恨仍允许手动切到二人房，但不再依赖建房页先选二人剧本', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -352,16 +338,13 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        fireEvent.change(screen.getByDisplayValue('剧本一：萨尔浒战后（1619）'), {
-            target: { value: 'dingmao-rebellion-1627' },
-        });
+        fireEvent.click(screen.getByRole('button', { name: '2人' }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
-        expect(screen.queryByRole('button', { name: '3人' })).toBeNull();
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
             numPlayers: 2,
             setupSelections: expect.objectContaining({
-                scenario: 'dingmao-rebellion-1627',
+                qidahenInMatchScenarioVote: 'enabled',
             }),
         }));
     });

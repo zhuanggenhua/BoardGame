@@ -6,12 +6,14 @@ import { syncQidahenRuntimeInteractionState } from './runtimeInteractions';
 import {
     readQidahenScenarioChoiceSelections,
     readQidahenScenarioId,
+    shouldUseQidahenInMatchScenarioVote,
     shouldResolveQidahenScenarioChoiceGroups,
 } from '../roomSetup';
 import { reduceQidahenResolvedEvent } from './resolvedEventReducers';
-import { createInitialCore } from './initialCoreSetup';
+import { createInitialCore, createInitialCoreForInMatchScenarioVote } from './initialCoreSetup';
 import { syncQidahenSpecialRuleState } from './specialRuleState';
 import type { QidahenCommand, QidahenCore, QidahenEvent } from './types';
+import { playerView } from './view';
 
 const now = () => Date.now();
 
@@ -22,6 +24,15 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
         const rawSetupData = (setupData && typeof setupData === 'object' && !Array.isArray(setupData))
             ? setupData as Record<string, unknown>
             : undefined;
+        const hasExplicitScenario = rawSetupData != null
+            && (
+                typeof rawSetupData.scenario === 'string'
+                || typeof (rawSetupData.setupSelections as Record<string, unknown> | undefined)?.scenario === 'string'
+                || typeof rawSetupData.scenarioId === 'string'
+            );
+        if (!hasExplicitScenario && shouldUseQidahenInMatchScenarioVote(rawSetupData)) {
+            return createInitialCoreForInMatchScenarioVote(playerIds);
+        }
         return createInitialCore(
             playerIds,
             readQidahenScenarioId(rawSetupData),
@@ -59,6 +70,8 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
         }
         return reduceQidahenDirectInputEvent(state, event) ?? state;
     },
+
+    playerView,
 
     isGameOver: (state) => {
         const winnerFactionId = state.victoryStatus?.winnerFactionId;

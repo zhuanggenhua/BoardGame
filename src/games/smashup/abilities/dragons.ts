@@ -3,6 +3,7 @@ import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     addTempPower,
     buildAbilityFeedback,
@@ -40,6 +41,8 @@ type DragonsPromptContext = {
     playerId: string;
     now: number;
     sourceId: 'dragons_wyvern';
+    sourceCardUid: string;
+    sourceBaseIndex: number;
     targets: DragonsTarget[];
 };
 
@@ -328,16 +331,12 @@ function buildBurnItDownReplacementEvents(
     }
 
     for (const action of base.ongoingActions) {
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: action.uid,
-                defId: action.defId,
-                ownerId: action.ownerId,
-                reason: 'dragons_burn_it_down',
-            },
-            timestamp,
-        });
+        events.push(...buildValidatedOngoingDetachEvents(core, {
+            cardUid: action.uid,
+            reason: 'dragons_burn_it_down',
+            now: timestamp,
+            expectedLocation: 'base',
+        }));
     }
 
     events.push({
@@ -427,6 +426,11 @@ const wyvernDestroyPromptProgram = createPromptProgram<DragonsPromptContext, Sma
                 destroyerId: playerId,
                 reason: 'dragons_wyvern',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'dragons_wyvern',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.sourceBaseIndex,
                 sourceKind: 'minion',
             }),
         };
@@ -677,6 +681,11 @@ function dragonsWyvernOnPlay(ctx: AbilityContext): AbilityResult {
                 destroyerId: ctx.playerId,
                 reason: 'dragons_wyvern',
                 now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: 'dragons_wyvern',
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
                 sourceKind: 'minion',
             }),
         };
@@ -686,6 +695,8 @@ function dragonsWyvernOnPlay(ctx: AbilityContext): AbilityResult {
         playerId: ctx.playerId,
         now: ctx.now,
         sourceId: 'dragons_wyvern',
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: ctx.baseIndex,
         targets,
     });
     return { events: result.events, matchState: result.matchState };

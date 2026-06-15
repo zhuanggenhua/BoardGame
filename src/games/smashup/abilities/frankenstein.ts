@@ -14,7 +14,6 @@ import {
     buildMinionTargetOptions,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
-    destroyMinion,
     findMinionOnBases,
     getMinionPower,
     grantContextualExtraMinion,
@@ -572,17 +571,18 @@ const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPrompt
         if (!liveTarget) return { events: [] };
 
         const power = getMinionPower(state.core, liveTarget, selected.baseIndex);
-        const events: SmashUpEvent[] = [
-            destroyMinion(
-                selected.minionUid,
-                selected.minionDefId,
-                selected.baseIndex,
-                liveTarget.owner,
-                playerId,
-                'frankenstein_body_shop',
-                timestamp,
-            ),
-        ];
+        const events: SmashUpEvent[] = buildValidatedDestroyEvents(state, {
+            minionUid: selected.minionUid,
+            minionDefId: selected.minionDefId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: playerId,
+            reason: 'frankenstein_body_shop',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'frankenstein_body_shop',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
+        });
         if (power <= 0) return { events };
         return {
             events,
@@ -628,6 +628,10 @@ const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestr
                 destroyerId: playerId,
                 reason: 'frankenstein_blitzed',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'frankenstein_blitzed',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
             }),
         };
     },
@@ -939,18 +943,15 @@ function registerFrankensteinOngoingEffects(): void {
         );
         if (!hasGraveSituation) return [];
 
-        return [{
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: {
-                minionUid: triggerMinionUid,
-                minionDefId: triggerMinionDefId,
-                fromBaseIndex: baseIndex,
-                toPlayerId: minion.owner,
-                sourcePlayerId: controllerId,
-                reason: 'frankenstein_grave_situation',
-            },
-            timestamp: now,
-        } as SmashUpEvent];
+        return buildValidatedReturnEvents(ctx.state, {
+            minionUid: triggerMinionUid,
+            minionDefId: triggerMinionDefId,
+            fromBaseIndex: baseIndex,
+            toPlayerId: minion.owner,
+            sourcePlayerId: controllerId,
+            reason: 'frankenstein_grave_situation',
+            now,
+        });
     }, {
         phase: 'replacement',
     });

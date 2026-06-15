@@ -6,7 +6,6 @@
  */
 
 import {
-    registerPowerModifier,
     registerPowerModifiers,
     registerOngoingPowerModifiers,
     registerBasePowerModifiers,
@@ -17,12 +16,10 @@ import {
     matchesRuntimeDefId,
     getActionControllerId,
 } from '../domain/ongoingModifiers';
-import { filterSemanticMatchedRuntimeActions } from '../domain/effectSemantics';
 import type { BasePowerModifierContext, OngoingPowerModifierDefinition, PowerModifierContext } from '../domain/ongoingModifiers';
-import type { MinionOnBase, SmashUpCore } from '../domain/types';
+import type { SmashUpCore } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { isMicrobot } from '../domain/utils';
-import type { PlayerId } from '../../../engine/types';
 import { registerKillerPlantModifiers as registerKillerPlantAbilitiesModifiers } from './killer_plants';
 import { isBaseAbilitySuppressed } from '../domain/ongoingEffects';
 
@@ -40,30 +37,6 @@ export const CELLULAR_BONDING_EXPLICIT_COPIED_POWER_DEF_IDS = [
 // ============================================================================
 // 辅助函数
 // ============================================================================
-
-/**
- * 检查随从是否匹配指定的 defId（包括 POD 版本）
- */
-function matchesDefId(minion: MinionOnBase, baseDefId: string): boolean {
-    return minion.defId === baseDefId || minion.defId === baseDefId + '_pod';
-}
-
-/**
- * 计算场上匹配指定 defId 的随从数量（包括 POD 版本）
- */
-function countMinionsWithDefId(
-    state: SmashUpCore,
-    baseDefId: string,
-    controller?: PlayerId
-): number {
-    let count = 0;
-    for (const base of state.bases) {
-        count += base.minions.filter(
-            m => matchesDefId(m, baseDefId) && (controller === undefined || m.controller === controller)
-        ).length;
-    }
-    return count;
-}
 
 const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinition[] = [
     { defId: 'dino_upgrade', location: 'minion', target: 'self', delta: 2 },
@@ -105,13 +78,11 @@ function registerStructuredOngoingPowerModifiers(): void {
 // ============================================================================
 
 function registerDinosaurModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'dino_armor_stego',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                const baseId = ctx.minion.defId.replace(/_pod$/, '');
-                if (baseId !== 'dino_armor_stego') return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'dino_armor_stego')) return 0;
                 const currentPlayer = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
                 if (currentPlayer === ctx.minion.controller) return 0;
                 const isPod = ctx.minion.defId.endsWith('_pod');
@@ -121,13 +92,11 @@ function registerDinosaurModifiers(): void {
         },
         {
             sourceDefId: 'dino_war_raptor',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                const baseId = ctx.minion.defId.replace(/_pod$/, '');
-                if (baseId !== 'dino_war_raptor') return 0;
-                return ctx.base.minions.filter(
-                    m => ['dino_war_raptor', 'dino_war_raptor_pod'].includes(m.defId) && m.controller === ctx.minion.controller
-                ).length;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'dino_war_raptor')) return 0;
+                return helpers.countMinionsOnBaseMatchingRuntimeDefId(ctx, 'dino_war_raptor', {
+                    controllerId: ctx.minion.controller,
+                });
             },
         },
     ]);
@@ -138,30 +107,23 @@ function registerDinosaurModifiers(): void {
 // ============================================================================
 
 function registerRobotModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'robot_microbot_alpha',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                const baseId = ctx.minion.defId.replace(/_pod$/, '');
-                if (baseId !== 'robot_microbot_alpha') return 0;
-                let otherMinionCount = 0;
-                for (const base of ctx.state.bases) {
-                    for (const minion of base.minions) {
-                        if (minion.controller === ctx.minion.controller && minion.uid !== ctx.minion.uid) {
-                            otherMinionCount++;
-                        }
-                    }
-                }
-                return otherMinionCount;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'robot_microbot_alpha')) return 0;
+                return helpers.countMinionsInPlayControlledBy(ctx, ctx.minion.controller, {
+                    excludeSelf: true,
+                });
             },
         },
         {
             sourceDefId: 'robot_microbot_fixer',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
+            compute: (ctx, helpers) => {
                 if (!isMicrobot(ctx.state, ctx.minion)) return 0;
-                return countMinionsWithDefId(ctx.state, 'robot_microbot_fixer', ctx.minion.controller);
+                return helpers.countMinionsInPlayMatchingRuntimeDefId(ctx, 'robot_microbot_fixer', {
+                    controllerId: ctx.minion.controller,
+                });
             },
         },
     ]);
@@ -172,12 +134,11 @@ function registerRobotModifiers(): void {
 // ============================================================================
 
 function registerGhostModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'ghost_haunting',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'ghost_haunting')) return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'ghost_haunting')) return 0;
                 const player = ctx.state.players[ctx.minion.controller];
                 if (!player) return 0;
                 return player.hand.length <= 2 ? 3 : 0;
@@ -291,12 +252,11 @@ function registerVampireModifiers(): void {
 }
 
 function registerAncientEgyptiansModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'ancient_egyptians_priest_of_anubis',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'ancient_egyptians_priest_of_anubis')) return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'ancient_egyptians_priest_of_anubis')) return 0;
                 const hasOwnedBuried = (ctx.base.buriedCards ?? []).some(card => card.controllerId === ctx.minion.controller);
                 return hasOwnedBuried ? 2 : 0;
             },
@@ -312,12 +272,11 @@ function registerSkeletonsModifiers(): void {
 }
 
 function registerMermaidsModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'mermaids_temptress',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'mermaids_temptress')) return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'mermaids_temptress')) return 0;
                 const movedOpponentHereThisTurn = Object.entries(ctx.state.minionsMovedToBaseThisTurn ?? {})
                     .some(([playerId, movedBases]) => playerId !== ctx.minion.controller && (movedBases?.[ctx.baseIndex] ?? 0) > 0);
                 return movedOpponentHereThisTurn ? 2 : 0;
@@ -371,27 +330,22 @@ function registerYuanhouModifiers(): void {
         return highestPrintedPower;
     };
 
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'shapeshifters_mimic',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'shapeshifters_mimic')) return 0;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'shapeshifters_mimic')) return 0;
                 const highestPrintedPower = getHighestPrintedPower(ctx.state);
                 return highestPrintedPower - getCardPrintedPower(ctx.minion.defId);
             },
         },
         {
             sourceDefId: 'cyborg_apes_furious_george',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (!matchesDefId(ctx.minion, 'cyborg_apes_furious_george')) return 0;
-                return ctx.minion.attachedActions.length;
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'cyborg_apes_furious_george')) return 0;
+                return helpers.getMinionAttachmentCount(ctx);
             },
         },
-    ]);
-
-    registerCustomPowerModifiers([
         {
             sourceDefId: 'shapeshifters_copycat_copied_power',
             variantPolicy: 'baseOnly',
@@ -448,14 +402,6 @@ function getCardPrintedPower(defId: string): number {
     return card?.type === 'minion' ? (card.power ?? 0) : 0;
 }
 
-function countOwnedActionsOnBase(ctx: PowerModifierContext, ownerId: PlayerId): number {
-    let total = ctx.base.ongoingActions.filter(action => action.ownerId === ownerId).length;
-    for (const minion of ctx.base.minions) {
-        total += minion.attachedActions.filter(action => action.ownerId === ownerId).length;
-    }
-    return total;
-}
-
 function registerKaijuModifiers(): void {
     registerBasePowerModifiers([
         ...[
@@ -482,13 +428,14 @@ function registerKaijuModifiers(): void {
         })),
     ]);
 
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'kaiju_kaijookey',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
-                if (ctx.minion.defId.replace(/_pod$/, '') !== 'kaiju_kaijookey') return 0;
-                return countOwnedActionsOnBase(ctx, ctx.minion.controller);
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'kaiju_kaijookey')) return 0;
+                return helpers.countActionsOnBaseControlledBy(ctx, ctx.minion.controller, {
+                    controllerLens: 'owner',
+                });
             },
         },
     ]);
@@ -501,82 +448,76 @@ function registerKaijuModifiers(): void {
 }
 
 function registerKittyCatsModifiers(): void {
-    // 悲哀：附着随从 -2 力量
-    registerPowerModifier('kitty_cats_grumpiness', (ctx: PowerModifierContext) => {
-        const copies = filterSemanticMatchedRuntimeActions(
-            { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
-            ctx.minion.attachedActions,
-            'kitty_cats_grumpiness',
-            {
-            semanticRole: 'target',
-            targetEffectType: 'affect',
-            },
-        ).length;
-        return copies * -2;
-    }, { podStrategy: 'selfManaged' });
-
-    // 发脾气：基地上其他玩家的随从 -1 力量
-    registerPowerModifier('kitty_cats_hissy_fit', (ctx: PowerModifierContext) => {
-        return filterSemanticMatchedRuntimeActions(
-            { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
-            ctx.base.ongoingActions,
-            'kitty_cats_hissy_fit',
-            {
-                relationToTargetController: 'different',
-                semanticRole: 'target',
-                targetEffectType: 'affect',
-            },
-        ).length * -1;
-    }, { podStrategy: 'selfManaged' });
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'kitty_cats_grumpiness',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countMinionAttachmentsMatchingRuntimeDefId(ctx, 'kitty_cats_grumpiness', {
+                    semanticRole: 'target',
+                    targetEffectType: 'affect',
+                }) * -2
+            ),
+        },
+        {
+            sourceDefId: 'kitty_cats_hissy_fit',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'kitty_cats_hissy_fit', {
+                    relationToTargetController: 'different',
+                    semanticRole: 'target',
+                    targetEffectType: 'affect',
+                }) * -1
+            ),
+        },
+    ]);
 }
 
 function registerMythicHorsesModifiers(): void {
-    // 星辉：同基地每个其他己方随从都让自己 +1 力量
-    registerPowerModifier('mythic_horses_starlyte', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId !== 'mythic_horses_starlyte' && ctx.minion.defId !== 'mythic_horses_starlyte_pod') {
-            return 0;
-        }
-        return ctx.base.minions.filter(minion =>
-            minion.uid !== ctx.minion.uid && minion.controller === ctx.minion.controller
-        ).length;
-    }, { podStrategy: 'selfManaged' });
-
-    // Pinkie：同基地还有其他己方随从时 +1 力量
-    registerPowerModifier('mythic_horses_pinkie', (ctx: PowerModifierContext) => {
-        if (ctx.minion.defId !== 'mythic_horses_pinkie' && ctx.minion.defId !== 'mythic_horses_pinkie_pod') {
-            return 0;
-        }
-        return ctx.base.minions.some(minion => minion.uid !== ctx.minion.uid && minion.controller === ctx.minion.controller)
-            ? 1
-            : 0;
-    }, { podStrategy: 'selfManaged' });
-
-    // 鼓舞之力：每张附着牌分别按 owner 统计“其他己方随从”的数量。
-    registerPowerModifier('mythic_horses_encouragement_power', (ctx: PowerModifierContext) => {
-        return ctx.minion.attachedActions.reduce((total, action) => {
-            if (
-                action.defId !== 'mythic_horses_encouragement_power'
-                && action.defId !== 'mythic_horses_encouragement_power_pod'
-            ) {
-                return total;
-            }
-            const otherOwnerMinionCount = ctx.base.minions.filter(minion =>
-                minion.uid !== ctx.minion.uid && minion.controller === action.ownerId
-            ).length;
-            return total + otherOwnerMinionCount;
-        }, 0);
-    }, { podStrategy: 'selfManaged' });
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'mythic_horses_starlyte',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'mythic_horses_starlyte')) return 0;
+                return helpers.countMinionsOnBaseControlledBy(ctx, ctx.minion.controller, {
+                    excludeSelf: true,
+                });
+            },
+        },
+        {
+            sourceDefId: 'mythic_horses_pinkie',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'mythic_horses_pinkie')) return 0;
+                return helpers.countMinionsOnBaseControlledBy(ctx, ctx.minion.controller, {
+                    excludeSelf: true,
+                }) > 0 ? 1 : 0;
+            },
+        },
+        {
+            sourceDefId: 'mythic_horses_encouragement_power',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'mythic_horses_encouragement_power',
+                    (action) => helpers.countMinionsOnBaseControlledBy(ctx, action.ownerId, {
+                        excludeSelf: true,
+                    }),
+                )
+            ),
+        },
+    ]);
 }
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
 
 function registerBaseModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'base_minionPowerBonus',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => {
                 if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) {
                     return 0;
                 }
@@ -595,11 +536,11 @@ function registerWerewolfModifiers(): void {
 }
 
 function registerDragonModifiers(): void {
-    registerPowerModifiers([
+    registerCustomPowerModifiers([
         {
             sourceDefId: 'base_wyrms_desolation',
-            podStrategy: 'selfManaged',
-            modifier: (ctx: PowerModifierContext) => {
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => {
                 if (ctx.base.defId !== 'base_wyrms_desolation') return 0;
                 if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
                 return -1;

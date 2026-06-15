@@ -18,6 +18,7 @@ import {
     grantContextualExtraAction,
 } from '../domain/abilityHelpers';
 import { isMinionTargetAllowed } from '../domain/effectSemantics';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import type {
     MinionMetadataUpdatedEvent,
     MinionOnBase,
@@ -193,19 +194,16 @@ function buildHangInThereDetachEvent(
     sourceOwnerId: PlayerId,
     timestamp: number,
 ): SmashUpEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: sourceCardUid,
-            defId: 'kitty_cats_hang_in_there',
-            ownerId: sourceOwnerId,
-            reason: 'kitty_cats_hang_in_there',
-            sourcePlayerId: sourceOwnerId,
-            sourceCardUid,
-            sourceDefId: 'kitty_cats_hang_in_there',
-        },
-        timestamp,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: sourceCardUid,
+        defId: 'kitty_cats_hang_in_there',
+        ownerId: sourceOwnerId,
+        reason: 'kitty_cats_hang_in_there',
+        sourcePlayerId: sourceOwnerId,
+        sourceCardUid,
+        sourceDefId: 'kitty_cats_hang_in_there',
+        now: timestamp,
+    });
 }
 
 function buildHangInThereSaveEvents(
@@ -229,6 +227,10 @@ function buildHangInThereSaveEvents(
             minionDefId: selected.minionDefId,
             fromBaseIndex: selected.fromBaseIndex,
             toBaseIndex: selected.baseIndex,
+            sourcePlayerId: selected.sourceOwnerId,
+            sourceDefId: 'kitty_cats_hang_in_there',
+            sourceControllerId: selected.sourceOwnerId,
+            sourceBaseIndex: selected.fromBaseIndex,
             reason: 'kitty_cats_hang_in_there',
             now: timestamp,
         }),
@@ -449,6 +451,10 @@ function handleCatFight(
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: playerId,
+                sourcePlayerId: playerId,
+                sourceDefId: 'kitty_cats_cat_fight',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
                 reason: 'kitty_cats_cat_fight',
                 now: timestamp,
                 sourceKind: 'action',
@@ -477,6 +483,10 @@ function handleDestroyForExtraAction(
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
                 destroyerId: playerId,
+                sourcePlayerId: playerId,
+                sourceDefId: 'kitty_cats_nine_lives',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
                 reason: 'kitty_cats_nine_lives',
                 now: timestamp,
                 sourceKind: 'action',
@@ -520,7 +530,7 @@ function handleInvisibleBicycleMinions(
 
 function handleInvisibleBicycleBase(
     state: MatchState<SmashUpCore>,
-    _playerId: PlayerId,
+    playerId: PlayerId,
     value: unknown,
     _data: Record<string, unknown> | undefined,
     _random: RandomFn,
@@ -535,6 +545,10 @@ function handleInvisibleBicycleBase(
             minionDefId: minion.defId,
             fromBaseIndex: minion.baseIndex,
             toBaseIndex: selected.baseIndex!,
+            sourcePlayerId: playerId,
+            sourceDefId: 'kitty_cats_invisible_bicycle',
+            sourceControllerId: playerId,
+            sourceBaseIndex: minion.baseIndex,
             reason: 'kitty_cats_invisible_bicycle',
             now: timestamp,
         });

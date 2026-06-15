@@ -44,6 +44,8 @@ export interface UseCardSpotlightQueueConfig<TData = unknown> {
     extractCard: (event: GameEvent) => { playerId: PlayerId; cardData: TData } | null;
     /** 队列上限（默认 5） */
     maxQueue?: number;
+    /** 忽略早于该时间戳的历史事件，避免进房/恢复时重播旧特写 */
+    ignoreEventsBefore?: number;
 }
 
 /** Hook 返回值 */
@@ -109,6 +111,7 @@ export function useCardSpotlightQueue<TData = unknown>(
         triggerEventTypes,
         extractCard,
         maxQueue = 5,
+        ignoreEventsBefore,
     } = config;
 
     const [queue, dispatch] = useReducer(spotlightQueueReducer<TData>, []);
@@ -133,6 +136,13 @@ export function useCardSpotlightQueue<TData = unknown>(
 
         for (const entry of newEntries) {
             if (!triggerSetRef.current.has(entry.event.type)) continue;
+            if (
+                typeof ignoreEventsBefore === 'number'
+                && typeof entry.event.timestamp === 'number'
+                && entry.event.timestamp < ignoreEventsBefore
+            ) {
+                continue;
+            }
 
             const extracted = extractCard(entry.event);
             if (!extracted) continue;
@@ -156,7 +166,7 @@ export function useCardSpotlightQueue<TData = unknown>(
                 maxQueue,
             });
         }
-    }, [entries, consumeNew, currentPlayerId, extractCard, maxQueue]);
+    }, [entries, consumeNew, currentPlayerId, extractCard, maxQueue, ignoreEventsBefore]);
 
     const dismiss = useCallback((id: string) => {
         dispatch({ type: 'dismiss', id });

@@ -9,6 +9,7 @@ import { CARDIA_EVENTS } from './events';
 import { ABILITY_IDS } from './ids';
 import { updatePlayer, getOpponentId } from './utils';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+import { findCardiaStoredOngoingAbility, removeCardiaStoredOngoingAbility } from './effectHost';
 
 /**
  * 归约事件到核心状态
@@ -404,16 +405,12 @@ function reduceOngoingAbilityRemoved(
     const { abilityId, cardId, playerId } = event.payload;
     
     // 查找被移除的持续能力（用于获取 targetCardId 和 targetPlayerId）
-    const removedAbility = core.ongoingAbilities.find(
-        ability => ability.abilityId === abilityId && ability.cardId === cardId
-    );
+    const removedAbility = findCardiaStoredOngoingAbility(core, { abilityId, cardId, playerId });
     
     // 移除 core.ongoingAbilities 中的记录
     let newCore = {
         ...core,
-        ongoingAbilities: core.ongoingAbilities.filter(
-            ability => !(ability.abilityId === abilityId && ability.cardId === cardId)
-        ),
+        ongoingAbilities: removeCardiaStoredOngoingAbility(core, { abilityId, cardId, playerId }),
     };
     
     // 同步移除 card.ongoingMarkers 中的标记

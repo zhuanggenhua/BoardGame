@@ -29,6 +29,7 @@
 | 2026-06-04 | `docs/audio/audio-usage.md`、`docs/audio/add-audio.md` 中的执行型 SOP | `.codex/skill/audio-integration/SKILL.md` | 有结构性重构，无核心语义放宽 | 将“查找 key、接配置、生成产物、/dev/audio 收口、最终汇报”下沉到项目 skill；音频文档保留架构合同、命令入口、目录/产物/运行时约束。 |
 | 2026-06-09 | `AGENTS.md` § 测试编写规范 / 验证测试 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/doc-index.md` | 有结构性收口 | 根文件改成“测试分层 + 文档路由 + 红线”，把三板斧定义、主页/进局分层、长链预算、组合式验证下沉到二级文档。 |
 | 2026-06-09 | 当前对话关于“测试太慢 / 三板斧失守 / 根 AGENTS 渐进式披露”的复盘 | `docs/ai-rules/e2e-verification.md` + `docs/ai-rules/doc-index.md` | 有约束增强 | 新增“15 分钟定位预算”“长链不得作为默认调试循环”“同一目标最多二次自然链后必须拆合同”，并把“为什么慢 / 是否还在推进实现”的入口也路由到二级文档。 |
+| 2026-06-14 | `docs/ai-rules/ui-ux.md` 中误放的“实施中状态呈现”规则 | `docs/framework/frontend.md` § 实施中状态横幅 + `docs/ai-rules/doc-index.md` | 无语义放宽 | 将 `statusTag='under_construction'` 必须复用 `ImplementationStatusRibbon` 的规则从通用 UI/UX 审美规范迁到前端框架组件合同；`doc-index` 只保留路由入口。 |
 
 ## 后续候选批次
 

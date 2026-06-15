@@ -1,5 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { CardiaCore, PlayerState, PlayedCard, ModifierToken } from './core-types';
+import { resolveCardiaEncounterOutcome } from './effectHost';
 
 /**
  * 创建初始玩家状态
@@ -141,34 +142,13 @@ export function recalculateEncounterResult(
     const player0Influence = recalculateCardInfluence(player0Card, player0Modifiers);
     const player1Influence = recalculateCardInfluence(player1Card, player1Modifiers);
     
-    // 基础结果判定
-    let result: PlayerId | 'tie';
-    if (player0Influence > player1Influence) {
-        result = player0;
-    } else if (player1Influence > player0Influence) {
-        result = player1;
-    } else {
-        result = 'tie';
-    }
-    
-    // 应用持续能力效果
-    // 1. 检查调停者（强制平局）
-    const mediatorAbility = core.ongoingAbilities.find(
-        ability => ability.abilityId === 'mediator' && ability.encounterIndex === encounterIndex
-    );
-    if (mediatorAbility) {
-        result = 'tie';
-    }
-    
-    // 2. 检查审判官（赢得所有平局）- 优先级高于调停者
-    const magistrateAbility = core.ongoingAbilities.find(
-        ability => ability.abilityId === 'magistrate'
-    );
-    if (magistrateAbility && result === 'tie') {
-        result = magistrateAbility.playerId;
-    }
-    
-    return result;
+    return resolveCardiaEncounterOutcome(core, {
+        player1Id: player0,
+        player1Influence: player0Influence,
+        player2Id: player1,
+        player2Influence: player1Influence,
+        encounterIndex: encounterIndex + 1,
+    }).winner;
 }
 
 /**

@@ -1683,6 +1683,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         playerNames,
     });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
+    const [visualEventFloor] = useState(() => Date.now());
 
     // 行动卡特写队列：
     // - 在线模式：只显示对手打出的行动卡
@@ -1708,6 +1709,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         triggerEventTypes: SPOTLIGHT_TRIGGER_EVENTS,
         extractCard: extractActionCard,
         maxQueue: 5,
+        ignoreEventsBefore: visualEventFloor,
     });
 
     useEffect(() => {
@@ -4011,12 +4013,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 />
 
                 {/* 卡牌展示浮层（非阻塞，点击关闭） */}
-                <RevealOverlay
-                    entries={eventStreamEntries}
-                    currentPlayerId={revealViewerId}
-                    playerNames={playerNames}
-                    suppressionRules={revealSuppressionRules}
-                />
+                {spotlightQueue.length === 0 && (
+                    <RevealOverlay
+                        entries={eventStreamEntries}
+                        currentPlayerId={revealViewerId}
+                        playerNames={playerNames}
+                        suppressionRules={revealSuppressionRules}
+                        ignoreEventsBefore={visualEventFloor}
+                    />
+                )}
 
                 {/* PREVIEW OVERLAY */}
                 <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />

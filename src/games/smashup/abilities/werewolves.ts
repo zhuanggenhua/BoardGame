@@ -37,6 +37,8 @@ type WerewolfPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+    sourceCardUid?: string;
+    sourceDefId?: string;
 };
 
 type WerewolfCandidate = {
@@ -62,6 +64,7 @@ type WerewolfLetTheDogOutContext = WerewolfPromptContext & {
 type WerewolfLetTheDogOutTargetsContext = WerewolfPromptContext & {
     budget: number;
     sourceUid: string;
+    sourceBaseIndex: number;
     destroyedUids: string[];
 };
 
@@ -135,6 +138,7 @@ function resolveWerewolfChewToySourceSelection(
     playerId: PlayerId,
     choice: WerewolfChoice,
     timestamp: number,
+    source?: { cardUid?: string; defId?: string },
 ) {
     if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
     const rawTargets = buildWerewolfChewToyRawTargets(state.core, choice.baseIndex, choice.minionUid);
@@ -159,6 +163,11 @@ function resolveWerewolfChewToySourceSelection(
                 destroyerId: playerId,
                 reason: 'werewolf_chew_toy',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: source?.cardUid,
+                sourceDefId: source?.defId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: choice.baseIndex,
             }),
         };
     }
@@ -240,6 +249,7 @@ function resolveWerewolfLetTheDogOutSourceSelection(
             now: timestamp,
             budget,
             sourceUid: choice.minionUid,
+            sourceBaseIndex: choice.baseIndex,
             destroyedUids: [],
         },
         nextProgram: werewolfLetTheDogOutTargetsPromptProgram,
@@ -313,6 +323,8 @@ function createWerewolfChewToyContext(ctx: AbilityContext): WerewolfChewToyConte
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
         ownMinions: buildWerewolfOwnMinionCandidates(ctx.state, ctx.playerId),
     };
 }
@@ -332,6 +344,8 @@ function createWerewolfLetTheDogOutContext(ctx: AbilityContext): WerewolfLetTheD
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
         ownMinions: buildWerewolfOwnMinionCandidates(ctx.state, ctx.playerId),
     };
 }
@@ -427,6 +441,11 @@ const werewolfChewToyTargetPromptProgram = createPromptProgram<
                 destroyerId: playerId,
                 reason: 'werewolf_chew_toy',
                 now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.baseIndex,
             }),
         };
     },
@@ -469,6 +488,10 @@ const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext,
                 defId: selected.defId,
             },
             timestamp,
+            {
+                cardUid: context.sourceCardUid,
+                defId: context.sourceDefId,
+            },
         );
     },
 });
@@ -492,6 +515,10 @@ const werewolfChewToyProgram = createBranchProgram<WerewolfChewToyContext, Smash
                     defId: selected.defId,
                 },
                 context.now,
+                {
+                    cardUid: context.sourceCardUid,
+                    defId: context.sourceDefId,
+                },
             );
         }),
         else: werewolfChewToyPromptProgram,
@@ -560,6 +587,11 @@ const werewolfLetTheDogOutTargetsPromptProgram = createPromptProgram<
             destroyerId: playerId,
             reason: 'werewolf_let_the_dog_out',
             now: timestamp,
+            sourcePlayerId: playerId,
+            sourceCardUid: context.sourceCardUid,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
         });
         if (destroyEvents.length === 0) {
             return { events: [] };

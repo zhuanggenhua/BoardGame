@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -20,13 +20,16 @@ import {
     readOnlineAiCore,
     readOnlineAiMatchState,
     readOnlineAiStateSummary,
-    switchFantasyRealmsPageToStackedLayout,
+    switchFantasyRealmsPageToCompactLandscapeLayout,
     waitForFantasyRealmsBoard,
     waitForFantasyRealmsPlayerReviewBoard,
     waitForFantasyRealmsSpectatorBoard,
 } from './helpers/fantasyrealmsOnlineAi';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
+const getFantasyRealmsDeckDrawButton = (page: Page) => page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
+const getFantasyRealmsFocusName = (page: Page) => page.locator('.fr-focus-name, .fr-compact-focus-name').first();
 
 test.describe('FantasyRealms online AI flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
@@ -56,8 +59,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -110,7 +113,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 || afterAiSummary.discardSignature !== aiTurnSummary.discardSignature,
             ).toBe(true);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-human-roundtrip');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -150,8 +153,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.discardCount).toBe(0);
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -190,7 +193,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(initialSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
             await expect(page.getByText(aiPlayerNames['1']!)).toHaveCount(0);
             await expect(page.getByText(aiPlayerNames['2']!)).toHaveCount(0);
 
@@ -232,8 +235,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -285,7 +288,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(seat2TurnSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(seat2TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-three-player-refresh-during-seat2-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -327,8 +330,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -370,11 +373,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await waitForFantasyRealmsSpectatorBoard(spectator.page, matchId);
             await expectFantasyRealmsSpectatorLiveNoLeak(spectator.page);
 
-            await switchFantasyRealmsPageToStackedLayout(spectator.page);
-            await expect(spectator.page.getByText('你当前正在旁观。这里不会展开任何玩家的隐藏手牌，只保留公开弃牌与终局结果。')).toHaveCount(0);
-            await expect(spectator.page.getByText('多人局进行中：旁观视角不会展示任何玩家的实时总分，所有结果会在终局统一揭示。')).toHaveCount(0);
-            await expect(spectator.page.getByText('隐藏手牌区')).toBeVisible();
-            await expect(spectator.page.getByText('暂无手牌')).toBeVisible();
+            await switchFantasyRealmsPageToCompactLandscapeLayout(spectator.page);
+            await expect(spectator.page.getByTestId('fantasyrealms-compact-focus-rail')).toBeVisible();
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('??');
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('终局揭示');
+            await expect(spectator.page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
             await expect(spectator.page.getByText(hiddenCardName)).toHaveCount(0);
 
             await expect.poll(async () => {
@@ -435,8 +438,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -481,11 +484,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await waitForFantasyRealmsSpectatorBoard(spectator.page, matchId);
             await expectFantasyRealmsSpectatorLiveNoLeak(spectator.page);
 
-            await switchFantasyRealmsPageToStackedLayout(spectator.page);
-            await expect(spectator.page.getByText('你当前正在旁观。这里不会展开任何玩家的隐藏手牌，只保留公开弃牌与终局结果。')).toHaveCount(0);
-            await expect(spectator.page.getByText('多人局进行中：旁观视角不会展示任何玩家的实时总分，所有结果会在终局统一揭示。')).toHaveCount(0);
-            await expect(spectator.page.getByText('隐藏手牌区')).toBeVisible();
-            await expect(spectator.page.getByText('暂无手牌')).toBeVisible();
+            await switchFantasyRealmsPageToCompactLandscapeLayout(spectator.page);
+            await expect(spectator.page.getByTestId('fantasyrealms-compact-focus-rail')).toBeVisible();
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('??');
+            await expect(spectator.page.getByTestId('fantasyrealms-live-score-strip')).toContainText('终局揭示');
+            await expect(spectator.page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
             await expect(spectator.page.getByText(hiddenCardName)).toHaveCount(0);
 
             await expect.poll(async () => {
@@ -545,8 +548,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -601,7 +604,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(seat5TurnSummary.eventStreamNextId).not.toBeNull();
             expect(afterAiSummary.eventStreamNextId!).toBeGreaterThan(seat5TurnSummary.eventStreamNextId!);
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(getFantasyRealmsDeckDrawButton(page)).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'online-ai-six-player-refresh-during-seat5-turn');
             await mkdir(dirname(evidencePath), { recursive: true });
@@ -646,8 +649,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(host.page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(host.page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -681,15 +684,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const waitingCore = await readOnlineAiCore(matchId, host.page);
             const waitingPlayerScore = waitingCore.players['2']?.score ?? 0;
             const hostScore = waitingCore.players['0']?.score ?? 0;
-            const playerScores = Object.entries(waitingCore.players).map(([playerId, player]) => ({
-                playerId,
-                score: player?.score ?? 0,
-            }));
-            const getRank = (playerId: string) => {
-                const currentScore = waitingCore.players[playerId]?.score ?? 0;
-                return playerScores.filter((entry) => entry.score > currentScore).length + 1;
-            };
-
             await expect(host.page.getByText('你的回合')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
 
@@ -717,8 +711,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await switchFantasyRealmsPageToStackedLayout(host.page);
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(host.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
             const ownHandInspectLabel = await ownHandInspectButton.getAttribute('aria-label');
@@ -726,7 +720,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
             await expectWaitingPageKeepsOpponentFocusHidden({
@@ -746,14 +740,13 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsBoard(waitingPlayer.page, '2');
-            await expect(waitingPlayer.page.getByText(/你当前正在等待/)).toHaveCount(0);
 
             const reloadedLiveActionButton = waitingPlayer.page.getByTestId('fantasyrealms-live-action-button');
             if (await reloadedLiveActionButton.count() > 0) {
                 await expect(waitingPlayer.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-                await expect(reloadedLiveActionButton).toContainText('抓一张牌');
+                await expect(getFantasyRealmsDeckDrawButton(waitingPlayer.page)).toBeVisible({ timeout: 10000 });
             } else {
-                await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('你的回合');
+                await expect(waitingPlayer.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
                 await expect(waitingPlayer.page.getByRole('button', { name: /从牌库摸/ })).toBeVisible({ timeout: 10000 });
             }
 
@@ -771,7 +764,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类在 stacked inspect 壳中刷新后，仍保持 waiting 身份、可继续查看自己的隐藏手牌且不向 host 泄露', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类在紧凑横屏 inspect 壳中刷新后，仍保持 waiting 身份、可继续查看自己的隐藏手牌且不向 host 泄露', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -804,8 +797,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(initialSummary.stage).toBe('draw');
 
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
-            await liveActionButton.click();
+            await expect(getFantasyRealmsDeckDrawButton(host.page)).toBeVisible({ timeout: 10000 });
+            await getFantasyRealmsDeckDrawButton(host.page).click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -838,14 +831,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             const waitingCore = await readOnlineAiCore(matchId, waitingPlayer.page);
             const waitingPlayerScore = waitingCore.players['2']?.score ?? 0;
-            const playerScores = Object.entries(waitingCore.players).map(([playerId, player]) => ({
-                playerId,
-                score: player?.score ?? 0,
-            }));
-            const getRank = (playerId: string) => {
-                const currentScore = waitingCore.players[playerId]?.score ?? 0;
-                return playerScores.filter((entry) => entry.score > currentScore).length + 1;
-            };
             const getCurrentPlayerName = async (page = waitingPlayer.page) => {
                 const core = await readOnlineAiCore(matchId, page);
                 const playerId = core.currentPlayer;
@@ -866,15 +851,15 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await switchFantasyRealmsPageToStackedLayout(host.page);
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(host.page);
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
             const ownHandInspectLabel = await ownHandInspectButton.getAttribute('aria-label');
             const hiddenCardName = ownHandInspectLabel?.replace(/^查看手牌\s*/, '').trim() ?? '';
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expectWaitingPageKeepsOpponentFocusHidden({
                 page: host.page,
@@ -892,13 +877,13 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expectedScore: waitingPlayerScore,
             });
 
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             const reloadedInspectButton = waitingPlayer.page
                 .getByRole('button', { name: new RegExp(`查看手牌\\s*${escapeRegExp(hiddenCardName)}`) })
                 .first();
             await expect(reloadedInspectButton).toBeVisible({ timeout: 10000 });
             await reloadedInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expectWaitingPageKeepsOpponentFocusHidden({
                 page: host.page,
@@ -919,7 +904,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类若在 stacked inspect 壳里遇到高人数 AI 链直接打进终局，仍会切到 review 并在刷新后保持最终排名与公开焦点', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类若在紧凑横屏 inspect 壳里遇到高人数 AI 链直接打进终局，仍会切到 review 并在刷新后保持最终排名与公开焦点', async ({ browser }, testInfo) => {
         test.setTimeout(420000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -967,9 +952,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 message: '等待 mixed-room 的 waiting 人类页进入 seat4 local AI 终局前最后一弃的代表态',
             }).toBe(true);
 
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
-            await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('等待');
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
+            await expect(waitingPlayer.page.getByText(aiPlayerNames['4']!)).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('终局复盘')).toHaveCount(0);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
@@ -981,11 +968,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 return Boolean(state.sys?.gameover);
             }, {
                 timeout: 90000,
-                message: '等待高人数 AI 链在 waiting 人类的 stacked inspect 壳期间直接打进终局',
+                message: '等待高人数 AI 链在 waiting 人类的紧凑横屏 inspect 壳期间直接打进终局',
             }).toBe(true);
 
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expect(waitingPlayer.page.getByText('终局复盘').first()).toBeVisible({ timeout: 10000 });
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
@@ -1016,7 +1003,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expectFinalStandingsVisible(waitingPlayer.page, sortedStandings);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-atlas-card-id', focusAtlasCardIdBeforeReload);
@@ -1031,7 +1018,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('6人混合房里 waiting 人类可从真实开局进入第二轮，再在 stacked inspect 壳里接续终局前代表态并打进终局 review', async ({ browser }, testInfo) => {
+    test('6人混合房里 waiting 人类可从真实开局进入第二轮，再在紧凑横屏 inspect 壳里接续终局前代表态并打进终局 review', async ({ browser }, testInfo) => {
         test.setTimeout(420000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -1086,9 +1073,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 message: '等待 mixed-room 第二轮后的 waiting 人类页接到 seat4 终局前最后一弃代表态',
             }).toBe(true);
 
-            await switchFantasyRealmsPageToStackedLayout(waitingPlayer.page);
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
-            await expect(waitingPlayer.page.locator('.fr-stage-banner')).toContainText('等待');
+            await switchFantasyRealmsPageToCompactLandscapeLayout(waitingPlayer.page);
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByText('你的回合')).toHaveCount(0);
+            await expect(waitingPlayer.page.getByText(aiPlayerNames['4']!)).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
             await expect(waitingPlayer.page.getByText('终局复盘')).toHaveCount(0);
 
             const ownHandInspectButton = waitingPlayer.page.getByRole('button', { name: /查看手牌/ }).nth(1);
@@ -1097,7 +1086,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(hiddenCardName).not.toBe('');
 
             await ownHandInspectButton.click();
-            await expect(waitingPlayer.page.locator('.fr-focus-name')).toHaveText(hiddenCardName);
+            await expect(getFantasyRealmsFocusName(waitingPlayer.page)).toHaveText(hiddenCardName);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
             await expect.poll(async () => {
@@ -1105,11 +1094,11 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 return Boolean(state.sys?.gameover);
             }, {
                 timeout: 90000,
-                message: '等待高人数 AI 链在第二轮 waiting human 的 stacked inspect 壳期间完成最后一弃并打进终局',
+                message: '等待高人数 AI 链在第二轮 waiting human 的紧凑横屏 inspect 壳期间完成最后一弃并打进终局',
             }).toBe(true);
 
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
 
             const finalState = await readOnlineAiMatchState(matchId, waitingPlayer.page);
@@ -1141,7 +1130,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
 
             await waitingPlayer.page.reload({ waitUntil: 'domcontentloaded' });
             await waitForFantasyRealmsPlayerReviewBoard(waitingPlayer.page, matchId, '2');
-            await expect(waitingPlayer.page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+            await expect(waitingPlayer.page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
             await expectFinalStandingsVisible(waitingPlayer.page, sortedStandings);
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'atlas');
             await expect(waitingPlayer.page.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-atlas-card-id', focusAtlasCardIdBeforeReload);

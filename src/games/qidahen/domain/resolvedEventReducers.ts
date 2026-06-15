@@ -17,6 +17,9 @@ import {
     resolveQidahenScenarioChoiceResolvedEvent,
 } from './scenarioChoiceState';
 import {
+    resolveQidahenScenarioVoteCastEvent,
+} from './scenarioVoteState';
+import {
     resolveQidahenSunYuanhuaTechResolvedEvent,
 } from './armamentUpgradeResolution';
 import {
@@ -57,6 +60,10 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<
 >();
 
 const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
+    defineResolvedEventReducer(
+        ['SCENARIO_VOTE_CAST'],
+        resolveQidahenScenarioVoteCastEvent,
+    ),
     defineResolvedEventReducer(
         ['SUN_YUANHUA_TECH_RESOLVED'],
         resolveQidahenSunYuanhuaTechResolvedEvent,

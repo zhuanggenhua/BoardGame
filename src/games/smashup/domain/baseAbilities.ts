@@ -23,11 +23,11 @@ import {
     drawMadnessCards,
     grantContextualExtraAction,
     grantContextualExtraMinion,
-    destroyMinion,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     addPowerCounter,
-    buildValidatedMoveEvents,
+    buildReplayMoveEvent,
+    buildValidatedBaseMoveEvents,
     buildValidatedDestroyEvents,
     buildValidatedReturnEvents,
     buildStandardDrawEvents,
@@ -1715,9 +1715,19 @@ export function registerBaseInteractionHandlers(): void {
         if (!target) return { state, events: [] };
         return {
             state,
-            events: [
-                destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, playerId, 'base_rlyeh', timestamp),
-            ] };
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex!,
+                destroyerId: playerId,
+                reason: 'base_rlyeh',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'base_rlyeh',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex!,
+                sourceKind: 'nonAction',
+            }) };
     });
 
     // 血堡：可选在刚打出的随从上放 +1 指示物
@@ -1770,16 +1780,15 @@ export function registerBaseInteractionHandlers(): void {
                 const isInSnapshot = !ctx.minionsSnapshot
                     || ctx.minionsSnapshot.some(minion => minion.uid === minionUid && minion.defId === minionDefId);
                 if (isInSnapshot && !existsElsewhere) {
-                    events.push({
-                        type: SU_EVENTS.MINION_RETURNED,
-                        payload: {
-                            minionUid,
-                            minionDefId,
-                            fromBaseIndex: ctx.baseIndex,
-                            toPlayerId: playerId,
-                            sourcePlayerId: playerId,
-                            reason: '母舰：冠军收回随从' },
-                        timestamp } as MinionReturnedEvent);
+                    events.push(...buildValidatedReturnEvents(state, {
+                        minionUid,
+                        minionDefId,
+                        fromBaseIndex: ctx.baseIndex,
+                        toPlayerId: playerId,
+                        sourcePlayerId: playerId,
+                        reason: '母舰：冠军收回随从',
+                        now: timestamp,
+                    }));
                 }
             }
         }
@@ -1788,7 +1797,7 @@ export function registerBaseInteractionHandlers(): void {
     });
 
     // 忍者道场：消灭随从
-    registerInteractionHandler('base_ninja_dojo', (state, _playerId, value, iData, _random, timestamp) => {
+    registerInteractionHandler('base_ninja_dojo', (state, playerId, value, iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; minionDefId?: string; ownerId?: string };
         const events: SmashUpEvent[] = [];
         
@@ -1797,6 +1806,10 @@ export function registerBaseInteractionHandlers(): void {
                 minionUid: selected.minionUid!,
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.baseIndex!,
+                sourcePlayerId: playerId,
+                sourceDefId: 'base_ninja_dojo',
+                sourceControllerId: playerId,
+                sourceKind: 'nonAction',
                 reason: 'base_ninja_dojo',
                 now: timestamp }));
         }
@@ -1824,11 +1837,14 @@ export function registerBaseInteractionHandlers(): void {
             const targetBase = baseCandidates.length === 1 ? baseCandidates[0].baseIndex : 0;
             return {
                 state,
-                events: buildValidatedMoveEvents(state, {
+                events: buildValidatedBaseMoveEvents(state, {
                     minionUid: selected.minionUid!,
                     minionDefId: selected.minionDefId!,
                     fromBaseIndex: ctx.baseIndex,
                     toBaseIndex: targetBase,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_pirate_cove',
+                    sourceBaseIndex: ctx.baseIndex,
                     reason: '海盗湾：移动随从到其他基地',
                     now: timestamp }) };
         }
@@ -1861,26 +1877,29 @@ export function registerBaseInteractionHandlers(): void {
 
         if (isScoringSessionAwaitingDeferredResolution(state)) {
             const resolvedTargetBase = resolveLiveBaseIndex(state.core, targetBase, baseDefId) ?? targetBase;
-            const moveEvent: SmashUpEvent = {
-                type: SU_EVENTS.MINION_MOVED,
-                payload: {
-                    minionUid: ctx.minionUid,
-                    minionDefId: ctx.minionDefId,
-                    fromBaseIndex: ctx.fromBaseIndex,
-                    toBaseIndex: resolvedTargetBase,
-                    reason: '海盗湾：移动随从到其他基地' },
-                timestamp };
+            const moveEvent: SmashUpEvent = buildReplayMoveEvent({
+                minionUid: ctx.minionUid,
+                minionDefId: ctx.minionDefId,
+                fromBaseIndex: ctx.fromBaseIndex,
+                toBaseIndex: resolvedTargetBase,
+                toBaseDefId: baseDefId,
+                reason: '海盗湾：移动随从到其他基地',
+                now: timestamp,
+            });
             return { state, events: [moveEvent] };
         }
 
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: ctx.minionUid,
                 minionDefId: ctx.minionDefId,
                 fromBaseIndex: ctx.fromBaseIndex,
                 toBaseIndex: targetBase,
                 toBaseDefId: baseDefId,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_pirate_cove',
+                sourceBaseIndex: ctx.fromBaseIndex,
                 reason: '海盗湾：移动随从到其他基地',
                 now: timestamp }) };
     });
@@ -1891,11 +1910,14 @@ export function registerBaseInteractionHandlers(): void {
         if (selected.skip) return { state, events: [] };
         const ctx = getContinuationContext<{ baseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
-        const moveEvents = buildValidatedMoveEvents(state, {
+        const moveEvents = buildValidatedBaseMoveEvents(state, {
             minionUid: selected.minionUid!,
             minionDefId: selected.minionDefId!,
             fromBaseIndex: selected.fromBaseIndex ?? -1,
             toBaseIndex: ctx.baseIndex,
+            sourcePlayerId: _playerId,
+            sourceDefId: 'base_tortuga',
+            sourceBaseIndex: ctx.baseIndex,
             reason: '托尔图加：亚军移动随从到替换基地',
             now: timestamp });
         if (moveEvents.length === 0) {
@@ -1913,7 +1935,13 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: selected.fromBaseIndex ?? -1,
                 toBaseIndex: ctx.baseIndex,
                 targetBaseDefId,
-                reason: '托尔图加：亚军移动随从到替换基地' };
+                reason: '托尔图加：亚军移动随从到替换基地',
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_tortuga',
+                sourceControllerId: _playerId,
+                sourceBaseIndex: ctx.baseIndex,
+                sourceKind: 'nonAction',
+            };
             return {
                 state: appendPendingPostScoringActions(state, [pendingAction]),
                 events: [] };
@@ -1991,11 +2019,14 @@ export function registerBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid!,
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.fromBaseIndex!,
                 toBaseIndex: ctx.mushroomBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_mushroom_kingdom',
+                sourceBaseIndex: ctx.mushroomBaseIndex,
                 // 规则：基地能力不属于任何玩家；reason 用稳定 id，供保护/归因系统判断
                 reason: 'base_mushroom_kingdom',
                 now: timestamp }) };
@@ -2013,11 +2044,14 @@ export function registerBaseInteractionHandlers(): void {
         if (selectedBaseIndex !== ctx.mushroomBaseIndex) {
             return {
                 state,
-                events: buildValidatedMoveEvents(state, {
+                events: buildValidatedBaseMoveEvents(state, {
                     minionUid: selected.minionUid!,
                     minionDefId: selected.minionDefId!,
                     fromBaseIndex: selectedBaseIndex,
                     toBaseIndex: ctx.mushroomBaseIndex,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_mushroom_kingdom_pod',
+                    sourceBaseIndex: ctx.mushroomBaseIndex,
                     reason: 'base_mushroom_kingdom_pod',
                     now: timestamp }) };
         }
@@ -2054,11 +2088,14 @@ export function registerBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: ctx.minionUid,
                 minionDefId: ctx.minionDefId,
                 fromBaseIndex: ctx.fromBaseIndex,
                 toBaseIndex: targetBase,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_mushroom_kingdom_pod',
+                sourceBaseIndex: ctx.fromBaseIndex,
                 reason: 'base_mushroom_kingdom_pod',
                 now: timestamp }) };
     });
@@ -2076,11 +2113,14 @@ export function registerBaseInteractionHandlers(): void {
         if (selected.fromBaseIndex !== ctx.mushroomBaseIndex) {
             return {
                 state,
-                events: buildValidatedMoveEvents(state, {
+                events: buildValidatedBaseMoveEvents(state, {
                     minionUid: selected.minionUid,
                     minionDefId: selected.minionDefId,
                     fromBaseIndex: selected.fromBaseIndex,
                     toBaseIndex: ctx.mushroomBaseIndex,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_mushroom_kingdom_pod',
+                    sourceBaseIndex: ctx.mushroomBaseIndex,
                     reason: 'base_mushroom_kingdom_pod',
                     now: timestamp }) };
         }
@@ -2095,11 +2135,14 @@ export function registerBaseInteractionHandlers(): void {
         if (baseCandidates.length === 1) {
             return {
                 state,
-                events: buildValidatedMoveEvents(state, {
+                events: buildValidatedBaseMoveEvents(state, {
                     minionUid: selected.minionUid,
                     minionDefId: selected.minionDefId,
                     fromBaseIndex: selected.fromBaseIndex,
                     toBaseIndex: baseCandidates[0].baseIndex,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_mushroom_kingdom_pod',
+                    sourceBaseIndex: selected.fromBaseIndex,
                     reason: 'base_mushroom_kingdom_pod',
                     now: timestamp }) };
         }
@@ -2128,11 +2171,14 @@ export function registerBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: ctx.minionUid,
                 minionDefId: ctx.minionDefId,
                 fromBaseIndex: ctx.fromBaseIndex,
                 toBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_mushroom_kingdom_pod',
+                sourceBaseIndex: ctx.fromBaseIndex,
                 reason: 'base_mushroom_kingdom_pod',
                 now: timestamp }) };
     });
@@ -2203,11 +2249,14 @@ export function registerBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid,
                 minionDefId: selected.minionDefId,
                 fromBaseIndex: selected.baseIndex,
                 toBaseIndex: ctx.targetBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_the_hill',
+                sourceBaseIndex: ctx.targetBaseIndex,
                 reason: 'base_the_hill',
                 now: timestamp }) };
     });

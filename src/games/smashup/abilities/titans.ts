@@ -40,8 +40,6 @@ import {
     canControllerPlayTitan,
     getTitanByController,
     getTitanByUid,
-    destroyMinion,
-    moveMinion,
     moveTitan,
     playTitan,
     removePowerCounter,
@@ -49,6 +47,8 @@ import {
     removeTitanFromPlay,
     revealHand,
     recoverCardsFromDiscard,
+    buildValidatedDestroyEvents,
+    buildValidatedMoveEvents,
 } from '../domain/abilityHelpers';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
@@ -4746,7 +4746,19 @@ function buildTheBrideEffectEvents(
     if (!minion) return [];
 
     if (selection.kind === 'destroy') {
-        return [destroyMinion(minion.uid, minion.defId, selection.baseIndex, minion.owner, playerId, 'frankenstein_the_bride_special', now)];
+        return buildValidatedDestroyEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: selection.baseIndex,
+            destroyerId: playerId,
+            reason: 'frankenstein_the_bride_special',
+            now,
+            sourcePlayerId: playerId,
+            sourceDefId: 'frankenstein_the_bride',
+            sourceControllerId: playerId,
+            sourceBaseIndex: selection.baseIndex,
+            sourceKind: 'nonAction',
+        });
     }
     return [removePowerCounter(minion.uid, selection.baseIndex, 1, 'frankenstein_the_bride_special', now)];
 }
@@ -5627,7 +5639,19 @@ export function registerTitanInteractionHandlers(): void {
         return {
             state,
             events: [
-                destroyMinion(minion.uid, minion.defId, continuation.baseIndex, minion.owner, playerId, 'dinosaurs_fort_titanosaurus_special', timestamp),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: continuation.baseIndex,
+                    destroyerId: playerId,
+                    reason: 'dinosaurs_fort_titanosaurus_special',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'dinosaurs_fort_titanosaurus',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.baseIndex,
+                    sourceKind: 'nonAction',
+                }),
                 playTitan(titan, playerId, continuation.baseIndex, 'dinosaurs_fort_titanosaurus_special', timestamp, continuation.baseDefId),
                 ...(destroyedPower > 0 ? [addTitanPowerCounter(titan.uid, destroyedPower, 'dinosaurs_fort_titanosaurus_special', timestamp)] : []),
             ],
@@ -6270,15 +6294,21 @@ export function registerTitanInteractionHandlers(): void {
                     candidate.uid === minionUid && candidate.controller === playerId,
                 );
                 if (!minion) continue;
-                events.push(moveMinion(
-                    minion.uid,
-                    minion.defId,
-                    liveContext.fromBaseIndex,
-                    continuation.targetBaseIndex,
-                    'magical_girls_walking_castle_talent',
-                    timestamp,
-                    continuation.targetBaseDefId,
-                ));
+                events.push(...buildValidatedMoveEvents(state, {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    fromBaseIndex: liveContext.fromBaseIndex,
+                    toBaseIndex: continuation.targetBaseIndex,
+                    toBaseDefId: continuation.targetBaseDefId,
+                    reason: 'magical_girls_walking_castle_talent',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                    sourceDefId: liveContext.titanDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: liveContext.fromBaseIndex,
+                    sourceKind: 'nonAction',
+                }));
             }
         }
 
@@ -6585,15 +6615,20 @@ export function registerTitanInteractionHandlers(): void {
             const targetBase = state.core.bases[continuation.toBaseIndex];
             const targetMinion = targetBase?.minions.find(minion => minion.uid === target.uid);
             if (!targetMinion) return { state, events };
-            events.push(destroyMinion(
-                targetMinion.uid,
-                targetMinion.defId,
-                continuation.toBaseIndex,
-                targetMinion.owner,
-                playerId,
-                'explorers_very_large_boulder_move',
-                timestamp,
-            ));
+            events.push(...buildValidatedDestroyEvents(state, {
+                minionUid: targetMinion.uid,
+                minionDefId: targetMinion.defId,
+                fromBaseIndex: continuation.toBaseIndex,
+                destroyerId: playerId,
+                reason: 'explorers_very_large_boulder_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: titan.uid,
+                sourceDefId: titan.defId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.toBaseIndex,
+                sourceKind: 'nonAction',
+            }));
             return { state, events };
         }
 
@@ -6654,15 +6689,20 @@ export function registerTitanInteractionHandlers(): void {
 
         return {
             state,
-            events: [destroyMinion(
-                target.uid,
-                target.defId,
-                continuation.targetBaseIndex,
-                target.owner,
-                playerId,
-                'explorers_very_large_boulder_move',
-                timestamp,
-            )],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: continuation.targetBaseIndex,
+                destroyerId: playerId,
+                reason: 'explorers_very_large_boulder_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: titan.uid,
+                sourceDefId: titan.defId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: continuation.targetBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -7699,17 +7739,21 @@ export function registerTitanInteractionHandlers(): void {
 
         return {
             state,
-            events: [
-                moveMinion(
-                    continuation.minionUid,
-                    continuation.minionDefId,
-                    continuation.fromBaseIndex,
-                    selected.baseIndex,
-                    'bear_cavalry_major_ursa',
-                    timestamp,
-                    selected.baseDefId,
-                ),
-            ],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: continuation.minionUid,
+                minionDefId: continuation.minionDefId,
+                fromBaseIndex: continuation.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'bear_cavalry_major_ursa',
+                now: timestamp,
+                sourcePlayerId: titan.controllerId,
+                sourceCardUid: titan.uid,
+                sourceDefId: titan.defId,
+                sourceControllerId: titan.controllerId,
+                sourceBaseIndex: titan.location.baseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -8193,17 +8237,21 @@ export function registerTitanInteractionHandlers(): void {
 
         return {
             state,
-            events: [
-                moveMinion(
-                    liveMinion.uid,
-                    liveMinion.defId,
-                    liveContext.fromBaseIndex,
-                    selected.baseIndex,
-                    'pirates_the_kraken_after_scoring_move',
-                    timestamp,
-                    selected.baseDefId,
-                ),
-            ],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: liveMinion.uid,
+                minionDefId: liveMinion.defId,
+                fromBaseIndex: liveContext.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'pirates_the_kraken_after_scoring_move',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                sourceDefId: liveContext.titanDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: liveContext.fromBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 
@@ -8343,15 +8391,20 @@ export function registerTitanInteractionHandlers(): void {
         return {
             state,
             events: [
-                destroyMinion(
-                    continuation.minionUid,
-                    continuation.minionDefId,
-                    continuation.minionBaseIndex,
-                    minion.owner,
-                    playerId,
-                    'tricksters_big_funny_giant_talent',
-                    timestamp,
-                ),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: continuation.minionUid,
+                    minionDefId: continuation.minionDefId,
+                    fromBaseIndex: continuation.minionBaseIndex,
+                    destroyerId: playerId,
+                    reason: 'tricksters_big_funny_giant_talent',
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid: liveContext.titanUid ?? continuation.titanUid,
+                    sourceDefId: liveContext.titanDefId,
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: liveContext.fromBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
                 moveTitan(
                     liveContext.titanUid ?? continuation.titanUid,
                     liveContext.titanDefId,

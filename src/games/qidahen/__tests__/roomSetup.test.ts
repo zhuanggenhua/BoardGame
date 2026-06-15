@@ -9,11 +9,14 @@ import {
     DEFAULT_QIDAHEN_SCENARIO_ID,
     getQidahenAllowedPlayerCounts,
     getQidahenPlayableFactions,
+    getQidahenScenarioIdsForPlayerCount,
     QIDAHEN_MAX_PLAYERS,
+    QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
     QIDAHEN_MIN_PLAYERS,
     QIDAHEN_PLAYER_OPTIONS,
     readQidahenScenarioChoiceSelections,
     readQidahenScenarioId,
+    shouldUseQidahenInMatchScenarioVote,
     shouldResolveQidahenScenarioChoiceGroups,
 } from '../roomSetup';
 
@@ -56,8 +59,18 @@ describe('七大恨房间 setup 解析', () => {
     it('会按剧本返回允许人数与真实参战势力', () => {
         expect(getQidahenAllowedPlayerCounts('post-sarhu-1619')).toEqual([3]);
         expect(getQidahenAllowedPlayerCounts('dingmao-rebellion-1627')).toEqual([2]);
+        expect(getQidahenScenarioIdsForPlayerCount(3)).toEqual(['post-sarhu-1619', 'shanhaiguan-1622']);
+        expect(getQidahenScenarioIdsForPlayerCount(2)).toEqual(['dingmao-rebellion-1627']);
         expect(getQidahenPlayableFactions('shanhaiguan-1622')).toEqual(['ming', 'mongol', 'jin']);
         expect(getQidahenPlayableFactions('dingmao-rebellion-1627')).toEqual(['ming', 'jin']);
+    });
+
+    it('显式局内剧本投票标记会让房间进入 match 后再决定剧本', () => {
+        expect(shouldUseQidahenInMatchScenarioVote({
+            setupSelections: {
+                [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+            },
+        })).toBe(true);
     });
 
     it('全局房间人数入口与 engine admission 会和剧本人数组合同步', () => {
@@ -83,6 +96,11 @@ describe('七大恨房间 setup 解析', () => {
         })).toEqual({
             scenarioId: 'shanhaiguan-1622',
         });
+        expect(buildQidahenPublicRoomSummary({
+            setupSelections: {
+                [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+            },
+        })).toEqual({});
     });
 
     it('切到非默认剧本时会补齐该剧本预选默认值，并清理其他剧本残留字段', () => {
@@ -190,5 +208,22 @@ describe('七大恨房间 setup 解析', () => {
         expect(core.factions.ming.playerId).toBe('0');
         expect(core.factions.jin.playerId).toBe('1');
         expect(core.factions.mongol.playerId).toBe('qidahen-neutral-mongol');
+    });
+
+    it('domain.setup 在联机局内剧本投票模式下会先停在剧本介绍与投票态', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom, {
+            setupSelections: {
+                [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+            },
+        });
+
+        expect(core.scenarioVote?.options.map((option) => option.scenarioId)).toEqual(['post-sarhu-1619', 'shanhaiguan-1622']);
+        expect(core.scenarioVote?.votes).toEqual({
+            '0': null,
+            '1': null,
+            '2': null,
+        });
+        expect(core.pendingScenarioCharacterChoices).toEqual([]);
+        expect(core.pendingScenarioArmamentChoices).toEqual([]);
     });
 });

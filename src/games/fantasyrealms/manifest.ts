@@ -4,7 +4,6 @@ const entry: GameManifestEntry = {
     id: 'fantasyrealms',
     type: 'game',
     enabled: true,
-    statusTag: 'under_construction',
     titleKey: 'games.fantasyrealms.title',
     descriptionKey: 'games.fantasyrealms.description',
     category: 'card',

@@ -5,7 +5,14 @@ describe('七大恨 shared printed 映射辅助层', () => {
     it('会把正式 shared printed 审计扩成统一行模型，并区分当前工作区缺的是 authoritative 还是 runtime-only', () => {
         const mappings = buildQidahenSharedPrintedRegionMappings({
             visiblePrintedRegionIds: ['city-region-15', 'city-region-19', 'city-region-28'],
-            visibleRuntimeRegionIds: ['city-region-15', 'city-region-19', 'city-region-28'],
+            visibleRuntimeRegionIds: [
+                'city-region-15',
+                'city-region-15-liaodong',
+                'city-region-19',
+                'city-region-19-liaoxi',
+                'city-region-28-jizhen',
+                'city-region-28',
+            ],
             runtimeGuideCandidates: [
                 {
                     runtimeRegionId: 'city-region-15-liaodong',

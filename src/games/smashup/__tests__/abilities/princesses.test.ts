@@ -236,9 +236,15 @@ describe('Princesses abilities', () => {
         const baseOption = getPromptOption(basePrompt, entry => entry.value?.baseIndex === 1, 'destination base');
 
         const resolved = respondToPrompt(choseMinion.finalState, baseOption.id, '0', defaultTestRandom);
+        const movedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-1');
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('enemy-1');
+        expect(movedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_true_loves_kiss',
+            sourceControllerId: '0',
+        });
     });
 
     it('princesses_some_day_my_prince_will_come 会先选本基地随从再选目标基地', () => {
@@ -320,9 +326,15 @@ describe('Princesses abilities', () => {
         const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'destroy target');
 
         const resolved = respondToPrompt(played.finalState, option.id, '0', defaultTestRandom);
+        const destroyedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-1');
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2', 'draw-3']);
+        expect(destroyedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_skillet',
+            sourceControllerId: '0',
+        });
     });
 
     it('princesses_snow_white 会把另一个基地上的仆从移动到这里', () => {
@@ -354,9 +366,16 @@ describe('Princesses abilities', () => {
         const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'move target');
 
         const resolved = respondToPrompt(talent.finalState, option.id, '0', defaultTestRandom);
+        const movedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
 
         expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('enemy-1');
         expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).not.toContain('enemy-1');
+        expect(movedEvent?.payload).toMatchObject({
+            sourcePlayerId: '0',
+            sourceDefId: 'princesses_snow_white',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+        });
     });
 
     it('princesses_tale_as_old_as_time 会把你的所有仆从移动到选定基地', () => {
@@ -399,6 +418,11 @@ describe('Princesses abilities', () => {
         );
         expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('ally-1');
         expect(played.finalState.core.bases[2].minions.map(minion => minion.uid)).not.toContain('ally-2');
+        const movedEvents = played.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as any[];
+        expect(movedEvents).toHaveLength(2);
+        expect(movedEvents.every(event => event.payload?.sourcePlayerId === '0')).toBe(true);
+        expect(movedEvents.every(event => event.payload?.sourceDefId === 'princesses_tale_as_old_as_time')).toBe(true);
+        expect(movedEvents.every(event => event.payload?.sourceControllerId === '0')).toBe(true);
     });
 
     it('princesses_griselda 可以把传家宝从弃牌堆回到手牌', () => {

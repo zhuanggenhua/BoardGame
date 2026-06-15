@@ -11,10 +11,10 @@ import {
     buildActionCancelRollbackEvents,
     buildAbilityFeedback,
     buildBaseTargetOptions,
+    buildValidatedDestroyEvents,
+    buildValidatedMoveEvents,
     buildMinionTargetOptions,
     createSkipOption,
-    destroyMinion,
-    moveMinion,
     removePowerCounter,
     revealAndPickFromDeck,
 } from '../domain/abilityHelpers';
@@ -24,7 +24,7 @@ import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import { getCardDef } from '../data/cards';
 import { drawCards, resolveLiveBaseIndex } from '../domain/utils';
 import { SU_EVENTS } from '../domain/types';
-import type { CardsDrawnEvent, DeckReshuffledEvent, MinionDestroyedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { CardsDrawnEvent, DeckReshuffledEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { type PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
@@ -541,38 +541,47 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { skip?: boolean; droneUid?: string; droneBaseIndex?: number };
         if (selected.skip) {
-            const destroyEvt: MinionDestroyedEvent = {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
+            return {
+                events: buildValidatedDestroyEvents(state, {
                     minionUid: context.targetMinionUid,
                     minionDefId: context.targetMinionDefId,
                     fromBaseIndex: context.fromBaseIndex,
-                    ownerId: context.toPlayerId,
                     destroyerId: context.destroyerId,
                     reason: 'giant_ant_drone_skip',
-                },
-                timestamp,
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceControllerId: context.playerId,
+                    sourceKind: 'nonAction',
+                }),
             };
-            return { events: [destroyEvt] };
         }
         if (!selected.droneUid || selected.droneBaseIndex === undefined) return { events: [] };
 
         const drone = state.core.bases[selected.droneBaseIndex]?.minions.find(m => m.uid === selected.droneUid);
         const target = state.core.bases[context.fromBaseIndex]?.minions.find(m => m.uid === context.targetMinionUid);
         if (!drone || !target || drone.controller !== context.playerId || drone.powerCounters <= 0) {
-            const destroyEvt: MinionDestroyedEvent = {
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
+            return {
+                events: buildValidatedDestroyEvents(state, {
                     minionUid: context.targetMinionUid,
                     minionDefId: context.targetMinionDefId,
                     fromBaseIndex: context.fromBaseIndex,
-                    ownerId: context.toPlayerId,
                     destroyerId: context.destroyerId,
                     reason: 'giant_ant_drone_skip',
-                },
-                timestamp,
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceControllerId: context.playerId,
+                    sourceKind: 'nonAction',
+                    targetSnapshot: target
+                        ? {
+                            ownerId: target.owner,
+                            controllerId: target.controller,
+                            attachedActions: target.attachedActions,
+                            metadata: target.metadata,
+                            playedThisTurn: target.playedThisTurn,
+                        }
+                        : undefined,
+                }),
             };
-            return { events: [destroyEvt] };
         }
 
         return {
@@ -673,7 +682,18 @@ const giantAntHeadlongChooseBasePromptProgram = createPromptProgram<
 
         return {
             events: [
-                moveMinion(context.minionUid, context.minionDefId, context.fromBaseIndex, selected.baseIndex, 'giant_ant_headlong', timestamp),
+                ...buildValidatedMoveEvents(state, {
+                    minionUid: context.minionUid,
+                    minionDefId: context.minionDefId,
+                    fromBaseIndex: context.fromBaseIndex,
+                    toBaseIndex: selected.baseIndex,
+                    reason: 'giant_ant_headlong',
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'giant_ant_headlong',
+                    sourceControllerId: context.playerId,
+                    sourceKind: 'action',
+                }),
                 addPowerCounter(context.minionUid, selected.baseIndex, 2, 'giant_ant_headlong', timestamp),
             ],
         };
@@ -1730,17 +1750,18 @@ const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram
         const minion = state.core.bases[selected.baseIndex]?.minions.find((entry) => entry.uid === selected.minionUid);
         if (!minion || minion.controller !== context.playerId) return { events: [] };
 
-        const events: SmashUpEvent[] = [
-            destroyMinion(
-                selected.minionUid,
-                selected.defId ?? minion.defId,
-                selected.baseIndex,
-                minion.owner,
-                context.playerId,
-                'giant_ant_who_wants_to_live_forever_pod',
-                timestamp,
-            ),
-        ];
+        const events: SmashUpEvent[] = buildValidatedDestroyEvents(state, {
+            minionUid: selected.minionUid,
+            minionDefId: selected.defId ?? minion.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: 'giant_ant_who_wants_to_live_forever_pod',
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'giant_ant_who_wants_to_live_forever_pod',
+            sourceControllerId: context.playerId,
+            sourceKind: 'action',
+        });
 
         const hasDeck = (state.core.players[context.playerId]?.deck.length ?? 0) > 0;
         if (!hasDeck) {

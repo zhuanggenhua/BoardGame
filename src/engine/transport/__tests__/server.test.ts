@@ -20687,6 +20687,229 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(feedbackReporter).not.toHaveBeenCalled();
     });
 
+    it('online AI watchdog 在手动代 AI 选角色阶段不应上报 legal_action_unavailable 噪音反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameId = 'test-watchdog-manual-setup-character-selection-suppressed';
+
+        aiModule.registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                if (playerId !== '1' || state.sys?.phase !== 'setup') {
+                    return [];
+                }
+
+                return [{
+                    actionId: 'setup-select-character-samurai',
+                    kind: 'setup-select-character',
+                    label: '选择角色 samurai',
+                    commands: [{ type: 'SELECT_CHARACTER', payload: { characterId: 'samurai' } }],
+                }];
+            },
+            localPolicies: {
+                manualSetupSelectionPolicy: {
+                    id: 'manualSetupSelectionPolicy',
+                    decide: () => ({
+                        actionId: 'setup-select-character-samurai',
+                        confidence: 0.99,
+                        reasoningSummary: '存在合法选角色动作，但该 AI 座位开启了手动代选，应交给真人。',
+                    }),
+                },
+            },
+            defaultLocalPolicyId: 'manualSetupSelectionPolicy',
+        });
+
+        await storage.createMatch('match-watchdog-manual-setup-character-selection-suppressed', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                        selectedCharacters: {
+                            '0': 'monk',
+                            '1': 'unselected',
+                        },
+                    },
+                    sys: {
+                        phase: 'setup',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: gameId,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'manualSetupSelectionPolicy', manualSetupSelection: true },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...createEngineConfigWithId(gameId),
+                onlineAiRecovery: {
+                    ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                    publicPregameLegalActionPhases: ['setup'],
+                },
+            }],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-manual-setup-character-selection-suppressed');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('online AI watchdog 在自定义手动前置选择阶段不应上报 legal_action_unavailable 噪音反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameId = 'test-watchdog-manual-custom-setup-selection-suppressed';
+
+        aiModule.registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                if (playerId !== '1' || state.sys?.phase !== 'draft') {
+                    return [];
+                }
+
+                return [{
+                    actionId: 'setup-select-draft-ranger',
+                    kind: 'setup-select-draft',
+                    label: '选择草案 ranger',
+                    commands: [{ type: 'SELECT_DRAFT', payload: { draftId: 'ranger' } }],
+                }];
+            },
+            localPolicies: {
+                manualSetupSelectionPolicy: {
+                    id: 'manualSetupSelectionPolicy',
+                    decide: () => ({
+                        actionId: 'setup-select-draft-ranger',
+                        confidence: 0.99,
+                        reasoningSummary: '存在合法草案选择动作，但该 AI 座位开启了手动代选，应交给真人。',
+                    }),
+                },
+            },
+            defaultLocalPolicyId: 'manualSetupSelectionPolicy',
+        });
+
+        await storage.createMatch('match-watchdog-manual-custom-setup-selection-suppressed', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                    },
+                    sys: {
+                        phase: 'draft',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: gameId,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'manualSetupSelectionPolicy', manualSetupSelection: true },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...createEngineConfigWithId(gameId),
+                onlineAiRecovery: {
+                    ...createEngineConfigWithId(gameId).onlineAiRecovery,
+                    publicPregameLegalActionPhases: ['draft'],
+                    shouldTreatActionAsManualSetupSelection: ({ actionKind }) => (
+                        actionKind === 'setup-select-draft' ? true : undefined
+                    ),
+                },
+            }],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-manual-custom-setup-selection-suppressed');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
     it('online AI watchdog 在 summonerwars pregame 已 ready 但仍等待 human host 时，不应上报 legal_action_unavailable 噪音反馈', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

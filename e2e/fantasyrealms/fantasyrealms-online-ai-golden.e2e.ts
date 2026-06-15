@@ -18,6 +18,7 @@ import {
 import { getMatchState } from '../helpers/state-injection';
 
 const GAME_NAME = 'fantasyrealms';
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
 type FantasyRealmsMatchState = MatchState<FantasyRealmsCore>;
 
 type OnlineAiSummary = {
@@ -154,26 +155,25 @@ async function seedAiSeatCredentials(
 async function waitForFantasyRealmsBoard(page: Page, expectedPlayerId: string) {
     await expect(page).toHaveURL(new RegExp(`/play/${GAME_NAME}/match/.+\\?playerID=${expectedPlayerId}`), { timeout: 15000 });
     const liveTable = page.getByTestId('fantasyrealms-live-table');
-    const stackedLayout = page.getByTestId('fantasyrealms-stacked-layout');
+    const compactLayout = page.getByTestId('fantasyrealms-compact-layout');
     await expect.poll(async () => {
         if (await liveTable.count() > 0 && await liveTable.first().isVisible().catch(() => false)) {
             return 'live';
         }
-        if (await stackedLayout.count() > 0 && await stackedLayout.first().isVisible().catch(() => false)) {
-            return 'stacked';
+        if (await compactLayout.count() > 0 && await compactLayout.first().isVisible().catch(() => false)) {
+            return 'compact-landscape';
         }
         return null;
     }, {
         timeout: 20000,
-        message: `等待 Fantasy Realms 玩家页进入 live 或 stacked 棋盘壳（playerID=${expectedPlayerId}）`,
+        message: `等待 Fantasy Realms 玩家页进入 live 或紧凑横屏棋盘壳（playerID=${expectedPlayerId}）`,
     }).toBeTruthy();
 
     if (await liveTable.count() > 0 && await liveTable.first().isVisible().catch(() => false)) {
         await expect(page.getByTestId('fantasyrealms-live-topbar')).toBeVisible({ timeout: 10000 });
     } else {
-        await expect(stackedLayout).toBeVisible({ timeout: 10000 });
+        await expect(compactLayout).toBeVisible({ timeout: 10000 });
     }
-    await expect(page.getByTestId('fantasyrealms-hand-row')).toBeVisible({ timeout: 10000 });
 }
 
 async function readOnlineAiStateSummary(matchId: string, page: Page): Promise<OnlineAiSummary> {
@@ -322,8 +322,8 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
     const beforeTurn = beforeSummary.turn ?? 0;
 
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-    await expect(args.liveActionButton).toContainText('抓一张牌');
-    await args.liveActionButton.click();
+    await expect(args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
+    await args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
 
     await expect.poll(async () => {
         const summary = await readOnlineAiStateSummary(args.matchId, args.page);
@@ -412,7 +412,7 @@ async function waitForMultiSeatAiRoundtripOrGameOver(args: {
         || afterAiSummary.discardSignature !== args.aiTurnSummary.discardSignature,
     ).toBe(true);
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-    await expect(args.liveActionButton).toContainText('抓一张牌');
+    await expect(args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
     return {
         kind: 'human-turn' as const,
         summary: afterAiSummary,
@@ -470,7 +470,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
             expect(currentSummary.currentPlayer).toBe('0');
             expect(currentSummary.stage).toBe('draw');
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
             await expect(page.getByText('终局复盘')).toHaveCount(0);
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, options.evidenceName);

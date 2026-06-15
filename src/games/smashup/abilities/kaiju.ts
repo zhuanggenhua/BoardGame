@@ -15,10 +15,12 @@ import {
     playTitan,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
+import { isMinionTargetAllowed } from '../domain/effectSemantics';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { isMinionProtected, registerInterceptor, registerProtection } from '../domain/ongoingEffects';
+import { registerInterceptor, registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
 import type {
     ActionCardDef,
@@ -40,8 +42,26 @@ type JohnnyActionChoice = {
     skip?: boolean;
 };
 
+type KaijuDestroyContinuation = {
+    sourcePlayerId: string;
+    sourceCardUid?: string;
+    sourceDefId: string;
+    sourceControllerId: string;
+    sourceBaseIndex: number;
+};
+
 function getTargetBaseIndex(ctx: AbilityContext): number {
     return ctx.targetBaseIndex ?? ctx.baseIndex;
+}
+
+function buildKaijuDestroyContinuation(ctx: AbilityContext): KaijuDestroyContinuation {
+    return {
+        sourcePlayerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: getTargetBaseIndex(ctx),
+    };
 }
 
 function getBaseLabel(core: SmashUpCore, baseIndex: number): string {
@@ -111,22 +131,19 @@ function buildDetachOngoingEvent(
     source: AbilityContext,
     destination?: 'discard' | 'hand',
 ): OngoingDetachedEvent {
-    return {
-        type: SU_EVENTS.ONGOING_DETACHED,
-        payload: {
-            cardUid: action.uid,
-            defId: action.defId,
-            ownerId: action.ownerId,
-            reason,
-            ...(destination ? { destination } : {}),
-            sourcePlayerId: source.playerId,
-            sourceCardUid: source.cardUid,
-            sourceDefId: source.defId,
-            sourceControllerId: source.playerId,
-            sourceBaseIndex: getTargetBaseIndex(source),
-        },
-        timestamp: source.now,
-    };
+    return buildOngoingDetachedEvent({
+        cardUid: action.uid,
+        defId: action.defId,
+        ownerId: action.ownerId,
+        reason,
+        destination,
+        sourcePlayerId: source.playerId,
+        sourceCardUid: source.cardUid,
+        sourceDefId: source.defId,
+        sourceControllerId: source.playerId,
+        sourceBaseIndex: getTargetBaseIndex(source),
+        now: source.now,
+    });
 }
 
 function getJohnnyActionChoices(core: SmashUpCore, playerId: string): JohnnyActionChoice[] {
@@ -217,7 +234,11 @@ function getDestroyableMinions(
     return base.minions
         .filter(minion => controller === 'any' || minion.controller !== playerId)
         .filter(minion => getMinionPower(core, minion, baseIndex) <= maxPower)
-        .filter(minion => !isMinionProtected(core, minion, baseIndex, playerId, 'destroy'))
+        .filter(minion => isMinionTargetAllowed(core, minion, baseIndex, {
+            sourcePlayerId: playerId,
+            effectType: 'destroy',
+            mode: 'preview',
+        }))
         .map(minion => ({
             uid: minion.uid,
             defId: minion.defId,
@@ -246,6 +267,7 @@ function queueDestroyMinionPrompt(
 
     if (!optional && !multi && options.length === 1) {
         const value = options[0].value;
+        const continuation = buildKaijuDestroyContinuation(ctx);
         return {
             events: buildValidatedDestroyEvents(ctx.state, {
                 minionUid: value.minionUid,
@@ -254,6 +276,11 @@ function queueDestroyMinionPrompt(
                 destroyerId: ctx.playerId,
                 reason: sourceId,
                 now: ctx.now,
+                sourcePlayerId: continuation.sourcePlayerId,
+                sourceCardUid: continuation.sourceCardUid,
+                sourceDefId: continuation.sourceDefId,
+                sourceControllerId: continuation.sourceControllerId,
+                sourceBaseIndex: continuation.sourceBaseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -271,6 +298,7 @@ function queueDestroyMinionPrompt(
             ...(multi ? { multi } : {}),
         },
     );
+    (interaction.data as { continuationContext?: KaijuDestroyContinuation }).continuationContext = buildKaijuDestroyContinuation(ctx);
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -532,7 +560,8 @@ export function registerKaijuInteractionHandlers(): void {
         return { state, events: [recoverCardsFromDiscard(playerId, [selected.cardUid], 'kaiju_pick_up_a_bus', timestamp)] };
     });
 
-    registerInteractionHandler('kaiju_radioactive_breath', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('kaiju_radioactive_breath', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as { continuationContext?: KaijuDestroyContinuation } | undefined)?.continuationContext;
         const selections = (Array.isArray(value) ? value : [value]) as Array<{ skip?: boolean; minionUid?: string; defId?: string; baseIndex?: number }>;
         const events = selections
             .filter(selection => !selection.skip && selection.minionUid && selection.defId && selection.baseIndex !== undefined)
@@ -543,12 +572,18 @@ export function registerKaijuInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'kaiju_radioactive_breath',
                 now: timestamp,
+                sourcePlayerId: continuation?.sourcePlayerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: continuation?.sourceControllerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'action',
             }));
         return { state, events };
     });
 
-    registerInteractionHandler('kaiju_tail_smash', (state, playerId, value, _data, _random, timestamp) => {
+    registerInteractionHandler('kaiju_tail_smash', (state, playerId, value, data, _random, timestamp) => {
+        const continuation = (data as { continuationContext?: KaijuDestroyContinuation } | undefined)?.continuationContext;
         const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
         if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { state, events: [] };
         return {
@@ -560,6 +595,11 @@ export function registerKaijuInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'kaiju_tail_smash',
                 now: timestamp,
+                sourcePlayerId: continuation?.sourcePlayerId,
+                sourceCardUid: continuation?.sourceCardUid,
+                sourceDefId: continuation?.sourceDefId,
+                sourceControllerId: continuation?.sourceControllerId,
+                sourceBaseIndex: continuation?.sourceBaseIndex,
                 sourceKind: 'action',
             }),
         };
@@ -585,21 +625,18 @@ export function registerKaijuInteractionHandlers(): void {
         return {
             state,
             events: [
-                {
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: {
-                        cardUid: action.uid,
-                        defId: action.defId,
-                        ownerId: action.ownerId,
-                        reason: 'kaiju_johnny',
-                        destination: 'hand',
-                        sourcePlayerId: playerId,
-                        sourceDefId: 'kaiju_johnny',
-                        sourceControllerId: playerId,
-                        sourceBaseIndex: continuation.targetBaseIndex,
-                    },
-                    timestamp,
-                } as OngoingDetachedEvent,
+                buildOngoingDetachedEvent({
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    reason: 'kaiju_johnny',
+                    destination: 'hand',
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'kaiju_johnny',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: continuation.targetBaseIndex,
+                    now: timestamp,
+                }),
                 grantContextualExtraAction(
                     { playerId, now: timestamp, matchState: state },
                     'kaiju_johnny',

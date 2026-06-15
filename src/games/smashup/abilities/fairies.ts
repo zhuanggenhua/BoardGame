@@ -23,6 +23,7 @@ import {
     markSpiritOfTheForestOrUsed,
     playTitan,
 } from '../domain/abilityHelpers';
+import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { reduce } from '../domain/reduce';
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
@@ -46,7 +47,6 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     OngoingAttachedEvent,
-    OngoingDetachedEvent,
     SmashUpReactionResourceFootprint,
     SmashUpReactionResourceRef,
 } from '../domain/types';
@@ -195,16 +195,13 @@ function buildTransferAttachedActionEvents(
     timestamp: number,
 ): SmashUpEvent[] {
     return [
-        {
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: attached.cardUid,
-                defId: attached.defId,
-                ownerId: attached.ownerId,
-                reason,
-            },
-            timestamp,
-        } as OngoingDetachedEvent,
+        buildOngoingDetachedEvent({
+            cardUid: attached.cardUid,
+            defId: attached.defId,
+            ownerId: attached.ownerId,
+            reason,
+            now: timestamp,
+        }),
         ...buildSemanticOngoingAttachEvents(state, {
             cardUid: attached.cardUid,
             defId: attached.defId,
@@ -886,7 +883,7 @@ const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlay
             autoResolveIfSingle: false,
         },
     ),
-    onResolve: ({ value, timestamp }) => {
+    onResolve: ({ state, value, timestamp }) => {
         const rawSelections = Array.isArray(value)
             ? value as Array<{ cardUid?: string; defId?: string; ownerId?: string }>
             : [];
@@ -901,16 +898,13 @@ const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlay
         }
 
         return {
-            events: Array.from(unique.values()).map(selection => ({
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: selection.cardUid,
-                    defId: selection.defId,
-                    ownerId: selection.ownerId,
-                    reason: 'fairies_playful_tricks',
-                },
-                timestamp,
-            } as OngoingDetachedEvent)),
+            events: Array.from(unique.values()).flatMap(selection => buildValidatedOngoingDetachEvents(state, {
+                cardUid: selection.cardUid,
+                defId: selection.defId,
+                ownerId: selection.ownerId,
+                reason: 'fairies_playful_tricks',
+                now: timestamp,
+            })),
         };
     },
 });

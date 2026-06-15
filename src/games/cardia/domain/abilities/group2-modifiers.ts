@@ -8,6 +8,7 @@
 import { ABILITY_IDS } from '../ids';
 import { CARDIA_EVENTS } from '../events';
 import { abilityExecutorRegistry } from '../abilityExecutor';
+import { getCardiaStoredOngoingAbilitiesOnCard, hasCardiaStoredOngoingAbilitiesOnCard } from '../effectHost';
 import { getPlayerFieldCards, calculateCurrentInfluence, getCardModifiers } from '../utils';
 import { createCardSelectionInteraction, filterCards, createModifierSelectionInteraction, createFactionSelectionInteraction } from '../interactionHandlers';
 import { registerInteractionHandler } from '../abilityInteractionHandlers';
@@ -464,7 +465,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.TELEKINETIC_MAGE, (ctx: CardiaAbili
     // 查找第一张有修正标记或持续标记的卡牌
     const sourceCard = player.playedCards.find(card => {
         const hasModifiers = ctx.core.modifierTokens.some(token => token.cardId === card.uid);
-        const hasOngoing = ctx.core.ongoingAbilities.some(ability => ability.cardId === card.uid);
+        const hasOngoing = hasCardiaStoredOngoingAbilitiesOnCard(ctx.core, card.uid);
         return hasModifiers || hasOngoing;
     });
     
@@ -509,9 +510,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.TELEKINETIC_MAGE, (ctx: CardiaAbili
     }
     
     // ✅ 新增：移动所有持续标记
-    const ongoingAbilities = ctx.core.ongoingAbilities.filter(
-        ability => ability.cardId === sourceCard.uid
-    );
+    const ongoingAbilities = getCardiaStoredOngoingAbilitiesOnCard(ctx.core, sourceCard.uid);
     
     for (const ability of ongoingAbilities) {
         // 移除源卡牌的持续标记
@@ -1103,9 +1102,7 @@ export function registerModifierInteractionHandlers(): void {
         }
         
         // 移动所有持续标记
-        const ongoingAbilities = state.core.ongoingAbilities.filter(
-            ability => ability.cardId === sourceCardId
-        );
+        const ongoingAbilities = getCardiaStoredOngoingAbilitiesOnCard(state.core, sourceCardId);
         
         for (const ability of ongoingAbilities) {
             // 移除源卡牌的持续标记

@@ -11,7 +11,6 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     CardsDiscardedEvent,
-    MinionDestroyedEvent,
     MinionPlayedEvent,
     PendingPostScoringAction,
 } from './types';
@@ -25,7 +24,7 @@ import {
     addPowerCounter,
     addTempPower,
     recoverCardsFromDiscard,
-    buildValidatedMoveEvents,
+    buildValidatedBaseMoveEvents,
     buildValidatedDestroyEvents,
     buildValidatedCardToDeckBottomEvents,
     buildStandardDrawEvents,
@@ -1220,11 +1219,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
         }
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid,
                 minionDefId: selected.minionDefId,
                 fromBaseIndex: selected.fromBaseIndex,
                 toBaseIndex: ctx.targetBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_mermaid_pool',
+                sourceBaseIndex: ctx.targetBaseIndex,
                 reason: 'base_mermaid_pool',
                 now: timestamp,
             }),
@@ -1574,6 +1576,9 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 ownerId: selected.ownerId,
+                sourcePlayerId: playerId,
+                sourceDefId: 'base_crystal_fortress',
+                sourceControllerId: playerId,
                 reason: '水晶堡垒：弃牌堆随从置于牌库底',
                 now: timestamp,
                 expectedLocation: 'discard',
@@ -1612,6 +1617,11 @@ export function registerExpansionBaseInteractionHandlers(): void {
             minionUid: selected.minionUid!,
             minionDefId: selected.minionDefId!,
             fromBaseIndex: ctx.baseIndex,
+            sourcePlayerId: playerId,
+            sourceDefId: 'base_cat_fanciers_alley',
+            sourceControllerId: playerId,
+            sourceBaseIndex: ctx.baseIndex,
+            sourceKind: 'nonAction',
             reason: '诡猫巷：消灭己方随从',
             now: timestamp,
         });
@@ -1627,11 +1637,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid!,
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.fromBaseIndex!,
                 toBaseIndex: ctx.balanceBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_land_of_balance',
+                sourceBaseIndex: ctx.balanceBaseIndex,
                 reason: '平衡之地：移动己方随从到此',
                 now: timestamp,
             }),
@@ -1646,11 +1659,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid!,
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.fromBaseIndex!,
                 toBaseIndex: ctx.targetBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_sheep_shrine',
+                sourceBaseIndex: ctx.targetBaseIndex,
                 reason: '绵羊神社：移动随从到新基地',
                 now: timestamp,
             }),
@@ -1664,11 +1680,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
         if (!ctx) return { state, events: [] };
         return {
             state,
-            events: buildValidatedMoveEvents(state, {
+            events: buildValidatedBaseMoveEvents(state, {
                 minionUid: selected.minionUid!,
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.fromBaseIndex!,
                 toBaseIndex: ctx.targetBaseIndex,
+                sourcePlayerId: _playerId,
+                sourceDefId: 'base_the_pasture',
+                sourceBaseIndex: ctx.targetBaseIndex,
                 reason: '牧场：移动随从到牧场',
                 now: timestamp,
             }),
@@ -1708,30 +1727,40 @@ export function registerExpansionBaseInteractionHandlers(): void {
             // 玩家选择移动到九命之屋
             return {
                 state,
-                events: buildValidatedMoveEvents(state, {
+                events: buildValidatedBaseMoveEvents(state, {
                     minionUid,
                     minionDefId,
                     fromBaseIndex,
                     toBaseIndex: houseBaseIndex,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_house_of_nine_lives',
+                    sourceBaseIndex: houseBaseIndex,
                     reason: '九命之屋：随从移动到九命之屋而非被消灭',
                     now: timestamp,
                 }),
             };
         } else {
             // 玩家选择不移动→恢复消灭事件
-            return { state, events: [{
-                type: SU_EVENTS.MINION_DESTROYED,
-                payload: {
+            return {
+                state,
+                events: buildValidatedDestroyEvents(state, {
                     minionUid,
                     minionDefId,
                     fromBaseIndex,
-                    ownerId,
-                    controllerId,
                     destroyerId,
                     reason: '九命之屋：玩家选择不拯救',
-                },
-                timestamp,
-            } as MinionDestroyedEvent] };
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceDefId: 'base_house_of_nine_lives',
+                    sourceControllerId: playerId,
+                    sourceBaseIndex: houseBaseIndex,
+                    sourceKind: 'nonAction',
+                    targetSnapshot: {
+                        ownerId,
+                        controllerId,
+                    },
+                }),
+            };
         }
     });
 }

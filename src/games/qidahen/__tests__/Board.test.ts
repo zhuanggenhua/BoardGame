@@ -16,11 +16,10 @@ const REQUIRED_TEST_IDS = [
     'data-testid={`qidahen-runtime-region-edge-${edge.id}`}',
     "import qidahenRegionMaskUrl from './data/region-mask.png?url'",
     'QIDAHEN_REGION_GRAPH_EDGES',
-    'QIDAHEN_REGION_ID_BY_MASK_COLOR',
     'getQidahenDirectedPassage',
-    'getQidahenPrintedRegionIdsForRuntimeRegionId',
     'getQidahenRuntimeRegionIdsForPrintedRegionId',
-    'resolveQidahenRuntimeRegionIdFromPrintedRegionId',
+    'buildQidahenRuntimeRegionIdByPixel',
+    'renderRegionOwnershipOverlay',
     "mainMap: 'qidahen/board/qidahen-main-map'",
     'data-testid="qidahen-player-float"',
     'data-testid={`qidahen-armaments-${faction.id}`}',
@@ -110,10 +109,6 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'data-testid="qidahen-wheel-move-choices"',
     'qidahen-wheel-move-${choice.id}',
     'data-testid="qidahen-wheel-summary"',
-    'qidahen-scenario-character-option-',
-    'qidahen-scenario-character-confirm-',
-    'qidahen-scenario-armament-option-',
-    'qidahen-scenario-armament-confirm-',
     '?? core.postBattleSelection',
     '?? core.recruitSelection',
     '?? core.diplomacySelection',
@@ -183,21 +178,38 @@ describe('Qidahen Board 结构门禁', () => {
         expect(cardAtlasSource).toMatch(/export const qidahenJinHandPreview = \(index: number\): CardPreviewRef => \(\{[\s\S]*?type: 'atlas',[\s\S]*?atlasId: QIDAHEN_JIN_ATLAS_ID,[\s\S]*?index,/);
     });
 
-    it('Board 不再把剧本待决项重复渲染成局内面板，只保留动作区阻断提示', () => {
+    it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或主 HUD', () => {
+        expect(boardSource).toContain('qidahen-scenario-vote-screen');
+        expect(boardSource).toContain('qidahen-scenario-vote-title');
+        expect(boardSource).toContain('qidahen-scenario-vote-confirm');
+        expect(boardSource).toContain('qidahen-scenario-vote-clear');
+        expect(boardSource).toContain('CAST_SCENARIO_VOTE');
         expect(boardSource).toContain('core.pendingScenarioCharacterChoices');
         expect(boardSource).toContain('core.pendingScenarioArmamentChoices');
+        expect(boardSource).toContain('qidahen-inmatch-setup-overlay');
+        expect(boardSource).toContain('qidahen-inmatch-setup-title');
+        expect(boardSource).toContain('qidahen-inmatch-setup-scenario');
+        expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-');
+        expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-');
         expect(boardSource).toContain('qidahen-actions-blocked-by-scenario');
-        expect(boardSource).not.toContain('qidahen-scenario-panel');
-        expect(boardSource).not.toContain('qidahen-scenario-compact-summary');
-        expect(boardSource).not.toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
-        expect(boardSource).not.toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
+        expect(boardSource).toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
+        expect(boardSource).toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
     });
 
-    it('剧本待决项若异常残留，会在动作区提示必须先回前置页，而不是再占地图区', () => {
+    it('剧本待决项出现时，动作区只保留阻断提示，真正交互在单独 setup 覆层里完成', () => {
+        expect(boardSource).toContain('局内剧本投票尚未完成');
+        expect(boardSource).toContain('当前只可处理剧本介绍与投票');
+        expect(boardSource).toContain('先选一张剧本介绍卡，再点确认投票');
         expect(boardSource).toContain('剧本待决项尚未确认');
         expect(boardSource).toContain('当前只可处理剧本选择');
-        expect(boardSource).not.toContain('待选人物');
-        expect(boardSource).not.toContain('待选军备');
+        expect(boardSource).toContain('确认人物');
+        expect(boardSource).toContain('确认军备');
+        expect(boardSource).toContain('等待其他玩家完成其所属阵营的前置项');
+    });
+
+    it('正式联机手牌区只允许本地模式保留 currentFaction fallback，在线 seat 不再退回别人的当前手牌', () => {
+        expect(boardSource).toContain('const currentFactionId = playerID == null ? (viewerFactionId ?? getCurrentFactionId(core)) : viewerFactionId;');
+        expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
     });
 
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {

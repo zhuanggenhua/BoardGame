@@ -1416,7 +1416,13 @@ export class GameTransportServer {
         }).legalActions;
 
         return legalActions.length > 0
-            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveFactionSelection(seatController, action));
+            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveSetupSelection(
+                match.engineConfig,
+                match.state,
+                playerId,
+                seatController,
+                action,
+            ));
     }
 
     private async resolveOnlineAiRecoveryCandidate(

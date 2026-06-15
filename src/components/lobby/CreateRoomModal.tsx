@@ -8,7 +8,7 @@
  * - manifest 声明的 setupOptions（单选 / 多选）
  */
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -29,10 +29,8 @@ import {
     type GameSetupSelections,
 } from '../../games/setupOptions';
 import {
-    applyQidahenPregameChoiceDefaults,
-    getQidahenAllowedPlayerCounts,
-    getQidahenPregameChoiceFields,
-    readQidahenScenarioId,
+    QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
+    QIDAHEN_PREGAME_CHOICE_FIELDS,
 } from '../../games/qidahen/roomSetup';
 import { SetupOptionsFields } from './SetupOptionsFields';
 import { PasswordField } from '../common/PasswordField';
@@ -253,7 +251,15 @@ const normalizeExtendedSetupSelections = (
     isQidahenRoom: boolean,
 ): GameSetupSelections => (
     isQidahenRoom
-        ? applyQidahenPregameChoiceDefaults(selections)
+        ? {
+            ...Object.fromEntries(
+                Object.entries(selections).filter(([key]) => (
+                    key !== 'scenario'
+                    && !QIDAHEN_PREGAME_CHOICE_FIELDS.some((field) => field.key === key)
+                )),
+            ),
+            [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
+        }
         : selections
 );
 
@@ -269,6 +275,10 @@ export const CreateRoomModal = ({
     const gameNamespace = `game-${gameManifest.id}`;
     const { t } = useTranslation(['lobby', gameNamespace]);
     const playerOptions = useMemo(() => gameManifest.playerOptions ?? [2], [gameManifest.playerOptions]);
+    const defaultNumPlayers = useMemo(() => (
+        gameManifest.bestPlayers?.find((count) => playerOptions.includes(count))
+        ?? playerOptions[0]
+    ), [gameManifest.bestPlayers, playerOptions]);
     const setupFields = useMemo(
         () => Object.entries(gameManifest.setupOptions ?? {}),
         [gameManifest.setupOptions],
@@ -283,19 +293,8 @@ export const CreateRoomModal = ({
     const primaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
     const secondaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
 
-    const resolveSetupLabel = (labelKey: string): string => {
-        const gamePrefix = `games.${gameManifest.id}.`;
-        if (labelKey.startsWith(gamePrefix)) {
-            return t(labelKey.slice(gamePrefix.length), {
-                ns: gameNamespace,
-                defaultValue: labelKey,
-            });
-        }
-        return t(labelKey, { defaultValue: labelKey });
-    };
-
     const [roomName, setRoomName] = useState('');
-    const [numPlayers, setNumPlayers] = useState(playerOptions[0]);
+    const [numPlayers, setNumPlayers] = useState(defaultNumPlayers);
     const [ttlSeconds, setTtlSeconds] = useState(0);
     const [password, setPassword] = useState('');
     const [enableAi, setEnableAi] = useState(false);
@@ -306,29 +305,13 @@ export const CreateRoomModal = ({
         const defaults = getDefaultSetupSelections(gameManifest);
         return normalizeExtendedSetupSelections({
             ...defaults,
-            ...normalizeSetupValuesForFields(setupFields, playerOptions[0], toSelectValueRecord(defaults)),
+            ...normalizeSetupValuesForFields(setupFields, defaultNumPlayers, toSelectValueRecord(defaults)),
         }, isQidahenRoom);
     });
 
-    const currentQidahenScenarioId = useMemo(
-        () => (isQidahenRoom
-            ? readQidahenScenarioId(setupSelections as Record<string, unknown>)
-            : null),
-        [isQidahenRoom, setupSelections],
-    );
-    const qidahenPregameChoiceFields = useMemo(
-        () => (currentQidahenScenarioId
-            ? getQidahenPregameChoiceFields(currentQidahenScenarioId)
-            : []),
-        [currentQidahenScenarioId],
-    );
     const currentPlayerOptions = useMemo(
-        () => (
-            isQidahenRoom && currentQidahenScenarioId
-                ? [...getQidahenAllowedPlayerCounts(currentQidahenScenarioId)]
-                : playerOptions
-        ),
-        [currentQidahenScenarioId, isQidahenRoom, playerOptions],
+        () => playerOptions,
+        [playerOptions],
     );
     const hasPlayerOptions = currentPlayerOptions.length > 1;
 
@@ -339,7 +322,10 @@ export const CreateRoomModal = ({
                 gameManifest,
                 initialPreferences as unknown as Record<string, unknown>,
             )
-            : createDefaultLocalMatchPreferences(gameManifest);
+            : {
+                ...createDefaultLocalMatchPreferences(gameManifest),
+                numPlayers: defaultNumPlayers,
+            };
         const nextSeatControllers = initialPreferences
             ? forceHumanOwnerSeat({ ...nextPreferences.seatControllers })
             : forceHumanOwnerSeat(
@@ -375,7 +361,7 @@ export const CreateRoomModal = ({
                 toSelectValueRecord(nextPreferences.setupSelections),
             ),
         }, isQidahenRoom));
-    }, [gameManifest, initialPreferences, isOpen, isQidahenRoom, playerOptions, setupFields]);
+    }, [defaultNumPlayers, gameManifest, initialPreferences, isOpen, isQidahenRoom, playerOptions, setupFields]);
 
     useEffect(() => {
         const fallbackPlayerCount = currentPlayerOptions[0];
@@ -424,13 +410,6 @@ export const CreateRoomModal = ({
 
     const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
         setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
-    };
-
-    const handleQidahenPregameChoiceChange = (fieldKey: string, value: string) => {
-        setSetupSelections((current) => normalizeExtendedSetupSelections({
-            ...current,
-            [fieldKey]: value,
-        }, isQidahenRoom));
     };
 
     const handleToggleAiEnabled = () => {
@@ -521,11 +500,8 @@ export const CreateRoomModal = ({
         titleClassName: string,
         descriptionClassName: string,
         fieldListClassName: string,
-        choiceLabelClassName: string,
-        selectClassName: string,
-        selectStyle?: CSSProperties,
     ) => {
-        if (!isQidahenRoom || qidahenPregameChoiceFields.length === 0) {
+        if (!isQidahenRoom) {
             return null;
         }
 
@@ -533,44 +509,22 @@ export const CreateRoomModal = ({
             <div className={containerClassName} data-testid="qidahen-pregame-choice-fields">
                 <div className="space-y-1">
                     <div className={titleClassName}>
-                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.title')}
+                        {t('createRoom.qidahenInMatchSetupTitle', {
+                            defaultValue: '局内完成剧本投票与前置项',
+                        })}
                     </div>
                     <div className={descriptionClassName}>
-                        {resolveSetupLabel('games.qidahen.setup.pregameChoices.description')}
+                        {t('createRoom.qidahenInMatchSetupDescription', {
+                            defaultValue: '创建房间时只决定人数与 AI。进入棋盘后，再按联机席位完成剧本介绍、投票、人物与军备前置。',
+                        })}
                     </div>
                 </div>
                 <div className={fieldListClassName}>
-                    {qidahenPregameChoiceFields.map((field) => {
-                        const options = field.field.options ?? [];
-                        const fallbackValue = field.field.default ?? options[0]?.value ?? '';
-                        const currentValue = setupSelections[field.key];
-                        const selectedValue = typeof currentValue === 'string'
-                            && options.some((option) => option.value === currentValue)
-                            ? currentValue
-                            : fallbackValue;
-
-                        return (
-                            <div key={field.key} className="space-y-1">
-                                <label className={choiceLabelClassName} htmlFor={`qidahen-pregame-choice-${field.key}`}>
-                                    {resolveSetupLabel(field.field.labelKey)}
-                                </label>
-                                <select
-                                    id={`qidahen-pregame-choice-${field.key}`}
-                                    value={selectedValue}
-                                    onChange={(event) => handleQidahenPregameChoiceChange(field.key, event.target.value)}
-                                    className={selectClassName}
-                                    style={selectStyle}
-                                    data-testid={`qidahen-pregame-choice-${field.key}`}
-                                >
-                                    {options.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {resolveSetupLabel(option.labelKey)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        );
-                    })}
+                    <div className={descriptionClassName} data-testid="qidahen-pregame-choice-inline-note">
+                        {t('createRoom.qidahenPregameMovedInMatch', {
+                            defaultValue: '这里不再预设剧本，也不会代投。正式联机房间会先进入局内剧本介绍与投票页，再继续人物、军备前置。',
+                        })}
+                    </div>
                 </div>
             </div>
         );
@@ -774,13 +728,6 @@ export const CreateRoomModal = ({
                                             ? 'text-[7px] leading-[1.45] text-[#7a573d]'
                                             : 'text-xs leading-5 text-[#7a573d]',
                                         isCompactHomeV2Layout ? 'grid gap-[7px]' : 'grid gap-3',
-                                        isCompactHomeV2Layout
-                                            ? 'block text-[7.6px] font-bold text-[#5b3822]'
-                                            : 'block text-xs font-bold text-[#5b3822]',
-                                        clsx(inputClassName, 'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat'),
-                                        {
-                                            backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
-                                        },
                                     )}
 
                                     {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
@@ -1039,8 +986,6 @@ export const CreateRoomModal = ({
                                     'text-xs font-bold uppercase tracking-[0.08em] text-parchment-base-text',
                                     'text-xs leading-5 text-parchment-light-text',
                                     'grid gap-3',
-                                    'block text-xs font-bold text-parchment-base-text',
-                                    "w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm",
                                 )}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (

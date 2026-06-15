@@ -19,6 +19,7 @@
     "reviewChip": "终局复盘",
     "compact": {
       "draw": "摸牌",
+      "drawTwo": "摸 2 张",
       "discard": "弃牌"
     },
     "drawDeck": {
@@ -48,7 +49,8 @@
     "handCount": "手牌 {{count}} 张",
     "badges": {
       "you": "你",
-      "winner": "胜者"
+      "winner": "胜者",
+      "reviewing": "当前查看"
     },
     "labels": {
       "activeBase": "有效基础分",
@@ -64,6 +66,7 @@
     "hand": {
       "ariaLabel": "手牌区",
       "title": "{{player}}的手牌",
+      "reviewTitle": "{{player}}的终局手牌",
       "titleSpectator": "隐藏手牌区",
       "emptyCompact": "暂无手牌"
     }
@@ -75,6 +78,7 @@
     "inspectHandAria": "查看手牌 {{name}}",
     "confirmTake": "确认选择",
     "confirmDiscard": "确认弃置",
+    "selectDiscardRequired": "选择弃牌",
     "selected": "已选"
   },
   "focus": {

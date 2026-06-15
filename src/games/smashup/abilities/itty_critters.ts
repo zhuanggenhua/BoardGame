@@ -22,6 +22,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import type {
@@ -30,7 +31,6 @@ import type {
     MinionCardDef,
     MinionMetadataUpdatedEvent,
     MinionPlayedEvent,
-    OngoingDetachedEvent,
     SmashUpCore,
     SmashUpEvent,
     TitanState,
@@ -66,6 +66,7 @@ type MoveMinionContext = PromptContext & {
 
 type MoveDestinationContext = PromptContext & {
     sourceId: string;
+    sourceDefId: string;
     minionUid: string;
     minionDefId: string;
     fromBaseIndex: number;
@@ -450,9 +451,13 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
             minionDefId: context.sourceMinionDefId,
             fromBaseIndex: context.sourceBaseIndex,
             destroyerId: playerId,
+            sourcePlayerId: playerId,
+            sourceCardUid: context.sourceMinionUid,
+            sourceDefId: context.sourceMinionDefId,
+            sourceControllerId: playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
             reason: 'itty_critters_evolution',
             now: timestamp,
-            sourceKind: 'action',
         });
         if (destroyEvents.length === 0) return { events: [] };
 
@@ -532,9 +537,11 @@ const optionalMinionPromptProgram = createPromptProgram<OptionalMinionContext, S
                 minionDefId: choice.defId,
                 fromBaseIndex: choice.baseIndex,
                 destroyerId: playerId,
+                sourcePlayerId: playerId,
+                sourceDefId: context.sourceId,
+                sourceControllerId: playerId,
                 reason: context.sourceId,
                 now: timestamp,
-                sourceKind: 'nonAction',
             }),
         };
     },
@@ -588,6 +595,7 @@ const tadpourChooseMinionProgram = createPromptProgram<MoveMinionContext, SmashU
             playerId,
             now: timestamp,
             sourceId: 'itty_critters_tadpour_dest',
+            sourceDefId: 'itty_critters_tadpour',
             minionUid: choice.minionUid,
             minionDefId: choice.defId,
             fromBaseIndex: choice.baseIndex,
@@ -619,6 +627,10 @@ const tadpourDestinationProgram = createPromptProgram<MoveDestinationContext, Sm
                 fromBaseIndex: context.fromBaseIndex,
                 toBaseIndex: choice.baseIndex,
                 toBaseDefId: choice.baseDefId,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.fromBaseIndex,
                 reason: context.sourceId,
                 now: timestamp,
             }),
@@ -714,20 +726,17 @@ const superEffectivePromptProgram = createPromptProgram<SuperEffectiveContext, S
             targetType: 'ongoing',
         },
     ),
-    onResolve: ({ value, timestamp }) => {
+    onResolve: ({ state, value, timestamp }) => {
         const choice = value as CardChoice;
         if (!choice.cardUid || !choice.defId || !choice.ownerId) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: choice.cardUid,
-                    defId: choice.defId,
-                    ownerId: choice.ownerId,
-                    reason: 'itty_critters_super_effective',
-                },
-                timestamp,
-            } as OngoingDetachedEvent],
+            events: buildValidatedOngoingDetachEvents(state, {
+                cardUid: choice.cardUid,
+                defId: choice.defId,
+                ownerId: choice.ownerId,
+                reason: 'itty_critters_super_effective',
+                now: timestamp,
+            }),
         };
     },
 });
@@ -841,6 +850,11 @@ function critterCube(ctx: AbilityContext): AbilityResult {
         cardUid: target.minion.uid,
         defId: target.minion.defId,
         ownerId: ctx.playerId,
+        sourcePlayerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
         reason: 'itty_critters_critter_cube',
         now: ctx.now,
         expectedLocation: 'bases',

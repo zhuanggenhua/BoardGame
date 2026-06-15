@@ -20,8 +20,8 @@
 ## 证据
 
 - 截图：
-  - [3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-host-waiting-score-summary.png](/D:/gongzuo/webgame/BoardGame/.worktrees/fantasyrealms/test-results/evidence-screenshots/_shared/fantasyrealms-online-basic.e2e/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-host-waiting-score-summary.png)
-  - [3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-player3-waiting-score-summary.png](/D:/gongzuo/webgame/BoardGame/.worktrees/fantasyrealms/test-results/evidence-screenshots/_shared/fantasyrealms-online-basic.e2e/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-player3-waiting-score-summary.png)
+  - [3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-host-waiting-score-summary.png](/D:/gongzuo/webgame/BoardGame/.worktrees/fantasyrealms/test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-host-waiting-score-summary.png)
+  - [3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-player3-waiting-score-summary.png](/D:/gongzuo/webgame/BoardGame/.worktrees/fantasyrealms/test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字/3人在线房间等待页只公开当前观察者分数摘要，不泄露第三方分数与名字-player3-waiting-score-summary.png)
 - 相关测试：
   - [fantasyrealms-online-basic.e2e.ts](/D:/gongzuo/webgame/BoardGame/.worktrees/fantasyrealms/e2e/fantasyrealms/fantasyrealms-online-basic.e2e.ts:1652)
 - 相关实现：

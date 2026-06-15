@@ -23,6 +23,8 @@ type TestHarnessWindow = Window & {
     };
 };
 
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
+
 async function waitForTestHarness(page: Page, timeout = 15000) {
     await page.waitForFunction(() => {
         const harness = (window as TestHarnessWindow).__BG_TEST_HARNESS__;
@@ -59,13 +61,13 @@ test.describe('FantasyRealms legal test-route local AI flow', () => {
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 15000 });
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-            const deckButton = page.getByRole('button', { name: /从牌库摸 2 张并弃 1 张/ });
+            const deckButton = page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
 
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(deckButton).toBeVisible({ timeout: 10000 });
             await deckButton.click();
 
-            await expect(liveActionButton).toContainText('弃一张牌');
             const firstHandDiscardButton = page.getByRole('button', { name: /弃置手牌/ }).first();
+            await expect(firstHandDiscardButton).toBeVisible({ timeout: 10000 });
             await firstHandDiscardButton.click();
 
             await expect(liveActionButton).toContainText('确认弃置');
@@ -85,7 +87,7 @@ test.describe('FantasyRealms legal test-route local AI flow', () => {
             }, { timeout: 20000 });
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-            await expect(liveActionButton).toContainText('抓一张牌');
+            await expect(deckButton).toBeVisible({ timeout: 10000 });
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'test-route-local-ai-roundtrip-back-to-human');
             await mkdir(dirname(evidencePath), { recursive: true });

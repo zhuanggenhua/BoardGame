@@ -494,6 +494,7 @@ describe('fantasyrealms runtime skeleton', () => {
         expect(engineConfig.commandTypes).toEqual(['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD']);
         expect(engineConfig.minPlayers).toBe(2);
         expect(engineConfig.maxPlayers).toBe(6);
+        expect(engineConfig.systems.map((system) => system.id)).toEqual(expect.arrayContaining(['actionLog', 'undo']));
     });
 });
 

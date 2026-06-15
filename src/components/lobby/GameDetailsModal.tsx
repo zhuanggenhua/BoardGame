@@ -1999,43 +1999,17 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                         {gameDisplayName}
                                     </h2>
                                 </div>
-                                <div className="flex shrink-0 items-center gap-1.5 self-center md:hidden">
-                                    <button
-                                        type="button"
-                                        data-testid="game-details-author-button-mobile"
-                                        onClick={() => setShowAuthorInfoModal(true)}
-                                        className="inline-flex h-5 items-center whitespace-nowrap border-none bg-transparent p-0 text-right text-[10px] font-semibold leading-none tracking-[0.04em] text-parchment-light-text/85 underline decoration-parchment-card-border/60 underline-offset-[0.2rem] shadow-none transition-colors hover:bg-transparent hover:text-parchment-base-text hover:decoration-parchment-base-text/55 focus-visible:outline-none cursor-pointer"
-                                        style={{ borderStyle: 'none' }}
-                                        title={gameAuthorButtonHint}
-                                        aria-label={gameAuthorButtonHint}
-                                        aria-haspopup="dialog"
-                                        aria-expanded={showAuthorInfoModal}
-                                    >
-                                        <span>{gameAuthorMobileLabel}</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        data-testid="game-details-author-icon-button-mobile"
-                                        onClick={() => setShowAuthorInfoModal(true)}
-                                        className="transition-colors hover:text-parchment-base-text focus-visible:outline-none cursor-pointer"
-                                        style={{
-                                            all: 'unset',
-                                            display: 'inline-flex',
-                                            width: '1.25rem',
-                                            height: '1.25rem',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'rgb(139 118 89 / 0.85)',
-                                            cursor: 'pointer',
-                                        }}
-                                        title={gameAuthorButtonHint}
-                                        aria-label={gameAuthorButtonHint}
-                                        aria-haspopup="dialog"
-                                        aria-expanded={showAuthorInfoModal}
-                                    >
-                                        <Info size={11} strokeWidth={2.2} className="shrink-0 opacity-90" />
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    data-testid="game-details-author-button-mobile"
+                                    onClick={() => setShowAuthorInfoModal(true)}
+                                    className="inline-flex shrink-0 self-baseline whitespace-nowrap border-none bg-transparent p-0 text-right text-[10px] font-semibold leading-none tracking-[0.04em] text-parchment-light-text/85 shadow-none transition-colors hover:bg-transparent hover:text-parchment-base-text focus-visible:outline-none cursor-pointer md:hidden"
+                                    style={{ borderStyle: 'none' }}
+                                    title={gameAuthorButtonHint}
+                                    aria-label={gameAuthorButtonHint}
+                                >
+                                    <span>{gameAuthorMobileLabel}</span>
+                                </button>
                                 <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
                             </div>
                             {/* 描述区域 - 可滚动 */}
@@ -2102,30 +2076,16 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             ) : null}
 
                             <div className="hidden shrink-0 w-full justify-center pt-2 md:flex md:pt-3">
-                                <div className="flex max-w-full items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAuthorInfoModal(true)}
-                                        className="inline-flex max-w-full items-center rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text underline decoration-parchment-card-border/60 underline-offset-[0.28rem] shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text hover:decoration-parchment-base-text/55 cursor-pointer"
-                                        title={gameAuthorButtonHint}
-                                        aria-label={gameAuthorButtonHint}
-                                        aria-haspopup="dialog"
-                                        aria-expanded={showAuthorInfoModal}
-                                    >
-                                        <span className="truncate">{gameAuthorLabel}</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAuthorInfoModal(true)}
-                                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
-                                        title={gameAuthorButtonHint}
-                                        aria-label={gameAuthorButtonHint}
-                                        aria-haspopup="dialog"
-                                        aria-expanded={showAuthorInfoModal}
-                                    >
-                                        <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAuthorInfoModal(true)}
+                                    className="inline-flex max-w-full items-center gap-3 rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
+                                    title={gameAuthorButtonHint}
+                                    aria-label={gameAuthorButtonHint}
+                                >
+                                    <span className="truncate">{gameAuthorLabel}</span>
+                                    <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
+                                </button>
                             </div>
                         </div>
                     </div>

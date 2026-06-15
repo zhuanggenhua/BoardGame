@@ -629,7 +629,7 @@ function handleAdventurePowerMinions(
 
 function handleAdventurePowerBase(
     state: MatchState<SmashUpCore>,
-    _playerId: PlayerId,
+    playerId: PlayerId,
     value: unknown,
     _data: Record<string, unknown> | undefined,
     _random: RandomFn,
@@ -648,6 +648,10 @@ function handleAdventurePowerBase(
             toBaseIndex: selected.baseIndex!,
             reason: 'mythic_horses_adventure_power',
             now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'mythic_horses_adventure_power',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
         });
     });
     return { state, events };
@@ -735,6 +739,10 @@ function handleFriendshipPowerBase(
             toBaseIndex: selected.baseIndex,
             reason: 'mythic_horses_friendship_power',
             now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'mythic_horses_friendship_power',
+            sourceControllerId: playerId,
+            sourceKind: 'action',
         }),
     ] };
 }

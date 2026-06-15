@@ -492,6 +492,11 @@ export function buildPendingPostScoringActionEvents(
             toBaseDefId: action.targetBaseDefId,
             reason: action.reason,
             now: timestamp,
+            sourcePlayerId: action.sourcePlayerId,
+            sourceDefId: action.sourceDefId,
+            sourceControllerId: action.sourceControllerId,
+            sourceBaseIndex: action.sourceBaseIndex,
+            sourceKind: action.sourceKind,
         }));
     }
 

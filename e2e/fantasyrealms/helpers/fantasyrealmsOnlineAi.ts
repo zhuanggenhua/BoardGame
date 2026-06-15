@@ -17,6 +17,7 @@ import {
 import { getMatchState, injectMatchState } from '../../helpers/state-injection';
 
 export const GAME_NAME = 'fantasyrealms';
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
 export type FantasyRealmsMatchState = MatchState<FantasyRealmsCore>;
 
 export type OnlineAiSummary = {
@@ -382,7 +383,7 @@ async function rescueFantasyRealmsRenderError(page: Page): Promise<boolean> {
     return true;
 }
 
-async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
+async function waitForFantasyRealmsLiveOrCompactShell(page: Page, args: {
     urlPattern: RegExp;
     shellLabel: string;
     requireHandRow?: boolean;
@@ -392,7 +393,7 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
     const maxRescues = 2;
     let lastBodyText = '';
     const liveTable = page.getByTestId('fantasyrealms-live-table');
-    const stackedLayout = page.getByTestId('fantasyrealms-stacked-layout');
+    const compactLayout = page.getByTestId('fantasyrealms-compact-layout');
     const handRow = page.getByTestId('fantasyrealms-hand-row');
 
     while (Date.now() < deadline) {
@@ -401,13 +402,17 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
 
         if (await liveTable.count() > 0 && await liveTable.first().isVisible().catch(() => false)) {
             await expect(page.getByTestId('fantasyrealms-live-topbar')).toBeVisible({ timeout: 10000 });
+            const liveScoreStrip = page.getByTestId('fantasyrealms-live-score-strip');
+            if (await liveScoreStrip.count() > 0) {
+                await expect(liveScoreStrip).toBeVisible({ timeout: 10000 });
+            }
             if (args.requireHandRow !== false) {
                 await expect(handRow).toBeVisible({ timeout: 10000 });
             }
             return;
         }
 
-        if (await stackedLayout.count() > 0 && await stackedLayout.first().isVisible().catch(() => false)) {
+        if (await compactLayout.count() > 0 && await compactLayout.first().isVisible().catch(() => false)) {
             if (args.requireHandRow !== false) {
                 await expect(handRow).toBeVisible({ timeout: 10000 });
             }
@@ -427,16 +432,18 @@ async function waitForFantasyRealmsLiveOrStackedShell(page: Page, args: {
 }
 
 export async function waitForFantasyRealmsBoard(page: Page, expectedPlayerId: string) {
-    await waitForFantasyRealmsLiveOrStackedShell(page, {
+    await waitForFantasyRealmsLiveOrCompactShell(page, {
         urlPattern: new RegExp(`/play/${GAME_NAME}/match/.+\\?playerID=${expectedPlayerId}`),
         shellLabel: `Fantasy Realms 玩家页棋盘壳（playerID=${expectedPlayerId}）`,
+        requireHandRow: false,
     });
 }
 
 export async function waitForFantasyRealmsSpectatorBoard(page: Page, matchId: string) {
-    await waitForFantasyRealmsLiveOrStackedShell(page, {
+    await waitForFantasyRealmsLiveOrCompactShell(page, {
         urlPattern: new RegExp(`/play/${GAME_NAME}/match/${matchId}\\?spectate=1$`),
         shellLabel: `Fantasy Realms spectator 棋盘壳（matchId=${matchId}）`,
+        requireHandRow: false,
     });
 }
 
@@ -463,22 +470,21 @@ export async function expectFantasyRealmsSpectatorLiveNoLeak(page: Page) {
         await expect(liveScoreStrip).toContainText('终局揭示');
     } else {
         await expect(page.getByText('??').first()).toBeVisible();
-        await expect(page.getByText('终局揭示').first()).toBeVisible();
+            await expect(page.getByText('终局揭示').first()).toBeVisible();
     }
     await expect(page.getByRole('button', { name: /查看手牌|弃置手牌/ })).toHaveCount(0);
+    await expect(page.locator('.fr-card-button--live-hand:visible')).toHaveCount(0);
 }
 
-export async function switchFantasyRealmsPageToStackedLayout(page: Page) {
+export async function switchFantasyRealmsPageToCompactLandscapeLayout(page: Page) {
     await page.setViewportSize({ width: 1024, height: 768 });
-    await expect(page.getByTestId('fantasyrealms-stacked-layout')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('fantasyrealms-compact-layout')).toBeVisible({ timeout: 10000 });
 }
 
 export async function expectWaitingPageKeepsOpponentFocusHidden(args: {
     page: Page;
     hiddenCardName: string;
 }) {
-    await expect(args.page.getByText('你当前正在等待。这里仍可查看自己的手牌与公开弃牌，其他玩家的隐藏手牌不会在此展开。')).toHaveCount(0);
-    await expect(args.page.getByText('多人局进行中：这里只公开你的官方总分，其他玩家分数会在终局统一揭示。')).toHaveCount(0);
     await expect(args.page.getByText('你的回合')).toHaveCount(0);
     await expect(args.page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
     await expectHiddenFocusPreviewNoLeak({
@@ -519,9 +525,6 @@ export async function expectLiveWaitingScoreSummary(args: {
     const liveScoreBandTotal = args.page.locator('.fr-live-score-band-total');
     if (await liveScoreBandTotal.count() > 0) {
         await expect(liveScoreBandTotal).toHaveText(String(args.expectedScore));
-        await expect(args.page.getByText('官方总分')).toHaveCount(0);
-        await expect(args.page.getByText('终局揭示')).toHaveCount(0);
-        await expect(args.page.getByText('当前行动')).toHaveCount(0);
     } else {
         await expect(summaryRegion.locator('.fr-score-row-total strong').filter({ hasText: String(args.expectedScore) }).first()).toBeVisible();
     }
@@ -579,6 +582,7 @@ export async function completeNaturalHumanDeckTurn(args: {
     playerId: string;
     roundLabel: string;
 }) {
+    const deckButton = args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
     const liveActionButton = args.page.getByTestId('fantasyrealms-live-action-button');
     const beforeSummary = await readOnlineAiStateSummary(args.matchId, args.page);
     const beforeHandCount = beforeSummary.handCounts[args.playerId] ?? 0;
@@ -586,8 +590,8 @@ export async function completeNaturalHumanDeckTurn(args: {
     const beforeDiscardCount = beforeSummary.discardCount;
 
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-    await expect(liveActionButton).toContainText('抓一张牌');
-    await liveActionButton.click();
+    await expect(deckButton).toBeVisible({ timeout: 10000 });
+    await deckButton.click();
 
     await expect.poll(async () => {
         const summary = await readOnlineAiStateSummary(args.matchId, args.page);

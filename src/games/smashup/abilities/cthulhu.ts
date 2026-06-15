@@ -19,10 +19,11 @@ import type {
 import { getCardDef, getBaseDef } from '../data/cards';
 import { matchesDefId } from '../domain/utils';
 import {
-    drawMadnessCards, grantContextualExtraAction, destroyMinion,
+    drawMadnessCards, grantContextualExtraAction,
     returnMadnessCard, getMinionPower,
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
+    buildValidatedDestroyEvents,
     buildStandardDrawEventsFromRuntimeContext,
     findMinionOnBases,
 } from '../domain/abilityHelpers';
@@ -536,15 +537,18 @@ const cthulhuCorruptionPromptProgram = createPromptProgram<CthulhuPromptContext,
         const target = base?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(
-                target.uid,
-                target.defId,
-                selected.baseIndex,
-                target.owner,
-                playerId,
-                'cthulhu_corruption',
-                timestamp,
-            )],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: 'cthulhu_corruption',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'cthulhu_corruption',
+                sourceControllerId: playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -1101,17 +1105,29 @@ const cthulhuServitorPromptProgram = createPromptProgram<CthulhuPromptContext, S
 
 const cthulhuServitorProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const sourceMinion = findMinionOnBases(ctx.state, ctx.cardUid)?.minion;
-    const events: SmashUpEvent[] = [
-        destroyMinion(
-            ctx.cardUid,
-            ctx.defId,
-            ctx.baseIndex,
-            sourceMinion?.owner ?? ctx.playerId,
-            undefined,
-            'cthulhu_servitor',
-            ctx.now,
-        ),
-    ];
+    const events: SmashUpEvent[] = buildValidatedDestroyEvents(ctx.state, {
+        minionUid: ctx.cardUid,
+        minionDefId: ctx.defId,
+        fromBaseIndex: ctx.baseIndex,
+        destroyerId: undefined,
+        reason: 'cthulhu_servitor',
+        now: ctx.now,
+        sourcePlayerId: ctx.playerId,
+        sourceCardUid: ctx.cardUid,
+        sourceDefId: ctx.defId,
+        sourceControllerId: ctx.playerId,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceKind: 'nonAction',
+        targetSnapshot: sourceMinion
+            ? {
+                ownerId: sourceMinion.owner,
+                controllerId: sourceMinion.controller,
+                attachedActions: sourceMinion.attachedActions,
+                metadata: sourceMinion.metadata,
+                playedThisTurn: sourceMinion.playedThisTurn,
+            }
+            : undefined,
+    });
     if (buildServitorOptions(ctx.state, ctx.playerId).length === 0) {
         return { events };
     }

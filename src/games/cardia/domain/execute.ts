@@ -12,6 +12,13 @@ import { ABILITY_IDS } from './ids';
 import { getOpponentId } from './utils';
 import { abilityExecutorRegistry, type CardiaAbilityContext } from './abilityExecutor';
 import { abilityRegistry } from './abilityRegistry';
+import {
+    getCardiaActiveOngoingAbilities,
+    getCardiaActiveOngoingAbilitiesByAbilityId,
+    getCardiaPlayerActiveOngoingAbilitiesByAbilityId,
+    getCardiaPlayerActiveOngoingAbilitiesByEffectType,
+    resolveCardiaEncounterOutcome,
+} from './effectHost';
 
 /**
  * 执行命令
@@ -223,42 +230,16 @@ function resolveEncounter(
     const player2Influence = player2Modifiers.reduce((acc, m) => acc + m.value, player2Card.baseInfluence);
     
     // 2. 判定胜负（基础判定）
-    let winner: PlayerId | 'tie';
-    let loser: PlayerId | null;
-    
-    if (player1Influence > player2Influence) {
-        winner = player1Id;
-        loser = player2Id;
-    } else if (player2Influence > player1Influence) {
-        winner = player2Id;
-        loser = player1Id;
-    } else {
-        winner = 'tie';
-        loser = null;
-    }
-    
-    // 3. 应用持续能力效果（按优先级）
-    // 保存原始的 winner 值，用于判断是否触发能力
-    // 审判官规则："平局不会触发能力"，即使审判官赢得平局，也不进入能力阶段
-    const originalWinner = winner;
-    
-    // 3.1 检查调停者（forceTie）- 强制平局（只影响当前遭遇）
-    const mediatorAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'forceTie' && a.encounterIndex === core.turnNumber
-    );
-    if (mediatorAbility) {
-        winner = 'tie';
-        loser = null;
-    }
-    
-    // 3.2 检查审判官（winTies）- 赢得平局（影响所有遭遇）
-    const magistrateAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'winTies'
-    );
-    if (magistrateAbility && winner === 'tie') {
-        winner = magistrateAbility.playerId;
-        loser = getOpponentId(core, magistrateAbility.playerId);
-    }
+    const outcome = resolveCardiaEncounterOutcome(core, {
+        player1Id,
+        player1Influence,
+        player2Id,
+        player2Influence,
+        encounterIndex: core.turnNumber,
+    });
+    const originalWinner = outcome.baseWinner;
+    const winner = outcome.winner;
+    const loser = outcome.loser;
     
     // 4. 发射遭遇战解析事件
     console.log('[Cardia] resolveEncounter: emitting ENCOUNTER_RESOLVED event', {
@@ -295,9 +276,7 @@ function resolveEncounter(
         });
         
         // 5.2 检查顾问（extraSignet）- 额外印戒（一次性）
-        const extraSignetAbilities = core.ongoingAbilities.filter(
-            a => a.abilityId === ABILITY_IDS.ADVISOR
-        );
+        const extraSignetAbilities = getCardiaPlayerActiveOngoingAbilitiesByAbilityId(core, winner, ABILITY_IDS.ADVISOR);
         
         for (const ability of extraSignetAbilities) {
             // 顾问：只对放置标记的玩家生效
@@ -329,9 +308,7 @@ function resolveEncounter(
         // 财务官的效果在激活时立即生效，持续标记保持到游戏结束（或被虚空法师移除）
         
         // 5.3 检查机械精灵（conditionalVictory）- 条件胜利（一次性）
-        const mechanicalSpiritAbility = core.ongoingAbilities.find(
-            a => a.effectType === 'conditionalVictory' && a.playerId === winner
-        );
+        const mechanicalSpiritAbility = getCardiaPlayerActiveOngoingAbilitiesByEffectType(core, winner, 'conditionalVictory')[0];
         
         if (mechanicalSpiritAbility) {
             // 触发游戏胜利
@@ -709,30 +686,13 @@ export function recalculateEncounterState(
     }
 
     // 4. 重新判定遭遇结果（考虑持续能力）
-    let newWinner: PlayerId | 'tie';
-
-    if (newPlayer1Influence > newPlayer2Influence) {
-        newWinner = player1Card.ownerId;
-    } else if (newPlayer2Influence > newPlayer1Influence) {
-        newWinner = player2Card.ownerId;
-    } else {
-        newWinner = 'tie';
-    }
-
-    // 应用持续能力效果
-    const mediatorAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'forceTie' && a.encounterIndex === encounterIndex
-    );
-    if (mediatorAbility) {
-        newWinner = 'tie';
-    }
-
-    const magistrateAbility = core.ongoingAbilities.find(
-        a => a.effectType === 'winTies'
-    );
-    if (magistrateAbility && newWinner === 'tie') {
-        newWinner = magistrateAbility.playerId;
-    }
+    const newWinner = resolveCardiaEncounterOutcome(core, {
+        player1Id: player1Card.ownerId,
+        player1Influence: newPlayer1Influence,
+        player2Id: player2Card.ownerId,
+        player2Influence: newPlayer2Influence,
+        encounterIndex: player1Card.encounterIndex,
+    }).winner;
 
     // 5. 如果遭遇结果改变，发射事件并移动印戒
     const oldWinner = encounter.winnerId;

@@ -62,9 +62,11 @@ const DRAFT_COMMANDS = [
 function makeRevealEntry({
     id,
     viewerPlayerId,
+    timestamp,
 }: {
     id: number;
     viewerPlayerId: '0' | '1' | 'all';
+    timestamp?: number;
 }): EventStreamEntry {
     return {
         id,
@@ -76,7 +78,7 @@ function makeRevealEntry({
                 cards: [{ uid: `card-${id}`, defId: 'pirate_first_mate' }],
                 reason: 'test_reveal_visibility',
             },
-            timestamp: id * 100,
+            timestamp: timestamp ?? id * 100,
         },
     };
 }
@@ -231,6 +233,28 @@ describe('卡牌展示系统', () => {
             const preview = document.querySelector<HTMLElement>('[data-card-preview]');
             expect(preview?.style.width).toBe('8.5vw');
             expect(preview?.style.height).toContain('vw');
+        });
+
+        it('早于当前页面会话的历史展示不应自动盖住牌桌', async () => {
+            const { rerender } = render(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 6, viewerPlayerId: 'all', timestamp: 1000 })],
+                currentPlayerId: '0',
+                ignoreEventsBefore: 2000,
+            }));
+
+            await Promise.resolve();
+            expect(screen.queryByTestId('reveal-overlay')).toBeNull();
+
+            rerender(React.createElement(RevealOverlay, {
+                entries: [
+                    makeRevealEntry({ id: 6, viewerPlayerId: 'all', timestamp: 1000 }),
+                    makeRevealEntry({ id: 7, viewerPlayerId: 'all', timestamp: 3000 }),
+                ],
+                currentPlayerId: '0',
+                ignoreEventsBefore: 2000,
+            }));
+
+            expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
         });
 
         it('猴子见猴子做 prompt 应生成同批顶五展示的 suppression 规则', () => {

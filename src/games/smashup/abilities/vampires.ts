@@ -7,7 +7,7 @@
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
-    addPowerCounter, addOngoingCardCounter, destroyMinion,
+    addPowerCounter, addOngoingCardCounter,
     buildMinionTargetOptions,
     findMinionOnBases, buildAbilityFeedback,
     buildBaseTargetOptions,
@@ -85,6 +85,9 @@ type VampireFledglingPodBuryBasePromptContext = VampirePromptContext & {
 type VampireDinnerDatePodPromptContext = VampirePromptContext & {
     attachedMinionUid: string;
     attachedBaseIndex: number;
+    sourceCardUid: string;
+    sourceDefId: string;
+    sourceBaseIndex: number;
 };
 
 type VampireCullTheWeakPodPromptContext = VampirePromptContext & {
@@ -114,6 +117,14 @@ function createVampirePromptContext<TExtra extends Record<string, unknown> = Rec
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+function getVampireSourceMinionDefId(
+    state: SmashUpCore,
+    sourceMinionUid: string,
+    sourceBaseIndex: number,
+): string | undefined {
+    return state.bases[sourceBaseIndex]?.minions.find((minion) => minion.uid === sourceMinionUid)?.defId;
 }
 
 function applyEventsToMatchState(
@@ -337,6 +348,13 @@ function registerVampirePodOngoingEffects(): void {
             destroyerId,
             reason: 'vampire_dinner_date_pod',
             now,
+            sourcePlayerId: ((attachment.metadata?.sourcePlayerId as PlayerId | undefined)
+                ?? (attachment.metadata?.sourceControllerId as PlayerId | undefined)
+                ?? attachment.ownerId),
+            sourceCardUid: attachment.uid,
+            sourceDefId: attachment.defId,
+            sourceControllerId: (attachment.metadata?.sourceControllerId as PlayerId | undefined) ?? attachment.ownerId,
+            sourceBaseIndex: baseIndex,
         });
     }, {
         canTrigger: canTriggerVampireDinnerDatePod,
@@ -697,6 +715,7 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
         } | undefined;
         const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
         if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
+        const sourceDefId = getVampireSourceMinionDefId(state.core, context.sourceMinionUid, context.sourceBaseIndex);
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
             minionDefId: selectedMinionDefId,
@@ -704,6 +723,11 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker',
             now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceCardUid: context.sourceMinionUid,
+            sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
         });
         if (destroyEvents.length === 0) return { events: [] };
         return {
@@ -750,6 +774,7 @@ const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinion
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
         if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const sourceDefId = getVampireSourceMinionDefId(state.core, context.sourceMinionUid, context.sourceBaseIndex);
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
             minionDefId: selected.defId,
@@ -757,6 +782,11 @@ const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinion
             destroyerId: context.playerId,
             reason: 'vampire_nightstalker',
             now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceCardUid: context.sourceMinionUid,
+            sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
         });
         if (destroyEvents.length === 0) return { events: [] };
         return {
@@ -802,7 +832,18 @@ const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMini
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_dinner_date', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'vampire_dinner_date',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'vampire_dinner_date',
+                sourceControllerId: context.playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -895,7 +936,18 @@ const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext, Sm
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_big_gulp', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'vampire_big_gulp',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'vampire_big_gulp',
+                sourceControllerId: context.playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -1330,6 +1382,7 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
         } | undefined;
         const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
         if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
+        const sourceDefId = getVampireSourceMinionDefId(state.core, context.sourceMinionUid, context.sourceBaseIndex);
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
             minionDefId: selectedMinionDefId,
@@ -1337,6 +1390,11 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker_pod',
             now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceCardUid: context.sourceMinionUid,
+            sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
         });
         if (destroyEvents.length === 0) return { events: [] };
         return {
@@ -1426,7 +1484,18 @@ const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext,
         const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
         if (!target) return { events: [] };
         return {
-            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_big_gulp_pod', timestamp)],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'vampire_big_gulp_pod',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'vampire_big_gulp_pod',
+                sourceControllerId: context.playerId,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -1612,6 +1681,11 @@ const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDateP
                     destroyerId: playerId,
                     reason: 'vampire_dinner_date_pod',
                     now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: context.sourceCardUid,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
                 }),
             ],
         };
@@ -1902,6 +1976,9 @@ function vampireDinnerDatePod(ctx: AbilityContext): AbilityResult {
         createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             attachedMinionUid: ctx.targetMinionUid,
             attachedBaseIndex: ctx.baseIndex,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceBaseIndex: ctx.baseIndex,
         }),
     );
     return { events: result.events, matchState: result.matchState };

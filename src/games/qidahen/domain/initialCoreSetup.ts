@@ -37,6 +37,11 @@ import type {
     QidahenScenarioChoiceSelections,
     QidahenScenarioId,
 } from './types';
+import {
+    DEFAULT_QIDAHEN_SCENARIO_ID,
+    getQidahenScenarioIdsForPlayerCount,
+    getQidahenScenarioVoteMeta,
+} from '../roomSetup';
 
 export const createInitialCore = (
     playerIds: PlayerId[],
@@ -103,6 +108,7 @@ export const createInitialCore = (
 
     const baseCore: QidahenCore = {
         playerIds: normalizedPlayerIds,
+        scenarioVote: null,
         scenarioId,
         scenarioLabel: preset.label,
         pendingScenarioCharacterChoices,
@@ -165,5 +171,38 @@ export const createInitialCore = (
     return {
         ...syncedBaseCore,
         selectedRegionId: getPreferredOpeningActionWindowSelectedRegionId(syncedBaseCore, openingFactionId),
+    };
+};
+
+export const createInitialCoreForInMatchScenarioVote = (
+    playerIds: PlayerId[],
+): QidahenCore => {
+    const allowedScenarioIds = getQidahenScenarioIdsForPlayerCount(playerIds.length);
+    const placeholderScenarioId = allowedScenarioIds[0] ?? DEFAULT_QIDAHEN_SCENARIO_ID;
+    const baseCore = createInitialCore(playerIds, placeholderScenarioId, true);
+    return {
+        ...baseCore,
+        scenarioVote: {
+            playerCount: playerIds.length,
+            hostPlayerId: playerIds[0] ?? '0',
+            options: allowedScenarioIds.map((scenarioId) => {
+                const meta = getQidahenScenarioVoteMeta(scenarioId);
+                return {
+                    scenarioId,
+                    label: meta.label,
+                    supportedPlayerCounts: [...meta.supportedPlayerCounts],
+                    intro: meta.intro,
+                    overview: meta.overview,
+                };
+            }),
+            votes: Object.fromEntries(playerIds.map((playerId) => [playerId, null])) as Record<PlayerId, QidahenScenarioId | null>,
+        },
+        actionLog: [
+            {
+                id: 'log-scenario-vote-intro',
+                faction: baseCore.currentFactionOrder[0] ?? 'ming',
+                text: '进入局内剧本介绍与投票阶段，全部席位确认后才会进入正式开局前置。',
+            },
+        ],
     };
 };

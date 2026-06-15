@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { UndoProvider } from '../../contexts/UndoContext';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import {
     EMPTY_FOCUS_INSIGHT,
@@ -11,6 +12,7 @@ import {
 } from './foundation';
 import {
     evaluateFantasyRealmsScore,
+    getDeckDrawCount,
     isDuelVariant,
     type FantasyRealmsCommandMap,
     type FantasyRealmsCore,
@@ -43,11 +45,12 @@ type PendingLiveSelection = {
     cardId: string;
 } | null;
 
-type LiveMotionCueType = 'draw-to-hand' | 'discard-to-hand' | 'hand-to-river';
+type LiveMotionCueType = 'draw-to-hand' | 'center-to-hand' | 'hand-to-center';
 
 type LiveMotionCue = {
     type: LiveMotionCueType;
     key: number;
+    cardIds: string[];
 } | null;
 
 type LiveMotionSnapshot = {
@@ -64,26 +67,19 @@ type LiveMotionWindow = Window & {
     __FR_LIVE_MOTION_LAST_SNAPSHOT__?: LiveMotionSnapshot;
 };
 
-const LIVE_RIVER_CARD_WIDTH = 190;
-const LIVE_RIVER_PREFERRED_GAP = 108;
-const LIVE_RIVER_MIN_GAP = 16;
-const LIVE_RIVER_MAX_ROW_WIDTH = 1220;
-const LIVE_RIVER_ROW_TOP = 8;
-const LIVE_RIVER_ROW_OFFSET = 202;
+const LIVE_CENTER_ROW_CARD_WIDTH = 190;
+const LIVE_CENTER_ROW_PREFERRED_GAP = 108;
+const LIVE_CENTER_ROW_MIN_GAP = 16;
+const LIVE_CENTER_ROW_MAX_ROW_WIDTH = 1220;
+const LIVE_CENTER_ROW_ROW_TOP = 8;
+const LIVE_CENTER_ROW_ROW_OFFSET = 202;
 
-function shouldUseStackedViewport(width: number, _height: number): boolean {
-    return width <= 1180;
+function shouldUseCompactLandscapeTableViewport(width: number, height: number): boolean {
+    return width > height && width <= 1180;
 }
-
-function shouldUseCompactLandscapeViewport(width: number, height: number): boolean {
+function shouldUseTightCompactLandscapeViewport(width: number, height: number): boolean {
     return width > height && width <= 900 && height <= 520;
 }
-
-const SCORE_LABEL_KEY_BY_LABEL: Record<string, string> = {
-    有效基础分: 'score.labels.activeBase',
-    总加分: 'score.labels.totalBonus',
-    总减分: 'score.labels.totalPenalty',
-};
 
 function createFallbackCore(): FantasyRealmsCore {
     const emptyScore = evaluateFantasyRealmsScore([], []);
@@ -135,20 +131,7 @@ function isFantasyRealmsCore(value: unknown): value is FantasyRealmsCore {
         && Object.values(candidate.players).every(isFantasyRealmsPlayerState);
 }
 
-function buildCardSlots(cards: TableCard[], slotCount: number, prefix: string): CardRowSlot[] {
-    const slots: CardRowSlot[] = cards.slice(0, slotCount).map((card) => ({
-        key: `${prefix}-${card.id}`,
-        card,
-    }));
-
-    while (slots.length < slotCount) {
-        slots.push({ key: `${prefix}-empty-${slots.length}` });
-    }
-
-    return slots;
-}
-
-function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties[] {
+function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSProperties[] {
     if (cardCount <= 0) return [];
 
     const topRowCount = cardCount <= 5 ? cardCount : Math.ceil(cardCount / 2);
@@ -160,18 +143,18 @@ function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties
 
         const availableGap = rowCount <= 1
             ? 0
-            : Math.floor((LIVE_RIVER_MAX_ROW_WIDTH - (rowCount * LIVE_RIVER_CARD_WIDTH)) / (rowCount - 1));
+            : Math.floor((LIVE_CENTER_ROW_MAX_ROW_WIDTH - (rowCount * LIVE_CENTER_ROW_CARD_WIDTH)) / (rowCount - 1));
         const gap = rowCount <= 1
             ? 0
-            : Math.max(LIVE_RIVER_MIN_GAP, Math.min(LIVE_RIVER_PREFERRED_GAP, availableGap));
-        const rowWidth = (rowCount * LIVE_RIVER_CARD_WIDTH) + ((rowCount - 1) * gap);
+            : Math.max(LIVE_CENTER_ROW_MIN_GAP, Math.min(LIVE_CENTER_ROW_PREFERRED_GAP, availableGap));
+        const rowWidth = (rowCount * LIVE_CENTER_ROW_CARD_WIDTH) + ((rowCount - 1) * gap);
         const startOffset = -(rowWidth / 2);
 
         for (let index = 0; index < rowCount; index += 1) {
-            const left = Math.round(startOffset + (index * (LIVE_RIVER_CARD_WIDTH + gap)));
+            const left = Math.round(startOffset + (index * (LIVE_CENTER_ROW_CARD_WIDTH + gap)));
             styles.push({
                 left: `calc(50% + ${left}px)`,
-                top: `${LIVE_RIVER_ROW_TOP + (rowIndex * LIVE_RIVER_ROW_OFFSET)}px`,
+                top: `${LIVE_CENTER_ROW_ROW_TOP + (rowIndex * LIVE_CENTER_ROW_ROW_OFFSET)}px`,
             });
         }
     };
@@ -181,34 +164,36 @@ function buildMinimalLiveRiverCardStyles(cardCount: number): React.CSSProperties
     return styles;
 }
 
+function buildCenteredLiveHandSlots(cards: TableCard[], slotCount: number): CardRowSlot[] {
+    if (slotCount <= 0) return [];
+
+    const centeredSlots: CardRowSlot[] = Array.from({ length: slotCount }, (_unused, index) => ({
+        key: `live-empty-hand-slot-${index}`,
+    }));
+    const visibleCards = cards.slice(0, slotCount);
+    const startIndex = Math.max(0, Math.floor((slotCount - visibleCards.length) / 2));
+
+    visibleCards.forEach((card, index) => {
+        centeredSlots[startIndex + index] = {
+            key: `live-hand-${card.id}`,
+            card,
+        };
+    });
+
+    return centeredSlots;
+}
+
 function buildMinimalLiveHandCardStyles(cardCount: number, slotCount: number): React.CSSProperties[] {
     if (cardCount <= 0 || slotCount <= 0) return [];
     const startColumn = Math.max(1, Math.floor((slotCount - cardCount) / 2) + 1);
-    return Array.from({ length: cardCount }, (_, index) => ({
+    return Array.from({ length: cardCount }, (_unused, index) => ({
         gridColumn: `${startColumn + index}`,
     }));
 }
 
-function createLiveMotionSnapshot(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string | null,
-    handCards: TableCard[],
-    discardCards: TableCard[],
-    isGameOver: boolean,
-): LiveMotionSnapshot {
-    return {
-        viewerPlayerId,
-        currentPlayer: core.currentPlayer,
-        stage: core.stage,
-        handIds: handCards.map((card) => card.id),
-        discardIds: discardCards.map((card) => card.id),
-        drawPileCount: core.drawPile.length,
-        isGameOver,
-    };
-}
-
-function localizeScoreBreakdownLabel(label: string, t: Translator): string {
-    return SCORE_LABEL_KEY_BY_LABEL[label] ? t(SCORE_LABEL_KEY_BY_LABEL[label]) : label;
+function getAddedIds(nextIds: string[], previousIds: string[]): string[] {
+    const previousIdSet = new Set(previousIds);
+    return nextIds.filter((id) => !previousIdSet.has(id));
 }
 
 function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
@@ -434,21 +419,6 @@ function getDrawDeckLabel(core: FantasyRealmsCore, t: Translator): string {
     return getCurrentPlayerHandCount(core) >= 7 ? t('turn.drawDeck.one') : t('turn.drawDeck.twoThenDiscardOne');
 }
 
-function getStageBannerText(
-    core: FantasyRealmsCore,
-    viewerPlayerId: string | null,
-    currentPlayerName: string,
-    t: Translator,
-): string {
-    if (viewerPlayerId !== core.currentPlayer) {
-        return t('turn.statusBanner.waiting', { player: currentPlayerName });
-    }
-    if (core.stage === 'discard') {
-        return t('turn.statusBanner.discardSelf');
-    }
-    return t('turn.live.selfTurn');
-}
-
 function getPlayerDisplayName(
     playerId: string,
     core: FantasyRealmsCore,
@@ -461,29 +431,42 @@ function getPlayerDisplayName(
     return t('fallback.unknownPlayer');
 }
 
-export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }: Props) {
+export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, isMultiplayer }: Props) {
     const { t, i18n } = useTranslation('game-fantasyrealms');
     const locale = i18n.language || 'zh-CN';
     const core = React.useMemo(() => (isFantasyRealmsCore(G?.core) ? G.core : createFallbackCore()), [G]);
-    const [isStackedViewport, setIsStackedViewport] = React.useState(() => (
-        typeof window !== 'undefined' ? shouldUseStackedViewport(window.innerWidth, window.innerHeight) : false
+    const [isCompactLandscapeTableViewport, setIsCompactLandscapeTableViewport] = React.useState(() => (
+        typeof window !== 'undefined'
+            ? shouldUseCompactLandscapeTableViewport(window.innerWidth, window.innerHeight)
+            : false
     ));
-    const [isCompactLandscapeViewport, setIsCompactLandscapeViewport] = React.useState(() => (
-        typeof window !== 'undefined' ? shouldUseCompactLandscapeViewport(window.innerWidth, window.innerHeight) : false
+    const [isTightCompactLandscapeViewport, setIsTightCompactLandscapeViewport] = React.useState(() => (
+        typeof window !== 'undefined'
+            ? shouldUseTightCompactLandscapeViewport(window.innerWidth, window.innerHeight)
+            : false
     ));
     const [pendingLiveSelection, setPendingLiveSelection] = React.useState<PendingLiveSelection>(null);
     const [liveMotionCue, setLiveMotionCue] = React.useState<LiveMotionCue>(null);
+    const [reviewPlayerId, setReviewPlayerId] = React.useState<string | null>(null);
     const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
     const liveMotionSequenceRef = React.useRef(0);
 
     React.useLayoutEffect(() => {
         if (typeof window === 'undefined') return undefined;
         const handleResize = () => {
-            const nextIsStackedViewport = shouldUseStackedViewport(window.innerWidth, window.innerHeight);
-            const nextIsCompactLandscapeViewport = shouldUseCompactLandscapeViewport(window.innerWidth, window.innerHeight);
-            setIsStackedViewport((previous) => (previous === nextIsStackedViewport ? previous : nextIsStackedViewport));
-            setIsCompactLandscapeViewport((previous) => (
-                previous === nextIsCompactLandscapeViewport ? previous : nextIsCompactLandscapeViewport
+            const nextIsCompactLandscapeTableViewport = shouldUseCompactLandscapeTableViewport(
+                window.innerWidth,
+                window.innerHeight,
+            );
+            const nextIsTightCompactLandscapeViewport = shouldUseTightCompactLandscapeViewport(
+                window.innerWidth,
+                window.innerHeight,
+            );
+            setIsCompactLandscapeTableViewport((previous) => (
+                previous === nextIsCompactLandscapeTableViewport ? previous : nextIsCompactLandscapeTableViewport
+            ));
+            setIsTightCompactLandscapeViewport((previous) => (
+                previous === nextIsTightCompactLandscapeViewport ? previous : nextIsTightCompactLandscapeViewport
             ));
         };
         handleResize();
@@ -494,39 +477,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
     const isSpectatorView = playerID == null;
     const viewerPlayerId = isSpectatorView ? null : playerID;
     const viewerPlayer = viewerPlayerId ? core.players[viewerPlayerId] : undefined;
-    const viewerHandCards = React.useMemo(() => viewerPlayer?.hand ?? [], [viewerPlayer?.hand]);
     const gameOver = G?.sys?.gameover as { winner?: string; draw?: boolean; scores?: Record<string, number>; winners?: string[] } | undefined;
     const isGameOver = Boolean(gameOver);
-    const handSlotCount = Math.max(FANTASY_REALMS_HAND_CARD_SLOTS, viewerHandCards.length);
-    const handCardSlots = React.useMemo(
-        () => buildCardSlots(viewerHandCards, handSlotCount, 'hand'),
-        [handSlotCount, viewerHandCards],
-    );
-    const focusDisplay = React.useMemo(
-        () => resolveFocusDisplayState(core, viewerPlayerId, viewerPlayer, isGameOver),
-        [core, isGameOver, viewerPlayer, viewerPlayerId],
-    );
-    const visibleFocusCard = focusDisplay.card;
-    const focusInsight = React.useMemo(
-        () => buildBoardFocusInsight(core, viewerPlayer, focusDisplay, t),
-        [core, focusDisplay, t, viewerPlayer],
-    );
-    const focusKicker = focusInsight.kicker;
-    const focusName = focusDisplay.hiddenByOtherPlayer
-        ? t('focus.hiddenName')
-        : (getFantasyRealmsCardDisplayName(visibleFocusCard) || t('focus.setupPhase'));
-    const focusEstimatedDelta = focusDisplay.hiddenByOtherPlayer
-        ? t('focus.hiddenDelta')
-        : (isGameOver
-            ? t('focus.hiddenDelta')
-            : (focusInsight.estimatedDelta >= 0 ? `+${focusInsight.estimatedDelta}` : String(focusInsight.estimatedDelta)));
-    const deckBackStyle = React.useMemo(() => getFantasyRealmsCardBackStyle(locale), [locale]);
-    const focusFaceStyle = React.useMemo(
-        () => (visibleFocusCard ? getFantasyRealmsCardFaceStyle(visibleFocusCard.id, locale) : null),
-        [locale, visibleFocusCard],
-    );
-    const focusPreviewUsesBack = focusDisplay.hiddenByOtherPlayer || !visibleFocusCard || !focusFaceStyle;
-    const focusPreviewStyle = focusPreviewUsesBack ? deckBackStyle : focusFaceStyle;
     const discardCards = React.useMemo(() => [...core.discardPile].reverse(), [core.discardPile]);
     const currentPlayerName = React.useMemo(() => {
         const matchPlayer = matchData.find((player) => String(player.id) === String(core.currentPlayer));
@@ -534,27 +486,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         if (core.players[core.currentPlayer]?.name) return core.players[core.currentPlayer]!.name;
         return t('fallback.currentPlayer');
     }, [core.currentPlayer, core.players, matchData, t]);
-    const viewerPlayerName = (() => {
-        if (isSpectatorView) return t('fallback.spectator');
-        const matchPlayer = matchData.find((player) => String(player.id) === String(viewerPlayerId));
-        if (matchPlayer?.name) return matchPlayer.name;
-        if (viewerPlayer?.name) return viewerPlayer.name;
-        return t('fallback.viewer');
-    })();
     const isMyTurn = !isSpectatorView && viewerPlayerId === core.currentPlayer;
     const canDrawFromDeck = isMyTurn && !isGameOver && core.stage === 'draw' && core.drawPile.length > 0;
     const canTakeDiscard = isMyTurn && !isGameOver && core.stage === 'draw' && core.discardPile.length > 0;
     const canDiscard = isMyTurn && !isGameOver && core.stage === 'discard';
-    const useDenseScorePanel = core.playerIds.length >= 5;
     const discardThreshold = getFantasyRealmsDiscardEndThreshold(core.playerIds.length);
-    const discardProgress = Math.min(core.discardPile.length / discardThreshold, 1);
     const pendingDiscardSelectionId = pendingLiveSelection?.source === 'discard' ? pendingLiveSelection.cardId : null;
     const pendingHandSelectionId = pendingLiveSelection?.source === 'hand' ? pendingLiveSelection.cardId : null;
     const selectedDiscardCard = pendingDiscardSelectionId
         ? discardCards.find((card) => card.id === pendingDiscardSelectionId) ?? null
-        : null;
-    const selectedHandCard = pendingHandSelectionId
-        ? viewerHandCards.find((card) => card.id === pendingHandSelectionId) ?? null
         : null;
     const winnerName = gameOver?.winner
         ? getPlayerDisplayName(gameOver.winner, core, matchData, t)
@@ -582,7 +522,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             ?? null,
         [playerSummaries],
     );
-    const canRevealViewerLiveScore = !isSpectatorView && Boolean(viewerPlayer);
+    const liveDeckDrawCount = React.useMemo(
+        () => getDeckDrawCount(core),
+        [core],
+    );
     const finalStandings = React.useMemo(() => {
         if (!isGameOver) return [];
         return core.playerIds
@@ -594,12 +537,64 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             }))
             .sort((left, right) => right.score - left.score);
     }, [core, gameOver?.scores, isGameOver, matchData, t, winnerIds]);
-    const stageBannerText = React.useMemo(
-        () => getStageBannerText(core, viewerPlayerId, currentPlayerName, t),
-        [core, currentPlayerName, t, viewerPlayerId],
+    const defaultReviewPlayerId = React.useMemo(() => {
+        if (!isGameOver) return null;
+        return viewerPlayerId ?? finalStandings[0]?.id ?? core.playerIds[0] ?? null;
+    }, [core.playerIds, finalStandings, isGameOver, viewerPlayerId]);
+    React.useEffect(() => {
+        if (!isGameOver) {
+            setReviewPlayerId(null);
+            return;
+        }
+        if (!defaultReviewPlayerId) return;
+        setReviewPlayerId((current) => {
+            if (current && core.players[current]) {
+                return current;
+            }
+            return defaultReviewPlayerId;
+        });
+    }, [core.players, defaultReviewPlayerId, isGameOver]);
+    const displayedPlayerId = isGameOver
+        ? (reviewPlayerId && core.players[reviewPlayerId] ? reviewPlayerId : defaultReviewPlayerId)
+        : viewerPlayerId;
+    const displayedPlayer = displayedPlayerId ? core.players[displayedPlayerId] : undefined;
+    const displayedHandCards = React.useMemo(() => displayedPlayer?.hand ?? [], [displayedPlayer?.hand]);
+    const selectedHandCard = pendingHandSelectionId
+        ? displayedHandCards.find((card) => card.id === pendingHandSelectionId) ?? null
+        : null;
+    const displayedPlayerName = React.useMemo(() => {
+        if (!displayedPlayerId) return null;
+        return getPlayerDisplayName(displayedPlayerId, core, matchData, t);
+    }, [core, displayedPlayerId, matchData, t]);
+    const handSlotCount = Math.max(FANTASY_REALMS_HAND_CARD_SLOTS, displayedHandCards.length);
+    const focusDisplay = React.useMemo(
+        () => resolveFocusDisplayState(core, displayedPlayerId, displayedPlayer, isGameOver),
+        [core, displayedPlayer, displayedPlayerId, isGameOver],
     );
+    const visibleFocusCard = focusDisplay.card;
+    const focusInsight = React.useMemo(
+        () => buildBoardFocusInsight(core, displayedPlayer, focusDisplay, t),
+        [core, displayedPlayer, focusDisplay, t],
+    );
+    const focusKicker = focusInsight.kicker;
+    const focusName = focusDisplay.hiddenByOtherPlayer
+        ? t('focus.hiddenName')
+        : (getFantasyRealmsCardDisplayName(visibleFocusCard) || t('focus.setupPhase'));
+    const focusEstimatedDelta = focusDisplay.hiddenByOtherPlayer
+        ? t('focus.hiddenDelta')
+        : (isGameOver
+            ? t('focus.hiddenDelta')
+            : (focusInsight.estimatedDelta >= 0 ? `+${focusInsight.estimatedDelta}` : String(focusInsight.estimatedDelta)));
+    const deckBackStyle = React.useMemo(() => getFantasyRealmsCardBackStyle(locale), [locale]);
+    const focusFaceStyle = React.useMemo(
+        () => (visibleFocusCard ? getFantasyRealmsCardFaceStyle(visibleFocusCard.id, locale) : null),
+        [locale, visibleFocusCard],
+    );
+    const focusPreviewUsesBack = focusDisplay.hiddenByOtherPlayer || !visibleFocusCard || !focusFaceStyle;
+    const focusPreviewStyle = focusPreviewUsesBack ? deckBackStyle : focusFaceStyle;
+    const shouldShowCompactFocusRail = !isGameOver && (Boolean(core.focusCardId) || core.hiddenFocusCard);
     const shouldShowFocusKicker = !isGameOver && !focusDisplay.hiddenByOtherPlayer;
-    const isMinimalLiveDesktop = !isStackedViewport;
+    const isMinimalLiveDesktop = true;
     const handRowOverflowStyle = React.useMemo<React.CSSProperties | undefined>(() => {
         if (handSlotCount <= FANTASY_REALMS_HAND_CARD_SLOTS) {
             return undefined;
@@ -610,16 +605,47 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 : `repeat(${handSlotCount}, minmax(88px, 1fr))`,
         };
     }, [handSlotCount, isMinimalLiveDesktop]);
+    const isDuelMode = core.playerIds.length === 2;
     const compactTurnStateLabel = React.useMemo(() => {
         if (!isMyTurn) return null;
         if (core.stage === 'discard') return t('turn.compact.discard');
+        if (isDuelMode && displayedHandCards.length === 0 && canDrawFromDeck) {
+            return t('turn.compact.drawTwo');
+        }
         return t('turn.compact.draw');
-    }, [core.stage, isMyTurn, t]);
-    const viewerHandIdsSignature = viewerHandCards.map((card) => card.id).join('|');
+    }, [canDrawFromDeck, core.stage, displayedHandCards.length, isDuelMode, isMyTurn, t]);
+    const liveHandZoneTitle = React.useMemo(() => {
+        if (isGameOver && displayedPlayerName) {
+            return t('zone.hand.reviewTitle', { player: displayedPlayerName });
+        }
+        if (isSpectatorView) return t('zone.hand.titleSpectator');
+        if (displayedHandCards.length > 0) {
+            return t('score.handCount', { count: displayedHandCards.length });
+        }
+        return t('zone.hand.title', { player: t('fallback.viewer') });
+    }, [displayedHandCards.length, displayedPlayerName, isGameOver, isSpectatorView, t]);
+    const viewerHandIdsSignature = displayedHandCards.map((card) => card.id).join('|');
     const discardIdsSignature = discardCards.map((card) => card.id).join('|');
+    const liveMotionSnapshot = React.useMemo<LiveMotionSnapshot>(() => ({
+        viewerPlayerId,
+        currentPlayer: core.currentPlayer,
+        stage: core.stage,
+        handIds: viewerHandIdsSignature ? viewerHandIdsSignature.split('|') : [],
+        discardIds: discardIdsSignature ? discardIdsSignature.split('|') : [],
+        drawPileCount: core.drawPile.length,
+        isGameOver,
+    }), [
+        core.currentPlayer,
+        core.drawPile.length,
+        core.stage,
+        discardIdsSignature,
+        isGameOver,
+        viewerHandIdsSignature,
+        viewerPlayerId,
+    ]);
 
     React.useEffect(() => {
-        const nextSnapshot = createLiveMotionSnapshot(core, viewerPlayerId, viewerHandCards, discardCards, isGameOver);
+        const nextSnapshot = liveMotionSnapshot;
         const previousSnapshot = liveMotionSnapshotRef.current
             ?? (typeof window !== 'undefined'
                 ? (window as LiveMotionWindow).__FR_LIVE_MOTION_LAST_SNAPSHOT__ ?? null
@@ -638,51 +664,53 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         const discardIdsChanged = nextSnapshot.discardIds.join('|') !== previousSnapshot.discardIds.join('|');
         const drawCountDelta = nextSnapshot.drawPileCount - previousSnapshot.drawPileCount;
         let nextCueType: LiveMotionCueType | null = null;
+        let nextCueCardIds: string[] = [];
 
         if (
-            previousSnapshot.currentPlayer === viewerPlayerId
-            && nextSnapshot.currentPlayer === viewerPlayerId
+            previousSnapshot.currentPlayer === nextSnapshot.viewerPlayerId
+            && nextSnapshot.currentPlayer === nextSnapshot.viewerPlayerId
             && previousSnapshot.stage === 'draw'
             && nextSnapshot.stage === 'discard'
             && handCountDelta > 0
         ) {
-            nextCueType = drawCountDelta < 0 ? 'draw-to-hand' : 'discard-to-hand';
+            nextCueType = drawCountDelta < 0 ? 'draw-to-hand' : 'center-to-hand';
+            nextCueCardIds = getAddedIds(nextSnapshot.handIds, previousSnapshot.handIds);
         } else if (
             previousSnapshot.currentPlayer === previousSnapshot.viewerPlayerId
             && previousSnapshot.stage === 'discard'
             && nextSnapshot.stage === 'draw'
             && (discardCountDelta > 0 || discardIdsChanged)
         ) {
-            nextCueType = 'hand-to-river';
+            nextCueType = 'hand-to-center';
+            nextCueCardIds = getAddedIds(nextSnapshot.discardIds, previousSnapshot.discardIds);
         }
 
-        if (!nextCueType) {
+        if (!nextCueType || nextCueCardIds.length === 0) {
             return undefined;
         }
 
         liveMotionSequenceRef.current += 1;
         const nextKey = liveMotionSequenceRef.current;
-        setLiveMotionCue({ type: nextCueType, key: nextKey });
-        const clearTimer = window.setTimeout(() => {
-            setLiveMotionCue((current) => (current?.key === nextKey ? null : current));
-        }, 1350);
+        setLiveMotionCue({ type: nextCueType, key: nextKey, cardIds: nextCueCardIds });
 
-        return () => window.clearTimeout(clearTimer);
+        return undefined;
     }, [
-        core.currentPlayer,
-        core.drawPile.length,
-        core.stage,
-        discardIdsSignature,
         isGameOver,
         isMinimalLiveDesktop,
         isSpectatorView,
-        viewerHandIdsSignature,
-        viewerPlayerId,
+        liveMotionSnapshot,
     ]);
 
-    const handleDrawFromDeck = React.useCallback(() => {
-        dispatch('DRAW_FROM_DECK', {});
-    }, [dispatch]);
+    React.useEffect(() => {
+        if (!liveMotionCue) return undefined;
+
+        const cueKey = liveMotionCue.key;
+        const clearTimer = window.setTimeout(() => {
+            setLiveMotionCue((current) => (current?.key === cueKey ? null : current));
+        }, 1350);
+
+        return () => window.clearTimeout(clearTimer);
+    }, [liveMotionCue]);
 
     React.useEffect(() => {
         if (!isMinimalLiveDesktop || !isMyTurn) {
@@ -761,223 +789,75 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             setPendingLiveSelection(null);
             return;
         }
-
-    }, [canDiscard, dispatch, selectedDiscardCard, selectedHandCard]);
-
-    const handleDeckStackClick = React.useCallback(() => {
-        if (!canDrawFromDeck || !isMyTurn) return;
-        setPendingLiveSelection(null);
-        dispatch('DRAW_FROM_DECK', {});
-    }, [canDrawFromDeck, dispatch, isMyTurn]);
+        if (canDrawFromDeck) {
+            setPendingLiveSelection(null);
+            dispatch('DRAW_FROM_DECK', {});
+        }
+    }, [canDiscard, canDrawFromDeck, dispatch, selectedDiscardCard, selectedHandCard]);
 
     const livePrimaryActionLabel = React.useMemo(() => {
         if (canDiscard) {
             return selectedHandCard ? t('actions.confirmDiscard') : t('turn.primaryActionShort.discardRequired');
         }
+        if (selectedDiscardCard) {
+            return t('actions.confirmTake');
+        }
+        if (canDrawFromDeck) {
+            return getDrawDeckLabel(core, t);
+        }
+        if (canTakeDiscard) {
+            return t('actions.selectDiscardRequired');
+        }
         return t('actions.confirmTake');
-    }, [canDiscard, selectedHandCard, t]);
-    const minimalLiveRiverCardStyles = React.useMemo(
-        () => buildMinimalLiveRiverCardStyles(discardCards.length),
+    }, [canDiscard, canDrawFromDeck, canTakeDiscard, core, selectedDiscardCard, selectedHandCard, t]);
+    const livePrimaryActionVisibleLabel = React.useMemo(() => {
+        if (canDiscard) {
+            return selectedHandCard ? t('actions.confirmDiscard') : (compactTurnStateLabel ?? t('turn.primaryActionShort.discardRequired'));
+        }
+        if (selectedDiscardCard) {
+            return t('actions.confirmTake');
+        }
+        if (canDrawFromDeck) {
+            return compactTurnStateLabel ?? livePrimaryActionLabel;
+        }
+        if (canTakeDiscard) {
+            return t('actions.selectDiscardRequired');
+        }
+        return livePrimaryActionLabel;
+    }, [
+        canDiscard,
+        canDrawFromDeck,
+        canTakeDiscard,
+        compactTurnStateLabel,
+        livePrimaryActionLabel,
+        selectedDiscardCard,
+        selectedHandCard,
+        t,
+    ]);
+    const minimalLiveCenterCardStyles = React.useMemo(
+        () => buildMinimalLiveCenterCardStyles(discardCards.length),
         [discardCards.length],
     );
+    const minimalLiveCenterPlaceholderStyles = React.useMemo(
+        () => buildMinimalLiveCenterCardStyles(5),
+        [],
+    );
     const minimalLiveHandCardStyles = React.useMemo(
-        () => buildMinimalLiveHandCardStyles(viewerHandCards.length, handSlotCount),
-        [handSlotCount, viewerHandCards.length],
+        () => buildMinimalLiveHandCardStyles(displayedHandCards.length, handSlotCount),
+        [displayedHandCards.length, handSlotCount],
     );
 
     const isLivePrimaryActionDisabled = React.useMemo(() => {
         if (canDiscard) return !selectedHandCard;
+        if (selectedDiscardCard) return false;
+        if (canDrawFromDeck) return false;
+        if (canTakeDiscard) return true;
         return false;
-    }, [canDiscard, selectedHandCard]);
-
-    const turnPanelBody = isGameOver ? (
-        <div className="fr-panel-body fr-chip-list">
-            <div className="fr-chip">{t('turn.reviewChip')}</div>
-        </div>
-    ) : (
-        <div className="fr-panel-body fr-chip-list">
-            <div className="fr-chip">{t('turn.roundChip', { turn: core.turn })}</div>
-            <div
-                className={`fr-stage-banner${core.stage === 'discard' ? ' fr-stage-banner--discard' : ''}`}
-                aria-live="polite"
-            >
-                {stageBannerText}
-            </div>
-            {canDrawFromDeck ? (
-                <button
-                    type="button"
-                    className="fr-chip fr-chip--actionable"
-                    onClick={handleDrawFromDeck}
-                >
-                    {getDrawDeckLabel(core, t)}
-                </button>
-            ) : null}
-        </div>
-    );
-
-    const turnPanelSection = (
-        <section className="fr-panel fr-stacked-turn-panel">
-            <div className="fr-panel-header">{t('turn.panelTitle')}</div>
-            {turnPanelBody}
-        </section>
-    );
-
-    const deckPanelSection = (
-        <section className="fr-panel fr-panel--deck-corner">
-            <div className="fr-panel-header">{t('deck.panelTitle')}</div>
-            <div className="fr-panel-body">
-                <div className={`fr-stack fr-stack--deck${isStackedViewport ? ' fr-stack--deck-compact' : ''}`}>
-                    <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--mid" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
-                    <div className="fr-stack-label">
-                        <span>{t('deck.remaining')}</span>
-                        <strong className="fr-count">{core.drawPile.length}</strong>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-
-    const scorePanelSection = (
-        <section className="fr-panel">
-            <div className="fr-panel-header">{t('score.panelTitle')}</div>
-            <div className={`fr-panel-body fr-score-summary${useDenseScorePanel ? ' fr-score-summary--dense' : ''}`}>
-                <div className={`fr-score-table${useDenseScorePanel ? ' fr-score-table--dense' : ''}`} aria-label={t('score.tableTitle')}>
-                    {playerSummaries.map((player) => (
-                        <div
-                            key={player.id}
-                            className={`fr-score-row${player.isCurrent ? ' fr-score-row--active' : ''}${useDenseScorePanel ? ' fr-score-row--dense' : ''}`}
-                        >
-                            <div className="fr-score-row-main">
-                                <div className={`fr-score-row-name${useDenseScorePanel ? ' fr-score-row-name--dense' : ''}`}>
-                                    <span>{player.name}</span>
-                                    {player.isViewer ? <i className="fr-score-badge">{t('score.badges.you')}</i> : null}
-                                    {player.isWinner ? <i className="fr-score-badge">{t('score.badges.winner')}</i> : null}
-                                </div>
-                                <div className={`fr-score-row-meta${useDenseScorePanel ? ' fr-score-row-meta--dense' : ''}`}>
-                                    {t('score.handCount', { count: player.handCount })}
-                                </div>
-                            </div>
-                            <div className={`fr-score-row-total${useDenseScorePanel ? ' fr-score-row-total--dense' : ''}`}>
-                                {player.scoreVisible ? (
-                                    <>
-                                        <strong>{player.score}</strong>
-                                        <span>{t('score.totalLabel')}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <strong>{t('score.hiddenValue')}</strong>
-                                        <span>{t('score.hiddenLabel')}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {canRevealViewerLiveScore ? (
-                    <div className={`fr-score-list${useDenseScorePanel ? ' fr-score-list--dense' : ''}`}>
-                        {(viewerPlayer?.scoreBreakdown ?? []).map((line) => (
-                            <span key={line.label}>
-                                <em>{localizeScoreBreakdownLabel(line.label, t)}</em>
-                                <b>{line.value >= 0 ? `+${line.value}` : line.value}</b>
-                            </span>
-                        ))}
-                    </div>
-                ) : null}
-            </div>
-        </section>
-    );
-
-    const discardZoneSection = (
-        <section
-            className="fr-zone"
-            aria-label={t('zone.discard.title')}
-        >
-            <div className="fr-zone-header">
-                <div className="fr-zone-title">{t('zone.discard.title')}</div>
-                <div className={`fr-zone-hint${canTakeDiscard ? ' fr-zone-hint--active' : ''}`}>
-                    {`${discardCards.length}/${discardThreshold}`}
-                </div>
-            </div>
-            <div
-                className={`fr-discard-row${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}`}
-                data-testid="fantasyrealms-discard-row"
-            >
-                {discardCards.length === 0 ? (
-                    <div
-                        className="fr-zone-empty"
-                        data-testid="fantasyrealms-discard-empty"
-                    >
-                        {t('zone.discard.emptyCompact')}
-                    </div>
-                ) : discardCards.map((card) => (
-                    <button
-                        key={card.id}
-                        type="button"
-                        className={`fr-card-button${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTakeDiscard ? ' fr-card-button--actionable' : ''}`}
-                        onClick={() => handleDiscardPileClick(card.id)}
-                        data-action-state={canTakeDiscard ? 'take' : 'inspect'}
-                        aria-label={canTakeDiscard
-                            ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
-                            : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
-                    >
-                        {renderCard(card, t, locale)}
-                    </button>
-                ))}
-            </div>
-        </section>
-    );
-
-    const handZoneSection = (
-        <section className="fr-zone" aria-label={t('zone.hand.ariaLabel')}>
-            <div className="fr-zone-header">
-                <div className="fr-zone-title">
-                    {isSpectatorView && !isGameOver ? t('zone.hand.titleSpectator') : t('zone.hand.title', { player: viewerPlayerName })}
-                </div>
-                {isSpectatorView && !isGameOver ? null : (
-                    <div className={`fr-zone-hint${canDiscard ? ' fr-zone-hint--active' : ''}`}>
-                        {`${viewerHandCards.length}/${FANTASY_REALMS_HAND_CARD_SLOTS}`}
-                    </div>
-                )}
-            </div>
-            <div className="fr-card-row-wrap">
-                <div
-                    className="fr-card-row"
-                    data-testid="fantasyrealms-hand-row"
-                    data-slot-count={handSlotCount}
-                    style={handRowOverflowStyle}
-                >
-                    {handCardSlots.map((slot) => slot.card ? (
-                        <button
-                            key={slot.key}
-                            type="button"
-                            className={`fr-card-button${core.focusCardId === slot.card!.id ? ' fr-card-button--selected' : ''}${canDiscard ? ' fr-card-button--actionable' : ''}`}
-                            onClick={() => handleHandCardClick(slot.card!.id)}
-                            data-action-state={canDiscard ? 'discard' : 'inspect'}
-                            aria-label={canDiscard
-                                ? t('actions.discardHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })
-                                : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(slot.card) })}
-                        >
-                            {renderCard(slot.card, t, locale)}
-                        </button>
-                    ) : (
-                        <div
-                            key={slot.key}
-                            className="fr-card-slot"
-                            data-testid="fantasyrealms-card-slot-empty"
-                            aria-hidden="true"
-                        />
-                    ))}
-                </div>
-                {viewerHandCards.length === 0 ? (
-                    <div className="fr-card-row-note" data-testid="fantasyrealms-hand-empty-note">
-                        {t('zone.hand.emptyCompact')}
-                    </div>
-                ) : null}
-            </div>
-        </section>
-    );
+    }, [canDiscard, canDrawFromDeck, canTakeDiscard, selectedDiscardCard, selectedHandCard]);
+    const shouldShowDeckDrawAction = canDrawFromDeck;
+    const shouldShowMinimalLiveAction = isMyTurn
+        && !isGameOver
+        && (canDiscard || Boolean(selectedHandCard) || Boolean(selectedDiscardCard));
 
     const focusPanelSection = (
         <section className="fr-panel">
@@ -1008,56 +888,36 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
             </div>
         </section>
     );
-
-    const progressPanelSection = (
-        <section className="fr-panel">
-            <div className="fr-panel-header">{t('progress.panelTitle')}</div>
-            <div className="fr-panel-body fr-focus-panel">
-                <div className="fr-progress-head">
-                    <span>{isDuelVariant(core) ? t('progress.duelThreshold') : t('progress.standardThreshold')}</span>
-                    <strong>{core.discardPile.length} / {discardThreshold}</strong>
-                </div>
-                <div className="fr-progress-track">
-                    <div className="fr-progress-fill" style={{ width: `${discardProgress * 100}%` }} />
-                </div>
-                {isGameOver ? (
-                    <div className="fr-endgame-summary">
-                        <div className="fr-combo-item">
-                            {gameOver?.draw
-                                ? t('progress.gameOverDraw')
-                                : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
-                        </div>
-                        <div className="fr-endgame-title">
-                            <span>{t('progress.finalStandings')}</span>
-                            {gameOver?.draw ? <i className="fr-score-badge">{t('progress.drawBadge')}</i> : null}
-                        </div>
-                        <div className="fr-endgame-list" aria-label={t('progress.finalStandings')}>
-                            {finalStandings.map((player, index) => (
-                                <div key={player.id} className="fr-endgame-row">
-                                    <div className="fr-endgame-rank">{t('progress.rank', { rank: index + 1 })}</div>
-                                    <div className="fr-endgame-name">
-                                        <span>{player.name}</span>
-                                        {player.isWinner ? <i className="fr-score-badge">{t('score.badges.winner')}</i> : null}
-                                    </div>
-                                    <div className="fr-endgame-score">{player.score}</div>
-                                </div>
-                            ))}
-                        </div>
+    const compactFocusRailSection = shouldShowCompactFocusRail ? (
+        <section className="fr-compact-focus-panel" data-testid="fantasyrealms-compact-focus-rail">
+            <div className="fr-compact-focus-header">{t('focus.panelTitle')}</div>
+            <div className="fr-compact-focus-body">
+                <div className={`fr-compact-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-compact-focus-preview-shell--hidden' : ''}`}>
+                    <div
+                        className="fr-card fr-card--atlas fr-card--focus-preview fr-card--compact-focus-preview"
+                        data-testid="fantasyrealms-focus-preview"
+                        data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
+                        data-atlas-card-id={visibleFocusCard?.id ?? ''}
+                        aria-label={focusName}
+                        style={focusPreviewStyle}
+                    >
+                        <div aria-hidden="true" className="fr-card-sheen" />
                     </div>
-                ) : null}
+                </div>
+                <div className="fr-compact-focus-copy">
+                    <div className="fr-compact-focus-name">{focusName}</div>
+                    <div className="fr-compact-focus-score">{focusEstimatedDelta}</div>
+                </div>
             </div>
         </section>
-    );
+    ) : null;
 
     const minimalLiveTopbarSection = !isGameOver ? (
         <div className="fr-live-topbar" data-testid="fantasyrealms-live-topbar">
-            <button
-                type="button"
-                className={`fr-live-deck${canDrawFromDeck ? ' fr-live-deck--enabled' : ''}`}
+            <div
+                className="fr-live-deck"
                 data-testid="fantasyrealms-live-deck"
-                aria-label={getDrawDeckLabel(core, t)}
-                onClick={handleDeckStackClick}
-                disabled={!canDrawFromDeck}
+                aria-label={t('deck.remaining')}
             >
                 <div className="fr-live-deck-stack">
                     <div className="fr-stack-card fr-stack-card--under" style={deckBackStyle} aria-hidden="true" />
@@ -1065,7 +925,24 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     <div className="fr-stack-card fr-stack-card--top" style={deckBackStyle} aria-hidden="true" />
                     <strong className="fr-live-deck-count">{core.drawPile.length}</strong>
                 </div>
-            </button>
+                {shouldShowDeckDrawAction ? (
+                    <div
+                        className="fr-live-deck-cue"
+                        data-testid="fantasyrealms-live-deck-cue"
+                        data-anchor="deck"
+                    >
+                        <button
+                            type="button"
+                            className="fr-live-action-button fr-live-action-button--enabled fr-live-action-button--deck"
+                            onClick={handleLivePrimaryAction}
+                            data-testid="fantasyrealms-live-action-button"
+                            aria-label={livePrimaryActionLabel}
+                        >
+                            <span className="fr-live-action-button-label">{livePrimaryActionVisibleLabel}</span>
+                        </button>
+                    </div>
+                ) : null}
+            </div>
             <div className="fr-live-status-strip" data-testid="fantasyrealms-live-status-strip">
                 <div className={`fr-live-chip fr-live-chip--turn${isMyTurn ? ' fr-live-chip--turn-active' : ''}`}>
                     {isMyTurn ? t('turn.live.selfTurn') : currentPlayerName}
@@ -1077,9 +954,28 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     {discardCards.length}/{discardThreshold}
                 </div>
                 {compactTurnStateLabel ? (
-                    <div className="fr-live-chip fr-live-chip--cue">
-                        {compactTurnStateLabel}
-                    </div>
+                    shouldShowMinimalLiveAction ? (
+                        <div
+                            className="fr-live-action-zone"
+                            data-anchor="status-strip"
+                            data-testid="fantasyrealms-live-action-zone"
+                        >
+                            <button
+                                type="button"
+                                className={`fr-live-chip fr-live-chip--cue fr-live-action-button${isLivePrimaryActionDisabled ? '' : ' fr-live-action-button--enabled'}`}
+                                onClick={handleLivePrimaryAction}
+                                disabled={isLivePrimaryActionDisabled}
+                                data-testid="fantasyrealms-live-action-button"
+                                aria-label={livePrimaryActionLabel}
+                            >
+                                <span className="fr-live-action-button-label">{livePrimaryActionVisibleLabel}</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="fr-live-chip fr-live-chip--cue">
+                            {compactTurnStateLabel}
+                        </div>
+                    )
                 ) : null}
             </div>
             <div className="fr-live-score-strip" aria-label={t('score.tableTitle')} data-testid="fantasyrealms-live-score-strip">
@@ -1092,7 +988,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                             {liveScoreOwner?.scoreVisible ? liveScoreOwner.score : t('score.hiddenValue')}
                         </strong>
                         {!liveScoreOwner?.scoreVisible ? (
-                            <span className="fr-live-score-band-rank">
+                            <span>
                                 {t('score.hiddenLabel')}
                             </span>
                         ) : null}
@@ -1102,48 +998,34 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
         </div>
     ) : null;
 
-    const shouldShowMinimalLiveAction = isMyTurn
-        && !isGameOver
-        && (Boolean(selectedHandCard) || Boolean(selectedDiscardCard));
-
-    const minimalLiveActionZoneSection = shouldShowMinimalLiveAction ? (
-        <div
-            className="fr-live-action-zone"
-            data-anchor="bottom-right"
-            data-testid="fantasyrealms-live-action-zone"
-        >
-            <button
-                type="button"
-                className={`fr-live-action-button${isLivePrimaryActionDisabled ? '' : ' fr-live-action-button--enabled'}`}
-                onClick={handleLivePrimaryAction}
-                disabled={isLivePrimaryActionDisabled}
-                data-testid="fantasyrealms-live-action-button"
-            >
-                <span className="fr-live-action-button-label">{livePrimaryActionLabel}</span>
-            </button>
-        </div>
-    ) : null;
-
-    const minimalLiveDiscardZoneSection = (
+    const minimalLiveCenterRowSection = (
         <section
-            className={`fr-live-river${liveMotionCue?.type === 'hand-to-river' ? ' fr-live-river--motion-receive' : ''}`}
+            className={`fr-live-center-row${discardCards.length === 0 ? ' fr-live-center-row--empty' : ''}${liveMotionCue?.type === 'hand-to-center' ? ' fr-live-center-row--motion-receive' : ''}`}
             aria-label={t('zone.discard.title')}
-            data-motion={liveMotionCue?.type === 'hand-to-river' ? 'hand-to-river' : 'idle'}
-            data-testid="fantasyrealms-live-river"
+            data-motion={liveMotionCue?.type === 'hand-to-center' ? 'hand-to-center' : 'idle'}
+            data-testid="fantasyrealms-live-center-row"
         >
             <div
-                className={`fr-discard-row fr-discard-row--live-river${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}${discardCards.length > 0 ? ' fr-discard-row--table-river' : ''}`}
+                className={`fr-discard-row fr-discard-row--live-center${discardCards.length === 0 ? ' fr-discard-row--empty' : ''}${discardCards.length > 0 ? ' fr-discard-row--table-center' : ''}`}
                 data-testid="fantasyrealms-discard-row"
             >
                 {discardCards.length === 0 ? (
-                    <div className="fr-zone-empty fr-zone-empty--silent" data-testid="fantasyrealms-discard-empty" aria-hidden="true" />
+                    <div className="fr-zone-empty fr-zone-empty--silent" data-testid="fantasyrealms-discard-empty" aria-hidden="true">
+                        {minimalLiveCenterPlaceholderStyles.map((style, index) => (
+                            <div
+                                key={`live-center-empty-${index}`}
+                                className="fr-card-slot fr-card-slot--live-center-placeholder"
+                                style={style}
+                            />
+                        ))}
+                    </div>
                 ) : discardCards.map((card, index) => (
                     <button
                         key={card.id}
                         type="button"
-                        className={`fr-card-button fr-card-button--live-river${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTakeDiscard ? ' fr-card-button--actionable' : ''}${pendingDiscardSelectionId === card.id ? ' fr-card-button--armed' : ''}`}
+                        className={`fr-card-button fr-card-button--live-center${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canTakeDiscard ? ' fr-card-button--actionable' : ''}${pendingDiscardSelectionId === card.id ? ' fr-card-button--armed' : ''}${liveMotionCue?.type === 'hand-to-center' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-center-receive' : ''}`}
                         onClick={() => handleDiscardPileClick(card.id)}
-                        style={minimalLiveRiverCardStyles[index]}
+                        style={minimalLiveCenterCardStyles[index]}
                         data-action-state={canTakeDiscard ? 'take' : 'inspect'}
                         aria-label={canTakeDiscard
                             ? t('actions.takeDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })
@@ -1161,24 +1043,30 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
 
     const minimalLiveHandZoneSection = (
         <section
-            className={`fr-live-handband${liveMotionCue?.type === 'draw-to-hand' ? ' fr-live-handband--motion-draw' : ''}${liveMotionCue?.type === 'discard-to-hand' ? ' fr-live-handband--motion-take' : ''}`}
+            className={`fr-live-hand-zone${displayedHandCards.length === 0 ? ' fr-live-hand-zone--empty' : ''}${shouldShowMinimalLiveAction ? ' fr-live-hand-zone--actioning' : ''}${liveMotionCue?.type === 'draw-to-hand' ? ' fr-live-hand-zone--motion-draw' : ''}${liveMotionCue?.type === 'center-to-hand' ? ' fr-live-hand-zone--motion-take' : ''}`}
             aria-label={t('zone.hand.ariaLabel')}
-            data-motion={liveMotionCue?.type === 'draw-to-hand' || liveMotionCue?.type === 'discard-to-hand' ? liveMotionCue.type : 'idle'}
-            data-testid="fantasyrealms-live-handband"
+            data-motion={liveMotionCue?.type === 'draw-to-hand' || liveMotionCue?.type === 'center-to-hand' ? liveMotionCue.type : 'idle'}
+            data-testid="fantasyrealms-live-hand-zone"
         >
+            <div className={`fr-live-hand-zone-header${shouldShowMinimalLiveAction ? '' : ' fr-live-hand-zone-header--solo'}`}>
+                <div className="fr-live-hand-zone-heading">
+                    <div className="fr-live-hand-zone-title">{liveHandZoneTitle}</div>
+                </div>
+            </div>
             <div className="fr-card-row-wrap">
                 <div
-                    className="fr-card-row fr-card-row--table-band"
+                    className="fr-card-row fr-card-row--live-hand-zone"
                     data-testid="fantasyrealms-hand-row"
                     data-slot-count={handSlotCount}
-                    data-visible-count={viewerHandCards.length}
+                    data-visible-count={displayedHandCards.length}
                     style={handRowOverflowStyle}
                 >
-                    {viewerHandCards.map((card, index) => (
+                    {displayedHandCards.length > 0
+                        ? displayedHandCards.map((card, index) => (
                         <button
                             key={`live-hand-${card.id}`}
                             type="button"
-                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canDiscard ? ' fr-card-button--actionable' : ''}${pendingHandSelectionId === card.id ? ' fr-card-button--armed' : ''}`}
+                            className={`fr-card-button fr-card-button--live-hand${core.focusCardId === card.id ? ' fr-card-button--selected' : ''}${canDiscard ? ' fr-card-button--actionable' : ''}${pendingHandSelectionId === card.id ? ' fr-card-button--armed' : ''}${liveMotionCue?.type === 'draw-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-draw' : ''}${liveMotionCue?.type === 'center-to-hand' && liveMotionCue.cardIds.includes(card.id) ? ' fr-card-button--motion-hand-take' : ''}`}
                             onClick={() => handleHandCardClick(card.id)}
                             style={minimalLiveHandCardStyles[index]}
                             data-action-state={canDiscard ? 'discard' : 'inspect'}
@@ -1191,84 +1079,101 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                                 <span className="fr-live-card-state" aria-hidden="true">{t('actions.selected')}</span>
                             ) : null}
                         </button>
-                    ))}
+                        ))
+                        : buildCenteredLiveHandSlots([], handSlotCount).map((slot) => (
+                            <div
+                                key={slot.key}
+                                className="fr-card-slot fr-card-slot--live-hand"
+                                data-testid="fantasyrealms-card-slot-empty"
+                                aria-hidden="true"
+                            />
+                        ))}
                 </div>
             </div>
         </section>
     );
 
+    const reviewedStanding = displayedPlayerId
+        ? finalStandings.find((player) => player.id === displayedPlayerId) ?? null
+        : null;
     const minimalLiveEndgameSection = isGameOver ? (
         <section className="fr-live-endgame" data-testid="fantasyrealms-live-endgame">
-            <div className="fr-live-endgame-header">{t('turn.reviewChip')}</div>
-            <div className="fr-live-endgame-grid">
-                <section className="fr-live-endgame-focus-block" aria-label={t('focus.panelTitle')}>
-                    <div className="fr-live-endgame-section-title">{t('focus.panelTitle')}</div>
-                    <div className="fr-focus-spotlight">
-                        <div className={`fr-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-focus-preview-shell--hidden' : ''}`}>
-                            <div
-                                className="fr-card fr-card--atlas fr-card--focus-preview"
-                                data-testid="fantasyrealms-focus-preview"
-                                data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
-                                data-atlas-card-id={visibleFocusCard?.id ?? ''}
-                                aria-label={focusName}
-                                style={focusPreviewStyle}
+            <div className="fr-live-endgame-rail" aria-label={t('progress.finalStandings')}>
+                <div className="fr-live-endgame-rail-header">
+                    <div className="fr-live-endgame-rail-title">{t('progress.finalStandings')}</div>
+                    <div className="fr-live-endgame-rail-subtitle">
+                        {gameOver?.draw
+                            ? t('progress.gameOverDraw')
+                            : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
+                    </div>
+                </div>
+                <div className="fr-live-endgame-rail-list">
+                    {finalStandings.map((player, index) => {
+                        const isReviewed = player.id === displayedPlayerId;
+                        return (
+                            <button
+                                key={player.id}
+                                type="button"
+                                className={`fr-live-endgame-rank-button${isReviewed ? ' fr-live-endgame-rank-button--active' : ''}`}
+                                onClick={() => setReviewPlayerId(player.id)}
+                                aria-pressed={isReviewed}
+                                data-testid={`fantasyrealms-endgame-rank-${player.id}`}
                             >
-                                <div aria-hidden="true" className="fr-card-sheen" />
-                            </div>
-                        </div>
-                        <article className="fr-focus-card">
-                            <div className="fr-focus-name">{focusName}</div>
-                            <div className="fr-focus-score">
-                                <span>{t('focus.estimatedDelta')}</span>
-                                <strong>{focusEstimatedDelta}</strong>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-                <section className="fr-live-endgame-summary-block">
-                    <div className="fr-live-endgame-section-title">
-                        <span>{t('progress.finalStandings')}</span>
-                        {gameOver?.draw ? <i className="fr-score-badge">{t('progress.drawBadge')}</i> : null}
-                    </div>
-                    <div className="fr-endgame-summary">
-                        <div className="fr-combo-item">
-                            {gameOver?.draw
-                                ? t('progress.gameOverDraw')
-                                : t('progress.gameOverWinner', { winner: winnerName ?? t('fallback.unknownPlayer') })}
-                        </div>
-                        <div className="fr-endgame-list" aria-label={t('progress.finalStandings')}>
-                            {finalStandings.map((player, index) => (
-                                <div key={player.id} className="fr-endgame-row">
-                                    <div className="fr-endgame-rank">{t('progress.rank', { rank: index + 1 })}</div>
-                                    <div className="fr-endgame-name">
-                                        <span>{player.name}</span>
+                                <div className="fr-live-endgame-rank-copy">
+                                    <span className="fr-live-endgame-rank-order">{t('progress.rank', { rank: index + 1 })}</span>
+                                    <span className="fr-live-endgame-rank-name">
+                                        {player.name}
                                         {player.isWinner ? <i className="fr-score-badge">{t('score.badges.winner')}</i> : null}
-                                    </div>
-                                    <div className="fr-endgame-score">{player.score}</div>
+                                        {isReviewed ? <i className="fr-score-badge">{t('score.badges.reviewing')}</i> : null}
+                                    </span>
                                 </div>
-                            ))}
-                        </div>
+                                <strong className="fr-live-endgame-rank-score">{player.score}</strong>
+                            </button>
+                        );
+                    })}
+                </div>
+                {reviewedStanding ? (
+                    <div className="fr-live-endgame-reviewed-player" data-testid="fantasyrealms-endgame-reviewed-player">
+                        {t('zone.hand.reviewTitle', { player: reviewedStanding.name })}
                     </div>
-                </section>
+                ) : null}
             </div>
         </section>
     ) : null;
 
+    const isMinimalLiveOpeningState = !isGameOver
+        && discardCards.length === 0
+        && displayedHandCards.length === 0;
+    const isMinimalLiveEarlyDrawState = !isGameOver
+        && discardCards.length === 0
+        && displayedHandCards.length > 0
+        && displayedHandCards.length <= 2;
+
+    const liveTableSection = (
+        <div
+            className={`fr-live-table${isGameOver ? ' fr-live-table--gameover' : ''}${isMinimalLiveOpeningState ? ' fr-live-table--opening' : ''}${isMinimalLiveEarlyDrawState ? ' fr-live-table--early-draw' : ''}`}
+            data-testid="fantasyrealms-live-table"
+        >
+            {minimalLiveTopbarSection}
+            {minimalLiveCenterRowSection}
+            {minimalLiveHandZoneSection}
+            {minimalLiveEndgameSection}
+        </div>
+    );
+
     return (
-        <div className="fr-root">
+        <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+            <div className="fr-root">
             <style>{`
                 .fr-root {
                     min-height: 100%;
                     overflow-y: auto;
-                    padding: 14px;
+                    padding: 0;
                     color: #f2ead7;
                     font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
                     background:
-                        radial-gradient(circle at 4% 74%, rgba(255, 188, 84, 0.22), transparent 10%),
-                        radial-gradient(circle at 95% 24%, rgba(219, 146, 53, 0.18), transparent 13%),
-                        linear-gradient(90deg, rgba(5, 8, 7, 0.72), transparent 18%, transparent 82%, rgba(5, 8, 7, 0.72)),
-                        repeating-linear-gradient(90deg, rgba(255, 213, 137, 0.034) 0 1px, transparent 1px 20px),
-                        linear-gradient(90deg, #100b08, #5b3419 50%, #100a07);
+                        radial-gradient(circle at 50% 14%, rgba(96, 157, 130, 0.08), transparent 30%),
+                        linear-gradient(180deg, #133730, #0b2520 58%, #081a18);
                 }
                 .fr-board {
                     width: min(1440px, 100%);
@@ -1301,41 +1206,32 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     height: calc(100vh - 28px);
                     min-height: 0;
                     box-sizing: border-box;
-                    padding: 20px 30px 24px;
-                    border-radius: 24px;
+                    padding: 18px 24px 22px;
+                    border-radius: 22px;
                     background:
-                        radial-gradient(circle at 4% 78%, rgba(255, 178, 70, 0.26), transparent 11%),
-                        radial-gradient(circle at 96% 18%, rgba(221, 146, 53, 0.22), transparent 13%),
-                        radial-gradient(ellipse at 50% -6%, rgba(178, 103, 43, 0.5), transparent 34%),
-                        radial-gradient(ellipse at 50% 106%, rgba(10, 4, 2, 0.64), transparent 34%),
-                        repeating-linear-gradient(90deg, rgba(255, 225, 165, 0.052) 0 1px, transparent 1px 18px),
-                        linear-gradient(90deg, #0d0805, #6a3d1d 18%, #3b210f 50%, #6a3d1d 82%, #0d0805);
+                        radial-gradient(circle at 6% 80%, rgba(216, 143, 56, 0.18), transparent 12%),
+                        radial-gradient(circle at 95% 20%, rgba(216, 143, 56, 0.14), transparent 12%),
+                        linear-gradient(90deg, #110b07, #4f2d16 16%, #2f1a0d 50%, #4f2d16 84%, #110b07);
                     box-shadow:
-                        inset 0 0 0 1px rgba(255, 223, 156, 0.12),
-                        inset 0 0 0 10px rgba(19, 10, 5, 0.34),
-                        inset 0 0 78px rgba(0, 0, 0, 0.58),
-                        0 22px 52px rgba(0, 0, 0, 0.5);
+                        inset 0 0 0 1px rgba(255, 223, 156, 0.08),
+                        inset 0 0 0 8px rgba(19, 10, 5, 0.28),
+                        inset 0 0 64px rgba(0, 0, 0, 0.42),
+                        0 22px 52px rgba(0, 0, 0, 0.42);
                 }
                 .fr-board--minimal-live::before {
                     content: "";
                     position: absolute;
-                    inset: 22px 32px 26px;
-                    border-radius: 20px;
+                    inset: 20px 24px 22px;
+                    border-radius: 18px;
                     background:
-                        radial-gradient(ellipse at 50% 16%, rgba(152, 214, 174, 0.22), transparent 34%),
-                        radial-gradient(ellipse at 50% 74%, rgba(0, 10, 8, 0.46), transparent 54%),
-                        radial-gradient(circle at 9% 87%, rgba(236, 157, 61, 0.1), transparent 18%),
-                        radial-gradient(circle at 93% 12%, rgba(236, 157, 61, 0.08), transparent 18%),
-                        linear-gradient(90deg, rgba(255, 240, 190, 0.08), transparent 8%, transparent 92%, rgba(0, 0, 0, 0.28)),
-                        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 12px),
-                        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.028) 0 1px, transparent 1px 6px),
-                        linear-gradient(180deg, #16483b, #0d332b 56%, #08241f);
+                        radial-gradient(ellipse at 50% 18%, rgba(109, 164, 132, 0.12), transparent 42%),
+                        radial-gradient(ellipse at 50% 78%, rgba(0, 0, 0, 0.18), transparent 56%),
+                        linear-gradient(180deg, #165044, #0f3b33 58%, #0a2c26);
                     box-shadow:
-                        inset 0 0 0 1px rgba(238, 196, 108, 0.28),
-                        inset 0 0 0 3px rgba(2, 15, 12, 0.42),
-                        inset 0 0 0 14px rgba(10, 40, 33, 0.28),
-                        inset 0 44px 96px rgba(255, 246, 210, 0.035),
-                        inset 0 -96px 150px rgba(0, 0, 0, 0.34);
+                        inset 0 0 0 1px rgba(230, 191, 109, 0.16),
+                        inset 0 0 0 3px rgba(4, 18, 15, 0.3),
+                        inset 0 28px 84px rgba(255, 247, 220, 0.02),
+                        inset 0 -72px 120px rgba(0, 0, 0, 0.2);
                     mix-blend-mode: normal;
                     opacity: 1;
                     pointer-events: none;
@@ -1359,13 +1255,16 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-table {
                     position: relative;
                     display: grid;
-                    grid-template-rows: 98px minmax(0, 1fr) 292px;
-                    gap: 8px;
+                    grid-template-rows: 116px minmax(0, 1fr) 300px;
+                    gap: 10px;
                     height: 100%;
                     min-height: 0;
                 }
+                .fr-live-table--opening {
+                    grid-template-rows: 112px minmax(300px, 1fr) 266px;
+                }
                 .fr-live-table--gameover {
-                    grid-template-rows: minmax(0, 1fr) 292px auto;
+                    grid-template-rows: minmax(0, 1fr) 314px auto;
                 }
                 .fr-live-table::before {
                     display: none;
@@ -1376,7 +1275,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-topbar {
                     position: relative;
                     z-index: 1;
-                    min-height: 96px;
+                    display: grid;
+                    grid-template-columns: 248px minmax(0, 1fr) 172px;
+                    align-items: start;
+                    gap: 14px;
+                    min-height: 116px;
+                    padding: 8px 18px 0;
                 }
                 .fr-live-topbar::before {
                     display: none;
@@ -1385,72 +1289,80 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-live-status-strip {
-                    position: absolute;
-                    left: 50%;
-                    top: 18px;
-                    transform: translateX(-50%);
-                    display: inline-flex;
+                    position: relative;
+                    left: auto;
+                    top: auto;
+                    transform: none;
+                    display: flex;
                     align-items: center;
+                    justify-content: center;
+                    justify-self: center;
                     gap: 12px;
                     min-width: 0;
+                    margin-top: 8px;
                     isolation: isolate;
                 }
                 .fr-live-status-strip::before {
                     content: "";
                     position: absolute;
-                    inset: -10px -22px;
-                    border-radius: 18px;
-                    background:
-                        radial-gradient(ellipse at 50% 0%, rgba(255, 226, 152, 0.16), transparent 44%),
-                        linear-gradient(180deg, rgba(56, 36, 22, 0.98), rgba(10, 11, 10, 0.98));
+                    inset: -6px -12px;
+                    border-radius: 14px;
+                    background: linear-gradient(180deg, rgba(26, 21, 16, 0.76), rgba(12, 14, 13, 0.74));
                     box-shadow:
-                        0 20px 28px rgba(0, 0, 0, 0.34),
-                        inset 0 0 0 1px rgba(240, 190, 92, 0.28),
-                        inset 0 0 0 4px rgba(17, 12, 9, 0.38),
-                        inset 0 2px 0 rgba(255, 241, 199, 0.08);
+                        0 10px 18px rgba(0, 0, 0, 0.12),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.04);
                     z-index: -1;
                     pointer-events: none;
                 }
                 .fr-live-deck {
-                    position: absolute;
-                    left: 0;
-                    top: 2px;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 12px;
+                    position: relative;
+                    left: auto;
+                    top: auto;
+                    display: grid;
+                    justify-items: start;
+                    justify-self: start;
+                    gap: 10px;
                     min-width: 0;
                     padding: 0;
                     border: 0;
                     background: transparent;
                     cursor: default;
                 }
+                .fr-live-deck-cue {
+                    position: relative;
+                    z-index: 1;
+                    display: flex;
+                    width: 100%;
+                    justify-content: flex-start;
+                    pointer-events: auto;
+                }
                 .fr-live-deck::before {
                     content: "";
                     position: absolute;
-                    left: -10px;
-                    top: -8px;
-                    width: 114px;
-                    height: 128px;
-                    border-radius: 16px;
+                    left: -8px;
+                    top: -6px;
+                    width: 122px;
+                    height: 142px;
+                    border-radius: 18px;
                     background:
-                        radial-gradient(ellipse at 42% 20%, rgba(255, 220, 142, 0.12), transparent 36%),
-                        linear-gradient(180deg, rgba(58, 36, 20, 0.5), rgba(10, 10, 9, 0.08));
+                        radial-gradient(ellipse at 42% 18%, rgba(255, 224, 152, 0.1), transparent 34%),
+                        linear-gradient(180deg, rgba(58, 36, 20, 0.32), rgba(10, 10, 9, 0.03));
                     box-shadow:
-                        0 24px 34px rgba(0, 0, 0, 0.42),
-                        inset 0 0 0 1px rgba(255, 226, 164, 0.1);
+                        0 18px 28px rgba(0, 0, 0, 0.2),
+                        inset 0 0 0 1px rgba(255, 226, 164, 0.06);
                     pointer-events: none;
                 }
                 .fr-live-deck::after {
                     content: "";
                     position: absolute;
-                    left: 5px;
-                    top: 9px;
-                    width: 76px;
-                    height: 104px;
+                    left: 8px;
+                    top: 10px;
+                    width: 86px;
+                    height: 116px;
                     border-radius: 14px;
                     box-shadow:
-                        8px 8px 0 rgba(52, 25, 13, 0.42),
-                        13px 13px 0 rgba(12, 8, 6, 0.34);
+                        8px 8px 0 rgba(52, 25, 13, 0.28),
+                        13px 13px 0 rgba(12, 8, 6, 0.22);
                     pointer-events: none;
                 }
                 .fr-live-deck--enabled {
@@ -1459,13 +1371,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-deck-stack {
                     position: relative;
                     z-index: 1;
-                    width: 76px;
-                    height: 104px;
-                    border-radius: 14px;
+                    width: 96px;
+                    height: 132px;
+                    border-radius: 12px;
                     flex: 0 0 auto;
-                    filter:
-                        drop-shadow(0 20px 26px rgba(0, 0, 0, 0.34))
-                        drop-shadow(0 3px 0 rgba(255, 226, 168, 0.08));
+                    filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.24));
                     transition: transform 140ms ease;
                 }
                 .fr-live-deck-stack .fr-stack-card {
@@ -1477,147 +1387,108 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    min-width: 50px;
-                    height: 40px;
-                    padding: 0 12px;
-                    font-size: 34px;
+                    min-width: 48px;
+                    height: 36px;
+                    padding: 0 11px;
+                    font-size: 30px;
                     line-height: 1;
                     color: #ffe1a0;
-                    border-radius: 14px;
-                    border: 1px solid rgba(235, 190, 96, 0.72);
-                    background:
-                        radial-gradient(circle at 36% 20%, rgba(255, 234, 174, 0.18), transparent 40%),
-                        linear-gradient(180deg, rgba(48, 32, 21, 0.99), rgba(8, 8, 7, 0.99));
+                    border-radius: 11px;
+                    border: 1px solid rgba(235, 190, 96, 0.28);
+                    background: rgba(12, 14, 11, 0.8);
                     box-shadow:
-                        inset 0 1px 0 rgba(255, 255, 255, 0.14),
-                        inset 0 -14px 20px rgba(0, 0, 0, 0.32),
-                        0 14px 24px rgba(0, 0, 0, 0.38);
-                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.34);
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                        0 8px 14px rgba(0, 0, 0, 0.18);
+                    text-shadow: none;
                 }
                 .fr-live-chip {
                     position: relative;
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    min-height: 48px;
-                    padding: 0 20px;
-                    border-radius: 14px;
-                    border: 1px solid rgba(231, 184, 92, 0.74);
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.18), transparent 40%),
-                        linear-gradient(180deg, rgba(64, 41, 24, 0.99), rgba(10, 11, 10, 0.99));
+                    min-height: 46px;
+                    padding: 0 18px;
+                    border-radius: 11px;
+                    border: 0;
+                    background: linear-gradient(180deg, rgba(42, 33, 24, 0.88), rgba(12, 12, 11, 0.9));
                     box-shadow:
-                        inset 0 1px 0 rgba(255,255,255,0.16),
-                        inset 0 -14px 24px rgba(0, 0, 0, 0.36),
-                        0 14px 26px rgba(0,0,0,0.38);
-                    color: #ffe4a6;
+                        0 10px 16px rgba(0, 0, 0, 0.12),
+                        inset 0 1px 0 rgba(255,255,255,0.04);
+                    color: #f3dfad;
                     font-weight: 800;
                     line-height: 1;
                     white-space: nowrap;
-                    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
+                    text-shadow: none;
                     overflow: hidden;
                 }
                 .fr-live-chip::before {
-                    content: "";
-                    position: absolute;
-                    inset: 4px 7px;
-                    border-radius: 10px;
-                    border: 1px solid rgba(255, 236, 188, 0.14);
-                    box-shadow: inset 0 1px 0 rgba(255, 250, 220, 0.04);
-                    pointer-events: none;
+                    display: none;
                 }
                 .fr-live-chip--turn {
                     min-width: 128px;
-                    font-size: 24px;
+                    font-size: 28px;
                     padding: 0 22px;
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.24), transparent 42%),
-                        linear-gradient(180deg, rgba(94, 58, 25, 0.99), rgba(19, 14, 10, 0.99));
+                    background: linear-gradient(180deg, rgba(68, 48, 29, 0.92), rgba(22, 16, 12, 0.94));
                 }
                 .fr-live-chip--turn-active {
-                    min-width: 152px;
+                    min-width: 158px;
                 }
                 .fr-live-chip--round {
-                    min-height: 34px;
+                    min-height: 36px;
                     padding: 0 14px;
-                    font-size: 13px;
+                    font-size: 14px;
                     font-weight: 700;
                     color: rgba(255, 237, 197, 0.84);
-                    border-color: rgba(207, 174, 116, 0.34);
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.12), transparent 42%),
-                        linear-gradient(180deg, rgba(29, 29, 22, 0.98), rgba(7, 8, 7, 0.99));
+                    background: rgba(19, 20, 18, 0.82);
                 }
                 .fr-live-chip--progress {
                     min-width: 96px;
                     font-size: 24px;
-                    padding: 0 20px;
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.18), transparent 42%),
-                        linear-gradient(180deg, rgba(102, 45, 31, 0.98), rgba(35, 17, 14, 0.99));
+                    padding: 0 18px;
+                    background: linear-gradient(180deg, rgba(80, 40, 28, 0.92), rgba(30, 16, 12, 0.94));
                 }
                 .fr-live-chip--cue {
-                    min-height: 40px;
-                    padding: 0 18px;
-                    font-size: 18px;
-                    border-color: rgba(191, 162, 109, 0.34);
-                    background:
-                        radial-gradient(circle at 50% 0%, rgba(105, 179, 153, 0.16), transparent 42%),
-                        linear-gradient(180deg, rgba(20, 63, 57, 0.98), rgba(9, 29, 27, 0.99));
+                    min-height: 38px;
+                    padding: 0 16px;
+                    font-size: 15px;
+                    background: linear-gradient(180deg, rgba(24, 68, 60, 0.82), rgba(10, 31, 28, 0.86));
                     color: rgba(255, 242, 207, 0.92);
                 }
                 .fr-live-score-strip {
-                    position: absolute;
-                    top: 2px;
-                    right: 0;
-                    width: 312px;
+                    position: relative;
+                    top: auto;
+                    right: auto;
+                    justify-self: end;
+                    width: 172px;
+                    margin-top: 8px;
                 }
                 .fr-live-score-band {
                     position: relative;
-                    height: 100px;
-                    padding: 14px 20px 12px;
-                    border-radius: 6px;
-                    border: 1px solid rgba(218, 174, 84, 0.76);
-                    background:
-                        radial-gradient(circle at 16% 0%, rgba(255, 226, 158, 0.2), transparent 36%),
-                        radial-gradient(circle at 84% 100%, rgba(124, 72, 28, 0.22), transparent 42%),
-                        linear-gradient(180deg, rgba(48, 34, 20, 0.99), rgba(5, 5, 5, 0.99));
+                    height: 78px;
+                    padding: 12px 14px;
+                    border-radius: 9px;
+                    border: 0;
+                    background: linear-gradient(180deg, rgba(18, 18, 16, 0.92), rgba(6, 6, 6, 0.94));
                     box-shadow:
-                        inset 0 1px 0 rgba(255,255,255,0.14),
-                        inset 0 -20px 32px rgba(0, 0, 0, 0.42),
-                        0 18px 30px rgba(0,0,0,0.44),
-                        0 0 22px rgba(237, 183, 88, 0.08);
+                        0 14px 24px rgba(0,0,0,0.14),
+                        inset 0 1px 0 rgba(255,255,255,0.04);
                 }
                 .fr-live-score-band::before {
                     content: "";
                     position: absolute;
-                    inset: 8px 10px;
-                    border-radius: 3px;
-                    border: 1px solid rgba(255, 229, 169, 0.14);
-                    box-shadow:
-                        -5px -5px 0 -4px rgba(255, 221, 145, 0.7),
-                        5px -5px 0 -4px rgba(255, 221, 145, 0.7),
-                        -5px 5px 0 -4px rgba(255, 221, 145, 0.7),
-                        5px 5px 0 -4px rgba(255, 221, 145, 0.7);
+                    inset: 6px;
+                    border-radius: 6px;
+                    border: 1px solid rgba(227, 188, 106, 0.22);
                     pointer-events: none;
                 }
                 .fr-live-score-band::after {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    border-radius: inherit;
-                    background:
-                        linear-gradient(90deg, rgba(232, 178, 84, 0.3), transparent 12%, transparent 88%, rgba(232, 178, 84, 0.3)),
-                        linear-gradient(180deg, rgba(255, 238, 183, 0.08), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.18));
-                    mix-blend-mode: screen;
-                    opacity: 0.34;
-                    pointer-events: none;
+                    display: none;
                 }
                 .fr-live-score-band-kicker {
                     position: relative;
                     z-index: 1;
                     color: rgba(246, 223, 180, 0.72);
-                    font-size: 11px;
+                    font-size: 10px;
                     line-height: 1;
                     font-weight: 700;
                     letter-spacing: 0.08em;
@@ -1627,18 +1498,18 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     align-items: baseline;
                     justify-content: space-between;
                     gap: 12px;
-                    margin-top: 16px;
+                    margin-top: 10px;
                 }
                 .fr-live-score-band-total {
                     color: #ffe4a4;
                     font-family: Georgia, "Times New Roman", "Microsoft YaHei", serif;
-                    font-size: 42px;
+                    font-size: 38px;
                     font-weight: 900;
                     line-height: 1;
-                    text-shadow: 0 4px 14px rgba(0, 0, 0, 0.34);
+                    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
                 }
-                .fr-live-river,
-                .fr-live-handband {
+                .fr-live-center-row,
+                .fr-live-hand-zone {
                     position: relative;
                     z-index: 1;
                     overflow: visible;
@@ -1646,77 +1517,143 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     background: transparent;
                     border: none;
                 }
-                .fr-live-river {
+                .fr-live-center-row {
                     display: grid;
                     align-items: center;
-                    padding-top: 0;
+                    padding-top: 2px;
                 }
-                .fr-live-river::before {
-                    content: "";
-                    position: absolute;
-                    left: 10%;
-                    right: 10%;
-                    top: 50px;
-                    bottom: 74px;
-                    border-radius: 42%;
-                    background:
-                        radial-gradient(ellipse at 50% 42%, rgba(255, 233, 178, 0.08), transparent 54%),
-                        radial-gradient(ellipse at 50% 74%, rgba(0, 0, 0, 0.28), transparent 68%);
-                    filter: blur(2px);
+                .fr-live-center-row--empty {
                     pointer-events: none;
                 }
-                .fr-live-handband {
+                .fr-live-center-row::before {
+                    content: "";
+                    position: absolute;
+                    left: 13%;
+                    right: 13%;
+                    top: 58px;
+                    bottom: 82px;
+                    border-radius: 48%;
+                    background:
+                        radial-gradient(ellipse at 50% 42%, rgba(255, 233, 178, 0.05), transparent 56%),
+                        radial-gradient(ellipse at 50% 76%, rgba(0, 0, 0, 0.16), transparent 72%);
+                    filter: blur(3px);
+                    pointer-events: none;
+                }
+                .fr-live-center-row--empty::before {
+                    left: 17%;
+                    right: 17%;
+                    top: 84px;
+                    bottom: 118px;
+                    background:
+                        radial-gradient(ellipse at 50% 42%, rgba(255, 233, 178, 0.025), transparent 60%),
+                        radial-gradient(ellipse at 50% 76%, rgba(0, 0, 0, 0.08), transparent 74%);
+                }
+                .fr-live-hand-zone {
                     display: grid;
                     align-items: end;
-                    padding-top: 0;
+                    padding: 4px 24px 16px;
                 }
-                .fr-live-river::after {
+                .fr-live-center-row::after {
                     display: none;
                 }
-                .fr-live-handband::before {
+                .fr-live-hand-zone::before {
                     content: "";
                     position: absolute;
-                    left: 3%;
-                    right: 7%;
+                    left: 3.4%;
+                    right: 3.4%;
+                    top: 70px;
                     bottom: 8px;
-                    height: 104px;
-                    border-radius: 50%;
+                    border-radius: 24px 24px 16px 16px;
                     background:
-                        radial-gradient(ellipse at 50% 62%, rgba(0, 0, 0, 0.34), transparent 66%),
-                        linear-gradient(180deg, transparent, rgba(255, 215, 143, 0.035));
+                        linear-gradient(180deg, rgba(12, 41, 35, 0.01), rgba(4, 18, 15, 0.08) 28%, rgba(2, 10, 9, 0.14)),
+                        radial-gradient(ellipse at 50% 6%, rgba(255, 229, 168, 0.02), transparent 48%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 242, 212, 0.012),
+                        inset 0 -16px 24px rgba(0, 0, 0, 0.06);
                     pointer-events: none;
                 }
-                .fr-live-handband::after {
+                .fr-live-hand-zone--empty::before {
+                    top: 148px;
+                    bottom: 12px;
+                    left: 4.8%;
+                    right: 4.8%;
+                    background:
+                        linear-gradient(180deg, rgba(11, 30, 26, 0.008), rgba(3, 14, 11, 0.06) 28%, rgba(2, 9, 8, 0.11)),
+                        radial-gradient(ellipse at 50% 10%, rgba(255, 229, 168, 0.015), transparent 50%);
+                }
+                .fr-live-table--opening .fr-live-center-row::before {
+                    left: 28%;
+                    right: 28%;
+                    top: 146px;
+                    bottom: 166px;
+                    background:
+                        radial-gradient(ellipse at 50% 48%, rgba(255, 233, 178, 0.02), transparent 62%),
+                        radial-gradient(ellipse at 50% 78%, rgba(0, 0, 0, 0.05), transparent 76%);
+                }
+                .fr-live-table--opening .fr-live-center-row::after {
+                    content: "";
+                    position: absolute;
+                    left: 34%;
+                    right: 34%;
+                    top: 206px;
+                    height: 2px;
+                    border-radius: 999px;
+                    background: linear-gradient(90deg, transparent, rgba(255, 229, 170, 0.16), transparent);
+                    opacity: 0.42;
+                    pointer-events: none;
+                }
+                .fr-live-table--opening .fr-zone-empty--silent {
+                    display: none;
+                }
+                .fr-live-table--opening .fr-live-hand-zone::before {
+                    display: none;
+                }
+                .fr-live-table--opening .fr-live-hand-zone {
+                    padding-top: 2px;
+                }
+                .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1180px, calc(100vw - 240px));
+                    gap: 14px;
+                    transform: translateY(-18px);
+                }
+                .fr-live-table--opening .fr-card-slot--live-hand {
+                    opacity: 0.9;
+                    border-style: solid;
+                    border-color: rgba(255, 236, 190, 0.12);
+                    background:
+                        linear-gradient(180deg, rgba(255, 246, 222, 0.028), rgba(0, 0, 0, 0.02)),
+                        rgba(9, 17, 15, 0.02);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 241, 205, 0.02),
+                        0 12px 18px rgba(0, 0, 0, 0.05);
+                }
+                .fr-live-table--opening .fr-card-slot--live-hand:nth-child(3),
+                .fr-live-table--opening .fr-card-slot--live-hand:nth-child(4) {
+                    opacity: 1;
+                    border-color: rgba(255, 229, 170, 0.24);
+                    background:
+                        linear-gradient(180deg, rgba(255, 244, 214, 0.06), rgba(0, 0, 0, 0.022)),
+                        rgba(12, 20, 17, 0.03);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 240, 198, 0.04),
+                        0 14px 20px rgba(0, 0, 0, 0.06),
+                        0 0 0 1px rgba(255, 232, 180, 0.05);
+                }
+                .fr-live-hand-zone::after {
                     display: none;
                 }
                 .fr-live-endgame {
-                    position: relative;
-                    z-index: 1;
-                    display: grid;
-                    gap: 14px;
-                    padding: 14px 10px 2px;
+                    position: absolute;
+                    top: 18px;
+                    right: 18px;
+                    z-index: 3;
+                    width: min(320px, 26vw);
+                    pointer-events: none;
                 }
-                .fr-live-endgame-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-start;
-                    color: rgba(242, 234, 215, 0.8);
-                    font-size: 12px;
-                    font-weight: 700;
-                    letter-spacing: 0.12em;
-                    text-transform: uppercase;
-                }
-                .fr-live-endgame-grid {
-                    display: grid;
-                    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-                    gap: 14px;
-                    align-items: start;
-                }
-                .fr-live-endgame-focus-block,
-                .fr-live-endgame-summary-block {
+                .fr-live-endgame-rail {
                     display: grid;
                     gap: 10px;
-                    padding: 14px;
+                    padding: 12px;
                     border-radius: 18px;
                     border: 1px solid rgba(255, 228, 179, 0.12);
                     background:
@@ -1724,22 +1661,102 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     box-shadow:
                         inset 0 0 0 1px rgba(255, 239, 197, 0.04),
                         0 18px 30px rgba(0, 0, 0, 0.22);
+                    pointer-events: auto;
                 }
-                .fr-live-endgame-section-title {
-                    display: inline-flex;
-                    align-items: center;
+                .fr-live-endgame-rail-header {
+                    display: grid;
                     gap: 8px;
-                    color: rgba(242, 234, 215, 0.66);
+                }
+                .fr-live-endgame-rail-title {
+                    display: flex;
+                    align-items: center;
+                    color: rgba(242, 234, 215, 0.8);
                     font-size: 12px;
                     font-weight: 700;
                     letter-spacing: 0.12em;
                     text-transform: uppercase;
                 }
-                .fr-discard-row--live-river {
+                .fr-live-endgame-rail-subtitle {
+                    padding: 10px 12px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                    background: rgba(12, 7, 5, 0.24);
+                    color: rgba(242, 234, 215, 0.84);
+                    font-size: 12px;
+                    line-height: 1.45;
+                }
+                .fr-live-endgame-rail-list {
+                    display: grid;
+                    gap: 8px;
+                }
+                .fr-live-endgame-rank-button {
+                    width: 100%;
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 10px 12px;
+                    border-radius: 14px;
+                    border: 1px solid rgba(228, 193, 128, 0.14);
+                    background: rgba(12, 7, 5, 0.24);
+                    color: #f2ead7;
+                    text-align: left;
+                    cursor: pointer;
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+                    transition:
+                        border-color 140ms ease,
+                        background 140ms ease,
+                        transform 140ms ease;
+                }
+                .fr-live-endgame-rank-button:hover {
+                    transform: translateY(-1px);
+                    border-color: rgba(243, 201, 116, 0.28);
+                    background: rgba(44, 28, 13, 0.34);
+                }
+                .fr-live-endgame-rank-button--active {
+                    border-color: rgba(243, 201, 116, 0.42);
+                    background: rgba(44, 28, 13, 0.42);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                        0 10px 18px rgba(0, 0, 0, 0.18);
+                }
+                .fr-live-endgame-rank-copy {
+                    min-width: 0;
+                    display: grid;
+                    gap: 6px;
+                }
+                .fr-live-endgame-rank-order {
+                    color: rgba(242, 234, 215, 0.64);
+                    font-size: 12px;
+                    font-weight: 700;
+                }
+                .fr-live-endgame-rank-name {
+                    min-width: 0;
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    color: #f2ead7;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
+                .fr-live-endgame-rank-score {
+                    color: #f2ead7;
+                    font-size: 22px;
+                    font-weight: 800;
+                    line-height: 1;
+                }
+                .fr-live-endgame-reviewed-player {
+                    color: rgba(242, 234, 215, 0.72);
+                    font-size: 12px;
+                    text-align: right;
+                }
+                .fr-discard-row--live-center {
                     position: relative;
                     display: block;
-                    width: min(1240px, 72vw);
-                    min-height: 446px;
+                    width: min(1360px, 82vw);
+                    min-height: 342px;
                     height: 100%;
                     margin: 0 auto;
                     padding: 0;
@@ -1750,11 +1767,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     border: none;
                     background: transparent;
                 }
-                .fr-card-button--live-river {
+                .fr-card-button--live-center {
                     position: absolute;
                     width: 190px;
                 }
-                .fr-card-button--live-river .fr-card {
+                .fr-card-button--live-center .fr-card {
                     border-radius: 14px;
                     border-color: rgba(255, 238, 199, 0.58);
                     box-shadow:
@@ -1766,11 +1783,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         border-color 140ms ease,
                         transform 140ms ease;
                 }
-                .fr-card-button--live-river.fr-card-button--actionable .fr-card,
+                .fr-card-button--live-center.fr-card-button--actionable .fr-card,
                 .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
                     transform: none;
                 }
-                .fr-card-button--live-river.fr-card-button--actionable .fr-card {
+                .fr-card-button--live-center.fr-card-button--actionable .fr-card {
                     border-color: rgba(255, 238, 201, 0.72);
                     box-shadow:
                         0 20px 34px rgba(0, 0, 0, 0.34),
@@ -1782,40 +1799,52 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 22px 36px rgba(0, 0, 0, 0.34),
                         0 0 0 2px rgba(255, 226, 156, 0.52) !important;
                 }
-                .fr-card-button--live-river:nth-child(1) { left: calc(50% - 595px); top: 2px; z-index: 1; }
-                .fr-card-button--live-river:nth-child(2) { left: calc(50% - 335px); top: 2px; z-index: 1; }
-                .fr-card-button--live-river:nth-child(3) { left: calc(50% - 75px); top: 2px; z-index: 1; }
-                .fr-card-button--live-river:nth-child(4) { left: calc(50% + 185px); top: 2px; z-index: 1; }
-                .fr-card-button--live-river:nth-child(5) { left: calc(50% + 445px); top: 2px; z-index: 1; }
-                .fr-card-button--live-river:nth-child(6) { left: calc(50% - 465px); top: 182px; z-index: 2; }
-                .fr-card-button--live-river:nth-child(7) { left: calc(50% - 205px); top: 182px; z-index: 2; }
-                .fr-card-button--live-river:nth-child(8) { left: calc(50% + 55px); top: 182px; z-index: 2; }
-                .fr-card-button--live-river:nth-child(9) { left: calc(50% + 315px); top: 182px; z-index: 2; }
-                .fr-card-button--live-river:nth-child(10) { left: calc(50% + 445px); top: 182px; z-index: 2; }
-                .fr-card-button--live-river:nth-child(6):nth-last-child(5) { left: calc(50% - 595px); }
-                .fr-card-button--live-river:nth-child(7):nth-last-child(4) { left: calc(50% - 335px); }
-                .fr-card-button--live-river:nth-child(8):nth-last-child(3) { left: calc(50% - 75px); }
-                .fr-card-button--live-river:nth-child(9):nth-last-child(2) { left: calc(50% + 185px); }
-                .fr-card-button--live-river:nth-child(10):nth-last-child(1) { left: calc(50% + 445px); }
-                .fr-live-handband .fr-card-row-wrap {
+                .fr-card-button--live-center:nth-child(1) { left: calc(50% - 595px); top: 2px; z-index: 1; }
+                .fr-card-button--live-center:nth-child(2) { left: calc(50% - 335px); top: 2px; z-index: 1; }
+                .fr-card-button--live-center:nth-child(3) { left: calc(50% - 75px); top: 2px; z-index: 1; }
+                .fr-card-button--live-center:nth-child(4) { left: calc(50% + 185px); top: 2px; z-index: 1; }
+                .fr-card-button--live-center:nth-child(5) { left: calc(50% + 445px); top: 2px; z-index: 1; }
+                .fr-card-button--live-center:nth-child(6) { left: calc(50% - 465px); top: 182px; z-index: 2; }
+                .fr-card-button--live-center:nth-child(7) { left: calc(50% - 205px); top: 182px; z-index: 2; }
+                .fr-card-button--live-center:nth-child(8) { left: calc(50% + 55px); top: 182px; z-index: 2; }
+                .fr-card-button--live-center:nth-child(9) { left: calc(50% + 315px); top: 182px; z-index: 2; }
+                .fr-card-button--live-center:nth-child(10) { left: calc(50% + 445px); top: 182px; z-index: 2; }
+                .fr-card-button--live-center:nth-child(6):nth-last-child(5) { left: calc(50% - 595px); }
+                .fr-card-button--live-center:nth-child(7):nth-last-child(4) { left: calc(50% - 335px); }
+                .fr-card-button--live-center:nth-child(8):nth-last-child(3) { left: calc(50% - 75px); }
+                .fr-card-button--live-center:nth-child(9):nth-last-child(2) { left: calc(50% + 185px); }
+                .fr-card-button--live-center:nth-child(10):nth-last-child(1) { left: calc(50% + 445px); }
+                .fr-live-hand-zone .fr-card-row-wrap {
                     position: relative;
                     padding: 0;
-                    gap: 0;
+                    gap: 12px;
                 }
-                .fr-live-handband .fr-card-row--table-band {
+                .fr-live-hand-zone .fr-card-row--live-hand-zone {
                     position: relative;
                     z-index: 1;
-                    width: min(1652px, calc(100vw - 316px));
-                    margin: 0 172px 0 auto;
-                    grid-template-columns: repeat(7, minmax(0, 234px));
+                    width: min(1500px, calc(100vw - 136px));
+                    margin: 0 auto;
+                    grid-template-columns: repeat(7, minmax(0, 1fr));
                     justify-content: center;
-                    gap: 0;
+                    gap: 16px;
                 }
                 .fr-card-button--live-hand {
                     position: relative;
                     transform: none;
                     width: 100%;
-                    max-width: 234px;
+                    max-width: none;
+                }
+                .fr-card-slot--live-hand {
+                    width: 100%;
+                    max-width: none;
+                    border-radius: 14px;
+                    border: 1px solid rgba(255, 235, 191, 0.04);
+                    background:
+                        linear-gradient(180deg, rgba(18, 29, 24, 0.03), rgba(8, 14, 11, 0.06)),
+                        rgba(7, 12, 10, 0.015);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 245, 214, 0.008),
+                        inset 0 10px 18px rgba(255, 255, 255, 0.004);
                 }
                 .fr-card-button--live-hand .fr-card {
                     border-radius: 14px;
@@ -1835,19 +1864,41 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 20px 30px rgba(0, 0, 0, 0.32),
                         0 0 0 1px rgba(255, 243, 213, 0.16);
                 }
-                /* 主动作固定在右侧中段操作坞，贴近公共区/手牌确认循环，同时避开右下 HUD 浮球。 */
-                .fr-live-action-zone {
-                    position: fixed;
-                    right: clamp(38px, 2.7vw, 64px);
-                    top: clamp(476px, 47.6vh, 526px);
-                    z-index: 4;
+                .fr-live-hand-zone-header {
                     display: flex;
                     align-items: center;
+                    justify-content: space-between;
+                    gap: 18px;
+                    width: min(1520px, calc(100vw - 140px));
+                    margin: 0 auto 6px;
+                }
+                .fr-live-hand-zone-header--solo {
                     justify-content: center;
-                    width: 176px;
-                    height: 104px;
-                    min-height: 104px;
-                    pointer-events: none;
+                }
+                .fr-live-hand-zone-heading {
+                    display: grid;
+                    gap: 8px;
+                    min-height: 46px;
+                    min-width: 0;
+                }
+                .fr-live-hand-zone-title {
+                    color: rgba(247, 229, 190, 0.78);
+                    font-size: 14px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                }
+                .fr-live-action-zone {
+                    position: relative;
+                    z-index: 3;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    flex: 0 0 auto;
+                    width: auto;
+                    height: auto;
+                    min-height: 0;
+                    pointer-events: auto;
                 }
                 .fr-live-action-button {
                     position: relative;
@@ -1855,39 +1906,38 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     align-items: center;
                     justify-content: center;
                     width: 176px;
-                    height: 104px;
-                    padding: 18px 22px;
-                    border-radius: 18px;
-                    border: 1px solid rgba(226, 184, 96, 0.82);
+                    height: 52px;
+                    padding: 10px 16px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(226, 184, 96, 0.28);
                     background:
-                        radial-gradient(circle at 50% 12%, rgba(255, 236, 178, 0.16), transparent 36%),
-                        linear-gradient(180deg, rgba(64, 42, 24, 0.99), rgba(12, 11, 10, 0.99));
-                    color: #ffe7af;
+                        radial-gradient(circle at 50% 12%, rgba(255, 236, 178, 0.08), transparent 36%),
+                        linear-gradient(180deg, rgba(52, 35, 20, 0.88), rgba(12, 11, 10, 0.92));
+                    color: rgba(255, 231, 175, 0.78);
                     text-align: center;
                     box-shadow:
-                        0 28px 42px rgba(0,0,0,0.48),
-                        inset 0 1px 0 rgba(255,255,255,0.12),
-                        inset 0 -20px 28px rgba(0, 0, 0, 0.34),
-                        0 0 0 4px rgba(20, 13, 8, 0.24);
-                    pointer-events: auto;
+                        0 10px 18px rgba(0,0,0,0.16),
+                        inset 0 1px 0 rgba(255,255,255,0.06),
+                        inset 0 -12px 20px rgba(0, 0, 0, 0.16);
                     cursor: default;
                     overflow: hidden;
                     transition:
                         box-shadow 140ms ease,
                         background 140ms ease,
-                        color 140ms ease;
+                        color 140ms ease,
+                        transform 140ms ease;
                 }
                 .fr-live-action-button::before {
                     content: "";
                     position: absolute;
-                    inset: 6px;
-                    border-radius: 12px;
-                    border: 1px solid rgba(255, 225, 160, 0.16);
+                    inset: 5px;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255, 225, 160, 0.08);
                     box-shadow:
-                        -6px -6px 0 -5px rgba(255, 225, 160, 0.68),
-                        6px -6px 0 -5px rgba(255, 225, 160, 0.68),
-                        -6px 6px 0 -5px rgba(255, 225, 160, 0.68),
-                        6px 6px 0 -5px rgba(255, 225, 160, 0.68);
+                        -6px -6px 0 -5px rgba(255, 225, 160, 0.34),
+                        6px -6px 0 -5px rgba(255, 225, 160, 0.34),
+                        -6px 6px 0 -5px rgba(255, 225, 160, 0.34),
+                        6px 6px 0 -5px rgba(255, 225, 160, 0.34);
                     pointer-events: none;
                 }
                 .fr-live-action-button::after {
@@ -1903,8 +1953,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-live-action-button-label {
                     position: relative;
                     z-index: 1;
-                    max-width: 124px;
-                    font-size: clamp(20px, 1.12vw, 24px);
+                    max-width: 144px;
+                    font-size: 16px;
                     font-weight: 900;
                     line-height: 1.1;
                     letter-spacing: 0;
@@ -1913,25 +1963,32 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-live-action-button--enabled {
                     background:
-                        radial-gradient(circle at 50% 10%, rgba(255, 239, 190, 0.2), transparent 34%),
-                        linear-gradient(180deg, rgba(76, 49, 28, 0.99), rgba(14, 13, 11, 0.99));
+                        radial-gradient(circle at 50% 10%, rgba(255, 239, 190, 0.14), transparent 34%),
+                        linear-gradient(180deg, rgba(120, 78, 34, 0.94), rgba(58, 33, 15, 0.94));
                     color: #ffecb9;
                     box-shadow:
-                        0 30px 46px rgba(0,0,0,0.5),
-                        inset 0 1px 0 rgba(255,255,255,0.16),
-                        inset 0 -22px 32px rgba(0, 0, 0, 0.34),
-                        0 0 0 4px rgba(20, 13, 8, 0.24);
+                        0 12px 20px rgba(0,0,0,0.22),
+                        inset 0 1px 0 rgba(255,255,255,0.12),
+                        inset 0 -16px 22px rgba(0, 0, 0, 0.18);
                     cursor: pointer;
                 }
                 .fr-live-action-button--enabled:hover {
-                    transform: none;
+                    transform: translateY(-1px);
                     box-shadow:
-                        0 32px 48px rgba(0,0,0,0.38),
+                        0 18px 28px rgba(0,0,0,0.38),
                         inset 0 1px 0 rgba(255,255,255,0.18),
                         inset 0 -18px 28px rgba(0, 0, 0, 0.28);
                 }
                 .fr-live-action-button--enabled:active {
-                    transform: none;
+                    transform: translateY(1px);
+                }
+                .fr-live-action-button:disabled {
+                    pointer-events: none;
+                }
+                .fr-live-action-button--deck {
+                    width: 100%;
+                    min-width: 0;
+                    justify-content: center;
                 }
                 .fr-live-action-button:focus-visible,
                 .fr-live-deck--enabled:focus-visible {
@@ -1964,91 +2021,111 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-table {
-                    grid-template-rows: 132px minmax(0, 1fr) 326px;
-                    gap: 0;
+                    grid-template-rows: 132px minmax(248px, 1fr) 392px;
+                    gap: 10px;
+                }
+                .fr-board--minimal-live .fr-live-table--opening {
+                    grid-template-rows: 128px minmax(180px, 0.78fr) 438px;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw {
+                    grid-template-rows: 128px minmax(176px, 0.8fr) 428px;
                 }
                 .fr-board--minimal-live .fr-live-topbar {
-                    min-height: 128px;
+                    grid-template-columns: 204px minmax(0, 1fr) 194px;
+                    min-height: 138px;
+                    gap: 20px;
+                    padding: 12px 24px 0;
                 }
                 .fr-board--minimal-live .fr-live-status-strip {
-                    top: 28px;
-                    gap: 16px;
+                    display: grid;
+                    grid-auto-flow: column;
+                    grid-auto-columns: max-content;
+                    gap: 14px;
+                    margin-top: 10px;
                 }
                 .fr-board--minimal-live .fr-live-status-strip::before {
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-chip {
-                    min-height: 28px;
-                    padding: 0 4px;
-                    border-radius: 0;
-                    border-color: transparent;
-                    background: transparent;
-                    box-shadow: none;
-                    color: rgba(246, 226, 185, 0.72);
-                    font-size: 13px;
+                    min-height: 44px;
+                    padding: 0 16px;
+                    border-radius: 999px;
+                    border: 1px solid rgba(224, 181, 97, 0.48);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.16), transparent 42%),
+                        linear-gradient(180deg, rgba(60, 40, 24, 0.96), rgba(11, 11, 10, 0.98));
+                    box-shadow:
+                        0 12px 18px rgba(0, 0, 0, 0.26),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+                    color: rgba(248, 231, 195, 0.86);
+                    font-size: 16px;
                     font-weight: 800;
-                    text-shadow: none;
+                    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
                 }
                 .fr-board--minimal-live .fr-live-chip::before {
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-chip--turn {
-                    min-width: 106px;
-                    font-size: 20px;
-                    padding: 0 4px;
-                    background: transparent;
+                    min-width: 136px;
+                    font-size: 24px;
+                    padding: 0 20px;
                     color: #ffe6aa;
                 }
                 .fr-board--minimal-live .fr-live-chip--turn-active {
-                    min-width: 124px;
+                    min-width: 150px;
                 }
                 .fr-board--minimal-live .fr-live-chip--round {
-                    min-height: 28px;
-                    padding: 0 4px;
+                    min-height: 36px;
+                    padding: 0 14px;
                     font-size: 12px;
-                    color: rgba(245, 226, 190, 0.68);
-                    background: transparent;
+                    color: rgba(245, 226, 190, 0.76);
+                    background:
+                        radial-gradient(circle at 50% 0%, rgba(255, 231, 168, 0.08), transparent 42%),
+                        linear-gradient(180deg, rgba(28, 29, 22, 0.98), rgba(7, 8, 7, 0.99));
                 }
                 .fr-board--minimal-live .fr-live-chip--progress {
-                    min-width: 74px;
-                    font-size: 21px;
-                    background: transparent;
+                    min-width: 92px;
+                    font-size: 24px;
                     color: #ffde9e;
                 }
                 .fr-board--minimal-live .fr-live-chip--cue {
-                    min-height: 30px;
-                    padding: 0 4px;
-                    font-size: 14px;
-                    background: transparent;
-                    color: rgba(232, 255, 235, 0.88);
+                    min-height: 36px;
+                    padding: 0 16px;
+                    font-size: 15px;
+                    background: linear-gradient(180deg, rgba(18, 56, 50, 0.96), rgba(8, 28, 25, 0.98));
+                    color: rgba(234, 248, 233, 0.92);
                 }
                 .fr-board--minimal-live .fr-live-deck {
-                    top: 24px;
-                    left: 52px;
-                    gap: 0;
+                    display: grid;
+                    align-content: start;
+                    justify-items: start;
+                    gap: 12px;
+                }
+                .fr-board--minimal-live .fr-live-deck-cue {
+                    width: 182px;
                 }
                 .fr-board--minimal-live .fr-live-deck::before,
                 .fr-board--minimal-live .fr-live-deck::after {
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-deck-stack {
-                    width: 122px;
-                    height: 168px;
-                    border-radius: 12px;
-                    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.34));
+                    width: 182px;
+                    height: 246px;
+                    border-radius: 14px;
+                    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.3));
                 }
                 .fr-board--minimal-live .fr-live-deck-stack .fr-stack-card {
-                    border-radius: 12px;
+                    border-radius: 14px;
                 }
                 .fr-board--minimal-live .fr-live-deck-count {
                     position: absolute;
-                    right: 8px;
-                    bottom: 10px;
+                    right: 12px;
+                    bottom: 12px;
                     transform: none;
                     z-index: 3;
-                    min-width: 42px;
-                    height: 32px;
-                    padding: 0 9px;
+                    min-width: 46px;
+                    height: 34px;
+                    padding: 0 10px;
                     border-radius: 8px;
                     border: 1px solid rgba(255, 229, 166, 0.34);
                     background: rgba(10, 14, 11, 0.82);
@@ -2056,63 +2133,101 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 8px 14px rgba(0, 0, 0, 0.3),
                         inset 0 1px 0 rgba(255, 255, 255, 0.12);
                     color: #f6dfaa;
-                    font-size: 24px;
+                    font-size: 28px;
                     text-shadow: none;
                 }
                 .fr-board--minimal-live .fr-live-score-strip {
-                    top: 28px;
-                    right: 36px;
-                    width: 156px;
+                    top: auto;
+                    right: auto;
+                    width: 174px;
                 }
                 .fr-board--minimal-live .fr-live-score-band {
-                    height: 42px;
-                    padding: 0;
-                    border-radius: 0;
-                    border: none;
-                    background: transparent;
-                    box-shadow: none;
-                }
-                .fr-board--minimal-live .fr-live-score-band::before,
-                .fr-board--minimal-live .fr-live-score-band::after {
-                    display: none;
+                    display: grid;
+                    align-content: center;
+                    gap: 6px;
+                    width: 100%;
+                    height: 78px;
+                    padding: 12px 14px;
+                    border-radius: 9px;
+                    border: 0;
+                    background: linear-gradient(180deg, rgba(18, 18, 16, 0.92), rgba(6, 6, 6, 0.94));
+                    box-shadow:
+                        0 14px 20px rgba(0, 0, 0, 0.14),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.04);
                 }
                 .fr-board--minimal-live .fr-live-score-band-kicker {
-                    color: rgba(246, 223, 180, 0.48);
+                    color: rgba(246, 223, 180, 0.56);
                     font-size: 10px;
                     letter-spacing: 0;
-                    text-align: right;
+                    text-align: left;
+                    white-space: nowrap;
                 }
                 .fr-board--minimal-live .fr-live-score-band-main {
-                    justify-content: flex-end;
-                    margin-top: 2px;
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: space-between;
+                    gap: 8px;
+                    margin-top: 0;
                 }
                 .fr-board--minimal-live .fr-live-score-band-total {
-                    font-size: 24px;
-                    color: rgba(248, 223, 159, 0.86);
-                    font-weight: 800;
+                    font-size: 34px;
+                    color: rgba(248, 223, 159, 0.94);
+                    font-weight: 750;
                     text-shadow: none;
                 }
-                .fr-board--minimal-live .fr-live-river::before {
-                    display: none;
+                .fr-board--minimal-live .fr-live-center-row::before {
+                    display: block;
+                    left: 13%;
+                    right: 13%;
+                    top: 42px;
+                    bottom: 58px;
+                    border-radius: 32px;
+                    background:
+                        linear-gradient(180deg, rgba(7, 17, 15, 0.025), rgba(2, 10, 9, 0.08)),
+                        radial-gradient(ellipse at 50% 30%, rgba(255, 232, 178, 0.03), transparent 62%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 245, 220, 0.015),
+                        inset 0 -18px 28px rgba(0, 0, 0, 0.06);
                 }
-                .fr-board--minimal-live .fr-live-handband::before {
-                    display: none;
-                }
-                .fr-board--minimal-live .fr-discard-row--live-river {
-                    width: min(1230px, 74vw);
-                    min-height: 408px;
-                    transform: translateY(18px);
+                .fr-board--minimal-live .fr-discard-row--live-center {
+                    width: min(1460px, 86vw);
+                    min-height: 312px;
+                    transform: translateY(0);
                 }
                 .fr-board--minimal-live .fr-discard-row--empty {
-                    min-height: 0;
+                    min-height: 188px;
                 }
                 .fr-board--minimal-live .fr-zone-empty--silent {
-                    display: none;
+                    display: block;
+                    width: min(1120px, 74vw);
+                    height: 198px;
+                    margin: 52px auto 0;
+                    min-height: 0;
+                    border: none;
+                    border-radius: 24px;
+                    background:
+                        linear-gradient(180deg, rgba(10, 20, 16, 0.015), rgba(0, 0, 0, 0.04)),
+                        radial-gradient(ellipse at 50% 26%, rgba(255, 236, 197, 0.012), transparent 58%);
+                    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.01);
+                    position: relative;
                 }
-                .fr-board--minimal-live .fr-card-button--live-river {
-                    width: 190px;
+                .fr-board--minimal-live .fr-card-slot--live-center-placeholder {
+                    position: absolute;
+                    width: 202px;
+                    border-radius: 14px;
+                    border: 1px solid rgba(255, 239, 202, 0.035);
+                    background:
+                        linear-gradient(180deg, rgba(255, 255, 255, 0.008), rgba(0, 0, 0, 0.025)),
+                        rgba(6, 15, 13, 0.02);
+                    box-shadow:
+                        0 12px 18px rgba(0, 0, 0, 0.05),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.008);
+                    opacity: 0.3;
                 }
-                .fr-board--minimal-live .fr-card-button--live-river .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-center {
+                    width: 206px;
+                }
+                .fr-board--minimal-live .fr-card-button--live-center .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand .fr-card {
                     border-radius: 9px;
                     border-color: rgba(255, 238, 199, 0.32);
@@ -2124,14 +2239,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         border-color 140ms ease,
                         transform 140ms ease;
                 }
-                .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
                     border-color: rgba(255, 238, 201, 0.64);
                     box-shadow:
                         0 14px 18px rgba(0, 0, 0, 0.26),
                         0 0 0 1px rgba(255, 243, 213, 0.1);
                 }
-                .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable:hover .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable:hover .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card {
                     transform: translateY(-8px);
                     border-color: rgba(255, 241, 203, 0.86);
@@ -2139,11 +2254,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 22px 30px rgba(0, 0, 0, 0.34),
                         0 0 0 2px rgba(255, 224, 145, 0.18);
                 }
-                .fr-board--minimal-live .fr-card-button--live-river:active .fr-card,
+                .fr-board--minimal-live .fr-card-button--live-center:active .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand:active .fr-card {
                     transform: translateY(-2px) scale(0.99);
                 }
-                .fr-board--minimal-live .fr-card-button--live-river:focus-visible,
+                .fr-board--minimal-live .fr-card-button--live-center:focus-visible,
                 .fr-board--minimal-live .fr-card-button--live-hand:focus-visible {
                     outline: 2px solid rgba(255, 238, 201, 0.86);
                     outline-offset: 5px;
@@ -2156,30 +2271,36 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 0 0 3px rgba(255, 215, 128, 0.46) !important;
                     transform: translateY(-10px);
                 }
-                .fr-board--minimal-live .fr-live-handband--motion-draw .fr-card-button--live-hand .fr-card {
-                    animation: fr-live-hand-arrive-from-deck 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw .fr-card {
+                    animation: fr-live-hand-arrive-from-deck 920ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
                 }
-                .fr-board--minimal-live .fr-live-handband--motion-take .fr-card-button--live-hand .fr-card {
-                    animation: fr-live-hand-arrive-from-river 1000ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(2n) .fr-card {
+                    animation-delay: 32ms;
                 }
-                .fr-board--minimal-live .fr-live-river--motion-receive .fr-card-button--live-river .fr-card {
-                    animation: fr-live-river-receive-discard 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                .fr-board--minimal-live .fr-card-button--motion-hand-draw:nth-child(3n) .fr-card {
+                    animation-delay: 64ms;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-hand-take .fr-card {
+                    animation: fr-live-hand-arrive-from-center 1000ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
+                }
+                .fr-board--minimal-live .fr-card-button--motion-center-receive .fr-card {
+                    animation: fr-live-center-row-receive-discard 1200ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
                 }
                 @keyframes fr-live-hand-arrive-from-deck {
                     0% {
-                        opacity: 0.18;
-                        transform: translate(-620px, -540px) scale(0.82) rotate(-5deg);
+                        opacity: 0;
+                        transform: translate(-220px, -260px) scale(0.88) rotate(-3deg);
                     }
-                    58% {
+                    52% {
                         opacity: 1;
-                        transform: translate(-18px, -18px) scale(1.02) rotate(-1deg);
+                        transform: translate(-24px, -28px) scale(1.015) rotate(-1deg);
                     }
                     100% {
                         opacity: 1;
                         transform: translate(0, 0) scale(1) rotate(0deg);
                     }
                 }
-                @keyframes fr-live-hand-arrive-from-river {
+                @keyframes fr-live-hand-arrive-from-center {
                     0% {
                         opacity: 0.22;
                         transform: translate(0, -230px) scale(0.9) rotate(2deg);
@@ -2193,7 +2314,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         transform: translate(0, 0) scale(1) rotate(0deg);
                     }
                 }
-                @keyframes fr-live-river-receive-discard {
+                @keyframes fr-live-center-row-receive-discard {
                     0% {
                         opacity: 0.2;
                         transform: translate(0, 300px) scale(0.9) rotate(-2deg);
@@ -2230,60 +2351,247 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         inset 0 1px 0 rgba(255, 255, 255, 0.16);
                     pointer-events: none;
                 }
-                .fr-board--minimal-live .fr-live-handband .fr-card-row--table-band {
-                    width: min(1540px, calc(100vw - 260px));
+                .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1460px, calc(100vw - 128px));
                     margin: 0 auto;
                     grid-template-columns: repeat(var(--fr-live-hand-slots, 7), minmax(0, 1fr));
                     justify-content: center;
-                    gap: 0;
-                    transform: translateY(-18px);
+                    gap: 18px;
+                    transform: translateY(-30px);
                 }
                 .fr-board--minimal-live .fr-card-button--live-hand {
                     width: 100%;
                     max-width: none;
                 }
+                .fr-board--minimal-live .fr-live-hand-zone {
+                    margin-top: -36px;
+                    padding: 10px 18px 24px;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-header {
+                    width: min(1460px, calc(100vw - 128px));
+                    margin: 0 auto 18px;
+                    align-items: flex-end;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-header--solo {
+                    justify-content: center;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-title {
+                    font-size: 13px;
+                    color: rgba(245, 230, 196, 0.68);
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-heading {
+                    flex: 1 1 auto;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-header--solo .fr-live-hand-zone-heading {
+                    flex: 0 1 auto;
+                    justify-items: center;
+                }
+                .fr-board--minimal-live .fr-card-slot--live-hand {
+                    border: 1px solid rgba(255, 235, 191, 0.02);
+                    background:
+                        linear-gradient(180deg, rgba(255, 255, 255, 0.006), rgba(0, 0, 0, 0.02)),
+                        rgba(7, 12, 10, 0.014);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 245, 214, 0.006),
+                        inset 0 8px 16px rgba(255, 255, 255, 0.003);
+                }
                 .fr-board--minimal-live .fr-live-action-zone {
-                    right: clamp(96px, 6.2vw, 132px);
-                    top: auto;
-                    bottom: clamp(224px, 22vh, 254px);
-                    width: 178px;
-                    height: 68px;
-                    min-height: 68px;
+                    min-width: 186px;
+                    justify-content: flex-end;
+                    align-self: end;
                 }
                 .fr-board--minimal-live .fr-live-action-button {
-                    width: 178px;
-                    height: 68px;
-                    padding: 10px 18px;
-                    border-radius: 8px;
-                    border-color: rgba(247, 205, 122, 0.42);
-                    background: rgba(50, 36, 20, 0.9);
+                    width: 176px;
+                    height: 52px;
+                    padding: 10px 16px;
+                    border-radius: 10px;
+                    border-color: rgba(247, 205, 122, 0.12);
+                    background: rgba(24, 21, 17, 0.76);
                     box-shadow:
-                        0 12px 20px rgba(0, 0, 0, 0.28),
-                        inset 0 1px 0 rgba(255, 239, 185, 0.12);
+                        0 8px 16px rgba(0, 0, 0, 0.1),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.04);
                     color: #ffe8ad;
-                    opacity: 0.88;
+                    opacity: 1;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone::before {
+                    display: block;
+                    left: 3.4%;
+                    right: 3.4%;
+                    top: 20px;
+                    bottom: 8px;
+                    border-radius: 28px 28px 18px 18px;
+                    background:
+                        linear-gradient(180deg, rgba(13, 49, 43, 0.008), rgba(5, 19, 17, 0.06) 18%, rgba(4, 16, 14, 0.12)),
+                        radial-gradient(ellipse at 50% 20%, rgba(255, 229, 168, 0.014), transparent 50%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 242, 212, 0.01),
+                        inset 0 -14px 24px rgba(0, 0, 0, 0.06);
+                }
+                .fr-board--minimal-live .fr-live-hand-zone--empty::before {
+                    top: 74px;
+                    bottom: 10px;
+                    left: 4.8%;
+                    right: 4.8%;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-center-row::before {
+                    left: 18%;
+                    right: 18%;
+                    top: 74px;
+                    bottom: 86px;
+                    border-radius: 30px;
+                    background:
+                        linear-gradient(180deg, rgba(8, 18, 16, 0.02), rgba(3, 11, 10, 0.08)),
+                        radial-gradient(ellipse at 50% 30%, rgba(255, 232, 178, 0.032), transparent 64%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 245, 220, 0.012),
+                        inset 0 -20px 30px rgba(0, 0, 0, 0.06);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-zone-empty--silent {
+                    display: block;
+                    width: min(780px, 52vw);
+                    height: 154px;
+                    margin: 74px auto 0;
+                    border-radius: 22px;
+                    background:
+                        linear-gradient(180deg, rgba(10, 20, 16, 0.02), rgba(0, 0, 0, 0.05)),
+                        radial-gradient(ellipse at 50% 22%, rgba(255, 236, 197, 0.014), transparent 56%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.012),
+                        inset 0 -18px 26px rgba(0, 0, 0, 0.04);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone::before {
+                    display: block;
+                    top: 52px;
+                    bottom: 14px;
+                    left: 6.8%;
+                    right: 6.8%;
+                    border-radius: 28px 28px 18px 18px;
+                    background:
+                        linear-gradient(180deg, rgba(14, 52, 46, 0.02), rgba(6, 21, 18, 0.1) 24%, rgba(4, 16, 14, 0.16)),
+                        radial-gradient(ellipse at 50% 8%, rgba(255, 229, 168, 0.018), transparent 52%);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 242, 212, 0.015),
+                        inset 0 -18px 28px rgba(0, 0, 0, 0.08);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-center-row::after {
+                    left: 38%;
+                    right: 38%;
+                    top: 208px;
+                    background: linear-gradient(90deg, transparent, rgba(255, 229, 170, 0.1), transparent);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone {
+                    margin-top: -72px;
+                    padding-top: 0;
+                    padding-bottom: 22px;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-header {
+                    width: min(1180px, calc(100vw - 200px));
+                    margin: 0 auto 28px;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-heading {
+                    justify-items: center;
+                    gap: 10px;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-title {
+                    font-size: 12px;
+                    letter-spacing: 0.12em;
+                    color: rgba(245, 230, 196, 0.58);
+                    text-transform: uppercase;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1280px, calc(100vw - 180px));
+                    gap: 16px;
+                    transform: translateY(-78px);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-hand {
+                    opacity: 0.96;
+                    border-style: solid;
+                    border-color: rgba(255, 236, 190, 0.14);
+                    background:
+                        linear-gradient(180deg, rgba(255, 246, 222, 0.032), rgba(0, 0, 0, 0.02)),
+                        rgba(9, 17, 15, 0.022);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 241, 205, 0.024),
+                        0 14px 22px rgba(0, 0, 0, 0.06);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-hand:nth-child(3),
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-hand:nth-child(4) {
+                    opacity: 1;
+                    border-color: rgba(255, 229, 170, 0.28);
+                    background:
+                        linear-gradient(180deg, rgba(255, 244, 214, 0.072), rgba(0, 0, 0, 0.022)),
+                        rgba(12, 20, 17, 0.034);
+                    box-shadow:
+                        inset 0 0 0 1px rgba(255, 240, 198, 0.048),
+                        0 18px 26px rgba(0, 0, 0, 0.08),
+                        0 0 0 1px rgba(255, 232, 180, 0.06);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder {
+                    opacity: 0.1;
+                    width: 186px;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder:nth-child(1),
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder:nth-child(5) {
+                    opacity: 0.04;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder:nth-child(2),
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder:nth-child(4) {
+                    opacity: 0.08;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-card-slot--live-center-placeholder:nth-child(3) {
+                    opacity: 0.12;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone {
+                    margin-top: -108px;
+                    padding-top: 4px;
+                    padding-bottom: 18px;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-header {
+                    width: min(1180px, calc(100vw - 220px));
+                    margin: 0 auto 28px;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-heading {
+                    flex: 0 1 auto;
+                    justify-items: center;
+                    gap: 10px;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone::before {
+                    top: 12px;
+                    left: 6.4%;
+                    right: 6.4%;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1380px, calc(100vw - 160px));
+                    transform: translateY(-24px);
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-center-row::before {
+                    top: 28px;
+                    bottom: 42px;
                 }
                 .fr-board--minimal-live .fr-live-action-button::before,
                 .fr-board--minimal-live .fr-live-action-button::after {
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-action-button-label {
-                    max-width: 142px;
-                    font-size: 20px;
+                    max-width: 140px;
+                    font-size: 16px;
                     line-height: 1.05;
                 }
                 .fr-board--minimal-live .fr-live-action-button--enabled {
-                    background: rgba(126, 75, 24, 0.96);
+                    background: linear-gradient(180deg, rgba(124, 83, 39, 0.94), rgba(70, 42, 18, 0.94));
                     box-shadow:
-                        0 16px 24px rgba(0, 0, 0, 0.34),
-                        inset 0 1px 0 rgba(255, 239, 185, 0.2);
-                    opacity: 1;
+                        0 12px 20px rgba(0, 0, 0, 0.16),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.1);
                 }
                 .fr-board--minimal-live .fr-live-action-button--enabled:hover {
                     transform: translateY(-2px);
                     box-shadow:
-                        0 18px 26px rgba(0, 0, 0, 0.34),
-                        inset 0 1px 0 rgba(255, 239, 185, 0.2);
+                        0 14px 22px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.1);
                 }
                 .fr-board--minimal-live .fr-live-action-button--enabled:active {
                     transform: translateY(1px);
@@ -2291,19 +2599,583 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         0 8px 14px rgba(0, 0, 0, 0.28),
                         inset 0 2px 5px rgba(0, 0, 0, 0.22);
                 }
+                .fr-board--minimal-live .fr-live-center-row::before,
+                .fr-board--minimal-live .fr-live-center-row::after,
+                .fr-board--minimal-live .fr-live-hand-zone::before,
+                .fr-board--minimal-live .fr-zone-empty--silent,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-center-row::before,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-center-row::after,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone::before,
+                .fr-board--minimal-live .fr-live-table--opening .fr-zone-empty--silent {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-center-row {
+                    padding-top: 54px;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone {
+                    margin-top: 0;
+                    padding: 0 18px 44px;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1320px, calc(100vw - 520px));
+                    margin: 0 auto;
+                    transform: translateY(-24px);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1520px, calc(100vw - 260px));
+                    margin: 0 auto;
+                    transform: translateY(0);
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-header,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-header,
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-header {
+                    position: absolute;
+                    left: 16px;
+                    right: 16px;
+                    bottom: 8px;
+                    width: auto;
+                    margin: 0;
+                    justify-content: center;
+                    align-items: center;
+                    pointer-events: none;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-heading,
+                .fr-board--minimal-live .fr-live-hand-zone-header--solo .fr-live-hand-zone-heading,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-heading,
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-heading {
+                    flex: 0 1 auto;
+                    width: 100%;
+                    justify-items: center;
+                    gap: 0;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-title,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-title {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-action-zone {
+                    position: absolute;
+                    right: 104px;
+                    bottom: 112px;
+                    width: auto;
+                    min-width: 0;
+                    justify-content: flex-end;
+                    align-self: auto;
+                    pointer-events: auto;
+                }
+                .fr-board--minimal-live .fr-live-action-button {
+                    width: 178px;
+                    height: 66px;
+                }
+                .fr-compact-layout .fr-live-table {
+                    min-height: 650px;
+                    grid-template-rows: 112px minmax(0, 1fr) 252px;
+                }
+                .fr-compact-layout .fr-live-topbar {
+                    min-height: 108px;
+                }
+                .fr-compact-layout .fr-live-status-strip {
+                    top: 20px;
+                    gap: 12px;
+                }
+                .fr-compact-layout .fr-live-chip--turn {
+                    min-width: 96px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-chip--turn-active {
+                    min-width: 112px;
+                }
+                .fr-compact-layout .fr-live-chip--round {
+                    font-size: 11px;
+                }
+                .fr-compact-layout .fr-live-chip--progress {
+                    min-width: 62px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-chip--cue {
+                    font-size: 13px;
+                }
+                .fr-compact-layout .fr-live-deck {
+                    top: 20px;
+                    left: 18px;
+                }
+                .fr-compact-layout .fr-live-deck-stack {
+                    width: 88px;
+                    height: 122px;
+                }
+                .fr-compact-layout .fr-live-deck-count {
+                    right: 6px;
+                    bottom: 6px;
+                    min-width: 32px;
+                    height: 24px;
+                    padding: 0 7px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-score-strip {
+                    top: 20px;
+                    right: 18px;
+                    width: 112px;
+                }
+                .fr-compact-layout .fr-discard-row--live-center {
+                    width: min(880px, calc(100vw - 96px));
+                    min-height: 286px;
+                    transform: translateY(6px);
+                }
+                .fr-compact-layout .fr-card-button--live-center {
+                    width: 164px;
+                }
+                .fr-compact-layout .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(920px, calc(100vw - 72px));
+                    transform: translateY(-8px);
+                }
+                .fr-compact-layout .fr-live-action-zone {
+                    right: 28px;
+                    bottom: 160px;
+                    width: 152px;
+                    height: 60px;
+                    min-height: 60px;
+                }
+                .fr-compact-layout .fr-live-action-button {
+                    width: 152px;
+                    height: 60px;
+                    padding: 8px 14px;
+                }
+                .fr-compact-layout .fr-live-action-button-label {
+                    max-width: 124px;
+                    font-size: 18px;
+                }
+                .fr-compact-focus-rail {
+                    margin-top: -6px;
+                }
+                /* 当前 fr-merge-pass2 桌面版：去掉底部说明横幅，保留轻量顶栏与右侧独立主动作。 */
+                .fr-board--minimal-live .fr-live-table {
+                    grid-template-rows: 132px minmax(0, 1fr) 326px;
+                    gap: 0;
+                }
+                .fr-board--minimal-live .fr-live-table--opening {
+                    grid-template-rows: 132px minmax(0, 1fr) 0;
+                }
+                .fr-board--minimal-live .fr-live-table--early-draw {
+                    grid-template-rows: 132px minmax(0, 1fr) 326px;
+                }
+                .fr-board--minimal-live .fr-live-topbar {
+                    grid-template-columns: 146px minmax(0, 1fr) 156px;
+                    min-height: 128px;
+                    gap: 0;
+                    padding: 0 24px;
+                }
+                .fr-board--minimal-live {
+                    width: 100vw;
+                    height: 100vh;
+                    padding: 12px 16px 16px;
+                    border-radius: 0;
+                    background:
+                        radial-gradient(ellipse at 50% 12%, rgba(87, 143, 118, 0.08), transparent 28%),
+                        linear-gradient(180deg, #15463c, #0e332c 58%, #0a2622);
+                    box-shadow: none;
+                }
+                .fr-board--minimal-live::before {
+                    inset: 0;
+                    border-radius: 0;
+                    background:
+                        radial-gradient(ellipse at 50% 18%, rgba(116, 172, 143, 0.05), transparent 36%),
+                        linear-gradient(180deg, rgba(24, 82, 69, 0.18), rgba(8, 29, 25, 0.04));
+                    box-shadow: none;
+                }
+                .fr-board--minimal-live::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-status-strip {
+                    display: flex;
+                    gap: 16px;
+                    margin-top: 18px;
+                }
+                .fr-board--minimal-live .fr-live-chip {
+                    min-height: 28px;
+                    padding: 0 4px;
+                    border-radius: 0;
+                    border-color: transparent;
+                    background: transparent;
+                    box-shadow: none;
+                    color: rgba(246, 226, 185, 0.72);
+                    font-size: 13px;
+                    font-weight: 800;
+                    text-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-chip--turn {
+                    min-width: 106px;
+                    padding: 0 4px;
+                    font-size: 20px;
+                }
+                .fr-board--minimal-live .fr-live-chip--turn-active {
+                    min-width: 124px;
+                }
+                .fr-board--minimal-live .fr-live-chip--round {
+                    min-height: 28px;
+                    padding: 0 4px;
+                    font-size: 12px;
+                    color: rgba(245, 226, 190, 0.68);
+                    background: transparent;
+                }
+                .fr-board--minimal-live .fr-live-chip--progress {
+                    min-width: 74px;
+                    font-size: 21px;
+                    background: transparent;
+                    color: #ffde9e;
+                }
+                .fr-board--minimal-live .fr-live-chip--cue {
+                    min-height: 30px;
+                    padding: 0 4px;
+                    font-size: 14px;
+                    background: transparent;
+                    color: rgba(232, 255, 235, 0.88);
+                }
+                .fr-board--minimal-live .fr-live-deck {
+                    gap: 0;
+                    padding-top: 16px;
+                }
+                .fr-board--minimal-live .fr-live-deck::before,
+                .fr-board--minimal-live .fr-live-deck::after {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-deck-stack {
+                    width: 122px;
+                    height: 168px;
+                    border-radius: 12px;
+                    filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.34));
+                }
+                .fr-board--minimal-live .fr-live-deck-stack .fr-stack-card {
+                    border-radius: 12px;
+                }
+                .fr-board--minimal-live .fr-live-deck-count {
+                    right: 8px;
+                    bottom: 10px;
+                    min-width: 42px;
+                    height: 32px;
+                    padding: 0 9px;
+                    font-size: 24px;
+                    border: none;
+                    background: rgba(10, 14, 11, 0.74);
+                    box-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-score-strip {
+                    width: 132px;
+                }
+                .fr-board--minimal-live .fr-live-score-band {
+                    display: block;
+                    height: 42px;
+                    padding: 0;
+                    border-radius: 0;
+                    border: none;
+                    background: transparent;
+                    box-shadow: none;
+                }
+                .fr-board--minimal-live .fr-live-score-band::before {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-score-band-kicker {
+                    color: rgba(246, 223, 180, 0.4);
+                    text-align: right;
+                }
+                .fr-board--minimal-live .fr-live-score-band-main {
+                    justify-content: flex-end;
+                    margin-top: 2px;
+                }
+                .fr-board--minimal-live .fr-live-score-band-total {
+                    font-size: 24px;
+                    color: rgba(248, 223, 159, 0.86);
+                    font-weight: 800;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone {
+                    margin-top: 0;
+                    padding: 0 18px 32px;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(1520px, calc(100vw - 260px));
+                    margin: 0 auto;
+                    transform: translateY(-24px);
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone {
+                    padding: 0;
+                }
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-header,
+                .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-header,
+                .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-header {
+                    position: static;
+                    width: 0;
+                    height: 0;
+                    margin: 0;
+                    overflow: visible;
+                    pointer-events: none;
+                }
+                .fr-board--minimal-live .fr-live-hand-zone-heading,
+                .fr-board--minimal-live .fr-live-hand-zone-title {
+                    display: none;
+                }
+                .fr-board--minimal-live .fr-live-action-zone {
+                    position: fixed;
+                    left: auto;
+                    right: clamp(40px, 4vw, 68px);
+                    top: auto;
+                    bottom: clamp(148px, 16vh, 184px);
+                    transform: none;
+                    z-index: 4;
+                    width: auto;
+                    height: auto;
+                    min-height: 0;
+                    justify-content: flex-end;
+                    pointer-events: none;
+                }
+                .fr-board--minimal-live .fr-live-action-button {
+                    width: 224px;
+                    min-height: 62px;
+                    height: auto;
+                    padding: 12px 20px;
+                    border-radius: 14px;
+                    border: none;
+                    background: linear-gradient(180deg, rgba(168, 114, 50, 0.98), rgba(110, 68, 26, 0.98));
+                    box-shadow:
+                        0 16px 28px rgba(0, 0, 0, 0.26),
+                        0 0 0 1px rgba(255, 232, 176, 0.16),
+                        inset 0 1px 0 rgba(255, 239, 185, 0.16);
+                    color: #fff0c6;
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+                .fr-board--minimal-live .fr-live-action-button-label {
+                    max-width: 168px;
+                    font-size: 20px;
+                    line-height: 1.08;
+                }
+                .fr-compact-layout .fr-live-table {
+                    grid-template-rows: 108px minmax(0, 1fr) 220px;
+                    min-height: 0;
+                }
+                .fr-compact-layout .fr-live-table--opening {
+                    grid-template-rows: 108px minmax(0, 1fr) 0;
+                }
+                .fr-compact-layout .fr-live-table--early-draw {
+                    grid-template-rows: 108px minmax(0, 1fr) 220px;
+                }
+                .fr-compact-layout .fr-live-topbar {
+                    grid-template-columns: 128px minmax(0, 1fr) 118px;
+                    min-height: 108px;
+                    padding: 0 16px;
+                }
+                .fr-compact-layout .fr-live-status-strip {
+                    gap: 12px;
+                    margin-top: 12px;
+                }
+                .fr-compact-layout .fr-live-chip--turn {
+                    min-width: 88px;
+                    font-size: 17px;
+                }
+                .fr-compact-layout .fr-live-chip--turn-active {
+                    min-width: 104px;
+                }
+                .fr-compact-layout .fr-live-chip--progress {
+                    min-width: 60px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-chip--cue {
+                    font-size: 12px;
+                }
+                .fr-compact-layout .fr-live-deck {
+                    padding-top: 10px;
+                }
+                .fr-compact-layout .fr-live-deck-stack {
+                    width: 96px;
+                    height: 132px;
+                }
+                .fr-compact-layout .fr-live-deck-count {
+                    min-width: 34px;
+                    height: 24px;
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-live-score-strip {
+                    width: 118px;
+                }
+                .fr-compact-layout .fr-live-score-band-total {
+                    font-size: 18px;
+                }
+                .fr-compact-layout .fr-discard-row--live-center {
+                    min-height: 240px;
+                }
+                .fr-compact-layout .fr-card-button--live-center {
+                    width: 164px;
+                }
+                .fr-compact-layout .fr-live-hand-zone {
+                    padding: 0 14px 12px;
+                }
+                .fr-compact-layout .fr-live-hand-zone .fr-card-row--live-hand-zone,
+                .fr-compact-layout .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                    width: min(820px, calc(100vw - 300px));
+                    transform: translateY(-58px);
+                }
+                .fr-compact-layout .fr-live-action-zone {
+                    position: fixed;
+                    left: auto;
+                    right: 28px;
+                    bottom: 116px;
+                    transform: none;
+                    width: auto;
+                    height: auto;
+                    min-height: 0;
+                    justify-content: flex-end;
+                    pointer-events: none;
+                }
+                .fr-compact-layout .fr-live-action-button {
+                    width: 186px;
+                    min-height: 56px;
+                    height: auto;
+                    padding: 10px 16px;
+                    pointer-events: auto;
+                }
+                .fr-compact-layout .fr-live-action-button-label {
+                    max-width: 142px;
+                    font-size: 18px;
+                }
+                .fr-compact-focus-rail {
+                    position: absolute;
+                    left: 24px;
+                    bottom: 18px;
+                    width: 184px;
+                    z-index: 4;
+                    margin-top: 0;
+                    pointer-events: none;
+                }
+                .fr-compact-focus-panel {
+                    display: grid;
+                    gap: 10px;
+                    padding: 12px 12px 14px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(224, 188, 114, 0.14);
+                    background: rgba(11, 24, 21, 0.72);
+                    box-shadow:
+                        0 14px 22px rgba(0, 0, 0, 0.24),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+                }
+                .fr-compact-focus-header {
+                    font-size: 11px;
+                    color: rgba(246, 223, 180, 0.72);
+                }
+                .fr-compact-focus-body {
+                    display: grid;
+                    grid-template-columns: 86px minmax(0, 1fr);
+                    gap: 10px;
+                    align-items: center;
+                }
+                .fr-compact-focus-preview-shell {
+                    position: relative;
+                    width: 86px;
+                    height: 120px;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 16px rgba(0, 0, 0, 0.22);
+                }
+                .fr-compact-focus-preview-shell--hidden {
+                    opacity: 0.92;
+                }
+                .fr-card--compact-focus-preview {
+                    width: 100%;
+                    height: 100%;
+                    min-height: 0;
+                    border-radius: 8px;
+                }
+                .fr-compact-focus-copy {
+                    display: grid;
+                    gap: 8px;
+                    min-width: 0;
+                }
+                .fr-compact-focus-name {
+                    font-size: 15px;
+                    line-height: 1.2;
+                    color: #ffe8ad;
+                }
+                .fr-compact-focus-score {
+                    font-size: 20px;
+                    line-height: 1;
+                    color: rgba(248, 223, 159, 0.9);
+                    font-weight: 800;
+                }
                 .fr-board--minimal-live .fr-live-deck--enabled:active .fr-live-deck-stack {
                     transform: translateY(1px) scale(0.99);
                     filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.28));
                 }
+                .fr-live-status-strip .fr-live-action-zone {
+                    position: relative;
+                    left: auto;
+                    right: auto;
+                    top: auto;
+                    bottom: auto;
+                    transform: none;
+                    z-index: 1;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: auto;
+                    min-width: 0;
+                    height: auto;
+                    min-height: 0;
+                    pointer-events: auto;
+                }
+                .fr-live-status-strip .fr-live-action-button {
+                    width: auto;
+                    min-width: 112px;
+                    height: 38px;
+                    min-height: 38px;
+                    padding: 0 16px;
+                    border-radius: 11px;
+                    border: 1px solid rgba(235, 190, 96, 0.28);
+                    background: linear-gradient(180deg, rgba(50, 37, 25, 0.94), rgba(17, 16, 14, 0.96));
+                    box-shadow:
+                        0 10px 16px rgba(0, 0, 0, 0.12),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                    color: rgba(255, 230, 173, 0.8);
+                    cursor: default;
+                }
+                .fr-live-status-strip .fr-live-action-button::before,
+                .fr-live-status-strip .fr-live-action-button::after {
+                    display: none;
+                }
+                .fr-live-status-strip .fr-live-action-button-label {
+                    max-width: none;
+                    font-size: inherit;
+                    font-weight: inherit;
+                    line-height: 1;
+                    white-space: nowrap;
+                    word-break: normal;
+                }
+                .fr-live-status-strip .fr-live-action-button--enabled {
+                    background: linear-gradient(180deg, rgba(130, 85, 38, 0.96), rgba(73, 43, 18, 0.98));
+                    box-shadow:
+                        0 12px 18px rgba(0, 0, 0, 0.18),
+                        inset 0 1px 0 rgba(255, 245, 214, 0.12);
+                    color: #ffe9b1;
+                    cursor: pointer;
+                }
+                .fr-live-status-strip .fr-live-action-button--enabled:hover {
+                    transform: translateY(-1px);
+                    box-shadow:
+                        0 14px 20px rgba(0, 0, 0, 0.22),
+                        inset 0 1px 0 rgba(255, 245, 214, 0.16);
+                }
+                .fr-live-status-strip .fr-live-action-button--enabled:active {
+                    transform: translateY(1px);
+                }
                 @media (prefers-reduced-motion: reduce) {
-                    .fr-board--minimal-live .fr-card-button--live-river .fr-card,
+                    .fr-board--minimal-live .fr-card-button--live-center .fr-card,
                     .fr-board--minimal-live .fr-card-button--live-hand .fr-card,
                     .fr-board--minimal-live .fr-live-action-button,
                     .fr-board--minimal-live .fr-live-deck-stack {
                         transition: none;
                         animation: none;
                     }
-                    .fr-board--minimal-live .fr-card-button--live-river.fr-card-button--actionable:hover .fr-card,
+                    .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable:hover .fr-card,
                     .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card,
                     .fr-board--minimal-live .fr-card-button--armed .fr-card,
                     .fr-board--minimal-live .fr-live-action-button--enabled:hover,
@@ -2338,18 +3210,18 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     aspect-ratio: auto;
                     min-height: 112px;
                 }
-                .fr-stacked-turn-panel {
+                .fr-compact-turn-panel {
                     margin-bottom: 14px;
                 }
-                .fr-stacked-layout {
+                .fr-compact-layout {
                     display: grid;
                     gap: 18px;
                 }
-                .fr-stacked-layout--compact-landscape {
+                .fr-compact-layout--tight-landscape {
                     gap: 12px;
                 }
-                .fr-stacked-insight-grid,
-                .fr-stacked-support-grid {
+                .fr-compact-insight-grid,
+                .fr-compact-support-grid {
                     display: grid;
                     gap: 18px;
                     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2364,10 +3236,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 }
                 .fr-stack--deck {
                     background: rgba(18, 24, 21, 0.78);
-                }
-                .fr-stack--deck-compact {
-                    aspect-ratio: auto;
-                    min-height: 120px;
                 }
                 .fr-stack-card {
                     position: absolute;
@@ -2387,93 +3255,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                 .fr-stack-card--top {
                     opacity: 0.94;
                 }
-                .fr-stack-label {
-                    position: absolute;
-                    left: 12px;
-                    right: 12px;
-                    bottom: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    font-size: 13px;
-                    color: #f2ead7;
-                    background: rgba(18, 24, 21, 0.72);
-                }
                 .fr-count {
                     color: #f2ead7;
                     font-weight: 700;
-                }
-                .fr-chip-list {
-                    display: grid;
-                    gap: 12px;
-                }
-                .fr-chip {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 34px;
-                    padding: 0 12px;
-                    border-radius: 10px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    background: rgba(13, 19, 16, 0.28);
-                    color: #f2ead7;
-                    font-size: 13px;
-                    font-weight: 600;
-                }
-                .fr-chip--actionable {
-                    box-shadow: none;
-                    border-color: rgba(255, 255, 255, 0.16);
-                    background: rgba(255, 255, 255, 0.06);
-                }
-                .fr-chip:disabled {
-                    opacity: 0.48;
-                    cursor: default;
-                }
-                .fr-stage-banner {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    background: rgba(13, 19, 16, 0.3);
-                    color: #f2ead7;
-                    font-size: 13px;
-                    line-height: 1.45;
-                    box-shadow: none;
-                }
-                .fr-stage-banner::before {
-                    content: "";
-                    width: 8px;
-                    height: 8px;
-                    flex: 0 0 auto;
-                    border-radius: 999px;
-                    background: rgba(242, 234, 215, 0.7);
-                    box-shadow: none;
-                }
-                .fr-stage-banner--discard {
-                    border-color: rgba(255, 255, 255, 0.12);
-                    background: rgba(44, 31, 23, 0.32);
-                }
-                .fr-stage-banner--discard::before {
-                    background: rgba(242, 234, 215, 0.9);
-                    box-shadow: none;
-                }
-                .fr-score-summary {
-                    display: grid;
-                    gap: 10px;
-                }
-                .fr-score-summary--dense {
-                    gap: 8px;
-                }
-                .fr-score-table {
-                    display: grid;
-                    gap: 8px;
-                }
-                .fr-score-table--dense {
-                    gap: 6px;
                 }
                 .fr-score-row {
                     display: grid;
@@ -2584,41 +3368,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-size: 11px;
                     color: rgba(242, 234, 215, 0.64);
                 }
-                .fr-zone {
-                    min-width: 0;
-                    padding: 14px;
-                    border-radius: 12px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    background: rgba(28, 39, 33, 0.24);
-                }
-                .fr-zone-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 12px;
-                    margin-bottom: 14px;
-                }
-                .fr-zone-title {
-                    font-size: 13px;
-                    letter-spacing: 0.04em;
-                    text-transform: none;
-                    color: #f2ead7;
-                }
-                .fr-zone-hint {
-                    font-size: 12px;
-                    color: rgba(242, 234, 215, 0.62);
-                }
-                .fr-zone-hint--active {
-                    color: #f2ead7;
-                    font-weight: 700;
-                }
                 .fr-card-row {
                     display: grid;
                     grid-template-columns: repeat(7, minmax(0, 1fr));
                     gap: 12px;
                     min-width: 0;
                 }
-                .fr-card-row--table-band {
+                .fr-card-row--live-hand-zone {
                     grid-template-columns: repeat(7, minmax(96px, 132px));
                     justify-content: center;
                     align-items: end;
@@ -2630,7 +3386,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     gap: 12px;
                     justify-content: start;
                 }
-                .fr-discard-row--table-river {
+                .fr-discard-row--table-center {
                     grid-template-columns: repeat(5, minmax(96px, 132px));
                     justify-content: center;
                     align-content: center;
@@ -2712,6 +3468,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     font-size: 12px;
                     line-height: 1.4;
                     text-align: center;
+                }
+                .fr-card-row-note--actionable {
+                    border-style: solid;
+                    border-color: rgba(243, 201, 116, 0.34);
+                    background: rgba(44, 28, 13, 0.42);
+                    color: rgba(255, 236, 190, 0.9);
+                    box-shadow:
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                        0 10px 18px rgba(0, 0, 0, 0.18);
                 }
                 .fr-card-sheen {
                     position: absolute;
@@ -2837,36 +3602,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     background: rgba(13, 19, 16, 0.22);
                     border: 1px solid rgba(255, 255, 255, 0.06);
                 }
-                .fr-progress-head {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 8px;
-                    font-size: 13px;
-                    color: rgba(242, 234, 215, 0.8);
-                }
-                .fr-progress-track {
-                    height: 8px;
-                    border-radius: 999px;
-                    overflow: hidden;
-                    background: rgba(13, 19, 16, 0.4);
-                }
-                .fr-progress-fill {
-                    height: 100%;
-                    background: #f2ead7;
-                }
                 .fr-endgame-summary {
                     display: grid;
                     gap: 10px;
-                }
-                .fr-endgame-title {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 10px;
-                    color: #f2ead7;
-                    font-size: 13px;
-                    font-weight: 700;
                 }
                 .fr-endgame-list {
                     display: grid;
@@ -2910,10 +3648,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     line-height: 1;
                 }
                 @media (max-width: 1180px) {
-                    .fr-zone-header {
-                        align-items: flex-start;
-                        flex-direction: column;
-                    }
                     .fr-focus-spotlight {
                         grid-template-columns: 1fr;
                     }
@@ -2930,11 +3664,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         border-width: 10px;
                         border-radius: 22px;
                     }
-                    .fr-stacked-insight-grid,
-                    .fr-stacked-support-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    .fr-live-endgame-grid {
+                    .fr-compact-insight-grid,
+                    .fr-compact-support-grid {
                         grid-template-columns: 1fr;
                     }
                     .fr-card-row {
@@ -2944,6 +3675,22 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     }
                     .fr-card--focus-preview {
                         max-width: 172px;
+                    }
+                    .fr-live-endgame {
+                        top: 14px;
+                        right: 14px;
+                        width: min(300px, calc(100vw - 40px));
+                    }
+                    .fr-live-endgame-rail {
+                        gap: 8px;
+                        padding: 10px;
+                        border-radius: 16px;
+                    }
+                    .fr-live-endgame-rank-button {
+                        padding: 9px 10px;
+                    }
+                    .fr-live-endgame-rank-score {
+                        font-size: 20px;
                     }
                 }
                 @media (max-height: 520px) {
@@ -2965,37 +3712,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     .fr-panel-body {
                         padding: 10px;
                     }
-                    .fr-chip-list {
-                        gap: 8px;
-                    }
-                    .fr-chip {
-                        min-height: 34px;
-                        font-size: 12px;
-                        padding: 0 10px;
-                    }
-                    .fr-stage-banner {
-                        padding: 9px 10px;
-                        font-size: 12px;
-                    }
-                    .fr-stage-banner::before {
-                        width: 8px;
-                        height: 8px;
-                    }
                     .fr-card-row-note {
-                        font-size: 11px;
-                    }
-                    .fr-zone {
-                        padding: 10px;
-                        border-radius: 18px;
-                    }
-                    .fr-zone-header {
-                        margin-bottom: 8px;
-                        gap: 8px;
-                    }
-                    .fr-zone-title {
-                        font-size: 12px;
-                    }
-                    .fr-zone-hint {
                         font-size: 11px;
                     }
                     .fr-discard-row {
@@ -3013,13 +3730,29 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         font-size: 12px;
                     }
                     .fr-live-endgame {
-                        gap: 10px;
-                        padding-top: 10px;
+                        top: 10px;
+                        right: 10px;
+                        width: min(280px, calc(100vw - 28px));
                     }
-                    .fr-live-endgame-focus-block,
-                    .fr-live-endgame-summary-block {
+                    .fr-live-endgame-rail {
                         gap: 8px;
-                        padding: 12px;
+                        padding: 10px;
+                    }
+                    .fr-live-endgame-rail-header {
+                        gap: 6px;
+                    }
+                    .fr-live-endgame-rank-button {
+                        gap: 8px;
+                        padding: 8px 10px;
+                    }
+                    .fr-live-endgame-rank-copy {
+                        gap: 4px;
+                    }
+                    .fr-live-endgame-rank-score {
+                        font-size: 18px;
+                    }
+                    .fr-live-endgame-reviewed-player {
+                        font-size: 11px;
                     }
                     .fr-card-row-wrap {
                         gap: 8px;
@@ -3047,8 +3780,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                     }
                     .fr-focus-kicker,
                     .fr-focus-score span,
-                    .fr-progress-head,
-                    .fr-endgame-title,
                     .fr-endgame-rank,
                     .fr-endgame-name {
                         font-size: 11px;
@@ -3063,70 +3794,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID }:
                         padding: 8px 10px;
                         font-size: 12px;
                     }
-                    .fr-progress-track {
-                        height: 8px;
-                    }
-                    .fr-stack--deck-compact {
-                        min-height: 88px;
-                    }
-                    .fr-stack-label {
-                        left: 8px;
-                        right: 8px;
-                        bottom: 8px;
-                        padding: 8px 10px;
-                        font-size: 12px;
-                    }
                 }
             `}</style>
 
             <div className={`fr-board${isMinimalLiveDesktop ? ' fr-board--minimal-live' : ''}`}>
-                {isStackedViewport ? turnPanelSection : null}
-                {isStackedViewport ? (
+                {isCompactLandscapeTableViewport ? (
                     <div
-                        className={`fr-stacked-layout${isCompactLandscapeViewport ? ' fr-stacked-layout--compact-landscape' : ''}`}
-                        data-testid="fantasyrealms-stacked-layout"
+                        className={`fr-compact-layout${isTightCompactLandscapeViewport ? ' fr-compact-layout--tight-landscape' : ''}`}
+                        data-testid="fantasyrealms-compact-layout"
                     >
-                        {isCompactLandscapeViewport ? (
-                            <>
-                                {handZoneSection}
-                                <div className="fr-stacked-insight-grid" data-testid="fantasyrealms-stacked-insight-grid">
-                                    {discardZoneSection}
-                                    {focusPanelSection}
-                                </div>
-                                <div className="fr-stacked-support-grid" data-testid="fantasyrealms-stacked-support-grid">
-                                    {scorePanelSection}
-                                    {progressPanelSection}
-                                </div>
-                                {deckPanelSection}
-                            </>
-                        ) : (
-                            <>
-                                {discardZoneSection}
-                                <div className="fr-stacked-insight-grid" data-testid="fantasyrealms-stacked-insight-grid">
-                                    {focusPanelSection}
-                                    {scorePanelSection}
-                                </div>
-                                {handZoneSection}
-                                <div className="fr-stacked-support-grid" data-testid="fantasyrealms-stacked-support-grid">
-                                    {progressPanelSection}
-                                    {deckPanelSection}
-                                </div>
-                            </>
-                        )}
+                        {liveTableSection}
+                        {compactFocusRailSection ? <div className="fr-compact-focus-rail">{compactFocusRailSection}</div> : null}
                     </div>
-                ) : (
-                    <div
-                        className={`fr-live-table${isGameOver ? ' fr-live-table--gameover' : ''}`}
-                        data-testid="fantasyrealms-live-table"
-                    >
-                        {minimalLiveTopbarSection}
-                        {minimalLiveDiscardZoneSection}
-                        {minimalLiveHandZoneSection}
-                        {minimalLiveActionZoneSection}
-                        {minimalLiveEndgameSection}
-                    </div>
-                )}
+                ) : liveTableSection}
             </div>
-        </div>
+            </div>
+        </UndoProvider>
     );
 }

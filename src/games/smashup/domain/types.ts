@@ -532,6 +532,11 @@ export type PendingPostScoringAction =
         toBaseIndex: number;
         targetBaseDefId: string;
         reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
     }
     | {
         kind: 'playTitanOnReplacementBase';
@@ -1629,6 +1634,12 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         ownerId: PlayerId;
         controllerId?: PlayerId; // 被消灭随从的控制者；live minion 缺失时供 reducer/ledger 继续保留 controller provenance
         destroyerId?: PlayerId;  // 消灭者（可选；缺失时按“无明确消灭者”或由事件流程回退推断处理）
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
         reason: string;
     };
 }
@@ -1641,6 +1652,12 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
         toBaseIndex: number;
         /** 目标基地 defId（可选）。存在时 reducer 优先按活体基地定位目标索引。 */
         toBaseDefId?: string;
+        /** 效果来源玩家（可选，用于保护检查与语义归因） */
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
         /** 同批移动标记；同一批内的随从不应互相见证彼此的移动。 */
         batchId?: string;
         reason: string;

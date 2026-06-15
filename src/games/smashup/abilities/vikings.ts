@@ -20,13 +20,13 @@ import {
     revealDeckTop,
     revealHand,
 } from '../domain/abilityHelpers';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import type {
     CardInstance,
     CardRemovedFromGameEvent,
     CardToDeckTopEvent,
     CardTransferredEvent,
     DeckReorderedEvent,
-    OngoingDetachedEvent,
     SmashUpCore,
     SmashUpEvent,
     VpAwardedEvent,
@@ -563,7 +563,7 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
             { sourceId: 'vikings_valkyrie', targetType: 'generic', titleKey: 'ui.vikings_valkyrie_title' },
         );
     },
-    onResolve: ({ context, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const selected = value as { cardUid?: string; sourcePlayerId?: PlayerId; ownerId?: PlayerId; defId?: string } | undefined;
         if (!selected?.cardUid || !selected.sourcePlayerId || !selected.ownerId || !selected.defId) return { events: [] };
@@ -599,11 +599,13 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
         if (selected.ownerId) {
             return {
                 events: [
-                    {
-                        type: SU_EVENTS.ONGOING_DETACHED,
-                        payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'vikings_ransack' },
-                        timestamp,
-                    } as OngoingDetachedEvent,
+                    ...buildValidatedOngoingDetachEvents(state, {
+                        cardUid: selected.cardUid,
+                        defId: selected.defId,
+                        ownerId: selected.ownerId,
+                        reason: 'vikings_ransack',
+                        now: timestamp,
+                    }),
                     transferCard(selected.cardUid, selected.defId, selected.ownerId, context.playerId, 'vikings_ransack', timestamp, selected.ownerId),
                 ],
             };

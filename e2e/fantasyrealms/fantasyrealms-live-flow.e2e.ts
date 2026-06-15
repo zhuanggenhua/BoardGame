@@ -77,7 +77,6 @@ const discardStageCore = () => applyCommand(FantasyRealmsDomain.setup(['0', '1']
     payload: {},
     timestamp: 10,
 });
-
 const gameOverCore = (): FantasyRealmsCore => {
     const baseCore = FantasyRealmsDomain.setup(['0', '1', '2'], random);
     return {
@@ -485,7 +484,7 @@ async function getFirstCardMotionFrame(page: Page, selector: string) {
 test.describe('FantasyRealms live flow', () => {
     test.use({ viewport: { width: 1920, height: 1080 } });
 
-    test('右下固定主按钮会在拿牌确认与弃牌确认之间复用，且不侵入手牌主热区', async ({ browser }, testInfo) => {
+    test('手牌区确认按钮会在拿牌确认与弃牌确认之间复用，且保持同一手牌区锚点', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -504,47 +503,36 @@ test.describe('FantasyRealms live flow', () => {
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const liveActionZoneSelector = '[data-testid="fantasyrealms-live-action-zone"]';
             const liveActionButtonSelector = '[data-testid="fantasyrealms-live-action-button"]';
-            const liveHandbandSelector = '[data-testid="fantasyrealms-hand-row"]';
-            const hudFabButtonSelector = '[data-testid="fab-menu"] button';
-
+            const liveStatusStripSelector = '[data-testid="fantasyrealms-live-status-strip"]';
             const drawCore = drawStageCore();
             await injectCore(page, drawCore);
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
-            const initialHandbandRect = await getLocatorRect(page, liveHandbandSelector);
-            const initialHudFabRect = await getLocatorRect(page, hudFabButtonSelector);
-            const viewport = page.viewportSize() ?? { width: 1920, height: 1080 };
-
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
+            const initialStatusStripRect = await getLocatorRect(page, liveStatusStripSelector);
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();
             await expect(liveActionButton).toContainText('确认选择');
-            await expect(page.locator('.fr-card-button--live-river.fr-card-button--armed .fr-live-card-state')).toHaveText('已选');
+            await expect(page.locator('.fr-card-button--live-center.fr-card-button--armed .fr-live-card-state')).toHaveText('已选');
 
             const initialActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const initialActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
-            const actionZoneRightInset = viewport.width - (initialActionZoneRect.x + initialActionZoneRect.width);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'bottom-right');
-            expect(initialActionZoneRect.x).toBeGreaterThanOrEqual(Math.floor(viewport.width * 0.8));
-            expect(initialActionZoneRect.x).toBeLessThanOrEqual(Math.floor(viewport.width * 0.88));
-            expect(actionZoneRightInset).toBeGreaterThanOrEqual(88);
-            expect(actionZoneRightInset).toBeLessThanOrEqual(150);
-            expect(initialActionButtonRect.y).toBeGreaterThanOrEqual(Math.floor(viewport.height * 0.68));
-            expect(initialActionButtonRect.y).toBeLessThanOrEqual(Math.floor(viewport.height * 0.79));
-            expect(initialActionButtonRect.width).toBeGreaterThanOrEqual(168);
-            expect(initialActionButtonRect.width).toBeLessThanOrEqual(182);
-            expect(initialActionButtonRect.height).toBeGreaterThanOrEqual(64);
-            expect(initialActionButtonRect.height).toBeLessThanOrEqual(72);
+            const statusStripRight = initialStatusStripRect.x + initialStatusStripRect.width;
+            const statusStripBottom = initialStatusStripRect.y + initialStatusStripRect.height;
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'status-strip');
+            expect(initialActionZoneRect.x).toBeGreaterThanOrEqual(initialStatusStripRect.x);
+            expect(initialActionZoneRect.x + initialActionZoneRect.width).toBeLessThanOrEqual(statusStripRight);
+            expect(initialActionZoneRect.y).toBeGreaterThanOrEqual(initialStatusStripRect.y - 4);
+            expect(initialActionZoneRect.y + initialActionZoneRect.height).toBeLessThanOrEqual(statusStripBottom + 4);
             expect(initialActionButtonRect.width).toBeGreaterThan(initialActionButtonRect.height);
-            expect(initialActionButtonRect.x).toBeGreaterThanOrEqual(Math.floor(viewport.width * 0.8));
-            expect(initialActionButtonRect.x).toBeGreaterThanOrEqual(initialHandbandRect.x + initialHandbandRect.width - 260);
-            expect(initialActionButtonRect.y + initialActionButtonRect.height).toBeLessThanOrEqual(initialHudFabRect.y - 72);
+            expect(initialActionButtonRect.x + initialActionButtonRect.width).toBeLessThanOrEqual(statusStripRight);
+            expect(initialActionButtonRect.y + initialActionButtonRect.height).toBeLessThanOrEqual(statusStripBottom + 4);
 
             const confirmTakeActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const confirmTakeActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
             expect(confirmTakeActionZoneRect).toEqual(initialActionZoneRect);
             expect(confirmTakeActionButtonRect).toEqual(initialActionButtonRect);
 
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'live-action-bottom-right-confirm-take');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'live-action-hand-zone-confirm-take');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
 
@@ -560,14 +548,14 @@ test.describe('FantasyRealms live flow', () => {
 
             const discardCore = discardStageCore();
             await injectCore(page, discardCore);
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const secondHandButton = page.getByRole('button', { name: /弃置手牌/ }).nth(1);
             await secondHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
             await expect(liveActionButton).toBeEnabled();
             await expect(page.locator('.fr-card-button--live-hand.fr-card-button--armed .fr-live-card-state')).toHaveText('已选');
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'bottom-right');
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveAttribute('data-anchor', 'status-strip');
 
             const confirmDiscardActionZoneRect = await getLocatorRect(page, liveActionZoneSelector);
             const confirmDiscardActionButtonRect = await getLocatorRect(page, liveActionButtonSelector);
@@ -620,17 +608,17 @@ test.describe('FantasyRealms live flow', () => {
             const scoreLeft = scoreBandRect.x;
             const scoreRightInset = viewport.width - (scoreBandRect.x + scoreBandRect.width);
 
-            expect(deckRect.x).toBeGreaterThanOrEqual(liveTableRect.x + 48);
-            expect(deckRect.x).toBeLessThanOrEqual(liveTableRect.x + 96);
-            expect(deckRect.y).toBeGreaterThanOrEqual(liveTableRect.y + 24);
+            expect(deckRect.x).toBeGreaterThanOrEqual(liveTableRect.x + 12);
+            expect(deckRect.x).toBeLessThanOrEqual(liveTableRect.x + 84);
+            expect(deckRect.y).toBeGreaterThanOrEqual(liveTableRect.y);
             expect(Math.abs(statusCenterX - tableCenterX)).toBeLessThanOrEqual(36);
             expect(statusRect.x).toBeGreaterThan(deckRight + 40);
             expect(scoreLeft).toBeGreaterThan(statusRect.x + statusRect.width + 80);
-            expect(scoreBandRect.width).toBeGreaterThanOrEqual(144);
-            expect(scoreBandRect.width).toBeLessThanOrEqual(172);
-            expect(scoreBandRect.height).toBeGreaterThanOrEqual(38);
-            expect(scoreBandRect.height).toBeLessThanOrEqual(50);
-            expect(scoreRightInset).toBeGreaterThanOrEqual(54);
+            expect(scoreBandRect.width).toBeGreaterThanOrEqual(118);
+            expect(scoreBandRect.width).toBeLessThanOrEqual(160);
+            expect(scoreBandRect.height).toBeGreaterThanOrEqual(24);
+            expect(scoreBandRect.height).toBeLessThanOrEqual(46);
+            expect(scoreRightInset).toBeGreaterThanOrEqual(36);
             expect(scoreRightInset).toBeLessThanOrEqual(104);
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'live-hud-three-anchor-topbar');
@@ -656,20 +644,19 @@ test.describe('FantasyRealms live flow', () => {
             await openFantasyRealmsTestPage(page, baseURL);
             await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
 
-            const deckButton = page.getByRole('button', { name: /从牌库摸 2 张并弃 1 张/ });
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const liveActionZone = page.getByTestId('fantasyrealms-live-action-zone');
 
-            await expect(liveActionButton).toHaveCount(0);
-            await deckButton.click();
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张/);
+            await liveActionButton.click();
 
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
             await expect(page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible();
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
-            await expect(liveActionZone).toHaveAttribute('data-anchor', 'bottom-right');
+            await expect(liveActionZone).toHaveAttribute('data-anchor', 'status-strip');
             await liveActionButton.click();
 
             await page.waitForFunction(() => {
@@ -702,13 +689,12 @@ test.describe('FantasyRealms live flow', () => {
             const core = duelFullHandDrawCore();
             await injectCore(page, core);
 
-            const deckButton = page.getByRole('button', { name: '从牌库摸 1 张' });
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const liveActionZone = page.getByTestId('fantasyrealms-live-action-zone');
 
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
-            await deckButton.click();
+            await expect(liveActionButton).toContainText('摸牌');
+            await liveActionButton.click();
 
             await page.waitForFunction(() => {
                 const state = (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
@@ -718,13 +704,13 @@ test.describe('FantasyRealms live flow', () => {
                     && state?.core?.discardPile?.length === 0;
             }, { timeout: 10000 });
 
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
             await expect(liveActionButton).toContainText('确认弃置');
             await expect(liveActionButton).toBeEnabled();
-            await expect(liveActionZone).toHaveAttribute('data-anchor', 'bottom-right');
+            await expect(liveActionZone).toHaveAttribute('data-anchor', 'status-strip');
             await liveActionButton.click();
 
             await page.waitForFunction(() => {
@@ -756,24 +742,23 @@ test.describe('FantasyRealms live flow', () => {
             await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
 
             await injectCore(page, multiplayerOpeningCore());
-            await expect(page.getByTestId('fantasyrealms-live-action-button')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-button')).toContainText('摸牌');
 
-            const deckButton = page.getByRole('button', { name: '从牌库摸 1 张' });
-            await deckButton.click();
-            const handband = page.getByTestId('fantasyrealms-live-handband');
-            await expect(handband).toHaveAttribute('data-motion', 'draw-to-hand', { timeout: 1000 });
+            await page.getByTestId('fantasyrealms-live-action-button').click();
+            const handZone = page.getByTestId('fantasyrealms-live-hand-zone');
+            await expect(handZone).toHaveAttribute('data-motion', 'draw-to-hand', { timeout: 1000 });
 
             const drawStartPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-start');
             await mkdir(dirname(drawStartPath), { recursive: true });
-            const drawStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-hand .fr-card');
+            const drawStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw .fr-card');
             await page.screenshot({ path: drawStartPath, fullPage: false });
 
             await page.waitForTimeout(220);
             const drawMidPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-mid');
-            const drawMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-hand .fr-card');
+            const drawMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-hand-draw .fr-card');
             await page.screenshot({ path: drawMidPath, fullPage: false });
 
-            await expect(handband).toHaveAttribute('data-motion', 'idle', { timeout: 1600 });
+            await expect(handZone).toHaveAttribute('data-motion', 'idle', { timeout: 1600 });
             const drawEndPath = getEvidenceScreenshotPath(testInfo, 'motion-draw-end');
             await page.screenshot({ path: drawEndPath, fullPage: false });
             const drawEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-hand .fr-card');
@@ -790,22 +775,22 @@ test.describe('FantasyRealms live flow', () => {
             await expect(discardConfirmButton).toContainText('确认弃置');
             await expect(discardConfirmButton).toBeEnabled();
             await discardConfirmButton.click();
-            const river = page.getByTestId('fantasyrealms-live-river');
-            await expect(river).toHaveAttribute('data-motion', 'hand-to-river', { timeout: 1000 });
+            const centerRow = page.getByTestId('fantasyrealms-live-center-row');
+            await expect(centerRow).toHaveAttribute('data-motion', 'hand-to-center', { timeout: 1000 });
 
             const discardStartPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-start');
-            const discardStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-river .fr-card');
+            const discardStartFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive .fr-card');
             await page.screenshot({ path: discardStartPath, fullPage: false });
 
             await page.waitForTimeout(220);
             const discardMidPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-mid');
-            const discardMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-river .fr-card');
+            const discardMidFrame = await getFirstCardMotionFrame(page, '.fr-card-button--motion-center-receive .fr-card');
             await page.screenshot({ path: discardMidPath, fullPage: false });
 
-            await expect(river).toHaveAttribute('data-motion', 'idle', { timeout: 2400 });
+            await expect(centerRow).toHaveAttribute('data-motion', 'idle', { timeout: 2400 });
             const discardEndPath = getEvidenceScreenshotPath(testInfo, 'motion-discard-end');
             await page.screenshot({ path: discardEndPath, fullPage: false });
-            const discardEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-river .fr-card');
+            const discardEndFrame = await getFirstCardMotionFrame(page, '.fr-card-button--live-center .fr-card');
 
             expect(discardStartFrame.transform).not.toBe('none');
             expect(discardMidFrame.transform).not.toBe('none');
@@ -837,6 +822,7 @@ test.describe('FantasyRealms live flow', () => {
             const sortedStandings = Object.entries(gameOverResult.scores ?? {})
                 .sort((left, right) => right[1] - left[1])
                 .map(([playerId, score], index) => ({
+                    playerId,
                     rank: index + 1,
                     playerName: `玩家${Number(playerId) + 1}`,
                     score,
@@ -845,14 +831,16 @@ test.describe('FantasyRealms live flow', () => {
 
             await injectCore(page, core, { gameover: gameOverResult });
 
-            await expect(page.getByText('终局复盘').first()).toBeVisible({ timeout: 10000 });
-            await expect(page.getByText('最终排名')).toBeVisible();
-            const standingsRegion = page.locator('.fr-endgame-list');
-            await expect(standingsRegion).toBeVisible();
+            const standingsRegion = page.getByLabel('最终排名');
+            await expect(standingsRegion).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('fantasyrealms-endgame-reviewed-player')).toBeVisible();
+            const rows = standingsRegion.locator('button[data-testid^="fantasyrealms-endgame-rank-"]');
+            await expect(rows).toHaveCount(sortedStandings.length);
             for (const standing of sortedStandings) {
-                await expect(standingsRegion.getByText(`第 ${standing.rank} 名`)).toBeVisible();
-                await expect(standingsRegion.getByText(standing.playerName)).toBeVisible();
-                await expect(standingsRegion.getByText(String(standing.score))).toBeVisible();
+                const row = page.getByTestId(`fantasyrealms-endgame-rank-${standing.playerId}`);
+                await expect(row).toBeVisible();
+                await expect(row).toContainText(`第 ${standing.rank} 名`);
+                await expect(row.locator('.fr-live-endgame-rank-score')).toHaveText(String(standing.score));
             }
             await expect(standingsRegion.getByText('胜者')).toBeVisible();
         } finally {
@@ -890,6 +878,7 @@ test.describe('FantasyRealms live flow', () => {
             const sortedStandings = Object.entries(gameOverResult.scores ?? {})
                 .sort((left, right) => right[1] - left[1])
                 .map(([playerId, score], index) => ({
+                    playerId,
                     rank: index + 1,
                     playerName: `玩家${Number(playerId) + 1}`,
                     score,
@@ -899,7 +888,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -912,13 +901,16 @@ test.describe('FantasyRealms live flow', () => {
                 return Boolean(state?.sys?.gameover);
             }, { timeout: 10000 });
 
-            await expect(page.getByText('终局复盘').first()).toBeVisible({ timeout: 10000 });
-            const standingsRegion = page.locator('.fr-endgame-list');
+            const standingsRegion = page.getByLabel('最终排名');
             await expect(standingsRegion).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-endgame-reviewed-player')).toBeVisible();
+            const rows = standingsRegion.locator('button[data-testid^="fantasyrealms-endgame-rank-"]');
+            await expect(rows).toHaveCount(sortedStandings.length);
             for (const standing of sortedStandings) {
-                await expect(standingsRegion.getByText(`第 ${standing.rank} 名`)).toBeVisible();
-                await expect(standingsRegion.getByText(standing.playerName)).toBeVisible();
-                await expect(standingsRegion.getByText(String(standing.score))).toBeVisible();
+                const row = page.getByTestId(`fantasyrealms-endgame-rank-${standing.playerId}`);
+                await expect(row).toBeVisible();
+                await expect(row).toContainText(`第 ${standing.rank} 名`);
+                await expect(row.locator('.fr-live-endgame-rank-score')).toHaveText(String(standing.score));
             }
         } finally {
             await context.close().catch(() => {});
@@ -955,6 +947,7 @@ test.describe('FantasyRealms live flow', () => {
             const sortedStandings = Object.entries(gameOverResult.scores ?? {})
                 .sort((left, right) => right[1] - left[1])
                 .map(([playerId, score], index) => ({
+                    playerId,
                     rank: index + 1,
                     playerName: `玩家${Number(playerId) + 1}`,
                     score,
@@ -965,7 +958,7 @@ test.describe('FantasyRealms live flow', () => {
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
             await expect(page.getByText('9/10')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -978,13 +971,16 @@ test.describe('FantasyRealms live flow', () => {
                 return Boolean(state?.sys?.gameover);
             }, { timeout: 10000 });
 
-            await expect(page.getByText('终局复盘').first()).toBeVisible({ timeout: 10000 });
-            const standingsRegion = page.locator('.fr-endgame-list');
+            const standingsRegion = page.getByLabel('最终排名');
             await expect(standingsRegion).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-endgame-reviewed-player')).toBeVisible();
+            const rows = standingsRegion.locator('button[data-testid^="fantasyrealms-endgame-rank-"]');
+            await expect(rows).toHaveCount(sortedStandings.length);
             for (const standing of sortedStandings) {
-                await expect(standingsRegion.getByText(`第 ${standing.rank} 名`)).toBeVisible();
-                await expect(standingsRegion.getByText(standing.playerName)).toBeVisible();
-                await expect(standingsRegion.getByText(String(standing.score))).toBeVisible();
+                const row = page.getByTestId(`fantasyrealms-endgame-rank-${standing.playerId}`);
+                await expect(row).toBeVisible();
+                await expect(row).toContainText(`第 ${standing.rank} 名`);
+                await expect(row.locator('.fr-live-endgame-rank-score')).toHaveText(String(standing.score));
             }
         } finally {
             await context.close().catch(() => {});
@@ -1010,22 +1006,22 @@ test.describe('FantasyRealms live flow', () => {
             await injectCore(page, drawStageCore());
 
             const liveTableRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-table"]');
-            const riverCardRects = await getLocatorRects(page, '.fr-card-button--live-river');
-            expect(riverCardRects).toHaveLength(2);
+            const centerCardRects = await getLocatorRects(page, '.fr-card-button--live-center');
+            expect(centerCardRects).toHaveLength(2);
 
             const tableCenterX = liveTableRect.x + (liveTableRect.width / 2);
             const pairCenterX = (
-                (riverCardRects[0]!.x + (riverCardRects[0]!.width / 2))
-                + (riverCardRects[1]!.x + (riverCardRects[1]!.width / 2))
+                (centerCardRects[0]!.x + (centerCardRects[0]!.width / 2))
+                + (centerCardRects[1]!.x + (centerCardRects[1]!.width / 2))
             ) / 2;
-            const horizontalGap = riverCardRects[1]!.x - (riverCardRects[0]!.x + riverCardRects[0]!.width);
+            const horizontalGap = centerCardRects[1]!.x - (centerCardRects[0]!.x + centerCardRects[0]!.width);
 
             expect(Math.abs(pairCenterX - tableCenterX)).toBeLessThanOrEqual(80);
-            expect(riverCardRects[0]!.y).toBe(riverCardRects[1]!.y);
+            expect(centerCardRects[0]!.y).toBe(centerCardRects[1]!.y);
             expect(horizontalGap).toBeGreaterThanOrEqual(90);
             expect(horizontalGap).toBeLessThanOrEqual(130);
 
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-centered-river');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-centered-row');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {
@@ -1051,12 +1047,12 @@ test.describe('FantasyRealms live flow', () => {
 
             await injectCore(page, nearEndMultiplayerDiscardCore());
 
-            const riverCardsSelector = '.fr-card-button--live-river';
-            const riverCards = page.locator(riverCardsSelector);
+            const centerCardsSelector = '.fr-card-button--live-center';
+            const centerCards = page.locator(centerCardsSelector);
             await expect(page.getByText('9/10')).toBeVisible();
-            await expect(riverCards).toHaveCount(9);
+            await expect(centerCards).toHaveCount(9);
 
-            const rects = await getLocatorRects(page, riverCardsSelector);
+            const rects = await getLocatorRects(page, centerCardsSelector);
             const topRow = rects.slice(0, 5);
             const bottomRow = rects.slice(5);
 
@@ -1067,12 +1063,12 @@ test.describe('FantasyRealms live flow', () => {
             for (const rect of topRow) {
                 expect(rect.y).toBe(topRowY);
                 expect(rect.width).toBeGreaterThanOrEqual(188);
-                expect(rect.width).toBeLessThanOrEqual(198);
+                expect(rect.width).toBeLessThanOrEqual(212);
             }
             for (const rect of bottomRow) {
                 expect(rect.y).toBe(bottomRowY);
                 expect(rect.width).toBeGreaterThanOrEqual(188);
-                expect(rect.width).toBeLessThanOrEqual(198);
+                expect(rect.width).toBeLessThanOrEqual(212);
             }
 
             expect(bottomRowY).toBeGreaterThan(topRowY + 120);
@@ -1087,7 +1083,7 @@ test.describe('FantasyRealms live flow', () => {
             }
 
             await page.waitForTimeout(1400);
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'near-end-interleaved-river');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'near-end-interleaved-center-row');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {
@@ -1115,7 +1111,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
 
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();
@@ -1130,7 +1126,7 @@ test.describe('FantasyRealms live flow', () => {
                     && state?.core?.discardPile?.length === 1;
             }, { timeout: 10000 });
 
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1170,7 +1166,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             await expect(page.getByText('你的回合')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText(/摸牌|摸 2 张|选择弃牌/);
 
             const firstDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await firstDiscardButton.click();
@@ -1185,7 +1181,7 @@ test.describe('FantasyRealms live flow', () => {
                     && state?.core?.discardPile?.length === 1;
             }, { timeout: 10000 });
 
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1224,13 +1220,12 @@ test.describe('FantasyRealms live flow', () => {
             await injectCore(page, core);
 
             const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-            const deckButton = page.getByRole('button', { name: '从牌库摸 1 张' });
             await expect(page.getByText('你的回合')).toBeVisible();
             await expect(page.getByText('0/10')).toBeVisible();
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('摸牌');
             await expect(page.getByRole('button', { name: /拿取弃牌/ })).toHaveCount(0);
 
-            await deckButton.click();
+            await liveActionButton.click();
 
             await page.waitForFunction(() => {
                 const state = (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
@@ -1240,7 +1235,7 @@ test.describe('FantasyRealms live flow', () => {
                     && state?.core?.discardPile?.length === 0;
             }, { timeout: 10000 });
 
-            await expect(liveActionButton).toHaveCount(0);
+            await expect(liveActionButton).toContainText('弃牌');
         } finally {
             await context.close().catch(() => {});
         }

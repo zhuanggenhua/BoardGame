@@ -24,6 +24,7 @@ import {
 import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import type { SmashUpCore, SmashUpEvent } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import {
     SHAYU_TRIGGER_CONTRACT,
     type BaseChoice,
@@ -42,6 +43,8 @@ type SharksDestroyContext = PromptContext & {
     targets: MinionTarget[];
     optional?: boolean;
     destroyerId?: PlayerId;
+    sourceDefId?: string;
+    sourceKind?: 'action' | 'nonAction';
 };
 
 type SharksBaseThenDestroyContext = PromptContext & {
@@ -51,6 +54,8 @@ type SharksBaseThenDestroyContext = PromptContext & {
     sourceBaseIndex: number;
     destinationBases: Array<{ baseIndex: number; label: string }>;
     destroyPowerMax: number;
+    sourceDefId?: string;
+    sourceKind?: 'action' | 'nonAction';
 };
 
 type SharksDestroyAfterMoveContext = PromptContext & {
@@ -59,6 +64,8 @@ type SharksDestroyAfterMoveContext = PromptContext & {
     movedMinionDefId: string;
     destinationBaseIndex: number;
     destroyPowerMax: number;
+    sourceDefId?: string;
+    sourceKind?: 'action' | 'nonAction';
 };
 
 type SharksAirJawsContext = PromptContext & {
@@ -83,17 +90,36 @@ type SharksMultiDestroyContext = PromptContext & {
     title: string;
     targets: MinionTarget[];
     destroyerId?: PlayerId;
+    sourceDefId?: string;
+    sourceKind?: 'action' | 'nonAction';
 };
 
-function destroyTarget(state: SmashUpCore | { core: SmashUpCore }, target: { minionUid: string; defId: string; baseIndex: number }, destroyerId: PlayerId | undefined, reason: string, now: number): SmashUpEvent[] {
+function destroyTarget(
+    state: SmashUpCore | { core: SmashUpCore },
+    target: { minionUid: string; defId: string; baseIndex: number },
+    params: {
+        destroyerId?: PlayerId;
+        reason: string;
+        now: number;
+        sourcePlayerId?: PlayerId;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+        sourceKind?: 'action' | 'nonAction';
+    },
+): SmashUpEvent[] {
     return buildValidatedDestroyEvents(state, {
         minionUid: target.minionUid,
         minionDefId: target.defId,
         fromBaseIndex: target.baseIndex,
-        destroyerId,
-        reason,
-        now,
-        sourceKind: 'action',
+        destroyerId: params.destroyerId,
+        reason: params.reason,
+        now: params.now,
+        sourcePlayerId: params.sourcePlayerId,
+        sourceDefId: params.sourceDefId,
+        sourceControllerId: params.sourceControllerId,
+        sourceBaseIndex: params.sourceBaseIndex,
+        sourceKind: params.sourceKind,
     });
 }
 
@@ -124,7 +150,7 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
             ...buildMinionTargetOptions(context.targets, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
-                sourceKind: 'action',
+                sourceKind: context.sourceKind ?? 'action',
                 effectType: 'destroy',
             }),
         ],
@@ -139,8 +165,19 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
             minionUid: choice.minionUid,
             defId: choice.defId,
             baseIndex: choice.baseIndex,
-        }, context.destroyerId ?? playerId, context.sourceId, timestamp);
-        if (context.sourceId === 'sharks_torn_apart') {
+        }, {
+            destroyerId: context.destroyerId ?? playerId,
+            reason: context.sourceId,
+            now: timestamp,
+            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.sourceDefId ? playerId : undefined,
+            sourceKind: context.sourceKind,
+        });
+        if (
+            context.sourceId === 'sharks_torn_apart'
+            && events.some((event) => event.type === SU_EVENTS.MINION_DESTROYED)
+        ) {
             events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         }
         return { events };
@@ -165,6 +202,8 @@ function sharksMegalodon(ctx: AbilityContext): AbilityResult {
         title: '巨齿鲨：你可以消灭这里一个力量≤4的随从',
         targets: collectPowerTargets(ctx.state, 4, ctx.baseIndex, ctx.cardUid),
         optional: true,
+        sourceDefId: 'sharks_megalodon',
+        sourceKind: 'nonAction',
     });
 }
 
@@ -173,6 +212,8 @@ function sharksTornApart(ctx: AbilityContext): AbilityResult {
         sourceId: 'sharks_torn_apart',
         title: '撕裂：消灭一个力量≤3的随从并抽一张牌',
         targets: collectPowerTargets(ctx.state, 3),
+        sourceDefId: 'sharks_torn_apart',
+        sourceKind: 'action',
     });
 }
 
@@ -188,6 +229,8 @@ function sharksFeedingFrenzy(ctx: AbilityContext): AbilityResult {
         title: '疯狂进食：选择任意数量的力量≤2随从消灭',
         targets,
         destroyerId: ctx.playerId,
+        sourceDefId: 'sharks_feeding_frenzy',
+        sourceKind: 'action',
     }));
 }
 
@@ -201,7 +244,7 @@ const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyCo
         buildMinionTargetOptions(context.targets, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
-            sourceKind: 'action',
+            sourceKind: context.sourceKind ?? 'action',
             effectType: 'destroy',
         }),
         {
@@ -224,7 +267,15 @@ const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyCo
                     minionUid: target.uid,
                     defId: target.defId,
                     baseIndex: target.baseIndex,
-                }, context.destroyerId ?? playerId, context.sourceId, timestamp)),
+                }, {
+                    destroyerId: context.destroyerId ?? playerId,
+                    reason: context.sourceId,
+                    now: timestamp,
+                    sourcePlayerId: context.sourceDefId ? playerId : undefined,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: context.sourceDefId ? playerId : undefined,
+                    sourceKind: context.sourceKind,
+                })),
         };
     },
 });
@@ -250,6 +301,11 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
             toBaseDefId: choice.baseDefId,
             reason: context.sourceId,
             now: timestamp,
+            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.sourceDefId ? playerId : undefined,
+            sourceBaseIndex: context.sourceBaseIndex,
+            sourceKind: context.sourceKind,
         });
         const targets = collectPowerTargets(state.core, context.destroyPowerMax, choice.baseIndex, context.sourceMinionUid);
         if (targets.length === 0) return { events: moveEvents };
@@ -261,7 +317,16 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
                         minionUid: targets[0].uid,
                         defId: targets[0].defId,
                         baseIndex: targets[0].baseIndex,
-                    }, playerId, `${context.sourceId}_destroy`, timestamp),
+                    }, {
+                        destroyerId: playerId,
+                        reason: `${context.sourceId}_destroy`,
+                        now: timestamp,
+                        sourcePlayerId: context.sourceDefId ? playerId : undefined,
+                        sourceDefId: context.sourceDefId,
+                        sourceControllerId: context.sourceDefId ? playerId : undefined,
+                        sourceBaseIndex: choice.baseIndex,
+                        sourceKind: context.sourceKind,
+                    }),
                 ],
             };
         }
@@ -276,6 +341,8 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
                 movedMinionDefId: context.sourceMinionDefId,
                 destinationBaseIndex: choice.baseIndex,
                 destroyPowerMax: context.destroyPowerMax,
+                sourceDefId: context.sourceDefId,
+                sourceKind: context.sourceKind,
             } satisfies SharksDestroyAfterMoveContext,
             nextProgram: sharksDestroyAfterMovePromptProgram,
         };
@@ -291,7 +358,12 @@ const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAft
         `选择移动后基地上力量≤${context.destroyPowerMax}的随从`,
         buildMinionTargetOptions(
             collectPowerTargets(context.matchState.core, context.destroyPowerMax, context.destinationBaseIndex, context.movedMinionUid),
-            { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'destroy' },
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceKind: context.sourceKind ?? 'action',
+                effectType: 'destroy',
+            },
         ),
         { sourceId: context.sourceId, targetType: 'minion' },
     ),
@@ -302,7 +374,16 @@ const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAft
             minionUid: choice.minionUid,
             defId: choice.defId,
             baseIndex: choice.baseIndex,
-        }, playerId, context.sourceId, timestamp) };
+        }, {
+            destroyerId: playerId,
+            reason: context.sourceId,
+            now: timestamp,
+            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.sourceDefId ? playerId : undefined,
+            sourceBaseIndex: context.destinationBaseIndex,
+            sourceKind: context.sourceKind,
+        }) };
     },
 });
 
@@ -321,6 +402,8 @@ function sharksGreatWhite(ctx: AbilityContext): AbilityResult {
         sourceBaseIndex: ctx.baseIndex,
         destinationBases,
         destroyPowerMax: 2,
+        sourceDefId: current.defId,
+        sourceKind: 'nonAction',
     }));
 }
 
@@ -353,6 +436,8 @@ const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContex
             sourceBaseIndex: choice.baseIndex,
             destinationBases,
             destroyPowerMax: 3,
+            sourceDefId: 'sharks_air_jaws',
+            sourceKind: 'action',
         });
     },
 });
@@ -375,6 +460,8 @@ function sharksAirJaws(ctx: AbilityContext): AbilityResult {
             sourceBaseIndex: selected.baseIndex,
             destinationBases,
             destroyPowerMax: 3,
+            sourceDefId: 'sharks_air_jaws',
+            sourceKind: 'action',
         }));
     }
     return runtimeToAbilityResult(executeAbilityProgram(sharksAirJawsMinionPromptProgram, {
@@ -399,14 +486,23 @@ const sharksLaserPromptProgram = createPromptProgram<SharksLaserContext, SmashUp
         }),
         { sourceId: 'sharks_freakin_laser_beam', targetType: 'minion' },
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, timestamp, context }) => {
         const choice = value as MinionChoice;
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
         return { events: destroyTarget(state, {
             minionUid: choice.minionUid,
             defId: choice.defId,
             baseIndex: choice.baseIndex,
-        }, playerId, 'sharks_freakin_laser_beam', timestamp) };
+        }, {
+            destroyerId: playerId,
+            reason: 'sharks_freakin_laser_beam',
+            now: timestamp,
+            sourcePlayerId: playerId,
+            sourceDefId: 'sharks_freakin_laser_beam',
+            sourceControllerId: playerId,
+            sourceBaseIndex: context.sourceBaseIndex,
+            sourceKind: 'action',
+        }) };
     },
 });
 
@@ -575,6 +671,8 @@ function sharksMegalodonBeforeScoring(ctx: TriggerContext) {
         targets,
         optional: true,
         destroyerId: playerId,
+        sourceDefId: 'sharks_megalodon',
+        sourceKind: 'nonAction',
     }), ctx.matchState);
 }
 

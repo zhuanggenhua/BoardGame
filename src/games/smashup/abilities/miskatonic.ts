@@ -8,16 +8,18 @@ import { registerAbility, registerAbilityProgram } from '../domain/abilityRegist
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { requireOnPlay, requireSpecial, resolveOnPlay, resolveSpecial } from '../domain/abilityRegistry';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
-import type { SmashUpEvent, OngoingDetachedEvent, CardsDrawnEvent, MinionCardDef, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, CardsDrawnEvent, MinionCardDef, SmashUpCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import {
     drawMadnessCards, grantContextualExtraAction, grantContextualExtraMinion, grantExtraAction, grantExtraMinion,
-    returnMadnessCard, destroyMinion, addTempPower, addPowerCounter, addPermanentPower,
+    returnMadnessCard, addTempPower, addPowerCounter, addPermanentPower,
     getMinionPower, buildMinionTargetOptions, buildActionMinionTargetOptions, buildBaseTargetOptions,
     buildAbilityFeedback,
     recoverCardsFromDiscard,
     buildStandardDrawEvents,
+    buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { reduce } from '../domain/reduce';
 import {
@@ -1173,16 +1175,16 @@ const miskatonicMeddlingKidsSelectPromptProgram = createPromptProgram<Miskatonic
             return { events: [], matchState: state };
         }
 
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                ownerId: selected.ownerId,
-                reason: 'miskatonic_those_meddling_kids',
-            },
-            timestamp,
-        } as OngoingDetachedEvent];
+        const events: SmashUpEvent[] = buildValidatedOngoingDetachEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selected.ownerId,
+            reason: 'miskatonic_those_meddling_kids',
+            now: timestamp,
+        });
+        if (events.length === 0) {
+            return { events: [], matchState: state };
+        }
 
         const removedActionUids = [...(context.removedActionUids ?? []), selected.cardUid];
         if (collectMeddlingKidsActionChoices(state.core, context.baseIndex, removedActionUids).length <= 0) {
@@ -1462,18 +1464,19 @@ const miskatonicThingOnTheDoorstepPromptProgram = createPromptProgram<Miskatonic
             return { events: [], matchState: state };
         }
         return {
-            events: [
-                destroyMinion(
-                    target.uid,
-                    target.defId,
-                    context.baseIndex,
-                    target.owner,
-                    undefined,
-                    'miskatonic_thing_on_the_doorstep',
-                    timestamp,
-                    'action',
-                ),
-            ],
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: context.baseIndex,
+                destroyerId: undefined,
+                reason: 'miskatonic_thing_on_the_doorstep',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'miskatonic_thing_on_the_doorstep',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.baseIndex,
+                sourceKind: 'action',
+            }),
             matchState: state,
         };
     },
@@ -1594,18 +1597,19 @@ export function registerMiskatonicAbilities(): void {
                     return { events: [] };
                 }
                 return {
-                    events: [
-                        destroyMinion(
-                            liveTarget.uid,
-                            liveTarget.defId,
-                            baseIndex,
-                            liveTarget.owner,
-                            undefined,
-                            'miskatonic_thing_on_the_doorstep',
-                            ctx.now,
-                            'action',
-                        ),
-                    ],
+                    events: buildValidatedDestroyEvents(ctx.state, {
+                        minionUid: liveTarget.uid,
+                        minionDefId: liveTarget.defId,
+                        fromBaseIndex: baseIndex,
+                        destroyerId: undefined,
+                        reason: 'miskatonic_thing_on_the_doorstep',
+                        now: ctx.now,
+                        sourcePlayerId: ctx.playerId,
+                        sourceDefId: 'miskatonic_thing_on_the_doorstep',
+                        sourceControllerId: ctx.playerId,
+                        sourceBaseIndex: baseIndex,
+                        sourceKind: 'action',
+                    }),
                 };
             }
             return {
@@ -1637,18 +1641,19 @@ export function registerMiskatonicAbilities(): void {
                     return { events: [] };
                 }
                 return {
-                    events: [
-                        destroyMinion(
-                            liveTarget.uid,
-                            liveTarget.defId,
-                            baseIndex,
-                            liveTarget.owner,
-                            undefined,
-                            'miskatonic_thing_on_the_doorstep',
-                            ctx.now,
-                            'action',
-                        ),
-                    ],
+                    events: buildValidatedDestroyEvents(ctx.state, {
+                        minionUid: liveTarget.uid,
+                        minionDefId: liveTarget.defId,
+                        fromBaseIndex: baseIndex,
+                        destroyerId: undefined,
+                        reason: 'miskatonic_thing_on_the_doorstep',
+                        now: ctx.now,
+                        sourcePlayerId: ctx.playerId,
+                        sourceDefId: 'miskatonic_thing_on_the_doorstep',
+                        sourceControllerId: ctx.playerId,
+                        sourceBaseIndex: baseIndex,
+                        sourceKind: 'action',
+                    }),
                 };
             }
             return {

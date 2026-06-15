@@ -7,14 +7,15 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
-import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, buildSemanticOngoingAttachEvents, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
+import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, buildSemanticOngoingAttachEvents, getMinionPower, buildStandardDrawEvents, buildValidatedMoveEvents, buildValidatedReturnEvents } from '../domain/abilityHelpers';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, ActionCardDef } from '../domain/types';
 import { registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
 import type { RestrictionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -379,21 +380,19 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
         if (ongoingControllerId === ctx.playerId) continue;
         // 排除 ornate_dome 自身（使用 uid 排除更安全，同时支持 POD 版）
         if (ongoing.uid === ctx.cardUid) continue;
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: ongoing.uid,
-                defId: ongoing.defId,
-                ownerId: ongoing.ownerId,
-                reason: 'steampunk_ornate_dome_destroy',
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-            },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent);
+        events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
+            cardUid: ongoing.uid,
+            defId: ongoing.defId,
+            ownerId: ongoing.ownerId,
+            reason: 'steampunk_ornate_dome_destroy',
+            now: ctx.now,
+            expectedLocation: 'base',
+            sourcePlayerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+        }));
     }
 
     // 摧毁基地上随从附着的非己方行动卡
@@ -401,21 +400,19 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
         for (const a of m.attachedActions) {
             const attachedControllerId = a.metadata?.sourceControllerId ?? a.ownerId;
             if (attachedControllerId === ctx.playerId) continue;
-            events.push({
-                type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
+            events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
                 cardUid: a.uid,
                 defId: a.defId,
                 ownerId: a.ownerId,
                 reason: 'steampunk_ornate_dome_destroy',
+                now: ctx.now,
+                expectedLocation: 'minion',
                 sourcePlayerId: ctx.playerId,
                 sourceCardUid: ctx.cardUid,
                 sourceDefId: ctx.defId,
                 sourceControllerId: ctx.playerId,
                 sourceBaseIndex: ctx.baseIndex,
-            },
-            timestamp: ctx.now,
-        } as OngoingDetachedEvent);
+            }));
         }
     }
 
@@ -492,19 +489,15 @@ export function steampunkEscapeHatchTrigger(ctx: TriggerContext): SmashUpEvent[]
     const hatchControllerId = (hatch.metadata?.sourceControllerId as PlayerId | undefined) ?? hatch.ownerId;
     if (minion.controller !== hatchControllerId) return [];
 
-    const evt: MinionReturnedEvent = {
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: minion.uid,
-            minionDefId: minion.defId,
-            fromBaseIndex: ctx.baseIndex,
-            toPlayerId: minion.owner,
-            sourcePlayerId: hatchControllerId,
-            reason: 'steampunk_escape_hatch',
-        },
-        timestamp: ctx.now,
-    };
-    return [evt];
+    return buildValidatedReturnEvents(ctx.state, {
+        minionUid: minion.uid,
+        minionDefId: minion.defId,
+        fromBaseIndex: ctx.baseIndex,
+        toPlayerId: minion.owner,
+        sourcePlayerId: hatchControllerId,
+        reason: 'steampunk_escape_hatch',
+        now: ctx.now,
+    });
 }
 
 // ============================================================================
@@ -581,7 +574,20 @@ const steampunkCaptainAhabPromptProgram = createPromptProgram<SteampunkPromptCon
             .some(option => option.value.baseIndex === selected.baseIndex);
         if (!isStillValid) return { events: [] };
         return {
-            events: [moveMinion(context.sourceCardUid, context.sourceDefId, currentBaseIndex, selected.baseIndex, 'steampunk_captain_ahab', timestamp)],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: context.sourceCardUid,
+                minionDefId: context.sourceDefId,
+                fromBaseIndex: currentBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                reason: 'steampunk_captain_ahab',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: currentBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     },
 });
@@ -597,7 +603,20 @@ const steampunkCaptainAhabProgram = createEffectProgram<AbilityContext, SmashUpC
     }
     if (options.length === 1) {
         return {
-            events: [moveMinion(ctx.cardUid, ctx.defId, currentBaseIndex, options[0].value.baseIndex, 'steampunk_captain_ahab', ctx.now)],
+            events: buildValidatedMoveEvents(ctx.state, {
+                minionUid: ctx.cardUid,
+                minionDefId: ctx.defId,
+                fromBaseIndex: currentBaseIndex,
+                toBaseIndex: options[0].value.baseIndex,
+                reason: 'steampunk_captain_ahab',
+                now: ctx.now,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: currentBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     }
     return {
@@ -653,7 +672,20 @@ const steampunkZeppelinChooseBasePromptProgram = createPromptProgram<SteampunkPr
             .some(option => option.value.baseIndex === selected.baseIndex);
         if (!isStillValid) return { events: [] };
         return {
-            events: [moveMinion(context.selectedMinionUid, context.selectedMinionDefId, context.fromBaseIndex, selected.baseIndex, 'steampunk_zeppelin', timestamp)],
+            events: buildValidatedMoveEvents(state, {
+                minionUid: context.selectedMinionUid,
+                minionDefId: context.selectedMinionDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                reason: 'steampunk_zeppelin',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'steampunk_zeppelin',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.zepBaseIndex,
+                sourceKind: 'action',
+            }),
         };
     },
 });
@@ -713,7 +745,11 @@ const steampunkZeppelinProgram = createEffectProgram<AbilityContext, SmashUpCore
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { sourceCardUid: ctx.cardUid, zepBaseIndex }),
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            zepBaseIndex,
+        }),
         nextProgram: steampunkZeppelinChooseMinionPromptProgram,
     };
 });
@@ -1011,11 +1047,14 @@ const steampunkChangeOfVenuePromptProgram = createPromptProgram<SteampunkPromptC
         if (!selected?.cardUid || !selected?.defId || !selected?.ownerId) return { events: [] };
         if (findOngoingBaseIndexByUid(state.core, selected.cardUid) === -1) return { events: [] };
         const cardDef = getCardDef(selected.defId) as ActionCardDef | undefined;
-        const detachEvent = {
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'steampunk_change_of_venue' },
-            timestamp,
-        } as SmashUpEvent;
+        const detachEvent = buildValidatedOngoingDetachEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: selected.ownerId,
+            reason: 'steampunk_change_of_venue',
+            now: timestamp,
+        })[0];
+        if (!detachEvent) return { events: [] };
         const recoverEvent = createCardTransferEvent({
             card: createCardObjectRef({
                 uid: selected.cardUid,

@@ -19,6 +19,7 @@
     "reviewChip": "Endgame Review",
     "compact": {
       "draw": "Draw",
+      "drawTwo": "Draw 2",
       "discard": "Discard"
     },
     "drawDeck": {
@@ -48,7 +49,8 @@
     "handCount": "{{count}} cards in hand",
     "badges": {
       "you": "You",
-      "winner": "Winner"
+      "winner": "Winner",
+      "reviewing": "Reviewing"
     },
     "labels": {
       "activeBase": "Active Base",
@@ -64,6 +66,7 @@
     "hand": {
       "ariaLabel": "Hand zone",
       "title": "{{player}}'s hand",
+      "reviewTitle": "{{player}} endgame hand",
       "titleSpectator": "Hidden hand zone",
       "emptyCompact": "No hand"
     }
@@ -75,6 +78,7 @@
     "inspectHandAria": "Inspect hand card {{name}}",
     "confirmTake": "Confirm",
     "confirmDiscard": "Confirm Discard",
+    "selectDiscardRequired": "Select discard",
     "selected": "Selected"
   },
   "focus": {

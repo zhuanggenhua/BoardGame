@@ -136,6 +136,16 @@ src/
 - **国际化**：`src/lib/i18n/`
 - **音频管理**：`src/lib/audio/AudioManager.ts`
 
+### 实施中状态横幅
+
+`statusTag: 'under_construction'` 表示游戏、角色、派系或候选对象仍处于实施中。它是框架级状态，不是普通分类标签。
+
+- 用户可见入口必须复用 `src/components/game/framework/ImplementationStatusRibbon.tsx`，包括游戏目录卡片、首页推荐位、详情缩略图、选角卡面、派系/角色候选卡面。
+- 页面只负责决定横幅挂在哪个缩略图/卡面容器上，以及必要的裁切边界和层级；不得重写“实施中”的核心视觉样式。
+- 禁止新建第二套实施中样式，禁止手写普通 chip、meta tag、角落小字或描述正文来替代共享斜条横幅。
+- 当卡面已经挂了 `ImplementationStatusRibbon`，同一对象的分类标签区、meta tag 区和说明首行不应重复出现“实施中”小标签。
+- 测试必须断言共享横幅或其稳定 test id 出现在目标入口，不能只断言页面里存在“实施中”文案。
+
 ### 系统清单（全部）
 
 - **Engine Systems（`src/engine/systems/`）**

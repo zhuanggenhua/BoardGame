@@ -381,6 +381,19 @@ describe('scoreBases 延迟清场 / 最终化', () => {
             SU_EVENTS.BASE_REPLACED,
             SU_EVENTS.MINION_MOVED,
         ]);
+        expect(finalizeEvents[2]).toMatchObject({
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'm3',
+                fromBaseIndex: 1,
+                toBaseIndex: 0,
+                sourcePlayerId: '1',
+                sourceDefId: 'base_tortuga',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+                reason: '托尔图加：亚军移动随从到替换基地',
+            },
+        });
 
         const finalCore = finalizeEvents.reduce(
             (core, event: SmashUpEvent) => reduce(core, event),
