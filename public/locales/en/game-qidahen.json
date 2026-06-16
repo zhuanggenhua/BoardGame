@@ -120,6 +120,10 @@
       "discardPile": "Korea discard pile"
     },
     "actions": {
+      "state": {
+        "current": "Current",
+        "available": "Available"
+      },
       "status": {
         "used": "used",
         "unused": "unused"

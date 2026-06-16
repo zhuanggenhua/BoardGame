@@ -120,6 +120,10 @@
       "discardPile": "朝鲜弃牌"
     },
     "actions": {
+      "state": {
+        "current": "当前",
+        "available": "可选"
+      },
       "status": {
         "used": "已用",
         "unused": "未用"
