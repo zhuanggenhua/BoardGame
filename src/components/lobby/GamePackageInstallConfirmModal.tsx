@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ModalBase } from '../common/overlays/ModalBase';
 import type { GamePackageCardState } from '../../features/mobile-packages/types';
 import { formatPackageBytes } from './packageManagerFormat';
+import { resolveGamePackageFailureMessage } from '../../features/mobile-packages/errorMessages';
 
 interface GamePackageInstallConfirmModalProps {
     gameName: string;
@@ -97,7 +98,7 @@ export const GamePackageInstallConfirmModal = ({
     const modalDescription = isPreview
         ? t('packageManager.confirmDescription')
         : isFailed
-            ? (state.errorMessage || t('packageManager.failedHint'))
+            ? resolveGamePackageFailureMessage(t, state.errorCode, state.errorMessage)
             : isInstalled
                 ? t('packageManager.installedHint', { game: gameName })
                 : t(progressHintKey);

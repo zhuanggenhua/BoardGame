@@ -328,6 +328,8 @@
     "runtimeUnsupported": "This runtime does not support downloading game packages yet. Please retry inside the Android app.",
     "failedTitle": "Download Failed",
     "failedHint": "Downloading, verifying, or activating the game package failed. Please try again later.",
+    "manifestFetchFailedHint": "Failed to load the download manifest. Check the network and try again. If it keeps failing, ask an administrator to verify the publication state.",
+    "manifestMissingHint": "The current download manifest does not include a downloadable game package yet. Please publish a build first.",
     "notificationSettingsAction": "Open notification settings",
     "retryAction": "Retry",
     "cancelAction": "Cancel Download",

@@ -5,6 +5,7 @@ import {
     type GamePackageCardState,
     type GamePackageInstallStatus,
 } from '../../features/mobile-packages/types';
+import { resolveGamePackageFailureMessage } from '../../features/mobile-packages/errorMessages';
 
 export type GamePackageCardStatus = GamePackageInstallStatus;
 export type { GamePackageCardState };
@@ -55,6 +56,7 @@ const getStatusMeta = (
     status: GamePackageCardStatus,
     t: ReturnType<typeof useTranslation<'lobby'>>['t'],
     gameName: string,
+    errorCode: GamePackageCardState['errorCode'],
     errorMessage?: string,
     failedActionLabel?: string,
     presentation: 'install' | 'update-required' = 'install',
@@ -113,7 +115,7 @@ const getStatusMeta = (
         case 'failed':
             return {
                 title: t('packageManager.failedTitle'),
-                description: errorMessage || t('packageManager.failedHint'),
+                description: resolveGamePackageFailureMessage(t, errorCode, errorMessage),
                 actionLabel: failedActionLabel || t('packageManager.retryAction'),
                 icon: AlertTriangle,
                 iconClassName: '',
@@ -160,6 +162,7 @@ export const GameDetailsMobilePackageCard = ({
         state.status,
         t,
         gameName,
+        state.errorCode,
         state.errorMessage,
         failedActionLabel,
         presentation,

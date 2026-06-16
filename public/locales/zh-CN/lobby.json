@@ -328,6 +328,8 @@
     "runtimeUnsupported": "当前运行环境暂不支持下载游戏包，请在 Android App 内重试。",
     "failedTitle": "下载失败",
     "failedHint": "游戏包下载、校验或激活失败，请稍后重试。",
+    "manifestFetchFailedHint": "拉取下载清单失败，请检查网络后重试。若多次失败，请联系管理员确认发布状态。",
+    "manifestMissingHint": "当前下载清单里还没有可下载的游戏包，请先发布一版。",
     "notificationSettingsAction": "打开通知设置",
     "retryAction": "重新发起",
     "cancelAction": "取消下载",

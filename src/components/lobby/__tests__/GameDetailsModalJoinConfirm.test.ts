@@ -865,6 +865,32 @@ describe('GameDetailsMobilePackageCard', () => {
         expect(retryMock).toHaveBeenCalledTimes(1);
     });
 
+    it('清单拉取失败时显示明确的清单失败提示', () => {
+        render(createElement(GameDetailsMobilePackageCard, {
+            gameName: 'Tic-Tac-Toe',
+            state: {
+                status: 'failed',
+                errorCode: 'manifest-fetch-failed',
+            },
+            onInstall: vi.fn(),
+        }));
+
+        expect(screen.getByText('packageManager.manifestFetchFailedHint')).toBeInTheDocument();
+    });
+
+    it('远端清单缺少可下载包时显示未发布提示', () => {
+        render(createElement(GameDetailsMobilePackageCard, {
+            gameName: 'Tic-Tac-Toe',
+            state: {
+                status: 'failed',
+                errorCode: 'manifest-missing',
+            },
+            onInstall: vi.fn(),
+        }));
+
+        expect(screen.getByText('packageManager.manifestMissingHint')).toBeInTheDocument();
+    });
+
     it('通知权限被系统拒绝时显示打开通知设置按钮', () => {
         const openSettingsMock = vi.fn();
 
