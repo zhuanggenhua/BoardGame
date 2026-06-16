@@ -33,7 +33,7 @@
 
 | 素材类型 | 默认命名 | 默认目录 |
 | --- | --- | --- |
-| 缩略图 | `cover.png` | `public/assets/<gameId>/thumbnails/` |
+| 缩略图 | `cover.png` | `public/assets/i18n/zh-CN/<gameId>/thumbnails/` |
 | 卡牌 atlas | `<batch>.png` | `public/assets/i18n/zh-CN/<gameId>/cards/` |
 | 基地 atlas | `<batch>_base.png` | `public/assets/i18n/zh-CN/<gameId>/base/` |
 | 角色/英雄面板 | `<entityId>-board.png` | `public/assets/i18n/zh-CN/<gameId>/hero/` |
@@ -56,9 +56,10 @@
 2. 先读图确认对象，再判断原文件名是否明显随机：
    - 随机/默认名：按图片内容改成正式名后再移动
    - 用户语义名：先询问，默认保留原名并移动
-3. 运行 `npm run compress:images -- public/assets/<gameId>` 或最小必要子目录。
-4. 如果用户给的是行列/顺序，直接生成索引映射与命名合同。
-5. 若涉及远端默认资源，交付前执行 `npm run assets:check`。
+3. 若当前文件是大拼版图、扫描页或整版说明图，先裁成代码会直接引用的单对象资源，再移动到正式目录；不得把整版图直接判成“正式素材已到位”。
+4. 运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
+5. 如果用户给的是行列/顺序，直接生成索引映射与命名合同。
+6. 若涉及远端默认资源，交付前执行 `npm run assets:check`。
 
 ## 完成判据
 

@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { DiceThroneDomain } from '../domain';
 import { diceThroneSystemsForTest } from '../game';
-import { createQueuedRandom, cmd, assertState } from './test-utils';
+import { createQueuedRandom, cmd, assertState, advanceTo } from './test-utils';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneCommand } from '../domain/types';
@@ -32,6 +32,32 @@ function createShadowThiefState(playerIds: PlayerId[], random: RandomFn): MatchS
     }
     state.core.selectedCharacters['1'] = 'shadow_thief';
     state.core.players['1'] = initHeroState('1', 'shadow_thief', random);
+    return state;
+}
+
+function createShadowThiefFourPlayerState(playerIds: PlayerId[], random: RandomFn): MatchState<DiceThroneCore> {
+    const core = DiceThroneDomain.setup(playerIds, random);
+    const sys = createInitialSystemState(playerIds, diceThroneSystemsForTest, undefined);
+    let state: MatchState<DiceThroneCore> = { sys, core };
+    const pipelineConfig = { domain: DiceThroneDomain, systems: diceThroneSystemsForTest };
+
+    const setupCommands = [
+        { type: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'shadow_thief' } },
+        { type: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: 'barbarian' } },
+        { type: 'SELECT_CHARACTER', playerId: '2', payload: { characterId: 'samurai' } },
+        { type: 'SELECT_CHARACTER', playerId: '3', payload: { characterId: 'monk' } },
+        { type: 'PLAYER_READY', playerId: '1', payload: {} },
+        { type: 'PLAYER_READY', playerId: '2', payload: {} },
+        { type: 'PLAYER_READY', playerId: '3', payload: {} },
+        { type: 'HOST_START_GAME', playerId: '0', payload: {} },
+    ];
+
+    for (const c of setupCommands) {
+        const command = { type: c.type, playerId: c.playerId, payload: c.payload, timestamp: Date.now() } as DiceThroneCommand;
+        const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+        if (result.success) state = result.state as MatchState<DiceThroneCore>;
+    }
+
     return state;
 }
 
@@ -150,5 +176,56 @@ describe('聚宝盆弃牌效果端到端测试', () => {
         expect(cardDiscardedEvents.length).toBe(0);
 
         console.log(`✅ 无Shadow时不弃牌`);
+    });
+
+    it('4 人模式：targetingRoll 结算后仍应按攻击骰快照触发聚宝盆', () => {
+        const queuedRandom = createQueuedRandom([5, 5, 6, 1, 2, 1]);
+
+        let player3InitialHandCount = 0;
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: diceThroneSystemsForTest,
+            playerIds: ['0', '1', '2', '3'],
+            random: queuedRandom,
+            setup: (playerIds, random) => {
+                const state = createShadowThiefFourPlayerState(playerIds, random);
+                state.core.players['0'].hand = [];
+                player3InitialHandCount = state.core.players['3'].hand.length;
+                return state;
+            },
+            assertFn: assertState,
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '聚宝盆 4 人 targetingRoll 回归',
+            commands: [
+                ...advanceTo('offensiveRoll', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'cornucopia' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('ADVANCE_PHASE', '0'),
+            ],
+            expect: {
+                turnPhase: 'main2',
+                players: {
+                    '0': { handCount: 2 },
+                    '3': { handCount: player3InitialHandCount - 1 },
+                },
+            },
+        });
+
+        expect(result.assertionErrors).toHaveLength(0);
+
+        const eventStream = result.finalState.sys.eventStream?.entries || [];
+        const cardDrawnEvents = eventStream.filter(e => e.event.type === 'CARD_DRAWN');
+        const cardDiscardedEvents = eventStream.filter(e => e.event.type === 'CARD_DISCARDED');
+
+        expect(cardDrawnEvents.length).toBe(2);
+        expect(cardDiscardedEvents.length).toBe(1);
     });
 });

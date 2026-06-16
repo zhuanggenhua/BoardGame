@@ -2,7 +2,7 @@
  * 影子盗贼 (Shadow Thief) 专属 Custom Action 处理器
  */
 
-import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { getActiveDice, getAttackDiceFaceCounts, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { SHADOW_THIEF_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { CP_MAX } from '../types';
@@ -27,6 +27,10 @@ import { resolveDiceOwnerId, resolveTargetOpponentDice } from './common';
 
 const FACE = SHADOW_THIEF_DICE_FACE_IDS;
 
+function getOffensiveAttackFaceCounts(state: CustomActionContext['state']) {
+    return getAttackDiceFaceCounts(state);
+}
+
 /** 计算中毒施加后的新总层数 */
 function calcPoisonNewTotal(state: CustomActionContext['state'], targetId: string, stacks: number): number {
     const current = state.players[targetId]?.statusEffects[STATUS_IDS.POISON] ?? 0;
@@ -40,7 +44,7 @@ function calcPoisonNewTotal(state: CustomActionContext['state'], targetId: strin
 
 /** 匕首打击：每有[Bag]获得1CP */
 function handleDaggerStrikeCp({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const bagCount = faceCounts[FACE.BAG] || 0;
 
     if (bagCount <= 0) return [];
@@ -59,7 +63,7 @@ function handleDaggerStrikeCp({ attackerId, sourceAbilityId, state, timestamp }:
 /** 匕首打击 II：每有[Card]抽1张牌 */
 function handleDaggerStrikeDraw({ attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const cardCount = faceCounts[FACE.CARD] || 0;
     if (cardCount <= 0) return [];
     return buildDrawEvents(state, attackerId, cardCount, random, 'ABILITY_EFFECT', timestamp, sourceAbilityId);
@@ -67,7 +71,7 @@ function handleDaggerStrikeDraw({ attackerId, sourceAbilityId, state, timestamp,
 
 /** 匕首打击：每有[Shadow]造成毒液 */
 function handleDaggerStrikePoison({ targetId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const shadowCount = faceCounts[FACE.SHADOW] || 0;
 
     if (shadowCount <= 0) return [];
@@ -124,7 +128,7 @@ function handleStealCp4(context: CustomActionContext) { return handleStealCpWith
 // handleStealCp5 and 6 are defined later
 
 function handleStealCpWithAmount({ targetId, attackerId, sourceAbilityId, state, timestamp }: CustomActionContext, amount: number): DiceThroneEvent[] {
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
     const events: DiceThroneEvent[] = [];
 
@@ -248,7 +252,7 @@ function handleShadowDanceRoll({ targetId, sourceAbilityId, state, timestamp, ra
 /** 聚宝盆 I：抽 Card面数量 牌，若有Shadow弃对手1牌 */
 function handleCornucopia({ attackerId, ctx, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const defenderId = ctx.defenderId;
 
     const cardCount = faceCounts[FACE.CARD] || 0;
@@ -278,7 +282,7 @@ function handleCornucopia({ attackerId, ctx, sourceAbilityId, state, timestamp, 
 
 /** 聚宝盆（旧）：若有Shadow丢弃对手1卡 - 保留向后兼容 */
 function handleCornucopiaDiscard({ ctx, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const hasShadow = (faceCounts[FACE.SHADOW] || 0) > 0;
     const defenderId = ctx.defenderId;
 
@@ -523,7 +527,7 @@ function handleStealCp6(params: CustomActionContext) { return handleStealCpWithA
 /** 聚宝盆 II：每有[Card]抽1。有[Shadow]弃1。有[Bag]得1CP */
 function handleCornucopia2({ attackerId, ctx, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
-    const faceCounts = getFaceCounts(getActiveDice(state));
+    const faceCounts = getOffensiveAttackFaceCounts(state);
     const defenderId = ctx.defenderId;
 
     const cardCount = faceCounts[FACE.CARD] || 0;

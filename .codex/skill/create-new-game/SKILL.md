@@ -516,6 +516,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - `reference`：只作为规则、帮助、剧本或人工核对资料，允许进入明确的 `aids/` 或留在 `rule/` / `evidence/`，但不得被当成运行时对象。
    - `candidate`：可能有用但规则依据不足，只能登记到 `temp/<gameId>-intake/` 或清单里，禁止进正式运行时目录。
    - `excluded`：TTS/Workshop 材质色块、编辑器占位图、无规则对象对应的贴图、重复导出、下载站装饰图等，必须写排除原因，禁止压缩、上传和引用。
+   - 若源文件本身是**大拼版图、扫描页、整页说明卡、整版房间板块、整版楼层板或多对象 atlas 原图**，默认只能先判为 `candidate` 或 `reference`；只有裁成“代码会直接引用的单对象运行时资源”后，才允许升格为 `runtime`。
 3. **正式目录只接收白名单资源**
    - 进入 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
    - 新游戏不得默认把正式图片放入顶层 `public/assets/<gameId>`；确需使用历史兼容落点时，必须先说明 `asset-pipeline` 依据和运行时加载链路。
@@ -549,6 +550,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 生成 `temp/<gameId>-intake/image-inventory.tsv` 或等价清单，至少包含原文件名、尺寸、类型、疑似用途。
    - 先按 `前置 1.3` 生成正式资源准入白名单；只有 `runtime` 或明确 `reference` 的图片，才允许按本 skill 的资源目录与语义命名落正式目录。
    - 不能可靠识别、不能对应规则配件表或当前 MVP 不需要的图片，只登记为 `candidate` / `excluded`，不强行命名，不移动到正式资源树。
+   - 若当前图片是房间拼版、楼层拼版、扫描页或多对象整版，必须先写“单对象裁切合同”；在未裁到单对象前，不得把该整版图片直接宣称为“正式素材已齐”。
 3. **资源闭环**
    - 正式图片落盘后运行最小必要压缩命令。
    - 压缩前再次确认正式目录没有 `candidate/excluded` 文件。
@@ -586,9 +588,10 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 若是随机名、默认导出名、批量下载残留名，则按**图片内容语义**自动重命名并移动到正式目录。
    - 若现有文件名看起来是用户有意命名的语义名，则默认不改名，只询问是否需要统一为项目规范命名。
 3. 移动正式资源前必须完成 `runtime/reference/candidate/excluded` 裁决；`candidate/excluded` 不得进入 `public/assets/` 正式树。
-4. 原图落盘后立即运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
-5. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
-6. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
+4. 若素材是大拼版或扫描页，先裁成单对象运行时资源，再落正式目录；不得把整版图片直接丢进 `public/assets/i18n/zh-CN/<gameId>/` 冒充接入完成。
+5. 原图落盘后立即运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
+6. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
+7. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
 
 ### 默认目录与命名约定
 
@@ -1783,7 +1786,8 @@ UI 侧使用 `TutorialSelectionGate`（框架组件）或自定义选择组件�
    - `manifest.ts` 中 `thumbnailPath` 使用 `<gameId>/thumbnails/cover`
    - `thumbnail.tsx` 使用 `ManifestGameThumbnail`，禁止自写 `<img src="/assets/...">`
 3. 图集 / 运行时图片默认流程：
-   - 原图按业务语义落到 `public/assets/i18n/zh-CN/<gameId>/<category>/`
+   - 若原图本身是单对象运行时资源，按业务语义落到 `public/assets/i18n/zh-CN/<gameId>/<category>/`
+   - 若原图本身是大拼版、整版房间图、整版楼层图、扫描页或多对象说明页，必须先裁成单对象资源，再进入正式目录
    - 图集配置落到 `public/assets/atlas-configs/<gameId>/`
    - 切片顺序、索引和命名先写合同，再接入代码
 4. 若当前环境依赖远端默认资源基址：
