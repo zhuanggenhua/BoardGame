@@ -971,8 +971,95 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         </section>
     ) : null;
 
-    const minimalLiveTopbarSection = !isGameOver ? (
-        <div className="fr-live-topbar" data-testid="fantasyrealms-live-topbar">
+    const winnerStanding = finalStandings.find((player) => player.isWinner) ?? finalStandings[0] ?? null;
+    const reviewedStanding = displayedPlayerId
+        ? finalStandings.find((player) => player.id === displayedPlayerId) ?? null
+        : null;
+    const endgameDisplayStanding = reviewedStanding ?? winnerStanding;
+    const reviewedStandingRank = reviewedStanding
+        ? finalStandings.findIndex((player) => player.id === reviewedStanding.id) + 1
+        : null;
+    const liveTopbarTurnLabel = isGameOver
+        ? t('turn.reviewChip')
+        : isMyTurn
+            ? t('turn.live.selfTurn')
+            : currentPlayerName;
+    const liveTopbarCueLabel = isGameOver ? null : compactTurnStateLabel;
+    const liveScoreBandLabel = isGameOver
+        ? endgameDisplayStanding?.name ?? t('score.panelTitle')
+        : t('score.panelTitle');
+    const liveScoreBandValue = isGameOver
+        ? endgameDisplayStanding?.score ?? liveScoreOwner?.score ?? 0
+        : liveScoreOwner?.scoreVisible
+            ? liveScoreOwner.score
+            : t('score.hiddenValue');
+    const liveScoreBandSideLabel = isGameOver
+        ? endgameDisplayStanding
+            ? t('progress.rank', {
+                rank: endgameDisplayStanding.isWinner
+                    ? 1
+                    : reviewedStandingRank && reviewedStandingRank > 0
+                        ? reviewedStandingRank
+                        : Math.max(finalStandings.findIndex((player) => player.id === endgameDisplayStanding.id) + 1, 1),
+            })
+            : null
+        : !liveScoreOwner?.scoreVisible
+            ? t('score.hiddenLabel')
+            : null;
+    const minimalLiveEndgameSection = isGameOver ? (
+        <div className="fr-live-endgame fr-live-endgame--docked" data-testid="fantasyrealms-live-endgame">
+            <div className="fr-live-endgame-rail" aria-label={t('progress.finalStandings')}>
+                <div className="fr-live-endgame-rail-header">
+                    <div className="fr-live-endgame-rail-title">{t('progress.finalStandings')}</div>
+                </div>
+                <div className="fr-live-endgame-rail-list">
+                    {finalStandings.map((player, index) => {
+                        const isReviewed = player.id === displayedPlayerId;
+                        const rankTone = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'plain';
+                        return (
+                            <button
+                                key={player.id}
+                                type="button"
+                                className={`fr-live-endgame-rank-button fr-live-endgame-rank-button--${rankTone}${isReviewed ? ' fr-live-endgame-rank-button--active' : ''}${player.isWinner ? ' fr-live-endgame-rank-button--winner' : ''}`}
+                                onClick={() => setReviewPlayerId(player.id)}
+                                aria-pressed={isReviewed}
+                                data-testid={`fantasyrealms-endgame-rank-${player.id}`}
+                                data-rank-tone={rankTone}
+                            >
+                                <div className="fr-live-endgame-rank-copy">
+                                    <span className={`fr-live-endgame-rank-order fr-live-endgame-rank-order--${rankTone}`}>
+                                        {t('progress.rank', { rank: index + 1 })}
+                                        {player.isWinner ? (
+                                            <Crown
+                                                className="fr-live-endgame-rank-crown"
+                                                role="img"
+                                                aria-label={t('score.badges.winner')}
+                                            />
+                                        ) : null}
+                                    </span>
+                                    <span className="fr-live-endgame-rank-name">
+                                        {player.name}
+                                        {isReviewed ? <i className="fr-score-badge fr-score-badge--rank-review">{t('score.badges.reviewing')}</i> : null}
+                                    </span>
+                                </div>
+                                <strong className="fr-live-endgame-rank-score">
+                                    <AnimatedScoreNumber score={player.score} />
+                                </strong>
+                            </button>
+                        );
+                    })}
+                </div>
+                {reviewedStanding ? (
+                    <div className="fr-live-endgame-reviewed-player" data-testid="fantasyrealms-endgame-reviewed-player">
+                        {t('zone.hand.reviewTitle', { player: reviewedStanding.name })}
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    ) : null;
+
+    const minimalLiveTopbarSection = (
+        <div className={`fr-live-topbar${isGameOver ? ' fr-live-topbar--gameover' : ''}`} data-testid="fantasyrealms-live-topbar">
             <div
                 className="fr-live-deck"
                 data-testid="fantasyrealms-live-deck"
@@ -987,42 +1074,43 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             </div>
             <div className="fr-live-status-strip" data-testid="fantasyrealms-live-status-strip">
                 <div
-                    className={`fr-live-chip fr-live-chip--turn${isMyTurn ? ' fr-live-chip--turn-active' : ''}`}
-                    data-turn-state={isMyTurn ? livePrimaryActionMode : 'waiting'}
+                    className={`fr-live-chip fr-live-chip--turn${isGameOver ? ' fr-live-chip--turn-finished' : ''}${!isGameOver && isMyTurn ? ' fr-live-chip--turn-active' : ''}`}
+                    data-turn-state={isGameOver ? 'gameover' : isMyTurn ? livePrimaryActionMode : 'waiting'}
                 >
-                    {isMyTurn ? t('turn.live.selfTurn') : currentPlayerName}
+                    {liveTopbarTurnLabel}
                 </div>
                 <div className="fr-live-chip fr-live-chip--round">
                     {t('turn.short.round', { turn: core.turn })}
                 </div>
                 <div className="fr-live-chip fr-live-chip--progress" aria-label={t('progress.panelTitle')}>
-                    {discardCards.length}/{discardThreshold}
+                    {isGameOver ? discardThreshold : discardCards.length}/{discardThreshold}
                 </div>
-                {compactTurnStateLabel && !shouldShowMinimalLiveAction ? (
+                {liveTopbarCueLabel && (!shouldShowMinimalLiveAction || isGameOver) ? (
                     <div className="fr-live-chip fr-live-chip--cue">
-                        {compactTurnStateLabel}
+                        {liveTopbarCueLabel}
                     </div>
                 ) : null}
             </div>
-            <div className="fr-live-score-strip" aria-label={t('score.tableTitle')} data-testid="fantasyrealms-live-score-strip">
-                <div className="fr-live-score-band" data-testid="fantasyrealms-live-score-band">
+            <div className={`fr-live-score-strip${isGameOver ? ' fr-live-score-strip--gameover' : ''}`} aria-label={t('score.tableTitle')} data-testid="fantasyrealms-live-score-strip">
+                <div className={`fr-live-score-band${isGameOver ? ' fr-live-score-band--gameover' : ''}`} data-testid="fantasyrealms-live-score-band">
                     <div className="fr-live-score-band-kicker">
-                        {t('score.panelTitle')}
+                        {liveScoreBandLabel}
                     </div>
                     <div className="fr-live-score-band-main">
                         <strong className="fr-live-score-band-total">
-                            {liveScoreOwner?.scoreVisible ? liveScoreOwner.score : t('score.hiddenValue')}
+                            {liveScoreBandValue}
                         </strong>
-                        {!liveScoreOwner?.scoreVisible ? (
+                        {liveScoreBandSideLabel ? (
                             <span>
-                                {t('score.hiddenLabel')}
+                                {liveScoreBandSideLabel}
                             </span>
                         ) : null}
                     </div>
                 </div>
+                {minimalLiveEndgameSection}
             </div>
         </div>
-    ) : null;
+    );
 
     const minimalLiveCenterRowSection = (
         <section
@@ -1140,66 +1228,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         </section>
     );
 
-    const reviewedStanding = displayedPlayerId
-        ? finalStandings.find((player) => player.id === displayedPlayerId) ?? null
-        : null;
-    const minimalLiveEndgameSection = isGameOver ? (
-        <section className="fr-live-endgame" data-testid="fantasyrealms-live-endgame">
-            <div className="fr-live-endgame-rail" aria-label={t('progress.finalStandings')}>
-                <div className="fr-live-endgame-rail-header">
-                    <div className="fr-live-endgame-rail-title">{t('progress.finalStandings')}</div>
-                    <div className="fr-live-endgame-rail-subtitle">
-                        {gameOver?.draw
-                            ? t('progress.gameOverDraw')
-                            : t('progress.gameOverWinner', { winner: finalStandings.find((player) => player.isWinner)?.name ?? t('fallback.unknownPlayer') })}
-                    </div>
-                </div>
-                <div className="fr-live-endgame-rail-list">
-                    {finalStandings.map((player, index) => {
-                        const isReviewed = player.id === displayedPlayerId;
-                        const rankTone = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'plain';
-                        return (
-                            <button
-                                key={player.id}
-                                 type="button"
-                                className={`fr-live-endgame-rank-button fr-live-endgame-rank-button--${rankTone}${isReviewed ? ' fr-live-endgame-rank-button--active' : ''}${player.isWinner ? ' fr-live-endgame-rank-button--winner' : ''}`}
-                                 onClick={() => setReviewPlayerId(player.id)}
-                                 aria-pressed={isReviewed}
-                                 data-testid={`fantasyrealms-endgame-rank-${player.id}`}
-                                data-rank-tone={rankTone}
-                              >
-                                  <div className="fr-live-endgame-rank-copy">
-                                     <span className={`fr-live-endgame-rank-order fr-live-endgame-rank-order--${rankTone}`}>
-                                        {t('progress.rank', { rank: index + 1 })}
-                                        {player.isWinner ? (
-                                            <Crown
-                                                className="fr-live-endgame-rank-crown"
-                                                role="img"
-                                                aria-label={t('score.badges.winner')}
-                                            />
-                                        ) : null}
-                                     </span>
-                                     <span className="fr-live-endgame-rank-name">
-                                         {player.name}
-                                        {isReviewed ? <i className="fr-score-badge">{t('score.badges.reviewing')}</i> : null}
-                                     </span>
-                                 </div>
-                                <strong className="fr-live-endgame-rank-score">
-                                    <AnimatedScoreNumber score={player.score} />
-                                </strong>
-                             </button>
-                         );
-                     })}
-                 </div>
-                {reviewedStanding ? (
-                    <div className="fr-live-endgame-reviewed-player" data-testid="fantasyrealms-endgame-reviewed-player">
-                        {t('zone.hand.reviewTitle', { player: reviewedStanding.name })}
-                    </div>
-                ) : null}
-            </div>
-        </section>
-    ) : null;
-
     const isMinimalLiveOpeningState = !isGameOver
         && discardCards.length === 0
         && displayedHandCards.length === 0;
@@ -1216,7 +1244,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             {minimalLiveTopbarSection}
             {minimalLiveCenterRowSection}
             {minimalLiveHandZoneSection}
-            {minimalLiveEndgameSection}
         </div>
     );
 
@@ -1323,7 +1350,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     grid-template-rows: 112px minmax(300px, 1fr) 266px;
                 }
                 .fr-live-table--gameover {
-                    grid-template-rows: minmax(0, 1fr) 314px auto;
+                    grid-template-rows: auto minmax(0, 1fr) 314px;
                 }
                 .fr-live-table::before {
                     display: none;
@@ -1340,6 +1367,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     gap: 14px;
                     min-height: 116px;
                     padding: 8px 18px 0;
+                }
+                .fr-live-topbar--gameover {
+                    grid-template-columns: 248px minmax(0, 1fr) 248px;
+                    align-items: start;
                 }
                 .fr-live-topbar::before {
                     display: none;
@@ -1493,6 +1524,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     min-width: 158px;
                     animation: fr-live-turn-chip-breathe 1800ms ease-in-out infinite;
                 }
+                .fr-live-chip--turn-finished {
+                    min-width: 146px;
+                    font-size: 22px;
+                    color: #ffe6aa;
+                }
                 .fr-live-chip--round {
                     min-height: 36px;
                     padding: 0 14px;
@@ -1522,6 +1558,16 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     width: 172px;
                     margin-top: 8px;
                 }
+                .fr-live-score-strip--gameover {
+                    width: 248px;
+                    display: grid;
+                    align-content: start;
+                    gap: 8px;
+                    padding: 0;
+                    border: 0;
+                    background: transparent;
+                    box-shadow: none;
+                }
                 .fr-live-score-band {
                     position: relative;
                     height: 78px;
@@ -1532,6 +1578,18 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     box-shadow:
                         0 14px 24px rgba(0,0,0,0.14),
                         inset 0 1px 0 rgba(255,255,255,0.04);
+                }
+                .fr-live-score-band--gameover {
+                    height: auto;
+                    min-height: 0;
+                    padding: 0 0 8px;
+                    border-radius: 0;
+                    background: transparent;
+                    box-shadow: none;
+                    border-bottom: 1px solid rgba(228, 193, 128, 0.16);
+                }
+                .fr-live-score-band--gameover::before {
+                    display: none;
                 }
                 .fr-live-score-band::before {
                     content: "";
@@ -1559,6 +1617,33 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     justify-content: space-between;
                     gap: 12px;
                     margin-top: 10px;
+                }
+                .fr-live-score-band-main span {
+                    color: rgba(246, 223, 180, 0.72);
+                    font-size: 14px;
+                    font-weight: 700;
+                    white-space: nowrap;
+                }
+                .fr-live-score-band--gameover .fr-live-score-band-kicker {
+                    color: rgba(246, 223, 180, 0.72);
+                    font-size: 11px;
+                    letter-spacing: 0.02em;
+                }
+                .fr-live-score-band--gameover .fr-live-score-band-main {
+                    margin-top: 6px;
+                    align-items: center;
+                }
+                .fr-live-score-band--gameover .fr-live-score-band-total {
+                    font-size: 34px;
+                }
+                .fr-live-score-band--gameover .fr-live-score-band-main span {
+                    display: inline;
+                    min-height: 0;
+                    padding: 0;
+                    border: 0;
+                    background: transparent;
+                    color: rgba(246, 223, 180, 0.84);
+                    font-size: 13px;
                 }
                 .fr-live-score-band-total {
                     color: #ffe4a4;
@@ -1703,12 +1788,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     display: none;
                 }
                 .fr-live-endgame {
-                    position: absolute;
-                    top: 18px;
-                    right: 18px;
-                    z-index: 3;
-                    width: min(288px, 24vw);
-                    pointer-events: none;
+                    width: 100%;
+                }
+                .fr-live-endgame--docked {
+                    position: relative;
+                    top: auto;
+                    right: auto;
+                    z-index: auto;
+                    pointer-events: auto;
                 }
                 .fr-live-endgame-rail {
                     display: grid;
@@ -1723,9 +1810,20 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         0 18px 30px rgba(0, 0, 0, 0.22);
                     pointer-events: auto;
                 }
+                .fr-live-score-strip--gameover .fr-live-endgame-rail {
+                    gap: 4px;
+                    padding: 0;
+                    border: 0;
+                    border-radius: 0;
+                    background: transparent;
+                    box-shadow: none;
+                }
                 .fr-live-endgame-rail-header {
                     display: grid;
                     gap: 8px;
+                }
+                .fr-live-score-strip--gameover .fr-live-endgame-rail-header {
+                    gap: 0;
                 }
                 .fr-live-endgame-rail-title {
                     display: flex;
@@ -1736,6 +1834,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     letter-spacing: 0.12em;
                     text-transform: uppercase;
                 }
+                .fr-live-score-strip--gameover .fr-live-endgame-rail-title {
+                    font-size: 11px;
+                    letter-spacing: 0.08em;
+                }
                 .fr-live-endgame-rail-subtitle {
                     padding: 10px 12px;
                     border-radius: 12px;
@@ -1745,9 +1847,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     font-size: 12px;
                     line-height: 1.45;
                 }
+                .fr-live-score-strip--gameover .fr-live-endgame-rail-subtitle {
+                    display: none;
+                }
                 .fr-live-endgame-rail-list {
                     display: grid;
                     gap: 8px;
+                }
+                .fr-live-score-strip--gameover .fr-live-endgame-rail-list {
+                    gap: 0;
                 }
                 .fr-live-endgame-rank-button {
                     width: 100%;
@@ -1769,10 +1877,24 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         background 140ms ease,
                         transform 140ms ease;
                 }
+                .fr-live-score-strip--gameover .fr-live-endgame-rank-button {
+                    gap: 12px;
+                    padding: 10px 0;
+                    border: 0;
+                    border-radius: 0;
+                    background: transparent;
+                    box-shadow: none;
+                    border-bottom: 1px solid rgba(228, 193, 128, 0.12);
+                }
                 .fr-live-endgame-rank-button:hover {
                     transform: translateY(-1px);
                     border-color: rgba(243, 201, 116, 0.28);
                     background: rgba(44, 28, 13, 0.34);
+                }
+                .fr-live-score-strip--gameover .fr-live-endgame-rank-button:hover {
+                    transform: none;
+                    border-color: transparent;
+                    background: rgba(255, 236, 189, 0.03);
                 }
                 .fr-live-endgame-rank-button--active {
                     border-color: rgba(243, 201, 116, 0.42);
@@ -1781,11 +1903,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         inset 0 1px 0 rgba(255, 255, 255, 0.08),
                         0 10px 18px rgba(0, 0, 0, 0.18);
                 }
+                .fr-live-score-strip--gameover .fr-live-endgame-rank-button--active {
+                    border-color: transparent;
+                    background: rgba(255, 231, 173, 0.06);
+                    box-shadow: none;
+                }
                 .fr-live-endgame-rank-button--winner {
                     border-color: rgba(255, 219, 142, 0.42);
                     background:
                         radial-gradient(circle at 94% 20%, rgba(255, 213, 128, 0.18), transparent 34%),
                         rgba(54, 32, 14, 0.5);
+                }
+                .fr-live-score-strip--gameover .fr-live-endgame-rank-button--winner {
+                    border-color: transparent;
+                    background:
+                        linear-gradient(90deg, rgba(255, 220, 142, 0.12), rgba(255, 220, 142, 0.02));
                 }
                 .fr-live-endgame-rank-button--silver {
                     border-color: rgba(222, 228, 232, 0.2);
@@ -1853,7 +1985,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-live-endgame-reviewed-player {
                     color: rgba(242, 234, 215, 0.72);
                     font-size: 12px;
-                    text-align: right;
+                    text-align: left;
+                }
+                .fr-live-score-strip--gameover .fr-live-endgame-reviewed-player {
+                    padding-top: 4px;
+                    color: rgba(242, 234, 215, 0.58);
+                    font-size: 11px;
                 }
                 .fr-discard-row--live-center {
                     position: relative;
@@ -2156,6 +2293,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     grid-template-rows: 132px minmax(248px, 1fr) 392px;
                     gap: 10px;
                 }
+                .fr-board--minimal-live .fr-live-table--gameover {
+                    grid-template-rows: auto minmax(248px, 1fr) 392px;
+                }
                 .fr-board--minimal-live .fr-live-table--opening {
                     grid-template-rows: 128px minmax(180px, 0.78fr) 438px;
                 }
@@ -2167,6 +2307,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     min-height: 138px;
                     gap: 20px;
                     padding: 12px 24px 0;
+                }
+                .fr-board--minimal-live .fr-live-topbar--gameover {
+                    grid-template-columns: 204px minmax(0, 1fr) 260px;
                 }
                 .fr-board--minimal-live .fr-live-status-strip {
                     display: grid;
@@ -2272,6 +2415,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     top: auto;
                     right: auto;
                     width: 174px;
+                }
+                .fr-board--minimal-live .fr-live-score-strip--gameover {
+                    width: 300px;
+                    padding: 12px;
                 }
                 .fr-board--minimal-live .fr-live-score-band {
                     display: grid;
@@ -2832,8 +2979,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     min-height: 650px;
                     grid-template-rows: 112px minmax(0, 1fr) 252px;
                 }
+                .fr-compact-layout .fr-live-table--gameover {
+                    grid-template-rows: auto minmax(0, 1fr) 252px;
+                }
                 .fr-compact-layout .fr-live-topbar {
                     min-height: 108px;
+                }
+                .fr-compact-layout .fr-live-topbar--gameover {
+                    min-height: 242px;
                 }
                 .fr-compact-layout .fr-live-status-strip {
                     top: 20px;
@@ -2876,6 +3029,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     top: 20px;
                     right: 18px;
                     width: 112px;
+                }
+                .fr-compact-layout .fr-live-score-strip--gameover {
+                    width: 220px;
+                    padding: 0;
                 }
                 .fr-compact-layout .fr-discard-row--live-center {
                     width: min(880px, calc(100vw - 96px));
@@ -2925,6 +3082,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     gap: 16px;
                     padding: 0 24px;
                     align-items: start;
+                }
+                .fr-board--minimal-live .fr-live-topbar--gameover {
+                    grid-template-columns: 118px minmax(0, 1fr) 248px;
                 }
                 .fr-board--minimal-live {
                     width: 100vw;
@@ -3023,6 +3183,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-live-score-strip {
                     width: 132px;
                 }
+                .fr-board--minimal-live .fr-live-score-strip--gameover {
+                    width: 248px;
+                    gap: 6px;
+                }
                 .fr-board--minimal-live .fr-live-score-band {
                     display: block;
                     height: 42px;
@@ -3047,6 +3211,29 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     font-size: 24px;
                     color: rgba(248, 223, 159, 0.86);
                     font-weight: 800;
+                }
+                .fr-board--minimal-live .fr-live-score-band--gameover {
+                    height: auto;
+                    padding: 0 0 6px;
+                }
+                .fr-board--minimal-live .fr-live-score-band--gameover .fr-live-score-band-kicker {
+                    color: rgba(246, 223, 180, 0.44);
+                }
+                .fr-board--minimal-live .fr-live-score-band--gameover .fr-live-score-band-main {
+                    justify-content: flex-end;
+                    gap: 8px;
+                }
+                .fr-board--minimal-live .fr-live-score-band--gameover .fr-live-score-band-main span {
+                    font-size: 13px;
+                }
+                .fr-board--minimal-live .fr-live-score-band--gameover .fr-live-score-band-total {
+                    font-size: 30px;
+                }
+                .fr-board--minimal-live .fr-live-score-strip--gameover .fr-live-endgame-rail-title {
+                    text-align: right;
+                }
+                .fr-board--minimal-live .fr-live-score-strip--gameover .fr-live-endgame-rank-button {
+                    padding: 8px 0;
                 }
                 .fr-board--minimal-live .fr-live-hand-zone {
                     margin-top: 0;
@@ -3152,6 +3339,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     min-height: 108px;
                     padding: 0 16px;
                 }
+                .fr-compact-layout .fr-live-topbar--gameover {
+                    grid-template-columns: 128px minmax(0, 1fr) 240px;
+                    min-height: 234px;
+                }
                 .fr-compact-layout .fr-live-status-strip {
                     gap: 12px;
                     margin-top: 12px;
@@ -3184,6 +3375,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-compact-layout .fr-live-score-strip {
                     width: 118px;
+                }
+                .fr-compact-layout .fr-live-score-strip--gameover {
+                    width: 240px;
+                    padding: 10px;
                 }
                 .fr-compact-layout .fr-live-score-band-total {
                     font-size: 18px;
@@ -3525,6 +3720,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     font-weight: 700;
                     letter-spacing: 0.04em;
                 }
+                .fr-score-badge--rank-review {
+                    min-height: 16px;
+                    padding: 0 6px;
+                    background: rgba(255, 255, 255, 0.04);
+                    border-color: rgba(255, 255, 255, 0.04);
+                    color: rgba(242, 234, 215, 0.62);
+                    font-size: 10px;
+                    letter-spacing: 0;
+                }
+                .fr-live-score-strip--gameover .fr-score-badge--rank-review {
+                    background: transparent;
+                    border-color: transparent;
+                    color: rgba(242, 234, 215, 0.54);
+                    padding: 0;
+                }
                 .fr-score-list {
                     display: grid;
                     gap: 8px;
@@ -3863,10 +4073,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-card--focus-preview {
                         max-width: 172px;
                     }
-                    .fr-live-endgame {
-                        top: 14px;
-                        right: 14px;
-                        width: min(300px, calc(100vw - 40px));
+                    .fr-live-endgame--docked {
+                        top: auto;
+                        right: auto;
+                        width: 100%;
                     }
                     .fr-live-endgame-rail {
                         gap: 8px;
@@ -3890,7 +4100,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         border-radius: 18px;
                     }
                     .fr-live-table--gameover {
-                        grid-template-rows: minmax(0, 1fr) 248px auto;
+                        grid-template-rows: auto minmax(0, 1fr) 248px;
                     }
                     .fr-panel-header {
                         padding: 8px 12px 6px;
@@ -3915,11 +4125,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         min-height: 88px;
                         padding: 12px 10px;
                         font-size: 12px;
-                    }
-                    .fr-live-endgame {
-                        top: 10px;
-                        right: 10px;
-                        width: min(280px, calc(100vw - 28px));
                     }
                     .fr-live-endgame-rail {
                         gap: 8px;

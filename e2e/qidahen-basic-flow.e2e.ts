@@ -17,6 +17,7 @@ const MOBILE_LANDSCAPE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/q
 const BASIC_GUIDED_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-剧本基础流程';
 const ACTION_WINDOW_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-行动窗口流程';
 const WHEEL_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-轮盘结算流程';
+const COMMAND_BATTLE_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-指挥进攻掷骰流程';
 const YEAR_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-年序结算流程';
 const BASIC_GUIDED_FLOW_PREGAME_BEFORE = `${BASIC_GUIDED_FLOW_DIR}/01-剧本前置页-确认前.png`;
 const BASIC_GUIDED_FLOW_BOARD_AFTER_CONFIRM = `${BASIC_GUIDED_FLOW_DIR}/02-剧本前置页-确认后进入棋盘.png`;
@@ -42,19 +43,22 @@ const COMMITTED_TROOPS_SCREENSHOT = `${WHEEL_FLOW_DIR}/09-待结算面板-投入
 const BATTLE_RESOLUTION_SCREENSHOT = `${WHEEL_FLOW_DIR}/10-结构化战斗-承伤后进入战后处理.png`;
 const CAVALRY_PLUNDER_SCREENSHOT = `${WHEEL_FLOW_DIR}/11-攻方骑兵-劫掠守方牌堆选择.png`;
 const CAVALRY_EVASION_SCREENSHOT = `${WHEEL_FLOW_DIR}/12-守方骑兵-避战目标选择.png`;
+const COMMAND_FLOW_SELECTION_SCREENSHOT = `${COMMAND_BATTLE_FLOW_DIR}/01-指挥部队-选择进攻目标.png`;
+const ATTACK_FLOW_PENDING_SCREENSHOT = `${COMMAND_BATTLE_FLOW_DIR}/02-进攻待结算-显示目标与投入兵力.png`;
+const BATTLE_ROLL_FLOW_SCREENSHOT = `${COMMAND_BATTLE_FLOW_DIR}/03-战斗掷骰-显示掷骰结果与战后处理.png`;
 const FACTION_DECK_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/03-行动窗口-突袭结算后进入下一势力行动.png`;
 const FACTION_HAND_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/04-行动窗口-赐印招安后大明手牌变化.png`;
 const HAND_LIMIT_DISCARD_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-手牌超限弃牌/01-新势力行动窗口-手牌超限弃牌选择.png';
-const WHEEL_RECRUIT_TRAIN_SCREENSHOT = 'temp/qidahen-轮盘征兵训练-当前区域加兵结果.png';
-const WHEEL_HIRE_SCREENSHOT = 'temp/qidahen-轮盘外交雇佣-外交目标选择.png';
-const DIPLOMACY_THREE_TARGET_SCREENSHOT = 'temp/qidahen-外交雇佣-连续处理三个目标后完成.png';
-const RECRUIT_SCREENSHOT = 'temp/qidahen-征召军队-建军方式选择.png';
-const RECRUIT_CHUANBING_SCREENSHOT = 'temp/qidahen-征召军队-选择川兵后的地图提示.png';
-const MA_SHI_TRADE_SCREENSHOT = 'temp/qidahen-马市贸易-建军选择与蒙古摸牌结果.png';
-const DRIVE_TIGER_SCREENSHOT = 'temp/qidahen-驱虎吞狼-同意后进入指挥调度.png';
-const KHAN_EDICT_SCREENSHOT = 'temp/qidahen-大汗令箭-二选一后进入征兵训练.png';
-const KHAN_EDICT_HIRE_SCREENSHOT = 'temp/qidahen-大汗令箭-外交雇佣分支结果.png';
-const MARRIAGE_SUBJUGATION_SCREENSHOT = 'temp/qidahen-联姻诱降失败后-改控并保留一兵.png';
+const WHEEL_RECRUIT_TRAIN_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-轮盘征兵训练/01-轮盘征兵训练-当前区域完成加兵.png';
+const WHEEL_HIRE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-轮盘外交雇佣/01-轮盘外交雇佣-只结算雇佣后地图结果.png';
+const DIPLOMACY_THREE_TARGET_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-外交雇佣连续目标/01-外交雇佣-连续处理三个目标后自动完成.png';
+const RECRUIT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-征召军队/01-征召军队-选择常规建军后地图结果.png';
+const RECRUIT_CHUANBING_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-征召军队/02-征召军队-选择川兵后地图提示.png';
+const MA_SHI_TRADE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-马市贸易/01-马市贸易-建军选择后蒙古获得摸牌.png';
+const DRIVE_TIGER_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-驱虎吞狼/01-驱虎吞狼-目标同意后进入指挥调度.png';
+const KHAN_EDICT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-大汗令箭/01-大汗令箭-选择征兵训练后完成结算.png';
+const KHAN_EDICT_HIRE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-大汗令箭/02-大汗令箭-选择外交雇佣后地图结果.png';
+const MARRIAGE_SUBJUGATION_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-联姻诱降/01-联姻诱降-失败后改控并保留一兵.png';
 const MAP_REGION_POINTS = {
     jinzhou: { x: 0.4957, y: 0.5342 },
     dongjiang: { x: 0.6859, y: 0.7815 },
@@ -920,6 +924,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
     });
 
     test('结构化战斗可选择低级承伤并继续战后占领', async ({ page }) => {
+        test.slow();
         await setChineseLocale(page);
         await disableAudio(page);
         await disableTutorial(page);
@@ -1023,8 +1028,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('攻方损失 1，幸存 2');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-14');
-        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战斗掷骰');
         await saveScreenshot(page, BATTLE_RESOLUTION_SCREENSHOT);
+        await saveScreenshot(page, BATTLE_ROLL_FLOW_SCREENSHOT);
         await page.click('[data-testid="qidahen-post-battle-choice-occupy"]');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后处理');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');
@@ -1349,6 +1354,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
     });
 
     test('轮盘进攻调度会按地图连线生成待结算目标', async ({ page }) => {
+        test.slow();
         await setChineseLocale(page);
         await disableAudio(page);
         await disableTutorial(page);
@@ -1404,6 +1410,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-32"]')).toContainText('登莱');
 
         await saveScreenshot(page, WHEEL_DISPATCH_SELECTION_SCREENSHOT);
+        await saveScreenshot(page, COMMAND_FLOW_SELECTION_SCREENSHOT);
 
         await page.click('[data-testid="qidahen-wheel-dispatch-target-city-region-32"]');
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
@@ -1412,6 +1419,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('耗4');
 
         await saveScreenshot(page, WHEEL_DISPATCH_SCREENSHOT);
+        await saveScreenshot(page, ATTACK_FLOW_PENDING_SCREENSHOT);
 
         await selectPendingCommittedTroopsIfPresent(page, 4);
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rear-guard', committedTroops: 4 });

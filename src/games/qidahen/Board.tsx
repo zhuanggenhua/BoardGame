@@ -1852,6 +1852,7 @@ const ActionsZone: React.FC<{
     onExecuteWheelMove: (moveId: string) => void;
 }> = ({ core, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onSelectAction, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
     const { t } = useTranslation('game-qidahen');
+    const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
     const pendingScenarioChoices = core.scenarioVote != null
         || core.pendingScenarioCharacterChoices.length > 0
@@ -1889,6 +1890,26 @@ const ActionsZone: React.FC<{
         || pendingTargetAction != null
         || postBattleSelection != null;
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
+    const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext;
+    const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
+        : internalDispatchSelection ? 'internal-dispatch'
+            : recruitSelection ? 'recruit'
+                : maShiTradeSelection ? 'ma-shi-trade'
+                    : khanEdictSelection ? 'khan-edict'
+                        : diplomacySelection ? 'diplomacy'
+                            : driveTigerConsentSelection ? 'drive-tiger-consent'
+                                : fortificationMaintenanceSelection ? 'fortification-maintenance'
+                                    : wheelDispatchSelection ? 'wheel-dispatch'
+                                        : pendingTargetAction ? `pending:${pendingTargetAction.actionId}`
+                                            : postBattleSelection ? `post-battle:${postBattleSelection.actionId}`
+                                                : showWheelNextStepBanner ? 'wheel-next-step'
+                                                    : selectedAction ? `action-rail:${selectedAction.id}` : 'action-rail:none';
+
+    React.useEffect(() => {
+        if (actionSlotRef.current) {
+            actionSlotRef.current.scrollTop = 0;
+        }
+    }, [actionSurfaceKey]);
 
     return (
         <div
@@ -1959,7 +1980,7 @@ const ActionsZone: React.FC<{
                     {primaryActionEntryText}
                 </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
+            <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {showWheelNextStepBanner ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[13px] font-black leading-5"
@@ -2690,19 +2711,21 @@ const ActionsZone: React.FC<{
                 </div>
             ) : null}
             </div>
-            <div className="mt-3 shrink-0">
-                <div className="flex flex-col items-end gap-2" data-testid="qidahen-action-rail">
-                    {core.actionChoices.map((action) => (
-                        <ActionButton
-                            key={action.id}
-                            action={action}
-                            selected={core.selectedActionId === action.id}
-                            disabled={pendingScenarioChoices || core.factionActionUsed || recruitSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null || internalDispatchSelection != null || maShiTradeSelection != null || khanEdictSelection != null || diplomacySelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || pendingTargetAction != null || postBattleSelection != null || wheelDispatchSelection != null}
-                            onClick={() => (core.selectedActionId === action.id ? onExecuteAction(action.id) : onSelectAction(action.id))}
-                        />
-                    ))}
+            {showActionRail ? (
+                <div className="mt-3 shrink-0">
+                    <div className="flex flex-col items-end gap-2" data-testid="qidahen-action-rail">
+                        {core.actionChoices.map((action) => (
+                            <ActionButton
+                                key={action.id}
+                                action={action}
+                                selected={core.selectedActionId === action.id}
+                                disabled={pendingScenarioChoices || core.factionActionUsed}
+                                onClick={() => (core.selectedActionId === action.id ? onExecuteAction(action.id) : onSelectAction(action.id))}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            ) : null}
         </div>
     );
 };

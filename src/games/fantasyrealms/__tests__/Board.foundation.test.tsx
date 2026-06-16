@@ -1362,8 +1362,8 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(screen.getByTestId('fantasyrealms-live-table')).toHaveClass('fr-live-table--gameover');
             expect(screen.getByTestId('fantasyrealms-live-endgame')).toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-topbar')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-score-strip')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-topbar')).toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-score-strip')).toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-table-layout')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toHaveAttribute('data-rank-tone', 'gold');
             expect(screen.getByTestId('fantasyrealms-endgame-rank-1')).toContainElement(screen.getByLabelText('胜者'));

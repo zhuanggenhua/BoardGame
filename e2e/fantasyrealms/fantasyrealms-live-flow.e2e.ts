@@ -885,6 +885,8 @@ test.describe('FantasyRealms live flow', () => {
 
             await injectCore(page, core, { gameover: gameOverResult });
 
+            await expect(page.getByTestId('fantasyrealms-live-topbar')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('fantasyrealms-live-score-strip')).toBeVisible();
             const standingsRegion = page.getByLabel('最终排名');
             await expect(standingsRegion).toBeVisible({ timeout: 10000 });
             const winnerStanding = sortedStandings.find((standing) => standing.isWinner) ?? sortedStandings[0];
