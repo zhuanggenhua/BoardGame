@@ -12,9 +12,17 @@
 
 ## 接口
 
-- 列表：`GET /feedback/open?status=<status>&page=<n>&limit=<n>`
-- 详情：`GET /feedback/open/:id`
-- 改状态：`PATCH /feedback/open/:id/status`
+- 列表：`GET /admin/feedback?status=<status>&page=<n>&limit=<n>`
+- 改状态：`PATCH /admin/feedback/:id/status`
+
+### 认证要求
+
+- `GET /admin/feedback`
+  - 当前线上允许无凭证读取列表，但这只证明“能看见线上真实反馈”，**不等于**有正式回写权限。
+- `PATCH /admin/feedback/:id/status`
+  - 必须携带 `Authorization: Bearer <token>`。
+  - 当前项目脚本统一使用 `BOARDGAME_FEEDBACK_TOKEN` 或 `--token` 传入。
+  - 如果线上返回 `401 缺少登录凭证`，说明问题是“没有正式写凭证”，不是接口不存在。
 
 ## 状态含义
 
@@ -37,3 +45,4 @@
 5. 重复项不要和代表项并行开工，先等代表项结论，再统一收口。
 6. 默认只处理线上真实反馈；任何本地环境返回的数据都只能视为演练或诊断材料，除非用户明确要求处理本地测试反馈。
 7. 正式回写前至少抽查 1 条目标反馈 ID，确认它在当前接口里的状态和用户给的任务上下文一致，再执行批量写回。
+8. 若旧的 `/feedback/open` 路由返回 `404`，不得继续沿旧脚本回写；应切到当前真实的 `/admin/feedback` 路径，并确认 Bearer 凭证是否齐备。

@@ -172,10 +172,11 @@ node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url 
 如果要把挑出的并行候选立即认领成 `in_progress`：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --slots 4 --mark-in-progress
+node .codex/skill/feedback-closeout/scripts/triage-open-feedback.mjs --base-url <真实反馈接口基址> --token <BearerToken> --slots 4 --mark-in-progress
 ```
 
 禁止把 `http://127.0.0.1:*` 当成默认正式目标，除非用户明确说这次就是要处理本地测试反馈。
+当前线上正式列表/回写接口默认是 `https://api.easyboardgame.top/admin/feedback...`；旧的 `/feedback/open` 若返回 `404`，视为过期入口，不得继续沿用。
 
 脚本会：
 
@@ -386,18 +387,19 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 使用：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> <status> --base-url <真实反馈接口基址>
+node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> <status> --base-url <真实反馈接口基址> --token <BearerToken>
 ```
 
 收口代表项并顺带关闭重复项：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址>
+node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken>
 ```
 
 补充规则：
 
 - 如果开放反馈接口实际上指向本地开发库或空库，禁止因为“脚本能通”就把本地结果当成线上已回写。
+- 如果当前 HTTP 回写失败是 `401 缺少登录凭证`，这代表“正式接口存在，但缺 Bearer 凭证”；不得再把它误判成“只能 Mongo 直写”。
 - 如果线上 HTTP 接口不可用，但用户已经允许使用生产机直连数据库作为真实写入口，可以改走生产机脚本；此时必须在交付里明确写明“本轮不是通过 HTTP 接口，而是通过生产机真实数据源回写”。
 - 未经用户明确允许，不要擅自使用生产 SSH、生产数据库直连或其他越过业务接口的写路径。
 - 不得只改远端状态、不改本地状态板；也不得只改本地状态板就口头宣称“已收口”。

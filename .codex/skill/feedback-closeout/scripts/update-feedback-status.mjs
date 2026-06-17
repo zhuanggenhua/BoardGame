@@ -4,6 +4,7 @@ const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
 function parseArgs(argv) {
     const options = {
         baseUrl: process.env.BOARDGAME_FEEDBACK_BASE_URL || 'http://127.0.0.1:3000',
+        token: process.env.BOARDGAME_FEEDBACK_TOKEN || '',
         id: '',
         status: '',
     };
@@ -13,6 +14,10 @@ function parseArgs(argv) {
         const arg = argv[index];
         if (arg === '--base-url') {
             options.baseUrl = argv[++index] || options.baseUrl;
+            continue;
+        }
+        if (arg === '--token') {
+            options.token = argv[++index] || options.token;
             continue;
         }
         positional.push(arg);
@@ -33,10 +38,14 @@ function parseArgs(argv) {
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const baseUrl = options.baseUrl.replace(/\/+$/, '');
-    const response = await fetch(`${baseUrl}/feedback/open/${options.id}/status`, {
+    if (!options.token) {
+        throw new Error('缺少反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
+    }
+    const response = await fetch(`${baseUrl}/admin/feedback/${options.id}/status`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${options.token}`,
         },
         body: JSON.stringify({ status: options.status }),
     });

@@ -15,6 +15,7 @@ const SEVERITY_RANK = {
 function parseArgs(argv) {
     const options = {
         baseUrl: process.env.BOARDGAME_FEEDBACK_BASE_URL || 'http://127.0.0.1:3000',
+        token: process.env.BOARDGAME_FEEDBACK_TOKEN || '',
         statuses: ['open', 'in_progress'],
         limit: 100,
         slots: 4,
@@ -26,6 +27,10 @@ function parseArgs(argv) {
         const arg = argv[index];
         if (arg === '--base-url') {
             options.baseUrl = argv[++index] || options.baseUrl;
+            continue;
+        }
+        if (arg === '--token') {
+            options.token = argv[++index] || options.token;
             continue;
         }
         if (arg === '--statuses') {
@@ -73,12 +78,21 @@ function normalizeBaseUrl(baseUrl) {
     return baseUrl.replace(/\/+$/, '');
 }
 
-async function updateFeedbackStatus(baseUrl, id, status) {
-    const response = await fetch(`${baseUrl}/feedback/open/${id}/status`, {
+function buildHeaders(token, extraHeaders = {}) {
+    return token
+        ? {
+            ...extraHeaders,
+            Authorization: `Bearer ${token}`,
+        }
+        : extraHeaders;
+}
+
+async function updateFeedbackStatus(baseUrl, token, id, status) {
+    const response = await fetch(`${baseUrl}/admin/feedback/${id}/status`, {
         method: 'PATCH',
-        headers: {
+        headers: buildHeaders(token, {
             'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ status }),
     });
 
@@ -90,14 +104,16 @@ async function updateFeedbackStatus(baseUrl, id, status) {
     return response.json();
 }
 
-async function fetchList(baseUrl, status, limit) {
+async function fetchList(baseUrl, token, status, limit) {
     const items = [];
     let page = 1;
     let total = 0;
 
     while (true) {
-        const url = `${baseUrl}/feedback/open?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`;
-        const response = await fetch(url);
+        const url = `${baseUrl}/admin/feedback?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`;
+        const response = await fetch(url, {
+            headers: buildHeaders(token),
+        });
         if (!response.ok) {
             throw new Error(`请求失败 ${response.status} ${response.statusText}: ${url}`);
         }
@@ -393,13 +409,16 @@ function pickParallelCandidates(groups, slots) {
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     const baseUrl = normalizeBaseUrl(options.baseUrl);
+    if (options.markInProgress && !options.token) {
+        throw new Error('mark-in-progress 需要反馈管理 Bearer 凭证；请通过 --token 或 BOARDGAME_FEEDBACK_TOKEN 提供');
+    }
     const outDir = makeRunDir(options.outDir);
     await fs.mkdir(outDir, { recursive: true });
 
     const fetchedByStatus = {};
     const merged = [];
     for (const status of options.statuses) {
-        const items = await fetchList(baseUrl, status, options.limit);
+        const items = await fetchList(baseUrl, options.token, status, options.limit);
         fetchedByStatus[status] = items.length;
         merged.push(...items);
     }
@@ -435,7 +454,7 @@ async function main() {
     const claimedCandidates = [];
     if (options.markInProgress) {
         for (const candidate of parallelCandidates) {
-            const updated = await updateFeedbackStatus(baseUrl, candidate.feedbackId, 'in_progress');
+            const updated = await updateFeedbackStatus(baseUrl, options.token, candidate.feedbackId, 'in_progress');
             candidate.status = updated.status;
             claimedCandidates.push({
                 feedbackId: candidate.feedbackId,
