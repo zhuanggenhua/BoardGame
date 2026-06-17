@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
+import { navigateBackToLobbyWithModalCleanup } from '../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import {
     clearMatchCredentials,
     clearOwnerActiveMatch,
@@ -54,18 +55,18 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
     } = args;
     const { t: tLobby } = useTranslation('lobby');
     const toast = useToast();
-    const { openModal, closeModal } = useModalStack();
+    const { openModal, closeModal, closeAll } = useModalStack();
     const [isLeaving, setIsLeaving] = useState(false);
     const destroyModalIdRef = useRef<string | null>(null);
     const forceExitModalIdRef = useRef<string | null>(null);
 
     const navigateBackToLobby = useCallback(() => {
-        if (gameId) {
-            navigate(`/?game=${gameId}`, { replace: true });
-            return;
-        }
-        navigate('/', { replace: true });
-    }, [gameId, navigate]);
+        navigateBackToLobbyWithModalCleanup({
+            navigate,
+            closeAll,
+            gameId,
+        });
+    }, [closeAll, gameId, navigate]);
 
     const clearMatchLocalState = useCallback(() => {
         if (!matchId) return;

@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from './LoadingScreen';
 import { UI_Z_INDEX } from '../../core';
+import { useModalStack } from '../../contexts/ModalStackContext';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useCoarsePointer } from '../../hooks/ui/useCoarsePointer';
+import { navigateBackToLobbyWithModalCleanup } from '../../lib/navigation/navigateBackToLobbyWithModalCleanup';
 
 /** 桌面端连接超时阈值（毫秒） */
 const CONNECTION_TIMEOUT_MS = 15_000;
@@ -43,6 +45,7 @@ export const ConnectionLoadingScreen = ({
 }: ConnectionLoadingScreenProps) => {
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
+    const { closeAll } = useModalStack();
     const isMobileViewport = useMobileViewport();
     const isCoarsePointer = useCoarsePointer();
     const [timedOut, setTimedOut] = useState(false);
@@ -72,12 +75,12 @@ export const ConnectionLoadingScreen = ({
     }, [navigate, onRetry]);
 
     const handleBack = useCallback(() => {
-        if (gameId) {
-            navigate(`/?game=${gameId}`, { replace: true });
-        } else {
-            navigate('/', { replace: true });
-        }
-    }, [gameId, navigate]);
+        navigateBackToLobbyWithModalCleanup({
+            navigate,
+            closeAll,
+            gameId,
+        });
+    }, [closeAll, gameId, navigate]);
 
     return (
         <>

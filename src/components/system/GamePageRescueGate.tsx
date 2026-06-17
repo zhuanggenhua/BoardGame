@@ -3,8 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UI_Z_INDEX } from '../../core';
+import { useModalStack } from '../../contexts/ModalStackContext';
 import { extractGameIdFromPlayPath } from '../../games/mobileSupport';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
+import { navigateBackToLobbyWithModalCleanup } from '../../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import { copyToClipboard } from '../../lib/utils';
 
 const INITIAL_LOADER_ID = 'initial-loader';
@@ -174,6 +176,7 @@ const readRescueSnapshot = (pathname: string, enteredAt: number): Omit<RescueSna
 export const GamePageRescueGate = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { closeAll } = useModalStack();
     const { t } = useTranslation('lobby');
     const [copied, setCopied] = useState(false);
     const [snapshot, setSnapshot] = useState<RescueSnapshot | null>(null);
@@ -290,13 +293,12 @@ export const GamePageRescueGate = () => {
     }, [diagnosticText]);
 
     const handleBackToLobby = useCallback(() => {
-        const gameId = extractGameIdFromPlayPath(location.pathname);
-        if (gameId) {
-            navigate(`/?game=${gameId}`, { replace: true });
-            return;
-        }
-        navigate('/', { replace: true });
-    }, [location.pathname, navigate]);
+        navigateBackToLobbyWithModalCleanup({
+            navigate,
+            closeAll,
+            gameId: extractGameIdFromPlayPath(location.pathname) ?? undefined,
+        });
+    }, [closeAll, location.pathname, navigate]);
 
     if (!snapshot?.signal) {
         return null;

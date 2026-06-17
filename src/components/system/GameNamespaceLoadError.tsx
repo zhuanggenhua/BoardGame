@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useModalStack } from '../../contexts/ModalStackContext';
+import { navigateBackToLobbyWithModalCleanup } from '../../lib/navigation/navigateBackToLobbyWithModalCleanup';
 
 interface GameNamespaceLoadErrorProps {
     gameId?: string;
@@ -19,6 +21,7 @@ export const GameNamespaceLoadError = ({
 }: GameNamespaceLoadErrorProps) => {
     const { t } = useTranslation('lobby');
     const navigate = useNavigate();
+    const { closeAll } = useModalStack();
     const title = titleKey === 'matchRoom.clientLoadFailed'
         ? t('matchRoom.clientLoadFailed')
         : t('matchRoom.namespaceLoadFailed');
@@ -27,12 +30,12 @@ export const GameNamespaceLoadError = ({
         : t('matchRoom.namespaceLoadFailedDesc');
 
     const handleBack = useCallback(() => {
-        if (gameId) {
-            navigate(`/?game=${gameId}`, { replace: true });
-            return;
-        }
-        navigate('/', { replace: true });
-    }, [gameId, navigate]);
+        navigateBackToLobbyWithModalCleanup({
+            navigate,
+            closeAll,
+            gameId,
+        });
+    }, [closeAll, gameId, navigate]);
 
     return (
         <div

@@ -360,9 +360,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                 '0': {
                     id: '0',
                     factionIds: [],
+                    factions: ['robots', 'wizards'],
                     hand: [],
                     deck: [],
                     discard: [],
+                    resources: {},
+                    statusEffects: [],
+                    abilities: [],
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -372,9 +376,13 @@ const createOnlineAiRecoveryState = (overrides?: {
                 '1': {
                     id: '1',
                     factionIds: [],
+                    factions: ['robots', 'wizards'],
                     hand: [],
                     deck: [],
                     discard: [],
+                    resources: {},
+                    statusEffects: [],
+                    abilities: [],
                     vp: 0,
                     minionsPlayed: 0,
                     minionLimit: 1,
@@ -415,6 +423,7 @@ const createPersistedStaleSmashUpReactionChoiceState = (): StoredMatchState => {
                 '0': {
                     id: '0',
                     factionIds: ['robot'],
+                    factions: ['robots', 'pirates'],
                     hand: [],
                     deck: [],
                     discard: [],
@@ -427,6 +436,7 @@ const createPersistedStaleSmashUpReactionChoiceState = (): StoredMatchState => {
                 '1': {
                     id: '1',
                     factionIds: ['wizard'],
+                    factions: ['robots', 'wizards'],
                     hand: [],
                     deck: [],
                     discard: [],
