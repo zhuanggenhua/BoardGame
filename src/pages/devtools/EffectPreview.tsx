@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import type { EffectEntryMeta, EffectGroupDef, IconComponent } from './cards/shared';
 import { EFFECT_GROUP_DEFS } from './cards/shared';
 import { AudioManager } from '../../lib/audio/AudioManager';
@@ -71,6 +72,12 @@ function buildGroups(entries: EffectEntryMeta[]): EffectGroup[] {
 
 const ALL_ENTRIES = collectEntries();
 const EFFECT_GROUPS = buildGroups(ALL_ENTRIES);
+const DEFAULT_EFFECT_ID = ALL_ENTRIES[0]?.id ?? '';
+
+function resolveEffectId(rawValue: string | null): string {
+  if (!rawValue) return DEFAULT_EFFECT_ID;
+  return ALL_ENTRIES.some(entry => entry.id === rawValue) ? rawValue : DEFAULT_EFFECT_ID;
+}
 
 // ============================================================================
 // 主页面
@@ -78,7 +85,8 @@ const EFFECT_GROUPS = buildGroups(ALL_ENTRIES);
 
 const EffectPreview: React.FC = () => {
   const { t } = useTranslation('lobby');
-  const [activeEffectId, setActiveEffectId] = useState(ALL_ENTRIES[0]?.id ?? '');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeEffectId, setActiveEffectId] = useState(() => resolveEffectId(searchParams.get('effect')));
   const [useRealCards, setUseRealCards] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [isCompactViewport, setIsCompactViewport] = useState(() => (
@@ -102,6 +110,21 @@ const EffectPreview: React.FC = () => {
     };
     initAudio();
   }, []);
+
+  useEffect(() => {
+    const nextEffectId = resolveEffectId(searchParams.get('effect'));
+    setActiveEffectId(prev => (prev === nextEffectId ? prev : nextEffectId));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const currentEffectId = searchParams.get('effect');
+    if (currentEffectId === activeEffectId) {
+      return;
+    }
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('effect', activeEffectId);
+    setSearchParams(nextParams, { replace: true });
+  }, [activeEffectId, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

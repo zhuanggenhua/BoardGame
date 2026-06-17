@@ -708,6 +708,31 @@ describe('AI seat controller helpers', () => {
         expect(search.get('seat2')).toBe('remote-ai:astrbot');
     });
 
+    it('本地对局 URL 会保存并恢复 AI 最小时长', () => {
+        const search = buildLocalMatchSearchParams({
+            numPlayers: 2,
+            playerOptions: [2],
+            aiSupport,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', difficulty: 'normal', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(search.get('seat1Delay')).toBe('0');
+
+        const controllers = resolveSeatControllersFromSearchParams({
+            numPlayers: 2,
+            searchParams: search,
+            aiSupport,
+        });
+        expect(controllers['1']).toEqual({
+            type: 'local-ai',
+            difficulty: 'normal',
+            minimumActionDelayMs: 0,
+        });
+    });
+
     it('本地对局 URL 会保存并恢复 AI 手动选派系标记', () => {
         const search = buildLocalMatchSearchParams({
             numPlayers: 2,

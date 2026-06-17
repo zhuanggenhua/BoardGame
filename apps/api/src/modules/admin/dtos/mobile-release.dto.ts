@@ -122,3 +122,17 @@ export class DeployRollbackExecuteDto extends DeployRollbackPreviewDto {
     @MaxLength(20)
     confirmText!: string;
 }
+
+export class DeployUpdatePreviewDto {
+    @IsOptional()
+    @IsString()
+    @MaxLength(80)
+    @Matches(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    tag?: string;
+}
+
+export class DeployUpdateExecuteDto extends DeployUpdatePreviewDto {
+    @IsString()
+    @MaxLength(20)
+    confirmText!: string;
+}

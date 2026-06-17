@@ -25,10 +25,15 @@ const damage = (
     timing: opts?.timing,
 });
 
-const grantStatus = (statusId: string, description: string): AbilityEffect => ({
+const grantStatus = (
+    statusId: string,
+    description: string,
+    opts?: { timing?: EffectTiming; condition?: AbilityEffect['condition'] },
+): AbilityEffect => ({
     description,
     action: { type: 'grantStatus', target: 'opponent', statusId, value: 1 },
-    timing: 'preDefense',
+    timing: opts?.timing ?? 'preDefense',
+    condition: opts?.condition,
 });
 
 const custom = (
@@ -313,7 +318,11 @@ const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
             id: 'light-the-fuse-small',
             trigger: { type: 'smallStraight' },
             effects: [
-                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('light-the-fuse', 'smallInflictPowderKeg')),
+                grantStatus(
+                    STATUS_IDS.POWDER_KEG,
+                    abilityEffectText('light-the-fuse', 'smallInflictPowderKeg'),
+                    { timing: 'postDamage', condition: { type: 'onHit' } },
+                ),
                 damage(7, abilityEffectText('light-the-fuse', 'smallDamage7'), { timing: 'preDefense' }),
             ],
             priority: 1,
@@ -322,7 +331,11 @@ const HUMAN_LIGHT_THE_FUSE: AbilityDef = {
             id: 'light-the-fuse-large',
             trigger: { type: 'largeStraight' },
             effects: [
-                grantStatus(STATUS_IDS.POWDER_KEG, abilityEffectText('light-the-fuse', 'largeInflictPowderKeg')),
+                grantStatus(
+                    STATUS_IDS.POWDER_KEG,
+                    abilityEffectText('light-the-fuse', 'largeInflictPowderKeg'),
+                    { timing: 'postDamage', condition: { type: 'onHit' } },
+                ),
                 damage(9, abilityEffectText('light-the-fuse', 'largeDamage9'), { timing: 'preDefense' }),
             ],
             priority: 2,

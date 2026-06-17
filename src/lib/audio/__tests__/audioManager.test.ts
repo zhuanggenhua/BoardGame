@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride } from '../../../core/AssetLoader';
+import { AUDIO_RUNTIME_TOAST_EVENT } from '../audioRuntimeNotifications';
 
 const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() => ({
     howlInstances: [] as Array<{
@@ -183,6 +184,24 @@ describe('AudioManager', () => {
         expect(howlInstances).toHaveLength(1);
         expect(howlInstances[0].options.loop).toBe(false);
         expect(typeof howlInstances[0].options.onend).toBe('function');
+    });
+
+    it('BGM 源地址为空时不会抛异常打挂页面', () => {
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const config: GameAudioConfig = {
+            bgm: [{ key: 'bgm-empty', name: 'Empty BGM', src: '' }],
+        };
+        const eventListener = vi.fn();
+        window.addEventListener(AUDIO_RUNTIME_TOAST_EVENT, eventListener as EventListener);
+
+        AudioManager.registerAll(config);
+
+        expect(() => AudioManager.playBgm('bgm-empty')).not.toThrow();
+        expect(howlInstances).toHaveLength(0);
+        expect(eventListener).toHaveBeenCalledTimes(1);
+
+        window.removeEventListener(AUDIO_RUNTIME_TOAST_EVENT, eventListener as EventListener);
+        consoleErrorSpy.mockRestore();
     });
 
     it('BGM 异常快速结束时会熔断手动循环，避免无限重播', async () => {

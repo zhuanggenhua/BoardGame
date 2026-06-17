@@ -36,6 +36,7 @@
       "selfTurn": "Your Turn"
     },
     "statusBanner": {
+      "discardPick": "Discard 1",
       "discardSelf": "Confirm Discard",
       "waiting": "Waiting for {{player}}"
     }
@@ -78,6 +79,7 @@
     "inspectHandAria": "Inspect hand card {{name}}",
     "confirmTake": "Confirm",
     "confirmDiscard": "Confirm Discard",
+    "closePreview": "Close Preview",
     "selectDiscardRequired": "Select a card to take",
     "selected": "Selected"
   },

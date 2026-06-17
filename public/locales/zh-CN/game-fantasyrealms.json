@@ -36,6 +36,7 @@
       "selfTurn": "你的回合"
     },
     "statusBanner": {
+      "discardPick": "弃置 1 张",
       "discardSelf": "确认弃牌",
       "waiting": "等待 {{player}}"
     }
@@ -78,6 +79,7 @@
     "inspectHandAria": "查看手牌 {{name}}",
     "confirmTake": "确认选择",
     "confirmDiscard": "确认弃置",
+    "closePreview": "关闭预览",
     "selectDiscardRequired": "选择一张牌获取",
     "selected": "已选"
   },

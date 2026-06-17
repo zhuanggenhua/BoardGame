@@ -13,6 +13,7 @@ const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;
 const MAX_AI_MINIMUM_ACTION_DELAY_MS = 5000;
 const MANUAL_SETUP_SEARCH_VALUE = '1';
+const AI_MINIMUM_ACTION_DELAY_SEARCH_SUFFIX = 'Delay';
 
 function sanitizeOptionalId(value: string | undefined): string | undefined {
     const trimmed = value?.trim();
@@ -215,15 +216,28 @@ export function resolveSeatControllersFromSearchParams(args: {
         const explicitDifficulty = normalizeAiDifficultyLevel(
             args.searchParams.get(`seat${index}Difficulty`) ?? undefined,
         );
+        const rawMinimumActionDelayMs = args.searchParams.get(`seat${index}${AI_MINIMUM_ACTION_DELAY_SEARCH_SUFFIX}`);
+        const explicitMinimumActionDelayMs = normalizeAiMinimumActionDelayMs(
+            rawMinimumActionDelayMs === null ? undefined : Number(rawMinimumActionDelayMs),
+        );
         const manualSetupSelection = isManualSetupSelectionEnabledFromSearchParams(args.searchParams, index);
         const fallback = getDefaultSeatController(index, args.numPlayers, args.aiSupport);
-        const controller = args.searchParams.has(`seat${index}`)
+        const explicitController = args.searchParams.has(`seat${index}`)
             ? (
                 explicit.type === 'local-ai' && explicitDifficulty
                     ? normalizeSeatController({ ...explicit, difficulty: explicitDifficulty }, args.aiSupport)
                     : explicit
             )
             : fallback;
+        const controller = explicitController.type !== 'human' && explicitMinimumActionDelayMs !== undefined
+            ? normalizeSeatController(
+                {
+                    ...explicitController,
+                    minimumActionDelayMs: explicitMinimumActionDelayMs,
+                },
+                args.aiSupport,
+            )
+            : explicitController;
         controllers[playerId] = controller.type === 'human' || !manualSetupSelection
             ? controller
             : normalizeSeatController({ ...controller, manualSetupSelection: true }, args.aiSupport);
@@ -266,6 +280,20 @@ export function buildLocalMatchSearchParams(args: {
             )
         ) {
             search.set(`seat${index}Difficulty`, controller.difficulty);
+        }
+        const controllerDelayMs = controller.type === 'human'
+            ? undefined
+            : normalizeAiMinimumActionDelayMs(controller.minimumActionDelayMs);
+        const defaultControllerDelayMs = defaultController.type === 'human'
+            ? undefined
+            : normalizeAiMinimumActionDelayMs(defaultController.minimumActionDelayMs)
+                ?? DEFAULT_AI_MINIMUM_ACTION_DELAY_MS;
+        if (
+            controller.type !== 'human'
+            && controllerDelayMs !== undefined
+            && controllerDelayMs !== defaultControllerDelayMs
+        ) {
+            search.set(`seat${index}${AI_MINIMUM_ACTION_DELAY_SEARCH_SUFFIX}`, String(controllerDelayMs));
         }
         if (isManualSetupSelectionEnabledForSeat(controller)) {
             search.set(`seat${index}ManualSetup`, MANUAL_SETUP_SEARCH_VALUE);

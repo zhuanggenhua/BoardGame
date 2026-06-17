@@ -22,10 +22,37 @@ import {
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './selectionBuilders';
-import { resolveQidahenWheelDispatchInteractionChoice } from './actionWindowDispatch';
+import {
+    resolveQidahenGaoDiDispatchChoice,
+    resolveQidahenInternalDispatchInteractionChoice,
+    resolveQidahenWheelDispatchInteractionChoice,
+} from './actionWindowDispatch';
 import { applyQidahenCharacterActionWindowEffectsWithFocus } from './characterActionWindow';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type { QidahenCore } from './types';
+import { getQidahenRuntimeRegionIdsForPrintedRegionId } from '../ui/mapGraph';
+
+const getQidahenSelectedRegionMatchIds = (selectedRegionId: string): Set<string> => (
+    new Set([
+        selectedRegionId,
+        resolveQidahenPrimaryRuntimeRegionId(selectedRegionId),
+        ...getQidahenRuntimeRegionIdsForPrintedRegionId(selectedRegionId),
+    ])
+);
+
+const doesQidahenSelectedRegionMatchTarget = (
+    selectedRegionId: string,
+    targetRegionId: string,
+): boolean => {
+    const selectedRegionMatchIds = getQidahenSelectedRegionMatchIds(selectedRegionId);
+    const targetRegionMatchIds = getQidahenSelectedRegionMatchIds(targetRegionId);
+    for (const candidateRegionId of targetRegionMatchIds) {
+        if (selectedRegionMatchIds.has(candidateRegionId)) {
+            return true;
+        }
+    }
+    return false;
+};
 
 interface QidahenRegionSelectedDependencies {
     applyCharacterActionWindowEffectsWithFocus: (
@@ -40,6 +67,18 @@ interface QidahenRegionSelectedDependencies {
         timestamp: number,
         interactionSelection?: ReturnType<typeof getQidahenCurrentWheelDispatchSelectionForCore>,
     ) => QidahenCore;
+    resolveQidahenGaoDiDispatchChoice: (
+        state: QidahenCore,
+        choiceId: string,
+        timestamp: number,
+        interactionSelection?: QidahenCore['gaoDiDispatchSelection'],
+    ) => QidahenCore;
+    resolveQidahenInternalDispatchInteractionChoice: (
+        state: QidahenCore,
+        choiceId: string,
+        timestamp: number,
+        interactionSelection?: ReturnType<typeof getQidahenInternalDispatchSelectionForCore>,
+    ) => QidahenCore;
 }
 
 export const reduceQidahenRegionSelected = (
@@ -47,11 +86,14 @@ export const reduceQidahenRegionSelected = (
     regionId: string,
     timestamp: number,
     diplomacySelectionCarry: ReturnType<typeof getQidahenCurrentDiplomacySelectionForCore> = null,
+    internalDispatchSelectionCarry: ReturnType<typeof getQidahenInternalDispatchSelectionForCore> = null,
     wheelDispatchSelectionCarry: ReturnType<typeof getQidahenCurrentWheelDispatchSelectionForCore> = null,
     dependencies: QidahenRegionSelectedDependencies = {
         applyCharacterActionWindowEffectsWithFocus: applyQidahenCharacterActionWindowEffectsWithFocus,
         updateTurnLabel: updateQidahenTurnLabel,
         resolveQidahenWheelDispatchInteractionChoice,
+        resolveQidahenGaoDiDispatchChoice,
+        resolveQidahenInternalDispatchInteractionChoice,
     },
 ): QidahenCore => {
     const actionWindowEffect = state.turnPhase === 'action-window'
@@ -75,6 +117,21 @@ export const reduceQidahenRegionSelected = (
         });
     }
     if (nextState.gaoDiDispatchSelection) {
+        const chosenTargetRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+        const chosenTarget = nextState.gaoDiDispatchSelection.selectedCardId
+            ? nextState.gaoDiDispatchSelection.candidates.find((candidate) => (
+                doesQidahenSelectedRegionMatchTarget(selectedRegionId, candidate.targetRegionId)
+                || candidate.targetRegionId === chosenTargetRuntimeRegionId
+            )) ?? null
+            : null;
+        if (chosenTarget) {
+            return dependencies.resolveQidahenGaoDiDispatchChoice(
+                nextState,
+                chosenTarget.id,
+                timestamp,
+                nextState.gaoDiDispatchSelection,
+            );
+        }
         const rebuiltGaoDiDispatchSelection = buildGaoDiDispatchSelection(
             nextState,
             selectedRegionId,
@@ -87,8 +144,22 @@ export const reduceQidahenRegionSelected = (
             gaoDiDispatchSelection: rebuiltGaoDiDispatchSelection,
         });
     }
-    const internalDispatchSelection = getQidahenInternalDispatchSelectionForCore(nextState);
+    const internalDispatchSelection = internalDispatchSelectionCarry
+        ?? getQidahenInternalDispatchSelectionForCore(nextState);
     if (internalDispatchSelection) {
+        const chosenTargetRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
+        const chosenTarget = internalDispatchSelection.candidates.find((candidate) => (
+            doesQidahenSelectedRegionMatchTarget(selectedRegionId, candidate.targetRegionId)
+            || candidate.targetRegionId === chosenTargetRuntimeRegionId
+        )) ?? null;
+        if (chosenTarget) {
+            return dependencies.resolveQidahenInternalDispatchInteractionChoice(
+                nextState,
+                chosenTarget.id,
+                timestamp,
+                internalDispatchSelection,
+            );
+        }
         const rebuiltInternalDispatchSelection = buildWangHuazhenInternalDispatchSelection(
             nextState,
             selectedRegionId,
@@ -211,8 +282,9 @@ export const reduceQidahenRegionSelected = (
 
     const chosenTargetRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegionId);
     const chosenTarget = wheelDispatchSelection.candidates.find((candidate) => (
-        candidate.targetRuntimeRegionId === chosenTargetRuntimeRegionId
-        || candidate.targetRegionId === selectedRegionId
+        doesQidahenSelectedRegionMatchTarget(selectedRegionId, candidate.targetRuntimeRegionId)
+        || doesQidahenSelectedRegionMatchTarget(selectedRegionId, candidate.targetRegionId)
+        || candidate.targetRuntimeRegionId === chosenTargetRuntimeRegionId
     ));
     if (chosenTarget) {
         return dependencies.resolveQidahenWheelDispatchInteractionChoice(

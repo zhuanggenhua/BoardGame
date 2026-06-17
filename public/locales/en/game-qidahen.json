@@ -104,7 +104,10 @@
       "regionSpecialTroops": "Special {{summary}}",
       "regionPassages": "Borders {{summary}}",
       "regionReachable": "Dispatch reach {{summary}}",
-      "sharedPrintedRegion": "Shared print"
+      "sharedPrintedRegion": "Shared print",
+      "selectionGuideSource": "Start",
+      "selectionContinueHint": "Click the green target to continue",
+      "clickableRegionSummary": "Clickable regions: {{summary}}"
     },
     "wheel": {
       "aria": "Qidahen action wheel",
@@ -124,6 +127,21 @@
         "current": "Current",
         "available": "Available"
       },
+      "primaryStageTagWheel": "Wheel Action",
+      "primaryStageTagFaction": "Faction Action",
+      "primaryStageFactionTitle": "Discard to Execute Faction Action",
+      "primaryStageWheelTitle": "Execute Wheel Action",
+      "primaryStageAvailable": "Available Now",
+      "primaryStageUnavailable": "Unavailable Now",
+      "primaryStageFactionCurrentDetail": "Current secondary action: {{label}}",
+      "primaryStageFactionDetail": "Choose a faction action first, then continue through the related region or resolution step.",
+      "primaryStageWheelDone": "This seat has already finished its wheel action.",
+      "primaryStageWheelDetail": "Every green sector is clickable. Current options: {{summary}}.",
+      "clickable": "Clickable",
+      "mapDirectClick": "Direct Map Click",
+      "mapClickable": "Map Clickable",
+      "mapDirectClickHint": "Click a green region on the map directly to complete the dispatch. The details below are only for confirming the target and amount.",
+      "currentClickableRegions": "Currently Clickable Regions",
       "status": {
         "used": "used",
         "unused": "unused"
@@ -133,8 +151,10 @@
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
       "primaryActionLabel": "Primary action",
       "primaryActionEmpty": "Not selected",
+      "wheelNextStepBadge": "Wheel Advance",
       "wheelNextStepTitle": "Next: click a wheel button to advance the turn",
       "wheelNextStepHint": "Do not click the painted wheel directly. Use the explicit button below.",
+      "wheelExecutePrompt": "Click a green sector to execute the wheel action",
       "directExecute": "Execute",
       "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
       "victory": {
@@ -152,6 +172,8 @@
         "highestFirst": "High first",
         "lowestFirst": "Low first"
       },
+      "fallbackChoices": "Fallback Buttons",
+      "fallbackChoiceList": "Fallback Button List",
       "targetUnlocked": "Unlocked",
       "gaoDi": {
         "summary": "Source {{sourceRegionName}} · Troops up to {{maxTroops}} · Population up to {{maxPopulation}}",

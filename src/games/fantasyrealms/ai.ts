@@ -364,6 +364,10 @@ const baselineLocalPolicy: LocalAiPolicy = {
 export const fantasyRealmsAiRuntime: GameAiRuntime = {
     gameId: 'fantasyrealms',
     buildLegalActions: buildFantasyRealmsAiLegalActions,
+    localVisibleStepDelayConfig: {
+        mode: 'whitelist',
+        actionKinds: ['draw-deck'],
+    },
     defaultMinimumActionDelayMs: 900,
     localPolicies: {
         baseline: baselineLocalPolicy,

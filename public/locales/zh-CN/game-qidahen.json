@@ -104,7 +104,10 @@
       "regionSpecialTroops": "特殊 {{summary}}",
       "regionPassages": "接边 {{summary}}",
       "regionReachable": "调度可达 {{summary}}",
-      "sharedPrintedRegion": "同图块"
+      "sharedPrintedRegion": "同图块",
+      "selectionGuideSource": "起",
+      "selectionContinueHint": "点击绿色目标继续",
+      "clickableRegionSummary": "可点击区域：{{summary}}"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -124,6 +127,21 @@
         "current": "当前",
         "available": "可选"
       },
+      "primaryStageTagWheel": "轮盘行动",
+      "primaryStageTagFaction": "势力行动",
+      "primaryStageFactionTitle": "弃牌执行势力行动",
+      "primaryStageWheelTitle": "进行轮盘行动",
+      "primaryStageAvailable": "当前可进入",
+      "primaryStageUnavailable": "当前不可进入",
+      "primaryStageFactionCurrentDetail": "当前二级行动：{{label}}",
+      "primaryStageFactionDetail": "先选一种势力行动，再进入对应区域或结算步骤。",
+      "primaryStageWheelDone": "本席轮盘已结算完成。",
+      "primaryStageWheelDetail": "所有绿色扇区都可点击；当前可选：{{summary}}。",
+      "clickable": "可点",
+      "mapDirectClick": "地图直点",
+      "mapClickable": "地图可点",
+      "mapDirectClickHint": "直接点击地图上的绿色区域完成调度。下列信息只用于确认目标与数量。",
+      "currentClickableRegions": "当前可点击区域",
       "status": {
         "used": "已用",
         "unused": "未用"
@@ -133,8 +151,10 @@
       "scenarioVoteBlocked": "局内剧本投票尚未完成，当前只可处理剧本介绍与投票。",
       "primaryActionLabel": "一级行动",
       "primaryActionEmpty": "未选择",
+      "wheelNextStepBadge": "轮盘推进",
       "wheelNextStepTitle": "下一步：点击轮盘按钮推进回合",
       "wheelNextStepHint": "不用点左侧轮盘盘面，直接点下面的明文按钮即可。",
+      "wheelExecutePrompt": "点击绿色扇区执行轮盘行动",
       "directExecute": "直接执行",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
       "victory": {
@@ -152,6 +172,8 @@
         "highestFirst": "高级先损",
         "lowestFirst": "低级先损"
       },
+      "fallbackChoices": "备选按钮",
+      "fallbackChoiceList": "备选按钮列表",
       "targetUnlocked": "未锁定",
       "gaoDi": {
         "summary": "源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}",

@@ -49,6 +49,7 @@ const QIDAHEN_DIRECT_INPUT_EVENT_REDUCERS = [
             event.payload.regionId,
             event.timestamp,
             event.payload.qidahenDiplomacySelection ?? null,
+            event.payload.qidahenInternalDispatchSelection ?? null,
             event.payload.qidahenWheelDispatchSelection ?? null,
         ),
     ),

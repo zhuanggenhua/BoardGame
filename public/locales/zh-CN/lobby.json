@@ -1020,7 +1020,7 @@
     },
     "mobileReleasePage": {
       "title": "发布中心",
-      "description": "集中处理 Android OTA、原生包、移动游戏包和部署回滚。",
+      "description": "集中处理 Android OTA、原生包、移动游戏包、更新部署和部署回滚。",
       "cards": {
         "product_version": "产品版本",
         "latest_ota": "最新 OTA 游标",
@@ -1059,6 +1059,7 @@
         "publish_native": "发布原生包",
         "publish_packages": "发布游戏包",
         "preview_command": "生成命令预览",
+        "execute_deploy_update": "执行更新部署",
         "execute_rollback": "执行回滚",
         "running": "执行中…"
       },
@@ -1072,6 +1073,14 @@
       },
       "native": {
         "title": "Android 原生包"
+      },
+      "deployUpdate": {
+        "title": "更新部署",
+        "tag": "镜像 tag",
+        "tag_placeholder": "留空部署最新镜像",
+        "confirm_label": "执行确认",
+        "confirm_placeholder": "输入“确认部署”后才可执行",
+        "description": "更新部署会执行服务器宿主机上的更新部署脚本。留空镜像标签时部署最新镜像；填写镜像标签时部署指定镜像。实际执行必须通过独立部署执行器，避免网页服务容器更新自己时中断控制入口。"
       },
       "rollback": {
         "title": "部署回滚",
@@ -1089,7 +1098,7 @@
       },
       "safety": {
         "title": "操作边界",
-        "description": "发布与回滚都改为后台显式操作。部署回滚只能交给服务器宿主机上的独立部署执行器执行；未配置独立部署执行器时后台只生成命令预览。"
+        "description": "发布、更新部署与回滚都改为后台显式操作。更新部署和部署回滚只能交给服务器宿主机上的独立部署执行器执行；未配置独立部署执行器时后台只生成命令预览。"
       },
       "result": {
         "title": "最近执行结果",
@@ -1110,6 +1119,7 @@
         "dry_run_success": "预演完成",
         "publish_success": "发布完成",
         "preview_success": "命令预览已生成",
+        "deploy_update_success": "更新部署命令已提交",
         "rollback_success": "回滚命令已执行"
       }
     },

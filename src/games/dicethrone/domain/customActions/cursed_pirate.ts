@@ -803,6 +803,8 @@ function requestHumanMercilessPlunder({
     state,
     timestamp,
 }: CustomActionContext): DiceThroneEvent[] {
+    if (ctx.damageDealt <= 0) return [];
+
     const resolvedTargetId = ctx?.defenderId
         ?? getPendingAttackDefenderId(state, attackerId, sourceAbilityId)
         ?? getOpponents(state, attackerId)[0];

@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { AudioManager } from '../../lib/audio/AudioManager';
+import { AudioManager, type AudioLoadState } from '../../lib/audio/AudioManager';
 import {
   COMMON_AUDIO_BASE_PATH,
   type AudioRegistryEntry,
@@ -243,8 +243,9 @@ const AudioTable: React.FC<{
   entries: AudioRegistryEntry[];
   playEntry: (entry: AudioRegistryEntry) => void;
   playingKey: string | null;
+  loadingKey: string | null;
   friendlyName: (key: string) => string;
-}> = ({ entries, playEntry, playingKey, friendlyName }) => {
+}> = ({ entries, playEntry, playingKey, loadingKey, friendlyName }) => {
   const { t } = useTranslation('lobby');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const timerRef = useRef<number>(0);
@@ -267,35 +268,43 @@ const AudioTable: React.FC<{
           </tr>
         </thead>
         <tbody>
-          {entries.slice(0, 300).map((entry) => (
-            <tr key={entry.key} className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${playingKey === entry.key ? 'bg-indigo-900/20' : ''}`}>
-              <td
-                className="px-1.5 py-0.5 cursor-pointer hover:text-indigo-300 truncate"
-                title={entry.key}
-                onClick={() => copyKey(entry.key)}
-              >
-                <span className="text-slate-200 text-[11px] flex items-center gap-1">
-                  {copiedKey === entry.key ? <Check size={12} className="text-emerald-400" /> : friendlyName(entry.key)}
-                </span>
-              </td>
-              <td className="px-1.5 py-0.5">
-                <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'}`}>
-                  {entry.type === 'bgm'
-                    ? t('devtools.audioBrowser.types.bgm')
-                    : t('devtools.audioBrowser.types.sfx')}
-                </span>
-              </td>
-              <td className="px-1.5 py-0.5 text-center">
-                <button
-                  onClick={() => playEntry(entry)}
-                  className="px-1.5 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold transition-[background-color]"
-                  title={t('devtools.audioBrowser.table.preview')}
+          {entries.slice(0, 300).map((entry) => {
+            const isLoading = loadingKey === entry.key;
+            const isPlaying = playingKey === entry.key && !isLoading;
+            return (
+              <tr key={entry.key} className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${playingKey === entry.key ? 'bg-indigo-900/20' : ''}`}>
+                <td
+                  className="px-1.5 py-0.5 cursor-pointer hover:text-indigo-300 truncate"
+                  title={entry.key}
+                  onClick={() => copyKey(entry.key)}
                 >
-                  {playingKey === entry.key ? '⏸' : '▶'}
-                </button>
-              </td>
-            </tr>
-          ))}
+                  <span className="text-slate-200 text-[11px] flex items-center gap-1">
+                    {copiedKey === entry.key ? <Check size={12} className="text-emerald-400" /> : friendlyName(entry.key)}
+                  </span>
+                </td>
+                <td className="px-1.5 py-0.5">
+                  <span className={`px-1 py-0.5 rounded text-[10px] font-bold ${entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'}`}>
+                    {entry.type === 'bgm'
+                      ? t('devtools.audioBrowser.types.bgm')
+                      : t('devtools.audioBrowser.types.sfx')}
+                  </span>
+                </td>
+                <td className="px-1.5 py-0.5 text-center">
+                  <button
+                    onClick={() => playEntry(entry)}
+                    className={`px-1.5 py-0.5 rounded text-white text-[10px] font-bold transition-[background-color] ${isLoading ? 'bg-amber-600 hover:bg-amber-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                    title={t('devtools.audioBrowser.table.preview')}
+                  >
+                    {isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : isPlaying
+                        ? '⏸'
+                        : '▶'}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {entries.length > 300 && (
@@ -321,6 +330,11 @@ interface HistoryItem {
   timestamp: number;
 }
 
+type PlaybackTarget = {
+  key: string;
+  type: AudioRegistryEntry['type'];
+};
+
 const HISTORY_STORAGE_KEY = 'audio-browser-history';
 const HISTORY_MAX = 30;
 
@@ -343,9 +357,10 @@ const HistoryPanel: React.FC<{
   history: HistoryItem[];
   replayEntry: (entry: AudioRegistryEntry) => void;
   playingKey: string | null;
+  loadingKey: string | null;
   friendlyName: (key: string) => string;
   onClear: () => void;
-}> = ({ history, replayEntry, playingKey, friendlyName, onClear }) => {
+}> = ({ history, replayEntry, playingKey, loadingKey, friendlyName, onClear }) => {
   const { t } = useTranslation('lobby');
   return (
     <div
@@ -377,37 +392,45 @@ const HistoryPanel: React.FC<{
           </div>
         ) : (
           <div className="divide-y divide-slate-700/50">
-            {history.map((item, idx) => (
-              <div
-                key={`${item.entry.key}-${item.timestamp}-${idx}`}
-                className={`px-2 py-1.5 hover:bg-slate-700/30 flex items-center gap-1.5 ${
-                  playingKey === item.entry.key ? 'bg-indigo-900/20' : ''
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] text-slate-200 truncate" title={item.entry.key}>
-                    {friendlyName(item.entry.key)}
-                  </div>
-                  <div className="text-[9px] text-slate-500">
-                    {new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </div>
-                </div>
-                <span className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-bold ${
-                  item.entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'
-                }`}>
-                  {item.entry.type === 'bgm'
-                    ? t('devtools.audioBrowser.history.bgm_short')
-                    : t('devtools.audioBrowser.history.sfx_short')}
-                </span>
-                <button
-                  onClick={() => replayEntry(item.entry)}
-                  className="shrink-0 w-5 h-5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center transition-[background-color]"
-                  title={t('devtools.audioBrowser.history.replay')}
+            {history.map((item, idx) => {
+              const isLoading = loadingKey === item.entry.key;
+              const isPlaying = playingKey === item.entry.key && !isLoading;
+              return (
+                <div
+                  key={`${item.entry.key}-${item.timestamp}-${idx}`}
+                  className={`px-2 py-1.5 hover:bg-slate-700/30 flex items-center gap-1.5 ${
+                    playingKey === item.entry.key ? 'bg-indigo-900/20' : ''
+                  }`}
                 >
-                  {playingKey === item.entry.key ? '⏸' : '▶'}
-                </button>
-              </div>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] text-slate-200 truncate" title={item.entry.key}>
+                      {friendlyName(item.entry.key)}
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      {new Date(item.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
+                  </div>
+                  <span className={`shrink-0 px-1 py-0.5 rounded text-[9px] font-bold ${
+                    item.entry.type === 'bgm' ? 'bg-emerald-900 text-emerald-300' : 'bg-indigo-900 text-indigo-300'
+                  }`}>
+                    {item.entry.type === 'bgm'
+                      ? t('devtools.audioBrowser.history.bgm_short')
+                      : t('devtools.audioBrowser.history.sfx_short')}
+                  </span>
+                  <button
+                    onClick={() => replayEntry(item.entry)}
+                    className={`shrink-0 h-5 rounded text-white text-[10px] font-bold flex items-center justify-center transition-[background-color] ${isLoading ? 'min-w-12 px-1.5 bg-amber-600 hover:bg-amber-500' : 'w-5 bg-indigo-600 hover:bg-indigo-500'}`}
+                    title={t('devtools.audioBrowser.history.replay')}
+                  >
+                    {isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : isPlaying
+                        ? '⏸'
+                        : '▶'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -430,6 +453,7 @@ const AudioBrowser: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const [loadingPlayback, setLoadingPlayback] = useState<PlaybackTarget | null>(null);
   const playingRef = useRef<{ key: string; type: string } | null>(null);
   const [phraseMappings, setPhraseMappings] = useState<Record<string, string>>({});
   const [history, setHistory] = useState<HistoryItem[]>(loadHistory);
@@ -545,6 +569,13 @@ const AudioBrowser: React.FC = () => {
     });
   }, [entries, typeFilter, selectedGroup, selectedSub, filter, friendlyName]);
 
+  const getEntryLoadState = useCallback((entry: PlaybackTarget): AudioLoadState => {
+    if (entry.type === 'bgm') {
+      return AudioManager.getBgmLoadState(entry.key);
+    }
+    return AudioManager.getSfxLoadState(entry.key);
+  }, []);
+
   /** 停止上一次播放 */
   const stopPrevious = useCallback(() => {
     const prev = playingRef.current;
@@ -555,43 +586,78 @@ const AudioBrowser: React.FC = () => {
       AudioManager.stopSfx(prev.key);
     }
     playingRef.current = null;
+    setLoadingPlayback(null);
   }, []);
 
-  /** 播放并记录历史（中间列表用） */
-  const playEntry = useCallback((entry: AudioRegistryEntry) => {
+  useEffect(() => {
+    if (!loadingPlayback) return undefined;
+
+    const syncLoadingState = () => {
+      const state = getEntryLoadState(loadingPlayback);
+      if (state === 'loading') {
+        return;
+      }
+      setLoadingPlayback((current) => (
+        current?.key === loadingPlayback.key && current.type === loadingPlayback.type
+          ? null
+          : current
+      ));
+      if (state === 'failed' || state === 'missing') {
+        setPlayingKey((current) => (current === loadingPlayback.key ? null : current));
+        if (playingRef.current?.key === loadingPlayback.key && playingRef.current.type === loadingPlayback.type) {
+          playingRef.current = null;
+        }
+      }
+    };
+
+    syncLoadingState();
+    const timer = window.setInterval(syncLoadingState, 120);
+    return () => window.clearInterval(timer);
+  }, [getEntryLoadState, loadingPlayback]);
+
+  const beginPlayback = useCallback((entry: AudioRegistryEntry, recordHistory: boolean) => {
     stopPrevious();
     if (entry.type === 'bgm') {
       AudioManager.playBgm(entry.key);
     } else {
       AudioManager.play(entry.key, undefined, () => {
         setPlayingKey(null);
+        setLoadingPlayback(null);
         playingRef.current = null;
       });
     }
+
+    const state = getEntryLoadState({ key: entry.key, type: entry.type });
+    if (state === 'missing' || state === 'failed') {
+      setPlayingKey(null);
+      setLoadingPlayback(null);
+      playingRef.current = null;
+      return;
+    }
+
     setPlayingKey(entry.key);
+    setLoadingPlayback(state === 'loading' ? { key: entry.key, type: entry.type } : null);
     playingRef.current = { key: entry.key, type: entry.type };
+
+    if (!recordHistory) return;
+
     setHistory((prev) => {
       const deduped = prev.filter((h) => h.entry.key !== entry.key);
       const next = [{ entry, timestamp: Date.now() }, ...deduped].slice(0, HISTORY_MAX);
       saveHistory(next);
       return next;
     });
-  }, [stopPrevious]);
+  }, [getEntryLoadState, stopPrevious]);
+
+  /** 播放并记录历史（中间列表用） */
+  const playEntry = useCallback((entry: AudioRegistryEntry) => {
+    beginPlayback(entry, true);
+  }, [beginPlayback]);
 
   /** 仅播放不修改历史（历史面板用） */
   const replayEntry = useCallback((entry: AudioRegistryEntry) => {
-    stopPrevious();
-    if (entry.type === 'bgm') {
-      AudioManager.playBgm(entry.key);
-    } else {
-      AudioManager.play(entry.key, undefined, () => {
-        setPlayingKey(null);
-        playingRef.current = null;
-      });
-    }
-    setPlayingKey(entry.key);
-    playingRef.current = { key: entry.key, type: entry.type };
-  }, [stopPrevious]);
+    beginPlayback(entry, false);
+  }, [beginPlayback]);
 
   useEffect(() => {
     const playKey = pendingAutoPlayKeyRef.current;
@@ -748,7 +814,13 @@ const AudioBrowser: React.FC = () => {
         {t('devtools.audioBrowser.summary.results_count', { count: filtered.length })}
       </div>
 
-              <AudioTable entries={filtered} playEntry={playEntry} playingKey={playingKey} friendlyName={friendlyName} />
+              <AudioTable
+                entries={filtered}
+                playEntry={playEntry}
+                playingKey={playingKey}
+                loadingKey={loadingPlayback?.key ?? null}
+                friendlyName={friendlyName}
+              />
             </div>
 
             {/* 右侧历史播放 */}
@@ -756,6 +828,7 @@ const AudioBrowser: React.FC = () => {
               history={history}
               replayEntry={replayEntry}
               playingKey={playingKey}
+              loadingKey={loadingPlayback?.key ?? null}
               friendlyName={friendlyName}
               onClear={clearHistory}
             />

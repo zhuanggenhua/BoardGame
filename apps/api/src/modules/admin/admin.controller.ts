@@ -20,6 +20,8 @@ import {
     AndroidOtaReleaseDto,
     DeployRollbackExecuteDto,
     DeployRollbackPreviewDto,
+    DeployUpdateExecuteDto,
+    DeployUpdatePreviewDto,
 } from './dtos/mobile-release.dto';
 import { AdminGuard } from './guards/admin.guard';
 import { Roles } from './guards/roles.decorator';
@@ -104,6 +106,20 @@ export class AdminController {
     @AdminController.AdminOnly()
     async executeDeployRollback(@Body() body: DeployRollbackExecuteDto, @Res() res: Response) {
         const result = await this.adminMobileReleaseService.executeDeployRollback(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/update/preview')
+    @AdminController.AdminOnly()
+    async previewDeployUpdate(@Body() body: DeployUpdatePreviewDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.previewDeployUpdate(body);
+        return res.status(200).json(result);
+    }
+
+    @Post('mobile-release/deploy/update/execute')
+    @AdminController.AdminOnly()
+    async executeDeployUpdate(@Body() body: DeployUpdateExecuteDto, @Res() res: Response) {
+        const result = await this.adminMobileReleaseService.executeDeployUpdate(body);
         return res.status(200).json(result);
     }
 

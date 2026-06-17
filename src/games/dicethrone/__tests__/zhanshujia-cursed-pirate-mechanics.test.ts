@@ -2737,9 +2737,15 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             'preDefense',
             { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse' },
         );
+        const smallFollowUp = resolveAbilityEffectsWithSystem(
+            smallResult.state,
+            getAbilityVariantEffects(smallResult.state.core, '0', 'light-the-fuse', 'light-the-fuse-small'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse', damageDealt: 7 },
+        );
 
         expect(smallResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(smallHpBefore - 7);
-        expect(smallResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(smallFollowUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
 
         const largeState = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         largeState.core = applyEvents(largeState.core, [{
@@ -2756,9 +2762,43 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             'preDefense',
             { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse' },
         );
+        const largeFollowUp = resolveAbilityEffectsWithSystem(
+            largeResult.state,
+            getAbilityVariantEffects(largeResult.state.core, '0', 'light-the-fuse', 'light-the-fuse-large'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse', damageDealt: 9 },
+        );
 
         expect(largeResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(largeHpBefore - 9);
-        expect(largeResult.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(largeFollowUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面点燃炸药在未造成伤害时不施加火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] = 1;
+
+        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const result = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityVariantEffects(state.core, '0', 'light-the-fuse', 'light-the-fuse-small'),
+            'preDefense',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse' },
+        );
+        const followUp = resolveAbilityEffectsWithSystem(
+            result.state,
+            getAbilityVariantEffects(result.state.core, '0', 'light-the-fuse', 'light-the-fuse-small'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'light-the-fuse', damageDealt: 0 },
+        );
+
+        expect(result.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+        expect(followUp.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
     });
 
     it('human 面判决指令会获得诅咒金币、施加休战并造成不可防御伤害', () => {
@@ -3354,6 +3394,40 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(declined.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 12);
         expect(declined.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
         expect(declined.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+    });
+
+    it('human 面无情劫掠在未造成伤害时不继续施加休战和火药桶', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] = 1;
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 0;
+
+        const hpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const damageResult = resolveAbilityEffectsWithSystem(
+            state,
+            getAbilityEffects(state.core, '0', 'merciless-plunder'),
+            'withDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'merciless-plunder' },
+        );
+
+        expect(damageResult.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore);
+
+        const result = resolveAbilityEffectsWithSystem(
+            damageResult.state,
+            getAbilityEffects(damageResult.state.core, '0', 'merciless-plunder'),
+            'postDamage',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'merciless-plunder', damageDealt: 0 },
+        );
+
+        expect(eventsOfType(result.events, 'CHOICE_REQUESTED')).toHaveLength(0);
+        expect(result.state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] ?? 0).toBe(0);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(0);
     });
 
     it('human 面无情劫掠在真实进攻 pipeline 中会于诅咒金币选择后收口攻击链', () => {

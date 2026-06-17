@@ -1,0 +1,6 @@
+{
+  "excludeKeys": [
+    "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_win_reaction",
+    "stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_lose_reaction"
+  ]
+}

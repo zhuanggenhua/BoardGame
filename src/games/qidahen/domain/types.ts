@@ -842,6 +842,7 @@ export interface RegionSelectedEvent extends GameEvent<'REGION_SELECTED'> {
         regionId: string;
         playerId: PlayerId;
         qidahenDiplomacySelection?: QidahenDiplomacySelection | null;
+        qidahenInternalDispatchSelection?: QidahenInternalDispatchSelection | null;
         qidahenWheelDispatchSelection?: QidahenWheelDispatchSelection | null;
     };
 }

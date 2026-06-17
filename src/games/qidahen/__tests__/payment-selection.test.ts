@@ -20986,7 +20986,7 @@ describe('七大恨支付手牌选择', () => {
         });
     });
 
-    it('高第与王化贞人物窗口内点逻辑区宁远时，会把 selectedRegionId 与来源区重建到真实运行时区域', () => {
+    it('高第与王化贞人物窗口内点逻辑区宁远时，高第会重建来源区，王化贞会按真实运行时目标直接完成调度', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '0';
         core.selectedRegionId = 'city-region-25';
@@ -21080,12 +21080,15 @@ describe('七大恨支付手牌选择', () => {
             payload: { regionId: 'ning-yuan' },
         });
 
-        expect(retargetedWang.turnPhase).toBe('internal-dispatch-choice');
+        expect(retargetedWang.turnPhase).toBe('action-window');
         expect(retargetedWang.selectedRegionId).toBe('city-region-24');
-        expect(getInternalDispatchSelection(retargetedWang)).toMatchObject({
-            sourceRegionId: 'city-region-24',
-            sourceRegionName: '宁远',
+        expect(retargetedWang.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
+            troops: 0,
         });
+        expect(retargetedWang.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
+            troops: 4,
+        });
+        expect(retargetedWang.actionLog[0]?.text).toContain('王化贞令 山海关 向 宁远 免费调度 1 个部队');
     });
 
     it('高第弃 1 张手牌后可以按所选数量调度部队到相邻友方区域', () => {
@@ -21490,7 +21493,7 @@ describe('七大恨支付手牌选择', () => {
         expect(resolved.actionLog[0]?.text).toContain('增援围城部队 2 个部队');
     });
 
-    it('王化贞在场时会在新的大明行动窗口前进入免费内部调度选择，且同一窗口不重复触发', () => {
+    it('王化贞在场时会在新的大明行动窗口前进入免费内部调度选择，点击绿色目标后本窗口不重复触发', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '0';
         core.selectedRegionId = 'song-jin';
@@ -21554,16 +21557,33 @@ describe('七大恨支付手牌选择', () => {
         ]));
         expect(firstWindow.actionLog[0]?.text).toContain('王化贞可在行动前免费调度 2 个部队');
 
-        const sameWindow = apply(firstWindow, {
+        const resolved = apply(firstWindow, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '0',
             payload: { regionId: 'city-region-24' },
         });
 
-        expect(sameWindow.turnPhase).toBe('internal-dispatch-choice');
-        expect(sameWindow.selectedRegionId).toBe('city-region-24');
-        expect(getInternalDispatchSelection(sameWindow)?.sourceRegionId).toBe('city-region-24');
-        expect(sameWindow.actionLog[0]?.text).toBe(firstWindow.actionLog[0]?.text);
+        expect(resolved.turnPhase).toBe('action-window');
+        expect(resolved.selectedRegionId).toBe('city-region-24');
+        expect(resolved.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
+            troops: 1,
+        });
+        expect(resolved.regions.find((region) => region.id === 'city-region-24')).toMatchObject({
+            troops: 3,
+        });
+        expect(resolved.actionLog[0]?.text).toContain('王化贞令 山海关 向 宁远 免费调度 2 个部队');
+
+        const sameWindow = apply(resolved, {
+            type: QIDAHEN_COMMANDS.SELECT_REGION,
+            playerId: '0',
+            payload: { regionId: 'city-region-25' },
+        });
+
+        expect(sameWindow.turnPhase).toBe('action-window');
+        expect(sameWindow.selectedRegionId).toBe('city-region-25');
+        expect(sameWindow.regions.find((region) => region.id === 'city-region-25')?.troops).toBe(1);
+        expect(sameWindow.regions.find((region) => region.id === 'city-region-24')?.troops).toBe(3);
+        expect(sameWindow.actionLog[0]?.text).toBe(resolved.actionLog[0]?.text);
     });
 
     it('王化贞内部调度会真实把 2 个部队从源区搬到友方目标区', () => {

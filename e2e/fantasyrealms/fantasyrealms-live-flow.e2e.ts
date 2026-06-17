@@ -898,11 +898,16 @@ test.describe('FantasyRealms live flow', () => {
             await expect(winnerRow).toHaveAttribute('data-rank-tone', 'gold');
             await expect(winnerRow.getByLabel('胜者')).toBeVisible();
             await expect(winnerRow.locator('.fr-live-endgame-rank-order').getByLabel('胜者')).toBeVisible();
-            await expect(winnerRow.locator('[data-score-animation="count-up"]')).toHaveAttribute(
-                'data-target-score',
-                String(winnerStanding.score),
-            );
-            await page.waitForTimeout(320);
+            await expect(winnerRow.locator('[data-score-role="final-score"]')).toHaveText(String(winnerStanding.score));
+            const liveScoreTotal = page.getByTestId('fantasyrealms-live-score-total');
+            await expect(liveScoreTotal).toHaveAttribute('data-score-animation', 'settlement-sequence');
+            await expect(liveScoreTotal).toHaveAttribute('data-score-target', String(winnerStanding.score));
+            await page.waitForTimeout(260);
+            await expect(page.getByTestId('fantasyrealms-live-score-step')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-endgame-card-delta')).toBeVisible();
+            const animatedTotalValue = Number(await liveScoreTotal.getAttribute('data-score-current'));
+            expect(animatedTotalValue).toBeGreaterThan(0);
+            expect(animatedTotalValue).toBeLessThan(winnerStanding.score);
             const animationEvidencePath = getEvidenceScreenshotPath(testInfo, '计分动画进行中');
             await mkdir(dirname(animationEvidencePath), { recursive: true });
             await page.screenshot({ path: animationEvidencePath, fullPage: false });
@@ -933,11 +938,10 @@ test.describe('FantasyRealms live flow', () => {
                     await expect(row).toHaveAttribute('data-rank-tone', rankTone);
                 }
                 await expect(row.locator('.fr-live-endgame-rank-score')).toHaveText(String(standing.score));
-                await expect(row.locator('[data-score-animation="count-up"]')).toHaveAttribute(
-                    'data-target-score',
-                    String(standing.score),
-                );
+                await expect(row.locator('[data-score-role="final-score"]')).toHaveText(String(standing.score));
             }
+            await expect(liveScoreTotal).toHaveAttribute('data-score-current', String(winnerStanding.score));
+            await expect(liveScoreTotal).toHaveAttribute('data-score-running', 'false');
             const evidencePath = getEvidenceScreenshotPath(testInfo, '终局最终排名');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });

@@ -63,6 +63,55 @@ const server = createServer(async (req, res) => {
             return;
         }
 
+        if (req.method === 'POST' && req.url === '/deploy/update/preview') {
+            if (!authorize(req)) {
+                sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+                return;
+            }
+            const body = await readJson(req);
+            const args = buildUpdateArgs(body);
+            sendJson(res, 200, {
+                ok: true,
+                mode: 'preview',
+                command: buildDeployCommand(args),
+                output: 'Deploy runner preview only. No command was executed.',
+            });
+            return;
+        }
+
+        if (req.method === 'POST' && req.url === '/deploy/update/execute') {
+            if (!authorize(req)) {
+                sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+                return;
+            }
+            if (!deployScriptReady()) {
+                sendJson(res, 503, { ok: false, error: 'Deploy script not found' });
+                return;
+            }
+            if (activeJobId) {
+                sendJson(res, 409, { ok: false, error: 'Deploy runner is busy', activeJobId });
+                return;
+            }
+
+            const body = await readJson(req);
+            if (body.confirmText !== '确认部署') {
+                sendJson(res, 400, { ok: false, error: 'Confirmation text mismatch' });
+                return;
+            }
+
+            const args = buildUpdateArgs(body);
+            const job = createJob(args);
+            runDeployJob(job, args);
+            sendJson(res, 202, {
+                ok: true,
+                mode: 'execute',
+                jobId: job.id,
+                command: job.command,
+                output: 'Deploy update job accepted by independent runner.',
+            });
+            return;
+        }
+
         if (req.method === 'POST' && req.url === '/deploy/rollback/execute') {
             if (!authorize(req)) {
                 sendJson(res, 401, { ok: false, error: 'Unauthorized' });
@@ -169,6 +218,20 @@ function buildRollbackArgs(body) {
         return ['rollback-last'];
     }
     throw new Error('Unsupported rollback action');
+}
+
+function buildUpdateArgs(body) {
+    if (!body || typeof body !== 'object') {
+        throw new Error('Request body is required');
+    }
+    const tag = typeof body.tag === 'string' ? body.tag.trim() : '';
+    if (!tag) {
+        return ['update'];
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(tag)) {
+        throw new Error('Invalid image tag');
+    }
+    return ['update', tag];
 }
 
 function createJob(args) {

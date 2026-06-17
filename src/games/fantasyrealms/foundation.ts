@@ -29,6 +29,16 @@ export type FantasyRealmsScoreLine = {
     value: number;
 };
 
+export type FantasyRealmsScoreCardDelta = {
+    cardId: string;
+    label: string;
+    baseScore: number;
+    bonus: number;
+    penalty: number;
+    totalDelta: number;
+    isVirtual?: boolean;
+};
+
 export const FANTASY_REALMS_HAND_CARD_SLOTS = 7;
 export const FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD = 10;
 export const FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD = 12;

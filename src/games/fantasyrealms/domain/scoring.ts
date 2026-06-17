@@ -1,6 +1,12 @@
 import type { GameOverResult, PlayerId } from '../../../engine/types';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../data/cards';
-import type { FantasyRealmsScoreLine, FantasyRealmsSuit, TableCard } from '../foundation';
+import {
+    getFantasyRealmsCardDisplayName,
+    type FantasyRealmsScoreCardDelta,
+    type FantasyRealmsScoreLine,
+    type FantasyRealmsSuit,
+    type TableCard,
+} from '../foundation';
 
 type EffectiveCard = {
     instanceId: string;
@@ -21,6 +27,7 @@ type EvaluationCandidate = {
     totalPenalty: number;
     tiebreakBaseScore: number;
     extraCardId?: string;
+    cardDeltas: FantasyRealmsScoreCardDelta[];
 };
 
 export type FantasyRealmsScoreEvaluation = EvaluationCandidate & {
@@ -577,7 +584,40 @@ function computePenalty(card: EffectiveCard, activeCards: readonly EffectiveCard
     }
 }
 
-function evaluateFixedCards(cards: readonly EffectiveCard[], islandTargetId?: string, extraCardId?: string): EvaluationCandidate {
+function buildCardDeltas(
+    cards: readonly EffectiveCard[],
+    activeCards: readonly EffectiveCard[],
+    originalHandIds: ReadonlySet<string>,
+    islandTargetId?: string,
+): FantasyRealmsScoreCardDelta[] {
+    const activeInstanceIds = new Set(activeCards.map((card) => card.instanceId));
+
+    return cards.map((card) => {
+        const isActive = activeInstanceIds.has(card.instanceId);
+        const baseScore = isActive ? card.baseScore : 0;
+        const bonus = isActive ? computeBonus(card, activeCards) : 0;
+        const penalty = isActive && !isPenaltyCleared(card, cards, islandTargetId)
+            ? computePenalty(card, activeCards)
+            : 0;
+
+        return {
+            cardId: card.sourceId,
+            label: getFantasyRealmsCardDisplayName(card.sourceCard),
+            baseScore,
+            bonus,
+            penalty,
+            totalDelta: baseScore + bonus - penalty,
+            isVirtual: !originalHandIds.has(card.instanceId),
+        };
+    });
+}
+
+function evaluateFixedCards(
+    cards: readonly EffectiveCard[],
+    originalHandIds: ReadonlySet<string>,
+    islandTargetId?: string,
+    extraCardId?: string,
+): EvaluationCandidate {
     const activeCards = getActiveCards(cards, islandTargetId);
     const activeBaseScore = activeCards.reduce((sum, card) => sum + card.baseScore, 0);
 
@@ -594,6 +634,7 @@ function evaluateFixedCards(cards: readonly EffectiveCard[], islandTargetId?: st
         totalPenalty,
         tiebreakBaseScore: cards.reduce((sum, card) => sum + card.baseScore, 0),
         extraCardId,
+        cardDeltas: buildCardDeltas(cards, activeCards, originalHandIds, islandTargetId),
     };
 }
 
@@ -607,6 +648,7 @@ function compareCandidates(a: EvaluationCandidate | null, b: EvaluationCandidate
 
 function findBestScoreCandidate(hand: readonly TableCard[], discardPile: readonly TableCard[]): EvaluationCandidate {
     let best: EvaluationCandidate | null = null;
+    const originalHandIds = new Set(hand.map((card) => card.id));
 
     for (const necromancerExtra of getNecromancerExtraChoices(hand, discardPile)) {
         const handWithExtra = necromancerExtra ? [...hand, necromancerExtra] : [...hand];
@@ -624,6 +666,7 @@ function findBestScoreCandidate(hand: readonly TableCard[], discardPile: readonl
                         for (const islandTargetId of getIslandTargetChoices(withBook)) {
                             best = compareCandidates(best, evaluateFixedCards(
                                 withBook,
+                                originalHandIds,
                                 islandTargetId,
                                 necromancerExtra?.id,
                             ));
@@ -640,6 +683,7 @@ function findBestScoreCandidate(hand: readonly TableCard[], discardPile: readonl
         totalBonus: 0,
         totalPenalty: 0,
         tiebreakBaseScore: 0,
+        cardDeltas: [],
     };
 }
 
@@ -653,6 +697,7 @@ export function evaluateFantasyRealmsScore(
         return {
             ...cached,
             scoreBreakdown: cached.scoreBreakdown.map((line) => ({ ...line })),
+            cardDeltas: cached.cardDeltas.map((entry) => ({ ...entry })),
         };
     }
 
@@ -664,11 +709,13 @@ export function evaluateFantasyRealmsScore(
             { label: '总加分', value: best.totalBonus },
             { label: '总减分', value: -best.totalPenalty },
         ],
+        cardDeltas: best.cardDeltas.map((entry) => ({ ...entry })),
     };
 
     SCORE_CACHE.set(cacheKey, {
         ...evaluation,
         scoreBreakdown: evaluation.scoreBreakdown.map((line) => ({ ...line })),
+        cardDeltas: evaluation.cardDeltas.map((entry) => ({ ...entry })),
     });
 
     return evaluation;

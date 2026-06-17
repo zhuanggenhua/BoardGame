@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyPlayerViewToState, resolveNextLocalAiAction } from '../../../engine/ai';
+import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import type { MatchState } from '../../../engine/types';
 import manifest from '../manifest';
 import { fantasyRealmsAiRuntime } from '../ai';
@@ -623,6 +624,28 @@ describe('FantasyRealms AI runtime', () => {
 
         expect(discardProtectionRune.totalScore).toBe(discardLightning.totalScore);
         expect(discardLightning.tiebreakBaseScore).toBeLessThan(discardProtectionRune.tiebreakBaseScore);
+    });
+
+    it('本地 AI 只让摸牌库保留可见延迟，拿公开牌与弃牌都应瞬发', () => {
+        const drawDeckAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDrawDecisionCore()),
+        }).find((action) => action.kind === 'draw-deck');
+        const takeDiscardAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDrawDecisionCore()),
+        }).find((action) => action.kind === 'take-discard');
+        const discardAction = fantasyRealmsAiRuntime.buildLegalActions({
+            playerId: '0',
+            state: stateOf(createDiscardDecisionCore()),
+        }).find((action) => action.kind === 'discard-card');
+
+        expect(drawDeckAction).toBeTruthy();
+        expect(takeDiscardAction).toBeTruthy();
+        expect(discardAction).toBeTruthy();
+        expect(resolveLocalAiActionVisibility(drawDeckAction!, fantasyRealmsAiRuntime)).toBe('visible');
+        expect(resolveLocalAiActionVisibility(takeDiscardAction!, fantasyRealmsAiRuntime)).toBe('hidden');
+        expect(resolveLocalAiActionVisibility(discardAction!, fantasyRealmsAiRuntime)).toBe('hidden');
     });
 });
 

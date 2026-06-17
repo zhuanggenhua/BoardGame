@@ -8,6 +8,8 @@ import type {
     AndroidOtaReleaseDto,
     DeployRollbackExecuteDto,
     DeployRollbackPreviewDto,
+    DeployUpdateExecuteDto,
+    DeployUpdatePreviewDto,
 } from './dtos/mobile-release.dto';
 
 type ReleaseOutput = {
@@ -48,6 +50,12 @@ type DeployRunnerResponse = {
     command?: string;
     output?: string;
     error?: string;
+};
+
+type DeployRunnerRequest = {
+    action?: string;
+    tag?: string;
+    confirmText?: string;
 };
 
 const OUTPUT_LIMIT = 200_000;
@@ -91,6 +99,8 @@ export class AdminMobileReleaseService {
             },
             deploy: {
                 statusCommand: this.buildDeployCommand(['status']),
+                updateCommand: this.buildDeployCommand(['update']),
+                updateExecutionEnabled: this.isDeployRunnerConfigured(),
                 rollbackLastCommand: this.buildDeployCommand(['rollback-last']),
                 rollbackExecutionEnabled: this.isDeployRunnerConfigured(),
                 rollbackLastTarget: await this.resolveDeployRollbackTarget({ action: 'rollback-last' }),
@@ -225,6 +235,49 @@ export class AdminMobileReleaseService {
                 target,
                 parsed: {},
                 output: result.output ?? '部署回滚任务已提交到独立 runner。',
+            };
+        } finally {
+            this.running = false;
+        }
+    }
+
+    async previewDeployUpdate(dto: DeployUpdatePreviewDto) {
+        const args = this.buildDeployUpdateArgs(dto);
+        return {
+            ok: true,
+            mode: 'preview',
+            command: this.buildDeployCommand(args),
+            output: this.isDeployRunnerConfigured()
+                ? '已配置独立部署 runner。请确认目标后再执行更新部署。'
+                : '未配置独立部署 runner，当前只生成更新部署命令预览。',
+        };
+    }
+
+    async executeDeployUpdate(dto: DeployUpdateExecuteDto) {
+        const args = this.buildDeployUpdateArgs(dto);
+        if (!this.isDeployRunnerConfigured()) {
+            throw new HttpException({
+                message: '未配置独立部署 runner。请在服务器宿主机启动 deploy runner，并配置 BG_DEPLOY_RUNNER_URL 与 BG_DEPLOY_RUNNER_TOKEN。',
+                error: '独立部署 runner 未配置',
+            }, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        if (dto.confirmText !== '确认部署') {
+            throw new HttpException('请在确认框输入“确认部署”后再执行', HttpStatus.BAD_REQUEST);
+        }
+        if (this.running) {
+            throw new ConflictException('已有发布或部署任务正在执行');
+        }
+
+        this.running = true;
+        try {
+            const result = await this.callDeployRunner('/deploy/update/execute', dto);
+            return {
+                ok: result.ok ?? true,
+                mode: result.mode ?? 'execute',
+                jobId: result.jobId,
+                command: result.command ?? this.buildDeployCommand(args),
+                parsed: {},
+                output: result.output ?? '更新部署任务已提交到独立 runner。',
             };
         } finally {
             this.running = false;
@@ -392,6 +445,14 @@ export class AdminMobileReleaseService {
         return ['rollback-last'];
     }
 
+    private buildDeployUpdateArgs(dto: DeployUpdatePreviewDto) {
+        const tag = dto.tag?.trim();
+        if (!tag) {
+            return ['update'];
+        }
+        return ['update', tag];
+    }
+
     private isDeployRunnerConfigured() {
         return Boolean(this.getDeployRunnerConfig());
     }
@@ -408,7 +469,7 @@ export class AdminMobileReleaseService {
         };
     }
 
-    private async callDeployRunner(pathname: string, body: DeployRollbackExecuteDto): Promise<DeployRunnerResponse> {
+    private async callDeployRunner(pathname: string, body: DeployRunnerRequest): Promise<DeployRunnerResponse> {
         const config = this.getDeployRunnerConfig();
         if (!config) {
             throw new HttpException('独立部署 runner 未配置', HttpStatus.SERVICE_UNAVAILABLE);

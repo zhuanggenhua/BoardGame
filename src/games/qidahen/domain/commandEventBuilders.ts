@@ -10,6 +10,7 @@ import { getCurrentFactionId } from './factionTurnAccessors';
 import {
     getQidahenDiplomacySelectionFromInteraction,
     getQidahenDriveTigerConsentSelectionFromInteraction,
+    getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenWheelDispatchSelectionFromInteraction,
 } from './interactionSelectionAccessors';
 import { buildQidahenResolvedCommandEvents } from './resolvedCommandEventBuilders';
@@ -100,6 +101,7 @@ const buildQidahenRegionSelectedEvent = (
             regionId: command.payload.regionId,
             playerId: command.playerId,
             qidahenDiplomacySelection: getQidahenDiplomacySelectionFromInteraction(currentInteraction),
+            qidahenInternalDispatchSelection: getQidahenInternalDispatchSelectionFromInteraction(currentInteraction),
             qidahenWheelDispatchSelection: getQidahenWheelDispatchSelectionFromInteraction(currentInteraction)
                 ?? driveTigerConsentSelection?.dispatchSelection
                 ?? null,

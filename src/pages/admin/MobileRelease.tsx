@@ -55,6 +55,8 @@ type AndroidReleaseStatus = {
     };
     deploy: {
         statusCommand: string;
+        updateCommand: string;
+        updateExecutionEnabled: boolean;
         rollbackLastCommand: string;
         rollbackExecutionEnabled: boolean;
         rollbackLastTarget?: DeployRollbackTarget;
@@ -136,6 +138,9 @@ export default function MobileReleasePage() {
     const [packageGameId, setPackageGameId] = useState('');
     const [packageManifestOnly, setPackageManifestOnly] = useState(false);
 
+    const [deployUpdateTag, setDeployUpdateTag] = useState('');
+    const [deployUpdateConfirmText, setDeployUpdateConfirmText] = useState('');
+
     const [rollbackAction, setRollbackAction] = useState<'rollback-last' | 'rollback'>('rollback-last');
     const [rollbackTag, setRollbackTag] = useState('');
     const [rollbackConfirmText, setRollbackConfirmText] = useState('');
@@ -174,6 +179,12 @@ export default function MobileReleasePage() {
     const canPublishOta = Boolean(canRunOta && status?.releaseReady.r2Configured);
     const canPublishNative = Boolean(canRunNative && status?.releaseReady.r2Configured);
     const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.r2Configured);
+    const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);
+    const canExecuteDeployUpdate = Boolean(
+        canPreviewDeployUpdate
+        && status?.deploy.updateExecutionEnabled
+        && deployUpdateConfirmText === '确认部署',
+    );
     const canPreviewRollback = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteRollback = Boolean(
         canPreviewRollback
@@ -422,6 +433,54 @@ export default function MobileReleasePage() {
                                     }, 'toast.publish_success')}
                                 >
                                     {busyAction === 'packages-publish' ? runningText : pageT('actions.publish_packages')}
+                                </ActionButton>
+                            </ActionRow>
+                        </ReleaseSection>
+
+                        <ReleaseSection icon={<Server size={18} className="text-emerald-600" />} title={pageT('deployUpdate.title')}>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.tag')}</span>
+                                    <input
+                                        value={deployUpdateTag}
+                                        onChange={(event) => setDeployUpdateTag(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder={pageT('deployUpdate.tag_placeholder')}
+                                    />
+                                </label>
+                                <label className="space-y-1.5">
+                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.confirm_label')}</span>
+                                    <input
+                                        value={deployUpdateConfirmText}
+                                        onChange={(event) => setDeployUpdateConfirmText(event.target.value)}
+                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                        placeholder={pageT('deployUpdate.confirm_placeholder')}
+                                    />
+                                </label>
+                            </div>
+                            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+                                {pageT('deployUpdate.description')}
+                            </div>
+                            <ActionRow>
+                                <ActionButton
+                                    icon={<CheckCircle2 size={16} />}
+                                    disabled={!canPreviewDeployUpdate}
+                                    onClick={() => void runAction('deploy-update-preview', '/mobile-release/deploy/update/preview', {
+                                        tag: deployUpdateTag.trim() || undefined,
+                                    }, 'toast.preview_success')}
+                                >
+                                    {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
+                                </ActionButton>
+                                <ActionButton
+                                    icon={<Rocket size={16} />}
+                                    variant="primary"
+                                    disabled={!canExecuteDeployUpdate}
+                                    onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
+                                        tag: deployUpdateTag.trim() || undefined,
+                                        confirmText: deployUpdateConfirmText,
+                                    }, 'toast.deploy_update_success')}
+                                >
+                                    {busyAction === 'deploy-update-execute' ? runningText : pageT('actions.execute_deploy_update')}
                                 </ActionButton>
                             </ActionRow>
                         </ReleaseSection>

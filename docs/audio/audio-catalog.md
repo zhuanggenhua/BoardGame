@@ -1,7 +1,7 @@
 # 音效语义目录
 
 > 自动生成。`node scripts/audio/generate_audio_catalog.js`
-> 11641 条 → 612 组
+> 11639 条 → 612 组
 
 ## 查找流程
 
@@ -31,7 +31,7 @@
 | retro | 1 | 165 |  |
 | status | 21 | 352 | 状态（buff/debuff/治疗/中毒） |
 | steampunk | 6 | 194 | 蒸汽朋克（齿轮/蒸汽） |
-| stinger | 8 | 22 | 过场（胜利/失败） |
+| stinger | 8 | 20 | 过场（胜利/失败） |
 | system | 10 | 501 | 系统（移动/通知/庆祝） |
 | token | 8 | 35 | Token（放置/拾取） |
 | ui | 28 | 807 | UI（点击/弹窗/通知/信号） |
@@ -690,7 +690,7 @@
 | musc_reaction_theme | 1 | `stinger.*musc_reaction_theme` |  |
 | musc_retro_theme | 1 | `stinger.*musc_retro_theme` |  |
 | musc_sports_theme | 1 | `stinger.*musc_sports_theme` |  |
-| stinger | 14 | `stinger.*stinger` | action_lose, action_win, lose_cute, lose_c... |
+| stinger | 12 | `stinger.*stinger` | action_lose, action_win, lose_cute, lose_c... |
 
 ## system
 
