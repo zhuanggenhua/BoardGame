@@ -9,7 +9,7 @@
 - `ANDROID_VITE_BACKEND_URL` 只作为兼容旧配置的别名，不再是唯一入口。
 - OTA 对象存储仍使用 GitHub Secrets：`R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`。
 - 推荐最小配置：
-  - Variables: `VITE_BACKEND_URL`、`VITE_ASSETS_BASE_URL`、`ANDROID_OTA_AUTO_CHANNEL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
+  - Variables: `VITE_BACKEND_URL`、`VITE_ASSETS_BASE_URL`、`CAPACITOR_APP_ID`、`CAPACITOR_APP_NAME`
   - Secrets: `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET_NAME`
 
 ## 命令
@@ -362,22 +362,24 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 
 如果走 GitHub Actions 自动化：
 
-- `main` 分支合入影响 H5 bundle 的改动后，会自动发布 **stable OTA**
-- `gray` / `edge` 仍可通过 Actions `Android OTA Publish` 手动触发（`stable` 也可手动重发）
-- 如需人工审批，可在**手动** OTA workflow 上绑定 `android-ota-production` Environment
-- **原生壳更新始终手动发包**，不走 `main` 自动流程
-- 手动触发时，workflow 只保留 `force_update`、`force_update_title`、`force_update_message`；原生版本门禁参数已移除
+- 只允许通过 Actions `Android OTA Publish` 手动触发；普通 `push main` 不得自动发布 **stable OTA**。
+- `stable` 应绑定 `android-ota-production` Environment 审批。
+- **原生壳更新始终手动发包**，不走 `main` 自动流程。
+- 手动触发时，workflow 只保留发布必要参数；原生版本门禁参数已移除。
+- 如需桥接旧客户端曾经记住的错误大版本，可填 `ota_version_base=6.0.0`，生成 `6.0.0-ota-...` 内部游标。
 
 推荐发布策略：
 
-1. 日常合并到 `main`：自动发 **stable OTA**
-2. 灰度/测试机验证：手动发 `gray` 或 `edge`
-3. 需要原生壳更新时：手动发 native update（与 OTA 独立）
+1. 日常合并到 `main`：只跑常规 CI，不自动改 Android OTA 最新入口。
+2. 灰度/测试机验证：手动发 `gray` 或 `edge`。
+3. 确认后：手动发 `stable`，由环境审批保护。
+4. 需要原生壳更新时：手动发 native update（与 OTA 独立）。
 
 可选参数：
 
 - `--channel <name>`：发布 channel，例如 `stable`、`gray`
 - `--version <bundleVersion>`：手动指定 bundle 版本号
+- `--ota-version-base <semver>`：未显式指定 `--version` 时，用于生成 bundle 内部游标；可与 `package.json.version` 解耦
 - `--native-version <version>`：当前打包对应的原生版本，默认取 `package.json.version`
 - `--force-update`：这次 OTA 下载完成后立即切换 bundle
 - `--no-force-update`：关闭“下载完成后立即切换”的行为
@@ -470,7 +472,7 @@ Manifest 字段说明：
 1. OTA 默认面向所有已安装版本，不再通过 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做分流。
 2. 如需客户端下载完成后立即切换 bundle，可显式传 `--force-update`。
 3. 如果改动涉及原生能力、权限、插件或壳层代码，仍然要另外发原生 APK / AAB；不要把 OTA 当成原生更新替代品。
-4. 正式 OTA 的 bundle 版本必须继续沿用既有命名口径：`package.json.version-ota-UTC时间戳`。切换发布入口（本地脚本 / GitHub Actions / 手工补发）时，不得擅自改成 `gha-*`、run number 或其他临时展示格式。
+4. 正式 OTA 的 bundle 版本必须继续沿用 `<ota-version-base>-ota-UTC时间戳` 或人工显式 `--version` 口径。默认 `ota-version-base=package.json.version`；桥接旧客户端时可临时升到更高内部游标，例如 `6.0.0`。客户端升级主判断依赖这个内部游标单调递增，`publishedAt` 只用于审计和展示。切换发布入口（本地脚本 / GitHub Actions / 手工补发）时，不得擅自改成 `gha-*`、run number 或其他临时展示格式。
 
 推荐命令：
 
@@ -510,7 +512,6 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update
 
 - `VITE_BACKEND_URL`
 - `VITE_ASSETS_BASE_URL`
-- `ANDROID_OTA_AUTO_CHANNEL`
 - `ANDROID_OTA_APP_READY_TIMEOUT_MS`
 - `CAPACITOR_APP_ID`
 - `CAPACITOR_APP_NAME`
@@ -529,14 +530,10 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update
 
 ## GitHub Actions 自动化策略
 
-- 目标口径是：H5 本体改动自动发 OTA，原生壳改动仍然走重新打包发包。
-- 推荐做法：
-  - `main` 合入后自动发布 `edge`
-  - `gray` / `stable` 保留人工触发
-  - `stable` 绑定 Environment 审批
-- 不建议把 `stable` 也做成完全自动：
-  - 本体更新虽然不需要重新发 APK，但仍可能影响大厅、主页、房间和对局体验
-  - 给 `stable` 保留一道人工确认，可以避免把坏 bundle 直接推给所有已安装用户
+- 目标口径是：CI 可以构建和校验，但不能因为普通协作者 push 就切换正式 Android OTA 最新入口。
+- `gray` / `stable` 保留人工触发或后台发布触发。
+- `stable` 绑定 Environment 审批。
+- 本体更新虽然不需要重新发 APK，但仍可能影响大厅、主页、房间和对局体验；正式包必须保留一个明确的发布动作。
 
 ## 关键约束
 

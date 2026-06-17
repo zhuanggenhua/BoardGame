@@ -62,6 +62,45 @@ bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```
 
+### 后台部署回滚执行器
+
+发布中心里的“执行回滚”不应由 `boardgame-web` 容器自己执行，否则回滚过程中可能重启或替换当前容器，导致控制请求中断、结果不可知。
+
+生产环境应在宿主机安装独立 systemd 服务：
+
+```bash
+cd /home/admin/BoardGame
+bash scripts/deploy/install-deploy-runner.sh
+```
+
+安装脚本会创建并启动 `boardgame-deploy-runner.service`，默认以 `root` 运行，确保它能执行 Docker 部署 / 回滚命令。若确认某个非 root 用户已经具备 Docker 权限，也可以安装时传 `RUNNER_USER=admin`。脚本会输出一串 `BG_DEPLOY_RUNNER_TOKEN`，把这串 token 写入服务器 `.env`：
+
+```bash
+BG_DEPLOY_RUNNER_URL=http://host.docker.internal:18761
+BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
+```
+
+然后按正常部署链路更新 `boardgame-web` 容器，让环境变量进入容器：
+
+```bash
+bash scripts/deploy/deploy-image.sh update
+```
+
+验证：
+
+```bash
+systemctl status boardgame-deploy-runner
+curl http://127.0.0.1:18761/health
+```
+
+约束：
+
+- runner 是宿主机服务，不放进 `docker-compose.prod.yml` 管理的服务列表。
+- runner 默认优先监听 Docker 网桥地址，供 `web` 容器通过 `host.docker.internal` 访问；不要把它当公网 HTTP 入口使用。
+- `docker-compose.prod.yml` 只给 `web` 容器注入 `BG_DEPLOY_RUNNER_URL` / `BG_DEPLOY_RUNNER_TOKEN`，让后台调用 runner。
+- runner 默认执行 `scripts/deploy/deploy-image.sh rollback-last` 或 `rollback <tag>`，并要求确认文案与 token。
+- 如果未配置 token 或 runner 不可达，后台只能生成回滚命令预览，不能执行回滚。
+
 ### 固定版本部署（仅明确指定 / 回滚排障）
 
 ```bash
@@ -249,12 +288,11 @@ node scripts/mobile/release-android.mjs ota --channel stable
 
 GitHub Actions 自动化：
 
-- 自动正式发版 workflow：`.github/workflows/android-push-release.yml`
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
-- `main` 自动发版：命中 Android H5 相关路径后，自动发布 **stable OTA**；**原生壳仍需手动发包**
-- 自动版本管理：默认会在自动发版成功后把 `package.json` / `package-lock.json` 自动递增到下一个 patch 版本，并回推一个带 `[skip android release]` 的 bot commit，避免发版循环；如需临时关闭，可把仓库变量 `ANDROID_AUTO_BUMP_VERSION` 设为 `false`
-- 手动触发：仍可手动选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`
-- 正式门禁：如需人工审批，可在**手动** OTA workflow 上绑定 `android-ota-production` Environment
+- 普通 `push main` 不得自动发布 **stable OTA**，也不得自动回写版本号。
+- 手动触发：可选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`、`ota_version_base`。
+- 正式门禁：`stable` 应绑定 `android-ota-production` Environment 审批。
+- OTA 内部游标：客户端按 bundle `version` 这个单调递增游标判断新旧；`publishedAt` 只用于审计和展示。若旧客户端曾记住错误大版本，例如 `5.9.0`，可用 `ota_version_base=6.0.0` 发桥接包。
 - 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本默认都必须收到 OTA。若误传这些参数，发布脚本必须直接失败。
 
 约束：
@@ -295,6 +333,8 @@ GitHub Actions 自动化：
 >
 > 禁止在生产服务器上直接运行 `docker compose up -d`，因为默认使用 `docker-compose.yml` 而非 `docker-compose.prod.yml`，两者的端口映射和环境变量配置不同。
 >
+> **部署回滚执行边界**：后台发布中心不直接在 `boardgame-web` 容器内执行部署 / 回滚脚本。实际执行者必须是宿主机上的 `boardgame-deploy-runner` systemd 服务；这样 `deploy-image.sh` 重启或替换 `boardgame-web` 时，控制部署回滚的进程不会一起被停掉。
+>
 > **当前部署脚本已内建 post-deploy smoke + 自动回退**：更新后会自动等待关键容器 ready，并检查首页、`/health`、`/notifications`。若新版本 smoke 失败，脚本会自动回退到部署前实际运行的 `web` / `game-server` 镜像引用，并再次执行 smoke。即使自动回退成功，本次更新命令仍会以失败状态退出，用于明确提示“服务已恢复，但升级未成功”。
 
 ## 同域策略
@@ -310,6 +350,7 @@ GitHub Actions 自动化：
   - 本地开发：`docker-compose.yml`（同样使用 ghcr 预构建镜像）
   - 对外仅暴露 `web`（单体），`game-server` 仅容器网络内通信
   - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
 ## 资源 /assets 与对象存储映射（官方）
 
@@ -347,20 +388,21 @@ GitHub Actions 自动化：
 
 Android OTA 产物也走同一个对象存储桶，但前缀独立：
 
-1. 日常主线：直接 `push main`，GitHub Actions **自动发布 stable OTA（原生壳手动）**
-2. 自动发版成功后，bot 会把仓库版本号自动 bump 到下一个 patch，作为下一次发版基线
+1. 日常主线：`push main` 只触发常规 CI，不自动切换 Android OTA 最新入口。
+2. OTA 发布必须由人工/后台触发，`stable` 需要走正式审批。
 3. 若只想单独操作 OTA 灰度/预演，继续手动执行：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`
    - `node scripts/mobile/release-android.mjs ota --channel gray --skip-latest`
    - `node scripts/mobile/release-android.mjs ota --channel gray`
-4. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
+4. 若要桥接旧客户端错误大版本，可执行：`node scripts/mobile/release-android.mjs ota --channel stable --ota-version-base 6.0.0 --force-update`
+5. 若要本地一次性正式发布 stable OTA + native，可执行：`node scripts/mobile/release-android.mjs full --channel stable`
 
 当前默认发布节奏：
 
-1. 开发者把待发版版本号写进 `package.json`
-2. `push main`
-3. CI 直接发布该版本到 stable
-4. CI 自动把仓库版本号 bump 到下一个 patch，等待下一次 push
+1. 开发者把产品版本号写进 `package.json`，例如 `0.6.0`。
+2. 合入 `main` 后等待常规 CI 通过。
+3. 在后台或 GitHub Actions 手动触发 OTA 发布，显式确认 `expected_base_version`。
+4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但产品版本仍保持 `0.6.0`。
 
 ## UGC 资源前缀预留（未实现）
 

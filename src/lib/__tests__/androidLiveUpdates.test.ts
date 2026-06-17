@@ -135,7 +135,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
             source: 'versioned',
         });
     });
@@ -167,7 +167,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
             source: 'versioned',
         });
     });
@@ -180,7 +180,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.8.apk?v=0.5.8',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
             source: 'versioned',
         });
     });
@@ -624,6 +624,102 @@ describe('androidLiveUpdates', () => {
         expect(currentMock).toHaveBeenCalledTimes(1);
         expect(listMock).not.toHaveBeenCalled();
         expect(downloadMock).not.toHaveBeenCalled();
+    });
+
+    it('后台 OTA 检查遇到当前 bundle 版本号偏大时，应通过更高内部游标桥接更新', async () => {
+        vi.resetModules();
+        vi.stubEnv('VITE_ANDROID_OTA_ENABLED', 'true');
+        vi.stubEnv('VITE_ANDROID_OTA_MANIFEST_URL', 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json');
+        vi.stubEnv('VITE_ANDROID_OTA_CHANNEL', 'stable');
+        vi.stubEnv('VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS', '15000');
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+
+        const currentMock = vi.fn().mockResolvedValue({
+            native: '0.6.0',
+            bundle: {
+                id: 'bad-version-bundle',
+                version: '5.9.0',
+                downloaded: '2026-06-15T00:00:00.000Z',
+                checksum: 'old',
+                status: 'success',
+            },
+        });
+        const listMock = vi.fn().mockResolvedValue({ bundles: [] });
+        const downloadMock = vi.fn().mockResolvedValue({
+            id: 'bundle-next',
+            version: '6.0.0-ota-bridge-2026-06-16T01-22-25-293Z',
+            downloaded: '2026-06-16T01:23:00.000Z',
+            checksum: 'new',
+            status: 'success',
+        });
+        const nextMock = vi.fn().mockResolvedValue(undefined);
+        const setMultiDelayMock = vi.fn().mockResolvedValue(undefined);
+
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: currentMock,
+                list: listMock,
+                download: downloadMock,
+                next: nextMock,
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: setMultiDelayMock,
+                addListener: vi.fn(async () => ({ remove: async () => undefined })),
+            },
+        }));
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            status: 200,
+            ok: true,
+            headers: {
+                get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+            },
+            json: async () => ({
+                version: '6.0.0-ota-bridge-2026-06-16T01-22-25-293Z',
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/6.0.0-ota-bridge-2026-06-16T01-22-25-293Z.zip',
+                checksum: 'new',
+                channel: 'stable',
+                publishedAt: '2026-06-16T01:22:26.114Z',
+            }),
+        }));
+
+        const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+
+        const result = await startAndroidLiveUpdateBackgroundCheck({
+            force: true,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+                VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
+            },
+        });
+
+        expect(result).toEqual({
+            status: 'queued',
+            version: '6.0.0-ota-bridge-2026-06-16T01-22-25-293Z',
+            source: 'downloaded',
+            mode: 'background',
+        });
+        expect(currentMock).toHaveBeenCalledTimes(1);
+        expect(listMock).toHaveBeenCalledTimes(1);
+        expect(downloadMock).toHaveBeenCalledWith({
+            url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/6.0.0-ota-bridge-2026-06-16T01-22-25-293Z.zip',
+            version: '6.0.0-ota-bridge-2026-06-16T01-22-25-293Z',
+            checksum: 'new',
+        });
+        expect(nextMock).toHaveBeenCalledWith({ id: 'bundle-next' });
+        expect(setMultiDelayMock).toHaveBeenCalledWith({
+            delayConditions: [{ kind: 'background', value: '0' }],
+        });
     });
 
     it('强制 OTA manifest 若发现新版本，也只后台排队等待重进 App 生效', async () => {
@@ -1411,7 +1507,7 @@ describe('androidLiveUpdates', () => {
 
         await waitFor(() => {
             expect(view.getByTestId('force-update-phase').textContent).toBe('hidden:false');
-            expect(toastSuccessMock).toHaveBeenCalledWith('当前已经是最新版本。', '应用更新', {
+            expect(toastSuccessMock).toHaveBeenCalledWith('nativeUpdate.toast.upToDate', 'nativeUpdate.eyebrow', {
                 dedupeKey: 'android-ota-up-to-date',
                 ttlMs: 3000,
             });

@@ -12,6 +12,7 @@ import {
     LayoutDashboard,
     LogOut,
     MessageSquareWarning,
+    Rocket,
     ScrollText,
     Users,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     { icon: Heart, labelKey: 'admin.layout.nav.sponsors', path: '/admin/sponsors' },
     { icon: MessageSquareWarning, labelKey: 'admin.layout.nav.feedback', path: '/admin/feedback' },
     { icon: Bell, labelKey: 'admin.layout.nav.notifications', path: '/admin/notifications' },
+    { icon: Rocket, labelKey: 'admin.layout.nav.mobile_release', path: '/admin/release-center' },
     { icon: Activity, labelKey: 'admin.layout.nav.health', path: '/admin/health' },
 ];
 

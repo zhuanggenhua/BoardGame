@@ -12,6 +12,7 @@ import { CursorPreferenceProvider } from './core/cursor/CursorPreferenceContext'
 import { useTokenRefresh } from './hooks/useTokenRefresh';
 import { ModalStackProvider } from './contexts/ModalStackContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { AudioRuntimeNotificationListener } from './components/system/AudioRuntimeNotificationListener';
 import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
@@ -83,6 +84,7 @@ const FeedbackPage = React.lazy(() => import('./pages/admin/Feedback'));
 const SystemHealthPage = React.lazy(() => import('./pages/admin/SystemHealth'));
 const SponsorsPage = React.lazy(() => import('./pages/admin/Sponsors'));
 const NotificationsPage = React.lazy(() => import('./pages/admin/Notifications'));
+const MobileReleasePage = React.lazy(() => import('./pages/admin/MobileRelease'));
 const SmashUp4PLayoutTest = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/SmashUp4PLayoutTest')) : null;
 const DevMobileEvidenceCaptureAgent = import.meta.env.DEV
   ? React.lazy(() =>
@@ -122,6 +124,7 @@ const AppRouteChrome = ({
       {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
       {isNativeMobile ? <MobileLiveUpdateManager /> : null}
       {!isPlayRoute ? <PcWebMascot /> : null}
+      <AudioRuntimeNotificationListener />
       <EngineNotificationListener />
       <GamePageRescueGate />
     </>
@@ -296,6 +299,8 @@ const AppContent = () => {
                       />
                       <Route path="health" element={renderAdminOnly(<SystemHealthPage />)} />
                       <Route path="notifications" element={renderAdminOnly(<NotificationsPage />)} />
+                      <Route path="release-center" element={renderAdminOnly(<MobileReleasePage />)} />
+                      <Route path="mobile-release" element={renderAdminOnly(<MobileReleasePage />)} />
                     </Route>
 
                     <Route
