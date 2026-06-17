@@ -1032,7 +1032,7 @@ export function registerExpansionBaseAbilities(): void {
 
     // ── 被动保护类基地──────────────────────────────────────────
 
-    // 美丽城堡（Beautiful Castle）：力量的 的随从免疫消灭、移动和影响
+    // 美丽城堡（Beautiful Castle）：力量 >= 5 的随从只免疫其他玩家的消灭、移动和影响
     // 保护检查时动态查找美丽城堡的基地索引，确保只保护该基地上的随从
     const beautifulCastleChecker = (ctx: ProtectionCheckContext): boolean => {
         // 动态查找美丽城堡所在基地索引?
@@ -1040,6 +1040,8 @@ export function registerExpansionBaseAbilities(): void {
         if (castleIndex === -1) return false;
         // 只保护美丽城堡上的随从
         if (ctx.targetBaseIndex !== castleIndex) return false;
+        // 只拦截其他玩家来源；自己的效果与基地公共效果不应被挡掉
+        if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
         // 力量的 才受保护
         const power = getEffectivePower(ctx.state, ctx.targetMinion, ctx.targetBaseIndex);
         return power >= 5;

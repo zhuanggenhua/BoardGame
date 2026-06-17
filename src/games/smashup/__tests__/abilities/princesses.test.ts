@@ -454,6 +454,44 @@ describe('Princesses abilities', () => {
         expect(resolved.finalState.core.players['0'].discard).toHaveLength(0);
     });
 
+    it('美丽城堡上的 5 力己方随从仍可被自己的传家宝附着', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('heirloom-1', 'princesses_heirloom', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_beautiful_castle',
+                minions: [makeMinion('ally-1', 'superheroes_the_burst', '0', 5)],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'heirloom-1', targetBaseIndex: 0, targetMinionUid: 'ally-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event => event.type === SU_EVENTS.ONGOING_ATTACHED)).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.ABILITY_FEEDBACK
+            && (event as any).payload?.messageKey === 'feedback.target_protected',
+        )).toBe(false);
+        expect(
+            played.finalState.core.bases[0].minions[0]?.attachedActions.some(
+                (action) => action.uid === 'heirloom-1' && action.defId === 'princesses_heirloom',
+            ),
+        ).toBe(true);
+    });
+
     it('princesses_happily_ever_after 会在你于该基地得分时额外给 1 VP', () => {
         const core = makeState({
             players: {
