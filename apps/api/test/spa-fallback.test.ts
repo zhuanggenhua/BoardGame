@@ -30,11 +30,15 @@ describe('SPA fallback guards', () => {
         expect(shouldServeSpaFallback('/room/abc123')).toBe(true);
     });
 
-    it('should preserve the explicit no-cache SPA entry for admin changelogs', () => {
+    it('should preserve explicit no-cache SPA entries under the admin API prefix', () => {
         expect(isNoCacheSpaEntryPath('/admin/changelogs')).toBe(true);
         expect(isNoCacheSpaEntryPath('/admin/changelogs/')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/release-center')).toBe(true);
+        expect(isNoCacheSpaEntryPath('/admin/mobile-release/')).toBe(true);
         expect(shouldServeSpaFallback('/admin/changelogs')).toBe(true);
         expect(shouldServeSpaFallback('/admin/changelogs/')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/release-center')).toBe(true);
+        expect(shouldServeSpaFallback('/admin/mobile-release/')).toBe(true);
     });
 
     it('should keep html and editable layout files on no-cache policy', () => {

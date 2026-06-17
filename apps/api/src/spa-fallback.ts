@@ -8,7 +8,8 @@ const normalizeFsPath = (value: string) => value.replace(/\\/g, '/');
 const VERSION_PARAM = 'v';
 const IMMUTABLE_PUBLIC_ASSET_RE = /\.(avif|webp|png|jpe?g|gif|svg|ogg|mp3|wav|m4a|aac|webm|mp4|woff2?|ttf|otf)$/i;
 
-export const isNoCacheSpaEntryPath = (path: string): boolean => /^\/admin\/changelogs\/?$/.test(path);
+export const isNoCacheSpaEntryPath = (path: string): boolean =>
+    /^\/admin\/(?:changelogs|release-center|mobile-release)\/?$/.test(path);
 export const isNoCacheStaticFilePath = (filePath: string): boolean => {
     const normalized = normalizeFsPath(filePath);
     return normalized.endsWith('.html') || normalized.endsWith('/summonerwars.layout.json');
