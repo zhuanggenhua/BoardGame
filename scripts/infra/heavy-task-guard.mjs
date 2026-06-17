@@ -67,6 +67,11 @@ function isGuardActive(record) {
     return leaseExpiresAt > Date.now();
 }
 
+function isDirectParentGuardRecord(record) {
+    const pid = Number(record?.pid);
+    return Number.isInteger(pid) && pid > 0 && pid === process.ppid;
+}
+
 function removeGuardFile(name) {
     try {
         fs.unlinkSync(getGuardFilePath(name));
@@ -232,7 +237,9 @@ export function acquireTaskGuard({
     if (!allowConcurrency) {
         const activeConflicts = normalizedConflicts
             .flatMap(conflictName => listActiveGuardsByBaseName(conflictName))
-            .filter(record => Number(record.pid) !== process.pid);
+            .filter(record => Number(record.pid) !== process.pid)
+            // 允许 quality-gate 之类的父流程拉起自己的子重任务，不把同一条链路误判成并发冲突。
+            .filter(record => !isDirectParentGuardRecord(record));
 
         const blockingConflict = activeConflicts
             .sort(compareGuardPriority)[0];
