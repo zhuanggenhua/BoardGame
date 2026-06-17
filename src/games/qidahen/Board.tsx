@@ -2131,7 +2131,9 @@ const ActionButton: React.FC<{
                     boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
                 }}
             >
-                {selected ? '当前' : '可选'}
+                {selected
+                    ? t('board.actions.state.current', { defaultValue: '当前' })
+                    : t('board.actions.state.available', { defaultValue: '可选' })}
             </span>
         </button>
     );
