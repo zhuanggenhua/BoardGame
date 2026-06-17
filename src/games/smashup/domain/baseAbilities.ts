@@ -25,6 +25,7 @@ import {
     grantContextualExtraMinion,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    addTempPower,
     addPowerCounter,
     buildReplayMoveEvent,
     buildValidatedBaseMoveEvents,
