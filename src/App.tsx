@@ -12,7 +12,6 @@ import { CursorPreferenceProvider } from './core/cursor/CursorPreferenceContext'
 import { useTokenRefresh } from './hooks/useTokenRefresh';
 import { ModalStackProvider } from './contexts/ModalStackContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { AudioRuntimeNotificationListener } from './components/system/AudioRuntimeNotificationListener';
 import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
@@ -124,7 +123,6 @@ const AppRouteChrome = ({
       {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
       {isNativeMobile ? <MobileLiveUpdateManager /> : null}
       {!isPlayRoute ? <PcWebMascot /> : null}
-      <AudioRuntimeNotificationListener />
       <EngineNotificationListener />
       <GamePageRescueGate />
     </>
