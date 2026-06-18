@@ -396,7 +396,8 @@
         "manualAdditionsLabel": "手工补边：",
         "denoiseRemovedLabel": "去噪：",
         "brushWidth": "画笔宽度约 {{width}}px",
-        "zoom": "缩放 {{scale}}x"
+        "zoom": "缩放 {{scale}}x",
+        "reset": "复位"
       },
       "compactPassages": {
         "summary": "中心 {{centers}} / 自动连线 {{passages}}",

@@ -1723,7 +1723,7 @@ const MapSceneLayer: React.FC<{
                         onClick={() => onViewportChange(DEFAULT_QIDAHEN_MAP_VIEWPORT)}
                         style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                     >
-                        复位
+                        {t('devtools.regionMaskTool.compactBoundaryStats.reset', { defaultValue: '复位' })}
                     </button>
                     <button
                         type="button"

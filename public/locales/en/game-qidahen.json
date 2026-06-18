@@ -396,7 +396,8 @@
         "manualAdditionsLabel": "Manual edge additions: ",
         "denoiseRemovedLabel": "Noise removed: ",
         "brushWidth": "Brush width about {{width}}px",
-        "zoom": "Zoom {{scale}}x"
+        "zoom": "Zoom {{scale}}x",
+        "reset": "Reset"
       },
       "compactPassages": {
         "summary": "Centers {{centers}} / Auto-linked {{passages}}",

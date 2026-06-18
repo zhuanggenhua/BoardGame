@@ -134,19 +134,19 @@ export function buildFantasyRealmsSetupOptions(): NonNullable<GameManifestEntry[
     return {
         [FANTASY_REALMS_VARIANT_SETUP_FIELD]: {
             type: 'select',
-            labelKey: 'games.fantasyrealms.setup.variant.label',
+            labelKey: 'setup.variant.label',
             options: [
-                { value: FANTASY_REALMS_STANDARD_SETUP_VALUE, labelKey: 'games.fantasyrealms.setup.variant.standard' },
-                { value: FANTASY_REALMS_DUEL_SETUP_VALUE, labelKey: 'games.fantasyrealms.setup.variant.duel' },
+                { value: FANTASY_REALMS_STANDARD_SETUP_VALUE, labelKey: 'setup.variant.standard' },
+                { value: FANTASY_REALMS_DUEL_SETUP_VALUE, labelKey: 'setup.variant.duel' },
             ],
             default: FANTASY_REALMS_STANDARD_SETUP_VALUE,
         },
         [FANTASY_REALMS_EXPANSION_SETUP_FIELD]: {
             type: 'select',
-            labelKey: 'games.fantasyrealms.setup.expansion.label',
+            labelKey: 'setup.expansion.label',
             options: [
-                { value: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE, labelKey: 'games.fantasyrealms.setup.expansion.base' },
-                { value: FANTASY_REALMS_CURSED_HOARD_SUITS_SETUP_VALUE, labelKey: 'games.fantasyrealms.setup.expansion.cursedHoardSuits' },
+                { value: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE, labelKey: 'setup.expansion.base' },
+                { value: FANTASY_REALMS_CURSED_HOARD_SUITS_SETUP_VALUE, labelKey: 'setup.expansion.cursedHoardSuits' },
             ],
             default: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
         },
