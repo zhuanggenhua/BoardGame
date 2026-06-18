@@ -1164,9 +1164,9 @@ const MapSceneLayer: React.FC<{
         return runtimeRegionIdByPixel[(y * QIDAHEN_MAP_WIDTH) + x] ?? null;
     }, []);
 
-    const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const handlePointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
         setHoveredRegionId(getRegionFromPointer(event));
-    };
+    }, [getRegionFromPointer]);
 
     const handleMapWheel = React.useCallback((event: React.WheelEvent<HTMLDivElement>) => {
         event.preventDefault();
@@ -2398,15 +2398,6 @@ const ActionsZone: React.FC<{
     const wheelStageActiveSelection = wheelDispatchSelection != null
         || pendingTargetAction != null
         || postBattleSelection != null;
-    const wheelStageAvailable = !pendingScenarioChoices
-        && !core.wheelActionUsed
-        && !factionStageActiveSelection
-        && !wheelStageActiveSelection
-        && core.wheelMoveChoices.length > 0;
-    const factionStageAvailable = !pendingScenarioChoices
-        && !core.factionActionUsed
-        && !factionStageActiveSelection
-        && !wheelStageActiveSelection;
     const showWheelNextStepBanner = !pendingScenarioChoices
         && primaryStageMode === 'wheel'
         && !core.wheelActionUsed

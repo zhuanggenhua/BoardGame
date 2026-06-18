@@ -574,10 +574,6 @@ function buildBoardFocusInsight(
     };
 }
 
-function getCurrentPlayerHandCount(core: FantasyRealmsCore): number {
-    return core.players[core.currentPlayer]?.hand.length ?? 0;
-}
-
 function getDrawDeckLabel(core: FantasyRealmsCore, t: Translator): string {
     if (!isDuelVariant(core)) {
         return t('turn.drawDeck.one');
@@ -1060,7 +1056,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 : null,
             playerCount: core.playerIds.length,
         }),
-        [core.playerIds.length, core.setupConfig?.cursedHoardSuitsEnabled],
+        [core.playerIds.length, core.setupConfig],
     );
     const reviewedStandingRank = reviewedStanding
         ? finalStandings.findIndex((player) => player.id === reviewedStanding.id) + 1

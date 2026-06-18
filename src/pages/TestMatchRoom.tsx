@@ -125,7 +125,7 @@ export const TestMatchRoom: React.FC = () => {
             seatControllers,
             setupData,
         };
-    }, [gameConfig?.ai, gameConfig?.playerOptions, searchParams]);
+    }, [gameConfig, searchParams]);
 
     useEffect(() => {
         if (!gameId) return;

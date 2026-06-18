@@ -219,8 +219,9 @@ describe('Qidahen Board 结构门禁', () => {
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
         expect(boardSource).toContain('showWheelNextStepBanner');
         expect(boardSource).toContain('进行轮盘行动');
-        expect(boardSource).toContain("wheelNextStepBadge', { defaultValue: '下一步' }");
-        expect(boardSource).toContain("wheelNextStepHint', {\n                            defaultValue: '点击绿色扇区'");
+        expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
+        expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
+        expect(boardSource).toContain("defaultValue: '点击绿色扇区'");
         expect(boardSource).toContain('直接执行');
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
     });
