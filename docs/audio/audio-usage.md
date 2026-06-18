@@ -122,10 +122,21 @@ node scripts/audio/generate_audio_catalog.js
    - 检查 BGM 是否重复
    - 评估迁移成本
    不得把“别的游戏已用 key 列表”当作默认挑选池
+   - 对 `mini_games_sound_effects_and_music_pack` 的胜利/失败提示，若仓内已大量复用，默认视为低优先级族群
 4. **全量 registry 最后回退**
    仅当前两层不足时，才回退到 `public/assets/common/audio/registry.json`
 5. **/dev/audio 最终确认**
    用于试听、复制 key、检查分类与中文友好名
+
+### 4.2 候选矩阵必须有跨族群信息量
+
+- 当任务不是“直接定案”，而是“给我挑选 / 给我候选 / 给我试听矩阵”时：
+  - 默认应给跨族群候选
+  - 至少跨 `2` 个不同语义家族、音频包或 naming line
+- 禁止只给同一包里 `traditional_success_a/b/c...`、`failure_d/e/f...` 这类微变体，就宣称已经给了有意义的挑选矩阵
+- 若因用户明确要求或语义约束，只做单一家族内细挑：
+  - 必须明确标记为 `同族群收窄对比`
+  - 不能冒充完整替换矩阵
 
 ### 4.1 中英双语命名合同
 
@@ -260,6 +271,7 @@ return 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_sy
 - [ ] 游戏层 `audio.config.ts` 不含 `basePath/sounds`
 - [ ] 查 key 时优先使用 `audio-catalog.md` 和 `registry.ai.json`
 - [ ] 最终交付包含 `中文名 + 英文本体 + key`
+- [ ] 若交付的是候选矩阵，已明确它是否跨族群
 - [ ] BGM 已做跨游戏重复检查；若重复，已写明例外理由
 - [ ] 新增素材时已按 `docs/audio/add-audio.md` 生成产物
 - [ ] 音效对接时已按 `audio-integration` skill 留查询证据和汇报

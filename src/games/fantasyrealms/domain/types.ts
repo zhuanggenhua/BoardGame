@@ -1,5 +1,6 @@
 import type { Command, GameEvent, PlayerId } from '../../../engine/types';
 import type { FantasyRealmsScoreLine, TableCard } from '../foundation';
+import type { FantasyRealmsRuntimeSetupConfig } from '../roomSetup';
 
 export type FantasyRealmsTurnStage = 'draw' | 'discard';
 
@@ -12,6 +13,7 @@ export interface FantasyRealmsPlayerState {
 }
 
 export interface FantasyRealmsCore {
+    setupConfig?: FantasyRealmsRuntimeSetupConfig;
     playerIds: PlayerId[];
     currentPlayer: PlayerId;
     turn: number;

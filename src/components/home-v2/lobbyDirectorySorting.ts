@@ -18,7 +18,7 @@ function matchesActiveCategory(
         return game.type === 'game';
     }
     if (activeCategory === 'tools') {
-        return game.type === 'tool' || game.category === activeCategory || game.tags?.includes(activeCategory);
+        return game.type === 'tool';
     }
     return game.type === 'game' && (game.category === activeCategory || game.tags?.includes(activeCategory));
 }

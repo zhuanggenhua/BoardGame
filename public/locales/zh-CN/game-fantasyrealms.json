@@ -30,14 +30,19 @@
       "discardRequired": "弃一张牌"
     },
     "short": {
-      "round": "R{{turn}}"
+      "round": "第{{turn}}轮"
     },
     "live": {
       "selfTurn": "你的回合"
     },
     "statusBanner": {
+      "kicker": "下一步",
       "discardPick": "弃置 1 张",
       "discardSelf": "确认弃牌",
+      "drawDeckDirect": "{{action}}",
+      "drawOrTake": "点牌库摸牌，或直接点公开牌拿取",
+      "takeDirect": "直接点公开牌拿取",
+      "discardDirect": "直接点一张手牌弃置",
       "waiting": "等待 {{player}}"
     }
   },
@@ -77,6 +82,7 @@
     "inspectDiscardAria": "查看弃牌 {{name}}",
     "discardHandAria": "弃置手牌 {{name}}",
     "inspectHandAria": "查看手牌 {{name}}",
+    "openMagnifyAria": "放大查看 {{name}}",
     "confirmTake": "确认选择",
     "confirmDiscard": "确认弃置",
     "closePreview": "关闭预览",
@@ -109,5 +115,17 @@
     "finalStandings": "最终排名",
     "drawBadge": "平局",
     "rank": "第 {{rank}} 名"
+  },
+  "setup": {
+    "variant": {
+      "label": "对局模式",
+      "standard": "标准对局",
+      "duel": "双人变体"
+    },
+    "expansion": {
+      "label": "卡组范围",
+      "base": "基础卡组",
+      "cursedHoardSuits": "诅咒宝藏：新花色"
+    }
   }
 }

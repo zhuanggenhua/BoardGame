@@ -106,8 +106,8 @@
       "regionReachable": "调度可达 {{summary}}",
       "sharedPrintedRegion": "同图块",
       "selectionGuideSource": "起",
-      "selectionContinueHint": "点击绿色目标继续",
-      "clickableRegionSummary": "可点击区域：{{summary}}"
+      "selectionContinueHint": "选择目标",
+      "clickableRegionSummary": "目标：{{summary}}"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -128,33 +128,33 @@
         "available": "可选"
       },
       "primaryStageTagWheel": "轮盘行动",
-      "primaryStageTagFaction": "势力行动",
-      "primaryStageFactionTitle": "弃牌执行势力行动",
+      "primaryStageTagFaction": "弃牌行动",
+      "primaryStageFactionTitle": "弃牌进行行动",
       "primaryStageWheelTitle": "进行轮盘行动",
       "primaryStageAvailable": "当前可进入",
       "primaryStageUnavailable": "当前不可进入",
       "primaryStageFactionCurrentDetail": "当前二级行动：{{label}}",
-      "primaryStageFactionDetail": "先选一种势力行动，再进入对应区域或结算步骤。",
+      "primaryStageFactionDetail": "先弃牌，再继续行动。",
       "primaryStageWheelDone": "本席轮盘已结算完成。",
-      "primaryStageWheelDetail": "所有绿色扇区都可点击；当前可选：{{summary}}。",
+      "primaryStageWheelDetail": "绿色扇区可执行：{{summary}}。",
       "clickable": "可点",
-      "mapDirectClick": "地图直点",
+      "mapDirectClick": "地图目标",
       "mapClickable": "地图可点",
-      "mapDirectClickHint": "直接点击地图上的绿色区域完成调度。下列信息只用于确认目标与数量。",
-      "currentClickableRegions": "当前可点击区域",
+      "mapDirectClickHint": "点击绿色区域完成调度。",
+      "currentClickableRegions": "目标列表",
       "status": {
         "used": "已用",
         "unused": "未用"
       },
-      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}",
+      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}",
       "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
       "scenarioVoteBlocked": "局内剧本投票尚未完成，当前只可处理剧本介绍与投票。",
-      "primaryActionLabel": "一级行动",
+      "primaryActionLabel": "当前步骤",
       "primaryActionEmpty": "未选择",
-      "wheelNextStepBadge": "轮盘推进",
-      "wheelNextStepTitle": "下一步：点击轮盘按钮推进回合",
-      "wheelNextStepHint": "不用点左侧轮盘盘面，直接点下面的明文按钮即可。",
-      "wheelExecutePrompt": "点击绿色扇区执行轮盘行动",
+      "wheelNextStepBadge": "下一步",
+      "wheelNextStepTitle": "进行轮盘行动",
+      "wheelNextStepHint": "点击绿色扇区",
+      "wheelExecutePrompt": "点击绿色扇区",
       "directExecute": "直接执行",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
       "victory": {
@@ -177,7 +177,7 @@
       "targetUnlocked": "未锁定",
       "gaoDi": {
         "summary": "源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}",
-        "hint": "先点击底部手牌选择要弃掉的牌，再点击下面的调度目标；也可以直接跳过。",
+        "hint": "弃 1 张牌后选择目标。",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "部队",
         "typePopulation": "人口",
@@ -213,7 +213,7 @@
         "summary": "{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。"
       },
       "wheelDispatch": {
-        "summary": "源区 {{sourceRegionName}} · 可选目标 {{count}} · 可直接点击地图高亮区",
+        "summary": "源区 {{sourceRegionName}} · 可选目标 {{count}}",
         "targetSummary": "{{targetRegionName}} · 防守 {{defenderLabel}}",
         "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
         "travelCost": "耗 {{totalTravelCost}}"

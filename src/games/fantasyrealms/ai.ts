@@ -5,7 +5,7 @@ import { FantasyRealmsDomain } from './domain';
 import { evaluateFantasyRealmsScore } from './domain';
 import { getDeckDrawCount } from './domain/commands';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from './domain/types';
-import { RUNTIME_DECK_CARDS } from './foundation';
+import { createRuntimeDeck } from './foundation';
 
 type FantasyRealmsState = MatchState<FantasyRealmsCore>;
 type AiOutcomeScore = {
@@ -17,7 +17,7 @@ type AiEvaluationCache = {
     playerOutcomeByKey: Map<string, AiOutcomeScore>;
 };
 
-const RUNTIME_CARD_IDS = new Set(RUNTIME_DECK_CARDS.map((card) => card.id));
+type FantasyRealmsScoringOptions = Parameters<typeof evaluateFantasyRealmsScore>[2];
 
 const AI_NOOP_RANDOM: RandomFn = {
     random: () => 0.5,
@@ -97,6 +97,16 @@ function cloneOutcome(outcome: AiOutcomeScore): AiOutcomeScore {
     };
 }
 
+function buildScoringOptions(args: {
+    playerCount: number;
+    setupConfig?: FantasyRealmsCore['setupConfig'];
+}): FantasyRealmsScoringOptions {
+    return {
+        setupConfig: args.setupConfig,
+        playerCount: args.playerCount,
+    };
+}
+
 function resolveBlindSampleCap(drawCount: number, decisionBudgetMs: number): number {
     const normalizedBudget = Number.isFinite(decisionBudgetMs) ? Math.max(0, decisionBudgetMs) : 250;
     const baseline = drawCount >= 2 ? MAX_BLIND_DOUBLE_DRAW_SAMPLES : MAX_BLIND_SINGLE_DRAW_SAMPLES;
@@ -136,7 +146,10 @@ function evaluatePlayerOutcome(state: FantasyRealmsState, playerId: PlayerId, ca
     if (cached) {
         return cloneOutcome(cached);
     }
-    const evaluation = evaluateFantasyRealmsScore(player.hand, state.core.discardPile);
+    const evaluation = evaluateFantasyRealmsScore(player.hand, state.core.discardPile, {
+        setupConfig: state.core.setupConfig,
+        playerCount: state.core.playerIds.length,
+    });
     const outcome = {
         totalScore: evaluation.totalScore,
         tiebreakBaseScore: evaluation.tiebreakBaseScore,
@@ -155,13 +168,15 @@ function compareAiOutcome(a: AiOutcomeScore, b: AiOutcomeScore): number {
     return 0;
 }
 
-function getBestDiscardOutcome(
-    hand: FantasyRealmsState['core']['players'][PlayerId]['hand'],
-    discardPile: FantasyRealmsState['core']['discardPile'],
-    cache: AiEvaluationCache,
-): AiOutcomeScore {
+function getBestDiscardOutcome(args: {
+    hand: FantasyRealmsState['core']['players'][PlayerId]['hand'];
+    discardPile: FantasyRealmsState['core']['discardPile'];
+    cache: AiEvaluationCache;
+    scoringOptions: FantasyRealmsScoringOptions;
+}): AiOutcomeScore {
+    const { hand, discardPile, cache, scoringOptions } = args;
     if (hand.length === 0) {
-        const evaluation = evaluateFantasyRealmsScore([], discardPile);
+        const evaluation = evaluateFantasyRealmsScore([], discardPile, scoringOptions);
         return {
             totalScore: evaluation.totalScore,
             tiebreakBaseScore: evaluation.tiebreakBaseScore,
@@ -178,7 +193,7 @@ function getBestDiscardOutcome(
         const discardedCard = hand[index];
         if (!discardedCard) continue;
         const keptHand = hand.filter((_, currentIndex) => currentIndex !== index);
-        const evaluation = evaluateFantasyRealmsScore(keptHand, [...discardPile, discardedCard]);
+        const evaluation = evaluateFantasyRealmsScore(keptHand, [...discardPile, discardedCard], scoringOptions);
         const candidateOutcome = {
             totalScore: evaluation.totalScore,
             tiebreakBaseScore: evaluation.tiebreakBaseScore,
@@ -197,21 +212,28 @@ function getBestDiscardOutcome(
 }
 
 function buildUnseenCardPool(state: FantasyRealmsState): FantasyRealmsState['core']['drawPile'] {
+    const cursedHoardSuitsEnabled = state.core.setupConfig?.cursedHoardSuitsEnabled === true
+        || state.core.discardPile.some((card) => ['建筑', '局外人', '不死族'].includes(card.suit))
+        || Object.values(state.core.players).some((player) => (
+            player.hand.some((card) => ['建筑', '局外人', '不死族'].includes(card.suit))
+        ));
+    const runtimeDeck = createRuntimeDeck({ cursedHoardSuitsEnabled });
+    const runtimeCardIds = new Set(runtimeDeck.map((card) => card.id));
     const visibleCardIds = new Set<string>();
     for (const card of state.core.discardPile) {
-        if (RUNTIME_CARD_IDS.has(card.id)) {
+        if (runtimeCardIds.has(card.id)) {
             visibleCardIds.add(card.id);
         }
     }
     for (const player of Object.values(state.core.players)) {
         for (const card of player.hand) {
-            if (RUNTIME_CARD_IDS.has(card.id)) {
+            if (runtimeCardIds.has(card.id)) {
                 visibleCardIds.add(card.id);
             }
         }
     }
 
-    return RUNTIME_DECK_CARDS
+    return runtimeDeck
         .filter((card) => !visibleCardIds.has(card.id))
         .map((card) => ({ ...card }));
 }
@@ -232,6 +254,10 @@ function evaluateBlindDeckDrawOutcome(
 
     const unseenPool = buildUnseenCardPool(state);
     const drawCount = getDeckDrawCount(state.core);
+    const scoringOptions = buildScoringOptions({
+        playerCount: state.core.playerIds.length,
+        setupConfig: state.core.setupConfig,
+    });
     if (drawCount <= 0 || unseenPool.length < drawCount) {
         return evaluatePlayerOutcome(state, playerId, cache);
     }
@@ -246,7 +272,12 @@ function evaluateBlindDeckDrawOutcome(
         for (let index = 0; index < unseenPool.length; index += stride) {
             const drawnCard = unseenPool[index];
             if (!drawnCard) continue;
-            const outcome = getBestDiscardOutcome([...player.hand, drawnCard], state.core.discardPile, cache);
+            const outcome = getBestDiscardOutcome({
+                hand: [...player.hand, drawnCard],
+                discardPile: state.core.discardPile,
+                cache,
+                scoringOptions,
+            });
             totalScoreSum += outcome.totalScore;
             tiebreakBaseScoreSum += outcome.tiebreakBaseScore;
             sampleCount += 1;
@@ -263,7 +294,12 @@ function evaluateBlindDeckDrawOutcome(
                 const secondCard = unseenPool[secondIndex];
                 if (!secondCard) continue;
                 if (combinationIndex % stride === 0) {
-                    const outcome = getBestDiscardOutcome([...player.hand, firstCard, secondCard], state.core.discardPile, cache);
+                    const outcome = getBestDiscardOutcome({
+                        hand: [...player.hand, firstCard, secondCard],
+                        discardPile: state.core.discardPile,
+                        cache,
+                        scoringOptions,
+                    });
                     totalScoreSum += outcome.totalScore;
                     tiebreakBaseScoreSum += outcome.tiebreakBaseScore;
                     sampleCount += 1;
@@ -304,7 +340,15 @@ function evaluateActionOutcome(
 
     const afterAction = applyAiCommand(state, playerId, command);
     if (afterAction.core.currentPlayer === playerId && afterAction.core.stage === 'discard') {
-        return getBestDiscardOutcome(afterAction.core.players[playerId]?.hand ?? [], afterAction.core.discardPile, cache);
+        return getBestDiscardOutcome({
+            hand: afterAction.core.players[playerId]?.hand ?? [],
+            discardPile: afterAction.core.discardPile,
+            cache,
+            scoringOptions: buildScoringOptions({
+                playerCount: afterAction.core.playerIds.length,
+                setupConfig: afterAction.core.setupConfig,
+            }),
+        });
     }
 
     return evaluatePlayerOutcome(afterAction, playerId, cache);

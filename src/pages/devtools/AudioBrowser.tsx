@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Check } from 'lucide-react';
+import { Check, LoaderCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AudioManager, type AudioLoadState } from '../../lib/audio/AudioManager';
 import {
@@ -292,11 +292,16 @@ const AudioTable: React.FC<{
                 <td className="px-1.5 py-0.5 text-center">
                   <button
                     onClick={() => playEntry(entry)}
-                    className={`px-1.5 py-0.5 rounded text-white text-[10px] font-bold transition-[background-color] ${isLoading ? 'bg-amber-600 hover:bg-amber-500' : 'bg-indigo-600 hover:bg-indigo-500'}`}
-                    title={t('devtools.audioBrowser.table.preview')}
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded text-white transition-[background-color,box-shadow] ${isLoading ? 'bg-amber-600 shadow-[0_0_0_1px_rgba(251,191,36,0.5)]' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                    title={isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : t('devtools.audioBrowser.table.preview')}
+                    aria-label={isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : t('devtools.audioBrowser.table.preview')}
                   >
                     {isLoading
-                      ? t('devtools.audioBrowser.playback.loading_short')
+                      ? <LoaderCircle size={12} className="animate-spin" />
                       : isPlaying
                         ? '⏸'
                         : '▶'}
@@ -419,11 +424,16 @@ const HistoryPanel: React.FC<{
                   </span>
                   <button
                     onClick={() => replayEntry(item.entry)}
-                    className={`shrink-0 h-5 rounded text-white text-[10px] font-bold flex items-center justify-center transition-[background-color] ${isLoading ? 'min-w-12 px-1.5 bg-amber-600 hover:bg-amber-500' : 'w-5 bg-indigo-600 hover:bg-indigo-500'}`}
-                    title={t('devtools.audioBrowser.history.replay')}
+                    className={`shrink-0 h-5 w-5 rounded text-white flex items-center justify-center transition-[background-color,box-shadow] ${isLoading ? 'bg-amber-600 shadow-[0_0_0_1px_rgba(251,191,36,0.5)]' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                    title={isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : t('devtools.audioBrowser.history.replay')}
+                    aria-label={isLoading
+                      ? t('devtools.audioBrowser.playback.loading_short')
+                      : t('devtools.audioBrowser.history.replay')}
                   >
                     {isLoading
-                      ? t('devtools.audioBrowser.playback.loading_short')
+                      ? <LoaderCircle size={10} className="animate-spin" />
                       : isPlaying
                         ? '⏸'
                         : '▶'}

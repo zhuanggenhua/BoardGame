@@ -57,8 +57,9 @@
 | `fantasyrealms-score-list-reference.png` 里的右上分数排行列表 | 更老的生图，只能作局部样式参考 | **不是交互真相源** |
 | `fantasyrealms-online-basic.e2e` 当前 full-flow 用例产出的 opening / after-draw / before-confirm / waiting / final-standings / review-other-player | 当前 worktree 的真实页面 E2E 证据，且可直接反查到游戏、测试文件和用例名 | 当前正式 live 真相源 |
 | “摸牌阶段点左上牌库” | 当前正式 live 路线 + 项目内已收敛的牌库主入口方案 | 当前正式方向 |
-| “桌面横屏 live 的统一主推进按钮复用顶部状态条里的现有 `chip` 家族，不再单独长出一颗右下/右侧漂浮按钮” | 当前 worktree 的 full-flow 真图 + 当前页面现有按钮家族审查，见 `evidence/fantasyrealms/fantasyrealms-live-primary-action-reference-2026-06-14.md` | 当前正式方向 |
-| “先点手牌/公开弃牌，再用顶部状态条里的确认按钮收口” | 当前正式 live 路线 + 上面这份主推进按钮参考核对 | 当前正式方向 |
+| “摸牌时直接点左上牌库；拿公开牌时直接点公开牌；弃牌时直接点手牌，不再额外弹确认按钮” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
+| “横幅只承担短提示，不承担确认按钮；固定单一路径动作直接落到对象本体” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
+| “牌面放大通过显式放大镜入口，而不是依赖二次点击猜测” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
 | 底部短提示横条（如 `点一张手牌，再确认弃置`） | 历史 `fr-ui-current-*` 路线 | **已退出当前桌面正式方向** |
 
 ## 当前未通过项

@@ -18,6 +18,7 @@
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` + `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` | 先按 feedback-closeout 固定流水线处理真实反馈；回写与发布上线拆轴；修复证据成立就立刻回写，生产 SSH/Mongo 仅是正式写入口之一，不是“等部署后再回写”的理由 |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
 | **做审计 / 重审 / 为什么没审出来** (审计范围、层级、漏审归因、跨游戏门禁) | `docs/ai-rules/testing-audit.md` + `docs/ai-rules/audit-evidence-template.md` | 先建对象清单，再锁承接语义、触发时机、作用宿主、自动移除/清理与负向断言；漏审先补通用门禁，不要只补单对象 |
+| **重构共享层 / 通用化 / 收口 helper / 为什么重构改坏功能** (shared helper、watchdog、transport、response-window、跨游戏 override) | `docs/ai-rules/shared-refactor-guard.md` + `docs/ai-rules/testing-audit.md` | 先锁旧语义、消费者矩阵、override 边界与 fallback 顺序；禁止把游戏特化语义退回共享默认 |
 | **E2E 与截图验收** (UI 交互、状态注入、真实开房、截图证据、用户直接要截图) | `docs/ai-rules/e2e-verification.md` + `docs/testing-best-practices.md` | 默认状态注入；真实开房只用于跨入口合同；用户要截图时禁止拿合成图/临时图/辅助图冒充真实截图；E2E 汇报必须附截图路径 |
 | **E2E 太慢 / 长链拆分 / 从主页起跑是否合理** | `docs/ai-rules/e2e-verification.md` | 先看三板斧、入口分层、组合式验证、时长预算；默认不要把主页漏斗和游戏流程绑成一条巨型 E2E |
 | **测试驱动是不是一直在写测试 / 为什么 45 分钟还没推进实现** | `docs/ai-rules/e2e-verification.md` + `docs/automated-testing.md` | 先看“长链不是默认调试循环”“15 分钟定位预算”“先状态注入锁定位点，再做最窄回归” |

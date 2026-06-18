@@ -8,6 +8,7 @@ import {
     normalizeSetupSelections,
     type GameSetupSelections,
 } from '../../shared/gameSetupOptions';
+import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
 
 const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;
@@ -255,7 +256,12 @@ export function buildLocalMatchSearchParams(args: {
     setupSelections?: GameSetupSelections;
 }): URLSearchParams {
     const search = new URLSearchParams();
-    const defaultPlayers = resolveLocalMatchPlayerCount(null, args.playerOptions);
+    const resolvedPlayerOptions = resolveAllowedPlayerCountsForGame({
+        gameManifest: args.gameManifest,
+        setupData: args.setupSelections,
+        fallbackPlayerOptions: args.playerOptions,
+    });
+    const defaultPlayers = resolveLocalMatchPlayerCount(null, resolvedPlayerOptions);
 
     if (args.numPlayers !== defaultPlayers) {
         search.set('players', String(args.numPlayers));

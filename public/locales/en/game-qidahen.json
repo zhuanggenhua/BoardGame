@@ -106,8 +106,8 @@
       "regionReachable": "Dispatch reach {{summary}}",
       "sharedPrintedRegion": "Shared print",
       "selectionGuideSource": "Start",
-      "selectionContinueHint": "Click the green target to continue",
-      "clickableRegionSummary": "Clickable regions: {{summary}}"
+      "selectionContinueHint": "Choose target",
+      "clickableRegionSummary": "Targets: {{summary}}"
     },
     "wheel": {
       "aria": "Qidahen action wheel",
@@ -128,33 +128,33 @@
         "available": "Available"
       },
       "primaryStageTagWheel": "Wheel Action",
-      "primaryStageTagFaction": "Faction Action",
-      "primaryStageFactionTitle": "Discard to Execute Faction Action",
+      "primaryStageTagFaction": "Discard Action",
+      "primaryStageFactionTitle": "Discard to Act",
       "primaryStageWheelTitle": "Execute Wheel Action",
       "primaryStageAvailable": "Available Now",
       "primaryStageUnavailable": "Unavailable Now",
       "primaryStageFactionCurrentDetail": "Current secondary action: {{label}}",
-      "primaryStageFactionDetail": "Choose a faction action first, then continue through the related region or resolution step.",
+      "primaryStageFactionDetail": "Discard first, then continue.",
       "primaryStageWheelDone": "This seat has already finished its wheel action.",
-      "primaryStageWheelDetail": "Every green sector is clickable. Current options: {{summary}}.",
+      "primaryStageWheelDetail": "Green sectors available: {{summary}}.",
       "clickable": "Clickable",
-      "mapDirectClick": "Direct Map Click",
+      "mapDirectClick": "Map Target",
       "mapClickable": "Map Clickable",
-      "mapDirectClickHint": "Click a green region on the map directly to complete the dispatch. The details below are only for confirming the target and amount.",
-      "currentClickableRegions": "Currently Clickable Regions",
+      "mapDirectClickHint": "Click a green region to finish the dispatch.",
+      "currentClickableRegions": "Target List",
       "status": {
         "used": "used",
         "unused": "unused"
       },
-      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Faction action {{factionStatus}}",
+      "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Discard action {{factionStatus}}",
       "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
-      "primaryActionLabel": "Primary action",
+      "primaryActionLabel": "Current step",
       "primaryActionEmpty": "Not selected",
-      "wheelNextStepBadge": "Wheel Advance",
-      "wheelNextStepTitle": "Next: click a wheel button to advance the turn",
-      "wheelNextStepHint": "Do not click the painted wheel directly. Use the explicit button below.",
-      "wheelExecutePrompt": "Click a green sector to execute the wheel action",
+      "wheelNextStepBadge": "Next",
+      "wheelNextStepTitle": "Take a wheel action",
+      "wheelNextStepHint": "Click a green sector",
+      "wheelExecutePrompt": "Click a green sector",
       "directExecute": "Execute",
       "victoryAchieved": "{{winnerName}} has achieved {{condition}}",
       "victory": {
@@ -177,7 +177,7 @@
       "targetUnlocked": "Unlocked",
       "gaoDi": {
         "summary": "Source {{sourceRegionName}} · Troops up to {{maxTroops}} · Population up to {{maxPopulation}}",
-        "hint": "Select the discard card from your hand first, then choose the dispatch target below. You can also skip.",
+        "hint": "Discard 1 card, then choose a target.",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "Troops",
         "typePopulation": "Population",
@@ -213,7 +213,7 @@
         "summary": "Will {{targetFactionName}} accept Ming command? If accepted, they will draw 6 cards and enter dispatch attack."
       },
       "wheelDispatch": {
-        "summary": "Source {{sourceRegionName}} · {{count}} target(s) · Click a highlighted map region directly",
+        "summary": "Source {{sourceRegionName}} · {{count}} target(s)",
         "targetSummary": "{{targetRegionName}} · Defend {{defenderLabel}}",
         "stats": "Source troops {{sourceAvailableTroops}} · Commit {{committedTroops}} · Pressure {{attackPressure}}",
         "travelCost": "Cost {{totalTravelCost}}"

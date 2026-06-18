@@ -55,6 +55,7 @@ import {
     buildInteractionSliderSemanticSignature,
     buildResponseWindowRecoveryFingerprintHint,
     resolveCurrentPlayerId,
+    resolveOnlineAiCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
     resolveForceEndTurnForStalledAi,
     shouldInspectSeatStatesForHiddenAiInteraction,
@@ -1268,8 +1269,12 @@ export class GameTransportServer {
         match: ActiveMatch,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<ForceEndTurnStalledAiResolution | null> {
-        const currentPlayerId = resolveCurrentPlayerId(match.state);
-        if (!currentPlayerId || seatControllers[currentPlayerId]?.type !== 'human') {
+        const visibleTurnPlayerId = resolveCurrentPlayerId(match.state);
+        const recoveryActorPlayerId = resolveOnlineAiCurrentPlayerId(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        if (!visibleTurnPlayerId || seatControllers[visibleTurnPlayerId]?.type !== 'human') {
             return null;
         }
 
@@ -1319,7 +1324,7 @@ export class GameTransportServer {
                     aiDispatchResult.blockedReason !== 'stale-private-overlay'
                     && aiDispatchResult.blockedReason !== 'missing-private-overlay'
                 )
-                || playerId === currentPlayerId
+                || playerId === recoveryActorPlayerId
             ) {
                 return null;
             }
@@ -1356,7 +1361,7 @@ export class GameTransportServer {
         }
 
         const resolution = aiDispatchResult.resolution;
-        if (resolution.playerId === currentPlayerId) {
+        if (resolution.playerId === recoveryActorPlayerId) {
             return null;
         }
 
@@ -1720,12 +1725,16 @@ export class GameTransportServer {
                 return id.length > 0 && seatControllers[id]?.type === 'human';
             });
         };
+        const resolveWatchdogCurrentPlayerId = (): string | null => resolveOnlineAiCurrentPlayerId(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
         const canExecuteWatchdogAdvancePhase = (playerId: string): boolean => {
             if (!playerId || seatControllers[playerId]?.type === 'human') {
                 return false;
             }
 
-            if (resolveCurrentPlayerId(match.state) !== playerId) {
+            if (resolveWatchdogCurrentPlayerId() !== playerId) {
                 return false;
             }
 
@@ -1934,7 +1943,7 @@ export class GameTransportServer {
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
                 const markerBeforeStep = buildAiProgressMarker(match.state);
-                const currentPlayerIdBeforeStep = resolveCurrentPlayerId(match.state);
+                const currentPlayerIdBeforeStep = resolveWatchdogCurrentPlayerId();
                 const stepKeyBefore = buildRecoverySequenceStepKey(currentCandidate.playerId, markerBeforeStep);
                 const interactionFingerprintBeforeStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
                 const responseWindowFingerprintBeforeStep = readCurrentAiResponseWindowRecoveryFingerprintHint(currentCandidate.playerId);
@@ -2149,7 +2158,7 @@ export class GameTransportServer {
                     && (candidate.reason === 'visible-interaction' || candidate.reason === 'hidden-interaction')
                     && nextCandidate.reason === 'active-turn'
                     && currentPlayerIdBeforeStep !== candidate.playerId
-                    && resolveCurrentPlayerId(match.state) === candidate.playerId;
+                    && resolveWatchdogCurrentPlayerId() === candidate.playerId;
                 const seatViewInteractionAfterStep = readCurrentAiSeatViewInteractionRecoveryFingerprintHint(candidate.playerId);
                 if (actionRecoveryApplied
                     && isInteractionRecoveryReason(candidate.reason)

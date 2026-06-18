@@ -3,7 +3,7 @@ import { createBaseSystems, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { FantasyRealmsDomain } from './domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore, FantasyRealmsEvent } from './domain';
-import { isDuelVariant } from './domain/commands';
+import { getDeckDrawCount } from './domain/commands';
 import { getFantasyRealmsCardDisplayName } from './foundation';
 import { fantasyRealmsAiRuntime } from './ai';
 
@@ -37,16 +37,12 @@ function formatFantasyRealmsActionEntry({
     }
 
     if (command.type === 'DRAW_FROM_DECK') {
-        const currentPlayer = core.players[command.playerId];
-        const drawCount = isDuelVariant(core)
-            ? ((currentPlayer?.hand.length ?? 0) >= 7 ? 1 : 2)
-            : 1;
         return {
             id: `${command.type}-${command.playerId}-${timestamp}`,
             timestamp,
             actorId: command.playerId,
             kind: command.type,
-            segments: [{ type: 'text', text: `从牌库摸 ${drawCount} 张` }],
+            segments: [{ type: 'text', text: `从牌库摸 ${getDeckDrawCount(core)} 张` }],
         };
     }
 

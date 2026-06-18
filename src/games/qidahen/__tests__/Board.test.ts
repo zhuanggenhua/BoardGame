@@ -218,20 +218,58 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
         expect(boardSource).toContain('showWheelNextStepBanner');
-        expect(boardSource).toContain('下一步：点击轮盘按钮推进回合');
-        expect(boardSource).toContain('不用点左侧轮盘盘面，直接点下面的明文按钮即可');
+        expect(boardSource).toContain('进行轮盘行动');
+        expect(boardSource).toContain("wheelNextStepBadge', { defaultValue: '下一步' }");
+        expect(boardSource).toContain("wheelNextStepHint', {\n                            defaultValue: '点击绿色扇区'");
         expect(boardSource).toContain('直接执行');
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
     });
 
-    it('一级行动面板会把当前主入口写成明文提示，并把当前行动按钮标成固定主焦点', () => {
+    it('一级行动面板会自动锁定当前主流程，并直接暴露二级行动而不是再加一级选择按钮', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain('当前主入口：先从下方动作栏选一个一级行动');
-        expect(boardSource).toContain('当前主入口：先点地图区域，再次点选中的行动按钮继续');
-        expect(boardSource).toContain('当前主入口：一级行动已完成，改点轮盘明文按钮推进回合');
+        expect(boardSource).toContain("return selectedAction ? `弃牌进行行动：${selectedAction.label}` : '弃牌进行行动';");
+        expect(boardSource).toContain("return '从下方选择行动';");
+        expect(boardSource).toContain("return '选择地图目标';");
+        expect(boardSource).toContain("return '进行轮盘行动';");
+        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '当前步骤' })");
+        expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '弃牌行动' })");
+        expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
         expect(boardSource).toContain('qidahen-primary-action-next-step');
         expect(boardSource).toContain('qidahen-action-state-${action.id}');
-        expect(boardSource).toContain("selected ? '当前' : '可选'");
+        expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
+        expect(boardSource).toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
+        expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
+    });
+
+    it('地图必须共享缩放拖动视口，并让高亮路线与顶层点击点一起跟随同一套投影', () => {
+        expect(boardSource).toContain('type QidahenMapViewport = {');
+        expect(boardSource).toContain('const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {');
+        expect(boardSource).toContain('const projectQidahenMapPointToStage = (');
+        expect(boardSource).toContain('data-testid="qidahen-map-viewport-controls"');
+        expect(boardSource).toContain('data-testid="qidahen-map-content"');
+        expect(boardSource).toContain('data-map-zoom={viewport.zoom}');
+        expect(boardSource).toContain('data-map-pan-x={viewport.panX}');
+        expect(boardSource).toContain('data-map-pan-y={viewport.panY}');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-in"');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-out"');
+        expect(boardSource).toContain('data-testid="qidahen-map-zoom-reset"');
+        expect(boardSource).toContain('onWheel={handleMapWheel}');
+        expect(boardSource).toContain('onPointerDown={handlePointerDown}');
+        expect(boardSource).toContain('onPointerUp={handlePointerUp}');
+        expect(boardSource).toContain('viewport={mapViewport}');
+        expect(boardSource).toContain('onViewportChange={setMapViewport}');
+        expect(boardSource).toContain("strokeDasharray={activeCandidate ? '24 14' : '18 12'}");
+        expect(boardSource).toContain("markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
+    });
+
+    it('地图文案不得再把 region id 直接漏给用户，可见区域名优先走中文规则名', () => {
+        expect(boardSource).toContain("import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';");
+        expect(boardSource).toContain("import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';");
+        expect(boardSource).toContain("regionName: targetRegion");
+        expect(boardSource).toContain("? getActionRuleDisplayRegionName(targetRegion, targetRegion.name)");
+        expect(boardSource).toContain(": getQidahenStatefulRegionDisplayName(regionId)");
+        expect(boardSource).not.toContain('regionName: targetRegion?.name ?? regionId');
     });
 
     it('有弃牌成本的势力行动必须先进入显式选牌确认态，并把确认入口收口到手牌上方的独立交互条', () => {

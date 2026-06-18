@@ -31,6 +31,7 @@ import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/st
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { evaluateEmptyRoomJoinGuard } from './src/server/joinGuard';
 import { areAllSeatsOccupied, hasOccupiedPlayers, isSeatOccupied, isSupportedPlayerCount } from './src/server/matchOccupancy';
+import { resolveAllowedPlayerCountsForGame } from './src/games/roomSetupRegistry';
 import {
     createMatchWithOwnerConflictRetry,
     decideDuplicateOwnerRoomAction,
@@ -768,17 +769,19 @@ router.post('/games/:name/create', async (ctx) => {
     const requestedOwnerName = typeof body?.playerName === 'string' && body.playerName.trim()
         ? body.playerName.trim()
         : undefined;
-    const minPlayers = gameEngine?.minPlayers ?? 2;
-    const maxPlayers = gameEngine?.maxPlayers ?? 2;
-    const playerOptions = gameEntry?.manifest.playerOptions;
-    if (!isSupportedPlayerCount(numPlayers, minPlayers, maxPlayers, playerOptions)) {
-        ctx.throw(400, 'Invalid numPlayers');
-    }
-
     const rawSetupData =
         body?.setupData && typeof body.setupData === 'object'
             ? (body.setupData as Record<string, unknown>)
             : {};
+    const minPlayers = gameEngine?.minPlayers ?? 2;
+    const maxPlayers = gameEngine?.maxPlayers ?? 2;
+    const playerOptions = resolveAllowedPlayerCountsForGame({
+        gameManifest: gameEntry?.manifest,
+        setupData: rawSetupData,
+    });
+    if (!isSupportedPlayerCount(numPlayers, minPlayers, maxPlayers, playerOptions)) {
+        ctx.throw(400, 'Invalid numPlayers');
+    }
     const { ownerKey, ownerType, ownerName } = resolveOwnerFromRequest(ctx, rawSetupData, requestedOwnerName);
     const setupData: MatchCreateSetupData = { ...rawSetupData, ownerKey, ownerType };
 

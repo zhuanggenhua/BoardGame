@@ -30,14 +30,19 @@
       "discardRequired": "Discard 1"
     },
     "short": {
-      "round": "R{{turn}}"
+      "round": "Round {{turn}}"
     },
     "live": {
       "selfTurn": "Your Turn"
     },
     "statusBanner": {
+      "kicker": "Next",
       "discardPick": "Discard 1",
       "discardSelf": "Confirm Discard",
+      "drawDeckDirect": "{{action}}",
+      "drawOrTake": "Tap the deck to draw, or tap a face-up card to take it",
+      "takeDirect": "Tap a face-up card to take it",
+      "discardDirect": "Tap a card in hand to discard it",
       "waiting": "Waiting for {{player}}"
     }
   },
@@ -77,6 +82,7 @@
     "inspectDiscardAria": "Inspect discard {{name}}",
     "discardHandAria": "Discard hand card {{name}}",
     "inspectHandAria": "Inspect hand card {{name}}",
+    "openMagnifyAria": "Magnify {{name}}",
     "confirmTake": "Confirm",
     "confirmDiscard": "Confirm Discard",
     "closePreview": "Close Preview",
@@ -109,5 +115,17 @@
     "finalStandings": "Final Standings",
     "drawBadge": "Draw",
     "rank": "#{{rank}}"
+  },
+  "setup": {
+    "variant": {
+      "label": "Match Mode",
+      "standard": "Standard Match",
+      "duel": "Duel Variant"
+    },
+    "expansion": {
+      "label": "Deck Scope",
+      "base": "Base Deck",
+      "cursedHoardSuits": "Cursed Hoard: Suit Expansion"
+    }
   }
 }

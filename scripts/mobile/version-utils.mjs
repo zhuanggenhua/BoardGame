@@ -37,7 +37,16 @@ export const bumpSemver = (value, bumpType) => {
 
 export const updateProjectVersion = (nextVersion) => {
     const packageJson = readJsonFile(packageJsonPath);
+    const currentVersion = packageJson.version;
     packageJson.version = nextVersion;
+    if (
+        currentVersion !== nextVersion
+        && typeof packageJson.androidVersionCode === 'number'
+        && Number.isFinite(packageJson.androidVersionCode)
+        && packageJson.androidVersionCode > 0
+    ) {
+        packageJson.androidVersionCode = Math.trunc(packageJson.androidVersionCode) + 1;
+    }
     writeJsonFile(packageJsonPath, packageJson);
 
     if (!existsSync(packageLockPath)) {

@@ -12,6 +12,7 @@ import {
     resolveLocalMatchPlayerCount,
 } from './seatControllers';
 import type { AiSeatController } from './types';
+import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
 
 const STORAGE_PREFIX = 'local_ai_match_preferences:';
 
@@ -40,7 +41,11 @@ export function readStoredLocalMatchPreferences(
 }
 
 export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEntry): LocalMatchPreferences {
-    const playerOptions = gameManifest.playerOptions?.length ? gameManifest.playerOptions : [2];
+    const defaultSetupSelections = getDefaultSetupSelections(gameManifest);
+    const playerOptions = resolveAllowedPlayerCountsForGame({
+        gameManifest,
+        setupData: defaultSetupSelections,
+    });
     const numPlayers = resolveLocalMatchPlayerCount(null, playerOptions);
     const seatControllers: Record<string, AiSeatController> = {};
 
@@ -52,7 +57,7 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
         numPlayers,
         minimumActionDelayMs: DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
         seatControllers,
-        setupSelections: getDefaultSetupSelections(gameManifest),
+        setupSelections: defaultSetupSelections,
     };
 }
 
@@ -61,11 +66,22 @@ export function normalizeLocalMatchPreferences(
     raw: Record<string, unknown> | null | undefined,
 ): LocalMatchPreferences {
     const defaults = createDefaultLocalMatchPreferences(gameManifest);
+    const rawSetupSelections = raw?.setupSelections && typeof raw.setupSelections === 'object' && !Array.isArray(raw.setupSelections)
+        ? raw.setupSelections as Record<string, unknown>
+        : {};
+    const setupSelections = normalizeSetupSelections(
+        gameManifest,
+        rawSetupSelections,
+    );
+    const playerOptions = resolveAllowedPlayerCountsForGame({
+        gameManifest,
+        setupData: setupSelections,
+    });
     const numPlayers = resolveLocalMatchPlayerCount(
         typeof raw?.numPlayers === 'number' || typeof raw?.numPlayers === 'string'
             ? String(raw.numPlayers)
             : null,
-        gameManifest.playerOptions,
+        playerOptions,
     );
 
     const seatControllers: Record<string, AiSeatController> = {};
@@ -86,13 +102,6 @@ export function normalizeLocalMatchPreferences(
         seatControllers[playerId] = getDefaultSeatController(index, numPlayers, gameManifest.ai);
     }
 
-    const rawSetupSelections = raw?.setupSelections && typeof raw.setupSelections === 'object' && !Array.isArray(raw.setupSelections)
-        ? raw.setupSelections as Record<string, unknown>
-        : {};
-    const setupSelections = normalizeSetupSelections(
-        gameManifest,
-        rawSetupSelections,
-    );
     const minimumActionDelayMs = normalizeAiMinimumActionDelayMs(
         typeof raw?.minimumActionDelayMs === 'number'
             ? raw.minimumActionDelayMs

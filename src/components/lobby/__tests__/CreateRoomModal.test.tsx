@@ -6,6 +6,7 @@ import { CreateRoomModal } from '../CreateRoomModal';
 import { PasswordEntryModal } from '../../common/overlays/PasswordEntryModal';
 import type { GameManifestEntry } from '../../../games/manifest.types';
 import type { LocalMatchPreferences } from '../../../engine/ai';
+import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { QIDAHEN_MANIFEST } from '../../../games/qidahen/manifest';
 
 vi.mock('react-i18next', () => ({
@@ -323,6 +324,96 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(passwordInput).toHaveAttribute('name', 'roomPassword');
         expect(passwordInput).toHaveAttribute('autocomplete', 'new-password');
+    });
+
+    it('幻想国度切到二人变体后，应把人数按钮立即收敛到 2 人并按该 setup 提交', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        const setupSelects = screen.getAllByRole('combobox');
+        const variantSelect = setupSelects[1];
+
+        expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
+
+        fireEvent.change(variantSelect, { target: { value: 'duel' } });
+
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '3人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '4人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '5人' })).toBeNull();
+        expect(screen.queryByRole('button', { name: '6人' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 2,
+            setupSelections: expect.objectContaining({
+                variant: 'duel',
+                expansion: 'base',
+            }),
+        }));
+    });
+
+    it('幻想国度从二人变体切回标准版后，应重新放开更高人数选项', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        const setupSelects = screen.getAllByRole('combobox');
+        const variantSelect = setupSelects[1];
+
+        fireEvent.change(variantSelect, { target: { value: 'duel' } });
+        expect(screen.queryByRole('button', { name: '6人' })).toBeNull();
+
+        fireEvent.change(variantSelect, { target: { value: 'standard' } });
+        fireEvent.click(screen.getByRole('button', { name: '6人' }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 6,
+            setupSelections: expect.objectContaining({
+                variant: 'standard',
+                expansion: 'base',
+            }),
+        }));
+    });
+
+    it('幻想国度可选扩展会通过建房 setupSelections 提交出去', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        const setupSelects = screen.getAllByRole('combobox');
+        const expansionSelect = setupSelects[2];
+
+        fireEvent.change(expansionSelect, { target: { value: 'cursed-hoard-suits' } });
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            setupSelections: expect.objectContaining({
+                variant: 'standard',
+                expansion: 'cursed-hoard-suits',
+            }),
+        }));
     });
 
     it('七大恨建房页不再提供剧本预选，而是只提示局内完成剧本介绍、投票与前置项', () => {

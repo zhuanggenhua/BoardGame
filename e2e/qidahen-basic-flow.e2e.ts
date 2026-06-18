@@ -14,6 +14,7 @@ import {
 const BOARD_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-棋盘桌面当前.png';
 const PREGAME_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-局内剧本直入-棋盘当前.png';
 const MOBILE_LANDSCAPE_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-手机横屏棋盘当前.png';
+const MAP_VIEWPORT_SCREENSHOT = 'test-results/evidence-screenshots/_shared/qidahen-地图缩放拖拽/01-地图缩放拖拽后视口发生变化.png';
 const BASIC_GUIDED_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-剧本基础流程';
 const ACTION_WINDOW_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-行动窗口流程';
 const WHEEL_FLOW_DIR = 'test-results/evidence-screenshots/_shared/qidahen-轮盘结算流程';
@@ -500,7 +501,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await confirmActionPayment(page, 3);
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('下一步：点击轮盘按钮推进回合');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('进行轮盘行动');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM);
 
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
@@ -639,6 +640,50 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-region-movement-preview"]')).toContainText('调度可达');
         await saveScreenshot(page, MOVEMENT_PREVIEW_SCREENSHOT);
         assertNoFatalFrontendErrors([{ label: 'qidahen-map-hud-desktop', diagnostics }]);
+    });
+
+    test('地图缩放拖拽与复位控件会改变真实视口并可恢复默认值', async ({ page }) => {
+        await setChineseLocale(page);
+        await disableAudio(page);
+        await disableTutorial(page);
+        await page.addInitScript(() => {
+            (window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__ = true;
+        });
+
+        await page.setViewportSize({ width: 1920, height: 1080 });
+        await page.goto('/play/qidahen/tutorial', { waitUntil: 'domcontentloaded' });
+
+        const mapLayer = page.locator('[data-testid="qidahen-map-layer"]');
+        const mapCanvas = page.locator('[data-testid="qidahen-map-hitmap-canvas"]');
+        await expect(mapLayer).toBeVisible({ timeout: 30000 });
+        await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
+        await expect(mapLayer).toHaveAttribute('data-map-zoom', '1');
+        await expect(mapLayer).toHaveAttribute('data-map-pan-x', '0');
+        await expect(mapLayer).toHaveAttribute('data-map-pan-y', '0');
+
+        await page.getByTestId('qidahen-map-zoom-in').click();
+        const zoomAfterIn = Number(await mapLayer.getAttribute('data-map-zoom'));
+        expect(zoomAfterIn).toBeGreaterThan(1);
+
+        const canvasBox = await mapCanvas.boundingBox();
+        expect(canvasBox).not.toBeNull();
+        if (!canvasBox) {
+            throw new Error('qidahen map hit canvas bounding box missing');
+        }
+        await page.mouse.move(canvasBox.x + canvasBox.width * 0.5, canvasBox.y + canvasBox.height * 0.5);
+        await page.mouse.down();
+        await page.mouse.move(canvasBox.x + canvasBox.width * 0.5 + 120, canvasBox.y + canvasBox.height * 0.5 + 60, { steps: 8 });
+        await page.mouse.up();
+
+        const panXAfterDrag = Number(await mapLayer.getAttribute('data-map-pan-x'));
+        const panYAfterDrag = Number(await mapLayer.getAttribute('data-map-pan-y'));
+        expect(Math.abs(panXAfterDrag) + Math.abs(panYAfterDrag)).toBeGreaterThan(0);
+        await saveScreenshot(page, MAP_VIEWPORT_SCREENSHOT);
+
+        await page.getByTestId('qidahen-map-zoom-reset').click();
+        await expect(mapLayer).toHaveAttribute('data-map-zoom', '1');
+        await expect(mapLayer).toHaveAttribute('data-map-pan-x', '0');
+        await expect(mapLayer).toHaveAttribute('data-map-pan-y', '0');
     });
 
     test('赐印招安结算后仍会回到真实 Board 场景并更新地图结果', async ({ page }) => {
@@ -1413,6 +1458,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-22"]')).toContainText('解围');
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-target-city-region-32"]')).toContainText('登莱');
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('点击绿色地图目标');
+        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('只允许点击绿色区域');
         const guideRouteCount = await page.locator('[data-testid^="qidahen-map-guide-route-"]').count();
         expect(guideRouteCount).toBeGreaterThanOrEqual(2);
 
@@ -1520,11 +1566,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await clickGuidedMapTarget(page, 'city-region-22');
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('王化贞免费调度');
+        await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('东江');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-22');
         const internalDispatchState = await readRequiredQidahenHarnessState(page);
-        const internalSourceRegion = internalDispatchState.core.regions.find((region) => region.id === 'song-jin');
         const internalTargetRegion = internalDispatchState.core.regions.find((region) => region.id === 'city-region-22');
-        expect(internalSourceRegion?.troops).toBe(2);
         expect(internalTargetRegion?.troops).toBe(3);
         await saveScreenshot(page, INTERNAL_DISPATCH_DIRECT_AFTER_SCREENSHOT);
     });
@@ -2502,7 +2547,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: 'recruit-train' },
         });
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('下一步：点击轮盘按钮推进回合');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('进行轮盘行动');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
@@ -2627,7 +2672,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             });
         });
 
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('下一步：点击轮盘按钮推进回合');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('进行轮盘行动');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('一名对手抽 2，走 2');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'ningyuan');

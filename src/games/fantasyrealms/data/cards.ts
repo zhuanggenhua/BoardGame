@@ -22,7 +22,7 @@ export const FANTASY_REALMS_CARD_NAME_ZH_BY_ID = {
     'army-elven-archers': '精灵射手',
     'weapon-elven-longbow': '精灵长弓',
     'leader-empress': '女皇',
-    'wizard-elemental-enchantress': '女巫',
+    'wizard-elemental-enchantress': '元素女巫',
     'flame-fire-elemental': '火元素',
     'land-forest': '森林',
     'flame-forge': '锻造炉',
@@ -52,6 +52,29 @@ export const FANTASY_REALMS_CARD_NAME_ZH_BY_ID = {
     'flood-water-elemental': '水元素',
     'weather-whirlwind': '旋风',
     'flame-wildfire': '野火',
+    'building-dungeon': '地牢',
+    'building-castle': '城堡',
+    'building-crypt': '墓穴',
+    'building-chapel': '礼拜堂',
+    'land-garden': '花园',
+    'outsider-genie': '巨灵',
+    'outsider-judge': '审判官',
+    'outsider-angel': '天使',
+    'outsider-leprechaun': '小妖精',
+    'outsider-demon': '恶魔',
+    'undead-dark-queen': '黑暗女王',
+    'undead-ghoul': '食尸鬼',
+    'undead-specter': '幽灵',
+    'undead-lich': '巫妖',
+    'undead-death-knight': '死亡骑士',
+    'building-bell-tower-ch': '钟塔',
+    'flood-fountain-of-life-ch': '生命之泉',
+    'flood-great-flood-ch': '大洪水',
+    'army-rangers-ch': '护林人',
+    'wizard-necromancer-ch': '死灵术士',
+    'artifact-world-tree-ch': '世界树',
+    'wild-shapeshifter-ch': '变形怪',
+    'wild-mirage-ch': '幻象',
 } as const;
 
 export const FANTASY_REALMS_CARD_TEXT_ZH_BY_ID = {
@@ -66,7 +89,7 @@ export const FANTASY_REALMS_CARD_TEXT_ZH_BY_ID = {
     'artifact-shield-of-keth': '奖励：与任意一张领袖牌同在时+15分；若同时有领袖牌和凯斯之剑则+40分。',
     'artifact-gem-of-order': '奖励：3张顺子+10分，4张顺子+30分，5张顺子+60分，6张顺子+100分，7张顺子+150分。',
     'beast-warhorse': '奖励：与任意一张领袖牌或法师牌同在时+14分。',
-    'beast-unicorn': '奖励：与公主同在时+30分；与女皇、王后或女巫同在时+15分。',
+    'beast-unicorn': '奖励：与公主同在时+30分；与女皇、王后或元素女巫同在时+15分。',
     'beast-hydra': '奖励：与沼泽同在时+28分。',
     'beast-dragon': '惩罚：若手中没有至少一张法师牌，-40分。',
     'beast-basilisk': '惩罚：无效化所有军队牌、领袖牌以及其他巨兽牌。',
@@ -108,6 +131,29 @@ export const FANTASY_REALMS_CARD_TEXT_ZH_BY_ID = {
     'wizard-collector': '奖励：若同一花色中有3张不同牌，+10分；4张不同牌+40分；5张不同牌+100分。',
     'wizard-beastmaster': '奖励：每张巨兽牌+9分；清除所有巨兽牌的惩罚项。',
     'wizard-warlock-lord': '惩罚：每张领袖牌和其他法师牌-10分。',
+    'building-dungeon': '奖励：若有不死族、巨兽或神器牌，各获得对应加成；死灵术士、术士领主和恶魔也会额外加分。',
+    'building-castle': '奖励：若有领袖、军队或土地牌，各获得加成；每多一种建筑牌也会继续加分。',
+    'building-crypt': '奖励：你的所有不死族牌基础分相加；惩罚：无效化所有领袖牌。',
+    'building-chapel': '奖励：若手中恰有两张牌来自领袖、法师、局外人和不死族花色的组合，+40分。',
+    'land-garden': '奖励：每张领袖牌和巨兽牌+11分；若手中有不死族、死灵术士或恶魔，此牌无效。',
+    'outsider-genie': '奖励：每名其他玩家+10分；占用额外手牌槽位。',
+    'outsider-judge': '奖励：每张带惩罚且惩罚未被清除的牌+10分。',
+    'outsider-angel': '可指定一张牌，使其不会被无效化。',
+    'outsider-leprechaun': '占用额外手牌槽位。',
+    'outsider-demon': '惩罚：无效化除局外人外的所有单花色牌。',
+    'undead-dark-queen': '奖励：弃牌区每张土地牌、洪流牌、烈焰牌和天象牌+5分；若弃牌区有独角兽，再+5分。',
+    'undead-ghoul': '奖励：弃牌区每张法师牌、领袖牌、军队牌、巨兽牌和不死族牌+4分。',
+    'undead-specter': '奖励：弃牌区每张法师牌、神器牌和局外人牌+6分。',
+    'undead-lich': '奖励：与死灵术士同在时+10分；每张其他不死族牌+10分。',
+    'undead-death-knight': '奖励：弃牌区每张武器牌和军队牌+7分。',
+    'building-bell-tower-ch': '奖励：与任意一张法师牌或不死族牌同在时+15分。',
+    'flood-fountain-of-life-ch': '奖励：将你手中任意一张建筑牌、武器牌、洪流牌、烈焰牌、土地牌或天象牌的基础分加入此牌。',
+    'flood-great-flood-ch': '惩罚：无效化所有军队牌、所有建筑牌、除山脉外的所有土地牌，以及除闪电外的所有烈焰牌。',
+    'army-rangers-ch': '奖励：每张土地牌和建筑牌+10分。',
+    'wizard-necromancer-ch': '奖励：游戏结束时，你可以从弃牌堆中拿1张军队牌、领袖牌、法师牌、巨兽牌或不死族牌加入手牌，作为第8张牌。',
+    'artifact-world-tree-ch': '奖励：若手中所有生效牌的花色都不同，+70分。',
+    'wild-shapeshifter-ch': '可视为任意一张神器牌、领袖牌、法师牌、武器牌、巨兽牌或不死族牌的名称与花色；不复制其奖励或惩罚。',
+    'wild-mirage-ch': '可视为任意一张军队牌、建筑牌、土地牌、天象牌、洪流牌或烈焰牌的名称与花色；不复制其奖励或惩罚。',
 } as const;
 
 const RAW_OFFICIAL_FANTASY_REALMS_CARDS = [
@@ -159,15 +205,71 @@ const RAW_OFFICIAL_FANTASY_REALMS_CARDS = [
     { id: 'wild-shapeshifter', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Shapeshifter', score: 0, text: 'May take on the name and suit of any Artifact, Leader, Wizard, Weapon or Beast. Does not take bonus or penalty.' },
     { id: 'wild-mirage', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Mirage', score: 0, text: 'May take on the name and suit of any Army, Land, Weather, Flood or Flame. Does not take bonus or penalty.' },
     { id: 'wild-doppelganger', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Doppelganger', score: 0, text: 'May duplicate the name, suit, base strength, and penalty but not bonus of any one other card in your hand' },
-    { id: 'wizard-necromancer', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Necromancer', score: 3, text: 'Bonus: At the end of the game, you may take one Army, Leader, Wizard, or Beast from the discard pile and add it to your hand as an eighth card.' },
+    { id: 'wizard-necromancer', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Necromancer', score: 3, text: 'Bonus: At the end of the game, you may take one Army, Leader, Wizard, or Beast from the discard pile and add it to your hand as an eighth card.', extraCard: true },
     { id: 'wizard-elemental-enchantress', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Elemental Enchantress', score: 5, text: 'Bonus: +5 for each Land, Weather, Flood, and Flame' },
     { id: 'wizard-collector', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Collector', score: 7, text: 'Bonus: +10 if three different cards in same suit, +40 if four different cards, +100 if five different cards' },
     { id: 'wizard-beastmaster', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Beastmaster', score: 9, text: 'Bonus: +9 for each Beast; Clears the Penalty on all Beasts' },
     { id: 'wizard-warlock-lord', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Warlock Lord', score: 25, text: 'Penalty: -10 for each Leader and other Wizard' },
+    { id: 'building-dungeon', suit: '建筑', toneClass: 'fr-suit-building', name: 'Dungeon', score: 7, text: 'Bonus: +10 with undead, beast, or artifact cards, and more for additional cards of those suits.' },
+    { id: 'building-castle', suit: '建筑', toneClass: 'fr-suit-building', name: 'Castle', score: 10, text: 'Bonus: +10 each with Leaders, Armies, Land, and other Buildings.' },
+    { id: 'building-crypt', suit: '建筑', toneClass: 'fr-suit-building', name: 'Crypt', score: 21, text: 'Bonus: Your undead cards add their base strength; Penalty: blanks all Leaders.' },
+    { id: 'building-chapel', suit: '建筑', toneClass: 'fr-suit-building', name: 'Chapel', score: 2, text: 'Bonus: +40 if exactly two cards among Leaders, Wizards, Outlanders, and Undead are in hand.' },
+    { id: 'land-garden', suit: '土地', toneClass: 'fr-suit-land', name: 'Garden', score: 11, text: 'Bonus: +11 for each Leader and Beast; blanked by Undead, Necromancer, or Demon.' },
+    { id: 'outsider-genie', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Genie', score: -50, text: 'Bonus: +10 per other player; counts as an extra card.', extraCard: true },
+    { id: 'outsider-judge', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Judge', score: 11, text: 'Bonus: +10 for each card with an active penalty.' },
+    { id: 'outsider-angel', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Angel', score: 16, text: 'Choose one card; that card cannot be blanked.' },
+    { id: 'outsider-leprechaun', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Leprechaun', score: 20, text: 'Counts as an extra card.', extraCard: true },
+    { id: 'outsider-demon', suit: '局外人', toneClass: 'fr-suit-outsider', name: 'Demon', score: 45, text: 'Blanks any non-Outsider card that is the only card of its suit.' },
+    { id: 'undead-dark-queen', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Dark Queen', score: 10, text: 'Bonus: +5 for each Land, Flood, Flame, and Weather card in discard; +5 more if Unicorn is in discard.' },
+    { id: 'undead-ghoul', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Ghoul', score: 8, text: 'Bonus: +4 for each Wizard, Leader, Army, Beast, and Undead card in discard.' },
+    { id: 'undead-specter', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Specter', score: 12, text: 'Bonus: +6 for each Wizard, Artifact, and Outsider card in discard.' },
+    { id: 'undead-lich', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Lich', score: 13, text: 'Bonus: +10 with Necromancer; +10 for each other Undead card.' },
+    { id: 'undead-death-knight', suit: '不死族', toneClass: 'fr-suit-undead', name: 'Death Knight', score: 14, text: 'Bonus: +7 for each Weapon and Army card in discard.' },
+    { id: 'building-bell-tower-ch', suit: '建筑', toneClass: 'fr-suit-building', name: 'Bell Tower', score: 8, text: 'Bonus: +15 with any one Wizard or Undead card.', replacesBaseCardId: 'land-bell-tower' },
+    { id: 'flood-fountain-of-life-ch', suit: '洪流', toneClass: 'fr-suit-flood', name: 'Fountain of Life', score: 1, text: 'Bonus: Add the base strength of any Building, Weapon, Flood, Flame, Land, or Weather card in your hand.', replacesBaseCardId: 'flood-fountain-of-life' },
+    { id: 'flood-great-flood-ch', suit: '洪流', toneClass: 'fr-suit-flood', name: 'Great Flood', score: 32, text: 'Penalty: blanks all Armies, all Buildings, all Lands except Mountain, and all Flames except Lightning.', replacesBaseCardId: 'flood-great-flood' },
+    { id: 'army-rangers-ch', suit: '军队', toneClass: 'fr-suit-army', name: 'Rangers', score: 5, text: 'Bonus: +10 for each Land and Building card.', replacesBaseCardId: 'army-rangers' },
+    { id: 'wizard-necromancer-ch', suit: '法师', toneClass: 'fr-suit-wizard', name: 'Necromancer', score: 3, text: 'Bonus: At the end of the game, you may take one Army, Leader, Wizard, Beast, or Undead from the discard pile and add it to your hand as an eighth card.', extraCard: true, replacesBaseCardId: 'wizard-necromancer' },
+    { id: 'artifact-world-tree-ch', suit: '神器', toneClass: 'fr-suit-artifact', name: 'World Tree', score: 2, text: 'Bonus: +70 if every active card in hand is a different suit.', replacesBaseCardId: 'artifact-world-tree' },
+    { id: 'wild-shapeshifter-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Shapeshifter', score: 0, text: 'May take on the name and suit of any Artifact, Leader, Wizard, Weapon, Beast, or Undead. Does not take bonus or penalty.', replacesBaseCardId: 'wild-shapeshifter' },
+    { id: 'wild-mirage-ch', suit: '野牌', toneClass: 'fr-suit-wild', name: 'Mirage', score: 0, text: 'May take on the name and suit of any Army, Building, Land, Weather, Flood, or Flame. Does not take bonus or penalty.', replacesBaseCardId: 'wild-mirage' },
 ] as const;
 
-export const OFFICIAL_FANTASY_REALMS_CARDS = RAW_OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({
+export const ALL_FANTASY_REALMS_CARDS = RAW_OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({
     ...card,
     displayNameZh: FANTASY_REALMS_CARD_NAME_ZH_BY_ID[card.id],
     textZh: FANTASY_REALMS_CARD_TEXT_ZH_BY_ID[card.id],
 }));
+
+export const OFFICIAL_FANTASY_REALMS_CARDS = ALL_FANTASY_REALMS_CARDS.filter((card) => (
+    card.id !== 'land-garden'
+    && !card.id.startsWith('building-')
+    && !card.id.startsWith('outsider-')
+    && !card.id.startsWith('undead-')
+    && !card.id.endsWith('-ch')
+));
+
+export const CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS = ALL_FANTASY_REALMS_CARDS.filter((card) => (
+    card.id === 'land-garden'
+    || card.id.startsWith('building-')
+    || card.id.startsWith('outsider-')
+    || card.id.startsWith('undead-')
+    || card.id.endsWith('-ch')
+));
+
+export const FANTASY_REALMS_CARD_REPLACEMENTS = new Map<string, string>([
+    ['land-bell-tower', 'building-bell-tower-ch'],
+    ['flood-fountain-of-life', 'flood-fountain-of-life-ch'],
+    ['flood-great-flood', 'flood-great-flood-ch'],
+    ['army-rangers', 'army-rangers-ch'],
+    ['wizard-necromancer', 'wizard-necromancer-ch'],
+    ['artifact-world-tree', 'artifact-world-tree-ch'],
+    ['wild-shapeshifter', 'wild-shapeshifter-ch'],
+    ['wild-mirage', 'wild-mirage-ch'],
+]);
+
+export const FANTASY_REALMS_EXTRA_CARD_IDS = new Set(
+    ALL_FANTASY_REALMS_CARDS
+        .filter((card) => Boolean((card as { extraCard?: boolean }).extraCard))
+        .map((card) => card.id),
+);

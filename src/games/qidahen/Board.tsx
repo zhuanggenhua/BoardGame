@@ -59,6 +59,8 @@ import {
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './domain/interactionSelectionAccessors';
+import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';
+import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';
 
 type QidahenYearCardSlot = QidahenCore['yearCards'][number];
 import { getCurrentFactionId } from './domain/factionTurnAccessors';
@@ -106,7 +108,11 @@ const ASSETS = {
 const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
 const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
 const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
+const MAP_COVER_WIDTH = QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE;
+const MAP_COVER_HEIGHT = QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE;
 const QIDAHEN_FACTION_ORDER: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
+const QIDAHEN_MAP_MIN_ZOOM = 1;
+const QIDAHEN_MAP_MAX_ZOOM = 2.25;
 
 const CARD_BACK_BY_FACTION: Record<QidahenFactionId, string> = {
     ming: ASSETS.mingCard,
@@ -250,6 +256,44 @@ const resolveViewerFactionId = (
 );
 
 type QidahenPrimaryStageMode = 'faction' | 'wheel';
+type QidahenMapViewport = {
+    zoom: number;
+    panX: number;
+    panY: number;
+};
+
+const DEFAULT_QIDAHEN_MAP_VIEWPORT: QidahenMapViewport = {
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+};
+
+const clampNumber = (value: number, min: number, max: number): number => (
+    Math.min(max, Math.max(min, value))
+);
+
+const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {
+    const zoom = clampNumber(viewport.zoom, QIDAHEN_MAP_MIN_ZOOM, QIDAHEN_MAP_MAX_ZOOM);
+    const scaledWidth = MAP_COVER_WIDTH * zoom;
+    const scaledHeight = MAP_COVER_HEIGHT * zoom;
+    const minPanX = STAGE_WIDTH - scaledWidth - MAP_COVER_LEFT;
+    const maxPanX = -MAP_COVER_LEFT;
+    const minPanY = STAGE_HEIGHT - scaledHeight - MAP_COVER_TOP;
+    const maxPanY = -MAP_COVER_TOP;
+    return {
+        zoom,
+        panX: clampNumber(viewport.panX, minPanX, maxPanX),
+        panY: clampNumber(viewport.panY, minPanY, maxPanY),
+    };
+};
+
+const projectQidahenMapPointToStage = (
+    point: { x: number; y: number },
+    viewport: QidahenMapViewport,
+) => ({
+    x: MAP_COVER_LEFT + viewport.panX + point.x * MAP_COVER_SCALE * viewport.zoom,
+    y: MAP_COVER_TOP + viewport.panY + point.y * MAP_COVER_SCALE * viewport.zoom,
+});
 
 const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
     const uniqueNames = Array.from(new Set(regionNames.filter((name) => name.trim().length > 0)));
@@ -275,9 +319,9 @@ const buildQidahenPrimaryStageHeadline = (
     }
     if (primaryStageMode === 'faction') {
         if (core.factionActionUsed) {
-            return '势力行动已完成';
+            return '弃牌行动已完成';
         }
-        return selectedAction ? `弃牌执行势力行动：${selectedAction.label}` : '弃牌执行势力行动';
+        return selectedAction ? `弃牌进行行动：${selectedAction.label}` : '弃牌进行行动';
     }
     return '当前主流程已收口';
 };
@@ -289,19 +333,19 @@ const buildQidahenPrimaryStageHint = (
 ): string => {
     if (primaryStageMode === 'wheel') {
         return core.wheelActionUsed
-            ? '本席轮盘步骤已经结束，等待后续结算或下一席。'
-            : '点击左侧轮盘上的绿色扇区。所有绿色扇区都可点击，亮金扇区只是当前焦点，不是唯一可点处。';
+            ? '等待后续结算'
+            : '点击绿色扇区';
     }
     if (primaryStageMode === 'faction') {
         if (!selectedAction) {
-            return '先选一个势力行动，再进入对应的区域、弃牌或结算步骤。';
+            return '从下方选择行动';
         }
         if (selectedAction.id === 'upgrade-armament') {
-            return '先预览并确认弃牌，再进入升级军备。';
+            return '确认后升级';
         }
-        return '先选中下方二级势力行动，再按地图高亮、手牌托盘或结算面板完成后续步骤。';
+        return '选择目标或继续结算';
     }
-    return '当前没有新的一级行动可推进。';
+    return '等待后续结算';
 };
 
 const buildQidahenPrimaryActionEntryText = (
@@ -309,12 +353,12 @@ const buildQidahenPrimaryActionEntryText = (
     selectedAction: QidahenActionChoice | null,
 ): string => {
     if (!selectedAction) {
-        return '当前主入口：先从下方动作栏选一个一级行动。';
+        return '从下方选择行动';
     }
     if (core.factionActionUsed) {
         return core.wheelActionUsed
-            ? '当前主入口：本席主流程已收口，等待后续结算。'
-            : '当前主入口：一级行动已完成，改点轮盘明文按钮推进回合。';
+            ? '等待后续结算'
+            : '进行轮盘行动';
     }
     switch (selectedAction.id) {
         case 'raid':
@@ -324,11 +368,11 @@ const buildQidahenPrimaryActionEntryText = (
         case 'khan-edict':
         case 'recruit':
         case 'ma-shi-trade':
-            return '当前主入口：先点地图区域，再次点选中的行动按钮继续。';
+            return '选择地图目标';
         case 'upgrade-armament':
-            return '当前主入口：再次点选中的行动按钮，进入弃牌与升级。';
+            return '确认弃牌并升级';
         default:
-            return '当前主入口：按下方选中的行动按钮继续。';
+            return '继续当前行动';
     }
 };
 
@@ -988,17 +1032,28 @@ const MapSceneLayer: React.FC<{
     internalDispatchSelection: QidahenInternalDispatchSelection | null;
     pendingTargetAction: QidahenCore['pendingTargetAction'];
     compactRegionTip: boolean;
+    viewport: QidahenMapViewport;
+    onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string) => void;
-}> = ({ core, perspectiveFactionId, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, compactRegionTip, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, wheelDispatchSelection, internalDispatchSelection, pendingTargetAction, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const currentFactionId = perspectiveFactionId
         ?? QIDAHEN_FACTION_ORDER.find((factionId) => core.factions[factionId].playerId === core.currentPlayer)
         ?? 'ming';
+    const mapLayerRef = React.useRef<HTMLDivElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = React.useRef<HTMLCanvasElement>(null);
     const hitmapRef = React.useRef<Uint8ClampedArray | null>(null);
     const runtimeRegionIdByPixelRef = React.useRef<Array<string | null> | null>(null);
+    const dragStateRef = React.useRef<{
+        pointerId: number;
+        startClientX: number;
+        startClientY: number;
+        startPanX: number;
+        startPanY: number;
+        moved: boolean;
+    } | null>(null);
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const [maskVersion, setMaskVersion] = React.useState(0);
 
@@ -1113,21 +1168,115 @@ const MapSceneLayer: React.FC<{
         setHoveredRegionId(getRegionFromPointer(event));
     };
 
-    const handleClick = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    const handleMapWheel = React.useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        const layer = mapLayerRef.current;
+        if (!layer) {
+            return;
+        }
+        const rect = layer.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+        const stageX = ((event.clientX - rect.left) / rect.width) * STAGE_WIDTH;
+        const stageY = ((event.clientY - rect.top) / rect.height) * STAGE_HEIGHT;
+        const nextZoom = clampNumber(
+            viewport.zoom * (event.deltaY < 0 ? 1.14 : 0.88),
+            QIDAHEN_MAP_MIN_ZOOM,
+            QIDAHEN_MAP_MAX_ZOOM,
+        );
+        if (Math.abs(nextZoom - viewport.zoom) < 0.001) {
+            return;
+        }
+        const mapX = (stageX - MAP_COVER_LEFT - viewport.panX) / (MAP_COVER_SCALE * viewport.zoom);
+        const mapY = (stageY - MAP_COVER_TOP - viewport.panY) / (MAP_COVER_SCALE * viewport.zoom);
+        onViewportChange(clampQidahenMapViewport({
+            zoom: nextZoom,
+            panX: stageX - MAP_COVER_LEFT - mapX * MAP_COVER_SCALE * nextZoom,
+            panY: stageY - MAP_COVER_TOP - mapY * MAP_COVER_SCALE * nextZoom,
+        }));
+    }, [onViewportChange, viewport.panX, viewport.panY, viewport.zoom]);
+
+    const handlePointerDown = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        dragStateRef.current = {
+            pointerId: event.pointerId,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            startPanX: viewport.panX,
+            startPanY: viewport.panY,
+            moved: false,
+        };
+    }, [viewport.panX, viewport.panY]);
+
+    const handleCanvasPointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const dragState = dragStateRef.current;
+        if (dragState && dragState.pointerId === event.pointerId) {
+            const layer = mapLayerRef.current;
+            if (!layer) {
+                return;
+            }
+            const rect = layer.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return;
+            }
+            const deltaX = ((event.clientX - dragState.startClientX) / rect.width) * STAGE_WIDTH;
+            const deltaY = ((event.clientY - dragState.startClientY) / rect.height) * STAGE_HEIGHT;
+            if (!dragState.moved && Math.abs(deltaX) + Math.abs(deltaY) >= 6) {
+                dragState.moved = true;
+            }
+            if (dragState.moved) {
+                setHoveredRegionId(null);
+                onViewportChange(clampQidahenMapViewport({
+                    zoom: viewport.zoom,
+                    panX: dragState.startPanX + deltaX,
+                    panY: dragState.startPanY + deltaY,
+                }));
+                return;
+            }
+        }
+        handlePointerMove(event);
+    }, [handlePointerMove, onViewportChange, viewport.zoom]);
+
+    const handlePointerUp = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const dragState = dragStateRef.current;
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        dragStateRef.current = null;
+        if (dragState.moved) {
+            return;
+        }
         const regionId = getRegionFromPointer(event);
         if (regionId) {
             onSelectRegion(regionId);
         }
     }, [getRegionFromPointer, onSelectRegion]);
 
+    const handlePointerCancel = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (dragStateRef.current?.pointerId === event.pointerId) {
+            dragStateRef.current = null;
+        }
+    }, []);
+
     const tipLeft = focusedRegion
         ? Math.min(
             Math.min(STAGE_WIDTH - MAP_REGION_TIP_WIDTH - 18, ACTIONS_DOCK_LEFT - MAP_REGION_TIP_WIDTH - MAP_REGION_TIP_ACTION_GAP),
-            Math.max(18, MAP_COVER_LEFT + focusedRegion.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE + 18),
+            Math.max(18, projectQidahenMapPointToStage({
+                x: focusedRegion.x * QIDAHEN_MAP_WIDTH,
+                y: focusedRegion.y * QIDAHEN_MAP_HEIGHT,
+            }, viewport).x + 18),
         )
         : 0;
     const tipTop = focusedRegion
-        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, MAP_COVER_TOP + focusedRegion.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE - 34))
+        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, projectQidahenMapPointToStage({
+            x: focusedRegion.x * QIDAHEN_MAP_WIDTH,
+            y: focusedRegion.y * QIDAHEN_MAP_HEIGHT,
+        }, viewport).y - 34))
         : 0;
     const focusRuntimeRegionIds = new Set(focusedRegion?.runtimeRegionIds ?? []);
     const runtimeRegionsById = new Map(
@@ -1182,7 +1331,9 @@ const MapSceneLayer: React.FC<{
                 const boundaryLabel = boundaryMeta.label;
                 return {
                     regionId,
-                    regionName: targetRegion?.name ?? regionId,
+                    regionName: targetRegion
+                        ? getActionRuleDisplayRegionName(targetRegion, targetRegion.name)
+                        : getQidahenStatefulRegionDisplayName(regionId),
                     travelCost,
                     battleWidth,
                     boundaryLabel,
@@ -1243,9 +1394,9 @@ const MapSceneLayer: React.FC<{
         if (wheelDispatchSelection) {
             return {
                 sourceRegionId: wheelDispatchSelection.sourceRegionId,
-                title: '点击绿色地图目标',
-                hint: `${wheelDispatchSelection.sourceRegionName} 出发 · 所有绿色区域都可点击 · 绿色箭头表示本次路线。`,
-                badgeLabel: '当前步骤',
+                title: '选择目标',
+                hint: `${wheelDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '目标',
                 candidates: wheelDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.targetRuntimeRegionId,
                     targetRegionId: candidate.targetRuntimeRegionId,
@@ -1260,10 +1411,10 @@ const MapSceneLayer: React.FC<{
             return {
                 sourceRegionId: core.gaoDiDispatchSelection.sourceRegionId,
                 title: core.gaoDiDispatchSelection.selectedCardId
-                    ? '点击绿色目标完成高第调度'
-                    : '先在底部选 1 张弃牌，再点击绿色区域',
-                hint: `${core.gaoDiDispatchSelection.sourceRegionName} 出发 · 所有绿色区域都可点击。`,
-                badgeLabel: '当前步骤',
+                    ? '高第调度'
+                    : '先弃 1 张牌',
+                hint: `${core.gaoDiDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '目标',
                 candidates: core.gaoDiDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     targetRegionId: candidate.targetRegionId,
@@ -1277,9 +1428,9 @@ const MapSceneLayer: React.FC<{
         if (internalDispatchSelection) {
             return {
                 sourceRegionId: internalDispatchSelection.sourceRegionId,
-                title: '点击绿色目标完成王化贞调度',
-                hint: `${internalDispatchSelection.sourceRegionName} 出发 · 所有绿色区域都可点击。`,
-                badgeLabel: '当前步骤',
+                title: '王化贞调度',
+                hint: `${internalDispatchSelection.sourceRegionName} 出发`,
+                badgeLabel: '目标',
                 candidates: internalDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     targetRegionId: candidate.targetRegionId,
@@ -1293,8 +1444,8 @@ const MapSceneLayer: React.FC<{
         if (pendingTargetAction?.sourceRegionId) {
             return {
                 sourceRegionId: pendingTargetAction.sourceRegionId,
-                title: `当前目标已锁定：${pendingTargetAction.targetRegionName}`,
-                hint: '地图上已保留来源与目标高亮，接下来按右侧承伤或结算按钮继续。',
+                title: `目标 ${pendingTargetAction.targetRegionName}`,
+                hint: '右侧继续结算',
                 badgeLabel: '已锁定',
                 candidates: [
                     {
@@ -1321,22 +1472,28 @@ const MapSceneLayer: React.FC<{
 
     return (
         <div
+            ref={mapLayerRef}
             className="pointer-events-auto absolute inset-0 z-10 overflow-hidden"
             data-testid="qidahen-map-layer"
             data-map-layout="full-bleed-cover"
             data-map-selected={core.selectedRegionId}
+            data-map-zoom={viewport.zoom}
+            data-map-pan-x={viewport.panX}
+            data-map-pan-y={viewport.panY}
+            onWheel={handleMapWheel}
             style={{
                 background: '#c8a970',
             }}
         >
             <div
                 className="absolute"
+                data-testid="qidahen-map-content"
                 style={{
-                    left: MAP_COVER_LEFT,
-                    top: MAP_COVER_TOP,
+                    left: MAP_COVER_LEFT + viewport.panX,
+                    top: MAP_COVER_TOP + viewport.panY,
                     width: QIDAHEN_MAP_WIDTH,
                     height: QIDAHEN_MAP_HEIGHT,
-                    transform: `scale(${MAP_COVER_SCALE})`,
+                    transform: `scale(${MAP_COVER_SCALE * viewport.zoom})`,
                     transformOrigin: 'top left',
                 }}
             >
@@ -1363,11 +1520,11 @@ const MapSceneLayer: React.FC<{
                         <filter id="qidahen-map-province-hover" x="-10%" y="-10%" width="120%" height="120%">
                             <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(255,220,146,0.44)" />
                         </filter>
-                        <marker id="qidahen-map-guide-arrow" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto" markerUnits="strokeWidth">
-                            <path d="M 0 0 L 16 8 L 0 16 z" fill="rgba(118, 214, 138, 0.98)" />
+                        <marker id="qidahen-map-guide-arrow" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(118, 214, 138, 0.98)" />
                         </marker>
-                        <marker id="qidahen-map-guide-arrow-active" markerWidth="16" markerHeight="16" refX="12" refY="8" orient="auto" markerUnits="strokeWidth">
-                            <path d="M 0 0 L 16 8 L 0 16 z" fill="rgba(255, 230, 167, 0.98)" />
+                        <marker id="qidahen-map-guide-arrow-active" markerWidth="18" markerHeight="18" refX="15" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+                            <path d="M 0 1 L 16 9 L 0 17 L 5 9 z" fill="rgba(255, 230, 167, 0.98)" />
                         </marker>
                         <filter id="qidahen-map-guide-glow" x="-18%" y="-18%" width="136%" height="136%">
                             <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(106,214,139,0.42)" />
@@ -1450,6 +1607,7 @@ const MapSceneLayer: React.FC<{
                                             strokeWidth={activeCandidate ? 10 : 7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
+                                            strokeDasharray={activeCandidate ? '24 14' : '18 12'}
                                             markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
                                             filter="url(#qidahen-map-guide-glow)"
                                             opacity={1}
@@ -1527,11 +1685,60 @@ const MapSceneLayer: React.FC<{
                     height={QIDAHEN_MAP_HEIGHT}
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     data-testid="qidahen-map-hitmap-canvas"
-                    onPointerMove={handlePointerMove}
-                    onPointerLeave={() => setHoveredRegionId(null)}
-                    onPointerDown={handleClick}
+                    onPointerMove={handleCanvasPointerMove}
+                    onPointerLeave={() => {
+                        if (!dragStateRef.current) {
+                            setHoveredRegionId(null);
+                        }
+                    }}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerCancel}
                     aria-label={t('board.map.regionSelectionAria', { defaultValue: '七大恨地图区域选择' })}
                 />
+            </div>
+            <div
+                className="pointer-events-auto absolute bottom-[132px] left-[26px] z-30 flex flex-col gap-2"
+                data-testid="qidahen-map-viewport-controls"
+                data-ui-anchor="left-bottom"
+            >
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-out"
+                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(clampQidahenMapViewport({
+                            zoom: viewport.zoom / 1.14,
+                            panX: viewport.panX,
+                            panY: viewport.panY,
+                        }))}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        -
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-reset"
+                        className="inline-flex h-[38px] min-w-[74px] items-center justify-center border-[3px] px-3 text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(DEFAULT_QIDAHEN_MAP_VIEWPORT)}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        复位
+                    </button>
+                    <button
+                        type="button"
+                        data-testid="qidahen-map-zoom-in"
+                        className="inline-flex h-[38px] min-w-[38px] items-center justify-center border-[3px] text-[18px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                        onClick={() => onViewportChange(clampQidahenMapViewport({
+                            zoom: viewport.zoom * 1.14,
+                            panX: viewport.panX,
+                            panY: viewport.panY,
+                        }))}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                    >
+                        +
+                    </button>
+                </div>
             </div>
             {mapSelectionGuide ? (
                 <div
@@ -1559,11 +1766,6 @@ const MapSceneLayer: React.FC<{
                         >
                             {mapSelectionGuide.badgeLabel}
                         </div>
-                        {mapSelectionBannerInteractive ? (
-                            <div className="text-[11px] font-black tracking-[0.08em]" style={{ color: '#e2ffd2' }}>
-                                {t('board.map.selectionContinueHint', { defaultValue: '点击绿色目标继续' })}
-                            </div>
-                        ) : null}
                     </div>
                     <div className="mt-2 text-[22px] font-black leading-7 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]">
                         {mapSelectionGuide.title}
@@ -2010,7 +2212,7 @@ const WheelPanel: React.FC<{
                         borderRadius: 3,
                     }}
                 >
-                    {t('board.actions.wheelExecutePrompt', { defaultValue: '点击绿色扇区执行轮盘行动' })}
+                    {t('board.actions.wheelExecutePrompt', { defaultValue: '点击绿色扇区' })}
                 </div>
             ) : null}
         </div>
@@ -2139,43 +2341,6 @@ const ActionButton: React.FC<{
     );
 };
 
-const PrimaryStageButton: React.FC<{
-    title: string;
-    subtitle: string;
-    detail: string;
-    active: boolean;
-    disabled?: boolean;
-    onClick: () => void;
-}> = ({ title, subtitle, detail, active, disabled = false, onClick }) => (
-    <button
-        type="button"
-        disabled={disabled}
-        className="relative inline-flex min-h-[96px] w-full flex-col items-start justify-center overflow-hidden border-[3px] px-4 py-3 text-left transition-[transform,box-shadow,background-color] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:active:translate-y-0"
-        onClick={onClick}
-        style={{
-            borderColor: active ? UI_STYLE.oldGold : UI_STYLE.mapInk,
-            background: active ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
-            color: UI_STYLE.mapIvory,
-            boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
-            borderRadius: 3,
-        }}
-    >
-        <span
-            className="pointer-events-none absolute inset-y-0 left-0 w-[10px]"
-            style={{ background: active ? '#76d68a' : 'rgba(210,183,117,0.48)' }}
-        />
-        <span className="text-[10px] font-black tracking-[0.18em]" style={{ color: active ? '#e4ffd2' : UI_STYLE.mapGold }}>
-            {subtitle}
-        </span>
-        <span className="mt-1 text-[20px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.5)]">
-            {title}
-        </span>
-        <span className="mt-2 text-[11px] font-black leading-5" style={{ color: active ? '#e8ffd7' : '#f3d1a5' }}>
-            {detail}
-        </span>
-    </button>
-);
-
 const ActionsZone: React.FC<{
     core: QidahenCore;
     primaryStageMode: QidahenPrimaryStageMode | null;
@@ -2190,7 +2355,6 @@ const ActionsZone: React.FC<{
     wheelDispatchSelection: QidahenWheelDispatchSelection | null;
     pendingTargetAction: QidahenCore['pendingTargetAction'];
     postBattleSelection: QidahenCore['postBattleSelection'];
-    onSelectPrimaryStage: (mode: QidahenPrimaryStageMode) => void;
     onSelectAction: (actionId: string) => void;
     onExecuteAction: (actionId: string) => void;
     onSelectRegion: (regionId: string) => void;
@@ -2214,7 +2378,7 @@ const ActionsZone: React.FC<{
     onResolvePostBattleDecision: (choiceId: string) => void;
     onResolveWheelDispatchChoice: (choiceId: string) => void;
     onExecuteWheelMove: (moveId: string) => void;
-}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onSelectPrimaryStage, onSelectAction, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
+}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onSelectAction, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
@@ -2258,7 +2422,6 @@ const ActionsZone: React.FC<{
     const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
     const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
     const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedAction);
-    const wheelChoiceSummary = formatQidahenCandidateRegionSummary(core.wheelMoveChoices.map((choice) => choice.label));
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
     const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
     const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
@@ -2308,7 +2471,7 @@ const ActionsZone: React.FC<{
                         factionStatus: core.factionActionUsed
                             ? t('board.actions.status.used', { defaultValue: '已用' })
                             : t('board.actions.status.unused', { defaultValue: '未用' }),
-                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 势力行动 {{factionStatus}}',
+                        defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}',
                     })}
                 </div>
                 {pendingScenarioChoices ? (
@@ -2331,7 +2494,7 @@ const ActionsZone: React.FC<{
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <div className="text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.actions.primaryActionLabel', { defaultValue: '一级行动' })}
+                            {t('board.actions.primaryActionLabel', { defaultValue: '当前步骤' })}
                         </div>
                         <div className="mt-1 text-[16px]" data-testid="qidahen-primary-action-current">
                             {primaryStageHeadline}
@@ -2348,7 +2511,7 @@ const ActionsZone: React.FC<{
                         >
                             {primaryStageMode === 'wheel'
                                 ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘行动' })
-                                : t('board.actions.primaryStageTagFaction', { defaultValue: '势力行动' })}
+                                : t('board.actions.primaryStageTagFaction', { defaultValue: '弃牌行动' })}
                         </div>
                     ) : null}
                 </div>
@@ -2367,40 +2530,6 @@ const ActionsZone: React.FC<{
                 >
                     {primaryActionEntryText}
                 </div>
-                <div className="mt-3 flex flex-col gap-2" data-testid="qidahen-primary-stage-choices">
-                    <PrimaryStageButton
-                        title={t('board.actions.primaryStageFactionTitle', { defaultValue: '弃牌执行势力行动' })}
-                        subtitle={factionStageAvailable || primaryStageMode === 'faction'
-                            ? t('board.actions.primaryStageAvailable', { defaultValue: '当前可进入' })
-                            : t('board.actions.primaryStageUnavailable', { defaultValue: '当前不可进入' })}
-                        detail={selectedAction
-                            ? t('board.actions.primaryStageFactionCurrentDetail', {
-                                label: selectedAction.label,
-                                defaultValue: '当前二级行动：{{label}}',
-                            })
-                            : t('board.actions.primaryStageFactionDetail', {
-                                defaultValue: '先选一种势力行动，再进入对应区域或结算步骤。',
-                            })}
-                        active={primaryStageMode === 'faction'}
-                        disabled={!factionStageAvailable || factionStageActiveSelection}
-                        onClick={() => onSelectPrimaryStage('faction')}
-                    />
-                    <PrimaryStageButton
-                        title={t('board.actions.primaryStageWheelTitle', { defaultValue: '进行轮盘行动' })}
-                        subtitle={wheelStageAvailable || primaryStageMode === 'wheel'
-                            ? t('board.actions.primaryStageAvailable', { defaultValue: '当前可进入' })
-                            : t('board.actions.primaryStageUnavailable', { defaultValue: '当前不可进入' })}
-                        detail={core.wheelActionUsed
-                            ? t('board.actions.primaryStageWheelDone', { defaultValue: '本席轮盘已结算完成。' })
-                            : t('board.actions.primaryStageWheelDetail', {
-                                summary: wheelChoiceSummary,
-                                defaultValue: '所有绿色扇区都可点击；当前可选：{{summary}}。',
-                            })}
-                        active={primaryStageMode === 'wheel'}
-                        disabled={!wheelStageAvailable || wheelStageActiveSelection}
-                        onClick={() => onSelectPrimaryStage('wheel')}
-                    />
-                </div>
             </div>
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {showWheelNextStepBanner ? (
@@ -2414,12 +2543,12 @@ const ActionsZone: React.FC<{
                     </div>
                     <div data-testid="qidahen-wheel-next-step-title">
                         {t('board.actions.wheelNextStepTitle', {
-                            defaultValue: '下一步：点击轮盘按钮推进回合',
+                            defaultValue: '进行轮盘行动',
                         })}
                     </div>
                     <div className="mt-1 text-[11px] leading-5" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.wheelNextStepHint', {
-                            defaultValue: '不用点左侧轮盘盘面，直接点下面的明文按钮即可。',
+                            defaultValue: '点击绿色扇区',
                         })}
                     </div>
                     <div className="mt-3 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">
@@ -2582,9 +2711,6 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-gao-di-dispatch-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div className="text-[10px] tracking-[0.18em]" style={{ color: '#e4ffd2' }}>
-                        {t('board.actions.mapDirectClick', { defaultValue: '地图直点' })}
-                    </div>
                     <div>{core.gaoDiDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.gaoDi.summary', {
@@ -2596,11 +2722,6 @@ const ActionsZone: React.FC<{
                     </div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {core.gaoDiDispatchSelection.summary}
-                    </div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.gaoDi.hint', {
-                            defaultValue: '先在底部手牌中选 1 张弃牌，再直接点击地图上的绿色区域。这里仅展示可达目标，不再作为主点击入口。',
-                        })}
                     </div>
                     <div className="mt-2 flex flex-col gap-2">
                         {core.gaoDiDispatchSelection.candidates.map((candidate) => {
@@ -2614,21 +2735,15 @@ const ActionsZone: React.FC<{
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[13px]">
-                                            {t('board.actions.gaoDi.target', {
-                                                targetRegionName: candidate.targetRegionName,
-                                                type: candidate.mode === 'troops'
+                                        {t('board.actions.gaoDi.target', {
+                                            targetRegionName: candidate.targetRegionName,
+                                            type: candidate.mode === 'troops'
                                                     ? t('board.actions.gaoDi.typeTroops', { defaultValue: '部队' })
                                                     : t('board.actions.gaoDi.typePopulation', { defaultValue: '人口' }),
                                                 amount,
                                                 defaultValue: '{{targetRegionName}} · {{type}} {{amount}}',
                                             })}
                                         </span>
-                                        <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                            {candidate.resolutionHint}
-                                        </span>
-                                    </span>
-                                    <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
-                                        {t('board.actions.mapClickable', { defaultValue: '地图可点' })}
                                     </span>
                                 </div>
                             );
@@ -2651,23 +2766,12 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-internal-dispatch-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div className="text-[10px] tracking-[0.18em]" style={{ color: '#e4ffd2' }}>
-                        {t('board.actions.mapDirectClick', { defaultValue: '地图直点' })}
-                    </div>
                     <div>{internalDispatchSelection.title}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.internalDispatch.summary', {
                             sourceRegionName: internalDispatchSelection.sourceRegionName,
                             maxTroops: internalDispatchSelection.maxTroops,
                             defaultValue: '源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队',
-                        })}
-                    </div>
-                    <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                        {internalDispatchSelection.summary}
-                    </div>
-                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.mapDirectClickHint', {
-                            defaultValue: '直接点击地图上的绿色区域完成调度。下列信息只用于确认目标与数量。',
                         })}
                     </div>
                     <div className="mt-2 flex max-h-[240px] flex-col gap-2 overflow-y-auto pr-1">
@@ -2680,14 +2784,11 @@ const ActionsZone: React.FC<{
                             >
                                 <span className="min-w-0">
                                     <span className="block text-[13px]">{candidate.targetRegionName}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.resolutionHint}
-                                    </span>
                                 </span>
                                 <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
                                     {t('board.actions.internalDispatch.committedTroops', {
                                         troops: candidate.committedTroops,
-                                        defaultValue: '可点 · 调 {{troops}}',
+                                        defaultValue: '调 {{troops}}',
                                     })}
                                 </span>
                             </div>
@@ -2928,21 +3029,15 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-wheel-dispatch-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div className="text-[10px] tracking-[0.18em]" style={{ color: '#e4ffd2' }}>
-                        {t('board.actions.mapDirectClick', { defaultValue: '地图直点' })}
-                    </div>
                     <div>{wheelDispatchSelection.restriction}</div>
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {t('board.actions.wheelDispatch.summary', {
                             sourceRegionName: wheelDispatchSelection.sourceRegionName,
                             count: wheelDispatchSelection.candidates.length,
-                            defaultValue: '源区 {{sourceRegionName}} · 可选目标 {{count}} · 直接点击地图绿色区域锁定目标',
+                            defaultValue: '源区 {{sourceRegionName}} · 可选目标 {{count}}',
                         })}
                     </div>
                     <div className="mt-2 max-h-[236px] overflow-y-auto pr-1">
-                        <div className="mb-2 text-[10px] tracking-[0.14em]" style={{ color: '#f3d1a5' }}>
-                            {t('board.actions.currentClickableRegions', { defaultValue: '当前可点击区域' })}
-                        </div>
                         <div className="flex flex-col gap-2">
                         {wheelDispatchSelection.candidates.map((candidate) => (
                             <div
@@ -2959,9 +3054,6 @@ const ActionsZone: React.FC<{
                                             defaultValue: '{{targetRegionName}} · 防守 {{defenderLabel}}',
                                         })}
                                     </span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {candidate.resolutionHint}
-                                    </span>
                                     <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
                                         {t('board.actions.wheelDispatch.stats', {
                                             sourceAvailableTroops: candidate.sourceAvailableTroops,
@@ -2974,7 +3066,7 @@ const ActionsZone: React.FC<{
                                 <span className="shrink-0 text-[11px]" style={{ color: '#2f7a40' }}>
                                     {t('board.actions.wheelDispatch.travelCost', {
                                         totalTravelCost: candidate.totalTravelCost,
-                                        defaultValue: '可点 · 耗 {{totalTravelCost}}',
+                                        defaultValue: '耗 {{totalTravelCost}}',
                                     })}
                                 </span>
                             </div>
@@ -3936,8 +4028,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const [pendingDefenderCasualtyPriority, setPendingDefenderCasualtyPriority] = React.useState<QidahenCasualtyPriority>('highest-level');
     const [upkeepAttritionPriority, setUpkeepAttritionPriority] = React.useState<QidahenCasualtyPriority>('lowest-level');
     const [actionPaymentPreviewVisible, setActionPaymentPreviewVisible] = React.useState(false);
+    const [mapViewport, setMapViewport] = React.useState<QidahenMapViewport>(DEFAULT_QIDAHEN_MAP_VIEWPORT);
     const [selectedHandLimitCardIds, setSelectedHandLimitCardIds] = React.useState<string[]>(handLimitDiscardSelection?.selectedCardIds ?? []);
-    const [preferredPrimaryStage, setPreferredPrimaryStage] = React.useState<QidahenPrimaryStageMode>('faction');
     const factionStageSelectionActive = core.gaoDiDispatchSelection != null
         || internalDispatchSelection != null
         || recruitSelection != null
@@ -3963,13 +4055,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         ? 'wheel'
         : factionStageSelectionActive
             ? 'faction'
-            : factionStageAvailable && wheelStageAvailable
-                ? preferredPrimaryStage
-                : factionStageAvailable
-                    ? 'faction'
-                    : wheelStageAvailable
-                        ? 'wheel'
-                        : null;
+            : factionStageAvailable
+                ? 'faction'
+                : wheelStageAvailable
+                    ? 'wheel'
+                    : null;
     const activeHandLimitInteractionId = handLimitDiscardSelectionFromInteraction ? activeInteraction?.id ?? null : null;
     const activeRecruitInteractionId = recruitSelectionFromInteraction ? activeInteraction?.id ?? null : null;
     const activeDiplomacyInteractionId = diplomacySelectionFromInteraction ? activeInteraction?.id ?? null : null;
@@ -3996,16 +4086,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     React.useEffect(() => {
         setSelectedHandLimitCardIds(handLimitDiscardSelection?.selectedCardIds ?? []);
     }, [activeHandLimitInteractionId, handLimitDiscardSelection]);
-
-    React.useEffect(() => {
-        if (factionStageAvailable && !wheelStageAvailable && preferredPrimaryStage !== 'faction') {
-            setPreferredPrimaryStage('faction');
-            return;
-        }
-        if (wheelStageAvailable && !factionStageAvailable && preferredPrimaryStage !== 'wheel') {
-            setPreferredPrimaryStage('wheel');
-        }
-    }, [factionStageAvailable, preferredPrimaryStage, wheelStageAvailable]);
 
     React.useEffect(() => {
         if (
@@ -4313,20 +4393,17 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         }
         const region = displayCore.regions.find((item) => item.id === regionId);
         if (region && typeof region.x === 'number' && typeof region.y === 'number') {
-            return {
-                x: MAP_COVER_LEFT + region.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE,
-                y: MAP_COVER_TOP + region.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE,
-            };
+            return projectQidahenMapPointToStage({
+                x: region.x * QIDAHEN_MAP_WIDTH,
+                y: region.y * QIDAHEN_MAP_HEIGHT,
+            }, mapViewport);
         }
         const graphNode = QIDAHEN_REGION_GRAPH_NODE_BY_ID.get(regionId);
         const point = graphNode?.center ?? graphNode?.seed ?? null;
         return point
-            ? {
-                x: MAP_COVER_LEFT + point.x * MAP_COVER_SCALE,
-                y: MAP_COVER_TOP + point.y * MAP_COVER_SCALE,
-            }
+            ? projectQidahenMapPointToStage(point, mapViewport)
             : null;
-    }, [displayCore.regions]);
+    }, [displayCore.regions, mapViewport]);
 
     const topLevelMapSelectionGuide = (() => {
         if (pendingTargetAction != null) {
@@ -4334,7 +4411,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         }
         if (wheelDispatchSelection) {
             return {
-                title: '点击绿色地图目标',
+                title: '选择目标',
                 candidates: wheelDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.targetRuntimeRegionId,
                     action: 'wheel-dispatch' as const,
@@ -4347,8 +4424,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (core.gaoDiDispatchSelection) {
             return {
                 title: core.gaoDiDispatchSelection.selectedCardId
-                    ? '点击绿色目标完成高第调度'
-                    : '先在底部选 1 张弃牌，再点击绿色区域',
+                    ? '高第调度'
+                    : '先弃 1 张牌',
                 candidates: core.gaoDiDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     action: core.gaoDiDispatchSelection?.selectedCardId ? 'gao-di' as const : 'select-region' as const,
@@ -4360,7 +4437,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         }
         if (internalDispatchSelection) {
             return {
-                title: '点击绿色目标完成王化贞调度',
+                title: '王化贞调度',
                 candidates: internalDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     action: 'internal-dispatch' as const,
@@ -4406,6 +4483,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 internalDispatchSelection={internalDispatchSelection}
                 pendingTargetAction={pendingTargetAction}
                 compactRegionTip={compactMapRegionTip}
+                viewport={mapViewport}
+                onViewportChange={setMapViewport}
                 locale={locale}
                 onSelectRegion={selectRegion}
             />
@@ -4435,7 +4514,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 fortificationMaintenanceSelection={fortificationMaintenanceSelection}
                 pendingTargetAction={pendingTargetAction}
                 postBattleSelection={postBattleSelection}
-                onSelectPrimaryStage={setPreferredPrimaryStage}
                 onSelectAction={selectAction}
                 onExecuteAction={executeAction}
                 onSelectRegion={selectRegion}

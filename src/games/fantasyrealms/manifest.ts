@@ -1,4 +1,5 @@
 import type { GameManifestEntry } from '../manifest.types';
+import { buildFantasyRealmsSetupOptions } from './roomSetup';
 
 const entry: GameManifestEntry = {
     id: 'fantasyrealms',
@@ -12,6 +13,7 @@ const entry: GameManifestEntry = {
     thumbnailPath: 'fantasyrealms/thumbnails/cover',
     allowLocalMode: true,
     playerOptions: [2, 3, 4, 5, 6],
+    setupOptions: buildFantasyRealmsSetupOptions(),
     bestPlayers: [3, 4],
     tags: ['card_driven', 'set_collection', 'fantasy'],
     mobileProfile: 'landscape-adapted',

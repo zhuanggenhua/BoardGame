@@ -18,6 +18,7 @@ const BGM_SORCERER_KEY = 'bgm.fantasy.fantasy_music_pack_vol.sorcerer_rt_3.sorce
 const BGM_CLOUD_CATHEDRAL_KEY = 'bgm.ethereal.ethereal_music_pack.cloud_cathedral_rt_5.ethereal_cloud_cathedral_main';
 const STINGER_WIN_KEY = 'system.success_and_failure_sound_fx_pack_vol.successes.traditional_success_f';
 const STINGER_LOSE_KEY = 'system.success_and_failure_sound_fx_pack_vol.failures.traditional_failure_f';
+export const ENDGAME_SCORE_STEP_KEY = 'retro.retro_gaming_sound_fx_pack_vol.16_bit.ui.coin_001';
 
 const baseFeedbackResolver = createFeedbackResolver(FANTASY_REALMS_AUDIO_EVENTS);
 
@@ -37,6 +38,7 @@ export const FANTASY_REALMS_AUDIO_CONFIG: GameAudioConfig = {
         ...collectPreloadKeys(FANTASY_REALMS_AUDIO_EVENTS),
         STINGER_WIN_KEY,
         STINGER_LOSE_KEY,
+        ENDGAME_SCORE_STEP_KEY,
     ])),
     bgm: [
         {

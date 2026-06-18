@@ -1,4 +1,5 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
+import { getFantasyRealmsCurrentHandLimit } from '../foundation';
 import type { FantasyRealmsCommand, FantasyRealmsCore } from './types';
 
 export const FANTASY_REALMS_COMMANDS = {
@@ -24,6 +25,9 @@ function getCurrentPlayer(core: FantasyRealmsCore) {
 }
 
 function isDuelVariant(core: FantasyRealmsCore): boolean {
+    if (core.setupConfig?.variant) {
+        return core.setupConfig.variant === 'duel';
+    }
     return core.playerIds.length === 2;
 }
 
@@ -31,14 +35,16 @@ function getDeckDrawCount(core: FantasyRealmsCore): number {
     if (!isDuelVariant(core)) {
         return 1;
     }
-    return (getCurrentPlayer(core)?.hand.length ?? 0) >= 7 ? 1 : 2;
+    const currentPlayerHand = getCurrentPlayer(core)?.hand ?? [];
+    return currentPlayerHand.length >= getFantasyRealmsCurrentHandLimit(currentPlayerHand, core.setupConfig) ? 1 : 2;
 }
 
 function requiresDiscardAfterTakingDiscard(core: FantasyRealmsCore): boolean {
     if (!isDuelVariant(core)) {
         return true;
     }
-    return (getCurrentPlayer(core)?.hand.length ?? 0) >= 7;
+    const currentPlayerHand = getCurrentPlayer(core)?.hand ?? [];
+    return currentPlayerHand.length >= getFantasyRealmsCurrentHandLimit(currentPlayerHand, core.setupConfig);
 }
 
 export function validate(

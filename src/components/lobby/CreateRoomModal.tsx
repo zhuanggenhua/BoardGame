@@ -30,6 +30,7 @@ import {
     getDefaultSetupSelections,
     type GameSetupSelections,
 } from '../../games/setupOptions';
+import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
 import {
     QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
     QIDAHEN_PREGAME_CHOICE_FIELDS,
@@ -307,16 +308,34 @@ export const CreateRoomModal = ({
 }: CreateRoomModalProps) => {
     const gameNamespace = `game-${gameManifest.id}`;
     const { t } = useTranslation(['lobby', gameNamespace]);
-    const playerOptions = useMemo(() => gameManifest.playerOptions ?? [2], [gameManifest.playerOptions]);
-    const defaultNumPlayers = useMemo(() => (
-        gameManifest.bestPlayers?.find((count) => playerOptions.includes(count))
-        ?? playerOptions[0]
-    ), [gameManifest.bestPlayers, playerOptions]);
     const setupFields = useMemo(
         () => Object.entries(gameManifest.setupOptions ?? {}),
         [gameManifest.setupOptions],
     );
     const isQidahenRoom = gameManifest.id === 'qidahen';
+    const rawDefaultSetupSelections = useMemo(
+        () => getDefaultSetupSelections(gameManifest),
+        [gameManifest],
+    );
+    const playerOptions = useMemo(
+        () => resolveAllowedPlayerCountsForGame({
+            gameManifest,
+            setupData: rawDefaultSetupSelections,
+        }),
+        [gameManifest, rawDefaultSetupSelections],
+    );
+    const defaultNumPlayers = useMemo(() => (
+        gameManifest.bestPlayers?.find((count) => playerOptions.includes(count))
+        ?? playerOptions[0]
+    ), [gameManifest.bestPlayers, playerOptions]);
+    const defaultSetupSelections = useMemo(() => normalizeExtendedSetupSelections({
+        ...rawDefaultSetupSelections,
+        ...normalizeSetupValuesForFields(
+            setupFields,
+            defaultNumPlayers,
+            toSelectValueRecord(rawDefaultSetupSelections),
+        ),
+    }, isQidahenRoom), [defaultNumPlayers, isQidahenRoom, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
@@ -335,17 +354,14 @@ export const CreateRoomModal = ({
     const [aiMinimumActionDelayMs, setAiMinimumActionDelayMs] = useState(DEFAULT_AI_MINIMUM_ACTION_DELAY_MS);
     const [manualFactionSelection, setManualFactionSelection] = useState(false);
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
-    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
-        const defaults = getDefaultSetupSelections(gameManifest);
-        return normalizeExtendedSetupSelections({
-            ...defaults,
-            ...normalizeSetupValuesForFields(setupFields, defaultNumPlayers, toSelectValueRecord(defaults)),
-        }, isQidahenRoom);
-    });
+    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => defaultSetupSelections);
 
     const currentPlayerOptions = useMemo(
-        () => playerOptions,
-        [playerOptions],
+        () => resolveAllowedPlayerCountsForGame({
+            gameManifest,
+            setupData: setupSelections,
+        }),
+        [gameManifest, setupSelections],
     );
     const hasPlayerOptions = currentPlayerOptions.length > 1;
 
@@ -402,7 +418,7 @@ export const CreateRoomModal = ({
                 toSelectValueRecord(nextPreferences.setupSelections),
             ),
         }, isQidahenRoom));
-    }, [defaultNumPlayers, gameManifest, initialPreferences, isOpen, isQidahenRoom, playerOptions, setupFields]);
+    }, [defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, isQidahenRoom, setupFields]);
 
     useEffect(() => {
         const fallbackPlayerCount = currentPlayerOptions[0];

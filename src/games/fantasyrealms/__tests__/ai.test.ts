@@ -177,7 +177,7 @@ function createDrawDecisionCore(): FantasyRealmsCore {
 
 function createDuelFullHandTakeDiscardDecisionCore(): FantasyRealmsCore {
     const aiLongbow = byId('weapon-elven-longbow');
-    const aiNecromancer = byId('wizard-necromancer');
+    const aiGem = byId('artifact-gem-of-order');
     const aiBellTower = byId('land-bell-tower');
     const aiSword = byId('weapon-sword-of-keth');
     const aiMirage = byId('wild-mirage');
@@ -196,13 +196,18 @@ function createDuelFullHandTakeDiscardDecisionCore(): FantasyRealmsCore {
     const warlockLord = byId('wizard-warlock-lord');
     const warship = byId('weapon-warship');
 
-    const aiHand = [aiLongbow, aiNecromancer, aiBellTower, aiSword, aiMirage, aiCollector, aiRainstorm];
+    const aiHand = [aiLongbow, aiGem, aiBellTower, aiSword, aiMirage, aiCollector, aiRainstorm];
     const hostHand = [hostDragon, hostRangers, hostForge, hostKing, hostQueen, hostUnicorn, hostBellTower];
     const discardPile = [discardAir, discardBook];
     const summaryAi = summarize(aiHand, discardPile);
     const summaryHost = summarize(hostHand, discardPile);
 
     return {
+        setupConfig: {
+            variant: 'duel',
+            expansion: 'base',
+            cursedHoardSuitsEnabled: false,
+        },
         playerIds: ['0', '1'],
         currentPlayer: '1',
         turn: 4,

@@ -1,4 +1,10 @@
-import { OFFICIAL_FANTASY_REALMS_CARDS } from './data/cards';
+import {
+    CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS,
+    FANTASY_REALMS_CARD_REPLACEMENTS,
+    FANTASY_REALMS_EXTRA_CARD_IDS,
+    OFFICIAL_FANTASY_REALMS_CARDS,
+} from './data/cards';
+import type { FantasyRealmsRuntimeSetupConfig } from './roomSetup';
 
 export type FantasyRealmsSuit =
     | '军队'
@@ -11,7 +17,10 @@ export type FantasyRealmsSuit =
     | '武器'
     | '天象'
     | '野牌'
-    | '法师';
+    | '法师'
+    | '建筑'
+    | '局外人'
+    | '不死族';
 
 export type TableCard = {
     id: string;
@@ -22,6 +31,8 @@ export type TableCard = {
     score: number;
     text: string;
     textZh: string;
+    extraCard?: boolean;
+    replacesBaseCardId?: string;
 };
 
 export type FantasyRealmsScoreLine = {
@@ -39,18 +50,17 @@ export type FantasyRealmsScoreCardDelta = {
     isVirtual?: boolean;
 };
 
-export const FANTASY_REALMS_HAND_CARD_SLOTS = 7;
+export const FANTASY_REALMS_BASE_HAND_CARD_SLOTS = 7;
+export const FANTASY_REALMS_CURSED_HOARD_SUITS_HAND_CARD_SLOTS = 8;
+export const FANTASY_REALMS_HAND_CARD_SLOTS = FANTASY_REALMS_BASE_HAND_CARD_SLOTS;
 export const FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD = 10;
 export const FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD = 12;
+export const FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD = 14;
 
-export function getFantasyRealmsDiscardEndThreshold(playerCount: number): number {
-    return playerCount <= 2
-        ? FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD
-        : FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD;
-}
+const CURSED_HOARD_REPLACED_BASE_IDS = new Set(FANTASY_REALMS_CARD_REPLACEMENTS.keys());
 
 export const RUNTIME_DECK_CARDS: TableCard[] = OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({ ...card }));
-// Foundation fallback 只取官方卡表中的前 14 张做静态卡位样例，不代表正式对局中的公开区规则。
+// Foundation fallback 只取基础卡表前 14 张做静态卡位样例，不代表正式对局中的公开区规则。
 export const PUBLIC_CARDS: TableCard[] = RUNTIME_DECK_CARDS.slice(0, 7).map((card) => ({ ...card }));
 export const HAND_CARDS: TableCard[] = RUNTIME_DECK_CARDS.slice(7, 14).map((card) => ({ ...card }));
 
@@ -59,8 +69,44 @@ export const EMPTY_FOCUS_INSIGHT = {
     estimatedDelta: 0,
 };
 
-export function cloneTableCards(cards: TableCard[]): TableCard[] {
+export function cloneTableCards(cards: readonly TableCard[]): TableCard[] {
     return cards.map((card) => ({ ...card }));
+}
+
+export function isFantasyRealmsCursedHoardSuitsEnabled(
+    setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
+): boolean {
+    return setupConfig?.cursedHoardSuitsEnabled === true;
+}
+
+export function getFantasyRealmsBaseHandLimit(
+    setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
+): number {
+    return isFantasyRealmsCursedHoardSuitsEnabled(setupConfig)
+        ? FANTASY_REALMS_CURSED_HOARD_SUITS_HAND_CARD_SLOTS
+        : FANTASY_REALMS_BASE_HAND_CARD_SLOTS;
+}
+
+export function getFantasyRealmsCurrentHandLimit(
+    hand: readonly Pick<TableCard, 'id' | 'extraCard'>[],
+    setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
+): number {
+    const baseLimit = getFantasyRealmsBaseHandLimit(setupConfig);
+    return hand.some((card) => card.extraCard === true || FANTASY_REALMS_EXTRA_CARD_IDS.has(card.id))
+        ? baseLimit + 1
+        : baseLimit;
+}
+
+export function getFantasyRealmsDiscardEndThreshold(
+    playerCount: number,
+    setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
+): number {
+    if (playerCount > 2) {
+        return FANTASY_REALMS_STANDARD_DISCARD_END_THRESHOLD;
+    }
+    return isFantasyRealmsCursedHoardSuitsEnabled(setupConfig)
+        ? FANTASY_REALMS_CURSED_HOARD_DUEL_DISCARD_END_THRESHOLD
+        : FANTASY_REALMS_DUEL_DISCARD_END_THRESHOLD;
 }
 
 export function getFantasyRealmsCardDisplayName(card?: Pick<TableCard, 'name' | 'displayNameZh'> | null): string {
@@ -80,6 +126,15 @@ export function getFantasyRealmsCardRuleText(
     return card.text;
 }
 
-export function createRuntimeDeck(): TableCard[] {
-    return cloneTableCards(RUNTIME_DECK_CARDS);
+export function createRuntimeDeck(
+    setupConfig?: Pick<FantasyRealmsRuntimeSetupConfig, 'cursedHoardSuitsEnabled'> | null,
+): TableCard[] {
+    if (!isFantasyRealmsCursedHoardSuitsEnabled(setupConfig)) {
+        return cloneTableCards(RUNTIME_DECK_CARDS);
+    }
+
+    return cloneTableCards([
+        ...OFFICIAL_FANTASY_REALMS_CARDS.filter((card) => !CURSED_HOARD_REPLACED_BASE_IDS.has(card.id)),
+        ...CURSED_HOARD_SUITS_FANTASY_REALMS_CARDS,
+    ]);
 }

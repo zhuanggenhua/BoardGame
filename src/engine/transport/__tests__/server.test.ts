@@ -1490,6 +1490,13 @@ describe('resolveLocalAiActionDelayPlan（单一延迟预算）', () => {
         }).remainingDelayMs).toBe(3000);
 
         expect(resolveLocalAiActionDelayPlan({
+            controller: { type: 'local-ai', minimumActionDelayMs: 0 },
+            actionVisibility: 'visible',
+            now: 1_000,
+            defaultMinimumActionDelayMs: 3000,
+        }).remainingDelayMs).toBe(0);
+
+        expect(resolveLocalAiActionDelayPlan({
             controller: { type: 'local-ai', minimumActionDelayMs: 500 },
             actionVisibility: 'visible',
             now: 1_000,
@@ -22612,6 +22619,185 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(match.lastCommandFailureReason).toBeNull();
         expect(match.state.sys.phase).toBe('main2');
         expect(match.state.core.pendingAttack).toBeNull();
+    });
+
+    it('Dice Throne watchdog 在 defensiveRoll 实际操作者是 AI 防御方时，legal-only fallback 的 ADVANCE_PHASE 不应再被通用 current player guard 误拦', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const random = createQueuedRandom([2, 2, 2, 3, 6, 6, 6, 1, 1]);
+        const state = createHeroMatchup('ninja', 'samurai')(['0', '1'], random);
+
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.currentPlayerIndex = 0;
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 3;
+        state.core.rollConfirmed = true;
+        state.core.activatingAbilityId = 'stand-tall';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'slash-2-4',
+            defenseAbilityId: 'stand-tall',
+            isDefendable: true,
+            damage: 6,
+            preDefenseResolved: true,
+            defenseResolved: false,
+            damageResolved: false,
+            attackDiceValues: [3, 2, 2, 6, 1],
+            attackDiceFaceCounts: {
+                ninja_katana: 4,
+                shuriken: 0,
+                mask: 1,
+            },
+        } as any;
+
+        await storage.createMatch('match-watchdog-dicethrone-defensive-advance-fallback', {
+            initialState: {
+                G: state,
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                resolved: boolean;
+                blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                executedCommandTypes: string[];
+                outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+            }>;
+            resolveOnlineAiRecoveryCandidate: (
+                match: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-dicethrone-defensive-advance-fallback');
+        expect(resolveCurrentPlayerId(match.state)).toBe('0');
+
+        const candidate = {
+            playerId: '1',
+            reason: 'active-turn',
+            legalActionOnly: true,
+            allowForceCommandAfterLegalActionExhausted: true,
+            fingerprintHint: 'active-turn-legal-only:1:defensiveRoll:advance-phase',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'force-end-turn:1:active-turn-legal-only:1:defensiveRoll:advance-phase',
+                source: 'local-ai',
+                action: {
+                    actionId: 'force-end-turn:active-turn-legal-only:1:defensiveRoll:advance-phase',
+                    kind: 'force-end-turn',
+                    label: '服务端代 AI 推进防御阶段',
+                    commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                },
+            },
+        };
+        const tracker = {
+            key: `1:active-turn:${(server as any).buildOnlineAiRecoveryFingerprint(
+                match,
+                candidate,
+                buildAiProgressMarker(match.state),
+            )}`,
+            firstSeenAt: Date.now(),
+            autoSubmittedAt: Date.now(),
+            lastReportedFailureReason: null,
+            failureCount: 0,
+        };
+        (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+
+        const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockResolvedValueOnce({
+            applied: false,
+            resolved: false,
+            blockedReason: null,
+            executedCommandTypes: [],
+            outcome: 'no-legal-action',
+        });
+        vi.spyOn(serverInternal, 'resolveOnlineAiRecoveryCandidate').mockResolvedValueOnce(null);
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+            expect(playerID).toBe('1');
+            expect(commandType).toBe('ADVANCE_PHASE');
+            expect(payload).toEqual({});
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    pendingAttack: null,
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    phase: 'main2',
+                    eventStream: {
+                        ...(activeMatch.state.sys?.eventStream ?? {}),
+                        nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                    },
+                },
+            };
+            return true;
+        });
+
+        await serverInternal.runOnlineAiRecoverySequence(
+            match,
+            tracker,
+            candidate,
+            buildAiProgressMarker(match.state),
+            {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+        );
+
+        expect(tryRecoverSpy).toHaveBeenCalledTimes(1);
+        expect(executeSpy).toHaveBeenCalledTimes(1);
+        expect(match.state.sys.phase).toBe('main2');
+        expect(match.state.core.pendingAttack).toBeNull();
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-dicethrone-defensive-advance-fallback',
+            playerId: '1',
+            incidentKind: 'force-end-turn-success',
+            status: 'resolved',
+            reason: 'active-turn:follow-up-advance:steps=1',
+        }));
+        expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-dicethrone-defensive-advance-fallback',
+            incidentKind: 'force-end-turn-failed',
+            reason: expect.stringContaining('advance_guard_blocked'),
+        }));
     });
 
     it('online AI watchdog 遇到同一 AI 的链式可见交互时，应在单次恢复序列内持续消费直到收口', async () => {

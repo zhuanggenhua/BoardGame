@@ -69,6 +69,12 @@ export const resolveRoomExpansionLabel = (
     expansionId: string,
 ): string => {
     const normalizedGameName = gameName?.trim().toLowerCase();
+    if (normalizedGameName === 'fantasyrealms' && expansionId === 'cursed-hoard-suits') {
+        return t('setup.expansion.cursedHoardSuits', {
+            ns: 'game-fantasyrealms',
+            defaultValue: expansionId,
+        });
+    }
     if (normalizedGameName !== 'smashup') {
         return expansionId;
     }
