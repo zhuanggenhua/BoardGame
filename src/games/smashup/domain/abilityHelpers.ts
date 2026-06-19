@@ -816,6 +816,7 @@ export function buildValidatedCardToDeckBottomEvents(
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        locationPlayerId?: PlayerId;
         reason: string;
         now: number;
         expectedLocation?: 'discard' | 'hand' | 'deck' | 'bases' | 'any';
@@ -824,15 +825,16 @@ export function buildValidatedCardToDeckBottomEvents(
     const core = 'core' in state ? state.core : state;
     const owner = core.players[params.ownerId];
     if (!owner) return [];
+    const zonePlayer = core.players[params.locationPlayerId ?? params.ownerId] ?? owner;
 
     const exists = (() => {
         switch (params.expectedLocation ?? 'any') {
             case 'discard':
-                return owner.discard.some(card => card.uid === params.cardUid);
+                return zonePlayer.discard.some(card => card.uid === params.cardUid);
             case 'hand':
-                return owner.hand.some(card => card.uid === params.cardUid);
+                return zonePlayer.hand.some(card => card.uid === params.cardUid);
             case 'deck':
-                return owner.deck.some(card => card.uid === params.cardUid);
+                return zonePlayer.deck.some(card => card.uid === params.cardUid);
             case 'bases':
                 return core.bases.some(
                     base => base.minions.some(minion => minion.uid === params.cardUid)

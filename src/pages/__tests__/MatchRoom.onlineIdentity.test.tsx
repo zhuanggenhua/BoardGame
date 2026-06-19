@@ -376,15 +376,15 @@ describe('MatchRoom online route identity', () => {
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
     });
 
-    it('当 URL seat 与本地 stored seat 冲突时，首帧仍先按 URL seat 建立 provider，再由导航 effect 收敛回 stored seat', async () => {
+    it('当 URL seat 与本地 stored seat 冲突时，GameProvider 应以 stored seat 建立身份并修正 URL', async () => {
         mockSearchParams = new URLSearchParams('playerID=1');
 
         await renderMatchRoom();
 
         await waitFor(() => {
-            expect(screen.getByTestId('game-provider')).toHaveAttribute('data-player-id', '1');
+            expect(screen.getByTestId('game-provider')).toHaveAttribute('data-player-id', '0');
         });
-        expect(capturedGameProviderPlayerIds).toContain('1');
+        expect(capturedGameProviderPlayerIds).toContain('0');
         expect(navigateMock).toHaveBeenCalledWith('/play/smashup/match/match-1?playerID=0', { replace: true });
     });
 

@@ -3461,7 +3461,7 @@ const HandZone: React.FC<{
                     transform: 'translateX(-50%)',
                     height: BOTTOM_DOCK_HEIGHT,
                     width: 1310,
-                    maxWidth: 'calc(100vw - 300px)',
+                    maxWidth: 'calc(100vw - 320px)',
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row">

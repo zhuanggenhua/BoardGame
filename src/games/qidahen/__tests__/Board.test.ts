@@ -353,7 +353,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('style={{ height: BOTTOM_DOCK_HEIGHT }}');
         expect(boardSource).toContain('className="absolute left-1/2 flex items-end justify-center overflow-x-auto overflow-y-visible"');
         expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
-        expect(boardSource).toContain("maxWidth: 'calc(100vw - 300px)'");
+        expect(boardSource).toContain("maxWidth: 'calc(100vw - 320px)'");
         expect(boardSource).toContain('data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('className="mx-auto flex min-w-max items-end justify-center px-2" data-testid="qidahen-hand-row"');
         expect(boardSource).toContain('hover:-translate-y-[18px]');

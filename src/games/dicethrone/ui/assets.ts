@@ -13,6 +13,7 @@ import { getDiceDefinition, getDieFaceByValue } from '../domain/diceRegistry';
 
 const CHARACTER_ASSET_DIR: Record<string, string> = {
     cursed_pirate: 'cursed',
+    artificer: 'artificial',
 };
 
 const getCharacterAssetBase = (charId: string = 'monk') => (

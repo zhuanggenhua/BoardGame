@@ -655,6 +655,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const [selectedDiscardCardId, setSelectedDiscardCardId] = React.useState<string | null>(null);
     const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
     const liveMotionSequenceRef = React.useRef(0);
+    const autoDeckDrawKeyRef = React.useRef<string | null>(null);
 
     React.useLayoutEffect(() => {
         if (typeof window === 'undefined') return undefined;
@@ -694,6 +695,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const canDrawFromDeck = isMyTurn && !isGameOver && core.stage === 'draw' && core.drawPile.length >= getDeckDrawCount(core);
     const canTakeDiscard = isMyTurn && !isGameOver && core.stage === 'draw' && core.discardPile.length > 0;
     const canDiscard = isMyTurn && !isGameOver && core.stage === 'discard';
+    const shouldAutoDrawFromDeck = canDrawFromDeck && !canTakeDiscard;
     const isTakeDiscardSelectionActive = canTakeDiscard && (liveDrawActionMode === 'take-discard' || !canDrawFromDeck);
     const discardThreshold = getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig);
     const winnerIds = React.useMemo(() => {
@@ -1030,23 +1032,16 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         shouldBlockInspectClick,
     ]);
 
-    const handleDeckClick = React.useCallback(() => {
-        if (canDrawFromDeck) {
-            setLiveDrawActionMode(null);
-            dispatch('DRAW_FROM_DECK', {});
-        }
-    }, [canDrawFromDeck, dispatch]);
     const handleSelectDiscardDraw = React.useCallback(() => {
         if (!canTakeDiscard) {
             return;
         }
-        setLiveDrawActionMode((currentMode) => {
-            if (canDrawFromDeck && currentMode === 'take-discard') {
-                return null;
-            }
-            return 'take-discard';
-        });
-    }, [canDrawFromDeck, canTakeDiscard]);
+        setLiveDrawActionMode('take-discard');
+    }, [canTakeDiscard]);
+    const handleDrawFromDeckAction = React.useCallback(() => {
+        setLiveDrawActionMode(null);
+        dispatch('DRAW_FROM_DECK', {});
+    }, [dispatch]);
     const handleConfirmDiscard = React.useCallback(() => {
         if (!canDiscard || !selectedDiscardCard) {
             return;
@@ -1054,6 +1049,30 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         dispatch('DISCARD_CARD', { cardId: selectedDiscardCard.id });
         setSelectedDiscardCardId(null);
     }, [canDiscard, dispatch, selectedDiscardCard]);
+    React.useEffect(() => {
+        if (!shouldAutoDrawFromDeck) {
+            autoDeckDrawKeyRef.current = null;
+            return;
+        }
+
+        const autoDeckDrawKey = [
+            core.currentPlayer,
+            core.turn,
+            core.stage,
+            core.drawPile.length,
+            getDeckDrawCount(core),
+        ].join(':');
+        if (autoDeckDrawKeyRef.current === autoDeckDrawKey) {
+            return;
+        }
+
+        autoDeckDrawKeyRef.current = autoDeckDrawKey;
+        dispatch('DRAW_FROM_DECK', {});
+    }, [
+        core,
+        dispatch,
+        shouldAutoDrawFromDeck,
+    ]);
     const minimalLiveCenterCardStyles = React.useMemo(
         () => buildMinimalLiveCenterCardStyles(discardCards.length),
         [discardCards.length],
@@ -1158,6 +1177,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         if (isGameOver || !isMyTurn) {
             return [];
         }
+        if (isTakeDiscardSelectionActive) {
+            return [];
+        }
         if (canDiscard) {
             return [{
                 key: 'discard',
@@ -1169,25 +1191,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 onClick: handleConfirmDiscard,
             }];
         }
-        if (isTakeDiscardSelectionActive) {
-            return [{
-                key: 'take-discard',
-                mode: 'take-discard',
-                label: '拿公开牌',
-                testId: 'fantasyrealms-live-action-take-discard',
-                selected: true,
-                onClick: handleSelectDiscardDraw,
-            }];
-        }
 
         const buttons: LiveActionButtonConfig[] = [];
-        if (canDrawFromDeck) {
+        if (canDrawFromDeck && !shouldAutoDrawFromDeck) {
             buttons.push({
                 key: 'draw',
                 mode: 'draw',
                 label: getDrawDeckLabel(core, t),
                 testId: 'fantasyrealms-live-action-draw',
-                onClick: handleDeckClick,
+                onClick: handleDrawFromDeckAction,
             });
         }
         if (canTakeDiscard) {
@@ -1207,12 +1219,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         canTakeDiscard,
         core,
         handleConfirmDiscard,
-        handleDeckClick,
+        handleDrawFromDeckAction,
         handleSelectDiscardDraw,
         isGameOver,
         isMyTurn,
         isTakeDiscardSelectionActive,
         selectedDiscardCard,
+        shouldAutoDrawFromDeck,
         t,
     ]);
     const minimalLiveEndgameSection = isGameOver ? (
@@ -2568,27 +2581,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         transform 140ms ease;
                 }
                 .fr-live-action-button::before {
-                    content: "";
-                    position: absolute;
-                    inset: 5px;
-                    border-radius: 8px;
-                    border: 1px solid rgba(255, 225, 160, 0.08);
-                    box-shadow:
-                        -6px -6px 0 -5px rgba(255, 225, 160, 0.34),
-                        6px -6px 0 -5px rgba(255, 225, 160, 0.34),
-                        -6px 6px 0 -5px rgba(255, 225, 160, 0.34),
-                        6px 6px 0 -5px rgba(255, 225, 160, 0.34);
-                    pointer-events: none;
+                    display: none;
                 }
                 .fr-live-action-button::after {
-                    content: "";
-                    position: absolute;
-                    left: 0;
-                    right: 0;
-                    top: 0;
-                    height: 34px;
-                    background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
-                    pointer-events: none;
+                    display: none;
                 }
                 .fr-live-action-button-label {
                     position: relative;

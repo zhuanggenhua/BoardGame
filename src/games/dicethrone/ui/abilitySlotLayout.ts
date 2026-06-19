@@ -81,6 +81,7 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
     ninja: { width: 2048, height: 1260 },
     zhanshujia: { width: 3632, height: 2234 },
     cursed_pirate: { width: 3643, height: 2234 },
+    artificer: { width: 3643, height: 2234 },
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
@@ -96,6 +97,7 @@ export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string,
     ninja: 'v2',
     zhanshujia: 'v2',
     cursed_pirate: 'v2',
+    artificer: 'v2',
 };
 
 export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = {

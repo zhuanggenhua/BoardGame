@@ -7,9 +7,9 @@
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { grantContextualExtraMinion, grantContextualExtraAction, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback, buildStandardDrawEvents, buildValidatedControlChangeEvents, buildValidatedDestroyEvents } from '../domain/abilityHelpers';
-import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
-import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, SmashUpCore, CardInstance } from '../domain/types';
+import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, CardsDiscardedEvent, SmashUpCore, CardInstance } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
@@ -1007,13 +1007,18 @@ function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
     // 行动卡打出后仍有手牌则自毁
     if (handAfterPlay > 0) {
         return {
-            events: buildValidatedOngoingDetachEvents(ctx.state, {
+            events: [buildOngoingDetachedEvent({
                 cardUid: ctx.cardUid,
                 defId: ctx.defId,
                 ownerId,
                 reason: 'ghost_make_contact_pod_has_hand',
                 now: ctx.now,
-            }),
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
+            })],
         };
     }
     return { events: buildMakeContactControlChangeEvents(ctx) };

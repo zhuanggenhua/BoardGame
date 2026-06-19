@@ -1402,6 +1402,7 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
             sourcePlayerId: ctx.playerId,
             reason: 'time_travelers_time_raider',
             now: ctx.now,
+            locationPlayerId: ctx.playerId,
             expectedLocation: 'discard',
         }),
     };
@@ -3644,6 +3645,7 @@ export function registerYuanhouAbilities(): void {
                 sourcePlayerId: playerId,
                 reason: 'time_travelers_time_raider',
                 now: timestamp,
+                locationPlayerId: playerId,
                 expectedLocation: 'discard',
             }),
         };

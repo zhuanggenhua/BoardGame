@@ -23,6 +23,8 @@
   - 必须携带 `Authorization: Bearer <token>`。
   - 当前项目脚本统一使用 `BOARDGAME_FEEDBACK_TOKEN` 或 `--token` 传入。
   - 如果线上返回 `401 缺少登录凭证`，说明问题是“没有正式写凭证”，不是接口不存在。
+  - `closed` 时应同时提交 `closedReason`（关闭理由）。
+  - `resolved` 时应同时提交 `resolvedMethod`（解决方式）。
 
 ## 状态含义
 
@@ -33,8 +35,10 @@
 - `resolved`
   - 已确认是真 bug，且代码与验证已经完成。
   - 不要求等待生产部署或未来不复发；部署/观察是后续发布状态，不是反馈状态。
+  - 为方便后续回看，回写时必须补 `resolvedMethod` 说明这条反馈是如何解决的。
 - `closed`
   - 不是真 bug、重复反馈、已失效、或无需代码修复。
+  - 对普通用户反馈，回写时必须补 `closedReason` 说明为什么关闭。
 
 ## 本 skill 默认策略
 

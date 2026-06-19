@@ -52,6 +52,7 @@ interface FeedbackItem {
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     closedReason?: string | null;
+    resolvedMethod?: string | null;
     rewardPoints?: number;
     reporterType?: 'user' | 'system';
     source?: string;
@@ -513,6 +514,7 @@ export default function AdminFeedbackPage() {
         }
 
         let closedReason: string | undefined;
+        let resolvedMethod: string | undefined;
         if (newStatus === 'closed' && requiresClosedReason(target)) {
             const promptValue = window.prompt(t('feedback.messages.closedReasonPrompt'), target.closedReason ?? '');
             if (promptValue === null) {
@@ -524,6 +526,17 @@ export default function AdminFeedbackPage() {
                 return;
             }
         }
+        if (newStatus === 'resolved' && target.status !== 'resolved') {
+            const promptValue = window.prompt(t('feedback.messages.resolvedMethodPrompt'), target.resolvedMethod ?? '');
+            if (promptValue === null) {
+                return;
+            }
+            resolvedMethod = promptValue.trim();
+            if (!resolvedMethod) {
+                error(t('feedback.messages.resolvedMethodRequired'));
+                return;
+            }
+        }
         try {
             const response = await fetch(`${ADMIN_API_URL}/feedback/${id}/status`, {
                 method: 'PATCH',
@@ -531,7 +544,11 @@ export default function AdminFeedbackPage() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: newStatus, ...(closedReason ? { closedReason } : {}) }),
+                body: JSON.stringify({
+                    status: newStatus,
+                    ...(closedReason ? { closedReason } : {}),
+                    ...(resolvedMethod ? { resolvedMethod } : {}),
+                }),
             });
             if (!response.ok) {
                 const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null;
@@ -1365,6 +1382,12 @@ function FeedbackDetailPanel({
                         {item.status === 'closed' ? (
                             <MetaField label={t('feedback.detail.closedReason')}>
                                 <span className="text-zinc-700">{item.closedReason?.trim() || t('feedback.detail.closedReasonEmpty')}</span>
+                            </MetaField>
+                        ) : null}
+
+                        {item.status === 'resolved' ? (
+                            <MetaField label={t('feedback.detail.resolvedMethod')}>
+                                <span className="text-zinc-700">{item.resolvedMethod?.trim() || t('feedback.detail.resolvedMethodEmpty')}</span>
                             </MetaField>
                         ) : null}
 

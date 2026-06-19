@@ -52,6 +52,9 @@ export const STATUS_IDS = {
 
     /** 咒缚海盗：休战 */
     PARLEY: 'parley',
+
+    /** 工匠：纳米爆弹 */
+    NANOBOMB: 'nanobomb',
 } as const;
 
 export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
@@ -122,6 +125,12 @@ export const TOKEN_IDS = {
     DELAYED_POISON: 'delayed_poison',
     NINJUTSU: 'ninjutsu',
     SMOKE_BOMB: 'smoke_bomb',
+
+    /** 工匠：合成器 / 机器人 */
+    SYNTH: 'synth',
+    NANOBOT: 'nanobot',
+    SHOCK_BOT: 'shock_bot',
+    HEAL_BOT: 'heal_bot',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -243,6 +252,14 @@ export const CURSED_PIRATE_DICE_FACE_IDS = {
 
 export type CursedPirateDiceFaceId = (typeof CURSED_PIRATE_DICE_FACE_IDS)[keyof typeof CURSED_PIRATE_DICE_FACE_IDS];
 
+export const ARTIFICER_DICE_FACE_IDS = {
+    WRENCH: 'wrench',
+    GEAR: 'gear',
+    ELECTRICITY: 'electricity',
+} as const;
+
+export type ArtificerDiceFaceId = (typeof ARTIFICER_DICE_FACE_IDS)[keyof typeof ARTIFICER_DICE_FACE_IDS];
+
 // ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
@@ -312,6 +329,7 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     NINJA: 'dicethrone:ninja-cards',
     ZHANSHUJIA: 'dicethrone:zhanshujia-cards',
     CURSED_PIRATE: 'dicethrone:cursed_pirate-cards',
+    ARTIFICER: 'dicethrone:artificer-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -332,4 +350,5 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     NINJA: 'dicethrone:ninja-status',
     ZHANSHUJIA: 'dicethrone:zhanshujia-status',
     CURSED_PIRATE: 'dicethrone:cursed_pirate-status',
+    ARTIFICER: 'dicethrone:artificer-status',
 } as const;

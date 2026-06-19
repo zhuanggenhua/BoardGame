@@ -8,6 +8,13 @@ vi.mock('nodemailer', () => ({
     },
 }));
 
+vi.mock('../../../server/logger', () => ({
+    default: {
+        error: vi.fn(),
+        info: vi.fn(),
+    },
+}));
+
 describe('email service', () => {
     const originalEnv = process.env;
     const originalConsoleLog = console.log;

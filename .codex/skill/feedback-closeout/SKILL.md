@@ -70,18 +70,20 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
 
 - 当前批次反馈默认使用 `temp/feedback-closeout/status-board.json` 作为本地状态板。
 - 该 JSON 是当前批次反馈进度的单一真实来源：一旦某条反馈确认进入 `in_progress`、`resolved`、`closed` 或 `blocked`，必须立刻更新状态板，禁止等整批结束再统一回填。
-- `resolved` 至少要附 1 条 `evidence` 和 1 条 `verification`；`closed` 至少要写清 `notes` 或补充证据。
+- `resolved` 至少要附 1 条 `evidence`、1 条 `verification`，并写清 `resolvedMethod`（解决方式）；`closed` 至少要写清 `closedReason`（关闭理由），旧数据没有独立字段时可暂时在 `notes` 兼容。
 - **开始处理就立刻认领（强制，2026-06-10 补强）**：只要已经决定“这条由当前批次实际接手处理”，无论后面是继续排查、开始修复，还是先做真假 bug 判断，都必须先把该条状态推进到 `in_progress`；禁止口头说“我在看/我开始修了”，但状态板仍停在 `open`。
 - **有结论就立刻收口（强制，2026-06-10 补强）**：只要结论已经成立，就必须当场更新，不允许攒到整批结束再统一回写：
   - 确认真是 bug，且已有“修复 + 验证 + 证据”：立刻改 `resolved`
   - 确认不是 bug、误报、重复、当前树已恢复、建议项：立刻改 `closed`
   - 确认被阻塞且短时间内无法继续：立刻改 `blocked` 并写明阻塞
+- **已解决必须写“怎么解决的”（强制，2026-06-19 新增）**：把反馈推进到 `resolved` 时，不得只写“已修复”或把解决方式埋在长段 `notes` 里；必须单独填写 `resolvedMethod`，用一句人能看懂的话说明解决手段，例如“补导入并加回归测试”“把 AI 候选改成按当前弹窗重新生成”“把错误的 URL 清理逻辑改成仅在手动关闭时触发”。
+- **已关闭必须写“为什么关闭”（强制，2026-06-19 收紧）**：把反馈推进到 `closed` 时，必须单独填写 `closedReason`；不要只写状态，不要让后续回看的人再去翻 evidence 猜关闭依据。
 - **“修了”与“确认没问题”同等要求即时更新（强制）**：状态即时同步不只适用于修复成功；只要本轮已经确认“不是现存 bug / 不需要改代码 / 已被其他修复覆盖”，也必须立即写 `closed` 或等价收口状态，避免同一条反馈在后续批次再次被重复分派。
 - 推荐顺序：
   1. 先用 `sync-feedback-status-board.mjs` 从最新 `summary.json` 初始化/刷新状态板
-  2. 一旦实际接手某条反馈，先立刻用 `update-local-feedback-board.mjs` 把该条改成 `in_progress`
-  3. 每拿到一个新结论，立刻再次用 `update-local-feedback-board.mjs` 更新该条本地状态
-  4. 最后跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
+2. 一旦实际接手某条反馈，先立刻用 `update-local-feedback-board.mjs` 把该条改成 `in_progress`
+3. 每拿到一个新结论，立刻再次用 `update-local-feedback-board.mjs` 更新该条本地状态；其中 `resolved` 必填 `--resolved-method`，`closed` 必填 `--closed-reason`
+4. 最后跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
 
 ### 同轮流程缺口回填（强制，2026-06-10 新增）
 
@@ -124,7 +126,9 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 更新单条本地状态：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status resolved --owner codex --evidence evidence/<file>.md --verification "<验证命令>" --screenshot <绝对路径截图>
+node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status resolved --owner codex --resolved-method "<解决方式>" --evidence evidence/<file>.md --verification "<验证命令>" --screenshot <绝对路径截图>
+
+node .codex/skill/feedback-closeout/scripts/update-local-feedback-board.mjs --id <feedbackId> --status closed --owner codex --closed-reason "<关闭理由>" --evidence evidence/<file>.md
 ```
 
 校验状态板：
@@ -370,6 +374,13 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - 预计要持续处理较久，且已经明确接手
   - 可先改 `in_progress`
 
+字段要求：
+
+- `closed`
+  - 必填 `closedReason`（关闭理由）
+- `resolved`
+  - 必填 `resolvedMethod`（解决方式）
+
 执行顺序硬规则：
 
 1. 决定接手该条反馈的当下，就先改 `in_progress`
@@ -387,7 +398,9 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 使用：
 
 ```bash
-node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> <status> --base-url <真实反馈接口基址> --token <BearerToken>
+node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> closed --base-url <真实反馈接口基址> --token <BearerToken> --closed-reason "<关闭理由>"
+
+node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken> --resolved-method "<解决方式>"
 ```
 
 收口代表项并顺带关闭重复项：

@@ -378,6 +378,53 @@ describe('Feedback Module (e2e)', () => {
         expect(closeRes.body.status).toBe('closed');
     });
 
+    it('标记为已解决时不填写解决方式会返回 400', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要填写解决方式的反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const resolveRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'resolved' })
+            .expect(400);
+
+        expect(String(resolveRes.body.error ?? resolveRes.body.message ?? '')).toContain('解决方式不能为空');
+    });
+
+    it('标记为已解决时会保存解决方式', async () => {
+        const { userToken } = await seedUsers();
+
+        const createRes = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({
+                content: '需要记录解决方式的反馈',
+                type: 'bug',
+                severity: 'medium',
+                gameName: 'smashup',
+            })
+            .expect(201);
+
+        const resolveRes = await request(app.getHttpServer())
+            .patch(`/admin/feedback/${createRes.body._id as string}/status`)
+            .set('Authorization', `Bearer ${userToken}`)
+            .send({ status: 'resolved', resolvedMethod: '补充判定分支并增加回归测试' })
+            .expect(200);
+
+        expect(resolveRes.body.status).toBe('resolved');
+        expect(resolveRes.body.resolvedMethod).toBe('补充判定分支并增加回归测试');
+    });
+
     it('internal feedback 需要 token 且可创建系统反馈', async () => {
         const payload = {
             content: 'system feedback',
@@ -1183,7 +1230,7 @@ describe('Feedback Module (e2e)', () => {
         const reopened = await request(app.getHttpServer())
             .patch(`/admin/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '重新激活聚合记录用于继续跟进' })
             .expect(200);
         expect(reopened.body.status).toBe('resolved');
         expect(reopened.body.aggregationActiveKey).toBe(first.body.incidentKey);
@@ -1251,7 +1298,7 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${first.body._id}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '尝试重新打开旧聚合记录' })
             .expect(409);
 
         const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).sort({ createdAt: 1 }).lean();
@@ -1322,11 +1369,11 @@ describe('Feedback Module (e2e)', () => {
             request(app.getHttpServer())
                 .patch(`/admin/feedback/${first.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ status: 'resolved' }),
+                .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 A' }),
             request(app.getHttpServer())
                 .patch(`/admin/feedback/${second.body._id}/status`)
                 .set('Authorization', `Bearer ${adminToken}`)
-                .send({ status: 'resolved' }),
+                .send({ status: 'resolved', resolvedMethod: '并发重开聚合记录 B' }),
         ]);
         const statuses = [reopenA.status, reopenB.status].sort((a, b) => a - b);
         expect(statuses).toEqual([200, 409]);
@@ -1671,7 +1718,7 @@ describe('Feedback Module (e2e)', () => {
         const updateRes = await request(app.getHttpServer())
             .patch(`/admin/feedback/${feedbackId}/status`)
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '后台确认问题已修复' })
             .expect(200);
 
         expect(updateRes.body.status).toBe('resolved');
@@ -1735,13 +1782,13 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${ownFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '本人确认并记录解决方式' })
             .expect(200);
 
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${otherFeedbackRes.body._id as string}/status`)
             .set('Authorization', `Bearer ${userToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
     });
 
@@ -1798,7 +1845,7 @@ describe('Feedback Module (e2e)', () => {
         const updateRes = await request(app.getHttpServer())
             .patch(`/admin/feedback/${ownFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '负责游戏已完成修复' })
             .expect(200);
 
         expect(updateRes.body.status).toBe('resolved');
@@ -1806,7 +1853,7 @@ describe('Feedback Module (e2e)', () => {
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${otherFeedbackId}/status`)
             .set('Authorization', `Bearer ${developerToken}`)
-            .send({ status: 'resolved' })
+            .send({ status: 'resolved', resolvedMethod: '越权尝试不应成功' })
             .expect(404);
 
         const adminListRes = await request(app.getHttpServer())

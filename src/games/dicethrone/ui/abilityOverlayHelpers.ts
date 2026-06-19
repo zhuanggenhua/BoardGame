@@ -12,6 +12,7 @@ import { TREANT_CARDS } from '../heroes/treant/cards';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
+import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import type { HeroState } from '../domain/types';
 
 export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
@@ -27,6 +28,7 @@ export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     ninja: NINJA_CARDS,
     zhanshujia: ZHANSHUJIA_CARDS,
     cursed_pirate: CURSED_PIRATE_CARDS,
+    artificer: ARTIFICER_CARDS,
 };
 
 const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
@@ -159,6 +161,17 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         calm: 'undead-claw',
         meditate: 'still-wet-behind-ears',
         ultimate: 'merciless-curse',
+    },
+    artificer: {
+        fist: 'wrench-strike',
+        chi: 'schematics',
+        sky: 'collect-parts',
+        lotus: 'eureka',
+        combo: 'activate-bots',
+        lightning: 'overclock',
+        calm: 'shock-bot',
+        meditate: 'tinker',
+        ultimate: 'maximum-power',
     },
 };
 

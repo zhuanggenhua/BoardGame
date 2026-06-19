@@ -55,7 +55,10 @@ const readRouteSelectionsFromSearchParams = (searchParams: URLSearchParams): Gam
         gameManifest: QIDAHEN_MANIFEST,
         searchParams,
     });
-    const scenarioId = readQidahenScenarioId(selections as Record<string, unknown>);
+    const scenarioId = readQidahenScenarioId({
+        ...selections,
+        [QIDAHEN_SCENARIO_SETUP_FIELD]: searchParams.get(`setup.${QIDAHEN_SCENARIO_SETUP_FIELD}`) ?? selections[QIDAHEN_SCENARIO_SETUP_FIELD],
+    } as Record<string, unknown>);
     const nextSelections: GameSetupSelections = {
         ...selections,
         [QIDAHEN_SCENARIO_SETUP_FIELD]: scenarioId,

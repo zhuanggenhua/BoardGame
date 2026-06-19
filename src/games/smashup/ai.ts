@@ -1399,9 +1399,12 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         options?: SmashUpInteractionOption[];
         sourceId?: string;
         multi?: PromptMultiConfig;
+        optionsGenerator?: ((state: MatchState<SmashUpCore>, data: unknown) => SmashUpInteractionOption[]) | undefined;
+        autoRefresh?: unknown;
     };
     const refreshedOptions = getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
-    const fallbackReactionOptions = data.sourceId === 'smashup_reaction_choose' && refreshedOptions.length === 0
+    const interactionOwnsLiveRefresh = typeof data.optionsGenerator === 'function' || data.autoRefresh !== undefined;
+    const fallbackReactionOptions = data.sourceId === 'smashup_reaction_choose' && !interactionOwnsLiveRefresh
         ? resolveLiveSmashUpReactionChoice(state, { kind: 'pass' }, state.core.turnNumber ?? 0)?.options
         : undefined;
     const resolvedOptions = fallbackReactionOptions ?? refreshedOptions;

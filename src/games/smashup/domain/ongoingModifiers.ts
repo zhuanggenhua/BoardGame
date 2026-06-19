@@ -639,12 +639,15 @@ export function registerCustomPowerModifiers(
     definitions: readonly CustomPowerModifierDefinition[],
 ): void {
     for (const definition of definitions) {
+        const variantOptions = definition.runtimeIdentity === 'actionFamily'
+            ? { podStrategy: 'selfManaged' as const }
+            : definition.runtimeIdentity === 'synthetic'
+                ? { podStrategy: 'baseOnly' as const }
+                : { variantPolicy: definition.variantPolicy };
         registerPowerModifier(
             definition.sourceDefId,
             (ctx) => definition.compute(ctx, powerModifierRuntimeHelpers),
-            definition.runtimeIdentity === 'actionFamily'
-                ? { podStrategy: 'selfManaged' }
-                : { variantPolicy: definition.variantPolicy },
+            variantOptions,
         );
     }
 }
@@ -665,12 +668,15 @@ export function registerCustomBreakpointModifiers(
     definitions: readonly CustomBreakpointModifierDefinition[],
 ): void {
     for (const definition of definitions) {
+        const variantOptions = definition.runtimeIdentity === 'actionFamily'
+            ? { podStrategy: 'selfManaged' as const }
+            : definition.runtimeIdentity === 'synthetic'
+                ? { podStrategy: 'baseOnly' as const }
+                : { variantPolicy: definition.variantPolicy };
         registerBreakpointModifier(
             definition.sourceDefId,
             (ctx) => definition.compute(ctx, powerModifierRuntimeHelpers),
-            definition.runtimeIdentity === 'actionFamily'
-                ? { podStrategy: 'selfManaged' }
-                : { variantPolicy: definition.variantPolicy },
+            variantOptions,
         );
     }
 }

@@ -91,6 +91,8 @@ type PublishResponse = {
 
 const CHANNELS = ['stable', 'gray', 'edge'] as const;
 const BUMP_OPTIONS = ['', 'patch', 'minor', 'major'] as const;
+const DEPLOY_UPDATE_CONFIRM_TEXT = '确认部署';
+const DEPLOY_ROLLBACK_CONFIRM_TEXT = '确认回滚';
 
 const formatSize = (bytes?: number) => {
     if (!bytes || !Number.isFinite(bytes)) return '-';
@@ -139,11 +141,9 @@ export default function MobileReleasePage() {
     const [packageManifestOnly, setPackageManifestOnly] = useState(false);
 
     const [deployUpdateTag, setDeployUpdateTag] = useState('');
-    const [deployUpdateConfirmText, setDeployUpdateConfirmText] = useState('');
 
     const [rollbackAction, setRollbackAction] = useState<'rollback-last' | 'rollback'>('rollback-last');
     const [rollbackTag, setRollbackTag] = useState('');
-    const [rollbackConfirmText, setRollbackConfirmText] = useState('');
 
     const fetchStatus = useCallback(async () => {
         if (!token) {
@@ -182,14 +182,12 @@ export default function MobileReleasePage() {
     const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteDeployUpdate = Boolean(
         canPreviewDeployUpdate
-        && status?.deploy.updateExecutionEnabled
-        && deployUpdateConfirmText === '确认部署',
+        && status?.deploy.updateExecutionEnabled,
     );
     const canPreviewRollback = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteRollback = Boolean(
         canPreviewRollback
         && status?.deploy.rollbackExecutionEnabled
-        && rollbackConfirmText === '确认回滚'
         && (rollbackAction === 'rollback-last' || rollbackTag.trim()),
     );
 
@@ -438,7 +436,7 @@ export default function MobileReleasePage() {
                         </ReleaseSection>
 
                         <ReleaseSection icon={<Server size={18} className="text-emerald-600" />} title={pageT('deployUpdate.title')}>
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-4">
                                 <label className="space-y-1.5">
                                     <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.tag')}</span>
                                     <input
@@ -446,15 +444,6 @@ export default function MobileReleasePage() {
                                         onChange={(event) => setDeployUpdateTag(event.target.value)}
                                         className="w-full rounded-lg border border-zinc-200 px-3 py-2 font-mono text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         placeholder={pageT('deployUpdate.tag_placeholder')}
-                                    />
-                                </label>
-                                <label className="space-y-1.5">
-                                    <span className="text-sm font-medium text-zinc-600">{pageT('deployUpdate.confirm_label')}</span>
-                                    <input
-                                        value={deployUpdateConfirmText}
-                                        onChange={(event) => setDeployUpdateConfirmText(event.target.value)}
-                                        className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                        placeholder={pageT('deployUpdate.confirm_placeholder')}
                                     />
                                 </label>
                             </div>
@@ -477,7 +466,7 @@ export default function MobileReleasePage() {
                                     disabled={!canExecuteDeployUpdate}
                                     onClick={() => void runAction('deploy-update-execute', '/mobile-release/deploy/update/execute', {
                                         tag: deployUpdateTag.trim() || undefined,
-                                        confirmText: deployUpdateConfirmText,
+                                        confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
                                     }, 'toast.deploy_update_success')}
                                 >
                                     {busyAction === 'deploy-update-execute' ? runningText : pageT('actions.execute_deploy_update')}
@@ -493,7 +482,6 @@ export default function MobileReleasePage() {
                                         value={rollbackAction}
                                         onChange={(event) => {
                                             setRollbackAction(event.target.value as 'rollback-last' | 'rollback');
-                                            setRollbackConfirmText('');
                                         }}
                                         className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                     >
@@ -522,15 +510,6 @@ export default function MobileReleasePage() {
                                         : pageT('rollback.last_target_empty')}
                                 />
                             </div>
-                            <label className="mt-4 block space-y-1.5">
-                                <span className="text-sm font-medium text-zinc-600">{pageT('rollback.confirm_label')}</span>
-                                <input
-                                    value={rollbackConfirmText}
-                                    onChange={(event) => setRollbackConfirmText(event.target.value)}
-                                    className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                                    placeholder={pageT('rollback.confirm_placeholder')}
-                                />
-                            </label>
                             <ActionRow>
                                 <ActionButton
                                     icon={<RotateCcw size={16} />}
@@ -549,7 +528,7 @@ export default function MobileReleasePage() {
                                     onClick={() => void runAction('rollback-execute', '/mobile-release/deploy/rollback/execute', {
                                         action: rollbackAction,
                                         tag: rollbackTag.trim() || undefined,
-                                        confirmText: rollbackConfirmText,
+                                        confirmText: DEPLOY_ROLLBACK_CONFIRM_TEXT,
                                     }, 'toast.rollback_success')}
                                 >
                                     {busyAction === 'rollback-execute' ? runningText : pageT('actions.execute_rollback')}

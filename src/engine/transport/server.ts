@@ -671,12 +671,81 @@ export interface GameEngineConfig<
     resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
     /** 在线 AI watchdog 的游戏级恢复策略 */
     onlineAiRecovery?: {
+        advancePhaseCommandType?: string;
+        disableFallbackAdvancePhase?: boolean;
+        publicPregameLegalActionPhases?: string[];
+        activeTurnLegalActionOnlyPhases?: string[];
+        humanTurnLegalActionProbePhases?: string[];
+        autoSelectFirstTriggerOnlySimpleChoiceSourceIds?: string[];
         allowForceCommandAfterLegalActionExhausted?: (args: {
             state: MatchState<unknown>;
             phase: string;
             previousCandidate: ForceEndTurnStalledAiResolution;
             nextCandidate: ForceEndTurnStalledAiResolution;
         }) => boolean;
+        resolveCurrentPlayerId?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            fallbackPlayerId: string | null;
+        }) => string | null | undefined;
+        resolveManualSetupSelectionTakeoverPlayerId?: (args: {
+            sharedState: MatchState<unknown>;
+            seatControllers: Record<string, unknown>;
+            currentPlayerId: string | null;
+        }) => string | null | undefined;
+        shouldReleaseManualSetupAttemptFromSharedState?: (args: {
+            sharedState: MatchState<unknown>;
+            playerId: string;
+            actionKind: string;
+            selectionId: string;
+        }) => boolean | undefined;
+        shouldTreatActionAsManualSetupSelection?: (args: {
+            actionKind: string;
+            actionId: string;
+            commandTypes: string[];
+        }) => boolean | undefined;
+        buildPregameSelectionProgressSignature?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            fallbackSignature: string;
+        }) => string | undefined;
+        buildInteractionRecoveryFingerprintHint?: (args: {
+            state: MatchState<unknown>;
+            playerId: string;
+            phase: string;
+            interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
+            fallbackFingerprintHint: string;
+        }) => string | undefined;
+        resolveForcedInteractionCommand?: (args: {
+            state: MatchState<unknown>;
+            playerId: string;
+            phase: string;
+            interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
+            fallbackCommand: { type: string; payload: unknown } | null;
+        }) => { type: string; payload: unknown } | null | undefined;
+        resolveSeatLegalOnlyRecovery?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+        }) => {
+            playerId: string;
+            command: { type: string; payload: unknown };
+            fingerprintHint: string;
+            attemptSuffix?: string;
+        } | null | undefined;
+        shouldSuppressActiveTurnCandidate?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            currentPlayerId: string;
+            turnNumber: number | null;
+        }) => boolean;
+        shouldSuppressUnsatisfiableInteractionFeedback?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            playerId: string;
+            reason: string;
+            interaction: unknown;
+        }) => boolean;
+        offlineAdjudicationCommandByInteractionKind?: Record<string, string>;
     };
 }
 
@@ -1432,7 +1501,9 @@ export class GameTransportServer {
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<boolean> {
         const seatController = seatControllers[playerId];
-        if (!seatController || seatController.type === 'human' || seatController.manualFactionSelection !== true) {
+        const manualSetupSelection = seatController.manualFactionSelection === true
+            || seatController.manualSetupSelection === true;
+        if (!seatController || seatController.type === 'human' || !manualSetupSelection) {
             return false;
         }
 
@@ -1455,13 +1526,24 @@ export class GameTransportServer {
         }).legalActions;
 
         return legalActions.length > 0
-            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveSetupSelection(
+            && legalActions.every((action) => {
+                const commandTypes = action.commands.map((command) => command.type);
+                const configured = match.engineConfig.onlineAiRecovery?.shouldTreatActionAsManualSetupSelection?.({
+                    actionKind: action.kind,
+                    actionId: action.actionId,
+                    commandTypes,
+                });
+                if (configured !== undefined) {
+                    return configured;
+                }
+                return aiModule.shouldPlayerManuallyResolveSetupSelection(
                 match.engineConfig,
                 match.state,
                 playerId,
                 seatController,
                 action,
-            ));
+                );
+            });
     }
 
     private async resolveOnlineAiRecoveryCandidate(

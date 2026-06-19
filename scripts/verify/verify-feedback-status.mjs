@@ -96,6 +96,12 @@ function validateBoard(board) {
         if (item.notes !== undefined && typeof item.notes !== 'string') {
             issues.push(formatMessage(itemId, 'notes 必须是字符串'));
         }
+        if (item.closedReason !== undefined && typeof item.closedReason !== 'string') {
+            issues.push(formatMessage(itemId, 'closedReason 必须是字符串'));
+        }
+        if (item.resolvedMethod !== undefined && typeof item.resolvedMethod !== 'string') {
+            issues.push(formatMessage(itemId, 'resolvedMethod 必须是字符串'));
+        }
 
         if (item.status === 'resolved') {
             if (!isStringArray(item.evidence) || item.evidence.length === 0) {
@@ -104,13 +110,19 @@ function validateBoard(board) {
             if (!isStringArray(item.verification) || item.verification.length === 0) {
                 issues.push(formatMessage(itemId, 'resolved 必须至少包含 1 条 verification'));
             }
+            const hasResolvedMethod = isNonEmptyString(item.resolvedMethod);
+            const hasLegacyNotes = isNonEmptyString(item.notes);
+            if (!hasResolvedMethod && !hasLegacyNotes) {
+                issues.push(formatMessage(itemId, 'resolved 必须提供 resolvedMethod（旧数据可临时用 notes 兼容）'));
+            }
         }
 
         if (item.status === 'closed') {
+            const hasClosedReason = isNonEmptyString(item.closedReason);
             const hasNotes = isNonEmptyString(item.notes);
             const hasEvidence = isStringArray(item.evidence) && item.evidence.length > 0;
-            if (!hasNotes && !hasEvidence) {
-                issues.push(formatMessage(itemId, 'closed 必须至少提供 notes 或 evidence'));
+            if (!hasClosedReason && !hasNotes && !hasEvidence) {
+                issues.push(formatMessage(itemId, 'closed 必须至少提供 closedReason、notes 或 evidence'));
             }
         }
     }

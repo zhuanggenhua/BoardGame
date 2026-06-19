@@ -66,7 +66,10 @@ export type DieFace =
     | 'medal'
     | 'cutlass'
     | 'loot'
-    | 'skull';
+    | 'skull'
+    | 'wrench'
+    | 'gear'
+    | 'electricity';
 
 // ============================================================================
 // 角色编目
@@ -85,6 +88,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'ninja',
     'zhanshujia',
     'cursed_pirate',
+    'artificer',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -110,6 +114,16 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'ninja', nameKey: 'characters.ninja' },
     { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
+    {
+        id: 'artificer',
+        nameKey: 'characters.artificer',
+        badges: [{
+            id: 'implementation_in_progress',
+            labelKey: 'common:status_tags.under_construction',
+            tone: 'warning',
+            variant: 'disabled-overlay',
+        }],
+    },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(

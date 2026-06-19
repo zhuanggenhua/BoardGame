@@ -20,6 +20,7 @@ export interface FeedbackItem {
     severity: 'low' | 'medium' | 'high' | 'critical';
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     closedReason?: string | null;
+    resolvedMethod?: string | null;
     gameName?: string;
     contactInfo?: string;
     actionLog?: string;
@@ -393,6 +394,7 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItem, t: TFunction
         `- 严重度: ${t(`feedback.severity.${item.severity}`)}`,
         `- 状态: ${t(`feedback.status.${item.status}`)}`,
         item.closedReason ? `- 关闭理由: ${item.closedReason}` : '',
+        item.resolvedMethod ? `- 解决方式: ${item.resolvedMethod}` : '',
         gameLabel ? `- 游戏: ${gameLabel}` : '',
         `- 提交人: ${reporter}`,
         item.contactInfo ? `- 联系方式: ${item.contactInfo}` : '',

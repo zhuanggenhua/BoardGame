@@ -71,6 +71,9 @@ export class Feedback {
     @Prop({ type: String, default: null, trim: true })
     closedReason?: string | null;
 
+    @Prop({ type: String, default: null, trim: true })
+    resolvedMethod?: string | null;
+
     @Prop({ type: String, enum: FeedbackReporterType, default: FeedbackReporterType.USER })
     reporterType!: FeedbackReporterType;
 

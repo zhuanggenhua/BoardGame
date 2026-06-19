@@ -214,6 +214,11 @@ export class UpdateFeedbackStatusDto {
     @IsOptional()
     @MaxLength(500)
     closedReason?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(500)
+    resolvedMethod?: string;
 }
 
 export class QueryFeedbackDto {

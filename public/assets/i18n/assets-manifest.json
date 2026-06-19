@@ -4108,6 +4108,132 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/面板": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "344be371a69602de93dff5af2cc47e7084a7bc6d31e74e82d0ba4c7dddd95ebf",
+          "bytes": 84580,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
+          "bytes": 637977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
+          "bytes": 720,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
       "variants": {
         "png": {
@@ -4176,6 +4302,87 @@
         "png": {
           "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
           "bytes": 306226,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
+          "bytes": 57152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/电能机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
+          "bytes": 57936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/合成器": {
+      "variants": {
+        "webp": {
+          "sha256": "55db363e3b599a16227fe689dd7ffcafb1d4e91f7e9d5c193f2e265cb4faa4f2",
+          "bytes": 9976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米爆蛋": {
+      "variants": {
+        "webp": {
+          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
+          "bytes": 6026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
+          "bytes": 49818,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/纳米机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
+          "bytes": 52470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f4ff713f18fe8b98dbfbb88d907ea57348dc09518f712e30c875b74e99b25391",
+          "bytes": 45174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/compressed/治疗机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "757f0170e677b6cd82549c234a3a5743e589f683444a4eab2fbcba6ec7ef1ad3",
+          "bytes": 47180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/tip": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
           "mime": "image/png"
         }
       }

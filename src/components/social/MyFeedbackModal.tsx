@@ -19,6 +19,7 @@ interface MyFeedbackItem {
     status: 'open' | 'in_progress' | 'resolved' | 'closed';
     gameName?: string;
     closedReason?: string | null;
+    resolvedMethod?: string | null;
     rewardPoints?: number;
     createdAt: string;
 }
@@ -222,6 +223,13 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                                             <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
                                                 <span className="font-semibold">{t('auth:menu.feedbackClosedReasonLabel')}</span>
                                                 <span className="ml-1">{item.closedReason?.trim() || t('auth:menu.feedbackClosedReasonEmpty')}</span>
+                                            </div>
+                                        ) : null}
+
+                                        {item.status === 'resolved' ? (
+                                            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                                                <span className="font-semibold">{t('auth:menu.feedbackResolvedMethodLabel')}</span>
+                                                <span className="ml-1">{item.resolvedMethod?.trim() || t('auth:menu.feedbackResolvedMethodEmpty')}</span>
                                             </div>
                                         ) : null}
                                     </article>

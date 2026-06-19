@@ -1,9 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DiscardPile } from '../ui/DiscardPile';
 import { CardSelectionModal } from '../ui/CardSelectionModal';
 import type { CardInstance } from '../domain/core-types';
 import { UI_Z_INDEX } from '../../../core';
+
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        i18n: { language: 'zh-CN' },
+        t: (key: string) => {
+            const translations: Record<string, string> = {
+                'imageAlt.card': 'Card',
+                empty: '空',
+            };
+            return translations[key] ?? key;
+        },
+    }),
+}));
 
 function createCard(overrides: Partial<CardInstance> = {}): CardInstance {
     return {

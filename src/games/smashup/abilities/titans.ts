@@ -63,6 +63,7 @@ import {
     getDeferredReplacementBaseDefId,
 } from '../domain/scoringSession';
 import { validateActionPlaySemantics } from '../domain/playLegality';
+import { processDestroyTriggers } from '../domain/reducer';
 import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from '../domain/utils';
 import {
     registerTitanSpecialValidator,
@@ -76,6 +77,7 @@ import type {
     CardTransferredEvent,
     CardsDrawnEvent,
     MadnessDrawnEvent,
+    MinionDestroyedEvent,
     MinionCardDef,
     PowerCounterAddedEvent,
     SmashUpCore,
@@ -4650,15 +4652,15 @@ function hasTheBrideSecondEffectOption(
     state: AbilityContext['state'],
     playerId: string,
     firstKind: BrideEffectKind,
-    targetUid: string,
+    _targetUid: string,
 ) {
     const otherKinds: BrideEffectKind[] = ['box', 'destroy', 'removeCounter'].filter(
         (kind): kind is BrideEffectKind => kind !== firstKind,
     );
     return otherKinds.some(kind => {
-        if (kind === 'box') return getTheBrideBoxTargets(state, playerId, targetUid).length > 0;
-        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId, targetUid).length > 0;
-        return getTheBrideRemoveCounterTargets(state, playerId, targetUid).length > 0;
+        if (kind === 'box') return getTheBrideBoxTargets(state, playerId).length > 0;
+        if (kind === 'destroy') return getTheBrideDestroyTargets(state, playerId).length > 0;
+        return getTheBrideRemoveCounterTargets(state, playerId).length > 0;
     });
 }
 
@@ -4666,17 +4668,17 @@ function buildTheBrideStartBranchOptions(
     state: AbilityContext['state'],
     playerId: string,
     usedKinds: BrideEffectKind[],
-    excludedUid?: string,
+    _excludedUid?: string,
 ) {
     const options: PromptOption<BrideStartBranchValue>[] = [];
     const requireSecondChoice = usedKinds.length === 0;
-    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'box', label: '放进盒中', labelKey: 'ui.titan_the_bride_effect_box', value: { kind: 'box' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'destroy', label: '消灭己方随从', labelKey: 'ui.titan_the_bride_effect_destroy', value: { kind: 'destroy' }, displayMode: 'button' });
     }
-    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', excludedUid, requireSecondChoice).length > 0) {
+    if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', undefined, requireSecondChoice).length > 0) {
         options.push({ id: 'removeCounter', label: '移除 +1 指示物', labelKey: 'ui.titan_the_bride_effect_remove_counter', value: { kind: 'removeCounter' }, displayMode: 'button' });
     }
     if (usedKinds.length === 0) {
@@ -4761,6 +4763,36 @@ function buildTheBrideEffectEvents(
         });
     }
     return [removePowerCounter(minion.uid, selection.baseIndex, 1, 'frankenstein_the_bride_special', now)];
+}
+
+function processTheBrideReplacementIfNeeded(
+    state: MatchState<SmashUpCore>,
+    playerId: string,
+    events: SmashUpEvent[],
+    random: Parameters<typeof processDestroyTriggers>[3],
+    timestamp: number,
+): { events: SmashUpEvent[]; matchState: MatchState<SmashUpCore> } {
+    const destroyEvents = events.filter((event): event is MinionDestroyedEvent =>
+        event.type === SU_EVENTS.MINION_DESTROYED);
+    if (destroyEvents.length === 0) {
+        return { events, matchState: state };
+    }
+
+    const processed = processDestroyTriggers(events, state, playerId, random, timestamp);
+    const remainingDestroyUids = new Set(
+        processed.events
+            .filter((event): event is MinionDestroyedEvent => event.type === SU_EVENTS.MINION_DESTROYED)
+            .map(event => event.payload.minionUid),
+    );
+    const hasSuppressedDestroy = destroyEvents.some(event => !remainingDestroyUids.has(event.payload.minionUid));
+    if (!hasSuppressedDestroy) {
+        return { events, matchState: state };
+    }
+
+    return {
+        events: processed.events,
+        matchState: processed.matchState ?? state,
+    };
 }
 
 function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
@@ -6021,9 +6053,8 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const excludedUid = continuation.selectedTargetUids?.[0];
         const requireSecondChoice = (continuation.usedKinds?.length ?? 0) === 0;
-        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, excludedUid, requireSecondChoice);
+        const options = buildTheBrideStartTargetOptions(state.core, playerId, selected.kind, undefined, requireSecondChoice);
         if (options.length === 0) {
             return { state, events: [] };
         }
@@ -6048,14 +6079,14 @@ export function registerTitanInteractionHandlers(): void {
                 nextState.core,
                 playerId,
                 selected.kind,
-                excludedUid,
+                undefined,
                 requireSecondChoice,
             );
 
         return { state: queueInteraction(state, interaction), events: [] };
     });
 
-    registerInteractionHandler('titan_frankenstein_the_bride_start_choose_target', (state, playerId, value, data, _random, timestamp) => {
+    registerInteractionHandler('titan_frankenstein_the_bride_start_choose_target', (state, playerId, value, data, random, timestamp) => {
         const selected = value as { kind?: BrideEffectKind; targetUid?: string; defId?: string; from?: 'hand' | 'discard'; baseIndex?: number } | undefined;
         const continuation = (data as {
             continuationContext?: {
@@ -6072,13 +6103,16 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const events = buildTheBrideEffectEvents(state.core, playerId, {
+        const rawEvents = buildTheBrideEffectEvents(state.core, playerId, {
             kind: selected.kind,
             targetUid: selected.targetUid,
             defId: selected.defId,
             from: selected.from,
             baseIndex: selected.baseIndex,
         }, timestamp);
+        const replacement = processTheBrideReplacementIfNeeded(state, playerId, rawEvents, random, timestamp);
+        const events = replacement.events;
+        const continuationState = replacement.matchState;
 
         const usedKinds = [...(continuation.usedKinds ?? []), selected.kind];
         const selectedTargetUids = [...(continuation.selectedTargetUids ?? []), selected.targetUid];
@@ -6088,7 +6122,7 @@ export function registerTitanInteractionHandlers(): void {
                 `titan_frankenstein_the_bride_start_choose_branch_${timestamp}`,
                 playerId,
                 '新娘：选择第二个效果',
-                buildTheBrideStartBranchOptions(state.core, playerId, usedKinds, selected.targetUid),
+                buildTheBrideStartBranchOptions(continuationState.core, playerId, usedKinds, selected.targetUid),
                 {
                     sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
                     targetType: 'generic',
@@ -6103,7 +6137,7 @@ export function registerTitanInteractionHandlers(): void {
             };
             (interaction.data as { continuationContext?: unknown; optionsGenerator?: unknown }).optionsGenerator = (nextState: AbilityContext['matchState']) =>
                 buildTheBrideStartBranchOptions(nextState.core, playerId, usedKinds, selected.targetUid);
-            return { state: queueInteraction(state, interaction), events };
+            return { state: queueInteraction(continuationState, interaction), events };
         }
 
         const interaction = createSimpleChoice(

@@ -55,6 +55,17 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         meditate: ['still-wet-behind-ears'],
         ultimate: ['merciless-curse'],
     },
+    artificer: {
+        fist: ['wrench-strike'],
+        chi: ['schematics'],
+        sky: ['collect-parts'],
+        lotus: ['eureka'],
+        combo: ['activate-bots'],
+        lightning: ['overclock'],
+        calm: ['shock-bot'],
+        meditate: ['tinker'],
+        ultimate: ['maximum-power'],
+    },
 };
 
 const CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES: Record<string, string[]> = {

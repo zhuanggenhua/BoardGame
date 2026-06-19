@@ -2,7 +2,12 @@
 
 ## 当前真相源
 
-- 当前正式 live 方向：
+- 当前正式开局合同：
+  - `src/games/fantasyrealms/rule/幻想国度规则.md`
+  - `src/games/fantasyrealms/domain/index.ts`
+  - `src/games/fantasyrealms/__tests__/Board.foundation.test.tsx`
+  - `evidence/fantasyrealms/fantasyrealms-duel-opening-real-2026-06-19.md`
+- 2026-06-13 首页到终局的 full-flow 截图链：
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-opening-before-first-draw.png`
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-after-first-draw-before-discard.png`
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-first-discard-before-confirm.png`
@@ -18,7 +23,8 @@
 
 ## 当前口径
 
-- 当前 live UI 的正式实现方向，现以 `fantasyrealms-online-basic.e2e` 用例 `首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图` 产出的开局 / 摸牌后 / 选牌待确认 / 等待态 / 终局榜单截图为准。
+- 当前 live UI 的正式实现方向，不再以旧 full-flow 截图里的 `点此摸 2 张 / 点左上牌库` 引导为准；真实开局合同以规则、初始化状态、`Board.foundation` 测试和 `fantasyrealms-duel-opening-real-2026-06-19.md` 为准。
+- `fantasyrealms-online-basic.e2e` 这组 full-flow 截图现在只保留“2026-06-13 当时产品链已跑通”的历史流程证据，不再作为今天的开局 UI 真相源。
 - 旧 `fr-merge-pass2-*` 手工图现在只保留“当时裁定过哪条方向”的历史别名作用，不再作为当前正式截图入口。
 - 若要判断“根目录 `main` 与 `fantasyrealms` worktree 到底先认哪边、哪些能双保留”，统一看 `evidence/fantasyrealms/fantasyrealms-main-vs-worktree-merge-decision-package-2026-06-14.md`。
 - 若要继续看“双边差异具体分成哪几桶、哪些只能先冻结、哪些要后续单独吸收”，统一看 `evidence/fantasyrealms/fantasyrealms-dual-side-diff-buckets-2026-06-14.md`。
@@ -55,11 +61,11 @@
 | --- | --- | --- |
 | 分数区进行中隐藏他人分数、终局再揭示 | 正式规则 + 当前实现合同 | 正式真相源 |
 | `fantasyrealms-score-list-reference.png` 里的右上分数排行列表 | 更老的生图，只能作局部样式参考 | **不是交互真相源** |
-| `fantasyrealms-online-basic.e2e` 当前 full-flow 用例产出的 opening / after-draw / before-confirm / waiting / final-standings / review-other-player | 当前 worktree 的真实页面 E2E 证据，且可直接反查到游戏、测试文件和用例名 | 当前正式 live 真相源 |
-| “摸牌阶段点左上牌库” | 当前正式 live 路线 + 项目内已收敛的牌库主入口方案 | 当前正式方向 |
-| “摸牌时直接点左上牌库；拿公开牌时直接点公开牌；弃牌时直接点手牌，不再额外弹确认按钮” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
-| “横幅只承担短提示，不承担确认按钮；固定单一路径动作直接落到对象本体” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
-| “牌面放大通过显式放大镜入口，而不是依赖二次点击猜测” | 当前 worktree 的 FantasyRealms Board 实现 + 本轮重构目标 | 当前正式方向 |
+| `fantasyrealms-online-basic.e2e` 2026-06-13 full-flow 用例产出的 opening / after-draw / before-confirm / waiting / final-standings / review-other-player | 历史真实页面链证据，能证明当时首页到终局跑通过，但其中 opening 图仍带旧提示 UI | **不是今天的开局 UI 真相源** |
+| “真实双人开局空弃牌时，不停在摸牌按钮；唯一合法来源是牌库且无目标可选，因此自动摸 2 张进入弃牌阶段” | 正式规则 + 当前初始化状态 + `Board.foundation` 测试 | 当前正式方向 |
+| “中盘公开弃牌已存在时，才允许同时出现 `摸牌` 与 `拿公开牌`；进入拿公开牌选牌态后，不再保留同名按钮并列” | 当前 `FantasyRealms Board` 实现 + `Board.foundation` 测试 + `fantasyrealms-direct-click-refactor-2026-06-18.md` | 当前正式方向 |
+| “横幅只承担短提示，不承担确认按钮；固定单一路径动作直接落到对象本体” | 当前根目录主线的 `FantasyRealms Board` 实现 + 本轮 UI 规则收口 | 当前正式方向 |
+| “牌面放大通过显式放大镜入口，而不是依赖二次点击猜测” | 当前根目录主线的 `FantasyRealms Board` 实现 + 本轮重构目标 | 当前正式方向 |
 | 底部短提示横条（如 `点一张手牌，再确认弃置`） | 历史 `fr-ui-current-*` 路线 | **已退出当前桌面正式方向** |
 
 ## 当前未通过项

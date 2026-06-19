@@ -103,6 +103,15 @@
         }
       }
     },
+    "base/compressed/zhongguo": {
+      "variants": {
+        "webp": {
+          "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
+          "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/shayu": {
       "variants": {
         "png": {
@@ -117,6 +126,15 @@
         "png": {
           "sha256": "3fa3dc9dafc50279272829e229a3c12993c11588e549b3b8d30e363f4776aafc",
           "bytes": 16968513,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/zhongguo": {
+      "variants": {
+        "png": {
+          "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
+          "bytes": 30275972,
           "mime": "image/png"
         }
       }
@@ -247,6 +265,15 @@
         }
       }
     },
+    "cards/compressed/zhongguo": {
+      "variants": {
+        "webp": {
+          "sha256": "08a74779f42701729149ccb707e110581e9c389dd902a5d9c583747301087b39",
+          "bytes": 835348,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/longzu": {
       "variants": {
         "png": {
@@ -279,6 +306,15 @@
         "png": {
           "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
           "bytes": 44486175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/zhongguo": {
+      "variants": {
+        "png": {
+          "sha256": "d2580992fa5dfd33082de91c1b1ba91917185bdd91a22649b84419b782f0176e",
+          "bytes": 37611409,
           "mime": "image/png"
         }
       }

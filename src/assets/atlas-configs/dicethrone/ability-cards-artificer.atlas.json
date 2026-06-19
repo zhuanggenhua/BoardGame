@@ -1,0 +1,218 @@
+{
+  "imageW": 900,
+  "imageH": 2048,
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 0,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 0,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 0,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 0,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 293,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 293,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 293,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 293,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 293,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 586,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 586,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 586,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 586,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 586,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 879,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 879,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 879,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 879,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 879,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 1172,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 1172,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 1172,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 1172,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 1172,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 1465,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 1465,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 1465,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 1465,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 1465,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 0,
+      "y": 1758,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 181,
+      "y": 1758,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 362,
+      "y": 1758,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 543,
+      "y": 1758,
+      "width": 176,
+      "height": 288
+    },
+    {
+      "x": 724,
+      "y": 1758,
+      "width": 176,
+      "height": 288
+    }
+  ],
+  "contract": "artificer-normalized-5x7-plus-empty-slots-physical-card-grid",
+  "note": "Copied from the validated Zhanshujia 1910x4348 -> 900x2048 normalized physical card grid; Artificer source uses the same dimensions and row-major slot contract."
+}

@@ -39,9 +39,6 @@
       "kicker": "Next",
       "discardPick": "Discard 1",
       "discardSelf": "Confirm Discard",
-      "drawDeckDirect": "{{action}}",
-      "drawOrTake": "Tap the deck to draw, or tap a face-up card to take it",
-      "takeDirect": "Tap a face-up card to take it",
       "discardDirect": "Tap a card in hand to discard it",
       "waiting": "Waiting for {{player}}"
     }

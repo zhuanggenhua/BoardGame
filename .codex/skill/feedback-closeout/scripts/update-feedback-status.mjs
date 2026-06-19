@@ -7,6 +7,8 @@ function parseArgs(argv) {
         token: process.env.BOARDGAME_FEEDBACK_TOKEN || '',
         id: '',
         status: '',
+        closedReason: '',
+        resolvedMethod: '',
     };
 
     const positional = [];
@@ -18,6 +20,14 @@ function parseArgs(argv) {
         }
         if (arg === '--token') {
             options.token = argv[++index] || options.token;
+            continue;
+        }
+        if (arg === '--closed-reason') {
+            options.closedReason = argv[++index] || '';
+            continue;
+        }
+        if (arg === '--resolved-method') {
+            options.resolvedMethod = argv[++index] || '';
             continue;
         }
         positional.push(arg);
@@ -47,7 +57,11 @@ async function main() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${options.token}`,
         },
-        body: JSON.stringify({ status: options.status }),
+        body: JSON.stringify({
+            status: options.status,
+            ...(options.closedReason.trim() ? { closedReason: options.closedReason.trim() } : {}),
+            ...(options.resolvedMethod.trim() ? { resolvedMethod: options.resolvedMethod.trim() } : {}),
+        }),
     });
 
     if (!response.ok) {

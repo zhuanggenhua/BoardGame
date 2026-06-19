@@ -170,6 +170,12 @@
       "description": [
         "持有者不能通过进攻投掷阶段造成任何伤害；投掷阶段结束移除。"
       ]
+    },
+    "nanobomb": {
+      "name": "纳米爆弹",
+      "description": [
+        "负面状态效果，上限 3。引爆时按数量造成 1/3/5 点伤害；维护阶段可尝试移除。"
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -354,6 +360,30 @@
       "description": [
         "上限 5。可花费 1 个来获得 1 CP 或重掷 1 骰；花费 3 个可抽 1 张牌或对 1 名对手施加锁定；花费 4 个可令 1 名玩家获得守护或转移 1 个状态。"
       ]
+    },
+    "synth": {
+      "name": "合成器",
+      "description": [
+        "工匠资源型标记，上限 7。用于制造、升级和激活机器人；完整消费链待 L2 实现。"
+      ]
+    },
+    "nanobot": {
+      "name": "纳米机器人",
+      "description": [
+        "同伴机器人，上限 1。维护阶段可激活并引爆所有纳米爆弹；完整激活链待 L2 实现。"
+      ]
+    },
+    "shock_bot": {
+      "name": "电能机器人",
+      "description": [
+        "同伴机器人，上限 1。进攻造成伤害后可激活，使攻击伤害 +3；完整响应链待 L2 实现。"
+      ]
+    },
+    "heal_bot": {
+      "name": "治疗机器人",
+      "description": [
+        "同伴机器人，上限 2。受到至少 6 点攻击伤害后可激活并投骰治疗；完整响应链待 L2 实现。"
+      ]
     }
   },
   "actionLog": {
@@ -499,7 +529,8 @@
     "treant": "树精",
     "ninja": "忍者",
     "zhanshujia": "战术家",
-    "cursed_pirate": "咒缚海盗"
+    "cursed_pirate": "咒缚海盗",
+    "artificer": "工匠"
   },
   "config": {
     "dice": {
@@ -541,6 +572,9 @@
       },
       "zhanshujia": {
         "name": "战术家骰子"
+      },
+      "artificer": {
+        "name": "工匠骰子"
       }
     },
     "resources": {
@@ -700,7 +734,10 @@
       "medal": "勋章",
       "cutlass": "弯刀",
       "loot": "战利品",
-      "skull": "骷髅"
+      "skull": "骷髅",
+      "wrench": "扳手",
+      "gear": "齿轮",
+      "electricity": "电能"
     }
   },
   "bonusDie": {
@@ -909,7 +946,9 @@
       "cursedPirateHumanMakeYourMarkLoot": "做好标记：战利品抽 1 张牌",
       "cursedPirateHumanMakeYourMarkSkull": "做好标记：骷髅获得诅咒金币",
       "cursedPirateSipHit": "啜呼：3-6，获得火药桶和凋零",
-      "cursedPirateSipMiss": "啜呼：1-2，无事发生"
+      "cursedPirateSipMiss": "啜呼：1-2，无事发生",
+      "artificerMasterpieceElectricity": "合成大师：电能获得 5 合成器",
+      "artificerMasterpieceOther": "合成大师：否则抽 1 张牌"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -1088,6 +1127,9 @@
       "spirit": "树灵",
       "bullet": "子弹",
       "bullseye": "靶心",
+      "wrench": "扳手",
+      "gear": "齿轮",
+      "electricity": "电流",
       "dash": "冲刺",
       "ninja_katana": "忍刀",
       "shuriken": "手里剑",
@@ -3694,6 +3736,234 @@
       "effects": {
         "choice": "对一名对手施加火药桶；该对手可改为投 1 骰，3-6 时获得火药桶和凋零。"
       }
+    },
+    "wrench-strike": {
+      "name": "扳手攻击",
+      "description": "3/4/5 个扳手分别造成 3/4/5 点伤害；追加投骰或合成器分支待 L2 实现。",
+      "effects": {
+        "damage3": "造成 3 点伤害。",
+        "damage4": "造成 4 点伤害。",
+        "damage5": "造成 5 点伤害。",
+        "bonusBranch": "可投 1 骰或花费 1 合成器追加效果；完整分支待 L2 实现。"
+      }
+    },
+    "wrench-strike-2": {
+      "name": "扳手攻击 II",
+      "description": "3/4/5 个扳手分别造成 4/5/6 点伤害；追加投骰或合成器分支待 L2 实现。",
+      "effects": {
+        "damage4": "造成 4 点伤害。",
+        "damage5": "造成 5 点伤害。",
+        "damage6": "造成 6 点伤害。",
+        "bonusBranch": "可投 1 骰或花费 1 合成器追加效果；完整分支待 L2 实现。"
+      }
+    },
+    "schematics": {
+      "name": "电路图",
+      "description": "3 齿轮 + 1 电能：抽 2 张牌，治疗 2，获得 4 合成器。",
+      "effects": {
+        "draw2": "抽 2 张牌。",
+        "heal2": "治疗 2。",
+        "gainSynth4": "获得 4 合成器。"
+      }
+    },
+    "schematics-2": {
+      "name": "电路图 II",
+      "description": "获得 2，然后抽 2 张牌，治疗 2，获得 4 合成器。",
+      "effects": {
+        "gain2": "获得 2。",
+        "draw2": "抽 2 张牌。",
+        "heal2": "治疗 2。",
+        "gainSynth4": "获得 4 合成器。"
+      }
+    },
+    "collect-parts": {
+      "name": "收集配件",
+      "description": "被动：维护阶段获得合成器，并可花费合成器施加纳米爆弹；完整时机待 L2 实现。",
+      "effects": {
+        "upkeepGainSynth": "维护阶段获得合成器。",
+        "spendSynthForNanobomb": "可花费 4 合成器对对手施加 1 纳米爆弹。"
+      }
+    },
+    "collect-parts-2": {
+      "name": "收集配件 II",
+      "description": "被动升级：维护阶段获得合成器，并可花费合成器施加纳米爆弹；完整时机待 L2 实现。",
+      "effects": {
+        "upkeepGainSynth": "维护阶段获得合成器。",
+        "spendSynthForNanobomb": "可花费 4 合成器对对手施加 1 纳米爆弹。"
+      }
+    },
+    "eureka": {
+      "name": "灵感突现",
+      "description": "2 扳手 + 3 齿轮：获得 3 合成器，然后造成 7 点伤害。",
+      "effects": {
+        "gainSynth3": "获得 3 合成器。",
+        "damage7": "造成 7 点伤害。"
+      }
+    },
+    "eureka-2": {
+      "name": "灵感突现 II",
+      "description": "2 扳手 + 3 齿轮：获得 3 合成器，然后造成 8 点伤害；从头构建子区待 L2 实现。",
+      "effects": {
+        "gainSynth3": "获得 3 合成器。",
+        "damage8": "造成 8 点伤害。",
+        "buildFromScratch": "从头构建子效果待 L2 实现。"
+      }
+    },
+    "activate-bots": {
+      "name": "唤醒机械",
+      "description": "小顺子：获得 1 合成器，施加 1 纳米爆弹，然后造成 7 点伤害。",
+      "effects": {
+        "gainSynth1": "获得 1 合成器。",
+        "inflictNanobomb": "对手获得 1 纳米爆弹。",
+        "damage7": "造成 7 点伤害。"
+      }
+    },
+    "activate-bots-2": {
+      "name": "唤醒机械 II",
+      "description": "小顺子：获得 1 合成器，施加 2 纳米爆弹，然后造成 7 点伤害；机械大军子区待 L2 实现。",
+      "effects": {
+        "gainSynth1": "获得 1 合成器。",
+        "inflictNanobomb2": "对手获得 2 纳米爆弹。",
+        "damage7": "造成 7 点伤害。",
+        "botSwarm": "机械大军子效果待 L2 实现。"
+      }
+    },
+    "overclock": {
+      "name": "超频运行",
+      "description": "4 电能：造成 6 点不可防御伤害，然后激活至多 2 个不同机器人。",
+      "effects": {
+        "damage6Unblockable": "造成 6 点不可防御伤害。",
+        "activateTwoBots": "激活至多 2 个不同机器人；完整选择链待 L2 实现。"
+      }
+    },
+    "overclock-2": {
+      "name": "超频运行 II",
+      "description": "4 电能造成 6 点不可防御伤害并激活机器人；能量提升子区提供合成器和伤害。",
+      "effects": {
+        "damage6Unblockable": "造成 6 点不可防御伤害。",
+        "activateTwoBots": "激活至多 2 个不同机器人；完整选择链待 L2 实现。",
+        "energyBoostGainSynth2": "获得 2 合成器。",
+        "energyBoostDamage4": "造成 4 点不可防御伤害。"
+      }
+    },
+    "shock-bot": {
+      "name": "电能脉冲",
+      "description": "大顺子：施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人。",
+      "effects": {
+        "inflictNanobomb": "对手获得 1 纳米爆弹。",
+        "damage9": "造成 9 点伤害。",
+        "activateOneBot": "激活 1 个机器人；完整选择链待 L2 实现。"
+      }
+    },
+    "shock-bot-3": {
+      "name": "电能脉冲 III",
+      "description": "大顺子：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人。",
+      "effects": {
+        "gainSynth2": "获得 2 合成器。",
+        "inflictNanobomb": "对手获得 1 纳米爆弹。",
+        "damage9": "造成 9 点伤害。",
+        "activateOneBot": "激活 1 个机器人；完整选择链待 L2 实现。"
+      }
+    },
+    "tinker": {
+      "name": "稍作调整",
+      "description": "防御掷 4：获得合成器；如果投出电能，施加纳米爆弹。",
+      "effects": {
+        "defense4": "防御掷 4：获得合成器；如果投出电能，施加纳米爆弹。"
+      }
+    },
+    "tinker-2": {
+      "name": "稍作调整 II",
+      "description": "防御掷 5：如果投出扳手造成 1 伤害；获得 1 合成器；施加 1 纳米爆弹。",
+      "effects": {
+        "defense5": "防御掷 5：扳手反击，获得 1 合成器，并施加 1 纳米爆弹。"
+      }
+    },
+    "maximum-power": {
+      "name": "真本能量！",
+      "description": "终极：获得 2 合成器，施加 1 纳米爆弹，造成 10 点伤害，然后激活至多 2 个不同机器人。",
+      "effects": {
+        "gainSynth2": "获得 2 合成器。",
+        "inflictNanobomb": "对手获得 1 纳米爆弹。",
+        "damage10": "造成 10 点伤害。",
+        "activateTwoBots": "激活至多 2 个不同机器人；完整选择链待 L2 实现。"
+      }
+    },
+    "card-artificer-masterpiece": {
+      "effects": {
+        "roll": "投 1 骰：若为电能，获得 5 合成器；否则抽 1 张牌。"
+      }
+    },
+    "card-artificer-mechanical-strike": {
+      "effects": {
+        "prevent2": "防止 2 点即将受到的伤害。",
+        "inflictNanobomb": "对攻击者施加 1 纳米爆弹。"
+      }
+    },
+    "upgrade-artificer-shock-bot-2": {
+      "effects": {
+        "pendingL2": "电弧盾完整响应与升级语义待 L2 裁定。"
+      }
+    },
+    "upgrade-artificer-tinker-2": {
+      "effects": {
+        "upgrade": "升级稍作调整至 II 级。"
+      }
+    },
+    "upgrade-artificer-overclock-2": {
+      "effects": {
+        "upgrade": "升级超频运行至 II 级。"
+      }
+    },
+    "upgrade-artificer-shock-bot-3": {
+      "effects": {
+        "upgrade": "升级电能脉冲至 III 级。"
+      }
+    },
+    "upgrade-artificer-activate-bots-2": {
+      "effects": {
+        "upgrade": "升级唤醒机械至 II 级。"
+      }
+    },
+    "upgrade-artificer-eureka-2": {
+      "effects": {
+        "upgrade": "升级灵感突现至 II 级。"
+      }
+    },
+    "upgrade-artificer-schematics-2": {
+      "effects": {
+        "upgrade": "升级电路图至 II 级。"
+      }
+    },
+    "upgrade-artificer-wrench-strike-2": {
+      "effects": {
+        "upgrade": "升级扳手攻击至 II 级。"
+      }
+    },
+    "upgrade-artificer-collect-parts-2": {
+      "effects": {
+        "upgrade": "升级收集配件至 II 级。"
+      }
+    },
+    "card-artificer-voltage": {
+      "effects": {
+        "gainSynth2": "获得 2 合成器。"
+      }
+    },
+    "card-artificer-nano-attack": {
+      "effects": {
+        "inflictNanobomb": "对 1 名对手施加 1 纳米爆弹。"
+      }
+    },
+    "card-artificer-overdrive": {
+      "effects": {
+        "roll": "投 1 骰：扳手治疗 2；齿轮获得合成器；电能施加纳米爆弹。"
+      }
+    },
+    "card-artificer-perfectly-calibrated": {
+      "effects": {
+        "roll": "投 1 骰，获得投掷数值一半向上取整的合成器。"
+      }
     }
   },
   "cards": {
@@ -4011,6 +4281,112 @@
       "description": "对一名对手施加火药桶。该对手也可以选择不获得这个火药桶，而是投掷 1 骰：如果投出 1-2，则无事发生；如果投出 3-6，则其获得火药桶和凋零。",
       "effects": {
         "choice": "对一名对手施加火药桶；对手也可以选择不获得它，而是投 1 骰"
+      }
+    },
+    "card-artificer-masterpiece": {
+      "name": "合成大师！",
+      "description": "投掷 1 骰：如果投出电能，获得 5 合成器；否则抽 1 张牌。",
+      "effects": {
+        "roll": "投 1 骰：电能获得 5 合成器；否则抽 1 张牌。"
+      }
+    },
+    "card-artificer-mechanical-strike": {
+      "name": "机械的反击！",
+      "description": "只能在被攻击后打出。防止 2 点即将受到的伤害；对攻击者施加 1 纳米爆弹。",
+      "effects": {
+        "prevent2": "防止 2 点即将受到的伤害。",
+        "inflictNanobomb": "对攻击者施加 1 纳米爆弹。"
+      }
+    },
+    "upgrade-artificer-shock-bot-2": {
+      "name": "电弧盾",
+      "description": "只能在被攻击后打出。防止 2 点即将受到的伤害，或花费 1 合成器防止 3 点即将受到的伤害；完整机制待 L2 裁定。",
+      "effects": {
+        "pendingL2": "电弧盾完整响应与升级语义待 L2 裁定。"
+      }
+    },
+    "upgrade-artificer-tinker-2": {
+      "name": "稍作调整 II",
+      "description": "升级稍作调整：防御掷 5；如果投出扳手造成 1 伤害；获得 1 合成器；施加 1 纳米爆弹。",
+      "effects": {
+        "upgrade": "升级稍作调整至 II 级。"
+      }
+    },
+    "upgrade-artificer-overclock-2": {
+      "name": "超频运行 II",
+      "description": "升级超频运行：造成 6 点不可防御伤害，然后激活至多 2 个不同机器人；包含能量提升子区。",
+      "effects": {
+        "upgrade": "升级超频运行至 II 级。"
+      }
+    },
+    "upgrade-artificer-shock-bot-3": {
+      "name": "电能脉冲 III",
+      "description": "升级电能脉冲：获得 2 合成器，施加 1 纳米爆弹，造成 9 点伤害，然后激活 1 个机器人。",
+      "effects": {
+        "upgrade": "升级电能脉冲至 III 级。"
+      }
+    },
+    "upgrade-artificer-activate-bots-2": {
+      "name": "唤醒机械 II",
+      "description": "升级唤醒机械：获得 1 合成器，施加 2 纳米爆弹，造成 7 点伤害；包含机械大军子区。",
+      "effects": {
+        "upgrade": "升级唤醒机械至 II 级。"
+      }
+    },
+    "upgrade-artificer-eureka-2": {
+      "name": "灵感突现 II",
+      "description": "升级灵感突现：获得 3 合成器，然后造成 8 点伤害；包含从头构建子区。",
+      "effects": {
+        "upgrade": "升级灵感突现至 II 级。"
+      }
+    },
+    "upgrade-artificer-schematics-2": {
+      "name": "电路图 II",
+      "description": "升级电路图：获得 2，抽 2 张牌，治疗 2，获得 4 合成器。",
+      "effects": {
+        "upgrade": "升级电路图至 II 级。"
+      }
+    },
+    "upgrade-artificer-wrench-strike-2": {
+      "name": "扳手攻击 II",
+      "description": "升级扳手攻击：3/4/5 扳手造成 4/5/6 点伤害；追加投骰或合成器分支待 L2 实现。",
+      "effects": {
+        "upgrade": "升级扳手攻击至 II 级。"
+      }
+    },
+    "upgrade-artificer-collect-parts-2": {
+      "name": "收集配件 II",
+      "description": "升级收集配件：维护阶段获得合成器；可花费 4 合成器对 1 名对手施加 1 纳米爆弹。",
+      "effects": {
+        "upgrade": "升级收集配件至 II 级。"
+      }
+    },
+    "card-artificer-voltage": {
+      "name": "超高电压！",
+      "description": "获得 2 合成器。",
+      "effects": {
+        "gainSynth2": "获得 2 合成器。"
+      }
+    },
+    "card-artificer-nano-attack": {
+      "name": "纳米袭击！",
+      "description": "对 1 名对手施加 1 纳米爆弹。",
+      "effects": {
+        "inflictNanobomb": "对 1 名对手施加 1 纳米爆弹。"
+      }
+    },
+    "card-artificer-overdrive": {
+      "name": "万能电流！",
+      "description": "投掷 1 骰：扳手治疗 2；齿轮获得合成器；电能对 1 名对手施加纳米爆弹。",
+      "effects": {
+        "roll": "投 1 骰：扳手治疗 2；齿轮获得合成器；电能施加纳米爆弹。"
+      }
+    },
+    "card-artificer-perfectly-calibrated": {
+      "name": "这玩意儿真棒！",
+      "description": "投掷 1 骰；获得投掷数值一半向上取整的合成器。",
+      "effects": {
+        "roll": "投 1 骰，获得投掷数值一半向上取整的合成器。"
       }
     },
     "card-just-this": {

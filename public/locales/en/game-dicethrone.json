@@ -171,6 +171,12 @@
       "description": [
         "The holder cannot deal damage through the Offensive Roll Phase; remove at the end of that phase."
       ]
+    },
+    "nanobomb": {
+      "name": "Nanobomb",
+      "description": [
+        "Negative status effect, limit 3. When detonated, deals 1/3/5 damage by stack count; Upkeep removal is pending L2 implementation."
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -355,6 +361,30 @@
       "description": [
         "Limit 5. Spend 1 to gain 1 CP or reroll 1 die; spend 3 to draw 1 or inflict Targeted on 1 opponent; spend 4 to let 1 player gain Protect or transfer 1 status."
       ]
+    },
+    "synth": {
+      "name": "Synth",
+      "description": [
+        "Artificer resource token, limit 7. Used to build, upgrade, and activate bots; full spending flow is pending L2 implementation."
+      ]
+    },
+    "nanobot": {
+      "name": "Nanobot",
+      "description": [
+        "Companion bot, limit 1. Can activate during Upkeep to detonate all Nanobombs; full activation flow is pending L2 implementation."
+      ]
+    },
+    "shock_bot": {
+      "name": "Shock Bot",
+      "description": [
+        "Companion bot, limit 1. Can activate after dealing attack damage to add +3 attack damage; full response flow is pending L2 implementation."
+      ]
+    },
+    "heal_bot": {
+      "name": "Heal Bot",
+      "description": [
+        "Companion bot, limit 2. Can activate after receiving at least 6 attack damage and roll to heal; full response flow is pending L2 implementation."
+      ]
     }
   },
   "actionLog": {
@@ -500,7 +530,8 @@
     "treant": "Treant",
     "ninja": "Ninja",
     "zhanshujia": "Tactician",
-    "cursed_pirate": "Cursed Pirate"
+    "cursed_pirate": "Cursed Pirate",
+    "artificer": "Artificer"
   },
   "config": {
     "dice": {
@@ -522,7 +553,8 @@
       },
       "treant": { "name": "Treant Dice" },
       "ninja": { "name": "Ninja Dice" },
-      "zhanshujia": { "name": "Tactician Dice" }
+      "zhanshujia": { "name": "Tactician Dice" },
+      "artificer": { "name": "Artificer Dice" }
     },
     "resources": {
       "cp": { "name": "CP" },
@@ -643,7 +675,10 @@
       "medal": "Medal",
       "cutlass": "Cutlass",
       "loot": "Loot",
-      "skull": "Skull"
+      "skull": "Skull",
+      "wrench": "Wrench",
+      "gear": "Gear",
+      "electricity": "Electricity"
     }
   },
   "bonusDie": {
@@ -867,7 +902,9 @@
       "cursedPirateHumanMakeYourMarkLoot": "Make Your Mark: Loot draws 1 card",
       "cursedPirateHumanMakeYourMarkSkull": "Make Your Mark: Skull gains Cursed Coin",
       "cursedPirateSipHit": "Sip: 3-6, gain Powder Keg and Wither",
-      "cursedPirateSipMiss": "Sip: 1-2, nothing happens"
+      "cursedPirateSipMiss": "Sip: 1-2, nothing happens",
+      "artificerMasterpieceElectricity": "Masterpiece: Electricity gains 5 Synth",
+      "artificerMasterpieceOther": "Masterpiece: otherwise draw 1 card"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -1045,6 +1082,9 @@
       "spirit": "Spirit",
       "bullet": "Bullet",
       "bullseye": "Bullseye",
+      "wrench": "Wrench",
+      "gear": "Gear",
+      "electricity": "Electricity",
       "dash": "Dash",
       "ninja_katana": "Ninja Blade",
       "shuriken": "Shuriken",
@@ -3587,6 +3627,234 @@
       "effects": {
         "choice": "Inflict Powder Keg on 1 opponent; that opponent may instead roll 1 die, and on 3-6 they gain Powder Keg and Wither."
       }
+    },
+    "wrench-strike": {
+      "name": "Wrench Strike",
+      "description": "3/4/5 Wrenches deal 3/4/5 damage; bonus roll or Synth branch is pending L2 implementation.",
+      "effects": {
+        "damage3": "Deal 3 damage.",
+        "damage4": "Deal 4 damage.",
+        "damage5": "Deal 5 damage.",
+        "bonusBranch": "May roll 1 die or spend 1 Synth for an extra effect; full branch is pending L2 implementation."
+      }
+    },
+    "wrench-strike-2": {
+      "name": "Wrench Strike II",
+      "description": "3/4/5 Wrenches deal 4/5/6 damage; bonus roll or Synth branch is pending L2 implementation.",
+      "effects": {
+        "damage4": "Deal 4 damage.",
+        "damage5": "Deal 5 damage.",
+        "damage6": "Deal 6 damage.",
+        "bonusBranch": "May roll 1 die or spend 1 Synth for an extra effect; full branch is pending L2 implementation."
+      }
+    },
+    "schematics": {
+      "name": "Schematics",
+      "description": "3 Gear + 1 Electricity: draw 2, heal 2, and gain 4 Synth.",
+      "effects": {
+        "draw2": "Draw 2 cards.",
+        "heal2": "Heal 2.",
+        "gainSynth4": "Gain 4 Synth."
+      }
+    },
+    "schematics-2": {
+      "name": "Schematics II",
+      "description": "Gain 2, then draw 2, heal 2, and gain 4 Synth.",
+      "effects": {
+        "gain2": "Gain 2.",
+        "draw2": "Draw 2 cards.",
+        "heal2": "Heal 2.",
+        "gainSynth4": "Gain 4 Synth."
+      }
+    },
+    "collect-parts": {
+      "name": "Collect Parts",
+      "description": "Passive: gain Synth during Upkeep and spend Synth to inflict Nanobomb; full timing is pending L2 implementation.",
+      "effects": {
+        "upkeepGainSynth": "Gain Synth during Upkeep.",
+        "spendSynthForNanobomb": "Spend 4 Synth to inflict 1 Nanobomb on an opponent."
+      }
+    },
+    "collect-parts-2": {
+      "name": "Collect Parts II",
+      "description": "Passive upgrade: gain Synth during Upkeep and spend Synth to inflict Nanobomb; full timing is pending L2 implementation.",
+      "effects": {
+        "upkeepGainSynth": "Gain Synth during Upkeep.",
+        "spendSynthForNanobomb": "Spend 4 Synth to inflict 1 Nanobomb on an opponent."
+      }
+    },
+    "eureka": {
+      "name": "Eureka",
+      "description": "2 Wrenches + 3 Gear: gain 3 Synth, then deal 7 damage.",
+      "effects": {
+        "gainSynth3": "Gain 3 Synth.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "eureka-2": {
+      "name": "Eureka II",
+      "description": "2 Wrenches + 3 Gear: gain 3 Synth, then deal 8 damage; Build From Scratch branch is pending L2 implementation.",
+      "effects": {
+        "gainSynth3": "Gain 3 Synth.",
+        "damage8": "Deal 8 damage.",
+        "buildFromScratch": "Build From Scratch sub-effect is pending L2 implementation."
+      }
+    },
+    "activate-bots": {
+      "name": "Activate Bots",
+      "description": "Small Straight: gain 1 Synth, inflict 1 Nanobomb, then deal 7 damage.",
+      "effects": {
+        "gainSynth1": "Gain 1 Synth.",
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
+        "damage7": "Deal 7 damage."
+      }
+    },
+    "activate-bots-2": {
+      "name": "Activate Bots II",
+      "description": "Small Straight: gain 1 Synth, inflict 2 Nanobombs, then deal 7 damage; Bot Swarm branch is pending L2 implementation.",
+      "effects": {
+        "gainSynth1": "Gain 1 Synth.",
+        "inflictNanobomb2": "Opponent gains 2 Nanobombs.",
+        "damage7": "Deal 7 damage.",
+        "botSwarm": "Bot Swarm sub-effect is pending L2 implementation."
+      }
+    },
+    "overclock": {
+      "name": "Overclock",
+      "description": "4 Electricity: deal 6 undefendable damage, then activate up to 2 different bots.",
+      "effects": {
+        "damage6Unblockable": "Deal 6 undefendable damage.",
+        "activateTwoBots": "Activate up to 2 different bots; full selection flow is pending L2 implementation."
+      }
+    },
+    "overclock-2": {
+      "name": "Overclock II",
+      "description": "4 Electricity deals 6 undefendable damage and activates bots; Energy Boost branch grants Synth and damage.",
+      "effects": {
+        "damage6Unblockable": "Deal 6 undefendable damage.",
+        "activateTwoBots": "Activate up to 2 different bots; full selection flow is pending L2 implementation.",
+        "energyBoostGainSynth2": "Gain 2 Synth.",
+        "energyBoostDamage4": "Deal 4 undefendable damage."
+      }
+    },
+    "shock-bot": {
+      "name": "Shock Bot",
+      "description": "Large Straight: inflict 1 Nanobomb, deal 9 damage, then activate 1 bot.",
+      "effects": {
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
+        "damage9": "Deal 9 damage.",
+        "activateOneBot": "Activate 1 bot; full selection flow is pending L2 implementation."
+      }
+    },
+    "shock-bot-3": {
+      "name": "Shock Bot III",
+      "description": "Large Straight: gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot.",
+      "effects": {
+        "gainSynth2": "Gain 2 Synth.",
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
+        "damage9": "Deal 9 damage.",
+        "activateOneBot": "Activate 1 bot; full selection flow is pending L2 implementation."
+      }
+    },
+    "tinker": {
+      "name": "Tinker",
+      "description": "Defensive roll 4: gain Synth; if you roll Electricity, inflict Nanobomb.",
+      "effects": {
+        "defense4": "Defensive roll 4: gain Synth; if you roll Electricity, inflict Nanobomb."
+      }
+    },
+    "tinker-2": {
+      "name": "Tinker II",
+      "description": "Defensive roll 5: Wrench deals 1 damage; gain 1 Synth; inflict 1 Nanobomb.",
+      "effects": {
+        "defense5": "Defensive roll 5: Wrench counterattacks, gain 1 Synth, and inflict 1 Nanobomb."
+      }
+    },
+    "maximum-power": {
+      "name": "Maximum Power!",
+      "description": "Ultimate: gain 2 Synth, inflict 1 Nanobomb, deal 10 damage, then activate up to 2 different bots.",
+      "effects": {
+        "gainSynth2": "Gain 2 Synth.",
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
+        "damage10": "Deal 10 damage.",
+        "activateTwoBots": "Activate up to 2 different bots; full selection flow is pending L2 implementation."
+      }
+    },
+    "card-artificer-masterpiece": {
+      "effects": {
+        "roll": "Roll 1 die: Electricity gains 5 Synth; otherwise draw 1 card."
+      }
+    },
+    "card-artificer-mechanical-strike": {
+      "effects": {
+        "prevent2": "Prevent 2 incoming damage.",
+        "inflictNanobomb": "Inflict 1 Nanobomb on the attacker."
+      }
+    },
+    "upgrade-artificer-shock-bot-2": {
+      "effects": {
+        "pendingL2": "Arc Shield's full response and upgrade semantics are pending L2 adjudication."
+      }
+    },
+    "upgrade-artificer-tinker-2": {
+      "effects": {
+        "upgrade": "Upgrade Tinker to level II."
+      }
+    },
+    "upgrade-artificer-overclock-2": {
+      "effects": {
+        "upgrade": "Upgrade Overclock to level II."
+      }
+    },
+    "upgrade-artificer-shock-bot-3": {
+      "effects": {
+        "upgrade": "Upgrade Shock Bot to level III."
+      }
+    },
+    "upgrade-artificer-activate-bots-2": {
+      "effects": {
+        "upgrade": "Upgrade Activate Bots to level II."
+      }
+    },
+    "upgrade-artificer-eureka-2": {
+      "effects": {
+        "upgrade": "Upgrade Eureka to level II."
+      }
+    },
+    "upgrade-artificer-schematics-2": {
+      "effects": {
+        "upgrade": "Upgrade Schematics to level II."
+      }
+    },
+    "upgrade-artificer-wrench-strike-2": {
+      "effects": {
+        "upgrade": "Upgrade Wrench Strike to level II."
+      }
+    },
+    "upgrade-artificer-collect-parts-2": {
+      "effects": {
+        "upgrade": "Upgrade Collect Parts to level II."
+      }
+    },
+    "card-artificer-voltage": {
+      "effects": {
+        "gainSynth2": "Gain 2 Synth."
+      }
+    },
+    "card-artificer-nano-attack": {
+      "effects": {
+        "inflictNanobomb": "Inflict 1 Nanobomb on 1 opponent."
+      }
+    },
+    "card-artificer-overdrive": {
+      "effects": {
+        "roll": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb."
+      }
+    },
+    "card-artificer-perfectly-calibrated": {
+      "effects": {
+        "roll": "Roll 1 die and gain Synth equal to half the value, rounded up."
+      }
     }
   },
   "cards": {
@@ -3884,6 +4152,112 @@
       "description": "Inflict Powder Keg on 1 opponent. That opponent may choose not to gain it and instead roll 1 die: on 1-2 nothing happens; on 3-6 they gain Powder Keg and Wither.",
       "effects": {
         "choice": "Inflict Powder Keg on 1 opponent; that opponent may instead roll 1 die"
+      }
+    },
+    "card-artificer-masterpiece": {
+      "name": "Masterpiece!",
+      "description": "Roll 1 die: if you roll Electricity, gain 5 Synth; otherwise draw 1 card.",
+      "effects": {
+        "roll": "Roll 1 die: Electricity gains 5 Synth; otherwise draw 1 card."
+      }
+    },
+    "card-artificer-mechanical-strike": {
+      "name": "Mechanical Strike!",
+      "description": "Play only after being attacked. Prevent 2 incoming damage; inflict 1 Nanobomb on the attacker.",
+      "effects": {
+        "prevent2": "Prevent 2 incoming damage.",
+        "inflictNanobomb": "Inflict 1 Nanobomb on the attacker."
+      }
+    },
+    "upgrade-artificer-shock-bot-2": {
+      "name": "Arc Shield",
+      "description": "Play only after being attacked. Prevent 2 incoming damage, or spend 1 Synth to prevent 3 incoming damage; full mechanism is pending L2 adjudication.",
+      "effects": {
+        "pendingL2": "Arc Shield's full response and upgrade semantics are pending L2 adjudication."
+      }
+    },
+    "upgrade-artificer-tinker-2": {
+      "name": "Tinker II",
+      "description": "Upgrade Tinker: defensive roll 5; Wrench deals 1 damage; gain 1 Synth; inflict 1 Nanobomb.",
+      "effects": {
+        "upgrade": "Upgrade Tinker to level II."
+      }
+    },
+    "upgrade-artificer-overclock-2": {
+      "name": "Overclock II",
+      "description": "Upgrade Overclock: deal 6 undefendable damage, then activate up to 2 different bots; includes the Energy Boost branch.",
+      "effects": {
+        "upgrade": "Upgrade Overclock to level II."
+      }
+    },
+    "upgrade-artificer-shock-bot-3": {
+      "name": "Shock Bot III",
+      "description": "Upgrade Shock Bot: gain 2 Synth, inflict 1 Nanobomb, deal 9 damage, then activate 1 bot.",
+      "effects": {
+        "upgrade": "Upgrade Shock Bot to level III."
+      }
+    },
+    "upgrade-artificer-activate-bots-2": {
+      "name": "Activate Bots II",
+      "description": "Upgrade Activate Bots: gain 1 Synth, inflict 2 Nanobombs, deal 7 damage; includes the Bot Swarm branch.",
+      "effects": {
+        "upgrade": "Upgrade Activate Bots to level II."
+      }
+    },
+    "upgrade-artificer-eureka-2": {
+      "name": "Eureka II",
+      "description": "Upgrade Eureka: gain 3 Synth, then deal 8 damage; includes the Build From Scratch branch.",
+      "effects": {
+        "upgrade": "Upgrade Eureka to level II."
+      }
+    },
+    "upgrade-artificer-schematics-2": {
+      "name": "Schematics II",
+      "description": "Upgrade Schematics: gain 2, draw 2 cards, heal 2, and gain 4 Synth.",
+      "effects": {
+        "upgrade": "Upgrade Schematics to level II."
+      }
+    },
+    "upgrade-artificer-wrench-strike-2": {
+      "name": "Wrench Strike II",
+      "description": "Upgrade Wrench Strike: 3/4/5 Wrenches deal 4/5/6 damage; bonus roll or Synth branch is pending L2 implementation.",
+      "effects": {
+        "upgrade": "Upgrade Wrench Strike to level II."
+      }
+    },
+    "upgrade-artificer-collect-parts-2": {
+      "name": "Collect Parts II",
+      "description": "Upgrade Collect Parts: gain Synth during Upkeep; spend 4 Synth to inflict 1 Nanobomb on 1 opponent.",
+      "effects": {
+        "upgrade": "Upgrade Collect Parts to level II."
+      }
+    },
+    "card-artificer-voltage": {
+      "name": "Voltage!",
+      "description": "Gain 2 Synth.",
+      "effects": {
+        "gainSynth2": "Gain 2 Synth."
+      }
+    },
+    "card-artificer-nano-attack": {
+      "name": "Nano Attack!",
+      "description": "Inflict 1 Nanobomb on 1 opponent.",
+      "effects": {
+        "inflictNanobomb": "Inflict 1 Nanobomb on 1 opponent."
+      }
+    },
+    "card-artificer-overdrive": {
+      "name": "Overdrive!",
+      "description": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb on 1 opponent.",
+      "effects": {
+        "roll": "Roll 1 die: Wrench heals 2; Gear gains Synth; Electricity inflicts Nanobomb."
+      }
+    },
+    "card-artificer-perfectly-calibrated": {
+      "name": "Perfectly Calibrated!",
+      "description": "Roll 1 die; gain Synth equal to half the value, rounded up.",
+      "effects": {
+        "roll": "Roll 1 die and gain Synth equal to half the value, rounded up."
       }
     },
     "card-just-this": {

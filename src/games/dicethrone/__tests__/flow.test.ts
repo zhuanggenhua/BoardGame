@@ -2088,11 +2088,13 @@ describe('王权骰铸流程测试', () => {
                 playerIds,
             );
             expect(targetResolveResult.success).toBe(true);
+            const attackResolvedEvent = (targetResolveResult.events as DiceThroneEvent[]).find(
+                (event): event is Extract<DiceThroneEvent, { type: 'ATTACK_RESOLVED' }> => event.type === 'ATTACK_RESOLVED',
+            );
             state = targetResolveResult.state as MatchState<DiceThroneCore>;
 
-            expect(state.core.pendingAttack?.defenderId).toBe('1');
-            expect(state.core.pendingAttack?.targetingSelectionResolved).toBe(true);
-            expect(state.core.pendingAttack?.deferredAttackModifierCardIds).toEqual([]);
+            expect(attackResolvedEvent?.payload.defenderId).toBe('1');
+            expect(state.core.pendingAttack?.deferredAttackModifierCardIds ?? []).toEqual([]);
             expect(state.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION]).toBe(1);
             expect(state.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);
         });

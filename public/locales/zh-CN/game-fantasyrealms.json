@@ -39,9 +39,6 @@
       "kicker": "下一步",
       "discardPick": "弃置 1 张",
       "discardSelf": "确认弃牌",
-      "drawDeckDirect": "{{action}}",
-      "drawOrTake": "点牌库摸牌，或直接点公开牌拿取",
-      "takeDirect": "直接点公开牌拿取",
       "discardDirect": "直接点一张手牌弃置",
       "waiting": "等待 {{player}}"
     }

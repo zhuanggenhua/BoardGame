@@ -214,6 +214,7 @@ export class FeedbackService {
                     },
                     $unset: {
                         aggregationActiveKey: '',
+                        resolvedMethod: '',
                         ...(closedReason ? {} : { closedReason: '' }),
                     },
                 },
@@ -233,6 +234,10 @@ export class FeedbackService {
         } | null>();
         if (!current) {
             return null;
+        }
+        const resolvedMethod = this.normalizeResolvedMethod(dto.resolvedMethod);
+        if (status === FeedbackStatus.RESOLVED && !resolvedMethod) {
+            throw new BadRequestException('解决方式不能为空');
         }
         const shouldRestoreAggregationActiveKey = Boolean(
             current.aggregationKey
@@ -254,14 +259,22 @@ export class FeedbackService {
                 $set: {
                     status,
                     aggregationActiveKey: current.aggregationKey,
+                    ...(status === FeedbackStatus.RESOLVED && resolvedMethod ? { resolvedMethod } : {}),
                 },
                 $unset: {
                     closedReason: '',
+                    ...(status === FeedbackStatus.RESOLVED ? {} : { resolvedMethod: '' }),
                 },
             }
             : {
-                $set: { status },
-                $unset: { closedReason: '' },
+                $set: {
+                    status,
+                    ...(status === FeedbackStatus.RESOLVED && resolvedMethod ? { resolvedMethod } : {}),
+                },
+                $unset: {
+                    closedReason: '',
+                    ...(status === FeedbackStatus.RESOLVED ? {} : { resolvedMethod: '' }),
+                },
             };
         try {
             return await this.feedbackModel.findOneAndUpdate(
@@ -348,6 +361,14 @@ export class FeedbackService {
     }
 
     private normalizeClosedReason(value?: string | null): string | undefined {
+        if (typeof value !== 'string') {
+            return undefined;
+        }
+        const normalized = value.trim();
+        return normalized || undefined;
+    }
+
+    private normalizeResolvedMethod(value?: string | null): string | undefined {
         if (typeof value !== 'string') {
             return undefined;
         }

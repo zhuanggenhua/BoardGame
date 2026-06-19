@@ -811,7 +811,7 @@ describe('SmashUp UI 交互验证', () => {
         expect(choice).toBeDefined();
         expect(choice?.sourceId).toBe('zombie_mall_crawl');
 
-        expect(choice?.title).toBe('选择一个卡名，将牌库中所有同名卡放入弃牌堆');
+        expect(choice?.title).toBe('ui.zombie_mall_crawl_title');
         expect(choice?.options).toHaveLength(3);
         expect(choice?.options.map(opt => ({
             id: opt.id,
@@ -867,7 +867,7 @@ describe('SmashUp UI 交互验证', () => {
         const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
 
-        expect(choice?.title).toBe('借把手：选择要洗回牌库的卡牌（任意数量，可不选）');
+        expect(choice?.title).toBe('ui.zombie_lend_a_hand_title');
         expect(choice?.multi).toEqual({ min: 0, max: 3 });
         expect(choice?.options).toHaveLength(3); // 弃牌堆有 3 张牌
     });
@@ -903,7 +903,7 @@ describe('SmashUp UI 交互验证', () => {
         const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
-        expect(choice1?.title).toBe('选择要移动的己方随从（至多2个，第1个）');
+        expect(choice1?.title).toBe('ui.pirate_dinghy_choose_first_title');
         expect(choice1?.sourceId).toBe('pirate_dinghy_choose_first');
         expect(choice1?.options.map(opt => ({
             id: opt.id,
