@@ -23,6 +23,10 @@ import {
 } from '../../../scripts/mobile/ota-publish-config.mjs';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
+import packageJson from '../../../package.json';
+
+const currentAppVersion = packageJson.version.replace(/^v/i, '').split('-')[0] || packageJson.version.replace(/^v/i, '');
+const currentVersionedApkUrl = `https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/${currentAppVersion}.apk?v=${currentAppVersion}`;
 
 afterEach(() => {
     cleanup();
@@ -135,7 +139,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
+            url: currentVersionedApkUrl,
             source: 'versioned',
         });
     });
@@ -167,7 +171,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
+            url: currentVersionedApkUrl,
             source: 'versioned',
         });
     });
@@ -180,7 +184,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.6.0.apk?v=0.6.0',
+            url: currentVersionedApkUrl,
             source: 'versioned',
         });
     });

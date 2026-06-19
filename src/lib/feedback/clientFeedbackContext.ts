@@ -5,6 +5,7 @@ import type {
     FeedbackRouteChangeSummary,
     FeedbackUserActionSummary,
 } from './feedbackPayload';
+import { resolveRuntimeBuildInfo } from './runtimeBuildInfo';
 
 type FeedbackWindow = Window & {
     __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
@@ -205,15 +206,14 @@ export function buildFeedbackClientContext(
     installClientDiagnosticCapture();
 
     const routeContext = getCurrentRouteContext();
+    const buildInfo = resolveRuntimeBuildInfo();
     return {
         route: routeContext.route,
         mode: overrides.mode ?? routeContext.mode,
         matchId: overrides.matchId ?? routeContext.matchId,
         playerId: overrides.playerId,
         gameId: overrides.gameId ?? routeContext.gameIdFromRoute,
-        appVersion: (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_APP_VERSION
-            || (import.meta as { env?: Record<string, string | undefined> }).env?.MODE
-            || undefined,
+        ...buildInfo,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
         viewport: typeof window !== 'undefined'
             ? { width: window.innerWidth, height: window.innerHeight }

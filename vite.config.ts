@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import type { ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -21,6 +22,9 @@ import { normalizeQidahenRegionMaskSaveScope } from './src/games/qidahen/regionM
 import { readyCheckPlugin } from './vite-plugins/ready-check.ts'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
+const packageJson = JSON.parse(fs.readFileSync(path.resolve(configDir, 'package.json'), 'utf-8')) as {
+  version?: string
+}
 const LEGACY_GAMEPLAY_BUILD_TARGETS = ['chrome88', 'edge88', 'firefox78', 'safari14']
 const VIRTUAL_RUNTIME_CHUNK_PATTERNS = ['commonjsHelpers.js']
 const MANUAL_CHUNK_PATTERNS: Array<[string, string[]]> = [
@@ -94,6 +98,32 @@ const readCliFlag = (flagName: string): string | undefined => {
   }
 
   return undefined
+}
+
+const readBuildMetaValue = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+const resolveGitCommitSha = (): string | undefined => {
+  const envValue = readBuildMetaValue(process.env.APP_COMMIT_SHA)
+    || readBuildMetaValue(process.env.VITE_APP_COMMIT_SHA)
+    || readBuildMetaValue(process.env.GIT_COMMIT_SHA)
+    || readBuildMetaValue(process.env.COMMIT_SHA)
+    || readBuildMetaValue(process.env.GITHUB_SHA)
+  if (envValue) {
+    return envValue.slice(0, 12)
+  }
+
+  try {
+    const commitSha = execSync('git rev-parse --short=12 HEAD', {
+      cwd: configDir,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString('utf-8').trim()
+    return commitSha || undefined
+  } catch {
+    return undefined
+  }
 }
 
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa'])
@@ -544,6 +574,22 @@ const createDevApiDisabledPlugin = (enabled: boolean) => ({
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const appVersion = readBuildMetaValue(env.VITE_APP_VERSION)
+    || readBuildMetaValue(process.env.VITE_APP_VERSION)
+    || readBuildMetaValue(process.env.APP_VERSION)
+    || readBuildMetaValue(packageJson.version)
+    || '0.0.0'
+  const appCommitSha = readBuildMetaValue(env.VITE_APP_COMMIT_SHA)
+    || resolveGitCommitSha()
+    || ''
+  const appBuildTime = readBuildMetaValue(env.VITE_APP_BUILD_TIME)
+    || readBuildMetaValue(process.env.VITE_APP_BUILD_TIME)
+    || readBuildMetaValue(process.env.APP_BUILD_TIME)
+    || new Date().toISOString()
+  const appReleaseChannel = readBuildMetaValue(env.VITE_APP_RELEASE_CHANNEL)
+    || readBuildMetaValue(process.env.VITE_APP_RELEASE_CHANNEL)
+    || readBuildMetaValue(process.env.APP_RELEASE_CHANNEL)
+    || mode
   // `BG_VITE_FORCE_INLINE` 只控制包装器是否在当前进程内启动 Vite，
   // 不应再顺带切到“禁 react/esbuild + TS fallback”的配置分支；
   // 否则会让 howler 之类 CJS 依赖直接裸露到浏览器端。
@@ -587,6 +633,12 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    define: {
+      'globalThis.__APP_VERSION__': JSON.stringify(appVersion),
+      'globalThis.__APP_COMMIT_SHA__': JSON.stringify(appCommitSha),
+      'globalThis.__APP_BUILD_TIME__': JSON.stringify(appBuildTime),
+      'globalThis.__APP_RELEASE_CHANNEL__': JSON.stringify(appReleaseChannel),
+    },
     plugins: [
       {
         name: 'suppress-public-dir-warning',

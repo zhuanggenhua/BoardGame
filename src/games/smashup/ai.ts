@@ -1400,12 +1400,12 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         sourceId?: string;
         multi?: PromptMultiConfig;
     };
-    const liveReactionChoice = data.sourceId === 'smashup_reaction_choose'
-        ? resolveLiveSmashUpReactionChoice(state, { kind: 'pass' }, state.core.turnNumber ?? 0)
+    const refreshedOptions = getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
+    const fallbackReactionOptions = data.sourceId === 'smashup_reaction_choose' && refreshedOptions.length === 0
+        ? resolveLiveSmashUpReactionChoice(state, { kind: 'pass' }, state.core.turnNumber ?? 0)?.options
         : undefined;
-    const refreshedOptions = liveReactionChoice?.options
-        ?? getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
-    const options = refreshedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
+    const resolvedOptions = fallbackReactionOptions ?? refreshedOptions;
+    const options = resolvedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
         return typeof option.id === 'string' && option.disabled !== true;
     });
     const minCount = data.multi?.min ?? 1;

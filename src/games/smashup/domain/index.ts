@@ -65,8 +65,7 @@ import { readSmashUpRuntimeSetupConfig } from '../roomSetup';
 import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
-import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
-import { isSmashUpDiyFaction } from './ids';
+import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
 import { drawCards } from './utils';
 import {
     countMadnessCards,
@@ -1240,10 +1239,7 @@ function isAiSeatControllerType(type: unknown): boolean {
 }
 
 function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
-    return getAllBaseDefIds().filter((defId) => {
-        const baseDef = getBaseDef(defId);
-        return !isSmashUpDiyFaction(baseDef?.faction) || enabledExpansions.includes('diy');
-    });
+    return getAllBaseDefIds().filter((defId) => isBaseDefAvailableForRuntimeBasePool(defId, enabledExpansions));
 }
 
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {

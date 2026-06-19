@@ -150,8 +150,8 @@ export function useGameNamespaceReady(
                 setState({ isReady: true, error: null });
             })
             .catch((error: unknown) => {
-                const handleFailure = (message: string) => {
-                    const isTimeout = message === timeoutMessage;
+                const handleFailure = (message: string, timeoutFailure = message === timeoutMessage) => {
+                    const isTimeout = timeoutFailure;
                     const payload = {
                         gameId,
                         namespace,
@@ -187,6 +187,7 @@ export function useGameNamespaceReady(
                 };
 
                 const message = error instanceof Error ? error.message : String(error);
+                const isTimeoutFailure = message === timeoutMessage;
                 void (async () => {
                     try {
                         await loadNamespaceByHttpFallback(
@@ -207,7 +208,7 @@ export function useGameNamespaceReady(
                         const fallbackMessage = fallbackError instanceof Error
                             ? fallbackError.message
                             : String(fallbackError);
-                        handleFailure(`${message}; fallback: ${fallbackMessage}`);
+                        handleFailure(`${message}; fallback: ${fallbackMessage}`, isTimeoutFailure);
                     }
                 })();
             });

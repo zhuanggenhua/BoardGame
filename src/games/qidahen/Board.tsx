@@ -211,7 +211,8 @@ const ACTIONS_DOCK_HEIGHT = 470;
 const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;
 const MAP_REGION_TIP_WIDTH = 252;
 const MAP_REGION_TIP_ACTION_GAP = 20;
-const MAP_SELECTION_BANNER_WIDTH = 620;
+const MAP_SELECTION_BANNER_WIDTH = 388;
+const MAP_SELECTION_BANNER_TOP = 122;
 
 const factionTone: Record<QidahenFactionId, { bg: string; border: string; text: string; chip: string }> = {
     ming: { bg: UI_STYLE.paper, border: UI_STYLE.cinnabar, text: UI_STYLE.ink, chip: ASSETS.mingMarker },
@@ -313,17 +314,17 @@ const buildQidahenPrimaryStageHeadline = (
 ): string => {
     if (primaryStageMode === 'wheel') {
         if (core.wheelActionUsed) {
-            return '轮盘行动已完成';
+            return '轮盘已完成';
         }
-        return '进行轮盘行动';
+        return '轮盘：点绿色扇区';
     }
     if (primaryStageMode === 'faction') {
         if (core.factionActionUsed) {
-            return '弃牌行动已完成';
+            return '本次行动已完成';
         }
-        return selectedAction ? `弃牌进行行动：${selectedAction.label}` : '弃牌进行行动';
+        return selectedAction ? `本次行动：${selectedAction.label}` : '先选一项行动';
     }
-    return '当前主流程已收口';
+    return '等待下一步';
 };
 
 const buildQidahenPrimaryStageHint = (
@@ -333,19 +334,19 @@ const buildQidahenPrimaryStageHint = (
 ): string => {
     if (primaryStageMode === 'wheel') {
         return core.wheelActionUsed
-            ? '等待后续结算'
-            : '点击绿色扇区';
+            ? '等待本轮其他结算'
+            : '绿色扇区就是可点入口';
     }
     if (primaryStageMode === 'faction') {
         if (!selectedAction) {
-            return '从下方选择行动';
+            return '先从右侧选一项行动';
         }
         if (selectedAction.id === 'upgrade-armament') {
-            return '确认后升级';
+            return '确认后升级军备';
         }
-        return '选择目标或继续结算';
+        return '先点地图上的绿色目标';
     }
-    return '等待后续结算';
+    return '等待下一步';
 };
 
 const buildQidahenPrimaryActionEntryText = (
@@ -353,12 +354,12 @@ const buildQidahenPrimaryActionEntryText = (
     selectedAction: QidahenActionChoice | null,
 ): string => {
     if (!selectedAction) {
-        return '从下方选择行动';
+        return '先从右侧选一项行动';
     }
     if (core.factionActionUsed) {
         return core.wheelActionUsed
-            ? '等待后续结算'
-            : '进行轮盘行动';
+            ? '等待本轮其他结算'
+            : '去点一个绿色扇区';
     }
     switch (selectedAction.id) {
         case 'raid':
@@ -368,13 +369,77 @@ const buildQidahenPrimaryActionEntryText = (
         case 'khan-edict':
         case 'recruit':
         case 'ma-shi-trade':
-            return '选择地图目标';
+            return '先点地图上的绿色目标';
         case 'upgrade-armament':
-            return '确认弃牌并升级';
+            return '确认弃牌后升级军备';
         default:
-            return '继续当前行动';
+            return '按当前提示继续';
     }
 };
+
+const formatQidahenVisibleTurnLabel = (turnLabel: string): string => (
+    turnLabel
+        .replace('势力行动', '行动窗口')
+        .replace('待结算', '处理中')
+);
+
+const normalizeQidahenBattleRollSummary = (summary?: string | null): string | null => {
+    if (!summary) {
+        return null;
+    }
+    return summary
+        .replace(/^[^：]+：/, '掷骰结果：')
+        .replace(/。$/, '');
+};
+
+const getQidahenFriendlyPendingTargetTitle = (pendingTargetAction: QidahenCore['pendingTargetAction']): string => {
+    if (!pendingTargetAction) {
+        return '';
+    }
+    if (pendingTargetAction.targetKind === 'siege-attacker') {
+        return `解围 ${pendingTargetAction.targetRegionName}`;
+    }
+    if ((pendingTargetAction.battleMode ?? 'field') === 'city' || pendingTargetAction.title.includes('城战')) {
+        return `${pendingTargetAction.targetRegionName} 城战`;
+    }
+    switch (pendingTargetAction.actionId) {
+        case 'raid':
+            return `突袭 ${pendingTargetAction.targetRegionName}`;
+        case 'wheel-dispatch':
+            return `进攻 ${pendingTargetAction.targetRegionName}`;
+        case 'drive-tiger':
+            return `驱虎吞狼：进攻 ${pendingTargetAction.targetRegionName}`;
+        case 'marriage-subjugation':
+            return `联姻诱降 ${pendingTargetAction.targetRegionName}`;
+        default:
+            return pendingTargetAction.targetRegionName;
+    }
+};
+
+const getQidahenFriendlyPendingChoiceLabel = (choice: { id: string; label: string }): string => {
+    if (choice.id === 'rear-guard') {
+        return '断后撤退';
+    }
+    if (choice.id === 'rout') {
+        return '溃退';
+    }
+    if (choice.id === 'cavalry-plunder-attacker') {
+        return '抽己方牌堆';
+    }
+    if (choice.id === 'cavalry-plunder-defender') {
+        return '抽守方牌堆';
+    }
+    if (choice.id.startsWith('cavalry-evasion:')) {
+        return choice.label.replace('骑兵避战至', '骑兵撤往 ');
+    }
+    return choice.label;
+};
+
+const getQidahenFriendlyPostBattleTitle = (postBattleSelection: QidahenPostBattleSelection): string => (
+    postBattleSelection.targetKind === 'siege-attacker'
+        ? '解围后进驻'
+        : '战后选择'
+);
 
 const getAtlasFrame = (index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame => {
     if ('frames' in atlas) {
@@ -1569,21 +1634,24 @@ const MapSceneLayer: React.FC<{
                                         strokeWidth={5}
                                         strokeLinecap="round"
                                         strokeDasharray={boundaryType === 'coast' ? '9 9' : undefined}
+                                        opacity={mapSelectionGuide ? 0.22 : 0.9}
                                         vectorEffect="non-scaling-stroke"
                                     />
-                                    <text
-                                        x={midX}
-                                        y={midY - 8}
-                                        fill={color}
-                                        stroke="rgba(32,21,13,0.78)"
-                                        strokeWidth={3}
-                                        paintOrder="stroke fill"
-                                        textAnchor="middle"
-                                        fontSize={18}
-                                        fontWeight={900}
-                                    >
-                                        {boundaryLabel || boundaryMeta.label}
-                                    </text>
+                                    {!mapSelectionGuide ? (
+                                        <text
+                                            x={midX}
+                                            y={midY - 8}
+                                            fill={color}
+                                            stroke="rgba(32,21,13,0.78)"
+                                            strokeWidth={3}
+                                            paintOrder="stroke fill"
+                                            textAnchor="middle"
+                                            fontSize={18}
+                                            fontWeight={900}
+                                        >
+                                            {boundaryLabel || boundaryMeta.label}
+                                        </text>
+                                    ) : null}
                                 </g>
                             );
                         })}
@@ -1604,10 +1672,10 @@ const MapSceneLayer: React.FC<{
                                             points={pointLabel}
                                             fill="none"
                                             stroke={activeCandidate ? 'rgba(255,226,161,0.98)' : 'rgba(109, 216, 141, 0.96)'}
-                                            strokeWidth={activeCandidate ? 10 : 7}
+                                            strokeWidth={activeCandidate ? 11 : 8}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            strokeDasharray={activeCandidate ? '24 14' : '18 12'}
+                                            markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
                                             markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}
                                             filter="url(#qidahen-map-guide-glow)"
                                             opacity={1}
@@ -1740,13 +1808,13 @@ const MapSceneLayer: React.FC<{
                     </button>
                 </div>
             </div>
-            {mapSelectionGuide ? (
+            {mapSelectionGuide && pendingTargetAction == null ? (
                 <div
                     className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
                     data-testid="qidahen-map-selection-banner"
                     style={{
                         left: mapSelectionBannerLeft,
-                        top: 74,
+                        top: MAP_SELECTION_BANNER_TOP,
                         width: MAP_SELECTION_BANNER_WIDTH,
                         borderColor: mapSelectionBannerInteractive ? '#5fb772' : UI_STYLE.oldGold,
                         background: mapSelectionBannerInteractive ? 'rgba(20, 63, 34, 0.94)' : UI_SURFACE.mapPanelSelected,
@@ -1767,16 +1835,16 @@ const MapSceneLayer: React.FC<{
                             {mapSelectionGuide.badgeLabel}
                         </div>
                     </div>
-                    <div className="mt-2 text-[22px] font-black leading-7 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]">
+                    <div className="mt-2 text-[18px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]">
                         {mapSelectionGuide.title}
                     </div>
-                    <div className="mt-2 text-[13px] font-black leading-5" style={{ color: mapSelectionBannerInteractive ? '#dbf5cf' : '#f3d1a5' }}>
+                    <div className="mt-1 text-[12px] font-black leading-5" style={{ color: mapSelectionBannerInteractive ? '#dbf5cf' : '#f3d1a5' }}>
                         {mapSelectionGuide.hint}
                     </div>
-                    <div className="mt-2 border-t pt-2 text-[11px] font-black leading-5" style={{ borderColor: 'rgba(231,255,221,0.18)', color: mapSelectionBannerInteractive ? '#e7ffd8' : '#f6d5a8' }}>
+                    <div className="mt-1 border-t pt-1.5 text-[10px] font-black leading-4" style={{ borderColor: 'rgba(231,255,221,0.18)', color: mapSelectionBannerInteractive ? '#e7ffd8' : '#f6d5a8' }}>
                         {t('board.map.clickableRegionSummary', {
                             summary: mapSelectionGuide.candidateSummary,
-                            defaultValue: '可点击区域：{{summary}}',
+                            defaultValue: '可点：{{summary}}',
                         })}
                     </div>
                 </div>
@@ -2311,7 +2379,7 @@ const ActionButton: React.FC<{
             data-testid={`qidahen-action-${action.id}`}
             title={action.detail}
             disabled={disabled}
-            className="relative inline-flex h-[52px] min-w-[146px] items-center justify-between gap-3 overflow-hidden border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
+            className="group relative inline-flex h-[52px] min-w-[146px] items-center justify-between gap-3 overflow-visible border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:translate-y-0"
             onClick={onClick}
             style={{
                 borderColor: UI_STYLE.mapInk,
@@ -2336,6 +2404,38 @@ const ActionButton: React.FC<{
                 {selected
                     ? t('board.actions.state.current', { defaultValue: '当前' })
                     : t('board.actions.state.available', { defaultValue: '可选' })}
+            </span>
+            <span
+                className="pointer-events-none absolute right-[calc(100%+12px)] top-1/2 z-30 hidden w-[248px] -translate-y-1/2 border-[3px] px-3 py-2 text-[11px] font-black leading-5 tracking-normal text-[#f6e8c9] shadow-[0_8px_18px_rgba(0,0,0,0.28)] group-hover:block group-focus:block"
+                data-testid={`qidahen-action-tooltip-${action.id}`}
+                role="tooltip"
+                style={{
+                    borderColor: UI_STYLE.mapInk,
+                    background: UI_SURFACE.mapPanel,
+                    boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                    borderRadius: 3,
+                    textShadow: 'none',
+                    whiteSpace: 'normal',
+                }}
+            >
+                <span className="flex items-center justify-between gap-3 text-[10px] tracking-[0.08em] text-[#d2b775]">
+                    <span>{t('board.actions.tooltipHeader', { defaultValue: '功能说明' })}</span>
+                    <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-black"
+                        style={{
+                            background: 'rgba(210,183,117,0.14)',
+                            color: UI_STYLE.mapGold,
+                            boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                        }}
+                    >
+                        {t('board.actions.tooltipCost', {
+                            cost: action.cost,
+                            defaultValue: '花费 {{cost}}',
+                        })}
+                    </span>
+                </span>
+                <span className="mt-1 block text-[13px] text-[#f6d5a8]">{action.label}</span>
+                <span className="mt-1 block">{action.detail}</span>
             </span>
         </button>
     );
@@ -2452,7 +2552,7 @@ const ActionsZone: React.FC<{
                 data-testid="qidahen-turn-banner"
                 style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
             >
-                <div>{core.turnLabel}</div>
+                <div>{formatQidahenVisibleTurnLabel(core.turnLabel)}</div>
                 <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                     {t('board.actions.turnStatus', {
                         year: core.currentYear,
@@ -2485,7 +2585,7 @@ const ActionsZone: React.FC<{
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <div className="text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.actions.primaryActionLabel', { defaultValue: '当前步骤' })}
+                            {t('board.actions.primaryActionLabel', { defaultValue: '现在做什么' })}
                         </div>
                         <div className="mt-1 text-[16px]" data-testid="qidahen-primary-action-current">
                             {primaryStageHeadline}
@@ -2501,8 +2601,8 @@ const ActionsZone: React.FC<{
                             }}
                         >
                             {primaryStageMode === 'wheel'
-                                ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘行动' })
-                                : t('board.actions.primaryStageTagFaction', { defaultValue: '弃牌行动' })}
+                                ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘' })
+                                : t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
                         </div>
                     ) : null}
                 </div>
@@ -2530,16 +2630,16 @@ const ActionsZone: React.FC<{
                     style={{ borderColor: '#f2c46b', background: 'linear-gradient(180deg, rgba(150,50,36,0.96) 0%, rgba(62,26,18,0.94) 100%)', color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     <div className="text-[10px] font-black tracking-[0.18em]" style={{ color: '#f6d5a8' }}>
-                        {t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘推进' })}
+                        {t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
                     </div>
                     <div data-testid="qidahen-wheel-next-step-title">
                         {t('board.actions.wheelNextStepTitle', {
-                            defaultValue: '进行轮盘行动',
+                            defaultValue: '去点绿色扇区',
                         })}
                     </div>
                     <div className="mt-1 text-[11px] leading-5" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.wheelNextStepHint', {
-                            defaultValue: '点击绿色扇区',
+                            defaultValue: '绿色扇区就是可点入口',
                         })}
                     </div>
                     <div className="mt-3 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">
@@ -2559,7 +2659,7 @@ const ActionsZone: React.FC<{
                                     </span>
                                 </span>
                                 <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    {t('board.actions.directExecute', { defaultValue: '直接执行' })}
+                                    {t('board.actions.directExecute', { defaultValue: '点这里' })}
                                 </span>
                             </button>
                         ))}
@@ -3072,12 +3172,17 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-raid-intent"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{t('board.actions.pendingTarget.header', {
-                        title: pendingTargetAction.title,
-                        targetRegionName: pendingTargetAction.targetRegionName,
-                        defenderLabel: pendingTargetAction.defenderLabel,
-                        defaultValue: '{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}',
-                    })}</div>
+                    <div>
+                        {getQidahenFriendlyPendingTargetTitle(pendingTargetAction)}
+                        <span className="sr-only">
+                            {t('board.actions.pendingTarget.header', {
+                                title: pendingTargetAction.title,
+                                targetRegionName: pendingTargetAction.targetRegionName,
+                                defenderLabel: pendingTargetAction.defenderLabel,
+                                defaultValue: '{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}',
+                            })}
+                        </span>
+                    </div>
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {pendingTargetAction.resolutionHint}
                         {pendingTargetAction.defenderPayCost != null
@@ -3187,7 +3292,7 @@ const ActionsZone: React.FC<{
                                 onClick={() => onResolvePendingAction(choice.value, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, pendingCommittedTroops)}
                                 style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                             >
-                                {choice.label}
+                                {getQidahenFriendlyPendingChoiceLabel(choice)}
                             </button>
                         ))}
                     </div>
@@ -3199,7 +3304,15 @@ const ActionsZone: React.FC<{
                     data-testid="qidahen-post-battle-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
-                    <div>{postBattleSelection.title} · {postBattleSelection.targetRegionName}</div>
+                    <div>
+                        {getQidahenFriendlyPostBattleTitle(postBattleSelection)} · {postBattleSelection.targetRegionName}
+                        <span className="sr-only">{postBattleSelection.title}</span>
+                    </div>
+                    {postBattleSelection.battleRollSummary ? (
+                        <div className="mt-1 text-[11px]" style={{ color: '#ffe5b3' }} data-testid="qidahen-post-battle-roll-summary">
+                            {normalizeQidahenBattleRollSummary(postBattleSelection.battleRollSummary)}
+                        </div>
+                    ) : null}
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.postBattle.summary', {
                             summary: postBattleSelection.summary,

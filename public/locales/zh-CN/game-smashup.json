@@ -1462,6 +1462,22 @@
     "time_travelers": {
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    },
+    "kung_fu_fighters": {
+      "name": "功夫斗士",
+      "description": "依靠 +1 力量标记、时机调整和精准移动，在关键基地爆发。"
+    },
+    "vigilantes": {
+      "name": "侠义义警",
+      "description": "用硬派英雄与街头战术保护自己、打击对手，并在计分前后改变战局。"
+    },
+    "truckers": {
+      "name": "卡车车神",
+      "description": "把卡牌、战术和随从搬来搬去，用高速调度制造基地优势。"
+    },
+    "disco_dancers": {
+      "name": "迪厅舞王",
+      "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
     }
   },
   "tutorial": {
@@ -1512,6 +1528,262 @@
     }
   },
   "cards": {
+    "kung_fu_fighters_fast_as_lightning": {
+      "name": "快如闪电",
+      "effectText": "选择一个随从。直至回合结束，其 +2 战力，且如果其将进入弃牌堆，则改为返回拥有者的手牌。"
+    },
+    "kung_fu_fighters_dragon_warrior": {
+      "name": "神龙武者",
+      "abilityText": "持续：此随从无法被消灭。天赋：转移一个随从上任意数量的 +1 战力标记至另一个随从。"
+    },
+    "kung_fu_fighters_cricket": {
+      "name": "蟋蟀",
+      "abilityText": "你可以转移一个随从上的 1 枚 +1 战力标记至另一个随从。"
+    },
+    "kung_fu_fighters_oh_hoh_hoh_hoah": {
+      "name": "哦-厚-厚-厚-厚",
+      "effectText": "对基地打出。持续：其他玩家打出随从至此处后，向你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "kung_fu_fighters_everybody_knew_their_part": {
+      "name": "各尽其责",
+      "effectText": "选择你的一个随从。额外打出一个战力更低的随从于该基地。"
+    },
+    "kung_fu_fighters_everybody_was_kung_fu_fighting": {
+      "name": "人人都是功夫高手",
+      "effectText": "选择一个基地。每个在此处有随从的玩家消灭此处另一位玩家的一个随从。"
+    },
+    "kung_fu_fighters_expert_timing": {
+      "name": "掌握时机",
+      "effectText": "选择一张牌。转移其全部的 +1 战力标记至另一张牌，并/或额外使用其天赋一次。特殊：可以在基地计分前打出。"
+    },
+    "kung_fu_fighters_ancient_chinese_art": {
+      "name": "古老的中国艺术",
+      "effectText": "天赋：放置 1 枚 +1 战力标记至本基地中的一个随从，或将一个随从上任意数量的 +1 战力标记转移至另一个随从。"
+    },
+    "kung_fu_fighters_a_little_bit_frightening": {
+      "name": "有些胆寒",
+      "effectText": "选择一个随从。消灭其基地中一个战力更低的随从，以放置 2 枚 +1 战力标记于该处你的随从上。"
+    },
+    "kung_fu_fighters_drunken_master": {
+      "name": "醉酒宗师",
+      "abilityText": "天赋：若此随从上没有 +1 战力标记，放置 1 枚 +1 战力标记于其上。"
+    },
+    "kung_fu_fighters_lady_whirlwind": {
+      "name": "旋风女侠",
+      "abilityText": "天赋：若此随从上没有 +1 战力标记，消灭本基地中战力更低的随从，以放置 1 枚 +1 战力标记于其上。"
+    },
+    "kung_fu_fighters_lets_get_it_on": {
+      "name": "让我们躁起来",
+      "effectText": "选择你的一个随从。消灭其基地中战力不大于此随从的一个或多个随从。"
+    },
+    "vigilantes_shrug_it_off": {
+      "name": "不屑一顾",
+      "effectText": "对基地打出。天赋：取消此基地的能力直至你的下个回合开始。"
+    },
+    "vigilantes_scared_straight": {
+      "name": "直面恐惧",
+      "effectText": "将你随从所在基地中一个其他玩家的随从移动至其他基地。额外打出一张战术。"
+    },
+    "vigilantes_who_loves_ya_baby": {
+      "name": "谁爱你，小老弟？",
+      "effectText": "由你控制的每个战力 4 或更高的随从使你抓 1 张牌。"
+    },
+    "vigilantes_a_whole_lot_meaner": {
+      "name": "凶恶百倍",
+      "effectText": "一个随从 +3 战力直至回合结束。"
+    },
+    "vigilantes_death_wisher": {
+      "name": "猛龙怪客",
+      "abilityText": "持续：每回合一次，当另一位玩家消灭本基地其他玩家的随从后，你可以消灭该玩家的一个随从。"
+    },
+    "vigilantes_tough_it_out": {
+      "name": "咬紧牙关",
+      "effectText": "对随从打出。持续：此随从 +2 战力且无法被消灭。"
+    },
+    "vigilantes_the_revenge": {
+      "name": "复仇",
+      "effectText": "特殊：基地计分后你不是第一名时打出。移动该处你的一个随从至其他基地而不进入弃牌堆。"
+    },
+    "vigilantes_brojak": {
+      "name": "神探布洛杰克",
+      "abilityText": "持续：当有随从移动后，你可以移动此随从至同一个基地，并 +1 战力直至回合结束。"
+    },
+    "vigilantes_stoneford": {
+      "name": "破萝飞龙",
+      "abilityText": "从你的牌库中搜索一张战术置于手牌。"
+    },
+    "vigilantes_jacky_bill": {
+      "name": "杰基比尔",
+      "abilityText": "持续：当其他玩家打出战术后，你可以使此随从 +2 战力直至回合结束。"
+    },
+    "vigilantes_make_my_day": {
+      "name": "一天的快乐",
+      "effectText": "消灭有你随从的基地中一个战力 3 或更低的随从。抓一张牌。"
+    },
+    "vigilantes_street_justice": {
+      "name": "街头正义",
+      "effectText": "对基地打出。持续：本基地中的你的随从不会受其他玩家的卡牌影响。"
+    },
+    "vigilantes_shift": {
+      "name": "铁杆神探",
+      "abilityText": "将你弃牌堆中至多 2 张随从置于你的牌库顶。"
+    },
+    "vigilantes_dusty_henry": {
+      "name": "瞌睡的亨利",
+      "abilityText": "你可以将本基地中的一个随从洗回其拥有者的牌库。"
+    },
+    "vigilantes_knocked_into_next_week": {
+      "name": "打到穿越",
+      "effectText": "选择一个随从。将其洗回拥有者的牌库中。"
+    },
+    "vigilantes_feeling_lucky": {
+      "name": "觉得运气不错？",
+      "effectText": "对随从打出。持续：此随从的控制者打出战术后，若此牌仍在其上，消灭该随从。"
+    },
+    "vigilantes_lets_finish_this": {
+      "name": "做个了断吧",
+      "effectText": "对基地打出。持续：在你的回合开始时，若此处有你的随从和其他玩家随从，将本基地的爆破点降为 0 至回合结束。"
+    },
+    "vigilantes_foxy_green": {
+      "name": "狐狸翠",
+      "abilityText": "持续：当另一位玩家打出一张牌或使用天赋直接影响本基地中的随从时，放置 1 枚 +1 战力标记于此随从上。"
+    },
+    "truckers_fixin_to_fix_it": {
+      "name": "修理",
+      "effectText": "选择弃牌堆中一张可以对基地打出的战术，将其额外打出。"
+    },
+    "truckers_dekotora": {
+      "name": "暴走卡车",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处至多 3 个你的随从至该基地。"
+    },
+    "truckers_high_speed_chase": {
+      "name": "高速追逐战",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处你的一个随从至该基地。其 +3 战力直至回合结束。"
+    },
+    "truckers_rubber_chicken": {
+      "name": "橡皮鸡",
+      "abilityText": "持续：本基地上每有 1 张你的战术，此随从便 +1 战力。"
+    },
+    "truckers_hotwire": {
+      "name": "短路点火",
+      "effectText": "选择基地上一张战术。转移至另一个基地，并/或获得其控制权。"
+    },
+    "truckers_skinny_minnie": {
+      "name": "皮包骨米妮",
+      "abilityText": "天赋：若本基地上有战术，移动此随从至另一个基地，以转移本基地上一张战术至该基地。"
+    },
+    "truckers_el_bandido": {
+      "name": "埃尔班迪多",
+      "abilityText": "你可以获得基地上一张战术的控制权。天赋：额外打出一张战术，或转移一个基地上的一张战术至另一个基地。"
+    },
+    "truckers_rally": {
+      "name": "车友聚会",
+      "effectText": "特殊：基地计分前，选择该基地中的一个随从。你每控制 1 张该基地上的战术，其便 +2 战力直至回合结束。"
+    },
+    "truckers_good_buddy": {
+      "name": "好伙伴",
+      "abilityText": "若本基地上有你的战术，抓一张牌。"
+    },
+    "truckers_convoy": {
+      "name": "车队",
+      "effectText": "打出到一个基地上。持续：这个基地上每有一张你的行动牌，你在这里 +1 力量（包括这一张）。"
+    },
+    "truckers_cab_over_pete": {
+      "name": "平头彼特",
+      "effectText": "对基地打出。天赋：转移此战术至另一个基地，以移动此处另一张你控制的牌至相同基地。"
+    },
+    "truckers_armored_truck": {
+      "name": "装甲卡车",
+      "effectText": "打出到一个基地上。持续：你在这里的仆从不能被其他玩家的卡牌摧毁或移动。"
+    },
+    "truckers_turn_the_beat_around": {
+      "name": "节拍一转",
+      "effectText": "使一个随从 +1 战力直至回合结束。每有 1 个随从受到影响，你选择该处 1 个随从 -1 战力直至回合结束。特殊：可以在基地计分前打出。"
+    },
+    "disco_dancers_diva": {
+      "name": "主唱",
+      "abilityText": "持续：每回合一次，当有普通战术直接影响本基地中你的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_get_down_tonight": {
+      "name": "就在今晚",
+      "effectText": "一个随从 +2 战力直至回合结束。抓一张牌。"
+    },
+    "disco_dancers_ul_disco_lou": {
+      "name": "迪斯科·卢",
+      "abilityText": "额外打出一张战术，或将你弃牌堆中的一张战术置于你的牌库顶。"
+    },
+    "disco_dancers_we_are_family": {
+      "name": "我们是一家人",
+      "effectText": "对随从打出。持续：每回合一次，当有普通战术直接影响本基地中的其他随从时，你可以使此随从受到同样的影响。"
+    },
+    "disco_dancers_disco_inferno": {
+      "name": "迪斯科地狱",
+      "effectText": "每位玩家可以为一个随从放置 1 枚 +1 战力标记。每有 1 个随从受到影响，抓 1 张牌。"
+    },
+    "disco_dancers_roller": {
+      "name": "轮滑舞娘",
+      "abilityText": "持续：当此随从被普通战术直接影响后，若之前此随从上没有 +1 战力标记，则放置 1 枚于其上。"
+    },
+    "disco_dancers_celebration": {
+      "name": "庆祝",
+      "effectText": "额外打出 2 张战术。"
+    },
+    "disco_dancers_i_will_survive": {
+      "name": "我会活下去",
+      "effectText": "特殊：基地计分后，将该处你的一个随从返回其拥有者手牌而不进入弃牌堆。"
+    },
+    "disco_dancers_its_raining_men": {
+      "name": "男人雨",
+      "effectText": "额外打出一个随从。"
+    },
+    "disco_dancers_dancing_king": {
+      "name": "舞王",
+      "abilityText": "持续：当有普通战术直接影响本基地中的随从时，你可以使此处另一个随从受到同样的影响。"
+    },
+    "disco_dancers_im_so_excited": {
+      "name": "我很亢奋",
+      "effectText": "移动你的一个随从。抓 1 张牌。"
+    },
+    "disco_dancers_last_dance": {
+      "name": "最后的舞曲",
+      "effectText": "每位玩家可以消灭自己的一个随从。每一个实际被消灭的随从使其控制者获得 1 VP。"
+    },
+    "disco_dancers_stayin_alive": {
+      "name": "活着",
+      "effectText": "选择你的一个在场随从。将你弃牌堆中的一张同名牌置于手牌。"
+    },
+    "base_funky_town": {
+      "name": "时髦镇",
+      "abilityText": "每回合一次，当你的战术直接影响本基地中你的随从时，你可以使此处的另一个随从受到同样的效果。"
+    },
+    "base_the_greasy_spoon": {
+      "name": "廉价小饭馆",
+      "abilityText": "当本基地上的战术即将进入弃牌堆时，改为将其洗入拥有者的牌库。"
+    },
+    "base_truck_stop": {
+      "name": "卡车服务站",
+      "abilityText": "你的回合开始时，可以将一张基地上的战术从本基地转移到另一个基地，或从另一个基地转移到本基地。"
+    },
+    "base_boogie_wonderland": {
+      "name": "摇摆仙境",
+      "abilityText": "当玩家打出战术影响此处的随从时，抓一张牌。"
+    },
+    "base_hideout": {
+      "name": "藏身处",
+      "abilityText": "本基地的随从不会受到其他玩家卡牌的影响。"
+    },
+    "base_the_mean_streets": {
+      "name": "险恶街区",
+      "abilityText": "当玩家打出法术影响本基地的卡牌时，每位其他玩家可以向此处的一个随从放置 1 枚 +1 战力标记。"
+    },
+    "base_ancient_dojo": {
+      "name": "古道场",
+      "abilityText": "当你向本基地打出随从后，向此处你的每一个战力低于该随从的随从上各加一枚 +1 战力标记。"
+    },
+    "base_tournament_site": {
+      "name": "比武擂台",
+      "abilityText": "本基地计分时，每有一位玩家在此没有战力，第一名便多 +1 VP。"
+    },
     "alien_supreme_overlord": {
       "name": "最高指挥官",
       "abilityText": "你可以将一个随从返回到其拥有者的手上。"

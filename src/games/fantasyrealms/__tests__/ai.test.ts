@@ -54,6 +54,38 @@ const applyCommand = (core: FantasyRealmsCore, command: FantasyRealmsCommand) =>
     return events.reduce((nextCore, event) => FantasyRealmsDomain.reduce(nextCore, event), core);
 };
 
+const applyHumanDuelTurn = (core: FantasyRealmsCore, playerId: string): FantasyRealmsCore => {
+    let nextCore = applyCommand(core, {
+        type: 'DRAW_FROM_DECK',
+        playerId,
+        payload: {},
+    });
+    if (nextCore.currentPlayer === playerId && nextCore.stage === 'discard') {
+        const discardCardId = nextCore.players[playerId]?.hand[0]?.id;
+        if (!discardCardId) {
+            throw new Error(`玩家${playerId}没有可弃手牌`);
+        }
+        nextCore = applyCommand(nextCore, {
+            type: 'DISCARD_CARD',
+            playerId,
+            payload: { cardId: discardCardId },
+        });
+    }
+    return nextCore;
+};
+
+const applyAiResolutionCommands = (
+    core: FantasyRealmsCore,
+    resolution: NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>,
+): FantasyRealmsCore => {
+    return resolution.action.commands.reduce((nextCore, command) => (
+        applyCommand(nextCore, {
+            ...command,
+            playerId: resolution.playerId,
+        } as FantasyRealmsCommand)
+    ), core);
+};
+
 function createDiscardDecisionCore(): FantasyRealmsCore {
     const dragon = byId('beast-dragon');
     const rangers = byId('army-rangers');
@@ -599,6 +631,41 @@ describe('FantasyRealms AI runtime', () => {
                 payload: { cardId: card.id },
             }).players['0']?.score ?? Number.NEGATIVE_INFINITY);
         expect(alternativeScores.every((score) => chosenScore >= score)).toBe(true);
+    });
+
+    it('本地 AI 在双人局进入第二个 AI 回合时仍会生成合法动作', async () => {
+        let core = FantasyRealmsDomain.setup(['0', '1'], random);
+        core = applyHumanDuelTurn(core, '0');
+        expect(core.currentPlayer).toBe('1');
+
+        for (let aiTurnIndex = 0; aiTurnIndex < 2; aiTurnIndex += 1) {
+            const actionKinds: string[] = [];
+            let guard = 0;
+            while (core.currentPlayer === '1' && guard < 4) {
+                const resolution = await resolveNextLocalAiAction({
+                    engineConfig,
+                    state: stateOf(core),
+                    matchId: `local:fantasyrealms-ai-second-turn-${aiTurnIndex}-${guard}`,
+                    seatControllers: {
+                        '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                    },
+                    decisionBudgetMs: 0,
+                });
+
+                expect(resolution?.playerId).toBe('1');
+                expect(resolution?.action.commands.length).toBeGreaterThan(0);
+                actionKinds.push(resolution!.action.kind);
+                core = applyAiResolutionCommands(core, resolution!);
+                guard += 1;
+            }
+
+            expect(actionKinds.length).toBeGreaterThan(0);
+            expect(core.currentPlayer).toBe('0');
+            if (aiTurnIndex === 0) {
+                core = applyHumanDuelTurn(core, '0');
+                expect(core.currentPlayer).toBe('1');
+            }
+        }
     });
 
     it('discard 阶段若总分相同，会继续按正式 tiebreak 选择更优弃牌', async () => {

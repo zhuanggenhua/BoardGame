@@ -998,6 +998,19 @@ function FeedbackRow({
                                 {item.clientContext.route}
                             </div>
                         )}
+                        {active && (
+                            item.clientContext?.appVersion
+                            || item.clientContext?.appCommitSha
+                            || item.clientContext?.appBuildTime
+                        ) && (
+                            <div className="text-[10px] leading-4 text-zinc-500">
+                                {[
+                                    item.clientContext?.appVersion ? `版本 ${item.clientContext.appVersion}` : null,
+                                    item.clientContext?.appCommitSha ? `提交 ${item.clientContext.appCommitSha}` : null,
+                                    item.clientContext?.appBuildTime ? `构建 ${item.clientContext.appBuildTime}` : null,
+                                ].filter(Boolean).join(' | ')}
+                            </div>
+                        )}
                         {active && item.errorContext && (
                             <div
                                 data-testid="feedback-error-context-panel"
@@ -1381,6 +1394,15 @@ function FeedbackDetailPanel({
                             <p>{item.errorContext.name || '-'}</p>
                             <p>{item.errorContext.message || '-'}</p>
                             <p>{item.errorContext.source || '-'}</p>
+                            {(item.clientContext?.appVersion || item.clientContext?.appCommitSha || item.clientContext?.appBuildTime) && (
+                                <p>
+                                    {[
+                                        item.clientContext?.appVersion ? `版本 ${item.clientContext.appVersion}` : null,
+                                        item.clientContext?.appCommitSha ? `提交 ${item.clientContext.appCommitSha}` : null,
+                                        item.clientContext?.appBuildTime ? `构建 ${item.clientContext.appBuildTime}` : null,
+                                    ].filter(Boolean).join(' | ')}
+                                </p>
+                            )}
                             {item.clientContext?.lastUserAction && (
                                 <p>{t('feedback.detail.recentAction')}: {item.clientContext.lastUserAction.type} / {summarizeFeedbackElement(item.clientContext.lastUserAction.target)}</p>
                             )}

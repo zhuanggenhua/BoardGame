@@ -232,6 +232,37 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
+    it('矮横屏紧凑布局会让位给手牌区，不再常驻当前焦点面板', () => {
+        withViewport(844, 390, () => {
+            renderBoard(makeCore({
+                stage: 'discard',
+                focusCardId: HAND_CARDS[0]!.id,
+            }));
+
+            expect(screen.getByTestId('fantasyrealms-compact-layout')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-compact-focus-rail')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-action-zone')).toBeInTheDocument();
+        });
+    });
+
+    it('粗指针环境不会常驻渲染放大镜按钮，改由长按预览承接', () => {
+        const originalForcedCoarsePointer = (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__;
+        (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = true;
+
+        try {
+            withViewport(844, 390, () => {
+                renderBoard(makeCore({
+                    stage: 'discard',
+                }));
+
+                expect(screen.queryAllByTestId(/fantasyrealms-card-magnify-button-/)).toHaveLength(0);
+            });
+        } finally {
+            (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;
+        }
+    });
+
     it('竖屏视口不会误进紧凑横屏牌桌分支', () => {
         withViewport(768, 1024, () => {
             renderBoard();
@@ -538,9 +569,13 @@ describe('FantasyRealms Board foundation', () => {
             expect(within(statusStrip).getByText('你的回合')).toBeInTheDocument();
             expect(within(statusStrip).getByLabelText('结束进度')).toHaveTextContent(/^\d+\/\d+$/);
             expect(within(statusStrip).queryByText('摸牌')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-action-button')).not.toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('直接点公开牌拿取');
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            expect(actionZone).toBeInTheDocument();
+            expect(within(actionZone).getAllByRole('button')).toHaveLength(1);
+            expect(screen.queryByTestId('fantasyrealms-live-action-draw')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-action-take-discard')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-action-discard')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByText('公开弃牌堆')).not.toBeInTheDocument();
         });
     });
@@ -713,13 +748,13 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             expect(screen.getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'draw');
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('点牌库摸牌，或直接点公开牌拿取');
+            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
+            expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
             expect(screen.queryByText('回合')).not.toBeInTheDocument();
-            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
-            expect(discardButtons[0]).toHaveAttribute('data-action-state', 'take');
+            expect(screen.getByTestId('fantasyrealms-live-action-take-discard')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-action-discard')).not.toBeInTheDocument();
         });
     });
 
@@ -844,8 +879,8 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             expect(screen.getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'draw');
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('摸 2 张');
+            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
+            expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
             expect(screen.queryByTestId('fantasyrealms-hand-empty-note')).not.toBeInTheDocument();
@@ -863,7 +898,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('进入弃牌阶段后桌面 live 只保留短横幅提示与直接可点手牌', () => {
+    it('进入弃牌阶段后桌面 live 显示短横幅与固定确认按钮', () => {
         withViewport(1440, 1024, () => {
             renderBoard(makeCore({
                 stage: 'discard',
@@ -871,42 +906,72 @@ describe('FantasyRealms Board foundation', () => {
                 discardPile: [],
             }));
 
-            expect(screen.queryByTestId('fantasyrealms-live-action-button')).not.toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('直接点一张手牌弃置');
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            expect(within(actionZone).getAllByRole('button')).toHaveLength(1);
+            expect(screen.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
+            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('选一张手牌弃置');
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
             const handButtons = screen.getAllByRole('button', { name: /弃置手牌/ });
-            expect(handButtons[0]).toHaveAttribute('data-action-state', 'discard');
+            expect(handButtons[0]).toHaveAttribute('data-action-state', 'select-discard');
             expect(screen.queryAllByRole('button', { name: /查看弃牌/ })).toHaveLength(0);
         });
     });
 
-    it('进入弃牌阶段后会显示短横幅提示，但不会再切出确认按钮', () => {
+    it('进入弃牌阶段后选中手牌再用右侧按钮确认弃牌', () => {
         withViewport(1440, 1024, () => {
+            const dispatch = vi.fn();
             renderBoard(makeCore({
                 stage: 'discard',
                 discardPile: [],
-            }));
+            }), { dispatch });
 
             const banner = screen.getByTestId('fantasyrealms-live-status-banner');
-            expect(banner).toHaveTextContent('直接点一张手牌弃置');
-            expect(screen.queryByTestId('fantasyrealms-live-action-button')).not.toBeInTheDocument();
+            const handButton = screen.getAllByRole('button', { name: /弃置手牌/ })[1]!;
+            const actionButton = screen.getByTestId('fantasyrealms-live-action-discard');
+
+            fireEvent.click(handButton);
+
+            expect(dispatch).toHaveBeenCalledTimes(1);
+            expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: HAND_CARDS[1]!.id });
+            expect(handButton).toHaveAttribute('data-action-state', 'pending-discard');
+            expect(actionButton).toBeEnabled();
+            expect(banner).toHaveTextContent('已选手牌，确认后弃置');
+
+            fireEvent.click(actionButton);
+
+            expect(dispatch).toHaveBeenNthCalledWith(2, 'DISCARD_CARD', { cardId: HAND_CARDS[1]!.id });
         });
     });
 
-    it('桌面 live 抓牌阶段点击公开牌会直接拿取，不再经过确认按钮', () => {
+    it('桌面 live 抓牌阶段只显示摸牌与拿公开牌两个动作', () => {
         withViewport(1440, 1024, () => {
             const dispatch = vi.fn();
             renderBoard(makeCore({
                 drawPile: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
             }), { dispatch });
 
-            const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
-            expect(screen.getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('点牌库摸牌，或直接点公开牌拿取');
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            expect(within(actionZone).getAllByRole('button')).toHaveLength(2);
+            expect(within(actionZone).getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
+            expect(within(actionZone).getByRole('button', { name: '拿公开牌' })).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-action-discard')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
 
+            const takeButton = within(actionZone).getByRole('button', { name: '拿公开牌' });
+            fireEvent.click(takeButton);
+            expect(within(actionZone).getAllByRole('button')).toHaveLength(1);
+            expect(within(actionZone).queryByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).not.toBeInTheDocument();
+            expect(within(actionZone).getByRole('button', { name: '拿公开牌' })).toHaveAttribute('aria-pressed', 'true');
+
+            fireEvent.click(within(actionZone).getByRole('button', { name: '拿公开牌' }));
+            expect(within(actionZone).getAllByRole('button')).toHaveLength(2);
+            expect(within(actionZone).getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
+
+            fireEvent.click(within(actionZone).getByRole('button', { name: '拿公开牌' }));
+            const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
             fireEvent.click(discardButton);
 
             expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[2]!.id });
@@ -932,7 +997,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('桌面 live 弃牌阶段点击手牌会直接弃置，不再经过确认按钮', () => {
+    it('桌面 live 弃牌阶段第二次点击已选手牌会打开预览', () => {
         withViewport(1440, 1024, () => {
             const dispatch = vi.fn();
             renderBoard(makeCore({
@@ -940,12 +1005,15 @@ describe('FantasyRealms Board foundation', () => {
                 discardPile: [],
             }), { dispatch });
 
+            const magnifyOverlay = screen.getByTestId('fantasyrealms-magnify-overlay');
             const handButton = screen.getAllByRole('button', { name: /弃置手牌/ })[1]!;
+            fireEvent.click(handButton);
             fireEvent.click(handButton);
 
             expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: HAND_CARDS[1]!.id });
-            expect(dispatch).toHaveBeenNthCalledWith(2, 'DISCARD_CARD', { cardId: HAND_CARDS[1]!.id });
-            expect(screen.queryByTestId('fantasyrealms-live-action-button')).not.toBeInTheDocument();
+            expect(dispatch).not.toHaveBeenCalledWith('DISCARD_CARD', expect.anything());
+            expect(magnifyOverlay).toHaveStyle({ opacity: '1' });
+            expect(within(magnifyOverlay).getByTestId('fantasyrealms-card')).toHaveAttribute('data-atlas-card-id', HAND_CARDS[1]!.id);
         });
     });
 
@@ -1051,7 +1119,7 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             expect(screen.getByRole('button', { name: '从牌库摸 1 张' })).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'draw');
+            expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByText('0/10')).toBeInTheDocument();
             expect(screen.getByText('当前总分')).toBeInTheDocument();
@@ -1686,6 +1754,94 @@ describe('FantasyRealms Board foundation', () => {
             expect(reviewedPlayer).toHaveTextContent('第二玩家的终局手牌');
             expect(handRow).toHaveAttribute('data-visible-count', '6');
         });
+    });
+
+    it('终局切去查看其他玩家时，不会继续播放对方的逐张计分音', () => {
+        vi.useFakeTimers();
+        vi.mocked(playSound).mockClear();
+        const originalMatchMedia = window.matchMedia;
+        window.matchMedia = vi.fn().mockImplementation(() => ({
+            matches: false,
+            media: '(prefers-reduced-motion: reduce)',
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })) as typeof window.matchMedia;
+
+        try {
+            withViewport(1024, 768, () => {
+                render(
+                    <Board
+                        G={{
+                            core: makeCore({
+                                playerIds: ['0', '1', '2'],
+                                players: {
+                                    '0': {
+                                        id: '0',
+                                        name: '玩家1',
+                                        hand: HAND_CARDS.map((card) => ({ ...card })),
+                                        score: 42,
+                                        scoreBreakdown: [],
+                                    },
+                                    '1': {
+                                        id: '1',
+                                        name: '玩家2',
+                                        hand: HAND_CARDS.slice(0, 6).map((card) => ({ ...card })),
+                                        score: 55,
+                                        scoreBreakdown: [],
+                                    },
+                                    '2': {
+                                        id: '2',
+                                        name: '玩家3',
+                                        hand: HAND_CARDS.slice(0, 5).map((card) => ({ ...card })),
+                                        score: 31,
+                                        scoreBreakdown: [],
+                                    },
+                                } as any,
+                            }),
+                            sys: {
+                                gameover: {
+                                    winner: '1',
+                                    scores: { '0': 42, '1': 55, '2': 31 },
+                                    winners: ['1'],
+                                },
+                            },
+                        } as MatchState<Record<string, unknown>>}
+                        dispatch={() => {}}
+                        playerID="0"
+                        matchData={[
+                            { id: 0, name: '测试玩家', isConnected: true },
+                            { id: 1, name: '第二玩家', isConnected: true },
+                            { id: 2, name: '第三玩家', isConnected: true },
+                        ]}
+                        isConnected
+                    />,
+                );
+            });
+
+            act(() => {
+                vi.advanceTimersByTime(200);
+            });
+
+            const callCountAfterSelfStep = vi.mocked(playSound).mock.calls.length;
+            expect(callCountAfterSelfStep).toBeGreaterThanOrEqual(1);
+
+            act(() => {
+                fireEvent.click(screen.getByTestId('fantasyrealms-endgame-rank-1'));
+            });
+
+            act(() => {
+                vi.advanceTimersByTime(700);
+            });
+
+            expect(vi.mocked(playSound).mock.calls.length).toBe(callCountAfterSelfStep);
+        } finally {
+            window.matchMedia = originalMatchMedia;
+            vi.useRealTimers();
+        }
     });
 });
 

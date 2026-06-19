@@ -94,6 +94,7 @@ const buildPostBattleSelection = (
     survivingTroops: number,
     attackerLosses: number,
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
+    battleRollSummary: string | null = null,
     dependencies: Pick<
         QidahenPendingTargetResolutionDependencies,
         'toFactionLabel' | 'getActionRuleDisplayRegionName'
@@ -144,6 +145,7 @@ const buildPostBattleSelection = (
             originalControlLabel: targetRegion.controlLabel,
             title: `${pendingTargetAction.targetRegionName} 解围待结算`,
             summary: `${pendingTargetAction.targetRegionName} 围城军已被压制，幸存 ${survivingTroops} 个援军可进驻解围。`,
+            battleRollSummary,
             choices: [{
                 id: 'occupy',
                 mode: 'occupy',
@@ -256,6 +258,7 @@ const buildPostBattleSelection = (
         originalControlLabel: targetRegion.controlLabel,
         title: '战后处理',
         summary: `${pendingTargetAction.targetRegionName} 已被突破，攻方损失 ${attackerLosses}，幸存 ${survivingTroops}，决定是否占领${canBesiege ? '、围城' : ''}或回退。`,
+        battleRollSummary,
         choices,
     };
 };
@@ -291,6 +294,7 @@ interface QidahenPendingTargetResolutionDependencies {
         survivingTroops: number,
         attackerLosses: number,
         attackerCasualtyPriority?: QidahenCasualtyPriority,
+        battleRollSummary?: string | null,
     ) => QidahenPostBattleSelection | null;
     toFactionLabel: (
         controller: QidahenRuntimeRegion['controller'],
@@ -665,6 +669,7 @@ const resolvePendingBattleWithoutDefenders = (
                 pendingTargetAction.committedTroops,
                 0,
                 attackerCasualtyPriority,
+                null,
             ),
             pendingTargetAction: null,
         };
@@ -709,6 +714,7 @@ const resolvePendingBattleWithoutDefenders = (
             pendingTargetAction.committedTroops,
             0,
             attackerCasualtyPriority,
+            null,
         ),
         pendingTargetAction: null,
     };
@@ -1739,6 +1745,7 @@ const resolvePendingCapturedBattleFollowup = (
             survivingAttackers,
             attackerLoss,
             attackerCasualtyPriority,
+            structuredBattleText.trim() || null,
         ),
         logText: null,
         region: null,
@@ -1788,6 +1795,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
                 survivingAttackers,
                 attackerLoss,
                 attackerCasualtyPriority,
+                structuredBattleText.trim() || null,
             ),
             sourceTroopLoss: 0,
             attackerRetreatSpecialTroops: null,

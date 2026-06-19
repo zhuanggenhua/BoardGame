@@ -345,7 +345,11 @@ function executeCommand(
                 const mulliganPlayers: PlayerId[] = [];
 
                 const selectedFactions = Object.values(tempSelections).flatMap((items) => items);
-                const basePool = getBaseDefIdsForFactions(selectedFactions, core.enabledExpansions ?? ['titans', 'diy']);
+                const basePool = getBaseDefIdsForFactions(
+                    selectedFactions,
+                    core.enabledExpansions ?? ['titans', 'diy'],
+                    { includeInProgress: false },
+                );
                 const shuffledBasePool = random.shuffle(basePool);
                 const baseCount = core.turnOrder.length + 1;
                 const activeBases: BaseInPlay[] = shuffledBasePool.slice(0, baseCount).map(defId => ({

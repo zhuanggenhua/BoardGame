@@ -4,6 +4,15 @@
   "id": "i18n",
   "basePrefix": "official/i18n/",
   "files": {
+    "en/fantasyrealms/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "ab3c82285c5181d3a2ee960e383a9cb33905000ed90c144e994d9843e154ecb5",
+          "bytes": 182306,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/tts_atlas_0157978c57": {
       "variants": {
         "webp": {
@@ -4063,6 +4072,114 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/artificial/面板": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/电能机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6f24fa8581cc3721565c32a89cf984bacbfaf32f5c4121bffcac0585b3574eb1",
+          "bytes": 402083,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/电能机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "63a92955784caa43724caffcc81bea9c960ae26abf8d7c71fdf466446ffaf693",
+          "bytes": 398106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/合成器": {
+      "variants": {
+        "png": {
+          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
+          "bytes": 89335,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米爆蛋": {
+      "variants": {
+        "png": {
+          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
+          "bytes": 64853,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "b1b24cf5dac0a4a91d43e43bb9b97561dbe733115f628a8b51c7ad1ef5e84d63",
+          "bytes": 329783,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/纳米机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6ca19753dc92599621d57714c1d665bfbe093d2fd406406c6de9eb2f0f650dbb",
+          "bytes": 316452,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
+          "bytes": 310633,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/artificial/status/治疗机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
+          "bytes": 306226,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/barbarian/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -4372,8 +4489,8 @@
     "zh-CN/dicethrone/images/cursed/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
-          "bytes": 647,
+          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
+          "bytes": 604,
           "mime": "application/json"
         }
       }
@@ -5308,8 +5425,8 @@
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
-          "bytes": 397,
+          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
+          "bytes": 370,
           "mime": "application/json"
         }
       }
@@ -5401,6 +5518,15 @@
           "sha256": "71b3a9083ca6cd5406154db1f11b3914c0336e818bc0c623ed5015584465f60a",
           "bytes": 2520767,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/fantasyrealms/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "ab3c82285c5181d3a2ee960e383a9cb33905000ed90c144e994d9843e154ecb5",
+          "bytes": 182306,
+          "mime": "image/webp"
         }
       }
     },
@@ -6682,6 +6808,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/zhongguo": {
+      "variants": {
+        "webp": {
+          "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
+          "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/huluwawa_bases": {
       "variants": {
         "png": {
@@ -6705,6 +6840,15 @@
         "png": {
           "sha256": "3fa3dc9dafc50279272829e229a3c12993c11588e549b3b8d30e363f4776aafc",
           "bytes": 16968513,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/zhongguo": {
+      "variants": {
+        "png": {
+          "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
+          "bytes": 30275972,
           "mime": "image/png"
         }
       }
@@ -6844,6 +6988,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/zhongguo": {
+      "variants": {
+        "webp": {
+          "sha256": "08a74779f42701729149ccb707e110581e9c389dd902a5d9c583747301087b39",
+          "bytes": 835348,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/huluwawa_cards": {
       "variants": {
         "png": {
@@ -6885,6 +7038,15 @@
         "png": {
           "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
           "bytes": 44486175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/zhongguo": {
+      "variants": {
+        "png": {
+          "sha256": "d2580992fa5dfd33082de91c1b1ba91917185bdd91a22649b84419b782f0176e",
+          "bytes": 37611409,
           "mime": "image/png"
         }
       }

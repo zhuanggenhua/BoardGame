@@ -14,6 +14,7 @@ import {
     buildMinionTargetOptions,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
+    buildValidatedReturnEvents,
     findMinionOnBases,
     getMinionPower,
     grantContextualExtraMinion,

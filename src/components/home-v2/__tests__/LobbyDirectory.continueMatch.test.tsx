@@ -7,12 +7,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { OverviewSpread, type HomeV2ContinueMatch } from '../LobbyDirectory';
 import { sortGamesForLobbyDirectory } from '../lobbyDirectorySorting';
 
-vi.mock('react-i18next', () => ({
-    useTranslation: () => ({
-        t: (key: string, options?: Record<string, unknown>) => options?.defaultValue ?? key,
-        i18n: { language: 'zh-CN', resolvedLanguage: 'zh-CN', changeLanguage: vi.fn() },
-    }),
-}));
+vi.mock('react-i18next', async () => {
+    const actual = await vi.importActual<typeof import('react-i18next')>('react-i18next');
+    return {
+        ...actual,
+        useTranslation: () => ({
+            t: (key: string, options?: Record<string, unknown>) => options?.defaultValue ?? key,
+            i18n: { language: 'zh-CN', resolvedLanguage: 'zh-CN', changeLanguage: vi.fn() },
+        }),
+    };
+});
 
 vi.mock('../../../contexts/AuthContext', () => ({
     useAuth: () => ({

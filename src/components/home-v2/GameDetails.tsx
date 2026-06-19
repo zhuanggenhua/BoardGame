@@ -39,7 +39,7 @@ import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
 import { GamePackageInstallConfirmModal } from '../lobby/GamePackageInstallConfirmModal';
-import { resolveRoomExpansionLabel } from '../lobby/roomActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel } from '../lobby/roomActions';
 import { PasswordField } from '../common/PasswordField';
 import { HomeV2DangerConfirmModal } from '../common/overlays/HomeV2DangerConfirmModal';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
@@ -569,6 +569,7 @@ function getRoomSearchHaystack(
         gameName?: string;
         publicSetupSummary?: {
             enabledExpansions?: string[];
+            scenarioId?: string;
         };
     },
     fallbackTitle: string,
@@ -1833,6 +1834,12 @@ export const Right = ({ game }: RightProps) => {
                                             const roomExpansionSummary = enabledExpansionLabels.length > 0
                                                 ? `${t('lobby:rooms.enabledExpansions', { defaultValue: '扩展' })}：${enabledExpansionLabels.join(' / ')}`
                                                 : '';
+                                            const scenarioLabel = room.publicSetupSummary?.scenarioId
+                                                ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
+                                                : '';
+                                            const roomScenarioSummary = scenarioLabel
+                                                ? `${t('lobby:rooms.scenario', { defaultValue: '剧本' })}：${scenarioLabel}`
+                                                : '';
                                             const actionLabel = roomState.key === 'locked'
                                                 ? t('lobby:homeV2.lockedRoomLabel')
                                                 : roomState.key === 'full'
@@ -1880,6 +1887,14 @@ export const Right = ({ game }: RightProps) => {
                                                                         className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
                                                                     >
                                                                         {roomExpansionSummary}
+                                                                    </div>
+                                                                ) : null}
+                                                                {!isCompactLandscape && roomScenarioSummary ? (
+                                                                    <div
+                                                                        data-testid={`home-v2-room-scenario-summary-${room.matchID}`}
+                                                                        className="mt-[6px] truncate text-[clamp(10px,0.74vw,11px)] leading-[1.2] text-[#7b5a40]"
+                                                                    >
+                                                                        {roomScenarioSummary}
                                                                     </div>
                                                                 ) : null}
                                                             </div>

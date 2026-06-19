@@ -266,9 +266,48 @@ vi.mock('../../hooks/match/useMatchStatus', () => ({
     validateStoredMatchSeat: (...args: unknown[]) => mockValidateStoredMatchSeat(...args),
 }));
 
+const translationMap: Record<string, string> = {
+    'admin.systemHealth.title': '系统健康监控',
+    'admin.systemHealth.description': '实时查看平台房间、玩家在线状态与后台核心指标。',
+    'admin.systemHealth.socket.label': '大厅连接',
+    'admin.systemHealth.socket.connected': '已连接',
+    'admin.systemHealth.socket.online': '在线',
+    'admin.systemHealth.socket.offline': '离线',
+    'admin.systemHealth.realtime_players.title': '实时在线玩家',
+    'admin.systemHealth.realtime_players.summary': '总入座 {{totalPlayers}} 人，分布在 {{activeRooms}} 个实时房间中',
+    'admin.systemHealth.today_matches.title': '今日对局数',
+    'admin.systemHealth.today_matches.total': '总对局：{{count}}',
+    'admin.systemHealth.active_rooms.title': '实时房间（含游客）',
+    'admin.systemHealth.room_distribution.title': '实时房间分布（含游客）',
+    'admin.systemHealth.room_distribution.group_room_count': '{{count}} 个实时房间',
+    'admin.systemHealth.room_distribution.group_online': '{{connected}}/{{total}} 在线',
+    'admin.systemHealth.room_distribution.room_online': '{{connected}}/{{total}} 在线',
+    'admin.systemHealth.overview.title': '平台数据概览',
+    'admin.systemHealth.overview.total_users': '总注册用户',
+    'admin.systemHealth.overview.persisted_rooms': '持久化房间',
+    'admin.systemHealth.overview.banned_users': '封禁用户',
+    'admin.roomsPage.online.online': '在线',
+    'admin.roomsPage.online.offline': '离线',
+    'ota.footer.bundleLabel': 'Bundle {{version}}',
+    'ota.footer.appLabel': 'App {{version}}',
+    'ota.footer.latestLabel': 'Latest {{version}}',
+    'ota.footer.mismatchUpdateNow': 'OTA 未对齐，点击立即更新',
+    'ota.footer.checkNow': '检查更新',
+    'ota.footer.currentBundleTitle': 'current bundle version {{version}}',
+    'ota.footer.currentAppShellTitle': 'app version {{version}}',
+    'ota.footer.latestOtaTitle': 'latest OTA version {{version}}',
+    'ota.footer.statusMismatchUpdateNow': 'versions are not aligned',
+    'ota.footer.statusCheckNow': 'check for updates now',
+    'ota.footer.ariaBundleAndApp': 'current bundle version {{bundleVersion}}, app version {{appVersion}}',
+    'ota.footer.ariaBundleAndAppMismatch': 'current bundle version {{bundleVersion}}, app version {{appVersion}}, latest OTA version {{latestVersion}}, versions are not aligned',
+};
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => key,
+        t: (key: string, options?: Record<string, unknown>) => {
+            const template = translationMap[key] ?? key;
+            return template.replace(/\{\{(\w+)\}\}/g, (_, optionKey: string) => String(options?.[optionKey] ?? ''));
+        },
     }),
 }));
 
@@ -553,6 +592,15 @@ describe('browser compatibility detection', () => {
 describe('useGameNamespaceReady', () => {
     beforeEach(() => {
         mockLoggerError.mockReset();
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: false,
+            status: 404,
+            json: async () => ({}),
+        } as Response)));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('切换语言后会重新触发游戏 namespace 加载', async () => {
@@ -585,7 +633,8 @@ describe('useGameNamespaceReady', () => {
         );
 
         await waitFor(() => {
-            expect(result.current.gameNamespaceError).toBe('zh namespace failed');
+            expect(result.current.gameNamespaceError).toContain('zh namespace failed');
+            expect(result.current.gameNamespaceError).toContain('fallback: 游戏文案加载失败：game-smashup HTTP 404');
         });
 
         i18n.language = 'en';
@@ -1237,13 +1286,17 @@ describe('resolveGameImplementationLoadTimeoutMs', () => {
 });
 
 describe('resolveFollowCurrentTurnPlayerId', () => {
-    it('优先使用 turnOrder/currentPlayerIndex，其次 currentPlayer/currentPlayerId', async () => {
+    it('优先使用显式当前玩家字段，缺失时回退 turnOrder/currentPlayerIndex', async () => {
         const { resolveFollowCurrentTurnPlayerId } = await import('../../engine/transport/followCurrentTurnPlayer');
 
         expect(resolveFollowCurrentTurnPlayerId({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,
             currentPlayer: '0',
+        })).toBe('0');
+        expect(resolveFollowCurrentTurnPlayerId({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
         })).toBe('1');
         expect(resolveFollowCurrentTurnPlayerId({ currentPlayer: '1' })).toBe('1');
         expect(resolveFollowCurrentTurnPlayerId({ currentPlayerId: '2' })).toBe('2');

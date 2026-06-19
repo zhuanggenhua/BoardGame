@@ -39,6 +39,9 @@ export interface FeedbackClientContext {
     playerId?: string;
     gameId?: string;
     appVersion?: string;
+    appCommitSha?: string;
+    appBuildTime?: string;
+    appReleaseChannel?: string;
     userAgent?: string;
     viewport?: {
         width: number;

@@ -7,6 +7,7 @@
  * - 内置离线交互裁决（断线 → graceMs → 自动 CANCEL_INTERACTION）
  */
 
+import { execSync } from 'node:child_process';
 import type { Server as IOServer, Socket as IOSocket } from 'socket.io';
 import type { Command, DomainCore, GameEvent, MatchState, PlayerId, RandomFn } from '../types';
 import type { EngineSystem, GameSystemsConfig } from '../systems/types';
@@ -66,6 +67,7 @@ import {
 } from './onlineAiRecovery';
 import type { LocalPregameControlResolver } from './followCurrentTurnPlayer';
 import { injectTutorialInteractionId } from './tutorialAiCommand';
+import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令
 // - simple-choice: 走通用系统取消
@@ -595,6 +597,38 @@ function shouldAutoReportCommandFailure(reason: string): boolean {
 
 function resolveCommandFailureFeedbackSeverity(reason: string): CommandFailureFeedbackPayload['severity'] {
     return reason === GENERIC_COMMAND_FAILURE_REASON ? 'medium' : 'high';
+}
+
+let cachedServerGitCommitSha: string | null | undefined;
+
+function resolveServerGitCommitSha(): string | undefined {
+    if (cachedServerGitCommitSha !== undefined) {
+        return cachedServerGitCommitSha || undefined;
+    }
+
+    try {
+        const commitSha = execSync('git rev-parse --short=12 HEAD', {
+            cwd: process.cwd(),
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).toString('utf-8').trim();
+        cachedServerGitCommitSha = commitSha || null;
+    } catch {
+        cachedServerGitCommitSha = null;
+    }
+
+    return cachedServerGitCommitSha || undefined;
+}
+
+function resolveServerFeedbackBuildInfo() {
+    const buildInfo = resolveRuntimeBuildInfo(process.env);
+    if (buildInfo.appCommitSha) {
+        return buildInfo;
+    }
+
+    return {
+        ...buildInfo,
+        appCommitSha: resolveServerGitCommitSha(),
+    };
 }
 
 function emitOnlineAiBatchTrace(stage: string, payload: Record<string, unknown>): void {
@@ -1447,6 +1481,7 @@ export class GameTransportServer {
             sharedState: match.state,
             seatControllers,
             seatStates,
+            engineConfig: match.engineConfig,
             gameId: match.gameId,
         }) ?? await this.resolveOnlineAiLegalActionOnlyCandidate(match, seatControllers);
 
@@ -1482,7 +1517,10 @@ export class GameTransportServer {
         });
         if (candidate.reason === 'response-window') {
             const currentTracker = this.onlineAiRecoveryTrackers.get(match.matchID);
-            const currentProgressMarker = buildAiProgressMarker(match.state);
+            const currentProgressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
             const currentRecoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, currentProgressMarker);
             const responseWindowTrackerKey = `${candidate.playerId}:${candidate.reason}:${currentRecoveryFingerprint}`;
             const responseLoopFingerprint = buildResponseWindowRecoveryFingerprintHint(
@@ -1593,7 +1631,10 @@ export class GameTransportServer {
                 continue;
             }
 
-            const progressMarker = buildAiProgressMarker(match.state);
+            const progressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
             const recoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
             const trackerKey = `${candidate.playerId}:${candidate.reason}:${recoveryFingerprint}`;
             const recoveryTimeoutMs = this.resolveOnlineAiRecoveryTimeoutMs(match, candidate);
@@ -1679,7 +1720,10 @@ export class GameTransportServer {
                 && latestCandidate.reason === expectedCandidate.reason
                 && latestCandidate.requiresConfirmedAdvancePhase === expectedCandidate.requiresConfirmedAdvancePhase
                 && latestCandidate.legalActionOnly === expectedCandidate.legalActionOnly;
-            const latestProgressMarker = buildAiProgressMarker(match.state);
+            const latestProgressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
             const latestRecoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(
                 match,
                 latestCandidate,
@@ -1697,7 +1741,10 @@ export class GameTransportServer {
         const syncRecoveryTrackerToCandidate = (
             nextCandidate: ForceEndTurnStalledAiResolution,
         ): void => {
-            const nextProgressMarker = buildAiProgressMarker(match.state);
+            const nextProgressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
             const nextRecoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(
                 match,
                 nextCandidate,
@@ -1767,7 +1814,10 @@ export class GameTransportServer {
             if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
                 return null;
             }
-            return buildInteractionRecoveryFingerprintHint(match.state, currentInteraction, playerId);
+            return buildInteractionRecoveryFingerprintHint(match.state, currentInteraction, playerId, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
         };
         const readCurrentAiSeatViewInteractionRecoveryFingerprintHint = (playerId: string): string | null => {
             const playerView = this.applyPlayerView(match, playerId) as MatchState<unknown>;
@@ -1777,7 +1827,10 @@ export class GameTransportServer {
             if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
                 return null;
             }
-            return buildInteractionRecoveryFingerprintHint(playerView, currentInteraction, playerId);
+            return buildInteractionRecoveryFingerprintHint(playerView, currentInteraction, playerId, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
         };
         const readCurrentAiResponseWindowRecoveryFingerprintHint = (playerId: string): string | null => {
             const currentWindow = (match.state.sys?.responseWindow as {
@@ -1942,7 +1995,10 @@ export class GameTransportServer {
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
-                const markerBeforeStep = buildAiProgressMarker(match.state);
+                const markerBeforeStep = buildAiProgressMarker(match.state, {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                });
                 const currentPlayerIdBeforeStep = resolveWatchdogCurrentPlayerId();
                 const stepKeyBefore = buildRecoverySequenceStepKey(currentCandidate.playerId, markerBeforeStep);
                 const interactionFingerprintBeforeStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
@@ -2095,7 +2151,10 @@ export class GameTransportServer {
 
                 recoverySteps += 1;
                 const attemptedInteractionRespond = executedCommandTypes.has(INTERACTION_COMMANDS.RESPOND);
-                const nextMarker = buildAiProgressMarker(match.state);
+                const nextMarker = buildAiProgressMarker(match.state, {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                });
                 const nextStepKey = buildRecoverySequenceStepKey(currentCandidate.playerId, nextMarker);
                 const interactionFingerprintAfterStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
                 const interactionRecoveryFingerprintAfterStep = readCurrentAiInteractionRecoveryFingerprintHint(currentCandidate.playerId);
@@ -2255,7 +2314,10 @@ export class GameTransportServer {
                 currentCandidate = normalizedNextCandidate;
             }
 
-            const markerAfterRecovery = buildAiProgressMarker(match.state);
+            const markerAfterRecovery = buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            });
             const unresolvedCandidate = allowNaturalAiContinuation
                 ? null
                 : await resolveChainedRecoveryCandidate(candidate.playerId);
@@ -2387,7 +2449,10 @@ export class GameTransportServer {
             phase: phaseLabel,
             failureCount: nextTracker.failureCount,
             markerBefore: progressMarkerBeforeRecovery,
-            markerAfter: buildAiProgressMarker(match.state),
+            markerAfter: buildAiProgressMarker(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            }),
         });
 
         if (nextTracker.failureCount >= this.onlineAiRecoveryFailureReportThreshold) {
@@ -2716,7 +2781,10 @@ export class GameTransportServer {
                 };
             } | undefined;
             if (current) {
-                return buildInteractionRecoveryFingerprintHint(match.state, current, candidate.playerId);
+                return buildInteractionRecoveryFingerprintHint(match.state, current, candidate.playerId, {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                });
             }
             return candidate.fingerprintHint ?? progressMarker;
         }
@@ -3220,6 +3288,7 @@ export class GameTransportServer {
     }
 
     private async defaultOnlineAiFeedbackReporter(payload: OnlineAiRecoveryFeedbackPayload): Promise<void> {
+        const buildInfo = resolveServerFeedbackBuildInfo();
         await this.postInternalSystemFeedback({
             content: `[system][online-ai-watchdog] ${payload.incidentKind} ${payload.reason}`,
             type: 'bug',
@@ -3239,6 +3308,7 @@ export class GameTransportServer {
                 playerId: payload.playerId,
                 gameId: payload.gameId,
                 timezone: 'server',
+                ...buildInfo,
             },
             errorContext: {
                 source: 'online-ai-watchdog',
@@ -3249,6 +3319,7 @@ export class GameTransportServer {
     }
 
     private async defaultCommandFailureFeedbackReporter(payload: CommandFailureFeedbackPayload): Promise<void> {
+        const buildInfo = resolveServerFeedbackBuildInfo();
         await this.postInternalSystemFeedback({
             content: `[system][command-failed] ${payload.commandType} ${payload.reason}`,
             type: 'bug',
@@ -3267,6 +3338,7 @@ export class GameTransportServer {
                 playerId: payload.playerId,
                 gameId: payload.gameId,
                 timezone: 'server',
+                ...buildInfo,
             },
             errorContext: {
                 source: 'player-command-failure',
@@ -3371,7 +3443,10 @@ export class GameTransportServer {
                         playerId: aiDispatchResult.playerId,
                         blockedReason: aiDispatchResult.blockedReason,
                         blockedKey: aiDispatchResult.blockedKey,
-                        progressMarker: buildAiProgressMarker(match.state),
+                        progressMarker: buildAiProgressMarker(match.state, {
+                            engineConfig: match.engineConfig,
+                            gameId: match.gameId,
+                        }),
                     });
                 }
                 return {
@@ -3391,7 +3466,10 @@ export class GameTransportServer {
             return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 
-        const markerBefore = buildAiProgressMarker(match.state);
+        const markerBefore = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
         const recoveryFingerprintBefore = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerBefore);
         const executedCommandTypes: string[] = [];
         for (const command of resolution.action.commands) {
@@ -3419,7 +3497,10 @@ export class GameTransportServer {
             executedCommandTypes.push(command.type);
         }
 
-        const markerAfter = buildAiProgressMarker(match.state);
+        const markerAfter = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
         const recoveryFingerprintAfter = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerAfter);
         if (markerAfter === markerBefore && recoveryFingerprintAfter === recoveryFingerprintBefore) {
             tracker.autoSubmittedAt = null;
@@ -4164,7 +4245,10 @@ export class GameTransportServer {
         const { engineConfig, state, random, playerIds } = match;
         const stateIdBefore = match.stateID;
         const preTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
-        const progressMarkerBeforeCommand = buildAiProgressMarker(match.state);
+        const progressMarkerBeforeCommand = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
         const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerID);
 

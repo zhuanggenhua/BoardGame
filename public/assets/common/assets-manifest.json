@@ -727,8 +727,8 @@
     "audio/phrase-mappings.zh-CN.json": {
       "variants": {
         "json": {
-          "sha256": "fc8a154ffbc9e6d216a44168a5ef076aa456fe9b491266465a5ea10fd2d69615",
-          "bytes": 176108,
+          "sha256": "dae7ccaedd84fc67d47da5a09adc7a6f1bdfa66e38363f3e21e327bcd7562c19",
+          "bytes": 173271,
           "mime": "application/json"
         }
       }
@@ -736,8 +736,8 @@
     "audio/registry.json": {
       "variants": {
         "json": {
-          "sha256": "e87b55726674443fb499b9913747a376bd0b49df496708d0504a4bd9cbb52647",
-          "bytes": 3798073,
+          "sha256": "8a634a26f2c8621a51293b83508b9759ba778c54f099103e61f271cd06c8941b",
+          "bytes": 3692624,
           "mime": "application/json"
         }
       }

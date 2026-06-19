@@ -218,22 +218,22 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
         expect(boardSource).toContain('showWheelNextStepBanner');
-        expect(boardSource).toContain('进行轮盘行动');
+        expect(boardSource).toContain('去点绿色扇区');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
-        expect(boardSource).toContain("defaultValue: '点击绿色扇区'");
-        expect(boardSource).toContain('直接执行');
+        expect(boardSource).toContain("defaultValue: '绿色扇区就是可点入口'");
+        expect(boardSource).toContain('点这里');
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
     });
 
     it('一级行动面板会自动锁定当前主流程，并直接暴露二级行动而不是再加一级选择按钮', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain("return selectedAction ? `弃牌进行行动：${selectedAction.label}` : '弃牌进行行动';");
-        expect(boardSource).toContain("return '从下方选择行动';");
-        expect(boardSource).toContain("return '选择地图目标';");
-        expect(boardSource).toContain("return '进行轮盘行动';");
-        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '当前步骤' })");
-        expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '弃牌行动' })");
+        expect(boardSource).toContain("return selectedAction ? `本次行动：${selectedAction.label}` : '先选一项行动';");
+        expect(boardSource).toContain("return '先从右侧选一项行动';");
+        expect(boardSource).toContain("return '先点地图上的绿色目标';");
+        expect(boardSource).toContain(": '去点一个绿色扇区';");
+        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '现在做什么' })");
+        expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
         expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
         expect(boardSource).toContain('qidahen-primary-action-next-step');
         expect(boardSource).toContain('qidahen-action-state-${action.id}');
@@ -241,6 +241,18 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("t('board.actions.state.available', { defaultValue: '可选' })");
         expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
         expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
+    });
+
+    it('右侧动作按钮在 hover 或 focus 时必须显示可见功能提示，而不是只依赖原生 title', () => {
+        expect(boardSource).toContain('title={action.detail}');
+        expect(boardSource).toContain('data-testid={`qidahen-action-tooltip-${action.id}`}');
+        expect(boardSource).toContain("role=\"tooltip\"");
+        expect(boardSource).toContain('group-hover:block group-focus:block');
+        expect(boardSource).toContain('right-[calc(100%+12px)] top-1/2');
+        expect(boardSource).toContain("t('board.actions.tooltipHeader', { defaultValue: '功能说明' })");
+        expect(boardSource).toContain("t('board.actions.tooltipCost', {");
+        expect(boardSource).toContain('{action.label}');
+        expect(boardSource).toContain('{action.detail}');
     });
 
     it('地图必须共享缩放拖动视口，并让高亮路线与顶层点击点一起跟随同一套投影', () => {
@@ -260,7 +272,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('onPointerUp={handlePointerUp}');
         expect(boardSource).toContain('viewport={mapViewport}');
         expect(boardSource).toContain('onViewportChange={setMapViewport}');
-        expect(boardSource).toContain("strokeDasharray={activeCandidate ? '24 14' : '18 12'}");
+        expect(boardSource).toContain("markerMid={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
         expect(boardSource).toContain("markerEnd={activeCandidate ? 'url(#qidahen-map-guide-arrow-active)' : 'url(#qidahen-map-guide-arrow)'}");
     });
 

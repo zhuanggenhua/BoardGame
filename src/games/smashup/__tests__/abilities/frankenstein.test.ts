@@ -449,6 +449,43 @@ describe('Frankenstein abilities', () => {
         ).toBe(true);
     });
 
+    it('frankenstein_grave_situation 在同基地己方随从被消灭时，应改为回手', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'aliens'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    ...makeMinion('igor', 'frankenstein_igor', '0', 2),
+                    powerCounters: 1,
+                }],
+                ongoingActions: [{
+                    uid: 'grave-1',
+                    defId: 'frankenstein_grave_situation',
+                    ownerId: '0',
+                }],
+            }],
+        });
+
+        const triggerMinion = core.bases[0].minions[0];
+        const triggerResult = fireTriggers(core, 'onMinionDestroyed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: triggerMinion.uid,
+            triggerMinionDefId: triggerMinion.defId,
+            triggerMinion,
+            random: defaultTestRandom,
+            now: 123,
+        });
+        expect(triggerResult.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(true);
+    });
+
     it('frankenstein_german_engineering 在该基地打出随从后给该随从 +1 指示物', () => {
         const core = makeState({
             players: {

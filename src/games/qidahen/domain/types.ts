@@ -474,6 +474,7 @@ export interface QidahenPostBattleSelection {
     originalControlLabel: string;
     title: string;
     summary: string;
+    battleRollSummary?: string | null;
     choices: QidahenPostBattleChoice[];
 }
 

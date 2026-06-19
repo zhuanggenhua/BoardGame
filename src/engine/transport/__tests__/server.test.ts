@@ -4,6 +4,7 @@ import {
     buildAiProgressMarker,
     resolveCurrentPlayerId,
     resolveForceEndTurnForStalledAi,
+    resolveOnlineAiCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
 } from '../onlineAiRecovery';
 import { createCompareRollChoice, createInteractionSystem, createSimpleChoice, INTERACTION_COMMANDS } from '../../systems/InteractionSystem';
@@ -238,11 +239,27 @@ const createEngineConfig = (): GameEngineConfig => ({
 
 const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
     const base = createEngineConfig();
+    const sourceConfig = gameId === 'dicethrone'
+        ? diceThroneEngineConfig
+        : gameId === 'smashup'
+            ? smashUpEngineConfig
+            : undefined;
     return {
         ...base,
         gameId,
         onlineAiRecovery: {
+            ...(sourceConfig?.onlineAiRecovery ?? {}),
+            ...(gameId === 'splendor' ? { disableFallbackAdvancePhase: true } : {}),
             allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => {
+                const sourceDecision = sourceConfig?.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+                    state: {} as any,
+                    phase,
+                    previousCandidate,
+                    nextCandidate,
+                });
+                if (sourceDecision !== undefined) {
+                    return sourceDecision;
+                }
                 if (gameId === 'dicethrone') {
                     return phase === 'defensiveRoll';
                 }
@@ -1346,7 +1363,10 @@ describe('resolveCurrentPlayerId（防御阶段操作者）', () => {
             isDefendable: true,
         };
 
-        expect(resolveCurrentPlayerId(state)).toBe('0');
+        expect(resolveOnlineAiCurrentPlayerId(state, {
+            engineConfig: diceThroneEngineConfig,
+            gameId: 'dicethrone',
+        })).toBe('0');
     });
 });
 
@@ -1651,6 +1671,8 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: smashUpEngineConfig,
+            gameId: 'smashup',
         });
 
         expect(candidate?.reason).toBe('active-turn');
@@ -1695,6 +1717,8 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
+            gameId: 'dicethrone',
         });
 
         expect(candidate?.reason).toBe('visible-interaction');
@@ -1743,6 +1767,8 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
+            engineConfig: diceThroneEngineConfig,
+            gameId: 'dicethrone',
         });
 
         expect(candidate?.reason).toBe('visible-interaction');
@@ -24072,6 +24098,66 @@ describe('GameTransportServer（离座与重连）', () => {
         });
 
         expect(defaultReporterSpy).not.toHaveBeenCalled();
+    });
+
+    it('online AI watchdog 默认系统反馈应附带版本定位字段', async () => {
+        vi.stubEnv('APP_VERSION', '0.6.1-server');
+        vi.stubEnv('APP_COMMIT_SHA', 'feedbead1234');
+        vi.stubEnv('APP_BUILD_TIME', '2026-06-19T11:00:00.000Z');
+        vi.stubEnv('APP_RELEASE_CHANNEL', 'production');
+
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+        });
+
+        const serverInternal = server as unknown as {
+            defaultOnlineAiFeedbackReporter: (payload: {
+                matchId: string;
+                gameId: string;
+                playerId: string;
+                incidentKind: 'force-end-turn-failed';
+                severity: 'high';
+                reason: string;
+                trackerKey: string;
+                progressMarker: string;
+                stateSnapshot: string;
+                actionLog?: string;
+            }) => Promise<void>;
+            postInternalSystemFeedback: (body: Record<string, unknown>) => Promise<void>;
+        };
+
+        const postSpy = vi.spyOn(serverInternal, 'postInternalSystemFeedback').mockResolvedValue();
+
+        try {
+            await serverInternal.defaultOnlineAiFeedbackReporter({
+                matchId: 'match-watchdog-build-meta',
+                gameId: 'dicethrone',
+                playerId: '1',
+                incidentKind: 'force-end-turn-failed',
+                severity: 'high',
+                reason: 'active-turn:follow-up-advance:command_failed:ADVANCE_PHASE:not_active_player',
+                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||1',
+                progressMarker: '0|defensiveRoll|42|0|||||||1',
+                stateSnapshot: '{"matchId":"match-watchdog-build-meta"}',
+                actionLog: '{"kind":"online-ai-feedback-diagnostic"}',
+            });
+        } finally {
+            vi.unstubAllEnvs();
+        }
+
+        expect(postSpy).toHaveBeenCalledWith(expect.objectContaining({
+            clientContext: expect.objectContaining({
+                appVersion: '0.6.1-server',
+                appCommitSha: 'feedbead1234',
+                appBuildTime: '2026-06-19T11:00:00.000Z',
+                appReleaseChannel: 'production',
+            }),
+        }));
     });
 
     it('online AI watchdog 自动反馈应携带交互选项与可选性诊断信息', async () => {

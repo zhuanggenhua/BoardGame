@@ -89,7 +89,10 @@ vi.mock('../../../lib/mobile/appVisibility', () => ({
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key,
+        t: (key: string, options?: { defaultValue?: string }) => {
+            if (key === 'ui.waiting_for_player') return '正在等待 {{player}}';
+            return options?.defaultValue ?? key;
+        },
         i18n: { exists: () => false },
     }),
     initReactI18next: {

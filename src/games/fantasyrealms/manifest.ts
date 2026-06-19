@@ -11,6 +11,7 @@ const entry: GameManifestEntry = {
     playersKey: 'games.fantasyrealms.players',
     icon: '🏰',
     thumbnailPath: 'fantasyrealms/thumbnails/cover',
+    cursorTheme: 'fantasyrealms-parchment',
     allowLocalMode: true,
     playerOptions: [2, 3, 4, 5, 6],
     setupOptions: buildFantasyRealmsSetupOptions(),

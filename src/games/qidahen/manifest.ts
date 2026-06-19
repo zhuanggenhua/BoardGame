@@ -14,6 +14,7 @@ const entry: GameManifestEntry = {
     playersKey: 'games.qidahen.players',
     icon: '恨',
     thumbnailPath: 'qidahen/thumbnails/cover',
+    cursorTheme: 'qidahen-tactical',
     allowLocalMode: false,
     playerOptions: [...QIDAHEN_PLAYER_OPTIONS],
     tags: ['card_driven', 'tactical'],

@@ -1,5 +1,10 @@
 import type { CardDef, BaseCardDef, MinionCardDef, ActionCardDef, FusionCardDef, TitanCardDef } from '../domain/types';
-import { isSmashUpDiyFaction, SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import {
+    isSmashUpDiyFaction,
+    isSmashUpFactionImplementationInProgress,
+    SMASHUP_ATLAS_IDS,
+    SMASHUP_FACTION_IDS,
+} from '../domain/ids';
 import { usesSeparateSmashUpBasePoolVariant } from '../domain/variantBindings';
 import { TITAN_CARD_DEFS } from './titans';
 
@@ -74,6 +79,12 @@ import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
 import { DRAGONS_CARDS } from './factions/dragons';
 import { SUPERHEROES_CARDS } from './factions/superheroes';
 import { GEEKS_CARDS } from './factions/geeks';
+import {
+    DISCO_DANCERS_CARDS,
+    KUNG_FU_FIGHTERS_CARDS,
+    TRUCKERS_CARDS,
+    VIGILANTES_CARDS,
+} from './factions/zhongguo';
 
 // ============================================================================
 // 注册表
@@ -211,6 +222,10 @@ registerCards(MEGA_TROOPERS_CARDS);
 registerCards(DRAGONS_CARDS);
 registerCards(SUPERHEROES_CARDS);
 registerCards(GEEKS_CARDS);
+registerCards(KUNG_FU_FIGHTERS_CARDS);
+registerCards(VIGILANTES_CARDS);
+registerCards(TRUCKERS_CARDS);
+registerCards(DISCO_DANCERS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -1168,6 +1183,85 @@ export const BASE_CARDS_BIG_IN_JAPAN: BaseCardDef[] = [
 ];
 registerBases(BASE_CARDS_BIG_IN_JAPAN);
 
+// ============================================================================
+// 扩展基地 (That '70s Expansion / zhongguo atlas - four confirmed factions)
+// ============================================================================
+export const BASE_CARDS_ZHONGGUO: BaseCardDef[] = [
+    {
+        id: 'base_funky_town',
+        name: '时髦镇',
+        nameEn: 'Funky Town',
+        breakpoint: 23,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.DISCO_DANCERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 0 },
+    },
+    {
+        id: 'base_the_greasy_spoon',
+        name: '廉价小饭馆',
+        nameEn: 'The Greasy Spoon',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TRUCKERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 1 },
+    },
+    {
+        id: 'base_truck_stop',
+        name: '卡车服务站',
+        nameEn: 'Truck Stop',
+        breakpoint: 18,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TRUCKERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 2 },
+    },
+    {
+        id: 'base_boogie_wonderland',
+        name: '摇摆仙境',
+        nameEn: 'Boogie Wonderland',
+        breakpoint: 21,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.DISCO_DANCERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 3 },
+    },
+    {
+        id: 'base_hideout',
+        name: '藏身处',
+        nameEn: 'Hideout',
+        breakpoint: 18,
+        vpAwards: [3, 1, 1],
+        faction: SMASHUP_FACTION_IDS.VIGILANTES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 4 },
+    },
+    {
+        id: 'base_the_mean_streets',
+        name: '险恶街区',
+        nameEn: 'The Mean Streets',
+        breakpoint: 25,
+        vpAwards: [5, 3, 2],
+        faction: SMASHUP_FACTION_IDS.VIGILANTES,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 5 },
+    },
+    {
+        id: 'base_ancient_dojo',
+        name: '古道场',
+        nameEn: 'Ancient Dojo',
+        breakpoint: 25,
+        vpAwards: [5, 4, 3],
+        faction: SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 6 },
+    },
+    {
+        id: 'base_tournament_site',
+        name: '比武擂台',
+        nameEn: 'Tournament Site',
+        breakpoint: 19,
+        vpAwards: [2, 0, 0],
+        faction: SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE10, index: 7 },
+    },
+];
+registerBases(BASE_CARDS_ZHONGGUO);
+
 registerPodBaseSkeletons();
 
 /**
@@ -1624,11 +1718,38 @@ function getPublicBaseDefs(): BaseCardDef[] {
     return Array.from(_baseRegistry.values()).filter(base => !isPodVariantId(base.id));
 }
 
+type BasePoolAvailabilityOptions = {
+    includeInProgress?: boolean;
+};
+
+function isBaseAvailableForBasePool(
+    base: BaseCardDef | undefined,
+    enabledExpansions: readonly string[],
+    options: BasePoolAvailabilityOptions = {},
+): boolean {
+    if (!base) return false;
+    const includeInProgress = options.includeInProgress ?? true;
+    if (isSmashUpDiyFaction(base.faction) && !enabledExpansions.includes('diy')) {
+        return false;
+    }
+    if (!includeInProgress && base.faction && isSmashUpFactionImplementationInProgress(base.faction)) {
+        return false;
+    }
+    return true;
+}
+
+export function isBaseDefAvailableForRuntimeBasePool(defId: string, enabledExpansions: readonly string[]): boolean {
+    return isBaseAvailableForBasePool(getBaseDef(defId), enabledExpansions, { includeInProgress: false });
+}
+
 /** 查找卡牌定义 */
 /** 根据所选派系获取基地定义 ID（同变体补充：POD 只补 POD，基础只补基础） */
-export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions: readonly string[] = ['titans', 'diy']): string[] {
+export function getBaseDefIdsForFactions(
+    factionIds: string[],
+    enabledExpansions: readonly string[] = ['titans', 'diy'],
+    options: BasePoolAvailabilityOptions = { includeInProgress: true },
+): string[] {
     const selectedFactionIds = [...new Set(factionIds)];
-    const diyEnabled = enabledExpansions.includes('diy');
     const selectedOriginalFactions = new Set(
         selectedFactionIds.filter(factionId => !factionId.endsWith('_pod')),
     );
@@ -1637,7 +1758,7 @@ export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions
         selectedFactionIds.filter(factionId => usesSeparateSmashUpBasePoolVariant(factionId)),
     );
     const matchedBases = getPublicBaseDefs().filter(base => {
-        if (isSmashUpDiyFaction(base.faction) && !diyEnabled) {
+        if (!isBaseAvailableForBasePool(base, enabledExpansions, options)) {
             return false;
         }
         if (base.faction && selectedOriginalFactions.has(base.faction)) {
@@ -1668,8 +1789,7 @@ export function getBaseDefIdsForFactions(factionIds: string[], enabledExpansions
         const usedBases = new Set(matchedBases.map(base => base.id));
         const availableBases = allBases.filter(id => {
             if (usedBases.has(id)) return false;
-            const base = getBaseDef(id);
-            return !isSmashUpDiyFaction(base?.faction) || diyEnabled;
+            return isBaseAvailableForBasePool(getBaseDef(id), enabledExpansions, options);
         });
 
         const missingCount = factionsWithoutBases.length * 2;

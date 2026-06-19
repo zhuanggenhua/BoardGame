@@ -53,6 +53,10 @@ describe('clientAutoReport', () => {
 
     it('会自动上报并写入最近错误上下文', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        vi.stubGlobal('__APP_VERSION__', '0.6.1-test');
+        vi.stubGlobal('__APP_COMMIT_SHA__', 'abc123def456');
+        vi.stubGlobal('__APP_BUILD_TIME__', '2026-06-19T10:00:00.000Z');
+        vi.stubGlobal('__APP_RELEASE_CHANNEL__', 'production');
         const { installClientDiagnosticCapture } = await import('../feedback/clientFeedbackContext');
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
         const { getLastErrorContext } = await import('../feedback/errorContext');
@@ -100,6 +104,10 @@ describe('clientAutoReport', () => {
                 gameId: 'smashup',
                 matchId: 'match-1',
                 playerId: '0',
+                appVersion: '0.6.1-test',
+                appCommitSha: 'abc123def456',
+                appBuildTime: '2026-06-19T10:00:00.000Z',
+                appReleaseChannel: 'production',
                 activeElement: {
                     tagName: 'button',
                     testId: 'confirm-play',

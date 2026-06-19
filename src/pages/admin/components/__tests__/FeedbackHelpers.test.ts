@@ -35,6 +35,10 @@ const feedbackItem = {
         gameId: 'smashup',
         matchId: 'match-1',
         playerId: '0',
+        appVersion: '0.6.1',
+        appCommitSha: 'abc123def456',
+        appBuildTime: '2026-06-19T10:00:00.000Z',
+        appReleaseChannel: 'production',
         activeElement: {
             tagName: 'button',
             testId: 'confirm-play',
@@ -77,6 +81,10 @@ describe('buildFeedbackAiDiagnosticPacket', () => {
         expect(packet).toContain('已占用 steampunks_pod, ghosts, aliens, robots');
         expect(packet).toContain('- activeElement: button[testid=confirm-play] (text=确认出牌)');
         expect(packet).toContain('- lastUserAction: click, at=2026-06-07T08:00:00.000Z');
+        expect(packet).toContain('- appVersion: 0.6.1');
+        expect(packet).toContain('- appCommitSha: abc123def456');
+        expect(packet).toContain('- appBuildTime: 2026-06-19T10:00:00.000Z');
+        expect(packet).toContain('- appReleaseChannel: production');
         expect(packet).toContain('### JS 堆栈');
         expect(packet).toContain('### React 组件栈');
     });
