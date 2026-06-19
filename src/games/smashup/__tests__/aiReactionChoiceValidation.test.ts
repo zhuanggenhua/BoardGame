@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpReactionSession } from '../domain/types';
-import { SmashUpDomain } from '../domain';
 import { buildSmashUpAiLegalActions } from '../ai';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -11,6 +10,7 @@ import {
     makeMatchState,
     makePlayer,
     makeState,
+    respondToPrompt,
 } from './helpers';
 
 beforeAll(() => {
@@ -110,11 +110,8 @@ describe('SmashUp AI reaction choice validation', () => {
             (action) => action.metadata?.optionId === 'trigger:stale-visible-choice',
         );
         expect(chosenAction).toBeDefined();
-        expect(SmashUpDomain.validate(stateForAi, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: chosenAction?.commands[0]?.payload ?? {},
-        } as any).valid).toBe(true);
+        const resolved = respondToPrompt(stateForAi, 'trigger:stale-visible-choice', '0');
+        expect(resolved.success).toBe(true);
 
         expect(chosenAction?.commands[0]?.payload).toMatchObject({
             interactionId: interaction.id,
