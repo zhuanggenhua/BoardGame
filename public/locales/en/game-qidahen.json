@@ -127,6 +127,8 @@
         "current": "Current",
         "available": "Available"
       },
+      "tooltipHeader": "Action Details",
+      "tooltipCost": "Cost {{cost}}",
       "primaryStageTagWheel": "Wheel Action",
       "primaryStageTagFaction": "Discard Action",
       "primaryStageFactionTitle": "Discard to Act",

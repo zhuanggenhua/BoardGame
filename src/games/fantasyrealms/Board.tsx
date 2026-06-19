@@ -1421,7 +1421,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     aria-live="polite"
                 >
                     <span className="fr-live-status-banner-copy">
-                        {selectedDiscardCard ? '已选手牌，确认后弃置' : '选一张手牌弃置'}
+                        {selectedDiscardCard
+                            ? t('turn.statusBanner.discardSelf', { defaultValue: '确认弃牌' })
+                            : t('turn.statusBanner.discardDirect', { defaultValue: '直接点一张手牌弃置' })}
                     </span>
                 </div>
             ) : null}
