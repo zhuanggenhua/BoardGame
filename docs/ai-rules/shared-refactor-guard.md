@@ -119,10 +119,13 @@
 
 - **触发条件**：修改 current player / active player / responder / defender / current operator 相关 helper。
 - **禁止行为**：把“真实操作者”偷换成“通用当前回合玩家”，或把游戏级 resolve helper 绕回共享默认。
+- **transport / provider 专项红线（强制）**：一旦涉及命令派发、socket payload、local provider 自动注入字段、教程 AI override、测试桥 payload 元字段，必须先锁定“谁是命令执行者”的唯一真相源。`当前本地视角玩家`、`教程指定执行者`、`socket 已认证玩家` 只能是不同来源的候选输入，不能在 `local/server/provider` 各写一份独立优先级，更不能让本地视角字段串进在线业务入口。
+- **测试桥专项红线（强制）**：`TestHarness` / 调试桥如果已经有正式的 `command.playerId`、状态注入入口或服务端 `/test` 注入入口，就不得再额外借用 `__tutorialPlayerId`、`__internalPlayerId` 之类 payload 元字段表达“我要代哪个玩家发命令”。否则就是把“测试壳便捷字段”重新抬成业务候选真相。
 - **最低证据**：
   - 哪些场景当前操作者不等于主动回合玩家；
   - 每类场景的代表测试；
   - 共享 helper 与游戏级 helper 的职责边界。
+  - 若修改 transport / provider：必须额外写清 `本地视角玩家`、`命令执行者`、`教程指定执行者` 各自的现实含义、唯一解析入口，以及哪些字段只允许停留在本地壳层。
 
 ### D. 共享层重构提交门禁
 

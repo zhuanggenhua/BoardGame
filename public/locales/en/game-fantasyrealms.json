@@ -39,7 +39,7 @@
       "kicker": "Next",
       "discardPick": "Discard 1",
       "discardSelf": "Confirm Discard",
-      "discardDirect": "Tap a card in hand to discard it",
+      "discardDirect": "Discard",
       "waiting": "Waiting for {{player}}"
     }
   },

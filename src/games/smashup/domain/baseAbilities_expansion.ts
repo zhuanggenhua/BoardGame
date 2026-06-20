@@ -1439,6 +1439,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 defId: selected.defId!,
                 ownerId: selected.ownerId!,
                 sourcePlayerId: selected.sourcePlayerId,
+                locationPlayerId: selected.sourcePlayerId,
                 reason: '印斯茅斯基地：弃牌堆卡放入牌库底',
                 now: timestamp,
                 expectedLocation: 'discard',

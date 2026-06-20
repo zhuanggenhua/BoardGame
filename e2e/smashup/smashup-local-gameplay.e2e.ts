@@ -205,7 +205,7 @@ const captureLayoutMotionDuringMinionPlay = async (
                             harness.command?.dispatch?.({
                                 type: 'su:play_minion',
                                 playerId: resolvedPlayerId,
-                                payload: { cardUid, baseIndex, __tutorialPlayerId: resolvedPlayerId },
+                                payload: { cardUid, baseIndex },
                             });
                         } catch (error) {
                             dispatchError = error instanceof Error ? error.message : String(error);
@@ -306,7 +306,7 @@ const captureMinionEntryTimeline = async (
                             harness.command?.dispatch?.({
                                 type: 'su:play_minion',
                                 playerId: resolvedPlayerId,
-                                payload: { cardUid, baseIndex, __tutorialPlayerId: resolvedPlayerId },
+                                payload: { cardUid, baseIndex },
                             });
                         } catch (error) {
                             dispatchError = error instanceof Error ? error.message : String(error);

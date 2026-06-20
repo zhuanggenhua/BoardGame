@@ -80,10 +80,7 @@ const dispatchHarnessCommand = async (
         }).__BG_TEST_HARNESS__?.command?.dispatch?.({
             type: commandType,
             playerId: commandPlayerId,
-            payload: {
-                ...commandPayload,
-                __tutorialPlayerId: commandPlayerId,
-            },
+            payload: commandPayload,
         });
     }, {
         commandType: type,

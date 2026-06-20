@@ -782,7 +782,6 @@ describe('FantasyRealms Board foundation', () => {
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
             }), { dispatch });
 
-            expect(screen.queryByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
@@ -893,7 +892,6 @@ describe('FantasyRealms Board foundation', () => {
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
             }), { dispatch });
 
-            expect(screen.queryByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
@@ -928,7 +926,7 @@ describe('FantasyRealms Board foundation', () => {
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
             expect(within(actionZone).getAllByRole('button')).toHaveLength(1);
             expect(screen.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
-            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('直接点一张手牌弃置');
+            expect(screen.getByTestId('fantasyrealms-live-status-banner')).toHaveTextContent('弃牌');
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();
             const handButtons = screen.getAllByRole('button', { name: /弃置手牌/ });
@@ -972,7 +970,7 @@ describe('FantasyRealms Board foundation', () => {
 
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
             expect(within(actionZone).getAllByRole('button')).toHaveLength(2);
-            expect(within(actionZone).getByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).toBeInTheDocument();
+            expect(within(actionZone).getByRole('button', { name: '摸牌' })).toBeInTheDocument();
             expect(within(actionZone).getByRole('button', { name: '拿公开牌' })).toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-action-discard')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
@@ -982,7 +980,7 @@ describe('FantasyRealms Board foundation', () => {
             const takeButton = within(actionZone).getByRole('button', { name: '拿公开牌' });
             fireEvent.click(takeButton);
             expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', { name: '从牌库摸 2 张并弃 1 张' })).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: '摸牌' })).not.toBeInTheDocument();
             expect(screen.queryByRole('button', { name: '拿公开牌' })).not.toBeInTheDocument();
             const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
             fireEvent.click(discardButton);
@@ -1132,7 +1130,6 @@ describe('FantasyRealms Board foundation', () => {
                 } as any,
             }), { dispatch });
 
-            expect(screen.queryByRole('button', { name: '从牌库摸 1 张' })).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
             expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();

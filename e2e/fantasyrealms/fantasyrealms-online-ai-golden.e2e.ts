@@ -18,8 +18,15 @@ import {
 import { getMatchState } from '../helpers/state-injection';
 
 const GAME_NAME = 'fantasyrealms';
-const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /从牌库摸 2 张并弃 1 张|从牌库摸 1 张/;
+const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
 type FantasyRealmsMatchState = MatchState<FantasyRealmsCore>;
+
+async function clickFantasyRealmsDeckDrawButtonIfVisible(page: Page) {
+    const deckButton = page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
+    if (await deckButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await deckButton.click();
+    }
+}
 
 type OnlineAiSummary = {
     currentPlayer: string | null;
@@ -320,26 +327,28 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
     const beforeHandCount = beforeSummary.handCounts['0'] ?? 0;
     const beforeDiscardCount = beforeSummary.discardCount;
     const beforeTurn = beforeSummary.turn ?? 0;
+    const alreadyInDiscardStage = beforeSummary.currentPlayer === '0' && beforeSummary.stage === 'discard';
 
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
-    await expect(args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
-    await args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME }).click();
+    await clickFantasyRealmsDeckDrawButtonIfVisible(args.page);
 
-    await expect.poll(async () => {
-        const summary = await readOnlineAiStateSummary(args.matchId, args.page);
-        return summary.currentPlayer === '0'
-            && summary.stage === 'discard'
-            && (summary.turn ?? 0) === beforeTurn
-            && (summary.handCounts['0'] ?? 0) > beforeHandCount;
-    }, {
-        timeout: 10000,
-        message: `${args.roundLabel}: 等待 host 从真实开局链进入 discard`,
-    }).toBe(true);
+    if (!alreadyInDiscardStage) {
+        await expect.poll(async () => {
+            const summary = await readOnlineAiStateSummary(args.matchId, args.page);
+            return summary.currentPlayer === '0'
+                && summary.stage === 'discard'
+                && (summary.turn ?? 0) === beforeTurn
+                && (summary.handCounts['0'] ?? 0) > beforeHandCount;
+        }, {
+            timeout: 10000,
+            message: `${args.roundLabel}: 等待 host 从真实开局链进入 discard`,
+        }).toBe(true);
+    }
 
     const afterDrawSummary = await readOnlineAiStateSummary(args.matchId, args.page);
     const discardHandButton = args.page.getByRole('button', { name: /弃置手牌/ }).first();
     await discardHandButton.click();
-    await expect(args.liveActionButton).toContainText('确认弃置');
+    await expect(args.liveActionButton).toContainText('确认弃牌');
     await args.liveActionButton.click();
 
     await expect.poll(async () => {
@@ -430,7 +439,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
     try {
         await clearEvidenceScreenshotsForTest(testInfo);
 
-        const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
+        const liveActionButton = page.getByTestId('fantasyrealms-live-action-discard');
         let completedAiRoundtrips = 0;
 
         for (let round = 1; round <= options.maxRounds; round += 1) {

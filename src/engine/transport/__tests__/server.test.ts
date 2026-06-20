@@ -3510,6 +3510,148 @@ describe('GameTransportServer（离座与重连）', () => {
         );
     });
 
+    it('在线 socket command 入口不应接受 __internalPlayerId 覆盖执行者', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-online-ignore-internal-player-id', {
+            initialState: {
+                G: {
+                    core: { currentPlayer: '0' },
+                    sys: {
+                        phase: 'main',
+                        turnNumber: 1,
+                        tutorial: { active: false },
+                        interaction: { queue: [], isBlocked: false },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const serverInternal = server as unknown as {
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+        const handleCommandSpy = vi.spyOn(serverInternal, 'handleCommand').mockResolvedValue(true);
+
+        const socket = new MockSocket('socket-online-ignore-internal-player-id');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-online-ignore-internal-player-id', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'command',
+            'match-online-ignore-internal-player-id',
+            'ROLL_DICE',
+            {
+                keepIds: [0],
+                __internalPlayerId: '1',
+            },
+            'cred-0',
+        );
+
+        expect(handleCommandSpy).toHaveBeenCalledTimes(1);
+        expect(handleCommandSpy).toHaveBeenCalledWith(
+            'match-online-ignore-internal-player-id',
+            '0',
+            'ROLL_DICE',
+            {
+                keepIds: [0],
+            },
+        );
+    });
+
+    it('在线非教程命令即使带 __tutorialPlayerId，也不应覆盖已认证玩家', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-online-ignore-tutorial-player-id', {
+            initialState: {
+                G: {
+                    core: { currentPlayer: '0' },
+                    sys: {
+                        phase: 'main',
+                        turnNumber: 1,
+                        tutorial: { active: true },
+                        interaction: { queue: [], isBlocked: false },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const serverInternal = server as unknown as {
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+        const handleCommandSpy = vi.spyOn(serverInternal, 'handleCommand').mockResolvedValue(true);
+
+        const socket = new MockSocket('socket-online-ignore-tutorial-player-id');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-online-ignore-tutorial-player-id', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'command',
+            'match-online-ignore-tutorial-player-id',
+            'ROLL_DICE',
+            {
+                keepIds: [0],
+                __tutorialPlayerId: '1',
+            },
+            'cred-0',
+        );
+
+        expect(handleCommandSpy).toHaveBeenCalledTimes(1);
+        expect(handleCommandSpy).toHaveBeenCalledWith(
+            'match-online-ignore-tutorial-player-id',
+            '0',
+            'ROLL_DICE',
+            {
+                keepIds: [0],
+            },
+        );
+    });
+
     it('training recorder 失败不应影响命令执行', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

@@ -69,6 +69,8 @@ type PirateBuccaneerMovePromptContext = PiratePromptContext & {
     minionUid: string;
     minionDefId: string;
     fromBaseIndex: number;
+    ownerId?: string;
+    controllerId?: string;
 };
 
 type PirateKingMoveEntry = {
@@ -89,6 +91,8 @@ type PirateFirstMateChooseBasePromptContext = PiratePromptContext & {
     mateDefId: string;
     mateBaseIndex?: number;
     scoringBaseIndex: number;
+    ownerId?: string;
+    controllerId?: string;
 };
 
 function createPiratePromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
@@ -332,7 +336,8 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
     // 无其他基地可移→正常消灭
     if (candidates.length === 0) return [];
     const minion = state.bases[baseIndex]?.minions.find(m => m.uid === triggerMinionUid);
-    const ownerId = minion?.controller ?? ctx.playerId;
+    const ownerId = minion?.owner ?? ctx.triggerMinion?.owner ?? ctx.playerId;
+    const controllerId = minion?.controller ?? ctx.triggerMinion?.controller ?? ctx.playerId;
 
     // 只有一个基地时自动移动（无需交互）
     if (candidates.length === 1) {
@@ -344,11 +349,12 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
             toBaseIndex: candidates[0].baseIndex,
             reason,
             now: ctx.now,
-            sourcePlayerId: ownerId,
+            sourcePlayerId: controllerId,
             sourceDefId: triggerMinionDefId,
-            sourceControllerId: ownerId,
+            sourceControllerId: controllerId,
             sourceBaseIndex: baseIndex,
             sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
         });
     }
 
@@ -363,20 +369,23 @@ function buccaneerOnDestroyed(ctx: TriggerContext): SmashUpEvent[] | TriggerResu
             toBaseIndex: candidates[0].baseIndex,
             reason,
             now: ctx.now,
-            sourcePlayerId: ownerId,
+            sourcePlayerId: controllerId,
             sourceDefId: triggerMinionDefId,
-            sourceControllerId: ownerId,
+            sourceControllerId: controllerId,
             sourceBaseIndex: baseIndex,
             sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
         });
     }
 
     const result = executeAbilityProgram(
         pirateBuccaneerMovePromptProgram,
-        createPiratePromptContext(ctx.matchState, ownerId, ctx.now, {
+        createPiratePromptContext(ctx.matchState, controllerId, ctx.now, {
             minionUid: triggerMinionUid,
             minionDefId: triggerMinionDefId,
             fromBaseIndex: baseIndex,
+            ownerId,
+            controllerId,
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };
@@ -474,6 +483,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
     if (otherBases.length === 0) return [];
 
     const controllerId = mate?.controller ?? ctx.sourceControllerId ?? ctx.playerId;
+    const ownerId = mate?.owner ?? ctx.triggerMinion?.owner ?? controllerId;
 
     // 无 matchState 时回退自动移动 first_mate 自身到第一个可用基地
     if (!ctx.matchState) {
@@ -489,6 +499,7 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
             sourceControllerId: controllerId,
             sourceBaseIndex: mateBaseIndex,
             sourceKind: 'nonAction',
+            targetSnapshot: { ownerId, controllerId },
         });
     }
 
@@ -499,6 +510,8 @@ function pirateFirstMateAfterScoring(ctx: TriggerContext): SmashUpEvent[] | Trig
             mateDefId,
             mateBaseIndex,
             scoringBaseIndex,
+            ownerId,
+            controllerId,
         }),
     );
     return { events: result.events, matchState: result.matchState ?? ctx.matchState };
@@ -1433,6 +1446,10 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
                 sourceControllerId: context.playerId,
                 sourceBaseIndex: fromBaseIndex,
                 sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: context.ownerId ?? context.playerId,
+                    controllerId: context.controllerId ?? context.playerId,
+                },
             }),
         };
     },
@@ -1564,6 +1581,10 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
                 sourceControllerId: context.playerId,
                 sourceBaseIndex: fromBaseIndex,
                 sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: context.ownerId ?? context.playerId,
+                    controllerId: context.controllerId ?? context.playerId,
+                },
             }));
         }
 

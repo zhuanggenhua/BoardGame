@@ -47,6 +47,10 @@ import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import { computeDiff } from './patch';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import {
+    parseDispatchPayloadMeta,
+    resolveDispatchActorPlayerId,
+} from './dispatchActorResolution';
+import {
     applyAiAutoRecoveryRejection,
     buildAiProgressMarker,
     buildMultistepChoiceMetaSemanticSignature,
@@ -1037,46 +1041,25 @@ export class GameTransportServer {
                 }
                 // 教程 AI 命令：payload 中携带 __tutorialPlayerId 时，以该 ID 作为执行者
                 // 仅在教程模式激活时生效，防止普通玩家伪造 playerId
-                const payloadRecord = payload && typeof payload === 'object' ? payload as Record<string, unknown> : null;
-                const tutorialOverrideId = typeof payloadRecord?.__internalPlayerId === 'string'
-                    ? payloadRecord.__internalPlayerId
-                    : typeof payloadRecord?.__tutorialPlayerId === 'string'
-                        ? payloadRecord.__tutorialPlayerId
-                    : undefined;
+                const meta = parseDispatchPayloadMeta(payload);
                 const match = this.activeMatches.get(matchID);
                 const isTutorialActive = !!(match?.state?.sys as Record<string, unknown> | undefined)
                     ?.tutorial && !!(match?.state?.sys as { tutorial?: { active?: boolean } })?.tutorial?.active;
-                const resolvedPlayerId = (tutorialOverrideId && isTutorialActive)
-                    ? tutorialOverrideId
-                    : info.playerID;
-                // 清除 payload 中的 __tutorialPlayerId，避免传入领域层
-                const normalizedPayload = payloadRecord && (
-                    '__internalPlayerId' in payloadRecord
-                    || '__internalAiCommand' in payloadRecord
-                    || '__tutorialPlayerId' in payloadRecord
-                    || '__tutorialAiCommand' in payloadRecord
-                )
-                    ? (() => {
-                        const {
-                            __internalPlayerId: _ignored0,
-                            __internalAiCommand: _ignored1,
-                            __tutorialPlayerId: _ignored2,
-                            __tutorialAiCommand: _ignored3,
-                            ...rest
-                        } = payloadRecord;
-                        return rest;
-                    })()
-                    : payload;
-                const isTutorialAiCommand = payloadRecord?.__tutorialAiCommand === true;
+                const resolvedPlayerId = resolveDispatchActorPlayerId({
+                    meta,
+                    allowInternalOverride: false,
+                    allowTutorialOverride: isTutorialActive,
+                    fallbackPlayerId: info.playerID,
+                });
                 const tutorialInjectedPayload = match
                     ? injectTutorialInteractionId({
                         state: match.state,
                         commandType,
-                        payload: normalizedPayload,
-                        tutorialPlayerId: tutorialOverrideId ?? resolvedPlayerId,
-                        isTutorialAiCommand,
+                        payload: meta.normalizedPayload,
+                        tutorialPlayerId: meta.tutorialOverrideId ?? resolvedPlayerId,
+                        isTutorialAiCommand: meta.isTutorialAiCommand,
                     })
-                    : normalizedPayload;
+                    : meta.normalizedPayload;
                 await this.handleCommand(matchID, resolvedPlayerId, commandType, tutorialInjectedPayload);
             });
 

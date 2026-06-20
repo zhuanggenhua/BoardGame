@@ -25,7 +25,34 @@ import { SmashUpDomain, smashUpSystemsForTest } from '../game';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../types';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { respondCommand } from './helpers';
+import {
+    getOptionalSimpleChoicePrompt,
+    getPromptOptions,
+    getReactionPrompt,
+    getReactionPromptOptionBySourceDefId,
+    getSimpleChoicePrompt,
+} from './helpers';
+
+function chooseAlienScoutTrigger(runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>): void {
+    const state = runner.getState();
+    if (getOptionalSimpleChoicePrompt(state, 'alien_scout_return')) {
+        return;
+    }
+    const prompt = getReactionPrompt(state);
+    expect(prompt).toBeDefined();
+    const option = getReactionPromptOptionBySourceDefId(state, prompt, 'alien_scout');
+    const result = runner.resolveInteraction('0', { optionId: option.id });
+    expect(result.success, result.error).toBe(true);
+}
+
+function chooseReturnScout(runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>): void {
+    const state = runner.getState();
+    const prompt = getSimpleChoicePrompt(state, 'alien_scout_return');
+    const option = getPromptOptions(prompt).find((candidate: any) => candidate.id === 'yes');
+    expect(option).toBeDefined();
+    const result = runner.resolveInteraction('0', { optionId: option.id });
+    expect(result.success, result.error).toBe(true);
+}
 
 function setupWithScoutOnBase(ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> {
     const core = SmashUpDomain.setup(ids, random);
@@ -101,33 +128,24 @@ describe('Alien Scout - No Duplicate Scoring', () => {
             setup: setupWithScoutOnBase,
         });
         
-        const result = runner.run({
-            name: '侦察兵 afterScoring 不重复记分',
-            commands: [
-                // 执行 ADVANCE_PHASE 进入记分阶段
-                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                // Base abilities are queued; choose Scout first if an ordering prompt appears.
-                respondCommand('trigger:afterScoring:alien_scout:0:0', '0'),
-                // 用户选择"返回手牌"
-                respondCommand('yes', '0'),
-            ] as any[],
-        });
-        
-        // 验证：测试应该通过
-        expect(result.passed).toBe(true);
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success, advance.error).toBe(true);
+        chooseAlienScoutTrigger(runner);
+        chooseReturnScout(runner);
+        const finalState = runner.getState();
         
         // 验证：侦察兵应该返回手牌
-        expect(result.finalState.core.players['0'].hand.length).toBe(1);
-        expect(result.finalState.core.players['0'].hand[0].defId).toBe('alien_scout');
+        expect(finalState.core.players['0'].hand.length).toBe(1);
+        expect(finalState.core.players['0'].hand[0].defId).toBe('alien_scout');
         
         // 验证：基地上的随从应该为 0
-        expect(result.finalState.core.bases[0].minions.length).toBe(0);
+        expect(finalState.core.bases[0].minions.length).toBe(0);
         
         // 注意：当前实现使用 frame-backed scoring session，而不是旧的 scoredBaseIndices 镜像
         // 测试只关心最终结果：不会重复触发交互
         
         // 验证：手牌中只有 1 张侦察兵（不会重复返回）
-        const scoutCount = result.finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
+        const scoutCount = finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
         expect(scoutCount).toBe(1);
     });
     
@@ -139,29 +157,19 @@ describe('Alien Scout - No Duplicate Scoring', () => {
             setup: setupWithTwoScoutsOnBase,
         });
         
-        const result = runner.run({
-            name: '多个侦察兵 afterScoring 不重复记分',
-            commands: [
-                // 执行 ADVANCE_PHASE 进入记分阶段
-                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                // Choose each Scout trigger first (reaction ordering prompt).
-                respondCommand('trigger:afterScoring:alien_scout:0:0', '0'),
-                // 用户选择"返回手牌"（第一个侦察兵）
-                respondCommand('yes', '0'),
-                respondCommand('trigger:afterScoring:alien_scout:0:1', '0'),
-                // 用户选择"返回手牌"（第二个侦察兵）
-                respondCommand('yes', '0'),
-            ] as any[],
-        });
-        
-        // 验证：测试应该通过
-        expect(result.passed).toBe(true);
+        const advance = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
+        expect(advance.success, advance.error).toBe(true);
+        chooseAlienScoutTrigger(runner);
+        chooseReturnScout(runner);
+        chooseAlienScoutTrigger(runner);
+        chooseReturnScout(runner);
+        const finalState = runner.getState();
         
         // 验证：两个侦察兵都应该返回手牌（允许额外牌因其他效果进入手牌）
-        expect(result.finalState.core.players['0'].hand.length).toBeGreaterThanOrEqual(2);
+        expect(finalState.core.players['0'].hand.length).toBeGreaterThanOrEqual(2);
         
         // 验证：手牌中至少有 2 张侦察兵（不会重复返回；允许其他效果额外加入手牌）
-        const scoutCount = result.finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
+        const scoutCount = finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
         expect(scoutCount).toBeGreaterThanOrEqual(2);
         
         // 注意：当前实现使用 frame-backed scoring session，而不是旧的 scoredBaseIndices 镜像

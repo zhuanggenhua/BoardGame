@@ -2437,6 +2437,7 @@ export function buildSemanticOngoingAttachEvents(
         targetMinionUid?: string;
         metadata?: Record<string, unknown>;
         talentUsed?: boolean;
+        removeFromDiscard?: boolean;
         onBlockedSourceDestination?: 'discard' | 'hand';
         now: number;
     },
@@ -2454,6 +2455,7 @@ export function buildSemanticOngoingAttachEvents(
                 targetBaseIndex: params.targetBaseIndex,
                 ...(params.metadata ? { metadata: params.metadata } : {}),
                 ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+                ...(params.removeFromDiscard !== undefined ? { removeFromDiscard: params.removeFromDiscard } : {}),
             },
             timestamp: params.now,
         } as OngoingAttachedEvent];
@@ -2518,6 +2520,7 @@ export function buildSemanticOngoingAttachEvents(
             targetMinionUid: params.targetMinionUid,
             ...(params.metadata ? { metadata: params.metadata } : {}),
             ...(params.talentUsed !== undefined ? { talentUsed: params.talentUsed } : {}),
+            ...(params.removeFromDiscard !== undefined ? { removeFromDiscard: params.removeFromDiscard } : {}),
         },
         timestamp: params.now,
     } as OngoingAttachedEvent];

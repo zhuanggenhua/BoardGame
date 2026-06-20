@@ -1197,7 +1197,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             buttons.push({
                 key: 'draw',
                 mode: 'draw',
-                label: getDrawDeckLabel(core, t),
+                label: t('turn.compact.draw'),
                 testId: 'fantasyrealms-live-action-draw',
                 onClick: handleDrawFromDeckAction,
             });
@@ -1217,7 +1217,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         canDiscard,
         canDrawFromDeck,
         canTakeDiscard,
-        core,
         handleConfirmDiscard,
         handleDrawFromDeckAction,
         handleSelectDiscardDraw,
@@ -1436,7 +1435,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     <span className="fr-live-status-banner-copy">
                         {selectedDiscardCard
                             ? t('turn.statusBanner.discardSelf', { defaultValue: '确认弃牌' })
-                            : t('turn.statusBanner.discardDirect', { defaultValue: '直接点一张手牌弃置' })}
+                            : t('turn.statusBanner.discardDirect', { defaultValue: '弃牌' })}
                     </span>
                 </div>
             ) : null}

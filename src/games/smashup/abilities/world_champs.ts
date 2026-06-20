@@ -907,6 +907,7 @@ const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChamp
                 ...(context.ownerId !== context.playerId ? { sourcePlayerId: context.playerId } : {}),
                 targetBaseIndex: selected.baseIndex,
                 targetMinionUid: selected.minionUid,
+                removeFromDiscard: true,
                 now: timestamp,
             }),
         };

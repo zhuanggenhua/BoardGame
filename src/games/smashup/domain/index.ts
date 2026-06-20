@@ -1998,10 +1998,13 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         const phase = state.sys.phase as GamePhase;
         const isFactionDraftReadyToStart = core.turnOrder.length > 0 && core.turnOrder.every((playerId) => {
             const player = core.players[playerId];
+            const factions = Array.isArray(player?.factions) ? player.factions : [];
+            const hand = Array.isArray(player?.hand) ? player.hand : [];
+            const deck = Array.isArray(player?.deck) ? player.deck : [];
             return Boolean(
                 player
-                && player.factions.length === 2
-                && (player.hand.length > 0 || player.deck.length > 0),
+                && factions.length === 2
+                && (hand.length > 0 || deck.length > 0),
             );
         });
         const justResolvedSmashUpReactionChoice = events.some((event) => {
