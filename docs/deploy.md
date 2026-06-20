@@ -36,7 +36,9 @@ curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts
 bash deploy-image.sh
 ```
 
-脚本会自动完成：下载 compose 文件 → 引导生成 .env → 配置 Docker 镜像加速 → 安装/配置 Nginx → 拉取镜像 → 启动服务。
+脚本会自动完成：下载 compose 文件 → 引导生成 `.env` → 检查宿主机 Docker 基础条件 → 拉取镜像 → 启动服务。
+
+> **强制边界**：`deploy-image.sh deploy/update/rollback` 只负责业务镜像发布，不负责替宿主机修改 Docker daemon 配置。像 `/etc/docker/daemon.json`、`registry-mirrors`、daemon 重载/重启 这类宿主机基础设施动作，必须作为独立运维动作处理，不能混进正式部署链。
 
 > **架构**：Cloudflare (HTTPS + CDN) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server
 > 无 Nginx，NestJS 直接监听 80 端口。Cloudflare 代理提供 SSL 和 CDN。
@@ -52,6 +54,23 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
 
 **默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+
+### 宿主机 Docker 镜像源配置（独立动作）
+
+如需显式写入项目默认镜像源，请在宿主机单独执行：
+
+```bash
+bash deploy-image.sh configure-mirror
+```
+
+约束：
+
+- 这是**宿主机基础设施维护**，不是业务部署步骤。
+- `configure-mirror` 只会更新 `/etc/docker/daemon.json` 里的 `registry-mirrors` 字段，并尝试向 `dockerd` 发送 `SIGHUP` 重新加载配置。
+- `configure-mirror` 不会自动跟 `deploy/update/rollback` 绑定执行，也不应把“镜像源治理”当成每次发版的一部分。
+- 如果生产机已有运维维护的 Docker daemon 配置，应继续以运维配置为真相源，不要依赖业务部署脚本覆盖。
+- `deploy/update/rollback` 拉取范围默认只包含应用服务 `game-server` 与 `web`；`mongodb`、`redis` 这类基础依赖应以宿主机现有缓存/既有镜像为准，不应把每次业务发版绑定到 Docker Hub 可用性。
+- 公网入口资源一致性门禁默认关闭；只有显式设置 `PUBLIC_WEB_URL` 时才会检查。当前正式根域名走 Pages，服务器部署默认不应拿 `http://127.0.0.1/` 与 `https://easyboardgame.top/` 比入口资源。
 
 ### 回滚 / 状态 / 日志
 
@@ -158,24 +177,18 @@ curl -I http://127.0.0.1/
 ### 可选环境变量
 
 ```bash
-REPO_URL=https://github.com/zhuanggenhua/BoardGame.git \   # 仓库地址
-APP_DIR=BoardGame \                                       # 代码目录
 JWT_SECRET=your-secret \                                  # JWT 密钥（不填则自动生成）
-MONGO_URI=mongodb://mongodb:27017/boardgame \            # Mongo 连接
 WEB_ORIGINS=https://your-domain.com \                    # CORS 白名单
-MIRROR_PROVIDER=multi \                                  # 镜像源方案（默认 multi）
-XUANYUAN_DOMAIN=docker.xuanyuan.me \                      # 轩辕镜像域名
-CUSTOM_MIRRORS=https://mirror1,https://mirror2 \         # 自定义镜像列表（优先级最高）
-SKIP_MIRROR=1 \                                          # 跳过镜像源配置
-FORCE_ENV=1 \                                            # 强制覆盖 .env
-bash deploy-auto.sh
+SKIP_MIRROR=1 \                                          # 跳过镜像源检查提示
+bash deploy-image.sh update
 ```
 
-### 镜像源说明（多源 HTTPS）
+### 镜像源说明（宿主机运维）
 
-- 默认使用多源 HTTPS 镜像列表（阿里云、USTC、SJTUG、DaoCloud、dockerproxy）。
-- 若你想使用轩辕镜像：设置 `MIRROR_PROVIDER=xuanyuan`，可选 `XUANYUAN_DOMAIN=你的专属域名`。
-- 若你想完全自定义：设置 `CUSTOM_MIRRORS` 为逗号分隔的镜像列表（优先级最高）。
+- 项目脚本内置的默认镜像源列表是：阿里云、USTC、SJTUG、DaoCloud、dockerproxy。
+- 这些镜像源只在你**显式执行** `bash deploy-image.sh configure-mirror` 时才会写入宿主机。
+- `deploy/update/rollback` 不会自动写入、覆盖或重建宿主机的 `registry-mirrors`。
+- 若生产机已有自定义镜像源、代理或私有 registry 配置，应继续以宿主机现有运维配置为准。
 
 ## Pages 部署（前后端分离）
 
