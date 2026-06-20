@@ -61,6 +61,17 @@
       "toggle": "翻面",
       "close": "收起"
     },
+    "scenario": {
+      "button": "剧本",
+      "title": "首剧本查阅",
+      "objectiveLabel": "目标",
+      "objective": "恶兆前继续探索房间、抽取事件/物品/预兆，并在首剧本演示里推进到幸存者结算。",
+      "statusLabel": "当前局面",
+      "haunt": "剧本",
+      "hauntValue": "饥饿",
+      "rooms": "已发现房间",
+      "omens": "弃置预兆"
+    },
     "actions": {
       "move": "移动",
       "cancelMove": "取消移动",
@@ -95,6 +106,7 @@
       "slotReady": "按“探索”翻出新房间",
       "explorable": "可探索",
       "moveTarget": "可移动到此",
+      "preview": "放大查看",
       "rewards": {
         "event": "事件",
         "item": "物品",

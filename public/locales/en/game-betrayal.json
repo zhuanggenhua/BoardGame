@@ -61,6 +61,17 @@
       "toggle": "Flip",
       "close": "Close"
     },
+    "scenario": {
+      "button": "Scenario",
+      "title": "First Scenario",
+      "objectiveLabel": "Objective",
+      "objective": "Before the haunt, keep exploring rooms, draw Event/Item/Omen cards, and advance the first scenario demo to the survivor ending.",
+      "statusLabel": "Current State",
+      "haunt": "Haunt",
+      "hauntValue": "The Hunger",
+      "rooms": "Discovered rooms",
+      "omens": "Discarded omens"
+    },
     "actions": {
       "move": "Move",
       "cancelMove": "Cancel Move",
@@ -95,6 +106,7 @@
       "slotReady": "Press Explore to reveal a new room",
       "explorable": "Explorable",
       "moveTarget": "Move target",
+      "preview": "Zoom preview",
       "rewards": {
         "event": "Event",
         "item": "Item",

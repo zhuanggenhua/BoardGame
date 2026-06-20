@@ -139,10 +139,16 @@ test.describe('山屋惊魂首剧本真实页面截图', () => {
         const roomGrid = page.getByTestId('betrayal-room-grid');
         await expect(roomGrid).toBeVisible();
         await expect(page.getByTestId('betrayal-action-explore')).toBeVisible();
-        await roomGrid.evaluate((element) => {
-            element.scrollLeft = 0;
-            element.scrollTop = 0;
-        });
+        await page.getByTestId('betrayal-room-preview-grand-staircase').click();
+        await expect(page.getByTestId('betrayal-room-preview-overlay')).toBeVisible();
+        await page.getByTestId('betrayal-room-preview-close').click();
+        await expect(page.getByTestId('betrayal-room-preview-overlay')).toBeHidden();
+        await page.getByTestId('betrayal-open-scenario').click();
+        await expect(page.getByTestId('betrayal-scenario-overlay')).toBeVisible();
+        await page.getByTestId('betrayal-scenario-close').click();
+        await expect(page.getByTestId('betrayal-scenario-overlay')).toBeHidden();
+        await saveScreenshot(page, RUNTIME_SCREENSHOT);
+        const initialScrollTop = await roomGrid.evaluate((element) => element.scrollTop);
         const roomGridBox = await roomGrid.boundingBox();
         expect(roomGridBox).not.toBeNull();
         const dragStartX = roomGridBox!.x + roomGridBox!.width / 2;
@@ -151,8 +157,10 @@ test.describe('山屋惊魂首剧本真实页面截图', () => {
         await page.mouse.down();
         await page.mouse.move(dragStartX, dragStartY - 220, { steps: 6 });
         await page.mouse.up();
-        await expect.poll(() => roomGrid.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-        await saveScreenshot(page, RUNTIME_SCREENSHOT);
+        await expect.poll(() => roomGrid.evaluate(
+            (element, previousScrollTop) => Math.abs(element.scrollTop - previousScrollTop),
+            initialScrollTop,
+        )).toBeGreaterThan(30);
 
         await injectCore(page, createEndgameCore());
         await expect(page.getByTestId('betrayal-endgame-screen')).toBeVisible({ timeout: 30000 });

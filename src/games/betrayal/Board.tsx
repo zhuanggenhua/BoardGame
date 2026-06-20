@@ -102,12 +102,23 @@ type RoomGridDragState = {
     hasMoved: boolean;
 };
 
-const ROOM_TILE_SIZE = 164;
-const ROOM_TILE_STEP_X = 212;
-const ROOM_TILE_STEP_Y = 182;
-const ROOM_CANVAS_PADDING = 72;
-const ROOM_CANVAS_MIN_WIDTH = 760;
-const ROOM_CANVAS_MIN_HEIGHT = 1020;
+const ROOM_TILE_SIZE = 190;
+const ROOM_TILE_STEP_X = 198;
+const ROOM_TILE_STEP_Y = 160;
+const ROOM_CANVAS_PADDING = 24;
+const ROOM_CANVAS_MIN_WIDTH = 840;
+const ROOM_CANVAS_MIN_HEIGHT = 760;
+
+const ROOM_VISUAL_LAYOUT: Record<string, { x: number; y: number }> = {
+    'upper-north': { x: 2, y: 0 },
+    'upper-west': { x: 1, y: 1 },
+    'upper-landing': { x: 2, y: 1 },
+    'grand-staircase': { x: 2, y: 2 },
+    'ground-east': { x: 3, y: 2 },
+    'entrance-hall': { x: 2, y: 3 },
+    'basement-landing': { x: 3, y: 3 },
+    'basement-east': { x: 4, y: 3 },
+};
 
 const ASSETS = {
     titleBanner: 'betrayal/ui/title-banner',
@@ -474,18 +485,24 @@ function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | n
     return core.rooms.find((room) => room.state === 'unexplored' && connectedIds.has(room.id)) ?? null;
 }
 
+function resolveRoomVisualPosition(room: BetrayalRoomNode): { x: number; y: number } {
+    return ROOM_VISUAL_LAYOUT[room.id] ?? { x: room.x, y: room.y };
+}
+
 function resolveRoomConnectionEdges(
     room: BetrayalRoomNode,
     roomLookup: Map<string, BetrayalRoomNode>,
 ): RoomConnectionEdge[] {
     const edges: RoomConnectionEdge[] = [];
+    const roomPosition = resolveRoomVisualPosition(room);
     for (const targetRoomId of room.connectedRoomIds) {
         const targetRoom = roomLookup.get(targetRoomId);
         if (!targetRoom) {
             continue;
         }
-        const deltaX = targetRoom.x - room.x;
-        const deltaY = targetRoom.y - room.y;
+        const targetPosition = resolveRoomVisualPosition(targetRoom);
+        const deltaX = targetPosition.x - roomPosition.x;
+        const deltaY = targetPosition.y - roomPosition.y;
         let direction: RoomConnectionDirection | null = null;
         if (deltaX === 1 && deltaY === 0) {
             direction = 'east';
@@ -516,15 +533,18 @@ function resolveRoomTileAsset(room: BetrayalRoomNode, isDiscovered: boolean): st
 }
 
 function resolveRoomCanvasStyle(rooms: BetrayalRoomNode[]): React.CSSProperties {
-    const maxX = Math.max(...rooms.map((room) => room.x), 1);
-    const maxY = Math.max(...rooms.map((room) => room.y), 1);
+    const roomPositions = rooms.map(resolveRoomVisualPosition);
+    const minX = Math.min(...roomPositions.map((position) => position.x), 1);
+    const maxX = Math.max(...roomPositions.map((position) => position.x), 1);
+    const minY = Math.min(...roomPositions.map((position) => position.y), 0);
+    const maxY = Math.max(...roomPositions.map((position) => position.y), 1);
     const width = Math.max(
         ROOM_CANVAS_MIN_WIDTH,
-        ROOM_CANVAS_PADDING * 2 + (maxX - 1) * ROOM_TILE_STEP_X + ROOM_TILE_SIZE,
+        ROOM_CANVAS_PADDING * 2 + (maxX - minX) * ROOM_TILE_STEP_X + ROOM_TILE_SIZE,
     );
     const height = Math.max(
         ROOM_CANVAS_MIN_HEIGHT,
-        ROOM_CANVAS_PADDING * 2 + maxY * ROOM_TILE_STEP_Y + ROOM_TILE_SIZE,
+        ROOM_CANVAS_PADDING * 2 + (maxY - minY) * ROOM_TILE_STEP_Y + ROOM_TILE_SIZE,
     );
 
     return {
@@ -536,9 +556,12 @@ function resolveRoomCanvasStyle(rooms: BetrayalRoomNode[]): React.CSSProperties 
 }
 
 function resolveRoomTileStyle(room: BetrayalRoomNode): React.CSSProperties {
+    const roomPosition = resolveRoomVisualPosition(room);
+    const minX = Math.min(...Object.values(ROOM_VISUAL_LAYOUT).map((position) => position.x), 1);
+    const minY = Math.min(...Object.values(ROOM_VISUAL_LAYOUT).map((position) => position.y), 0);
     return {
-        left: ROOM_CANVAS_PADDING + (room.x - 1) * ROOM_TILE_STEP_X,
-        top: ROOM_CANVAS_PADDING + room.y * ROOM_TILE_STEP_Y,
+        left: ROOM_CANVAS_PADDING + (roomPosition.x - minX) * ROOM_TILE_STEP_X,
+        top: ROOM_CANVAS_PADDING + (roomPosition.y - minY) * ROOM_TILE_STEP_Y,
         width: ROOM_TILE_SIZE,
         height: ROOM_TILE_SIZE,
     };
@@ -1055,6 +1078,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [previewState, setPreviewState] = React.useState<PreviewState>(() => createInitialPreviewState(baseCore));
     const [referenceOpen, setReferenceOpen] = React.useState(false);
     const [referenceSide, setReferenceSide] = React.useState<'front' | 'back'>('front');
+    const [scenarioOpen, setScenarioOpen] = React.useState(false);
+    const [roomPreviewId, setRoomPreviewId] = React.useState<string | null>(null);
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
@@ -1103,6 +1128,38 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         [core.rooms],
     );
     const roomCanvasStyle = React.useMemo(() => resolveRoomCanvasStyle(core.rooms), [core.rooms]);
+    const previewRoom = React.useMemo(
+        () => core.rooms.find((room) => room.id === roomPreviewId) ?? null,
+        [core.rooms, roomPreviewId],
+    );
+    const previewRoomAsset = previewRoom
+        ? resolveRoomTileAsset(previewRoom, previewRoom.state === 'discovered')
+        : null;
+    const focusActiveRoomInView = React.useCallback(() => {
+        const roomGrid = roomGridRef.current;
+        if (!roomGrid) {
+            return;
+        }
+        const activeRoomShell = roomGrid.querySelector<HTMLElement>(`[data-testid="betrayal-room-shell-${core.activeRoomId}"]`);
+        if (!activeRoomShell) {
+            return;
+        }
+        activeRoomShell.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+            behavior: 'auto',
+        });
+    }, [core.activeRoomId]);
+
+    React.useEffect(() => {
+        if (core.phase !== 'preHaunt') {
+            return undefined;
+        }
+        const frameId = window.requestAnimationFrame(() => {
+            focusActiveRoomInView();
+        });
+        return () => window.cancelAnimationFrame(frameId);
+    }, [core.activeRoomId, core.phase, focusActiveRoomInView]);
 
     const phaseItems = React.useMemo(
         () => [{ id: 'preHaunt', label: t('board.phase.preHaunt') }],
@@ -1839,7 +1896,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                 ].join(','),
             }}
         >
-            <div className="mx-auto flex h-full min-h-full w-full max-w-[1680px] flex-col gap-3 px-3 py-3 md:gap-4 md:px-5 md:py-4">
+            <div className="mx-auto flex h-full min-h-full w-full max-w-[1800px] flex-col gap-3 px-3 py-3 md:gap-4 md:px-5 md:py-4">
                 <header className="overflow-hidden rounded-[20px] border border-[#5b4a32] bg-[rgba(9,15,13,0.94)] shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
                     <div className="grid min-h-[76px] grid-cols-[minmax(220px,1fr)_minmax(220px,1.1fr)_minmax(260px,1fr)_72px] items-stretch divide-x divide-[#3e3528]">
                         <div className="flex items-center px-4">
@@ -1898,7 +1955,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     />
                 </header>
 
-                <main className="grid min-h-0 flex-1 gap-4 overflow-y-auto pb-[13.5rem] xl:grid-cols-[306px_minmax(0,1fr)_300px] xl:overflow-hidden xl:pb-0">
+                <main className="grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[13.5rem] xl:grid-cols-[236px_minmax(0,1fr)_220px] xl:overflow-hidden xl:pb-0">
                     <section className="order-2 grid min-h-0 content-start gap-3 xl:order-1 xl:overflow-y-auto xl:pr-1">
                         <article className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4">
                             <div className="flex items-start gap-3">
@@ -2124,7 +2181,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                         <article
                             id="betrayal-room-panel"
-                            className="order-1 flex min-h-[520px] flex-col rounded-[24px] border border-[#3c3328] bg-[rgba(8,15,13,0.76)] p-2 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:min-h-[640px] md:p-3 xl:min-h-0"
+                            className="order-1 flex min-h-[560px] flex-col rounded-[24px] border border-[#3c3328] bg-[rgba(8,15,13,0.76)] p-2 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:min-h-[700px] md:p-3 xl:min-h-0"
                         >
                             <div className="sr-only">
                                 <span data-testid="betrayal-room-latest-feedback">
@@ -2165,7 +2222,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                             <div
                                 ref={roomGridRef}
-                                className="relative min-h-[520px] flex-1 cursor-grab touch-none overflow-auto overscroll-contain rounded-[20px] border border-[#2f2a22] bg-[linear-gradient(180deg,rgba(13,24,20,0.82),rgba(5,10,9,0.96))] shadow-[inset_0_0_30px_rgba(0,0,0,0.34)] [scrollbar-color:#7a6240_rgba(8,12,10,0.72)] active:cursor-grabbing sm:min-h-[560px] md:min-h-[640px]"
+                                className="relative min-h-[560px] flex-1 cursor-grab touch-none overflow-auto overscroll-contain rounded-[20px] border border-[#2f2a22] bg-[linear-gradient(180deg,rgba(13,24,20,0.82),rgba(5,10,9,0.96))] shadow-[inset_0_0_30px_rgba(0,0,0,0.34)] [scrollbar-color:#7a6240_rgba(8,12,10,0.72)] active:cursor-grabbing sm:min-h-[600px] md:min-h-[700px]"
                                 data-testid="betrayal-room-grid"
                                 aria-label={t('board.sections.rooms')}
                                 onPointerDown={handleRoomGridPointerDown}
@@ -2174,7 +2231,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 onPointerCancel={handleRoomGridPointerEnd}
                             >
                                 <div
-                                    className="relative"
+                                    className="relative mx-auto"
                                     data-testid="betrayal-room-canvas"
                                     style={roomCanvasStyle}
                                 >
@@ -2213,21 +2270,25 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             ? t('board.rooms.slotReady')
                                             : t('board.rooms.slotUndiscovered');
                                     return (
-                                        <button
+                                        <div
                                             key={room.id}
-                                            type="button"
-                                            onClick={() => handleMoveToRoom(room.id)}
-                                            disabled={
-                                                !isDiscovered
-                                                || isActive
-                                                || core.movesRemaining <= 0
-                                                || !isReachableRoom
-                                            }
-                                            data-testid={`betrayal-room-${room.id}`}
-                                            title={note}
-                                            className="group absolute overflow-visible rounded-[14px] border bg-[#15110d] p-0 text-left transition duration-200 disabled:cursor-default"
-                                            style={{
-                                                ...resolveRoomTileStyle(room),
+                                            data-testid={`betrayal-room-shell-${room.id}`}
+                                            className="group absolute overflow-visible"
+                                            style={resolveRoomTileStyle(room)}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => handleMoveToRoom(room.id)}
+                                                disabled={
+                                                    !isDiscovered
+                                                    || isActive
+                                                    || core.movesRemaining <= 0
+                                                    || !isReachableRoom
+                                                }
+                                                data-testid={`betrayal-room-${room.id}`}
+                                                title={note}
+                                                className="relative h-full w-full overflow-visible rounded-[14px] border bg-[#15110d] p-0 text-left transition duration-200 disabled:cursor-default"
+                                                style={{
                                                 borderColor: isActive
                                                     ? tone.accent
                                                     : isMoveTarget
@@ -2316,28 +2377,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     <span className="h-3 w-2 rounded-full bg-[rgba(7,26,13,0.36)]" />
                                                 </div>
                                             ) : null}
-                                            <div className="pointer-events-none absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] rounded-[7px] border border-[rgba(234,209,153,0.18)] bg-[rgba(8,10,8,0.68)] px-2 py-1 backdrop-blur-[1px]">
-                                                <div className="min-w-0 w-full">
-                                                    <div className="truncate text-[11px] font-semibold leading-tight tracking-[0.06em] text-[#f3ead6]">
-                                                        {room.name}
-                                                    </div>
-                                                    <div className="mt-0.5 text-[9px] tracking-[0.16em] text-[#bcaf93]">
-                                                        {tone.label}
-                                                    </div>
-                                                    {identityTone && identityLabel ? (
-                                                        <div
-                                                            data-testid={`betrayal-room-identity-${room.id}`}
-                                                            className={`mt-1 flex w-fit rounded-full border px-1.5 py-0.5 text-[9px] font-semibold ${identityTone.badge}`}
-                                                        >
-                                                            {identityLabel}
-                                                        </div>
-                                                    ) : null}
-                                                </div>
-                                                {isActive ? (
-                                                    <div className="sr-only">
-                                                        {t('board.rooms.active')}
-                                                    </div>
+                                            <div className="sr-only">
+                                                <span>{room.name}</span>
+                                                <span>{tone.label}</span>
+                                                {identityTone && identityLabel ? (
+                                                    <span data-testid={`betrayal-room-identity-${room.id}`}>
+                                                        {identityLabel}
+                                                    </span>
                                                 ) : null}
+                                                {isActive ? <span>{t('board.rooms.active')}</span> : null}
                                             </div>
 
                                             <div className="pointer-events-none absolute right-2 top-2 z-10 flex min-h-6 flex-wrap justify-center gap-1.5">
@@ -2370,7 +2418,24 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </span>
                                                 ))}
                                             </div>
-                                        </button>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onPointerDown={(event) => {
+                                                    event.stopPropagation();
+                                                }}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    setRoomPreviewId(room.id);
+                                                }}
+                                                data-testid={`betrayal-room-preview-${room.id}`}
+                                                className="absolute bottom-2 right-2 z-30 grid h-8 w-8 place-items-center rounded-full border border-[rgba(222,192,133,0.5)] bg-[rgba(7,10,8,0.82)] text-[#f0d29a] opacity-75 shadow-[0_6px_14px_rgba(0,0,0,0.34)] transition hover:bg-[rgba(36,28,19,0.92)] hover:opacity-100 focus:opacity-100"
+                                                title={t('board.rooms.preview')}
+                                            >
+                                                <Search size={15} />
+                                                <span className="sr-only">{t('board.rooms.preview')}</span>
+                                            </button>
+                                        </div>
                                     );
                                     })}
                                 </div>
@@ -2496,16 +2561,19 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             <div className="flex justify-end gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setReferenceOpen(true)}
+                                    onClick={() => setScenarioOpen(true)}
+                                    data-testid="betrayal-open-scenario"
                                     className="grid h-14 w-14 place-items-center rounded-[10px] border border-[#58472f] bg-[rgba(18,19,15,0.9)] text-[#d8bf81] transition hover:border-[#8b744d]"
-                                    title={t('board.reference.button')}
+                                    title={t('board.scenario.button')}
                                 >
                                     <BookOpen size={24} />
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() => setRoomPreviewId(core.activeRoomId)}
+                                    data-testid="betrayal-open-active-room-preview"
                                     className="grid h-14 w-14 place-items-center rounded-[10px] border border-[#58472f] bg-[rgba(18,19,15,0.9)] text-[#d8bf81] transition hover:border-[#8b744d]"
-                                    title={latestLogEntry?.text || t('board.feedback.idle')}
+                                    title={t('board.rooms.preview')}
                                 >
                                     <Search size={24} />
                                 </button>
@@ -2574,6 +2642,93 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         draggable={false}
                                     />
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+
+                {previewRoom && previewRoomAsset ? (
+                    <div
+                        className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
+                        data-testid="betrayal-room-preview-overlay"
+                    >
+                        <div className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-[22px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] shadow-[0_24px_60px_rgba(0,0,0,0.46)]">
+                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#4d3f2b] bg-[rgba(16,23,20,0.98)] px-4 py-3 md:px-5">
+                                <div>
+                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                        {t('board.rooms.preview')}
+                                    </div>
+                                    <div className="mt-1 text-sm text-[#e7dcc3]">
+                                        {previewRoom.name}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setRoomPreviewId(null)}
+                                    data-testid="betrayal-room-preview-close"
+                                    className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
+                                >
+                                    {t('board.reference.close')}
+                                </button>
+                            </div>
+                            <div className="overflow-auto p-3 md:p-5">
+                                <div className="flex items-center justify-center overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
+                                    <OptimizedImage
+                                        src={previewRoomAsset}
+                                        locale={effectiveLocale}
+                                        alt={previewRoom.name}
+                                        className="h-auto max-h-[72vh] w-full object-contain md:max-h-[78vh]"
+                                        draggable={false}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+
+                {scenarioOpen ? (
+                    <div
+                        className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
+                        data-testid="betrayal-scenario-overlay"
+                    >
+                        <div className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[22px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] shadow-[0_24px_60px_rgba(0,0,0,0.46)]">
+                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#4d3f2b] bg-[rgba(16,23,20,0.98)] px-4 py-3 md:px-5">
+                                <div>
+                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                        {t('board.scenario.button')}
+                                    </div>
+                                    <div className="mt-1 text-sm text-[#e7dcc3]">
+                                        {t('board.scenario.title')}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setScenarioOpen(false)}
+                                    data-testid="betrayal-scenario-close"
+                                    className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
+                                >
+                                    {t('board.reference.close')}
+                                </button>
+                            </div>
+                            <div className="grid gap-3 overflow-auto p-4 md:grid-cols-[1.1fr_0.9fr] md:p-5">
+                                <section className="rounded-[18px] border border-[#57462f] bg-[rgba(31,23,18,0.72)] p-4">
+                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                        {t('board.scenario.objectiveLabel')}
+                                    </div>
+                                    <p className="mt-2 text-sm leading-6 text-[#e7dcc3]">
+                                        {t('board.scenario.objective')}
+                                    </p>
+                                </section>
+                                <section className="rounded-[18px] border border-[#57462f] bg-[rgba(31,23,18,0.72)] p-4">
+                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
+                                        {t('board.scenario.statusLabel')}
+                                    </div>
+                                    <div className="mt-3 grid gap-2 text-sm text-[#e7dcc3]">
+                                        <div>{t('board.scenario.haunt')}: {t('board.scenario.hauntValue')}</div>
+                                        <div>{t('board.scenario.rooms')}: {core.rooms.filter((room) => room.state === 'discovered').length}</div>
+                                        <div>{t('board.scenario.omens')}: {core.discardCounts.omen}</div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </div>

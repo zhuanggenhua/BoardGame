@@ -133,10 +133,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-grid')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-grid')).toHaveClass('overflow-auto');
         expect(screen.getByTestId('betrayal-room-canvas')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-room-grand-staircase')).toHaveStyle({
-            width: '164px',
-            height: '164px',
+        expect(screen.getByTestId('betrayal-room-shell-grand-staircase')).toHaveStyle({
+            width: '190px',
+            height: '190px',
         });
+        expect(screen.getByTestId('betrayal-room-preview-grand-staircase')).toBeInTheDocument();
         const roomTileSources = Array.from(screen.getByTestId('betrayal-room-grid').querySelectorAll('img'))
             .map((img) => img.getAttribute('data-src'));
         expect(roomTileSources.some((src) => src?.startsWith('betrayal/rooms/'))).toBe(true);
@@ -153,6 +154,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-mobile-jump-decks')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('等待第一步');
         expect(screen.getByTestId('betrayal-open-reference')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-open-scenario')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-open-active-room-preview')).toBeInTheDocument();
         expect(screen.queryByText('下一块会翻到 一层')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-connector-grand-staircase-upper-landing')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-connector-grand-staircase-entrance-hall')).toBeInTheDocument();
@@ -515,5 +518,17 @@ describe('Betrayal Board foundation', () => {
 
         fireEvent.click(screen.getByTestId('betrayal-reference-close'));
         expect(screen.queryByTestId('betrayal-reference-overlay')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('betrayal-room-preview-grand-staircase'));
+        expect(screen.getByTestId('betrayal-room-preview-overlay')).toBeInTheDocument();
+        expect(screen.getByAltText('大楼梯')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-room-preview-close'));
+        expect(screen.queryByTestId('betrayal-room-preview-overlay')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('betrayal-open-scenario'));
+        expect(screen.getByTestId('betrayal-scenario-overlay')).toBeInTheDocument();
+        expect(screen.getByText('首剧本查阅')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-scenario-close'));
+        expect(screen.queryByTestId('betrayal-scenario-overlay')).not.toBeInTheDocument();
     });
 });
