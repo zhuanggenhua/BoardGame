@@ -3514,6 +3514,1140 @@
         }
       }
     },
+    "zh-CN/betrayal/cards/back-event": {
+      "variants": {
+        "png": {
+          "sha256": "4b0e29deef314322a7f15335588fa910ade589345328935c8a6663805af9f3a7",
+          "bytes": 1941141,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/back-item": {
+      "variants": {
+        "png": {
+          "sha256": "61a98b25970c2d35f4bef06f7f90981ff30d1bf2fe27c2530357f0f0096e65af",
+          "bytes": 1269727,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/back-monster": {
+      "variants": {
+        "png": {
+          "sha256": "4df7d6509445ce0141cc7f30ca0d85b03aec73ccfd4655c768ea0d843c058fea",
+          "bytes": 1420817,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/back-omen": {
+      "variants": {
+        "png": {
+          "sha256": "b950e403ba4612302a228766d16b51b5a46eb74ccf4af118844775711b9ac54e",
+          "bytes": 1592029,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/back-traitor": {
+      "variants": {
+        "png": {
+          "sha256": "6595fe30733bfd58ef37bea2bb4be8b61154dab485662ce0ae4b6d04b3e5867a",
+          "bytes": 1567778,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/back-event": {
+      "variants": {
+        "webp": {
+          "sha256": "bd1567b39c2a5d28be638bb5fbb6ebf3c866987259745c1e19ba84a6e8cdce62",
+          "bytes": 286204,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/back-item": {
+      "variants": {
+        "webp": {
+          "sha256": "ff88b140a4d97cd29ea456ccfe09416011a87e32d228ad5e227216a4976ac3ba",
+          "bytes": 81534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/back-monster": {
+      "variants": {
+        "webp": {
+          "sha256": "e366464f8dc73e2c48c75ee0bc3725ed9fc0eb0b5672344fb004269978f6ea26",
+          "bytes": 118298,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/back-omen": {
+      "variants": {
+        "webp": {
+          "sha256": "e94f09db5267b30d9973be1d4c9fdd1d5b95396291099e833a12d065df6a6cc3",
+          "bytes": 173354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/back-traitor": {
+      "variants": {
+        "webp": {
+          "sha256": "1009754ae0fb9bd2ba1d72baa844d8b9d51ad502cc900048bee1bdc4eead1e85",
+          "bytes": 163716,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/monster-reference-zh": {
+      "variants": {
+        "webp": {
+          "sha256": "5d3fb4e3bec47e80c73ea3834e9394f243be4041bf6fa0bf8bf82e7cea92627f",
+          "bytes": 181382,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/player-reference-en-back": {
+      "variants": {
+        "webp": {
+          "sha256": "eb9c5ed0e6db886b63ccd65f209e3ae4262fd313d0d20e37df902b878767920e",
+          "bytes": 284746,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/player-reference-en-front": {
+      "variants": {
+        "webp": {
+          "sha256": "35225e1311db44719e2f0b04799990b8ed179d946af1eb1ef6091da15f469b8b",
+          "bytes": 164116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/player-reference-zh-back": {
+      "variants": {
+        "webp": {
+          "sha256": "9033e889a1ffd12b84eaeb8e725a16fe29250e0bebf849f5daed1a0260879aa4",
+          "bytes": 247278,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/player-reference-zh-front": {
+      "variants": {
+        "webp": {
+          "sha256": "3896e45b032417c5851c0499dd813a9316a7030c2cd3dcc962fa49080c2fc370",
+          "bytes": 166456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/reference-blue-moonlit-howl-zh": {
+      "variants": {
+        "webp": {
+          "sha256": "ef0e621b5d1f649ebadb1004aab06f45785cb90591c7545c8877fb437f6d48ba",
+          "bytes": 189496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/traitor-reference-zh": {
+      "variants": {
+        "webp": {
+          "sha256": "955df3ce826ad160b8b808b21b312f5bd7353fc6d43b6355dc2500982cfb7e2f",
+          "bytes": 112192,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/monster-reference-zh": {
+      "variants": {
+        "png": {
+          "sha256": "2859b664427272ae34f5005ab07f0c1dcae02657bc59708f6dfda52326f27878",
+          "bytes": 1674758,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/player-reference-en-back": {
+      "variants": {
+        "png": {
+          "sha256": "c79a6b9b12bb2b8cb7da39aa828c415470b4e3d89b6affe655f34dd2da1c969c",
+          "bytes": 1992725,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/player-reference-en-front": {
+      "variants": {
+        "png": {
+          "sha256": "cf8daf5291666a8fe06f293aeb3eeabf5a21a31e1a827558948f876b61e21080",
+          "bytes": 1582592,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/player-reference-zh-back": {
+      "variants": {
+        "png": {
+          "sha256": "aca837c584441e0a164b30295b293f2595012b15499393ace400a6d77b70a864",
+          "bytes": 1901755,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/player-reference-zh-front": {
+      "variants": {
+        "png": {
+          "sha256": "16bcb5674d50ee379fd804b5f22771d9cc53aa2152c503dda3218434b1672f23",
+          "bytes": 1619244,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/reference-blue-moonlit-howl-zh": {
+      "variants": {
+        "png": {
+          "sha256": "f88eb3f29c7de79b734c484fecbb0cb58936441ad1695fadd76cd06c09a428e8",
+          "bytes": 1871109,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/traitor-reference-zh": {
+      "variants": {
+        "png": {
+          "sha256": "55c767f7b18a9926f6274c2a8ea9ac1d7f964eda421221dff6e60f03796bf68a",
+          "bytes": 1386807,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/anita-hernandez": {
+      "variants": {
+        "png": {
+          "sha256": "efa3404ebd51de13a8488a5a9ae5b5992e34eac3cc0594b01a56a27a6fc83161",
+          "bytes": 2320442,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/beat-box-bowen": {
+      "variants": {
+        "png": {
+          "sha256": "933d444f53be212146e8643d6c748fb00b3296c4afe27ebc2218ae51d1b72803",
+          "bytes": 2038424,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/anita-hernandez": {
+      "variants": {
+        "webp": {
+          "sha256": "02c7d85259f91949aa8d20d102dbf03a42fcc4ccb9ddf6d7456d60586e5e3d03",
+          "bytes": 241974,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/beat-box-bowen": {
+      "variants": {
+        "webp": {
+          "sha256": "7222d11826abe941c28cdf8583b803a25a81e14ea47c64f5447e08d83c744597",
+          "bytes": 180888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/dan-nguyen-md": {
+      "variants": {
+        "webp": {
+          "sha256": "aef9b4086b69c02856ec92fd8269564b396f654590670fbb8e1136e97854062c",
+          "bytes": 234734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/father-warren-leung": {
+      "variants": {
+        "webp": {
+          "sha256": "ddf4132c1f2e38581473ffe8163d0b6d0d27ae06dd4debd3a992c5e1ce0781ff",
+          "bytes": 222164,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/jade-jones": {
+      "variants": {
+        "webp": {
+          "sha256": "6da60d86a644c4009c35edcdb523ab8bf2003c06f3839258da9cd213d376fc46",
+          "bytes": 252180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/josef-hooper": {
+      "variants": {
+        "webp": {
+          "sha256": "f4c36153eb381680d170c3b5f0039c1995b1316635abceedcbcb360894df0678",
+          "bytes": 234652,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/michelle-monroe": {
+      "variants": {
+        "webp": {
+          "sha256": "d2f576f98da94e9d7026c915b4452150af784e0d7aeae3fe25f7aa859f31a3bd",
+          "bytes": 176604,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/oliver-swift": {
+      "variants": {
+        "webp": {
+          "sha256": "f988c6381917337dc235bba107e74f8202bdd7d0365fb0e883c6e19dde2a38f1",
+          "bytes": 228334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/persephone-puleri": {
+      "variants": {
+        "webp": {
+          "sha256": "4736c364dfe6c5655be3f74b14ad5884495f3914126fbe99c038b5200717f33f",
+          "bytes": 295900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/sammy-angler": {
+      "variants": {
+        "webp": {
+          "sha256": "18c65ab4c6c3b1a3860e1a9848eff6e4b9d8c1c25b9ea62edede7eb45daabe3d",
+          "bytes": 231946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/sera-nguyen": {
+      "variants": {
+        "webp": {
+          "sha256": "bbd96af32b38855abf06f55e7e5ebb0535212adc3486b88cd8a8f226e50a6f9d",
+          "bytes": 186302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/stephanie-richter": {
+      "variants": {
+        "webp": {
+          "sha256": "0a96368bd726f1f1c5497ff547d9312c522daee6b159bb2017d53e9ead881dd7",
+          "bytes": 272312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/compressed/xia": {
+      "variants": {
+        "webp": {
+          "sha256": "957edd338c751016f5b2306953c96ce7f09bfa9370cf1553bbcbde93ba1c0a19",
+          "bytes": 229538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/dan-nguyen-md": {
+      "variants": {
+        "png": {
+          "sha256": "aacd9f5b2afa78d85961cb5bd61f7c686ef0d30d4ba5a81b69b5e72db13f4acd",
+          "bytes": 2331240,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/father-warren-leung": {
+      "variants": {
+        "png": {
+          "sha256": "ad15fd49f173edc646f08137078e8ab2ac7fdbb46d6766606d7ab3f41f9ae252",
+          "bytes": 2267407,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/jade-jones": {
+      "variants": {
+        "png": {
+          "sha256": "40c2d1fdbe3c501e7e968147275311b25334603d38efd8517f544cb60fdbef65",
+          "bytes": 2353742,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/josef-hooper": {
+      "variants": {
+        "png": {
+          "sha256": "d2dffe627ab391729df004b152f3f77a5a38ecf124ce2b84a7f1159357fac312",
+          "bytes": 2243538,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/michelle-monroe": {
+      "variants": {
+        "png": {
+          "sha256": "2675b2221fb2ae17bdfe1a9cb4e701631bcda1c02d844c39c9a27293808c86cb",
+          "bytes": 2070216,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/oliver-swift": {
+      "variants": {
+        "png": {
+          "sha256": "58b50183d7952e915eb7b977a59b4bee8df9d83a4f2384a3b92b958af9adb0f5",
+          "bytes": 2216851,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/persephone-puleri": {
+      "variants": {
+        "png": {
+          "sha256": "2339e99d2e6904f93920ec49e939daa9ef644428fc9534fc2ed3bc6f550cb1ee",
+          "bytes": 2491201,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/sammy-angler": {
+      "variants": {
+        "png": {
+          "sha256": "5980119321efa59157610c13b232aa654b601a22378685e6241cd4a0a4b009bd",
+          "bytes": 2279449,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/sera-nguyen": {
+      "variants": {
+        "png": {
+          "sha256": "73ec450878dbbc308f14577d7be1363270e47c0724bcb659199261d71c455c17",
+          "bytes": 1664521,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/stephanie-richter": {
+      "variants": {
+        "png": {
+          "sha256": "6762e2994315e4afdb7f5f6aa86ee966c6e424adf6fd5cc5a36f68594da5a714",
+          "bytes": 2378117,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/explorers/xia": {
+      "variants": {
+        "png": {
+          "sha256": "f0708000e4052e1c70f7eac5fe970c26098f50039a1347482a560c24db215d03",
+          "bytes": 2259193,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/altar": {
+      "variants": {
+        "png": {
+          "sha256": "dfce291a78d05e7f478163965a508c7aff4efe457eaa40770ae482622cc1299e",
+          "bytes": 183619,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/blessing": {
+      "variants": {
+        "png": {
+          "sha256": "cbef3d29182e2d6261d0184ca294a870defa5d64d66a0883209f04d45914d04e",
+          "bytes": 228107,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/blood": {
+      "variants": {
+        "png": {
+          "sha256": "4a0c9e73671a548d9f11ab03d4b571448091344710e229d1955ec70f91610e37",
+          "bytes": 96869,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/altar": {
+      "variants": {
+        "webp": {
+          "sha256": "09052696e26b411b6f87b804fa0b842f724abfeb0b446ea25a0e5fb0b33b454c",
+          "bytes": 21494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/blessing": {
+      "variants": {
+        "webp": {
+          "sha256": "04ca3e1896d4e8699078fc79eb57e938583a4340cff8ff97d91f01aac59ca97e",
+          "bytes": 33190,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/blood": {
+      "variants": {
+        "webp": {
+          "sha256": "5d17d69195e70d7762b4966854d4358cb35d9338d5ed7d3d9b55bf6229f9d4ef",
+          "bytes": 11640,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/contract": {
+      "variants": {
+        "webp": {
+          "sha256": "ec5b42d5a402cf42e689ea062c145de832614547e95da3fc906e85b60b45ad18",
+          "bytes": 26004,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/food": {
+      "variants": {
+        "webp": {
+          "sha256": "86dea348048f4f4021b2ff5578f6753a5898d7a592d0c5c6c669b3d2ae531678",
+          "bytes": 21318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/hidden": {
+      "variants": {
+        "webp": {
+          "sha256": "97d7d0596b78e90c1097f9add28ff9c73c9c27fd5c620f5f512778b105b8d88f",
+          "bytes": 20958,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/knowledge": {
+      "variants": {
+        "webp": {
+          "sha256": "af3270330950d52d7e665368a18232b5e22593cd858662f95700c7fda463e966",
+          "bytes": 20858,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/might": {
+      "variants": {
+        "webp": {
+          "sha256": "42647e738a441a088f6d6683df1bcd32178d39ce31cf0f6469db805e4fe0eeca",
+          "bytes": 20052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/nest": {
+      "variants": {
+        "webp": {
+          "sha256": "71efcb2eb41657ddc1eeb5a9d2ab132bcb0b0f0cce5113dad8216c0847228333",
+          "bytes": 15004,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-1": {
+      "variants": {
+        "webp": {
+          "sha256": "3cccdc70a35496825ae593d4c6c47934841a03d90b6e952aba8287e2720fe3f9",
+          "bytes": 10236,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-2": {
+      "variants": {
+        "webp": {
+          "sha256": "dcb7a9c8f0584551e1ee9c83b3527496110076b4a20235c5829704d9030745d8",
+          "bytes": 10374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-3": {
+      "variants": {
+        "webp": {
+          "sha256": "0e28b53e7d5ebcc8bc9a95ff217a1caa75cb245bbd589114c439abb9b6c2e3ef",
+          "bytes": 10598,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-4": {
+      "variants": {
+        "webp": {
+          "sha256": "3430aff47319393e3aedc9746dc0d554cd3440efdb3d121c23be28c461c14c31",
+          "bytes": 10970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-5": {
+      "variants": {
+        "webp": {
+          "sha256": "c34d48ab7eba4bb4ec5e824c5fc5752b5bb3b74e4c9cd8996b6418801eb1072f",
+          "bytes": 10490,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-6": {
+      "variants": {
+        "webp": {
+          "sha256": "51afa1c27621ada9039dc093ef992122155e0dbc3a75d694bd4662a549e1aa5c",
+          "bytes": 10946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-7": {
+      "variants": {
+        "webp": {
+          "sha256": "695371ac1242649915a93db517c51ebba4e990264bf9ad7ad75a5a17370942fc",
+          "bytes": 11058,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-8": {
+      "variants": {
+        "webp": {
+          "sha256": "24966990d05f2ebd683e0224fde40945e693b07e24bc63cec79bd7e032b25e89",
+          "bytes": 13956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-9": {
+      "variants": {
+        "webp": {
+          "sha256": "f5196f459d22afeaf7233e3dd6145010c32d062cf1854dac68dad67d36c84fb7",
+          "bytes": 11936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/number-blank": {
+      "variants": {
+        "webp": {
+          "sha256": "6aa866e34e9f164c91031d0db959dd4347defbb2b925d818507dc861df1007be",
+          "bytes": 9358,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/obstacle": {
+      "variants": {
+        "webp": {
+          "sha256": "65b0abbbdd51ba91e2e638e3cd035882253864c7e1faae6c2d5ce071fe7681a7",
+          "bytes": 17512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/off": {
+      "variants": {
+        "webp": {
+          "sha256": "42824ca88895e188f16db137160c45b7938fb8b3c07160aef90a20e0efd1af9e",
+          "bytes": 15028,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/on": {
+      "variants": {
+        "webp": {
+          "sha256": "53b1377a2e1537f974be9099b8e0e2948a868411a83f4946c1282a5dafc70e21",
+          "bytes": 13680,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/portal": {
+      "variants": {
+        "webp": {
+          "sha256": "48d086947968a8fff7e3e6558c3209cf485a2a0042e880cb2042a18978fa3464",
+          "bytes": 24508,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/sanity": {
+      "variants": {
+        "webp": {
+          "sha256": "68fb7f804b3f743ed9b86aadf57deba18bcbe2aa6f0cc9d4be919d95f9f578b4",
+          "bytes": 18410,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/searched": {
+      "variants": {
+        "webp": {
+          "sha256": "82a0b0c288cb071659bfd8cc3c714c7b08370b29abb392b614277e4d768acb6a",
+          "bytes": 20930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/speed": {
+      "variants": {
+        "webp": {
+          "sha256": "b190a75314d3c8ae04a1bacc3ea3c41c26c8f2a2a1d892922a9b5b68d3ec2913",
+          "bytes": 16612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/trait": {
+      "variants": {
+        "webp": {
+          "sha256": "290fa0345ce25cc53f8113960ed7b828ed9f0f59913b1b6899d5682c43d963d8",
+          "bytes": 17646,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/compressed/videotape": {
+      "variants": {
+        "webp": {
+          "sha256": "b3a7e7805e3b0b3187eb33ca2733465cf2208d88ef01b668ff01a1e56974b4cb",
+          "bytes": 21840,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/contract": {
+      "variants": {
+        "png": {
+          "sha256": "bf171462f5aa12aa2aefb225116789ddac7d28dc66e6c22ae629092e5cf5d697",
+          "bytes": 196997,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/food": {
+      "variants": {
+        "png": {
+          "sha256": "a92a9644b90221a12d18d2888909de99439df1bfa7be5ff0d4d7accba8b5bb1d",
+          "bytes": 176046,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/hidden": {
+      "variants": {
+        "png": {
+          "sha256": "673e70fb7ecc849403cec7ce7e864c4195ba81ddaaed9b4ab81bbf5b3a74413d",
+          "bytes": 161537,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/knowledge": {
+      "variants": {
+        "png": {
+          "sha256": "3b63b84766833ffdbd0959886cfd51dc05e6b363b931211db3b7dbd83d58f891",
+          "bytes": 171019,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/might": {
+      "variants": {
+        "png": {
+          "sha256": "d35dd09f4d16a052beaff1c586576e7bf71c6cf5ecd0b003c6d6f7c7b5b10d99",
+          "bytes": 169613,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/nest": {
+      "variants": {
+        "png": {
+          "sha256": "14326fea915d82c4ce1975d453c11cc76fcd95c65a66f0803babe06a3c8a7c15",
+          "bytes": 105108,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-1": {
+      "variants": {
+        "png": {
+          "sha256": "cf4b5a77ba8fb32eeeec54d18c67a78cf39fb03400e1cdfc8fd2e1dade2f88bc",
+          "bytes": 115665,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-2": {
+      "variants": {
+        "png": {
+          "sha256": "9222cf85e7aa7efd85c3bc46c6583b1c29e19f5efefeee5a6e3591155ccab7f3",
+          "bytes": 117629,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-3": {
+      "variants": {
+        "png": {
+          "sha256": "24be2a80ab416c910d70b34e5e5c6c4ffa4f0ff9c2dd69671eaa26761d92848f",
+          "bytes": 118717,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-4": {
+      "variants": {
+        "png": {
+          "sha256": "a3598f5e89a6c18e8d039654e1d5c983326467b56a23a5e7ec19bc3fb391bf37",
+          "bytes": 117569,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-5": {
+      "variants": {
+        "png": {
+          "sha256": "817f7613716680d64d6710d973fb43e07feba270c6b0fb2143c687bdac898f14",
+          "bytes": 118586,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-6": {
+      "variants": {
+        "png": {
+          "sha256": "a0e249ee3c8197dab97739b3f2e3dbf6697ed5eb5efed3a234ca563f77659141",
+          "bytes": 121552,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-7": {
+      "variants": {
+        "png": {
+          "sha256": "9630bb7d541ddcea9d4055eb8facdce5e3c8977de212a43dd1b336ac9289f4e9",
+          "bytes": 114854,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-8": {
+      "variants": {
+        "png": {
+          "sha256": "a86624840bb63fb2c6655c25981570728c55f488605a151703e3daf5fa0c9a72",
+          "bytes": 119016,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-9": {
+      "variants": {
+        "png": {
+          "sha256": "1c5fd4688aab900563c8d7e277d80deac6e40a27c64a66b40ea0a25e7d078ed7",
+          "bytes": 124323,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/number-blank": {
+      "variants": {
+        "png": {
+          "sha256": "35078b39c33f6b02be0d0aae1815b44dcde41c25032fb8376dad0c8239b76732",
+          "bytes": 116120,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/obstacle": {
+      "variants": {
+        "png": {
+          "sha256": "71615c36c8cf3b5e11418b3a0da42dc46abc4f03f710d0e5301bee496ebeace8",
+          "bytes": 134282,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/off": {
+      "variants": {
+        "png": {
+          "sha256": "006f32c33ec5b6237c00ab16e6c9d02f21ac5f28b922d7f147aefdd60fcc1dab",
+          "bytes": 120645,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/on": {
+      "variants": {
+        "png": {
+          "sha256": "1d8a571681e35443c6bb6019493d9f9fd19b94684374e0e58089814d20899bd1",
+          "bytes": 116351,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/portal": {
+      "variants": {
+        "png": {
+          "sha256": "acc69149c1ea557822e50c8519f4ad91050f439179ae10b684f04a0e02ab96fa",
+          "bytes": 207345,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/sanity": {
+      "variants": {
+        "png": {
+          "sha256": "16e4220fe6b350dc7c019cac29919defe5d0e930093070c04927e1bb671d4353",
+          "bytes": 163193,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/searched": {
+      "variants": {
+        "png": {
+          "sha256": "b0c783477494a1aea216660a4b5395d6ac39861d0a5d831399103fcc82c6610d",
+          "bytes": 165158,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/speed": {
+      "variants": {
+        "png": {
+          "sha256": "66abe76764f24eac3f006549c96b188690c00218fd0723e00c60792faefb7d26",
+          "bytes": 156054,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/trait": {
+      "variants": {
+        "png": {
+          "sha256": "0c29441c16fb4dcebe21ed6e466c9c458861d1d9e12023c9dcfb6bc492418e47",
+          "bytes": 162669,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/markers/videotape": {
+      "variants": {
+        "png": {
+          "sha256": "1c13765205b7597597f444e0c24fef4fec107c8dd06f2a01d6ad0b3b77864c4c",
+          "bytes": 193175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/clawing-thing": {
+      "variants": {
+        "png": {
+          "sha256": "b16b1defd77996eb3f843f39c43fb541a99ad5489215c690310580623678ab26",
+          "bytes": 2021279,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/compressed/clawing-thing": {
+      "variants": {
+        "webp": {
+          "sha256": "b6051c88874fec9b1ce677fc6e34e8797efbe74ef5df8ac3ed2ed03797c6fe18",
+          "bytes": 161602,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/compressed/spirit": {
+      "variants": {
+        "webp": {
+          "sha256": "77ee09b5e34ec8d48796601aff453a31a5a3a9ac20ecf925ea79af4814f805e4",
+          "bytes": 145402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/compressed/werewolf": {
+      "variants": {
+        "webp": {
+          "sha256": "5bd1e6f454ab1d77ed19c786fb2f0c623b67161a0b13b4780625b8b8cc97176a",
+          "bytes": 146500,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/spirit": {
+      "variants": {
+        "png": {
+          "sha256": "47645507898ffc78ae8218da2566a06128aac998bb60dd7874b992d0947a8567",
+          "bytes": 1771267,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/monsters/werewolf": {
+      "variants": {
+        "png": {
+          "sha256": "8650589a45408b0576da6e260a4b6439e9d5f42dd0ce22733ac8a7f8d6057364",
+          "bytes": 1525352,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/room-back-basement": {
+      "variants": {
+        "webp": {
+          "sha256": "68271b091625c870d635d25adef4c8e2fd5e50a1d829d92c8a77df06578816a0",
+          "bytes": 8084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/room-back-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "42f6b5e3c0f6ed13c9de3cccd4715c48dc3c215293ce6098cf181468a531caf1",
+          "bytes": 7976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/sunroom": {
+      "variants": {
+        "webp": {
+          "sha256": "f4cb2dd7b578efa16725d0f9702f26ab6c8d376a2aeea842a56da50799d3c917",
+          "bytes": 11374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/compressed/trophy-room": {
+      "variants": {
+        "webp": {
+          "sha256": "85018580cc961bc1b135e0758e20b486f0fec7c3d045e1d2ad32f574fba0a181",
+          "bytes": 11656,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/room-back-basement": {
+      "variants": {
+        "png": {
+          "sha256": "549725b45bb7529e154b02b66656a379ff6881b43960d781ae04fbc29a30bba6",
+          "bytes": 376276,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/room-back-ground": {
+      "variants": {
+        "png": {
+          "sha256": "88534dbcbd490618e37526c581aa20db69a2f545979120184472cdcc15af3f24",
+          "bytes": 382596,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/sunroom": {
+      "variants": {
+        "png": {
+          "sha256": "2ac0193c08ee05f363ce24f5f06f36510d90efc8be1dfcf974255f34d4cf7336",
+          "bytes": 504916,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/rooms/trophy-room": {
+      "variants": {
+        "png": {
+          "sha256": "1b0b1c606c357723fffb74202274b0d86bbd83acb7c408910d9e6978cf47d5ef",
+          "bytes": 525672,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "e274bf22d3a7323a467515ad09e03321cc7912b48eaa1c35b99f5b1216dc3696",
+          "bytes": 120262,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/thumbnails/cover": {
+      "variants": {
+        "png": {
+          "sha256": "73eec70ff289732232744452708ae01b784a11ffe99ced6ae215208c0ff34cac",
+          "bytes": 1293977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/ui/compressed/title-banner": {
+      "variants": {
+        "webp": {
+          "sha256": "e274bf22d3a7323a467515ad09e03321cc7912b48eaa1c35b99f5b1216dc3696",
+          "bytes": 120262,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/ui/compressed/trait-track-0-9": {
+      "variants": {
+        "webp": {
+          "sha256": "5b14f889b708c030d5e68b5a38306b7ecec6bbff5fce9ac42b4443b68054eb0d",
+          "bytes": 103510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/ui/title-banner": {
+      "variants": {
+        "png": {
+          "sha256": "73eec70ff289732232744452708ae01b784a11ffe99ced6ae215208c0ff34cac",
+          "bytes": 1293977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/ui/trait-track-0-9": {
+      "variants": {
+        "png": {
+          "sha256": "60e425a633dd43c52862fc8611ef8b5106cb280f349b4b2e920e7abf98db3993",
+          "bytes": 1227181,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/cardia/board/compressed/background": {
       "variants": {
         "webp": {

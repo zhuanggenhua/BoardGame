@@ -1,8 +1,25 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const rootDir = process.cwd();
-const eslintCli = path.join(rootDir, 'node_modules', 'eslint', 'bin', 'eslint.js');
+
+function resolveEslintCli(startDir) {
+    let currentDir = path.resolve(startDir);
+    while (true) {
+        const candidate = path.join(currentDir, 'node_modules', 'eslint', 'bin', 'eslint.js');
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+        const parentDir = path.dirname(currentDir);
+        if (parentDir === currentDir) {
+            throw new Error(`找不到 ESLint CLI：从 ${startDir} 向上查找 node_modules/eslint/bin/eslint.js 失败`);
+        }
+        currentDir = parentDir;
+    }
+}
+
+const eslintCli = resolveEslintCli(rootDir);
 
 const allFiles = process.argv.slice(2);
 const INITIAL_BATCH_SIZE = 20;

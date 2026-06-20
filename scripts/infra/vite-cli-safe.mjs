@@ -1,9 +1,35 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import { installViteWindowsNetUseBypass } from './vite-windows-net-use-bypass.mjs';
+
+function resolveViteCliEntry() {
+    const searchRoots = [
+        process.cwd(),
+        path.dirname(fileURLToPath(import.meta.url)),
+    ];
+
+    for (const root of searchRoots) {
+        let current = path.resolve(root);
+        while (true) {
+            const candidate = path.join(current, 'node_modules', 'vite', 'bin', 'vite.js');
+            if (fs.existsSync(candidate)) {
+                return candidate;
+            }
+
+            const parent = path.dirname(current);
+            if (parent === current) {
+                break;
+            }
+            current = parent;
+        }
+    }
+
+    throw new Error('未找到 vite/bin/vite.js，请确认 node_modules 是否可用');
+}
 
 export async function runViteCli(args = process.argv.slice(2)) {
     installViteWindowsNetUseBypass();
@@ -21,7 +47,7 @@ export async function runViteCli(args = process.argv.slice(2)) {
     const originalArgv = process.argv;
     process.argv = [process.execPath, fileURLToPath(import.meta.url), ...viteArgs];
     try {
-        await import(new URL('../../node_modules/vite/bin/vite.js', import.meta.url));
+        await import(pathToFileURL(resolveViteCliEntry()).href);
     } finally {
         process.argv = originalArgv;
     }

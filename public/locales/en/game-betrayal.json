@@ -1,0 +1,157 @@
+{
+  "title": "Betrayal at House on the Hill",
+  "description": "A 3-6 player horror exploration board game. This foundation skeleton locks the runtime board layout, asset paths, and the entry point for later gameplay work.",
+  "players": "3-6 Players",
+  "board": {
+    "phase": {
+      "preHaunt": "Pre-Haunt"
+    },
+    "sections": {
+      "currentExplorer": "Current Explorer",
+      "traits": "Trait Track",
+      "inventory": "Inventory",
+      "players": "Party Summary",
+      "turnFlow": "Turn Flow",
+      "rooms": "Room Board",
+      "actions": "Action Bar",
+      "decks": "Decks",
+      "discard": "Discard",
+      "summary": "Table Summary",
+      "activity": "Earlier Steps"
+    },
+    "status": {
+      "currentTurn": "Current Turn: {{player}}",
+      "movesRemaining": "Moves {{count}}",
+      "recommendedAction": "Recommended: {{action}}",
+      "activeExplorer": "Active Explorer: {{name}}",
+      "previewMode": "Clickable preview",
+      "selectedCard": "Selected: {{card}}",
+      "noSelectedCard": "No card selected",
+      "exploreTarget": "Next reveal goes to {{room}}",
+      "tradeTarget": "Trade with: {{player}}",
+      "noTradeTargets": "No teammate is in the same room",
+      "turnHintMove": "Reach: {{targets}}",
+      "turnHintExplore": "Reveal: {{floor}}",
+      "turnHintHold": "Stay in this room",
+      "focusMoveTarget": "Next: {{room}}",
+      "focusMoveMode": "Only left: {{room}}",
+      "focusTradeTarget": "Trade with: {{player}}",
+      "focusUseCard": "Use: {{card}}",
+      "actionCueMoveMode": "Now: tap a green room",
+      "actionCueMoveSingle": "Now: tap {{room}}",
+      "actionCueMoveMany": "Now: tap a green room",
+      "actionCueExplore": "Now: tap Explore for {{floor}}",
+      "actionCueUse": "Now: tap Use",
+      "actionCueUseCard": "Now: use {{card}}",
+      "actionCueTrade": "Now: tap Trade",
+      "actionCueTradePlayer": "Now: trade with {{player}}",
+      "actionCueEndTurn": "Now: tap End Turn",
+      "usePreview": "Use: {{effect}}",
+      "cardUsedThisTurn": "Used this turn",
+      "cardUsedTag": "Used"
+    },
+    "feedback": {
+      "label": "Latest",
+      "idle": "Waiting for the first action"
+    },
+    "reference": {
+      "button": "Reference",
+      "front": "Player reference front",
+      "back": "Player reference back",
+      "toggle": "Flip",
+      "close": "Close"
+    },
+    "actions": {
+      "move": "Move",
+      "cancelMove": "Cancel Move",
+      "explore": "Explore",
+      "trade": "Trade",
+      "use": "Use",
+      "endTurn": "End Turn"
+    },
+    "traits": {
+      "might": "Might",
+      "speed": "Speed",
+      "knowledge": "Knowledge",
+      "sanity": "Sanity"
+    },
+    "inventory": {
+      "item": "Item",
+      "omen": "Omen"
+    },
+    "decks": {
+      "omen": "Omen Deck",
+      "item": "Item Deck",
+      "event": "Event Deck",
+      "faceUp": "Counts and entry points only for now",
+      "emptySlot": "Empty slot"
+    },
+    "rooms": {
+      "active": "Active Room",
+      "unknown": "Unknown Room",
+      "tilePlaceholder": "Room tile pending",
+      "ready": "Move here",
+      "slotUndiscovered": "Not revealed yet",
+      "slotReady": "Press Explore to reveal a new room",
+      "explorable": "Explorable",
+      "moveTarget": "Move target",
+      "rewards": {
+        "event": "Event",
+        "item": "Item",
+        "omen": "Omen"
+      },
+      "discovered": {
+        "event": "Event resolved",
+        "item": "Item discovered",
+        "omen": "Omen discovered"
+      }
+    },
+    "players": {
+      "inventoryCount": "Holding {{count}}",
+      "sameRoom": "Same room",
+      "tradeTarget": "Trade target"
+    },
+    "summary": {
+      "objective": "Current Objective",
+      "objectiveValue": "Pre-haunt scouting",
+      "next": "Next Step",
+      "nextValue": "Prioritize {{action}}"
+    },
+    "discovery": {
+      "label": "Discovery",
+      "eventResolved": "Immediate effect",
+      "addedToInventory": "Added to inventory",
+      "readyToUse": "Selected and ready to use"
+    },
+    "useEffects": {
+      "move": "Move {{value}}",
+      "trait": "{{trait}} {{value}}"
+    },
+    "activity": {
+      "earlierEmpty": "No earlier actions yet",
+      "idle": "Click a room or action to walk through one preview turn.",
+      "moveToRoom": "{{explorer}} moved to {{room}}",
+      "exploreEvent": "{{explorer}} triggered an event card",
+      "exploreCard": "{{explorer}} picked up {{card}}",
+      "exploreRoomEvent": "{{explorer}} explored {{room}} and triggered an event card",
+      "exploreRoomEventResolved": "{{explorer}} explored {{room}} and hit {{card}} ({{effect}})",
+      "exploreRoomCard": "{{explorer}} explored {{room}} and picked up {{card}}",
+      "useCard": "{{explorer}} used {{card}}",
+      "useCardMove": "{{explorer}} used {{card}} and gained {{value}} extra move",
+      "useCardTrait": "{{explorer}} used {{card}} and gained {{trait}} +{{value}}",
+      "cardAlreadyUsed": "{{card}} has already been used this turn",
+      "tradeCard": "{{from}} handed {{card}} to {{to}}",
+      "chooseMoveTarget": "Choose a discovered room to move into",
+      "cancelMoveTarget": "Move targeting cancelled",
+      "noMoveTargets": "There is no discovered room you can move to right now",
+      "noTradeTargets": "There is no teammate in the same room to trade with",
+      "nextExplorer": "{{explorer}} is now active",
+      "nextExplorerWithTargets": "{{explorer}} is now active and can move to {{targets}}",
+      "decksEmpty": "No explorable deck remains",
+      "noExploreSlots": "No unrevealed room slot is available right now"
+    }
+  },
+  "errors": {
+    "readOnly": "This is a read-only foundation skeleton. Gameplay commands are not enabled yet."
+  }
+}

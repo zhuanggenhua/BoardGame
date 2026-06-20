@@ -408,6 +408,35 @@ export function buildDiceModifyConfigSemanticSignature(config: unknown): string 
     });
 }
 
+export function buildPendingDamageSemanticSignature(pendingDamage: unknown): string {
+    if (!isPlainRecord(pendingDamage)) {
+        return '';
+    }
+
+    return JSON.stringify({
+        id: typeof pendingDamage.id === 'string' ? pendingDamage.id : null,
+        responderId: typeof pendingDamage.responderId === 'string' ? pendingDamage.responderId : null,
+        responseType: typeof pendingDamage.responseType === 'string' ? pendingDamage.responseType : null,
+        currentDamage: typeof pendingDamage.currentDamage === 'number' ? pendingDamage.currentDamage : null,
+        sourceAbilityId: typeof pendingDamage.sourceAbilityId === 'string' ? pendingDamage.sourceAbilityId : null,
+        tokenUsageTotals: pendingDamage.tokenUsageTotals ?? null,
+    });
+}
+
+export function buildPendingBonusDiceSettlementSemanticSignature(settlement: unknown): string {
+    if (!isPlainRecord(settlement)) {
+        return '';
+    }
+
+    return JSON.stringify({
+        id: typeof settlement.id === 'string' ? settlement.id : null,
+        attackerId: typeof settlement.attackerId === 'string' ? settlement.attackerId : null,
+        displayOnly: settlement.displayOnly === true ? true : null,
+        rerollCount: typeof settlement.rerollCount === 'number' ? settlement.rerollCount : null,
+        dice: settlement.dice ?? null,
+    });
+}
+
 export function buildMultistepChoiceMetaSemanticSignature(meta: unknown): string {
     if (!meta || typeof meta !== 'object') {
         return '';

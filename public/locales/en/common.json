@@ -186,6 +186,11 @@
     "matchTitle": "{{game}} - Match"
   },
   "games": {
+    "betrayal": {
+      "title": "Betrayal at House on the Hill",
+      "description": "A 3-6 player horror exploration board game with the runtime skeleton, asset tree, and gameplay entry point now locked.",
+      "players": "3-6 Players"
+    },
     "qidahen": {
       "title": "Seven Hatreds",
       "description": "A heavy three-faction strategy game set in 17th-century Northeast Asia, driven by action wheel timing, cards, area control, block units, and multi-step battles.",

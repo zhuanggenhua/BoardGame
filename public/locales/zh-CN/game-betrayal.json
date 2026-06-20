@@ -1,0 +1,157 @@
+{
+  "title": "山屋惊魂",
+  "description": "3-6 人恐怖探索桌游。当前已接入运行时 foundation skeleton，用于锁定牌桌布局、资源路径与后续玩法实施入口。",
+  "players": "3-6 人",
+  "board": {
+    "phase": {
+      "preHaunt": "恶兆前"
+    },
+    "sections": {
+      "currentExplorer": "当前探索者",
+      "traits": "属性轨道",
+      "inventory": "当前持有区",
+      "players": "队友摘要",
+      "turnFlow": "回合流",
+      "rooms": "房间主视区",
+      "actions": "动作条",
+      "decks": "牌堆区",
+      "discard": "弃牌区",
+      "summary": "局面摘要",
+      "activity": "稍早记录"
+    },
+    "status": {
+      "currentTurn": "当前回合：{{player}}",
+      "movesRemaining": "剩余移动 {{count}}",
+      "recommendedAction": "推荐动作：{{action}}",
+      "activeExplorer": "行动者：{{name}}",
+      "previewMode": "可点击预演",
+      "selectedCard": "已选：{{card}}",
+      "noSelectedCard": "未选卡牌",
+      "exploreTarget": "下一块会翻到 {{room}}",
+      "tradeTarget": "可交易给：{{player}}",
+      "noTradeTargets": "当前没有同房间队友",
+      "turnHintMove": "可前往：{{targets}}",
+      "turnHintExplore": "可翻：{{floor}}",
+      "turnHintHold": "暂留本房间",
+      "focusMoveTarget": "下一站：{{room}}",
+      "focusMoveMode": "只剩：{{room}}",
+      "focusTradeTarget": "交易给：{{player}}",
+      "focusUseCard": "使用：{{card}}",
+      "actionCueMoveMode": "现在：点绿色房间",
+      "actionCueMoveSingle": "现在：点{{room}}",
+      "actionCueMoveMany": "现在：点绿色房间",
+      "actionCueExplore": "现在：点探索翻{{floor}}",
+      "actionCueUse": "现在：点使用",
+      "actionCueUseCard": "现在：点使用{{card}}",
+      "actionCueTrade": "现在：点交易",
+      "actionCueTradePlayer": "现在：点交易给{{player}}",
+      "actionCueEndTurn": "现在：点结束回合",
+      "usePreview": "使用：{{effect}}",
+      "cardUsedThisTurn": "本回合已用",
+      "cardUsedTag": "已用"
+    },
+    "feedback": {
+      "label": "刚发生",
+      "idle": "等待第一步"
+    },
+    "reference": {
+      "button": "参考卡",
+      "front": "玩家参考卡正面",
+      "back": "玩家参考卡背面",
+      "toggle": "翻面",
+      "close": "收起"
+    },
+    "actions": {
+      "move": "移动",
+      "cancelMove": "取消移动",
+      "explore": "探索",
+      "trade": "交易",
+      "use": "使用",
+      "endTurn": "结束回合"
+    },
+    "traits": {
+      "might": "力量",
+      "speed": "速度",
+      "knowledge": "知识",
+      "sanity": "神志"
+    },
+    "inventory": {
+      "item": "物品",
+      "omen": "预兆"
+    },
+    "decks": {
+      "omen": "预兆牌堆",
+      "item": "物品牌堆",
+      "event": "事件牌堆",
+      "faceUp": "当前仅展示计数与入口",
+      "emptySlot": "空槽"
+    },
+    "rooms": {
+      "active": "当前房间",
+      "unknown": "未知房间",
+      "tilePlaceholder": "房间板块待接入",
+      "ready": "可移动到此",
+      "slotUndiscovered": "尚未翻出",
+      "slotReady": "按“探索”翻出新房间",
+      "explorable": "可探索",
+      "moveTarget": "可移动到此",
+      "rewards": {
+        "event": "事件",
+        "item": "物品",
+        "omen": "预兆"
+      },
+      "discovered": {
+        "event": "事件已触发",
+        "item": "发现物品",
+        "omen": "发现预兆"
+      }
+    },
+    "players": {
+      "inventoryCount": "持有 {{count}}",
+      "sameRoom": "同房间",
+      "tradeTarget": "交易对象"
+    },
+    "summary": {
+      "objective": "当前目标",
+      "objectiveValue": "恶兆前探索",
+      "next": "下一步",
+      "nextValue": "优先 {{action}}"
+    },
+    "discovery": {
+      "label": "探索结果",
+      "eventResolved": "即时生效",
+      "addedToInventory": "已加入持有区",
+      "readyToUse": "已选中，可直接使用"
+    },
+    "useEffects": {
+      "move": "移动 {{value}}",
+      "trait": "{{trait}} {{value}}"
+    },
+    "activity": {
+      "earlierEmpty": "前面还没有动作",
+      "idle": "点击房间或动作条，先走一轮预演。",
+      "moveToRoom": "{{explorer}}移动到{{room}}",
+      "exploreEvent": "{{explorer}}触发了一张事件牌",
+      "exploreCard": "{{explorer}}拿到了{{card}}",
+      "exploreRoomEvent": "{{explorer}}探索到{{room}}，触发了一张事件牌",
+      "exploreRoomEventResolved": "{{explorer}}探索到{{room}}，事件：{{card}}（{{effect}}）",
+      "exploreRoomCard": "{{explorer}}探索到{{room}}，拿到了{{card}}",
+      "useCard": "{{explorer}}使用了{{card}}",
+      "useCardMove": "{{explorer}}用{{card}}稳住路线，额外获得 {{value}} 点移动",
+      "useCardTrait": "{{explorer}}用{{card}}调整状态，{{trait}} +{{value}}",
+      "cardAlreadyUsed": "{{card}}本回合已经使用过了",
+      "tradeCard": "{{from}}把{{card}}交给了{{to}}",
+      "chooseMoveTarget": "选择一个已发现房间完成移动",
+      "cancelMoveTarget": "已退出移动选目标",
+      "noMoveTargets": "当前没有可移动到的已发现房间",
+      "noTradeTargets": "当前没有可交易的同房间队友",
+      "nextExplorer": "轮到{{explorer}}",
+      "nextExplorerWithTargets": "轮到{{explorer}}，可前往{{targets}}",
+      "decksEmpty": "当前没有可探索的牌堆",
+      "noExploreSlots": "这一局面暂时没有可翻出的房间"
+    }
+  },
+  "errors": {
+    "readOnly": "当前是只读 foundation skeleton，尚未开放正式玩法命令。"
+  }
+}

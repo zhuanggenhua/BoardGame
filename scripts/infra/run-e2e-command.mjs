@@ -12,7 +12,22 @@ import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 
-const playwrightCli = path.resolve(process.cwd(), 'node_modules', 'playwright', 'cli.js');
+function resolvePlaywrightCli(startDir) {
+    let currentDir = path.resolve(startDir);
+    while (true) {
+        const candidate = path.join(currentDir, 'node_modules', 'playwright', 'cli.js');
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+        const parentDir = path.dirname(currentDir);
+        if (parentDir === currentDir) {
+            throw new Error(`找不到 Playwright CLI：从 ${startDir} 向上查找 node_modules/playwright/cli.js 失败`);
+        }
+        currentDir = parentDir;
+    }
+}
+
+const playwrightCli = resolvePlaywrightCli(process.cwd());
 const runtimeNode = process.env.PW_NODE_BINARY || process.execPath;
 const PREFLIGHT_CACHE_PATH = path.resolve(process.cwd(), '.tmp', 'e2e-preflight-cache.json');
 const CLEANUP_CACHE_TTL_MS = 90_000;

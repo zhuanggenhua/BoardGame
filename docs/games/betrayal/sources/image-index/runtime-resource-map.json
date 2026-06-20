@@ -1,0 +1,380 @@
+[
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/ui/title-banner.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1830158443002929094DBA6A15D2E7F846B1A7D8E5E303408E79FDB62BA.png",
+    "meaning": "山屋惊魂英文标题横幅",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/thumbnails/cover.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1830158443002929094DBA6A15D2E7F846B1A7D8E5E303408E79FDB62BA.png",
+    "meaning": "大厅缩略图候选：标题横幅",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/ui/trait-track-0-9.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc183015844300292923083A1B6A216F0B1CDB823896A1F1DE48FF748C6F0.png",
+    "meaning": "0-9 数字轨道横条",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/trophy-room.png",
+    "sourceFile": "contact-11-1425-1426.jpg",
+    "meaning": "房间牌正面裁片：Trophy Room / 奖杯室，当前用于运行时真实房间牌素材占位",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/sunroom.png",
+    "sourceFile": "contact-11-1425-1426.jpg",
+    "meaning": "房间牌正面裁片：Sunroom / 日光室，当前用于运行时真实房间牌素材占位",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-back-ground.png",
+    "sourceFile": "contact-11-1425-1426.jpg",
+    "meaning": "房间牌背面裁片：Ground / 一层，当前用于未探索房间槽",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-back-basement.png",
+    "sourceFile": "contact-11-1425-1426.jpg",
+    "meaning": "房间牌背面裁片：Basement / 地下，当前用于未探索房间槽",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/back-traitor.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310181969442D8E256407E0D96B428083D42CE9C2A0DC774B15B.png",
+    "meaning": "背面：Traitor / 叛徒",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/back-monster.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018196964025D0AAAE9A3CF5AE59130148F4E789F6535925B7.png",
+    "meaning": "背面：Monster / 怪物",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/player-reference-en-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310181969723D9A45CEE4F1EE7E3172FD6DAD43B5D96F74F47C4.png",
+    "meaning": "英文玩家参考卡正面",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/player-reference-en-back.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101819698297DE240552483ECABBA53893B7C34DE841B504CE6.png",
+    "meaning": "英文玩家参考卡背面",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/back-omen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310181972167951F809E891BD4EDDA61AED94B5CBE8F625C413F.png",
+    "meaning": "背面：Omen / 预兆",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/back-item.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101819761185B0DE6BF2A6243E15738B425CCEC5D00BA690EC3.png",
+    "meaning": "背面：Item / 物品",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/back-event.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310181982789F92515BC37D06842F469AF86EA7C6EF216393032.png",
+    "meaning": "背面：Event / 事件",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/traitor-reference-zh.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938615303CA9D0058D99360DA524CC34B0256E629B091196.png",
+    "meaning": "中文叛徒参考卡",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/monster-reference-zh.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938617221E6F6917FFAEF689FA66A2C2AB20373AC59864B2.png",
+    "meaning": "中文怪物参考卡",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/player-reference-zh-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938619281538B624E9448757F5BD158AE194CF79E22E8999.png",
+    "meaning": "中文玩家参考卡正面",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/player-reference-zh-back.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938620469AC388FC61D461A202E1A861DE6D84BF220B8552.png",
+    "meaning": "中文玩家参考卡背面",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/reference-blue-moonlit-howl-zh.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc2008073659346876433821AF27C8D1ED64FB90F21E8F356C77F855BEB1F.png",
+    "meaning": "蓝色中文参考/剧本提示卡，文字含“月下狼嚎”",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/stephanie-richter.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993834949E013A5C2D7C03DC98E7FAFC04D9A2BFC3D414398.png",
+    "meaning": "探索者：Stephanie Richter / 斯蒂芬妮·里希特",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/persephone-puleri.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993835165610F6351E93DB3EA07D2AC757EB72EB0014D5905.png",
+    "meaning": "探索者：Persephone Puleri / 珀耳塞福涅·普莱里",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/sammy-angler.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993835295B97B46B410BEA126047B34D641DD47C956EC0CD8.png",
+    "meaning": "探索者：Sammy Angler / 萨米·安格勒",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/jade-jones.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993835449C66E295B65EF9722270138253133E1F37F6E71D7.png",
+    "meaning": "探索者：Jade Jones / 杰德·琼斯",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/beat-box-bowen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc191686303399383559689D6FA73E099CBCCD287D4D37A5B2AE9438E83E9.png",
+    "meaning": "探索者：Beat Box Bowen",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/michelle-monroe.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993835847FBC57EB3D429BFFF2983DEFCA2494616F18DFA84.png",
+    "meaning": "探索者：Michelle Monroe / 米歇尔·门罗",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/oliver-swift.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993835967D1AAC43F28804750BE97245516990ACB0C296D7C.png",
+    "meaning": "探索者：Oliver Swift / 奥利弗·斯威夫特",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/xia.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993836583D10B7914912CDBDB2C230A41E54A9805E7D28FF4.png",
+    "meaning": "探索者：Xia / 夏",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/anita-hernandez.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938367058028A6A10216115BA853AC4E72AB92F829978879.png",
+    "meaning": "探索者：Anita Hernandez / 安妮塔·赫尔南德斯",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/josef-hooper.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938447799CD8F67BF7C3D8808CDAEF179D5B50B0CF837399.png",
+    "meaning": "探索者：Josef Hooper / 约瑟夫·胡珀",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/dan-nguyen-md.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc19168630339938364616BACD85F6709DD5820F0FA5B854942FFA6D1FE2F.png",
+    "meaning": "探索者：Dan Nguyen, M.D. / 阮单",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/father-warren-leung.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1916863033993836284A14530C81EF0FA4F73EC3A8E8F63A73329D7C706.png",
+    "meaning": "探索者：Father Warren Leung / 神父梁沃伦",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/explorers/sera-nguyen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc20080736593468736877F094AEF25AAF97D62BCD640F5E944C6C4B6C60B.png",
+    "meaning": "探索者：Sera Nguyen / 塞拉·阮",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/monsters/werewolf.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc2008073659346873410F043F55A6D698E4C7869E9F8290474D17ACCA7DB.png",
+    "meaning": "怪物卡：Werewolf / 狼人",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/monsters/clawing-thing.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc3106424570790058082384E6DC1EBF73DEC35DB0528077680152C544E.png",
+    "meaning": "怪物卡：魔爪响叮当",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/monsters/spirit.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc31064245707900991140CDE2AA60F22E5F72E22B0C516F07EA4881DBF.png",
+    "meaning": "怪物卡：精灵",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-1.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182002455367F6E3604E028BD5A419DDB70FA45D7F3CFDF94.png",
+    "meaning": "数字标记 1",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-blank.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200253449034CEC6845BCAA0199277268C0C2FD09E5CCA6.png",
+    "meaning": "空白数字标记",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-2.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200260227B70A929CB2DBC511793A6343C917A117A8F0E2.png",
+    "meaning": "数字标记 2",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-3.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820026588BD97CFEE4CDF6C88362314097ED5CEFB1057003.png",
+    "meaning": "数字标记 3",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-4.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182002737A936862BF0DA41494CDDCB73ECB7E399FB9E1F03.png",
+    "meaning": "数字标记 4",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-5.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820028219B8B535FBF332F9679EA8A45BA7CB9E8BA472C18.png",
+    "meaning": "数字标记 5",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-6.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182002897B3D6D2F64CCE3ADE56923B2BAFBAE51465E9CD8A.png",
+    "meaning": "数字标记 6",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-7.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820029745874C829CA41AD424B85D3C85B3C87C39E65FFB5.png",
+    "meaning": "数字标记 7",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-8.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200305833D28A823E6B3BFEE279A046961F5318E097D80B.png",
+    "meaning": "数字标记 8",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/number-9.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003152B99C482983570EAE8F2B6D50015B356701CD13EF.png",
+    "meaning": "数字标记 9",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/altar.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200324331A489104AC726F03E1B129B709CC2B01C9494A0.png",
+    "meaning": "标记：Altar / 祭坛",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/blessing.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003304F262CF39857544D8FA8C5BDC352D8B57AF0AB138.png",
+    "meaning": "标记：Blessing / 祝福",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/blood.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200335807837467E7F9F5584A5DC944CA113A6A7138CFC5.png",
+    "meaning": "标记：Blood / 血",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/contract.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200342248E48A7C0513E1C11B57989858391305FDE7C8D8.png",
+    "meaning": "标记：Contract / 契约",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/food.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820035461E31F1B52C7E793BCC1604BF38CC7CBBD4EF1D99.png",
+    "meaning": "标记：Food / 食物",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/hidden.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003598687BA1611D7FDF91D713E40C53AFAD2388C6B90F.png",
+    "meaning": "标记：Hidden / 隐藏",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/knowledge.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003655266BAB4E7F9316C3070B2399BB51776DD0D2DCC5.png",
+    "meaning": "标记：Knowledge / 知识",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/might.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003714F10C54AA397C58BB29BD7DAC0414D8598792A6B1.png",
+    "meaning": "标记：Might / 力量",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/nest.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200376345B0842103A7077052313672BCF61B1A2DC9D1DD.png",
+    "meaning": "标记：Nest / 巢穴",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/obstacle.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820038223FDE99172E9145D290C4322096C1B6E41FCED8E7.png",
+    "meaning": "标记：Obstacle / 障碍",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/portal.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003885A2E7EA837C05EEB78CAE994DE57A9766F8C37F17.png",
+    "meaning": "标记：Portal / 传送门",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/sanity.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182003961E8CC7109B442743670A9F46E321EE63DA6C4E600.png",
+    "meaning": "标记：Sanity / 神志",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/searched.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182004026E150A72B6E0325733A21C0776BD1335525ACA0C6.png",
+    "meaning": "标记：Searched / 已搜索",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/speed.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182004141BD9930D93160F3E9948E6E4BC7D526B447BBB333.png",
+    "meaning": "标记：Speed / 速度",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/off.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182004264F415FDB9A45A40013577168F87ECF7F79F78D831.png",
+    "meaning": "标记：Off",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/on.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182004335E28E5BB36C675ABF0C4EEB14B0C98E080BE5578E.png",
+    "meaning": "标记：On",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/trait.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200438406319CB96BE7BBF5D1D21D86BCC4814D9F351719.png",
+    "meaning": "标记：Trait / 属性",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/markers/videotape.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820045172F226CEC4075249D331E17E5092623CE09ECACAD.png",
+    "meaning": "标记：Videotape / 录像带",
+    "status": "runtime"
+  }
+]

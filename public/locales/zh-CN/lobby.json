@@ -64,6 +64,9 @@
         "dicethrone": {
           "summary": "建立王权，争夺荣耀，成为统治者。"
         },
+        "betrayal": {
+          "summary": "探索鬼屋、累积预兆，并在恶兆前锁定牌桌信息结构。"
+        },
         "smashup": {
           "summary": "在混乱战场中生存，消灭一切敌人！"
         },
@@ -440,10 +443,15 @@
   "gameDetails": {
     "description": "经典策略游戏。连成 3 个符号即可获胜。"
   },
-  "games": {
-    "tictactoe": {
-      "title": "井字棋",
-      "description": "经典的井字棋游戏。挑战 AI 或与朋友对战。",
+    "games": {
+      "betrayal": {
+        "title": "山屋惊魂",
+        "description": "3-6 人恐怖探索桌游。当前已接入运行时 foundation skeleton，用于锁定房间主视图、探索者区与牌堆区。",
+        "players": "3-6 人"
+      },
+      "tictactoe": {
+        "title": "井字棋",
+        "description": "经典的井字棋游戏。挑战 AI 或与朋友对战。",
       "players": "2 人游戏"
     },
     "dicethrone": {

@@ -64,6 +64,9 @@
         "dicethrone": {
           "summary": "Claim the throne, battle for honor, and rule the realm."
         },
+        "betrayal": {
+          "summary": "Explore the haunted house, track omens, and lock the table scan order before the haunt."
+        },
         "smashup": {
           "summary": "Survive the chaotic battlefield and crush every enemy."
         },
@@ -440,10 +443,15 @@
   "gameDetails": {
     "description": "Classic strategy play. Connect three symbols to win."
   },
-  "games": {
-    "tictactoe": {
-      "title": "Tic-Tac-Toe",
-      "description": "Classic X and O game. Challenge the AI or face a friend.",
+    "games": {
+      "betrayal": {
+        "title": "Betrayal at House on the Hill",
+        "description": "A 3-6 player horror exploration board game. The current foundation skeleton locks the room board, explorer area, and deck rail.",
+        "players": "3-6 Players"
+      },
+      "tictactoe": {
+        "title": "Tic-Tac-Toe",
+        "description": "Classic X and O game. Challenge the AI or face a friend.",
       "players": "2 Players"
     },
     "dicethrone": {
