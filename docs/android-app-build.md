@@ -367,6 +367,11 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 - **原生壳更新始终手动发包**，不走 `main` 自动流程。
 - 手动触发时，workflow 只保留发布必要参数；原生版本门禁参数已移除。
 - 如需桥接旧客户端曾经记住的错误大版本，可填 `ota_version_base=6.0.0`，生成 `6.0.0-ota-...` 内部游标。
+- 后台发布中心触发 OTA 时，默认通过 GitHub Actions dispatch 发起 `android-ota-publish.yml`，避免生产机本地构建。生产环境至少配置：
+  - `BG_GITHUB_ACTIONS_TOKEN`：具备目标仓库 `workflow` 权限的 GitHub token
+  - `BG_GITHUB_REPOSITORY`：默认 `zhuanggenhua/BoardGame`
+  - `BG_ANDROID_OTA_WORKFLOW_REF`：默认 `main`，用于触发 workflow 的 ref
+  - `BG_ANDROID_OTA_GIT_REF`：默认同上，用于 workflow 实际 checkout 的发布 ref
 
 推荐发布策略：
 

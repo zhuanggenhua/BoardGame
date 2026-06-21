@@ -385,7 +385,10 @@ function runMobileRelease(args) {
         let output = '';
         const child = spawn(process.execPath, [mobileReleaseScriptPath(), ...args], {
             cwd: rootDir,
-            env: process.env,
+            env: {
+                ...process.env,
+                NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=4096',
+            },
             windowsHide: true,
         });
         const append = (chunk) => {

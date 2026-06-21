@@ -963,6 +963,8 @@ ensure_port_available() {
         $SUDO systemctl stop nginx 2>/dev/null || true
         $SUDO systemctl disable nginx 2>/dev/null || true
         log "✅ 已停止并禁用宿主机 Nginx（不再需要，web 容器直接监听 80）"
+      elif [[ "$proc_name" == "docker-proxy" ]] && docker container inspect "$WEB_CONTAINER_NAME" >/dev/null 2>&1; then
+        log "检测到当前 web 容器正在占用 80 端口，允许继续更新部署"
       else
         die "端口 ${port} 被 ${proc_name}(PID=${pid}) 占用，请先释放"
       fi

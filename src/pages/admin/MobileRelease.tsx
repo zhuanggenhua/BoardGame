@@ -49,6 +49,7 @@ type AndroidReleaseStatus = {
         packageScript: boolean;
         deployScript: boolean;
         deployRunner: boolean;
+        otaWorkflow?: boolean;
         dist: boolean;
         releaseApk: boolean;
         r2Configured: boolean;
@@ -172,11 +173,11 @@ export default function MobileReleasePage() {
     }, [fetchStatus]);
 
     const canRun = useMemo(() => Boolean(token && !busyAction && !status?.running), [busyAction, status, token]);
-    const canRunOta = Boolean(canRun && status?.releaseReady.script);
+    const canRunOta = Boolean(canRun && (status?.releaseReady.script || status?.releaseReady.otaWorkflow));
     const nativeApkReady = !nativeSkipBuild || Boolean(status?.releaseReady.releaseApk);
     const canRunNative = Boolean(canRun && nativeApkReady && status?.releaseReady.script && status?.releaseReady.nativeScript);
     const canRunPackages = Boolean(canRun && status?.releaseReady.script && status?.releaseReady.packageScript);
-    const canPublishOta = Boolean(canRunOta && status?.releaseReady.r2Configured);
+    const canPublishOta = Boolean(canRunOta && (status?.releaseReady.r2Configured || status?.releaseReady.otaWorkflow));
     const canPublishNative = Boolean(canRunNative && status?.releaseReady.r2Configured);
     const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.r2Configured);
     const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);

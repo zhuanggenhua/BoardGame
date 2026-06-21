@@ -67,6 +67,12 @@ type DeployRunnerHealthResponse = {
     };
 };
 
+type GitHubWorkflowDispatchResponse = {
+    workflow_run_id?: number;
+    run_url?: string;
+    html_url?: string;
+};
+
 type DeployRunnerRequest = {
     action?: string;
     args?: string[];
@@ -75,6 +81,7 @@ type DeployRunnerRequest = {
 };
 
 const OUTPUT_LIMIT = 200_000;
+const ANDROID_OTA_WORKFLOW_ID = 'android-ota-publish.yml';
 
 @Injectable()
 export class AdminMobileReleaseService {
@@ -90,6 +97,7 @@ export class AdminMobileReleaseService {
         const deployRunnerHealth = await this.fetchDeployRunnerHealth();
         const runnerReleaseReady = deployRunnerHealth?.release;
         const hasRunnerConfig = this.isDeployRunnerConfigured();
+        const otaWorkflowReady = this.isGithubWorkflowDispatchConfigured();
 
         const localReleaseReady = {
             script: existsSync(path.join(this.rootDir, 'scripts/mobile/release-android.mjs')),
@@ -126,6 +134,7 @@ export class AdminMobileReleaseService {
                 packageScript: runnerReleaseReady?.packageScript ?? localReleaseReady.packageScript,
                 deployScript: deployScriptReady,
                 deployRunner: deployRunnerReady,
+                otaWorkflow: otaWorkflowReady,
                 dist: runnerReleaseReady?.dist ?? localReleaseReady.dist,
                 releaseApk: runnerReleaseReady?.releaseApk ?? localReleaseReady.releaseApk,
                 r2Configured: runnerReleaseReady?.r2Configured ?? localReleaseReady.r2Configured,
@@ -155,6 +164,10 @@ export class AdminMobileReleaseService {
         try {
             const packageJson = this.readPackageJson();
             const args = this.buildOtaReleaseArgs(dto);
+            if (this.isGithubWorkflowDispatchConfigured()) {
+                return await this.dispatchAndroidOtaWorkflow(dto, packageJson.version);
+            }
+
             const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildOtaManifestUrl(dto.channel);
             const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
@@ -349,6 +362,98 @@ export class AdminMobileReleaseService {
         return args;
     }
 
+    private async dispatchAndroidOtaWorkflow(dto: AndroidOtaReleaseDto, packageVersion: string) {
+        const config = this.getGithubWorkflowDispatchConfig();
+        if (!config) {
+            throw new HttpException('GitHub Actions 发布入口未配置', HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        const workflowInputs = this.buildAndroidOtaWorkflowInputs(dto, packageVersion, config.gitRef);
+        const endpoint = `${config.apiBaseUrl}/repos/${config.repository}/actions/workflows/${encodeURIComponent(ANDROID_OTA_WORKFLOW_ID)}/dispatches`;
+        let response: Response;
+        try {
+            response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/vnd.github+json',
+                    Authorization: `Bearer ${config.token}`,
+                    'Content-Type': 'application/json',
+                    'X-GitHub-Api-Version': '2022-11-28',
+                },
+                body: JSON.stringify({
+                    ref: config.dispatchRef,
+                    inputs: workflowInputs,
+                }),
+            });
+        } catch (error) {
+            throw new HttpException({
+                message: '无法连接 GitHub Actions 发布入口',
+                error: error instanceof Error ? error.message : 'github actions connection failed',
+            }, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        const data = await response.json().catch(() => null) as GitHubWorkflowDispatchResponse | { message?: string } | null;
+        if (!response.ok) {
+            throw new HttpException({
+                message: (data as { message?: string } | null)?.message || 'GitHub Actions 发布任务触发失败',
+                error: 'github workflow dispatch failed',
+            }, response.status);
+        }
+
+        const result = data as GitHubWorkflowDispatchResponse | null;
+        const workflowUrl = result?.html_url
+            ?? `https://github.com/${config.repository}/actions/workflows/${ANDROID_OTA_WORKFLOW_ID}`;
+        return {
+            ok: true,
+            kind: 'ota' as const,
+            mode: dto.dryRun ? 'dry-run' : 'publish',
+            packageVersion,
+            command: `GitHub Actions workflow_dispatch ${config.repository}/${ANDROID_OTA_WORKFLOW_ID}`,
+            parsed: {
+                workflowRunId: result?.workflow_run_id ? String(result.workflow_run_id) : '',
+                workflowUrl,
+                gitRef: workflowInputs.git_ref,
+                channel: workflowInputs.channel,
+            },
+            latest: null,
+            output: [
+                'Android OTA 发布任务已提交到 GitHub Actions。',
+                `workflow=${ANDROID_OTA_WORKFLOW_ID}`,
+                `repository=${config.repository}`,
+                `ref=${config.dispatchRef}`,
+                `git_ref=${workflowInputs.git_ref}`,
+                `channel=${workflowInputs.channel}`,
+                `dry_run=${workflowInputs.dry_run}`,
+                `skip_latest=${workflowInputs.skip_latest}`,
+                `force_update=${workflowInputs.force_update}`,
+                `expected_base_version=${workflowInputs.expected_base_version}`,
+                `ota_version_base=${workflowInputs.ota_version_base || '(default)'}`,
+                `url=${workflowUrl}`,
+            ].join('\n'),
+        };
+    }
+
+    private buildAndroidOtaWorkflowInputs(dto: AndroidOtaReleaseDto, packageVersion: string, gitRef: string) {
+        const inputs: Record<string, string> = {
+            channel: dto.channel,
+            git_ref: gitRef,
+            expected_base_version: packageVersion,
+            ota_version_base: dto.otaVersionBase?.trim() || '',
+            dry_run: dto.dryRun ? 'true' : 'false',
+            skip_latest: dto.skipLatest ? 'true' : 'false',
+            force_update: dto.forceUpdate === false ? 'false' : 'true',
+        };
+        const forceUpdateTitle = dto.forceUpdateTitle?.trim();
+        if (forceUpdateTitle) {
+            inputs.force_update_title = forceUpdateTitle;
+        }
+        const forceUpdateMessage = dto.forceUpdateMessage?.trim();
+        if (forceUpdateMessage) {
+            inputs.force_update_message = forceUpdateMessage;
+        }
+        return inputs;
+    }
+
     private buildNativeReleaseArgs(dto: AndroidNativeReleaseDto) {
         const args = ['native', '--channel', dto.channel];
         if (dto.bump) {
@@ -501,6 +606,41 @@ export class AdminMobileReleaseService {
 
     private isDeployRunnerConfigured() {
         return Boolean(this.getDeployRunnerConfig());
+    }
+
+    private isGithubWorkflowDispatchConfigured() {
+        return Boolean(this.getGithubWorkflowDispatchConfig());
+    }
+
+    private getGithubWorkflowDispatchConfig() {
+        const token = (
+            process.env.BG_GITHUB_ACTIONS_TOKEN
+            || process.env.GITHUB_ACTIONS_TOKEN
+            || process.env.GH_TOKEN
+            || process.env.GITHUB_TOKEN
+            || ''
+        ).trim();
+        if (!token) {
+            return null;
+        }
+        const repository = (
+            process.env.BG_GITHUB_REPOSITORY
+            || process.env.GITHUB_REPOSITORY
+            || 'zhuanggenhua/BoardGame'
+        ).trim();
+        if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+            return null;
+        }
+        const dispatchRef = (process.env.BG_ANDROID_OTA_WORKFLOW_REF || 'main').trim();
+        const gitRef = (process.env.BG_ANDROID_OTA_GIT_REF || dispatchRef).trim();
+        const apiBaseUrl = (process.env.GITHUB_API_URL || 'https://api.github.com').replace(/\/+$/, '');
+        return {
+            token,
+            repository,
+            dispatchRef,
+            gitRef,
+            apiBaseUrl,
+        };
     }
 
     private getDeployRunnerConfig() {

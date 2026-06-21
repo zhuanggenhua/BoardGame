@@ -27,6 +27,7 @@ const baseStatus = {
         packageScript: true,
         deployScript: true,
         deployRunner: true,
+        otaWorkflow: false,
         dist: true,
         releaseApk: true,
         r2Configured: true,
@@ -167,6 +168,58 @@ describe('MobileReleasePage', () => {
         expect(executeBody).toMatchObject({
             action: 'rollback-last',
             confirmText: '确认回滚',
+        });
+    });
+
+    it('OTA 发布可在 GitHub Actions 入口就绪时绕过本机发布产物要求', async () => {
+        const status = {
+            ...baseStatus,
+            releaseReady: {
+                ...baseStatus.releaseReady,
+                script: false,
+                otaWorkflow: true,
+                dist: false,
+                r2Configured: false,
+            },
+        };
+        let publishBody: Record<string, unknown> | null = null;
+        const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = typeof input === 'string' ? input : input.toString();
+            const method = init?.method ?? 'GET';
+            if (method === 'GET' && url.includes('/mobile-release/android/status')) {
+                return jsonResponse(status);
+            }
+            if (method === 'POST' && url.endsWith('/mobile-release/android/ota/publish')) {
+                publishBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+                return jsonResponse({
+                    ok: true,
+                    kind: 'ota',
+                    mode: 'publish',
+                    command: 'GitHub Actions workflow_dispatch zhuanggenhua/BoardGame/android-ota-publish.yml',
+                    output: 'Android OTA 发布任务已提交到 GitHub Actions。',
+                });
+            }
+            throw new Error(`Unexpected request: ${method} ${url}`);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(<MobileReleasePage />);
+
+        const publishButton = await screen.findByRole('button', { name: 'admin.mobileReleasePage.actions.publish' });
+        expect(publishButton).toBeEnabled();
+
+        fireEvent.click(publishButton);
+
+        await waitFor(() => {
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/admin-api/mobile-release/android/ota/publish',
+                expect.objectContaining({ method: 'POST' }),
+            );
+        });
+        expect(publishBody).toMatchObject({
+            channel: 'stable',
+            dryRun: false,
+            forceUpdate: true,
         });
     });
 });
