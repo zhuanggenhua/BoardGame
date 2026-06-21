@@ -12,6 +12,7 @@ import {
 import {
     applyEvents,
     findInteractionOption,
+    getPromptOptions,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -7610,8 +7611,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_time_raider_choose');
-        expect(talent.finalState.sys.interaction.current?.data?.options).toEqual(expect.arrayContaining([
+        const timeRaiderPrompt = getSimpleChoicePrompt(talent.finalState, 'time_travelers_time_raider_choose');
+        expect(getPromptOptions(timeRaiderPrompt)).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 value: expect.objectContaining({ cardUid: 'discard-a', defId: 'sharks_hammerhead' }),
                 displayMode: 'card',
@@ -7808,8 +7809,8 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect(played.finalState.sys.interaction.current?.data?.sourceId).toBe('time_travelers_repeater_perfect_choose');
-        expect(played.finalState.sys.interaction.current?.data?.options).toEqual(expect.arrayContaining([
+        const repeaterPrompt = getSimpleChoicePrompt(played.finalState, 'time_travelers_repeater_perfect_choose');
+        expect(getPromptOptions(repeaterPrompt)).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 value: expect.objectContaining({ cardUid: 'action-a', defId: 'super_spies_from_q_with_love' }),
                 displayMode: 'card',
