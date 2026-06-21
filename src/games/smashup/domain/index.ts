@@ -522,7 +522,6 @@ function beginPostScoringBaseRevealDelay(
     now: number,
 ): MatchState<SmashUpCore> {
     const delayStart = now > 0 ? now : Date.now();
-    const delayUntil = delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS;
     const delayedState = updateScoringSession(state, (session) => session
         ? {
             ...session,
@@ -534,7 +533,7 @@ function beginPostScoringBaseRevealDelay(
         ...delayedState,
         sys: {
             ...delayedState.sys,
-            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayUntil,
+            [POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY]: delayStart + POST_SCORING_BASE_REVEAL_DELAY_MS,
         } as typeof delayedState.sys,
     };
 }
@@ -1230,6 +1229,23 @@ function processImmediateStartTurnMinionTriggers(
         : { events: finalEvents };
 }
 
+function getPlayCardsContextForBuriedPlay(
+    matchState: MatchState<SmashUpCore>,
+    fromBuried: boolean | undefined,
+): MatchState<SmashUpCore> {
+    if (!fromBuried) return matchState;
+    if (matchState.sys.phase !== 'startTurn' && !(matchState.sys as any)._smashupStartTurnWindowActive) {
+        return matchState;
+    }
+    return {
+        ...matchState,
+        sys: {
+            ...matchState.sys,
+            phase: 'playCards',
+        },
+    };
+}
+
 // ============================================================================
 // Setup
 // ============================================================================
@@ -1617,6 +1633,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 || currentSession.currentStep === 'awaiting-response-window'
             )) {
                 const delayedState = beginPostScoringBaseRevealDelay(currentState, now);
+                if (!isPostScoringBaseRevealDelayActive(delayedState, now)) {
+                    const finalized = finalizeCurrentScoringBase(clearPostScoringBaseRevealDelay(delayedState), now);
+                    return { events: finalized.events, halt: true, updatedState: finalized.updatedState } as PhaseExitResult;
+                }
                 return { events: [], halt: true, updatedState: delayedState } as PhaseExitResult;
             }
 
@@ -2040,7 +2060,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if ((state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
-            if (justResolvedSmashUpReactionChoice) {
+            if (justResolvedSmashUpReactionChoice && (state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
             if (hasPendingPhaseReactionFrame(core, phase, state)) {
@@ -2618,7 +2638,7 @@ function postProcessSystemEvents(
             
             const triggers = fireMinionPlayedTriggers({
                 core: tempCore,
-                matchState: ms,
+                matchState: getPlayCardsContextForBuriedPlay(ms, playedEvt.payload.fromBuried),
                 playerId: payload.playerId,
                 cardUid: payload.cardUid,
                 defId: payload.defId,
@@ -2708,7 +2728,7 @@ function postProcessSystemEvents(
 
             const queuedActionTriggers = collectTriggers(tempCore, 'onActionPlayed', {
                 state: tempCore,
-                matchState: tempMatchState,
+                matchState: getPlayCardsContextForBuriedPlay(tempMatchState, playedEvt.payload.fromBuried),
                 playerId: playedEvt.payload.playerId,
                 baseIndex: playedEvt.payload.targetBaseIndex,
                 actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
