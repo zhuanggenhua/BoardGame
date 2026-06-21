@@ -3000,7 +3000,7 @@ test.describe('SmashUp Base/Minion Selection', () => {
         await clickMinion(hostPage, 'support-minion');
         await waitForInteractionSourceId(matchId, hostPage, 'giant_ant_we_are_the_champions_choose_amount', 8000);
 
-        const slider = hostPage.getByLabel('slider-choice');
+        const slider = hostPage.getByLabel(/slider-choice|滑杆选择/i);
         await expect(slider).toBeVisible();
         await slider.evaluate((element) => {
             const input = element as HTMLInputElement;
@@ -3210,7 +3210,7 @@ test.describe('SmashUp Base/Minion Selection', () => {
         await clickMinion(guestPage, 'p1-target');
         await waitForInteractionSourceId(matchId, guestPage, 'giant_ant_we_are_the_champions_choose_amount', 8000);
 
-        const slider = guestPage.getByLabel('slider-choice');
+        const slider = guestPage.getByLabel(/slider-choice|滑杆选择/i);
         await expect(slider).toBeVisible();
         await slider.evaluate((element) => {
             const input = element as HTMLInputElement;

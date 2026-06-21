@@ -63,7 +63,7 @@ function CardSpotlightQueueInner<TData = unknown>({
         <AnimatePresence mode="wait">
             <motion.div
                 key={current.id}
-                className="fixed inset-0 flex items-center justify-center"
+                className="fixed inset-0 flex items-center justify-center pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlayRaised }}
                 data-testid="card-spotlight-queue"
                 initial={{ opacity: 0 }}
@@ -76,13 +76,13 @@ function CardSpotlightQueueInner<TData = unknown>({
                 <button
                     type="button"
                     aria-label={t('cardSpotlightQueue.closeSpotlight')}
-                    className="absolute inset-0 bg-black/20"
+                    className="absolute inset-0 bg-black/20 pointer-events-auto"
                     onClick={handleDismiss}
                 />
 
                 {/* 卡牌内容 */}
                 <motion.div
-                    className="relative cursor-pointer"
+                    className="relative cursor-pointer pointer-events-auto"
                     data-testid="card-spotlight-content"
                     initial={{ scale: 0.5, opacity: 0, y: 40 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}

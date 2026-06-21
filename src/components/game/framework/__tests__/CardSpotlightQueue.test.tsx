@@ -33,10 +33,12 @@ describe('CardSpotlightQueue', () => {
         );
 
         const content = screen.getByTestId('card-spotlight-content');
+        const backdrop = screen.getByRole('button', { name: '关闭特写' });
 
         expect(screen.getByText('关闭后继续')).toBeInTheDocument();
+        expect(backdrop.className).toContain('pointer-events-auto');
 
-        fireEvent.click(screen.getByRole('button', { name: '关闭特写' }));
+        fireEvent.click(backdrop);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
 
         onDismiss.mockClear();
