@@ -49,11 +49,27 @@ type DeployRunnerResponse = {
     jobId?: string;
     command?: string;
     output?: string;
+    parsed?: Record<string, string>;
     error?: string;
+};
+
+type DeployRunnerHealthResponse = {
+    ok?: boolean;
+    activeJobId?: string | null;
+    scriptReady?: boolean;
+    release?: {
+        script?: boolean;
+        nativeScript?: boolean;
+        packageScript?: boolean;
+        dist?: boolean;
+        releaseApk?: boolean;
+        r2Configured?: boolean;
+    };
 };
 
 type DeployRunnerRequest = {
     action?: string;
+    args?: string[];
     tag?: string;
     confirmText?: string;
 };
@@ -71,6 +87,24 @@ export class AdminMobileReleaseService {
         const nativeManifestUrl = this.buildNativeManifestUrl(channel);
         const otaManifest = await this.fetchLatestManifest(otaManifestUrl);
         const nativeManifest = await this.fetchLatestManifest(nativeManifestUrl);
+        const deployRunnerHealth = await this.fetchDeployRunnerHealth();
+        const runnerReleaseReady = deployRunnerHealth?.release;
+        const hasRunnerConfig = this.isDeployRunnerConfigured();
+
+        const localReleaseReady = {
+            script: existsSync(path.join(this.rootDir, 'scripts/mobile/release-android.mjs')),
+            nativeScript: existsSync(path.join(this.rootDir, 'scripts/mobile/publish-android-native-update.mjs')),
+            packageScript: existsSync(path.join(this.rootDir, 'scripts/mobile/publish-android-game-packages.mjs')),
+            deployScript: existsSync(path.join(this.rootDir, 'scripts/deploy/deploy-image.sh')),
+            dist: existsSync(path.join(this.rootDir, 'dist/android-build-meta.json')),
+            releaseApk: existsSync(path.join(this.rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
+            r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
+                .every((key) => Boolean(process.env[key])),
+        };
+        const deployRunnerReady = Boolean(deployRunnerHealth?.ok);
+        const deployScriptReady = hasRunnerConfig
+            ? Boolean(deployRunnerHealth?.scriptReady)
+            : localReleaseReady.deployScript;
 
         return {
             packageVersion: packageJson.version,
@@ -87,22 +121,21 @@ export class AdminMobileReleaseService {
                 latest: nativeManifest,
             },
             releaseReady: {
-                script: existsSync(path.join(this.rootDir, 'scripts/mobile/release-android.mjs')),
-                nativeScript: existsSync(path.join(this.rootDir, 'scripts/mobile/publish-android-native-update.mjs')),
-                packageScript: existsSync(path.join(this.rootDir, 'scripts/mobile/publish-android-game-packages.mjs')),
-                deployScript: existsSync(path.join(this.rootDir, 'scripts/deploy/deploy-image.sh')),
-                deployRunner: this.isDeployRunnerConfigured(),
-                dist: existsSync(path.join(this.rootDir, 'dist/android-build-meta.json')),
-                releaseApk: existsSync(path.join(this.rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
-                r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
-                    .every((key) => Boolean(process.env[key])),
+                script: runnerReleaseReady?.script ?? localReleaseReady.script,
+                nativeScript: runnerReleaseReady?.nativeScript ?? localReleaseReady.nativeScript,
+                packageScript: runnerReleaseReady?.packageScript ?? localReleaseReady.packageScript,
+                deployScript: deployScriptReady,
+                deployRunner: deployRunnerReady,
+                dist: runnerReleaseReady?.dist ?? localReleaseReady.dist,
+                releaseApk: runnerReleaseReady?.releaseApk ?? localReleaseReady.releaseApk,
+                r2Configured: runnerReleaseReady?.r2Configured ?? localReleaseReady.r2Configured,
             },
             deploy: {
                 statusCommand: this.buildDeployCommand(['status']),
                 updateCommand: this.buildDeployCommand(['update']),
-                updateExecutionEnabled: this.isDeployRunnerConfigured(),
+                updateExecutionEnabled: Boolean(deployRunnerReady && deployScriptReady),
                 rollbackLastCommand: this.buildDeployCommand(['rollback-last']),
-                rollbackExecutionEnabled: this.isDeployRunnerConfigured(),
+                rollbackExecutionEnabled: Boolean(deployRunnerReady && deployScriptReady),
                 rollbackLastTarget: await this.resolveDeployRollbackTarget({ action: 'rollback-last' }),
             },
             running: this.running,
@@ -122,7 +155,7 @@ export class AdminMobileReleaseService {
         try {
             const packageJson = this.readPackageJson();
             const args = this.buildOtaReleaseArgs(dto);
-            const result = await this.runNodeScript('scripts/mobile/release-android.mjs', args);
+            const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildOtaManifestUrl(dto.channel);
             const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
 
@@ -149,7 +182,7 @@ export class AdminMobileReleaseService {
         try {
             const packageJson = this.readPackageJson();
             const args = this.buildNativeReleaseArgs(dto);
-            const result = await this.runNodeScript('scripts/mobile/release-android.mjs', args);
+            const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildNativeManifestUrl(dto.channel);
             const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
 
@@ -177,7 +210,7 @@ export class AdminMobileReleaseService {
         try {
             const packageJson = this.readPackageJson();
             const args = this.buildGamePackageReleaseArgs(dto);
-            const result = await this.runNodeScript('scripts/mobile/release-android.mjs', args);
+            const result = await this.runAndroidRelease(args);
 
             return {
                 ok: true,
@@ -360,6 +393,19 @@ export class AdminMobileReleaseService {
         return this.runCommand(process.execPath, [scriptPath, ...args], relativeScriptPath, 'Android 发布任务失败');
     }
 
+    private async runAndroidRelease(args: string[]): Promise<ReleaseOutput> {
+        if (!this.isDeployRunnerConfigured()) {
+            return this.runNodeScript('scripts/mobile/release-android.mjs', args);
+        }
+
+        const result = await this.callDeployRunner('/mobile-release/android/run', { args });
+        return {
+            exitCode: 0,
+            output: result.output ?? '',
+            parsed: result.parsed ?? this.parseScriptOutput(result.output ?? ''),
+        };
+    }
+
     private runCommand(command: string, args: string[], relativeScriptPath: string, failureMessage: string): Promise<ReleaseOutput> {
         const scriptPath = path.join(this.rootDir, relativeScriptPath);
         if (!existsSync(scriptPath)) {
@@ -485,6 +531,7 @@ export class AdminMobileReleaseService {
                 },
                 body: JSON.stringify({
                     action: body.action,
+                    args: body.args,
                     tag: body.tag,
                     confirmText: body.confirmText,
                 }),
@@ -505,6 +552,27 @@ export class AdminMobileReleaseService {
             }, response.status);
         }
         return data ?? { ok: true };
+    }
+
+    private async fetchDeployRunnerHealth(): Promise<DeployRunnerHealthResponse | null> {
+        const config = this.getDeployRunnerConfig();
+        if (!config) {
+            return null;
+        }
+
+        try {
+            const response = await fetch(`${config.url}/health`, {
+                headers: {
+                    'Authorization': `Bearer ${config.token}`,
+                },
+            });
+            if (!response.ok) {
+                return null;
+            }
+            return await response.json() as DeployRunnerHealthResponse;
+        } catch {
+            return null;
+        }
     }
 
     private async resolveDeployRollbackTarget(dto: DeployRollbackPreviewDto): Promise<DeployRollbackTarget> {

@@ -28,6 +28,7 @@ const server = createServer(async (req, res) => {
                 ok: true,
                 activeJobId,
                 scriptReady: deployScriptReady(),
+                release: mobileReleaseStatus(),
             });
             return;
         }
@@ -108,6 +109,35 @@ const server = createServer(async (req, res) => {
                 jobId: job.id,
                 command: job.command,
                 output: 'Deploy update job accepted by independent runner.',
+            });
+            return;
+        }
+
+        if (req.method === 'POST' && req.url === '/mobile-release/android/run') {
+            if (!authorize(req)) {
+                sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+                return;
+            }
+            if (!mobileReleaseScriptReady()) {
+                sendJson(res, 503, { ok: false, error: 'Mobile release script not found' });
+                return;
+            }
+            if (activeJobId) {
+                sendJson(res, 409, { ok: false, error: 'Deploy runner is busy', activeJobId });
+                return;
+            }
+
+            const body = await readJson(req);
+            const args = validateMobileReleaseArgs(body);
+            const result = await runMobileRelease(args);
+            sendJson(res, result.exitCode === 0 ? 200 : 503, {
+                ok: result.exitCode === 0,
+                mode: args.includes('--dry-run') ? 'dry-run' : 'publish',
+                command: ['node', 'scripts/mobile/release-android.mjs', ...args].join(' '),
+                output: result.output,
+                parsed: parseScriptOutput(result.output),
+                exitCode: result.exitCode,
+                ...(result.exitCode === 0 ? {} : { error: 'Mobile release failed' }),
             });
             return;
         }
@@ -292,6 +322,84 @@ function deployScriptPath() {
 
 function deployScriptReady() {
     return existsSync(deployScriptPath());
+}
+
+function mobileReleaseScriptPath() {
+    return path.join(rootDir, 'scripts/mobile/release-android.mjs');
+}
+
+function mobileReleaseScriptReady() {
+    return existsSync(mobileReleaseScriptPath());
+}
+
+function mobileReleaseStatus() {
+    return {
+        script: mobileReleaseScriptReady(),
+        nativeScript: existsSync(path.join(rootDir, 'scripts/mobile/publish-android-native-update.mjs')),
+        packageScript: existsSync(path.join(rootDir, 'scripts/mobile/publish-android-game-packages.mjs')),
+        dist: existsSync(path.join(rootDir, 'dist/android-build-meta.json')),
+        releaseApk: existsSync(path.join(rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
+        r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
+            .every((key) => Boolean(process.env[key])),
+    };
+}
+
+function validateMobileReleaseArgs(body) {
+    if (!body || typeof body !== 'object' || !Array.isArray(body.args)) {
+        throw new Error('Mobile release args are required');
+    }
+    const args = body.args.map((value) => {
+        if (typeof value !== 'string' || value.includes('\0') || value.length > 500) {
+            throw new Error('Invalid mobile release arg');
+        }
+        return value;
+    });
+    const command = args[0];
+    if (!['ota', 'native', 'packages'].includes(command)) {
+        throw new Error('Unsupported mobile release command');
+    }
+    return args;
+}
+
+function runMobileRelease(args) {
+    return new Promise((resolve) => {
+        const jobId = randomUUID();
+        activeJobId = jobId;
+        let output = '';
+        const child = spawn(process.execPath, [mobileReleaseScriptPath(), ...args], {
+            cwd: rootDir,
+            env: process.env,
+            windowsHide: true,
+        });
+        const append = (chunk) => {
+            output += chunk.toString('utf8');
+            if (output.length > outputLimit) {
+                output = output.slice(output.length - outputLimit);
+            }
+        };
+        child.stdout.on('data', append);
+        child.stderr.on('data', append);
+        child.on('error', (error) => {
+            output += `\n${error.message}`;
+            activeJobId = null;
+            resolve({ exitCode: 1, output });
+        });
+        child.on('exit', (code) => {
+            activeJobId = null;
+            resolve({ exitCode: code ?? 1, output });
+        });
+    });
+}
+
+function parseScriptOutput(output) {
+    const parsed = {};
+    for (const line of output.split(/\r?\n/)) {
+        const match = /^([A-Za-z][A-Za-z0-9]*)=(.*)$/.exec(line.trim());
+        if (match) {
+            parsed[match[1]] = match[2];
+        }
+    }
+    return parsed;
 }
 
 function buildDeployCommand(args) {
