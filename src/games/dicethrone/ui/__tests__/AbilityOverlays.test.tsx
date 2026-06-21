@@ -123,11 +123,24 @@ describe('AbilityOverlays', () => {
 
         const fistSlot = container.querySelector('[data-ability-slot="fist"]');
         expect(fistSlot).not.toBeNull();
+        expect(fistSlot).toHaveAttribute('data-should-highlight', 'true');
 
         fireEvent.click(fistSlot!);
 
         expect(onHighlightedAbilityClick).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard).not.toHaveBeenCalled();
+    });
+
+    it('高亮壳层在不同入口保持同一套视觉类名', () => {
+        const { getByTestId } = renderAbilityOverlays({
+            availableAbilityIds: ['fist-technique'],
+            canHighlight: true,
+        });
+
+        const highlight = getByTestId('dt-ability-highlight-fist');
+        expect(highlight.className).toContain('border-[2.5px]');
+        expect(highlight.className).toContain('rounded-lg');
+        expect(highlight.className).not.toContain('rounded-xl');
     });
 
     it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {
@@ -216,6 +229,7 @@ describe('AbilityOverlays', () => {
         expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'verdict-command');
         expect(ultimateSlot).toHaveAttribute('data-base-ability-id', 'merciless-plunder');
         expect(ultimateSlot).toHaveAttribute('data-resolved-ability-id', 'merciless-plunder');
+        expect(ultimateSlot).toHaveAttribute('data-should-highlight', 'true');
     });
 
 });

@@ -12,6 +12,7 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { BonusDieOverlay } from './BonusDieOverlay';
 import { CardSpotlightOverlay } from './CardSpotlightOverlay';
+import { AbilityOverlays } from './AbilityOverlays';
 import { EndgameOverlay } from '../../../components/game/framework/widgets/EndgameOverlay';
 import { RematchActions } from '../../../components/game/framework/widgets/RematchActions';
 import { DiceThroneEndgameContent, renderDiceThroneButton } from './DiceThroneEndgame';
@@ -20,12 +21,10 @@ import type { AbilityCard, DieFace, HeroState, PendingBonusDiceSettlement, Chara
 import type { PlayerId } from '../../../engine/types';
 import type { CardSpotlightItem } from './CardSpotlightOverlay';
 import {
-    getAbilitySlotLayoutForCharacter,
     getPlayerBoardAspectRatio,
 } from './abilitySlotLayout';
 import { getPendingBonusSettlementDice } from '../domain/rules';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
-import { getSlotAbilityId, getUpgradeCardPreviewRef } from './abilityOverlayHelpers';
 import { createScopedLogger } from '../../../lib/logger';
 
 const boardOverlaysLogger = createScopedLogger('DT_BOARD_OVERLAYS');
@@ -37,6 +36,13 @@ export interface BoardOverlaysProps {
     magnifiedCard: AbilityCard | null;
     magnifiedCards: AbilityCard[];
     onCloseMagnify: () => void;
+    availableAbilityIds: string[];
+    canSelectAbility: boolean;
+    canHighlightAbility: boolean;
+    onSelectAbility: (abilityId: string) => void;
+    onHighlightedAbilityClick?: () => void;
+    selectedAbilityId?: string;
+    activatingAbilityId?: string;
     /** 当前视角玩家的技能等级（用于放大预览叠加升级卡） */
     abilityLevels?: Record<string, number>;
     /** 当前视角玩家的角色 ID */
@@ -105,46 +111,6 @@ export interface BoardOverlaysProps {
     bonusDieManualCloseOnly?: boolean;
 }
 
-/**
- * 放大预览时叠加升级卡图层
- * 复用 AbilityOverlays 的槽位布局和升级卡查找逻辑
- */
-const MagnifyUpgradeOverlay: React.FC<{
-    characterId: string;
-    abilityLevels: Record<string, number>;
-    playerBoardFace?: HeroState['playerBoardFace'];
-    locale: string;
-}> = ({ characterId, abilityLevels, playerBoardFace, locale }) => {
-    const slots = getAbilitySlotLayoutForCharacter(characterId);
-    return (
-        <div className="absolute inset-0 pointer-events-none">
-            {slots.map((slot) => {
-                if (slot.id === 'ultimate') return null;
-                const baseAbilityId = getSlotAbilityId(characterId, slot.id, playerBoardFace);
-                const level = baseAbilityId ? (abilityLevels[baseAbilityId] ?? 1) : 1;
-                if (!baseAbilityId || level <= 1) return null;
-                const previewRef = getUpgradeCardPreviewRef(characterId, baseAbilityId, level);
-                if (!previewRef) return null;
-                return (
-                    <div
-                        key={slot.id}
-                        className="absolute"
-                        style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
-                    >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <CardPreview
-                                previewRef={previewRef}
-                                locale={locale}
-                                className="w-full h-full rounded-lg"
-                            />
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
 export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const { t } = useTranslation('game-dicethrone');
     const { ref: multiCardScrollRef, dragProps: multiCardDragProps } = useHorizontalDragScroll();
@@ -168,6 +134,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const playerBoardPreviewWidth = `min(90vw, calc(90vh * ${playerBoardAspectRatio}))`;
     const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
     const magnifiedMultiCardWidth = 'min(28vw, 350px, calc(54.9vh - 2.44vw))';
+    const shouldRenderMagnifiedAbilityOverlay = isPlayerBoardPreview && Boolean(props.viewCharacterId);
     const magnifyContainerClassName = `
         group/modal
         ${isPlayerBoardPreview ? 'h-auto w-auto max-h-[90vh] max-w-[90vw]' : ''}
@@ -175,6 +142,10 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
         ${isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
         ${!isPlayerBoardPreview && !props.magnifiedCard && !isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
     `;
+    const handleSelectMagnifiedAbility = React.useCallback((abilityId: string) => {
+        props.onSelectAbility(abilityId);
+        props.onCloseMagnify();
+    }, [props.onCloseMagnify, props.onSelectAbility]);
 
     return (
         <>
@@ -243,11 +214,19 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                         : 'block max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain'}
                                     alt={t('imageAlt.magnifiedView')}
                                 />
-                                {/* 玩家面板放大时叠加升级卡预览 */}
-                                {isPlayerBoardPreview && props.viewCharacterId && props.abilityLevels && (
-                                    <MagnifyUpgradeOverlay
-                                        characterId={props.viewCharacterId}
+                                {/* 玩家面板放大时复用原技能槽命中层，保证放大态仍可直接选技能 */}
+                                {shouldRenderMagnifiedAbilityOverlay && props.viewCharacterId && (
+                                    <AbilityOverlays
+                                        isEditing={false}
+                                        availableAbilityIds={props.availableAbilityIds}
+                                        canSelect={props.canSelectAbility}
+                                        canHighlight={props.canHighlightAbility}
+                                        onSelectAbility={handleSelectMagnifiedAbility}
+                                        onHighlightedAbilityClick={props.onHighlightedAbilityClick}
+                                        selectedAbilityId={props.selectedAbilityId}
+                                        activatingAbilityId={props.activatingAbilityId}
                                         abilityLevels={props.abilityLevels}
+                                        characterId={props.viewCharacterId}
                                         playerBoardFace={props.viewPlayerBoardFace}
                                         locale={props.locale}
                                     />

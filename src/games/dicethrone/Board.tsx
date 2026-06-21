@@ -896,7 +896,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         setAbilityChoiceOptions([]);
         engineMoves.selectAbility(abilityId);
     }, [closeUiModal, engineMoves]);
-
     const confirmSkipModalEntry = React.useMemo(() => ({
         onClose: handleCloseConfirmSkipModal,
         render: () => (
@@ -1524,6 +1523,82 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
     }, [isTutorialActive, tutorialStep, nextTutorialStep]);
 
+    const handleBoardAbilitySelect = React.useCallback((abilityId: string) => {
+        if (shouldBlockTutorialAction('ability-slots')) return;
+        if (currentPhase === 'offensiveRoll' && G.rollConfirmed) {
+            const match = findPlayerAbility(G, rollerId, abilityId);
+            const baseAbilityId = match?.ability.id ?? abilityId;
+            const rollerCharacterId = G.selectedCharacters?.[rollerId];
+            const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId);
+            if (slotId) {
+                const mapping = ABILITY_SLOT_MAP[slotId];
+                if (mapping) {
+                    const slotVariants = availableAbilityIdsForRoller.filter(id => {
+                        const abilityMatch = findPlayerAbility(G, rollerId, id);
+                        if (!abilityMatch) {
+                            return false;
+                        }
+                        return slotContainsAbilityIdForCharacter(rollerCharacterId, slotId, abilityMatch.ability.id);
+                    });
+                    if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
+                        const options: AbilityChoiceOption[] = [];
+                        for (const variantId of slotVariants) {
+                            const abilityMatch = findPlayerAbility(G, rollerId, variantId);
+                            if (!abilityMatch) continue;
+                            const text = getAbilityChoiceText(variantId, abilityMatch, {
+                                t: (key, options) => t(key, options),
+                                exists: (key) => i18n.exists(key, { ns: 'game-dicethrone' }),
+                            });
+                            options.push({
+                                abilityId: variantId,
+                                name: text.name,
+                                description: text.description,
+                                slotId,
+                            });
+                        }
+
+                        options.sort((a, b) => {
+                            const leftMatch = findPlayerAbility(G, rollerId, a.abilityId);
+                            const rightMatch = findPlayerAbility(G, rollerId, b.abilityId);
+                            if (!leftMatch?.variant || !rightMatch?.variant) return 0;
+                            const variants = leftMatch.ability.variants ?? [];
+                            const leftIndex = variants.indexOf(leftMatch.variant);
+                            const rightIndex = variants.indexOf(rightMatch.variant);
+                            return leftIndex - rightIndex;
+                        });
+
+                        if (options.length >= 2) {
+                            setAbilityChoiceOptions(options);
+                            openUiModal('abilityChoice');
+                            advanceTutorialIfNeeded('ability-slots');
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        engineMoves.selectAbility(abilityId);
+        advanceTutorialIfNeeded('ability-slots');
+    }, [
+        G,
+        advanceTutorialIfNeeded,
+        availableAbilityIdsForRoller,
+        currentPhase,
+        engineMoves,
+        i18n,
+        openUiModal,
+        rollerId,
+        shouldBlockTutorialAction,
+        t,
+    ]);
+
+    const handleBoardHighlightedAbilityClick = React.useCallback(() => {
+        if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
+            playDeniedSound();
+            toast.warning(t('error.confirmRoll'), undefined, { dedupeKey: 'dicethrone.confirmRoll' });
+        }
+    }, [G.rollConfirmed, currentPhase, playDeniedSound, t]);
+
     const handleAdvancePhase = () => {
         if (!canAdvancePhase) {
             if ((currentPhase === 'offensiveRoll' || currentPhase === 'targetingRoll') && !G.rollConfirmed) {
@@ -1812,89 +1887,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         availableAbilityIds={availableAbilityIds}
                         canSelectAbility={canSelectAbility}
                         canHighlightAbility={canHighlightAbility}
-                        onSelectAbility={(abilityId) => {
-                            if (shouldBlockTutorialAction('ability-slots')) return;
-                            // 进攻阶段确认骰面后，检查该 slot 是否有多个 variant 同时满足
-                            if (currentPhase === 'offensiveRoll' && G.rollConfirmed) {
-                                // 对于变体 ID（如 incinerate），先通过 findPlayerAbility 获取基础技能 ID
-                                const match = findPlayerAbility(G, rollerId, abilityId);
-                                const baseAbilityId = match?.ability.id ?? abilityId;
-                                const rollerCharacterId = G.selectedCharacters?.[rollerId];
-                                const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId);
-                                if (slotId) {
-                                    const mapping = ABILITY_SLOT_MAP[slotId];
-                                    if (mapping) {
-                                        // 从 availableAbilityIdsForRoller 中找出属于该 slot 的所有满足条件的 variant
-                                        // 不能用 id.startsWith(baseId-) 判断归属，因为 variant id 不一定以 base id 为前缀
-                                        // （如 blazing-soul 属于 soul-burn ability，但 id 不以 soul-burn 开头）
-                                        const slotVariants = availableAbilityIdsForRoller.filter(id => {
-                                            const match = findPlayerAbility(G, rollerId, id);
-                                            if (!match) {
-                                                return false;
-                                            }
-                                            const included = slotContainsAbilityIdForCharacter(rollerCharacterId, slotId, match.ability.id);
-                                            return included;
-                                        });
-                                        if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
-                                            const options: AbilityChoiceOption[] = [];
-                                            for (const vid of slotVariants) {
-                                                const match = findPlayerAbility(G, rollerId, vid);
-                                                if (!match) continue;
-                                                const text = getAbilityChoiceText(vid, match, {
-                                                    t: (key, options) => t(key, options),
-                                                    exists: (key) => i18n.exists(key, { ns: 'game-dicethrone' }),
-                                                });
-                                                options.push({
-                                                    abilityId: vid,
-                                                    name: text.name,
-                                                    description: text.description,
-                                                    slotId,
-                                                });
-                                            }
-
-                                            // 按变体在 AbilityDef.variants 数组中的定义顺序排列
-                                            // 定义顺序与卡片上的视觉布局一致（第一个变体在上方）
-                                            options.sort((a, b) => {
-                                                const ma = findPlayerAbility(G, rollerId, a.abilityId);
-                                                const mb = findPlayerAbility(G, rollerId, b.abilityId);
-                                                if (!ma?.variant || !mb?.variant) return 0;
-                                                const variants = ma.ability.variants ?? [];
-                                                const ia = variants.indexOf(ma.variant);
-                                                const ib = variants.indexOf(mb.variant);
-                                                return ia - ib;
-                                            });
-
-                                            if (options.length >= 2) {
-                                                // 按变体在 AbilityDef.variants 数组中的定义顺序排列（与卡牌图片顺序一致）
-                                                options.sort((a, b) => {
-                                                    const ma = findPlayerAbility(G, rollerId, a.abilityId);
-                                                    const mb = findPlayerAbility(G, rollerId, b.abilityId);
-                                                    if (!ma?.variant || !mb?.variant) return 0;
-
-                                                    const variants = ma.ability.variants ?? [];
-                                                    const ia = variants.indexOf(ma.variant);
-                                                    const ib = variants.indexOf(mb.variant);
-                                                    return ia - ib;
-                                                });
-
-                                                setAbilityChoiceOptions(options);
-                                                openUiModal('abilityChoice');
-                                                advanceTutorialIfNeeded('ability-slots');
-                                                return;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            engineMoves.selectAbility(abilityId);
-                            advanceTutorialIfNeeded('ability-slots');
-                        }}
-                        onHighlightedAbilityClick={() => {
-                            if (currentPhase === 'offensiveRoll' && !G.rollConfirmed) {
-                                playDeniedSound();
-                                toast.warning(t('error.confirmRoll'), undefined, { dedupeKey: 'dicethrone.confirmRoll' });
-                            }
-                        }}
+                        onSelectAbility={handleBoardAbilitySelect}
+                        onHighlightedAbilityClick={handleBoardHighlightedAbilityClick}
                         selectedAbilityId={selectedAbilityId}
                         activatingAbilityId={activatingAbilityId}
                         abilityLevels={viewPlayer.abilityLevels}
@@ -2052,8 +2046,16 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     magnifiedCard={magnify.card}
                     magnifiedCards={magnify.cards}
                     onCloseMagnify={closeMagnify}
+                    availableAbilityIds={availableAbilityIds}
+                    canSelectAbility={canSelectAbility}
+                    canHighlightAbility={canHighlightAbility}
+                    onSelectAbility={handleBoardAbilitySelect}
+                    onHighlightedAbilityClick={handleBoardHighlightedAbilityClick}
+                    selectedAbilityId={selectedAbilityId}
+                    activatingAbilityId={activatingAbilityId}
                     abilityLevels={viewPlayer.abilityLevels}
                     viewCharacterId={viewPlayer.characterId}
+                    viewPlayerBoardFace={viewPlayer.playerBoardFace}
 
                     // 卡牌特写
                     cardSpotlightQueue={cardSpotlightQueue}

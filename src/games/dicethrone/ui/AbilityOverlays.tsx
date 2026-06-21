@@ -115,6 +115,8 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
         const editingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-slate-950/65 pointer-events-none';
         const activeEditingGuideClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-emerald-300 bg-emerald-400/12 shadow-[0_0_0_1px_rgba(6,95,70,0.95),0_0_18px_rgba(52,211,153,0.55)] pointer-events-none';
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
+        const highlightOverlayClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.8),0_0_40px_rgba(251,113,133,0.4)] pointer-events-none z-10 animate-pulse';
+        const selectedOverlayClassName = 'absolute inset-0 rounded-lg border-[3px] border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.9),0_0_50px_rgba(239,68,68,0.5)] pointer-events-none z-10';
         const inspectButtonClassName = 'absolute right-[0.2vw] top-[0.2vw] z-20 flex h-[1.15vw] w-[1.15vw] min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_0.18vw_0.42vw_rgba(0,0,0,0.45)] transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
 
         // 通过 ref 暴露保存方法，供调试面板调用
@@ -283,6 +285,9 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                             data-resolved-ability-id={isResolved ?? ''}
                             data-base-ability-id={baseAbilityId ?? ''}
                             data-can-click={canClick ? 'true' : 'false'}
+                            data-should-highlight={shouldHighlight ? 'true' : 'false'}
+                            data-is-selected={isAbilitySelected ? 'true' : 'false'}
+                            data-is-activating={isActivating ? 'true' : 'false'}
                             data-upgrade-card-interactive={upgradeCard ? 'true' : 'false'}
                             onMouseDown={(e) => handleMouseDown(e, slot.id, 'move')}
                             className={`
@@ -329,10 +334,16 @@ const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
                                 </div>
                             )}
                             {shouldHighlight && (
-                                <div className="absolute inset-0 rounded-lg border-[2.5px] border-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.8),0_0_40px_rgba(251,113,133,0.4)] pointer-events-none z-10 animate-pulse" />
+                                <div
+                                    data-testid={`dt-ability-highlight-${slot.id}`}
+                                    className={highlightOverlayClassName}
+                                />
                             )}
                             {isAbilitySelected && (
-                                <div className="absolute inset-0 rounded-lg border-[3px] border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.9),0_0_50px_rgba(239,68,68,0.5)] pointer-events-none z-10">
+                                <div
+                                    data-testid={`dt-ability-selected-${slot.id}`}
+                                    className={selectedOverlayClassName}
+                                >
                                     <div className="absolute -inset-[2px] rounded-lg border-2 border-white/60 animate-pulse" />
                                 </div>
                             )}
