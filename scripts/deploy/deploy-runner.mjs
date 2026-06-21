@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -333,6 +333,7 @@ function mobileReleaseScriptReady() {
 }
 
 function mobileReleaseStatus() {
+    const releaseEnv = readReleaseEnv();
     return {
         script: mobileReleaseScriptReady(),
         nativeScript: existsSync(path.join(rootDir, 'scripts/mobile/publish-android-native-update.mjs')),
@@ -340,8 +341,24 @@ function mobileReleaseStatus() {
         dist: existsSync(path.join(rootDir, 'dist/android-build-meta.json')),
         releaseApk: existsSync(path.join(rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
         r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
-            .every((key) => Boolean(process.env[key])),
+            .every((key) => Boolean(releaseEnv[key])),
     };
+}
+
+function readReleaseEnv() {
+    const env = { ...process.env };
+    for (const file of ['.env', '.env.android', '.env.android.local', '.env.example']) {
+        const fullPath = path.join(rootDir, file);
+        if (!existsSync(fullPath)) continue;
+        for (const line of readFileSync(fullPath, 'utf8').split(/\r?\n/)) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(trimmed);
+            if (!match || env[match[1]]) continue;
+            env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
+        }
+    }
+    return env;
 }
 
 function validateMobileReleaseArgs(body) {
