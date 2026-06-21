@@ -1110,7 +1110,7 @@ test.describe('FantasyRealms live flow', () => {
             await expect(liveScoreTotal).toHaveAttribute('data-score-animation', 'settlement-sequence');
             await expect(liveScoreTotal).toHaveAttribute('data-score-target', String(winnerStanding.score));
             await page.waitForTimeout(260);
-            await expect(page.getByTestId('fantasyrealms-live-score-step')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-score-step')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-endgame-card-delta')).toBeVisible();
             const animatedTotalValue = Number(await liveScoreTotal.getAttribute('data-score-current'));
             expect(animatedTotalValue).toBeGreaterThan(0);
@@ -1379,10 +1379,10 @@ test.describe('FantasyRealms live flow', () => {
 
             for (let index = 0; index < bottomRow.length; index += 1) {
                 const previousTop = topRow[index]!;
-                const nextTop = topRow[index + 1]!;
                 const bottom = bottomRow[index]!;
-                expect(bottom.x).toBeGreaterThan(previousTop.x + 60);
-                expect(bottom.x).toBeLessThan(nextTop.x - 60);
+                const leftShift = previousTop.x - bottom.x;
+                expect(leftShift).toBeGreaterThan(80);
+                expect(leftShift).toBeLessThan(130);
             }
 
             await page.waitForTimeout(1400);

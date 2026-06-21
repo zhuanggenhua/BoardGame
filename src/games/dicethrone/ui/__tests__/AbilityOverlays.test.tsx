@@ -138,9 +138,11 @@ describe('AbilityOverlays', () => {
         });
 
         const highlight = getByTestId('dt-ability-highlight-fist');
-        expect(highlight.className).toContain('border-[2.5px]');
+        expect(highlight.className).toContain('inset-0');
+        expect(highlight.className).toContain('ring-[3px]');
+        expect(highlight.className).toContain('ring-[#ff3347]');
         expect(highlight.className).toContain('rounded-lg');
-        expect(highlight.className).not.toContain('rounded-xl');
+        expect(highlight.className).toContain('animate-pulse');
     });
 
     it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {

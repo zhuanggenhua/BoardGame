@@ -30,4 +30,18 @@ describe('applyRuntimeViewportCssVars', () => {
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1160px');
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.806897');
     });
+
+    it('fantasyrealms board-shell uses its own design baseline instead of the shared default width', () => {
+        const gamePage = document.createElement('div');
+        gamePage.setAttribute('data-game-page', 'true');
+        gamePage.setAttribute('data-game-id', 'fantasyrealms');
+        gamePage.setAttribute('data-mobile-profile', 'landscape-adapted');
+        gamePage.setAttribute('data-mobile-layout-preset', 'board-shell');
+        document.body.appendChild(gamePage);
+
+        applyRuntimeViewportCssVars({ width: 936, height: 432 });
+
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1520px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.615789');
+    });
 });

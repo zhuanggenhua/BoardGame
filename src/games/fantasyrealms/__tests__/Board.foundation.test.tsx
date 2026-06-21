@@ -842,8 +842,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', String(FANTASY_REALMS_HAND_CARD_SLOTS));
             expect(handRow).toHaveAttribute('data-visible-count', '4');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
-            expect(handRow.style.gridTemplateColumns).toBe('repeat(7, minmax(0, var(--fr-live-hand-track-width)))');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('calc((100% - 98px) / 8)');
+            expect(handRow.style.width).toBe('1506px');
+            expect(handRow.style.gridTemplateColumns).toBe('repeat(7, 176px)');
+            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(4);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
             expect(within(handRow).getAllByRole('button')[0]).toHaveStyle({ gridColumn: '2' });
@@ -897,10 +898,28 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', '8');
             expect(handRow).toHaveAttribute('data-visible-count', '8');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
-            expect(handRow.style.gridTemplateColumns).toBe('repeat(8, minmax(0, var(--fr-live-hand-track-width)))');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('calc((100% - 98px) / 8)');
+            expect(handRow.style.width).toBe('1506px');
+            expect(handRow.style.gridTemplateColumns).toBe('repeat(8, 176px)');
+            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(8);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
+        });
+    });
+
+    it('桌面 live 的中央牌河第二排整体继续偏左，并保持固定桌面宽度', () => {
+        withViewport(1920, 1080, () => {
+            const discardPile = PUBLIC_CARDS.concat(HAND_CARDS.slice(0, 2)).map((card) => ({ ...card }));
+            renderBoard(makeCore({ discardPile }));
+
+            const discardRow = screen.getByTestId('fantasyrealms-discard-row');
+            const centerButtons = within(discardRow).getAllByRole('button');
+
+            expect(centerButtons).toHaveLength(9);
+            expect(discardRow.style.width).toBe('1460px');
+            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)' });
+            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -414px)' });
+            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + -154px)' });
+            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)' });
         });
     });
 
@@ -1187,8 +1206,28 @@ describe('FantasyRealms Board foundation', () => {
             expect(discardButtons).toHaveLength(9);
             expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
             expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 470px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -440px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 340px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)', top: '210px', zIndex: '2' });
+        });
+    });
+
+    it('中央牌区满 10 张时，第二排仍按卡缝左到右填满', () => {
+        withViewport(1440, 1024, () => {
+            renderBoard(makeCore({
+                discardPile: HAND_CARDS
+                    .concat(PUBLIC_CARDS)
+                    .slice(0, 10)
+                    .map((card) => ({ ...card })),
+            }));
+
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+
+            expect(discardButtons).toHaveLength(10);
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -414px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -154px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 366px)', top: '210px', zIndex: '2' });
         });
     });
 

@@ -1,6 +1,8 @@
 import type { GameManifestEntry } from '../manifest.types';
 import { buildFantasyRealmsSetupOptions } from './roomSetup';
 
+export const FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1520;
+
 const entry: GameManifestEntry = {
     id: 'fantasyrealms',
     type: 'game',

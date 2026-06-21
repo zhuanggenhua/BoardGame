@@ -5,6 +5,7 @@ import {
     resolveStableViewportSize,
     type RuntimeViewportSize,
 } from '../../games/mobileSupport';
+import { FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX } from '../../games/fantasyrealms/manifest';
 import { isTextEntrySessionElement } from '../../lib/textEntry';
 
 export interface RuntimeSafeAreaInsets {
@@ -26,6 +27,7 @@ const DEFAULT_ROOT_DESIGN_WIDTH = 1280;
 const DEFAULT_BOARD_SHELL_DESIGN_WIDTH = 1280;
 const BOARD_SHELL_DESIGN_WIDTH_BY_GAME: Record<string, number> = {
     dicethrone: 940,
+    fantasyrealms: FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
     smashup: 1160,
     summonerwars: 900,
 };
