@@ -51,7 +51,9 @@ export interface FeedbackClientContext {
     timezone?: string;
     activeElement?: FeedbackElementSummary;
     lastUserAction?: FeedbackUserActionSummary;
+    recentUserActions?: FeedbackUserActionSummary[];
     lastRouteChange?: FeedbackRouteChangeSummary;
+    recentRouteChanges?: FeedbackRouteChangeSummary[];
     pageFlags?: FeedbackPageFlags;
 }
 

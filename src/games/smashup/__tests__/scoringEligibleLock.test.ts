@@ -271,7 +271,7 @@ describe('计分阶段 eligible 基地锁定', () => {
     });
 
     describe('完整流程回归', () => {
-        it('Me First! 特殊牌把基地压到 breakpoint 以下后，已触发的基地仍然计分', () => {
+        it('Me First! 特殊牌把基地压到 breakpoint 以下后，已触发的基地仍然计分并进入延迟收尾', () => {
             const runner = createRunner((ids) => {
                 const core = makeMinimalCore({
                     bases: [
@@ -349,11 +349,15 @@ describe('计分阶段 eligible 基地锁定', () => {
                 ...passEvents,
             ].map(event => event.type);
             expect(eventTypes).toContain(SU_EVENTS.BASE_SCORED);
-            expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
-            expect(runner.getState().core.bases[0]?.defId).toBe('base_the_hill');
+            expect(eventTypes).not.toContain(SU_EVENTS.BASE_CLEARED);
+            expect(runner.getState().sys.phase).toBe('scoreBases');
+            expect((runner.getState().sys as any).flowHalted).toBe(true);
+            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
+            expect(runner.getState().core.bases[0]?.defId).toBe(BASE_JUNGLE);
+            expect(runner.getState().core.scoringEligibleBaseIndices).toEqual([0]);
         });
 
-        it('beforeScoring 触发器把基地压到 breakpoint 以下后，已触发的基地仍然计分', () => {
+        it('beforeScoring 触发器把基地压到 breakpoint 以下后，已触发的基地仍然计分并进入延迟收尾', () => {
             const runner = createRunner((ids) => {
                 const core = makeMinimalCore({
                     bases: [
@@ -393,8 +397,12 @@ describe('计分阶段 eligible 基地锁定', () => {
 
             expect(eventTypes).toContain(SU_EVENTS.MINION_DESTROYED);
             expect(eventTypes).toContain(SU_EVENTS.BASE_SCORED);
-            expect(eventTypes).toContain(SU_EVENTS.BASE_CLEARED);
-            expect(runner.getState().core.bases[0]?.defId).toBe('base_secret_garden');
+            expect(eventTypes).not.toContain(SU_EVENTS.BASE_CLEARED);
+            expect(runner.getState().sys.phase).toBe('scoreBases');
+            expect((runner.getState().sys as any).flowHalted).toBe(true);
+            expect((runner.getState().sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
+            expect(runner.getState().core.bases[0]?.defId).toBe(BASE_JUNGLE);
+            expect(runner.getState().core.scoringEligibleBaseIndices).toEqual([0]);
         });
     });
 });

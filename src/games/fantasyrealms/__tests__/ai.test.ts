@@ -698,7 +698,7 @@ describe('FantasyRealms AI runtime', () => {
         expect(discardLightning.tiebreakBaseScore).toBeLessThan(discardProtectionRune.tiebreakBaseScore);
     });
 
-    it('本地 AI 只让摸牌库保留可见延迟，拿公开牌与弃牌都应瞬发', () => {
+    it('本地 AI 只让摸牌库保留可见延迟，拿中央牌与弃牌都应瞬发', () => {
         const drawDeckAction = fantasyRealmsAiRuntime.buildLegalActions({
             playerId: '0',
             state: stateOf(createDrawDecisionCore()),

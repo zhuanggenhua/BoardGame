@@ -10,6 +10,27 @@ import {
 import { buildLocalAiSeatStates } from './stateNormalization';
 import { logLocalAiPerfInfo } from './localAiDiagnostics';
 
+function resolveLocalAiDecisionBudgetMs(args: {
+    state: MatchState<unknown>;
+    config: GameEngineConfig;
+    seatControllers: Record<string, AiSeatController>;
+}): number | undefined {
+    const currentAiActorId = resolveOnlineAiCurrentPlayerId(args.state, {
+        engineConfig: args.config,
+        gameId: args.config.gameId,
+    });
+    if (!currentAiActorId) {
+        return undefined;
+    }
+
+    const currentController = args.seatControllers[currentAiActorId];
+    if (currentController?.type === 'human') {
+        return undefined;
+    }
+
+    return currentController?.minimumActionDelayMs === 0 ? 0 : undefined;
+}
+
 export function canApplyLocalAiStalledRecovery(args: {
     stalledCandidate: ReturnType<typeof resolveForceEndTurnForStalledAi> | null;
     activePhaseElapsedMs: number | null;
@@ -51,6 +72,11 @@ export async function resolveLocalAiActionWithRecovery(args: {
         state,
         matchId,
         seatControllers,
+        decisionBudgetMs: resolveLocalAiDecisionBudgetMs({
+            state,
+            config,
+            seatControllers,
+        }),
     });
     if (resolution) {
         return resolution;

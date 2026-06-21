@@ -4390,11 +4390,13 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
         return [];
     }
 
-    const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
+    const destroyedControllerId = ctx.triggerMinion?.controller
+        ?? ctx.triggerCardOwnerId
+        ?? ctx.controllerId
+        ?? ctx.playerId;
     const destroyAnotherPlayersCard =
-        ctx.timing === 'onMinionDestroyed'
+        (ctx.timing === 'onMinionDestroyed' || ctx.timing === 'onCardDestroyed')
         && ctx.destroyerId === controllerId
-        && !!ctx.triggerMinion
         && destroyedControllerId !== controllerId;
     const returnedPlayerId = ctx.eventPlayerId ?? ctx.playerId;
     const returnedOwnMinion =
@@ -4440,10 +4442,12 @@ function invisibleNinjaTriggered(ctx: TriggerContext): TriggerResult | SmashUpEv
 
 function canTriggerInvisibleNinjaTriggered(ctx: TriggerContext): boolean {
     const controllerId = ctx.sourceControllerId ?? ctx.playerId;
-    if (ctx.timing === 'onMinionDestroyed') {
-        const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId ?? ctx.playerId;
+    if (ctx.timing === 'onMinionDestroyed' || ctx.timing === 'onCardDestroyed') {
+        const destroyedControllerId = ctx.triggerMinion?.controller
+            ?? ctx.triggerCardOwnerId
+            ?? ctx.controllerId
+            ?? ctx.playerId;
         return ctx.destroyerId === controllerId
-            && !!ctx.triggerMinion
             && destroyedControllerId !== controllerId;
     }
 
@@ -5073,6 +5077,12 @@ export function registerTitanAbilities(): void {
         playerContext: 'sourceController',
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
+        optional: true,
+        baseScoped: false,
+        playerContext: 'sourceController',
+        canTrigger: canTriggerInvisibleNinjaTriggered,
+    });
+    registerTrigger('ninjas_invisible_ninja', 'onCardDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
@@ -7762,12 +7772,12 @@ export function registerTitanInteractionHandlers(): void {
         ) {
             return { state, events: [] };
         }
-        const sourceTitanStillLive = (state.core.titans ?? []).some(titan =>
+        const sourceTitan = (state.core.titans ?? []).find(titan =>
             titan.uid === continuation.titanUid
             && titan.defId === 'bear_cavalry_major_ursa'
             && titan.location.zone === 'base',
         );
-        if (!sourceTitanStillLive) {
+        if (!sourceTitan) {
             return { state, events: [] };
         }
 
@@ -7781,11 +7791,11 @@ export function registerTitanInteractionHandlers(): void {
                 toBaseDefId: selected.baseDefId,
                 reason: 'bear_cavalry_major_ursa',
                 now: timestamp,
-                sourcePlayerId: titan.controllerId,
-                sourceCardUid: titan.uid,
-                sourceDefId: titan.defId,
-                sourceControllerId: titan.controllerId,
-                sourceBaseIndex: titan.location.baseIndex,
+                sourcePlayerId: sourceTitan.controllerId,
+                sourceCardUid: sourceTitan.uid,
+                sourceDefId: sourceTitan.defId,
+                sourceControllerId: sourceTitan.controllerId,
+                sourceBaseIndex: sourceTitan.location.baseIndex,
                 sourceKind: 'nonAction',
             }),
         };

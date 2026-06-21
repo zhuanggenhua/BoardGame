@@ -95,6 +95,7 @@ export type TriggerTiming =
     | 'onMinionDestroyed'
     | 'onMinionMoved'
     | 'onCardReturnedToHand'
+    | 'onCardDestroyed'
     | 'onDeckInspected'
     | 'onMinionAffected'
     | 'onMinionDiscardedFromBase'
@@ -163,6 +164,14 @@ export interface TriggerContext {
     triggerMinionUid?: string;
     /** 触发相关随从 defId */
     triggerMinionDefId?: string;
+    /** 触发相关场上行动牌 UID */
+    triggerCardUid?: string;
+    /** 触发相关场上行动牌 defId */
+    triggerCardDefId?: string;
+    /** 触发相关场上行动牌拥有者 */
+    triggerCardOwnerId?: PlayerId;
+    /** 触发相关场上行动牌类型 */
+    triggerCardKind?: 'ongoing' | 'attached_action';
     /** 收集 trigger 时应排除的来源实例 UID（例如 onPlay 才被移动进来的“晚到见证者”）。 */
     suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
@@ -603,6 +612,10 @@ function createTriggerInstance(
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: (ctx as any).triggerMinionPower,
+        triggerCardUid: ctx.triggerCardUid,
+        triggerCardDefId: ctx.triggerCardDefId,
+        triggerCardOwnerId: ctx.triggerCardOwnerId,
+        triggerCardKind: ctx.triggerCardKind,
         destroyerId: ctx.destroyerId,
         controllerId: ctx.controllerId,
         reason: ctx.reason,

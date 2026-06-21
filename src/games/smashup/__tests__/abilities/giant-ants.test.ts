@@ -335,10 +335,12 @@ describe('巨蚁派系能力', () => {
         expect((added as any).payload.amount).toBe(3);
         expect((added as any).payload.minionUid).toBe('m2');
 
-        // 当前时点仍处于 Me First! 响应链内部；计分基地是否随后清场由后续 pass / auto-continue 收口负责，
-        // 这里先锁定承受压力自己的即时权威状态。
-        const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
+        // 当前实现会在确认转移后回到计分收口流程，但不会在同一命令里立刻清空来源基地；
+        // 这里锁定的是“转移已生效，且仍停留在计分收口阶段”的权威状态。
         const m2Final = amountResult.finalState.core.bases[1]?.minions.find(m => m.uid === 'm2');
+        const m1Final = amountResult.finalState.core.bases[0]?.minions.find(m => m.uid === 'm1');
+        expect(amountResult.finalState.sys.phase).toBe('scoreBases');
+        expect((amountResult.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toEqual(expect.any(Number));
         expect(m1Final?.powerCounters).toBe(0);
         expect(m2Final?.powerCounters).toBe(3);
     });

@@ -3,6 +3,12 @@ import type { MatchState } from '../../../src/engine/types';
 import { FantasyRealmsDomain, evaluateFantasyRealmsScore } from '../../../src/games/fantasyrealms/domain';
 import type { FantasyRealmsCore } from '../../../src/games/fantasyrealms/domain';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../../src/games/fantasyrealms/data/cards';
+import {
+    FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
+    FANTASY_REALMS_DUEL_SETUP_VALUE,
+    FANTASY_REALMS_EXPANSION_SETUP_FIELD,
+    FANTASY_REALMS_VARIANT_SETUP_FIELD,
+} from '../../../src/games/fantasyrealms/roomSetup';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../../framework/evidenceScreenshots';
 import {
     assertNoFatalFrontendErrors,
@@ -273,6 +279,12 @@ export async function createFantasyRealmsAiRoom(
 } | null> {
     const numPlayers = options?.numPlayers ?? 2;
     const aiSeatIds = options?.aiSeatIds ?? ['1'];
+    const setupSelections: Record<string, string> = {
+        [FANTASY_REALMS_EXPANSION_SETUP_FIELD]: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE,
+        ...(numPlayers === 2
+            ? { [FANTASY_REALMS_VARIANT_SETUP_FIELD]: FANTASY_REALMS_DUEL_SETUP_VALUE }
+            : {}),
+    };
     const seatControllers = Object.fromEntries(
         aiSeatIds.map((seatId) => [seatId, {
             type: 'local-ai',
@@ -287,6 +299,8 @@ export async function createFantasyRealmsAiRoom(
                 guestId: ownerGuestId,
                 ownerKey: `guest:${ownerGuestId}`,
                 ownerType: 'guest',
+                ...setupSelections,
+                setupSelections,
                 enableAi: true,
                 seatControllers,
             },
@@ -582,7 +596,6 @@ export async function waitForSingleOnlineAiRoundtrip(args: {
     roundLabel: string;
     timeoutMs?: number;
 }) {
-    const liveDiscardButton = args.page.getByTestId('fantasyrealms-live-action-discard');
     const deckButton = args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
 
     await expect.poll(async () => {
@@ -614,7 +627,8 @@ export async function waitForSingleOnlineAiRoundtrip(args: {
     if (afterAiSummary.stage === 'draw') {
         await expect(deckButton).toBeVisible({ timeout: 10000 });
     } else {
-        await expect(liveDiscardButton).toBeVisible({ timeout: 10000 });
+        await expect(args.page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible({ timeout: 10000 });
+        await expect(args.page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
         await expect(deckButton).toHaveCount(0);
     }
     return afterAiSummary;
@@ -627,7 +641,6 @@ export async function completeNaturalHumanDeckTurn(args: {
     roundLabel: string;
 }) {
     const deckButton = args.page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
-    const liveActionButton = args.page.getByTestId('fantasyrealms-live-action-discard');
     const beforeSummary = await readOnlineAiStateSummary(args.matchId, args.page);
     const beforeHandCount = beforeSummary.handCounts[args.playerId] ?? 0;
     const beforeTurn = beforeSummary.turn ?? 0;
@@ -658,10 +671,10 @@ export async function completeNaturalHumanDeckTurn(args: {
     }
 
     const afterDrawSummary = await readOnlineAiStateSummary(args.matchId, args.page);
+    await expect(args.page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible({ timeout: 10000 });
+    await expect(args.page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
     const discardHandButton = args.page.getByRole('button', { name: /弃置手牌/ }).first();
     await discardHandButton.click();
-    await expect(liveActionButton).toContainText('确认弃牌');
-    await liveActionButton.click();
 
     await expect.poll(async () => {
         const summary = await readOnlineAiStateSummary(args.matchId, args.page);

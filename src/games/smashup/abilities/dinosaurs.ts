@@ -534,25 +534,35 @@ const dinoLaserTriceratopsPodProgram = createBranchProgram<
     then: createEffectProgram(() => ({ events: [] })),
     else: createPromptProgram({
         sourceId: 'dino_laser_triceratops_pod',
-        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-            `dino_laser_triceratops_pod_${context.now}`,
-            context.playerId,
-            '你可以消灭这里一个印制力量≤2的随从',
-            [
-                createSkipOption('跳过（不消灭随从）', 'ui.dino_laser_triceratops_pod_skip_option'),
-                ...buildMinionTargetOptions(context.targets, {
-                    state: context.matchState.core,
-                    sourcePlayerId: context.playerId,
-                    effectType: 'destroy',
-                }),
-            ],
-            {
-                sourceId: 'dino_laser_triceratops_pod',
-                titleKey: 'ui.dino_laser_triceratops_pod_title',
-                targetType: 'minion',
-                subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
-            },
-        ),
+        buildInteraction: (context) => {
+            const title = '你可以消灭这里一个印制力量≤2的随从';
+            const interaction = createAbilityRuntimeSimpleChoice(
+                `dino_laser_triceratops_pod_${context.now}`,
+                context.playerId,
+                title,
+                [
+                    createSkipOption('跳过（不消灭随从）', 'ui.dino_laser_triceratops_pod_skip_option'),
+                    ...buildMinionTargetOptions(context.targets, {
+                        state: context.matchState.core,
+                        sourcePlayerId: context.playerId,
+                        effectType: 'destroy',
+                    }),
+                ],
+                {
+                    sourceId: 'dino_laser_triceratops_pod',
+                    titleKey: 'ui.dino_laser_triceratops_pod_title',
+                    targetType: 'minion',
+                    subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
+                },
+            );
+            return {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    title,
+                },
+            };
+        },
         onResolve: ({ playerId, value, timestamp, state }) => {
             const choice = value as DinoMinionChoice;
             if (choice.skip) return { events: [] };

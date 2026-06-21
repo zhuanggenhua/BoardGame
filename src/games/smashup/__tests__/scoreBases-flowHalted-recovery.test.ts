@@ -3,6 +3,7 @@
  *
  * 锁定 `onPhaseExit('scoreBases')` 在 flowHalted 场景下的恢复语义：
  * - 若当前交互已解决，应清除 flowHalted，并进入 awaiting-post-reduce 收尾
+ *   此时 BASE_CLEARED / BASE_REPLACED 仍保留在后续 continuation，而不是在本次恢复里立刻发出
  * - 若当前交互仍在进行，应继续 halt，不能越过交互
  *
  * 场景素材借用托尔图加 / 海盗王，但真实边界是 scoreBases 阶段恢复合同，不是单张卡修复文件。
@@ -75,15 +76,13 @@ describe('scoreBases flowHalted 恢复', () => {
         expect(Array.isArray(result)).toBe(false);
         expect(result).toMatchObject({ halt: true });
 
-        // PR64 之后 scoreBases 会先发出计分/换基地事件，再以 awaiting-post-reduce 暂停
+        // 当前实现会先恢复计分主事件，然后把清场/换基地延后到后续 continuation
         const events = Array.isArray(result) ? result : result.events ?? [];
         expect(events.map((event) => event.type)).toEqual([
             'su:before_scoring_triggered',
             'su:when_scoring_triggered',
             'su:base_scored',
             'su:after_scoring_triggered',
-            'su:base_cleared',
-            'su:base_replaced',
         ]);
 
         const baseScoredEvent = events.find((e) => e.type === 'su:base_scored');
@@ -101,9 +100,9 @@ describe('scoreBases flowHalted 恢复', () => {
             expectNoPrompt(result.updatedState);
             expect(result.updatedState.sys.responseWindow?.current).toBeUndefined();
             expect(getScoringSession(result.updatedState)).toMatchObject({
-                currentStep: 'awaiting-post-reduce',
+                currentStep: 'awaiting-post-scoring-delay',
                 lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
-                completedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
+                completedBaseRefs: [],
             });
         }
     });

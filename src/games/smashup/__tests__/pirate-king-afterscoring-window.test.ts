@@ -42,7 +42,7 @@ function runCommandWithFullSystems(initialState: MatchState<SmashUpCore>, comman
 }
 
 describe('pirate_king afterScoring window', () => {
-    it('海盗王结算后，若当前回合玩家被限制打行动牌，不应错误打开 afterScoring 响应窗口', () => {
+    it('海盗王结算后，若当前回合玩家被限制打行动牌，不应错误打开 afterScoring 响应窗口，并应留在 scoreBases 等待延迟收尾', () => {
         const state: MatchState<SmashUpCore> = {
             core: {
                 turnOrder: ['0', '1'],
@@ -93,7 +93,9 @@ describe('pirate_king afterScoring window', () => {
         expect(resolvePirateKing.success).toBe(true);
         expect(resolvePirateKing.finalState.sys.responseWindow?.current).toBeFalsy();
         expectNoPrompt(resolvePirateKing.finalState);
-        expect(resolvePirateKing.finalState.sys.phase).toBe('playCards');
-        expect(resolvePirateKing.finalState.core.currentPlayerIndex).toBe(0);
+        expect(resolvePirateKing.finalState.sys.phase).toBe('scoreBases');
+        expect((resolvePirateKing.finalState.sys as any).flowHalted).toBe(true);
+        expect((resolvePirateKing.finalState.sys as any)._smashupPostScoringBaseRevealDelayUntil).toBeDefined();
+        expect(resolvePirateKing.finalState.core.currentPlayerIndex).toBe(1);
     });
 });

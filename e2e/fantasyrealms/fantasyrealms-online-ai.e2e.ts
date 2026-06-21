@@ -105,7 +105,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -131,8 +130,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -187,7 +184,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -212,8 +208,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -281,7 +275,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -306,8 +299,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -388,7 +379,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -413,8 +403,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -497,7 +485,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
 
@@ -522,8 +509,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, page);
             const discardHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, page);
@@ -595,7 +580,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, host.page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
             const initialDiscardCount = initialSummary.discardCount;
@@ -622,8 +606,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, host.page);
             const discardHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);
@@ -742,7 +724,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             const initialSummary = await readOnlineAiStateSummary(matchId, host.page);
             const initialHand0 = initialSummary.handCounts['0'] ?? 0;
             const initialDiscardCount = initialSummary.discardCount;
@@ -769,8 +750,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const afterDrawSummary = await readOnlineAiStateSummary(matchId, host.page);
             const discardHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await discardHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const summary = await readOnlineAiStateSummary(matchId, host.page);

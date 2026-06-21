@@ -10,6 +10,7 @@ import {
 import { TestHarness, isTestEnvironment } from '../testing';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import {
+    isPersistedLocalStateCompatible,
     normalizePersistedLocalStateForGame,
     normalizeStateForConfig,
 } from './stateNormalization';
@@ -249,7 +250,10 @@ export function createInitialLocalProviderState(args: {
         setupData,
         setupPlayerIds,
     } = args;
-    if (persistedState) {
+    if (persistedState && isPersistedLocalStateCompatible({
+        state: persistedState,
+        expectedPlayerIds: setupPlayerIds,
+    })) {
         return setUndoAiSeatIds(
             normalizePersistedLocalStateForGame(config, persistedState),
             aiSeatIds,

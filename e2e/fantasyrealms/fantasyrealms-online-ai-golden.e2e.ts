@@ -318,7 +318,6 @@ async function openFantasyRealmsOnlineAiRoom(
 async function completeHostDeckTurnUntilAiOrGameOver(args: {
     matchId: string;
     page: Page;
-    liveActionButton: ReturnType<Page['getByTestId']>;
     aiSeatIds: string[];
     roundLabel: string;
     afterHostTurnTimeoutMs: number;
@@ -348,8 +347,6 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
     const afterDrawSummary = await readOnlineAiStateSummary(args.matchId, args.page);
     const discardHandButton = args.page.getByRole('button', { name: /弃置手牌/ }).first();
     await discardHandButton.click();
-    await expect(args.liveActionButton).toContainText('确认弃牌');
-    await args.liveActionButton.click();
 
     await expect.poll(async () => {
         const state = await readOnlineAiMatchState(args.matchId, args.page);
@@ -383,7 +380,6 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
 async function waitForMultiSeatAiRoundtripOrGameOver(args: {
     matchId: string;
     page: Page;
-    liveActionButton: ReturnType<Page['getByTestId']>;
     aiTurnSummary: OnlineAiSummary;
     roundLabel: string;
     aiRoundtripTimeoutMs: number;
@@ -439,7 +435,6 @@ async function runMultiSeatNaturalOnlineAiScenario(
     try {
         await clearEvidenceScreenshotsForTest(testInfo);
 
-        const liveActionButton = page.getByTestId('fantasyrealms-live-action-discard');
         let completedAiRoundtrips = 0;
 
         for (let round = 1; round <= options.maxRounds; round += 1) {
@@ -447,7 +442,6 @@ async function runMultiSeatNaturalOnlineAiScenario(
             const afterHost = await completeHostDeckTurnUntilAiOrGameOver({
                 matchId,
                 page,
-                liveActionButton,
                 aiSeatIds: options.aiSeatIds,
                 roundLabel,
                 afterHostTurnTimeoutMs: options.afterHostTurnTimeoutMs,
@@ -459,7 +453,6 @@ async function runMultiSeatNaturalOnlineAiScenario(
             const afterAi = await waitForMultiSeatAiRoundtripOrGameOver({
                 matchId,
                 page,
-                liveActionButton,
                 aiTurnSummary: afterHost.summary,
                 roundLabel,
                 aiRoundtripTimeoutMs: options.aiRoundtripTimeoutMs,

@@ -19,6 +19,7 @@
     "reviewChip": "Endgame Review",
     "compact": {
       "draw": "Draw",
+      "drawChoice": "Draw (or take center card)",
       "drawTwo": "Draw 2",
       "discard": "Discard"
     },
@@ -38,8 +39,9 @@
     "statusBanner": {
       "kicker": "Next",
       "discardPick": "Discard 1",
-      "discardSelf": "Confirm Discard",
-      "discardDirect": "Discard",
+      "discardDirect": "Discard 1 card",
+      "drawChoice": "Draw / Take center card",
+      "takeCenter": "Take center card",
       "waiting": "Waiting for {{player}}"
     }
   },
@@ -80,10 +82,7 @@
     "discardHandAria": "Discard hand card {{name}}",
     "inspectHandAria": "Inspect hand card {{name}}",
     "openMagnifyAria": "Magnify {{name}}",
-    "confirmTake": "Confirm",
-    "confirmDiscard": "Confirm Discard",
     "closePreview": "Close Preview",
-    "selectDiscardRequired": "Select a card to take",
     "selected": "Selected"
   },
   "focus": {
@@ -124,5 +123,15 @@
       "base": "Base Deck",
       "cursedHoardSuits": "Cursed Hoard: Suit Expansion"
     }
+  },
+  "error": {
+    "unknownCard": "That card is not visible right now.",
+    "notYourTurn": "It is not your turn.",
+    "notInDrawStage": "You cannot draw right now.",
+    "deckEmpty": "The deck is empty.",
+    "discardCardUnavailable": "That center card is not available.",
+    "notInDiscardStage": "You cannot discard right now.",
+    "handCardUnavailable": "That hand card is not available to discard.",
+    "unknownCommand": "Unknown command."
   }
 }

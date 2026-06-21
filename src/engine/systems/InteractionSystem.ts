@@ -224,6 +224,7 @@ export type SimpleChoiceTargetType =
     | 'ongoing'
     | 'player'
     | 'button'
+    | 'discard'
     | 'discard_minion'
     | 'generic';
 

@@ -1380,12 +1380,13 @@ function timeTravelersTimeRaider(ctx: AbilityContext): AbilityResult {
             discard.map(card => ({
                 id: card.uid,
                 label: cardLabel(card),
-                value: { cardUid: card.uid },
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
                 displayMode: 'card' as const,
             })),
             {
                 sourceId: 'time_travelers_time_raider_choose',
-                targetType: 'generic',
+                targetType: 'discard',
                 titleKey: 'ui.time_travelers_time_raider_choose_title',
             },
         );
@@ -1418,12 +1419,13 @@ function timeTravelersRepeaterPerfect(ctx: AbilityContext): AbilityResult {
             actions.map(card => ({
                 id: card.uid,
                 label: cardLabel(card),
-                value: { cardUid: card.uid },
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
                 displayMode: 'card' as const,
             })),
             {
                 sourceId: 'time_travelers_repeater_perfect_choose',
-                targetType: 'generic',
+                targetType: 'discard',
                 titleKey: 'ui.time_travelers_repeater_perfect_choose_title',
             },
         );

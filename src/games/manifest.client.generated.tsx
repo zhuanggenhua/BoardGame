@@ -96,6 +96,11 @@ const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
+const loadCriticalImageResolver5 = async () => {
+    const resolverModule = await import('./fantasyrealms/criticalImageResolver');
+    return resolverModule.default ?? resolverModule.fantasyRealmsCriticalImageResolver;
+};
+
 const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule] = await Promise.all([
         import('./qidahen/game'),
@@ -236,6 +241,7 @@ const entry5: GameClientManifestEntry = {
     manifest: manifest5,
     thumbnail: <Thumbnail5 />,
     loadRuntime: loadRuntime5,
+    loadCriticalImageResolver: loadCriticalImageResolver5,
 };
 
 const entry6: GameClientManifestEntry = {

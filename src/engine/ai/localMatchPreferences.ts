@@ -12,7 +12,7 @@ import {
     resolveLocalMatchPlayerCount,
 } from './seatControllers';
 import type { AiSeatController } from './types';
-import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
+import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
 
 const STORAGE_PREFIX = 'local_ai_match_preferences:';
 
@@ -47,6 +47,11 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
         setupData: defaultSetupSelections,
     });
     const numPlayers = resolveLocalMatchPlayerCount(null, playerOptions);
+    const setupSelections = applySetupDefaultsForGame({
+        gameManifest,
+        numPlayers,
+        setupSelections: defaultSetupSelections,
+    });
     const seatControllers: Record<string, AiSeatController> = {};
 
     for (let index = 0; index < numPlayers; index += 1) {
@@ -57,7 +62,7 @@ export function createDefaultLocalMatchPreferences(gameManifest: GameManifestEnt
         numPlayers,
         minimumActionDelayMs: DEFAULT_AI_MINIMUM_ACTION_DELAY_MS,
         seatControllers,
-        setupSelections: defaultSetupSelections,
+        setupSelections,
     };
 }
 
@@ -69,13 +74,21 @@ export function normalizeLocalMatchPreferences(
     const rawSetupSelections = raw?.setupSelections && typeof raw.setupSelections === 'object' && !Array.isArray(raw.setupSelections)
         ? raw.setupSelections as Record<string, unknown>
         : {};
-    const setupSelections = normalizeSetupSelections(
+    const normalizedSetupSelections = normalizeSetupSelections(
         gameManifest,
         rawSetupSelections,
     );
+    const requestedNumPlayers = typeof raw?.numPlayers === 'number' || typeof raw?.numPlayers === 'string'
+        ? Number(raw.numPlayers)
+        : defaults.numPlayers;
+    const setupSelectionsWithDefaults = applySetupDefaultsForGame({
+        gameManifest,
+        numPlayers: Number.isInteger(requestedNumPlayers) ? requestedNumPlayers : defaults.numPlayers,
+        setupSelections: normalizedSetupSelections,
+    });
     const playerOptions = resolveAllowedPlayerCountsForGame({
         gameManifest,
-        setupData: setupSelections,
+        setupData: setupSelectionsWithDefaults,
     });
     const numPlayers = resolveLocalMatchPlayerCount(
         typeof raw?.numPlayers === 'number' || typeof raw?.numPlayers === 'string'
@@ -83,6 +96,11 @@ export function normalizeLocalMatchPreferences(
             : null,
         playerOptions,
     );
+    const setupSelections = applySetupDefaultsForGame({
+        gameManifest,
+        numPlayers,
+        setupSelections: setupSelectionsWithDefaults,
+    });
 
     const seatControllers: Record<string, AiSeatController> = {};
     const rawControllers = raw?.seatControllers && typeof raw.seatControllers === 'object' && !Array.isArray(raw.seatControllers)

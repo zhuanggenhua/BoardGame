@@ -512,6 +512,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                         {t('ui.player_taken', {
                                             id: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
                                             player: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
+                                            defaultValue: '{{player}} 已占领',
                                         })}
                                     </span>
                                 </div>

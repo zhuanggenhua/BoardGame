@@ -183,7 +183,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
         if (!showDiscard || discard.length === 0) return undefined;
 
         return {
-            title: `${t('ui.discard_pile')} (${discard.length})`,
+            title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
             panelKind: 'discard' as const,
             // 反转顺序：最新弃掉的卡在左边
             cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
@@ -202,7 +202,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
         if (!showDeck || !deckQueryEnabled || aggregatedDeckCards.length === 0) return undefined;
 
         return {
-            title: `${t('ui.deck')} (${deckCount})`,
+            title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
             panelKind: 'deck' as const,
             cards: aggregatedDeckCards,
             onClose: handleCloseDeck,
@@ -333,8 +333,8 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                             style={{ fontSize: titanAbilityBadgeFontSize }}
                                         >
                                             {isReactionTitan
-                                                ? t('ui.titan_reaction_available')
-                                                : t('ui.titan_play_available')}
+                                                ? t('ui.titan_reaction_available', { defaultValue: '可触发' })
+                                                : t('ui.titan_play_available', { defaultValue: '可打出' })}
                                         </div>
                                     </div>
                                 )}
@@ -364,7 +364,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                     className="mt-2 bg-black/60 px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider"
                     style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
                 >
-                    {t('ui.titan')}
+                    {t('ui.titan', { defaultValue: '泰坦' })}
                 </div>
             )}
         </div>
@@ -447,7 +447,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         className="mt-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-white font-bold uppercase tracking-wider flex items-center gap-1"
                         style={{ minHeight: labelMinHeight, fontSize: labelFontSize }}
                     >
-                        <Library size={10} /> {t('ui.deck')}
+                        <Library size={10} /> {t('ui.deck', { defaultValue: '牌库' })}
                     </div>
                 </div>
                 {titanRailContent}

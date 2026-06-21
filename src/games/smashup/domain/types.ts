@@ -660,6 +660,10 @@ export interface TriggerInstance {
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
+    triggerCardUid?: string;
+    triggerCardDefId?: string;
+    triggerCardOwnerId?: PlayerId;
+    triggerCardKind?: 'ongoing' | 'attached_action';
     /** destroyer (for onMinionDestroyed "after you destroy" checks) */
     destroyerId?: PlayerId;
     /** 被影响/被消灭随从的控制者等事件控制者上下文 */

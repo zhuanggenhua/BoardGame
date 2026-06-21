@@ -2088,6 +2088,41 @@ export function processAffectTriggers(
                 controllerId: record.triggerMinion!.controller,
             }));
         for (const [recordIndex, record] of affectRecords.entries()) {
+            if (
+                record.affectType === 'destroy'
+                && (record.targetKind === 'ongoing' || record.targetKind === 'attached_action')
+                && record.triggerCardUid
+                && record.triggerCardDefId
+                && record.triggerCardOwnerId
+            ) {
+                const sourceEventId = `card-destroyed:${event.type}:${record.triggerCardUid}:${record.affectType}:${record.baseIndex ?? 'none'}:${eventIndex}:${recordIndex}:${now}`;
+                const frameId = `card-destroyed-frame:${event.type}:${record.triggerCardUid}:${record.affectType}:${record.baseIndex ?? 'none'}:${eventIndex}:${recordIndex}:${now}`;
+                const queuedCardDestroyed = collectTriggers(coreBeforeAffect, 'onCardDestroyed', {
+                    state: coreBeforeAffect,
+                    matchState: stateBeforeAffect,
+                    playerId: record.sourcePlayerId ?? playerId,
+                    baseIndex: record.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    sourceCardUid: record.sourceCardUid,
+                    sourceDefId: record.sourceDefId,
+                    sourceBaseIndex: record.sourceBaseIndex,
+                    sourceControllerId: record.sourceControllerId,
+                    sourceOwnerPlayerId: record.sourceOwnerPlayerId,
+                    triggerCardUid: record.triggerCardUid,
+                    triggerCardDefId: record.triggerCardDefId,
+                    triggerCardOwnerId: record.triggerCardOwnerId,
+                    triggerCardKind: record.triggerCardKind,
+                    destroyerId: record.sourcePlayerId ?? playerId,
+                    affectType: record.affectType,
+                    affectEvent: event,
+                    reason: record.reason,
+                    random,
+                    now,
+                });
+                if (queuedCardDestroyed) extraEvents.push(queuedCardDestroyed);
+            }
+
             if (!record.countsForOnMinionAffected || !record.triggerMinion || record.baseIndex === undefined) continue;
             const sourceEventId = `minion-affected:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
             const frameId = `minion-affected-frame:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;

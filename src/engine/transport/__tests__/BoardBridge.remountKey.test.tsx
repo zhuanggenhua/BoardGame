@@ -11,6 +11,9 @@ const testConfig = {
     gameId: 'board-bridge-test',
     domain: {
         setup: (playerIds: string[]) => ({
+            players: Object.fromEntries(playerIds.map((playerId) => [playerId, { id: playerId }])),
+            playerIds,
+            currentPlayer: playerIds[0] ?? null,
             turnOrder: playerIds,
             currentPlayerIndex: 0,
         }),
@@ -126,6 +129,7 @@ const smashupDirtyDispatchConfig = {
 describe('BoardBridge remountKey', () => {
     afterEach(() => {
         cleanup();
+        window.localStorage.clear();
     });
 
     it('remountKey 为 false 时，playerID 切换只更新 props，不重挂载 Board', () => {
@@ -216,6 +220,8 @@ describe('BoardBridge remountKey', () => {
                 sys: {
                     phase: 'playCards',
                     turnNumber: 1,
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 0,
                     eventStream: { nextId: 1 },
                     interaction: { current: undefined, queue: [], isBlocked: false },
                     responseWindow: { current: undefined },
@@ -238,7 +244,56 @@ describe('BoardBridge remountKey', () => {
             </LocalGameProvider>,
         );
 
-        expect(screen.getByTestId('smashup-state').textContent).toBe('["special_madness","special_madness","special_madness"]');
+        return waitFor(() => {
+            expect(screen.getByTestId('smashup-state').textContent).toBe('["special_madness","special_madness","special_madness"]');
+        });
+    });
+
+    it('LocalGameProvider 恢复到与当前 2 人对局不兼容的旧快照时，应丢弃多余玩家并重建当前局面', () => {
+        const key = 'local_match_snapshot_v1:board-bridge-test:board-bridge-invalid-player-snapshot';
+        window.localStorage.setItem(key, JSON.stringify({
+            version: 1,
+            gameId: 'board-bridge-test',
+            seed: 'board-bridge-invalid-player-snapshot',
+            numPlayers: 2,
+            randomCursor: 0,
+            savedAt: Date.now(),
+            state: {
+                core: {
+                    players: {
+                        '0': { id: '0' },
+                        '1': { id: '1' },
+                        '2': { id: '2' },
+                    },
+                    playerIds: ['0', '1', '2'],
+                    currentPlayer: '2',
+                },
+                sys: {
+                    matchId: 'local:board-bridge-test:board-bridge-invalid-player-snapshot',
+                    turnOrder: ['0', '1', '2'],
+                    currentPlayerIndex: 2,
+                },
+            },
+        }));
+
+        const Board = ({ G }: GameBoardProps<unknown>) => (
+            <pre data-testid="state-player-ids">{JSON.stringify(Object.keys(((G as any)?.core?.players ?? {})))}</pre>
+        );
+
+        render(
+            <LocalGameProvider
+                config={testConfig}
+                numPlayers={2}
+                seed="board-bridge-invalid-player-snapshot"
+                persistSession
+            >
+                <BoardBridge board={Board} remountKey={false} />
+            </LocalGameProvider>,
+        );
+
+        return waitFor(() => {
+            expect(screen.getByTestId('state-player-ids').textContent).toBe('["0","1"]');
+        });
     });
 
     it('LocalGameProvider 运行中的本地 dispatch 若产出脏 SmashUp runtime state，会在渲染前先归一化', async () => {

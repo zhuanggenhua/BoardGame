@@ -19,9 +19,17 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain('isDirectHandSelectPrompt && handSelectExtraOptions.length > 0');
         expect(source).toContain('const shouldRender = !isDirectHandSelectPrompt');
         expect(source).not.toContain('const shouldRender = !isReactionChoicePrompt');
+        expect(source).toContain('&& !isDiscardCardPrompt');
         expect(source).toContain('isDiscardMode={needDiscard}');
         expect(source).not.toContain('isHandDrivenPrompt');
         expect(source).not.toContain('isReactionDirectHandPrompt');
+    });
+
+    it('弃牌堆静态选牌 prompt 应自动打开弃牌堆面板，而不是落回中央层', () => {
+        const source = readBoardSource();
+        expect(source).toContain("data?.targetType !== 'discard'");
+        expect(source).toContain("autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}");
+        expect(source).toContain('onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : setDiscardStripSelectedUid}');
     });
 
     it('计分响应里手牌后点基地应优先回到 smashup_reaction_choose 的统一响应入口', () => {

@@ -337,9 +337,10 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        const setupSelects = screen.getAllByRole('combobox');
-        const variantSelect = setupSelects[1];
+        const variantSelect = screen.getByTestId('setup-option-select-variant');
 
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.getByRole('button', { name: '3人' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
 
         fireEvent.change(variantSelect, { target: { value: 'duel' } });
@@ -361,6 +362,47 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 
+    it('幻想国度标准局建房不应再提供 2 人按钮', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
+        expect(screen.getByRole('button', { name: '3人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '4人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '5人' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '6人' })).toBeInTheDocument();
+    });
+
+    it('幻想国度重新打开建房弹窗时，扩展应默认回到基础卡组，而不是记住上次扩展', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: {
+                numPlayers: 3,
+                minimumActionDelayMs: 1000,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'human' },
+                    '2': { type: 'human' },
+                },
+                setupSelections: {
+                    variant: 'standard',
+                    expansion: 'cursed-hoard-suits',
+                },
+            },
+        }));
+
+        expect(screen.getByTestId('setup-option-select-expansion-base')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits')).toHaveAttribute('aria-pressed', 'false');
+    });
+
     it('幻想国度从二人变体切回标准版后，应重新放开更高人数选项', () => {
         const onConfirm = vi.fn();
 
@@ -372,13 +414,13 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        const setupSelects = screen.getAllByRole('combobox');
-        const variantSelect = setupSelects[1];
+        const variantSelect = screen.getByTestId('setup-option-select-variant');
 
         fireEvent.change(variantSelect, { target: { value: 'duel' } });
         expect(screen.queryByRole('button', { name: '6人' })).toBeNull();
 
         fireEvent.change(variantSelect, { target: { value: 'standard' } });
+        expect(screen.queryByRole('button', { name: '2人' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: '6人' }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
@@ -402,10 +444,8 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        const setupSelects = screen.getAllByRole('combobox');
-        const expansionSelect = setupSelects[2];
-
-        fireEvent.change(expansionSelect, { target: { value: 'cursed-hoard-suits' } });
+        expect(screen.queryByTestId('setup-option-select-expansion')).toBeNull();
+        fireEvent.click(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits'));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -414,6 +454,20 @@ describe('CreateRoomModal AI default state', () => {
                 expansion: 'cursed-hoard-suits',
             }),
         }));
+    });
+
+    it('幻想国度扩展入口使用 tag 切片，而不是下拉框', () => {
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm: vi.fn(),
+            gameManifest: FANTASY_REALMS_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        expect(screen.queryByTestId('setup-option-select-expansion')).toBeNull();
+        expect(screen.getByTestId('setup-option-select-expansion-base')).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits')).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('七大恨建房页不再提供剧本预选，而是只提示局内完成剧本介绍、投票与前置项', () => {

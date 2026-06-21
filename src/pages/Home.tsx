@@ -38,6 +38,7 @@ import clsx from 'clsx';
 import * as matchApi from '../services/matchApi';
 import { SEO } from '../components/common/SEO';
 import { useLobbyStats } from '../hooks/useLobbyStats';
+import { useGamePopularityRanking } from '../hooks/useGamePopularityRanking';
 import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { versionedPublicFileUrl } from '../lib/publicFileUrl';
@@ -46,6 +47,7 @@ import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { reportClientAutoFeedbackOnce } from '../lib/feedback/clientAutoReport';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
+import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
@@ -264,6 +266,7 @@ export const Home = () => {
 
     // Monitoring & Stats
     const { mostPopularGameId } = useLobbyStats();
+    const gamePopularityById = useGamePopularityRanking();
 
     const { user, token, logout } = useAuth();
     const { openModal, closeModal } = useModalStack();
@@ -280,8 +283,14 @@ export const Home = () => {
     }, [i18n, t]);
     const filteredGames = useMemo(() => {
         void registryVersion;
-        return getGamesByCategory(activeCategory);
-    }, [activeCategory, registryVersion]);
+        const category = activeCategory === 'All' ? 'all' : activeCategory;
+        return sortGamesForLobbyDirectory(
+            getGamesByCategory(activeCategory),
+            category,
+            gamePopularityById,
+            [],
+        );
+    }, [activeCategory, gamePopularityById, registryVersion]);
     useEffect(() => {
         if (user?.id) return;
         setGuestId((current) => current ?? getOrCreateGuestId());

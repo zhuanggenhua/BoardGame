@@ -123,6 +123,96 @@ function buildCompareRollVisibleState(args?: {
 }
 
 describe('resolveOnlineAiDecisionView', () => {
+    it('phase 为空但 event/currentPlayer 对齐时，不应把私有视角误判为过期', async () => {
+        const gameId = '__test_online_ai_phase_less_private_overlay__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                const core = state.core as {
+                    currentPlayer?: string;
+                    stage?: string;
+                } | undefined;
+                if (core?.currentPlayer !== playerId || core?.stage !== 'draw') {
+                    return [];
+                }
+                return [{
+                    actionId: `draw-${playerId}`,
+                    kind: 'draw-card',
+                    label: `draw-${playerId}`,
+                    commands: [{ type: 'DRAW_FROM_DECK', payload: {} }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: (context) => (
+                        context.legalActions[0]
+                            ? { actionId: context.legalActions[0].actionId }
+                            : null
+                    ),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const sharedState = {
+            sys: {
+                phase: '',
+                turnNumber: 0,
+                eventStream: {
+                    nextId: 4,
+                    entries: [],
+                },
+                interaction: { current: null, queue: [], isBlocked: false },
+                responseWindow: { current: null },
+            },
+            core: {
+                currentPlayer: '1',
+                turn: 2,
+                stage: 'draw',
+            },
+        } as MatchState<unknown>;
+        const seatState = structuredClone(sharedState);
+
+        const resolved = resolveOnlineAiDecisionView({
+            sharedState,
+            privateOverlay: seatState,
+            playerId: '1',
+        });
+
+        expect(resolved.visibility).toBe('private-required');
+        expect(resolved.canDecide).toBe(true);
+        expect(resolved.blockedReason).toBeNull();
+        expect(resolved.visibleState).toBe(seatState);
+
+        const dispatch = await resolveNextAiDispatch({
+            engineConfig: {
+                gameId,
+                domain: {} as never,
+                systems: [],
+            },
+            state: sharedState,
+            matchId: 'match-phase-less-private-overlay',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+                sharedState,
+                privateOverlay: seatState,
+                playerId,
+            }),
+        });
+
+        expect(dispatch.kind).toBe('action');
+        if (dispatch.kind !== 'action') {
+            return;
+        }
+        expect(dispatch.resolution.playerId).toBe('1');
+        expect(dispatch.resolution.action.commands).toEqual([
+            { type: 'DRAW_FROM_DECK', payload: {} },
+        ]);
+    });
+
     it('compare-roll 公开可见但仍 blocked 的 contestant，应优先使用新鲜 seat snapshot 作为 visibleState', () => {
         const sharedState = buildCompareRollSharedState();
         const seatState = buildCompareRollSeatState();

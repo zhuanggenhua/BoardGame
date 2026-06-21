@@ -48,6 +48,7 @@ vi.mock('../../config/games.config', () => ({
         id: 'fantasyrealms',
         title: '幻想国度',
         playerOptions: [2, 3, 4, 5, 6],
+        bestPlayers: [3, 4],
         setupOptions: {
             variant: {
                 type: 'select',
@@ -198,5 +199,49 @@ describe('LocalMatchRoom', () => {
             '1': expect.objectContaining({ type: 'local-ai' }),
         });
         expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it('幻想国度 legacy 二人本地链接未显式写 variant 时，也应自动按 duel 收敛到 2 人', async () => {
+        mockSearchParams = new URLSearchParams('players=2&seed=legacy-two-player');
+        const { LocalMatchRoom } = await import('../LocalMatchRoom');
+
+        render(<LocalMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(2);
+        expect(latestCall.setupData).toEqual({
+            variant: 'duel',
+            expansion: 'base',
+            setupSelections: {
+                variant: 'duel',
+                expansion: 'base',
+            },
+        });
+    });
+
+    it('未显式指定人数时，应默认落到最佳标准局人数，而不是被 2 人总体支持误吸到 duel', async () => {
+        mockSearchParams = new URLSearchParams('seed=default-standard');
+        const { LocalMatchRoom } = await import('../LocalMatchRoom');
+
+        render(<LocalMatchRoom />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('local-game-provider-probe')).toBeInTheDocument();
+        });
+
+        const latestCall = localGameProviderSpy.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+        expect(latestCall.numPlayers).toBe(3);
+        expect(latestCall.setupData).toEqual({
+            variant: 'standard',
+            expansion: 'base',
+            setupSelections: {
+                variant: 'standard',
+                expansion: 'base',
+            },
+        });
     });
 });

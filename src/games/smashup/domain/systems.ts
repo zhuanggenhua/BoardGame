@@ -553,10 +553,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                     continue;
                                 }
 
-                                const producedMinionPlayed = emittedEvents.some(
-                                    (resultEvent) => resultEvent.type === SU_EVENT_TYPES.MINION_PLAYED,
-                                );
-                                if (startTurnWindowActive && producedMinionPlayed) {
+                                if (startTurnWindowActive && producedDomainEvents) {
                                     newState = {
                                         ...newState,
                                         sys: {

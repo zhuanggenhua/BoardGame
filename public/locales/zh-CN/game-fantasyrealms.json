@@ -19,6 +19,7 @@
     "reviewChip": "终局复盘",
     "compact": {
       "draw": "摸牌",
+      "drawChoice": "摸牌（或拿中央牌）",
       "drawTwo": "摸 2 张",
       "discard": "弃牌"
     },
@@ -38,8 +39,9 @@
     "statusBanner": {
       "kicker": "下一步",
       "discardPick": "弃置 1 张",
-      "discardSelf": "确认弃牌",
-      "discardDirect": "弃牌",
+      "discardDirect": "弃一张牌",
+      "drawChoice": "摸牌 / 拿中央牌",
+      "takeCenter": "拿中央牌",
       "waiting": "等待 {{player}}"
     }
   },
@@ -80,10 +82,7 @@
     "discardHandAria": "弃置手牌 {{name}}",
     "inspectHandAria": "查看手牌 {{name}}",
     "openMagnifyAria": "放大查看 {{name}}",
-    "confirmTake": "确认选择",
-    "confirmDiscard": "确认弃牌",
     "closePreview": "关闭预览",
-    "selectDiscardRequired": "选择一张牌获取",
     "selected": "已选"
   },
   "focus": {
@@ -124,5 +123,15 @@
       "base": "基础卡组",
       "cursedHoardSuits": "诅咒宝藏：新花色"
     }
+  },
+  "error": {
+    "unknownCard": "该牌当前不可见",
+    "notYourTurn": "现在还不是你的回合",
+    "notInDrawStage": "当前还不能摸牌",
+    "deckEmpty": "牌库已经空了",
+    "discardCardUnavailable": "这张中央牌当前不能拿",
+    "notInDiscardStage": "当前还不能弃牌",
+    "handCardUnavailable": "这张手牌当前不能弃",
+    "unknownCommand": "未知操作"
   }
 }

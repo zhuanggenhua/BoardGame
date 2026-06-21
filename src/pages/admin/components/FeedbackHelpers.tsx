@@ -306,11 +306,38 @@ function formatLastUserAction(context: FeedbackClientContext): string {
     return parts.join(', ');
 }
 
+function formatRecentUserActions(context: FeedbackClientContext): string {
+    const actions = context.recentUserActions;
+    if (!actions?.length) return '-';
+    return actions
+        .map((action, index) => {
+            const parts = [
+                `${index + 1}.${action.type}`,
+                action.key ? `key=${action.key}` : '',
+                action.at ? `at=${action.at}` : '',
+                action.target ? `target=${formatElementSummary(action.target)}` : '',
+            ].filter(Boolean);
+            return parts.join(', ');
+        })
+        .join(' | ');
+}
+
 function formatRouteChange(context: FeedbackClientContext): string {
     const routeChange = context.lastRouteChange;
     if (!routeChange) return '-';
     const from = routeChange.from || '-';
     return `${from} -> ${routeChange.to} (${routeChange.trigger} @ ${routeChange.at})`;
+}
+
+function formatRecentRouteChanges(context: FeedbackClientContext): string {
+    const routeChanges = context.recentRouteChanges;
+    if (!routeChanges?.length) return '-';
+    return routeChanges
+        .map((routeChange, index) => {
+            const from = routeChange.from || '-';
+            return `${index + 1}.${from} -> ${routeChange.to} (${routeChange.trigger} @ ${routeChange.at})`;
+        })
+        .join(' | ');
 }
 
 function formatPageFlags(context: FeedbackClientContext): string {
@@ -345,7 +372,9 @@ function buildClientContextLines(context: FeedbackClientContext | null | undefin
         `- viewport: ${context.viewport ? `${context.viewport.width}x${context.viewport.height}` : '-'}`,
         `- activeElement: ${formatElementSummary(context.activeElement)}`,
         `- lastUserAction: ${formatLastUserAction(context)}`,
+        `- recentUserActions: ${formatRecentUserActions(context)}`,
         `- lastRouteChange: ${formatRouteChange(context)}`,
+        `- recentRouteChanges: ${formatRecentRouteChanges(context)}`,
         `- pageFlags: ${formatPageFlags(context)}`,
         `- userAgent: ${context.userAgent || '-'}`,
     ];

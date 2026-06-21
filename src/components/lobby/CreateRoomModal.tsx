@@ -30,7 +30,10 @@ import {
     getDefaultSetupSelections,
     type GameSetupSelections,
 } from '../../games/setupOptions';
-import { resolveAllowedPlayerCountsForGame } from '../../games/roomSetupRegistry';
+import {
+    applyCreateRoomSetupDefaultsForGame,
+    resolveAllowedPlayerCountsForGame,
+} from '../../games/roomSetupRegistry';
 import {
     QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
     QIDAHEN_PREGAME_CHOICE_FIELDS,
@@ -297,6 +300,28 @@ const normalizeExtendedSetupSelections = (
         : selections
 );
 
+const normalizeCreateRoomSetupSelections = (args: {
+    gameManifest: GameManifestEntry;
+    setupFields: ReadonlyArray<readonly [string, GameSetupField]>;
+    numPlayers: number;
+    setupSelections: GameSetupSelections;
+    isQidahenRoom: boolean;
+}): GameSetupSelections => {
+    const setupWithDefaults = applyCreateRoomSetupDefaultsForGame({
+        gameManifest: args.gameManifest,
+        numPlayers: args.numPlayers,
+        setupSelections: args.setupSelections,
+    });
+    return normalizeExtendedSetupSelections({
+        ...setupWithDefaults,
+        ...normalizeSetupValuesForFields(
+            args.setupFields,
+            args.numPlayers,
+            toSelectValueRecord(setupWithDefaults),
+        ),
+    }, args.isQidahenRoom);
+};
+
 export const CreateRoomModal = ({
     isOpen,
     onClose,
@@ -328,14 +353,13 @@ export const CreateRoomModal = ({
         gameManifest.bestPlayers?.find((count) => playerOptions.includes(count))
         ?? playerOptions[0]
     ), [gameManifest.bestPlayers, playerOptions]);
-    const defaultSetupSelections = useMemo(() => normalizeExtendedSetupSelections({
-        ...rawDefaultSetupSelections,
-        ...normalizeSetupValuesForFields(
-            setupFields,
-            defaultNumPlayers,
-            toSelectValueRecord(rawDefaultSetupSelections),
-        ),
-    }, isQidahenRoom), [defaultNumPlayers, isQidahenRoom, rawDefaultSetupSelections, setupFields]);
+    const defaultSetupSelections = useMemo(() => normalizeCreateRoomSetupSelections({
+        gameManifest,
+        setupFields,
+        numPlayers: defaultNumPlayers,
+        setupSelections: rawDefaultSetupSelections,
+        isQidahenRoom,
+    }), [defaultNumPlayers, gameManifest, isQidahenRoom, rawDefaultSetupSelections, setupFields]);
     const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
     const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
@@ -410,14 +434,13 @@ export const CreateRoomModal = ({
             nextPreferences.numPlayers,
             nextMinimumActionDelayMs,
         ));
-        setSetupSelections(normalizeExtendedSetupSelections({
-            ...nextPreferences.setupSelections,
-            ...normalizeSetupValuesForFields(
-                setupFields,
-                nextPreferences.numPlayers,
-                toSelectValueRecord(nextPreferences.setupSelections),
-            ),
-        }, isQidahenRoom));
+        setSetupSelections(normalizeCreateRoomSetupSelections({
+            gameManifest,
+            setupFields,
+            numPlayers: nextPreferences.numPlayers,
+            setupSelections: nextPreferences.setupSelections,
+            isQidahenRoom,
+        }));
     }, [defaultNumPlayers, defaultSetupSelections, gameManifest, initialPreferences, isOpen, isQidahenRoom, setupFields]);
 
     useEffect(() => {
@@ -472,6 +495,17 @@ export const CreateRoomModal = ({
 
     const handleSetupSelectionsChange = (nextSelections: GameSetupSelections) => {
         setSetupSelections(normalizeExtendedSetupSelections(nextSelections, isQidahenRoom));
+    };
+
+    const handlePlayerCountChange = (nextNumPlayers: number) => {
+        setNumPlayers(nextNumPlayers);
+        setSetupSelections((current) => normalizeCreateRoomSetupSelections({
+            gameManifest,
+            setupFields,
+            numPlayers: nextNumPlayers,
+            setupSelections: current,
+            isQidahenRoom,
+        }));
     };
 
     const handleToggleAiEnabled = () => {
@@ -749,7 +783,7 @@ export const CreateRoomModal = ({
                                                     <button
                                                         key={count}
                                                         type="button"
-                                                        onClick={() => setNumPlayers(count)}
+                                                        onClick={() => handlePlayerCountChange(count)}
                                                         className={`${isCompactHomeV2Layout ? 'min-w-[52px] rounded-[5px] px-[9px] py-[5px] text-[8.1px]' : 'rounded-[8px] px-4 py-2 text-sm'} cursor-pointer font-bold transition-all ${
                                                             numPlayers === count
                                                                 ? 'border border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]'
@@ -1052,7 +1086,7 @@ export const CreateRoomModal = ({
                                                 <button
                                                     key={count}
                                                     type="button"
-                                                    onClick={() => setNumPlayers(count)}
+                                                    onClick={() => handlePlayerCountChange(count)}
                                                     className={`cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold transition-all ${
                                                         numPlayers === count
                                                             ? 'bg-parchment-base-text text-parchment-card-bg border border-parchment-base-text'

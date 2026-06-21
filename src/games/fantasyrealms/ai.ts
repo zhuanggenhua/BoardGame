@@ -110,6 +110,8 @@ function buildScoringOptions(args: {
 function resolveBlindSampleCap(drawCount: number, decisionBudgetMs: number): number {
     const normalizedBudget = Number.isFinite(decisionBudgetMs) ? Math.max(0, decisionBudgetMs) : 250;
     const baseline = drawCount >= 2 ? MAX_BLIND_DOUBLE_DRAW_SAMPLES : MAX_BLIND_SINGLE_DRAW_SAMPLES;
+    if (normalizedBudget === 0) return drawCount >= 2 ? 8 : 4;
+    if (normalizedBudget <= 50) return drawCount >= 2 ? 12 : 6;
     if (normalizedBudget >= 1000) return baseline;
     if (normalizedBudget >= 500) return Math.max(32, Math.floor(baseline * 0.75));
     return Math.max(16, Math.floor(baseline * 0.5));

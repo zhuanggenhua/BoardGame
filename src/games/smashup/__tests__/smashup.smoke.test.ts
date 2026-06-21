@@ -2437,8 +2437,7 @@ describe('smashup', () => {
             .map((action) => String(action.metadata?.factionId ?? ''));
 
         expect(factionIds.length).toBeGreaterThan(0);
-        expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS);
-        expect(factionIds).not.toContain(SMASHUP_FACTION_IDS.GRANNIES);
+        expect(factionIds.filter((factionId) => isSmashUpFactionImplementationInProgress(factionId))).toEqual([]);
         expect(factionIds.every((factionId) => getFactionCards(factionId as any).length > 0)).toBe(true);
     });
 

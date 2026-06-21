@@ -10,7 +10,9 @@ import { resolveRuntimeBuildInfo } from './runtimeBuildInfo';
 type FeedbackWindow = Window & {
     __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
     __BG_LAST_USER_ACTION__?: FeedbackUserActionSummary;
+    __BG_RECENT_USER_ACTIONS__?: FeedbackUserActionSummary[];
     __BG_LAST_ROUTE_CHANGE__?: FeedbackRouteChangeSummary;
+    __BG_RECENT_ROUTE_CHANGES__?: FeedbackRouteChangeSummary[];
     __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
     __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
 };
@@ -23,6 +25,8 @@ type RouteContext = {
 };
 
 const MAX_INLINE_TEXT_LENGTH = 80;
+const MAX_RECENT_USER_ACTIONS = 8;
+const MAX_RECENT_ROUTE_CHANGES = 6;
 
 const getHost = (): FeedbackWindow | null => (
     typeof window !== 'undefined' ? (window as FeedbackWindow) : null
@@ -41,6 +45,10 @@ const getCurrentRoute = (): string | undefined => {
     const route = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     return route || undefined;
 };
+
+function appendBounded<T>(items: T[] | undefined, item: T, maxItems: number): T[] {
+    return [...(items ?? []), item].slice(-maxItems);
+}
 
 export function getCurrentRouteContext(): RouteContext {
     if (typeof window === 'undefined') return {};
@@ -111,12 +119,18 @@ function rememberRouteChange(trigger: FeedbackRouteChangeSummary['trigger'], fro
     const host = getHost();
     const to = getCurrentRoute();
     if (!host || !to) return;
-    host.__BG_LAST_ROUTE_CHANGE__ = {
+    const routeChange: FeedbackRouteChangeSummary = {
         from,
         to,
         trigger,
         at: new Date().toISOString(),
     };
+    host.__BG_LAST_ROUTE_CHANGE__ = routeChange;
+    host.__BG_RECENT_ROUTE_CHANGES__ = appendBounded(
+        host.__BG_RECENT_ROUTE_CHANGES__,
+        routeChange,
+        MAX_RECENT_ROUTE_CHANGES,
+    );
 }
 
 function rememberLastUserAction(type: string, eventTarget: EventTarget | null, key?: string) {
@@ -124,12 +138,18 @@ function rememberLastUserAction(type: string, eventTarget: EventTarget | null, k
     if (!host) return;
 
     const normalizedKey = key && key.length > 1 ? key : undefined;
-    host.__BG_LAST_USER_ACTION__ = {
+    const userAction: FeedbackUserActionSummary = {
         type,
         at: new Date().toISOString(),
         key: normalizedKey,
         target: describeElement(eventTarget instanceof Element ? eventTarget : null),
     };
+    host.__BG_LAST_USER_ACTION__ = userAction;
+    host.__BG_RECENT_USER_ACTIONS__ = appendBounded(
+        host.__BG_RECENT_USER_ACTIONS__,
+        userAction,
+        MAX_RECENT_USER_ACTIONS,
+    );
 }
 
 function installHistoryRouteCapture(host: FeedbackWindow) {
@@ -185,7 +205,7 @@ export function installClientDiagnosticCapture() {
 
 export function getClientDiagnosticContext(): Pick<
     FeedbackClientContext,
-    'activeElement' | 'lastUserAction' | 'lastRouteChange' | 'pageFlags'
+    'activeElement' | 'lastUserAction' | 'recentUserActions' | 'lastRouteChange' | 'recentRouteChanges' | 'pageFlags'
 > {
     const host = getHost();
     if (!host || typeof document === 'undefined') {
@@ -195,7 +215,9 @@ export function getClientDiagnosticContext(): Pick<
     return {
         activeElement: describeElement(document.activeElement),
         lastUserAction: host.__BG_LAST_USER_ACTION__,
+        recentUserActions: host.__BG_RECENT_USER_ACTIONS__,
         lastRouteChange: host.__BG_LAST_ROUTE_CHANGE__,
+        recentRouteChanges: host.__BG_RECENT_ROUTE_CHANGES__,
         pageFlags: buildPageFlags(),
     };
 }

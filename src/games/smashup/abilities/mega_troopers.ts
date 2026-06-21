@@ -22,6 +22,7 @@ import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerBaseAbility, registerExtended as registerExtendedBase, type BaseAbilityContext } from '../domain/baseAbilities';
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { registerInterceptor } from '../domain/ongoingEffects';
@@ -29,7 +30,6 @@ import { getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import type {
     ActionCardDef,
-    ActionPlayedEvent,
     CardsDrawnEvent,
     CardInstance,
     DeckReorderedEvent,
@@ -982,16 +982,13 @@ export function registerMegaTroopersInteractionHandlers(): void {
         }
         const def = getCardDef(selected.defId) as ActionCardDef | undefined;
         const targetBaseIndex = def?.playNeedsBase || def?.ongoingTarget === 'base' ? selected.baseIndex : undefined;
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: {
-                playerId,
-                cardUid: selected.cardUid,
-                defId: selected.defId,
-                isExtraAction: true,
-            },
+        const events: SmashUpEvent[] = [buildActionPlayedEvent({
+            playerId,
+            cardUid: selected.cardUid,
+            defId: selected.defId,
             timestamp,
-        } as ActionPlayedEvent];
+            isExtraAction: true,
+        })];
         const result = appendResolvedActionAbility({
             state,
             events,

@@ -14,7 +14,7 @@
        - `MINION_RETURNED`（回手牌）；
        - `MINION_MOVED`（移到其他基地）；
        - `CARD_TO_DECK_TOP` / `CARD_TO_DECK_BOTTOM`（放回牌库顶/底）；
-       - 或 **防止消灭交互**（`sourceId` 在 `PREVENT_DESTROY_SOURCE_IDS` 白名单内，如 `base_nine_lives_intercept`、`giant_ant_drone_prevent_destroy`、`pirate_buccaneer_move`）。
+       - 或 **防止消灭交互**（`sourceId` 在 `PREVENT_DESTROY_SOURCE_IDS` 白名单内，如 `base_nine_lives_intercept`、`giant_ant_drone_prevent_destroy`、`pirate_buccaneer_move`、`kitty_cats_hang_in_there`）。
      - 若出现上述任一情况，则视为“消灭被替代/改写”，本次不再确认“已消灭”。
   4. **Phase 2：确认已消灭 → reaction & onDestroy**
      - 仅当本次 **既没有被替代，也没有 pendingSave** 时，才认为该随从“真正被消灭”；

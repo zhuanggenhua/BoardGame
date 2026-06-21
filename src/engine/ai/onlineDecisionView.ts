@@ -297,7 +297,7 @@ function isPrivateOverlayFreshEnough(args: {
 
     const sharedPhase = resolveStatePhase(args.sharedState);
     const privatePhase = resolveStatePhase(args.privateOverlay);
-    if (!sharedPhase || !privatePhase || sharedPhase !== privatePhase) {
+    if (sharedPhase !== privatePhase) {
         return false;
     }
 

@@ -1,6 +1,8 @@
 import { FEEDBACK_API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { isStaleChunkError } from '../staleChunkReloadGuard';
 import { buildFeedbackClientContext, getCurrentRouteContext } from './clientFeedbackContext';
+import { buildGameFeedbackActionLog, buildGameFeedbackStateSnapshot } from './gameFeedbackDiagnostics';
+import { getCurrentGameFeedbackContext } from './gameFeedbackContext';
 import { setLastErrorContext } from './errorContext';
 
 const DEFAULT_CLIENT_AUTO_REPORT_SOURCE = 'client-auto-report';
@@ -235,6 +237,13 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     const { matchId, mode, gameIdFromRoute } = getCurrentRouteContext();
     const gameId = resolveClientAutoReportGameId(payload.gameId, payload.gameName, gameIdFromRoute);
     const source = payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE;
+    const gameFeedbackContext = getCurrentGameFeedbackContext();
+    const actionLog = gameFeedbackContext?.state
+        ? buildGameFeedbackActionLog(gameFeedbackContext.state)
+        : undefined;
+    const stateSnapshot = gameFeedbackContext?.state
+        ? buildGameFeedbackStateSnapshot(gameFeedbackContext.state)
+        : undefined;
 
     markRecentReport(signature);
 
@@ -252,6 +261,8 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
                 autoReportKind: payload.autoReportKind,
                 gameName: payload.gameName,
                 contactInfo: `auto:${source}`,
+                actionLog,
+                stateSnapshot,
                 clientContext: buildFeedbackClientContext({
                     mode,
                     matchId,

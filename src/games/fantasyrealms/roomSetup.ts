@@ -22,7 +22,7 @@ export interface FantasyRealmsRuntimeSetupConfig {
     cursedHoardSuitsEnabled: boolean;
 }
 
-const FANTASY_REALMS_DEFAULT_PLAYER_OPTIONS = [2, 3, 4, 5, 6] as const;
+const FANTASY_REALMS_STANDARD_PLAYER_OPTIONS = [3, 4, 5, 6] as const;
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -114,7 +114,7 @@ export function getFantasyRealmsAllowedPlayerCounts(
     if (variant === FANTASY_REALMS_DUEL_SETUP_VALUE) {
         return [2];
     }
-    return FANTASY_REALMS_DEFAULT_PLAYER_OPTIONS;
+    return FANTASY_REALMS_STANDARD_PLAYER_OPTIONS;
 }
 
 export function buildFantasyRealmsPublicRoomSummary(
@@ -144,6 +144,7 @@ export function buildFantasyRealmsSetupOptions(): NonNullable<GameManifestEntry[
         [FANTASY_REALMS_EXPANSION_SETUP_FIELD]: {
             type: 'select',
             labelKey: 'setup.expansion.label',
+            presentation: 'segmented',
             options: [
                 { value: FANTASY_REALMS_BASE_EXPANSION_SETUP_VALUE, labelKey: 'setup.expansion.base' },
                 { value: FANTASY_REALMS_CURSED_HOARD_SUITS_SETUP_VALUE, labelKey: 'setup.expansion.cursedHoardSuits' },

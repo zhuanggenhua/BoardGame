@@ -1,6 +1,6 @@
 # CriticalImageGate 使用规则
 
-> 触发条件：修改 `CriticalImageGate`、调整对局首屏加载链路、排查“刷新进入对局很慢”时必读。
+> 触发条件：修改 `CriticalImageGate`、调整对局首屏加载链路、排查“刷新进入对局很慢”，以及**任何游戏首屏依赖 atlas / 牌背 / 棋盘底图 / 角色立绘等正式图片资产**时必读。
 
 ## 两种模式
 
@@ -9,6 +9,9 @@
 
 ## 使用约束
 
+- 只要游戏首屏一进入房间就会直接看到正式图片资产，就**必须**提供 `criticalImageResolver.ts`，把这些首屏关键图显式列进 `critical`；不要等到用户指出“为什么没进度条/为什么首帧抖动/为什么先糊后清晰”才补。
+- 关键图解析器不是可选装饰。对局首屏依赖的 atlas、牌背、桌面图、角色立绘、Token 面等，只要缺它就视为首屏链路未完成。
+- 新游戏或新 UI 若已经在 `Board` / `cardAtlas` / `assets.ts` 引用了正式图片路径，交付前必须同时检查三件事：① 是否存在 `criticalImageResolver.ts`；② `manifest.client.generated.tsx` 是否已生成 `loadCriticalImageResolver`；③ 真实房间页是否能显示 `loadingAssets` 进度态。
 - 联机对局刷新优先使用 `blockRendering={false}`，避免 `/game` 状态同步完成后又被关键图片二次卡住。
 - 教程模式保留 `blockRendering={true}`，因为教程首步、资源切阶段和引导浮层经常互相依赖，不适合先放开棋盘再补资源。
 - `blockRendering={false}` 不等于关闭预加载。`CriticalImageGate` 仍应继续执行 `preloadCriticalImages` / `preloadWarmImages`，只是不要再用 `LoadingScreen` 挡住棋盘。
@@ -18,3 +21,5 @@
 
 - `src/components/game/framework/CriticalImageGate.tsx`：提供 `blockRendering` 能力。
 - `src/pages/MatchRoom.tsx`：联机模式使用后台预加载，教程模式继续阻塞。
+- `src/games/<gameId>/criticalImageResolver.ts`：每个游戏自己的首屏关键图真相源。
+- `src/games/<gameId>/game.ts` 或 `manifest.client.generated.tsx`：确保解析器能在真实房间页进入首屏前被加载到链路中。

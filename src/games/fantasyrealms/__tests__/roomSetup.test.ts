@@ -10,6 +10,14 @@ import {
 } from '../roomSetup';
 
 describe('fantasyrealms room setup', () => {
+    it('标准局人数应限制在 3 到 6 人', () => {
+        expect(getFantasyRealmsAllowedPlayerCounts()).toEqual([3, 4, 5, 6]);
+        expect(resolveAllowedPlayerCountsForGame({
+            gameManifest: manifest,
+            setupData: undefined,
+        })).toEqual([3, 4, 5, 6]);
+    });
+
     it('双人变体 setup 会把允许人数收敛到 2 人', () => {
         const setupData = {
             setupSelections: {

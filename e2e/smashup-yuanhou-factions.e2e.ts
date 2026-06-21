@@ -14548,12 +14548,16 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await expect(page.locator('[data-option-id="repeater-discard-action-a"]')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('[data-option-id="repeater-discard-action-b"]')).toBeVisible({ timeout: 15000 });
-    await game.screenshot('yuanhou-repeater-perfect-discard-action-choice-prompt', testInfo);
-    await screenshotLocator(page.locator('[data-option-id="repeater-discard-action-b"]'), 'yuanhou-repeater-perfect-second-action-option', testInfo);
+    await expect(page.getByTestId('su-discard-toggle')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel] [data-card-uid="repeater-discard-action-a"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel] [data-card-uid="repeater-discard-action-b"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-option-id="repeater-discard-action-a"]')).toHaveCount(0);
+    await expect(page.locator('[data-option-id="repeater-discard-action-b"]')).toHaveCount(0);
+    await game.screenshot('yuanhou-repeater-perfect-discard-action-panel', testInfo);
+    await screenshotLocator(page.locator('[data-discard-view-panel] [data-card-uid="repeater-discard-action-b"]'), 'yuanhou-repeater-perfect-second-action-card', testInfo);
 
-    await page.locator('[data-option-id="repeater-discard-action-b"]').click();
+    await page.locator('[data-discard-view-panel] [data-card-uid="repeater-discard-action-b"]').click();
 
     await expect.poll(async () => {
       const state = await game.getState();
@@ -14571,8 +14575,98 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await expect(page.locator('[data-option-id="repeater-discard-action-b"]')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel]')).toBeHidden({ timeout: 15000 });
     await game.screenshot('yuanhou-repeater-perfect-selected-action-topped', testInfo);
+  });
+
+  test('时间旅行者-Repeater Perfect-候选很多时仍应走弃牌堆底部面板而不是带搜索的中央弹窗', async ({ page, game }, testInfo) => {
+    test.setTimeout(150000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 0,
+          turnNumber: 1,
+          nextUid: 1000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [{ uid: 'repeater-many-hand', defId: 'time_travelers_repeater_perfect', type: 'minion', owner: '0' }],
+              deck: [{ uid: 'repeater-many-deck-a', defId: 'time_travelers_jumper', type: 'minion', owner: '0' }],
+              discard: [
+                { uid: 'repeater-many-discard-action-a', defId: 'time_travelers_time_walk', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-b', defId: 'super_spies_from_q_with_love', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-c', defId: 'cyborg_apes_juiced_up', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-d', defId: 'cyborg_apes_cyberevolution', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-e', defId: 'super_spies_for_my_eyes_only', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-f', defId: 'time_travelers_1_21_gigawatts', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-g', defId: 'time_travelers_time_walk', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-h', defId: 'super_spies_from_q_with_love', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-i', defId: 'cyborg_apes_juiced_up', type: 'action', owner: '0' },
+                { uid: 'repeater-many-discard-action-j', defId: 'cyborg_apes_cyberevolution', type: 'action', owner: '0' },
+              ],
+              factions: ['time_travelers', 'super_spies', 'cyborg_apes'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['cyborg_apes'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+          },
+          bases: [{
+            defId: 'base_portal_room',
+            breakpoint: 20,
+            minions: [],
+            ongoingActions: [],
+          }],
+          baseDeck: ['base_faceless_city'],
+          baseDiscard: [],
+        },
+      },
+    });
+
+    await page.locator('[data-card-uid="repeater-many-hand"]').click();
+    await page.getByTestId('base-zone-0').click();
+
+    const discardPanelCards = page.locator('[data-discard-view-panel] [data-card-uid^="repeater-many-discard-action-"]');
+    await expect(page.locator('[data-discard-view-panel]')).toBeVisible({ timeout: 15000 });
+    await expect(discardPanelCards).toHaveCount(10);
+    await expect(page.getByTestId('prompt-card-search-input')).toHaveCount(0);
+    await expect(page.locator('[data-testid="prompt-card-banner"]')).toHaveCount(0);
+    await game.screenshot('yuanhou-repeater-perfect-many-actions-discard-panel', testInfo);
+
+    await page.locator('[data-discard-view-panel] [data-card-uid="repeater-many-discard-action-j"]').click();
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const deck = state?.core?.players?.['0']?.deck ?? [];
+      const discard = state?.core?.players?.['0']?.discard ?? [];
+      const minions = state?.core?.bases?.[0]?.minions ?? [];
+      return state?.sys?.interaction?.current == null
+        && hasUid(minions, 'repeater-many-hand')
+        && deck.map((card: any) => card?.uid).join(',') === 'repeater-many-discard-action-j,repeater-many-deck-a'
+        && !hasUid(discard, 'repeater-many-discard-action-j');
+    }, {
+      message: 'Repeater Perfect 候选很多时，仍应通过弃牌堆底部面板选中较靠后的行动并正常收口',
+      timeout: 15000,
+    }).toBe(true);
   });
 
   test('时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt', async ({ page, game }, testInfo) => {
@@ -15114,13 +15208,17 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await expect(page.locator('[data-option-id="raider-discard-minion"]')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('[data-option-id="raider-discard-action"]')).toBeVisible({ timeout: 15000 });
-    await game.screenshot('yuanhou-time-raider-discard-choice-prompt', testInfo);
-    await screenshotLocator(page.locator('[data-option-id="raider-discard-minion"]'), 'yuanhou-time-raider-discard-minion-option', testInfo);
-    await screenshotLocator(page.locator('[data-option-id="raider-discard-action"]'), 'yuanhou-time-raider-discard-action-option', testInfo);
+    await expect(page.getByTestId('su-discard-toggle')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel] [data-card-uid="raider-discard-minion"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel] [data-card-uid="raider-discard-action"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-option-id="raider-discard-minion"]')).toHaveCount(0);
+    await expect(page.locator('[data-option-id="raider-discard-action"]')).toHaveCount(0);
+    await game.screenshot('yuanhou-time-raider-discard-panel', testInfo);
+    await screenshotLocator(page.locator('[data-discard-view-panel] [data-card-uid="raider-discard-minion"]'), 'yuanhou-time-raider-discard-minion-card', testInfo);
+    await screenshotLocator(page.locator('[data-discard-view-panel] [data-card-uid="raider-discard-action"]'), 'yuanhou-time-raider-discard-action-card', testInfo);
 
-    await page.locator('[data-option-id="raider-discard-action"]').click();
+    await page.locator('[data-discard-view-panel] [data-card-uid="raider-discard-action"]').click();
 
     await expect.poll(async () => {
       const state = await game.getState();
@@ -15137,8 +15235,111 @@ test.describe('SmashUp yuanhou 四派系 intake 真实入口验证', () => {
       timeout: 15000,
     }).toBe(true);
 
-    await expect(page.locator('[data-option-id="raider-discard-action"]')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('[data-discard-view-panel]')).toBeHidden({ timeout: 15000 });
     await game.screenshot('yuanhou-time-raider-selected-card-bottomed', testInfo);
+  });
+
+  test('时间旅行者-Time Raider-候选很多时仍应走弃牌堆底部面板而不是带搜索的中央弹窗', async ({ page, game }, testInfo) => {
+    test.setTimeout(150000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 0,
+          turnNumber: 1,
+          nextUid: 1000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [],
+              deck: [{ uid: 'raider-many-deck-a', defId: 'time_travelers_jumper', type: 'minion', owner: '0' }],
+              discard: [
+                { uid: 'raider-many-discard-a', defId: 'time_travelers_time_walk', type: 'action', owner: '0' },
+                { uid: 'raider-many-discard-b', defId: 'time_travelers_doctor_when', type: 'minion', owner: '0' },
+                { uid: 'raider-many-discard-c', defId: 'super_spies_from_q_with_love', type: 'action', owner: '0' },
+                { uid: 'raider-many-discard-d', defId: 'cyborg_apes_cyberback', type: 'minion', owner: '0' },
+                { uid: 'raider-many-discard-e', defId: 'cyborg_apes_juiced_up', type: 'action', owner: '0' },
+                { uid: 'raider-many-discard-f', defId: 'time_travelers_jumper', type: 'minion', owner: '0' },
+                { uid: 'raider-many-discard-g', defId: 'cyborg_apes_cyberevolution', type: 'action', owner: '0' },
+                { uid: 'raider-many-discard-h', defId: 'time_travelers_1_21_gigawatts', type: 'action', owner: '0' },
+                { uid: 'raider-many-discard-i', defId: 'time_travelers_repeater_perfect', type: 'minion', owner: '0' },
+                { uid: 'raider-many-discard-j', defId: 'super_spies_for_my_eyes_only', type: 'action', owner: '0' },
+              ],
+              factions: ['time_travelers', 'super_spies', 'cyborg_apes'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['cyborg_apes'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+          },
+          bases: [
+            {
+              defId: 'base_portal_room',
+              breakpoint: 20,
+              minions: [{
+                uid: 'time-raider-many-source',
+                defId: 'time_travelers_time_raider',
+                controller: '0',
+                owner: '0',
+                basePower: 3,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                playedThisTurn: false,
+                attachedActions: [],
+              }],
+              ongoingActions: [],
+            },
+          ],
+          baseDeck: ['base_faceless_city'],
+          baseDiscard: [],
+        },
+      },
+    });
+
+    await page.locator('[data-minion-uid="time-raider-many-source"]').click();
+
+    const discardPanelCards = page.locator('[data-discard-view-panel] [data-card-uid^="raider-many-discard-"]');
+    await expect(page.locator('[data-discard-view-panel]')).toBeVisible({ timeout: 15000 });
+    await expect(discardPanelCards).toHaveCount(10);
+    await expect(page.getByTestId('prompt-card-search-input')).toHaveCount(0);
+    await expect(page.locator('[data-testid="prompt-card-banner"]')).toHaveCount(0);
+    await game.screenshot('yuanhou-time-raider-many-cards-discard-panel', testInfo);
+
+    await page.locator('[data-discard-view-panel] [data-card-uid="raider-many-discard-j"]').click();
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const deck = state?.core?.players?.['0']?.deck ?? [];
+      const discard = state?.core?.players?.['0']?.discard ?? [];
+      const raider = state?.core?.bases?.[0]?.minions?.find((minion: any) => minion?.uid === 'time-raider-many-source');
+      return state?.sys?.interaction?.current == null
+        && deck.map((card: any) => card?.uid).join(',') === 'raider-many-deck-a,raider-many-discard-j'
+        && !hasUid(discard, 'raider-many-discard-j')
+        && raider?.talentUsed === true;
+    }, {
+      message: 'Time Raider 候选很多时，仍应通过弃牌堆底部面板选中较靠后的牌并正常收口',
+      timeout: 15000,
+    }).toBe(true);
   });
 
   test('时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt', async ({ page, game }, testInfo) => {

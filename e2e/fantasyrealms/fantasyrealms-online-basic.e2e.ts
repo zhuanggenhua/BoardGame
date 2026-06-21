@@ -806,7 +806,6 @@ async function completeOnlineDeckTurn(args: {
     const drawCount = getDeckDrawCount(beforeCore);
 
     const deckButton = getFantasyRealmsDeckDrawButton(args.actingPlayer.page);
-    const liveActionButton = args.actingPlayer.page.getByTestId('fantasyrealms-live-action-discard');
     const alreadyInDiscardStage = beforeCore.currentPlayer === args.actingPlayer.playerId && beforeCore.stage === 'discard';
     if (alreadyInDiscardStage) {
         await expect(deckButton).toHaveCount(0);
@@ -835,8 +834,6 @@ async function completeOnlineDeckTurn(args: {
 
     const firstHandDiscardButton = args.actingPlayer.page.getByRole('button', { name: /弃置手牌/ }).first();
     await firstHandDiscardButton.click();
-    await expect(liveActionButton).toContainText('确认弃牌');
-    await liveActionButton.click();
 
     await expectFantasyRealmsTurnSnapshot(
         args.matchId,
@@ -871,11 +868,8 @@ async function completeOnlineTakeDiscardTurn(args: {
     const requiresDiscardAfterTake = requiresDiscardAfterTakingDiscard(beforeCore);
 
     const discardTakeButton = args.actingPlayer.page.getByRole('button', { name: /拿取弃牌/ }).first();
-    const liveActionButton = args.actingPlayer.page.getByTestId('fantasyrealms-live-action-button');
 
     await discardTakeButton.click();
-    await expect(liveActionButton).toContainText('确认选择');
-    await liveActionButton.click();
 
     if (requiresDiscardAfterTake) {
         await expectFantasyRealmsTurnSnapshot(
@@ -894,8 +888,6 @@ async function completeOnlineTakeDiscardTurn(args: {
 
         const firstHandDiscardButton = args.actingPlayer.page.getByRole('button', { name: /弃置手牌/ }).first();
         await firstHandDiscardButton.click();
-        await expect(liveActionButton).toContainText('确认弃牌');
-        await liveActionButton.click();
 
         await expectFantasyRealmsTurnSnapshot(
             args.matchId,
@@ -943,7 +935,6 @@ async function completeOnlineDeckTurnToGameOver(args: {
     const drawCount = getDeckDrawCount(beforeCore);
 
     const deckButton = getFantasyRealmsDeckDrawButton(args.actingPlayer.page);
-    const liveActionButton = args.actingPlayer.page.getByTestId('fantasyrealms-live-action-button');
     await expect(deckButton).toBeVisible({ timeout: 10000 });
 
     await deckButton.click();
@@ -964,8 +955,6 @@ async function completeOnlineDeckTurnToGameOver(args: {
 
     const firstHandDiscardButton = args.actingPlayer.page.getByRole('button', { name: /弃置手牌/ }).first();
     await firstHandDiscardButton.click();
-    await expect(liveActionButton).toContainText('确认弃牌');
-    await liveActionButton.click();
 
     await expect.poll(async () => {
         const state = await readFantasyRealmsMatchState(args.matchId, observerPage);
@@ -1117,9 +1106,10 @@ test.describe('FantasyRealms online basic flow', () => {
             }
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10_000 });
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '8');
+            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
 
             const openingPath = getEvidenceScreenshotPath(testInfo, 'ui-opening-after-create-room');
             await mkdir(dirname(openingPath), { recursive: true });
@@ -1160,9 +1150,6 @@ test.describe('FantasyRealms online basic flow', () => {
             const firstHandDiscardButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await expect(firstHandDiscardButton).toBeVisible({ timeout: 10_000 });
             await firstHandDiscardButton.click();
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-discard');
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const core = await readFantasyRealmsCore(matchId, page);
@@ -1194,8 +1181,6 @@ test.describe('FantasyRealms online basic flow', () => {
                 return {
                     currentPlayer: core.currentPlayer,
                     turn: core.turn,
-                    stage: core.stage,
-                    hostHand: core.players['0']?.hand.length ?? -1,
                 };
             }, {
                 timeout: 25_000,
@@ -1203,9 +1188,21 @@ test.describe('FantasyRealms online basic flow', () => {
             }).toEqual({
                 currentPlayer: '0',
                 turn: initialTurn + 2,
-                stage: 'draw',
-                hostHand: (alreadyInDiscardStage ? initialHostHandCount : initialHostHandCount + deckDrawCount) - 1,
             });
+
+            const returnedCore = await readFantasyRealmsCore(matchId, page);
+            const hostHandAfterOwnDiscard = (
+                alreadyInDiscardStage
+                    ? initialHostHandCount
+                    : initialHostHandCount + deckDrawCount
+            ) - 1;
+            const returnedHostHandCount = returnedCore.players['0']?.hand.length ?? -1;
+            if (returnedCore.stage === 'draw') {
+                expect(returnedHostHandCount).toBe(hostHandAfterOwnDiscard);
+            } else {
+                expect(returnedCore.stage).toBe('discard');
+                expect(returnedHostHandCount).toBe(hostHandAfterOwnDiscard + deckDrawCount);
+            }
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10_000 });
             const returnedPath = getEvidenceScreenshotPath(testInfo, 'ui-returned-to-host-after-ai');
@@ -1281,7 +1278,7 @@ test.describe('FantasyRealms online basic flow', () => {
 
         const completeHostDeckTurnAndWaitAi = async (options?: {
             afterDrawScreenshotName?: string;
-            beforeConfirmScreenshotName?: string;
+            beforeDiscardScreenshotName?: string;
             waitingScreenshotName?: string;
             returnedScreenshotName?: string;
             allowGameOver?: boolean;
@@ -1321,18 +1318,13 @@ test.describe('FantasyRealms online basic flow', () => {
 
             const firstHandDiscardButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await expect(firstHandDiscardButton).toBeVisible({ timeout: 10000 });
-            await firstHandDiscardButton.click();
-
-            const liveActionButton = page.getByTestId('fantasyrealms-live-action-button');
-            await expect(liveActionButton).toContainText('确认弃牌');
-
-            if (options?.beforeConfirmScreenshotName) {
-                const beforeConfirmPath = getEvidenceScreenshotPath(testInfo, options.beforeConfirmScreenshotName);
-                await mkdir(dirname(beforeConfirmPath), { recursive: true });
-                await page.screenshot({ path: beforeConfirmPath, fullPage: false });
+            if (options?.beforeDiscardScreenshotName) {
+                const beforeDiscardPath = getEvidenceScreenshotPath(testInfo, options.beforeDiscardScreenshotName);
+                await mkdir(dirname(beforeDiscardPath), { recursive: true });
+                await page.screenshot({ path: beforeDiscardPath, fullPage: false });
             }
 
-            await liveActionButton.click();
+            await firstHandDiscardButton.click();
             const postDiscardStatus = await waitForPostDiscardAdvanceOrGameOver(matchId, beforeTurn, 10000);
             if (postDiscardStatus.kind === 'gameover') {
                 if (!options?.allowGameOver) {
@@ -1394,7 +1386,7 @@ test.describe('FantasyRealms online basic flow', () => {
 
         const completeHostTakeDiscardTurnAndWaitAi = async (options?: {
             beforeTakeScreenshotName?: string;
-            beforeConfirmScreenshotName?: string;
+            afterTakeScreenshotName?: string;
             waitingScreenshotName?: string;
             returnedScreenshotName?: string;
             allowGameOver?: boolean;
@@ -1415,16 +1407,12 @@ test.describe('FantasyRealms online basic flow', () => {
             }
 
             await takeDiscardButton.click();
-            const actionButton = page.getByTestId('fantasyrealms-live-action-button');
-            await expect(actionButton).toContainText('确认选择');
-
-            if (options?.beforeConfirmScreenshotName) {
-                const beforeConfirmPath = getEvidenceScreenshotPath(testInfo, options.beforeConfirmScreenshotName);
-                await mkdir(dirname(beforeConfirmPath), { recursive: true });
-                await page.screenshot({ path: beforeConfirmPath, fullPage: false });
+            if (options?.afterTakeScreenshotName) {
+                await page.waitForTimeout(400);
+                const afterTakePath = getEvidenceScreenshotPath(testInfo, options.afterTakeScreenshotName);
+                await mkdir(dirname(afterTakePath), { recursive: true });
+                await page.screenshot({ path: afterTakePath, fullPage: false });
             }
-
-            await actionButton.click();
 
             if (options?.waitingScreenshotName) {
                 await page.waitForTimeout(400);
@@ -1488,7 +1476,7 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '8');
+            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
 
             const openingPath = getEvidenceScreenshotPath(testInfo, 'ui-full-flow-opening-before-first-draw');
             await mkdir(dirname(openingPath), { recursive: true });
@@ -1496,7 +1484,7 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await completeHostDeckTurnAndWaitAi({
                 afterDrawScreenshotName: 'ui-full-flow-after-first-draw-before-discard',
-                beforeConfirmScreenshotName: 'ui-full-flow-first-discard-before-confirm',
+                beforeDiscardScreenshotName: 'ui-full-flow-first-discard-before-direct-click',
                 waitingScreenshotName: 'ui-full-flow-waiting-ai-after-first-discard',
                 returnedScreenshotName: 'ui-full-flow-host-next-turn-after-ai',
             });
@@ -1530,7 +1518,7 @@ test.describe('FantasyRealms online basic flow', () => {
                 if (!capturedTakeDiscardBranch && turnCore.discardPile.length > 0) {
                     const status = await completeHostTakeDiscardTurnAndWaitAi({
                         beforeTakeScreenshotName: 'ui-full-flow-pre-take-discard-branch',
-                        beforeConfirmScreenshotName: 'ui-full-flow-take-discard-before-confirm',
+                        afterTakeScreenshotName: 'ui-full-flow-take-discard-after-direct-click',
                         waitingScreenshotName: 'ui-full-flow-waiting-ai-after-take-discard',
                         returnedScreenshotName: 'ui-full-flow-host-returned-after-take-discard',
                         allowGameOver: true,
@@ -1546,8 +1534,8 @@ test.describe('FantasyRealms online basic flow', () => {
                     afterDrawScreenshotName: capturedLateGameDecision && !capturedFinalDiscardDecision
                         ? 'ui-full-flow-final-draw-before-last-discard'
                         : undefined,
-                    beforeConfirmScreenshotName: capturedLateGameDecision && !capturedFinalDiscardDecision
-                        ? 'ui-full-flow-final-discard-before-confirm'
+                    beforeDiscardScreenshotName: capturedLateGameDecision && !capturedFinalDiscardDecision
+                        ? 'ui-full-flow-final-discard-before-direct-click'
                         : undefined,
                     allowGameOver: true,
                 });
@@ -1651,12 +1639,9 @@ test.describe('FantasyRealms online basic flow', () => {
                 });
             }
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-discard');
             const firstHandDiscardButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await expect(firstHandDiscardButton).toBeVisible({ timeout: 10000 });
             await firstHandDiscardButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const core = await readFantasyRealmsCore(matchId, host.page);
@@ -1686,8 +1671,6 @@ test.describe('FantasyRealms online basic flow', () => {
             const turnBeforeTake = guestCoreBeforeTake.turn;
             const guestRequiresDiscardAfterTake = requiresDiscardAfterTakingDiscard(guestCoreBeforeTake);
 
-            const guestTakeDiscardModeButton = guest.page.getByTestId('fantasyrealms-live-action-take-discard');
-            await guestTakeDiscardModeButton.click();
             const guestDiscardPileButton = guest.page.getByRole('button', { name: /拿取弃牌/ }).first();
             await guestDiscardPileButton.click();
 
@@ -1712,11 +1695,8 @@ test.describe('FantasyRealms online basic flow', () => {
                     discardCount: Math.max(0, discardCountBeforeTake - 1),
                 });
 
-                const guestActionButton = guest.page.getByTestId('fantasyrealms-live-action-discard');
                 const guestHandDiscardButton = guest.page.getByRole('button', { name: /弃置手牌/ }).first();
                 await guestHandDiscardButton.click();
-                await expect(guestActionButton).toContainText('确认弃牌');
-                await guestActionButton.click();
             }
 
             await expect.poll(async () => {
@@ -1789,13 +1769,10 @@ test.describe('FantasyRealms online basic flow', () => {
                 core,
             }, host.page);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             const firstHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await expect(firstHandButton).toBeVisible({ timeout: 10000 });
             await firstHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const state = await readFantasyRealmsMatchState(matchId, host.page);
@@ -1863,13 +1840,10 @@ test.describe('FantasyRealms online basic flow', () => {
                 core,
             }, host.page);
 
-            const liveActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             await expect(host.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             const firstHandButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await expect(firstHandButton).toBeVisible({ timeout: 10000 });
             await firstHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const state = await readFantasyRealmsMatchState(matchId, host.page);
@@ -2418,11 +2392,8 @@ test.describe('FantasyRealms online basic flow', () => {
                 discardCount: 2,
             });
 
-            const guestActionButton = host.page.getByTestId('fantasyrealms-live-action-button');
             const discardButton = host.page.getByRole('button', { name: /拿取弃牌/ }).first();
             await discardButton.click();
-            await expect(guestActionButton).toContainText('确认选择');
-            await guestActionButton.click();
 
             await expect.poll(async () => {
                 const nextCore = await readFantasyRealmsCore(matchId, host.page);
@@ -2448,8 +2419,6 @@ test.describe('FantasyRealms online basic flow', () => {
 
             const handDiscardButton = host.page.getByRole('button', { name: /弃置手牌/ }).first();
             await handDiscardButton.click();
-            await expect(guestActionButton).toContainText('确认弃牌');
-            await guestActionButton.click();
 
             await expect.poll(async () => {
                 const nextCore = await readFantasyRealmsCore(matchId, host.page);
@@ -2497,7 +2466,6 @@ test.describe('FantasyRealms online basic flow', () => {
             await switchFantasyRealmsPageToCompactLandscapeLayout(player2.page);
 
             const deckButton = getFantasyRealmsDeckDrawButton(player1.page);
-            const liveActionButton = player1.page.getByTestId('fantasyrealms-live-action-button');
             await expect(deckButton).toBeVisible({ timeout: 10000 });
             await deckButton.click();
 
@@ -2521,7 +2489,6 @@ test.describe('FantasyRealms online basic flow', () => {
             expect(hiddenCardName).not.toBe('');
 
             await handDiscardButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
 
             await expectWaitingPageKeepsOpponentFocusHidden({
                 page: player0.page,
@@ -2833,8 +2800,6 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(firstHandButton).toBeVisible({ timeout: 10000 });
             await expect(liveActionButton).toHaveCount(0);
             await firstHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const state = await readFantasyRealmsMatchState(matchId, host.page);
@@ -3638,8 +3603,6 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(firstHandButton).toBeVisible({ timeout: 10000 });
             await expect(liveActionButton).toHaveCount(0);
             await firstHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const state = await readFantasyRealmsMatchState(matchId, host.page);
@@ -3709,8 +3672,6 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(firstHandButton).toBeVisible({ timeout: 10000 });
             await expect(liveActionButton).toHaveCount(0);
             await firstHandButton.click();
-            await expect(liveActionButton).toContainText('确认弃牌');
-            await liveActionButton.click();
 
             await expect.poll(async () => {
                 const state = await readFantasyRealmsMatchState(matchId, host.page);

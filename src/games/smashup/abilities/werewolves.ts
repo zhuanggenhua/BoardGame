@@ -468,7 +468,7 @@ const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext,
         ),
         (state) => buildWerewolfOwnMinionPromptOptions(state.core, context.playerId),
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as WerewolfChoice;
         if (!choice.minionUid || choice.baseIndex === undefined) {
             return { events: [] };

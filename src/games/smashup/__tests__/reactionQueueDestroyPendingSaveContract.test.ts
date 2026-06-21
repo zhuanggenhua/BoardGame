@@ -37,7 +37,11 @@ function extractEngineGuidePreventDestroyIds(): string[] {
   const guide = readSmashUpFile('rule/ENGINE_GUIDE.md');
   const matches = [...guide.matchAll(/`([a-z0-9_]+)`/g)]
     .map((entry) => entry[1])
-    .filter((id) => id.endsWith('_intercept') || id.endsWith('_prevent_destroy') || id.endsWith('_move'));
+    .filter((id) =>
+      id.endsWith('_intercept')
+      || id.endsWith('_prevent_destroy')
+      || id.endsWith('_move')
+      || id === 'kitty_cats_hang_in_there');
   return [...new Set(matches)];
 }
 

@@ -2089,16 +2089,71 @@ describe('Feedback Module (e2e)', () => {
                     playerId: '0',
                     gameId: 'smashup',
                     appVersion: 'dev',
+                    appCommitSha: 'abc123def456',
+                    appBuildTime: '2026-06-19T10:00:00.000Z',
+                    appReleaseChannel: 'production',
                     userAgent: 'vitest',
                     viewport: { width: 1280, height: 720 },
                     language: 'zh-CN',
                     timezone: 'Asia/Shanghai',
+                    activeElement: {
+                        tagName: 'button',
+                        testId: 'confirm-play',
+                        text: '确认出牌',
+                    },
+                    lastUserAction: {
+                        type: 'click',
+                        at: '2026-06-20T08:00:00.000Z',
+                        target: {
+                            tagName: 'button',
+                            testId: 'confirm-play',
+                        },
+                    },
+                    recentUserActions: [
+                        {
+                            type: 'pointerdown',
+                            at: '2026-06-20T07:59:59.000Z',
+                            target: { tagName: 'button', testId: 'confirm-play' },
+                        },
+                        {
+                            type: 'click',
+                            at: '2026-06-20T08:00:00.000Z',
+                            target: { tagName: 'button', testId: 'confirm-play' },
+                        },
+                    ],
+                    lastRouteChange: {
+                        from: '/play/smashup/match/abc?seat=0',
+                        to: '/play/smashup/match/abc?seat=0&step=confirm',
+                        trigger: 'pushState',
+                        at: '2026-06-20T08:00:01.000Z',
+                    },
+                    recentRouteChanges: [
+                        {
+                            to: '/play/smashup/match/abc?seat=0',
+                            trigger: 'init',
+                            at: '2026-06-20T07:59:58.000Z',
+                        },
+                        {
+                            from: '/play/smashup/match/abc?seat=0',
+                            to: '/play/smashup/match/abc?seat=0&step=confirm',
+                            trigger: 'pushState',
+                            at: '2026-06-20T08:00:01.000Z',
+                        },
+                    ],
+                    pageFlags: {
+                        isGamePage: true,
+                        hasModalOpen: true,
+                        gameId: 'smashup',
+                        mobileLayoutPreset: 'board-shell',
+                    },
                 },
                 errorContext: {
                     message: 'Cannot read properties of undefined',
                     name: 'TypeError',
                     stack: 'TypeError: ...',
                     source: 'react.error_boundary',
+                    jsStack: 'TypeError: ...\n    at CardPanel',
+                    componentStack: '\n    at CardPanel\n    at MatchRoomWithAudio',
                 },
             })
             .expect(201);
@@ -2106,7 +2161,18 @@ describe('Feedback Module (e2e)', () => {
         expect(accepted.body.type).toBe('bug');
         expect(accepted.body.actionLog).toContain('cast card');
         expect(accepted.body.clientContext?.matchId).toBe('abc');
+        expect(accepted.body.clientContext?.appCommitSha).toBe('abc123def456');
+        expect(accepted.body.clientContext?.appBuildTime).toBe('2026-06-19T10:00:00.000Z');
+        expect(accepted.body.clientContext?.appReleaseChannel).toBe('production');
+        expect(accepted.body.clientContext?.activeElement?.testId).toBe('confirm-play');
+        expect(accepted.body.clientContext?.lastUserAction?.type).toBe('click');
+        expect(accepted.body.clientContext?.recentUserActions).toHaveLength(2);
+        expect(accepted.body.clientContext?.lastRouteChange?.trigger).toBe('pushState');
+        expect(accepted.body.clientContext?.recentRouteChanges).toHaveLength(2);
+        expect(accepted.body.clientContext?.pageFlags?.mobileLayoutPreset).toBe('board-shell');
         expect(accepted.body.errorContext?.name).toBe('TypeError');
+        expect(accepted.body.errorContext?.jsStack).toContain('CardPanel');
+        expect(accepted.body.errorContext?.componentStack).toContain('MatchRoomWithAudio');
     });
 
     it('admin 可删除单条反馈并批量删除命中的反馈', async () => {

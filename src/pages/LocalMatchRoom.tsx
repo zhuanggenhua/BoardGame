@@ -22,7 +22,7 @@ import {
     resolveSetupSelectionsFromSearchParams,
     resolveSeatControllersFromSearchParams,
 } from '../engine/ai/seatControllers';
-import { resolveAllowedPlayerCountsForGame } from '../games/roomSetupRegistry';
+import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../games/roomSetupRegistry';
 import { GameCursorProvider } from '../core/cursor/GameCursorProvider';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
@@ -80,10 +80,28 @@ export const LocalMatchRoom = () => {
     }, [fallbackSeed, gameId, navigate, searchParams, seedFromUrl]);
 
     const defaultSetupSelections = useMemo(
-        () => resolveSetupSelectionsFromSearchParams({
-            gameManifest: gameConfig,
-            searchParams,
-        }),
+        () => {
+            const parsedSelections = resolveSetupSelectionsFromSearchParams({
+                gameManifest: gameConfig,
+                searchParams,
+            });
+            const requestedPlayers = Number(searchParams.get('players'));
+            const setupScopedPlayerOptions = resolveAllowedPlayerCountsForGame({
+                gameManifest: gameConfig ?? undefined,
+                setupData: parsedSelections,
+            });
+            const fallbackPlayerCount = gameConfig?.bestPlayers?.find((count) => setupScopedPlayerOptions.includes(count))
+                ?? setupScopedPlayerOptions[0]
+                ?? gameConfig?.playerOptions?.[0]
+                ?? 2;
+            return applySetupDefaultsForGame({
+                gameManifest: gameConfig ?? undefined,
+                numPlayers: Number.isInteger(requestedPlayers)
+                    ? requestedPlayers
+                    : fallbackPlayerCount,
+                setupSelections: parsedSelections,
+            });
+        },
         [gameConfig, searchParams],
     );
     const currentPlayerOptions = useMemo(
@@ -94,6 +112,14 @@ export const LocalMatchRoom = () => {
         [defaultSetupSelections, gameConfig],
     );
     const defaultLocalPlayerCount = resolveLocalMatchPlayerCount(searchParams.get('players'), currentPlayerOptions);
+    const defaultResolvedSetupSelections = useMemo(
+        () => applySetupDefaultsForGame({
+            gameManifest: gameConfig ?? undefined,
+            numPlayers: defaultLocalPlayerCount,
+            setupSelections: defaultSetupSelections,
+        }),
+        [defaultLocalPlayerCount, defaultSetupSelections, gameConfig],
+    );
     const defaultSeatControllers = useMemo(
         () => resolveSeatControllersFromSearchParams({
             numPlayers: defaultLocalPlayerCount,
@@ -103,8 +129,8 @@ export const LocalMatchRoom = () => {
         [defaultLocalPlayerCount, gameConfig?.ai, searchParams],
     );
     const defaultLocalSetupData = useMemo(
-        () => buildLocalMatchSetupData(defaultSetupSelections),
-        [defaultSetupSelections],
+        () => buildLocalMatchSetupData(defaultResolvedSetupSelections),
+        [defaultResolvedSetupSelections],
     );
     const defaultHasAiSeat = useMemo(
         () => Object.values(defaultSeatControllers).some((controller) => controller.type !== 'human'),

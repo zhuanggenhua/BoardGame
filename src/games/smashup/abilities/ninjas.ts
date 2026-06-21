@@ -1023,7 +1023,7 @@ function ninjaInfiltratePodTalent(ctx: AbilityContext): AbilityResult {
         ownerId,
         reason: 'ninja_infiltrate_pod_talent',
         now: ctx.now,
-        expectedLocation: 'minion',
+        expectedLocation: 'any',
     })[0];
     if (!detachEvent) return { events: [] };
     const events: SmashUpEvent[] = [

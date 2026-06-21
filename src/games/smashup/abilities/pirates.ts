@@ -713,13 +713,21 @@ const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptC
             const baseDef = getBaseDef(context.matchState.core.bases[i].defId);
             candidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
         }
-        return createAbilityRuntimeSimpleChoice(
+        const title = '选择一个你有随从的基地';
+        const interaction = createAbilityRuntimeSimpleChoice(
             `pirate_broadside_choose_base_${context.now}`,
             context.playerId,
-            '选择一个你有随从的基地',
+            title,
             buildBaseTargetOptions(candidates, context.matchState.core),
             { sourceId: 'pirate_broadside_choose_base', targetType: 'base', autoResolveIfSingle: false, titleKey: 'ui.pirate_broadside_choose_base_title' },
         );
+        return {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                title,
+            },
+        };
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
         const { baseIndex } = value as { baseIndex?: number };
@@ -1432,6 +1440,7 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
         const minionUid = context?.minionUid ?? selected?.minionUid;
         const minionDefId = context?.minionDefId ?? selected?.minionDefId;
         const fromBaseIndex = context?.fromBaseIndex ?? selected?.fromBaseIndex;
+        const fallbackPlayerId = context?.playerId ?? state.sys.interaction?.current?.playerId;
         if (!minionUid || !minionDefId || fromBaseIndex === undefined) return { events: [] };
         return {
             events: buildValidatedMoveEvents(state, {
@@ -1441,14 +1450,14 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
                 toBaseIndex: resolvedToBaseIndex,
                 reason: minionDefId === 'pirate_buccaneer_pod' ? 'pirate_buccaneer_pod' : 'pirate_buccaneer',
                 now: timestamp,
-                sourcePlayerId: context.playerId,
+                sourcePlayerId: fallbackPlayerId ?? '',
                 sourceDefId: minionDefId,
-                sourceControllerId: context.playerId,
+                sourceControllerId: fallbackPlayerId ?? '',
                 sourceBaseIndex: fromBaseIndex,
                 sourceKind: 'nonAction',
                 targetSnapshot: {
-                    ownerId: context.ownerId ?? context.playerId,
-                    controllerId: context.controllerId ?? context.playerId,
+                    ownerId: context?.ownerId ?? fallbackPlayerId,
+                    controllerId: context?.controllerId ?? fallbackPlayerId,
                 },
             }),
         };

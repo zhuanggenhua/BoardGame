@@ -19,14 +19,18 @@ describe('clientAutoReport', () => {
         }));
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         vi.unstubAllEnvs();
         vi.unstubAllGlobals();
+        const { setCurrentGameFeedbackContext } = await import('../feedback/gameFeedbackContext');
+        setCurrentGameFeedbackContext(null);
         const host = window as Window & {
             __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean;
             __BG_LAST_ERROR_CONTEXT__?: unknown;
             __BG_LAST_USER_ACTION__?: unknown;
+            __BG_RECENT_USER_ACTIONS__?: unknown;
             __BG_LAST_ROUTE_CHANGE__?: unknown;
+            __BG_RECENT_ROUTE_CHANGES__?: unknown;
             __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
             __BG_HISTORY_PUSH_STATE_ORIGINAL__?: History['pushState'];
             __BG_HISTORY_REPLACE_STATE_ORIGINAL__?: History['replaceState'];
@@ -34,7 +38,9 @@ describe('clientAutoReport', () => {
         delete host.__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__;
         delete host.__BG_LAST_ERROR_CONTEXT__;
         delete host.__BG_LAST_USER_ACTION__;
+        delete host.__BG_RECENT_USER_ACTIONS__;
         delete host.__BG_LAST_ROUTE_CHANGE__;
+        delete host.__BG_RECENT_ROUTE_CHANGES__;
         delete host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__;
         if (host.__BG_HISTORY_PUSH_STATE_ORIGINAL__) {
             window.history.pushState = host.__BG_HISTORY_PUSH_STATE_ORIGINAL__;
@@ -115,10 +121,25 @@ describe('clientAutoReport', () => {
                 lastUserAction: {
                     type: 'click',
                 },
+                recentUserActions: [
+                    {
+                        type: 'click',
+                    },
+                ],
                 lastRouteChange: {
                     to: '/play/smashup/match/match-1?seat=0&step=confirm',
                     trigger: 'pushState',
                 },
+                recentRouteChanges: [
+                    {
+                        to: '/play/smashup/match/match-1?seat=0',
+                        trigger: 'init',
+                    },
+                    {
+                        to: '/play/smashup/match/match-1?seat=0&step=confirm',
+                        trigger: 'pushState',
+                    },
+                ],
                 pageFlags: {
                     isGamePage: true,
                     gameId: 'smashup',
@@ -177,6 +198,71 @@ describe('clientAutoReport', () => {
         });
         expect(body.errorContext.stack).toContain('CardPanel');
         expect(body.errorContext.stack).toContain('MatchRoomWithAudio');
+    });
+
+    it('游戏页有现场时会自动附带操作日志和状态快照', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { setCurrentGameFeedbackContext } = await import('../feedback/gameFeedbackContext');
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        setCurrentGameFeedbackContext({
+            state: {
+                core: {
+                    gameId: 'smashup',
+                },
+                sys: {
+                    phase: 'play',
+                    turnNumber: 7,
+                    actionLog: {
+                        entries: [
+                            {
+                                text: '打出一张牌',
+                                event: { type: 'play-card' },
+                                timestamp: 123,
+                            },
+                        ],
+                    },
+                    eventStream: {
+                        entries: [],
+                    },
+                    undo: {
+                        snapshots: [],
+                    },
+                    interaction: {
+                        current: {
+                            type: 'select',
+                        },
+                    },
+                    responseWindow: {
+                        current: {
+                            triggerEvent: {
+                                type: 'reaction-ready',
+                            },
+                        },
+                    },
+                },
+            } as never,
+            playerId: '0',
+            isGameOver: false,
+            isLocalMode: false,
+        });
+
+        await reportClientAutoFeedbackOnce('game-context-auto-report', {
+            content: '[auto][react.error_boundary] render failed',
+            autoReportKind: 'react-render-error',
+            source: 'react-error-boundary',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: 'Cannot read properties of undefined',
+            errorSource: 'react.error_boundary',
+        });
+
+        const body = JSON.parse(String((globalThis.fetch as any).mock.calls[0]?.[1]?.body ?? '{}'));
+        expect(body).toMatchObject({
+            actionLog: expect.stringContaining('user-feedback-diagnostic'),
+            stateSnapshot: expect.stringContaining('"turnNumber": 7'),
+        });
     });
 
     it('同一签名在去重窗口内只会上报一次', async () => {

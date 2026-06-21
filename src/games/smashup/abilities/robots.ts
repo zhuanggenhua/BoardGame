@@ -55,6 +55,7 @@ type RobotHoverbotChoice = {
     cardUid?: string;
     defId?: string;
     power?: number;
+    ownerId?: PlayerId;
     baseIndex?: number;
     skip?: boolean;
 };
@@ -69,6 +70,7 @@ type RobotHoverbotBaseContext = RobotPromptContext & {
     cardUid: string;
     defId: string;
     power: number;
+    ownerId: PlayerId;
 };
 
 type RobotTechCenterContext = RobotPromptContext & {
@@ -385,6 +387,7 @@ const robotHoverbotBasePromptProgram = createPromptProgram<RobotHoverbotBaseCont
                     playerId,
                     cardUid: context.cardUid,
                     defId: context.defId,
+                    ownerId: context.ownerId,
                     baseIndex: choice.baseIndex,
                     baseDefId: state.core.bases[choice.baseIndex]?.defId,
                     power: context.power,
@@ -411,7 +414,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, power, ownerId: topCard.owner },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -442,7 +445,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                     {
                         id: 'play',
                         label: `打出 cards.${topCard.defId}.name`,
-                        value: { cardUid: topCard.uid, defId: topCard.defId, power },
+                        value: { cardUid: topCard.uid, defId: topCard.defId, power, ownerId: topCard.owner },
                         displayMode: 'card' as const,
                         _source: 'static' as const,
                     },
@@ -473,6 +476,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                         playerId,
                         cardUid: choice.cardUid,
                         defId: choice.defId,
+                        ownerId: choice.ownerId ?? playerId,
                         baseIndex: 0,
                         baseDefId: state.core.bases[0].defId,
                         power: choice.power ?? 0,
@@ -492,6 +496,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
                 cardUid: choice.cardUid,
                 defId: choice.defId,
                 power: choice.power ?? 0,
+                ownerId: choice.ownerId ?? playerId,
             },
             nextProgram: robotHoverbotBasePromptProgram,
         };

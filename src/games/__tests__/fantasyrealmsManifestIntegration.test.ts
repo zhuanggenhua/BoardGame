@@ -19,6 +19,7 @@ describe('fantasyrealms manifest integration', () => {
         expect(GAME_CLIENT_MANIFEST_BY_ID.fantasyrealms).toBeDefined();
         expect(GAME_CLIENT_MANIFEST_BY_ID.fantasyrealms?.manifest.enabled).toBe(true);
         expect(typeof GAME_CLIENT_MANIFEST_BY_ID.fantasyrealms?.loadRuntime).toBe('function');
+        expect(typeof GAME_CLIENT_MANIFEST_BY_ID.fantasyrealms?.loadCriticalImageResolver).toBe('function');
 
         expect(GAME_SERVER_MANIFEST_BY_ID.fantasyrealms).toBeDefined();
         expect(GAME_SERVER_MANIFEST_BY_ID.fantasyrealms?.manifest.enabled).toBe(true);
@@ -38,5 +39,18 @@ describe('fantasyrealms manifest integration', () => {
         expect(implementation).not.toBeNull();
         expect(implementation?.engineConfig.gameId).toBe('fantasyrealms');
         expect(typeof implementation?.board).toBe('function');
+    });
+
+    it('fantasyrealms 首屏关键素材已配置关键图解析器', async () => {
+        const resolver = await GAME_CLIENT_MANIFEST_BY_ID.fantasyrealms?.loadCriticalImageResolver?.();
+
+        expect(resolver).toBeDefined();
+        const result = resolver?.();
+        expect(result?.critical).toEqual(expect.arrayContaining([
+            'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png',
+            'fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp',
+            'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png',
+        ]));
+        expect(result?.phaseKey).toBe('fantasyrealms:first-paint');
     });
 });

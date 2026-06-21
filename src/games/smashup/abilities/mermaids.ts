@@ -121,6 +121,10 @@ const MERMAIDS_CHARMED_SUPPRESSED_TURN_META = 'mermaidsCharmedSuppressedTurn';
 const MERMAIDS_TEMP_CONTROL_CONTROLLER_META = 'mermaidsTemporaryControlOriginalController';
 const MERMAIDS_TEMP_CONTROL_PLAYER_META = 'mermaidsTemporaryControlPlayerId';
 const MERMAIDS_TEMP_CONTROL_TURN_META = 'mermaidsTemporaryControlTurn';
+const selfDetachOrderingContract = {
+    reads: [],
+    writes: [],
+};
 
 function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: AbilityContext['matchState'],
@@ -1257,6 +1261,7 @@ export function registerMermaidsAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        effectContract: selfDetachOrderingContract,
     });
 }
 

@@ -1540,6 +1540,170 @@
     }
   },
   "cards": {
+    "dragons_great_wyrm": {
+      "name": "巨龙",
+      "abilityText": "持续：在此随从所在基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "dragons_wyvern": {
+      "name": "飞龙",
+      "abilityText": "打出时：消灭这里一个力量 3 或以下的随从。天赋：将此基地的摧毁点降低 3，直到回合结束。"
+    },
+    "dragons_imperial_dragon": {
+      "name": "帝国龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，抽 1 张牌。"
+    },
+    "dragons_hatchling": {
+      "name": "幼龙",
+      "abilityText": "持续：其他玩家在此处打出或移动随从到此处后，那个随从直到回合结束 -1 力量。"
+    },
+    "dragons_dangerous_ground": {
+      "name": "险地",
+      "effectText": "对基地打出。持续：其他玩家在此处打出随从后，该玩家弃 1 张牌。"
+    },
+    "dragons_ruins": {
+      "name": "废墟",
+      "effectText": "对基地打出。持续：在此基地计分时，其他玩家获得的 VP 减少 1。"
+    },
+    "dragons_burn_it_down": {
+      "name": "烧毁它",
+      "effectText": "选择一个基地。将其替换为基地牌库顶牌或基地弃牌堆中的一张基地。"
+    },
+    "dragons_raze": {
+      "name": "夷平",
+      "effectText": "对基地打出。持续：此基地的能力无效。"
+    },
+    "dragons_bring_down_the_walls": {
+      "name": "推倒城墙",
+      "effectText": "对基地打出。持续：此基地计分前，你可以额外打出一个随从到这里。"
+    },
+    "dragons_dragon_lands": {
+      "name": "龙之领地",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：你在这里的随从各 +1 力量。"
+    },
+    "dragons_intimidating_presence": {
+      "name": "威压",
+      "effectText": "特殊：你可以在基地计分前对基地打出。持续：其他玩家在这里的随从各 -1 力量。"
+    },
+    "dragons_flank_attack": {
+      "name": "侧翼攻击",
+      "effectText": "从你的牌库和/或弃牌堆中选择一张可打在基地上的行动，并将其作为额外行动打出。"
+    },
+    "superheroes_awesome_guy": {
+      "name": "超赞男"
+    },
+    "superheroes_mild_mannered_citizen": {
+      "name": "温和市民"
+    },
+    "superheroes_mind_lady": {
+      "name": "心灵女士",
+      "abilityText": "选择另一名玩家的一个随从。其能力取消，直到你下回合开始。"
+    },
+    "superheroes_captain_amazing": {
+      "name": "惊奇队长",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 5 或以上的随从，将其作为额外随从打出，然后洗牌。"
+    },
+    "superheroes_the_burst": {
+      "name": "爆发"
+    },
+    "superheroes_not_really_dead": {
+      "name": "并没真死",
+      "effectText": "从任意弃牌堆中选择最多 2 个力量 2 或以下的随从，将它们返回其拥有者手牌。"
+    },
+    "superheroes_justice_friends": {
+      "name": "正义伙伴",
+      "effectText": "选择一个基地。你在这里每有一个力量 5 或以上的随从，便抽 1 张牌。"
+    },
+    "superheroes_golden_age": {
+      "name": "黄金时代",
+      "effectText": "选择最多 3 个随从，将它们放到其拥有者牌库底。"
+    },
+    "superheroes_sidekick": {
+      "name": "助手",
+      "effectText": "额外打出一个力量 2 或以下的随从。"
+    },
+    "superheroes_expanded_power": {
+      "name": "强化能力",
+      "effectText": "对你的一个随从打出。持续：此随从 +2 力量。"
+    },
+    "superheroes_radioactive_exposure": {
+      "name": "放射暴露",
+      "effectText": "选择一个随从。直到回合结束，其获得 +2 力量且不受其他玩家卡牌影响。"
+    },
+    "superheroes_secret_base": {
+      "name": "秘密基地",
+      "effectText": "对基地打出。持续：其他玩家不能在此基地上打出行动。"
+    },
+    "superheroes_my_only_weakness": {
+      "name": "我唯一的弱点",
+      "effectText": "对一个随从打出。持续：此随从 -3 力量。"
+    },
+    "geeks_felicia_day": {
+      "name": "菲丽希亚"
+    },
+    "geeks_wil_wheaton": {
+      "name": "维尔"
+    },
+    "geeks_game_guru": {
+      "name": "游戏专家",
+      "abilityText": "持续：此随从不受其他玩家的非行动牌影响。"
+    },
+    "geeks_fan": {
+      "name": "粉丝"
+    },
+    "geeks_cosplay": {
+      "name": "角色扮演",
+      "effectText": "特殊：当你获得 VP 后，你可以打出此牌。若如此做，再获得 1 VP。"
+    },
+    "geeks_force_of_wil": {
+      "name": "维尔的力量",
+      "effectText": "特殊：取消刚打出的行动牌。"
+    },
+    "geeks_rules_lawyer": {
+      "name": "规则咬定者",
+      "effectText": "移动一张持续行动到另一个合法目标。"
+    },
+    "geeks_banned_list": {
+      "name": "禁卡表",
+      "effectText": "说出一个卡牌名称。每位其他玩家必须弃掉手牌中所有同名牌。"
+    },
+    "geeks_griefer": {
+      "name": "嘲讽",
+      "effectText": "选择另一位玩家。该玩家选择弃掉 1 张牌，或由你消灭其一个随从。"
+    },
+    "geeks_mulligan": {
+      "name": "妙力一击",
+      "effectText": "查看你牌库顶若干张牌。你可以将它们全部加入手牌，否则保持原样。"
+    },
+    "geeks_control_minion": {
+      "name": "控制仆从",
+      "effectText": "选择一个刚由其他玩家打出的随从。你控制它直到回合结束。"
+    },
+    "geeks_non_infinite_loop": {
+      "name": "无限循环",
+      "effectText": "从弃牌堆打出一张行动作为额外行动。结算后你可以将其返回手牌。"
+    },
+    "geeks_min_maxing": {
+      "name": "平衡",
+      "effectText": "查看另一位玩家的手牌。你可以从中选择一张行动作为额外行动打出。"
+    },
+    "base_tabletop": {
+      "name": "桌游桌"
+    },
+    "base_wyrms_desolation": {
+      "name": "龙之荒芜"
+    },
+    "base_the_con": {
+      "name": "展会"
+    },
+    "base_dragons_lair": {
+      "name": "龙穴"
+    },
+    "base_converted_cave": {
+      "name": "改造洞穴"
+    },
+    "base_crystal_fortress": {
+      "name": "水晶堡垒"
+    },
     "kung_fu_fighters_fast_as_lightning": {
       "name": "快如闪电",
       "effectText": "选择一个随从。直至回合结束，其 +2 战力，且如果其将进入弃牌堆，则改为返回拥有者的手牌。"
@@ -4341,7 +4505,7 @@
     },
     "ancient_egyptians_mummy_strength_pod": {
       "name": "木乃伊之力",
-      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 力量；否则其直到回合结束 +2 力量。"
+      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "ancient_egyptians_tomb_trap_pod": {
       "name": "墓穴陷阱",
@@ -4461,7 +4625,7 @@
     },
     "samurai_ronin_pod": {
       "name": "浪人",
-      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 力量指示物。"
+      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 战力指示物。"
     },
     "samurai_bushi_pod": {
       "name": "武士",
@@ -4497,7 +4661,7 @@
     },
     "samurai_final_haiku_pod": {
       "name": "终曲俳句",
-      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 力量。"
+      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 战力。"
     },
     "samurai_code_of_bushido_pod": {
       "name": "武士道",
@@ -4605,7 +4769,7 @@
     },
     "cowboys_gunfighter_pod": {
       "name": "枪手",
-      "abilityText": "此随从可以与这里另一位玩家的一个随从决斗。消灭失败的随从。"
+      "abilityText": "此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_pinkerton_pod": {
       "name": "平克顿",
@@ -4641,7 +4805,7 @@
     },
     "cowboys_dynamite_surprise_pod": {
       "name": "炸药惊喜",
-      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该基地一个力量 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个力量 4 或以下的随从。"
+      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该处一个战力 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个战力 4 或以下的随从。"
     },
     "cowboys_gold_strike_pod": {
       "name": "淘到金了",
@@ -4673,7 +4837,7 @@
     },
     "vikings_berserk_pod": {
       "name": "狂战",
-      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 力量。"
+      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 战力。"
     },
     "vikings_cast_the_runes_pod": {
       "name": "掷符文",
@@ -4689,7 +4853,7 @@
     },
     "vikings_raiding_party_pod": {
       "name": "突袭队",
-      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张力量 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
+      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张战力 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
     },
     "vikings_ransack_pod": {
       "name": "洗劫",

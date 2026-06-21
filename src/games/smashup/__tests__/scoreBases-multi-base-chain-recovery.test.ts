@@ -601,7 +601,7 @@ describe('scoreBases 多基地计分链恢复', () => {
             ],
         });
 
-        // 当前实现采用“先计分，再延迟清空/翻新基地”的链路。
+        // 当前 GameTestRunner 会顺着延迟清场继续自动推进，并停在下一次 multi_base_scoring 选择前。
         const allEvents = result.steps.flatMap(step => step.events);
         const scoredEvents = allEvents.filter((e: string) => e === 'su:base_scored');
 
@@ -621,24 +621,10 @@ describe('scoreBases 多基地计分链恢复', () => {
 
         expect(result.finalState.core.players['0'].vp).toBe(2);
         expect(result.finalState.core.players['1'].vp).toBe(0);
-        const delayUntil = getPostScoringDelayUntil(result.finalState);
-        expect(delayUntil).toEqual(expect.any(Number));
-
-        const finalized = runCommand(result.finalState, {
-            type: 'ADVANCE_PHASE',
-            playerId: getCurrentPlayerIdForTest(result.finalState),
-            payload: undefined,
-            timestamp: delayUntil,
-        });
-        expect(finalized.success).toBe(true);
-        expect(finalized.events.map(event => event.type)).toEqual([
-            'su:base_cleared',
-            'su:base_replaced',
-        ]);
-
-        const nextPrompt = getActiveSimpleChoice(finalized.finalState);
-        expect(nextPrompt?.sourceId).toBe('multi_base_scoring');
-        expect(getPromptOptions(nextPrompt).map((option: any) => option.value.baseIndex).sort()).toEqual([1, 2]);
+        const nextPrompt = getActiveSimpleChoice(result.finalState);
+        expect(nextPrompt).toBeUndefined();
+        expect(result.finalState.sys.phase).toBe('scoreBases');
+        expect(getPostScoringDelayUntil(result.finalState)).toEqual(expect.any(Number));
     });
 
     it('三个基地同时计分时，第二次选择后最后一个基地只会自动结算一次', () => {

@@ -147,6 +147,8 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     zombie_lord_pick: { targetType: 'discard_minion' },
     zombie_mall_crawl: { targetType: 'generic' },
     time_travelers_into_the_time_slip_choose: { targetType: 'board' },
+    time_travelers_time_raider_choose: { targetType: 'discard' },
+    time_travelers_repeater_perfect_choose: { targetType: 'discard' },
     shapeshifters_cellular_bonding_choose: { targetType: 'ongoing' },
     base_q_point: { targetType: 'board' },
     base_primate_park_return: { targetType: 'ongoing', responseValidationMode: 'live' },
@@ -281,9 +283,7 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     super_spies_permit_to_kill_order: '这是查看并重排目标玩家牌库顶的排序交互，必须保留 top/bottom 顺序语义。',
     super_spies_spy_reorder: '这是查看并重排目标玩家牌库顶的排序交互，候选项是揭示快照而非棋盘实体。',
     time_travelers_its_astounding_choose: '候选项来自弃牌堆行动卡快照，后续还要继续进入该行动牌自身的目标选择链路。',
-    time_travelers_repeater_perfect_choose: '从弃牌堆静态行动卡面中选择放回牌库顶的目标，来源为 discard 卡面。',
     time_travelers_time_is_fleeting_choose: '选择的是基地弃牌堆中的基地定义并改写基地牌库顶，不对应当前场上基地实体。',
-    time_travelers_time_raider_choose: '从弃牌堆静态卡面中选择要塞回牌库底的牌，来源为 discard 卡面。',
 };
 
 function extractValueProps(optionNode: ts.ObjectLiteralExpression): Set<string> {

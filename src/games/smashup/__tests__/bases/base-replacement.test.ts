@@ -74,7 +74,7 @@ describe('BASE_REPLACED keepCards 模式', () => {
         const next = reduce(state, evt);
         expect(next.titans?.[0]).toMatchObject({
             uid: 'titan-1',
-            controllerId: '0',
+            controllerId: '1',
             powerCounters: 0,
             talentUsed: false,
             metadata: undefined,

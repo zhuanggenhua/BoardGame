@@ -449,6 +449,71 @@ describe('Frankenstein abilities', () => {
         ).toBe(true);
     });
 
+    it('线上反馈 6a33a09c5ed87cdca4f71449：The Bride 在起始阶段消灭己方随从并命中身体改造时，应改为回手而不是抛 helper 未定义异常', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['frankenstein', 'giant_ants'],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_secret_volcano_headquarters',
+                    minions: [{
+                        ...makeMinion('worker-1', 'giant_ant_worker', '0', 2),
+                        powerCounters: 2,
+                    }],
+                    ongoingActions: [{
+                        uid: 'grave-1',
+                        defId: 'frankenstein_grave_situation',
+                        ownerId: '0',
+                    }],
+                },
+                { defId: 'base_ninja_dojo', minions: [], ongoingActions: [] },
+                { defId: 'base_isis_swingin_pad', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'bride-1',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+        });
+
+        const triggerResult = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 123,
+        });
+
+        const chooseDestroy = respondToPromptOption(
+            triggerResult.matchState!,
+            option => option.value?.kind === 'destroy',
+            'The Bride first destroy effect',
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseDestroy.success, chooseDestroy.error).toBe(true);
+
+        const destroyWorker = respondToPromptOption(
+            chooseDestroy.finalState,
+            option => option.value?.targetUid === 'worker-1',
+            'The Bride destroy worker with grave situation',
+            '0',
+            defaultTestRandom,
+        );
+        expect(destroyWorker.success, destroyWorker.error).toBe(true);
+        expect(destroyWorker.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(true);
+        expect(destroyWorker.finalState.core.players['0'].hand.some(card => card.uid === 'worker-1')).toBe(true);
+    });
+
     it('frankenstein_grave_situation 在同基地己方随从被消灭时，应改为回手', () => {
         const core = makeState({
             players: {

@@ -1576,6 +1576,170 @@
     }
   },
   "cards": {
+    "dragons_great_wyrm": {
+      "name": "Great Wyrm",
+      "abilityText": "Ongoing: When this minion's base scores, other players gain 1 less VP."
+    },
+    "dragons_wyvern": {
+      "name": "Wyvern",
+      "abilityText": "On play: Destroy a minion here of power 3 or less. Talent: Reduce this base's breakpoint by 3 until the end of the turn."
+    },
+    "dragons_imperial_dragon": {
+      "name": "Imperial Dragon",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, draw 1 card."
+    },
+    "dragons_hatchling": {
+      "name": "Hatchling",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, that minion gets -1 power until the end of the turn."
+    },
+    "dragons_dangerous_ground": {
+      "name": "Dangerous Ground",
+      "effectText": "Play on a base. Ongoing: After another player plays a minion here, that player discards 1 card."
+    },
+    "dragons_ruins": {
+      "name": "Ruins",
+      "effectText": "Play on a base. Ongoing: When this base scores, other players gain 1 less VP."
+    },
+    "dragons_burn_it_down": {
+      "name": "Burn it Down",
+      "effectText": "Choose a base. Replace it with the top card of the base deck or a base from the base discard pile."
+    },
+    "dragons_raze": {
+      "name": "Raze",
+      "effectText": "Play on a base. Ongoing: This base's ability is canceled."
+    },
+    "dragons_bring_down_the_walls": {
+      "name": "Bring Down the Walls",
+      "effectText": "Play on a base. Ongoing: Before this base scores, you may play an extra minion here."
+    },
+    "dragons_dragon_lands": {
+      "name": "Dragon Lands",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Your minions here each have +1 power."
+    },
+    "dragons_intimidating_presence": {
+      "name": "Intimidating Presence",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Other players' minions here each have -1 power."
+    },
+    "dragons_flank_attack": {
+      "name": "Flank Attack",
+      "effectText": "Choose an action in your deck and/or discard pile that can be played on a base and play it as an extra action."
+    },
+    "superheroes_awesome_guy": {
+      "name": "Awesome Guy"
+    },
+    "superheroes_mild_mannered_citizen": {
+      "name": "Mild Mannered Citizen"
+    },
+    "superheroes_mind_lady": {
+      "name": "Mind Lady",
+      "abilityText": "Choose another player's minion. Its ability is canceled until the start of your next turn."
+    },
+    "superheroes_captain_amazing": {
+      "name": "Captain Amazing",
+      "abilityText": "Talent: Search your deck for a minion of power 5 or more, play it as an extra minion, then shuffle your deck."
+    },
+    "superheroes_the_burst": {
+      "name": "The Burst"
+    },
+    "superheroes_not_really_dead": {
+      "name": "Not Really Dead",
+      "effectText": "Choose up to two minions of power 2 or less in any discard pile and return them to their owners' hands."
+    },
+    "superheroes_justice_friends": {
+      "name": "Justice Friends",
+      "effectText": "Choose a base. Draw 1 card for each of your minions of power 5 or more there."
+    },
+    "superheroes_golden_age": {
+      "name": "Golden Age",
+      "effectText": "Choose up to three minions and place them on the bottoms of their owners' decks."
+    },
+    "superheroes_sidekick": {
+      "name": "Sidekick",
+      "effectText": "Play an extra minion of power 2 or less."
+    },
+    "superheroes_expanded_power": {
+      "name": "Expanded Power",
+      "effectText": "Play on one of your minions. Ongoing: This minion has +2 power."
+    },
+    "superheroes_radioactive_exposure": {
+      "name": "Radioactive Exposure",
+      "effectText": "Choose a minion. Until the end of the turn, it has +2 power and is not affected by other players' cards."
+    },
+    "superheroes_secret_base": {
+      "name": "Secret Base",
+      "effectText": "Play on a base. Ongoing: Other players cannot play actions on this base."
+    },
+    "superheroes_my_only_weakness": {
+      "name": "My Only Weakness!",
+      "effectText": "Play on a minion. Ongoing: This minion has -3 power."
+    },
+    "geeks_felicia_day": {
+      "name": "Felicia Day"
+    },
+    "geeks_wil_wheaton": {
+      "name": "Wil Wheaton"
+    },
+    "geeks_game_guru": {
+      "name": "Game Guru",
+      "abilityText": "Ongoing: This minion is not affected by other players' non-action cards."
+    },
+    "geeks_fan": {
+      "name": "Fan"
+    },
+    "geeks_cosplay": {
+      "name": "Cosplay",
+      "effectText": "Special: After you gain VP, you may play this card. If you do, gain 1 VP."
+    },
+    "geeks_force_of_wil": {
+      "name": "Force of Wil",
+      "effectText": "Special: Cancel the just-played action card."
+    },
+    "geeks_rules_lawyer": {
+      "name": "Rules Lawyer",
+      "effectText": "Move an ongoing action to another legal target."
+    },
+    "geeks_banned_list": {
+      "name": "Banned List",
+      "effectText": "Name a card. Each other player must discard all cards with that name from their hand."
+    },
+    "geeks_griefer": {
+      "name": "Griefer",
+      "effectText": "Choose another player. That player chooses to discard 1 card or let you destroy one of their minions."
+    },
+    "geeks_mulligan": {
+      "name": "Mulligan",
+      "effectText": "Look at cards from the top of your deck. You may put all of them into your hand, or leave them as they are."
+    },
+    "geeks_control_minion": {
+      "name": "Control Minion",
+      "effectText": "Choose a minion just played by another player. You control it until the end of the turn."
+    },
+    "geeks_non_infinite_loop": {
+      "name": "Non-Infinite Loop",
+      "effectText": "Play an action from the discard pile as an extra action. After it resolves, you may return it to your hand."
+    },
+    "geeks_min_maxing": {
+      "name": "Min-Maxing",
+      "effectText": "Look at another player's hand. You may choose an action from it and play it as an extra action."
+    },
+    "base_tabletop": {
+      "name": "TableTop"
+    },
+    "base_wyrms_desolation": {
+      "name": "Wyrm's Desolation"
+    },
+    "base_the_con": {
+      "name": "The Con"
+    },
+    "base_dragons_lair": {
+      "name": "Dragon's Lair"
+    },
+    "base_converted_cave": {
+      "name": "Converted Cave"
+    },
+    "base_crystal_fortress": {
+      "name": "Crystal Fortress"
+    },
     "kung_fu_fighters_fast_as_lightning": {
       "name": "Fast as Lightning",
       "effectText": "Choose a minion. Until the end of the turn, it has +2 power, and if it would go to the discard pile, return it to its owner's hand instead."

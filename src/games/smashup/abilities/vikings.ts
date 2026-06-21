@@ -582,7 +582,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
         collectRansackTargets(context.matchState.core),
         { sourceId: 'vikings_ransack', targetType: 'generic', titleKey: 'ui.vikings_ransack_title' },
     ),
-    onResolve: ({ context, value, timestamp }) => {
+    onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as {
             cardUid?: string;
             defId?: string;

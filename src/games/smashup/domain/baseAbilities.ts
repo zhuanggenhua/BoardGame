@@ -1307,6 +1307,10 @@ export function registerBaseAbilities(): void {
                 ...interaction,
                 data: { 
                     ...interaction.data, 
+                    title: '母舰：选择收回的随从',
+                    options: interaction.data.options.map((option) => (
+                        option.id === 'skip' ? { ...option, label: '不收回' } : option
+                    )),
                     continuationContext: { 
                         baseIndex: ctx.baseIndex,
                         minionsSnapshot, // 保存随从快照

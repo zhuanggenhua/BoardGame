@@ -1,11 +1,13 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
 import { createBaseSystems, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
+import { registerCriticalImageResolver } from '../../core';
 import { FantasyRealmsDomain } from './domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore, FantasyRealmsEvent } from './domain';
 import { getDeckDrawCount } from './domain/commands';
 import { getFantasyRealmsCardDisplayName } from './foundation';
 import { fantasyRealmsAiRuntime } from './ai';
+import { fantasyRealmsCriticalImageResolver } from './criticalImageResolver';
 
 const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'] as const;
 
@@ -88,5 +90,6 @@ export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCom
 });
 
 registerGameAiRuntime(fantasyRealmsAiRuntime);
+registerCriticalImageResolver('fantasyrealms', fantasyRealmsCriticalImageResolver);
 
 export default engineConfig;
