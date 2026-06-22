@@ -1919,6 +1919,67 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         });
     });
 
+    it('DiceThrone afterAttackResolved 未显式暴露 pendingInteractionId，但当前响应者 seat view 已有私有交互时，也应优先检查 hidden interaction', () => {
+        const sharedState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'defensiveRoll',
+            interaction: {
+                current: undefined,
+                queue: [],
+                isBlocked: false,
+            },
+            responseWindow: {
+                current: {
+                    id: 'after-attack-resolved-window-1',
+                    windowType: 'afterAttackResolved',
+                    sourceId: 'barbarian-rage',
+                    responderQueue: ['1'],
+                    currentResponderIndex: 0,
+                },
+            },
+        }).G as any;
+
+        const seatState = createOnlineAiRecoveryState({
+            activePlayerId: '1',
+            phase: 'defensiveRoll',
+            interaction: {
+                current: {
+                    id: 'dt-hidden-after-attack-choice',
+                    kind: 'simple-choice',
+                    playerId: '1',
+                    data: {
+                        sourceId: 'barbarian-rage',
+                        title: '选择攻击后的额外效果',
+                        options: [
+                            { id: 'skip', label: '跳过', value: { skip: true } },
+                        ],
+                    },
+                },
+                queue: [],
+                isBlocked: false,
+            },
+            responseWindow: sharedState.sys.responseWindow,
+        }).G as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': seatState,
+            },
+        });
+
+        expect(candidate?.reason).toBe('hidden-interaction');
+        expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
+        expect(candidate?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { interactionId: 'dt-hidden-after-attack-choice', optionId: 'skip' },
+        });
+    });
+
     it('DiceThrone 非战斗阶段遗留 displayOnly 奖励骰时，应直接代 AI 收口而不是放任残留', () => {
         const sharedState = createOnlineAiRecoveryState({
             activePlayerId: '0',

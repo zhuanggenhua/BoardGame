@@ -960,7 +960,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('手牌与焦点区使用正式 atlas 卡图而不是程序文字卡', () => {
+    it('手牌与焦点区使用正式单卡面资源而不是程序文字卡', () => {
         renderBoard();
 
         const handRow = screen.getByTestId('fantasyrealms-hand-row');
@@ -969,13 +969,13 @@ describe('FantasyRealms Board foundation', () => {
 
         expect(handCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
         expect(handCards[0]).toHaveAttribute('data-atlas-card-id', HAND_CARDS[0]!.id);
-        expect(handCards[0].style.backgroundSize).toBe('1000% 700%');
-        expect(handCards[0].style.backgroundPosition).toBe('77.778% 33.333%');
-        expect(handCards[0].getAttribute('style')).toContain('fantasyrealms-base-cards-atlas');
+        expect(handCards[0].style.backgroundSize).toBe('cover');
+        expect(handCards[0].style.backgroundPosition).toBe('center center');
+        expect(handCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${HAND_CARDS[0]!.id}.webp`);
 
         expect(focusPreview).toHaveAttribute('data-card-renderer', 'atlas');
         expect(focusPreview).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[0]!.id);
-        expect(focusPreview.getAttribute('style')).toContain('fantasyrealms-base-cards-atlas');
+        expect(focusPreview.getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${PUBLIC_CARDS[0]!.id}.webp`);
     });
 
     it('桌面 live 页只保留最小动作与数值，不再显示描述性标题和说明', () => {

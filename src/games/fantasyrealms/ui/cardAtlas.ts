@@ -1,22 +1,14 @@
 import type { CSSProperties } from 'react';
-import { buildLocalizedImageSet, getLocalizedLocalAssetPath } from '../../../core/AssetLoader';
+import { buildLocalizedImageSet } from '../../../core/AssetLoader';
 
 export const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
 export const FANTASY_REALMS_CARD_ATLAS_COMPRESSED_PATH = 'fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp';
 export const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
-
-const ATLAS_COLUMNS = 10;
-const ATLAS_ROWS = 7;
+export const FANTASY_REALMS_CARD_FACE_PATH_PREFIX = 'fantasyrealms/cards/faces';
 
 type AtlasPosition = {
     column: number;
     row: number;
-};
-
-export type FantasyRealmsAtlasSprite = {
-    src: string;
-    translateXPercent: string;
-    translateYPercent: string;
 };
 
 // @atlas-contract 基础版中文卡图 fantasyrealms-base-cards-atlas.png 使用 10x7 网格；
@@ -77,37 +69,16 @@ const FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID: Record<string, AtlasPosition> = 
     'flame-wildfire': { column: 7, row: 6 },
 };
 
-function formatGridPercent(index: number, maxIndex: number): string {
-    if (index <= 0 || maxIndex <= 0) {
-        return '0%';
-    }
-    return `${((index / maxIndex) * 100).toFixed(3)}%`;
-}
-
 export function getFantasyRealmsCardFaceStyle(cardId: string, locale?: string): CSSProperties | null {
-    const atlasPosition = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
-    if (!atlasPosition) {
+    if (!FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId]) {
         return null;
     }
 
     return {
-        backgroundImage: buildLocalizedImageSet(FANTASY_REALMS_CARD_ATLAS_PATH, locale),
-        backgroundSize: `${ATLAS_COLUMNS * 100}% ${ATLAS_ROWS * 100}%`,
-        backgroundPosition: `${formatGridPercent(atlasPosition.column, ATLAS_COLUMNS - 1)} ${formatGridPercent(atlasPosition.row, ATLAS_ROWS - 1)}`,
+        backgroundImage: buildLocalizedImageSet(`${FANTASY_REALMS_CARD_FACE_PATH_PREFIX}/${cardId}.png`, locale),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-    };
-}
-
-export function getFantasyRealmsCardFaceSprite(cardId: string, locale?: string): FantasyRealmsAtlasSprite | null {
-    const atlasPosition = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
-    if (!atlasPosition) {
-        return null;
-    }
-
-    return {
-        src: getLocalizedLocalAssetPath(FANTASY_REALMS_CARD_ATLAS_COMPRESSED_PATH, locale),
-        translateXPercent: `${((atlasPosition.column / ATLAS_COLUMNS) * 100).toFixed(3)}%`,
-        translateYPercent: `${((atlasPosition.row / ATLAS_ROWS) * 100).toFixed(3)}%`,
     };
 }
 

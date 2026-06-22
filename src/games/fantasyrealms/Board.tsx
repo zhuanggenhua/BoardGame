@@ -22,7 +22,7 @@ import {
     type FantasyRealmsCore,
     type FantasyRealmsPlayerState,
 } from './domain';
-import { getFantasyRealmsCardBackStyle, getFantasyRealmsCardFaceSprite, getFantasyRealmsCardFaceStyle } from './ui/cardAtlas';
+import { getFantasyRealmsCardBackStyle, getFantasyRealmsCardFaceStyle } from './ui/cardAtlas';
 import { ScoreBurstBadge } from '../../components/common/animations/ScoreBurstBadge';
 import { useTouchInspectGesture } from '../../hooks/ui/useTouchInspectGesture';
 import { playSound, useGameAudio } from '../../lib/audio/useGameAudio';
@@ -466,15 +466,14 @@ function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
 
 function renderCard(card: TableCard, t: Translator, locale?: string) {
     const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, locale);
-    const atlasSprite = getFantasyRealmsCardFaceSprite(card.id, locale);
     const displayName = getFantasyRealmsCardDisplayName(card);
-    if (!atlasStyle || !atlasSprite?.src) {
+    if (!atlasStyle) {
         return renderFallbackCard(card, t, locale);
     }
 
     return (
         <article
-            className="fr-card fr-card--atlas"
+            className="fr-card fr-card--face"
             data-testid="fantasyrealms-card"
             data-card-renderer="atlas"
             data-atlas-card-id={card.id}
@@ -485,19 +484,6 @@ function renderCard(card: TableCard, t: Translator, locale?: string) {
             })}
             style={atlasStyle}
         >
-            <img
-                className="fr-card-atlas-image"
-                data-testid="fantasyrealms-card-atlas-image"
-                src={atlasSprite.src}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                decoding="async"
-                loading="eager"
-                style={{
-                    transform: `translate(-${atlasSprite.translateXPercent}, -${atlasSprite.translateYPercent})`,
-                }}
-            />
             <div aria-hidden="true" className="fr-card-sheen" />
         </article>
     );
@@ -1232,7 +1218,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             <div className="fr-compact-focus-body">
                 <div className={`fr-compact-focus-preview-shell${focusDisplay.hiddenByOtherPlayer ? ' fr-compact-focus-preview-shell--hidden' : ''}`}>
                     <div
-                        className="fr-card fr-card--atlas fr-card--focus-preview fr-card--compact-focus-preview"
+                        className="fr-card fr-card--face fr-card--focus-preview fr-card--compact-focus-preview"
                         data-testid="fantasyrealms-focus-preview"
                         data-card-renderer={focusPreviewUsesBack ? 'back' : 'atlas'}
                         data-atlas-card-id={visibleFocusCard?.id ?? ''}
@@ -4203,7 +4189,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-panel {
                     overflow: hidden;
                     border-radius: 12px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border: 0;
                     background: rgba(28, 39, 33, 0.78);
                     box-shadow: none;
                 }
@@ -4252,7 +4238,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     overflow: hidden;
                     aspect-ratio: 0.72;
                     border-radius: 12px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border: 0;
                     box-shadow: none;
                 }
                 .fr-stack--deck {
@@ -4262,7 +4248,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     position: absolute;
                     inset: 0;
                     border-radius: 10px;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border: 0;
                     box-shadow: none;
                 }
                 .fr-stack-card--under {
@@ -4288,14 +4274,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     padding: 9px 10px;
                     border-radius: 10px;
                     background: rgba(13, 19, 16, 0.2);
-                    border: 1px solid rgba(255, 255, 255, 0.06);
+                    border: 0;
                 }
                 .fr-score-row--dense {
                     gap: 10px;
                     padding: 8px 10px;
                 }
                 .fr-score-row--active {
-                    border-color: rgba(255, 255, 255, 0.16);
                     background: rgba(255, 255, 255, 0.05);
                 }
                 .fr-score-row-main {
@@ -4536,27 +4521,13 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     overflow: hidden;
                     aspect-ratio: 0.72;
                     border-radius: 14px;
-                    border: 1px solid rgba(255, 255, 255, 0.14);
+                    border: 0;
                     background: linear-gradient(180deg, #ece1c7 0%, #cdb68a 100%);
                     color: #23170f;
                     box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
                 }
-                .fr-card--atlas {
+                .fr-card--face {
                     background-color: #1b130f;
-                    background-origin: border-box;
-                }
-                .fr-card-atlas-image {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    display: block;
-                    width: 1000%;
-                    height: 700%;
-                    max-width: none;
-                    max-height: none;
-                    pointer-events: none;
-                    user-select: none;
-                    -webkit-user-drag: none;
                 }
                 .fr-card-slot {
                     aspect-ratio: 0.72;
