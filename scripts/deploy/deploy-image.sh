@@ -7,6 +7,7 @@ set -euo pipefail
 #   首次部署：  bash deploy-image.sh
 #   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
 #   更新版本：  bash deploy-image.sh update [tag]
+#   使用本地已导入镜像更新：bash deploy-image.sh update-local [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
 #   回滚到上次部署：bash deploy-image.sh rollback-last
 #   配置镜像源：bash deploy-image.sh configure-mirror
@@ -1078,6 +1079,7 @@ EOF
 
 deploy() {
   local tag="${1:-latest}"
+  local image_source="${2:-remote}"
   ensure_compose_file
   ensure_env_file
   check_docker_mirror_config
@@ -1090,8 +1092,12 @@ deploy() {
   docker image prune -f > /dev/null 2>&1 || true
   docker builder prune -f > /dev/null 2>&1 || true
 
-  log "拉取镜像（tag: ${tag}）"
-  pull_app_images
+  if [ "$image_source" = "local" ]; then
+    log "使用服务器本地已存在镜像（tag: ${tag}）"
+  else
+    log "拉取镜像（tag: ${tag}）"
+  fi
+  pull_app_images "$image_source"
 
   log "停止旧服务"
   if ! docker compose -f "$COMPOSE_FILE" down --remove-orphans; then
@@ -1229,9 +1235,30 @@ logs() {
   docker compose -f "$COMPOSE_FILE" logs -f "${1:-}"
 }
 
+ensure_local_target_image() {
+  local image_ref="${1:-}"
+  if [ -z "$image_ref" ]; then
+    die "本地镜像检查缺少镜像引用"
+  fi
+
+  if ! docker image inspect "$image_ref" >/dev/null 2>&1; then
+    die "目标镜像未在本地就绪：${image_ref}。请先导入镜像，再执行 update-local"
+  fi
+}
+
 pull_app_images() {
+  local image_source="${1:-remote}"
   if [ -z "$TARGET_GAME_IMAGE_REF" ] || [ -z "$TARGET_WEB_IMAGE_REF" ]; then
     die "未锁定目标应用镜像引用，无法执行定向拉取"
+  fi
+
+  if [ "$image_source" = "local" ]; then
+    log "跳过远端拉取，检查服务器本地目标镜像"
+    log "  - game-server: ${TARGET_GAME_IMAGE_REF}"
+    log "  - web: ${TARGET_WEB_IMAGE_REF}"
+    ensure_local_target_image "$TARGET_GAME_IMAGE_REF"
+    ensure_local_target_image "$TARGET_WEB_IMAGE_REF"
+    return 0
   fi
 
   log "拉取应用镜像引用"
@@ -1247,7 +1274,10 @@ pull_app_images() {
 
 case "${1:-deploy}" in
   deploy|update)
-    deploy "${2:-latest}"
+    deploy "${2:-latest}" "remote"
+    ;;
+  deploy-local|update-local)
+    deploy "${2:-latest}" "local"
     ;;
   rollback)
     rollback "${2:-}"
@@ -1268,7 +1298,7 @@ case "${1:-deploy}" in
     logs "${2:-}"
     ;;
   *)
-    echo "用法: $0 [deploy [tag]|update [tag]|rollback <tag>|rollback-last|configure-mirror|init-admin|status|logs [service]]"
+    echo "用法: $0 [deploy [tag]|update [tag]|deploy-local [tag]|update-local [tag]|rollback <tag>|rollback-last|configure-mirror|init-admin|status|logs [service]]"
     exit 1
     ;;
 esac

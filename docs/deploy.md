@@ -55,6 +55,20 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 
 **默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
 
+**正式 fallback（当服务器直拉 GHCR 大层失败时）**：先在网络更好的机器或 CI 上执行：
+
+```bash
+node scripts/deploy/stream-images-to-server.mjs --tag <tag> --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
+```
+
+这条链路会先把目标业务镜像流式送到生产机本地，再在服务器上执行：
+
+```bash
+bash scripts/deploy/deploy-image.sh update-local <tag>
+```
+
+`update-local` 仍然会复用同一套 `post-deploy smoke + 自动回退`；变化的只是镜像分发方式，不是部署门禁。
+
 ### 宿主机 Docker 镜像源配置（独立动作）
 
 如需显式写入项目默认镜像源，请在宿主机单独执行：
@@ -144,6 +158,8 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
 - **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，直接使用 `update` 拉取 `latest`。
 
 > **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
+>
+> **当服务器直拉 GHCR 不稳定时**：正式 fallback 不是“在服务器本地重建一遍前端”，而是先用 `node scripts/deploy/stream-images-to-server.mjs --tag <tag> --deploy` 把镜像送到生产机，再在服务器上走 `update-local`。
 
 > **注意**：镜像构建由 GitHub Actions 自动完成，服务器脚本只负责拉取镜像。
 > 私有镜像需要登录（脚本会提示是否登录 ghcr.io）。
@@ -344,6 +360,8 @@ GitHub Actions 自动化：
 
 > **生产环境更新必须使用部署脚本**：`bash scripts/deploy/deploy-image.sh update [tag]`
 >
+> 如果目标镜像已经通过正式 fallback 预先导入到服务器本地，可改用：`bash scripts/deploy/deploy-image.sh update-local [tag]`
+>
 > 禁止在生产服务器上直接运行 `docker compose up -d`，因为默认使用 `docker-compose.yml` 而非 `docker-compose.prod.yml`，两者的端口映射和环境变量配置不同。
 >
 > **部署回滚执行边界**：后台发布中心不直接在 `boardgame-web` 容器内执行部署 / 回滚脚本。实际执行者必须是宿主机上的 `boardgame-deploy-runner` systemd 服务；这样 `deploy-image.sh` 重启或替换 `boardgame-web` 时，控制部署回滚的进程不会一起被停掉。
@@ -362,7 +380,7 @@ GitHub Actions 自动化：
   - 镜像部署：`docker-compose.prod.yml`（服务器不需要源码，推荐生产环境）
   - 本地开发：`docker-compose.yml`（同样使用 ghcr 预构建镜像）
   - 对外仅暴露 `web`（单体），`game-server` 仅容器网络内通信
-  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
   - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
 ## 资源 /assets 与对象存储映射（官方）
