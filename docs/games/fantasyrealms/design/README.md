@@ -14,6 +14,9 @@
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-waiting-ai-after-first-discard.png`
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-final-standings.png`
   - `test-results/evidence-screenshots/fantasyrealms/fantasyrealms-online-basic.e2e/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图/首页真实建房入口可从开始一路推进到终局排名，并在关键决策位保留前后截图-ui-full-flow-final-standings-review-other-player.png`
+- 只有这一组中文命名的 full-flow E2E 截图，才可以作为“之前正常的时候”的正式对照图。
+- `temp/rendered-board/*`、`temp/fr-*`、`compact-1024x768.png`、`desktop-1600x900.png`、本地运行截图，只能做辅助排查，不能替代这组 E2E 对照图。
+- 用户说的“摸牌（或弃牌）那一版”，指的是 `test-results/evidence-screenshots/_shared/fantasyrealms-live-flow.e2e/终局会展示胜者与最终排名/` 这一组 live-flow 中文截图；在没把具体文件打开并确认前，不得拿别的阶段图或旧桌面图替代。
 - 历史正式视觉稿候选：
   - `fantasyrealms-official-ui-design-2026-06-10.png`
   - 来源：`D:\codex-home\generated_images\019e9d4c-4891-73f3-b886-7af479b62a42\ig_0e062a1c21ef3881016a2436c6d2788191a352559b3fff4520.png`

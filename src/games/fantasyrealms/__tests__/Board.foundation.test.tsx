@@ -842,9 +842,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', String(FANTASY_REALMS_HAND_CARD_SLOTS));
             expect(handRow).toHaveAttribute('data-visible-count', '4');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
+            expect(handRow.style.width).toBe('1506px');
+            expect(handRow.style.gridTemplateColumns).toBe('repeat(7, 176px)');
             expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-slots')).toBe('7');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-stable-slots')).toBe('8');
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(4);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
             expect(within(handRow).getAllByRole('button')[0]).toHaveStyle({ gridColumn: '2' });
@@ -898,9 +898,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', '8');
             expect(handRow).toHaveAttribute('data-visible-count', '8');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
+            expect(handRow.style.width).toBe('1506px');
+            expect(handRow.style.gridTemplateColumns).toBe('repeat(8, 176px)');
             expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-slots')).toBe('8');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-stable-slots')).toBe('8');
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(8);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
         });
