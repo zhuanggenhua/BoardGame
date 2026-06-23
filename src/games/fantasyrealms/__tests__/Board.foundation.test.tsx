@@ -997,7 +997,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('双人真实开局空弃牌时自动从牌库摸牌，不停在显式摸牌入口', async () => {
+    it('双人真实开局空弃牌时保留显式摸牌入口，不自动吞掉动作区', () => {
         const dispatch = vi.fn();
         withViewport(1440, 1024, () => {
             renderBoard(makeDuelOpeningCore({
@@ -1009,9 +1009,11 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
             expect(screen.queryByText('回合')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
-        });
-        await waitFor(() => {
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
+            expect(drawActionButton).toBeEnabled();
+            expect(dispatch).not.toHaveBeenCalled();
+            fireEvent.click(drawActionButton);
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         });
     });
@@ -1098,7 +1100,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('双人开局空手时，桌面 live 预留基础 7 槽占位并自动发牌', async () => {
+    it('双人开局空手时，桌面 live 预留基础 7 槽占位并保留摸牌入口', () => {
         const originalInnerWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
@@ -1120,9 +1122,12 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             expect(screen.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-hand-density', 'default');
             expect(screen.getAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(7);
-            await waitFor(() => {
-                expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
-            });
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
+            expect(drawActionButton).toBeEnabled();
+            expect(dispatch).not.toHaveBeenCalled();
+            fireEvent.click(drawActionButton);
+            expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         } finally {
             Object.defineProperty(window, 'innerWidth', {
                 configurable: true,
@@ -1353,7 +1358,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('多人基础版无公开弃牌时也自动从牌库摸牌，并只保留短状态和阈值数字', async () => {
+    it('多人基础版无公开弃牌时也保留摸牌入口，并只保留短状态和阈值数字', () => {
         const dispatch = vi.fn();
         withViewport(1440, 1024, () => {
             renderBoard(makeCore({
@@ -1398,14 +1403,16 @@ describe('FantasyRealms Board foundation', () => {
             }), { dispatch });
 
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
-            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
+            expect(drawActionButton).toBeEnabled();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByText('0/10')).toBeInTheDocument();
             expect(screen.getByText('当前总分')).toBeInTheDocument();
             expect(screen.queryByText(/当前为 3 人基础版/)).not.toBeInTheDocument();
             expect(screen.queryByText(/第 \d+ 名/)).not.toBeInTheDocument();
-        });
-        await waitFor(() => {
+            expect(dispatch).not.toHaveBeenCalled();
+            fireEvent.click(drawActionButton);
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         });
     });
