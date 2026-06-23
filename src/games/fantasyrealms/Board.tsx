@@ -286,13 +286,6 @@ const LIVE_CENTER_ROW_SECOND_ROW_POSITIONS = {
     5: [-674, -414, -154, 106, 366],
 } as const;
 const LIVE_CENTER_ROW_THIRD_OFFSETS = [-570, -310, -50, 210, 470] as const;
-const LIVE_CENTER_ROW_SPARSE_TOP_POSITIONS = {
-    1: [0],
-    2: [-208, 52],
-    3: [-208, 52, 312],
-    4: [-468, -208, 52, 312],
-    5: [...LIVE_CENTER_ROW_FULL_TOP_OFFSETS],
-} as const;
 
 function shouldUseCompactLandscapeTableViewport(width: number, height: number): boolean {
     return width > height && width <= 1180;
@@ -359,11 +352,11 @@ function isFantasyRealmsCore(value: unknown): value is FantasyRealmsCore {
 function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSProperties[] {
     if (cardCount <= 0) return [];
 
-    const styles: React.CSSProperties[] = [];
+    const fixedSlotStyles: React.CSSProperties[] = [];
 
     const pushAbsoluteRow = (rowOffsets: readonly number[], rowIndex: number) => {
         rowOffsets.forEach((left) => {
-            styles.push({
+            fixedSlotStyles.push({
                 left: `calc(50% + ${left}px)`,
                 top: `${LIVE_CENTER_ROW_ROW_TOP + (rowIndex * LIVE_CENTER_ROW_ROW_OFFSET)}px`,
                 zIndex: rowIndex + 1,
@@ -371,31 +364,19 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
         });
     };
 
-    if (cardCount <= 5) {
-        pushAbsoluteRow(
-            LIVE_CENTER_ROW_SPARSE_TOP_POSITIONS[cardCount as keyof typeof LIVE_CENTER_ROW_SPARSE_TOP_POSITIONS]
-                ?? LIVE_CENTER_ROW_SPARSE_TOP_POSITIONS[5],
-            0,
-        );
-        return styles;
+    pushAbsoluteRow(LIVE_CENTER_ROW_FULL_TOP_OFFSETS, 0);
+    pushAbsoluteRow(LIVE_CENTER_ROW_SECOND_ROW_POSITIONS[5], 1);
+    if (cardCount <= fixedSlotStyles.length) {
+        return fixedSlotStyles.slice(0, cardCount);
     }
 
-    pushAbsoluteRow(LIVE_CENTER_ROW_FULL_TOP_OFFSETS, 0);
-
-    let remainingCount = cardCount - 5;
-    const secondRowCount = Math.min(remainingCount, 5);
-    pushAbsoluteRow(
-        LIVE_CENTER_ROW_SECOND_ROW_POSITIONS[secondRowCount as keyof typeof LIVE_CENTER_ROW_SECOND_ROW_POSITIONS]
-            ?? LIVE_CENTER_ROW_SECOND_ROW_POSITIONS[5],
-        1,
-    );
-    remainingCount -= secondRowCount;
+    const remainingCount = cardCount - fixedSlotStyles.length;
 
     if (remainingCount > 0) {
         pushAbsoluteRow(LIVE_CENTER_ROW_THIRD_OFFSETS.slice(0, Math.min(remainingCount, 5)), 2);
     }
 
-    return styles;
+    return fixedSlotStyles.slice(0, cardCount);
 }
 
 function buildCenteredLiveHandSlots(cards: TableCard[], slotCount: number): CardRowSlot[] {
@@ -427,8 +408,6 @@ function buildMinimalLiveHandCardStyles(cardCount: number, slotCount: number): R
 
 function getMinimalLiveCenterRowClass(cardCount: number) {
     if (cardCount <= 0) return 'fr-live-center-row--empty';
-    if (cardCount === 1) return 'fr-live-center-row--single';
-    if (cardCount <= 3) return 'fr-live-center-row--sparse';
     return 'fr-live-center-row--spread';
 }
 
@@ -722,7 +701,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const liveMotionSnapshotRef = React.useRef<LiveMotionSnapshot | null>(null);
     const liveMotionSequenceRef = React.useRef(0);
     const openingDealSignatureRef = React.useRef<string | null>(null);
-    const autoDeckDrawKeyRef = React.useRef<string | null>(null);
     const liveTableRef = React.useRef<HTMLDivElement | null>(null);
     const liveHandZoneRef = React.useRef<HTMLElement | null>(null);
     const liveHandRowRef = React.useRef<HTMLDivElement | null>(null);
@@ -766,7 +744,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const canDrawFromDeck = isMyTurn && !isGameOver && core.stage === 'draw' && core.drawPile.length >= getDeckDrawCount(core);
     const canTakeDiscard = isMyTurn && !isGameOver && core.stage === 'draw' && core.discardPile.length > 0;
     const canDiscard = isMyTurn && !isGameOver && core.stage === 'discard';
-    const shouldAutoDrawFromDeck = canDrawFromDeck && !canTakeDiscard;
     const isTakeDiscardSelectionActive = canTakeDiscard;
     const discardThreshold = getFantasyRealmsDiscardEndThreshold(core.playerIds.length, core.setupConfig);
     const winnerIds = React.useMemo(() => {
@@ -1176,36 +1153,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     const handleDrawFromDeckAction = React.useCallback(() => {
         dispatch('DRAW_FROM_DECK', {});
     }, [dispatch]);
-    React.useEffect(() => {
-        if (!shouldAutoDrawFromDeck) {
-            autoDeckDrawKeyRef.current = null;
-            return;
-        }
-
-        const autoDeckDrawKey = [
-            core.currentPlayer,
-            core.turn,
-            core.stage,
-            core.drawPile.length,
-            getDeckDrawCount(core),
-        ].join(':');
-        if (autoDeckDrawKeyRef.current === autoDeckDrawKey) {
-            return;
-        }
-
-        autoDeckDrawKeyRef.current = autoDeckDrawKey;
-        dispatch('DRAW_FROM_DECK', {});
-    }, [
-        core,
-        dispatch,
-        shouldAutoDrawFromDeck,
-    ]);
     const minimalLiveCenterCardStyles = React.useMemo(
         () => buildMinimalLiveCenterCardStyles(discardCards.length),
         [discardCards.length],
     );
     const minimalLiveCenterPlaceholderStyles = React.useMemo(
-        () => buildMinimalLiveCenterCardStyles(5),
+        () => buildMinimalLiveCenterCardStyles(10).map((style) => ({ ...style, zIndex: 0 })),
         [],
     );
     const minimalLiveHandCardStyles = React.useMemo(
@@ -1282,6 +1235,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             : currentPlayerName;
     const liveTopbarCueLabel = isGameOver ? null : liveTurnStateLabel;
     const liveActionState = canDiscard ? 'discard' : canDrawFromDeck ? 'draw' : canTakeDiscard ? 'take' : 'idle';
+    const liveDiscardActionLabel = '弃牌';
     const liveScoreBandLabel = isGameOver
         ? endgameDisplayStanding?.name ?? t('score.panelTitle')
         : t('score.panelTitle');
@@ -1306,11 +1260,18 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 : [];
         }
         if (canDiscard) {
-            return [];
+            return [{
+                key: 'discard',
+                mode: 'discard',
+                label: liveDiscardActionLabel,
+                testId: 'fantasyrealms-live-action-discard',
+                disabled: true,
+                onClick: () => {},
+            }];
         }
 
         const buttons: LiveActionButtonConfig[] = [];
-        if (canDrawFromDeck && !shouldAutoDrawFromDeck) {
+        if (canDrawFromDeck) {
             buttons.push({
                 key: 'draw',
                 mode: 'draw',
@@ -1327,8 +1288,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         isGameOver,
         isMyTurn,
         isTakeDiscardSelectionActive,
+        liveDiscardActionLabel,
         liveDrawActionLabel,
-        shouldAutoDrawFromDeck,
     ]);
     React.useLayoutEffect(() => {
         if (typeof window === 'undefined') {
@@ -1518,17 +1479,20 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 data-testid="fantasyrealms-discard-row"
                 style={minimalLiveDiscardRowStyle}
             >
-                {discardCards.length === 0 ? (
-                    <div className="fr-zone-empty fr-zone-empty--silent" data-testid="fantasyrealms-discard-empty" aria-hidden="true">
-                        {minimalLiveCenterPlaceholderStyles.map((style, index) => (
-                            <div
-                                key={`live-center-empty-${index}`}
-                                className="fr-card-slot fr-card-slot--live-center-placeholder"
-                                style={style}
-                            />
-                        ))}
-                    </div>
-                ) : discardCards.map((card, index) => (
+                <div
+                    className="fr-live-center-slot-grid"
+                    data-testid={discardCards.length === 0 ? 'fantasyrealms-discard-empty' : undefined}
+                    aria-hidden="true"
+                >
+                    {minimalLiveCenterPlaceholderStyles.map((style, index) => (
+                        <div
+                            key={`live-center-slot-${index}`}
+                            className="fr-card-slot fr-card-slot--live-center-placeholder"
+                            style={style}
+                        />
+                    ))}
+                </div>
+                {discardCards.map((card, index) => (
                     <motion.button
                         layout="position"
                         transition={CARD_LAYOUT_TRANSITION}
@@ -2121,8 +2085,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     transition: transform 180ms ease, color 180ms ease;
                 }
                 .fr-live-score-band-total--pulse {
-                    transform: scale(1.12);
-                    color: #fff1c8;
+                    transform: scale(1.15);
+                    color: #fff6da;
+                    text-shadow:
+                        0 3px 10px rgba(0, 0, 0, 0.22),
+                        0 0 18px rgba(255, 215, 132, 0.26),
+                        0 0 32px rgba(255, 229, 177, 0.18);
                 }
                 .fr-live-center-row,
                 .fr-live-hand-zone {
@@ -2477,6 +2445,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     padding: 0;
                     border: none;
                     background: transparent;
+                }
+                .fr-live-center-slot-grid {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
                 }
                 .fr-card-button--live-center {
                     position: absolute;
@@ -3101,7 +3074,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         transform: translateY(0) scale(1);
                     }
                     38% {
-                        transform: translateY(-18px) scale(1.09);
+                        transform: translateY(-24px) scale(1.12);
                     }
                     100% {
                         transform: translateY(0) scale(1);
@@ -3782,26 +3755,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-live-center-row {
                     padding-top: 18px;
                     padding-bottom: 14px;
-                }
-                .fr-board--minimal-live .fr-live-center-row--single .fr-discard-row--live-center {
-                    width: min(1080px, 62vw);
-                    min-height: 280px;
-                }
-                .fr-board--minimal-live .fr-live-center-row--single .fr-card-button--live-center {
-                    width: 160px;
-                }
-                .fr-board--minimal-live .fr-live-center-row--single .fr-card-button--live-center:nth-child(1) {
-                    left: calc(50% - 80px);
-                    top: 28px;
-                }
-                .fr-board--minimal-live .fr-live-center-row--single .fr-card-button--live-center .fr-card {
-                    box-shadow:
-                        0 18px 28px rgba(0, 0, 0, 0.3),
-                        0 6px 12px rgba(0, 0, 0, 0.16);
-                }
-                .fr-board--minimal-live .fr-live-center-row--sparse .fr-discard-row--live-center {
-                    width: min(1240px, 72vw);
-                    min-height: 292px;
                 }
                 .fr-board--minimal-live .fr-live-action-zone {
                     position: absolute;
@@ -4496,22 +4449,22 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     position: absolute;
                     left: 0;
                     right: 0;
-                    top: -18px;
-                    z-index: 4;
+                    top: -30px;
+                    z-index: 5;
                     display: flex;
                     justify-content: center;
                     pointer-events: none;
                 }
                 .fr-endgame-card-delta--static {
-                    top: -16px;
+                    top: -20px;
                 }
                 .fr-endgame-card-delta-text {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 34px;
+                    font-size: 38px;
                     font-weight: 900;
-                    line-height: 1;
+                    line-height: 0.92;
                     letter-spacing: 0;
                 }
                 .fr-card {

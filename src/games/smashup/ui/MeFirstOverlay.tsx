@@ -17,6 +17,10 @@ import {
     isCardMinionLike,
 } from '../domain/utils';
 import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
+import {
+    getSmashUpReactionChoicePassOptionId,
+    isSmashUpReactionChoiceInteraction,
+} from '../domain/reactionChoiceInteraction';
 import { validate } from '../domain/commands';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
@@ -84,24 +88,13 @@ export const MeFirstOverlay: React.FC<{
 
     // `smashup_reaction_choose` 本身就是计分响应的中间承载语义，不应把这层提示弹窗隐藏掉。
     const currentInteraction = G.sys.interaction?.current;
-    const interactionSourceId = (currentInteraction?.data as { sourceId?: unknown } | undefined)?.sourceId;
-    const reactionPassOptionId = (() => {
-        if (interactionSourceId !== 'smashup_reaction_choose') return undefined;
-        const rawOptions = (currentInteraction?.data as { options?: unknown } | undefined)?.options;
-        if (!Array.isArray(rawOptions)) return undefined;
-        const option = rawOptions.find((entry) => {
-            if (!entry || typeof entry !== 'object') return false;
-            const candidate = entry as { id?: unknown; value?: { kind?: unknown; __emergency_skip__?: unknown } };
-            return candidate.id === 'pass'
-                || candidate.value?.kind === 'pass'
-                || candidate.id === '__emergency_skip__'
-                || candidate.value?.__emergency_skip__ === true;
-        }) as { id?: unknown } | undefined;
-        return typeof option?.id === 'string' ? option.id : undefined;
-    })();
+    const isReactionChoiceInteraction = isSmashUpReactionChoiceInteraction(currentInteraction);
+    const reactionPassOptionId = isReactionChoiceInteraction
+        ? getSmashUpReactionChoicePassOptionId(G, currentInteraction)
+        : undefined;
     const handlePass = () => {
         onSelectCard(null);
-        if (interactionSourceId === 'smashup_reaction_choose' && currentInteraction?.id && reactionPassOptionId) {
+        if (isReactionChoiceInteraction && currentInteraction.id && reactionPassOptionId) {
             dispatch(INTERACTION_COMMANDS.RESPOND, {
                 interactionId: currentInteraction.id,
                 optionId: reactionPassOptionId,
@@ -110,7 +103,7 @@ export const MeFirstOverlay: React.FC<{
         }
         dispatch('RESPONSE_PASS');
     };
-    const hasInteraction = !!currentInteraction && interactionSourceId !== 'smashup_reaction_choose';
+    const hasInteraction = !!currentInteraction && !isReactionChoiceInteraction;
     const hasLockedHiddenInteraction = !!G.sys.responseWindow?.current?.pendingInteractionId;
 
     // 支持 meFirst 和 afterScoring 两种窗口类型

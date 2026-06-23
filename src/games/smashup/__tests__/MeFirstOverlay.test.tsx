@@ -350,6 +350,57 @@ describe('SmashUp MeFirstOverlay regressions', () => {
         expect(dispatch).not.toHaveBeenCalledWith('RESPONSE_PASS');
     });
 
+    it('统一响应交互已有 live optionsGenerator 时，中间让过按钮应命中最新 optionId 而不是旧快照', () => {
+        const base = createState();
+        const state = createState({
+            sys: {
+                ...base.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-choose',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个响应动作',
+                            options: [
+                                { id: 'stale-pass', label: '旧让过', value: { kind: 'pass' } },
+                            ],
+                            optionsGenerator: () => [
+                                { id: 'play-live', label: '打出当前卡牌', value: { kind: 'play_action', cardUid: 'card-live' } },
+                                { id: 'live-pass', label: '当前让过', value: { kind: 'pass' } },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+            },
+        });
+        const dispatch = vi.fn();
+
+        render(
+            <MeFirstOverlay
+                G={state}
+                dispatch={dispatch}
+                playerID="0"
+                pendingCard={null}
+                onSelectCard={vi.fn()}
+                playerNames={{ '0': 'Host', '1': 'Guest' }}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('me-first-pass-button'));
+
+        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: 'reaction-choose',
+            optionId: 'live-pass',
+        });
+        expect(dispatch).not.toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: 'reaction-choose',
+            optionId: 'stale-pass',
+        });
+    });
+
     it('hides when response window is locked by another hidden interaction', () => {
         const state = createState({
             sys: {

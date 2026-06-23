@@ -12,6 +12,7 @@ import {
     getSimpleChoiceResponseValidationMode,
     INTERACTION_COMMANDS,
     INTERACTION_EVENTS,
+    isControlChoiceValue,
     resolveInteraction,
     stripNonSerializableFromData,
     type PromptOption,
@@ -22,24 +23,6 @@ import type { EngineSystem, HookResult } from './types';
 function isSamePlayerId(a: unknown, b: unknown): boolean {
     if (a === undefined || a === null || b === undefined || b === null) return false;
     return String(a) === String(b);
-}
-
-function isRecoveryChoiceValue(value: unknown): boolean {
-    if (!value || typeof value !== 'object') return false;
-    const candidate = value as {
-        skip?: unknown;
-        done?: unknown;
-        cancel?: unknown;
-        __cancel__?: unknown;
-        __emergency_skip__?: unknown;
-    };
-    return Boolean(
-        candidate.skip
-        || candidate.done
-        || candidate.cancel
-        || candidate.__cancel__
-        || candidate.__emergency_skip__,
-    );
 }
 
 export interface SimpleChoiceSystemConfig {
@@ -183,7 +166,7 @@ function handleSimpleChoiceRespond<TCore>(
         selectedOptionIds = uniqueIds;
         selectedOptions = uniqueIds.map((id) => optionsById.get(id)!);
         const selectedSingleRecovery = selectedOptions.length === 1
-            && isRecoveryChoiceValue(selectedOptions[0]?.value);
+            && isControlChoiceValue(selectedOptions[0]?.value);
 
         const minSelections = data.multi?.min ?? 1;
         const maxSelections = data.multi?.max;
@@ -270,7 +253,7 @@ function handleSimpleChoiceRespond<TCore>(
     } else {
         const isSingleRecoveryChoice = isMulti
             && selectedOptions.length === 1
-            && isRecoveryChoiceValue(selectedOptions[0]?.value);
+            && isControlChoiceValue(selectedOptions[0]?.value);
         resolvedValue = isSingleRecoveryChoice
             ? selectedOptions[0]?.value
             : isMulti

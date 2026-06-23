@@ -52,7 +52,10 @@ import {
 } from './domain/ids';
 import { getManualSpecialScoringBaseIndices, validate } from './domain/commands';
 import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
-import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
+import {
+    getSmashUpReactionChoiceOptions,
+    isSmashUpReactionChoiceInteraction,
+} from './domain/reactionChoiceInteraction';
 import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
 import {
     actionLikeNeedsResponseWindowBase,
@@ -1399,15 +1402,10 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         options?: SmashUpInteractionOption[];
         sourceId?: string;
         multi?: PromptMultiConfig;
-        optionsGenerator?: ((state: MatchState<SmashUpCore>, data: unknown) => SmashUpInteractionOption[]) | undefined;
-        autoRefresh?: unknown;
     };
-    const refreshedOptions = getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
-    const interactionOwnsLiveRefresh = typeof data.optionsGenerator === 'function' || data.autoRefresh !== undefined;
-    const fallbackReactionOptions = data.sourceId === 'smashup_reaction_choose' && !interactionOwnsLiveRefresh
-        ? resolveLiveSmashUpReactionChoice(state, { kind: 'pass' }, state.core.turnNumber ?? 0)?.options
-        : undefined;
-    const resolvedOptions = fallbackReactionOptions ?? refreshedOptions;
+    const resolvedOptions = isSmashUpReactionChoiceInteraction(current)
+        ? getSmashUpReactionChoiceOptions(state, current)
+        : getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
     const options = resolvedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
         return typeof option.id === 'string' && option.disabled !== true;
     });

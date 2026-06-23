@@ -6,6 +6,7 @@ import { FantasyRealmsDomain, evaluateFantasyRealmsScore } from '../../src/games
 import { getDeckDrawCount, requiresDiscardAfterTakingDiscard } from '../../src/games/fantasyrealms/domain/commands';
 import type { FantasyRealmsCore } from '../../src/games/fantasyrealms/domain';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from '../../src/games/fantasyrealms/data/cards';
+import { getFantasyRealmsBaseHandLimit } from '../../src/games/fantasyrealms/foundation';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import {
     assertNoFatalFrontendErrors,
@@ -121,6 +122,22 @@ async function openFantasyRealmsCreateRoomModal(page: Page): Promise<void> {
     await expect(openCreateRoomButton).toBeVisible({ timeout: 10_000 });
     await openCreateRoomButton.click();
     await expect(page.getByTestId('create-room-modal').last()).toBeVisible({ timeout: 10_000 });
+}
+
+async function resetFantasyRealmsHomepageCreateRoomPreferences(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        window.localStorage.removeItem('local_ai_match_preferences:fantasyrealms');
+    });
+}
+
+async function configureFantasyRealmsHomepageRoom(
+    page: Page,
+    options: {
+        numPlayers: 2 | 3;
+    },
+): Promise<void> {
+    await page.getByRole('button', { name: `${options.numPlayers}人` }).click();
+    await page.getByTestId('setup-option-select-expansion-base').click();
 }
 
 function extractFantasyRealmsMatchId(url: string): string | null {
@@ -1086,9 +1103,11 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await clearEvidenceScreenshotsForTest(testInfo);
             await ensureFantasyRealmsLobbyReady(page);
+            await resetFantasyRealmsHomepageCreateRoomPreferences(page);
             await openFantasyRealmsCreateRoomModal(page);
-
-            await page.getByRole('button', { name: '2人' }).click();
+            await configureFantasyRealmsHomepageRoom(page, {
+                numPlayers: 2,
+            });
             await page.getByRole('button', { name: '加入 AI' }).click();
 
             const createModalPath = getEvidenceScreenshotPath(testInfo, 'ui-create-room-modal-before-confirm');
@@ -1109,14 +1128,19 @@ test.describe('FantasyRealms online basic flow', () => {
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
 
             const openingPath = getEvidenceScreenshotPath(testInfo, 'ui-opening-after-create-room');
             await mkdir(dirname(openingPath), { recursive: true });
             await page.screenshot({ path: openingPath, fullPage: false });
 
             const initialCore = await readFantasyRealmsCore(matchId, page);
+            expect(initialCore.setupConfig?.cursedHoardSuitsEnabled).toBe(false);
             const initialHostHandCount = initialCore.players['0']?.hand.length ?? 0;
+            const initialHandSlotCount = Math.max(
+                getFantasyRealmsBaseHandLimit(initialCore.setupConfig),
+                initialHostHandCount,
+            );
+            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', String(initialHandSlotCount));
             const initialDiscardCount = initialCore.discardPile.length;
             const initialTurn = initialCore.turn;
             const deckDrawCount = getDeckDrawCount(initialCore);
@@ -1294,8 +1318,11 @@ test.describe('FantasyRealms online basic flow', () => {
             const beforeHandCount = beforeCore.players[hostPlayerId]?.hand.length ?? 0;
             const beforeDiscardCount = beforeCore.discardPile.length;
             const drawCount = getDeckDrawCount(beforeCore);
+            const alreadyInDiscardStage = beforeCore.currentPlayer === hostPlayerId && beforeCore.stage === 'discard';
+            const playerCount = Object.keys(beforeCore.players ?? {}).length;
 
-            await clickFantasyRealmsDeckDrawButtonIfVisible(page);
+        await clickFantasyRealmsDeckDrawButtonIfVisible(page);
+        if (!alreadyInDiscardStage) {
             await expectFantasyRealmsTurnSnapshot(
                 matchId,
                 page,
@@ -1309,6 +1336,7 @@ test.describe('FantasyRealms online basic flow', () => {
                 },
                 `等待首页真实建房入口的 host 在 turn ${beforeTurn} 摸牌后进入弃牌阶段`,
             );
+        }
 
             if (options?.afterDrawScreenshotName) {
                 const afterDrawPath = getEvidenceScreenshotPath(testInfo, options.afterDrawScreenshotName);
@@ -1369,7 +1397,7 @@ test.describe('FantasyRealms online basic flow', () => {
                 message: `等待首页真实建房入口的 AI 在 host turn ${beforeTurn} 后自动推进并把回合还给 host`,
             }).toEqual({
                 currentPlayer: hostPlayerId,
-                turn: beforeTurn + 2,
+                turn: beforeTurn + playerCount,
                 stage: 'draw',
                 hostHand: beforeHandCount + (beforeCore.stage === 'discard' ? 0 : drawCount) - 1,
             });
@@ -1397,6 +1425,12 @@ test.describe('FantasyRealms online basic flow', () => {
             }
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
 
+            const beforeCore = await readFantasyRealmsCore(matchId, page);
+            const beforeTurn = beforeCore.turn;
+            const beforeHandCount = beforeCore.players[hostPlayerId]?.hand.length ?? 0;
+            const beforeDiscardCount = beforeCore.discardPile.length;
+            const requiresDiscardAfterTake = requiresDiscardAfterTakingDiscard(beforeCore);
+
             const takeDiscardButton = page.getByRole('button', { name: /拿取弃牌/ }).first();
             await expect(takeDiscardButton).toBeVisible({ timeout: 10000 });
 
@@ -1414,7 +1448,49 @@ test.describe('FantasyRealms online basic flow', () => {
                 await page.screenshot({ path: afterTakePath, fullPage: false });
             }
 
-            if (options?.waitingScreenshotName) {
+            if (requiresDiscardAfterTake) {
+                await expectFantasyRealmsTurnSnapshot(
+                    matchId,
+                    page,
+                    hostPlayerId,
+                    {
+                        currentPlayer: hostPlayerId,
+                        turn: beforeTurn,
+                        stage: 'discard',
+                        handCount: beforeHandCount + 1,
+                        discardCount: Math.max(0, beforeDiscardCount - 1),
+                    },
+                    `等待首页真实建房入口的 host 在 turn ${beforeTurn} 拿公开弃牌后进入弃牌阶段`,
+                );
+
+                const firstHandDiscardButton = page.getByRole('button', { name: /弃置手牌/ }).first();
+                await expect(firstHandDiscardButton).toBeVisible({ timeout: 10000 });
+                await firstHandDiscardButton.click();
+
+                const postDiscardStatus = await waitForPostDiscardAdvanceOrGameOver(matchId, beforeTurn, 10000);
+                if (postDiscardStatus.kind === 'gameover') {
+                    if (!options?.allowGameOver) {
+                        throw new Error('首页真实建房入口的拿公开弃牌分支意外直接进入终局');
+                    }
+                    return postDiscardStatus;
+                }
+
+                if (options?.waitingScreenshotName && postDiscardStatus.kind === 'waiting') {
+                    await page.waitForTimeout(400);
+                    const waitingPath = getEvidenceScreenshotPath(testInfo, options.waitingScreenshotName);
+                    await mkdir(dirname(waitingPath), { recursive: true });
+                    await page.screenshot({ path: waitingPath, fullPage: false });
+                }
+
+                if (postDiscardStatus.kind === 'host-returned') {
+                    if (options?.returnedScreenshotName) {
+                        const returnedPath = getEvidenceScreenshotPath(testInfo, options.returnedScreenshotName);
+                        await mkdir(dirname(returnedPath), { recursive: true });
+                        await page.screenshot({ path: returnedPath, fullPage: false });
+                    }
+                    return { kind: 'host' as const, core: postDiscardStatus.core };
+                }
+            } else if (options?.waitingScreenshotName) {
                 await page.waitForTimeout(400);
                 const waitingPath = getEvidenceScreenshotPath(testInfo, options.waitingScreenshotName);
                 await mkdir(dirname(waitingPath), { recursive: true });
@@ -1443,8 +1519,13 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await clearEvidenceScreenshotsForTest(testInfo);
             await ensureFantasyRealmsLobbyReady(page);
+            await resetFantasyRealmsHomepageCreateRoomPreferences(page);
             await openFantasyRealmsCreateRoomModal(page);
+            await configureFantasyRealmsHomepageRoom(page, {
+                numPlayers: 3,
+            });
             await page.getByRole('button', { name: '加入 AI' }).click();
+            await page.getByRole('button', { name: '3 号位' }).click();
 
             const createModalPath = getEvidenceScreenshotPath(testInfo, 'ui-full-flow-create-room-before-confirm');
             await mkdir(dirname(createModalPath), { recursive: true });
@@ -1476,7 +1557,14 @@ test.describe('FantasyRealms online basic flow', () => {
 
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             await expect(page.getByTestId('fantasyrealms-hand-empty-note')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
+            const openingCore = await readFantasyRealmsCore(matchId, page);
+            expect(openingCore.setupConfig?.cursedHoardSuitsEnabled).toBe(false);
+            const openingHostHandCount = openingCore.players[hostPlayerId]?.hand.length ?? 0;
+            const openingHandSlotCount = Math.max(
+                getFantasyRealmsBaseHandLimit(openingCore.setupConfig),
+                openingHostHandCount,
+            );
+            await expect(page.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', String(openingHandSlotCount));
 
             const openingPath = getEvidenceScreenshotPath(testInfo, 'ui-full-flow-opening-before-first-draw');
             await mkdir(dirname(openingPath), { recursive: true });
@@ -1559,7 +1647,7 @@ test.describe('FantasyRealms online basic flow', () => {
                 .map(([playerId, score], index) => ({
                     playerId,
                     rank: index + 1,
-                    playerName: playerId === hostPlayerId ? hostPlayerName : 'AI 2 号位',
+                    playerName: playerId === hostPlayerId ? hostPlayerName : `AI ${Number(playerId) + 1} 号位`,
                     score,
                 }));
             const sortedStandings: FinalStanding[] = rankedPlayers.map(({ rank, playerName, score }) => ({

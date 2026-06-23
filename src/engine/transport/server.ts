@@ -35,7 +35,7 @@ import {
     resolveSeatPlayerDisplayName,
 } from '../ai';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
-import type { AiInteractionSnapshot, AiInteractionOptionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
+import type { AiInteractionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
 import {
     executePipeline,
     createSeededRandom,
@@ -72,6 +72,11 @@ import {
 import type { LocalPregameControlResolver } from './followCurrentTurnPlayer';
 import { injectTutorialInteractionId } from './tutorialAiCommand';
 import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
+import {
+    buildInteractionSelectabilityDiagnostic,
+    resolveUnsatisfiableReasonFromSelectability,
+    type InteractionSelectabilityDiagnostic,
+} from './onlineAiWatchdogFeedbackDiagnostics';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令
 // - simple-choice: 走通用系统取消
@@ -209,21 +214,6 @@ const UNSATISFIABLE_INTERACTION_REASONS = new Set([
     'min-selection-unreachable',
 ]);
 
-type InteractionSelectabilityDiagnostic = {
-    totalOptions: number;
-    enabledOptions: number;
-    disabledOptions: number;
-    minSelectionCount: number;
-    enabledOptionIds: string[];
-    disabledOptionIds: string[];
-    recoverableOptionIds: string[];
-    selectionState:
-        | 'no-options'
-        | 'all-options-disabled'
-        | 'recoverable-option-available'
-        | 'manual-selection-required';
-};
-
 type OnlineAiRecoveryLegalActionSummary = {
     total: number;
     truncated: boolean;
@@ -264,88 +254,6 @@ type OnlineAiRecoveryEventTailEntry = {
     type?: string;
     timestamp?: unknown;
     payload?: unknown;
-};
-
-type OnlineAiRecoveryPendingDamageDiagnostic = {
-    id: unknown;
-    responderId: unknown;
-    responseType: unknown;
-    currentDamage: unknown;
-    sourceAbilityId: unknown;
-    tokenUsageTotals: unknown;
-};
-
-const isRecoverableInteractionOption = (option: AiInteractionOptionSnapshot): boolean => {
-    const value = option.value as {
-        skip?: unknown;
-        __cancel__?: unknown;
-        done?: unknown;
-        __emergency_skip__?: unknown;
-    } | undefined;
-
-    return option.id === 'skip'
-        || option.id === '__cancel__'
-        || option.id === 'done'
-        || option.id === '__emergency_skip__'
-        || value?.skip === true
-        || value?.__cancel__ === true
-        || value?.done === true
-        || value?.__emergency_skip__ === true;
-};
-
-const buildInteractionSelectabilityDiagnostic = (
-    snapshot: AiInteractionSnapshot | null | undefined,
-): InteractionSelectabilityDiagnostic | null => {
-    if (!snapshot) {
-        return null;
-    }
-
-    const options = Array.isArray(snapshot.options) ? snapshot.options : [];
-    const enabledOptions = options.filter((option) => option.disabled !== true);
-    const disabledOptions = options.filter((option) => option.disabled === true);
-    const multi = snapshot.multi as { min?: unknown } | undefined;
-    const minSelectionCount = typeof multi?.min === 'number' ? multi.min : 1;
-    const recoverableOptionIds = minSelectionCount === 0
-        ? ['__empty_selection__']
-        : enabledOptions.filter(isRecoverableInteractionOption).map((option) => option.id);
-
-    const selectionState: InteractionSelectabilityDiagnostic['selectionState'] = options.length === 0
-        ? 'no-options'
-        : enabledOptions.length === 0
-            ? 'all-options-disabled'
-            : recoverableOptionIds.length > 0
-                ? 'recoverable-option-available'
-                : 'manual-selection-required';
-
-    return {
-        totalOptions: options.length,
-        enabledOptions: enabledOptions.length,
-        disabledOptions: disabledOptions.length,
-        minSelectionCount,
-        enabledOptionIds: enabledOptions.map((option) => option.id),
-        disabledOptionIds: disabledOptions.map((option) => option.id),
-        recoverableOptionIds,
-        selectionState,
-    };
-};
-
-const resolveUnsatisfiableReasonFromSelectability = (
-    snapshot: AiInteractionSnapshot | null | undefined,
-): string | null => {
-    const diagnostic = buildInteractionSelectabilityDiagnostic(snapshot);
-    if (!diagnostic) {
-        return null;
-    }
-    if (diagnostic.totalOptions === 0) {
-        return 'empty-options';
-    }
-    if (diagnostic.enabledOptions === 0) {
-        return 'all-options-disabled';
-    }
-    if (diagnostic.minSelectionCount > 0 && diagnostic.enabledOptions < diagnostic.minSelectionCount) {
-        return 'min-selection-unreachable';
-    }
-    return null;
 };
 
 const isEmergencySkipOnlySelectability = (

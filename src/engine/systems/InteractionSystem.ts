@@ -409,26 +409,118 @@ function sanitizePromptOption<T>(option: PromptOption<T>): PromptOption<T> {
     };
 }
 
-function isControlChoiceValue(value: unknown): boolean {
-    if (!value || typeof value !== 'object') return false;
-    const candidate = value as {
+type ControlChoiceOptionLike = {
+    id?: unknown;
+    disabled?: unknown;
+    value?: unknown;
+};
+
+const CONTROL_CHOICE_OPTION_IDS = new Set([
+    'skip',
+    'pass',
+    'done',
+    'cancel',
+    '__cancel__',
+    '__emergency_skip__',
+]);
+
+const SKIP_LIKE_CONTROL_CHOICE_OPTION_IDS = new Set([
+    'skip',
+    'pass',
+    '__emergency_skip__',
+]);
+
+function asControlChoiceValueRecord(value: unknown): {
+    skip?: unknown;
+    pass?: unknown;
+    done?: unknown;
+    cancel?: unknown;
+    __cancel__?: unknown;
+    __emergency_skip__?: unknown;
+    kind?: unknown;
+} | null {
+    if (!value || typeof value !== 'object') return null;
+    return value as {
         skip?: unknown;
+        pass?: unknown;
         done?: unknown;
         cancel?: unknown;
         __cancel__?: unknown;
         __emergency_skip__?: unknown;
+        kind?: unknown;
     };
+}
+
+function isControlChoiceId(id: unknown): boolean {
+    return typeof id === 'string' && CONTROL_CHOICE_OPTION_IDS.has(id);
+}
+
+function isSkipLikeControlChoiceId(id: unknown): boolean {
+    return typeof id === 'string' && SKIP_LIKE_CONTROL_CHOICE_OPTION_IDS.has(id);
+}
+
+export function isPassChoiceValue(value: unknown): boolean {
+    const candidate = asControlChoiceValueRecord(value);
+    return Boolean(candidate && (candidate.pass || candidate.kind === 'pass'));
+}
+
+export function isSkipLikeControlChoiceValue(value: unknown): boolean {
+    const candidate = asControlChoiceValueRecord(value);
     return Boolean(
-        candidate.skip
-        || candidate.done
-        || candidate.cancel
-        || candidate.__cancel__
-        || candidate.__emergency_skip__,
+        candidate
+        && (
+            candidate.skip
+            || candidate.__emergency_skip__
+            || candidate.pass
+            || candidate.kind === 'pass'
+        ),
     );
 }
 
-function isEnabledControlChoiceOption<T>(option: PromptOption<T>): boolean {
-    return option.disabled !== true && isControlChoiceValue(option.value);
+export function isDoneControlChoiceValue(value: unknown): boolean {
+    const candidate = asControlChoiceValueRecord(value);
+    return Boolean(candidate?.done);
+}
+
+export function isSystemCancelControlChoiceValue(value: unknown): boolean {
+    const candidate = asControlChoiceValueRecord(value);
+    return Boolean(candidate?.__cancel__);
+}
+
+export function isControlChoiceValue(value: unknown): boolean {
+    const candidate = asControlChoiceValueRecord(value);
+    return Boolean(
+        candidate
+        && (
+            candidate.cancel
+            || candidate.__cancel__
+            || candidate.done
+            || candidate.skip
+            || candidate.__emergency_skip__
+            || candidate.pass
+            || candidate.kind === 'pass'
+        ),
+    );
+}
+
+export function isControlChoiceOption(option: ControlChoiceOptionLike): boolean {
+    return isControlChoiceId(option.id) || isControlChoiceValue(option.value);
+}
+
+export function isSkipLikeControlChoiceOption(option: ControlChoiceOptionLike): boolean {
+    return isSkipLikeControlChoiceId(option.id) || isSkipLikeControlChoiceValue(option.value);
+}
+
+export function isDoneControlChoiceOption(option: ControlChoiceOptionLike): boolean {
+    return option.id === 'done' || isDoneControlChoiceValue(option.value);
+}
+
+export function isSystemCancelControlChoiceOption(option: ControlChoiceOptionLike): boolean {
+    return option.id === '__cancel__' || isSystemCancelControlChoiceValue(option.value);
+}
+
+export function isEnabledControlChoiceOption<T>(option: PromptOption<T>): boolean {
+    return option.disabled !== true && isControlChoiceOption(option);
 }
 
 function resolveUnsatisfiableSimpleChoiceReason<T>(

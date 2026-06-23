@@ -475,7 +475,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.getByTestId('fantasyrealms-compact-layout')).toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-compact-focus-rail')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
-            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            const discardActionButton = within(actionZone).getByRole('button', { name: '弃牌' });
+            expect(discardActionButton).toBeDisabled();
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
         });
     });
@@ -1133,7 +1135,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('进入弃牌阶段后桌面 live 不再显示横幅，并由手牌直接承接弃牌', () => {
+    it('进入弃牌阶段后桌面 live 保留灰态弃牌按钮，并由手牌直接承接弃牌', () => {
         withViewport(1440, 1024, () => {
             renderBoard(makeCore({
                 stage: 'discard',
@@ -1141,7 +1143,9 @@ describe('FantasyRealms Board foundation', () => {
                 discardPile: [],
             }));
 
-            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
+            const discardActionButton = within(actionZone).getByRole('button', { name: '弃牌' });
+            expect(discardActionButton).toBeDisabled();
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
             expect(screen.queryByTestId('fantasyrealms-live-guidance-note')).not.toBeInTheDocument();

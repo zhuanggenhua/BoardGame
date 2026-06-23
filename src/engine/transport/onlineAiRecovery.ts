@@ -1,4 +1,13 @@
 import type { AiResolution, AiSeatController } from '../ai';
+import {
+    getFreshSimpleChoiceOptions,
+    isControlChoiceOption as isSharedControlChoiceOption,
+    isDoneControlChoiceOption,
+    isSkipLikeControlChoiceOption,
+    isSystemCancelControlChoiceOption,
+    type InteractionDescriptor,
+    type SimpleChoiceData,
+} from '../systems/InteractionSystem';
 import type { MatchState } from '../types';
 import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 import type { GameEngineConfig } from './server';
@@ -711,27 +720,23 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
     });
 }
 
-function isControlChoiceOption(option: HiddenSimpleChoiceOption): boolean {
-    const value = option.value;
-    return option.id === 'skip'
-        || option.id === 'pass'
-        || option.id === 'done'
-        || option.id === 'cancel'
-        || option.id === '__cancel__'
-        || option.id === '__emergency_skip__'
-        || value?.skip === true
-        || value?.kind === 'pass'
-        || value?.done === true
-        || value?.cancel === true
-        || value?.__cancel__ === true
-        || value?.__emergency_skip__ === true;
+function isControlChoiceOptionShared(option: HiddenSimpleChoiceOption): boolean {
+    return isSharedControlChoiceOption(option);
 }
 
-function hasEnabledNonControlOptions(data: { options?: HiddenSimpleChoiceOption[] } | undefined): boolean {
-    const options = Array.isArray(data?.options) ? data.options : [];
-    return options.some((option) =>
-        Boolean(option) && option.disabled !== true && !isControlChoiceOption(option),
-    );
+function hasEnabledNonControlOptions(options: Array<HiddenSimpleChoiceOption & { id: string }>): boolean {
+    return options.some((option) => !isControlChoiceOptionShared(option));
+}
+
+function getFreshEnabledSimpleChoiceOptions(
+    state: MatchState<unknown>,
+    current: HiddenSimpleChoiceInteraction,
+): Array<HiddenSimpleChoiceOption & { id: string }> {
+    return getFreshSimpleChoiceOptions(
+        state,
+        current as unknown as InteractionDescriptor<SimpleChoiceData<unknown>>,
+    ).filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
+        Boolean(option) && option.disabled !== true && typeof option.id === 'string');
 }
 
 function buildForceSkipPayloadFromSeatState(
@@ -757,23 +762,13 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const data = current.data;
-    const enabledOptions = Array.isArray(data?.options)
-        ? data.options.filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
-            Boolean(option) && option.disabled !== true && typeof option.id === 'string')
-        : [];
+    const enabledOptions = getFreshEnabledSimpleChoiceOptions(state, current);
     const sourceId = typeof data?.sourceId === 'string' ? data.sourceId : undefined;
     const title = typeof data?.title === 'string' ? data.title : undefined;
     const minCount = typeof data?.multi?.min === 'number' ? data.multi.min : 1;
     const maxCount = typeof data?.multi?.max === 'number' ? data.multi.max : minCount;
 
-    const skipOption = enabledOptions.find((option) =>
-        option.id === 'skip'
-        || option.id === 'pass'
-        || option.value?.skip === true
-        || option.value?.kind === 'pass'
-        || option.id === '__emergency_skip__'
-        || option.value?.__emergency_skip__ === true,
-    );
+    const skipOption = enabledOptions.find((option) => isSkipLikeControlChoiceOption(option));
     if (skipOption?.id) {
         return {
             interactionId: current.id,
@@ -784,7 +779,7 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const enabledTriggerOptions = enabledOptions.filter((option) =>
-        !isControlChoiceOption(option) && option.value?.kind === 'trigger',
+        !isControlChoiceOptionShared(option) && option.value?.kind === 'trigger',
     );
     if (shouldAutoSelectOnlineAiWatchdogFirstTriggerOnlySimpleChoice({
         sourceId,
@@ -804,13 +799,11 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
-    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
+    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(enabledOptions)) {
         return null;
     }
 
-    const cancelOption = enabledOptions.find((option) =>
-        option.id === '__cancel__' || option.value?.__cancel__ === true,
-    );
+    const cancelOption = enabledOptions.find((option) => isSystemCancelControlChoiceOption(option));
     if (cancelOption?.id) {
         return {
             interactionId: current.id,
@@ -829,9 +822,7 @@ function buildForceSkipPayloadFromSeatState(
         };
     }
 
-    const doneOption = enabledOptions.find((option) =>
-        option.id === 'done' || option.value?.done === true,
-    );
+    const doneOption = enabledOptions.find((option) => isDoneControlChoiceOption(option));
     if (doneOption?.id) {
         return {
             interactionId: current.id,
