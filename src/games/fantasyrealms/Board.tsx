@@ -4227,7 +4227,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         width: min(1320px, calc(100% - 52px));
                     }
                     ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-zone {
-                        top: 72px;
+                        top: 420px;
                         right: 52px;
                         bottom: auto;
                     }

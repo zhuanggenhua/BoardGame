@@ -1015,6 +1015,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
+                    if (postDamageEvents.some(isBlockingInteractionEvent)) {
+                        return { events, halt: true };
+                    }
+
                     if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
                         return { events, halt: true };
                     }
@@ -1371,6 +1375,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
+                if (postDamageEvents.some(isBlockingInteractionEvent)) {
+                    return { events, halt: true };
+                }
+
                 if (!appendPendingAttackResolvedEvent(coreForPostDamage.pendingAttack, events, command.type, timestamp)) {
                     return { events, halt: true };
                 }
@@ -1527,6 +1535,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         !(e as any).payload?.settlement?.displayOnly
                     );
                     if (hasBonusDiceRerollPost) {
+                        return { events, halt: true };
+                    }
+
+                    if (postDamageEvents.some(isBlockingInteractionEvent)) {
                         return { events, halt: true };
                     }
 
