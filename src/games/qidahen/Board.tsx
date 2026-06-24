@@ -2599,6 +2599,7 @@ const ActionsZone: React.FC<{
     const showPrimaryStageHint = primaryStageHint !== primaryStageHeadline;
     const showPrimaryActionEntry = primaryActionEntryText !== primaryStageHeadline
         && primaryActionEntryText !== primaryStageHint;
+    const showPrimaryActionPanel = !suppressPassiveActionContext && !pendingScenarioChoices;
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
     const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
     const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
@@ -2663,55 +2664,57 @@ const ActionsZone: React.FC<{
                     </div>
                 ) : null}
             </div>
-            <div
-                className="mb-3 shrink-0 border-[3px] px-3 py-2 text-[12px] font-black leading-5"
-                data-testid="qidahen-primary-action-panel"
-                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
-            >
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <div className="text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })}
+            {showPrimaryActionPanel ? (
+                <div
+                    className="mb-3 shrink-0 border-[3px] px-3 py-2 text-[12px] font-black leading-5"
+                    data-testid="qidahen-primary-action-panel"
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <div className="text-[11px]" style={{ color: UI_STYLE.mapGold }}>
+                                {t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })}
+                            </div>
+                            <div className="mt-1 text-[16px]" data-testid="qidahen-primary-action-current">
+                                {primaryStageHeadline}
+                            </div>
                         </div>
-                        <div className="mt-1 text-[16px]" data-testid="qidahen-primary-action-current">
-                            {primaryStageHeadline}
-                        </div>
+                        {primaryStageMode ? (
+                            <div
+                                className="rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.16em]"
+                                style={{
+                                    background: primaryStageMode === 'wheel' ? 'rgba(118,214,138,0.18)' : 'rgba(246,213,168,0.18)',
+                                    color: primaryStageMode === 'wheel' ? '#e4ffd2' : '#f6d5a8',
+                                    boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                                }}
+                            >
+                                {primaryStageMode === 'wheel'
+                                    ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘' })
+                                    : t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
+                            </div>
+                        ) : null}
                     </div>
-                    {primaryStageMode ? (
+                    {showPrimaryStageHint ? (
+                        <div className="mt-2 text-[11px] font-black leading-5" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
+                            {primaryStageHint}
+                        </div>
+                    ) : null}
+                    {showPrimaryActionEntry ? (
                         <div
-                            className="rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.16em]"
+                            className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
+                            data-testid="qidahen-primary-action-next-step"
                             style={{
-                                background: primaryStageMode === 'wheel' ? 'rgba(118,214,138,0.18)' : 'rgba(246,213,168,0.18)',
-                                color: primaryStageMode === 'wheel' ? '#e4ffd2' : '#f6d5a8',
-                                boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
+                                borderColor: 'rgba(232,200,133,0.2)',
+                                background: 'rgba(246,213,168,0.08)',
+                                color: UI_STYLE.mapIvory,
+                                borderRadius: 3,
                             }}
                         >
-                            {primaryStageMode === 'wheel'
-                                ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘' })
-                                : t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
+                            {primaryActionEntryText}
                         </div>
                     ) : null}
                 </div>
-                {showPrimaryStageHint ? (
-                    <div className="mt-2 text-[11px] font-black leading-5" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
-                        {primaryStageHint}
-                    </div>
-                ) : null}
-                {showPrimaryActionEntry ? (
-                    <div
-                        className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
-                        data-testid="qidahen-primary-action-next-step"
-                        style={{
-                            borderColor: 'rgba(232,200,133,0.2)',
-                            background: 'rgba(246,213,168,0.08)',
-                            color: UI_STYLE.mapIvory,
-                            borderRadius: 3,
-                        }}
-                    >
-                        {primaryActionEntryText}
-                    </div>
-                ) : null}
-            </div>
+            ) : null}
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {showWheelNextStepBanner ? (
                 <div
