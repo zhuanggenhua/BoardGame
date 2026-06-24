@@ -77,6 +77,14 @@ const clickSimpleChoiceByCustomId = async (
     await visibleButtons.nth(optionIndex).click();
 };
 
+const dismissAttackShowcaseIfVisible = async (page: Page): Promise<void> => {
+    const dismissButton = page.getByRole('button', { name: /开始防御|继续/ }).last();
+    const isVisible = await dismissButton.isVisible({ timeout: 1000 }).catch(() => false);
+    if (!isVisible) return;
+    await dismissButton.click();
+    await expect(dismissButton).toBeHidden({ timeout: 5000 });
+};
+
 const dragHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
     const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
     await expect(card).toBeVisible({ timeout: 5000 });
@@ -246,6 +254,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await setupArtificerBeforeDamageResponseScene(game, 'card-artificer-mechanical-strike');
         await game.screenshot('artificer-mechanical-strike-before-play', testInfo);
 
+        await dismissAttackShowcaseIfVisible(page);
         await dragHandCardToPlay(page, 'card-artificer-mechanical-strike');
 
         await expect.poll(async () => {
@@ -276,6 +285,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await setupArtificerBeforeDamageResponseScene(game, 'upgrade-artificer-shock-bot-2', 1);
         await game.screenshot('artificer-arc-shield-before-play', testInfo);
 
+        await dismissAttackShowcaseIfVisible(page);
         await dragHandCardToPlay(page, 'upgrade-artificer-shock-bot-2');
 
         await expect.poll(async () => {
@@ -345,7 +355,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
     test('攻击后机器人选择链应可真实选择治疗机器人并收口攻击后续', async ({ page, game }, testInfo) => {
         await setupArtificerPostDamageBotChoiceScene(game, {
             tokenId: TOKEN_IDS.HEAL_BOT,
-            randomQueue: [4],
+            randomQueue: [1],
         });
         await game.screenshot('artificer-post-damage-heal-bot-choice-open', testInfo);
 
@@ -368,11 +378,11 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         }, { timeout: 10000 }).toMatchObject({
             synth: 0,
             healBot: 0,
-            artificerHp: 42,
+            artificerHp: 41,
             postDamageFollowUpResolved: true,
             settlementStage: 'readyToResolve',
             interactionKind: null,
-            bonusDieFaces: ['gear'],
+            bonusDieFaces: ['wrench'],
         });
 
         await game.screenshot('artificer-post-damage-heal-bot-after-choice', testInfo);

@@ -1381,6 +1381,37 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(resolution.nextState.pendingAttack?.postDamageFollowUpResolved).toBe(true);
     });
 
+    it('攻击后机器人选择生成后应暂停攻击结算并保留 pendingAttack', () => {
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
+        state.core.players['0'].tokens[TOKEN_IDS.SHOCK_BOT] = 1;
+        state.core.activePlayerId = '0';
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shock-bot',
+            damageResolved: true,
+            resolvedDamage: 9,
+            settlementStage: 'postDamagePending',
+        } as DiceThroneCore['pendingAttack'];
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state: { ...state, sys: { ...state.sys, phase: 'offensiveRoll' } },
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = (Array.isArray(result) ? result : (result?.events ?? [])) as DiceThroneEvent[];
+        const next = applyEvents(state.core, events);
+
+        expect(eventsOfType(events, 'CHOICE_REQUESTED')).toHaveLength(1);
+        expect(eventsOfType(events, 'ATTACK_RESOLVED')).toHaveLength(0);
+        expect(result && !Array.isArray(result) ? result.halt : false).toBe(true);
+        expect(next.pendingAttack?.sourceAbilityId).toBe('shock-bot');
+        expect(next.pendingAttack?.settlementStage).toBe('postDamagePending');
+    });
+
     it('超频运行在合成器不足时不提供基础机器人，但高级机器人仍可被激活', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 1;
