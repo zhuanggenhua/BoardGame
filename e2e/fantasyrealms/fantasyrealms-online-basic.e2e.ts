@@ -116,10 +116,19 @@ async function openFantasyRealmsCreateRoomModal(page: Page): Promise<void> {
     await expect(fantasyRealmsCard).toBeVisible({ timeout: 15_000 });
     await fantasyRealmsCard.click();
     await expect(page).toHaveURL(/game=fantasyrealms/);
-    const detailsModal = page.locator('[data-testid="game-details-modal-root"]:visible').last();
-    await expect(detailsModal).toBeVisible({ timeout: 15_000 });
-    const openCreateRoomButton = detailsModal.getByTestId('game-details-open-create-room').first();
-    await expect(openCreateRoomButton).toBeVisible({ timeout: 10_000 });
+    const detailsModalRoot = page.locator('[data-testid="game-details-modal-root"]:visible').last();
+    const detailsModalFallback = page.getByTestId('home-game-details-loading-fallback-root').last();
+    await expect
+        .poll(async () => (
+            (await detailsModalRoot.count()) > 0
+            || await detailsModalFallback.isVisible().catch(() => false)
+        ), {
+            timeout: 15_000,
+            message: '等待首页游戏详情层出现（正式弹窗或懒加载骨架）',
+        })
+        .toBe(true);
+    const openCreateRoomButton = page.getByTestId('game-details-open-create-room').first();
+    await expect(openCreateRoomButton).toBeVisible({ timeout: 25_000 });
     await openCreateRoomButton.click();
     await expect(page.getByTestId('create-room-modal').last()).toBeVisible({ timeout: 10_000 });
 }

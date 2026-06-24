@@ -28,10 +28,31 @@ import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+import { getTokenStackLimit } from './rules';
 
 // ============================================================================
 // Token 可用性检查
 // ============================================================================
+
+function resolveAdditionalTokenCosts(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+    tokenDef: TokenDef,
+): Array<{ tokenId: string; amount: number }> {
+    return (tokenDef.activeUse?.additionalTokenCosts ?? [])
+        .map((cost) => {
+            const override = cost.overrideWhenOwnerTokenLimitAtLeast;
+            if (override) {
+                const ownerTokenId = override.tokenId ?? tokenDef.id;
+                const ownerLimit = getTokenStackLimit(state, playerId, ownerTokenId);
+                if (ownerLimit >= override.limit) {
+                    return { tokenId: cost.tokenId, amount: override.amount };
+                }
+            }
+            return { tokenId: cost.tokenId, amount: cost.amount };
+        })
+        .filter((cost) => Number.isInteger(cost.amount) && cost.amount > 0);
+}
 
 export function getUsableTokenAmountForTiming(
     state: DiceThroneCore,
@@ -53,8 +74,25 @@ export function getUsableTokenAmountForTiming(
         if (!hasAttackContext) return 0;
         if (damageScope !== 'attack') return 0;
     }
+    if (
+        typeof tokenDef.activeUse.minimumAttackDamage === 'number'
+        && ((state.pendingDamage?.originalDamage ?? 0) < tokenDef.activeUse.minimumAttackDamage)
+    ) {
+        return 0;
+    }
 
     let availableAmount = player.tokens[tokenDef.id] ?? 0;
+    if (availableAmount <= 0) return 0;
+    const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
+    const sameTokenAdditionalCost = additionalCosts
+        .filter(cost => cost.tokenId === tokenDef.id)
+        .reduce((sum, cost) => sum + cost.amount, 0);
+    if (sameTokenAdditionalCost > 0) {
+        availableAmount = Math.max(0, availableAmount - sameTokenAdditionalCost);
+    }
+    for (const cost of additionalCosts) {
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return 0;
+    }
     if (availableAmount <= 0) return 0;
 
     // 规则：本回合获得的太极不可用于本回合增强伤害（beforeDamageDealt）。
@@ -444,13 +482,28 @@ export function processTokenUsage(
         ? Math.max(0, maxWindowUsage - usedInWindow)
         : currentAmount;
     const actualAmount = Math.min(amount, currentAmount, remainingWindowUsage);
+    const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
+    const sameTokenAdditionalCost = additionalCosts
+        .filter(cost => cost.tokenId === tokenDef.id)
+        .reduce((sum, cost) => sum + cost.amount, 0);
+    const affordablePrimaryAmount = Math.max(0, currentAmount - sameTokenAdditionalCost);
+    const actualAffordableAmount = Math.min(actualAmount, affordablePrimaryAmount);
 
-    if (amount <= 0 || actualAmount <= 0) {
+    if (amount <= 0 || actualAffordableAmount <= 0) {
         return {
             events,
             result: { success: false },
             newTokenAmount: currentAmount,
         };
+    }
+    for (const cost of additionalCosts) {
+        if ((player?.tokens[cost.tokenId] ?? 0) < cost.amount) {
+            return {
+                events,
+                result: { success: false },
+                newTokenAmount: currentAmount,
+            };
+        }
     }
     
     // 构建处理上下文
@@ -458,7 +511,7 @@ export function processTokenUsage(
         state,
         tokenDef,
         playerId,
-        amount: actualAmount,
+        amount: actualAffordableAmount,
         random,
         pendingDamage: state.pendingDamage ? {
             originalDamage: state.pendingDamage.originalDamage,
@@ -481,7 +534,28 @@ export function processTokenUsage(
     }
     const result = processor(ctx);
     
-    const newTokenAmount = currentAmount - actualAmount;
+    const newTokenAmount = currentAmount - actualAffordableAmount;
+
+    if (result.success) {
+        const runningTotals = new Map<string, number>();
+        for (const cost of additionalCosts) {
+            const spentSoFar = runningTotals.get(cost.tokenId) ?? 0;
+            runningTotals.set(cost.tokenId, spentSoFar + cost.amount);
+            const currentCostAmount = player?.tokens[cost.tokenId] ?? 0;
+            events.push({
+                type: 'TOKEN_CONSUMED',
+                payload: {
+                    playerId,
+                    tokenId: cost.tokenId,
+                    amount: cost.amount,
+                    newTotal: Math.max(0, currentCostAmount - spentSoFar - cost.amount),
+                    sourceAbilityId: tokenDef.id,
+                },
+                sourceCommandType: 'USE_TOKEN',
+                timestamp,
+            } as DiceThroneEvent);
+        }
+    }
     
     // 生成 TOKEN_USED 事件
     const resolvedResponseType = responseType ?? state.pendingDamage?.responseType;
@@ -500,7 +574,7 @@ export function processTokenUsage(
         payload: {
             playerId,
             tokenId: tokenDef.id,
-            amount: actualAmount,
+            amount: actualAffordableAmount,
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
             evasionRoll: result.rollResult,

@@ -475,6 +475,7 @@ export interface QidahenPostBattleSelection {
     title: string;
     summary: string;
     battleRollSummary?: string | null;
+    battleRolls?: QidahenBattleRolls | null;
     choices: QidahenPostBattleChoice[];
 }
 

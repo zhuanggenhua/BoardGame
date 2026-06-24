@@ -279,10 +279,13 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     let pendingAttack = state.pendingAttack;
     // 统一累计“本次攻击对防御方造成的净掉血”，作为 lastResolvedAttackDamage 的单一来源。
     if (pendingAttack && targetId === pendingAttack.defenderId) {
+        const nextStage = pendingAttack.postDamageFollowUpResolved === true
+            ? 'readyToResolve'
+            : 'postDamagePending';
         pendingAttack = updatePendingAttackSettlementStage({
             ...pendingAttack,
             resolvedDamage: (pendingAttack.resolvedDamage ?? 0) + netHpLoss,
-        }, 'postDamagePending')!;
+        }, nextStage)!;
     }
 
     const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, hpAfter);

@@ -130,7 +130,7 @@ export const buildQidahenSunYuanhuaTechSelection = (
     return {
         source: 'sun-yuanhua',
         title: '孙元化弃牌科技',
-        summary: '袁崇焕在场时，行动前可弃 2 张手牌，按当前低保真规则推进 1 次科技。',
+        summary: '袁崇焕在场时，行动前可弃 2 张手牌，推进 1 项科技。',
         requiredCardCount: 2,
         candidateCardIds,
         selectedCardIds: nextSelectedCardIds,

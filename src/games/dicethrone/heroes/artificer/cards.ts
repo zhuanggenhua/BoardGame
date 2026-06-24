@@ -117,12 +117,19 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-artificer-shock-bot-2', 'name'),
         type: 'upgrade',
         cpCost: 0,
-        timing: 'main',
+        timing: 'instant',
         description: cardText('upgrade-artificer-shock-bot-2', 'description'),
         previewRef: atlasPreview(19),
         sourceAtlasIndex: 19,
+        playCondition: {
+            pendingDamage: {
+                role: 'target',
+                responseType: 'beforeDamageReceived',
+            },
+        },
         effects: [{
-            description: abilityEffectText('upgrade-artificer-shock-bot-2', 'pendingL2'),
+            description: abilityEffectText('upgrade-artificer-shock-bot-2', 'activate'),
+            action: { type: 'custom', target: 'self', customActionId: 'artificer-arc-shield' },
             timing: 'immediate',
         }],
     },
@@ -255,6 +262,28 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         sourceAtlasIndex: 30,
         effects: [{
             description: abilityEffectText('card-artificer-overdrive', 'roll'),
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 1,
+                conditionalEffects: [
+                    {
+                        face: ARTIFICER_DICE_FACE_IDS.WRENCH,
+                        heal: 2,
+                        effectKey: 'bonusDie.effect.artificerOverdriveWrench',
+                    },
+                    {
+                        face: ARTIFICER_DICE_FACE_IDS.GEAR,
+                        grantToken: { tokenId: TOKEN_IDS.SYNTH, value: 1 },
+                        effectKey: 'bonusDie.effect.artificerOverdriveGear',
+                    },
+                    {
+                        face: ARTIFICER_DICE_FACE_IDS.ELECTRICITY,
+                        grantStatus: { statusId: STATUS_IDS.NANOBOMB, value: 1, target: 'opponent' },
+                        effectKey: 'bonusDie.effect.artificerOverdriveElectricity',
+                    },
+                ],
+            },
             timing: 'immediate',
         }],
     },
@@ -269,6 +298,7 @@ const ARTIFICER_HERO_CARDS: AbilityCard[] = [
         sourceAtlasIndex: 31,
         effects: [{
             description: abilityEffectText('card-artificer-perfectly-calibrated', 'roll'),
+            action: { type: 'custom', target: 'self', customActionId: 'artificer-perfectly-calibrated-roll' },
             timing: 'immediate',
         }],
     },
@@ -287,4 +317,3 @@ export const getArtificerStartingDeck = (random: RandomFn): AbilityCard[] => {
     const deck = ARTIFICER_CARDS.map(card => ({ ...card }));
     return random.shuffle(deck);
 };
-

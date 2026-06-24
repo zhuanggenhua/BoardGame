@@ -61,7 +61,7 @@ import {
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
-import { isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, isPassiveActionUsable } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
@@ -1406,8 +1406,10 @@ const validateUsePassiveAbility = (
     // CP / Token / 时机检查
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return fail('not_enough_cp');
-    if (action.tokenCost && (player.tokens[action.tokenCost.tokenId] ?? 0) < action.tokenCost.amount) {
-        return fail('not_enough_token');
+    for (const cost of getPassiveActionTokenCosts(action)) {
+        if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) {
+            return fail('not_enough_token');
+        }
     }
     if (!isPassiveActionUsable(state, playerId, cmd.payload.passiveId, cmd.payload.actionIndex, phase)) {
         return fail('passive_action_unusable');

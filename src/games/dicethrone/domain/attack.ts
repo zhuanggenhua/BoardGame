@@ -13,6 +13,9 @@ import { reduce } from './reducer';
 const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'CHOICE_REQUESTED' || event.type === 'INTERACTION_REQUESTED';
 
+const isInteractiveBonusDiceRerollEvent = (event: DiceThroneEvent): boolean =>
+    event.type === 'BONUS_DICE_REROLL_REQUESTED' && event.payload.settlement?.displayOnly !== true;
+
 const createPreDefenseResolvedEvent = (
     attackerId: string,
     defenderId: string | undefined,
@@ -73,6 +76,9 @@ export const resolveOffensivePreDefenseEffects = (
 
     const events: DiceThroneEvent[] = [];
     events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, { random }));
+    if (events.some(isBlockingInteractionEvent)) {
+        return events;
+    }
     events.push(createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp));
     return events;
 };
@@ -179,10 +185,7 @@ export const resolveAttack = (
     events.push(...defenseEvents);
     const hasDefenseChoice = defenseEvents.some(e => e.type === 'CHOICE_REQUESTED');
     const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-    const hasDefenseInteractiveBonusDiceReroll = defenseEvents.some(e =>
-        e.type === 'BONUS_DICE_REROLL_REQUESTED'
-        && !(e as any).payload?.settlement?.displayOnly
-    );
+    const hasDefenseInteractiveBonusDiceReroll = defenseEvents.some(isInteractiveBonusDiceRerollEvent);
     if (hasDefenseChoice || hasDefenseTokenResponse || hasDefenseInteractiveBonusDiceReroll) {
         return events;
     }
@@ -207,10 +210,7 @@ export const resolveAttack = (
         });
 
         const hasTokenResponse = withDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-        const hasInteractiveBonusDiceReroll = withDamageEvents.some(e =>
-            e.type === 'BONUS_DICE_REROLL_REQUESTED'
-            && !(e as any).payload?.settlement?.displayOnly
-        );
+        const hasInteractiveBonusDiceReroll = withDamageEvents.some(isInteractiveBonusDiceRerollEvent);
         const hasChoiceInWithDamage = withDamageEvents.some(isBlockingInteractionEvent);
         if (hasTokenResponse || hasInteractiveBonusDiceReroll || hasChoiceInWithDamage) {
             attackEvents.push(...withDamageEvents);
@@ -224,10 +224,7 @@ export const resolveAttack = (
         const postDamageEvents = attackEvents.slice(withDamageEvents.length);
         const hasChoiceInPostDamage = postDamageEvents.some(isBlockingInteractionEvent);
         const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
-        const hasBonusDiceRerollInPostDamage = postDamageEvents.some(e =>
-            e.type === 'BONUS_DICE_REROLL_REQUESTED'
-            && !(e as any).payload?.settlement?.displayOnly
-        );
+        const hasBonusDiceRerollInPostDamage = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
         if (hasChoiceInPostDamage || hasTokenResponseInPostDamage || hasBonusDiceRerollInPostDamage) {
             events.push(...attackEvents);
             return events;

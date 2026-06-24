@@ -77,7 +77,7 @@ export function getEvidenceScreenshotPath(
     const dir = getEvidenceScreenshotDir(testInfo, options.subdir);
     const filename =
         options.filename ??
-        `${sanitizeEvidencePathSegment(testInfo.title || 'unnamed')}-${sanitizeEvidencePathSegment(name)}.png`;
+        `${sanitizeEvidencePathSegment(name) || 'screenshot'}.png`;
     return join(dir, sanitizeEvidenceFileName(filename));
 }
 

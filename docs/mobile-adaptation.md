@@ -88,6 +88,8 @@
   - 再按可用视口计算统一缩放因子：`scale = min(availableWidth / designWidth, availableHeight / designHeight)`
   - 整块内容一起 `scale-to-fit`
 - 这类界面**不要**把 `vw`、`sm/md/lg` 断点、局部字号缩小，当作主适配手段；这些做法只会导致“局部变小”或“结构重排”，无法保证和 PC 对等。
+- 对已经声明 `mobileLayoutPreset="board-shell"` 的固定牌桌类游戏，手机横屏默认不是切到另一套 `compact` / 单栏 / 窄版 UI，而是保留 PC 牌桌构图，用 `MobileBoardShell` 的设计尺寸与运行时缩放统一适配。
+- 在这类游戏里，内部 `px` 应理解为设计画布坐标；`vh` 只能作为壳层高度、运行时视口或局部辅助单位，不能替代统一缩放去重算每张牌、每个 HUD 或每条操作轨。
 - 这类界面允许在移动条件下补局部例外：
   - 安全区 padding
   - 固定按钮改为底部 rail / 悬浮层
@@ -234,6 +236,11 @@ shellTargets?: Array<'pwa' | 'app-webview' | 'mini-program-webview'>;
 - `smashup`
   - `landscape-adapted`
   - `board-shell`
+- `fantasyrealms`
+  - `landscape-adapted`
+  - `board-shell`
+  - 手机横屏主口径：沿用同一套 PC live 牌桌，通过 `FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX = 1520` 与 `MobileBoardShell` 统一缩放适配。
+  - `<= 1023px` 手机横屏不得进入 `fantasyrealms-compact-layout`；`1024px - 1180px` 的窄桌面 / 平板兼容分支可继续使用 compact 壳，但不能变成另一套产品级 UI。
 
 ## 验证要求
 

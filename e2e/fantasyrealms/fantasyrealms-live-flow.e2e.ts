@@ -71,7 +71,7 @@ const drawStageCore = () => {
     return core;
 };
 
-const discardStageCore = () => applyCommand(FantasyRealmsDomain.setup(['0', '1'], random), {
+const _discardStageCore = () => applyCommand(FantasyRealmsDomain.setup(['0', '1'], random), {
     type: 'DRAW_FROM_DECK',
     playerId: '0',
     payload: {},
@@ -220,6 +220,56 @@ const nearEndMultiplayerDiscardCore = (): FantasyRealmsCore => {
             '2': {
                 ...baseCore.players['2']!,
                 hand: playerTwoHand,
+                score: 0,
+                scoreBreakdown: [],
+            },
+        },
+        focusCardId: currentFocusCard.id,
+    };
+
+    const recalculated = Object.fromEntries(
+        Object.entries(core.players).map(([playerId, player]) => {
+            const evaluation = evaluateFantasyRealmsScore(player.hand, discardPile);
+            return [playerId, {
+                ...player,
+                score: evaluation.totalScore,
+                scoreBreakdown: evaluation.scoreBreakdown.map((line) => ({ ...line })),
+            }];
+        }),
+    ) as FantasyRealmsCore['players'];
+
+    return {
+        ...core,
+        players: recalculated,
+    };
+};
+
+const fullTenDiscardCore = (): FantasyRealmsCore => {
+    const baseCore = FantasyRealmsDomain.setup(['0', '1'], random);
+    const cards = OFFICIAL_FANTASY_REALMS_CARDS.map((card) => ({ ...card }));
+    const discardPile = cards.slice(0, 10);
+    const playerZeroHand = cards.slice(10, 17);
+    const playerOneHand = cards.slice(17, 24);
+    const currentFocusCard = discardPile[discardPile.length - 1]!;
+
+    const core: FantasyRealmsCore = {
+        ...baseCore,
+        currentPlayer: '0',
+        turn: 6,
+        stage: 'draw',
+        drawPile: cards.slice(24),
+        discardPile,
+        players: {
+            ...baseCore.players,
+            '0': {
+                ...baseCore.players['0']!,
+                hand: playerZeroHand,
+                score: 0,
+                scoreBreakdown: [],
+            },
+            '1': {
+                ...baseCore.players['1']!,
+                hand: playerOneHand,
                 score: 0,
                 scoreBreakdown: [],
             },
@@ -568,14 +618,16 @@ async function _expectMagnifyOnlyAppearsOnHover(page: Page) {
     }).toBe('0');
 }
 
-async function expectSingleCenterCardNotOverscaled(page: Page) {
+async function expectSingleCenterCardUsesStableTableSize(page: Page) {
     const centerRects = await getLocatorRects(page, '.fr-card-button--live-center');
     if (centerRects.length !== 1) {
         return;
     }
     const onlyCard = centerRects[0]!;
-    expect(onlyCard.width).toBeLessThanOrEqual(170);
-    expect(onlyCard.height).toBeLessThanOrEqual(290);
+    expect(onlyCard.width).toBeGreaterThanOrEqual(188);
+    expect(onlyCard.width).toBeLessThanOrEqual(212);
+    expect(onlyCard.height).toBeGreaterThanOrEqual(284);
+    expect(onlyCard.height).toBeLessThanOrEqual(308);
 }
 
 async function getFirstCardMotionFrame(page: Page, selector: string) {
@@ -631,7 +683,8 @@ test.describe('FantasyRealms live flow', () => {
                 discardCount: 0,
             });
             await expect(page.getByTestId('fantasyrealms-live-action-draw')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expectTurnChipPrimaryReadable(page);
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
             await expectHandRowUsesStableHandSlotGrid(page, 7);
@@ -699,10 +752,11 @@ test.describe('FantasyRealms live flow', () => {
                 discardCount: 1,
             });
             await expect(page.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
             await expectStableHandRegion(page);
-            await expectSingleCenterCardNotOverscaled(page);
+            await expectSingleCenterCardUsesStableTableSize(page);
             await expectHandRowUsesStableHandSlotGrid(page, 8);
             await clearHandCardHoverState(page);
             const handSizeAfterTake = await getFirstHandCardSize(page);
@@ -776,22 +830,6 @@ test.describe('FantasyRealms live flow', () => {
                 return state?.core?.currentPlayer === '1'
                     && state?.core?.stage === 'draw'
                     && state?.core?.players?.['0']?.hand?.length === 2
-                    && state?.core?.discardPile?.length === 1;
-            }, { timeout: 10000 });
-
-            const discardCore = discardStageCore();
-            await injectCore(page, discardCore);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-
-            const secondHandButton = page.getByRole('button', { name: /弃置手牌/ }).nth(1);
-            await secondHandButton.click();
-
-            await page.waitForFunction(() => {
-                const state = (window as TestHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.core?.currentPlayer === '1'
-                    && state?.core?.stage === 'draw'
-                    && state?.core?.players?.['0']?.hand?.length === 1
                     && state?.core?.discardPile?.length === 1;
             }, { timeout: 10000 });
         } finally {
@@ -884,7 +922,8 @@ test.describe('FantasyRealms live flow', () => {
             expect(handZoneRect.y).toBeGreaterThan(liveTableRect.y + Math.round(liveTableRect.height * 0.62));
             expect(handZoneBottom).toBeGreaterThanOrEqual(liveTableBottom - 28);
             expect(handRowBottom).toBeGreaterThanOrEqual(liveTableBottom - 28);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'live-hand-zone-bottom-docked');
@@ -929,7 +968,8 @@ test.describe('FantasyRealms live flow', () => {
                 discardCount: 0,
             });
             await expect(page.getByTestId('fantasyrealms-live-action-draw')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
             await expect(page.getByRole('button', { name: /弃置手牌/ }).first()).toBeVisible();
 
@@ -975,7 +1015,8 @@ test.describe('FantasyRealms live flow', () => {
                     && state?.core?.discardPile?.length === 0;
             }, { timeout: 10000 });
 
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
@@ -1197,7 +1238,8 @@ test.describe('FantasyRealms live flow', () => {
 
             await expect(page.getByText('你的回合')).toBeVisible();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1264,7 +1306,8 @@ test.describe('FantasyRealms live flow', () => {
             await expect(page.getByText('你的回合')).toBeVisible();
             await expect(page.getByText('9/10')).toBeVisible();
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1290,7 +1333,7 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('低张数公开弃牌会按当前张数重新居中，不沿用 5 槽顶排固定槽位', async ({ browser }, testInfo) => {
+    test('低张数公开弃牌保持满 10 张固定槽位，不再因为少牌重新居中放大', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -1306,25 +1349,31 @@ test.describe('FantasyRealms live flow', () => {
             await openFantasyRealmsTestPage(page, baseURL);
             await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
 
+            await injectCore(page, fullTenDiscardCore());
+            await expect(page.getByText('你的回合')).toBeVisible();
+
+            const fullRowRects = await getLocatorRects(page, '.fr-card-button--live-center');
+            expect(fullRowRects).toHaveLength(10);
+
+            const topRowRects = fullRowRects.slice(0, 5);
+            const secondRowRects = fullRowRects.slice(5);
+            expect(secondRowRects[0]!.x).toBeLessThan(topRowRects[0]!.x);
+            expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+
             await injectCore(page, drawStageCore());
+            await expect(page.getByText('你的回合')).toBeVisible();
+            const lowCountRects = await getLocatorRects(page, '.fr-card-button--live-center');
+            expect(lowCountRects).toHaveLength(2);
 
-            const liveTableRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-table"]');
-            const centerCardRects = await getLocatorRects(page, '.fr-card-button--live-center');
-            expect(centerCardRects).toHaveLength(2);
+            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
+            expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
 
-            const tableCenterX = liveTableRect.x + (liveTableRect.width / 2);
-            const pairCenterX = (
-                (centerCardRects[0]!.x + (centerCardRects[0]!.width / 2))
-                + (centerCardRects[1]!.x + (centerCardRects[1]!.width / 2))
-            ) / 2;
-            const horizontalGap = centerCardRects[1]!.x - (centerCardRects[0]!.x + centerCardRects[0]!.width);
-
-            expect(Math.abs(pairCenterX - tableCenterX)).toBeLessThanOrEqual(80);
-            expect(centerCardRects[0]!.y).toBe(centerCardRects[1]!.y);
-            expect(horizontalGap).toBeGreaterThanOrEqual(90);
-            expect(horizontalGap).toBeLessThanOrEqual(130);
-
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-centered-row');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-fixed-center-slots');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {
@@ -1427,7 +1476,8 @@ test.describe('FantasyRealms live flow', () => {
             }, { timeout: 10000 });
 
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1477,7 +1527,8 @@ test.describe('FantasyRealms live flow', () => {
             }, { timeout: 10000 });
 
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
 
             const firstHandButton = page.getByRole('button', { name: /弃置手牌/ }).first();
             await firstHandButton.click();
@@ -1526,7 +1577,8 @@ test.describe('FantasyRealms live flow', () => {
             }, { timeout: 10000 });
 
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
-            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toHaveCount(0);
+            await expect(page.getByTestId('fantasyrealms-live-action-zone')).toBeVisible();
+            await expect(page.getByTestId('fantasyrealms-live-action-discard')).toBeDisabled();
         } finally {
             await context.close().catch(() => {});
         }

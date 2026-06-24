@@ -241,6 +241,7 @@ describe('CustomAction 覆盖完整性审计', () => {
         'gunslinger-card-wanted-resolve',
         'gunslinger-card-high-noon-resolve',
         'samurai-card-you-should-be-ashamed-resolve',
+        'artificer-synth-inflict-nanobomb-selected',
     ]);
 
     it('所有注册的 customAction 都被声明式引用或在已知非声明式列表中', () => {

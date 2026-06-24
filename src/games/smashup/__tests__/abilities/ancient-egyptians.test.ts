@@ -3,6 +3,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
+import { uncoverBuriedCard } from '../../domain/bury';
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
@@ -292,6 +293,60 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
                 baseIndex: 0,
                 amount: 2,
                 reason: 'ancient_egyptians_blessing_of_anubis',
+            }),
+        }));
+    });
+
+    it('ancient_egyptians_tomb_trap 翻开后选择目标随从时不应再抛 context 未定义错误', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('weak-minion', 'test_weak_minion', '1', 4),
+                        makeMinion('strong-minion', 'test_strong_minion', '1', 5),
+                    ],
+                    buriedCards: [
+                        {
+                            uid: 'buried-trap',
+                            defId: 'ancient_egyptians_tomb_trap',
+                            trueOwnerId: '0',
+                            controllerId: '0',
+                            buriedFrom: 'play',
+                        } as any,
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+
+        const uncovered = uncoverBuriedCard({
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'buried-trap',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 401,
+            reason: 'test_uncover_tomb_trap',
+        });
+
+        const prompt = getSimpleChoicePrompt(uncovered.state, 'ancient_egyptians_tomb_trap');
+        const destroyOption = getPromptOption(prompt, option => option.value?.minionUid === 'weak-minion', 'tomb trap destroy option');
+        const resolved = respondToPrompt(uncovered.state, destroyOption.id, '0', defaultTestRandom);
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.error).toBeUndefined();
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'weak-minion')).toBe(false);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'weak-minion',
+                destroyerId: '0',
+                reason: 'ancient_egyptians_tomb_trap',
             }),
         }));
     });

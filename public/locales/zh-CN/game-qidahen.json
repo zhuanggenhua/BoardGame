@@ -138,7 +138,7 @@
       "primaryStageFactionCurrentDetail": "当前行动：{{label}}",
       "primaryStageFactionDetail": "先弃牌，再继续当前行动。",
       "primaryStageWheelDone": "本席轮盘已完成。",
-      "primaryStageWheelDetail": "绿色扇区可直接执行：{{summary}}。",
+      "primaryStageWheelDetail": "左上发亮的绿色格可直接执行：{{summary}}。",
       "clickable": "可点",
       "mapDirectClick": "点地图",
       "mapClickable": "地图可点",
@@ -151,12 +151,12 @@
       "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}",
       "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
       "scenarioVoteBlocked": "局内剧本投票尚未完成，当前只可处理剧本介绍与投票。",
-      "primaryActionLabel": "现在做什么",
+      "primaryActionLabel": "这一步做什么",
       "primaryActionEmpty": "未选择",
       "wheelNextStepBadge": "轮盘",
-      "wheelNextStepTitle": "去点绿色扇区",
-      "wheelNextStepHint": "绿色扇区就是可点入口",
-      "wheelExecutePrompt": "点击绿色扇区",
+      "wheelNextStepTitle": "点左上轮盘",
+      "wheelNextStepHint": "发亮的绿色格就是下一步",
+      "wheelExecutePrompt": "点左上发亮的绿色格",
       "directExecute": "点这里",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
       "victory": {
@@ -176,9 +176,9 @@
       },
       "fallbackChoices": "其他做法",
       "fallbackChoiceList": "其他做法",
-      "targetUnlocked": "未锁定",
+      "targetUnlocked": "先点地图选地区",
       "gaoDi": {
-        "summary": "源区 {{sourceRegionName}} · 部队最多 {{maxTroops}} · 人口最多 {{maxPopulation}}",
+        "summary": "从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口",
         "hint": "弃 1 张牌后选择目标。",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "部队",
@@ -188,49 +188,49 @@
         "skip": "跳过高第调度"
       },
       "internalDispatch": {
-        "summary": "源区 {{sourceRegionName}} · 最多调度 {{maxTroops}} 部队",
+        "summary": "从 {{sourceRegionName}} 出发 · 最多调 {{maxTroops}} 个部队",
         "committedTroops": "调 {{troops}}"
       },
       "recruit": {
         "title": "征召军队",
-        "summary": "当前目标 {{targetRegionName}} · 可切换到其他己方控制区后再决定建军方式"
+        "summary": "准备在 {{targetRegionName}} 建军，可先换别的己方区域"
       },
       "maShiTrade": {
         "title": "马市贸易",
-        "summary": "当前目标 {{targetRegionName}} · 可切换到其他大明控制区后再决定建立数量"
+        "summary": "准备在 {{targetRegionName}} 建军，可先换别的大明区域"
       },
       "khanEdict": {
         "title": "大汗令箭",
-        "summary": "当前区域 {{sourceRegionName}} · 可切换地图选中区后再决定"
+        "summary": "准备在 {{sourceRegionName}} 执行，可先换别的地区"
       },
       "diplomacy": {
         "currentControlRegion": "当前控制区",
-        "sourceSummary": "源区 {{sourceRegionName}} · 雇佣落在 {{hireRegionName}}",
+        "sourceSummary": "从 {{sourceRegionName}} 出发 · 雇佣落在 {{hireRegionName}}",
         "resolvedSummary": "已执行 {{resolved}}/{{total}} 次外交 · 还可继续 {{remaining}} 次",
-        "targetSummary": "当前目标 {{targetRegionName}} · {{targetHint}}",
+        "targetSummary": "正在查看 {{targetRegionName}} · {{targetHint}}",
         "stepSummary": "外交 {{index}} · {{summary}}"
       },
       "driveTiger": {
         "title": "驱虎吞狼",
-        "summary": "{{targetFactionName}} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻。"
+        "summary": "先问 {{targetFactionName}} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻。"
       },
       "wheelDispatch": {
-        "summary": "源区 {{sourceRegionName}} · 可选目标 {{count}}",
-        "targetSummary": "{{targetRegionName}} · 防守 {{defenderLabel}}",
-        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "summary": "从 {{sourceRegionName}} 出发 · 可攻 {{count}} 处",
+        "targetSummary": "进攻 {{targetRegionName}} · 守方 {{defenderLabel}}",
+        "stats": "本次出兵 {{committedTroops}}",
         "travelCost": "耗 {{totalTravelCost}}"
       },
       "pendingTarget": {
-        "header": "{{title}} · 目标 {{targetRegionName}} · 防守 {{defenderLabel}}",
+        "header": "{{title}} · {{targetRegionName}} · 守方 {{defenderLabel}}",
         "defenderPayCost": " · 守方需付 {{cost}}",
-        "stats": "源兵 {{sourceAvailableTroops}} · 投入 {{committedTroops}} · 压力 {{attackPressure}}",
+        "stats": "本次出兵 {{committedTroops}}",
         "boundaryUnitCap": " · 边界上限 {{count}}",
         "actualCommittedTroops": "实际投入",
         "attackerCasualtyLabel": "攻方承伤",
         "defenderCasualtyLabel": "守方承伤"
       },
       "postBattle": {
-        "summary": "{{summary}} · 投入 {{committedTroops}}"
+        "summary": "{{summary}} · 幸存 {{survivingTroops}}"
       }
     },
     "setup": {
@@ -270,7 +270,7 @@
   },
   "battle": {
     "pendingTargetChoice": {
-      "rearGuard": "断后撤退",
+      "rearGuard": "断后",
       "rout": "溃退",
       "cavalryPlunderAttacker": "抽己方牌堆",
       "cavalryPlunderDefender": "抽守方牌堆"

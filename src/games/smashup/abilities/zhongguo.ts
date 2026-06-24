@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -8,17 +8,49 @@ import {
 import { registerAbilityProgram, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import {
+    addTempPower,
     addPowerCounter,
     buildAbilityFeedback,
+    buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildSemanticOngoingAttachEvents,
+    buildStandardDrawEvents,
+    buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
+    buildValidatedMoveEvents,
+    buildValidatedReturnEvents,
     createSkipOption,
     getMinionPower,
+    grantContextualExtraAction,
     grantContextualExtraMinion,
+    modifyBreakpoint,
     removePowerCounter,
 } from '../domain/abilityHelpers';
-import { registerBaseVpModifier, registerProtection, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
-import { SU_EVENTS, type SmashUpCore, type SmashUpEvent } from '../domain/types';
+import {
+    registerBaseVpModifier,
+    registerProtection,
+    registerTrigger,
+    type ProtectionCheckContext,
+    type TriggerContext,
+    type TriggerResult,
+} from '../domain/ongoingEffects';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
+import {
+    SU_EVENTS,
+    type CardInstance,
+    type MinionDestroyedEvent,
+    type MinionMetadataUpdatedEvent,
+    type MinionMovedEvent,
+    type MinionOnBase,
+    type MinionReturnedEvent,
+    type OngoingActionOnBase,
+    type PermanentPowerAddedEvent,
+    type PowerCounterAddedEvent,
+    type PowerCounterRemovedEvent,
+    type SmashUpCore,
+    type SmashUpEvent,
+    type TempPowerAddedEvent,
+} from '../domain/types';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { getCardDef } from '../data/cards';
 
@@ -33,6 +65,35 @@ type MinionChoice = {
     baseIndex?: number;
     defId?: string;
     skip?: boolean;
+};
+
+type BaseChoice = {
+    baseIndex?: number;
+    skip?: boolean;
+};
+
+type BaseOngoingActionChoice = {
+    actionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    skip?: boolean;
+};
+
+type TruckersActionMode = 'transfer' | 'control' | 'transfer_and_control' | 'extra_action';
+
+type TruckersActionModeChoice = {
+    mode?: TruckersActionMode;
+};
+
+type BaseOngoingActionCandidate = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    ownerId: PlayerId;
+    controllerId: PlayerId;
+    talentUsed?: boolean;
+    metadata?: Record<string, unknown>;
+    label: string;
 };
 
 type CounterTransferChoice = {
@@ -85,6 +146,77 @@ type OhHohHohHoahContext = ZhongguoPromptContext & {
     baseIndex: number;
 };
 
+type DiscoDancingKingContext = ZhongguoPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    sourceControllerId: PlayerId;
+    affectedMinionUid: string;
+    affectEvent: SmashUpEvent;
+};
+
+type DiscoIWillSurviveContext = ZhongguoPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    sourceBaseDefId: string;
+};
+
+type TruckersHighSpeedChaseContext = ZhongguoPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    sourceControllerId: PlayerId;
+    minionUid?: string;
+    minionDefId?: string;
+};
+
+type TruckersDekotoraContext = ZhongguoPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    sourceControllerId: PlayerId;
+    targetBaseIndex?: number;
+};
+
+type TruckersHotwireContext = ZhongguoPromptContext & {
+    actionUid?: string;
+    actionBaseIndex?: number;
+    actionDefId?: string;
+    actionOwnerId?: PlayerId;
+    actionControllerId?: PlayerId;
+    actionMode?: TruckersActionMode;
+    availableModes?: TruckersActionMode[];
+};
+
+type TruckersElBandidoTransferContext = ZhongguoPromptContext & {
+    actionUid?: string;
+    actionBaseIndex?: number;
+    actionDefId?: string;
+    actionOwnerId?: PlayerId;
+    actionControllerId?: PlayerId;
+};
+
+type TruckersSkinnyMinnieContext = ZhongguoPromptContext & {
+    selfUid: string;
+    selfBaseIndex: number;
+    targetBaseIndex?: number;
+};
+
+type TruckersTurnTheBeatAroundContext = ZhongguoPromptContext & {
+    sourceBaseIndex: number;
+    affectedMinionUid?: string;
+    affectedBaseIndex?: number;
+};
+
+type VigilantesDeathWisherContext = ZhongguoPromptContext & {
+    selfUid: string;
+    selfBaseIndex: number;
+    destroyerId: PlayerId;
+};
+
+type VigilantesBrojakContext = ZhongguoPromptContext & {
+    selfUid: string;
+    selfBaseIndex: number;
+    targetBaseIndex: number;
+};
+
 function createPromptContext<TExtra extends object>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -97,6 +229,212 @@ function createPromptContext<TExtra extends object>(
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+const DISCO_DANCERS_DIVA_TRIGGERED_TURN_META = 'discoDancersDivaTriggeredTurn';
+const DISCO_DANCERS_DANCING_KING_TRIGGERED_TURN_META = 'discoDancersDancingKingTriggeredTurn';
+const DISCO_DANCERS_WE_ARE_FAMILY_TRIGGERED_TURNS_META = 'discoDancersWeAreFamilyTriggeredTurns';
+const VIGILANTES_DEATH_WISHER_TRIGGERED_TURN_META = 'vigilantesDeathWisherTriggeredTurn';
+
+function runtimeResultToTriggerResult(
+    result: ReturnType<typeof executeAbilityProgram<unknown, SmashUpCore, SmashUpEvent>>,
+    fallbackState: MatchState<SmashUpCore>,
+): TriggerResult {
+    return {
+        events: result.events,
+        matchState: result.matchState ?? fallbackState,
+    };
+}
+
+function isStandardActionDefId(defId?: string): boolean {
+    if (!defId) return false;
+    const def = getCardDef(defId);
+    return !!def && def.type === 'action' && def.subtype === 'standard';
+}
+
+function normalizeSourceDefIdFromReason(reason?: string): string | undefined {
+    if (!reason) return undefined;
+    return reason
+        .replace(/_(self_destruct|destroy|discard|expired|return|returned|shuffle|shuffled|detach|detached)$/u, '')
+        .replace(/_pod$/u, '_pod');
+}
+
+function resolveSourceDefIdFromEvent(event: SmashUpEvent): string | undefined {
+    const payload = (event as { payload?: Record<string, unknown> }).payload;
+    if (!payload) return undefined;
+    const explicit = payload.sourceDefId;
+    if (typeof explicit === 'string' && explicit.length > 0) return explicit;
+    const reason = payload.reason;
+    return typeof reason === 'string' ? normalizeSourceDefIdFromReason(reason) : undefined;
+}
+
+function buildMinionMetadataUpdatedEvent(
+    minionUid: string,
+    baseIndex: number,
+    metadataUpdate: Record<string, unknown>,
+    reason: string,
+    timestamp: number,
+): MinionMetadataUpdatedEvent {
+    return {
+        type: SU_EVENTS.MINION_METADATA_UPDATED,
+        payload: {
+            minionUid,
+            baseIndex,
+            metadataUpdate,
+            reason,
+        },
+        timestamp,
+    };
+}
+
+function buildDiscoMirrorEvents(
+    state: SmashUpCore,
+    event: SmashUpEvent,
+    target: {
+        uid: string;
+        defId: string;
+        baseIndex: number;
+        ownerId: PlayerId;
+        controllerId: PlayerId;
+    },
+    sourceDefId: string,
+    now: number,
+): SmashUpEvent[] {
+    switch (event.type) {
+        case SU_EVENTS.POWER_COUNTER_ADDED: {
+            const payload = (event as PowerCounterAddedEvent).payload;
+            return [addPowerCounter(
+                target.uid,
+                target.baseIndex,
+                payload.amount,
+                `${sourceDefId}_copy_power_counter_added`,
+                event.timestamp ?? now,
+                {
+                    sourcePlayerId: target.controllerId,
+                    sourceCardUid: target.uid,
+                    sourceDefId,
+                    sourceControllerId: target.controllerId,
+                    sourceBaseIndex: target.baseIndex,
+                },
+            ) as PowerCounterAddedEvent];
+        }
+        case SU_EVENTS.POWER_COUNTER_REMOVED: {
+            const payload = (event as PowerCounterRemovedEvent).payload;
+            return [removePowerCounter(
+                target.uid,
+                target.baseIndex,
+                payload.amount,
+                `${sourceDefId}_copy_power_counter_removed`,
+                event.timestamp ?? now,
+                {
+                    sourcePlayerId: target.controllerId,
+                    sourceCardUid: target.uid,
+                    sourceDefId,
+                    sourceControllerId: target.controllerId,
+                    sourceBaseIndex: target.baseIndex,
+                },
+            ) as PowerCounterRemovedEvent];
+        }
+        case SU_EVENTS.TEMP_POWER_ADDED: {
+            const payload = (event as TempPowerAddedEvent).payload;
+            return [addTempPower(
+                target.uid,
+                target.baseIndex,
+                payload.amount,
+                `${sourceDefId}_copy_temp_power`,
+                event.timestamp ?? now,
+                {
+                    sourcePlayerId: target.controllerId,
+                    sourceCardUid: target.uid,
+                    sourceDefId,
+                    sourceControllerId: target.controllerId,
+                    sourceBaseIndex: target.baseIndex,
+                },
+            ) as TempPowerAddedEvent];
+        }
+        case SU_EVENTS.PERMANENT_POWER_ADDED: {
+            const payload = (event as PermanentPowerAddedEvent).payload;
+            return [{
+                type: SU_EVENTS.PERMANENT_POWER_ADDED,
+                payload: {
+                    minionUid: target.uid,
+                    baseIndex: target.baseIndex,
+                    amount: payload.amount,
+                    reason: `${sourceDefId}_copy_permanent_power`,
+                    ...(payload.expiresOnTurnNumber !== undefined ? { expiresOnTurnNumber: payload.expiresOnTurnNumber } : {}),
+                    sourcePlayerId: target.controllerId,
+                    sourceCardUid: target.uid,
+                    sourceDefId,
+                    sourceControllerId: target.controllerId,
+                    sourceBaseIndex: target.baseIndex,
+                },
+                timestamp: event.timestamp ?? now,
+            } as PermanentPowerAddedEvent];
+        }
+        case SU_EVENTS.MINION_DESTROYED:
+            return buildValidatedDestroyEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: target.baseIndex,
+                destroyerId: (event as MinionDestroyedEvent).payload.destroyerId,
+                reason: `${sourceDefId}_copy_destroyed`,
+                now: event.timestamp ?? now,
+                sourcePlayerId: target.controllerId,
+                sourceCardUid: target.uid,
+                sourceDefId,
+                sourceControllerId: target.controllerId,
+                sourceBaseIndex: target.baseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: target.ownerId,
+                    controllerId: target.controllerId,
+                },
+            });
+        case SU_EVENTS.MINION_MOVED: {
+            const payload = (event as MinionMovedEvent).payload;
+            return buildValidatedMoveEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: target.baseIndex,
+                toBaseIndex: payload.toBaseIndex,
+                toBaseDefId: payload.toBaseDefId,
+                reason: `${sourceDefId}_copy_moved`,
+                now: event.timestamp ?? now,
+                sourcePlayerId: target.controllerId,
+                sourceCardUid: target.uid,
+                sourceDefId,
+                sourceControllerId: target.controllerId,
+                sourceBaseIndex: target.baseIndex,
+                sourceKind: 'nonAction',
+                targetSnapshot: {
+                    ownerId: target.ownerId,
+                    controllerId: target.controllerId,
+                },
+            });
+        }
+        case SU_EVENTS.MINION_RETURNED: {
+            const payload = (event as MinionReturnedEvent).payload;
+            return buildValidatedReturnEvents(state, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: target.baseIndex,
+                toPlayerId: payload.toPlayerId ?? target.ownerId,
+                reason: `${sourceDefId}_copy_returned`,
+                now: event.timestamp ?? now,
+                sourcePlayerId: target.controllerId,
+                sourceCardUid: target.uid,
+                sourceDefId,
+                sourceControllerId: target.controllerId,
+                sourceBaseIndex: target.baseIndex,
+                targetSnapshot: {
+                    ownerId: target.ownerId,
+                    controllerId: target.controllerId,
+                },
+            });
+        }
+        default:
+            return [];
+    }
 }
 
 function collectAllMinions(state: SmashUpCore): CounterTransferCandidate[] {
@@ -121,6 +459,1411 @@ function collectOwnMinions(state: SmashUpCore, playerId: PlayerId): CounterTrans
         return minion?.controller === playerId;
     });
 }
+
+function collectMinionsMatching(
+    state: SmashUpCore,
+    predicate: (minion: MinionOnBase, baseIndex: number) => boolean,
+): CounterTransferCandidate[] {
+    return collectAllMinions(state).filter((candidate) => {
+        const minion = state.bases[candidate.baseIndex]?.minions.find(entry => entry.uid === candidate.uid);
+        return !!minion && predicate(minion, candidate.baseIndex);
+    });
+}
+
+function collectOtherBases(state: SmashUpCore, baseIndex: number): Array<{ baseIndex: number; label: string }> {
+    return state.bases
+        .map((base, index) => ({ baseIndex: index, label: getCardDef(base.defId)?.name ?? base.defId }))
+        .filter(candidate => candidate.baseIndex !== baseIndex);
+}
+
+function getBaseOngoingActionControllerId(action: OngoingActionOnBase): PlayerId {
+    return ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId);
+}
+
+function collectBaseOngoingActions(
+    state: SmashUpCore,
+    predicate?: (action: BaseOngoingActionCandidate) => boolean,
+): BaseOngoingActionCandidate[] {
+    const results: BaseOngoingActionCandidate[] = [];
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        const base = state.bases[baseIndex];
+        const baseLabel = getCardDef(base.defId)?.name ?? base.defId;
+        for (const action of base.ongoingActions) {
+            const candidate: BaseOngoingActionCandidate = {
+                uid: action.uid,
+                defId: action.defId,
+                baseIndex,
+                ownerId: action.ownerId,
+                controllerId: getBaseOngoingActionControllerId(action),
+                talentUsed: action.talentUsed,
+                metadata: action.metadata,
+                label: `${getCardDef(action.defId)?.name ?? action.defId}（${baseLabel}）`,
+            };
+            if (!predicate || predicate(candidate)) {
+                results.push(candidate);
+            }
+        }
+    }
+    return results;
+}
+
+function findBaseOngoingAction(
+    state: SmashUpCore,
+    actionUid: string,
+    baseIndex?: number,
+): BaseOngoingActionCandidate | undefined {
+    return collectBaseOngoingActions(
+        state,
+        (candidate) => candidate.uid === actionUid && (baseIndex === undefined || candidate.baseIndex === baseIndex),
+    )[0];
+}
+
+function buildBaseOngoingActionOptions(
+    candidates: BaseOngoingActionCandidate[],
+): Array<{
+    id: string;
+    label: string;
+    value: { actionUid: string; baseIndex: number; defId: string };
+    _source: 'field';
+}> {
+    return candidates.map((candidate, index) => ({
+        id: `ongoing-${index}`,
+        label: candidate.label,
+        value: {
+            actionUid: candidate.uid,
+            baseIndex: candidate.baseIndex,
+            defId: candidate.defId,
+        },
+        _source: 'field' as const,
+    }));
+}
+
+function stripBaseOngoingActionControlMetadata(
+    metadata: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+    if (!metadata) return undefined;
+    const nextMetadata = { ...metadata };
+    delete nextMetadata.sourceControllerId;
+    delete nextMetadata.sourcePlayerId;
+    return Object.keys(nextMetadata).length > 0 ? nextMetadata : {};
+}
+
+function buildBaseOngoingActionAttachMetadata(
+    action: BaseOngoingActionCandidate,
+    controllerId: PlayerId,
+): Record<string, unknown> | undefined {
+    if (controllerId !== action.ownerId) {
+        return {
+            ...(action.metadata ?? {}),
+            sourceControllerId: controllerId,
+            sourcePlayerId: controllerId,
+        };
+    }
+    return stripBaseOngoingActionControlMetadata(action.metadata);
+}
+
+function buildBaseOngoingActionControlEvents(
+    state: MatchState<SmashUpCore>,
+    action: BaseOngoingActionCandidate,
+    targetBaseIndex: number,
+    controllerId: PlayerId,
+    reason: string,
+    now: number,
+    options?: {
+        includeDetach?: boolean;
+        talentUsed?: boolean;
+    },
+): SmashUpEvent[] {
+    const metadata = buildBaseOngoingActionAttachMetadata(action, controllerId);
+    return [
+        ...(options?.includeDetach
+            ? [buildOngoingDetachedEvent({
+                cardUid: action.uid,
+                defId: action.defId,
+                ownerId: action.ownerId,
+                reason,
+                now,
+            })]
+            : []),
+        ...buildSemanticOngoingAttachEvents(state, {
+            cardUid: action.uid,
+            defId: action.defId,
+            ownerId: action.ownerId,
+            ...(controllerId !== action.ownerId ? { sourcePlayerId: controllerId } : {}),
+            targetBaseIndex,
+            ...(metadata !== undefined ? { metadata } : {}),
+            ...(options?.talentUsed !== undefined ? { talentUsed: options.talentUsed } : {}),
+            now,
+        }),
+    ];
+}
+
+function hasOtherBaseTarget(state: SmashUpCore, baseIndex: number): boolean {
+    return collectOtherBases(state, baseIndex).length > 0;
+}
+
+function getTruckersHotwireModes(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    action: BaseOngoingActionCandidate,
+): TruckersActionMode[] {
+    const modes: TruckersActionMode[] = [];
+    if (hasOtherBaseTarget(state, action.baseIndex)) {
+        modes.push('transfer');
+    }
+    if (action.controllerId !== playerId) {
+        modes.push('control');
+        if (hasOtherBaseTarget(state, action.baseIndex)) {
+            modes.push('transfer_and_control');
+        }
+    }
+    return modes;
+}
+
+function buildTruckersActionModeOptions(modes: TruckersActionMode[]): Array<{
+    id: string;
+    label: string;
+    value: TruckersActionModeChoice;
+    displayMode: 'button';
+}> {
+    return modes.map((mode) => ({
+        id: mode,
+        label:
+            mode === 'transfer'
+                ? '只转移'
+                : mode === 'control'
+                    ? '只控权'
+                    : mode === 'transfer_and_control'
+                        ? '转移并控权'
+                        : '额外行动',
+        value: { mode },
+        displayMode: 'button' as const,
+    }));
+}
+
+function countControlledHighPowerMinions(state: SmashUpCore, playerId: PlayerId, minPower: number): number {
+    let count = 0;
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        for (const minion of state.bases[baseIndex].minions) {
+            if (minion.controller === playerId && getMinionPower(state, minion, baseIndex) >= minPower) {
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
+
+function hasOwnMinionOnBase(state: SmashUpCore, baseIndex: number, playerId: PlayerId): boolean {
+    return state.bases[baseIndex]?.minions.some(minion => minion.controller === playerId) ?? false;
+}
+
+function isPlayerWinningScoredBase(state: SmashUpCore, baseIndex: number, playerId: PlayerId): boolean {
+    const base = state.bases[baseIndex];
+    if (!base) return false;
+    const highestPower = Math.max(
+        ...state.turnOrder.map(candidatePlayerId => getPlayerEffectivePowerOnBase(state, base, baseIndex, candidatePlayerId)),
+        0,
+    );
+    return getPlayerEffectivePowerOnBase(state, base, baseIndex, playerId) >= highestPower;
+}
+
+function buildShuffleMinionIntoDeckEvents(
+    state: MatchState<SmashUpCore>,
+    minion: MinionOnBase,
+    baseIndex: number,
+    sourcePlayerId: PlayerId,
+    sourceDefId: string,
+    now: number,
+    random: RandomFn,
+): SmashUpEvent[] {
+    const owner = state.core.players[minion.owner];
+    if (!owner) return [];
+    const toDeckEvents = buildValidatedCardToDeckBottomEvents(state, {
+        cardUid: minion.uid,
+        defId: minion.defId,
+        ownerId: minion.owner,
+        sourcePlayerId,
+        sourceDefId,
+        sourceControllerId: sourcePlayerId,
+        sourceBaseIndex: baseIndex,
+        reason: sourceDefId,
+        now,
+        expectedLocation: 'bases',
+    });
+    if (!toDeckEvents.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)) return toDeckEvents;
+    return [
+        ...toDeckEvents,
+        {
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: {
+                playerId: minion.owner,
+                deckUids: random.shuffle([...owner.deck.map(card => card.uid), minion.uid]),
+                reason: sourceDefId,
+            },
+            timestamp: now,
+        } as SmashUpEvent,
+    ];
+}
+
+function topDeckCardsFromDiscard(
+    playerCards: CardInstance[],
+    selectedCards: CardInstance[],
+    playerId: PlayerId,
+    reason: string,
+    now: number,
+): SmashUpEvent[] {
+    if (selectedCards.length === 0) return [];
+    return [{
+        type: SU_EVENTS.DECK_REORDERED,
+        payload: {
+            playerId,
+            deckUids: [
+                ...selectedCards.map(card => card.uid),
+                ...playerCards.map(card => card.uid),
+            ],
+            reason,
+        },
+        timestamp: now,
+    } as SmashUpEvent];
+}
+
+function buildCardToDeckTopEvent(card: CardInstance, playerId: PlayerId, reason: string, now: number): SmashUpEvent {
+    return {
+        type: SU_EVENTS.CARD_TO_DECK_TOP,
+        payload: {
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            sourcePlayerId: playerId,
+            sourceDefId: reason,
+            sourceControllerId: playerId,
+            reason,
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
+type SimpleMinionEffectKind =
+    | 'tempPower'
+    | 'tempPowerDraw'
+    | 'destroyDraw'
+    | 'shuffleIntoDeck'
+    | 'addCounterDraw'
+    | 'destroyOwnVp';
+
+type SimpleMinionEffectContext = ZhongguoPromptContext & {
+    sourceDefId: string;
+    title: string;
+    candidates: CounterTransferCandidate[];
+    effectKind: SimpleMinionEffectKind;
+    amount?: number;
+    allowSkip?: boolean;
+};
+
+type MoveOwnMinionContext = ZhongguoPromptContext & {
+    sourceDefId: string;
+    title: string;
+    candidates: CounterTransferCandidate[];
+    selectedMinionUid?: string;
+    fromBaseIndex?: number;
+    requireOwn?: boolean;
+    drawAfter?: boolean;
+    extraActionAfter?: boolean;
+};
+
+function resolveSimpleMinionEffect(
+    state: MatchState<SmashUpCore>,
+    context: SimpleMinionEffectContext,
+    selected: MinionChoice | undefined,
+    timestamp: number,
+    random: RandomFn,
+): AbilityResult {
+    if (selected?.skip) return { events: [] };
+    if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+    const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+    if (!target) return { events: [] };
+
+    if (context.effectKind === 'tempPower') {
+        return {
+            events: [addTempPower(target.uid, selected.baseIndex, context.amount ?? 0, context.sourceDefId, timestamp, {
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: context.playerId,
+            })],
+        };
+    }
+
+    if (context.effectKind === 'tempPowerDraw') {
+        return {
+            events: [
+                addTempPower(target.uid, selected.baseIndex, context.amount ?? 0, context.sourceDefId, timestamp, {
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: context.playerId,
+                }),
+                ...buildStandardDrawEvents(state, context.playerId, 1, random, timestamp),
+            ],
+        };
+    }
+
+    if (context.effectKind === 'destroyDraw') {
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: target.uid,
+            minionDefId: target.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: context.sourceDefId,
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceKind: 'action',
+        });
+        return {
+            events: [
+                ...destroyEvents,
+                ...(destroyEvents.some(event => event.type === SU_EVENTS.MINION_DESTROYED)
+                    ? buildStandardDrawEvents(state, context.playerId, 1, random, timestamp)
+                    : []),
+            ],
+        };
+    }
+
+    if (context.effectKind === 'shuffleIntoDeck') {
+        return {
+            events: buildShuffleMinionIntoDeckEvents(
+                state,
+                target,
+                selected.baseIndex,
+                context.playerId,
+                context.sourceDefId,
+                timestamp,
+                random,
+            ),
+        };
+    }
+
+    if (context.effectKind === 'addCounterDraw') {
+        return {
+            events: [
+                addPowerCounter(target.uid, selected.baseIndex, context.amount ?? 1, context.sourceDefId, timestamp, {
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: context.sourceDefId,
+                    sourceControllerId: context.playerId,
+                }),
+                ...buildStandardDrawEvents(state, context.playerId, 1, random, timestamp),
+            ],
+        };
+    }
+
+    if (context.effectKind === 'destroyOwnVp') {
+        if (target.controller !== context.playerId) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: target.uid,
+            minionDefId: target.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: context.sourceDefId,
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceKind: 'action',
+        });
+        return {
+            events: [
+                ...destroyEvents,
+                ...(destroyEvents.some(event => event.type === SU_EVENTS.MINION_DESTROYED)
+                    ? [{
+                        type: SU_EVENTS.VP_AWARDED,
+                        payload: { playerId: context.playerId, amount: 1, reason: context.sourceDefId },
+                        timestamp,
+                    } as SmashUpEvent]
+                    : []),
+            ],
+        };
+    }
+
+    return { events: [] };
+}
+
+const simpleMinionEffectPromptProgram = createPromptProgram<SimpleMinionEffectContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'zhongguo_simple_minion_effect',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceDefId}_${context.now}`,
+        context.playerId,
+        context.title,
+        [
+            ...(context.allowSkip ? [createSkipOption()] : []),
+            ...buildMinionTargetOptions(context.candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+                sourceKind: 'action',
+                effectType: context.effectKind === 'destroyDraw' || context.effectKind === 'destroyOwnVp'
+                    ? 'destroy'
+                    : context.effectKind === 'shuffleIntoDeck'
+                        ? 'move'
+                        : 'affect',
+                respectActionProtection: true,
+            }),
+        ],
+        {
+            sourceId: context.sourceDefId,
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp, random }) =>
+        resolveSimpleMinionEffect(state, context, value as MinionChoice | undefined, timestamp, random),
+});
+
+const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'zhongguo_move_own_minion_destination',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceDefId}_destination_${context.now}`,
+        context.playerId,
+        '选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.fromBaseIndex ?? -1), context.matchState.core),
+        {
+            sourceId: `${context.sourceDefId}_destination`,
+            targetType: 'base',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp, random }) => {
+        const selected = value as BaseChoice | undefined;
+        if (!context.selectedMinionUid || context.fromBaseIndex === undefined || selected?.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const minion = state.core.bases[context.fromBaseIndex]?.minions.find(candidate => candidate.uid === context.selectedMinionUid);
+        if (!minion || (context.requireOwn !== false && minion.controller !== context.playerId)) return { events: [] };
+        const moveEvents = buildValidatedMoveEvents(state, {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: context.fromBaseIndex,
+            toBaseIndex: selected.baseIndex,
+            reason: context.sourceDefId,
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            sourceControllerId: context.playerId,
+            sourceKind: 'action',
+        });
+        return {
+            events: [
+                ...moveEvents,
+                ...(context.drawAfter && moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)
+                    ? buildStandardDrawEvents(state, context.playerId, 1, random, timestamp)
+                    : []),
+                ...(context.extraActionAfter && moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)
+                    ? [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceDefId)]
+                    : []),
+            ],
+        };
+    },
+});
+
+const moveOwnMinionPromptProgram = createPromptProgram<MoveOwnMinionContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'zhongguo_move_own_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceDefId}_${context.now}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            sourceKind: 'action',
+            effectType: 'move',
+            respectActionProtection: true,
+        }),
+        {
+            sourceId: context.sourceDefId,
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, value }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: {
+                ...context,
+                selectedMinionUid: selected.minionUid,
+                fromBaseIndex: selected.baseIndex,
+            },
+            nextProgram: moveOwnMinionDestinationPromptProgram,
+        };
+    },
+});
+
+const vigilantesDeathWisherPromptProgram = createPromptProgram<VigilantesDeathWisherContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vigilantes_death_wisher',
+    buildInteraction: (context) => {
+        const candidates = collectMinionsMatching(
+            context.matchState.core,
+            minion => minion.controller === context.destroyerId,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `vigilantes_death_wisher_${context.now}`,
+            context.playerId,
+            '猛龙怪客：选择一个消灭者控制的随从并消灭之',
+            [
+                createSkipOption('跳过（不消灭）', 'ui.vigilantes_death_wisher_skip_option'),
+                ...buildMinionTargetOptions(candidates, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'vigilantes_death_wisher',
+                    sourceKind: 'nonAction',
+                    effectType: 'destroy',
+                }),
+            ],
+            {
+                sourceId: 'vigilantes_death_wisher',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (selected?.skip || !selected?.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const self = state.core.bases[context.selfBaseIndex]?.minions.find(minion => minion.uid === context.selfUid);
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!self || !target || target.controller !== context.destroyerId) {
+            return { events: [] };
+        }
+        return {
+            events: [
+                buildMinionMetadataUpdatedEvent(
+                    self.uid,
+                    context.selfBaseIndex,
+                    { [VIGILANTES_DEATH_WISHER_TRIGGERED_TURN_META]: state.core.turnNumber },
+                    'vigilantes_death_wisher_once_per_turn',
+                    timestamp,
+                ),
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: target.uid,
+                    minionDefId: target.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    destroyerId: context.playerId,
+                    reason: 'vigilantes_death_wisher',
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: self.uid,
+                    sourceDefId: 'vigilantes_death_wisher',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.selfBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
+            ],
+        };
+    },
+});
+
+const vigilantesBrojakPromptProgram = createPromptProgram<VigilantesBrojakContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vigilantes_brojak',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `vigilantes_brojak_${context.now}`,
+        context.playerId,
+        '神探布洛杰克：是否移动到刚才移动随从所在的基地并获得 +1 战力？',
+        [
+            {
+                id: 'follow',
+                label: '移动并 +1 战力',
+                value: { skip: false },
+                displayMode: 'button',
+            },
+            createSkipOption('跳过（不移动）', 'ui.vigilantes_brojak_skip_option'),
+        ],
+        {
+            sourceId: 'vigilantes_brojak',
+            targetType: 'button',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { skip?: boolean } | undefined;
+        if (selected?.skip) return { events: [] };
+        const self = state.core.bases[context.selfBaseIndex]?.minions.find(minion => minion.uid === context.selfUid);
+        if (!self || context.targetBaseIndex === context.selfBaseIndex) {
+            return { events: [] };
+        }
+        const moveEvents = buildValidatedMoveEvents(state, {
+            minionUid: self.uid,
+            minionDefId: self.defId,
+            fromBaseIndex: context.selfBaseIndex,
+            toBaseIndex: context.targetBaseIndex,
+            reason: 'vigilantes_brojak',
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceCardUid: self.uid,
+            sourceDefId: 'vigilantes_brojak',
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.selfBaseIndex,
+            sourceKind: 'nonAction',
+        });
+        if (!moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)) {
+            return { events: [] };
+        }
+        return {
+            events: [
+                ...moveEvents,
+                addTempPower(self.uid, context.targetBaseIndex, 1, 'vigilantes_brojak', timestamp, {
+                    sourcePlayerId: context.playerId,
+                    sourceCardUid: self.uid,
+                    sourceDefId: 'vigilantes_brojak',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.targetBaseIndex,
+                }),
+            ],
+        };
+    },
+});
+
+const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & { sourceBaseIndex: number }, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_rally',
+    buildInteraction: (context) => {
+        const candidates = collectMinionsMatching(context.matchState.core, (_minion, baseIndex) => baseIndex === context.sourceBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_rally_${context.now}`,
+            context.playerId,
+            '车友聚会：选择计分基地的一个随从',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'truckers_rally',
+                sourceKind: 'action',
+                effectType: 'affect',
+                respectActionProtection: true,
+            }),
+            {
+                sourceId: 'truckers_rally',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        const controlledActions = state.core.bases[selected.baseIndex]?.ongoingActions.filter(action =>
+            (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === playerId),
+        ).length ?? 0;
+        if (controlledActions <= 0) return { events: [] };
+        return {
+            events: [addTempPower(target.uid, selected.baseIndex, controlledActions * 2, 'truckers_rally', timestamp, {
+                sourcePlayerId: playerId,
+                sourceDefId: 'truckers_rally',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
+            })],
+        };
+    },
+});
+
+const truckersTurnTheBeatAroundPenaltyPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_turn_the_beat_around_penalty',
+    buildInteraction: (context) => {
+        const candidates = collectMinionsMatching(
+            context.matchState.core,
+            (_minion, baseIndex) => baseIndex === context.affectedBaseIndex,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_turn_the_beat_around_penalty_${context.now}`,
+            context.playerId,
+            '节拍一转：选择同基地一个随从 -1 战力',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'truckers_turn_the_beat_around',
+                sourceKind: 'action',
+                effectType: 'affect',
+                respectActionProtection: true,
+            }),
+            {
+                sourceId: 'truckers_turn_the_beat_around_penalty',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!context.affectedMinionUid || context.affectedBaseIndex === undefined || !selected?.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const boostedMinion = state.core.bases[context.affectedBaseIndex]?.minions.find(minion => minion.uid === context.affectedMinionUid);
+        const penalizedMinion = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!boostedMinion || !penalizedMinion) return { events: [] };
+        return {
+            events: [
+                addTempPower(boostedMinion.uid, context.affectedBaseIndex, 1, 'truckers_turn_the_beat_around', timestamp, {
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'truckers_turn_the_beat_around',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.affectedBaseIndex,
+                }),
+                addTempPower(penalizedMinion.uid, selected.baseIndex, -1, 'truckers_turn_the_beat_around', timestamp, {
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'truckers_turn_the_beat_around',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.affectedBaseIndex,
+                }),
+            ],
+        };
+    },
+});
+
+const truckersTurnTheBeatAroundBoostPromptProgram = createPromptProgram<TruckersTurnTheBeatAroundContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_turn_the_beat_around',
+    buildInteraction: (context) => {
+        const candidates = collectMinionsMatching(
+            context.matchState.core,
+            (_minion, baseIndex) => baseIndex === context.sourceBaseIndex,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_turn_the_beat_around_${context.now}`,
+            context.playerId,
+            '节拍一转：选择计分基地一个随从 +1 战力',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'truckers_turn_the_beat_around',
+                sourceKind: 'action',
+                effectType: 'affect',
+                respectActionProtection: true,
+            }),
+            {
+                sourceId: 'truckers_turn_the_beat_around',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, value }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: {
+                ...context,
+                affectedMinionUid: selected.minionUid,
+                affectedBaseIndex: selected.baseIndex,
+            },
+            nextProgram: truckersTurnTheBeatAroundPenaltyPromptProgram,
+        };
+    },
+});
+
+const truckersHighSpeedChaseBasePromptProgram = createPromptProgram<TruckersHighSpeedChaseContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_high_speed_chase_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_high_speed_chase_base_${context.now}`,
+        context.playerId,
+        '高速追逐战：选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.sourceBaseIndex), context.matchState.core),
+        {
+            sourceId: 'truckers_high_speed_chase_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_high_speed_chase_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (!context.minionUid || !context.minionDefId || selected?.baseIndex === undefined) return { events: [] };
+        const action = findBaseOngoingAction(state.core, context.sourceCardUid, context.sourceBaseIndex);
+        if (!action) return { events: [] };
+        const moveEvents = buildValidatedMoveEvents(state, {
+            minionUid: context.minionUid,
+            minionDefId: context.minionDefId,
+            fromBaseIndex: context.sourceBaseIndex,
+            toBaseIndex: selected.baseIndex,
+            reason: 'truckers_high_speed_chase',
+            now: timestamp,
+            sourcePlayerId: context.sourceControllerId,
+            sourceDefId: 'truckers_high_speed_chase',
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: context.sourceBaseIndex,
+            sourceKind: 'action',
+        });
+        return {
+            events: [
+                ...buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    selected.baseIndex,
+                    context.sourceControllerId,
+                    'truckers_high_speed_chase',
+                    timestamp,
+                    { includeDetach: true, talentUsed: true },
+                ),
+                ...moveEvents,
+                ...(moveEvents.length > 0
+                    ? [addTempPower(context.minionUid, selected.baseIndex, 3, 'truckers_high_speed_chase', timestamp)]
+                    : []),
+            ],
+        };
+    },
+});
+
+const truckersHighSpeedChaseMinionPromptProgram = createPromptProgram<TruckersHighSpeedChaseContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_high_speed_chase_minion',
+    buildInteraction: (context) => {
+        const ownMinions = context.matchState.core.bases[context.sourceBaseIndex]?.minions
+            .filter(minion => minion.controller === context.playerId)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })) ?? [];
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_high_speed_chase_minion_${context.now}`,
+            context.playerId,
+            '高速追逐战：选择你在此基地的一个随从',
+            buildMinionTargetOptions(ownMinions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'truckers_high_speed_chase',
+                effectType: 'move',
+            }),
+            {
+                sourceId: 'truckers_high_speed_chase_minion',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_high_speed_chase_minion_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { events: [] };
+        }
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                sourceCardUid: context.sourceCardUid,
+                sourceBaseIndex: selected.baseIndex,
+                sourceControllerId: context.playerId,
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+            }),
+            nextProgram: truckersHighSpeedChaseBasePromptProgram,
+        };
+    },
+});
+
+const truckersDekotoraMinionsPromptProgram = createPromptProgram<TruckersDekotoraContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_dekotora_minions',
+    buildInteraction: (context) => {
+        const ownMinions = context.matchState.core.bases[context.sourceBaseIndex]?.minions
+            .filter(minion => minion.controller === context.playerId)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })) ?? [];
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_dekotora_minions_${context.now}`,
+            context.playerId,
+            '暴走卡车：选择至多 3 个你的随从移动',
+            buildMinionTargetOptions(ownMinions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'truckers_dekotora',
+                effectType: 'move',
+            }),
+            {
+                sourceId: 'truckers_dekotora_minions',
+                targetType: 'minion',
+                multi: { min: 0, max: Math.min(3, ownMinions.length) },
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_dekotora_minions_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if (context.targetBaseIndex === undefined) return { events: [] };
+        const action = findBaseOngoingAction(state.core, context.sourceCardUid, context.sourceBaseIndex);
+        if (!action) return { events: [] };
+        const selections = (Array.isArray(value) ? value : []) as MinionChoice[];
+        const uniqueSelections = new Map<string, MinionChoice>();
+        for (const selection of selections) {
+            if (!selection.minionUid || selection.baseIndex === undefined || !selection.defId) continue;
+            uniqueSelections.set(selection.minionUid, selection);
+        }
+        const moveEvents = [...uniqueSelections.values()].flatMap((selection) => buildValidatedMoveEvents(state, {
+            minionUid: selection.minionUid!,
+            minionDefId: selection.defId!,
+            fromBaseIndex: context.sourceBaseIndex,
+            toBaseIndex: context.targetBaseIndex!,
+            reason: 'truckers_dekotora',
+            now: timestamp,
+            sourcePlayerId: context.sourceControllerId,
+            sourceDefId: 'truckers_dekotora',
+            sourceControllerId: context.sourceControllerId,
+            sourceBaseIndex: context.sourceBaseIndex,
+            sourceKind: 'action',
+        }));
+        return {
+            events: [
+                ...buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    context.targetBaseIndex,
+                    context.sourceControllerId,
+                    'truckers_dekotora',
+                    timestamp,
+                    { includeDetach: true, talentUsed: true },
+                ),
+                ...moveEvents,
+            ],
+        };
+    },
+});
+
+const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_dekotora_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_dekotora_base_${context.now}`,
+        context.playerId,
+        '暴走卡车：选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.sourceBaseIndex), context.matchState.core),
+        {
+            sourceId: 'truckers_dekotora_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_dekotora_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        const ownMinions = state.core.bases[context.sourceBaseIndex]?.minions
+            .filter(minion => minion.controller === context.playerId) ?? [];
+        if (ownMinions.length === 0) {
+            const action = findBaseOngoingAction(state.core, context.sourceCardUid, context.sourceBaseIndex);
+            if (!action) return { events: [] };
+            return {
+                events: buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    selected.baseIndex,
+                    context.sourceControllerId,
+                    'truckers_dekotora',
+                    timestamp,
+                    { includeDetach: true, talentUsed: true },
+                ),
+            };
+        }
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                ...context,
+                targetBaseIndex: selected.baseIndex,
+            }),
+            nextProgram: truckersDekotoraMinionsPromptProgram,
+        };
+    },
+});
+
+const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_hotwire_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_hotwire_base_${context.now}`,
+        context.playerId,
+        '短路点火：选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.actionBaseIndex ?? -1), context.matchState.core),
+        {
+            sourceId: 'truckers_hotwire_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_hotwire_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (
+            !context.actionUid
+            || context.actionBaseIndex === undefined
+            || context.actionControllerId === undefined
+            || selected?.baseIndex === undefined
+        ) {
+            return { events: [] };
+        }
+        const action = findBaseOngoingAction(state.core, context.actionUid, context.actionBaseIndex);
+        if (!action) return { events: [] };
+        const controllerId = context.actionMode === 'transfer_and_control'
+            ? context.playerId
+            : context.actionControllerId;
+        return {
+            events: buildBaseOngoingActionControlEvents(
+                state,
+                action,
+                selected.baseIndex,
+                controllerId,
+                'truckers_hotwire',
+                timestamp,
+                { includeDetach: true },
+            ),
+        };
+    },
+});
+
+const truckersHotwireModePromptProgram = createPromptProgram<TruckersHotwireContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_hotwire_mode',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_hotwire_mode_${context.now}`,
+        context.playerId,
+        '短路点火：选择效果',
+        buildTruckersActionModeOptions(context.availableModes ?? []),
+        {
+            sourceId: 'truckers_hotwire_mode',
+            targetType: 'button',
+            titleKey: 'ui.truckers_hotwire_mode_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as TruckersActionModeChoice | undefined;
+        if (
+            !selected?.mode
+            || !context.actionUid
+            || context.actionBaseIndex === undefined
+            || context.actionControllerId === undefined
+        ) {
+            return { events: [] };
+        }
+        const action = findBaseOngoingAction(state.core, context.actionUid, context.actionBaseIndex);
+        if (!action) return { events: [] };
+        if (selected.mode === 'control') {
+            return {
+                events: buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    context.actionBaseIndex,
+                    context.playerId,
+                    'truckers_hotwire',
+                    timestamp,
+                ),
+            };
+        }
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                ...context,
+                actionMode: selected.mode,
+            }),
+            nextProgram: truckersHotwireBasePromptProgram,
+        };
+    },
+});
+
+const truckersHotwireActionPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_hotwire_action',
+    buildInteraction: (context) => {
+        const candidates = collectBaseOngoingActions(
+            context.matchState.core,
+            candidate => getTruckersHotwireModes(context.matchState.core, context.playerId, candidate).length > 0,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_hotwire_action_${context.now}`,
+            context.playerId,
+            '短路点火：选择基地上的一张战术',
+            buildBaseOngoingActionOptions(candidates),
+            {
+                sourceId: 'truckers_hotwire_action',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_hotwire_action_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseOngoingActionChoice | undefined;
+        if (!selected?.actionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const action = findBaseOngoingAction(state.core, selected.actionUid, selected.baseIndex);
+        if (!action) return { events: [] };
+        const modes = getTruckersHotwireModes(state.core, context.playerId, action);
+        if (modes.length === 0) {
+            return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
+        }
+        if (modes.length === 1 && modes[0] === 'control') {
+            return {
+                events: buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    action.baseIndex,
+                    context.playerId,
+                    'truckers_hotwire',
+                    timestamp,
+                ),
+            };
+        }
+        const nextContext = createPromptContext(state, context.playerId, timestamp, {
+            actionUid: action.uid,
+            actionBaseIndex: action.baseIndex,
+            actionDefId: action.defId,
+            actionOwnerId: action.ownerId,
+            actionControllerId: action.controllerId,
+            availableModes: modes,
+            ...(modes.length === 1 ? { actionMode: modes[0] } : {}),
+        });
+        return {
+            events: [],
+            context: nextContext,
+            nextProgram: modes.length === 1 ? truckersHotwireBasePromptProgram : truckersHotwireModePromptProgram,
+        };
+    },
+});
+
+const truckersElBandidoTakeControlPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_el_bandido_take_control',
+    buildInteraction: (context) => {
+        const candidates = collectBaseOngoingActions(
+            context.matchState.core,
+            candidate => candidate.controllerId !== context.playerId,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_el_bandido_take_control_${context.now}`,
+            context.playerId,
+            '埃尔班迪多：你可以获得一张基地战术的控制权',
+            [
+                createSkipOption('跳过（不获得控制权）', 'ui.truckers_el_bandido_take_control_skip_option'),
+                ...buildBaseOngoingActionOptions(candidates),
+            ],
+            {
+                sourceId: 'truckers_el_bandido_take_control',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_el_bandido_take_control_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseOngoingActionChoice | undefined;
+        if (selected?.skip) return { events: [] };
+        if (!selected?.actionUid || selected.baseIndex === undefined) return { events: [] };
+        const action = findBaseOngoingAction(state.core, selected.actionUid, selected.baseIndex);
+        if (!action) return { events: [] };
+        return {
+            events: buildBaseOngoingActionControlEvents(
+                state,
+                action,
+                action.baseIndex,
+                context.playerId,
+                'truckers_el_bandido',
+                timestamp,
+            ),
+        };
+    },
+});
+
+const truckersElBandidoTransferBasePromptProgram = createPromptProgram<TruckersElBandidoTransferContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_el_bandido_transfer_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_el_bandido_transfer_base_${context.now}`,
+        context.playerId,
+        '埃尔班迪多：选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.actionBaseIndex ?? -1), context.matchState.core),
+        {
+            sourceId: 'truckers_el_bandido_transfer_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_el_bandido_transfer_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (
+            !context.actionUid
+            || context.actionBaseIndex === undefined
+            || context.actionControllerId === undefined
+            || selected?.baseIndex === undefined
+        ) {
+            return { events: [] };
+        }
+        const action = findBaseOngoingAction(state.core, context.actionUid, context.actionBaseIndex);
+        if (!action) return { events: [] };
+        return {
+            events: buildBaseOngoingActionControlEvents(
+                state,
+                action,
+                selected.baseIndex,
+                context.actionControllerId,
+                'truckers_el_bandido',
+                timestamp,
+                { includeDetach: true },
+            ),
+        };
+    },
+});
+
+const truckersElBandidoTransferActionPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_el_bandido_transfer_action',
+    buildInteraction: (context) => {
+        const candidates = collectBaseOngoingActions(
+            context.matchState.core,
+            candidate => hasOtherBaseTarget(context.matchState.core, candidate.baseIndex),
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_el_bandido_transfer_action_${context.now}`,
+            context.playerId,
+            '埃尔班迪多：选择要转移的基地战术',
+            buildBaseOngoingActionOptions(candidates),
+            {
+                sourceId: 'truckers_el_bandido_transfer_action',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_el_bandido_transfer_action_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseOngoingActionChoice | undefined;
+        if (!selected?.actionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const action = findBaseOngoingAction(state.core, selected.actionUid, selected.baseIndex);
+        if (!action) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                actionUid: action.uid,
+                actionBaseIndex: action.baseIndex,
+                actionDefId: action.defId,
+                actionOwnerId: action.ownerId,
+                actionControllerId: action.controllerId,
+            }),
+            nextProgram: truckersElBandidoTransferBasePromptProgram,
+        };
+    },
+});
+
+const truckersElBandidoTalentModePromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_el_bandido_talent_mode',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_el_bandido_talent_mode_${context.now}`,
+        context.playerId,
+        '埃尔班迪多：选择天赋效果',
+        buildTruckersActionModeOptions(['extra_action', 'transfer']),
+        {
+            sourceId: 'truckers_el_bandido_talent_mode',
+            targetType: 'button',
+            titleKey: 'ui.truckers_el_bandido_talent_mode_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as TruckersActionModeChoice | undefined;
+        if (!selected?.mode) return { events: [] };
+        if (selected.mode === 'extra_action') {
+            return {
+                events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, 'truckers_el_bandido')],
+            };
+        }
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp),
+            nextProgram: truckersElBandidoTransferActionPromptProgram,
+        };
+    },
+});
+
+const truckersSkinnyMinnieActionPromptProgram = createPromptProgram<TruckersSkinnyMinnieContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_skinny_minnie_action',
+    buildInteraction: (context) => {
+        const candidates = collectBaseOngoingActions(
+            context.matchState.core,
+            candidate => candidate.baseIndex === context.selfBaseIndex,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `truckers_skinny_minnie_action_${context.now}`,
+            context.playerId,
+            '皮包骨米妮：选择要一起转移的基地战术',
+            buildBaseOngoingActionOptions(candidates),
+            {
+                sourceId: 'truckers_skinny_minnie_action',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                titleKey: 'ui.truckers_skinny_minnie_action_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if (context.targetBaseIndex === undefined) return { events: [] };
+        const selected = value as BaseOngoingActionChoice | undefined;
+        if (!selected?.actionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const self = state.core.bases[context.selfBaseIndex]?.minions.find(minion => minion.uid === context.selfUid);
+        const action = findBaseOngoingAction(state.core, selected.actionUid, selected.baseIndex);
+        if (!self || !action || self.controller !== context.playerId) return { events: [] };
+        const moveEvents = buildValidatedMoveEvents(state, {
+            minionUid: self.uid,
+            minionDefId: self.defId,
+            fromBaseIndex: context.selfBaseIndex,
+            toBaseIndex: context.targetBaseIndex,
+            reason: 'truckers_skinny_minnie',
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'truckers_skinny_minnie',
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.selfBaseIndex,
+            sourceKind: 'nonAction',
+        });
+        if (moveEvents.length === 0) return { events: [] };
+        return {
+            events: [
+                ...moveEvents,
+                ...buildBaseOngoingActionControlEvents(
+                    state,
+                    action,
+                    context.targetBaseIndex,
+                    action.controllerId,
+                    'truckers_skinny_minnie',
+                    timestamp,
+                    { includeDetach: true },
+                ),
+            ],
+        };
+    },
+});
+
+const truckersSkinnyMinnieBasePromptProgram = createPromptProgram<TruckersSkinnyMinnieContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_skinny_minnie_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_skinny_minnie_base_${context.now}`,
+        context.playerId,
+        '皮包骨米妮：选择目标基地',
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.selfBaseIndex), context.matchState.core),
+        {
+            sourceId: 'truckers_skinny_minnie_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_skinny_minnie_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                ...context,
+                targetBaseIndex: selected.baseIndex,
+            }),
+            nextProgram: truckersSkinnyMinnieActionPromptProgram,
+        };
+    },
+});
 
 function collectCounterTransferSources(state: SmashUpCore): CounterTransferCandidate[] {
     const result: CounterTransferCandidate[] = [];
@@ -1216,7 +2959,1024 @@ function ancientDojoOnMinionPlayed(ctx: BaseAbilityContext): AbilityResult {
     };
 }
 
+function runSimpleMinionEffect(
+    ctx: AbilityContext,
+    config: Omit<SimpleMinionEffectContext, 'matchState' | 'playerId' | 'now' | 'candidates'> & {
+        candidates: CounterTransferCandidate[];
+    },
+): AbilityResult {
+    if (config.candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (config.candidates.length === 1 && !config.allowSkip) {
+        return resolveSimpleMinionEffect(
+            ctx.matchState,
+            createPromptContext(ctx.matchState, ctx.playerId, ctx.now, config),
+            {
+                minionUid: config.candidates[0].uid,
+                baseIndex: config.candidates[0].baseIndex,
+                defId: config.candidates[0].defId,
+            },
+            ctx.now,
+            ctx.random,
+        );
+    }
+    const result = executeAbilityProgram(
+        simpleMinionEffectPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, config),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function vigilantesShrugItOffTalent(ctx: AbilityContext): AbilityResult {
+    return {
+        events: [{
+            type: SU_EVENTS.BASE_ABILITY_SUPPRESSED,
+            payload: {
+                baseIndex: ctx.baseIndex,
+                suppressorPlayerId: ctx.playerId,
+                reason: 'vigilantes_shrug_it_off',
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: 'vigilantes_shrug_it_off',
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
+            },
+            timestamp: ctx.now,
+        } as SmashUpEvent],
+    };
+}
+
+function vigilantesWhoLovesYaBaby(ctx: AbilityContext): AbilityResult {
+    const count = countControlledHighPowerMinions(ctx.state, ctx.playerId, 4);
+    return { events: buildStandardDrawEvents(ctx.matchState, ctx.playerId, count, ctx.random, ctx.now) };
+}
+
+function vigilantesAWholeLotMeaner(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_a_whole_lot_meaner',
+        title: '凶恶百倍：选择一个随从 +3 战力',
+        candidates: collectAllMinions(ctx.state),
+        effectKind: 'tempPower',
+        amount: 3,
+    });
+}
+
+function vigilantesMakeMyDay(ctx: AbilityContext): AbilityResult {
+    const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
+        hasOwnMinionOnBase(ctx.state, baseIndex, ctx.playerId)
+        && getMinionPower(ctx.state, minion, baseIndex) <= 3,
+    );
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_make_my_day',
+        title: '一天的快乐：选择要消灭的战力 3 或更低随从',
+        candidates,
+        effectKind: 'destroyDraw',
+    });
+}
+
+function vigilantesTheRevenge(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+    if (isPlayerWinningScoredBase(ctx.state, ctx.baseIndex, ctx.playerId)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
+    }
+    const candidates = collectMinionsMatching(
+        ctx.state,
+        (minion, baseIndex) => baseIndex === ctx.baseIndex && minion.controller === ctx.playerId,
+    );
+    if (candidates.length === 0 || !hasOtherBaseTarget(ctx.state, ctx.baseIndex)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        moveOwnMinionPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceDefId: 'vigilantes_the_revenge',
+            title: '复仇：选择计分基地中的一个己方随从移动到其他基地',
+            candidates,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function vigilantesKnockedIntoNextWeek(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_knocked_into_next_week',
+        title: '打到穿越：选择要洗回牌库的随从',
+        candidates: collectAllMinions(ctx.state),
+        effectKind: 'shuffleIntoDeck',
+    });
+}
+
+function vigilantesStoneford(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    const selected = player?.deck.find(card => getCardDef(card.defId)?.type === 'action');
+    if (!player || !selected) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    return {
+        events: [
+            {
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: {
+                    playerId: ctx.playerId,
+                    deckUids: [selected.uid, ...player.deck.filter(card => card.uid !== selected.uid).map(card => card.uid)],
+                    reason: 'vigilantes_stoneford',
+                },
+                timestamp: ctx.now,
+            } as SmashUpEvent,
+            {
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: ctx.playerId, count: 1, cardUids: [selected.uid] },
+                timestamp: ctx.now,
+            } as SmashUpEvent,
+        ],
+    };
+}
+
+function vigilantesShift(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return { events: [] };
+    const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'minion').slice(0, 2);
+    if (selected.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    return { events: topDeckCardsFromDiscard(player.deck, selected, ctx.playerId, 'vigilantes_shift', ctx.now) };
+}
+
+function vigilantesDustyHenry(ctx: AbilityContext): AbilityResult {
+    const candidates = collectMinionsMatching(ctx.state, (_minion, baseIndex) => baseIndex === ctx.baseIndex);
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_dusty_henry',
+        title: '瞌睡的亨利：选择本基地一个随从洗回牌库',
+        candidates,
+        effectKind: 'shuffleIntoDeck',
+        allowSkip: true,
+    });
+}
+
+function truckersGoodBuddy(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    const hasOwnAction = base?.ongoingActions.some(action =>
+        ((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.playerId,
+    ) ?? false;
+    return hasOwnAction
+        ? { events: buildStandardDrawEvents(ctx.matchState, ctx.playerId, 1, ctx.random, ctx.now) }
+        : { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
+}
+
+function truckersHotwire(ctx: AbilityContext): AbilityResult {
+    const candidates = collectBaseOngoingActions(
+        ctx.state,
+        candidate => getTruckersHotwireModes(ctx.state, ctx.playerId, candidate).length > 0,
+    );
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersHotwireActionPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersSkinnyMinnieTalent(ctx: AbilityContext): AbilityResult {
+    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
+    if (!self || self.controller !== ctx.playerId) return { events: [] };
+    const baseActions = collectBaseOngoingActions(ctx.state, candidate => candidate.baseIndex === ctx.baseIndex);
+    if (baseActions.length === 0 || !hasOtherBaseTarget(ctx.state, ctx.baseIndex)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersSkinnyMinnieBasePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            selfUid: self.uid,
+            selfBaseIndex: ctx.baseIndex,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersElBandidoOnPlay(ctx: AbilityContext): AbilityResult {
+    const candidates = collectBaseOngoingActions(
+        ctx.state,
+        candidate => candidate.controllerId !== ctx.playerId,
+    );
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersElBandidoTakeControlPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersElBandidoTalent(ctx: AbilityContext): AbilityResult {
+    const hasTransferTarget = collectBaseOngoingActions(
+        ctx.state,
+        candidate => hasOtherBaseTarget(ctx.state, candidate.baseIndex),
+    ).length > 0;
+    if (!hasTransferTarget) {
+        return { events: [grantContextualExtraAction(ctx, 'truckers_el_bandido')] };
+    }
+    const result = executeAbilityProgram(
+        truckersElBandidoTalentModePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base || !hasOtherBaseTarget(ctx.state, ctx.baseIndex)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const ownMinions = base.minions.filter(minion => minion.controller === ctx.playerId);
+    if (ownMinions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersHighSpeedChaseMinionPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            sourceControllerId: ctx.playerId,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersDekotoraTalent(ctx: AbilityContext): AbilityResult {
+    if (!hasOtherBaseTarget(ctx.state, ctx.baseIndex)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersDekotoraBasePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            sourceControllerId: ctx.playerId,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersRally(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base || base.minions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersRallyPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceBaseIndex: ctx.baseIndex,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersTurnTheBeatAround(ctx: AbilityContext): AbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base || base.minions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersTurnTheBeatAroundBoostPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceBaseIndex: ctx.baseIndex,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+const discoDancingKingPromptProgram = createPromptProgram<DiscoDancingKingContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'disco_dancers_dancing_king',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.sourceBaseIndex];
+        const candidates = (base?.minions ?? [])
+            .filter(minion => minion.uid !== context.affectedMinionUid)
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            }));
+        return createAbilityRuntimeSimpleChoice(
+            `disco_dancers_dancing_king_${context.now}`,
+            context.playerId,
+            '舞王：选择另一个同基地随从复制这次普通战术影响',
+            [
+                ...buildMinionTargetOptions(candidates, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                }),
+                createSkipOption('跳过（不复制）', 'ui.disco_dancers_dancing_king_skip_option'),
+            ],
+            {
+                sourceId: 'disco_dancers_dancing_king',
+                targetType: 'minion',
+                titleKey: 'ui.disco_dancers_dancing_king_title',
+            },
+        );
+    },
+    onResolve: ({ state, value, timestamp, context }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const sourceMinion = state.core.bases[context.sourceBaseIndex]?.minions.find(
+            minion => minion.uid === context.sourceCardUid,
+        );
+        const targetMinion = state.core.bases[selected.baseIndex]?.minions.find(
+            minion => minion.uid === selected.minionUid,
+        );
+        if (!sourceMinion || !targetMinion) {
+            return { events: [] };
+        }
+        const mirroredEvents = buildDiscoMirrorEvents(
+            state.core,
+            context.affectEvent,
+            {
+                uid: targetMinion.uid,
+                defId: targetMinion.defId,
+                baseIndex: selected.baseIndex,
+                ownerId: targetMinion.owner,
+                controllerId: targetMinion.controller,
+            },
+            'disco_dancers_dancing_king',
+            timestamp,
+        );
+        if (mirroredEvents.length === 0) {
+            return { events: [] };
+        }
+        return {
+            events: [
+                buildMinionMetadataUpdatedEvent(
+                    sourceMinion.uid,
+                    context.sourceBaseIndex,
+                    { [DISCO_DANCERS_DANCING_KING_TRIGGERED_TURN_META]: state.core.turnNumber },
+                    'disco_dancers_dancing_king_once_per_turn',
+                    timestamp,
+                ),
+                ...mirroredEvents,
+            ],
+        };
+    },
+});
+
+const discoIWillSurvivePromptProgram = createPromptProgram<DiscoIWillSurviveContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'disco_dancers_i_will_survive',
+    buildInteraction: (context) => {
+        const candidates = collectMinionsMatching(
+            context.matchState.core,
+            (minion, baseIndex) => baseIndex === context.sourceBaseIndex && minion.controller === context.playerId,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `disco_dancers_i_will_survive_${context.now}`,
+            context.playerId,
+            '我会活下去：选择计分基地中的一个己方随从返回拥有者手牌',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+            }),
+            {
+                sourceId: 'disco_dancers_i_will_survive',
+                targetType: 'minion',
+                titleKey: 'ui.disco_dancers_i_will_survive_title',
+            },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(candidate => candidate.uid === selected.minionUid);
+        if (!minion) {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedReturnEvents(state, {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                fromBaseIndex: selected.baseIndex,
+                toPlayerId: minion.owner,
+                reason: 'disco_dancers_i_will_survive',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'disco_dancers_i_will_survive',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.baseIndex,
+            }),
+        };
+    },
+});
+
+function discoGetDownTonight(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'disco_dancers_get_down_tonight',
+        title: '就在今晚：选择一个随从 +2 战力',
+        candidates: collectAllMinions(ctx.state),
+        effectKind: 'tempPowerDraw',
+        amount: 2,
+    });
+}
+
+function discoUlDiscoLou(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    const discardAction = player?.discard.find(card => getCardDef(card.defId)?.type === 'action');
+    if (discardAction) {
+        return { events: [buildCardToDeckTopEvent(discardAction, ctx.playerId, 'disco_dancers_ul_disco_lou', ctx.now)] };
+    }
+    return { events: [grantContextualExtraAction(ctx, 'disco_dancers_ul_disco_lou')] };
+}
+
+function discoInferno(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'disco_dancers_disco_inferno',
+        title: '迪斯科地狱：选择一个随从放置 +1 战力标记',
+        candidates: collectAllMinions(ctx.state),
+        effectKind: 'addCounterDraw',
+        amount: 1,
+        allowSkip: true,
+    });
+}
+
+function discoCelebration(ctx: AbilityContext): AbilityResult {
+    return {
+        events: [
+            grantContextualExtraAction(ctx, 'disco_dancers_celebration'),
+            grantContextualExtraAction(ctx, 'disco_dancers_celebration'),
+        ],
+    };
+}
+
+function discoItsRainingMen(ctx: AbilityContext): AbilityResult {
+    return { events: [grantContextualExtraMinion(ctx, 'disco_dancers_its_raining_men')] };
+}
+
+function discoImSoExcited(ctx: AbilityContext): AbilityResult {
+    const candidates = collectOwnMinions(ctx.state, ctx.playerId)
+        .filter(candidate => collectOtherBases(ctx.state, candidate.baseIndex).length > 0);
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        moveOwnMinionPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceDefId: 'disco_dancers_im_so_excited',
+            title: '我很亢奋：选择要移动的己方随从',
+            candidates,
+            drawAfter: true,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function discoLastDance(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'disco_dancers_last_dance',
+        title: '最后的舞曲：选择自己的一个随从消灭并获得 1 VP',
+        candidates: collectOwnMinions(ctx.state, ctx.playerId),
+        effectKind: 'destroyOwnVp',
+        allowSkip: true,
+    });
+}
+
+function discoStayinAlive(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return { events: [] };
+    const ownInPlayDefIds = new Set(collectOwnMinions(ctx.state, ctx.playerId).map(candidate => candidate.defId));
+    const card = player.discard.find(candidate => ownInPlayDefIds.has(candidate.defId));
+    if (!card) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    return {
+        events: [{
+            type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            payload: { playerId: ctx.playerId, cardUids: [card.uid], reason: 'disco_dancers_stayin_alive' },
+            timestamp: ctx.now,
+        } as SmashUpEvent],
+    };
+}
+
+function discoIWillSurvive(ctx: AbilityContext): AbilityResult {
+    const hasOwnMinion = ctx.state.bases[ctx.baseIndex]?.minions.some(minion => minion.controller === ctx.playerId) ?? false;
+    if (!hasOwnMinion) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return runtimeResultToTriggerResult(
+        executeAbilityProgram(
+            discoIWillSurvivePromptProgram,
+            createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                sourceCardUid: ctx.cardUid,
+                sourceBaseIndex: ctx.baseIndex,
+                sourceBaseDefId: ctx.state.bases[ctx.baseIndex]?.defId ?? '',
+            }),
+        ),
+        ctx.matchState,
+    );
+}
+
+function discoIWillSurviveAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    const { state, baseIndex, now, sourceCardUid } = ctx;
+    if (baseIndex === undefined || !sourceCardUid) return [];
+    const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
+        special => special.sourceDefId === 'disco_dancers_i_will_survive'
+            && special.baseIndex === baseIndex
+            && special.cardUid === sourceCardUid,
+    );
+    if (!armedEntry) return [];
+    const consumedEvent = {
+        type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
+        payload: {
+            sourceDefId: armedEntry.sourceDefId,
+            playerId: armedEntry.playerId,
+            baseIndex: armedEntry.baseIndex,
+            cardUid: armedEntry.cardUid,
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+    const ownMinions = state.bases[baseIndex]?.minions.filter(minion => minion.controller === armedEntry.playerId) ?? [];
+    if (ownMinions.length === 0 || !ctx.matchState) {
+        return { events: [consumedEvent] };
+    }
+    const result = executeAbilityProgram(
+        discoIWillSurvivePromptProgram,
+        createPromptContext(ctx.matchState, armedEntry.playerId, now, {
+            sourceCardUid: armedEntry.cardUid,
+            sourceBaseIndex: armedEntry.baseIndex,
+            sourceBaseDefId: state.bases[armedEntry.baseIndex]?.defId ?? '',
+        }),
+    );
+    return {
+        events: [consumedEvent, ...result.events],
+        matchState: result.matchState ?? ctx.matchState,
+    };
+}
+
+function attachedActionProtection(sourceDefId: string): (ctx: ProtectionCheckContext) => boolean {
+    return (ctx) => ctx.targetMinion.attachedActions.some(action => action.defId === sourceDefId);
+}
+
+function baseOwnMinionProtection(sourceDefId: string, types: ReadonlySet<string>): (ctx: ProtectionCheckContext) => boolean {
+    return (ctx) => {
+        if (!types.has(ctx.protectionType)) return false;
+        if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+        const base = ctx.state.bases[ctx.targetBaseIndex];
+        return base?.ongoingActions.some(action =>
+            action.defId === sourceDefId
+            && (((action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId) === ctx.targetMinion.controller),
+        ) ?? false;
+    };
+}
+
+function hideoutProtection(ctx: ProtectionCheckContext): boolean {
+    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+    return ctx.state.bases[ctx.targetBaseIndex]?.defId === 'base_hideout';
+}
+
+function findAttachedActionHost(
+    state: SmashUpCore,
+    actionUid: string,
+): { minion: MinionOnBase; baseIndex: number } | undefined {
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        const minion = state.bases[baseIndex].minions.find(candidate =>
+            candidate.attachedActions.some(action => action.uid === actionUid),
+        );
+        if (minion) return { minion, baseIndex };
+    }
+    return undefined;
+}
+
+function vigilantesDeathWisherTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId || !ctx.destroyerId) {
+        return [];
+    }
+    if (ctx.destroyerId === ctx.sourceControllerId) return [];
+    const destroyedControllerId = ctx.triggerMinion?.controller ?? ctx.controllerId;
+    if (!destroyedControllerId || destroyedControllerId === ctx.destroyerId) return [];
+
+    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self) return [];
+    const usedTurn = Number(self.metadata?.[VIGILANTES_DEATH_WISHER_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return [];
+
+    const candidates = collectMinionsMatching(ctx.state, minion => minion.controller === ctx.destroyerId);
+    if (candidates.length === 0) return [];
+
+    return runtimeResultToTriggerResult(
+        executeAbilityProgram(
+            vigilantesDeathWisherPromptProgram,
+            createPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+                selfUid: self.uid,
+                selfBaseIndex: ctx.baseIndex,
+                destroyerId: ctx.destroyerId,
+            }),
+        ),
+        ctx.matchState,
+    );
+}
+
+function vigilantesTheRevengeAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    if (!ctx.matchState || ctx.baseIndex === undefined || !ctx.sourceCardUid) return [];
+    const armedEntry = (ctx.state.pendingAfterScoringSpecials ?? []).find(special =>
+        special.sourceDefId === 'vigilantes_the_revenge'
+        && special.baseIndex === ctx.baseIndex
+        && special.cardUid === ctx.sourceCardUid,
+    );
+    if (!armedEntry) return [];
+
+    const consumedEvent = {
+        type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
+        payload: {
+            sourceDefId: armedEntry.sourceDefId,
+            playerId: armedEntry.playerId,
+            baseIndex: armedEntry.baseIndex,
+            cardUid: armedEntry.cardUid,
+        },
+        timestamp: ctx.now,
+    } as SmashUpEvent;
+
+    if (isPlayerWinningScoredBase(ctx.state, ctx.baseIndex, armedEntry.playerId)) {
+        return { events: [consumedEvent] };
+    }
+
+    const result = vigilantesTheRevenge({
+        state: ctx.state,
+        matchState: ctx.matchState,
+        playerId: armedEntry.playerId,
+        cardUid: armedEntry.cardUid,
+        defId: armedEntry.sourceDefId,
+        baseIndex: armedEntry.baseIndex,
+        random: ctx.random,
+        now: ctx.now,
+    });
+    return {
+        events: [consumedEvent, ...result.events],
+        matchState: result.matchState ?? ctx.matchState,
+    };
+}
+
+function vigilantesBrojakTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.sourceControllerId) return [];
+    if (ctx.moveToBaseIndex === undefined || ctx.moveToBaseIndex === ctx.sourceBaseIndex) return [];
+    if (ctx.triggerMinionUid === ctx.sourceCardUid) return [];
+
+    const self = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self || self.controller !== ctx.sourceControllerId) return [];
+
+    return runtimeResultToTriggerResult(
+        executeAbilityProgram(
+            vigilantesBrojakPromptProgram,
+            createPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+                selfUid: self.uid,
+                selfBaseIndex: ctx.sourceBaseIndex,
+                targetBaseIndex: ctx.moveToBaseIndex,
+            }),
+        ),
+        ctx.matchState,
+    );
+}
+
+function letsFinishThisTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.sourceControllerId) return [];
+    if (ctx.playerId !== ctx.sourceControllerId) return [];
+    const base = ctx.state.bases[ctx.baseIndex];
+    const baseDef = base ? getCardDef(base.defId) : undefined;
+    if (!base || !baseDef || !('breakpoint' in baseDef)) return [];
+    const hasOwn = base.minions.some(minion => minion.controller === ctx.sourceControllerId);
+    const hasOther = base.minions.some(minion => minion.controller !== ctx.sourceControllerId);
+    if (!hasOwn || !hasOther) return [];
+    return [modifyBreakpoint(ctx.baseIndex, -baseDef.breakpoint, 'vigilantes_lets_finish_this', ctx.now)];
+}
+
+function jackyBillTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) return [];
+    if (ctx.playerId === ctx.sourceControllerId) return [];
+    const base = ctx.state.bases[ctx.baseIndex];
+    const self = base?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self) return [];
+    return [addTempPower(self.uid, ctx.baseIndex, 2, 'vigilantes_jacky_bill', ctx.now, {
+        sourcePlayerId: ctx.sourceControllerId,
+        sourceDefId: 'vigilantes_jacky_bill',
+        sourceControllerId: ctx.sourceControllerId,
+    })];
+}
+
+function foxyGreenTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) return [];
+    if (ctx.sourceControllerId === ctx.playerId) return [];
+    const base = ctx.state.bases[ctx.baseIndex];
+    const self = base?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self) return [];
+    return [addPowerCounter(self.uid, ctx.baseIndex, 1, 'vigilantes_foxy_green', ctx.now, {
+        sourcePlayerId: ctx.sourceControllerId,
+        sourceDefId: 'vigilantes_foxy_green',
+        sourceControllerId: ctx.sourceControllerId,
+    })];
+}
+
+function feelingLuckyTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (!ctx.matchState || !ctx.sourceCardUid || !ctx.sourceControllerId) return [];
+    const host = findAttachedActionHost(ctx.state, ctx.sourceCardUid);
+    if (!host) return [];
+    if (ctx.playerId !== host.minion.controller) return [];
+    return buildValidatedDestroyEvents(ctx.matchState, {
+        minionUid: host.minion.uid,
+        minionDefId: host.minion.defId,
+        fromBaseIndex: host.baseIndex,
+        destroyerId: ctx.sourceControllerId,
+        reason: 'vigilantes_feeling_lucky',
+        now: ctx.now,
+        sourcePlayerId: ctx.sourceControllerId,
+        sourceCardUid: ctx.sourceCardUid,
+        sourceDefId: 'vigilantes_feeling_lucky',
+        sourceControllerId: ctx.sourceControllerId,
+        sourceBaseIndex: host.baseIndex,
+        sourceKind: 'nonAction',
+    });
+}
+
+function discoDivaTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.affectEvent) return [];
+    if (ctx.triggerMinionUid === ctx.sourceCardUid) return [];
+
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isStandardActionDefId(actionDefId)) return [];
+
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    const affectedMinion = ctx.triggerMinionUid
+        ? ctx.state.bases[ctx.baseIndex ?? ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.triggerMinionUid) ?? ctx.triggerMinion
+        : ctx.triggerMinion;
+    if (!sourceMinion || !affectedMinion) return [];
+    if (affectedMinion.controller !== sourceMinion.controller) return [];
+
+    const usedTurn = Number(sourceMinion.metadata?.[DISCO_DANCERS_DIVA_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return [];
+
+    const mirroredEvents = buildDiscoMirrorEvents(
+        ctx.state,
+        ctx.affectEvent,
+        {
+            uid: sourceMinion.uid,
+            defId: sourceMinion.defId,
+            baseIndex: ctx.sourceBaseIndex,
+            ownerId: sourceMinion.owner,
+            controllerId: sourceMinion.controller,
+        },
+        'disco_dancers_diva',
+        ctx.now,
+    );
+    if (mirroredEvents.length === 0) return [];
+
+    return [
+        buildMinionMetadataUpdatedEvent(
+            sourceMinion.uid,
+            ctx.sourceBaseIndex,
+            { [DISCO_DANCERS_DIVA_TRIGGERED_TURN_META]: ctx.state.turnNumber },
+            'disco_dancers_diva_once_per_turn',
+            ctx.now,
+        ),
+        ...mirroredEvents,
+    ];
+}
+
+function discoWeAreFamilyTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (!ctx.sourceCardUid || !ctx.affectEvent) return [];
+    const host = findAttachedActionHost(ctx.state, ctx.sourceCardUid);
+    if (!host) return [];
+    if (ctx.triggerMinionUid === host.minion.uid) return [];
+
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isStandardActionDefId(actionDefId)) return [];
+
+    const affectedMinion = ctx.triggerMinionUid
+        ? ctx.state.bases[ctx.baseIndex ?? host.baseIndex]?.minions.find(minion => minion.uid === ctx.triggerMinionUid) ?? ctx.triggerMinion
+        : ctx.triggerMinion;
+    if (!affectedMinion || affectedMinion.controller !== host.minion.controller) return [];
+
+    const triggeredTurns = (host.minion.metadata?.[DISCO_DANCERS_WE_ARE_FAMILY_TRIGGERED_TURNS_META] as Record<string, unknown> | undefined) ?? {};
+    const usedTurn = Number(triggeredTurns[ctx.sourceCardUid] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return [];
+
+    const mirroredEvents = buildDiscoMirrorEvents(
+        ctx.state,
+        ctx.affectEvent,
+        {
+            uid: host.minion.uid,
+            defId: host.minion.defId,
+            baseIndex: host.baseIndex,
+            ownerId: host.minion.owner,
+            controllerId: host.minion.controller,
+        },
+        'disco_dancers_we_are_family',
+        ctx.now,
+    );
+    if (mirroredEvents.length === 0) return [];
+
+    return [
+        buildMinionMetadataUpdatedEvent(
+            host.minion.uid,
+            host.baseIndex,
+            {
+                [DISCO_DANCERS_WE_ARE_FAMILY_TRIGGERED_TURNS_META]: {
+                    ...triggeredTurns,
+                    [ctx.sourceCardUid]: ctx.state.turnNumber,
+                },
+            },
+            'disco_dancers_we_are_family_once_per_turn',
+            ctx.now,
+        ),
+        ...mirroredEvents,
+    ];
+}
+
+function discoDancingKingTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || !ctx.affectEvent) return [];
+    const actionDefId = resolveSourceDefIdFromEvent(ctx.affectEvent) ?? normalizeSourceDefIdFromReason(ctx.reason);
+    if (!isStandardActionDefId(actionDefId)) return [];
+
+    const sourceMinion = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!sourceMinion) return [];
+    const usedTurn = Number(sourceMinion.metadata?.[DISCO_DANCERS_DANCING_KING_TRIGGERED_TURN_META] ?? -1);
+    if (usedTurn === ctx.state.turnNumber) return [];
+
+    const affectedMinionUid = ctx.triggerMinionUid ?? ctx.triggerMinion?.uid;
+    if (!affectedMinionUid) return [];
+    const candidateCount = ctx.state.bases[ctx.sourceBaseIndex]?.minions.filter(minion => minion.uid !== affectedMinionUid).length ?? 0;
+    if (candidateCount === 0) return [];
+
+    return runtimeResultToTriggerResult(
+        executeAbilityProgram(
+            discoDancingKingPromptProgram,
+            createPromptContext(ctx.matchState, sourceMinion.controller, ctx.now, {
+                sourceCardUid: sourceMinion.uid,
+                sourceBaseIndex: ctx.sourceBaseIndex,
+                sourceControllerId: sourceMinion.controller,
+                affectedMinionUid,
+                affectEvent: ctx.affectEvent,
+            }),
+        ),
+        ctx.matchState,
+    );
+}
+
+function discoRollerTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.sourceCardUid || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
+    const base = ctx.state.bases[ctx.baseIndex];
+    const self = base?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!self || (self.powerCounters ?? 0) > 0) return [];
+    return [addPowerCounter(self.uid, ctx.baseIndex, 1, 'disco_dancers_roller', ctx.now, {
+        sourcePlayerId: self.controller,
+        sourceDefId: 'disco_dancers_roller',
+        sourceControllerId: self.controller,
+    })];
+}
+
 export function registerZhongguoAbilities(): void {
+    registerAbilityProgram('vigilantes_shrug_it_off', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesShrugItOffTalent),
+    });
+    registerAbilityProgram('vigilantes_scared_straight', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+            const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
+                baseIndex === ctx.baseIndex
+                && minion.controller !== ctx.playerId
+                && hasOwnMinionOnBase(ctx.state, baseIndex, ctx.playerId),
+            );
+            if (candidates.length === 0) {
+                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+            }
+            const result = executeAbilityProgram(moveOwnMinionPromptProgram, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                sourceDefId: 'vigilantes_scared_straight',
+                title: '直面恐惧：选择要移动的其他玩家随从',
+                candidates,
+                requireOwn: false,
+                extraActionAfter: true,
+            }));
+            return {
+                events: result.events,
+                matchState: result.matchState,
+            };
+        }),
+    });
+    registerAbilityProgram('vigilantes_who_loves_ya_baby', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesWhoLovesYaBaby),
+    });
+    registerAbilityProgram('vigilantes_a_whole_lot_meaner', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesAWholeLotMeaner),
+    });
+    registerAbilityProgram('vigilantes_stoneford', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesStoneford),
+    });
+    registerAbilityProgram('vigilantes_shift', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesShift),
+    });
+    registerAbilityProgram('vigilantes_dusty_henry', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesDustyHenry),
+    });
+    registerAbilityProgram('vigilantes_knocked_into_next_week', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesKnockedIntoNextWeek),
+    });
+    registerAbilityProgram('vigilantes_make_my_day', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesMakeMyDay),
+    });
+    registerAbilityProgram('vigilantes_the_revenge', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesTheRevenge),
+    });
+    registerProtection('base_hideout', 'action', hideoutProtection);
+    registerProtection('base_hideout', 'affect', hideoutProtection);
+    registerProtection('base_hideout', 'destroy', hideoutProtection);
+    registerProtection('base_hideout', 'move', hideoutProtection);
+    registerProtection('vigilantes_street_justice', 'affect', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
+    registerProtection('vigilantes_street_justice', 'destroy', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
+    registerProtection('vigilantes_street_justice', 'move', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
+    registerProtection('vigilantes_street_justice', 'action', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
+    registerProtection('vigilantes_tough_it_out', 'destroy', attachedActionProtection('vigilantes_tough_it_out'));
+    registerProtection('truckers_armored_truck', 'destroy', baseOwnMinionProtection('truckers_armored_truck', new Set(['destroy', 'move'])));
+    registerProtection('truckers_armored_truck', 'move', baseOwnMinionProtection('truckers_armored_truck', new Set(['destroy', 'move'])));
+
+    registerAbilityProgram('truckers_fixin_to_fix_it', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+            const discardActions = ctx.state.players[ctx.playerId]?.discard.filter(card => getCardDef(card.defId)?.type === 'action') ?? [];
+            if (discardActions.length === 0) {
+                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+            }
+            const selected = discardActions[0];
+            return {
+                events: [
+                    {
+                        type: SU_EVENTS.CARDS_DRAWN,
+                        payload: { playerId: ctx.playerId, count: 1, cardUids: [selected.uid] },
+                        timestamp: ctx.now,
+                    } as SmashUpEvent,
+                ],
+            };
+        }),
+    });
+    registerAbilityProgram('truckers_good_buddy', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersGoodBuddy),
+    });
+    registerAbilityProgram('truckers_hotwire', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersHotwire),
+    });
+    registerAbilityProgram('truckers_skinny_minnie', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersSkinnyMinnieTalent),
+        validateUse: (ctx) => {
+            const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
+            if (!self || self.controller !== ctx.playerId) return '当前无法发动此天赋';
+            const hasAction = collectBaseOngoingActions(ctx.state, candidate => candidate.baseIndex === ctx.baseIndex).length > 0;
+            return hasAction && hasOtherBaseTarget(ctx.state, ctx.baseIndex) ? null : '当前没有可转移的基地战术';
+        },
+    });
+    registerAbilityProgram('truckers_el_bandido', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersElBandidoOnPlay),
+    });
+    registerAbilityProgram('truckers_el_bandido', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersElBandidoTalent),
+    });
+    registerAbilityProgram('truckers_high_speed_chase', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersHighSpeedChaseTalent),
+        validateUse: (ctx) => {
+            const base = ctx.state.bases[ctx.baseIndex];
+            if (!base || !hasOtherBaseTarget(ctx.state, ctx.baseIndex)) return '当前没有可选择的目标';
+            return base.minions.some(minion => minion.controller === ctx.playerId) ? null : '当前没有可选择的目标';
+        },
+    });
+    registerAbilityProgram('truckers_dekotora', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersDekotoraTalent),
+        validateUse: (ctx) => hasOtherBaseTarget(ctx.state, ctx.baseIndex) ? null : '当前没有可选择的目标',
+    });
+    registerAbilityProgram('truckers_rally', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersRally),
+    });
+    registerAbilityProgram('truckers_turn_the_beat_around', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersTurnTheBeatAround),
+    });
+    registerAbilityProgram('disco_dancers_get_down_tonight', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoGetDownTonight),
+    });
+    registerAbilityProgram('disco_dancers_ul_disco_lou', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoUlDiscoLou),
+    });
+    registerAbilityProgram('disco_dancers_disco_inferno', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoInferno),
+    });
+    registerAbilityProgram('disco_dancers_celebration', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoCelebration),
+    });
+    registerAbilityProgram('disco_dancers_i_will_survive', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoIWillSurvive),
+    });
+    registerAbilityProgram('disco_dancers_its_raining_men', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoItsRainingMen),
+    });
+    registerAbilityProgram('disco_dancers_im_so_excited', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoImSoExcited),
+    });
+    registerAbilityProgram('disco_dancers_last_dance', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoLastDance),
+    });
+    registerAbilityProgram('disco_dancers_stayin_alive', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(discoStayinAlive),
+    });
+
     registerAbilityProgram('kung_fu_fighters_cricket', 'onPlay', {
         program: cricketOnPlayProgram,
     });
@@ -1290,5 +4050,66 @@ export function registerZhongguoAbilities(): void {
         const leaders = powers.filter((entry) => entry.power === highestPower);
         if (leaders.length !== 1 || leaders[0]?.playerId !== playerId) return 0;
         return powers.filter((entry) => entry.power <= 0).length;
+    });
+
+    registerTrigger('vigilantes_lets_finish_this', 'onTurnStart', letsFinishThisTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('vigilantes_death_wisher', 'onMinionDestroyed', vigilantesDeathWisherTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('vigilantes_the_revenge', 'afterScoring', vigilantesTheRevengeAfterScoring, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('vigilantes_brojak', 'onMinionMoved', vigilantesBrojakTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        baseScoped: false,
+    });
+    registerTrigger('vigilantes_jacky_bill', 'onActionPlayed', jackyBillTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('vigilantes_foxy_green', 'onMinionAffected', foxyGreenTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('vigilantes_feeling_lucky', 'onActionPlayed', feelingLuckyTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('disco_dancers_diva', 'onMinionAffected', discoDivaTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('disco_dancers_we_are_family', 'onMinionAffected', discoWeAreFamilyTrigger, {
+        perInstance: true,
+        playerContext: 'sourceHostController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('disco_dancers_dancing_king', 'onMinionAffected', discoDancingKingTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('disco_dancers_roller', 'onMinionAffected', discoRollerTrigger, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('disco_dancers_i_will_survive', 'afterScoring', discoIWillSurviveAfterScoring, {
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
     });
 }

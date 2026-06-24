@@ -114,16 +114,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'ninja', nameKey: 'characters.ninja' },
     { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
-    {
-        id: 'artificer',
-        nameKey: 'characters.artificer',
-        badges: [{
-            id: 'implementation_in_progress',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        }],
-    },
+    { id: 'artificer', nameKey: 'characters.artificer' },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
@@ -273,6 +264,8 @@ export interface PendingAttack {
     attackDiceValues?: number[];
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
+    /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
+    followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
     treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
     /**

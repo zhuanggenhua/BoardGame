@@ -578,7 +578,7 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
         };
         return interaction;
     },
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
         const selected = value as { minionUid?: string; defId?: string; baseIndex?: number; skip?: boolean } | undefined;
         if (!selected || selected.skip || selected.baseIndex === undefined || !selected.minionUid || !selected.defId) return { events: [] };
         return {

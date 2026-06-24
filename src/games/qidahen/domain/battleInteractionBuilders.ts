@@ -45,7 +45,7 @@ function buildQidahenPendingTargetInteraction(
             sourceId: QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `防守 ${pendingTargetAction.defenderLabel} · 源兵 ${pendingTargetAction.sourceAvailableTroops} · 投入 ${pendingTargetAction.committedTroops} · 压力 ${pendingTargetAction.attackPressure}`,
+            subtitle: `守方 ${pendingTargetAction.defenderLabel} · 本次出兵 ${pendingTargetAction.committedTroops}`,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
         },
     ) as QidahenPendingTargetInteraction;
@@ -82,7 +82,7 @@ function buildQidahenPostBattleInteraction(
             sourceId: QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `${selection.summary} · 投入 ${selection.committedTroops}`,
+            subtitle: `${selection.summary} · 幸存 ${selection.survivingTroops}`,
         },
     ) as QidahenPostBattleInteraction;
 

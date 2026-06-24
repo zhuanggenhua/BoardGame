@@ -23,6 +23,7 @@ import type {
     AttackResolvedEvent,
     DamageDealtEvent,
     DamageShieldGrantedEvent,
+    BonusDieRolledEvent,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -606,6 +607,56 @@ function resolvePostAttackFollowUp(
     }
 
     return { events, overrideNextPhase: 'main2' };
+}
+
+function resolveNanobombUpkeepEvents(
+    core: DiceThroneCore,
+    playerId: string,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): DiceThroneEvent[] {
+    const stacks = core.players[playerId]?.statusEffects[STATUS_IDS.NANOBOMB] ?? 0;
+    if (stacks <= 0 || !random) return [];
+
+    const events: DiceThroneEvent[] = [];
+    let removedStacks = 0;
+
+    for (let index = 0; index < stacks; index += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(core, playerId, value) ?? '';
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId,
+                targetPlayerId: playerId,
+                effectKey: 'bonusDie.effect.artificerNanobombUpkeep',
+                effectParams: { value },
+            },
+            sourceCommandType,
+            timestamp: timestamp + index * 0.001,
+        } as BonusDieRolledEvent);
+        if (value === 6) {
+            removedStacks += 1;
+        }
+    }
+
+    if (removedStacks > 0) {
+        events.push({
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: playerId,
+                statusId: STATUS_IDS.NANOBOMB,
+                stacks: removedStacks,
+            },
+            sourceCommandType,
+            timestamp: timestamp + stacks * 0.001,
+        } as StatusRemovedEvent);
+    }
+
+    return events;
 }
 
 function appendPendingAttackResolvedEvent(
@@ -1848,6 +1899,15 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     activeId,
                     command.type,
                     timestamp + 0.02,
+                    random,
+                ));
+
+                // 5. 工匠：纳米爆弹 — 每层投 1 骰，6 移除 1 层。
+                events.push(...resolveNanobombUpkeepEvents(
+                    phaseEnterCore,
+                    activeId,
+                    command.type,
+                    timestamp + 0.03,
                     random,
                 ));
             }

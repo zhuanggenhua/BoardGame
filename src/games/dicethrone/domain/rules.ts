@@ -995,6 +995,12 @@ const checkStandardCardPlay = (
     return { ok: true };
 };
 
+const isResponseUpgradeCard = (card: AbilityCard): boolean => (
+    card.type === 'upgrade'
+    && getUpgradeTargetAbilityId(card) === null
+    && !!card.playCondition?.pendingDamage
+);
+
 const checkResponseWindowCardPlay = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -1005,7 +1011,7 @@ const checkResponseWindowCardPlay = (
     const failResponseWindow = (): CardPlayCheckResult => ({ ok: false, reason: 'wrongPhaseForCard' });
     const cond = card.playCondition;
 
-    if (card.type === 'upgrade') {
+    if (card.type === 'upgrade' && !isResponseUpgradeCard(card)) {
         return failResponseWindow();
     }
 
@@ -1065,7 +1071,7 @@ export const checkPlayCard = (
     phase: TurnPhase,
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
-    if (card.type === 'upgrade') {
+    if (card.type === 'upgrade' && !isResponseUpgradeCard(card)) {
         if (responseWindowType) {
             return checkResponseWindowCardPlay(state, playerId, card, responseWindowType, phase);
         }

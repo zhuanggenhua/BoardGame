@@ -105,7 +105,7 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
     return {
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('升级军备', timestamp, [
-            `${upgradedArmamentLine} 当前为低保真研发入口，后续可接真实军备牌选择。`,
+            `${upgradedArmamentLine} 军备升级完成。`,
         ]),
     };
 };

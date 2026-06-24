@@ -383,7 +383,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
                             {
                                 id: `log-sun-yuanhua-tech-${triggerKey}`,
                                 faction: 'ming',
-                                text: '孙元化可在行动前弃 2 张手牌，按当前低保真规则打出 1 张科技。',
+                                text: '孙元化可在行动前弃 2 张手牌，推进 1 项科技。',
                             },
                             ...nextState.actionLog,
                         ].slice(0, 6),

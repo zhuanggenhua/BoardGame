@@ -43,17 +43,17 @@ const isImplementationInProgress = (character: { badges?: Array<{ id: string }> 
     character.badges?.some((badge) => badge.id === 'implementation_in_progress') ?? false
 );
 
-describe('DiceThrone 工匠 L1 静态接入', () => {
-    it('角色目录保留实施中徽标，且 AI 等价选择列表会排除工匠', () => {
+describe('DiceThrone 工匠接入与完成态', () => {
+    it('角色目录已切到完成态，且 AI 等价选择列表会纳入工匠', () => {
         const artificer = DICETHRONE_CHARACTER_CATALOG.find(character => character.id === 'artificer');
         expect(artificer).toBeDefined();
         expect(artificer?.nameKey).toBe('characters.artificer');
-        expect(artificer?.badges?.some((badge) => badge.id === 'implementation_in_progress')).toBe(true);
+        expect(artificer?.badges?.some((badge) => badge.id === 'implementation_in_progress') ?? false).toBe(false);
 
         const aiSelectableIds = DICETHRONE_CHARACTER_CATALOG
             .filter((character) => !isImplementationInProgress(character))
             .map((character) => character.id);
-        expect(aiSelectableIds).not.toContain('artificer');
+        expect(aiSelectableIds).toContain('artificer');
         expect(aiSelectableIds).toContain('cursed_pirate');
     });
 

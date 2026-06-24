@@ -13,7 +13,6 @@ import {
     registerCustomPowerModifiers,
     registerCustomBasePowerModifiers,
     registerTitanPowerModifier,
-    matchesRuntimeDefId,
     getActionControllerId,
 } from '../domain/ongoingModifiers';
 import type { BasePowerModifierContext, OngoingPowerModifierDefinition, PowerModifierContext } from '../domain/ongoingModifiers';
@@ -67,6 +66,7 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'dragons_dragon_lands', location: 'base', target: 'ownerMinions', delta: 1 },
     { defId: 'dragons_intimidating_presence', location: 'base', target: 'opponentMinions', delta: -1 },
     { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
+    { defId: 'vigilantes_tough_it_out', location: 'minion', target: 'self', delta: 2 },
 ];
 
 function registerStructuredOngoingPowerModifiers(): void {
@@ -552,6 +552,32 @@ function registerDragonModifiers(): void {
 function registerSuperheroesModifiers(): void {
 }
 
+function registerZhongguoModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'truckers_rubber_chicken',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'truckers_rubber_chicken')) return 0;
+                return helpers.countActionsOnBaseControlledBy(ctx, ctx.minion.controller);
+            },
+        },
+    ]);
+
+    registerCustomBasePowerModifiers([
+        {
+            defId: 'truckers_convoy',
+            compute: (ctx, helpers) => {
+                if (!ctx.ongoing) return 0;
+                const controllerId = helpers.getActionControllerId(ctx.ongoing);
+                if (controllerId !== ctx.playerId) return 0;
+                return ctx.base.ongoingActions
+                    .filter(action => helpers.getActionControllerId(action) === controllerId)
+                    .length;
+            },
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -578,4 +604,5 @@ export function registerAllOngoingModifiers(): void {
     registerDragonModifiers();
     registerSuperheroesModifiers();
     registerYuanhouModifiers();
+    registerZhongguoModifiers();
 }

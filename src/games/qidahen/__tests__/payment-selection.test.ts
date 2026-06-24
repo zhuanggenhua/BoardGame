@@ -16766,7 +16766,7 @@ describe('七大恨支付手牌选择', () => {
         };
         core.payment = { required: 1, selected: 0, prompt: '需弃 1 / 已选 0' };
         core.actionChoices = [
-            { id: 'upgrade-armament', label: '升级军备', cost: 2, detail: '打出军备牌并弃 1 张手牌，当前低保真先升级己方已开发军备。' },
+            { id: 'upgrade-armament', label: '升级军备', cost: 2, detail: '弃 1 张手牌，选择一项已开发军备进行升级。' },
             { id: 'raid', label: '突袭作战', cost: 1, detail: '弃 1 张手牌，执行进攻行动（不能执行调度）。' },
             { id: 'ma-shi-trade', label: '马市贸易', cost: 1, detail: '弃 1 张手牌，大明选择建立 1-3 个部队，蒙古抽 2 倍张数的手牌。' },
             { id: 'khan-edict', label: '大汗令箭', cost: 1, detail: '弃 1 张手牌，执行征兵训练或外交雇佣，不需再支付花费。' },

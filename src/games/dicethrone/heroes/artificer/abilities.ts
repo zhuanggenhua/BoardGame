@@ -36,6 +36,12 @@ const drawCards = (drawCount: number, description: string, timing: EffectTiming 
     timing,
 });
 
+const gainCp = (value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'gain-cp', params: { amount: value } },
+    timing,
+});
+
 const grantSynth = (value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
     description,
     action: { type: 'grantToken', target: 'self', tokenId: TOKEN_IDS.SYNTH, value },
@@ -53,6 +59,46 @@ const textOnly = (description: string, timing: EffectTiming = 'preDefense'): Abi
     timing,
 });
 
+const custom = (
+    customActionId: string,
+    description: string,
+    opts?: {
+        timing?: EffectTiming;
+        target?: 'self' | 'opponent';
+        params?: Record<string, unknown>;
+    },
+): AbilityEffect => ({
+    description,
+    action: {
+        type: 'custom',
+        target: opts?.target ?? 'self',
+        customActionId,
+        ...(opts?.params ? { params: opts.params } : {}),
+    },
+    timing: opts?.timing,
+});
+
+const wrenchBranch = (description: string): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'artificer-wrench-strike-branch' },
+    timing: 'preDefense',
+});
+
+const buildFromScratch = (description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'artificer-build-from-scratch-choice' },
+    timing,
+});
+
+const activateBots = (
+    description: string,
+    maxActivations: number,
+    timing: EffectTiming = 'postDamage',
+): AbilityEffect => custom('artificer-activate-bots', description, {
+    timing,
+    params: { maxActivations },
+});
+
 const WRENCH_STRIKE: AbilityDef = {
     id: 'wrench-strike',
     name: abilityText('wrench-strike', 'name'),
@@ -64,8 +110,8 @@ const WRENCH_STRIKE: AbilityDef = {
             id: 'wrench-strike-3',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 3 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike', 'bonusBranch')),
                 damage(3, abilityEffectText('wrench-strike', 'damage3')),
-                textOnly(abilityEffectText('wrench-strike', 'bonusBranch'), 'postDamage'),
             ],
             priority: 1,
         },
@@ -73,8 +119,8 @@ const WRENCH_STRIKE: AbilityDef = {
             id: 'wrench-strike-4',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 4 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike', 'bonusBranch')),
                 damage(4, abilityEffectText('wrench-strike', 'damage4')),
-                textOnly(abilityEffectText('wrench-strike', 'bonusBranch'), 'postDamage'),
             ],
             priority: 2,
         },
@@ -82,8 +128,8 @@ const WRENCH_STRIKE: AbilityDef = {
             id: 'wrench-strike-5',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 5 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike', 'bonusBranch')),
                 damage(5, abilityEffectText('wrench-strike', 'damage5')),
-                textOnly(abilityEffectText('wrench-strike', 'bonusBranch'), 'postDamage'),
             ],
             priority: 3,
         },
@@ -101,8 +147,8 @@ export const WRENCH_STRIKE_2: AbilityDef = {
             id: 'wrench-strike-2-3',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 3 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike-2', 'bonusBranch')),
                 damage(4, abilityEffectText('wrench-strike-2', 'damage4')),
-                textOnly(abilityEffectText('wrench-strike-2', 'bonusBranch'), 'postDamage'),
             ],
             priority: 1,
         },
@@ -110,8 +156,8 @@ export const WRENCH_STRIKE_2: AbilityDef = {
             id: 'wrench-strike-2-4',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 4 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike-2', 'bonusBranch')),
                 damage(5, abilityEffectText('wrench-strike-2', 'damage5')),
-                textOnly(abilityEffectText('wrench-strike-2', 'bonusBranch'), 'postDamage'),
             ],
             priority: 2,
         },
@@ -119,8 +165,8 @@ export const WRENCH_STRIKE_2: AbilityDef = {
             id: 'wrench-strike-2-5',
             trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 5 } },
             effects: [
+                wrenchBranch(abilityEffectText('wrench-strike-2', 'bonusBranch')),
                 damage(6, abilityEffectText('wrench-strike-2', 'damage6')),
-                textOnly(abilityEffectText('wrench-strike-2', 'bonusBranch'), 'postDamage'),
             ],
             priority: 3,
         },
@@ -149,7 +195,7 @@ export const SCHEMATICS_2: AbilityDef = {
     sfxKey: ARTIFICER_SFX_METAL,
     trigger: { type: 'diceSet', faces: { [FACE.GEAR]: 3, [FACE.ELECTRICITY]: 1 } },
     effects: [
-        textOnly(abilityEffectText('schematics-2', 'gain2')),
+        gainCp(2, abilityEffectText('schematics-2', 'gain2')),
         drawCards(2, abilityEffectText('schematics-2', 'draw2')),
         heal(2, abilityEffectText('schematics-2', 'heal2')),
         grantSynth(4, abilityEffectText('schematics-2', 'gainSynth4')),
@@ -163,7 +209,7 @@ const COLLECT_PARTS: AbilityDef = {
     description: abilityText('collect-parts', 'description'),
     trigger: { type: 'phaseStart', phase: 'upkeep' },
     effects: [
-        textOnly(abilityEffectText('collect-parts', 'upkeepGainSynth'), 'immediate'),
+        grantSynth(1, abilityEffectText('collect-parts', 'upkeepGainSynth'), 'immediate'),
         textOnly(abilityEffectText('collect-parts', 'spendSynthForNanobomb'), 'immediate'),
     ],
 };
@@ -175,7 +221,32 @@ export const COLLECT_PARTS_2: AbilityDef = {
     description: abilityText('collect-parts-2', 'description'),
     trigger: { type: 'phaseStart', phase: 'upkeep' },
     effects: [
-        textOnly(abilityEffectText('collect-parts-2', 'upkeepGainSynth'), 'immediate'),
+        {
+            description: abilityEffectText('collect-parts-2', 'upkeepRoll'),
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 1,
+                conditionalEffects: [
+                    {
+                        face: FACE.WRENCH,
+                        grantToken: { tokenId: TOKEN_IDS.SYNTH, value: 1 },
+                        effectKey: 'bonusDie.effect.artificerCollectPartsWrench',
+                    },
+                    {
+                        face: FACE.GEAR,
+                        grantToken: { tokenId: TOKEN_IDS.SYNTH, value: 2 },
+                        effectKey: 'bonusDie.effect.artificerCollectPartsGear',
+                    },
+                    {
+                        face: FACE.ELECTRICITY,
+                        grantToken: { tokenId: TOKEN_IDS.SYNTH, value: 2 },
+                        effectKey: 'bonusDie.effect.artificerCollectPartsElectricity',
+                    },
+                ],
+            },
+            timing: 'immediate',
+        },
         textOnly(abilityEffectText('collect-parts-2', 'spendSynthForNanobomb'), 'immediate'),
     ],
 };
@@ -199,11 +270,24 @@ export const EUREKA_2: AbilityDef = {
     type: 'offensive',
     description: abilityText('eureka-2', 'description'),
     sfxKey: ARTIFICER_SFX_METAL,
-    trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 2, [FACE.GEAR]: 3 } },
-    effects: [
-        grantSynth(3, abilityEffectText('eureka-2', 'gainSynth3')),
-        damage(8, abilityEffectText('eureka-2', 'damage8')),
-        textOnly(abilityEffectText('eureka-2', 'buildFromScratch'), 'postDamage'),
+    variants: [
+        {
+            id: 'eureka-2-main',
+            trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 2, [FACE.GEAR]: 3 } },
+            effects: [
+                grantSynth(3, abilityEffectText('eureka-2', 'gainSynth3')),
+                damage(8, abilityEffectText('eureka-2', 'damage8')),
+            ],
+            priority: 2,
+        },
+        {
+            id: 'eureka-2-build-from-scratch',
+            trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 2, [FACE.GEAR]: 2 } },
+            effects: [
+                buildFromScratch(abilityEffectText('eureka-2', 'buildFromScratch')),
+            ],
+            priority: 1,
+        },
     ],
 };
 
@@ -227,12 +311,25 @@ export const ACTIVATE_BOTS_2: AbilityDef = {
     type: 'offensive',
     description: abilityText('activate-bots-2', 'description'),
     sfxKey: ARTIFICER_SFX_METAL,
-    trigger: { type: 'smallStraight' },
-    effects: [
-        grantSynth(1, abilityEffectText('activate-bots-2', 'gainSynth1')),
-        inflictNanobomb(2, abilityEffectText('activate-bots-2', 'inflictNanobomb2')),
-        damage(7, abilityEffectText('activate-bots-2', 'damage7')),
-        textOnly(abilityEffectText('activate-bots-2', 'botSwarm'), 'postDamage'),
+    variants: [
+        {
+            id: 'activate-bots-2-main',
+            trigger: { type: 'smallStraight' },
+            effects: [
+                grantSynth(1, abilityEffectText('activate-bots-2', 'gainSynth1')),
+                inflictNanobomb(2, abilityEffectText('activate-bots-2', 'inflictNanobomb2')),
+                damage(7, abilityEffectText('activate-bots-2', 'damage7')),
+            ],
+            priority: 2,
+        },
+        {
+            id: 'activate-bots-2-precision-fabrication',
+            trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 3, [FACE.ELECTRICITY]: 1 } },
+            effects: [
+                grantSynth(5, abilityEffectText('activate-bots-2', 'precisionFabricationGainSynth5')),
+            ],
+            priority: 1,
+        },
     ],
 };
 
@@ -246,7 +343,7 @@ const OVERCLOCK: AbilityDef = {
     trigger: { type: 'diceSet', faces: { [FACE.ELECTRICITY]: 4 } },
     effects: [
         damage(6, abilityEffectText('overclock', 'damage6Unblockable'), { unblockable: true }),
-        textOnly(abilityEffectText('overclock', 'activateTwoBots'), 'postDamage'),
+        activateBots(abilityEffectText('overclock', 'activateTwoBots'), 2),
     ],
 };
 
@@ -254,7 +351,6 @@ export const OVERCLOCK_2: AbilityDef = {
     id: 'overclock',
     name: abilityText('overclock-2', 'name'),
     type: 'offensive',
-    tags: ['unblockable'],
     description: abilityText('overclock-2', 'description'),
     sfxKey: ARTIFICER_SFX_ELECTRIC,
     variants: [
@@ -263,20 +359,18 @@ export const OVERCLOCK_2: AbilityDef = {
             trigger: { type: 'diceSet', faces: { [FACE.ELECTRICITY]: 4 } },
             effects: [
                 damage(6, abilityEffectText('overclock-2', 'damage6Unblockable'), { unblockable: true }),
-                textOnly(abilityEffectText('overclock-2', 'activateTwoBots'), 'postDamage'),
+                activateBots(abilityEffectText('overclock-2', 'activateTwoBots'), 2),
             ],
             priority: 2,
             tags: ['unblockable'],
         },
         {
             id: 'overclock-2-energy-boost',
-            trigger: { type: 'diceSet', faces: { [FACE.GEAR]: 2, [FACE.ELECTRICITY]: 2 } },
+            trigger: { type: 'diceSet', faces: { [FACE.ELECTRICITY]: 3 } },
             effects: [
-                grantSynth(2, abilityEffectText('overclock-2', 'energyBoostGainSynth2')),
-                damage(4, abilityEffectText('overclock-2', 'energyBoostDamage4'), { unblockable: true }),
+                inflictNanobomb(3, abilityEffectText('overclock-2', 'energyBoostInflictNanobomb3')),
             ],
             priority: 1,
-            tags: ['unblockable'],
         },
     ],
 };
@@ -291,7 +385,7 @@ const SHOCK_BOT: AbilityDef = {
     effects: [
         inflictNanobomb(1, abilityEffectText('shock-bot', 'inflictNanobomb')),
         damage(9, abilityEffectText('shock-bot', 'damage9')),
-        textOnly(abilityEffectText('shock-bot', 'activateOneBot'), 'postDamage'),
+        activateBots(abilityEffectText('shock-bot', 'activateOneBot'), 1),
     ],
 };
 
@@ -301,12 +395,29 @@ export const SHOCK_BOT_3: AbilityDef = {
     type: 'offensive',
     description: abilityText('shock-bot-3', 'description'),
     sfxKey: ARTIFICER_SFX_ELECTRIC,
-    trigger: { type: 'largeStraight' },
-    effects: [
-        grantSynth(2, abilityEffectText('shock-bot-3', 'gainSynth2')),
-        inflictNanobomb(1, abilityEffectText('shock-bot-3', 'inflictNanobomb')),
-        damage(9, abilityEffectText('shock-bot-3', 'damage9')),
-        textOnly(abilityEffectText('shock-bot-3', 'activateOneBot'), 'postDamage'),
+    variants: [
+        {
+            id: 'shock-bot-3-main',
+            trigger: { type: 'largeStraight' },
+            effects: [
+                grantSynth(2, abilityEffectText('shock-bot-3', 'gainSynth2')),
+                inflictNanobomb(1, abilityEffectText('shock-bot-3', 'inflictNanobomb')),
+                damage(9, abilityEffectText('shock-bot-3', 'damage9')),
+                activateBots(abilityEffectText('shock-bot-3', 'activateOneBot'), 1),
+            ],
+            priority: 2,
+        },
+        {
+            id: 'shock-bot-3-mechanical-army',
+            trigger: { type: 'diceSet', faces: { [FACE.WRENCH]: 1, [FACE.GEAR]: 2, [FACE.ELECTRICITY]: 1 } },
+            effects: [
+                custom('artificer-mechanical-army', abilityEffectText('shock-bot-3', 'mechanicalArmy'), {
+                    target: 'opponent',
+                    timing: 'withDamage',
+                }),
+            ],
+            priority: 1,
+        },
     ],
 };
 
@@ -319,7 +430,9 @@ const TINKER: AbilityDef = {
     sfxKey: ARTIFICER_SFX_METAL,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
     effects: [
-        textOnly(abilityEffectText('tinker', 'defense4'), 'withDamage'),
+        custom('artificer-tinker-defense', abilityEffectText('tinker', 'defense4'), {
+            timing: 'withDamage',
+        }),
     ],
 };
 
@@ -332,7 +445,9 @@ export const TINKER_2: AbilityDef = {
     sfxKey: ARTIFICER_SFX_METAL,
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 5 },
     effects: [
-        textOnly(abilityEffectText('tinker-2', 'defense5'), 'withDamage'),
+        custom('artificer-tinker-2-defense', abilityEffectText('tinker-2', 'defense5'), {
+            timing: 'withDamage',
+        }),
     ],
 };
 
@@ -348,7 +463,7 @@ const MAXIMUM_POWER: AbilityDef = {
         grantSynth(2, abilityEffectText('maximum-power', 'gainSynth2')),
         inflictNanobomb(1, abilityEffectText('maximum-power', 'inflictNanobomb')),
         damage(10, abilityEffectText('maximum-power', 'damage10')),
-        textOnly(abilityEffectText('maximum-power', 'activateTwoBots'), 'postDamage'),
+        activateBots(abilityEffectText('maximum-power', 'activateTwoBots'), 2),
     ],
 };
 

@@ -93,54 +93,184 @@ export const KUNG_FU_FIGHTERS_CARDS: CardDef[] = [
 ];
 
 export const VIGILANTES_CARDS: CardDef[] = [
-    action('vigilantes_shrug_it_off', '不屑一顾', 'Shrug it Off', VIGILANTES, 1, 12),
-    action('vigilantes_scared_straight', '直面恐惧', 'Scared Straight', VIGILANTES, 1, 13),
-    action('vigilantes_who_loves_ya_baby', '谁爱你，小老弟？', 'Who Loves Ya, Baby?', VIGILANTES, 2, 14),
-    action('vigilantes_a_whole_lot_meaner', '凶恶百倍', 'A Whole Lot Meaner', VIGILANTES, 1, 15),
-    minion('vigilantes_death_wisher', '猛龙怪客', 'Death Wisher', VIGILANTES, 4, 1, 16),
-    action('vigilantes_tough_it_out', '咬紧牙关', 'Tough It Out', VIGILANTES, 2, 17),
-    action('vigilantes_the_revenge', '复仇', 'The Revenge', VIGILANTES, 1, 18),
-    minion('vigilantes_brojak', '神探布洛杰克', 'Brojak', VIGILANTES, 4, 1, 19),
-    minion('vigilantes_stoneford', '破萝飞龙', 'Stoneford', VIGILANTES, 4, 1, 20),
-    minion('vigilantes_jacky_bill', '杰基比尔', 'Jacky Bill', VIGILANTES, 4, 1, 21),
-    action('vigilantes_make_my_day', '一天的快乐', 'Make My Day', VIGILANTES, 1, 22),
-    action('vigilantes_street_justice', '街头正义', 'Street Justice', VIGILANTES, 1, 23),
-    minion('vigilantes_shift', '铁杆神探', 'Shift', VIGILANTES, 4, 1, 24),
-    minion('vigilantes_dusty_henry', '瞌睡的亨利', 'Dusty Henry', VIGILANTES, 4, 1, 25),
-    action('vigilantes_knocked_into_next_week', '打到穿越', 'Knocked into Next Week', VIGILANTES, 1, 26),
-    action('vigilantes_feeling_lucky', '觉得运气不错？', 'Feeling Lucky?', VIGILANTES, 1, 27),
-    action('vigilantes_lets_finish_this', '做个了断吧', "Let's Finish This", VIGILANTES, 1, 28),
-    minion('vigilantes_foxy_green', '狐狸翠', 'Foxy Green', VIGILANTES, 4, 1, 29),
+    action('vigilantes_shrug_it_off', '不屑一顾', 'Shrug it Off', VIGILANTES, 1, 12, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing', 'talent'],
+    }),
+    action('vigilantes_scared_straight', '直面恐惧', 'Scared Straight', VIGILANTES, 1, 13, {
+        abilityTags: ['onPlay'],
+    }),
+    action('vigilantes_who_loves_ya_baby', '谁爱你，小老弟？', 'Who Loves Ya, Baby?', VIGILANTES, 2, 14, {
+        abilityTags: ['onPlay'],
+    }),
+    action('vigilantes_a_whole_lot_meaner', '凶恶百倍', 'A Whole Lot Meaner', VIGILANTES, 1, 15, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('vigilantes_death_wisher', '猛龙怪客', 'Death Wisher', VIGILANTES, 4, 1, 16, {
+        abilityTags: ['ongoing'],
+    }),
+    action('vigilantes_tough_it_out', '咬紧牙关', 'Tough It Out', VIGILANTES, 2, 17, {
+        subtype: 'ongoing',
+        ongoingTarget: 'minion',
+        abilityTags: ['ongoing'],
+    }),
+    action('vigilantes_the_revenge', '复仇', 'The Revenge', VIGILANTES, 1, 18, {
+        subtype: 'special',
+        specialTiming: 'afterScoring',
+        specialNeedsBase: true,
+        abilityTags: ['special'],
+    }),
+    minion('vigilantes_brojak', '神探布洛杰克', 'Brojak', VIGILANTES, 4, 1, 19, {
+        abilityTags: ['ongoing'],
+    }),
+    minion('vigilantes_stoneford', '破萝飞龙', 'Stoneford', VIGILANTES, 4, 1, 20, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('vigilantes_jacky_bill', '杰基比尔', 'Jacky Bill', VIGILANTES, 4, 1, 21, {
+        abilityTags: ['ongoing'],
+    }),
+    action('vigilantes_make_my_day', '一天的快乐', 'Make My Day', VIGILANTES, 1, 22, {
+        abilityTags: ['onPlay'],
+    }),
+    action('vigilantes_street_justice', '街头正义', 'Street Justice', VIGILANTES, 1, 23, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing'],
+    }),
+    minion('vigilantes_shift', '铁杆神探', 'Shift', VIGILANTES, 4, 1, 24, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('vigilantes_dusty_henry', '瞌睡的亨利', 'Dusty Henry', VIGILANTES, 4, 1, 25, {
+        abilityTags: ['onPlay'],
+    }),
+    action('vigilantes_knocked_into_next_week', '打到穿越', 'Knocked into Next Week', VIGILANTES, 1, 26, {
+        abilityTags: ['onPlay'],
+    }),
+    action('vigilantes_feeling_lucky', '觉得运气不错？', 'Feeling Lucky?', VIGILANTES, 1, 27, {
+        subtype: 'ongoing',
+        ongoingTarget: 'minion',
+        abilityTags: ['ongoing'],
+    }),
+    action('vigilantes_lets_finish_this', '做个了断吧', "Let's Finish This", VIGILANTES, 1, 28, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing'],
+    }),
+    minion('vigilantes_foxy_green', '狐狸翠', 'Foxy Green', VIGILANTES, 4, 1, 29, {
+        abilityTags: ['ongoing'],
+    }),
 ];
 
 export const TRUCKERS_CARDS: CardDef[] = [
-    action('truckers_fixin_to_fix_it', '修理', "Fixin' to Fix It", TRUCKERS, 1, 30),
-    action('truckers_dekotora', '暴走卡车', 'Dekotora', TRUCKERS, 1, 31),
-    action('truckers_high_speed_chase', '高速追逐战', 'High-Speed Chase', TRUCKERS, 1, 32),
-    minion('truckers_rubber_chicken', '橡皮鸡', 'Rubber Chicken', TRUCKERS, 4, 2, 33),
-    action('truckers_hotwire', '短路点火', 'Hotwire', TRUCKERS, 1, 34),
-    minion('truckers_skinny_minnie', '皮包骨米妮', 'Skinny Minnie', TRUCKERS, 3, 3, 35),
-    minion('truckers_el_bandido', '埃尔班迪多', 'El Bandido', TRUCKERS, 5, 1, 36),
-    action('truckers_rally', '车友聚会', 'Rally', TRUCKERS, 1, 37),
-    minion('truckers_good_buddy', '好伙伴', 'Good Buddy', TRUCKERS, 2, 4, 38),
-    action('truckers_convoy', '车队', 'Convoy', TRUCKERS, 2, 39),
-    action('truckers_cab_over_pete', '平头彼特', 'Cab-over Pete', TRUCKERS, 1, 40),
-    action('truckers_armored_truck', '装甲卡车', 'Armored Truck', TRUCKERS, 1, 41),
-    action('truckers_turn_the_beat_around', '节拍一转', 'Turn The Beat Around', TRUCKERS, 1, 42),
+    action('truckers_fixin_to_fix_it', '修理', "Fixin' to Fix It", TRUCKERS, 1, 30, {
+        abilityTags: ['onPlay'],
+    }),
+    action('truckers_dekotora', '暴走卡车', 'Dekotora', TRUCKERS, 1, 31, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing', 'talent'],
+    }),
+    action('truckers_high_speed_chase', '高速追逐战', 'High-Speed Chase', TRUCKERS, 1, 32, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing', 'talent'],
+    }),
+    minion('truckers_rubber_chicken', '橡皮鸡', 'Rubber Chicken', TRUCKERS, 4, 2, 33, {
+        abilityTags: ['ongoing'],
+    }),
+    action('truckers_hotwire', '短路点火', 'Hotwire', TRUCKERS, 1, 34, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('truckers_skinny_minnie', '皮包骨米妮', 'Skinny Minnie', TRUCKERS, 3, 3, 35, {
+        abilityTags: ['talent'],
+    }),
+    minion('truckers_el_bandido', '埃尔班迪多', 'El Bandido', TRUCKERS, 5, 1, 36, {
+        abilityTags: ['onPlay', 'talent'],
+    }),
+    action('truckers_rally', '车友聚会', 'Rally', TRUCKERS, 1, 37, {
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+        specialNeedsBase: true,
+        abilityTags: ['special'],
+    }),
+    minion('truckers_good_buddy', '好伙伴', 'Good Buddy', TRUCKERS, 2, 4, 38, {
+        abilityTags: ['onPlay'],
+    }),
+    action('truckers_convoy', '车队', 'Convoy', TRUCKERS, 2, 39, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing'],
+    }),
+    action('truckers_cab_over_pete', '平头彼特', 'Cab-over Pete', TRUCKERS, 1, 40, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing', 'talent'],
+    }),
+    action('truckers_armored_truck', '装甲卡车', 'Armored Truck', TRUCKERS, 1, 41, {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing'],
+    }),
+    action('truckers_turn_the_beat_around', '节拍一转', 'Turn The Beat Around', TRUCKERS, 1, 42, {
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+        specialNeedsBase: true,
+        abilityTags: ['onPlay', 'special'],
+    }),
 ];
 
 export const DISCO_DANCERS_CARDS: CardDef[] = [
-    minion('disco_dancers_diva', '主唱', 'Diva', DISCO_DANCERS, 3, 3, 43),
-    action('disco_dancers_get_down_tonight', '就在今晚', 'Get Down Tonight', DISCO_DANCERS, 2, 44),
-    minion('disco_dancers_ul_disco_lou', '迪斯科·卢', 'UL Disco Lou', DISCO_DANCERS, 4, 2, 45),
-    action('disco_dancers_we_are_family', '我们是一家人', 'We Are Family', DISCO_DANCERS, 1, 46),
-    action('disco_dancers_disco_inferno', '迪斯科地狱', 'Disco Inferno', DISCO_DANCERS, 1, 47),
-    minion('disco_dancers_roller', '轮滑舞娘', 'Roller', DISCO_DANCERS, 2, 4, 48),
-    action('disco_dancers_celebration', '庆祝', 'Celebration', DISCO_DANCERS, 1, 49),
-    action('disco_dancers_i_will_survive', '我会活下去', 'I Will Survive', DISCO_DANCERS, 1, 50),
-    action('disco_dancers_its_raining_men', '男人雨', "It's Raining Men", DISCO_DANCERS, 1, 51),
-    minion('disco_dancers_dancing_king', '舞王', 'Dancing King', DISCO_DANCERS, 5, 1, 52),
-    action('disco_dancers_im_so_excited', '我很亢奋', "I'm So Excited", DISCO_DANCERS, 1, 53),
-    action('disco_dancers_last_dance', '最后的舞曲', 'Last Dance', DISCO_DANCERS, 1, 54),
-    action('disco_dancers_stayin_alive', '活着', "Stayin' Alive", DISCO_DANCERS, 1, 55),
+    minion('disco_dancers_diva', '主唱', 'Diva', DISCO_DANCERS, 3, 3, 43, {
+        abilityTags: ['ongoing'],
+    }),
+    action('disco_dancers_get_down_tonight', '就在今晚', 'Get Down Tonight', DISCO_DANCERS, 2, 44, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('disco_dancers_ul_disco_lou', '迪斯科·卢', 'UL Disco Lou', DISCO_DANCERS, 4, 2, 45, {
+        abilityTags: ['onPlay', 'extra'],
+    }),
+    action('disco_dancers_we_are_family', '我们是一家人', 'We Are Family', DISCO_DANCERS, 1, 46, {
+        subtype: 'ongoing',
+        ongoingTarget: 'minion',
+        abilityTags: ['ongoing'],
+    }),
+    action('disco_dancers_disco_inferno', '迪斯科地狱', 'Disco Inferno', DISCO_DANCERS, 1, 47, {
+        abilityTags: ['onPlay'],
+    }),
+    minion('disco_dancers_roller', '轮滑舞娘', 'Roller', DISCO_DANCERS, 2, 4, 48, {
+        abilityTags: ['ongoing'],
+    }),
+    action('disco_dancers_celebration', '庆祝', 'Celebration', DISCO_DANCERS, 1, 49, {
+        abilityTags: ['onPlay', 'extra'],
+    }),
+    action('disco_dancers_i_will_survive', '我会活下去', 'I Will Survive', DISCO_DANCERS, 1, 50, {
+        subtype: 'special',
+        specialTiming: 'afterScoring',
+        specialNeedsBase: true,
+        abilityTags: ['special'],
+    }),
+    action('disco_dancers_its_raining_men', '男人雨', "It's Raining Men", DISCO_DANCERS, 1, 51, {
+        abilityTags: ['onPlay', 'extra'],
+    }),
+    minion('disco_dancers_dancing_king', '舞王', 'Dancing King', DISCO_DANCERS, 5, 1, 52, {
+        abilityTags: ['ongoing'],
+    }),
+    action('disco_dancers_im_so_excited', '我很亢奋', "I'm So Excited", DISCO_DANCERS, 1, 53, {
+        abilityTags: ['onPlay'],
+    }),
+    action('disco_dancers_last_dance', '最后的舞曲', 'Last Dance', DISCO_DANCERS, 1, 54, {
+        abilityTags: ['onPlay'],
+    }),
+    action('disco_dancers_stayin_alive', '活着', "Stayin' Alive", DISCO_DANCERS, 1, 55, {
+        abilityTags: ['onPlay'],
+    }),
 ];

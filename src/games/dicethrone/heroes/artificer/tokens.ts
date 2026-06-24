@@ -1,4 +1,5 @@
 import type { TokenDef } from '../../domain/tokenTypes';
+import type { PassiveAbilityDef } from '../../domain/passiveAbility';
 import { DICETHRONE_STATUS_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
 
 const tokenText = (id: string, field: 'name' | 'description') => `tokens.${id}.${field}`;
@@ -51,6 +52,20 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/电能机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        activeUse: {
+            timing: ['beforeDamageDealt'],
+            consumeAmount: 1,
+            additionalTokenCosts: [{
+                tokenId: TOKEN_IDS.SYNTH,
+                amount: 2,
+                overrideWhenOwnerTokenLimitAtLeast: {
+                    limit: 2,
+                    amount: 1,
+                },
+            }],
+            requiresAttackDamage: true,
+            effect: { type: 'modifyDamageDealt', value: 3 },
+        },
         frameId: 'shock_bot',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
     },
@@ -60,10 +75,134 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         colorTheme: 'from-lime-300 to-green-800',
         description: tokenText(TOKEN_IDS.HEAL_BOT, 'description') as unknown as string[],
         iconPath: 'dicethrone/images/artificial/status/治疗机器人1次使用机会',
-        stackLimit: 2,
+        stackLimit: 1,
         category: 'consumable',
+        activeUse: {
+            timing: ['beforeDamageReceived'],
+            consumeAmount: 1,
+            additionalTokenCosts: [{
+                tokenId: TOKEN_IDS.SYNTH,
+                amount: 2,
+                overrideWhenOwnerTokenLimitAtLeast: {
+                    limit: 2,
+                    amount: 1,
+                },
+            }],
+            requiresAttackDamage: true,
+            minimumAttackDamage: 6,
+            customActionId: 'artificer-heal-bot-use',
+            effect: { type: 'modifyDamageReceived', value: 0 },
+        },
         frameId: 'heal_bot',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
+    },
+];
+
+export const ARTIFICER_PASSIVE_ABILITIES: PassiveAbilityDef[] = [
+    {
+        id: 'artificer-workshop',
+        nameKey: 'abilities.collect-parts.name',
+        actions: [
+            {
+                type: 'custom',
+                labelKey: 'tokens.nanobot.name',
+                cpCost: 0,
+                tokenCosts: [
+                    { tokenId: TOKEN_IDS.NANOBOT, amount: 1 },
+                    { tokenId: TOKEN_IDS.SYNTH, amount: 2 },
+                ],
+                requiresTokenLimitBelow: { tokenId: TOKEN_IDS.NANOBOT, limit: 2 },
+                timing: 'ownUpkeepPhase',
+                descriptionKey: 'tokens.nanobot.description',
+                customActionId: 'artificer-nanobot-detonate',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.activateNanobotAdvancedShort',
+                cpCost: 0,
+                tokenCosts: [
+                    { tokenId: TOKEN_IDS.NANOBOT, amount: 1 },
+                    { tokenId: TOKEN_IDS.SYNTH, amount: 1 },
+                ],
+                requiresTokens: [{ tokenId: TOKEN_IDS.NANOBOT, amount: 1 }],
+                requiresTokenLimitAtLeast: { tokenId: TOKEN_IDS.NANOBOT, limit: 2 },
+                timing: 'ownUpkeepPhase',
+                descriptionKey: 'passive.artificerWorkshop.activateNanobotAdvanced',
+                customActionId: 'artificer-nanobot-detonate',
+            },
+            {
+                type: 'custom',
+                labelKey: 'statusEffects.nanobomb.name',
+                cpCost: 0,
+                tokenCost: { tokenId: TOKEN_IDS.SYNTH, amount: 4 },
+                timing: 'anytime',
+                descriptionKey: 'abilities.collect-parts.effects.spendSynthForNanobomb',
+                customActionId: 'artificer-synth-inflict-nanobomb',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.buildNanobotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 2 }],
+                requiresTokenBelowLimit: { tokenId: TOKEN_IDS.NANOBOT },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.buildNanobot',
+                customActionId: 'artificer-build-nanobot',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.buildShockBotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 2 }],
+                requiresTokenBelowLimit: { tokenId: TOKEN_IDS.SHOCK_BOT },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.buildShockBot',
+                customActionId: 'artificer-build-shock-bot',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.buildHealBotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 2 }],
+                requiresTokenBelowLimit: { tokenId: TOKEN_IDS.HEAL_BOT },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.buildHealBot',
+                customActionId: 'artificer-build-heal-bot',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.upgradeNanobotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 3 }],
+                requiresTokens: [{ tokenId: TOKEN_IDS.NANOBOT, amount: 1 }],
+                requiresTokenLimitBelow: { tokenId: TOKEN_IDS.NANOBOT, limit: 2 },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.upgradeNanobot',
+                customActionId: 'artificer-upgrade-nanobot',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.upgradeShockBotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 3 }],
+                requiresTokens: [{ tokenId: TOKEN_IDS.SHOCK_BOT, amount: 1 }],
+                requiresTokenLimitBelow: { tokenId: TOKEN_IDS.SHOCK_BOT, limit: 2 },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.upgradeShockBot',
+                customActionId: 'artificer-upgrade-shock-bot',
+            },
+            {
+                type: 'custom',
+                labelKey: 'passive.artificerWorkshop.upgradeHealBotShort',
+                cpCost: 0,
+                tokenCosts: [{ tokenId: TOKEN_IDS.SYNTH, amount: 3 }],
+                requiresTokens: [{ tokenId: TOKEN_IDS.HEAL_BOT, amount: 1 }],
+                requiresTokenLimitBelow: { tokenId: TOKEN_IDS.HEAL_BOT, limit: 2 },
+                timing: 'ownMainPhase',
+                descriptionKey: 'passive.artificerWorkshop.upgradeHealBot',
+                customActionId: 'artificer-upgrade-heal-bot',
+            },
+        ],
     },
 ];
 
@@ -74,4 +213,3 @@ export const ARTIFICER_INITIAL_TOKENS: Record<string, number> = {
     [TOKEN_IDS.SHOCK_BOT]: 0,
     [TOKEN_IDS.HEAL_BOT]: 0,
 };
-

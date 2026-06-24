@@ -47,7 +47,7 @@ import { DICETHRONE_COMMANDS, STATUS_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
-import { getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
+import { getPassiveActionTokenCosts, getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
@@ -1053,16 +1053,16 @@ export function execute(
                 });
             }
 
-            // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉）
-            if (action.tokenCost) {
-                const currentTokenAmount = player.tokens[action.tokenCost.tokenId] ?? 0;
+            // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉、工匠合成器）
+            for (const tokenCost of getPassiveActionTokenCosts(action)) {
+                const currentTokenAmount = player.tokens[tokenCost.tokenId] ?? 0;
                 events.push({
                     type: 'TOKEN_CONSUMED',
                     payload: {
                         playerId: command.playerId,
-                        tokenId: action.tokenCost.tokenId,
-                        amount: action.tokenCost.amount,
-                        newTotal: Math.max(0, currentTokenAmount - action.tokenCost.amount),
+                        tokenId: tokenCost.tokenId,
+                        amount: tokenCost.amount,
+                        newTotal: Math.max(0, currentTokenAmount - tokenCost.amount),
                         sourceAbilityId: passiveId,
                     },
                     sourceCommandType: command.type,

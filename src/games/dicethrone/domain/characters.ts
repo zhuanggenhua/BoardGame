@@ -21,7 +21,7 @@ import { TREANT_ABILITIES, TREANT_TOKENS, TREANT_INITIAL_TOKENS, TREANT_PASSIVE_
 import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDeck } from '../heroes/ninja';
 import { ZHANSHUJIA_ABILITIES, ZHANSHUJIA_TOKENS, ZHANSHUJIA_INITIAL_TOKENS, ZHANSHUJIA_PASSIVE_ABILITIES, getZhanshujiaStartingDeck } from '../heroes/zhanshujia';
 import { CURSED_PIRATE_ABILITIES, CURSED_PIRATE_TOKENS, CURSED_PIRATE_INITIAL_TOKENS, getCursedPirateStartingDeck, getCursedPirateAbilitiesForFace } from '../heroes/cursed_pirate';
-import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, getArtificerStartingDeck } from '../heroes/artificer';
+import { ARTIFICER_ABILITIES, ARTIFICER_TOKENS, ARTIFICER_INITIAL_TOKENS, ARTIFICER_PASSIVE_ABILITIES, getArtificerStartingDeck } from '../heroes/artificer';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -373,6 +373,7 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         },
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
         statusAtlasPath: 'dicethrone/images/artificial/status-icons-atlas.json',
+        passiveAbilities: ARTIFICER_PASSIVE_ABILITIES,
     },
 };
 

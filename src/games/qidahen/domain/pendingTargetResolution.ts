@@ -95,6 +95,7 @@ const buildPostBattleSelection = (
     attackerLosses: number,
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
     battleRollSummary: string | null = null,
+    battleRolls: QidahenBattleRolls | null = null,
     dependencies: Pick<
         QidahenPendingTargetResolutionDependencies,
         'toFactionLabel' | 'getActionRuleDisplayRegionName'
@@ -146,6 +147,7 @@ const buildPostBattleSelection = (
             title: `${pendingTargetAction.targetRegionName} 解围待结算`,
             summary: `${pendingTargetAction.targetRegionName} 围城军已被压制，幸存 ${survivingTroops} 个援军可进驻解围。`,
             battleRollSummary,
+            battleRolls,
             choices: [{
                 id: 'occupy',
                 mode: 'occupy',
@@ -259,6 +261,7 @@ const buildPostBattleSelection = (
         title: '战后处理',
         summary: `${pendingTargetAction.targetRegionName} 已被突破，攻方损失 ${attackerLosses}，幸存 ${survivingTroops}，决定是否占领${canBesiege ? '、围城' : ''}或回退。`,
         battleRollSummary,
+        battleRolls,
         choices,
     };
 };
@@ -295,6 +298,7 @@ interface QidahenPendingTargetResolutionDependencies {
         attackerLosses: number,
         attackerCasualtyPriority?: QidahenCasualtyPriority,
         battleRollSummary?: string | null,
+        battleRolls?: QidahenBattleRolls | null,
     ) => QidahenPostBattleSelection | null;
     toFactionLabel: (
         controller: QidahenRuntimeRegion['controller'],
@@ -1306,6 +1310,7 @@ const resolvePendingBattleTargetAction = (
             survivingSiegeSpecialTroops,
             retreatLossMode,
             structuredBattleText,
+            battleRolls,
             attackerCasualtyPriority,
             dependencies,
         );
@@ -1664,6 +1669,7 @@ const resolvePendingCapturedBattleFollowup = (
     attackerLoss: number,
     battleOutcomeText: string,
     structuredBattleText: string,
+    battleRolls: QidahenBattleRolls | null | undefined,
     remainingTroops: number,
     survivingAttackers: number,
     isCityRegion = false,
@@ -1746,6 +1752,7 @@ const resolvePendingCapturedBattleFollowup = (
             attackerLoss,
             attackerCasualtyPriority,
             structuredBattleText.trim() || null,
+            battleRolls ?? null,
         ),
         logText: null,
         region: null,
@@ -1766,6 +1773,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
     survivingSiegeSpecialTroops: QidahenSpecialTroopStack[],
     retreatLossMode: QidahenRetreatLossMode,
     structuredBattleText: string,
+    battleRolls: QidahenBattleRolls | null | undefined,
     attackerCasualtyPriority: QidahenCasualtyPriority = 'highest-level',
     dependencies: Pick<
         QidahenPendingTargetResolutionDependencies,
@@ -1796,6 +1804,7 @@ const resolvePendingSiegeAttackerBattleOutcome = (
                 attackerLoss,
                 attackerCasualtyPriority,
                 structuredBattleText.trim() || null,
+                battleRolls,
             ),
             sourceTroopLoss: 0,
             attackerRetreatSpecialTroops: null,
@@ -1917,6 +1926,7 @@ const resolvePendingGenericBattleOutcome = (
             attackerLoss,
             battleOutcomeText,
             structuredBattleText,
+            battleRolls,
             remainingTroops,
             survivingAttackers,
             isCityRegion,

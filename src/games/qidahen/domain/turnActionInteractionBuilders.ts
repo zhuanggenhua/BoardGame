@@ -114,7 +114,7 @@ function buildQidahenRecruitInteraction(
             sourceId: QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `当前目标 ${selection.targetRegionName ?? '未锁定'} · 可切换到其他己方控制区后再决定建军方式`,
+            subtitle: `准备在 ${selection.targetRegionName ?? '先选地区'} 建军 · 也可先换别的己方区域`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenRecruitInteraction;
@@ -151,7 +151,7 @@ function buildQidahenDiplomacyInteraction(
             sourceId: QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `源区 ${selection.sourceRegionName ?? '未锁定'} · 当前目标 ${selection.targetRegionName ?? '未锁定'} · 还可继续 ${selection.remainingTargetCount} 次`,
+            subtitle: `从 ${selection.sourceRegionName ?? '当前区域'} 出发 · 当前看向 ${selection.targetRegionName ?? '待选目标'} · 还可再做 ${selection.remainingTargetCount} 次`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenDiplomacyInteraction;
@@ -181,10 +181,10 @@ function buildQidahenWheelDispatchInteraction(
 
     const options = selection.candidates.map((candidate) => ({
         id: candidate.targetRuntimeRegionId,
-        label: `${candidate.targetRegionName} · 防守 ${candidate.defenderLabel}`,
+        label: `进攻 ${candidate.targetRegionName} · 守方 ${candidate.defenderLabel}`,
         value: { choiceId: candidate.targetRuntimeRegionId },
         displayMode: 'button' as const,
-        description: `${candidate.resolutionHint} · 源兵 ${candidate.sourceAvailableTroops} · 投入 ${candidate.committedTroops} · 压力 ${candidate.attackPressure} · 耗 ${candidate.totalTravelCost}`,
+        description: `${candidate.resolutionHint} · 出兵 ${candidate.committedTroops} · 路耗 ${candidate.totalTravelCost}`,
     }));
 
     const interaction = createSimpleChoice(
@@ -196,7 +196,7 @@ function buildQidahenWheelDispatchInteraction(
             sourceId: QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `源区 ${selection.sourceRegionName} · 可选目标 ${selection.candidates.length} · 也可继续点击地图高亮区锁定目标`,
+            subtitle: `从 ${selection.sourceRegionName} 出发 · 可去 ${selection.candidates.length} 处 · 也可直接点地图高亮区`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenWheelDispatchInteraction;
@@ -234,7 +234,7 @@ function buildQidahenInternalDispatchInteraction(
             sourceId: QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `源区 ${selection.sourceRegionName} · 最多调度 ${selection.maxTroops} 部队 · 也可直接点击地图绿色目标完成调度`,
+            subtitle: `从 ${selection.sourceRegionName} 出发 · 最多调 ${selection.maxTroops} 个部队 · 也可直接点地图绿色目标`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenInternalDispatchInteraction;
@@ -273,7 +273,7 @@ function buildQidahenMaShiTradeInteraction(
             sourceId: QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `当前目标 ${selection.targetRegionName ?? '未锁定'} · 可切换到其他大明控制区后再决定建立数量`,
+            subtitle: `准备在 ${selection.targetRegionName ?? '先选地区'} 建军 · 也可先换别的大明区域`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenMaShiTradeInteraction;
@@ -312,7 +312,7 @@ function buildQidahenKhanEdictInteraction(
             sourceId: QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `当前区域 ${selection.sourceRegionName ?? '未锁定'} · 可切换地图选中区后再决定`,
+            subtitle: `准备在 ${selection.sourceRegionName ?? '先选地区'} 执行 · 也可先换地图区域`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenKhanEdictInteraction;
@@ -355,7 +355,7 @@ function buildQidahenDriveTigerConsentInteraction(
             sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `${selection.targetFactionName} 是否同意接受大明指挥；同意后才会抽 6 张牌并进入调度进攻`,
+            subtitle: `先问 ${selection.targetFactionName} 愿不愿听大明指挥；同意后抽 6 张牌，再由其出兵进攻`,
         },
     ) as QidahenDriveTigerConsentInteraction;
 

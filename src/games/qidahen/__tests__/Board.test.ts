@@ -52,6 +52,7 @@ const REQUIRED_TEST_IDS = [
     '年中',
     'data-testid="qidahen-raid-intent"',
     'data-testid="qidahen-post-battle-selection"',
+    'data-testid="qidahen-post-battle-dice-summary"',
     'data-testid={`qidahen-post-battle-choice-${choice.id}`}',
     'data-testid="qidahen-wheel-dispatch-selection"',
     'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
@@ -97,7 +98,6 @@ const FORBIDDEN_LEGACY_TITLES = [
     '结束行动',
     '当前年度',
     '势力状态',
-    '战斗',
     '待处理',
     '地图缩放',
     '行动记录',
@@ -218,21 +218,21 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
         expect(boardSource).toContain('showWheelNextStepBanner');
-        expect(boardSource).toContain('去点绿色扇区');
+        expect(boardSource).toContain('点左上轮盘');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
-        expect(boardSource).toContain("defaultValue: '绿色扇区就是可点入口'");
+        expect(boardSource).toContain("defaultValue: '发亮的绿色格就是下一步'");
         expect(boardSource).toContain('点这里');
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
     });
 
     it('一级行动面板会自动锁定当前主流程，并直接暴露二级行动而不是再加一级选择按钮', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain("return selectedAction ? `本次行动：${selectedAction.label}` : '先选一项行动';");
+        expect(boardSource).toContain("return selectedAction ? `正在执行：${selectedAction.label}` : '先选一项行动';");
         expect(boardSource).toContain("return '先从右侧选一项行动';");
-        expect(boardSource).toContain("return '先点地图上的绿色目标';");
-        expect(boardSource).toContain(": '去点一个绿色扇区';");
-        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '现在做什么' })");
+        expect(boardSource).toContain("return '点亮起的绿色区域继续';");
+        expect(boardSource).toContain(": '点左上发亮的绿色格';");
+        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
         expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
         expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
         expect(boardSource).toContain('qidahen-primary-action-next-step');
@@ -253,6 +253,16 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("t('board.actions.tooltipCost', {");
         expect(boardSource).toContain('{action.label}');
         expect(boardSource).toContain('{action.detail}');
+    });
+
+    it('战后处理必须展示本次掷骰本体，而不是只剩文字摘要', () => {
+        expect(boardSource).toContain('const formatQidahenBattleRollPhaseLabel = (phase: QidahenBattleRollPhase): string => {');
+        expect(boardSource).toContain('const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (');
+        expect(boardSource).toContain('const QidahenBattleRollDiceSummary: React.FC<');
+        expect(boardSource).toContain('data-testid="qidahen-post-battle-dice-summary"');
+        expect(boardSource).toContain('{postBattleSelection.battleRolls ? (');
+        expect(boardSource).toContain('<QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />');
+        expect(boardSource).toContain("defaultValue: '{{summary}} · 幸存 {{survivingTroops}}'");
     });
 
     it('地图必须共享缩放拖动视口，并让高亮路线与顶层点击点一起跟随同一套投影', () => {

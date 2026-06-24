@@ -412,7 +412,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('紧凑横屏布局会收掉回合区重复动作按钮，并避免重复渲染回合区', () => {
+    it('1024 宽度的 PC 横屏不再切紧凑壳，继续使用同一张正式牌桌', () => {
         const originalInnerWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
@@ -423,7 +423,8 @@ describe('FantasyRealms Board foundation', () => {
         try {
             renderBoard();
 
-            expect(screen.getByTestId('fantasyrealms-compact-layout')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-compact-layout')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-table').closest('.fr-board')).toHaveClass('fr-board--minimal-live');
             expect(screen.getByTestId('fantasyrealms-live-table')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-topbar')).toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
@@ -440,7 +441,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('紧凑横屏布局不再切到另一套牌库面板，而是继续复用 live 牌桌对象', () => {
+    it('1024 宽度的 PC 横屏继续复用 live 牌库对象，不再进入 compact 包装', () => {
         const originalInnerWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
@@ -450,7 +451,7 @@ describe('FantasyRealms Board foundation', () => {
 
         try {
             renderBoard();
-            expect(screen.getByTestId('fantasyrealms-compact-layout')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-compact-layout')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-deck')).toBeInTheDocument();
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
         } finally {
@@ -465,14 +466,15 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('矮横屏紧凑布局会让位给手牌区，不再常驻当前焦点面板', () => {
+    it('矮横屏会让位给手牌区，不再常驻当前焦点面板', () => {
         withViewport(844, 390, () => {
             renderBoard(makeCore({
                 stage: 'discard',
                 focusCardId: HAND_CARDS[0]!.id,
             }));
 
-            expect(screen.getByTestId('fantasyrealms-compact-layout')).toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-compact-layout')).not.toBeInTheDocument();
+            expect(screen.getByTestId('fantasyrealms-live-table').closest('.fr-board')).toHaveClass('fr-board--minimal-live');
             expect(screen.queryByTestId('fantasyrealms-compact-focus-rail')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
@@ -508,7 +510,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('紧凑横屏布局会保留同一张牌桌主壳，只把焦点压到次级区', () => {
+    it('1024x768 不再渲染 compact 包装，仍保留同一张正式牌桌主壳', () => {
         const originalInnerWidth = window.innerWidth;
         const originalInnerHeight = window.innerHeight;
         Object.defineProperty(window, 'innerWidth', {
@@ -597,12 +599,11 @@ describe('FantasyRealms Board foundation', () => {
                 } as any,
             }));
 
-            const compactLayout = screen.getByTestId('fantasyrealms-compact-layout');
             const liveTable = screen.getByTestId('fantasyrealms-live-table');
-            const directChildren = Array.from(compactLayout.children);
+            const boardShell = liveTable.closest('.fr-board');
 
-            expect(directChildren[0]).toBe(liveTable);
-            expect(directChildren).toHaveLength(1);
+            expect(screen.queryByTestId('fantasyrealms-compact-layout')).not.toBeInTheDocument();
+            expect(boardShell).toHaveClass('fr-board--minimal-live');
             expect(screen.getByTestId('fantasyrealms-live-topbar')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-center-row')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
@@ -625,7 +626,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('低高度横屏仍保留同一张牌桌主壳，只在外层使用紧凑横屏包装', () => {
+    it('低高度横屏仍保留同一张牌桌主壳，不再切出另一套紧凑横屏包装', () => {
         const originalInnerWidth = window.innerWidth;
         const originalInnerHeight = window.innerHeight;
         Object.defineProperty(window, 'innerWidth', {
@@ -692,13 +693,11 @@ describe('FantasyRealms Board foundation', () => {
                 } as any,
             }));
 
-            const compactLayout = screen.getByTestId('fantasyrealms-compact-layout');
-            const directChildren = Array.from(compactLayout.children);
             const liveTable = screen.getByTestId('fantasyrealms-live-table');
+            const boardShell = liveTable.closest('.fr-board');
 
-            expect(compactLayout.className).toContain('fr-compact-layout--tight-landscape');
-            expect(directChildren[0]).toBe(liveTable);
-            expect(directChildren).toHaveLength(1);
+            expect(screen.queryByTestId('fantasyrealms-compact-layout')).not.toBeInTheDocument();
+            expect(boardShell).toHaveClass('fr-board--minimal-live');
             expect(screen.getByTestId('fantasyrealms-live-topbar')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-center-row')).toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
@@ -918,10 +917,10 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(centerButtons).toHaveLength(9);
             expect(discardRow.style.width).toBe('1460px');
-            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)' });
-            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -414px)' });
-            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + -154px)' });
-            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)' });
+            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)' });
+            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)' });
+            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)' });
+            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)' });
         });
     });
 
@@ -962,12 +961,12 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('手牌与焦点区使用正式单卡面资源而不是程序文字卡', () => {
+    it('手牌与中央牌区使用正式单卡面资源而不是程序文字卡', () => {
         renderBoard();
 
         const handRow = screen.getByTestId('fantasyrealms-hand-row');
         const handCards = within(handRow).getAllByTestId('fantasyrealms-card');
-        const focusPreview = screen.getByTestId('fantasyrealms-focus-preview');
+        const discardCards = within(screen.getByTestId('fantasyrealms-discard-row')).getAllByTestId('fantasyrealms-card');
 
         expect(handCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
         expect(handCards[0]).toHaveAttribute('data-atlas-card-id', HAND_CARDS[0]!.id);
@@ -975,9 +974,10 @@ describe('FantasyRealms Board foundation', () => {
         expect(handCards[0].style.backgroundPosition).toBe('center center');
         expect(handCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${HAND_CARDS[0]!.id}.webp`);
 
-        expect(focusPreview).toHaveAttribute('data-card-renderer', 'atlas');
-        expect(focusPreview).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[0]!.id);
-        expect(focusPreview.getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${PUBLIC_CARDS[0]!.id}.webp`);
+        expect(discardCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
+        expect(discardCards[0]).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
+        expect(discardCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${PUBLIC_CARDS[2]!.id}.webp`);
+        expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
     });
 
     it('桌面 live 页只保留最小动作与数值，不再显示描述性标题和说明', () => {
@@ -997,9 +997,9 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('双人真实开局空弃牌时保留显式摸牌入口，不自动吞掉动作区', () => {
+    it('双人真实开局空弃牌时会自动摸牌，不再额外停留一级摸牌按钮', async () => {
         const dispatch = vi.fn();
-        withViewport(1440, 1024, () => {
+        await withViewportAsync(1440, 1024, async () => {
             renderBoard(makeDuelOpeningCore({
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
             }), { dispatch });
@@ -1009,11 +1009,10 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
             expect(screen.queryByText('回合')).not.toBeInTheDocument();
-            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
-            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
-            expect(drawActionButton).toBeEnabled();
-            expect(dispatch).not.toHaveBeenCalled();
-            fireEvent.click(drawActionButton);
+            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            await waitFor(() => {
+                expect(dispatch).toHaveBeenCalledTimes(1);
+            });
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         });
     });
@@ -1100,7 +1099,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('双人开局空手时，桌面 live 预留基础 7 槽占位并保留摸牌入口', () => {
+    it('双人开局空手时，桌面 live 预留基础 7 槽占位并自动摸牌', async () => {
         const originalInnerWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', {
             configurable: true,
@@ -1122,11 +1121,10 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-slot-count', '7');
             expect(screen.getByTestId('fantasyrealms-hand-row')).toHaveAttribute('data-hand-density', 'default');
             expect(screen.getAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(7);
-            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
-            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
-            expect(drawActionButton).toBeEnabled();
-            expect(dispatch).not.toHaveBeenCalled();
-            fireEvent.click(drawActionButton);
+            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            await waitFor(() => {
+                expect(dispatch).toHaveBeenCalledTimes(1);
+            });
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         } finally {
             Object.defineProperty(window, 'innerWidth', {
@@ -1202,9 +1200,22 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('中央牌区进入两排后保持固定交错槽位，下排从左往右填充且不随牌数重新居中', () => {
+    it('中央牌区少牌时仍保持满 10 张的固定槽位，两排后下排继续从左往右交错铺开', () => {
         withViewport(1440, 1024, () => {
-            renderBoard(makeCore({
+            const view = renderBoard(makeCore({
+                discardPile: PUBLIC_CARDS.slice(0, 2).map((card) => ({ ...card })),
+            }));
+
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+
+            expect(discardButtons).toHaveLength(2);
+            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
+            expect(discardButtons[1]).toHaveStyle({ left: 'calc(50% + -310px)', top: '8px', zIndex: '1' });
+            view.unmount();
+        });
+
+        withViewport(1440, 1024, () => {
+            const view = renderBoard(makeCore({
                 discardPile: HAND_CARDS.slice(0, 6)
                     .concat(PUBLIC_CARDS.slice(0, 3))
                     .map((card) => ({ ...card })),
@@ -1215,8 +1226,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(discardButtons).toHaveLength(9);
             expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
             expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 470px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', top: '210px', zIndex: '2' });
+            view.unmount();
         });
     });
 
@@ -1232,11 +1244,11 @@ describe('FantasyRealms Board foundation', () => {
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
 
             expect(discardButtons).toHaveLength(10);
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -674px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -414px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -154px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 106px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 366px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 340px)', top: '210px', zIndex: '2' });
         });
     });
 
@@ -1248,12 +1260,16 @@ describe('FantasyRealms Board foundation', () => {
             const magnifyButton = screen.getByTestId(`fantasyrealms-card-magnify-button-discard-${PUBLIC_CARDS[2]!.id}`);
 
             expect(magnifyOverlay).toHaveStyle({ opacity: '0' });
+            expect(magnifyOverlay).toHaveAttribute('aria-hidden', 'true');
+            expect(within(magnifyOverlay).queryByRole('button', { name: '关闭预览' })).not.toBeInTheDocument();
 
             act(() => {
                 fireEvent.click(magnifyButton);
             });
 
             expect(magnifyOverlay).toHaveStyle({ opacity: '1' });
+            expect(magnifyOverlay).toHaveAttribute('aria-hidden', 'false');
+            expect(within(magnifyOverlay).getByRole('button', { name: '关闭预览' })).toBeInTheDocument();
             expect(within(magnifyOverlay).getByTestId('fantasyrealms-card')).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
         });
     });
@@ -1326,22 +1342,21 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('紧凑横屏布局下公开弃牌焦点只保留牌名与分值，不再常驻拿牌说明正文', () => {
+    it('公开弃牌聚焦后不再渲染旧焦点面板，只保留卡牌本体选中态', () => {
         const focusCard = PUBLIC_CARDS[0]!;
         withViewport(1024, 768, () => {
             renderBoard(makeCore({
                 focusCardId: focusCard.id,
             }));
 
-            const focusPanel = screen.getAllByText('当前焦点')[0]!.closest('section');
-            expect(focusPanel).not.toBeNull();
-            expect(screen.getAllByText(focusCard.displayNameZh).length).toBeGreaterThan(0);
-            expect(within(focusPanel as HTMLElement).getByText(/^[+-]\d+$/)).toBeInTheDocument();
+            const focusCardButton = screen.getByRole('button', { name: `拿取弃牌 ${focusCard.displayNameZh}` });
+            expect(focusCardButton.className).toContain('fr-card-button--selected');
+            expect(screen.queryByText('当前焦点')).not.toBeInTheDocument();
             expect(screen.queryByText(new RegExp(`若现在拿走 ${focusCard.displayNameZh}`))).not.toBeInTheDocument();
         });
     });
 
-    it('紧凑横屏布局下手牌焦点只保留牌名与分值，不再常驻弃牌说明正文', () => {
+    it('手牌聚焦后不再渲染旧焦点面板，只保留手牌本体选中态', () => {
         const focusCard = HAND_CARDS[0]!;
         withViewport(1024, 768, () => {
             renderBoard(makeCore({
@@ -1350,17 +1365,16 @@ describe('FantasyRealms Board foundation', () => {
                 discardPile: [],
             }));
 
-            const focusPanel = screen.getAllByText('当前焦点')[0]!.closest('section');
-            expect(focusPanel).not.toBeNull();
-            expect(screen.getAllByText(focusCard.displayNameZh).length).toBeGreaterThan(0);
-            expect(within(focusPanel as HTMLElement).getByText(/^[+-]\d+$/)).toBeInTheDocument();
+            const focusCardButton = screen.getByRole('button', { name: `弃置手牌 ${focusCard.displayNameZh}` });
+            expect(focusCardButton.className).toContain('fr-card-button--selected');
+            expect(screen.queryByText('当前焦点')).not.toBeInTheDocument();
             expect(screen.queryByText(new RegExp(`若现在弃掉 ${focusCard.displayNameZh}`))).not.toBeInTheDocument();
         });
     });
 
-    it('多人基础版无公开弃牌时也保留摸牌入口，并只保留短状态和阈值数字', () => {
+    it('多人基础版无公开弃牌时会自动摸牌，并只保留短状态和阈值数字', async () => {
         const dispatch = vi.fn();
-        withViewport(1440, 1024, () => {
+        await withViewportAsync(1440, 1024, async () => {
             renderBoard(makeCore({
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
                 playerIds: ['0', '1', '2'],
@@ -1403,16 +1417,15 @@ describe('FantasyRealms Board foundation', () => {
             }), { dispatch });
 
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
-            const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
-            const drawActionButton = within(actionZone).getByRole('button', { name: /摸牌/ });
-            expect(drawActionButton).toBeEnabled();
+            expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
             expect(screen.getByText('0/10')).toBeInTheDocument();
             expect(screen.getByText('当前总分')).toBeInTheDocument();
             expect(screen.queryByText(/当前为 3 人基础版/)).not.toBeInTheDocument();
             expect(screen.queryByText(/第 \d+ 名/)).not.toBeInTheDocument();
-            expect(dispatch).not.toHaveBeenCalled();
-            fireEvent.click(drawActionButton);
+            await waitFor(() => {
+                expect(dispatch).toHaveBeenCalledTimes(1);
+            });
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
         });
     });
@@ -1596,7 +1609,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('紧凑横屏布局下等待他人行动时不会泄露其他玩家的隐藏手牌焦点，并会提示多人局隐藏信息规则', () => {
+    it('等待他人行动时不会泄露其他玩家的隐藏手牌焦点，也不会再渲染旧焦点面板', () => {
         const hiddenOpponentCard = HAND_CARDS[5]!;
         const publicDiscardCard = PUBLIC_CARDS[0]!;
         withViewport(1024, 768, () => {
@@ -1643,17 +1656,15 @@ describe('FantasyRealms Board foundation', () => {
                 } as any,
             }));
 
-            expect(screen.getAllByText('当前焦点')).toHaveLength(1);
-            expect(screen.getByText('焦点暂不可见')).toBeInTheDocument();
-            expect(screen.getByText('--')).toBeInTheDocument();
+            expect(screen.queryByText('当前焦点')).not.toBeInTheDocument();
+            expect(screen.queryByText('焦点暂不可见')).not.toBeInTheDocument();
             expect(screen.getByRole('button', { name: `查看弃牌 ${publicDiscardCard.displayNameZh}` })).toBeInTheDocument();
             expect(screen.queryByText(hiddenOpponentCard.displayNameZh)).not.toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'back');
-            expect(screen.getByTestId('fantasyrealms-focus-preview').getAttribute('style')).toContain('fantasyrealms-base-card-back');
+            expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
         });
     });
 
-    it('经过 playerView 遮蔽后，hiddenFocusCard 仍会让焦点预览保持牌背', () => {
+    it('经过 playerView 遮蔽后，不会渲染旧焦点预览，也不会泄露隐藏焦点信息', () => {
         withViewport(1024, 768, () => {
             renderBoard(makeCore({
                 playerIds: ['0', '1', '2'],
@@ -1709,8 +1720,9 @@ describe('FantasyRealms Board foundation', () => {
                 } as any,
             }));
 
-            expect(screen.getByText('焦点暂不可见')).toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'back');
+            expect(screen.queryByText('焦点暂不可见')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
+            expect(screen.queryByText('隐藏卡牌')).not.toBeInTheDocument();
         });
     });
 
@@ -1772,7 +1784,7 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByRole('button', { name: /查看手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByRole('button', { name: /弃置手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByText(hiddenOpponentCard.displayNameZh)).not.toBeInTheDocument();
-            expect(screen.getByTestId('fantasyrealms-focus-preview')).toHaveAttribute('data-card-renderer', 'back');
+            expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
 
             const scoreTable = screen.getByLabelText('玩家分数总览');
             expect(within(scoreTable).queryByText('终局揭示')).toBeNull();
