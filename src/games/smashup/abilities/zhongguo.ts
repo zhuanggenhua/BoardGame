@@ -15,6 +15,7 @@ import {
     buildMinionTargetOptions,
     buildSemanticOngoingAttachEvents,
     buildStandardDrawEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -1078,7 +1079,8 @@ const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionC
             responseValidationMode: 'live',
         },
     ),
-    onResolve: ({ state, context, value, timestamp, random }) => {
+    onResolve: (args) => {
+        const { state, context, value, timestamp } = args;
         const selected = value as BaseChoice | undefined;
         if (!context.selectedMinionUid || context.fromBaseIndex === undefined || selected?.baseIndex === undefined) {
             return { events: [] };
@@ -1101,7 +1103,7 @@ const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionC
             events: [
                 ...moveEvents,
                 ...(context.drawAfter && moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)
-                    ? buildStandardDrawEvents(state, context.playerId, 1, random, timestamp)
+                    ? buildStandardDrawEventsFromRuntimeContext(args, context.playerId, 1)
                     : []),
                 ...(context.extraActionAfter && moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)
                     ? [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceDefId)]
