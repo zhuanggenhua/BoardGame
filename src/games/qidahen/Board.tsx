@@ -301,7 +301,7 @@ const projectQidahenMapPointToStage = (
 const formatQidahenCandidateRegionSummary = (regionNames: string[]): string => {
     const uniqueNames = Array.from(new Set(regionNames.filter((name) => name.trim().length > 0)));
     if (uniqueNames.length <= 0) {
-        return '暂无可点击区域';
+        return '暂无可选地区';
     }
     if (uniqueNames.length <= 4) {
         return uniqueNames.join('、');
@@ -318,7 +318,7 @@ const buildQidahenPrimaryStageHeadline = (
         if (core.wheelActionUsed) {
             return '轮盘这一步已做完';
         }
-        return '点左上轮盘';
+        return '选择轮盘行动';
     }
     if (primaryStageMode === 'faction') {
         if (core.factionActionUsed) {
@@ -337,7 +337,7 @@ const buildQidahenPrimaryStageHint = (
     if (primaryStageMode === 'wheel') {
         return core.wheelActionUsed
             ? '等待本轮其他结算'
-            : '发亮的绿色格就是下一步';
+            : '选择轮盘行动';
     }
     if (primaryStageMode === 'faction') {
         if (!selectedAction) {
@@ -346,7 +346,7 @@ const buildQidahenPrimaryStageHint = (
         if (selectedAction.id === 'upgrade-armament') {
             return '确认后升级军备';
         }
-        return '点亮起的绿色区域继续';
+        return '选择行动目标';
     }
     return '等待下一步';
 };
@@ -361,7 +361,7 @@ const buildQidahenPrimaryActionEntryText = (
     if (core.factionActionUsed) {
         return core.wheelActionUsed
             ? '等待本轮其他结算'
-            : '点左上发亮的绿色格';
+            : '选择轮盘行动';
     }
     switch (selectedAction.id) {
         case 'raid':
@@ -371,7 +371,7 @@ const buildQidahenPrimaryActionEntryText = (
         case 'khan-edict':
         case 'recruit':
         case 'ma-shi-trade':
-            return '点亮起的绿色区域继续';
+            return '选择行动目标';
         case 'upgrade-armament':
             return '确认弃牌后升级军备';
         default:
@@ -1550,7 +1550,7 @@ const MapSceneLayer: React.FC<{
                 sourceRegionId: wheelDispatchSelection.sourceRegionId,
                 title: '点一个进攻目标',
                 hint: `${wheelDispatchSelection.sourceRegionName} 出发`,
-                badgeLabel: '地图可点',
+                badgeLabel: '选择目标',
                 candidates: wheelDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.targetRuntimeRegionId,
                     targetRegionId: candidate.targetRuntimeRegionId,
@@ -1568,7 +1568,7 @@ const MapSceneLayer: React.FC<{
                     ? '点一个调度目标'
                     : '先弃 1 张牌',
                 hint: `${core.gaoDiDispatchSelection.sourceRegionName} 出发`,
-                badgeLabel: '地图可点',
+                badgeLabel: '选择目标',
                 candidates: core.gaoDiDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     targetRegionId: candidate.targetRegionId,
@@ -1584,7 +1584,7 @@ const MapSceneLayer: React.FC<{
                 sourceRegionId: internalDispatchSelection.sourceRegionId,
                 title: '点一个调度目标',
                 hint: `${internalDispatchSelection.sourceRegionName} 出发`,
-                badgeLabel: '地图可点',
+                badgeLabel: '选择目标',
                 candidates: internalDispatchSelection.candidates.map((candidate) => ({
                     id: candidate.id,
                     targetRegionId: candidate.targetRegionId,
@@ -1929,12 +1929,6 @@ const MapSceneLayer: React.FC<{
                     </div>
                     <div className="mt-1 text-[12px] font-black leading-5" style={{ color: mapSelectionBannerInteractive ? '#dbf5cf' : '#f3d1a5' }}>
                         {mapSelectionGuide.hint}
-                    </div>
-                    <div className="mt-1 border-t pt-1.5 text-[10px] font-black leading-4" style={{ borderColor: 'rgba(231,255,221,0.18)', color: mapSelectionBannerInteractive ? '#e7ffd8' : '#f6d5a8' }}>
-                        {t('board.map.clickableRegionSummary', {
-                            summary: mapSelectionGuide.candidateSummary,
-                            defaultValue: '可点：{{summary}}',
-                        })}
                     </div>
                 </div>
             ) : null}
@@ -2369,7 +2363,7 @@ const WheelPanel: React.FC<{
                         borderRadius: 3,
                     }}
                 >
-                    {t('board.actions.wheelExecutePrompt', { defaultValue: '点左上发亮的绿色格' })}
+                    {t('board.actions.wheelExecutePrompt', { defaultValue: '选择轮盘行动' })}
                 </div>
             ) : null}
         </div>
@@ -2602,6 +2596,9 @@ const ActionsZone: React.FC<{
     const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
     const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
     const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedAction);
+    const showPrimaryStageHint = primaryStageHint !== primaryStageHeadline;
+    const showPrimaryActionEntry = primaryActionEntryText !== primaryStageHeadline
+        && primaryActionEntryText !== primaryStageHint;
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
     const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
     const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
@@ -2695,21 +2692,25 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : null}
                 </div>
-                <div className="mt-2 text-[11px] font-black leading-5" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
-                    {primaryStageHint}
-                </div>
-                <div
-                    className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
-                    data-testid="qidahen-primary-action-next-step"
-                    style={{
-                        borderColor: 'rgba(232,200,133,0.2)',
-                        background: 'rgba(246,213,168,0.08)',
-                        color: UI_STYLE.mapIvory,
-                        borderRadius: 3,
-                    }}
-                >
-                    {primaryActionEntryText}
-                </div>
+                {showPrimaryStageHint ? (
+                    <div className="mt-2 text-[11px] font-black leading-5" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
+                        {primaryStageHint}
+                    </div>
+                ) : null}
+                {showPrimaryActionEntry ? (
+                    <div
+                        className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
+                        data-testid="qidahen-primary-action-next-step"
+                        style={{
+                            borderColor: 'rgba(232,200,133,0.2)',
+                            background: 'rgba(246,213,168,0.08)',
+                            color: UI_STYLE.mapIvory,
+                            borderRadius: 3,
+                        }}
+                    >
+                        {primaryActionEntryText}
+                    </div>
+                ) : null}
             </div>
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
             {showWheelNextStepBanner ? (
@@ -2723,12 +2724,12 @@ const ActionsZone: React.FC<{
                     </div>
                     <div data-testid="qidahen-wheel-next-step-title">
                         {t('board.actions.wheelNextStepTitle', {
-                            defaultValue: '点左上轮盘',
+                            defaultValue: '选择轮盘行动',
                         })}
                     </div>
                     <div className="mt-1 text-[11px] leading-5" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
                         {t('board.actions.wheelNextStepHint', {
-                            defaultValue: '发亮的绿色格就是下一步',
+                            defaultValue: '本次轮盘行动待执行',
                         })}
                     </div>
                     <div className="mt-3 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">

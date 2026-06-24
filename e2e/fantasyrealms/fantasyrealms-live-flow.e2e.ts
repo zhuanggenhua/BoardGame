@@ -526,6 +526,21 @@ async function getLocatorRects(page: Page, selector: string) {
     }));
 }
 
+async function waitForLocatorRectsToSettle(page: Page, selector: string, timeoutMs = 3000) {
+    const deadline = Date.now() + timeoutMs;
+    let previousSignature: string | null = null;
+    while (Date.now() < deadline) {
+        const rects = await getLocatorRects(page, selector);
+        const signature = JSON.stringify(rects);
+        if (rects.length > 0 && signature === previousSignature) {
+            return rects;
+        }
+        previousSignature = signature;
+        await page.waitForTimeout(120);
+    }
+    return getLocatorRects(page, selector);
+}
+
 async function expectTurnChipPrimaryReadable(page: Page) {
     const turnChip = page.locator('.fr-live-chip--turn').first();
     const metrics = await turnChip.evaluate((element) => {
@@ -1352,7 +1367,7 @@ test.describe('FantasyRealms live flow', () => {
             await injectCore(page, fullTenDiscardCore());
             await expect(page.getByText('你的回合')).toBeVisible();
 
-            const fullRowRects = await getLocatorRects(page, '.fr-card-button--live-center');
+            const fullRowRects = await waitForLocatorRectsToSettle(page, '.fr-card-button--live-center');
             expect(fullRowRects).toHaveLength(10);
 
             const topRowRects = fullRowRects.slice(0, 5);
@@ -1363,7 +1378,7 @@ test.describe('FantasyRealms live flow', () => {
 
             await injectCore(page, drawStageCore());
             await expect(page.getByText('你的回合')).toBeVisible();
-            const lowCountRects = await getLocatorRects(page, '.fr-card-button--live-center');
+            const lowCountRects = await waitForLocatorRectsToSettle(page, '.fr-card-button--live-center');
             expect(lowCountRects).toHaveLength(2);
 
             expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);

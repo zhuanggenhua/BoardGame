@@ -1226,8 +1226,8 @@ describe('FantasyRealms Board foundation', () => {
             expect(discardButtons).toHaveLength(9);
             expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
             expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 470px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', zIndex: '2' });
             view.unmount();
         });
     });
@@ -1244,11 +1244,11 @@ describe('FantasyRealms Board foundation', () => {
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
 
             expect(discardButtons).toHaveLength(10);
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', top: '210px', zIndex: '2' });
-            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 340px)', top: '210px', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', zIndex: '2' });
+            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)', zIndex: '2' });
+            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', zIndex: '2' });
+            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 340px)', zIndex: '2' });
         });
     });
 

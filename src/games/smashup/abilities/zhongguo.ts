@@ -25,6 +25,7 @@ import {
     grantContextualExtraMinion,
     modifyBreakpoint,
     removePowerCounter,
+    recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
 import {
     registerBaseVpModifier,
@@ -52,7 +53,7 @@ import {
     type TempPowerAddedEvent,
 } from '../domain/types';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
-import { getCardDef } from '../data/cards';
+import { getBaseDef, getCardDef } from '../data/cards';
 
 type ZhongguoPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -101,6 +102,15 @@ type CounterTransferChoice = {
     value?: number;
 };
 
+type CardChoice = {
+    kind?: 'minion' | 'ongoingAction';
+    minionUid?: string;
+    actionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    skip?: boolean;
+};
+
 type CounterTransferCandidate = {
     uid: string;
     defId: string;
@@ -136,6 +146,19 @@ type LetsGetItOnContext = ZhongguoPromptContext & {
 
 type EverybodyKnewContext = ZhongguoPromptContext;
 
+type EverybodyWasDestroySelection = {
+    playerId: PlayerId;
+    minionUid: string;
+    minionDefId: string;
+    baseIndex: number;
+};
+
+type EverybodyWasContext = ZhongguoPromptContext & {
+    baseIndex?: number;
+    remainingPlayerIds?: PlayerId[];
+    selections?: EverybodyWasDestroySelection[];
+};
+
 type ABitFrighteningContext = ZhongguoPromptContext & {
     referenceMinionUid?: string;
     referenceBaseIndex?: number;
@@ -169,6 +192,13 @@ type TruckersHighSpeedChaseContext = ZhongguoPromptContext & {
 };
 
 type TruckersDekotoraContext = ZhongguoPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+    sourceControllerId: PlayerId;
+    targetBaseIndex?: number;
+};
+
+type TruckersCabOverPeteContext = ZhongguoPromptContext & {
     sourceCardUid: string;
     sourceBaseIndex: number;
     sourceControllerId: PlayerId;
@@ -217,6 +247,17 @@ type VigilantesBrojakContext = ZhongguoPromptContext & {
     targetBaseIndex: number;
 };
 
+type KungFuExpertTimingMode = 'transfer' | 'talent' | 'both';
+
+type KungFuExpertTimingContext = ZhongguoPromptContext & {
+    mode?: KungFuExpertTimingMode;
+    talentMinionUid?: string;
+    talentBaseIndex?: number;
+    sourceMinionUid?: string;
+    sourceBaseIndex?: number;
+    sourceCounterAmount?: number;
+};
+
 const TRUCKERS_ACTION_MODE_LABEL_BY_MODE: Record<TruckersActionMode, string> = {
     transfer: '只转移',
     control: '只控权',
@@ -232,6 +273,13 @@ const TRUCKERS_ACTION_MODE_LABEL_KEY_BY_MODE: Record<TruckersActionMode, string>
 };
 
 const ZHONGGUO_PROMPT_TITLES = {
+    kungFuFastAsLightning: '快如闪电：选择一个随从',
+    kungFuEverybodyWasBase: '人人都是功夫高手：选择一个基地',
+    kungFuEverybodyWasTarget: '人人都是功夫高手：选择要消灭的其他玩家随从',
+    kungFuExpertTimingMode: '掌握时机：选择效果',
+    kungFuExpertTimingTalent: '掌握时机：选择额外使用天赋的随从',
+    kungFuExpertTimingSource: '掌握时机：选择要转出全部 +1 标记的随从',
+    kungFuExpertTimingTarget: '掌握时机：选择接收全部 +1 标记的另一个随从',
     moveOwnMinionDestination: '选择目标基地',
     vigilantesDeathWisher: '猛龙怪客：选择一个消灭者控制的随从并消灭之',
     vigilantesBrojak: '神探布洛杰克：是否移动到刚才移动随从所在的基地并获得 +1 战力？',
@@ -242,6 +290,8 @@ const ZHONGGUO_PROMPT_TITLES = {
     truckersHighSpeedChaseMinion: '高速追逐战：选择你在此基地的一个随从',
     truckersDekotoraMinions: '暴走卡车：选择至多 3 个你的随从移动',
     truckersDekotoraBase: '暴走卡车：选择目标基地',
+    truckersCabOverPeteBase: '平头彼特：选择目标基地',
+    truckersCabOverPeteCard: '平头彼特：选择此处另一张你控制的牌',
     truckersHotwireBase: '短路点火：选择目标基地',
     truckersHotwireMode: '短路点火：选择效果',
     truckersHotwireAction: '短路点火：选择基地上的一张战术',
@@ -274,6 +324,8 @@ const DISCO_DANCERS_DIVA_TRIGGERED_TURN_META = 'discoDancersDivaTriggeredTurn';
 const DISCO_DANCERS_DANCING_KING_TRIGGERED_TURN_META = 'discoDancersDancingKingTriggeredTurn';
 const DISCO_DANCERS_WE_ARE_FAMILY_TRIGGERED_TURNS_META = 'discoDancersWeAreFamilyTriggeredTurns';
 const VIGILANTES_DEATH_WISHER_TRIGGERED_TURN_META = 'vigilantesDeathWisherTriggeredTurn';
+const KUNG_FU_FAST_AS_LIGHTNING_RETURN_TURN_META = 'kungFuFastAsLightningReturnTurn';
+const KUNG_FU_FAST_AS_LIGHTNING_SOURCE_PLAYER_META = 'kungFuFastAsLightningSourcePlayer';
 
 function runtimeResultToTriggerResult(
     result: ReturnType<typeof executeAbilityProgram<unknown, SmashUpCore, SmashUpEvent>>,
@@ -577,6 +629,74 @@ function buildBaseOngoingActionOptions(
     }));
 }
 
+function buildCardChoiceOptions(candidates: Array<{
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    kind: 'minion' | 'ongoingAction';
+    label: string;
+}>): Array<{
+    id: string;
+    label: string;
+    value: CardChoice;
+    _source: 'field';
+    displayMode: 'card';
+}> {
+    return candidates.map((candidate, index) => ({
+        id: `${candidate.kind}-${index}`,
+        label: candidate.label,
+        value: candidate.kind === 'minion'
+            ? {
+                kind: 'minion',
+                minionUid: candidate.uid,
+                baseIndex: candidate.baseIndex,
+                defId: candidate.defId,
+            }
+            : {
+                kind: 'ongoingAction',
+                actionUid: candidate.uid,
+                baseIndex: candidate.baseIndex,
+                defId: candidate.defId,
+            },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function collectCabOverPeteControlledCards(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    sourceBaseIndex: number,
+    sourceCardUid: string,
+): Array<{ uid: string; defId: string; baseIndex: number; kind: 'minion' | 'ongoingAction'; label: string }> {
+    const base = state.bases[sourceBaseIndex];
+    if (!base) return [];
+    return [
+        ...base.minions
+            .filter(minion => minion.controller === playerId)
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: sourceBaseIndex,
+                kind: 'minion' as const,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })),
+        ...collectBaseOngoingActions(
+            state,
+            candidate =>
+                candidate.baseIndex === sourceBaseIndex
+                && candidate.uid !== sourceCardUid
+                && candidate.controllerId === playerId,
+        ).map(action => ({
+            uid: action.uid,
+            defId: action.defId,
+            baseIndex: action.baseIndex,
+            kind: 'ongoingAction' as const,
+            label: action.label,
+        })),
+    ];
+}
+
 function stripBaseOngoingActionControlMetadata(
     metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
@@ -740,25 +860,16 @@ function buildShuffleMinionIntoDeckEvents(
 }
 
 function topDeckCardsFromDiscard(
-    playerCards: CardInstance[],
     selectedCards: CardInstance[],
     playerId: PlayerId,
     reason: string,
     now: number,
 ): SmashUpEvent[] {
     if (selectedCards.length === 0) return [];
-    return [{
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: {
-            playerId,
-            deckUids: [
-                ...selectedCards.map(card => card.uid),
-                ...playerCards.map(card => card.uid),
-            ],
-            reason,
-        },
-        timestamp: now,
-    } as SmashUpEvent];
+    return selectedCards
+        .slice()
+        .reverse()
+        .map(card => buildCardToDeckTopEvent(card, playerId, reason, now));
 }
 
 function buildCardToDeckTopEvent(card: CardInstance, playerId: PlayerId, reason: string, now: number): SmashUpEvent {
@@ -1518,6 +1629,104 @@ const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraCo
     },
 });
 
+const truckersCabOverPeteCardPromptProgram = createPromptProgram<TruckersCabOverPeteContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_cab_over_pete_card',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_cab_over_pete_card_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.truckersCabOverPeteCard,
+        buildCardChoiceOptions(collectCabOverPeteControlledCards(
+            context.matchState.core,
+            context.playerId,
+            context.sourceBaseIndex,
+            context.sourceCardUid,
+        )),
+        {
+            sourceId: 'truckers_cab_over_pete_card',
+            targetType: 'card',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+            titleKey: 'ui.truckers_cab_over_pete_card_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as CardChoice | undefined;
+        if (context.targetBaseIndex === undefined || !selected?.kind || selected.baseIndex === undefined || !selected.defId) {
+            return { events: [] };
+        }
+        const selfAction = findBaseOngoingAction(state.core, context.sourceCardUid, context.sourceBaseIndex);
+        if (!selfAction) return { events: [] };
+        const events: SmashUpEvent[] = [
+            ...buildBaseOngoingActionControlEvents(
+                state,
+                selfAction,
+                context.targetBaseIndex,
+                context.sourceControllerId,
+                'truckers_cab_over_pete',
+                timestamp,
+                { includeDetach: true, talentUsed: true },
+            ),
+        ];
+        if (selected.kind === 'minion' && selected.minionUid) {
+            events.push(...buildValidatedMoveEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: context.sourceBaseIndex,
+                toBaseIndex: context.targetBaseIndex,
+                reason: 'truckers_cab_over_pete',
+                now: timestamp,
+                sourcePlayerId: context.sourceControllerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'truckers_cab_over_pete',
+                sourceControllerId: context.sourceControllerId,
+                sourceBaseIndex: context.sourceBaseIndex,
+                sourceKind: 'action',
+            }));
+        } else if (selected.kind === 'ongoingAction' && selected.actionUid) {
+            const targetAction = findBaseOngoingAction(state.core, selected.actionUid, context.sourceBaseIndex);
+            if (targetAction && targetAction.controllerId === context.sourceControllerId) {
+                events.push(...buildBaseOngoingActionControlEvents(
+                    state,
+                    targetAction,
+                    context.targetBaseIndex,
+                    context.sourceControllerId,
+                    'truckers_cab_over_pete',
+                    timestamp,
+                    { includeDetach: true, talentUsed: targetAction.talentUsed },
+                ));
+            }
+        }
+        return { events };
+    },
+});
+
+const truckersCabOverPeteBasePromptProgram = createPromptProgram<TruckersCabOverPeteContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'truckers_cab_over_pete_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `truckers_cab_over_pete_base_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.truckersCabOverPeteBase,
+        buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.sourceBaseIndex), context.matchState.core),
+        {
+            sourceId: 'truckers_cab_over_pete_base',
+            targetType: 'base',
+            titleKey: 'ui.truckers_cab_over_pete_base_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, context.playerId, timestamp, {
+                ...context,
+                targetBaseIndex: selected.baseIndex,
+            }),
+            nextProgram: truckersCabOverPeteCardPromptProgram,
+        };
+    },
+});
+
 const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'truckers_hotwire_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -2139,6 +2348,449 @@ const kungFuCounterTransferSourcePromptProgram = createPromptProgram<CounterTran
     },
 });
 
+function collectEverybodyWasBaseCandidates(state: SmashUpCore): Array<{ baseIndex: number; label: string }> {
+    return state.bases
+        .map((base, baseIndex) => {
+            const controllers = new Set(base.minions.map(minion => minion.controller));
+            return {
+                baseIndex,
+                label: getCardDef(base.defId)?.name ?? base.defId,
+                controllerCount: controllers.size,
+            };
+        })
+        .filter(candidate => candidate.controllerCount >= 2)
+        .map(({ baseIndex, label }) => ({ baseIndex, label }));
+}
+
+function getEverybodyWasParticipantIds(state: SmashUpCore, baseIndex: number): PlayerId[] {
+    const seen = new Set<PlayerId>();
+    const participants: PlayerId[] = [];
+    for (const minion of state.bases[baseIndex]?.minions ?? []) {
+        if (seen.has(minion.controller)) continue;
+        seen.add(minion.controller);
+        participants.push(minion.controller);
+    }
+    return participants;
+}
+
+function buildEverybodyWasDestroyEvents(
+    state: MatchState<SmashUpCore>,
+    selections: EverybodyWasDestroySelection[],
+    now: number,
+): SmashUpEvent[] {
+    return selections.flatMap(selection => buildValidatedDestroyEvents(state, {
+        minionUid: selection.minionUid,
+        minionDefId: selection.minionDefId,
+        fromBaseIndex: selection.baseIndex,
+        destroyerId: selection.playerId,
+        reason: 'kung_fu_fighters_everybody_was_kung_fu_fighting',
+        now,
+        sourcePlayerId: selection.playerId,
+        sourceDefId: 'kung_fu_fighters_everybody_was_kung_fu_fighting',
+        sourceControllerId: selection.playerId,
+        sourceBaseIndex: selection.baseIndex,
+        sourceKind: 'action',
+    }));
+}
+
+const everybodyWasTargetPromptProgram = createPromptProgram<EverybodyWasContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_target',
+    buildInteraction: (context) => {
+        const baseIndex = context.baseIndex ?? -1;
+        const activePlayerId = context.remainingPlayerIds?.[0] ?? context.playerId;
+        const selectedUids = new Set((context.selections ?? []).map(selection => selection.minionUid));
+        const candidates = (context.matchState.core.bases[baseIndex]?.minions ?? [])
+            .filter(minion => minion.controller !== activePlayerId && !selectedUids.has(minion.uid))
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            }));
+        const options = buildMinionTargetOptions(candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: activePlayerId,
+            sourceDefId: 'kung_fu_fighters_everybody_was_kung_fu_fighting',
+            sourceKind: 'action',
+            effectType: 'destroy',
+        });
+        return createAbilityRuntimeSimpleChoice(
+            `kung_fu_fighters_everybody_was_target_${context.now}_${activePlayerId}`,
+            activePlayerId,
+            ZHONGGUO_PROMPT_TITLES.kungFuEverybodyWasTarget,
+            options.length > 0 ? options : [createSkipOption()],
+            {
+                sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_target',
+                targetType: 'minion',
+                autoRefresh: 'field',
+                responseValidationMode: 'live',
+                titleKey: 'ui.kung_fu_fighters_everybody_was_target_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const baseIndex = context.baseIndex;
+        const remaining = [...(context.remainingPlayerIds ?? [])];
+        const activePlayerId = remaining.shift();
+        if (baseIndex === undefined || !activePlayerId) return { events: [] };
+        const selected = value as MinionChoice | undefined;
+        const selections = [...(context.selections ?? [])];
+        if (!selected?.skip && selected?.minionUid && selected.baseIndex !== undefined) {
+            const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+            if (target && target.controller !== activePlayerId) {
+                selections.push({
+                    playerId: activePlayerId,
+                    minionUid: target.uid,
+                    minionDefId: target.defId,
+                    baseIndex: selected.baseIndex,
+                });
+            }
+        }
+        if (remaining.length === 0) {
+            return { events: buildEverybodyWasDestroyEvents(state, selections, timestamp) };
+        }
+        return {
+            events: [],
+            context: createPromptContext(state, remaining[0]!, timestamp, {
+                ...context,
+                playerId: remaining[0]!,
+                remainingPlayerIds: remaining,
+                selections,
+            }),
+            nextProgram: everybodyWasTargetPromptProgram,
+        };
+    },
+});
+
+const everybodyWasBasePromptProgram = createPromptProgram<EverybodyWasContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `kung_fu_fighters_everybody_was_base_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.kungFuEverybodyWasBase,
+        buildBaseTargetOptions(collectEverybodyWasBaseCandidates(context.matchState.core), context.matchState.core),
+        {
+            sourceId: 'kung_fu_fighters_everybody_was_kung_fu_fighting_base',
+            targetType: 'base',
+            titleKey: 'ui.kung_fu_fighters_everybody_was_base_title',
+        },
+    ),
+    onResolve: ({ state, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        const participants = getEverybodyWasParticipantIds(state.core, selected.baseIndex);
+        if (participants.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, participants[0]!, timestamp, {
+                baseIndex: selected.baseIndex,
+                remainingPlayerIds: participants,
+                selections: [],
+            }),
+            nextProgram: everybodyWasTargetPromptProgram,
+        };
+    },
+});
+
+function collectExpertTimingTalentTargets(state: SmashUpCore, playerId: PlayerId): CounterTransferCandidate[] {
+    return collectOwnMinions(state, playerId).filter((candidate) => {
+        const def = getCardDef(candidate.defId) as { abilityTags?: string[] } | undefined;
+        return def?.abilityTags?.includes('talent') === true;
+    });
+}
+
+function buildExpertTimingExtraTalentEvent(
+    minionUid: string,
+    baseIndex: number,
+    now: number,
+): SmashUpEvent {
+    return buildMinionMetadataUpdatedEvent(
+        minionUid,
+        baseIndex,
+        { mythicHorsesSeastarExtraTalent: true, mythicHorsesSeastarExtraTalentConsumed: false },
+        'kung_fu_fighters_expert_timing_extra_talent',
+        now,
+    );
+}
+
+function buildExpertTimingSelectedEvents(
+    state: MatchState<SmashUpCore>,
+    context: KungFuExpertTimingContext,
+    target: MinionChoice | undefined,
+    timestamp: number,
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+    if ((context.mode === 'talent' || context.mode === 'both') && context.talentMinionUid && context.talentBaseIndex !== undefined) {
+        events.push(buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp));
+    }
+    if (
+        (context.mode === 'transfer' || context.mode === 'both')
+        && context.sourceMinionUid
+        && context.sourceBaseIndex !== undefined
+        && context.sourceCounterAmount !== undefined
+        && target?.minionUid
+        && target.baseIndex !== undefined
+    ) {
+        const source = state.core.bases[context.sourceBaseIndex]?.minions.find(minion => minion.uid === context.sourceMinionUid);
+        const targetMinion = state.core.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.minionUid);
+        const amount = source?.powerCounters ?? context.sourceCounterAmount;
+        if (source && targetMinion && source.uid !== targetMinion.uid && amount > 0) {
+            events.push(...performCounterTransfer(
+                source.uid,
+                context.sourceBaseIndex,
+                targetMinion.uid,
+                target.baseIndex,
+                amount,
+                'kung_fu_fighters_expert_timing',
+                timestamp,
+            ));
+        }
+    }
+    return events;
+}
+
+const expertTimingTargetPromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_expert_timing_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `kung_fu_fighters_expert_timing_target_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingTarget,
+        buildMinionTargetOptions(
+            collectCounterTransferTargets(context.matchState.core, context.sourceMinionUid ?? ''),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'kung_fu_fighters_expert_timing',
+                sourceKind: 'action',
+                effectType: 'affect',
+            },
+        ),
+        {
+            sourceId: 'kung_fu_fighters_expert_timing_target',
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+            titleKey: 'ui.kung_fu_fighters_expert_timing_target_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => ({
+        events: buildExpertTimingSelectedEvents(state, context, value as MinionChoice | undefined, timestamp),
+    }),
+});
+
+const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_expert_timing_source',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `kung_fu_fighters_expert_timing_source_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingSource,
+        buildMinionTargetOptions(
+            collectCounterTransferSources(context.matchState.core),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'kung_fu_fighters_expert_timing',
+                sourceKind: 'action',
+                effectType: 'affect',
+            },
+        ),
+        {
+            sourceId: 'kung_fu_fighters_expert_timing_source',
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+            titleKey: 'ui.kung_fu_fighters_expert_timing_source_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) {
+            if (context.mode === 'both' && context.talentMinionUid && context.talentBaseIndex !== undefined) {
+                return { events: [buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp)] };
+            }
+            return { events: [] };
+        }
+        const source = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        const sourceCounters = source?.powerCounters ?? 0;
+        if (!source || sourceCounters <= 0) {
+            if (context.mode === 'both' && context.talentMinionUid && context.talentBaseIndex !== undefined) {
+                return { events: [buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp)] };
+            }
+            return { events: [] };
+        }
+        return {
+            events: [],
+            context: {
+                ...context,
+                sourceMinionUid: source.uid,
+                sourceBaseIndex: selected.baseIndex,
+                sourceCounterAmount: sourceCounters,
+            },
+            nextProgram: expertTimingTargetPromptProgram,
+        };
+    },
+});
+
+const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_expert_timing_talent',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `kung_fu_fighters_expert_timing_talent_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingTalent,
+        buildMinionTargetOptions(
+            collectExpertTimingTalentTargets(context.matchState.core, context.playerId),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'kung_fu_fighters_expert_timing',
+                sourceKind: 'action',
+                effectType: 'affect',
+            },
+        ),
+        {
+            sourceId: 'kung_fu_fighters_expert_timing_talent',
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+            titleKey: 'ui.kung_fu_fighters_expert_timing_talent_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target || target.controller !== context.playerId) return { events: [] };
+        if (context.mode === 'both') {
+            return {
+                events: [],
+                context: {
+                    ...context,
+                    talentMinionUid: target.uid,
+                    talentBaseIndex: selected.baseIndex,
+                },
+                nextProgram: expertTimingSourcePromptProgram,
+            };
+        }
+        return { events: [buildExpertTimingExtraTalentEvent(target.uid, selected.baseIndex, timestamp)] };
+    },
+});
+
+const expertTimingModePromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_expert_timing_mode',
+    buildInteraction: (context) => {
+        const canTransfer = collectCounterTransferSources(context.matchState.core).length > 0
+            && collectAllMinions(context.matchState.core).length > 1;
+        const canTalent = collectExpertTimingTalentTargets(context.matchState.core, context.playerId).length > 0;
+        const options: Array<{
+            id: string;
+            label: string;
+            labelKey: string;
+            value: { mode: KungFuExpertTimingMode };
+            displayMode: 'button';
+        }> = [];
+        if (canTransfer) {
+            options.push({
+                id: 'transfer',
+                label: '转移全部 +1 标记',
+                labelKey: 'ui.kung_fu_fighters_expert_timing_transfer_option',
+                value: { mode: 'transfer' },
+                displayMode: 'button',
+            });
+        }
+        if (canTalent) {
+            options.push({
+                id: 'talent',
+                label: '额外使用一次天赋',
+                labelKey: 'ui.kung_fu_fighters_expert_timing_talent_option',
+                value: { mode: 'talent' },
+                displayMode: 'button',
+            });
+        }
+        if (canTransfer && canTalent) {
+            options.push({
+                id: 'both',
+                label: '两者都做',
+                labelKey: 'ui.kung_fu_fighters_expert_timing_both_option',
+                value: { mode: 'both' },
+                displayMode: 'button',
+            });
+        }
+        return createAbilityRuntimeSimpleChoice(
+            `kung_fu_fighters_expert_timing_mode_${context.now}`,
+            context.playerId,
+            ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingMode,
+            options,
+            {
+                sourceId: 'kung_fu_fighters_expert_timing_mode',
+                targetType: 'button',
+                titleKey: 'ui.kung_fu_fighters_expert_timing_mode_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { mode?: KungFuExpertTimingMode } | undefined;
+        if (!selected?.mode) return { events: [] };
+        const nextContext = createPromptContext(state, context.playerId, timestamp, {
+            ...context,
+            mode: selected.mode,
+        });
+        return {
+            events: [],
+            context: nextContext,
+            nextProgram: selected.mode === 'talent' || selected.mode === 'both'
+                ? expertTimingTalentPromptProgram
+                : expertTimingSourcePromptProgram,
+        };
+    },
+});
+
+const fastAsLightningPromptProgram = createPromptProgram<ZhongguoPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'kung_fu_fighters_fast_as_lightning',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `kung_fu_fighters_fast_as_lightning_${context.now}`,
+        context.playerId,
+        ZHONGGUO_PROMPT_TITLES.kungFuFastAsLightning,
+        buildMinionTargetOptions(
+            collectAllMinions(context.matchState.core),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'kung_fu_fighters_fast_as_lightning',
+                sourceKind: 'action',
+                effectType: 'affect',
+            },
+        ),
+        {
+            sourceId: 'kung_fu_fighters_fast_as_lightning',
+            targetType: 'minion',
+            autoRefresh: 'field',
+            responseValidationMode: 'live',
+            titleKey: 'ui.kung_fu_fighters_fast_as_lightning_title',
+        },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [
+                addTempPower(target.uid, selected.baseIndex, 2, 'kung_fu_fighters_fast_as_lightning', timestamp),
+                buildMinionMetadataUpdatedEvent(
+                    target.uid,
+                    selected.baseIndex,
+                    {
+                        [KUNG_FU_FAST_AS_LIGHTNING_RETURN_TURN_META]: state.core.turnNumber,
+                        [KUNG_FU_FAST_AS_LIGHTNING_SOURCE_PLAYER_META]: context.playerId,
+                    },
+                    'kung_fu_fighters_fast_as_lightning_return_marker',
+                    timestamp,
+                ),
+            ],
+        };
+    },
+});
+
 const ancientChineseArtModePromptProgram = createPromptProgram<AncientChineseArtModeContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'kung_fu_fighters_ancient_chinese_art_mode',
     buildInteraction: (context) => {
@@ -2665,6 +3317,42 @@ const cricketOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, Sm
         },
     ));
 
+const fastAsLightningOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    if (collectAllMinions(ctx.state).length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        fastAsLightningPromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+});
+
+const everybodyWasOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    if (collectEverybodyWasBaseCandidates(ctx.state).length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        everybodyWasBasePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+});
+
+const expertTimingProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const canTransfer = collectCounterTransferSources(ctx.state).length > 0
+        && collectAllMinions(ctx.state).length > 1;
+    const canTalent = collectExpertTimingTalentTargets(ctx.state, ctx.playerId).length > 0;
+    if (!canTransfer && !canTalent) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        expertTimingModePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
+});
+
 const dragonWarriorTalentProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) =>
     runCounterTransferProgram(
         ctx.matchState,
@@ -2944,6 +3632,34 @@ function canTriggerOhHohHohHoah(ctx: TriggerContext): boolean {
     return base.minions.some((minion) => minion.controller === ctx.sourceControllerId);
 }
 
+function fastAsLightningReturnTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.triggerMinionUid || !ctx.triggerMinionDefId) {
+        return [];
+    }
+    const minion = ctx.triggerMinion
+        ?? ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.uid === ctx.triggerMinionUid);
+    if (!minion) return [];
+    const markedTurn = Number(minion.metadata?.[KUNG_FU_FAST_AS_LIGHTNING_RETURN_TURN_META] ?? -1);
+    if (markedTurn !== ctx.state.turnNumber) {
+        return [];
+    }
+    const sourcePlayerId = (minion.metadata?.[KUNG_FU_FAST_AS_LIGHTNING_SOURCE_PLAYER_META] as PlayerId | undefined)
+        ?? minion.controller;
+    return buildValidatedReturnEvents(ctx.state, {
+        minionUid: minion.uid,
+        minionDefId: minion.defId,
+        fromBaseIndex: ctx.baseIndex,
+        toPlayerId: minion.owner,
+        reason: 'kung_fu_fighters_fast_as_lightning',
+        now: ctx.now,
+        sourcePlayerId,
+        sourceDefId: 'kung_fu_fighters_fast_as_lightning',
+        sourceControllerId: sourcePlayerId,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceKind: 'action',
+    });
+}
+
 function ohHohHohHoahTrigger(
     ctx: TriggerContext,
 ): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
@@ -3132,7 +3848,7 @@ function vigilantesShift(ctx: AbilityContext): AbilityResult {
     if (!player) return { events: [] };
     const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'minion').slice(0, 2);
     if (selected.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return { events: topDeckCardsFromDiscard(player.deck, selected, ctx.playerId, 'vigilantes_shift', ctx.now) };
+    return { events: topDeckCardsFromDiscard(selected, ctx.playerId, 'vigilantes_shift', ctx.now) };
 }
 
 function vigilantesDustyHenry(ctx: AbilityContext): AbilityResult {
@@ -3244,6 +3960,25 @@ function truckersDekotoraTalent(ctx: AbilityContext): AbilityResult {
     }
     const result = executeAbilityProgram(
         truckersDekotoraBasePromptProgram,
+        createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            sourceControllerId: ctx.playerId,
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
+}
+
+function truckersCabOverPeteTalent(ctx: AbilityContext): AbilityResult {
+    if (!hasOtherBaseTarget(ctx.state, ctx.baseIndex)) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const candidates = collectCabOverPeteControlledCards(ctx.state, ctx.playerId, ctx.baseIndex, ctx.cardUid);
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        truckersCabOverPeteBasePromptProgram,
         createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceCardUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
@@ -3673,8 +4408,8 @@ function letsFinishThisTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.playerId !== ctx.sourceControllerId) return [];
     const base = ctx.state.bases[ctx.baseIndex];
-    const baseDef = base ? getCardDef(base.defId) : undefined;
-    if (!base || !baseDef || !('breakpoint' in baseDef)) return [];
+    const baseDef = base ? getBaseDef(base.defId) : undefined;
+    if (!base || !baseDef) return [];
     const hasOwn = base.minions.some(minion => minion.controller === ctx.sourceControllerId);
     const hasOther = base.minions.some(minion => minion.controller !== ctx.sourceControllerId);
     if (!hasOwn || !hasOther) return [];
@@ -3871,8 +4606,7 @@ export function registerZhongguoAbilities(): void {
     registerAbilityProgram('vigilantes_scared_straight', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
             const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
-                baseIndex === ctx.baseIndex
-                && minion.controller !== ctx.playerId
+                minion.controller !== ctx.playerId
                 && hasOwnMinionOnBase(ctx.state, baseIndex, ctx.playerId),
             );
             if (candidates.length === 0) {
@@ -3936,11 +4670,7 @@ export function registerZhongguoAbilities(): void {
             const selected = discardActions[0];
             return {
                 events: [
-                    {
-                        type: SU_EVENTS.CARDS_DRAWN,
-                        payload: { playerId: ctx.playerId, count: 1, cardUids: [selected.uid] },
-                        timestamp: ctx.now,
-                    } as SmashUpEvent,
+                    recoverCardsFromDiscard(ctx.playerId, [selected.uid], 'truckers_fixin_to_fix_it', ctx.now),
                 ],
             };
         }),
@@ -3978,6 +4708,14 @@ export function registerZhongguoAbilities(): void {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersDekotoraTalent),
         validateUse: (ctx) => hasOtherBaseTarget(ctx.state, ctx.baseIndex) ? null : '当前没有可选择的目标',
     });
+    registerAbilityProgram('truckers_cab_over_pete', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersCabOverPeteTalent),
+        validateUse: (ctx) => {
+            if (!hasOtherBaseTarget(ctx.state, ctx.baseIndex)) return '当前没有可选择的目标';
+            const candidates = collectCabOverPeteControlledCards(ctx.state, ctx.playerId, ctx.baseIndex, ctx.cardUid);
+            return candidates.length > 0 ? null : '当前没有可移动的己方牌';
+        },
+    });
     registerAbilityProgram('truckers_rally', 'special', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(truckersRally),
     });
@@ -4014,6 +4752,9 @@ export function registerZhongguoAbilities(): void {
 
     registerAbilityProgram('kung_fu_fighters_cricket', 'onPlay', {
         program: cricketOnPlayProgram,
+    });
+    registerAbilityProgram('kung_fu_fighters_fast_as_lightning', 'onPlay', {
+        program: fastAsLightningOnPlayProgram,
     });
     registerAbilityProgram('kung_fu_fighters_dragon_warrior', 'talent', {
         program: dragonWarriorTalentProgram,
@@ -4056,6 +4797,15 @@ export function registerZhongguoAbilities(): void {
     registerAbilityProgram('kung_fu_fighters_everybody_knew_their_part', 'onPlay', {
         program: everybodyKnewOnPlayProgram,
     });
+    registerAbilityProgram('kung_fu_fighters_everybody_was_kung_fu_fighting', 'onPlay', {
+        program: everybodyWasOnPlayProgram,
+    });
+    registerAbilityProgram('kung_fu_fighters_expert_timing', 'onPlay', {
+        program: expertTimingProgram,
+    });
+    registerAbilityProgram('kung_fu_fighters_expert_timing', 'special', {
+        program: expertTimingProgram,
+    });
     registerAbilityProgram('kung_fu_fighters_a_little_bit_frightening', 'onPlay', {
         program: aLittleBitFrighteningOnPlayProgram,
     });
@@ -4063,6 +4813,11 @@ export function registerZhongguoAbilities(): void {
         program: letsGetItOnOnPlayProgram,
     });
 
+    registerTrigger('kung_fu_fighters_fast_as_lightning', 'onMinionDestroyed', fastAsLightningReturnTrigger, {
+        phase: 'replacement',
+        global: true,
+        globalZones: ['discard'],
+    });
     registerProtection('kung_fu_fighters_dragon_warrior', 'destroy', (ctx) => ctx.targetMinion.defId === 'kung_fu_fighters_dragon_warrior');
     registerTrigger('kung_fu_fighters_oh_hoh_hoh_hoah', 'onMinionPlayed', ohHohHohHoahTrigger, {
         perInstance: true,

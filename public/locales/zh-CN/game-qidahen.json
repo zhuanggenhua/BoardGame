@@ -106,8 +106,8 @@
       "regionReachable": "调度可达 {{summary}}",
       "sharedPrintedRegion": "同图块",
       "selectionGuideSource": "起",
-      "selectionContinueHint": "绿色区域都能点",
-      "clickableRegionSummary": "可点：{{summary}}"
+      "selectionContinueHint": "选择目标",
+      "clickableRegionSummary": "目标：{{summary}}"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -138,12 +138,12 @@
       "primaryStageFactionCurrentDetail": "当前行动：{{label}}",
       "primaryStageFactionDetail": "先弃牌，再继续当前行动。",
       "primaryStageWheelDone": "本席轮盘已完成。",
-      "primaryStageWheelDetail": "左上发亮的绿色格可直接执行：{{summary}}。",
-      "clickable": "可点",
-      "mapDirectClick": "点地图",
-      "mapClickable": "地图可点",
-      "mapDirectClickHint": "点绿色区域完成这一步。",
-      "currentClickableRegions": "可点目标",
+      "primaryStageWheelDetail": "本次轮盘行动：{{summary}}。",
+      "clickable": "可选",
+      "mapDirectClick": "地图目标",
+      "mapClickable": "选择目标",
+      "mapDirectClickHint": "选择目标完成这一步。",
+      "currentClickableRegions": "可选地区",
       "status": {
         "used": "已用",
         "unused": "未用"
@@ -154,9 +154,9 @@
       "primaryActionLabel": "这一步做什么",
       "primaryActionEmpty": "未选择",
       "wheelNextStepBadge": "轮盘",
-      "wheelNextStepTitle": "点左上轮盘",
-      "wheelNextStepHint": "发亮的绿色格就是下一步",
-      "wheelExecutePrompt": "点左上发亮的绿色格",
+      "wheelNextStepTitle": "选择轮盘行动",
+      "wheelNextStepHint": "本次轮盘行动待执行",
+      "wheelExecutePrompt": "选择轮盘行动",
       "directExecute": "点这里",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
       "victory": {

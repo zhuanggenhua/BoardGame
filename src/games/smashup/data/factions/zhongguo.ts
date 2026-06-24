@@ -54,7 +54,9 @@ const TRUCKERS = SMASHUP_FACTION_IDS.TRUCKERS;
 const DISCO_DANCERS = SMASHUP_FACTION_IDS.DISCO_DANCERS;
 
 export const KUNG_FU_FIGHTERS_CARDS: CardDef[] = [
-    action('kung_fu_fighters_fast_as_lightning', '快如闪电', 'Fast as Lightning', KUNG_FU_FIGHTERS, 2, 0),
+    action('kung_fu_fighters_fast_as_lightning', '快如闪电', 'Fast as Lightning', KUNG_FU_FIGHTERS, 2, 0, {
+        abilityTags: ['onPlay'],
+    }),
     minion('kung_fu_fighters_dragon_warrior', '神龙武者', 'Dragon Warrior', KUNG_FU_FIGHTERS, 5, 1, 1, {
         abilityTags: ['ongoing', 'talent'],
     }),
@@ -70,8 +72,14 @@ export const KUNG_FU_FIGHTERS_CARDS: CardDef[] = [
     action('kung_fu_fighters_everybody_knew_their_part', '各尽其责', 'Everybody Knew Their Part', KUNG_FU_FIGHTERS, 1, 4, {
         abilityTags: ['onPlay'],
     }),
-    action('kung_fu_fighters_everybody_was_kung_fu_fighting', '人人都是功夫高手', 'Everybody was Kung Fu Fighting', KUNG_FU_FIGHTERS, 1, 5),
-    action('kung_fu_fighters_expert_timing', '掌握时机', 'Expert Timing', KUNG_FU_FIGHTERS, 1, 6),
+    action('kung_fu_fighters_everybody_was_kung_fu_fighting', '人人都是功夫高手', 'Everybody was Kung Fu Fighting', KUNG_FU_FIGHTERS, 1, 5, {
+        abilityTags: ['onPlay'],
+    }),
+    action('kung_fu_fighters_expert_timing', '掌握时机', 'Expert Timing', KUNG_FU_FIGHTERS, 1, 6, {
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+        abilityTags: ['onPlay', 'special'],
+    }),
     action('kung_fu_fighters_ancient_chinese_art', '古老的中国艺术', 'Ancient Chinese Art', KUNG_FU_FIGHTERS, 2, 7, {
         subtype: 'ongoing',
         ongoingTarget: 'base',

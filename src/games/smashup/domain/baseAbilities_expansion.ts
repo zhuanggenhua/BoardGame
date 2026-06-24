@@ -27,6 +27,7 @@ import {
     buildValidatedBaseMoveEvents,
     buildValidatedDestroyEvents,
     buildValidatedCardToDeckBottomEvents,
+    buildValidatedMoveEvents,
     buildStandardDrawEvents,
     createSkipOption,
     drawMadnessCards,
@@ -254,6 +255,106 @@ const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, pl
 
 /** 注册扩展包基地能力*/
 export function registerExpansionBaseAbilities(): void {
+    // ============================================================================
+    // That '70s / zhongguo 扩展基地能力
+    // ============================================================================
+
+    // ── 时髦镇（Funky Town）────────────────────────────────────
+    // 在玩家打出影响这里一个随从的战术后，在该随从上放 1 枚 +1 力量指示物。
+    registerBaseAbility('base_funky_town', 'onActionPlayed', (ctx) => {
+        if (ctx.actionTargetType !== 'minion' || ctx.actionTargetBaseIndex !== ctx.baseIndex || !ctx.actionTargetMinionUid) {
+            return { events: [] };
+        }
+        const target = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.actionTargetMinionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_funky_town', ctx.now, {
+                sourcePlayerId: ctx.playerId,
+                sourceDefId: 'base_funky_town',
+                sourceBaseIndex: ctx.baseIndex,
+            })],
+        };
+    }, {
+    });
+
+    // ── 廉价小饭馆（The Greasy Spoon）──────────────────────────
+    // 本基地计分后，每位在这里有随从的玩家抓 1 张牌。
+    registerBaseAbility('base_the_greasy_spoon', 'afterScoring', (ctx) => {
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const playerIds = Array.from(new Set(base.minions.map(minion => minion.controller)));
+        return {
+            events: playerIds.flatMap(playerId =>
+                buildStandardDrawEvents(ctx.state, playerId, 1, ctx.random, ctx.now),
+            ),
+        };
+    }, {
+    });
+
+    // ── 卡车服务站（Truck Stop）────────────────────────────────
+    // 本基地计分后，将这里所有随从移动到另一个基地，而不是随基地清理进入弃牌堆。
+    registerBaseAbility('base_truck_stop', 'afterScoring', (ctx) => {
+        const sourceBase = ctx.state.bases[ctx.baseIndex];
+        const targetBaseIndex = ctx.state.bases.findIndex((_base, index) => index !== ctx.baseIndex);
+        if (!sourceBase || targetBaseIndex < 0) return { events: [] };
+        return {
+            events: sourceBase.minions.flatMap(minion => buildValidatedMoveEvents(ctx.matchState ?? ctx.state, {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                fromBaseIndex: ctx.baseIndex,
+                toBaseIndex: targetBaseIndex,
+                reason: 'base_truck_stop',
+                now: ctx.now,
+                sourcePlayerId: minion.controller,
+                sourceDefId: 'base_truck_stop',
+                sourceBaseIndex: ctx.baseIndex,
+                sourceKind: 'nonAction',
+            })),
+        };
+    }, {
+    });
+
+    // ── 摇摆仙境（Boogie Wonderland）──────────────────────────
+    // 玩家回合开始时，可以额外打出一个力量 2 或更低的随从到这里。
+    registerBaseAbility('base_boogie_wonderland', 'onTurnStart', (ctx) => {
+        const player = ctx.state.players[ctx.playerId];
+        const hasEligibleMinion = player?.hand.some(card => {
+            const def = getMinionDef(card.defId);
+            return def !== undefined && def.power <= 2;
+        }) ?? false;
+        if (!hasEligibleMinion) return { events: [] };
+        return {
+            events: [grantContextualExtraMinion(ctx, 'base_boogie_wonderland', ctx.baseIndex, { powerMax: 2 })],
+        };
+    }, {
+    });
+
+    // ── 险恶街区（The Mean Streets）───────────────────────────
+    // 玩家打出影响这里一张牌的战术后，其他玩家可以在这里自己的一个随从上放 1 枚 +1 力量指示物。
+    registerBaseAbility('base_the_mean_streets', 'onActionPlayed', (ctx) => {
+        if (ctx.actionTargetBaseIndex !== ctx.baseIndex) return { events: [] };
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const otherPlayerIds = Array.from(new Set(
+            base.minions
+                .filter(minion => minion.controller !== ctx.playerId)
+                .map(minion => minion.controller),
+        ));
+        return {
+            events: otherPlayerIds.flatMap((playerId) => {
+                const target = base.minions.find(minion => minion.controller === playerId);
+                return target
+                    ? [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_the_mean_streets', ctx.now, {
+                        sourcePlayerId: playerId,
+                        sourceDefId: 'base_the_mean_streets',
+                        sourceBaseIndex: ctx.baseIndex,
+                    })]
+                    : [];
+            }),
+        };
+    }, {
+    });
+
     // ── 人鱼水池（Mermaid Pool）─────────────────────────────────
     registerBaseAbility('base_mermaid_pool', 'onTurnStart', (ctx) => {
         const base = ctx.state.bases[ctx.baseIndex];

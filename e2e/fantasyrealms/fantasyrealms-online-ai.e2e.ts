@@ -7,6 +7,8 @@ import {
     bridgeMixedRoomToSecondHumanDrawTurn,
     clearEvidenceScreenshotsForTest,
     completeNaturalHumanDeckTurn,
+    createAiTakeDiscardBranchCore,
+    createOnlineAiNearReviewCore,
     createPlayerContext,
     createSixPlayerMixedWaitingToReviewCore,
     expectFantasyRealmsSpectatorLiveNoLeak,
@@ -15,6 +17,7 @@ import {
     GAME_NAME,
     expectWaitingPageKeepsOpponentFocusHidden,
     getEvidenceScreenshotPath,
+    injectOnlineAiCore,
     injectMatchState,
     openFantasyRealmsOnlineAiMixedRoom,
     openFantasyRealmsOnlineAiRoom,
@@ -38,6 +41,33 @@ async function clickFantasyRealmsDeckDrawButtonIfVisible(page: Page) {
     if (await deckButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await deckButton.click();
     }
+}
+
+async function getLocatorRects(page: Page, selector: string) {
+    return page.locator(selector).evaluateAll((elements) => elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+    }));
+}
+
+async function waitForLocatorRectsToSettle(page: Page, selector: string, timeoutMs = 3000) {
+    const deadline = Date.now() + timeoutMs;
+    let previousSignature: string | null = null;
+    while (Date.now() < deadline) {
+        const rects = await getLocatorRects(page, selector);
+        const signature = JSON.stringify(rects);
+        if (rects.length > 0 && signature === previousSignature) {
+            return rects;
+        }
+        previousSignature = signature;
+        await page.waitForTimeout(120);
+    }
+    return getLocatorRects(page, selector);
 }
 
 test.describe('FantasyRealms online AI flow', () => {
@@ -82,6 +112,56 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             await page.screenshot({ path: evidencePath, fullPage: false });
 
             assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-ai', diagnostics }]);
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
+
+    test('真实在线房间低张数公开弃牌保持固定槽位，不因少牌重新居中放大', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await openFantasyRealmsOnlineAiRoom(browser, baseURL);
+        if (!match) {
+            test.skip(true, 'Game server unavailable for Fantasy Realms online center layout test.');
+        }
+
+        const { context, page, matchId } = match!;
+        const diagnostics = attachPageDiagnostics(page);
+        const centerCardsSelector = '.fr-card-button--live-center';
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            await injectOnlineAiCore(matchId, page, createOnlineAiNearReviewCore(['0', '1'], '0', 6));
+            await expect(page.locator(centerCardsSelector)).toHaveCount(9, { timeout: 10000 });
+            const fullRowRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(fullRowRects).toHaveLength(9);
+            const topRowRects = fullRowRects.slice(0, 5);
+            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-center-slots-nine-cards');
+            await mkdir(dirname(fullEvidencePath), { recursive: true });
+            await page.screenshot({ path: fullEvidencePath, fullPage: false });
+
+            await injectOnlineAiCore(matchId, page, {
+                ...createAiTakeDiscardBranchCore(),
+                currentPlayer: '0',
+            });
+            await expect(page.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+            const lowCountRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(lowCountRects).toHaveLength(2);
+
+            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
+            expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
+
+            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-center-slots-two-cards');
+            await mkdir(dirname(lowEvidencePath), { recursive: true });
+            await page.screenshot({ path: lowEvidencePath, fullPage: false });
+
+            assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-center-layout', diagnostics }]);
         } finally {
             await context.close().catch(() => {});
         }

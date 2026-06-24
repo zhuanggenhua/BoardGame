@@ -4,9 +4,8 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
-import { fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
@@ -21,6 +20,7 @@ import {
     makeState,
     respondToPrompt,
     respondToPromptOptions,
+    triggerBaseAbilityWithMS,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
@@ -127,6 +127,539 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+    });
+
+    it('凶恶百倍会给目标随从 +3 临时战力', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('meaner-1', 'vigilantes_a_whole_lot_meaner', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'truckers_good_buddy', '1', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'meaner-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+            && (event as any).payload?.minionUid === 'target'
+            && (event as any).payload?.amount === 3,
+        )).toBe(true);
+        expect(played.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(3);
+    });
+
+    it('打到穿越会把目标随从洗回其拥有者牌库', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('knock-1', 'vigilantes_knocked_into_next_week', 'action', '0')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('deck-1', 'test_action_a', 'action', '1')],
+                    }),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'truckers_good_buddy', '1', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'knock-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+        expect(played.finalState.core.players['1'].deck.some(card => card.uid === 'target')).toBe(true);
+    });
+
+    it('破萝飞龙打出时会找到牌库中的战术并抽到手牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('stoneford-1', 'vigilantes_stoneford', '0')],
+                        deck: [
+                            makeCard('deck-minion', 'truckers_good_buddy', 'minion', '0'),
+                            makeCard('deck-action', 'vigilantes_who_loves_ya_baby', 'action', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase('base_a', [])],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'stoneford-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.DECK_REORDERED
+            && (event as any).payload?.deckUids?.[0] === 'deck-action',
+        )).toBe(true);
+        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'deck-action')).toBe(true);
+    });
+
+    it('杰基比尔会在其他玩家打出战术后获得 +2 临时战力', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_a', [
+                    makeMinion('jacky', 'vigilantes_jacky_bill', '0', 4),
+                ]),
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'onActionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+            && (event as any).payload?.minionUid === 'jacky'
+            && (event as any).payload?.amount === 2,
+        )).toBe(true);
+    });
+
+    it('狐狸翠会在其他玩家影响本基地随从后获得 +1 指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_a', [
+                    makeMinion('foxy', 'vigilantes_foxy_green', '0', 4),
+                    makeMinion('target', 'truckers_good_buddy', '1', 2),
+                ]),
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'target',
+            triggerMinionDefId: 'truckers_good_buddy',
+            triggerMinion: core.bases[0].minions.find(minion => minion.uid === 'target'),
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'foxy'
+            && (event as any).payload?.amount === 1,
+        )).toBe(true);
+    });
+
+    it('街头正义会保护同基地己方随从不受其他玩家影响', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('protected', 'vigilantes_jacky_bill', '0', 4),
+                        makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                    ],
+                    ongoingActions: [{ uid: 'justice-1', defId: 'vigilantes_street_justice', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const protectedMinion = state.bases[0].minions[0];
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '0', 'destroy')).toBe(false);
+    });
+
+    it('藏身处会保护本基地己方随从不受其他玩家影响', () => {
+        const state = makeState({
+            bases: [
+                makeBase('base_hideout', [
+                    makeMinion('protected', 'vigilantes_jacky_bill', '0', 4),
+                    makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                ]),
+            ],
+        });
+
+        const protectedMinion = state.bases[0].minions[0];
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'affect')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '0', 'destroy')).toBe(false);
+    });
+
+    it('不屑一顾天赋会压制所在基地能力', () => {
+        const used = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase({
+                        defId: 'base_the_mean_streets',
+                        ongoingActions: [{ uid: 'shrug-1', defId: 'vigilantes_shrug_it_off', ownerId: '0', talentUsed: false } as any],
+                    }),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'shrug-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(used.success).toBe(true);
+        expect(used.events.some(event =>
+            event.type === SU_EVENTS.BASE_ABILITY_SUPPRESSED
+            && (event as any).payload?.baseIndex === 0
+            && (event as any).payload?.sourceDefId === 'vigilantes_shrug_it_off',
+        )).toBe(true);
+    });
+
+    it('直面恐惧会移动有己方随从基地中的其他玩家随从并给予额外战术', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('scared-1', 'vigilantes_scared_straight', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('own', 'vigilantes_jacky_bill', '0', 4),
+                        makeMinion('target', 'truckers_good_buddy', '1', 2),
+                    ]),
+                    makeBase('base_b', []),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'scared-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const chooseMinionPrompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_scared_straight');
+        const chooseMinion = respondToPrompt(
+            played.finalState,
+            getPromptOption(chooseMinionPrompt, option => option.value?.minionUid === 'target', '直面恐惧目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseMinion.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinion.finalState, 'vigilantes_scared_straight_destination');
+        const resolved = respondToPrompt(
+            chooseMinion.finalState,
+            getPromptOption(chooseBasePrompt, option => option.value?.baseIndex === 1, '直面恐惧目标基地').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'target')).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && (event as any).payload?.limitType === 'action'
+            && (event as any).payload?.delta === 1,
+        )).toBe(true);
+    });
+
+    it('铁杆神探会把弃牌堆至多 2 个随从放到牌库顶并移出弃牌堆', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('shift-1', 'vigilantes_shift', '0')],
+                        deck: [makeCard('deck-1', 'test_action_a', 'action', '0')],
+                        discard: [
+                            makeCard('discard-minion-a', 'truckers_good_buddy', 'minion', '0'),
+                            makeCard('discard-minion-b', 'disco_dancers_roller', 'minion', '0'),
+                            makeCard('discard-action', 'vigilantes_who_loves_ya_baby', 'action', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase('base_a', [])],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'shift-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.finalState.core.players['0'].deck.slice(0, 2).map(card => card.uid)).toEqual([
+            'discard-minion-a',
+            'discard-minion-b',
+        ]);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-a')).toBe(false);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion-b')).toBe(false);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(true);
+    });
+
+    it('瞌睡的亨利会把本基地一个随从洗回牌库', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('henry-1', 'vigilantes_dusty_henry', '0')],
+                    }),
+                    '1': makePlayer('1', {
+                        deck: [makeCard('deck-1', 'test_action_a', 'action', '1')],
+                    }),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'truckers_good_buddy', '1', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'henry-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'vigilantes_dusty_henry');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '瞌睡的亨利目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+        expect(resolved.finalState.core.players['1'].deck.some(card => card.uid === 'target')).toBe(true);
+    });
+
+    it('做个了断吧会在控制者回合开始时把有双方随从的基地临界点降为 0', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_mean_streets',
+                    minions: [
+                        makeMinion('own', 'vigilantes_jacky_bill', '0', 4),
+                        makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                    ],
+                    ongoingActions: [{ uid: 'finish-1', defId: 'vigilantes_lets_finish_this', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            sourceCardUid: 'finish-1',
+            sourceControllerId: '0',
+            sourceBaseIndex: 0,
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.BREAKPOINT_MODIFIED
+            && (event as any).payload?.baseIndex === 0
+            && (event as any).payload?.delta === -25,
+        )).toBe(true);
+    });
+
+    it('时髦镇会在影响本基地随从的战术后给该随从 +1 指示物', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_funky_town', [
+                    makeMinion('target', 'truckers_good_buddy', '0', 2),
+                ]),
+            ],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_funky_town', 'onActionPlayed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_funky_town',
+            actionTargetBaseIndex: 0,
+            actionTargetType: 'minion',
+            actionTargetMinionUid: 'target',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(result.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'target'
+            && (event as any).payload?.amount === 1,
+        )).toBe(true);
+    });
+
+    it('廉价小饭馆会在计分后让每位在这里有随从的玩家抓 1 张牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', { deck: [makeCard('draw-0', 'test_action_a', 'action', '0')] }),
+                '1': makePlayer('1', { deck: [makeCard('draw-1', 'test_action_b', 'action', '1')] }),
+            },
+            bases: [
+                makeBase('base_the_greasy_spoon', [
+                    makeMinion('a', 'truckers_good_buddy', '0', 2),
+                    makeMinion('b', 'vigilantes_jacky_bill', '1', 4),
+                ]),
+            ],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_the_greasy_spoon', 'afterScoring', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_the_greasy_spoon',
+            rankings: [{ playerId: '0', power: 10, vp: 3 }],
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN)).toHaveLength(2);
+    });
+
+    it('卡车服务站会在计分后把这里的随从移到另一个基地', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_truck_stop', [
+                    makeMinion('a', 'truckers_good_buddy', '0', 2),
+                    makeMinion('b', 'disco_dancers_roller', '1', 2),
+                ]),
+                makeBase('base_a', []),
+            ],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_truck_stop', 'afterScoring', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_truck_stop',
+            rankings: [{ playerId: '0', power: 10, vp: 3 }],
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(true);
+    });
+
+    it('摇摆仙境会在回合开始时给予 2 力量或更低随从额外随从额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('minion-1', 'truckers_good_buddy', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_boogie_wonderland', [])],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_boogie_wonderland', 'onTurnStart', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_boogie_wonderland',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(result.events.some(event =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && (event as any).payload?.limitType === 'minion'
+            && (event as any).payload?.delta === 1
+            && (event as any).payload?.restrictToBase === 0
+            && (event as any).payload?.powerMax === 2,
+        )).toBe(true);
+    });
+
+    it('险恶街区会在战术影响这里时让其他玩家的随从获得 +1 指示物', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_mean_streets', [
+                    makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                ]),
+            ],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_the_mean_streets', 'onActionPlayed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_the_mean_streets',
+            actionTargetBaseIndex: 0,
+            actionTargetType: 'base',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(result.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'enemy'
+            && (event as any).payload?.amount === 1,
+        )).toBe(true);
     });
 
     it('猛龙怪客会在其他玩家消灭别人随从后反杀其一个随从，且每回合仅一次', () => {
@@ -694,6 +1227,286 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'save-me')).toBe(false);
     });
 
+    it('迪斯科·卢会把弃牌堆中的战术放到牌库顶', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('lou-1', 'disco_dancers_ul_disco_lou', '0')],
+                        deck: [makeCard('deck-1', 'test_action_a', 'action', '0')],
+                        discard: [makeCard('discard-action', 'disco_dancers_celebration', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [makeBase('base_a', [])],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'lou-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.CARD_TO_DECK_TOP
+            && (event as any).payload?.cardUid === 'discard-action',
+        )).toBe(true);
+        expect(played.finalState.core.players['0'].deck[0]?.uid).toBe('discard-action');
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(false);
+    });
+
+    it('迪斯科地狱会给目标随从 +1 指示物并抓牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('inferno-1', 'disco_dancers_disco_inferno', 'action', '0')],
+                        deck: [makeCard('draw-1', 'test_action_a', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'truckers_good_buddy', '0', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'inferno-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_disco_inferno');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '迪斯科地狱目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.powerCounters).toBe(1);
+    });
+
+    it('庆祝会给予两次额外战术额度', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('celebration-1', 'disco_dancers_celebration', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'celebration-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.filter(event =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && (event as any).payload?.limitType === 'action'
+            && (event as any).payload?.delta === 1,
+        )).toHaveLength(2);
+    });
+
+    it('男人雨会给予一次额外随从额度', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('rain-1', 'disco_dancers_its_raining_men', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'rain-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.LIMIT_MODIFIED
+            && (event as any).payload?.limitType === 'minion'
+            && (event as any).payload?.delta === 1,
+        )).toBe(true);
+    });
+
+    it('我很亢奋会移动己方随从到其他基地并抓牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('excited-1', 'disco_dancers_im_so_excited', 'action', '0')],
+                        deck: [makeCard('draw-1', 'test_action_a', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('mover', 'disco_dancers_roller', '0', 2),
+                    ]),
+                    makeBase('base_b', []),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'excited-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const chooseMinionPrompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_im_so_excited');
+        const chooseMinion = respondToPrompt(
+            played.finalState,
+            getPromptOption(chooseMinionPrompt, option => option.value?.minionUid === 'mover', '我很亢奋移动目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseMinion.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinion.finalState, 'disco_dancers_im_so_excited_destination');
+        const resolved = respondToPrompt(
+            chooseMinion.finalState,
+            getPromptOption(chooseBasePrompt, option => option.value?.baseIndex === 1, '我很亢奋目标基地').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'mover')).toBe(true);
+    });
+
+    it('最后的舞曲会消灭自己的随从并获得 1 VP', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('last-dance-1', 'disco_dancers_last_dance', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'disco_dancers_roller', '0', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'last-dance-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'disco_dancers_last_dance');
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(prompt, option => option.value?.minionUid === 'target', '最后的舞曲目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.VP_AWARDED
+            && (event as any).payload?.playerId === '0'
+            && (event as any).payload?.amount === 1,
+        )).toBe(true);
+        expect(resolved.finalState.core.players['0'].vp).toBe(1);
+    });
+
+    it('活着会把弃牌堆中与己方场上同名的随从回手', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('stayin-1', 'disco_dancers_stayin_alive', 'action', '0')],
+                        discard: [
+                            makeCard('discard-roller', 'disco_dancers_roller', 'minion', '0'),
+                            makeCard('discard-other', 'truckers_good_buddy', 'minion', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('roller-in-play', 'disco_dancers_roller', '0', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'stayin-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD
+            && (event as any).payload?.cardUids?.includes('discard-roller'),
+        )).toBe(true);
+        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'discard-roller')).toBe(true);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-other')).toBe(true);
+    });
+
+    it('轮滑舞娘被影响时若没有 +1 指示物，会给自己加 1 枚', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_a', [
+                    makeMinion('roller', 'disco_dancers_roller', '0', 2),
+                ]),
+            ],
+        });
+
+        const triggered = fireTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'roller',
+            triggerMinionDefId: 'disco_dancers_roller',
+            triggerMinion: core.bases[0].minions.find(minion => minion.uid === 'roller'),
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'roller'
+            && (event as any).payload?.amount === 1,
+        )).toBe(true);
+    });
+
     it('咬紧牙关会让宿主随从 +2 战力', () => {
         const state = makeState({
             bases: [
@@ -742,6 +1555,60 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         });
 
         expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '0')).toBe(4);
+    });
+
+    it('修理会把弃牌堆中的战术回收到手牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('fix-1', 'truckers_fixin_to_fix_it', 'action', '0')],
+                        discard: [
+                            makeCard('discard-action', 'truckers_convoy', 'action', '0'),
+                            makeCard('discard-minion', 'truckers_good_buddy', 'minion', '0'),
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'fix-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event =>
+            event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD
+            && (event as any).payload?.cardUids?.includes('discard-action'),
+        )).toBe(true);
+        expect(played.finalState.core.players['0'].hand.some(card => card.uid === 'discard-action')).toBe(true);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-action')).toBe(false);
+        expect(played.finalState.core.players['0'].discard.some(card => card.uid === 'discard-minion')).toBe(true);
+    });
+
+    it('装甲卡车会保护同基地己方随从不受消灭和移动影响', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('protected', 'truckers_good_buddy', '0', 2),
+                        makeMinion('enemy', 'truckers_el_bandido', '1', 5),
+                    ],
+                    ongoingActions: [
+                        { uid: 'armor-1', defId: 'truckers_armored_truck', ownerId: '0' },
+                    ],
+                }),
+            ],
+        });
+
+        const protectedMinion = state.bases[0].minions[0];
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'move')).toBe(true);
+        expect(isMinionProtected(state, protectedMinion, 0, '1', 'affect')).toBe(false);
     });
 
     it('觉得运气不错？会在宿主控制者打出战术后消灭宿主', () => {
@@ -1028,5 +1895,233 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.tempPowerModifier).toBe(1);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.tempPowerModifier).toBe(-1);
+    });
+
+    it('快如闪电会给予目标 +2 战力并在本回合被消灭时改回手牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('fast-1', 'kung_fu_fighters_fast_as_lightning', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('lady', 'kung_fu_fighters_lady_whirlwind', '0', 4),
+                        makeMinion('target', 'test_target', '1', 1),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'fast-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const fastPrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_fast_as_lightning');
+        const applied = respondToPrompt(
+            played.finalState,
+            getPromptOption(fastPrompt, option => option.value?.minionUid === 'target', '快如闪电目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(applied.success).toBe(true);
+        expect(applied.finalState.core.bases[0].minions.find(minion => minion.uid === 'target')?.tempPowerModifier).toBe(2);
+
+        const usedTalent = runCommand(applied.finalState, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'lady', baseIndex: 0 },
+        }, defaultTestRandom);
+
+        expect(usedTalent.success).toBe(true);
+        expect(usedTalent.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(false);
+        expect(usedTalent.finalState.core.players['1'].hand.some(card => card.uid === 'target')).toBe(true);
+        expect(usedTalent.events.some(event =>
+            event.type === SU_EVENTS.MINION_RETURNED
+            && (event as any).payload?.minionUid === 'target',
+        )).toBe(true);
+    });
+
+    it('人人都是功夫高手会让所选基地每位有随从的玩家各消灭另一位玩家的随从', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('everybody-1', 'kung_fu_fighters_everybody_was_kung_fu_fighting', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('ally', 'kung_fu_fighters_cricket', '0', 2),
+                        makeMinion('enemy', 'test_enemy', '1', 2),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'everybody-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const basePrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_everybody_was_kung_fu_fighting_base');
+        const chooseBase = respondToPrompt(
+            played.finalState,
+            getPromptOption(basePrompt, option => option.value?.baseIndex === 0, '人人都是功夫高手目标基地').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseBase.success).toBe(true);
+
+        const p0Prompt = getSimpleChoicePrompt(chooseBase.finalState, 'kung_fu_fighters_everybody_was_kung_fu_fighting_target');
+        const p0Choice = respondToPrompt(
+            chooseBase.finalState,
+            getPromptOption(p0Prompt, option => option.value?.minionUid === 'enemy', '玩家0消灭目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(p0Choice.success).toBe(true);
+
+        const p1Prompt = getSimpleChoicePrompt(p0Choice.finalState, 'kung_fu_fighters_everybody_was_kung_fu_fighting_target');
+        const resolved = respondToPrompt(
+            p0Choice.finalState,
+            getPromptOption(p1Prompt, option => option.value?.minionUid === 'ally', '玩家1消灭目标').id,
+            '1',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'ally')).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy')).toBe(false);
+        expect(resolved.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(2);
+    });
+
+    it('掌握时机会在计分前打出并同时转移全部 +1 标记与授予额外天赋', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('expert-1', 'kung_fu_fighters_expert_timing', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_greasy_spoon', [
+                    makeMinion('dragon', 'kung_fu_fighters_dragon_warrior', '0', 5, { talentUsed: true }),
+                    makeMinion('source', 'test_source', '1', 2, { powerCounters: 3 }),
+                    makeMinion('receiver', 'kung_fu_fighters_cricket', '0', 2, { powerCounters: 0 }),
+                ]),
+            ],
+        });
+
+        const played = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'expert-1' },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        const modePrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_expert_timing_mode');
+        const chooseMode = respondToPrompt(
+            played.finalState,
+            getPromptOption(modePrompt, option => option.value?.mode === 'both', '掌握时机两者都做').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseMode.success).toBe(true);
+
+        const talentPrompt = getSimpleChoicePrompt(chooseMode.finalState, 'kung_fu_fighters_expert_timing_talent');
+        const chooseTalent = respondToPrompt(
+            chooseMode.finalState,
+            getPromptOption(talentPrompt, option => option.value?.minionUid === 'dragon', '掌握时机额外天赋目标').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseTalent.success).toBe(true);
+
+        const sourcePrompt = getSimpleChoicePrompt(chooseTalent.finalState, 'kung_fu_fighters_expert_timing_source');
+        const chooseSource = respondToPrompt(
+            chooseTalent.finalState,
+            getPromptOption(sourcePrompt, option => option.value?.minionUid === 'source', '掌握时机标记来源').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseSource.success).toBe(true);
+
+        const targetPrompt = getSimpleChoicePrompt(chooseSource.finalState, 'kung_fu_fighters_expert_timing_target');
+        const resolved = respondToPrompt(
+            chooseSource.finalState,
+            getPromptOption(targetPrompt, option => option.value?.minionUid === 'receiver', '掌握时机标记接收者').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'source')?.powerCounters).toBe(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'receiver')?.powerCounters).toBe(3);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'dragon')?.metadata).toMatchObject({
+            mythicHorsesSeastarExtraTalent: true,
+            mythicHorsesSeastarExtraTalentConsumed: false,
+        });
+    });
+
+    it('平头彼特天赋会转移自身并移动同基地另一张己方基地战术', () => {
+        const used = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase({
+                        defId: 'base_a',
+                        minions: [makeMinion('ally', 'truckers_good_buddy', '0', 2)],
+                        ongoingActions: [
+                            { uid: 'pete-1', defId: 'truckers_cab_over_pete', ownerId: '0', talentUsed: false } as any,
+                            { uid: 'convoy-1', defId: 'truckers_convoy', ownerId: '0', talentUsed: false } as any,
+                        ],
+                    }),
+                    makeBase('base_b', []),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'pete-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(used.success).toBe(true);
+        const basePrompt = getSimpleChoicePrompt(used.finalState, 'truckers_cab_over_pete_base');
+        const chooseBase = respondToPrompt(
+            used.finalState,
+            getPromptOption(basePrompt, option => option.value?.baseIndex === 1, '平头彼特目标基地').id,
+            '0',
+            defaultTestRandom,
+        );
+        expect(chooseBase.success).toBe(true);
+
+        const cardPrompt = getSimpleChoicePrompt(chooseBase.finalState, 'truckers_cab_over_pete_card');
+        const resolved = respondToPrompt(
+            chooseBase.finalState,
+            getPromptOption(cardPrompt, option => option.value?.actionUid === 'convoy-1', '平头彼特移动战术').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'pete-1')?.talentUsed).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'convoy-1')).toBe(true);
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'pete-1' || action.uid === 'convoy-1')).toBe(false);
     });
 });

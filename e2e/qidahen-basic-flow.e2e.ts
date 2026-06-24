@@ -511,7 +511,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await confirmActionPayment(page, 3);
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点左上轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM);
 
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
@@ -1723,7 +1723,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toContainText('王化贞');
-        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('王化贞调度');
+        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('选择目标');
         await saveScreenshot(page, INTERNAL_DISPATCH_DIRECT_BEFORE_SCREENSHOT);
 
         await clickGuidedMapTarget(page, 'city-region-22');
@@ -1790,7 +1790,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             next.core.gaoDiDispatchSelection = {
                 source: 'gao-di',
                 title: '高第弃牌调度',
-                summary: '测试：地图绿色目标直点执行。',
+                summary: '测试：地图目标选择执行。',
                 sourceRegionId: 'city-region-24',
                 sourceRegionName: '宁远',
                 maxTroops: 2,
@@ -2710,7 +2710,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: 'recruit-train' },
         });
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点左上轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
@@ -2835,7 +2835,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             });
         });
 
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点左上轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('一名对手抽 2，走 2');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'ningyuan');
@@ -3110,7 +3110,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toBeVisible();
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rout' });
         await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点左上轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择轮盘行动');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 后金');

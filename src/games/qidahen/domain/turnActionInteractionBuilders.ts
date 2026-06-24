@@ -234,7 +234,7 @@ function buildQidahenInternalDispatchInteraction(
             sourceId: QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
             targetType: 'button',
             autoResolveIfSingle: false,
-            subtitle: `从 ${selection.sourceRegionName} 出发 · 最多调 ${selection.maxTroops} 个部队 · 也可直接点地图绿色目标`,
+            subtitle: `从 ${selection.sourceRegionName} 出发 · 最多调 ${selection.maxTroops} 个部队 · 在地图上选择目标`,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION],
         },
     ) as QidahenInternalDispatchInteraction;

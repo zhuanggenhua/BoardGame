@@ -15,6 +15,8 @@ describe('applyRuntimeViewportCssVars', () => {
         style.removeProperty('--mobile-board-shell-logical-height');
         style.removeProperty('--mobile-board-shell-inline-unit');
         style.removeProperty('--mobile-board-shell-block-unit');
+        style.removeProperty('--mobile-board-shell-offset-x');
+        style.removeProperty('--mobile-board-shell-offset-y');
     });
 
     it('uses descendant game page metadata before html/body attributes are synced', () => {
@@ -42,6 +44,8 @@ describe('applyRuntimeViewportCssVars', () => {
         applyRuntimeViewportCssVars({ width: 936, height: 432 });
 
         expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-design-width')).toBe('1520px');
-        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.615789');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-scale')).toBe('0.540000');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-x')).toBe('57.600px');
+        expect(document.documentElement.style.getPropertyValue('--mobile-board-shell-offset-y')).toBe('0.000px');
     });
 });

@@ -218,20 +218,22 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
         expect(boardSource).toContain('showWheelNextStepBanner');
-        expect(boardSource).toContain('点左上轮盘');
+        expect(boardSource).toContain('选择轮盘行动');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
-        expect(boardSource).toContain("defaultValue: '发亮的绿色格就是下一步'");
+        expect(boardSource).toContain("defaultValue: '本次轮盘行动待执行'");
         expect(boardSource).toContain('点这里');
         expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
+        expect(boardSource).not.toContain('发亮的绿色格就是下一步');
+        expect(boardSource).not.toContain('点左上发亮的绿色格');
     });
 
     it('一级行动面板会自动锁定当前主流程，并直接暴露二级行动而不是再加一级选择按钮', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
         expect(boardSource).toContain("return selectedAction ? `正在执行：${selectedAction.label}` : '先选一项行动';");
         expect(boardSource).toContain("return '先从右侧选一项行动';");
-        expect(boardSource).toContain("return '点亮起的绿色区域继续';");
-        expect(boardSource).toContain(": '点左上发亮的绿色格';");
+        expect(boardSource).toContain("return '选择行动目标';");
+        expect(boardSource).toContain(": '选择轮盘行动';");
         expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
         expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
         expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
@@ -239,6 +241,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('qidahen-action-state-${action.id}');
         expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
         expect(boardSource).toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).not.toContain('点亮起的绿色区域继续');
+        expect(boardSource).not.toContain('地图可点');
         expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
         expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
     });

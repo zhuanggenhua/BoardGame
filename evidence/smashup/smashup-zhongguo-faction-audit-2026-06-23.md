@@ -4,20 +4,19 @@
 
 ## 结论等级
 
-本文件只证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级实现盘点 + 局部 L2 行为验证**。
+本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 2 条代表性 L3/L4 真实入口 E2E**。
 
 当前**不能**写成：
 
 - 四派系玩法完成
-- 四派系对象级全面审计完成
 - 四派系 L3/L4 收口
 - 可发布口径已收口
 
 当前更准确的结论是：
 
 - `L0/L1`：四派系卡牌、基地、atlas、manifest 合同已存在，见 intake 合同
-- `L2`：部分对象已有运行时行为测试
-- `L3/L4`：四派系整体仍大面积缺失
+- `L2`：当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系对象
+- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E 与“车友聚会”计分前真实入口 E2E；四派系整体仍未收口
 - `整批状态`：仍在实施中
 
 关联 intake 合同：
@@ -40,21 +39,81 @@
    - `vigilantes_death_wisher`
    - `vigilantes_the_revenge`
    - `vigilantes_brojak`
-4. 静态语义修正
+4. 功夫斗士
+   - 快如闪电（`kung_fu_fighters_fast_as_lightning`）
+   - 人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）
+   - 掌握时机（`kung_fu_fighters_expert_timing`）
+5. 卡车车神
+   - 平头彼特（`truckers_cab_over_pete`）
+6. 本轮续做 L2 补证
+   - 凶恶百倍（`vigilantes_a_whole_lot_meaner`）
+   - 破萝飞龙（`vigilantes_stoneford`）
+   - 杰基比尔（`vigilantes_jacky_bill`）
+   - 街头正义（`vigilantes_street_justice`）
+   - 打到穿越（`vigilantes_knocked_into_next_week`）
+   - 狐狸翠（`vigilantes_foxy_green`）
+   - 藏身处（`base_hideout`）
+   - 修理（`truckers_fixin_to_fix_it`）
+   - 装甲卡车（`truckers_armored_truck`）
+7. 侠义义警第二批 L2 补证
+   - 不屑一顾（`vigilantes_shrug_it_off`）
+   - 直面恐惧（`vigilantes_scared_straight`）
+   - 铁杆神探（`vigilantes_shift`）
+   - 瞌睡的亨利（`vigilantes_dusty_henry`）
+8. 迪厅舞王续做 L2 补证
+   - 迪斯科·卢（`disco_dancers_ul_disco_lou`）
+   - 迪斯科地狱（`disco_dancers_disco_inferno`）
+   - 轮滑舞娘（`disco_dancers_roller`）
+   - 庆祝（`disco_dancers_celebration`）
+   - 男人雨（`disco_dancers_its_raining_men`）
+   - 我很亢奋（`disco_dancers_im_so_excited`）
+   - 最后的舞曲（`disco_dancers_last_dance`）
+   - 活着（`disco_dancers_stayin_alive`）
+9. 剩余基地与触发补证
+   - 做个了断吧（`vigilantes_lets_finish_this`）
+   - 时髦镇（`base_funky_town`）
+   - 廉价小饭馆（`base_the_greasy_spoon`）
+   - 卡车服务站（`base_truck_stop`）
+   - 摇摆仙境（`base_boogie_wonderland`）
+   - 险恶街区（`base_the_mean_streets`）
+10. 行为修正
+   - 修理（`truckers_fixin_to_fix_it`）从误用普通抽牌事件改为弃牌堆回手事件，L2 已证明弃牌堆战术进入手牌且不错误拿随从
+   - 直面恐惧（`vigilantes_scared_straight`）不再依赖普通战术不存在的预选基地，改为从所有“你有随从”的基地选择其他玩家随从
+   - 铁杆神探（`vigilantes_shift`）从只重排牌库改为真正把弃牌堆随从移到牌库顶，L2 已证明弃牌堆会移除目标随从
+   - 做个了断吧（`vigilantes_lets_finish_this`）从普通卡定义查询改为基地定义查询，L2 已证明可按险恶街区临界点产生临时临界点修正
+11. 静态语义修正
    - `truckers_rally` 改为 `special + beforeScoring + specialNeedsBase`
    - `truckers_turn_the_beat_around` 改为 `special + beforeScoring + specialNeedsBase`
    - `disco_dancers_i_will_survive` 已在本轮前半段修正为 `special + afterScoring + specialNeedsBase`
    - `vigilantes_the_revenge` 改为 `special + afterScoring + specialNeedsBase`
+   - `kung_fu_fighters_expert_timing` 改为 `special + beforeScoring`，不强制计分基地目标；其实际效果选择牌/随从而不是选择计分基地
+12. L3/L4 真实入口补证
+   - 我会活下去（`disco_dancers_i_will_survive`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分响应窗口，在 `afterScoring` 窗口打出该 special，选择计分基地己方随从，最终断言随从回到手牌、计分基地移除该随从、`pendingAfterScoringSpecials` / `triggerQueue` / 交互 / 响应窗口清空
+   - 车友聚会（`truckers_rally`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分前响应窗口，在 `beforeScoring` 窗口打出该 special，选择计分基地己方随从，最终断言按己方基地持续战术数量获得临时战力，并清理交互 / `triggerQueue`
 
 ## 本轮验证
 
 已通过：
 
 - `npx tsc --noEmit --pretty false`
-- `npx eslint src/games/smashup/abilities/zhongguo.ts src/games/smashup/data/factions/zhongguo.ts src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`
-- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`
-- `npx vitest run src/games/smashup/__tests__/afterscoring-card-registration.test.ts`
-- `npx vitest run src/games/smashup/__tests__/variantBindingRuntime.test.ts`
+- `npx eslint e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts src/games/smashup/abilities/zhongguo.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/data/factions/zhongguo.ts src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`（0 error；E2E 文件沿用现有测试框架风格，有 `any` warning）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts src/games/smashup/__tests__/afterscoring-card-registration.test.ts src/games/smashup/__tests__/variantBindingRuntime.test.ts`（61 passed）
+- `npm run test:e2e:file -- e2e/smashup/smashup-afterscoring-simple-complete.e2e.ts`（对照链路，1 passed）
+- `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts`（zhongguo 新增链路，1 passed）
+
+新增 E2E 文件：
+
+- `e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts`
+
+新增截图证据：
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-i-will-survive.e2e\计分后从真实响应窗口打出我会活下去，并把计分基地己方随从返回手牌\zhongguo-i-will-survive-after-scoring-window.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-i-will-survive.e2e\计分后从真实响应窗口打出我会活下去，并把计分基地己方随从返回手牌\zhongguo-i-will-survive-choose-minion.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-i-will-survive.e2e\计分后从真实响应窗口打出我会活下去，并把计分基地己方随从返回手牌\zhongguo-i-will-survive-final-state.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-rally-before-scoring.e2e\计分前从真实响应窗口打出车友聚会，并给己方随从加临时战力\zhongguo-rally-before-scoring-window.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-rally-before-scoring.e2e\计分前从真实响应窗口打出车友聚会，并给己方随从加临时战力\zhongguo-rally-before-scoring-final-state.png`
 
 ## 批次矩阵（按对象粒度分组）
 
@@ -71,22 +130,19 @@
 `L2 已证实`
 
 - `kung_fu_fighters_cricket`
+- `kung_fu_fighters_fast_as_lightning`
 - `kung_fu_fighters_dragon_warrior`
 - `kung_fu_fighters_drunken_master`
 - `kung_fu_fighters_lady_whirlwind`
 - `kung_fu_fighters_ancient_chinese_art`
 - `kung_fu_fighters_everybody_knew_their_part`
+- `kung_fu_fighters_everybody_was_kung_fu_fighting`
+- `kung_fu_fighters_expert_timing`
 - `kung_fu_fighters_a_little_bit_frightening`
 - `kung_fu_fighters_lets_get_it_on`
 - `kung_fu_fighters_oh_hoh_hoh_hoah`
 - `base_ancient_dojo`
 - `base_tournament_site`
-
-`L2 未实现`
-
-- `kung_fu_fighters_fast_as_lightning`
-- `kung_fu_fighters_everybody_was_kung_fu_fighting`
-- `kung_fu_fighters_expert_timing`
 
 ### 侠义义警（18 张牌 + 2 个基地）
 
@@ -99,21 +155,18 @@
 - `vigilantes_brojak`
 - `vigilantes_tough_it_out`
 - `vigilantes_feeling_lucky`
-
-`L2 待补证`
-
-- `vigilantes_shrug_it_off`
-- `vigilantes_scared_straight`
 - `vigilantes_a_whole_lot_meaner`
 - `vigilantes_stoneford`
 - `vigilantes_jacky_bill`
 - `vigilantes_street_justice`
-- `vigilantes_shift`
-- `vigilantes_dusty_henry`
 - `vigilantes_knocked_into_next_week`
-- `vigilantes_lets_finish_this`
 - `vigilantes_foxy_green`
 - `base_hideout`
+- `vigilantes_shrug_it_off`
+- `vigilantes_scared_straight`
+- `vigilantes_shift`
+- `vigilantes_dusty_henry`
+- `vigilantes_lets_finish_this`
 - `base_the_mean_streets`
 
 ### 卡车车神（13 张牌 + 2 个基地）
@@ -130,17 +183,11 @@
 - `truckers_convoy`
 - `truckers_rally`
 - `truckers_turn_the_beat_around`
-
-`L2 待补证`
-
+- `truckers_cab_over_pete`
 - `truckers_fixin_to_fix_it`
 - `truckers_armored_truck`
 - `base_the_greasy_spoon`
 - `base_truck_stop`
-
-`L2 未实现`
-
-- `truckers_cab_over_pete`
 
 ### 迪厅舞王（13 张牌 + 2 个基地）
 
@@ -151,9 +198,6 @@
 - `disco_dancers_we_are_family`
 - `disco_dancers_dancing_king`
 - `disco_dancers_i_will_survive`
-
-`L2 待补证`
-
 - `disco_dancers_ul_disco_lou`
 - `disco_dancers_disco_inferno`
 - `disco_dancers_roller`
@@ -167,35 +211,33 @@
 
 ## 当前明确未实现对象
 
-截至本轮，确认还没落对象级玩法实现的卡：
+截至本轮，前一版列出的 `4` 张明确未实现牌已经补到对象级 `L2` 行为验证：
 
-- 功夫斗士：`3`
-  - `kung_fu_fighters_fast_as_lightning`
-  - `kung_fu_fighters_everybody_was_kung_fu_fighting`
-  - `kung_fu_fighters_expert_timing`
-- 卡车车神：`1`
-  - `truckers_cab_over_pete`
+- 快如闪电（`kung_fu_fighters_fast_as_lightning`）：打出选随从、本回合 +2、被消灭时改回拥有者手牌
+- 人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）：选基地后，该基地每位有随从的玩家各选另一位玩家随从并消灭
+- 掌握时机（`kung_fu_fighters_expert_timing`）：计分前特殊窗口可打出，已覆盖“转移全部随从 +1 标记”与“给己方随从额外一次天赋”的组合分支
+- 平头彼特（`truckers_cab_over_pete`）：天赋转移自身到另一基地，并移动同基地另一张己方牌；当前 L2 覆盖己方基地持续战术目标
 
-合计：`4` 张牌仍是明确未实现。
+当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系牌；但这不等于整批完成，见下方剩余项和残余风险。
 
 ## 当前批次剩余项
 
 按优先级建议：
 
-1. 先补明确未实现的 `4` 张牌
-   - 功夫斗士 `3`
-   - 卡车车神 `1`
-2. 再补 `L2 待补证` 对象的对象级测试
-   - 重点先补义警与迪厅的 ongoing / trigger / protection 家族
-3. 最后再补 `L3/L4`
-   - 真实计分前 / 计分后入口
-   - reaction session
-   - finalState / triggerQueue
+1. 补当前 4 张新增 L2 对象的更深层证据
+   - 快如闪电（`kung_fu_fighters_fast_as_lightning`）：当前只验证“被消灭”进入弃牌堆前改回手牌；尚未证明计分后 `BASE_CLEARED` 清理路径也能替代回手
+   - 掌握时机（`kung_fu_fighters_expert_timing`）：当前只覆盖随从上的 +1 标记与随从天赋额外使用；尚未覆盖基地持续战术上的标记/天赋
+   - 平头彼特（`truckers_cab_over_pete`）：当前覆盖移动另一张己方基地持续战术；己方随从目标也由同 handler 支持，但仍可补独立对象测试
+2. 继续补 `L3/L4`
+   - 我会活下去（`disco_dancers_i_will_survive`）已覆盖真实页面按钮推进、`afterScoring` 响应窗口、最终状态清理
+   - 车友聚会（`truckers_rally`）已覆盖真实页面按钮推进、`beforeScoring` 响应窗口、最终状态清理
+   - 仍需补更多 `beforeScoring` special 分支，例如掌握时机（`kung_fu_fighters_expert_timing`）的复杂模式选择
+   - 仍需补至少一条基地能力真实入口，例如廉价小饭馆（`base_the_greasy_spoon`）或卡车服务站（`base_truck_stop`）
+   - 仍需把 `reaction session` 的队列/清理状态纳入更多 representative 链路
 
 ## 本轮不宣称完成的原因
 
-1. 仍有 `4` 张牌未实现
-2. 仍有大量对象只有静态接入或代码接入，没有对象级测试
-3. 还没有四派系的真实入口 E2E
-4. 还没有四派系的 L4 收口证据
-5. 本文件只是第一版批次清单，不是最终 rollup
+1. 当前已清空对象级 `L2` 待补证，但只有两条代表性真实入口 E2E，不能代表四派系 L3/L4 全收口
+2. 我会活下去（`disco_dancers_i_will_survive`）与车友聚会（`truckers_rally`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但基地能力和多对象交互链路仍缺 L4 流程态证据
+3. 快如闪电（`kung_fu_fighters_fast_as_lightning`）、掌握时机（`kung_fu_fighters_expert_timing`）与平头彼特（`truckers_cab_over_pete`）仍有上文列出的更深层分支残余
+4. 本文件只是实施审计底稿，不是最终 rollup

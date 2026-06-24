@@ -110,6 +110,48 @@ function getCurrentInteractionChoiceSourceId(
     return typeof sourceId === 'string' ? sourceId : undefined;
 }
 
+function isResolvedPromptBackedByInteraction(
+    event: GameEvent,
+    resolvedEvent: ChoiceResolvedEvent,
+): boolean {
+    if (event.type !== INTERACTION_EVENTS.RESOLVED) return false;
+
+    const payload = event.payload as {
+        optionId?: unknown;
+        sourceId?: unknown;
+        interactionData?: unknown;
+    };
+    const sourceAbilityId = resolvedEvent.payload.sourceAbilityId;
+    if (
+        typeof sourceAbilityId !== 'string'
+        || sourceAbilityId.length === 0
+        || payload.sourceId !== sourceAbilityId
+    ) {
+        return false;
+    }
+
+    const data = payload.interactionData as {
+        sourceId?: unknown;
+        options?: Array<{
+            id?: unknown;
+            value?: { customId?: unknown };
+        }>;
+    } | undefined;
+    if (data?.sourceId !== sourceAbilityId || !Array.isArray(data.options)) {
+        return false;
+    }
+
+    const option = typeof payload.optionId === 'string'
+        ? data.options.find(entry => entry?.id === payload.optionId)
+        : undefined;
+    if (!option) return false;
+
+    const customId = resolvedEvent.payload.customId;
+    return typeof customId === 'string'
+        && customId.length > 0
+        && option.value?.customId === customId;
+}
+
 function syncCurrentChoiceAnchorWithInteraction(
     state: MatchState<DiceThroneCore>,
 ): MatchState<DiceThroneCore> {
@@ -811,7 +853,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     const customId = resolvedEvent.payload.customId;
                     if (customId) {
                         const followupHandler = getChoiceResolvedEventHandler(customId);
-                        if (followupHandler && hasCurrentChoiceAnchor(newState.core, resolvedEvent.payload.sourceAbilityId)) {
+                        const hasChoiceAnchor = hasCurrentChoiceAnchor(newState.core, resolvedEvent.payload.sourceAbilityId)
+                            || isResolvedPromptBackedByInteraction(event, resolvedEvent);
+                        if (followupHandler && hasChoiceAnchor) {
                             nextEvents.push(...followupHandler({
                                 state: newState.core,
                                 playerId: resolvedEvent.payload.playerId,
