@@ -217,6 +217,45 @@ type VigilantesBrojakContext = ZhongguoPromptContext & {
     targetBaseIndex: number;
 };
 
+const TRUCKERS_ACTION_MODE_LABEL_BY_MODE: Record<TruckersActionMode, string> = {
+    transfer: '只转移',
+    control: '只控权',
+    transfer_and_control: '转移并控权',
+    extra_action: '额外行动',
+};
+
+const TRUCKERS_ACTION_MODE_LABEL_KEY_BY_MODE: Record<TruckersActionMode, string> = {
+    transfer: 'ui.truckers_action_mode_transfer_option',
+    control: 'ui.truckers_action_mode_control_option',
+    transfer_and_control: 'ui.truckers_action_mode_transfer_and_control_option',
+    extra_action: 'ui.truckers_action_mode_extra_action_option',
+};
+
+const ZHONGGUO_PROMPT_TITLES = {
+    moveOwnMinionDestination: '选择目标基地',
+    vigilantesDeathWisher: '猛龙怪客：选择一个消灭者控制的随从并消灭之',
+    vigilantesBrojak: '神探布洛杰克：是否移动到刚才移动随从所在的基地并获得 +1 战力？',
+    truckersRally: '车友聚会：选择计分基地的一个随从',
+    truckersTurnTheBeatAroundPenalty: '节拍一转：选择同基地一个随从 -1 战力',
+    truckersTurnTheBeatAroundBoost: '节拍一转：选择计分基地一个随从 +1 战力',
+    truckersHighSpeedChaseBase: '高速追逐战：选择目标基地',
+    truckersHighSpeedChaseMinion: '高速追逐战：选择你在此基地的一个随从',
+    truckersDekotoraMinions: '暴走卡车：选择至多 3 个你的随从移动',
+    truckersDekotoraBase: '暴走卡车：选择目标基地',
+    truckersHotwireBase: '短路点火：选择目标基地',
+    truckersHotwireMode: '短路点火：选择效果',
+    truckersHotwireAction: '短路点火：选择基地上的一张战术',
+    truckersElBandidoTakeControl: '埃尔班迪多：你可以获得一张基地战术的控制权',
+    truckersElBandidoTransferBase: '埃尔班迪多：选择目标基地',
+    truckersElBandidoTransferAction: '埃尔班迪多：选择要转移的基地战术',
+    truckersElBandidoTalentMode: '埃尔班迪多：选择天赋效果',
+    truckersSkinnyMinnieAction: '皮包骨米妮：选择要一起转移的基地战术',
+    truckersSkinnyMinnieBase: '皮包骨米妮：选择目标基地',
+    discoDancingKing: '舞王：选择另一个同基地随从复制这次普通战术影响',
+    discoIWillSurvive: '我会活下去：选择计分基地中的一个己方随从返回拥有者手牌',
+    vigilantesBrojakFollowOption: '移动并 +1 战力',
+} as const;
+
 function createPromptContext<TExtra extends object>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -623,19 +662,14 @@ function getTruckersHotwireModes(
 function buildTruckersActionModeOptions(modes: TruckersActionMode[]): Array<{
     id: string;
     label: string;
+    labelKey: string;
     value: TruckersActionModeChoice;
     displayMode: 'button';
 }> {
     return modes.map((mode) => ({
         id: mode,
-        label:
-            mode === 'transfer'
-                ? '只转移'
-                : mode === 'control'
-                    ? '只控权'
-                    : mode === 'transfer_and_control'
-                        ? '转移并控权'
-                        : '额外行动',
+        label: TRUCKERS_ACTION_MODE_LABEL_BY_MODE[mode],
+        labelKey: TRUCKERS_ACTION_MODE_LABEL_KEY_BY_MODE[mode],
         value: { mode },
         displayMode: 'button' as const,
     }));
@@ -924,7 +958,7 @@ const moveOwnMinionDestinationPromptProgram = createPromptProgram<MoveOwnMinionC
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceDefId}_destination_${context.now}`,
         context.playerId,
-        '选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.moveOwnMinionDestination,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.fromBaseIndex ?? -1), context.matchState.core),
         {
             sourceId: `${context.sourceDefId}_destination`,
@@ -1012,7 +1046,7 @@ const vigilantesDeathWisherPromptProgram = createPromptProgram<VigilantesDeathWi
         return createAbilityRuntimeSimpleChoice(
             `vigilantes_death_wisher_${context.now}`,
             context.playerId,
-            '猛龙怪客：选择一个消灭者控制的随从并消灭之',
+            ZHONGGUO_PROMPT_TITLES.vigilantesDeathWisher,
             [
                 createSkipOption('跳过（不消灭）', 'ui.vigilantes_death_wisher_skip_option'),
                 ...buildMinionTargetOptions(candidates, {
@@ -1074,11 +1108,12 @@ const vigilantesBrojakPromptProgram = createPromptProgram<VigilantesBrojakContex
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `vigilantes_brojak_${context.now}`,
         context.playerId,
-        '神探布洛杰克：是否移动到刚才移动随从所在的基地并获得 +1 战力？',
+        ZHONGGUO_PROMPT_TITLES.vigilantesBrojak,
         [
             {
                 id: 'follow',
-                label: '移动并 +1 战力',
+                label: ZHONGGUO_PROMPT_TITLES.vigilantesBrojakFollowOption,
+                labelKey: 'ui.vigilantes_brojak_follow_option',
                 value: { skip: false },
                 displayMode: 'button',
             },
@@ -1135,7 +1170,7 @@ const truckersRallyPromptProgram = createPromptProgram<ZhongguoPromptContext & {
         return createAbilityRuntimeSimpleChoice(
             `truckers_rally_${context.now}`,
             context.playerId,
-            '车友聚会：选择计分基地的一个随从',
+            ZHONGGUO_PROMPT_TITLES.truckersRally,
             buildMinionTargetOptions(candidates, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -1182,7 +1217,7 @@ const truckersTurnTheBeatAroundPenaltyPromptProgram = createPromptProgram<Trucke
         return createAbilityRuntimeSimpleChoice(
             `truckers_turn_the_beat_around_penalty_${context.now}`,
             context.playerId,
-            '节拍一转：选择同基地一个随从 -1 战力',
+            ZHONGGUO_PROMPT_TITLES.truckersTurnTheBeatAroundPenalty,
             buildMinionTargetOptions(candidates, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -1236,7 +1271,7 @@ const truckersTurnTheBeatAroundBoostPromptProgram = createPromptProgram<Truckers
         return createAbilityRuntimeSimpleChoice(
             `truckers_turn_the_beat_around_${context.now}`,
             context.playerId,
-            '节拍一转：选择计分基地一个随从 +1 战力',
+            ZHONGGUO_PROMPT_TITLES.truckersTurnTheBeatAroundBoost,
             buildMinionTargetOptions(candidates, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -1273,7 +1308,7 @@ const truckersHighSpeedChaseBasePromptProgram = createPromptProgram<TruckersHigh
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_high_speed_chase_base_${context.now}`,
         context.playerId,
-        '高速追逐战：选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.truckersHighSpeedChaseBase,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.sourceBaseIndex), context.matchState.core),
         {
             sourceId: 'truckers_high_speed_chase_base',
@@ -1333,7 +1368,7 @@ const truckersHighSpeedChaseMinionPromptProgram = createPromptProgram<TruckersHi
         return createAbilityRuntimeSimpleChoice(
             `truckers_high_speed_chase_minion_${context.now}`,
             context.playerId,
-            '高速追逐战：选择你在此基地的一个随从',
+            ZHONGGUO_PROMPT_TITLES.truckersHighSpeedChaseMinion,
             buildMinionTargetOptions(ownMinions, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -1382,7 +1417,7 @@ const truckersDekotoraMinionsPromptProgram = createPromptProgram<TruckersDekotor
         return createAbilityRuntimeSimpleChoice(
             `truckers_dekotora_minions_${context.now}`,
             context.playerId,
-            '暴走卡车：选择至多 3 个你的随从移动',
+            ZHONGGUO_PROMPT_TITLES.truckersDekotoraMinions,
             buildMinionTargetOptions(ownMinions, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -1444,7 +1479,7 @@ const truckersDekotoraBasePromptProgram = createPromptProgram<TruckersDekotoraCo
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_dekotora_base_${context.now}`,
         context.playerId,
-        '暴走卡车：选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.truckersDekotoraBase,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.sourceBaseIndex), context.matchState.core),
         {
             sourceId: 'truckers_dekotora_base',
@@ -1488,7 +1523,7 @@ const truckersHotwireBasePromptProgram = createPromptProgram<TruckersHotwireCont
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_hotwire_base_${context.now}`,
         context.playerId,
-        '短路点火：选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.truckersHotwireBase,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.actionBaseIndex ?? -1), context.matchState.core),
         {
             sourceId: 'truckers_hotwire_base',
@@ -1530,7 +1565,7 @@ const truckersHotwireModePromptProgram = createPromptProgram<TruckersHotwireCont
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_hotwire_mode_${context.now}`,
         context.playerId,
-        '短路点火：选择效果',
+        ZHONGGUO_PROMPT_TITLES.truckersHotwireMode,
         buildTruckersActionModeOptions(context.availableModes ?? []),
         {
             sourceId: 'truckers_hotwire_mode',
@@ -1583,7 +1618,7 @@ const truckersHotwireActionPromptProgram = createPromptProgram<ZhongguoPromptCon
         return createAbilityRuntimeSimpleChoice(
             `truckers_hotwire_action_${context.now}`,
             context.playerId,
-            '短路点火：选择基地上的一张战术',
+            ZHONGGUO_PROMPT_TITLES.truckersHotwireAction,
             buildBaseOngoingActionOptions(candidates),
             {
                 sourceId: 'truckers_hotwire_action',
@@ -1641,7 +1676,7 @@ const truckersElBandidoTakeControlPromptProgram = createPromptProgram<ZhongguoPr
         return createAbilityRuntimeSimpleChoice(
             `truckers_el_bandido_take_control_${context.now}`,
             context.playerId,
-            '埃尔班迪多：你可以获得一张基地战术的控制权',
+            ZHONGGUO_PROMPT_TITLES.truckersElBandidoTakeControl,
             [
                 createSkipOption('跳过（不获得控制权）', 'ui.truckers_el_bandido_take_control_skip_option'),
                 ...buildBaseOngoingActionOptions(candidates),
@@ -1678,7 +1713,7 @@ const truckersElBandidoTransferBasePromptProgram = createPromptProgram<TruckersE
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_el_bandido_transfer_base_${context.now}`,
         context.playerId,
-        '埃尔班迪多：选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.truckersElBandidoTransferBase,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.actionBaseIndex ?? -1), context.matchState.core),
         {
             sourceId: 'truckers_el_bandido_transfer_base',
@@ -1722,7 +1757,7 @@ const truckersElBandidoTransferActionPromptProgram = createPromptProgram<Zhonggu
         return createAbilityRuntimeSimpleChoice(
             `truckers_el_bandido_transfer_action_${context.now}`,
             context.playerId,
-            '埃尔班迪多：选择要转移的基地战术',
+            ZHONGGUO_PROMPT_TITLES.truckersElBandidoTransferAction,
             buildBaseOngoingActionOptions(candidates),
             {
                 sourceId: 'truckers_el_bandido_transfer_action',
@@ -1756,7 +1791,7 @@ const truckersElBandidoTalentModePromptProgram = createPromptProgram<ZhongguoPro
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_el_bandido_talent_mode_${context.now}`,
         context.playerId,
-        '埃尔班迪多：选择天赋效果',
+        ZHONGGUO_PROMPT_TITLES.truckersElBandidoTalentMode,
         buildTruckersActionModeOptions(['extra_action', 'transfer']),
         {
             sourceId: 'truckers_el_bandido_talent_mode',
@@ -1790,7 +1825,7 @@ const truckersSkinnyMinnieActionPromptProgram = createPromptProgram<TruckersSkin
         return createAbilityRuntimeSimpleChoice(
             `truckers_skinny_minnie_action_${context.now}`,
             context.playerId,
-            '皮包骨米妮：选择要一起转移的基地战术',
+            ZHONGGUO_PROMPT_TITLES.truckersSkinnyMinnieAction,
             buildBaseOngoingActionOptions(candidates),
             {
                 sourceId: 'truckers_skinny_minnie_action',
@@ -1843,7 +1878,7 @@ const truckersSkinnyMinnieBasePromptProgram = createPromptProgram<TruckersSkinny
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `truckers_skinny_minnie_base_${context.now}`,
         context.playerId,
-        '皮包骨米妮：选择目标基地',
+        ZHONGGUO_PROMPT_TITLES.truckersSkinnyMinnieBase,
         buildBaseTargetOptions(collectOtherBases(context.matchState.core, context.selfBaseIndex), context.matchState.core),
         {
             sourceId: 'truckers_skinny_minnie_base',
@@ -3261,7 +3296,7 @@ const discoDancingKingPromptProgram = createPromptProgram<DiscoDancingKingContex
         return createAbilityRuntimeSimpleChoice(
             `disco_dancers_dancing_king_${context.now}`,
             context.playerId,
-            '舞王：选择另一个同基地随从复制这次普通战术影响',
+            ZHONGGUO_PROMPT_TITLES.discoDancingKing,
             [
                 ...buildMinionTargetOptions(candidates, {
                     state: context.matchState.core,
@@ -3331,7 +3366,7 @@ const discoIWillSurvivePromptProgram = createPromptProgram<DiscoIWillSurviveCont
         return createAbilityRuntimeSimpleChoice(
             `disco_dancers_i_will_survive_${context.now}`,
             context.playerId,
-            '我会活下去：选择计分基地中的一个己方随从返回拥有者手牌',
+            ZHONGGUO_PROMPT_TITLES.discoIWillSurvive,
             buildMinionTargetOptions(candidates, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,

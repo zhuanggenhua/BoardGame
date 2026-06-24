@@ -413,6 +413,16 @@ const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (
     roll.raw === roll.value ? `${roll.raw}` : `${roll.raw}→${roll.value}`
 );
 
+const QIDAHEN_BATTLE_ROLL_COPY = {
+    attackerLabel: '攻方',
+    defenderLabel: '守方',
+    totalLabel: '合计',
+    noRollsLabel: '未掷骰',
+    summaryTitle: '本次掷骰',
+    attackerDamageLabel: '攻方伤害',
+    defenderDamageLabel: '守方伤害',
+} as const;
+
 const renderQidahenBattleRollDiceGroup = (
     sideLabel: string,
     rolls: QidahenBattleRoll[],
@@ -428,7 +438,7 @@ const renderQidahenBattleRollDiceGroup = (
         <div className="rounded-[3px] border px-2 py-2" style={{ borderColor, background }}>
             <div className="flex items-center justify-between gap-3 text-[10px] font-black" style={{ color: '#f6d5a8' }}>
                 <span>{sideLabel}</span>
-                <span>合计 {total}</span>
+                <span>{`${QIDAHEN_BATTLE_ROLL_COPY.totalLabel} ${total}`}</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
                 {rolls.map((roll, index) => (
@@ -442,7 +452,7 @@ const renderQidahenBattleRollDiceGroup = (
                     </div>
                 ))}
                 {rolls.length <= 0 ? (
-                    <div className="px-1 text-[10px]" style={{ color: '#d8c7ab' }}>未掷骰</div>
+                    <div className="px-1 text-[10px]" style={{ color: '#d8c7ab' }}>{QIDAHEN_BATTLE_ROLL_COPY.noRollsLabel}</div>
                 ) : null}
             </div>
         </div>
@@ -453,21 +463,17 @@ const QidahenBattleRollDiceSummary: React.FC<{
     battleRolls: NonNullable<QidahenPostBattleSelection['battleRolls']>;
 }> = ({ battleRolls }) => (
     <div className="mt-2 rounded-[3px] border border-[#d8b36e]/40 bg-[rgba(44,20,11,0.24)] px-2.5 py-2" data-testid="qidahen-post-battle-dice-summary">
-        <div className="text-[10px] font-black tracking-[0.08em]" style={{ color: '#f6d5a8' }}>
-            本次掷骰
-        </div>
+        <div className="text-[10px] font-black tracking-[0.08em]" style={{ color: '#f6d5a8' }}>{QIDAHEN_BATTLE_ROLL_COPY.summaryTitle}</div>
         <div className="mt-2 flex flex-col gap-2">
             {battleRolls.stages.map((stage, index) => (
                 <div
                     key={`${stage.phase}-${index}`}
                     className="rounded-[3px] border border-[#d8b36e]/25 bg-[rgba(0,0,0,0.12)] px-2 py-2"
                 >
-                    <div className="text-[10px] font-black" style={{ color: '#ffe5b3' }}>
-                        {formatQidahenBattleRollPhaseLabel(stage.phase)} · 攻方伤害 {stage.attackerDamage} · 守方伤害 {stage.defenderDamage}
-                    </div>
+                    <div className="text-[10px] font-black" style={{ color: '#ffe5b3' }}>{`${formatQidahenBattleRollPhaseLabel(stage.phase)} · ${QIDAHEN_BATTLE_ROLL_COPY.attackerDamageLabel} ${stage.attackerDamage} · ${QIDAHEN_BATTLE_ROLL_COPY.defenderDamageLabel} ${stage.defenderDamage}`}</div>
                     <div className="mt-2 grid gap-2 md:grid-cols-2">
-                        {renderQidahenBattleRollDiceGroup('攻方', stage.attackerRolls, stage.attackerTotal, 'attacker')}
-                        {renderQidahenBattleRollDiceGroup('守方', stage.defenderRolls, stage.defenderTotal, 'defender')}
+                        {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.attackerLabel, stage.attackerRolls, stage.attackerTotal, 'attacker')}
+                        {renderQidahenBattleRollDiceGroup(QIDAHEN_BATTLE_ROLL_COPY.defenderLabel, stage.defenderRolls, stage.defenderTotal, 'defender')}
                     </div>
                 </div>
             ))}
