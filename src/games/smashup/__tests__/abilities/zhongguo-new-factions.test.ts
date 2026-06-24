@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { SmashUpDomain } from '../../domain';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearOngoingEffectRegistry, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
-import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS, type SmashUpCommand, type SmashUpCore } from '../../domain/types';
+import { smashUpSystemsForTest } from '../../game';
+import { createInitialSystemState, executePipeline } from '../../../../engine/pipeline';
+import type { MatchState } from '../../../../engine/types';
 import {
     getPromptOption,
     getPromptOptions,
@@ -572,6 +576,66 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         });
 
         expect(result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN)).toHaveLength(2);
+    });
+
+    it('廉价小饭馆会在真实计分命令链后让在场双方各抓 1 张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-0', 'truckers_fixin_to_fix_it', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('draw-1', 'disco_dancers_get_down_tonight', 'action', '1')],
+                }),
+            },
+            bases: [
+                makeBase('base_the_greasy_spoon', [
+                    makeMinion('greasy-p0', 'truckers_good_buddy', '0', 18),
+                    makeMinion('greasy-p1', 'disco_dancers_diva', '1', 8),
+                ]),
+                makeBase('base_central_brain', []),
+            ],
+            baseDeck: ['base_the_factory'],
+        });
+        core.currentPlayerIndex = 0;
+
+        const sys = createInitialSystemState(['0', '1'], smashUpSystemsForTest, undefined);
+        sys.phase = 'playCards';
+        let state: MatchState<SmashUpCore> = { core, sys };
+
+        const advance = executePipeline(
+            { domain: SmashUpDomain, systems: smashUpSystemsForTest },
+            state,
+            { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 1 } as unknown as SmashUpCommand,
+            defaultTestRandom,
+            ['0', '1'],
+        );
+        expect(advance.success).toBe(true);
+        state = advance.state;
+
+        const passP0 = executePipeline(
+            { domain: SmashUpDomain, systems: smashUpSystemsForTest },
+            state,
+            { type: 'RESPONSE_PASS', playerId: '0', payload: undefined, timestamp: 2 } as unknown as SmashUpCommand,
+            defaultTestRandom,
+            ['0', '1'],
+        );
+        expect(passP0.success).toBe(true);
+
+        const passP1 = executePipeline(
+            { domain: SmashUpDomain, systems: smashUpSystemsForTest },
+            passP0.state,
+            { type: 'RESPONSE_PASS', playerId: '1', payload: undefined, timestamp: 3 } as unknown as SmashUpCommand,
+            defaultTestRandom,
+            ['0', '1'],
+        );
+        expect(passP1.success).toBe(true);
+
+        const finalState = passP1.state.core;
+        expect(finalState.players['0'].hand.some(card => card.uid === 'draw-0')).toBe(true);
+        expect(finalState.players['1'].hand.some(card => card.uid === 'draw-1')).toBe(true);
+        expect(finalState.players['0'].deck.some(card => card.uid === 'draw-0')).toBe(false);
+        expect(finalState.players['1'].deck.some(card => card.uid === 'draw-1')).toBe(false);
     });
 
     it('卡车服务站会在计分后把这里的随从移到另一个基地', () => {

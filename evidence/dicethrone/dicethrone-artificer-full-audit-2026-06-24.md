@@ -47,6 +47,7 @@
 | 卡牌录入 | `src/games/dicethrone/rule/工匠卡牌录入核对.md` | 锁定 15 张专属牌与 slot / atlas |
 | 当前实现 | `src/games/dicethrone/heroes/artificer/*` | 静态定义、能力、手牌、Token、骰面 |
 | 自定义动作 | `src/games/dicethrone/domain/customActions/artificer.ts` | 机器人、纳米爆弹、电弧盾、分支选择、投骰、多人目标 |
+| 阶段退出链 | `src/games/dicethrone/domain/flowHooks.ts` | 攻击后机器人选择生成后必须先暂停，不能同批提前收口攻击 |
 | L1/L2/L4 测试 | `src/games/dicethrone/__tests__/artificer-intake.test.ts`、`artificer-mechanics.test.ts`、`artificer-closeout.test.ts` | 静态接入、机制行为、对象全集、元数据 |
 | 选择锚点契约 | `src/games/dicethrone/__tests__/choice-interaction-anchor-contract.test.ts`、`src/games/dicethrone/domain/systems.ts` | 真实 simple-choice 响应事件在系统层触发 followup，且无锚点 / 无交互快照时仍拒绝 |
 | L3 E2E | `e2e/dicethrone/artificer-intake.e2e.ts` | 在线开局与工坊纳米机器人链 |
@@ -106,7 +107,7 @@
 ### L2 领域行为证据
 
 - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
-- 当前覆盖：40 个工匠核心机制用例，包括合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技和终极后续链。
+- 当前覆盖：41 个工匠核心机制用例，包括合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技和终极后续链。
 - 本轮实跑命令：
 
 ```bash
@@ -117,17 +118,19 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
 - 追加实跑命令：
 
 ```bash
-node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artificer-intake.test.ts src/games/dicethrone/__tests__/artificer-closeout.test.ts src/games/dicethrone/__tests__/artificer-mechanics.test.ts src/games/dicethrone/__tests__/choice-interaction-anchor-contract.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1
+node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artificer-mechanics.test.ts src/games/dicethrone/__tests__/choice-interaction-anchor-contract.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1
 ```
 
-- 追加实跑结果：4 个测试文件通过，80 个用例通过。
+- 追加实跑结果：2 个测试文件通过，71 个用例通过。
 
 ### 选择锚点修复证据
 
 - 本轮发现：攻击后机器人 simple-choice 弹窗能扣除合成器和机器人，但没有追加真实伤害 / 治疗事件，也没有把攻击后续收口到 `readyToResolve`。现实含义是“玩家点了机器人按钮，资源花掉了，但机器人效果没有真正进入攻击结算”。
 - 直接原因：simple-choice 响应事件进入 DiceThrone 系统时，交互系统可能已经把当前交互弹窗关闭，导致核心状态里的当前选择来源锚点不可用；系统层只看核心锚点，不看响应事件自带的交互快照，所以跳过了 followup。
 - 修复：`src/games/dicethrone/domain/systems.ts` 仍优先使用核心锚点；当核心锚点已被交互系统关闭时，必须由同一 `SYS_INTERACTION_RESOLVED` 事件携带的交互快照同时证明 `sourceId`、`optionId` 和 `customId` 对齐，才允许触发 followup。
+- 修复：`src/games/dicethrone/domain/flowHooks.ts` 在 post-damage 收口前补上阻塞交互检查，攻击后机器人选择生成后必须先暂停，不能同批清空 pendingAttack。
 - 回归保护：`choice-interaction-anchor-contract.test.ts` 新增“真实 simple-choice 交互快照存在时可不依赖 core 锚点生效”，同时保留“只有 source 正确但没有锚点 / 没有交互快照时拒绝”的旧用例。
+- 回归保护：`artificer-mechanics.test.ts` 新增“攻击后机器人选择生成后应暂停攻击结算并保留 pendingAttack”。
 
 ### Closeout 结构证据
 
@@ -143,7 +146,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
 - `e2e/dicethrone/artificer-full-audit.e2e.ts`
   - 已新增覆盖目标：机械的反击、电弧盾、攻击后电能机器人、攻击后治疗机器人。
   - 场景修正：真实响应窗口用 `playerID=0` 打开测试页，保证底部手牌 DOM 与工匠玩家 0 的状态同源。
-  - 当前验证状态：尚未通过完整 E2E；`node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e.ts` 被全局重任务门禁拦截，最近一次阻塞为可用内存 `0.67GB < 1.5GB`，同时存在无关 FantasyRealms E2E runtime。该结果只能记为环境 / 预算阻塞，不能记为 L3 通过。
+  - 当前验证状态：尚未通过完整 E2E；最近一次跑到测试主体后，四条场景仍失败，随后又被无关 `e2e/qidahen-basic-flow.e2e.ts` 的重任务门禁和资源门禁拦下。当前只能记为“待资源恢复后复跑”，不能记为 L3 通过。
 - 当前缺口：
   - 未逐个覆盖专属手牌真实打出。
   - 未覆盖真实防御响应窗口下的机械的反击 / 电弧盾。
