@@ -820,7 +820,7 @@ export async function openFantasyRealmsOnlineAiRoom(
         gameServerBaseURL: getGameServerBaseURL(),
     });
     const page = await context.newPage();
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90000 });
 
     if (!(await ensureGameServerAvailable(page, getGameServerBaseURL()))) {
         await context.close();
@@ -874,7 +874,10 @@ export async function openFantasyRealmsOnlineAiRoom(
         localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
     }, { targetMatchId: room.matchId, targetCredentials: aiCredentialsBySeat });
 
-    await page.goto(`/play/${GAME_NAME}/match/${room.matchId}?playerID=${room.ownerPlayerId}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/play/${GAME_NAME}/match/${room.matchId}?playerID=${room.ownerPlayerId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90000,
+    });
     await waitForFantasyRealmsBoard(page, room.ownerPlayerId);
     await seedAiSeatCredentials(page, room.matchId, aiCredentialsBySeat);
 
@@ -900,7 +903,7 @@ export async function openFantasyRealmsOnlineAiMixedRoom(
         gameServerBaseURL: getGameServerBaseURL(),
     });
     const hostPage = await hostContext.newPage();
-    await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
+    await hostPage.goto('/', { waitUntil: 'domcontentloaded', timeout: 90000 });
 
     if (!(await ensureGameServerAvailable(hostPage, getGameServerBaseURL()))) {
         await hostContext.close();

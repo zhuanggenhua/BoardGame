@@ -55,6 +55,24 @@ async function getLocatorRects(page: Page, selector: string) {
     }));
 }
 
+async function getLocatorRect(page: Page, selector: string) {
+    return page.locator(selector).first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+    });
+}
+
+function getRectGroupCenter(rects: Array<{ x: number; width: number }>) {
+    const left = Math.min(...rects.map((rect) => rect.x));
+    const right = Math.max(...rects.map((rect) => rect.x + rect.width));
+    return left + ((right - left) / 2);
+}
+
 async function waitForLocatorRectsToSettle(page: Page, selector: string, timeoutMs = 3000) {
     const deadline = Date.now() + timeoutMs;
     let previousSignature: string | null = null;
@@ -117,7 +135,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('真实在线房间低张数公开弃牌保持固定槽位，不因少牌重新居中放大', async ({ browser }, testInfo) => {
+    test('真实在线房间低张数公开弃牌保持真实居中，不用左侧固定槽位冒充居中', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -138,7 +156,9 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const fullRowRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
             expect(fullRowRects).toHaveLength(9);
             const topRowRects = fullRowRects.slice(0, 5);
-            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-center-slots-nine-cards');
+            const secondRowRects = fullRowRects.slice(5);
+            expect(Math.abs(getRectGroupCenter(secondRowRects) - getRectGroupCenter(topRowRects))).toBeLessThanOrEqual(2);
+            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-nine-cards');
             await mkdir(dirname(fullEvidencePath), { recursive: true });
             await page.screenshot({ path: fullEvidencePath, fullPage: false });
 
@@ -150,14 +170,15 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const lowCountRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
             expect(lowCountRects).toHaveLength(2);
 
-            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            const discardRowRect = await getLocatorRect(page, '.fr-discard-row--live-center');
+            const discardRowCenter = discardRowRect.x + (discardRowRect.width / 2);
+            expect(Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
             expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
             expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
 
-            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-center-slots-two-cards');
+            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-cards');
             await mkdir(dirname(lowEvidencePath), { recursive: true });
             await page.screenshot({ path: lowEvidencePath, fullPage: false });
 

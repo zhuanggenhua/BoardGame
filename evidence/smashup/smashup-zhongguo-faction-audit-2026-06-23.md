@@ -4,7 +4,7 @@
 
 ## 结论等级
 
-本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 2 条代表性 L3/L4 真实入口 E2E**。
+本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 4 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
 
 当前**不能**写成：
 
@@ -16,7 +16,7 @@
 
 - `L0/L1`：四派系卡牌、基地、atlas、manifest 合同已存在，见 intake 合同
 - `L2`：当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系对象
-- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E 与“车友聚会”计分前真实入口 E2E；四派系整体仍未收口
+- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
 - `整批状态`：仍在实施中
 
 关联 intake 合同：
@@ -90,22 +90,29 @@
 12. L3/L4 真实入口补证
    - 我会活下去（`disco_dancers_i_will_survive`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分响应窗口，在 `afterScoring` 窗口打出该 special，选择计分基地己方随从，最终断言随从回到手牌、计分基地移除该随从、`pendingAfterScoringSpecials` / `triggerQueue` / 交互 / 响应窗口清空
    - 车友聚会（`truckers_rally`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分前响应窗口，在 `beforeScoring` 窗口打出该 special，选择计分基地己方随从，最终断言按己方基地持续战术数量获得临时战力，并清理交互 / `triggerQueue`
+   - 廉价小饭馆（`base_the_greasy_spoon`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言在该基地有随从的双方各抓 1，并清理交互 / 响应窗口 / `triggerQueue`；另新增服务端计分命令链测试，从 `ADVANCE_PHASE` 到双方 `RESPONSE_PASS` 后验证基地 `afterScoring` 让在场双方各抓 1
+   - 卡车服务站（`base_truck_stop`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言该基地计分后把这里的随从移动到另一基地，并清理交互 / 响应窗口 / `triggerQueue`
 
 ## 本轮验证
 
 已通过：
 
 - `npx tsc --noEmit --pretty false`
-- `npx eslint e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts src/games/smashup/abilities/zhongguo.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/data/factions/zhongguo.ts src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`（0 error；E2E 文件沿用现有测试框架风格，有 `any` warning）
-- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts src/games/smashup/__tests__/afterscoring-card-registration.test.ts src/games/smashup/__tests__/variantBindingRuntime.test.ts`（61 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts e2e/smashup/smashup-zhongguo-greasy-spoon-base.e2e.ts e2e/smashup/smashup-zhongguo-truck-stop-base.e2e.ts src/games/smashup/abilities/zhongguo.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/data/factions/zhongguo.ts src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`（0 error；E2E 文件沿用现有测试框架风格，有 `any` warning）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts`（55 passed）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts src/games/smashup/__tests__/afterscoring-card-registration.test.ts src/games/smashup/__tests__/variantBindingRuntime.test.ts`（62 passed）
 - `npm run test:e2e:file -- e2e/smashup/smashup-afterscoring-simple-complete.e2e.ts`（对照链路，1 passed）
 - `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts`（zhongguo 新增链路，1 passed）
 - `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-greasy-spoon-base.e2e.ts`（zhongguo 新增基地链路，1 passed）
+- `npm run test:e2e:file -- e2e/smashup/smashup-zhongguo-truck-stop-base.e2e.ts`（zhongguo 新增基地移动链路，1 passed）
 
 新增 E2E 文件：
 
 - `e2e/smashup/smashup-zhongguo-i-will-survive.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-rally-before-scoring.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-greasy-spoon-base.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-truck-stop-base.e2e.ts`
 
 新增截图证据：
 
@@ -114,6 +121,10 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-i-will-survive.e2e\计分后从真实响应窗口打出我会活下去，并把计分基地己方随从返回手牌\zhongguo-i-will-survive-final-state.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-rally-before-scoring.e2e\计分前从真实响应窗口打出车友聚会，并给己方随从加临时战力\zhongguo-rally-before-scoring-window.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-rally-before-scoring.e2e\计分前从真实响应窗口打出车友聚会，并给己方随从加临时战力\zhongguo-rally-before-scoring-final-state.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-greasy-spoon-base.e2e\计分后廉价小饭馆应让在场双方各抓-1-张牌\zhongguo-greasy-spoon-before-scoring.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-greasy-spoon-base.e2e\计分后廉价小饭馆应让在场双方各抓-1-张牌\zhongguo-greasy-spoon-final-state.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-truck-stop-base.e2e\计分后卡车服务站应把这里的随从移动到另一个基地\zhongguo-truck-stop-before-scoring.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-truck-stop-base.e2e\计分后卡车服务站应把这里的随从移动到另一个基地\zhongguo-truck-stop-final-state.png`
 
 ## 批次矩阵（按对象粒度分组）
 
@@ -231,13 +242,15 @@
 2. 继续补 `L3/L4`
    - 我会活下去（`disco_dancers_i_will_survive`）已覆盖真实页面按钮推进、`afterScoring` 响应窗口、最终状态清理
    - 车友聚会（`truckers_rally`）已覆盖真实页面按钮推进、`beforeScoring` 响应窗口、最终状态清理
+   - 廉价小饭馆（`base_the_greasy_spoon`）已覆盖服务端计分命令链与浏览器真实入口，并取得页面截图证据
+   - 卡车服务站（`base_truck_stop`）已覆盖浏览器真实入口的计分后移动随从链路，并取得页面截图证据
    - 仍需补更多 `beforeScoring` special 分支，例如掌握时机（`kung_fu_fighters_expert_timing`）的复杂模式选择
-   - 仍需补至少一条基地能力真实入口，例如廉价小饭馆（`base_the_greasy_spoon`）或卡车服务站（`base_truck_stop`）
+   - 如继续加深基地能力覆盖，可继续补更多多对象交互和计分后替代清理路径
    - 仍需把 `reaction session` 的队列/清理状态纳入更多 representative 链路
 
 ## 本轮不宣称完成的原因
 
-1. 当前已清空对象级 `L2` 待补证，但只有两条代表性真实入口 E2E，不能代表四派系 L3/L4 全收口
-2. 我会活下去（`disco_dancers_i_will_survive`）与车友聚会（`truckers_rally`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但基地能力和多对象交互链路仍缺 L4 流程态证据
+1. 当前已清空对象级 `L2` 待补证，但只有四条代表性真实入口 E2E，不能代表四派系 L3/L4 全收口
+2. 我会活下去（`disco_dancers_i_will_survive`）、车友聚会（`truckers_rally`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但掌握时机复杂模式和更多多对象交互链路仍缺 L4 页面证据
 3. 快如闪电（`kung_fu_fighters_fast_as_lightning`）、掌握时机（`kung_fu_fighters_expert_timing`）与平头彼特（`truckers_cab_over_pete`）仍有上文列出的更深层分支残余
 4. 本文件只是实施审计底稿，不是最终 rollup

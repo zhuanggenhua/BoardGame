@@ -526,6 +526,24 @@ async function getLocatorRects(page: Page, selector: string) {
     }));
 }
 
+async function getLocatorRect(page: Page, selector: string) {
+    return page.locator(selector).first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        };
+    });
+}
+
+function getRectGroupCenter(rects: Array<{ x: number; width: number }>) {
+    const left = Math.min(...rects.map((rect) => rect.x));
+    const right = Math.max(...rects.map((rect) => rect.x + rect.width));
+    return left + ((right - left) / 2);
+}
+
 async function waitForLocatorRectsToSettle(page: Page, selector: string, timeoutMs = 3000) {
     const deadline = Date.now() + timeoutMs;
     let previousSignature: string | null = null;
@@ -1348,7 +1366,7 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('低张数公开弃牌保持满 10 张固定槽位，不再因为少牌重新居中放大', async ({ browser }, testInfo) => {
+    test('低张数公开弃牌保持真实居中，不再用左侧固定槽位冒充居中', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -1372,7 +1390,7 @@ test.describe('FantasyRealms live flow', () => {
 
             const topRowRects = fullRowRects.slice(0, 5);
             const secondRowRects = fullRowRects.slice(5);
-            expect(secondRowRects[0]!.x).toBeLessThan(topRowRects[0]!.x);
+            expect(Math.abs(getRectGroupCenter(secondRowRects) - getRectGroupCenter(topRowRects))).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
 
@@ -1381,14 +1399,15 @@ test.describe('FantasyRealms live flow', () => {
             const lowCountRects = await waitForLocatorRectsToSettle(page, '.fr-card-button--live-center');
             expect(lowCountRects).toHaveLength(2);
 
-            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            const discardRowRect = await getLocatorRect(page, '.fr-discard-row--live-center');
+            const discardRowCenter = discardRowRect.x + (discardRowRect.width / 2);
+            expect(Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
             expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
             expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
 
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-fixed-center-slots');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-real-centered-cards');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {

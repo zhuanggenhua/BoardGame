@@ -478,7 +478,7 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByTestId('fantasyrealms-compact-focus-rail')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
-            const discardActionButton = within(actionZone).getByRole('button', { name: '弃牌' });
+            const discardActionButton = within(actionZone).getByRole('button', { name: '从手牌弃置一张牌' });
             expect(discardActionButton).toBeDisabled();
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
         });
@@ -907,7 +907,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('桌面 live 的中央牌河第二排整体继续偏左，并保持固定桌面宽度', () => {
+    it('桌面 live 的中央牌河不再固定宽度，第二排按实际牌数居中排列', () => {
         withViewport(1920, 1080, () => {
             const discardPile = PUBLIC_CARDS.concat(HAND_CARDS.slice(0, 2)).map((card) => ({ ...card }));
             renderBoard(makeCore({ discardPile }));
@@ -916,11 +916,11 @@ describe('FantasyRealms Board foundation', () => {
             const centerButtons = within(discardRow).getAllByRole('button');
 
             expect(centerButtons).toHaveLength(9);
-            expect(discardRow.style.width).toBe('1460px');
-            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)' });
-            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)' });
-            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)' });
-            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)' });
+            expect(discardRow.style.width).toBe('');
+            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -493px)' });
+            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -233px)' });
+            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + 27px)' });
+            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 287px)' });
         });
     });
 
@@ -1138,7 +1138,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('进入弃牌阶段后桌面 live 保留灰态弃牌按钮，并由手牌直接承接弃牌', () => {
+    it('进入弃牌阶段后桌面 live 保留灰态手牌弃置按钮，并由手牌直接承接弃牌', () => {
         withViewport(1440, 1024, () => {
             renderBoard(makeCore({
                 stage: 'discard',
@@ -1147,7 +1147,7 @@ describe('FantasyRealms Board foundation', () => {
             }));
 
             const actionZone = screen.getByTestId('fantasyrealms-live-action-zone');
-            const discardActionButton = within(actionZone).getByRole('button', { name: '弃牌' });
+            const discardActionButton = within(actionZone).getByRole('button', { name: '从手牌弃置一张牌' });
             expect(discardActionButton).toBeDisabled();
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.getByTestId('fantasyrealms-discard-empty')).toHaveTextContent('');
@@ -1200,7 +1200,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('中央牌区少牌时仍保持满 10 张的固定槽位，两排后下排继续从左往右交错铺开', () => {
+    it('中央牌区按实际行数居中铺开，两排时下排继续从左往右排列', () => {
         withViewport(1440, 1024, () => {
             const view = renderBoard(makeCore({
                 discardPile: PUBLIC_CARDS.slice(0, 2).map((card) => ({ ...card })),
@@ -1209,8 +1209,8 @@ describe('FantasyRealms Board foundation', () => {
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
 
             expect(discardButtons).toHaveLength(2);
-            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[1]).toHaveStyle({ left: 'calc(50% + -310px)', top: '8px', zIndex: '1' });
+            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -233px)', top: '8px', zIndex: '1' });
+            expect(discardButtons[1]).toHaveStyle({ left: 'calc(50% + 27px)', top: '8px', zIndex: '1' });
             view.unmount();
         });
 
@@ -1224,10 +1224,10 @@ describe('FantasyRealms Board foundation', () => {
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
 
             expect(discardButtons).toHaveLength(9);
-            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -570px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 470px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', zIndex: '2' });
+            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -623px)', top: '8px', zIndex: '1' });
+            expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 417px)', top: '8px', zIndex: '1' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -493px)', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 287px)', zIndex: '2' });
             view.unmount();
         });
     });
@@ -1244,11 +1244,11 @@ describe('FantasyRealms Board foundation', () => {
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
 
             expect(discardButtons).toHaveLength(10);
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -700px)', zIndex: '2' });
-            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -440px)', zIndex: '2' });
-            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -180px)', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 80px)', zIndex: '2' });
-            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 340px)', zIndex: '2' });
+            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -623px)', zIndex: '2' });
+            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -363px)', zIndex: '2' });
+            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -103px)', zIndex: '2' });
+            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 157px)', zIndex: '2' });
+            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 417px)', zIndex: '2' });
         });
     });
 

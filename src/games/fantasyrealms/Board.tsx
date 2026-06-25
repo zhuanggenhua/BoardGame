@@ -96,7 +96,6 @@ const ENDGAME_SCORE_STEP_MS = 460;
 const ENDGAME_SCORE_PULSE_MS = 220;
 const ENDGAME_SCORE_SETTLE_MS = 220;
 const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]';
-const LIVE_DESKTOP_CENTER_ROW_WIDTH_PX = 1460;
 const LIVE_DESKTOP_HAND_CARD_WIDTH_PX = 176;
 const LIVE_DESKTOP_HAND_GAP_PX = 14;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
@@ -264,13 +263,11 @@ const LIVE_CENTER_ROW_ROW_OFFSET = 202;
 const LIVE_CENTER_SECOND_ROW_TOP_CSS_VAR = `var(--fr-live-center-second-row-top, ${LIVE_CENTER_ROW_ROW_TOP + LIVE_CENTER_ROW_ROW_OFFSET}px)`;
 const LIVE_CENTER_CARD_WIDTH_PX = 206;
 const LIVE_CENTER_CARD_STRIDE_PX = 260;
-const LIVE_CENTER_TOP_ROW_SHIFT_PX = 53;
-const LIVE_CENTER_SECOND_ROW_SHIFT_PX = LIVE_CENTER_TOP_ROW_SHIFT_PX - Math.round(LIVE_CENTER_CARD_STRIDE_PX / 2);
 
-function buildMinimalLiveCenterRowOffsets(cardCount: number, rowShift: number): number[] {
+function buildMinimalLiveCenterRowOffsets(cardCount: number): number[] {
     if (cardCount <= 0) return [];
     const rowWidth = LIVE_CENTER_CARD_WIDTH_PX + ((cardCount - 1) * LIVE_CENTER_CARD_STRIDE_PX);
-    const start = rowShift - (rowWidth / 2);
+    const start = -(rowWidth / 2);
     return Array.from({ length: cardCount }, (_unused, index) => start + (index * LIVE_CENTER_CARD_STRIDE_PX));
 }
 
@@ -333,8 +330,8 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
     if (cardCount <= 0) return [];
 
     const fixedSlotStyles: React.CSSProperties[] = [];
-    const topRowOffsets = buildMinimalLiveCenterRowOffsets(5, LIVE_CENTER_TOP_ROW_SHIFT_PX);
-    const secondRowOffsets = buildMinimalLiveCenterRowOffsets(5, LIVE_CENTER_SECOND_ROW_SHIFT_PX);
+    const topRowCount = Math.min(cardCount, 5);
+    const topRowOffsets = buildMinimalLiveCenterRowOffsets(topRowCount);
     const pushAbsoluteRow = (rowOffsets: readonly number[], rowIndex: number) => {
         rowOffsets.forEach((left) => {
             fixedSlotStyles.push({
@@ -345,13 +342,14 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
         });
     };
     if (cardCount <= 5) {
-        pushAbsoluteRow(topRowOffsets.slice(0, cardCount), 0);
+        pushAbsoluteRow(topRowOffsets, 0);
         return fixedSlotStyles;
     }
 
     const secondRowCount = Math.min(cardCount - 5, 5);
+    const secondRowOffsets = buildMinimalLiveCenterRowOffsets(secondRowCount);
     pushAbsoluteRow(topRowOffsets, 0);
-    pushAbsoluteRow(secondRowOffsets.slice(0, secondRowCount), 1);
+    pushAbsoluteRow(secondRowOffsets, 1);
     return fixedSlotStyles;
 }
 
@@ -621,10 +619,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         width: `${liveDesktopHandRowWidthPx}px`,
         gridTemplateColumns: `repeat(${handSlotCount}, ${LIVE_DESKTOP_HAND_CARD_WIDTH_PX}px)`,
     }), [handSlotCount, liveDesktopHandRowWidthPx]);
-    const minimalLiveDiscardRowStyle = React.useMemo<React.CSSProperties | undefined>(
-        () => ({ width: `${LIVE_DESKTOP_CENTER_ROW_WIDTH_PX}px` }),
-        [],
-    );
+    const minimalLiveDiscardRowStyle = undefined;
     const isDuelMode = isDuelVariant(core);
     const viewerHandIdsSignature = displayedHandCards.map((card) => card.id).join('|');
     const discardIdsSignature = discardCards.map((card) => card.id).join('|');
@@ -983,7 +978,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             : currentPlayerName;
     const liveTopbarCueLabel = isGameOver ? null : liveTurnStateLabel;
     const liveActionState = canDiscard ? 'discard' : canDrawFromDeck ? 'draw' : canTakeDiscard ? 'take' : 'idle';
-    const liveDiscardActionLabel = '弃牌';
+    const liveDiscardActionLabel = '从手牌弃置一张牌';
     const liveScoreBandLabel = isGameOver
         ? endgameDisplayStanding?.name ?? t('score.panelTitle')
         : t('score.panelTitle');
@@ -2179,21 +2174,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         0 22px 36px rgba(0, 0, 0, 0.34),
                         0 0 0 2px rgba(255, 226, 156, 0.52) !important;
                 }
-                .fr-card-button--live-center:nth-child(1) { left: calc(50% - 595px); top: 2px; z-index: 1; }
-                .fr-card-button--live-center:nth-child(2) { left: calc(50% - 335px); top: 2px; z-index: 1; }
-                .fr-card-button--live-center:nth-child(3) { left: calc(50% - 75px); top: 2px; z-index: 1; }
-                .fr-card-button--live-center:nth-child(4) { left: calc(50% + 185px); top: 2px; z-index: 1; }
-                .fr-card-button--live-center:nth-child(5) { left: calc(50% + 445px); top: 2px; z-index: 1; }
-                .fr-card-button--live-center:nth-child(6) { left: calc(50% - 465px); top: 182px; z-index: 2; }
-                .fr-card-button--live-center:nth-child(7) { left: calc(50% - 205px); top: 182px; z-index: 2; }
-                .fr-card-button--live-center:nth-child(8) { left: calc(50% + 55px); top: 182px; z-index: 2; }
-                .fr-card-button--live-center:nth-child(9) { left: calc(50% + 315px); top: 182px; z-index: 2; }
-                .fr-card-button--live-center:nth-child(10) { left: calc(50% + 445px); top: 182px; z-index: 2; }
-                .fr-card-button--live-center:nth-child(6):nth-last-child(5) { left: calc(50% - 595px); }
-                .fr-card-button--live-center:nth-child(7):nth-last-child(4) { left: calc(50% - 335px); }
-                .fr-card-button--live-center:nth-child(8):nth-last-child(3) { left: calc(50% - 75px); }
-                .fr-card-button--live-center:nth-child(9):nth-last-child(2) { left: calc(50% + 185px); }
-                .fr-card-button--live-center:nth-child(10):nth-last-child(1) { left: calc(50% + 445px); }
                 .fr-live-hand-zone .fr-card-row-wrap {
                     position: relative;
                     padding: 0;

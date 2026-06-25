@@ -1987,12 +1987,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 currentPhase={currentPhase}
                                 playerCp={handOwner.resources[RESOURCE_IDS.CP] ?? 0}
                                 onPlayCard={(card) => {
-                                    if (card.type === 'upgrade') {
-                                        const targetAbilityId = getUpgradeTargetAbilityId(card);
-                                        if (!targetAbilityId) {
-                                            toast.error(t('error.cannotPlayCard'));
-                                            return;
-                                        }
+                                    const targetAbilityId = card.type === 'upgrade'
+                                        ? getUpgradeTargetAbilityId(card)
+                                        : null;
+                                    if (targetAbilityId) {
                                         dispatch('PLAY_UPGRADE_CARD', { cardId: card.id, targetAbilityId });
                                         return;
                                     }
