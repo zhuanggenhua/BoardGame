@@ -242,13 +242,6 @@ function withViewport(width: number, height: number, run: () => void) {
     }
 }
 
-function expectInlineStyleContains(node: HTMLElement, declarations: string[]) {
-    const style = node.getAttribute('style') ?? '';
-    for (const declaration of declarations) {
-        expect(style).toContain(declaration);
-    }
-}
-
 function getRect(node: HTMLElement) {
     const rect = node.getBoundingClientRect();
     return {
@@ -1093,13 +1086,14 @@ describe('FantasyRealms Board foundation', () => {
 
         expect(handCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
         expect(handCards[0]).toHaveAttribute('data-atlas-card-id', HAND_CARDS[0]!.id);
-        expect(handCards[0].style.backgroundSize).toBe('cover');
-        expect(handCards[0].style.backgroundPosition).toBe('center center');
-        expect(handCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${HAND_CARDS[0]!.id}.webp`);
+        expect(handCards[0].style.backgroundSize).toBe('1000% 700%');
+        expect(handCards[0].getAttribute('style')).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
+        expect(handCards[0].getAttribute('style')).not.toContain('fantasyrealms/cards/faces/');
 
         expect(discardCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
         expect(discardCards[0]).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
-        expect(discardCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${PUBLIC_CARDS[2]!.id}.webp`);
+        expect(discardCards[0].getAttribute('style')).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
+        expect(discardCards[0].getAttribute('style')).not.toContain('fantasyrealms/cards/faces/');
         expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
         expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
     });
@@ -1119,13 +1113,13 @@ describe('FantasyRealms Board foundation', () => {
         expect(Math.min(...secondRowZ)).toBeGreaterThan(Math.max(...firstRowZ));
     });
 
-    it('正式卡面未就绪时使用扫光骨架，而不是裸露纯色底板', () => {
+    it('中央占位区使用扫光骨架，而不是裸露纯色底板', () => {
         clearGameAssetsCache('fantasyrealms');
         const firstView = renderBoard();
 
         const handRow = screen.getByTestId('fantasyrealms-hand-row');
         const handCards = within(handRow).getAllByTestId('fantasyrealms-card');
-        expect(handCards[0]).toHaveClass('atlas-shimmer');
+        expect(handCards[0]).not.toHaveClass('atlas-shimmer');
         firstView.unmount();
 
         const discardEmptyCore = makeCore({ discardPile: [] });

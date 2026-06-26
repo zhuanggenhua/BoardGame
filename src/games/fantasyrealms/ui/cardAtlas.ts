@@ -2,9 +2,7 @@ import type { CSSProperties } from 'react';
 import { buildLocalizedImageSet } from '../../../core/AssetLoader';
 
 export const FANTASY_REALMS_CARD_ATLAS_PATH = 'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png';
-export const FANTASY_REALMS_CARD_ATLAS_COMPRESSED_PATH = 'fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp';
 export const FANTASY_REALMS_CARD_BACK_PATH = 'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png';
-export const FANTASY_REALMS_CARD_FACE_PATH_PREFIX = 'fantasyrealms/cards/faces';
 
 type AtlasPosition = {
     column: number;
@@ -70,14 +68,15 @@ const FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID: Record<string, AtlasPosition> = 
 };
 
 export function getFantasyRealmsCardFaceStyle(cardId: string, locale?: string): CSSProperties | null {
-    if (!FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId]) {
+    const position = FANTASY_REALMS_CARD_ATLAS_POSITION_BY_ID[cardId];
+    if (!position) {
         return null;
     }
 
     return {
-        backgroundImage: buildLocalizedImageSet(`${FANTASY_REALMS_CARD_FACE_PATH_PREFIX}/${cardId}.png`, locale),
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundImage: buildLocalizedImageSet(FANTASY_REALMS_CARD_ATLAS_PATH, locale),
+        backgroundSize: '1000% 700%',
+        backgroundPosition: `${(position.column / 9) * 100}% ${(position.row / 6) * 100}%`,
         backgroundRepeat: 'no-repeat',
     };
 }

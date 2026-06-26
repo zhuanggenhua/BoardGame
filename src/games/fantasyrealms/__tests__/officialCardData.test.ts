@@ -70,13 +70,14 @@ describe('fantasyrealms official card catalog', () => {
         expect(OFFICIAL_FANTASY_REALMS_CARDS[0]!.name).toBe(originalName);
     });
 
-    it('53 张官方基础卡在 zh-CN 下都存在正式单卡面资源，不卡到 fallback 英文卡面', () => {
+    it('53 张官方基础卡在 zh-CN 下都映射到正式图集，不卡到 fallback 英文卡面', () => {
         OFFICIAL_FANTASY_REALMS_CARDS.forEach((card) => {
             const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, 'zh-CN');
             expect(atlasStyle).not.toBeNull();
-            expect(atlasStyle?.backgroundImage).toContain(`fantasyrealms/cards/faces/compressed/${card.id}.webp`);
-            expect(atlasStyle?.backgroundSize).toBe('cover');
-            expect(atlasStyle?.backgroundPosition).toBe('center');
+            expect(atlasStyle?.backgroundImage).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
+            expect(atlasStyle?.backgroundImage).not.toContain('fantasyrealms/cards/faces/');
+            expect(atlasStyle?.backgroundSize).toBe('1000% 700%');
+            expect(atlasStyle?.backgroundPosition).toMatch(/^\d+(?:\.\d+)?% \d+(?:\.\d+)?%$/);
         });
     });
 

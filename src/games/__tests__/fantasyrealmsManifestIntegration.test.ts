@@ -48,9 +48,9 @@ describe('fantasyrealms manifest integration', () => {
         const result = resolver?.();
         expect(result?.critical).toEqual(expect.arrayContaining([
             'fantasyrealms/cards/atlases/fantasyrealms-base-cards-atlas.png',
-            'fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp',
             'fantasyrealms/cards/backs/fantasyrealms-base-card-back.png',
         ]));
+        expect(result?.critical).not.toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
         expect(result?.phaseKey).toBe('fantasyrealms:first-paint');
     });
 });

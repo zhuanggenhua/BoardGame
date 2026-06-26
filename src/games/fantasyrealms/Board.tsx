@@ -1,5 +1,3 @@
-// @asset-pipeline-allow
-// 这里用 AssetLoader 候选链路做真实图片就绪探测，只补 atlas 骨架切换，不引入独立资源来源。
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -7,13 +5,6 @@ import { Crown, Search } from 'lucide-react';
 import { UndoProvider } from '../../contexts/UndoContext';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
-import {
-    getPreloadedImageElement,
-    getResolvedImageCandidateUrl,
-    getRuntimeImageCandidateUrls,
-    markImageLoaded,
-    onImageReady,
-} from '../../core';
 import {
     getFantasyRealmsBaseHandLimit,
     getFantasyRealmsDiscardEndThreshold,
@@ -39,7 +30,6 @@ import {
     FANTASY_REALMS_MANIFEST,
     FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
 } from './manifest';
-import { FANTASY_REALMS_CARD_FACE_PATH_PREFIX } from './ui/cardAtlas';
 
 type Props = GameBoardProps<FantasyRealmsCore, FantasyRealmsCommandMap>;
 
@@ -419,74 +409,6 @@ function getAddedIds(nextIds: string[], previousIds: string[]): string[] {
     return nextIds.filter((id) => !previousIdSet.has(id));
 }
 
-function useFantasyRealmsImageReady(imagePath: string | null, locale?: string) {
-    const effectiveLocale = locale || 'zh-CN';
-    const candidateUrls = React.useMemo(
-        () => (imagePath ? getRuntimeImageCandidateUrls(imagePath, effectiveLocale) : []),
-        [effectiveLocale, imagePath],
-    );
-    const [loaded, setLoaded] = React.useState(() => {
-        if (!imagePath) return true;
-        const resolved = getResolvedImageCandidateUrl(candidateUrls, imagePath, effectiveLocale);
-        return Boolean(
-            resolved
-            || getPreloadedImageElement(imagePath, effectiveLocale)
-            || candidateUrls.some((candidate) => getPreloadedImageElement(candidate)),
-        );
-    });
-
-    React.useEffect(() => {
-        if (!imagePath) {
-            setLoaded(true);
-            return;
-        }
-
-        const resolved = getResolvedImageCandidateUrl(candidateUrls, imagePath, effectiveLocale);
-        if (resolved || getPreloadedImageElement(imagePath, effectiveLocale) || candidateUrls.some((candidate) => getPreloadedImageElement(candidate))) {
-            setLoaded(true);
-            return;
-        }
-
-        setLoaded(false);
-        let cancelled = false;
-        const tryLoad = (index: number) => {
-            if (cancelled || index >= candidateUrls.length) {
-                return;
-            }
-
-            const candidateUrl = candidateUrls[index]!;
-            const img = new Image();
-            const handleSuccess = () => {
-                if (cancelled || img.naturalWidth <= 0) return;
-                markImageLoaded(imagePath, effectiveLocale, img, candidateUrl);
-                markImageLoaded(candidateUrl, undefined, img);
-                setLoaded(true);
-            };
-
-            img.onload = handleSuccess;
-            img.onerror = () => {
-                tryLoad(index + 1);
-            };
-            img.src = candidateUrl;
-            if (img.complete && img.naturalWidth > 0) {
-                handleSuccess();
-            }
-        };
-        tryLoad(0);
-        const unsubscribe = onImageReady((url) => {
-            if (url === imagePath || candidateUrls.includes(url)) {
-                setLoaded(true);
-            }
-        });
-        return () => {
-            cancelled = true;
-            unsubscribe();
-        };
-    }, [candidateUrls, effectiveLocale, imagePath]);
-
-    return loaded;
-}
-
 function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
     const displayName = getFantasyRealmsCardDisplayName(card);
     return (
@@ -525,14 +447,13 @@ function FantasyRealmsCard({
 }) {
     const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, locale);
     const displayName = getFantasyRealmsCardDisplayName(card);
-    const faceImageLoaded = useFantasyRealmsImageReady(`${FANTASY_REALMS_CARD_FACE_PATH_PREFIX}/${card.id}.png`, locale);
     if (!atlasStyle) {
         return renderFallbackCard(card, t, locale);
     }
 
     return (
         <article
-            className={`fr-card fr-card--face${faceImageLoaded ? '' : ' atlas-shimmer'}`}
+            className="fr-card fr-card--face"
             data-testid="fantasyrealms-card"
             data-card-renderer="atlas"
             data-atlas-card-id={card.id}
@@ -2727,6 +2648,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-board--minimal-live .fr-card-slot--live-center-placeholder.atlas-shimmer::before,
                 .fr-card.fr-card--face.atlas-shimmer::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    z-index: 1;
+                    pointer-events: none;
                     background-color: rgba(255, 245, 224, 0.05);
                     background-image: linear-gradient(
                         100deg,
@@ -2734,6 +2660,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         rgba(255, 241, 210, 0.22) 50%,
                         rgba(255, 245, 224, 0.02) 65%
                     );
+                    background-size: 220% 100%;
+                    transform: translateX(-120%);
+                    animation: fr-card-atlas-shimmer-sweep 1200ms ease-in-out infinite;
+                }
+                .fr-card.fr-card--face.atlas-shimmer {
+                    position: relative;
+                    overflow: hidden;
+                }
+                @keyframes fr-card-atlas-shimmer-sweep {
+                    0% {
+                        transform: translateX(-120%);
+                    }
+                    100% {
+                        transform: translateX(120%);
+                    }
                 }
                 .fr-board--minimal-live .fr-card-button--live-center {
                     width: var(--fr-live-center-card-width);
