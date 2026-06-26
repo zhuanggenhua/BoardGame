@@ -3764,6 +3764,7 @@
       "name": "Overclock",
       "description": "4 Electricity: deal 6 undefendable damage, then activate up to 2 different bots (ignoring normal activation conditions).",
       "effects": {
+        "inflictNanobomb": "Opponent gains 1 Nanobomb.",
         "damage6Unblockable": "Deal 6 undefendable damage.",
         "activateTwoBots": "Activate up to 2 different bots (ignoring normal activation conditions)."
       }

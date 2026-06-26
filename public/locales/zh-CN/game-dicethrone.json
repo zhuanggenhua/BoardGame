@@ -3873,6 +3873,7 @@
       "name": "超频运行",
       "description": "4 电能：造成 6 点不可防御伤害，然后激活至多 2 个不同机器人（无视正常激活条件）。",
       "effects": {
+        "inflictNanobomb": "对手获得 1 纳米爆弹。",
         "damage6Unblockable": "造成 6 点不可防御伤害。",
         "activateTwoBots": "激活至多 2 个不同机器人（无视正常激活条件）。"
       }
