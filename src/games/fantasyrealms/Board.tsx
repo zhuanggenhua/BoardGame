@@ -274,6 +274,7 @@ const LIVE_CENTER_ROW_REFERENCE_WIDTH_PX = 1360;
 const LIVE_CENTER_CARD_WIDTH_PX = 206;
 const LIVE_CENTER_CARD_STRIDE_PX = 260;
 const LIVE_CENTER_CARD_MIN_WIDTH_PX = 148;
+const LIVE_CENTER_ROW_Z_STRIDE = 8;
 const LIVE_CENTER_CARD_WIDTH_RATIO = LIVE_CENTER_CARD_WIDTH_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
 const LIVE_CENTER_CARD_STRIDE_RATIO = LIVE_CENTER_CARD_STRIDE_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
 const LIVE_CENTER_ROW_OFFSET_RATIO = LIVE_CENTER_ROW_ROW_OFFSET / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
@@ -355,7 +356,7 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
     const topRowOffsets = buildMinimalLiveCenterRowOffsets(topRowCount);
     const pushAbsoluteRow = (rowOffsets: readonly string[], rowIndex: number) => {
         const rowCount = rowOffsets.length;
-        const rowBaseZIndex = rowIndex === 0 ? 4 : 2;
+        const rowBaseZIndex = rowIndex * LIVE_CENTER_ROW_Z_STRIDE;
         rowOffsets.forEach((left, columnIndex) => {
             const centerBias = Math.abs(columnIndex - ((rowCount - 1) / 2));
             fixedSlotStyles.push({

@@ -1104,7 +1104,7 @@ describe('FantasyRealms Board foundation', () => {
         expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
     });
 
-    it('中央公开牌达到两排时，上排层级高于下排，避免边缘卡被盖成半截', () => {
+    it('中央公开牌达到两排时，下排层级高于上排，保持左偏叠放时不被上排压住', () => {
         renderBoard(makeCore({
             discardPile: [
                 ...PUBLIC_CARDS,
@@ -1116,7 +1116,7 @@ describe('FantasyRealms Board foundation', () => {
         expect(centerCards).toHaveLength(9);
         const firstRowZ = centerCards.slice(0, 5).map((card) => Number(getComputedStyle(card).zIndex));
         const secondRowZ = centerCards.slice(5).map((card) => Number(getComputedStyle(card).zIndex));
-        expect(Math.max(...firstRowZ)).toBeGreaterThan(Math.max(...secondRowZ));
+        expect(Math.min(...secondRowZ)).toBeGreaterThan(Math.max(...firstRowZ));
     });
 
     it('正式卡面未就绪时使用扫光骨架，而不是裸露纯色底板', () => {
