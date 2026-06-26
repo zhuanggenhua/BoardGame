@@ -1,3 +1,5 @@
+// @asset-pipeline-allow
+// 这里用 AssetLoader 候选链路做真实图片就绪探测，只补 atlas 骨架切换，不引入独立资源来源。
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
