@@ -819,7 +819,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
   - App 壳专属能力必须继续通过统一运行时探测 helper 隔离，不能让网页端共享 UI 直接感知原生桥。
 - **单位规范（强制）**：
   - 文本、按钮、表单、日志、普通 HUD：默认使用 `rem`，必要时配 `clamp()`，**禁止**再用裸 `vw` 作为主字号或主控件尺寸。
-  - 固定构图类主布局：默认使用“`px` 设计尺寸 + 外层统一 `scale`”或 `aspect-ratio + %`，**禁止**再把裸 `vw` 当作主适配手段。
+  - 固定构图类主布局：唯一主方案是“`px` 设计画布 + 外层统一等比 `scale`”，公式为 `scale = min(availableWidth / designWidth, availableHeight / designHeight)`；横屏高度约束、竖屏宽度约束只能是该公式结果，不能另写成两套主单位。
   - 触控命中区：使用 `px/rem` 下限（如 `44px`），不要跟 viewport 宽度一起漂。
   - `vw/vh` 只允许作为局部比例辅助单位、装饰偏移或历史桌面区域的过渡方案；一旦进入 `board-shell` / 双端同构主链路，优先迁移到统一缩放或 `rem/clamp`。
 - **深度感分级**：重点区域毛玻璃+软阴影，高频更新区域禁止毛玻璃。

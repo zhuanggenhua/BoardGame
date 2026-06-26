@@ -218,7 +218,7 @@ function handleBlinkBase(ctx: CustomActionContext): DiceThroneEvent[] {
     if (shurikenCount > 0) reflectedDamage += 2;
     events.push(...createBlinkDamageEvents(ctx, originalAttackerId, reflectedDamage, ctx.timestamp + 10));
 
-    if (maskCount > 0) {
+    if (maskCount >= 2) {
         const smokeEvent = grantTokenEvent(ctx.state, ctx.sourceAbilityId, ctx.targetId, TOKEN_IDS.SMOKE_BOMB, 1, ctx.timestamp + 20);
         if (smokeEvent) events.push(smokeEvent);
     }

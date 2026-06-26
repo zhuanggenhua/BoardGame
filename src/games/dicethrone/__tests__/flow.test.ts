@@ -21,6 +21,7 @@ import { buildAfterRollConfirmedSignature } from '../domain/responseWindowGuards
 import { playerView } from '../domain/view';
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
+import { SHADOW_FANG_2 } from '../heroes/ninja/abilities';
 import type { AbilityEffect } from '../domain/combat';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { GameTestRunner, type TestCase } from '../../../engine/testing';
@@ -39,6 +40,7 @@ import {
     createHeroMatchup,
     createSetupWithHand,
     createNoResponseSetup,
+    getSimpleChoicePrompt,
     getCardById,
     assertState,
     advanceTo,
@@ -1793,6 +1795,198 @@ describe('王权骰铸流程测试', () => {
             }
         });
 
+        it('忍者打出瞬身 II 升级卡后，真实防御流程应按升级后的防御技结算', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            const random = createQueuedRandom([1, 6, 6]);
+            let state = createInitializedStateWithCharacters(playerIds, random, {
+                '0': 'ninja',
+                '1': 'treant',
+            });
+
+            state.core.players['0'].hand = [getCardById('upgrade-blink-2')];
+            state.core.players['0'].deck = state.core.players['0'].deck.filter((card) => card.id !== 'upgrade-blink-2');
+            state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+            state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+            state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+
+            let result = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '0',
+                    payload: { cardId: 'upgrade-blink-2' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+
+            state.core.activePlayerId = '1';
+            state.core.pendingAttack = {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: 'splinter',
+                isDefendable: true,
+                damage: 0,
+            } as DiceThroneCore['pendingAttack'];
+            state.core.rollCount = 0;
+            state.core.rollLimit = 1;
+            state.core.rollDiceCount = 0;
+            state.core.rollConfirmed = false;
+            state.sys.phase = 'defensiveRoll';
+
+            const commands: CommandInput[] = [
+                cmd('SELECT_ABILITY', '0', { abilityId: 'blink' }),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('ADVANCE_PHASE', '0'),
+            ];
+
+            for (const input of commands) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.core.players['0'].abilityLevels.blink).toBe(2);
+            expect(state.core.pendingAttack).toBeNull();
+            expect(state.sys.phase).toBe('main2');
+            expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(49);
+            expect(state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        });
+
+        it('忍者打出瞬身 II 升级卡后，进入 defensiveRoll 自动选中唯一防御技时仍应保留升级版合同', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            const random = createQueuedRandom([
+                1, 1, 1, 1, 1,
+                6, 6, 1,
+                2, 3,
+            ]);
+            let state = createInitializedStateWithCharacters(playerIds, random, {
+                '0': 'monk',
+                '1': 'ninja',
+            });
+
+            state.core.activePlayerId = '1';
+            state.core.players['1'].hand = [getCardById('upgrade-blink-2')];
+            state.core.players['1'].deck = state.core.players['1'].deck.filter((card) => card.id !== 'upgrade-blink-2');
+            state.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
+            state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+            state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
+
+            let result = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '1',
+                    payload: { cardId: 'upgrade-blink-2' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+            state.core.activePlayerId = '0';
+
+            const commands: CommandInput[] = [
+                ...advanceTo('offensiveRoll', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
+                cmd('ADVANCE_PHASE', '0'),
+            ];
+
+            for (const input of commands) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.sys.phase).toBe('defensiveRoll');
+            expect(state.core.pendingAttack?.defenseAbilityId).toBe('blink');
+            expect(state.core.players['1'].abilityLevels.blink).toBe(2);
+            expect(state.core.rollCount).toBe(0);
+            expect(state.core.rollLimit).toBe(2);
+            expect(state.core.rollDiceCount).toBe(3);
+
+            result = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'ROLL_DICE',
+                    playerId: '1',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+
+            expect(state.core.rollCount).toBe(1);
+            expect(state.core.rollLimit).toBe(2);
+            expect(state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(0);
+
+            result = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'TOGGLE_DIE_LOCK',
+                    playerId: '1',
+                    payload: { dieId: 0 },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+            expect(state.core.dice.find((die) => die.id === 0)?.isKept).toBe(true);
+
+            result = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'ROLL_DICE',
+                    playerId: '1',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+            expect(state.core.rollCount).toBe(2);
+            expect(state.core.rollLimit).toBe(2);
+        });
+
         it('4 人模式若已卡成“同一防御技已选中但全锁骰”，再次选择同一防御技应恢复掷骰配置', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {
@@ -2421,6 +2615,142 @@ describe('王权骰铸流程测试', () => {
             const afterSkip = resolveResult.state as MatchState<DiceThroneCore>;
             expect(afterSkip.sys.interaction.current).toBeUndefined();
             expect(afterSkip.core.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
+        });
+
+        it('忍术掷出 6 后选择不可防御分支时，不应先进入防御阶段', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            const random = createQueuedRandom([6]);
+            let state = createHeroMatchup('ninja', 'treant')(['0', '1'], random);
+
+            state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
+            state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
+                ability.id === 'shadow-fang' ? SHADOW_FANG_2 : ability
+            ));
+            state.core.players['0'].abilityLevels['shadow-fang'] = 2;
+            state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+            state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+            state.core.activePlayerId = '0';
+            state.core.rollConfirmed = true;
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'shadow-fang-2-main',
+                isDefendable: true,
+                damage: 0,
+            };
+            state.sys.phase = 'offensiveRoll';
+
+            const advanceResult = executePipeline(
+                pipelineConfig,
+                state,
+                cmd('ADVANCE_PHASE', '0') as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(advanceResult.success).toBe(true);
+            if (!advanceResult.success) return;
+
+            const tokenChoiceState = advanceResult.state as MatchState<DiceThroneCore>;
+            expect(tokenChoiceState.sys.phase).toBe('offensiveRoll');
+            const tokenPrompt = getSimpleChoicePrompt(tokenChoiceState, 'shadow-fang-2-main');
+            const useOption = tokenPrompt.options.find((option) => option.value?.customId === 'use-ninjutsu');
+            expect(useOption).toBeTruthy();
+
+            const useResult = respondToPrompt(tokenChoiceState, useOption!.id, '0', random, playerIds);
+            expect(useResult.success).toBe(true);
+            if (!useResult.success) return;
+
+            const ninjutsuPrompt = getSimpleChoicePrompt(useResult.state, 'shadow-fang-2-main');
+            const undefendableOption = ninjutsuPrompt.options.find((option) => option.value?.customId === 'ninja-ninjutsu-undefendable');
+            expect(undefendableOption).toBeTruthy();
+
+            const resolveResult = respondToPrompt(useResult.state, undefendableOption!.id, '0', createQueuedRandom([1]), playerIds);
+            expect(resolveResult.success).toBe(true);
+            if (!resolveResult.success) return;
+
+            expect(resolveResult.state.core.pendingAttack?.isDefendable).toBe(false);
+            expect(resolveResult.events.some((event) => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
+            expect(resolveResult.state.sys.phase).not.toBe('defensiveRoll');
+        });
+
+        it('4 人模式选定目标后应先弹出忍术选择，而不是直接进入防御阶段', () => {
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            const random = createQueuedRandom([1, 1, 1, 1, 1, 6]);
+            let state = createInitializedStateWithCharacters(playerIds, random, {
+                '0': 'ninja',
+                '1': 'treant',
+                '2': 'monk',
+                '3': 'paladin',
+            });
+
+            for (const pid of playerIds) {
+                state.core.players[pid].hand = [];
+                state.core.players[pid].deck = [];
+                state.core.players[pid].discard = [];
+                state.core.players[pid].statusEffects = {};
+            }
+
+            state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
+
+            const setupCommands: CommandInput[] = [
+                ...advanceTo('offensiveRoll', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'slash-5' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('ADVANCE_PHASE', '0'),
+            ];
+
+            for (const input of setupCommands) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            const defenderChoice = (
+                state.sys.interaction.current?.data as { options?: Array<{ playerId: string; customId?: string }> } | undefined
+            )?.options ?? [];
+            const chooseTargetOption = defenderChoice.find((option) => option.customId === 'select-target:1');
+            expect(chooseTargetOption).toBeDefined();
+
+            const chooseTargetResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'SELECT_DEFENDER_TARGET',
+                    playerId: '0',
+                    payload: { defenderId: chooseTargetOption!.playerId },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(chooseTargetResult.success).toBe(true);
+            if (!chooseTargetResult.success) return;
+
+            const afterTargetState = chooseTargetResult.state as MatchState<DiceThroneCore>;
+            expect(afterTargetState.core.pendingAttack?.defenderId).toBe('1');
+            expect(afterTargetState.sys.phase).toBe('targetingRoll');
+            const tokenPrompt = getSimpleChoicePrompt(afterTargetState, 'slash-5');
+            expect(tokenPrompt.options.map((option) => option.value?.customId)).toContain('use-ninjutsu');
         });
 
         it('4 人模式 targetingRoll 不允许伪造队友为目标', () => {

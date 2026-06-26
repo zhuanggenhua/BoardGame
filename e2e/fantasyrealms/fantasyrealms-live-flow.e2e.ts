@@ -1354,7 +1354,7 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('低张数公开弃牌保持真实居中，不再用左侧固定槽位冒充居中', async ({ browser }, testInfo) => {
+    test('低张数公开弃牌保持满铺起始槽位，不再按牌组整体回中', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -1378,24 +1378,35 @@ test.describe('FantasyRealms live flow', () => {
 
             const topRowRects = fullRowRects.slice(0, 5);
             const secondRowRects = fullRowRects.slice(5);
-            expect(Math.abs(getRectGroupCenter(secondRowRects) - getRectGroupCenter(topRowRects))).toBeLessThanOrEqual(2);
+            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+
+            await injectCore(page, {
+                ...drawStageCore(),
+                discardPile: fullTenDiscardCore().discardPile.slice(0, 1),
+            });
+            await expect(page.locator('.fr-card-button--live-center')).toHaveCount(1);
+            const oneCardRects = await waitForLocatorRectsToSettle(page, '.fr-card-button--live-center');
+            expect(oneCardRects).toHaveLength(1);
+            expect(Math.abs(oneCardRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
 
             await injectCore(page, drawStageCore());
             await expect(page.getByText('你的回合')).toBeVisible();
             const lowCountRects = await waitForLocatorRectsToSettle(page, '.fr-card-button--live-center');
             expect(lowCountRects).toHaveLength(2);
 
-            const discardRowRect = await getLocatorRect(page, '.fr-discard-row--live-center');
-            const discardRowCenter = discardRowRect.x + (discardRowRect.width / 2);
-            expect(Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
-            expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
-            expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
+            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
 
-            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-real-centered-cards');
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-prefix-slots');
             await mkdir(dirname(evidencePath), { recursive: true });
             await page.screenshot({ path: evidencePath, fullPage: false });
         } finally {

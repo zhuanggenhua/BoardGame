@@ -106,18 +106,18 @@ const clickSimpleChoiceByCustomId = async (
     customId: string,
 ): Promise<void> => {
     const optionIndex = await getSimpleChoiceOptionIndexByCustomId(game, customId);
-    const visibleButtons = page.locator('#modal-root button:visible');
+    const modalRoot = page.locator('#modal-root');
+    const visibleButtons = modalRoot.locator('button:visible');
     const modalButton = visibleButtons.nth(optionIndex);
     if (await modalButton.isVisible({ timeout: 1000 }).catch(() => false)) {
         await modalButton.click();
         return;
     }
 
-    const choicePanel = page.getByRole('heading', { name: '技能结算选择' }).locator('..');
-    await expect(choicePanel).toBeVisible({ timeout: 5000 });
+    await expect(modalRoot.getByRole('heading', { name: '技能结算选择' })).toBeVisible({ timeout: 5000 });
 
     if (customId === 'artificer-wrench-strike-roll') {
-        const rollButton = choicePanel.getByRole('button', { name: '投 1 骰' });
+        const rollButton = modalRoot.getByRole('button', { name: '投 1 骰' });
         await expect(rollButton).toBeVisible({ timeout: 5000 });
         await rollButton.click();
         return;
@@ -132,22 +132,39 @@ const clickSimpleChoiceByCustomId = async (
     if (synthIndex === undefined) {
         throw new Error(`未适配的 simple-choice 点击目标 ${customId}`);
     }
-    const clicked = await page.evaluate((index) => {
-        const heading = Array.from(document.querySelectorAll('h2')).find((node) => node.textContent?.trim() === '技能结算选择');
-        const panel = heading?.parentElement;
-        if (!panel) return false;
 
-        const clickableEntries = Array.from(panel.querySelectorAll('*')).filter((node) => {
-            const element = node as HTMLElement;
-            const text = element.textContent?.trim() ?? '';
-            return text === '合成器' && element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0;
-        });
-        const target = clickableEntries[index] as HTMLElement | undefined;
-        if (!target) return false;
-        target.click();
-        return true;
-    }, synthIndex);
-    expect(clicked).toBe(true);
+    const synthLabel = modalRoot.getByText('合成器', { exact: true }).nth(synthIndex);
+    await expect(synthLabel).toBeVisible({ timeout: 5000 });
+
+    try {
+        await synthLabel.click();
+        return;
+    } catch {
+        const clickableAncestor = synthLabel.locator('xpath=ancestor::*[contains(@class,"cursor-pointer")]').first();
+        await expect(clickableAncestor).toBeVisible({ timeout: 5000 });
+        await clickableAncestor.click();
+    }
+};
+
+const clickSimpleChoiceByIndex = async (
+    page: Page,
+    game: GameTestContext,
+    optionIndex: number,
+): Promise<void> => {
+    const state = await game.getState() as JsonRecord;
+    const interaction = state?.sys?.interaction?.current;
+    const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
+        ? interaction.data.options
+        : [];
+    if (optionIndex < 0 || optionIndex >= options.length) {
+        throw new Error(`simple-choice 选项索引越界: ${optionIndex}`);
+    }
+
+    const modalRoot = page.locator('#modal-root');
+    const visibleButtons = modalRoot.locator('button:visible');
+    const modalButton = visibleButtons.nth(optionIndex);
+    await expect(modalButton).toBeVisible({ timeout: 5000 });
+    await modalButton.click();
 };
 
 const readIconBadgeSnapshots = async (page: Page, rootSelector: string): Promise<BadgeSpriteSnapshot[]> =>
@@ -399,6 +416,62 @@ const setupArtificerPostDamageBotChoiceScene = async (
     });
 
     await game.waitForPhase('offensiveRoll', 10000);
+    await game.page.evaluate(({ tokenId, shockBotId, healBotId }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => any;
+                    set?: (state: any) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const current = harness?.state?.get?.();
+        if (!harness?.state?.set || !current?.core?.players?.['0']) {
+            throw new Error('TestHarness state.set 不可用，无法补工匠机器人状态');
+        }
+
+        const player0 = current.core.players['0'];
+        const nextState = {
+            ...current,
+            core: {
+                ...current.core,
+                players: {
+                    ...current.core.players,
+                    '0': {
+                        ...player0,
+                        tokenStackLimits: {
+                            ...(player0.tokenStackLimits ?? {}),
+                            [shockBotId]: tokenId === shockBotId ? 1 : (player0.tokenStackLimits?.[shockBotId] ?? 0),
+                            [healBotId]: tokenId === healBotId ? 1 : (player0.tokenStackLimits?.[healBotId] ?? 0),
+                        },
+                        artificerBotState: {
+                            ...(player0.artificerBotState ?? {}),
+                            ...(tokenId === shockBotId ? {
+                                [shockBotId]: {
+                                    built: true,
+                                    upgraded: false,
+                                    activationsUsedThisTurn: 0,
+                                },
+                            } : {}),
+                            ...(tokenId === healBotId ? {
+                                [healBotId]: {
+                                    built: true,
+                                    upgraded: false,
+                                    activationsUsedThisTurn: 0,
+                                },
+                            } : {}),
+                        },
+                    },
+                },
+            },
+        };
+
+        return harness.state.set(nextState);
+    }, {
+        tokenId: options.tokenId,
+        shockBotId: TOKEN_IDS.SHOCK_BOT,
+        healBotId: TOKEN_IDS.HEAL_BOT,
+    });
     await dispatchHarnessCommand(game.page, 'ADVANCE_PHASE', '0');
 
     await expect.poll(async () => {
@@ -686,6 +759,290 @@ const prepareArtificerWrenchStrikeUpgradeBoardScene = async (page: Page): Promis
     }, { synthId: TOKEN_IDS.SYNTH });
 };
 
+const prepareArtificerSchematicsUpgradeBoardScene = async (page: Page): Promise<void> => {
+    await page.evaluate(({ synthId }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => JsonRecord;
+                    set?: (state: JsonRecord) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!state || !harness?.state?.set) {
+            throw new Error('TestHarness state 不可用');
+        }
+
+        const core = state.core as JsonRecord;
+        const sys = state.sys as JsonRecord;
+        const players = core.players as Record<string, JsonRecord>;
+        const player0 = players['0'];
+        const player1 = players['1'];
+        const deckCards = Array.isArray(player0.deck) ? player0.deck.slice(0, 2) : [];
+
+        const toDie = (value: number, symbol: string, id: number) => ({
+            id,
+            value,
+            symbol,
+            symbols: [symbol],
+            isKept: false,
+            isLocked: false,
+            playerId: '0',
+        });
+
+        return harness.state.set({
+            ...state,
+            core: {
+                ...core,
+                activePlayerId: '0',
+                currentPlayer: '0',
+                currentPlayerIndex: 0,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                pendingAttack: null,
+                pendingDamage: null,
+                pendingBonusDiceSettlement: undefined,
+                activatingAbilityId: undefined,
+                players: {
+                    ...players,
+                    '0': {
+                        ...player0,
+                        hand: [],
+                        deck: deckCards,
+                        resources: {
+                            ...(player0.resources ?? {}),
+                            cp: 4,
+                            hp: 38,
+                        },
+                        tokens: {
+                            ...(player0.tokens ?? {}),
+                            [synthId]: 0,
+                        },
+                    },
+                    '1': {
+                        ...player1,
+                        resources: {
+                            ...(player1.resources ?? {}),
+                            cp: player1.resources?.cp ?? 10,
+                            hp: 50,
+                        },
+                    },
+                },
+                dice: [
+                    toDie(4, 'gear', 0),
+                    toDie(5, 'gear', 1),
+                    toDie(6, 'gear', 2),
+                    toDie(6, 'electricity', 3),
+                    toDie(1, 'wrench', 4),
+                ],
+            },
+            sys: {
+                ...sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    ...((sys.interaction ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+                responseWindow: {
+                    ...((sys.responseWindow ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+            },
+        });
+    }, { synthId: TOKEN_IDS.SYNTH });
+};
+
+const prepareArtificerEurekaUpgradeBoardScene = async (page: Page): Promise<void> => {
+    await page.evaluate(() => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => JsonRecord;
+                    set?: (state: JsonRecord) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!state || !harness?.state?.set) {
+            throw new Error('TestHarness state 不可用');
+        }
+
+        const core = state.core as JsonRecord;
+        const sys = state.sys as JsonRecord;
+        const players = core.players as Record<string, JsonRecord>;
+        const player0 = players['0'];
+        const player1 = players['1'];
+
+        const toDie = (value: number, symbol: string, id: number) => ({
+            id,
+            value,
+            symbol,
+            symbols: [symbol],
+            isKept: false,
+            isLocked: false,
+            playerId: '0',
+        });
+
+        return harness.state.set({
+            ...state,
+            core: {
+                ...core,
+                activePlayerId: '0',
+                currentPlayer: '0',
+                currentPlayerIndex: 0,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                pendingAttack: null,
+                pendingDamage: null,
+                pendingBonusDiceSettlement: undefined,
+                activatingAbilityId: undefined,
+                players: {
+                    ...players,
+                    '0': {
+                        ...player0,
+                        hand: [],
+                        resources: {
+                            ...(player0.resources ?? {}),
+                            cp: player0.resources?.cp ?? 8,
+                            hp: player0.resources?.hp ?? 50,
+                        },
+                    },
+                    '1': {
+                        ...player1,
+                        resources: {
+                            ...(player1.resources ?? {}),
+                            cp: player1.resources?.cp ?? 10,
+                            hp: 50,
+                        },
+                    },
+                },
+                dice: [
+                    toDie(1, 'wrench', 0),
+                    toDie(2, 'wrench', 1),
+                    toDie(4, 'gear', 2),
+                    toDie(5, 'gear', 3),
+                    toDie(6, 'electricity', 4),
+                ],
+            },
+            sys: {
+                ...sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    ...((sys.interaction ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+                responseWindow: {
+                    ...((sys.responseWindow ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+            },
+        });
+    });
+};
+
+const prepareArtificerActivateBotsUpgradeBoardScene = async (page: Page): Promise<void> => {
+    await page.evaluate(({ synthId, nanobombId }) => {
+        const harness = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => JsonRecord;
+                    set?: (state: JsonRecord) => void | Promise<void>;
+                };
+            };
+        }).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!state || !harness?.state?.set) {
+            throw new Error('TestHarness state 不可用');
+        }
+
+        const core = state.core as JsonRecord;
+        const sys = state.sys as JsonRecord;
+        const players = core.players as Record<string, JsonRecord>;
+        const player0 = players['0'];
+        const player1 = players['1'];
+
+        const toDie = (value: number, symbol: string, id: number) => ({
+            id,
+            value,
+            symbol,
+            symbols: [symbol],
+            isKept: false,
+            isLocked: false,
+            playerId: '0',
+        });
+
+        return harness.state.set({
+            ...state,
+            core: {
+                ...core,
+                activePlayerId: '0',
+                currentPlayer: '0',
+                currentPlayerIndex: 0,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                pendingAttack: null,
+                pendingDamage: null,
+                pendingBonusDiceSettlement: undefined,
+                activatingAbilityId: undefined,
+                players: {
+                    ...players,
+                    '0': {
+                        ...player0,
+                        hand: [],
+                        resources: {
+                            ...(player0.resources ?? {}),
+                            cp: player0.resources?.cp ?? 8,
+                            hp: player0.resources?.hp ?? 50,
+                        },
+                        tokens: {
+                            ...(player0.tokens ?? {}),
+                            [synthId]: 0,
+                        },
+                    },
+                    '1': {
+                        ...player1,
+                        resources: {
+                            ...(player1.resources ?? {}),
+                            cp: player1.resources?.cp ?? 10,
+                            hp: 50,
+                        },
+                        statusEffects: {
+                            ...(player1.statusEffects ?? {}),
+                            [nanobombId]: 0,
+                        },
+                    },
+                },
+                dice: [
+                    toDie(1, 'wrench', 0),
+                    toDie(2, 'wrench', 1),
+                    toDie(3, 'wrench', 2),
+                    toDie(6, 'electricity', 3),
+                    toDie(4, 'gear', 4),
+                ],
+            },
+            sys: {
+                ...sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    ...((sys.interaction ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+                responseWindow: {
+                    ...((sys.responseWindow ?? {}) as Record<string, unknown>),
+                    current: undefined,
+                },
+            },
+        });
+    }, {
+        synthId: TOKEN_IDS.SYNTH,
+        nanobombId: STATUS_IDS.NANOBOMB,
+    });
+};
+
 const injectVisibleArtificerStatusIcons = async (game: GameTestContext): Promise<void> => {
     await game.page.evaluate(({ synthId, nanobotId, shockBotId, healBotId, nanobombId }) => {
         const harness = (window as Window & {
@@ -823,13 +1180,15 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             return {
                 synth: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
                 shockBot: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SHOCK_BOT] ?? null,
+                shockBotUsed: state?.core?.players?.['0']?.artificerBotState?.[TOKEN_IDS.SHOCK_BOT]?.activationsUsedThisTurn ?? null,
                 defenderHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 attackSettled: isPostDamageFollowUpSettled(state),
             };
         }, { timeout: 10000 }).toMatchObject({
             synth: 0,
-            shockBot: 0,
+            shockBot: 1,
+            shockBotUsed: 1,
             defenderHp: 47,
             interactionKind: null,
             attackSettled: true,
@@ -852,6 +1211,7 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             return {
                 synth: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
                 healBot: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.HEAL_BOT] ?? null,
+                healBotUsed: state?.core?.players?.['0']?.artificerBotState?.[TOKEN_IDS.HEAL_BOT]?.activationsUsedThisTurn ?? null,
                 artificerHp: state?.core?.players?.['0']?.resources?.[RESOURCE_IDS.HP] ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 attackSettled: isPostDamageFollowUpSettled(state),
@@ -862,7 +1222,8 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             };
         }, { timeout: 10000 }).toMatchObject({
             synth: 0,
-            healBot: 0,
+            healBot: 1,
+            healBotUsed: 1,
             artificerHp: 41,
             interactionKind: null,
             attackSettled: true,
@@ -1219,26 +1580,258 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
             const state = await game.getState() as JsonRecord;
             const artificer = state?.core?.players?.['0'];
             const pendingAttack = state?.core?.pendingAttack;
+            const phase = state?.sys?.phase ?? null;
+            const interactionKind = state?.sys?.interaction?.current?.kind ?? null;
+            const synth = artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null;
+
+            if (
+                phase === 'defensiveRoll'
+                && interactionKind == null
+                && pendingAttack?.sourceAbilityId === 'wrench-strike-2-4'
+            ) {
+                return {
+                    state: 'defensive-roll-observed',
+                    synth,
+                    pendingAttackDamage: pendingAttack?.damage ?? null,
+                    pendingAttackBonusDamage: pendingAttack?.bonusDamage ?? null,
+                };
+            }
+
+            if (phase === 'main2' && interactionKind == null && !pendingAttack) {
+                return {
+                    state: 'main2-resolved',
+                    synth,
+                    opponentHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                };
+            }
+
+            return {
+                state: 'waiting',
+                phase,
+                interactionKind,
+                synth,
+                pendingAttackSourceId: pendingAttack?.sourceAbilityId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            synth: 1,
+        });
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const pendingAttack = state?.core?.pendingAttack;
+            const phase = state?.sys?.phase ?? null;
+            const interactionKind = state?.sys?.interaction?.current?.kind ?? null;
+
+            if (
+                phase === 'defensiveRoll'
+                && interactionKind == null
+                && pendingAttack?.sourceAbilityId === 'wrench-strike-2-4'
+                && pendingAttack?.damage === 5
+                && pendingAttack?.bonusDamage === 0
+            ) {
+                return 'defensive-roll-observed';
+            }
+
+            if (phase === 'main2' && interactionKind == null && !pendingAttack) {
+                return 'main2-resolved';
+            }
+
+            return 'waiting';
+        }, {
+            timeout: 10000,
+            message: '等待升级版扳手攻击 II 的电能分支在真实页面进入 defensiveRoll，或被对手自动防御后快速收口到 main2',
+        }).toMatch(/defensive-roll-observed|main2-resolved/);
+
+        await game.screenshot('artificer-wrench-strike-2-after-electricity-branch', testInfo);
+    });
+
+    test('电路图 II 打出后应可从真实玩家板触发升级后的电路图并同时获得 2 CP、抽 2、治疗 2、获得 4 合成器', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, ['upgrade-artificer-schematics-2']);
+        await game.screenshot('artificer-schematics-2-before-play', testInfo);
+
+        await dragHandCardToPlay(page, 'upgrade-artificer-schematics-2');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            return {
+                handIds: artificer?.hand?.map((card: JsonRecord) => card.id) ?? [],
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                abilityLevel: artificer?.abilityLevels?.['schematics'] ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['schematics']?.cardId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            handIds: [],
+            cp: 9,
+            abilityLevel: 2,
+            upgradeCardId: 'upgrade-artificer-schematics-2',
+        });
+
+        await prepareArtificerSchematicsUpgradeBoardScene(page);
+        await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
+        await game.screenshot('artificer-schematics-2-board-ready', testInfo);
+
+        await clickResolvedAbilitySlot(page, 'chi', 'schematics');
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                hp: artificer?.resources?.[RESOURCE_IDS.HP] ?? null,
+                synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                handCount: artificer?.hand?.length ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['schematics']?.cardId ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main2',
+            interactionKind: null,
+            cp: 6,
+            hp: 40,
+            synth: 4,
+            handCount: 2,
+            upgradeCardId: 'upgrade-artificer-schematics-2',
+            pendingAttack: null,
+        });
+
+        await game.screenshot('artificer-schematics-2-after-trigger', testInfo);
+    });
+
+    test('灵感突现 II 打出后应可从真实玩家板触发从头构建并制造高级电能机器人', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, ['upgrade-artificer-eureka-2']);
+        await game.screenshot('artificer-eureka-2-before-play', testInfo);
+
+        await dragHandCardToPlay(page, 'upgrade-artificer-eureka-2');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            return {
+                handIds: artificer?.hand?.map((card: JsonRecord) => card.id) ?? [],
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                abilityLevel: artificer?.abilityLevels?.['eureka'] ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['eureka']?.cardId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            handIds: [],
+            cp: 8,
+            abilityLevel: 2,
+            upgradeCardId: 'upgrade-artificer-eureka-2',
+        });
+
+        await prepareArtificerEurekaUpgradeBoardScene(page);
+        await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
+        await game.screenshot('artificer-eureka-2-board-ready', testInfo);
+
+        await clickResolvedAbilitySlot(page, 'lotus', 'eureka-2-build-from-scratch');
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const interaction = state?.sys?.interaction?.current;
+            const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
+                ? interaction.data.options
+                : [];
+            return {
+                phase: state?.sys?.phase ?? null,
+                kind: interaction?.kind ?? null,
+                sourceId: interaction?.data?.sourceId ?? null,
+                optionValues: options.map((option: JsonRecord) => option?.value?.value ?? option?.value),
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            kind: 'simple-choice',
+            sourceId: 'eureka-2-build-from-scratch',
+            optionValues: [1, 2, 3],
+        });
+
+        await clickSimpleChoiceByIndex(page, game, 1);
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const shockBotState = artificer?.artificerBotState?.[TOKEN_IDS.SHOCK_BOT];
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                tokenCount: artificer?.tokens?.[TOKEN_IDS.SHOCK_BOT] ?? null,
+                tokenLimit: artificer?.tokenStackLimits?.[TOKEN_IDS.SHOCK_BOT] ?? null,
+                built: shockBotState?.built ?? null,
+                upgraded: shockBotState?.upgraded ?? null,
+                activationsUsedThisTurn: shockBotState?.activationsUsedThisTurn ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'main2',
+            interactionKind: null,
+            tokenCount: 1,
+            tokenLimit: 2,
+            built: true,
+            upgraded: true,
+            activationsUsedThisTurn: 0,
+            pendingAttack: null,
+        });
+
+        await game.screenshot('artificer-eureka-2-after-build-from-scratch', testInfo);
+    });
+
+    test('唤醒机械 II 打出后应可从真实玩家板触发精密制造并获得 5 合成器', async ({ page, game }, testInfo) => {
+        await setupArtificerMainHandScene(game, ['upgrade-artificer-activate-bots-2']);
+        await game.screenshot('artificer-activate-bots-2-before-play', testInfo);
+
+        await dragHandCardToPlay(page, 'upgrade-artificer-activate-bots-2');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            return {
+                handIds: artificer?.hand?.map((card: JsonRecord) => card.id) ?? [],
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                abilityLevel: artificer?.abilityLevels?.['activate-bots'] ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['activate-bots']?.cardId ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            handIds: [],
+            cp: 8,
+            abilityLevel: 2,
+            upgradeCardId: 'upgrade-artificer-activate-bots-2',
+        });
+
+        await prepareArtificerActivateBotsUpgradeBoardScene(page);
+        await expect(page.getByTestId('player-board-surface')).toHaveAttribute('data-character-id', ARTIFICER, { timeout: 10000 });
+        await game.screenshot('artificer-activate-bots-2-board-ready', testInfo);
+
+        await clickResolvedAbilitySlot(page, 'combo', 'activate-bots-2-precision-fabrication');
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const monk = state?.core?.players?.['1'];
             return {
                 phase: state?.sys?.phase ?? null,
                 interactionKind: state?.sys?.interaction?.current?.kind ?? null,
                 synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
-                pendingAttackSourceId: pendingAttack?.sourceAbilityId ?? null,
-                pendingAttackDamage: pendingAttack?.damage ?? null,
-                pendingAttackBonusDamage: pendingAttack?.bonusDamage ?? null,
-                opponentHp: state?.core?.players?.['1']?.resources?.[RESOURCE_IDS.HP] ?? null,
+                cp: artificer?.resources?.[RESOURCE_IDS.CP] ?? null,
+                opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+                pendingAttack: state?.core?.pendingAttack ?? null,
+                upgradeCardId: artificer?.upgradeCardByAbilityId?.['activate-bots']?.cardId ?? null,
             };
         }, { timeout: 10000 }).toMatchObject({
-            phase: 'defensiveRoll',
+            phase: 'main2',
             interactionKind: null,
-            synth: 1,
-            pendingAttackSourceId: 'wrench-strike-2-4',
-            pendingAttackDamage: 5,
-            pendingAttackBonusDamage: 0,
-            opponentHp: 50,
+            synth: 5,
+            cp: 8,
+            opponentNanobomb: 0,
+            pendingAttack: null,
+            upgradeCardId: 'upgrade-artificer-activate-bots-2',
         });
 
-        await game.screenshot('artificer-wrench-strike-2-after-electricity-branch', testInfo);
+        await game.screenshot('artificer-activate-bots-2-after-precision-fabrication', testInfo);
     });
 
     test('工匠合成器、纳米爆弹和三类机器人状态图标应命中状态图集 sprite', async ({ page, game }, testInfo) => {

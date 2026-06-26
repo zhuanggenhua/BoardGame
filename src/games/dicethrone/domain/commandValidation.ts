@@ -1203,7 +1203,12 @@ const validateUseToken = (
         return fail('unknown_token');
     }
 
-    const currentAmount = p?.tokens[cmd.payload.tokenId] ?? 0;
+    const isArtificerBot = cmd.payload.tokenId === TOKEN_IDS.NANOBOT
+        || cmd.payload.tokenId === TOKEN_IDS.SHOCK_BOT
+        || cmd.payload.tokenId === TOKEN_IDS.HEAL_BOT;
+    const currentAmount = isArtificerBot
+        ? getUsableTokenAmountForTiming(state, playerId, cmd.payload.tokenId, pendingDamage.responseType)
+        : (p?.tokens[cmd.payload.tokenId] ?? 0);
     if (currentAmount <= 0) {
         return fail('no_token');
     }

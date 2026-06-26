@@ -103,6 +103,8 @@ public/assets/
 
 ### 精灵图/图集裁剪安全规则（强制）
 
+- **有正式图集就必须优先使用图集裁切显示**：只要游戏素材已经提供正式卡牌图集、状态图集、token 图集或等价 sprite atlas，运行时必须直接加载图集并通过 `registerLazyCardAtlasSource` / `registerCardAtlasSource` / `background-position` / 裁剪容器等方式显示对应裁片。禁止为了“使用方便”“预加载检测”“组件更简单”再把图集切成单张卡图、单张 token 图或单张状态图作为正式运行时素材。
+- **禁止把图集拆图当成默认修复手段**：图集加载失败、裁剪错位、首屏 loading、R2 路径错误或缓存问题，应优先修图集路径、manifest、criticalImageResolver、atlas 注册或裁剪合同；不得绕过图集链路改成 `cards/faces/<id>.png`、`crops/<id>.webp` 这类单张派生路径来“止血”。只有用户明确要求导出单张素材、规则书本身只提供单图、或某平台已证明无法稳定渲染图集且已写明专项兼容方案时，才允许使用单张派生图；这种情况必须在文档或代码注释中说明例外原因。
 - **禁止使用 `background` 简写设置精灵图背景**：`background` 会重置 `background-size / background-position`，导致裁剪参数丢失而出现“图加载了但显示空白/错位”。  
   ✅ 正确：`backgroundImage` + `backgroundSize` + `backgroundPosition`  
   ❌ 错误：`background: linear-gradient(...);`（与裁剪参数共存）
@@ -150,6 +152,7 @@ style={{
 - 素材外观不等于运行时语义。看到空白格、黑边、角落装饰、额外立绘、复合排版时，禁止直接推断它“不是卡”“要裁掉”“要拆成两张”或“必须改单元格配置”。
 - 修改 atlas 用法、`previewRef` 指向、rows/cols、frame 映射、split/topCrop 之类资源接线前，必须先对照同游戏旧实现、现有资源配置和专项规范。
 - 如果旧实现和现有文档仍不能唯一说明这张图该怎么接，必须先问用户，不能靠肉眼猜图。
+- 如果当前规则、设计稿或运行时语义已经明确需要某类素材，但仓内盘点后仍缺对应正面图、token 图、atlas frame 或同语义对象图，必须主动问用户素材位置、额外目录或未 intake 批次；不得等用户催，也不得先拿别的面板、marker、牌背或无关小图顶上。
 - 允许存在“一张正式图对应多个运行时对象”的复用模式；这种关系必须体现在配置或专项文档里，不能在代码里临时脑补。
 
 ### 精灵图路径处理规范（强制）

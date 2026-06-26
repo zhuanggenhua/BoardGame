@@ -9,10 +9,12 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bm
 const usage = () => {
     console.log(`用法:
   node scripts/verify/open-verified-image.mjs --path <图片路径>
+  node scripts/verify/open-verified-image.mjs --paths <图片路径1> <图片路径2> ...
   node scripts/verify/open-verified-image.mjs --latest [目录]
 
 选项:
   --path <路径>     打开指定图片
+  --paths <路径...> 依次打开多张指定图片
   --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
   --dry-run         只解析路径，不实际打开
   --help            显示帮助
@@ -39,6 +41,7 @@ const collectImages = (dirPath) => {
 const parseArgs = (argv) => {
     const parsed = {
         path: null,
+        paths: [],
         latest: null,
         dryRun: false,
         help: false,
@@ -59,6 +62,13 @@ const parseArgs = (argv) => {
             index += 1;
             continue;
         }
+        if (current === '--paths') {
+            while (argv[index + 1] && !argv[index + 1].startsWith('--')) {
+                parsed.paths.push(argv[index + 1]);
+                index += 1;
+            }
+            continue;
+        }
         if (current === '--latest') {
             const candidate = argv[index + 1];
             if (candidate && !candidate.startsWith('--')) {
@@ -69,28 +79,45 @@ const parseArgs = (argv) => {
             }
             continue;
         }
-        if (!parsed.path) {
+        if (!parsed.path && parsed.paths.length === 0) {
             parsed.path = current;
+            continue;
+        }
+        if (parsed.path && parsed.paths.length === 0) {
+            parsed.paths = [parsed.path, current];
+            parsed.path = null;
+            continue;
+        }
+        if (parsed.paths.length > 0) {
+            parsed.paths.push(current);
         }
     }
 
     return parsed;
 };
 
-const resolveTargetImage = ({ path: imagePath, latest }) => {
+const resolveImagePath = (imagePath) => {
+    const resolved = path.resolve(imagePath);
+    if (!existsSync(resolved)) {
+        throw new Error(`图片不存在: ${resolved}`);
+    }
+    const stats = statSync(resolved);
+    if (stats.isDirectory()) {
+        throw new Error(`给定路径是目录，不是图片: ${resolved}`);
+    }
+    if (!isImageFile(resolved)) {
+        throw new Error(`目标文件不是支持的图片格式: ${resolved}`);
+    }
+    return resolved;
+};
+
+const resolveTargetImages = ({ path: imagePath, paths, latest }) => {
+    if (paths.length > 0) {
+        return paths.map(resolveImagePath);
+    }
+
     if (imagePath) {
-        const resolved = path.resolve(imagePath);
-        if (!existsSync(resolved)) {
-            throw new Error(`图片不存在: ${resolved}`);
-        }
-        const stats = statSync(resolved);
-        if (stats.isDirectory()) {
-            throw new Error(`给定路径是目录，不是图片: ${resolved}`);
-        }
-        if (!isImageFile(resolved)) {
-            throw new Error(`目标文件不是支持的图片格式: ${resolved}`);
-        }
-        return resolved;
+        return [resolveImagePath(imagePath)];
     }
 
     const latestRoot = path.resolve(latest ?? 'test-results/evidence-screenshots');
@@ -103,7 +130,7 @@ const resolveTargetImage = ({ path: imagePath, latest }) => {
         if (!isImageFile(latestRoot)) {
             throw new Error(`目标文件不是支持的图片格式: ${latestRoot}`);
         }
-        return latestRoot;
+        return [latestRoot];
     }
 
     const images = collectImages(latestRoot);
@@ -112,7 +139,7 @@ const resolveTargetImage = ({ path: imagePath, latest }) => {
     }
 
     images.sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
-    return images[0];
+    return [images[0]];
 };
 
 const openImage = (imagePath) => {
@@ -156,6 +183,12 @@ const openImage = (imagePath) => {
     child.unref();
 };
 
+const openImages = (imagePaths) => {
+    for (const imagePath of imagePaths) {
+        openImage(imagePath);
+    }
+};
+
 const main = () => {
     const parsed = parseArgs(process.argv.slice(2));
 
@@ -164,20 +197,24 @@ const main = () => {
         process.exit(0);
     }
 
-    if (!parsed.path && !parsed.latest) {
+    if (!parsed.path && parsed.paths.length === 0 && !parsed.latest) {
         usage();
-        throw new Error('必须提供 --path 或 --latest');
+        throw new Error('必须提供 --path、--paths 或 --latest');
     }
 
-    const resolvedImage = resolveTargetImage(parsed);
-    console.log(`RESOLVED_IMAGE=${resolvedImage}`);
+    const resolvedImages = resolveTargetImages(parsed);
+    for (const resolvedImage of resolvedImages) {
+        console.log(`RESOLVED_IMAGE=${resolvedImage}`);
+    }
 
     if (parsed.dryRun) {
         return;
     }
 
-    openImage(resolvedImage);
-    console.log(`OPENED_IMAGE=${resolvedImage}`);
+    openImages(resolvedImages);
+    for (const resolvedImage of resolvedImages) {
+        console.log(`OPENED_IMAGE=${resolvedImage}`);
+    }
 };
 
 try {

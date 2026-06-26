@@ -557,6 +557,17 @@ export interface HeroState {
     tokens: TokenState;
     /** Token 堆叠上限（可被技能永久提高，如莲花掌） */
     tokenStackLimits: Record<string, number>;
+    /**
+     * 工匠机器人状态。
+     * built: 是否已建造该机器人
+     * upgraded: 是否已升级为高级
+     * activationsUsedThisTurn: 本回合已激活次数
+     */
+    artificerBotState?: Partial<Record<string, {
+        built: boolean;
+        upgraded: boolean;
+        activationsUsedThisTurn: number;
+    }>>;
     /** 伤害护盾（下次受伤时消耗） */
     damageShields: DamageShield[];
     abilities: AbilityDef[];

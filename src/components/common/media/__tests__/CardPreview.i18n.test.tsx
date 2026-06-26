@@ -232,6 +232,58 @@ describe('CardPreview i18n atlas path', () => {
         });
     });
 
+    it('OptimizedImage 命中已缓存的本地正式图片后，不应再走 fetch/blob 慢链', async () => {
+        __resetAssetLoaderCachesForTests();
+        setAssetsBaseUrl('/assets');
+
+        const cachedUrl = '/assets/i18n/zh-CN/dicethrone/images/monk/compressed/player-board.webp';
+        const img = new Image();
+        Object.defineProperty(img, 'naturalWidth', { value: 2048, configurable: true });
+        Object.defineProperty(img, 'naturalHeight', { value: 1248, configurable: true });
+        Object.defineProperty(img, 'src', {
+            value: cachedUrl,
+            configurable: true,
+        });
+        Object.defineProperty(img, 'currentSrc', {
+            value: cachedUrl,
+            configurable: true,
+        });
+        markImageLoaded('dicethrone/images/monk/player-board', 'zh-CN', img);
+
+        const fetchSpy = vi.fn().mockResolvedValue({
+            ok: true,
+            blob: async () => new Blob(),
+        });
+        const originalFetch = globalThis.fetch;
+        Object.defineProperty(globalThis, 'fetch', {
+            configurable: true,
+            writable: true,
+            value: fetchSpy,
+        });
+
+        try {
+            const { container } = render(
+                <OptimizedImage src="dicethrone/images/monk/player-board" locale="zh-CN" alt="test" />
+            );
+
+            await waitFor(() => {
+                const image = container.querySelector('img');
+                expect(image).not.toBeNull();
+                expect(image?.getAttribute('data-debug-current-src')).toBe(cachedUrl);
+                expect(image?.getAttribute('src')).toBe(cachedUrl);
+                expect(image?.getAttribute('data-debug-local-fetch')).toBe('idle');
+            });
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        } finally {
+            Object.defineProperty(globalThis, 'fetch', {
+                configurable: true,
+                writable: true,
+                value: originalFetch,
+            });
+        }
+    });
+
     it('OptimizedImage 切到 fallback 候选后不应被重置回 primary', async () => {
         __resetAssetLoaderCachesForTests();
         setAssetsBaseUrl('/assets');

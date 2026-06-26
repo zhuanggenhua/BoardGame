@@ -41,6 +41,11 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/纳米机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'onPhaseEnter',
+            removable: false,
+            actions: [],
+        },
         frameId: 'nanobot',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.ARTIFICER,
     },
@@ -52,6 +57,11 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/电能机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'onPhaseEnter',
+            removable: false,
+            actions: [],
+        },
         activeUse: {
             timing: ['beforeDamageDealt'],
             consumeAmount: 1,
@@ -77,6 +87,11 @@ export const ARTIFICER_TOKENS: TokenDef[] = [
         iconPath: 'dicethrone/images/artificial/status/治疗机器人1次使用机会',
         stackLimit: 1,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'onPhaseEnter',
+            removable: false,
+            actions: [],
+        },
         activeUse: {
             timing: ['beforeDamageReceived'],
             consumeAmount: 1,
@@ -207,7 +222,7 @@ export const ARTIFICER_PASSIVE_ABILITIES: PassiveAbilityDef[] = [
 ];
 
 export const ARTIFICER_INITIAL_TOKENS: Record<string, number> = {
-    [TOKEN_IDS.SYNTH]: 0,
+    [TOKEN_IDS.SYNTH]: 3,
     [STATUS_IDS.NANOBOMB]: 0,
     [TOKEN_IDS.NANOBOT]: 0,
     [TOKEN_IDS.SHOCK_BOT]: 0,

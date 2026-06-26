@@ -171,6 +171,7 @@ export const OptimizedImage = ({
         && !isRemoteUrl(currentCandidate.url);
     const isLocalPrimary = !isRemoteUrl(currentSrc);
     const renderedSrc = objectUrl ?? currentSrc;
+    const hasRestoredLoadedSrc = Boolean(restoredLoadedSrc);
 
     const isSvg = isSvgSource(renderedSrc);
     const rememberEarlierCandidateFailures = React.useCallback((successfulUrl: string) => {
@@ -227,7 +228,7 @@ export const OptimizedImage = ({
     // Android 游戏包会落到 /_capacitor_file_/...；这里若继续 fetch，会把已安装的本地包
     // 也套进开发兜底链路，导致图片长时间停在加载态。
     React.useEffect(() => {
-        if (!isLocalPrimary || isSvg) return undefined;
+        if (!isLocalPrimary || isSvg || hasRestoredLoadedSrc) return undefined;
         if (!shouldUseBlobFetchForLocalAsset(currentSrc)) {
             setLocalFetchDebug(isPublicAssetsUrl(currentSrc) ? 'direct' : 'direct-native');
             return undefined;
@@ -262,7 +263,7 @@ export const OptimizedImage = ({
                 URL.revokeObjectURL(nextObjectUrl);
             }
         };
-    }, [currentSrc, isLocalPrimary, isSvg]);
+    }, [currentSrc, hasRestoredLoadedSrc, isLocalPrimary, isSvg]);
 
     React.useEffect(() => {
         if (effectiveLoaded || errored) return undefined;

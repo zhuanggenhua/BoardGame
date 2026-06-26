@@ -117,6 +117,7 @@ export const DT_EVENTS = defineEvents({
   BONUS_DICE_SETTLED: { audio: 'immediate', sound: BONUS_DICE_SETTLE_KEY },
   EXTRA_ATTACK_TRIGGERED: { audio: 'immediate', sound: EXTRA_ATTACK_KEY },
   ABILITY_RESELECTION_REQUIRED: { audio: 'immediate', sound: ABILITY_RESELECT_KEY },
+  ARTIFICER_BOT_STATE_UPDATED: 'silent',
 
   // ========== 动画驱动（FX 系统）==========
   DAMAGE_DEALT: 'fx',            // 伤害（飞行动画 onImpact）
@@ -908,6 +909,18 @@ export interface PendingAttackUpdatedEvent extends GameEvent<'PENDING_ATTACK_UPD
     };
 }
 
+/** 更新某玩家的工匠机器人状态 */
+export interface ArtificerBotStateUpdatedEvent extends GameEvent<'ARTIFICER_BOT_STATE_UPDATED'> {
+    payload: {
+        playerId: PlayerId;
+        patch: Record<string, {
+            built: boolean;
+            upgraded: boolean;
+            activationsUsedThisTurn: number;
+        }>;
+    };
+}
+
 /** 额外攻击触发事件（晕眩 daze 触发：攻击结算后当前攻击者立即再次攻击） */
 export interface ExtraAttackTriggeredEvent extends GameEvent<'EXTRA_ATTACK_TRIGGERED'> {
     payload: {
@@ -985,4 +998,5 @@ export type DiceThroneEvent =
     | BonusDieRerolledEvent
     | BonusDiceSettledEvent
     | PendingAttackUpdatedEvent
+    | ArtificerBotStateUpdatedEvent
     | ExtraAttackTriggeredEvent;

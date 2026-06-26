@@ -26,7 +26,7 @@ import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
-import { STATUS_IDS, DICETHRONE_STATUS_ATLAS_IDS } from './ids';
+import { STATUS_IDS, TOKEN_IDS, DICETHRONE_STATUS_ATLAS_IDS } from './ids';
 
 
 export interface CharacterData {
@@ -461,6 +461,13 @@ export function initHeroState(
         },
         tokens: { ...data.initialTokens },
         tokenStackLimits: Object.fromEntries(data.tokens.map(t => [t.id, t.stackLimit])),
+        artificerBotState: characterId === 'artificer'
+            ? {
+                [TOKEN_IDS.NANOBOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+                [TOKEN_IDS.SHOCK_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+                [TOKEN_IDS.HEAL_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+            }
+            : undefined,
         damageShields: [],
         abilityLevels: { ...data.initialAbilityLevels },
         abilities: buildHeroAbilitiesForFace(

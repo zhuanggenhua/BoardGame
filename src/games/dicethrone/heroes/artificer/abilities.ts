@@ -342,6 +342,7 @@ const OVERCLOCK: AbilityDef = {
     sfxKey: ARTIFICER_SFX_ELECTRIC,
     trigger: { type: 'diceSet', faces: { [FACE.ELECTRICITY]: 4 } },
     effects: [
+        inflictNanobomb(1, abilityEffectText('overclock', 'inflictNanobomb')),
         damage(6, abilityEffectText('overclock', 'damage6Unblockable'), { unblockable: true }),
         activateBots(abilityEffectText('overclock', 'activateTwoBots'), 2),
     ],
@@ -358,6 +359,7 @@ export const OVERCLOCK_2: AbilityDef = {
             id: 'overclock-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.ELECTRICITY]: 4 } },
             effects: [
+                inflictNanobomb(1, abilityEffectText('overclock-2', 'inflictNanobomb')),
                 damage(6, abilityEffectText('overclock-2', 'damage6Unblockable'), { unblockable: true }),
                 activateBots(abilityEffectText('overclock-2', 'activateTwoBots'), 2),
             ],

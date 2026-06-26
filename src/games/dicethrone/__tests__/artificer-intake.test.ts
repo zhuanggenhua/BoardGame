@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import '../domain';
 import { DICETHRONE_CHARACTER_CATALOG } from '../domain/types';
-import { CHARACTER_DATA_MAP } from '../domain/characters';
+import { CHARACTER_DATA_MAP, initHeroState } from '../domain/characters';
 import { getDiceDefinition } from '../domain/diceRegistry';
 import {
     ARTIFICER_DICE_FACE_IDS,
@@ -15,6 +15,7 @@ import {
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import { _testExports as criticalImages } from '../criticalImageResolver';
 import { ASSETS } from '../ui/assets';
+import { fixedRandom } from './test-utils';
 
 const assetRoot = (...parts: string[]) => join(
     process.cwd(),
@@ -70,6 +71,20 @@ describe('DiceThrone 工匠接入与完成态', () => {
             ARTIFICER_DICE_FACE_IDS.GEAR,
             ARTIFICER_DICE_FACE_IDS.ELECTRICITY,
         ]);
+    });
+
+    it('工匠实际初始化状态开局自带 3 个合成器，并预置三类机器人独立状态', () => {
+        const player = initHeroState('0', 'artificer', fixedRandom);
+
+        expect(player.tokens[TOKEN_IDS.SYNTH]).toBe(3);
+        expect(player.tokens[TOKEN_IDS.NANOBOT]).toBe(0);
+        expect(player.tokens[TOKEN_IDS.SHOCK_BOT]).toBe(0);
+        expect(player.tokens[TOKEN_IDS.HEAL_BOT]).toBe(0);
+        expect(player.artificerBotState).toEqual({
+            [TOKEN_IDS.NANOBOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+            [TOKEN_IDS.SHOCK_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+            [TOKEN_IDS.HEAL_BOT]: { built: false, upgraded: false, activationsUsedThisTurn: 0 },
+        });
     });
 
     it('卡牌预览全部走工匠 ability-cards atlas，并锁定专属 slot 与意不意外索引', () => {

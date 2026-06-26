@@ -480,6 +480,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('咒缚在对手进攻投掷阶段未发起攻击时对其施加火药桶', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '1', 'cursed');
         state.sys.phase = 'offensiveRoll';
         state.core.activePlayerId = '0';
         state.core.pendingAttack = null;
@@ -501,8 +502,29 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
     });
 
+    it('海盗处于正面时，不应再触发反面咒缚的未攻击施加火药桶被动', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '1', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.pendingAttack = null;
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state,
+            from: 'offensiveRoll',
+            to: 'main2',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = Array.isArray(result) ? result : result?.events ?? [];
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'STATUS_APPLIED')
+            .some(event => event.payload.statusId === STATUS_IDS.POWDER_KEG)).toBe(false);
+    });
+
     it('咒缚不会在对手已发起攻击的进攻投掷阶段重复施加火药桶', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '1', 'cursed');
         state.sys.phase = 'offensiveRoll';
         state.core.activePlayerId = '0';
         const afterAttackInitiated = applyEvents(state.core, [{

@@ -4,6 +4,7 @@
  */
 
 import type { DiceThroneCore, DiceThroneEvent } from './types';
+import { TOKEN_IDS } from './ids';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS } from './ids';
@@ -648,9 +649,27 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
     const player = state.players[playerId];
     if (player) {
         const currentAmount = player.tokens[tokenId] ?? 0;
+        const isArtificerBot = tokenId === TOKEN_IDS.NANOBOT || tokenId === TOKEN_IDS.SHOCK_BOT || tokenId === TOKEN_IDS.HEAL_BOT;
+        const nextArtificerBotState = isArtificerBot
+            ? {
+                ...player.artificerBotState,
+                [tokenId]: {
+                    ...(player.artificerBotState?.[tokenId] ?? { built: false, upgraded: false, activationsUsedThisTurn: 0 }),
+                    built: true,
+                    activationsUsedThisTurn: (player.artificerBotState?.[tokenId]?.activationsUsedThisTurn ?? 0) + amount,
+                },
+            }
+            : player.artificerBotState;
         players = {
             ...state.players,
-            [playerId]: { ...player, tokens: { ...player.tokens, [tokenId]: Math.max(0, currentAmount - amount) } },
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [tokenId]: isArtificerBot ? currentAmount : Math.max(0, currentAmount - amount),
+                },
+                artificerBotState: nextArtificerBotState,
+            },
         };
     }
 

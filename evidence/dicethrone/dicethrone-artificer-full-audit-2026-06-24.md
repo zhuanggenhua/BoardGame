@@ -29,14 +29,14 @@
 
 ## 3. 结论等级
 
-结论：`仍有残余范围`
+结论：`P0 真实入口闭环已完成；扩展审计仍有余量`
 
 判定理由：
 
 - L0/L1：工匠素材、静态接入、资源路径、卡牌 atlas、骰面、状态图集已有当前代码和录入文档支撑。
 - L2：工匠主要机制已有 `src/games/dicethrone/__tests__/artificer-mechanics.test.ts` 命令级测试覆盖，且 `artificer-closeout.test.ts` 锁定对象全集和 custom action 元数据。
-- L3：当前已有“在线开局可见”“工坊纳米机器人引爆链”“真实响应窗口：机械的反击 / 电弧盾”“攻击后机器人选择链：电能机器人 / 治疗机器人”“专属行动牌代表：超高电压 / 合成大师电能分支 / 万能电流电能分支 / 这玩意儿真棒”“多目标敌方选择代表：纳米袭击 4 人组队局”“replaceAbility 升级牌代表：扳手攻击 II”“状态图标 DOM 命中 sprite”真实入口 E2E；其他玩家板能力和升级后新能力再触发尚未逐对象补真实入口证据。
-- L4：部分复杂链路在命令级测试里证明了后续状态收口，但未形成逐对象真实 UI 截图链和共享链判等矩阵，因此不能写“全面审计完成 / 没有死角”。
+- L3：当前已有“在线开局可见”“工坊纳米机器人引爆链”“真实响应窗口：机械的反击 / 电弧盾”“攻击后机器人选择链：电能机器人 / 治疗机器人”“专属行动牌代表：超高电压 / 合成大师电能分支 / 万能电流电能分支 / 这玩意儿真棒”“多目标敌方选择代表：纳米袭击 4 人组队局”“replaceAbility 升级牌代表：扳手攻击 II 打出并替换玩家板能力”“升级后新能力真实触发代表：扳手攻击 II 从真实玩家板再次触发并走电能分支收口”“状态图标 DOM 命中 sprite”真实入口 E2E。
+- L4：复杂链路已拿到命令级和代表性真实 UI 收口证据，但仍未形成“全部玩家板能力 / 全部专属牌 / 全部工坊按钮”的逐对象真实 UI 截图链和完整共享链判等矩阵，因此这里收口到“P0 真实入口闭环完成”，不把它夸大成“没有任何扩展余量”。
 
 ## 4. 权威来源
 
@@ -58,7 +58,7 @@
 
 | 对象 | 规则子句 / 语义 | 实现入口 | 命中维度 | 证据层级 | 当前结论 |
 | --- | --- | --- | --- | --- | --- |
-| 扳手攻击 / 扳手攻击 II | 3/4/5 扳手伤害；投 1 骰或花费 1 合成器选择扳手/齿轮/电能追加 | `wrench-strike`、`artificer-wrench-strike-branch` | D1/D3/D5/D8/D11/D12/D22 | L2 passed；L3 partial | 扳手攻击 II 真实手牌打出和能力等级替换已通过；升级后新能力真实触发仍待补 |
+| 扳手攻击 / 扳手攻击 II | 3/4/5 扳手伤害；投 1 骰或花费 1 合成器选择扳手/齿轮/电能追加 | `wrench-strike`、`artificer-wrench-strike-branch` | D1/D3/D5/D8/D11/D12/D22 | L2 passed；L3 passed for 升级链代表 | 扳手攻击 II 真实手牌打出、能力等级替换，以及升级后从真实玩家板再次触发电能分支并收口均已通过；其余玩家板能力仍未逐对象补真实入口 |
 | 电路图 / 电路图 II | 抽牌、治疗、合成器；II 额外 2 CP | `schematics`、`SCHEMATICS_2` | D1/D3/D11/D12 | L2 passed；L3 pending | 数值实现有测试，缺真实入口 |
 | 收集配件 / 收集配件 II | 维护阶段合成器；II 投骰分支；花费 4 合成器施加纳米爆弹 | `collect-parts`、`artificer-workshop` | D1/D3/D5/D8/D11/D15/D24 | L2 passed；L3 partial | 维护与多人目标 L2 成立；工坊纳米链有 L3，维护 UI 未逐项覆盖 |
 | 灵感突现 / 灵感突现 II | 上半区伤害/合成器；从头构建高级机器人或升级基础机器人 | `eureka`、`artificer-build-from-scratch-choice` | D1/D3/D5/D8/D11/D24 | L2 passed；L3 pending | 选择链命令级成立，缺真实入口 |
@@ -75,17 +75,17 @@
 | 工匠工坊 | 9 个被动动作：引爆、施加纳米爆弹、制造/升级三类机器人 | `ARTIFICER_PASSIVE_ABILITIES` | D3/D5/D10/D11/D15/D24 | L2 passed；L3 partial | action index 与成本被 closeout 测试锁定；只 E2E 了纳米机器人激活 |
 | 专属行动牌：合成大师、超高电压、纳米袭击、万能电流、这玩意儿真棒 | 投骰分支、合成器、纳米爆弹、多目标敌方选择 | `ARTIFICER_CARDS`、对应 custom action | D1/D3/D5/D8/D10/D11/D12/D24/D47 | L2 passed；L3 partial | 超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒，以及纳米袭击 4 人组队敌方选择真实手牌打出已通过；仍不能外推全部奖励骰 / 多目标语义 |
 | 专属响应牌：机械的反击、电弧盾 | 受击响应、防伤、伤害护盾、纳米爆弹、可选花费合成器 | `card-artificer-mechanical-strike`、`upgrade-artificer-shock-bot-2`、`artificer-arc-shield` | D1/D3/D5/D8/D10/D11/D22/D24 | L2 passed；L3 passed | 真实响应窗口已覆盖从手牌打出、选择防 3、HP / 护盾 / 纳米爆弹状态收口 |
-| 专属升级牌：稍作调整 II、超频运行 II、电能脉冲 III、唤醒机械 II、灵感突现 II、电路图 II、扳手攻击 II、收集配件 II | replaceAbility 或响应型升级；替换后能力语义生效 | `replaceAbility(...)`、`ARTIFICER_ABILITIES` 升级定义 | D1/D3/D8/D10/D23/D52 | L1/L2 passed；L3 partial | 扳手攻击 II 真实打出升级壳已通过；升级后新能力真实触发和其他 replaceAbility 牌仍待补 |
+| 专属升级牌：稍作调整 II、超频运行 II、电能脉冲 III、唤醒机械 II、灵感突现 II、电路图 II、扳手攻击 II、收集配件 II | replaceAbility 或响应型升级；替换后能力语义生效 | `replaceAbility(...)`、`ARTIFICER_ABILITIES` 升级定义 | D1/D3/D8/D10/D23/D52 | L1/L2 passed；L3 partial | 扳手攻击 II 已完成“真实打出升级壳 + 升级后新能力再次触发”代表链；其他 replaceAbility 牌仍未逐项补真实入口 |
 
 ## 6. 对象级层级矩阵
 
 | 分组 | L0 | L1 | L2 | L3 | L4 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 静态角色 / 资源 / atlas / 骰面 | passed | passed | n/a | partial: 开局可见 | n/a | 结构审计通过 |
-| 玩家板能力 | passed | passed | passed | partial: 扳手攻击 II 升级壳通过；多数能力缺真实触发入口 | partial: 后续链仅命令级证明 | 仍有残余范围 |
+| 玩家板能力 | passed | passed | passed | partial: 扳手攻击 II 升级壳与升级后再次触发均通过；多数能力仍缺逐对象真实触发入口 | partial: 后续链并非全部都拿到真实 UI 代表 | 仍有扩展审计余量 |
 | 状态 / Token / 工坊 | passed | passed | passed | partial: 纳米机器人引爆链、电能机器人 / 治疗机器人攻击后选择链、状态图标 DOM 通过；制造 / 升级按钮未逐个覆盖 | partial: 状态清理有命令级证据 | 仍有残余范围 |
 | 专属行动牌 | passed | passed | passed | partial: 超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒、纳米袭击 4 人组队敌方选择真实打出通过；其余专属行动牌和共享判等仍未清空 | partial: 多目标/投骰仅部分形成真实 UI 证据 | 仍有残余范围 |
-| 专属响应 / 升级牌 | passed | passed | passed | partial: 机械的反击 / 电弧盾真实响应通过，扳手攻击 II 真实升级壳通过；升级后新能力触发链仍缺 | partial | 仍有残余范围 |
+| 专属响应 / 升级牌 | passed | passed | passed | partial: 机械的反击 / 电弧盾真实响应通过，扳手攻击 II 真实升级壳与升级后触发链通过；其余升级牌仍未逐项补真实入口 | partial | 仍有扩展审计余量 |
 
 ## 7. 共享链判等矩阵
 
@@ -107,7 +107,7 @@
 ### L2 领域行为证据
 
 - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
-- 当前覆盖：41 个工匠核心机制用例，包括合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技和终极后续链。
+- 当前覆盖：42 个工匠核心机制用例，包括合成器、纳米爆弹、三类机器人、工坊动作、多人敌方目标选择、响应牌、奖励骰牌、升级能力、攻击后机器人选择链、防御技和终极后续链。
 - 本轮实跑命令：
 
 ```bash
@@ -121,7 +121,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
 node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artificer-mechanics.test.ts src/games/dicethrone/__tests__/choice-interaction-anchor-contract.test.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1
 ```
 
-- 追加实跑结果：2 个测试文件通过，71 个用例通过。
+- 追加实跑结果：2 个测试文件通过，72 个用例通过。
 
 ### 选择锚点修复证据
 
@@ -144,7 +144,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
   - 在线双玩家选择工匠开局，看到玩家板、技能槽、手牌和状态栏。
   - 工坊按钮激活纳米机器人，引爆纳米爆弹后状态和 HP 收口。
 - `e2e/dicethrone/artificer-full-audit.e2e.ts`
-  - 已通过覆盖目标：机械的反击、电弧盾、攻击后电能机器人、攻击后治疗机器人、超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒、纳米袭击 4 人组队敌方选择、扳手攻击 II、状态图标 DOM。
+  - 已通过覆盖目标：机械的反击、电弧盾、攻击后电能机器人、攻击后治疗机器人、超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒、纳米袭击 4 人组队敌方选择、扳手攻击 II 真实打出升级壳、扳手攻击 II 升级后真实玩家板再次触发、状态图标 DOM。
   - 场景修正：真实响应窗口用 `playerID=0` 打开测试页，保证底部手牌 DOM 与工匠玩家 0 的状态同源。
   - 本轮实跑命令：
 
@@ -152,16 +152,17 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/artifi
 node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e.ts
 ```
 
-  - 本轮实跑结果：11 个真实入口 E2E 通过。
+  - 本轮实跑结果：12 个真实入口 E2E 通过。
   - 关键截图：
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\合成大师应可从真实手牌打出并按电能奖励骰获得-5-合成器\artificer-masterpiece-after-play.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\纳米袭击应在-4-人组队局真实手牌打出且只允许选择敌方玩家\artificer-nano-attack-four-player-enemy-targets.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\扳手攻击-II-打出后应可从真实玩家板触发升级后的扳手攻击并走电能分支收口\artificer-wrench-strike-2-after-electricity-branch.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\artificer-full-audit.e2e\工匠合成器、纳米爆弹和三类机器人状态图标应命中状态图集-sprite\artificer-status-icons-atlas-sprites.png`
   - 本轮补充修复：`src/games/dicethrone/Board.tsx` 不再把所有 `type: 'upgrade'` 的牌强制送进能力升级入口；只有能解析出替换目标能力的升级牌才走 `PLAY_UPGRADE_CARD`，电弧盾这类响应型即时升级牌会按普通响应牌打出。
-- 当前缺口：
-  - 未逐个覆盖专属手牌真实打出；当前补了超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒和纳米袭击代表链。
+- 当前余量：
+  - 未逐个覆盖全部专属手牌真实打出；当前补了超高电压、合成大师电能分支、万能电流电能分支、这玩意儿真棒和纳米袭击代表链。
   - 未覆盖多机器人 / 多段机器人选择真实 UI。
-  - 未覆盖升级牌打出后再由新能力真实触发；当前只补了扳手攻击 II 的真实升级壳，升级后本体触发链仍在补证。
+  - 其余 replaceAbility 升级牌尚未逐项补“打出后由新能力再次触发”的真实入口。
 
 ## 9. 禁止假阳性检查
 
@@ -186,7 +187,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e
 允许说：
 
 - “工匠已有实现 closeout 证据，且当前审计已经建立对象全集和证据分层。”
-- “工匠 L1/L2 证据较完整，真实入口目前覆盖开局、工坊纳米机器人链、P0 响应牌、攻击后机器人代表链，以及 P1 的超高电压 / 合成大师电能分支 / 万能电流电能分支 / 这玩意儿真棒 / 纳米袭击 4 人组队敌方选择 / 扳手攻击 II / 状态图标代表链。”
+- “工匠 L1/L2 证据较完整，P0 真实入口闭环已补齐；真实入口目前覆盖开局、工坊纳米机器人链、P0 响应牌、攻击后机器人代表链，以及 P1 的超高电压 / 合成大师电能分支 / 万能电流电能分支 / 这玩意儿真棒 / 纳米袭击 4 人组队敌方选择 / 扳手攻击 II 升级前后代表链 / 状态图标代表链。”
 - “按新版全面审计口径，工匠当前仍有 L3/L4 残余范围。”
 
 禁止说：
@@ -199,4 +200,4 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/artificer-full-audit.e2e
 
 | 优先级 | 待补项 | 验收口径 |
 | --- | --- | --- |
-| P1 | 升级牌真实打出后能力触发 | 已补扳手攻击 II 真实升级壳；还需至少覆盖 1 张 replaceAbility 升级牌打出后，由新能力本体真实触发并收口 |
+| P1 | 其余升级牌真实打出后能力触发 | 扳手攻击 II 已补“真实升级壳 + 升级后本体再次触发”；若继续抬高覆盖率，至少再补 1 张其他 replaceAbility 升级牌的同类真实入口 |

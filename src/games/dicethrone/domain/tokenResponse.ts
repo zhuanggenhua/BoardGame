@@ -31,6 +31,20 @@ import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 import { getTokenStackLimit } from './rules';
 import { isPurifiableDebuffId } from './statusRemoval';
 
+const ARTIFICER_BOT_ACTIVATION_LIMITS: Partial<Record<string, number>> = {
+    [TOKEN_IDS.NANOBOT]: 1,
+    [TOKEN_IDS.SHOCK_BOT]: 1,
+    [TOKEN_IDS.HEAL_BOT]: 2,
+};
+
+function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
+    const maxUses = ARTIFICER_BOT_ACTIVATION_LIMITS[tokenId];
+    if (!maxUses) return undefined;
+    const botState = state.players[playerId]?.artificerBotState?.[tokenId];
+    if (!botState?.built) return 0;
+    return Math.max(0, maxUses - (botState.activationsUsedThisTurn ?? 0));
+}
+
 // ============================================================================
 // Token 可用性检查
 // ============================================================================
@@ -82,7 +96,7 @@ export function getUsableTokenAmountForTiming(
         return 0;
     }
 
-    let availableAmount = player.tokens[tokenDef.id] ?? 0;
+    let availableAmount = getArtificerBotAvailableAmount(state, playerId, tokenDef.id) ?? (player.tokens[tokenDef.id] ?? 0);
     if (availableAmount <= 0) return 0;
     const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
     const sameTokenAdditionalCost = additionalCosts
@@ -482,7 +496,8 @@ export function processTokenUsage(
     const remainingWindowUsage = hasExplicitWindowCap
         ? Math.max(0, maxWindowUsage - usedInWindow)
         : currentAmount;
-    const actualAmount = Math.min(amount, currentAmount, remainingWindowUsage);
+    const availableAmount = getArtificerBotAvailableAmount(state, playerId, tokenDef.id) ?? currentAmount;
+    const actualAmount = Math.min(amount, availableAmount, remainingWindowUsage);
     const additionalCosts = resolveAdditionalTokenCosts(state, playerId, tokenDef);
     const sameTokenAdditionalCost = additionalCosts
         .filter(cost => cost.tokenId === tokenDef.id)

@@ -312,7 +312,7 @@ const BLINK: AbilityDef = {
     tags: ['defensive'],
     description: abilityText('blink', 'description'),
     sfxKey: NINJA_SFX_SMOKE,
-    trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3 },
+    trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3, rollLimit: 2, rerollDieLimit: 1 },
     effects: [
         {
             description: abilityEffectText('blink', 'resolveDefense'),

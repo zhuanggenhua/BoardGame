@@ -682,7 +682,10 @@ function resolveCursedPirateNoAttackPowderKegEvents(
     if (core.offensiveRollAttackMadeThisTurn?.[activePlayerId]) return [];
 
     const hasOpposingCursedPirate = getOpponents(core, activePlayerId)
-        .some(playerId => core.players[playerId]?.characterId === 'cursed_pirate');
+        .some((playerId) => {
+            const player = core.players[playerId];
+            return player?.characterId === 'cursed_pirate' && player.playerBoardFace === 'cursed';
+        });
     if (!hasOpposingCursedPirate) return [];
 
     return buildStatusAppliedOrChoiceEvents({

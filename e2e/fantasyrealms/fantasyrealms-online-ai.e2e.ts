@@ -178,7 +178,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('真实在线房间低张数公开弃牌保持真实居中，不用左侧固定槽位冒充居中', async ({ browser }, testInfo) => {
+    test('真实在线房间低张数公开弃牌保持满铺起始槽位，不再按牌组整体回中', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -202,10 +202,27 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(fullRowRects).toHaveLength(9);
             const topRowRects = fullRowRects.slice(0, 5);
             const secondRowRects = fullRowRects.slice(5);
-            expect(Math.abs(getRectGroupCenter(secondRowRects) - getRectGroupCenter(topRowRects))).toBeLessThanOrEqual(2);
-            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-nine-cards');
+            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
+            const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-nine-cards');
             await mkdir(dirname(fullEvidencePath), { recursive: true });
             await page.screenshot({ path: fullEvidencePath, fullPage: false });
+
+            const oneCardCore = createAiTakeDiscardBranchCore();
+            await injectOnlineAiCore(matchId, page, {
+                ...oneCardCore,
+                currentPlayer: '0',
+                discardPile: oneCardCore.discardPile.slice(0, 1),
+            });
+            await expect(page.locator(centerCardsSelector)).toHaveCount(1, { timeout: 10000 });
+            const oneCardRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
+            expect(oneCardRects).toHaveLength(1);
+            expect(Math.abs(oneCardRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(oneCardRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            const oneEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-one-card');
+            await mkdir(dirname(oneEvidencePath), { recursive: true });
+            await page.screenshot({ path: oneEvidencePath, fullPage: false });
 
             await injectOnlineAiCore(matchId, page, {
                 ...createAiTakeDiscardBranchCore(),
@@ -215,19 +232,17 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             const lowCountRects = await waitForLocatorRectsToSettle(page, centerCardsSelector);
             expect(lowCountRects).toHaveLength(2);
 
-            const discardRowRect = await getLocatorRect(page, '.fr-discard-row--live-center');
-            const discardRowCenter = discardRowRect.x + (discardRowRect.width / 2);
-            expect(Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
-            expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
-            expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
+            expect(Math.abs(lowCountRects[0]!.x - topRowRects[0]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
+            expect(Math.abs(lowCountRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
             const wideTwoCardWidth = lowCountRects[0]!.width;
 
-            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-cards');
+            const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards');
             await mkdir(dirname(lowEvidencePath), { recursive: true });
             await page.screenshot({ path: lowEvidencePath, fullPage: false });
-            const wideDiscardDelta = Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter);
             const wideDeckRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
             const wideScoreRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-score-strip"]');
             const wideActionRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-action-draw"]');
@@ -256,37 +271,36 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 await narrowPage.waitForTimeout(500);
                 await expect(narrowPage.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
                 const narrowRects = await waitForLocatorRectsToSettle(narrowPage, centerCardsSelector);
-                const narrowDiscardRowRect = await getLocatorRect(narrowPage, '.fr-discard-row--live-center');
-                const narrowDiscardRowCenter = narrowDiscardRowRect.x + (narrowDiscardRowRect.width / 2);
                 const narrowViewport = await getViewportMetrics(narrowPage);
                 const narrowViewportWidth = narrowViewport.innerWidth;
                 const expectedNarrowCardWidth = getExpectedLiveCenterCardWidth(narrowViewportWidth);
-                const narrowDiscardDelta = Math.abs(getRectGroupCenter(narrowRects) - narrowDiscardRowCenter);
                 const narrowDeckRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
                 const narrowScoreRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-score-strip"]');
                 const narrowActionRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-action-draw"]');
                 const narrowTopbarRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-topbar"]');
 
-                expect(narrowDiscardDelta).toBeLessThanOrEqual(2);
                 expect(narrowRects[0]!.width).toBeLessThan(wideTwoCardWidth);
                 expect(Math.abs(narrowRects[0]!.width - expectedNarrowCardWidth)).toBeLessThanOrEqual(3);
                 expect(Math.abs(narrowRects[0]!.height - narrowRects[1]!.height)).toBeLessThanOrEqual(2);
+                expect(Math.abs(narrowRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
+                expect(Math.abs(narrowRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
                 expect(narrowDeckRect.width).toBeLessThanOrEqual(wideDeckRect.width);
                 expect(narrowScoreRect.width).toBeLessThanOrEqual(wideScoreRect.width);
                 expect(narrowActionRect.width).toBeLessThanOrEqual(wideActionRect.width);
                 expect(narrowTopbarRect.width).toBeLessThanOrEqual(wideTopbarRect.width);
 
-                const narrowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-cards-1281w');
+                const narrowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards-1281w');
                 await mkdir(dirname(narrowEvidencePath), { recursive: true });
                 await narrowPage.screenshot({ path: narrowEvidencePath, fullPage: false });
-                const metricsPath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-card-widths').replace(/\.png$/i, '.json');
+                const metricsPath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-card-widths').replace(/\.png$/i, '.json');
                 const metricsPayload: Record<string, unknown> = {
                     wide: {
                         viewportWidth: wideViewport.innerWidth,
                         deviceScaleFactor: wideViewport.devicePixelRatio,
                         cardWidth: wideTwoCardWidth,
                         cardHeight: lowCountRects[0]!.height,
-                        discardCenterDelta: wideDiscardDelta,
+                        firstSlotX: lowCountRects[0]!.x,
+                        firstSlotY: lowCountRects[0]!.y,
                         deckWidth: wideDeckRect.width,
                         scoreStripWidth: wideScoreRect.width,
                         actionWidth: wideActionRect.width,
@@ -298,7 +312,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                         expectedCardWidth: expectedNarrowCardWidth,
                         cardWidth: narrowRects[0]!.width,
                         cardHeight: narrowRects[0]!.height,
-                        discardCenterDelta: narrowDiscardDelta,
+                        firstSlotX: narrowRects[0]!.x,
+                        firstSlotY: narrowRects[0]!.y,
                         deckWidth: narrowDeckRect.width,
                         scoreStripWidth: narrowScoreRect.width,
                         actionWidth: narrowActionRect.width,
@@ -348,11 +363,36 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                     await waitForFantasyRealmsBoard(tightPage, hostPlayerId);
                     await tightPage.waitForTimeout(500);
 
+                    await injectOnlineAiCore(matchId, tightPage, createOnlineAiNearReviewCore(['0', '1'], '0', 6));
+                    await expect(tightPage.locator(centerCardsSelector)).toHaveCount(9, { timeout: 10000 });
+                    const tightFullRowRects = await waitForLocatorRectsToSettle(tightPage, centerCardsSelector);
+                    const tightTopRowRects = tightFullRowRects.slice(0, 5);
+
+                    await injectOnlineAiCore(matchId, tightPage, {
+                        ...tightHandCore,
+                        currentPlayer: '0',
+                        stage: 'discard',
+                        players: {
+                            '0': {
+                                id: '0',
+                                name: '你',
+                                hand: [
+                                    ...tightHandCore.players['0']!.hand,
+                                    { ...tightHandCore.discardPile[0]! },
+                                ],
+                                score: tightHandCore.players['0']!.score,
+                                scoreBreakdown: tightHandCore.players['0']!.scoreBreakdown,
+                            },
+                            '1': tightHandCore.players['1']!,
+                        },
+                    });
+                    await expect(tightPage.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+                    await expect(tightPage.locator('.fr-card-button--live-hand')).toHaveCount(8, { timeout: 10000 });
+
                     const tightViewport = await getViewportMetrics(tightPage);
                     const tightTopbarRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-topbar"]');
                     const tightScoreRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-score-strip"]');
                     const tightCenterRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-center-row"]');
-                    const tightDiscardRowRect = await getLocatorRect(tightPage, '.fr-discard-row--live-center');
                     const tightActionRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-action-discard"]');
                     const tightHandRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-hand-row"]');
                     const tightCenterRects = await waitForLocatorRectsToSettle(tightPage, centerCardsSelector);
@@ -362,8 +402,6 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                     const tightCenterRowCenter = tightCenterRowRect.x + (tightCenterRowRect.width / 2);
                     const tightTopbarCenter = tightTopbarRect.x + (tightTopbarRect.width / 2);
                     const tightHandRowCenter = tightHandRowRect.x + (tightHandRowRect.width / 2);
-                    const tightDiscardRowCenter = tightDiscardRowRect.x + (tightDiscardRowRect.width / 2);
-                    const tightCenterDelta = Math.abs(getRectGroupCenter(tightCenterRects) - tightDiscardRowCenter);
                     const tightExpectedCenterCardWidth = getExpectedLiveCenterCardWidth(tightViewport.innerWidth);
 
                     expect(tightViewport.innerWidth).toBe(1037);
@@ -374,9 +412,12 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                     expect(Math.abs(tightTopbarCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
                     expect(Math.abs(tightHandRowCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
                     expect(tightCenterRects).toHaveLength(2);
-                    expect(tightCenterDelta).toBeLessThanOrEqual(2);
                     expect(Math.abs(tightCenterRects[0]!.width - tightExpectedCenterCardWidth)).toBeLessThanOrEqual(3);
                     expect(Math.abs(tightCenterRects[0]!.width - tightCenterRects[1]!.width)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[0]!.x - tightTopRowRects[0]!.x)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[0]!.y - tightTopRowRects[0]!.y)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[1]!.x - tightTopRowRects[1]!.x)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[1]!.y - tightTopRowRects[1]!.y)).toBeLessThanOrEqual(2);
                     expect(tightHandRects).toHaveLength(8);
                     expect(tightHandRects[0]!.width).toBeGreaterThanOrEqual(114);
                     expect(Math.abs(tightHandRects[0]!.width - tightHandRects[1]!.width)).toBeLessThanOrEqual(2);
@@ -427,7 +468,10 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                         centerRowWidth: tightCenterRowRect.width,
                         centerCardWidth: tightCenterRects[0]!.width,
                         centerCardHeight: tightCenterRects[0]!.height,
-                        centerGroupDelta: tightCenterDelta,
+                        centerFirstSlotX: tightCenterRects[0]!.x,
+                        centerFirstSlotY: tightCenterRects[0]!.y,
+                        fullRowFirstSlotX: tightTopRowRects[0]!.x,
+                        fullRowFirstSlotY: tightTopRowRects[0]!.y,
                         topbarCenterDelta: Math.abs(tightTopbarCenter - tightCenterRowCenter),
                         handCenterDelta: Math.abs(tightHandRowCenter - tightCenterRowCenter),
                         handRowWidth: tightHandRowRect.width,

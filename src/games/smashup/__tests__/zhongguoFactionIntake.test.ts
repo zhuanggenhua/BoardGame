@@ -193,10 +193,10 @@ describe('SmashUp zhongguo 四派系 intake 静态合同', () => {
         expect(getBaseDef('base_the_dohyo')).toBeUndefined();
     });
 
-    it('四个 zhongguo 派系当前不再标记为实施中', () => {
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS)).toBe(false);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.VIGILANTES)).toBe(false);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TRUCKERS)).toBe(false);
-        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.DISCO_DANCERS)).toBe(false);
+    it('四个 zhongguo 派系当前标记为实施中', () => {
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS)).toBe(true);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.VIGILANTES)).toBe(true);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.TRUCKERS)).toBe(true);
+        expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.DISCO_DANCERS)).toBe(true);
     });
 });

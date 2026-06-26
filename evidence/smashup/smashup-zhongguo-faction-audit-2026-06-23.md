@@ -4,7 +4,7 @@
 
 ## 结论等级
 
-本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 8 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
+本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 17 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
 
 当前**不能**写成：
 
@@ -16,7 +16,7 @@
 
 - `L0/L1`：四派系卡牌、基地、atlas、manifest 合同已存在，见 intake 合同
 - `L2`：当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系对象
-- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“平头彼特”天赋真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
+- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“人人都是功夫高手”出牌阶段真实入口 E2E、“平头彼特”天赋真实入口 E2E、“短路点火”出牌阶段真实入口 E2E、“高速追逐战”天赋真实入口 E2E、“暴走卡车”天赋真实入口 E2E、“今晚嗨起来”与“舞王”联动真实入口 E2E、“我很亢奋”与“神探布洛杰克”联动真实入口 E2E、“最后的舞曲”出牌阶段真实入口 E2E、“男人雨”出牌阶段真实入口 E2E、“打到穿越”出牌阶段真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
 - `整批状态`：仍在实施中
 
 关联 intake 合同：
@@ -93,7 +93,16 @@
    - 车友聚会（`truckers_rally`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分前响应窗口，在 `beforeScoring` 窗口打出该 special，选择计分基地己方随从，最终断言按己方基地持续战术数量获得临时战力，并清理交互 / `triggerQueue`
    - 节拍一转（`truckers_turn_the_beat_around`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分前响应窗口，在 `beforeScoring` 窗口打出该 special，先选择计分基地己方随从获得 +1，再选择同基地一个随从获得 -1，最终断言双方临时战力修正正确落地，并清理交互 / 响应窗口 / `triggerQueue`
    - 掌握时机（`kung_fu_fighters_expert_timing`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分前响应窗口，在 `beforeScoring` 窗口打出该 special，选择“两者都做”，然后选择《神龙武者》作为额外天赋目标、选择《古老的中国艺术》作为标记来源、选择己方随从作为接收者，最终断言基地持续战术上的 `powerCounters` 清零、目标随从获得标记、额外天赋 metadata 落地，并清理交互 / 响应窗口 / `triggerQueue`
+   - 人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）：新增真实页面 E2E，在出牌阶段打出该动作后，先选择目标基地，再由双方依次各选另一位玩家的随从执行消灭，最终断言双方目标都离场，且 `triggerQueue` / 交互 / 响应窗口清空
    - 平头彼特（`truckers_cab_over_pete`）：新增真实页面 E2E，在出牌阶段真实点击基地持续战术触发其天赋，先选择目标基地，再选择同基地另一张己方战术，最终断言《平头彼特》自身与被选战术一起移动到目标基地、`talentUsed` 落地，且 `triggerQueue` / 交互 / 响应窗口清空
+   - 短路点火（`truckers_hotwire`）：新增真实页面 E2E，在出牌阶段打出该动作后，先选择目标基地持续战术，再选择“转移并控权”，最后选择目标基地，最终断言对方基地持续战术移入目标基地且控制权改为己方，并清理 `triggerQueue` / 交互 / 响应窗口
+   - 高速追逐战（`truckers_high_speed_chase`）：新增真实页面 E2E，在出牌阶段真实点击基地持续战术触发其天赋，先选择己方随从，再选择目标基地，最终断言该随从与《高速追逐战》一起移动到目标基地、该随从获得 `+3` 临时战力、`talentUsed` 落地，并清理 `triggerQueue` / 交互 / 响应窗口
+   - 暴走卡车（`truckers_dekotora`）：新增真实页面 E2E，在出牌阶段真实点击基地持续战术触发其天赋，先选择目标基地，再多选至多 3 个己方随从，最终断言《暴走卡车》自身与被选己方随从一起移动到目标基地、未选随从留在原基地、`talentUsed` 落地，并清理 `triggerQueue` / 交互 / 响应窗口
+   - 今晚嗨起来（`disco_dancers_get_down_tonight`）与舞王（`disco_dancers_dancing_king`）：新增真实页面 E2E，在出牌阶段打出《今晚嗨起来》后先选择原目标随从，再进入《舞王》复制提示，选择同基地另一随从复制效果，最终断言原目标与复制目标都获得 `+2` 临时战力、且己方完成抓牌，并清理 `triggerQueue` / 交互 / 响应窗口
+   - 我很亢奋（`disco_dancers_im_so_excited`）与神探布洛杰克（`vigilantes_brojak`）：新增真实页面 E2E，在出牌阶段打出《我很亢奋》后先选择己方随从、再选择目标基地，随后进入《神探布洛杰克》跟随提示，最终断言被移动随从与《神探布洛杰克》都到达目标基地、《神探布洛杰克》获得 `+1` 临时战力、且己方完成抓牌，并清理 `triggerQueue` / 交互 / 响应窗口
+   - 最后的舞曲（`disco_dancers_last_dance`）：新增真实页面 E2E，在出牌阶段打出该动作后选择己方目标随从，最终断言目标随从被消灭进己方弃牌堆、己方获得 `1 VP`，且 `triggerQueue` / 交互 / 响应窗口清空
+   - 男人雨（`disco_dancers_its_raining_men`）：新增真实页面 E2E，在普通随从额度已用完的出牌阶段打出该动作，先断言己方获得 1 次额外随从额度，再在同一真实页面继续打出额外随从，最终断言额外随从成功落到目标基地，且 `triggerQueue` / 交互 / 响应窗口清空
+   - 打到穿越（`vigilantes_knocked_into_next_week`）：新增真实页面 E2E，在出牌阶段打出该动作后选择目标随从，最终断言目标随从离开基地并洗回其拥有者牌库，且 `triggerQueue` / 交互 / 响应窗口清空
    - 廉价小饭馆（`base_the_greasy_spoon`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言在该基地有随从的双方各抓 1，并清理交互 / 响应窗口 / `triggerQueue`；另新增服务端计分命令链测试，从 `ADVANCE_PHASE` 到双方 `RESPONSE_PASS` 后验证基地 `afterScoring` 让在场双方各抓 1
    - 卡车服务站（`base_truck_stop`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言该基地计分后把这里的随从移动到另一基地，并清理交互 / 响应窗口 / `triggerQueue`
 
@@ -116,6 +125,32 @@
 - `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "节拍一转会先让计分基地目标随从 \\+1，再让同基地一个随从 -1"`（1 passed）
 - `npx eslint e2e/smashup/smashup-zhongguo-turn-the-beat-around-before-scoring.e2e.ts`（0 error；3 warning，均为 E2E 夹具里的既有 `any` 风格）
 - `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-turn-the-beat-around-before-scoring.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-hotwire.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "短路点火可以把基地战术转移到另一个基地并获得控制权"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-hotwire.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-high-speed-chase.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "高速追逐战天赋会转移自身、移动己方随从并给予 \\+3 战力"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-high-speed-chase.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-dekotora.e2e.ts`（0 error；2 warning，均为 E2E 夹具中的 `any`）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "暴走卡车天赋会转移自身并移动至多 3 个己方随从"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-dekotora.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-everybody-was-kung-fu-fighting.e2e.ts`（0 error）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-everybody-was-kung-fu-fighting.e2e.ts`（zhongguo 新增链路，1 passed；修正前提为 `seat1=human` 后通过）
+- `npx eslint e2e/smashup/smashup-zhongguo-get-down-tonight-dancing-king.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "舞王会提示选择同基地另一个随从复制普通战术影响|就在今晚会给所选随从 \\+2 临时战力并抓牌"`（2 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-get-down-tonight-dancing-king.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-im-so-excited-brojak.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "我很亢奋会移动己方随从到其他基地并抓牌|神探布洛杰克会在其他随从移动后跟随到同一基地并获得 \\+1 临时战力"`（2 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-im-so-excited-brojak.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-last-dance.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "最后的舞曲会消灭自己的随从并获得 1 VP"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-last-dance.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx eslint e2e/smashup/smashup-zhongguo-its-raining-men.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "男人雨会给予一次额外随从额度"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-its-raining-men.e2e.ts`（zhongguo 新增链路，1 passed；补上关闭动作牌特写遮罩的页面前提后通过）
+- `npx eslint e2e/smashup/smashup-zhongguo-knocked-into-next-week.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "打到穿越会把目标随从洗回其拥有者牌库"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-knocked-into-next-week.e2e.ts`（zhongguo 新增链路，1 passed；补成 2 个合法目标后真实选择 prompt 正常出现）
 
 新增 E2E 文件：
 
@@ -125,6 +160,15 @@
 - `e2e/smashup/smashup-zhongguo-turn-the-beat-around-before-scoring.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-expert-timing-before-scoring.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-cab-over-pete-talent.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-hotwire.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-high-speed-chase.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-dekotora.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-everybody-was-kung-fu-fighting.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-get-down-tonight-dancing-king.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-im-so-excited-brojak.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-last-dance.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-its-raining-men.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-knocked-into-next-week.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-greasy-spoon-base.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-truck-stop-base.e2e.ts`
 
@@ -150,6 +194,35 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-cab-over-pete-talent.e2e\真实点击平头彼特后，应移动自身到另一基地并把同基地另一张己方战术一起移动过去\zhongguo-cab-over-pete-choose-base.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-cab-over-pete-talent.e2e\真实点击平头彼特后，应移动自身到另一基地并把同基地另一张己方战术一起移动过去\zhongguo-cab-over-pete-choose-card.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-cab-over-pete-talent.e2e\真实点击平头彼特后，应移动自身到另一基地并把同基地另一张己方战术一起移动过去\zhongguo-cab-over-pete-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-hotwire.e2e\打出短路点火后，应转移对方基地战术到另一基地并获得控制权\zhongguo-hotwire-action.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-hotwire.e2e\打出短路点火后，应转移对方基地战术到另一基地并获得控制权\zhongguo-hotwire-mode.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-hotwire.e2e\打出短路点火后，应转移对方基地战术到另一基地并获得控制权\zhongguo-hotwire-base.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-hotwire.e2e\打出短路点火后，应转移对方基地战术到另一基地并获得控制权\zhongguo-hotwire-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-high-speed-chase.e2e\真实点击高速追逐战后，应移动自身和己方随从到另一基地并给该随从-+3-临时战力\zhongguo-high-speed-chase-ready.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-high-speed-chase.e2e\真实点击高速追逐战后，应移动自身和己方随从到另一基地并给该随从-+3-临时战力\zhongguo-high-speed-chase-minion.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-high-speed-chase.e2e\真实点击高速追逐战后，应移动自身和己方随从到另一基地并给该随从-+3-临时战力\zhongguo-high-speed-chase-base.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-high-speed-chase.e2e\真实点击高速追逐战后，应移动自身和己方随从到另一基地并给该随从-+3-临时战力\zhongguo-high-speed-chase-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-dekotora.e2e\真实点击暴走卡车后，应移动自身到另一基地并把至多两个己方随从一起移动过去\zhongguo-dekotora-ready.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-dekotora.e2e\真实点击暴走卡车后，应移动自身到另一基地并把至多两个己方随从一起移动过去\zhongguo-dekotora-base.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-dekotora.e2e\真实点击暴走卡车后，应移动自身到另一基地并把至多两个己方随从一起移动过去\zhongguo-dekotora-minions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-dekotora.e2e\真实点击暴走卡车后，应移动自身到另一基地并把至多两个己方随从一起移动过去\zhongguo-dekotora-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-everybody-was-kung-fu-fighting.e2e\打出人人都是功夫高手后，应先选基地，再让每位有随从的玩家各消灭另一位玩家的一个随从\zhongguo-everybody-was-base.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-everybody-was-kung-fu-fighting.e2e\打出人人都是功夫高手后，应先选基地，再让每位有随从的玩家各消灭另一位玩家的一个随从\zhongguo-everybody-was-player0-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-everybody-was-kung-fu-fighting.e2e\打出人人都是功夫高手后，应先选基地，再让每位有随从的玩家各消灭另一位玩家的一个随从\zhongguo-everybody-was-player1-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-everybody-was-kung-fu-fighting.e2e\打出人人都是功夫高手后，应先选基地，再让每位有随从的玩家各消灭另一位玩家的一个随从\zhongguo-everybody-was-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-get-down-tonight-dancing-king.e2e\打出今晚嗨起来后，应先给原目标-+2-并抓牌，再由舞王复制给同基地另一随从\zhongguo-get-down-tonight-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-get-down-tonight-dancing-king.e2e\打出今晚嗨起来后，应先给原目标-+2-并抓牌，再由舞王复制给同基地另一随从\zhongguo-dancing-king-copy.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-get-down-tonight-dancing-king.e2e\打出今晚嗨起来后，应先给原目标-+2-并抓牌，再由舞王复制给同基地另一随从\zhongguo-get-down-tonight-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-im-so-excited-brojak.e2e\打出我很亢奋后，应移动己方随从、抓牌，并让神探布洛杰克跟随到同一基地获得-+1-临时战力\zhongguo-im-so-excited-minion.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-im-so-excited-brojak.e2e\打出我很亢奋后，应移动己方随从、抓牌，并让神探布洛杰克跟随到同一基地获得-+1-临时战力\zhongguo-im-so-excited-base.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-im-so-excited-brojak.e2e\打出我很亢奋后，应移动己方随从、抓牌，并让神探布洛杰克跟随到同一基地获得-+1-临时战力\zhongguo-brojak-follow.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-im-so-excited-brojak.e2e\打出我很亢奋后，应移动己方随从、抓牌，并让神探布洛杰克跟随到同一基地获得-+1-临时战力\zhongguo-im-so-excited-brojak-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-last-dance.e2e\打出最后的舞曲后，应消灭己方目标随从并获得-1-VP\zhongguo-last-dance-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-last-dance.e2e\打出最后的舞曲后，应消灭己方目标随从并获得-1-VP\zhongguo-last-dance-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-its-raining-men.e2e\打出男人雨后，在普通随从额度已用完时仍应允许再打出一个随从\zhongguo-its-raining-men-extra-minion-ready.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-its-raining-men.e2e\打出男人雨后，在普通随从额度已用完时仍应允许再打出一个随从\zhongguo-its-raining-men-extra-minion-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-knocked-into-next-week.e2e\打出打到穿越后，应把目标随从洗回其拥有者牌库\zhongguo-knocked-into-next-week-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-knocked-into-next-week.e2e\打出打到穿越后，应把目标随从洗回其拥有者牌库\zhongguo-knocked-into-next-week-resolved.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-greasy-spoon-base.e2e\计分后廉价小饭馆应让在场双方各抓-1-张牌\zhongguo-greasy-spoon-before-scoring.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-greasy-spoon-base.e2e\计分后廉价小饭馆应让在场双方各抓-1-张牌\zhongguo-greasy-spoon-final-state.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-truck-stop-base.e2e\计分后卡车服务站应把这里的随从移动到另一个基地\zhongguo-truck-stop-before-scoring.png`
@@ -269,13 +342,22 @@
    - 车友聚会（`truckers_rally`）已覆盖真实页面按钮推进、`beforeScoring` 响应窗口、最终状态清理
    - 节拍一转（`truckers_turn_the_beat_around`）已覆盖真实页面按钮推进、`beforeScoring` 双段选择链、最终状态清理
    - 掌握时机（`kung_fu_fighters_expert_timing`）已覆盖真实页面按钮推进、`beforeScoring` 响应窗口、模式选择、额外天赋目标与基地持续战术标记转移
+   - 人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）已覆盖真实页面双人顺序选择链与最终状态清理
+   - 短路点火（`truckers_hotwire`）已覆盖真实页面三段选择链：目标基地持续战术、模式选择、目标基地，以及最终状态清理
+   - 高速追逐战（`truckers_high_speed_chase`）已覆盖真实点击天赋、选择己方随从、选择目标基地，以及最终状态清理
+   - 暴走卡车（`truckers_dekotora`）已覆盖真实点击天赋、选择目标基地、多选己方随从，以及最终状态清理
    - 廉价小饭馆（`base_the_greasy_spoon`）已覆盖服务端计分命令链与浏览器真实入口，并取得页面截图证据
    - 卡车服务站（`base_truck_stop`）已覆盖浏览器真实入口的计分后移动随从链路，并取得页面截图证据
+   - 今晚嗨起来（`disco_dancers_get_down_tonight`）与舞王（`disco_dancers_dancing_king`）已覆盖真实页面双段提示链与最终状态清理
+   - 我很亢奋（`disco_dancers_im_so_excited`）与神探布洛杰克（`vigilantes_brojak`）已覆盖真实页面移动 + 跟随提示链与最终状态清理
+   - 最后的舞曲（`disco_dancers_last_dance`）已覆盖真实页面单段目标选择链、己方随从消灭进弃牌堆、获得 `1 VP` 与最终状态清理
+   - 男人雨（`disco_dancers_its_raining_men`）已覆盖真实页面“普通随从额度已耗尽 -> 额外随从额度生效 -> 继续打出额外随从”整段门禁链与最终状态清理
+   - 打到穿越（`vigilantes_knocked_into_next_week`）已覆盖真实页面目标选择链、目标随从离开基地并回到拥有者牌库，以及最终状态清理
    - 如继续加深基地能力覆盖，可继续补更多多对象交互和计分后替代清理路径
    - 仍需把 `reaction session` 的队列/清理状态纳入更多 representative 链路
 
 ## 本轮不宣称完成的原因
 
-1. 当前已清空对象级 `L2` 待补证，但只有八条代表性真实入口 E2E，不能代表四派系 L3/L4 全收口
-2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、平头彼特（`truckers_cab_over_pete`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
+1. 当前已清空对象级 `L2` 待补证，但只有十七条代表性真实入口 E2E，仍不能直接代表四派系 L3/L4 全收口
+2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）、平头彼特（`truckers_cab_over_pete`）、短路点火（`truckers_hotwire`）、高速追逐战（`truckers_high_speed_chase`）、暴走卡车（`truckers_dekotora`）、今晚嗨起来 + 舞王（`disco_dancers_get_down_tonight` + `disco_dancers_dancing_king`）、我很亢奋 + 神探布洛杰克（`disco_dancers_im_so_excited` + `vigilantes_brojak`）、最后的舞曲（`disco_dancers_last_dance`）、男人雨（`disco_dancers_its_raining_men`）、打到穿越（`vigilantes_knocked_into_next_week`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
 3. 本文件只是实施审计底稿，不是最终 rollup

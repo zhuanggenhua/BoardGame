@@ -55,6 +55,8 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 
 **默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
 
+**镜像拉取等待口径（强制）**：`docker pull` / `deploy-image.sh update` 正在下载镜像层时，只要能看到层进度、已下载字节数或阶段变化，就默认继续等待，不得把“下载慢”直接判定为失败并改走补救链路。只有满足以下任一条件，才允许进入 fallback：连续多次超时且同一层无新增进度；明确报网络/认证/磁盘错误；服务器或本机/CI 对同一镜像均无法完成拉取；或用户明确要求停止等待。切换 fallback 时，必须说明这是“镜像分发补救”，不是正式镜像拉取链路已成功。
+
 **正式 fallback（当服务器直拉 GHCR 大层失败时）**：先在网络更好的机器或 CI 上执行：
 
 ```bash
