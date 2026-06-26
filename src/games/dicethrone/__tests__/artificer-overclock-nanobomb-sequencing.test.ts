@@ -8,7 +8,7 @@ import { createHeroMatchup, fixedRandom } from './test-utils';
 const applyEvents = (core: any, events: any[]) =>
     events.reduce((current, event) => reduce(current, event), core);
 
-describe('DiceThrone 工匠超频运行回归', () => {
+describe('DiceThrone 工匠超频运行纳米爆弹顺序', () => {
     it('基础版超频运行会在前段先施加 1 纳米爆弹', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         const ability = state.core.players['0'].abilities.find(entry => entry.id === 'overclock');

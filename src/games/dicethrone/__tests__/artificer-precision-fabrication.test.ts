@@ -8,7 +8,7 @@ import { createHeroMatchup, fixedRandom } from './test-utils';
 const applyEvents = (core: any, events: any[]) =>
     events.reduce((current, event) => reduce(current, event), core);
 
-describe('DiceThrone 工匠唤醒机械回归', () => {
+describe('DiceThrone 工匠精密制造分支', () => {
     it('唤醒机械 II 的精密制造分支只获得 5 合成器，不应附带纳米爆弹或挂住攻击链', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].abilityLevels['activate-bots'] = 2;

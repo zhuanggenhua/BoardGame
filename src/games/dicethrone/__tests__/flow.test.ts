@@ -40,6 +40,7 @@ import {
     createHeroMatchup,
     createSetupWithHand,
     createNoResponseSetup,
+    getDefenderChoicePrompt,
     getSimpleChoicePrompt,
     getCardById,
     assertState,
@@ -2724,9 +2725,7 @@ describe('王权骰铸流程测试', () => {
                 state = result.state as MatchState<DiceThroneCore>;
             }
 
-            const defenderChoice = (
-                state.sys.interaction.current?.data as { options?: Array<{ playerId: string; customId?: string }> } | undefined
-            )?.options ?? [];
+            const defenderChoice = getDefenderChoicePrompt(state, 'slash-5').options as Array<{ playerId: string; customId?: string }>;
             const chooseTargetOption = defenderChoice.find((option) => option.customId === 'select-target:1');
             expect(chooseTargetOption).toBeDefined();
 

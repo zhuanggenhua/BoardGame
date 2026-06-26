@@ -31,7 +31,7 @@ const setArtificerBot = (
     };
 };
 
-describe('DiceThrone 工匠机器人回归', () => {
+describe('DiceThrone 工匠机器人持久化与使用次数', () => {
     it('基础电能机器人激活后不会降级或消失，只记录本回合已激活次数', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
