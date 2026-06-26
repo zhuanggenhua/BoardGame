@@ -878,7 +878,12 @@ export function validate(
                         && targetBase.defId === 'base_standing_stones'
                         && attachedHostMinion?.controller === command.playerId
                         && !core.standingStonesDoubleTalentMinionUid;
-                    if (!canUseStandingStonesDoubleTalent) {
+                    const canUseSeastarDouble =
+                        (ongoing.metadata as { mythicHorsesSeastarExtraTalent?: boolean; mythicHorsesSeastarExtraTalentConsumed?: boolean } | undefined)
+                            ?.mythicHorsesSeastarExtraTalent === true
+                        && (ongoing.metadata as { mythicHorsesSeastarExtraTalentConsumed?: boolean } | undefined)
+                            ?.mythicHorsesSeastarExtraTalentConsumed !== true;
+                    if (!canUseStandingStonesDoubleTalent && !canUseSeastarDouble) {
                         return { valid: false, error: '本回合天赋已使用' };
                     }
                 }

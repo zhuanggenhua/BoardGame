@@ -4,11 +4,16 @@ import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { resolvePostDamageEffects } from '../domain/attack';
-import { getChoiceResolvedEventHandler } from '../domain/choiceResolvedEvents';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
 import { SLASH_2 } from '../heroes/ninja/abilities';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import {
+    createHeroMatchup,
+    createQueuedRandom,
+    getSimpleChoicePrompt,
+    injectSimpleChoicePrompt,
+    respondToPrompt,
+} from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -19,6 +24,30 @@ const command = (type: DiceThroneCommand['type'], playerId: string, payload: Rec
     payload,
     timestamp: 100,
 } as DiceThroneCommand);
+
+const injectNinjutsuOffensiveRollEndPrompt = (state: ReturnType<ReturnType<typeof createHeroMatchup>>, sourceAbilityId = 'slash') => {
+    state.sys.phase = 'offensiveRoll';
+    state.sys.flowHalted = true;
+    state.core.currentChoiceSourceAbilityId = sourceAbilityId;
+    injectSimpleChoicePrompt(state, {
+        id: `choice-${sourceAbilityId}-offensive-roll-end`,
+        playerId: '0',
+        title: 'offensiveRollEndToken.title',
+        sourceId: sourceAbilityId,
+        options: [
+            {
+                id: 'option-0',
+                label: '使用忍术',
+                value: { tokenId: TOKEN_IDS.NINJUTSU, value: 1, customId: 'use-ninjutsu' },
+            },
+            {
+                id: 'option-1',
+                label: '跳过',
+                value: { value: 0, customId: 'skip' },
+            },
+        ],
+    });
+};
 
 describe('DiceThrone Ninja Token 机制', () => {
     it('烟雾弹改为掷骰 1-3 避免本次伤害，而不是固定减伤', () => {
@@ -49,7 +78,7 @@ describe('DiceThrone Ninja Token 机制', () => {
         expect(next.pendingDamage).toBeUndefined();
     });
 
-    it('忍术会掷骰并把 4-5 结果作为 +2 写入当前 pendingDamage', () => {
+    it('忍术会在防御前的攻击掷骰结束选择中掷骰，并把 4-5 结果作为 +2 写入当前攻击', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
         state.core.pendingAttack = {
@@ -59,25 +88,19 @@ describe('DiceThrone Ninja Token 机制', () => {
             isDefendable: true,
             damage: 6,
         };
-        state.core.pendingDamage = {
-            id: 'damage-ninjutsu-test',
-            sourcePlayerId: '0',
-            targetPlayerId: '1',
-            originalDamage: 6,
-            currentDamage: 6,
-            sourceAbilityId: 'slash',
-            responseType: 'beforeDamageDealt',
-            responderId: '0',
-            isFullyEvaded: false,
-        };
+        injectNinjutsuOffensiveRollEndPrompt(state);
 
-        const events = execute(state, command('USE_TOKEN', '0', { tokenId: TOKEN_IDS.NINJUTSU, amount: 1 }), createQueuedRandom([5]));
-        const next = applyEvents(state.core, events);
+        const result = respondToPrompt(state, 'option-0', '0', createQueuedRandom([5]), ['0', '1']);
 
-        expect(events.some(event => event.type === 'BONUS_DIE_ROLLED')).toBe(true);
-        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
-        expect(next.pendingDamage?.currentDamage).toBe(8);
-        expect(next.pendingAttack?.bonusDamage).toBe(2);
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+
+        expect(result.events.some(event => event.type === 'BONUS_DIE_ROLLED')).toBe(true);
+        expect(result.state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+        expect(result.state.core.pendingAttack?.bonusDamage).toBe(2);
+        expect(result.state.core.pendingAttack?.isDefendable).toBe(true);
+        expect(result.state.core.pendingDamage).toBeUndefined();
+        expect(result.state.core.pendingAttack?.settlementStage).toBe('preDamage');
     });
 
     it('斩击 II postDamage 应使用攻击骰快照判断三个相同数字，防御阶段不读取当前防御骰', () => {
@@ -109,7 +132,7 @@ describe('DiceThrone Ninja Token 机制', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
     });
 
-    it('忍术掷出 6 后选择慢性中毒分支，应 +2 伤害并给防御者慢性中毒', () => {
+    it('忍术掷出 6 后选择慢性中毒分支，应在防御前给当前攻击 +2 并给防御者慢性中毒', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
         state.core.pendingAttack = {
@@ -119,43 +142,33 @@ describe('DiceThrone Ninja Token 机制', () => {
             isDefendable: true,
             damage: 6,
         };
-        state.core.pendingDamage = {
-            id: 'damage-ninjutsu-choice-test',
-            sourcePlayerId: '0',
-            targetPlayerId: '1',
-            originalDamage: 6,
-            currentDamage: 6,
-            sourceAbilityId: 'slash',
-            responseType: 'beforeDamageDealt',
-            responderId: '0',
-            isFullyEvaded: false,
-        };
+        injectNinjutsuOffensiveRollEndPrompt(state);
 
-        const tokenEvents = execute(state, command('USE_TOKEN', '0', { tokenId: TOKEN_IDS.NINJUTSU, amount: 1 }), createQueuedRandom([6]));
-        const afterRoll = applyEvents(state.core, tokenEvents);
-        const choiceEvent = tokenEvents.find(event => event.type === 'CHOICE_REQUESTED');
-        const handler = getChoiceResolvedEventHandler('ninja-ninjutsu-poison');
+        const useResult = respondToPrompt(state, 'option-0', '0', createQueuedRandom([6]), ['0', '1']);
 
-        expect(choiceEvent?.payload.options.map(option => option.customId)).toContain('ninja-ninjutsu-poison');
-        expect(handler).toBeDefined();
+        expect(useResult.success).toBe(true);
+        if (!useResult.success) return;
 
-        const followupEvents = handler?.({
-            state: afterRoll,
-            playerId: '0',
-            customId: 'ninja-ninjutsu-poison',
-            sourceAbilityId: 'slash',
-            value: 1,
-            timestamp: 200,
-        }) ?? [];
-        const next = applyEvents(afterRoll, followupEvents);
+        const followupPrompt = getSimpleChoicePrompt(useResult.state, 'slash');
+        expect(followupPrompt.options.map(option => option.value?.customId)).toContain('ninja-ninjutsu-poison');
 
-        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
-        expect(next.pendingDamage?.currentDamage).toBe(8);
-        expect(next.pendingAttack?.bonusDamage).toBe(2);
-        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+        const poisonOption = followupPrompt.options.find(option => option.value?.customId === 'ninja-ninjutsu-poison');
+        expect(poisonOption).toBeTruthy();
+
+        const resolveResult = respondToPrompt(useResult.state, poisonOption!.id, '0', createQueuedRandom([1]), ['0', '1']);
+
+        expect(resolveResult.success).toBe(true);
+        if (!resolveResult.success) return;
+
+        expect(resolveResult.state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+        expect(resolveResult.state.core.pendingAttack?.bonusDamage).toBe(2);
+        expect(resolveResult.state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+        expect(resolveResult.state.core.pendingDamage).toBeUndefined();
+        expect(resolveResult.state.core.pendingAttack?.settlementStage).toBe('preDamage');
+        expect(resolveResult.state.core.pendingAttack?.isDefendable).toBe(true);
     });
 
-    it('忍术掷出 6 后选择不可防御分支，应 +2 伤害并使攻击不可防御', () => {
+    it('忍术掷出 6 后选择不可防御分支，应跳过防御并直接按加成后的伤害结算', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 1;
         state.core.pendingAttack = {
@@ -165,37 +178,25 @@ describe('DiceThrone Ninja Token 机制', () => {
             isDefendable: true,
             damage: 6,
         };
-        state.core.pendingDamage = {
-            id: 'damage-ninjutsu-undefendable-test',
-            sourcePlayerId: '0',
-            targetPlayerId: '1',
-            originalDamage: 6,
-            currentDamage: 6,
-            sourceAbilityId: 'slash',
-            responseType: 'beforeDamageDealt',
-            responderId: '0',
-            isFullyEvaded: false,
-        };
+        injectNinjutsuOffensiveRollEndPrompt(state);
 
-        const tokenEvents = execute(state, command('USE_TOKEN', '0', { tokenId: TOKEN_IDS.NINJUTSU, amount: 1 }), createQueuedRandom([6]));
-        const afterRoll = applyEvents(state.core, tokenEvents);
-        const handler = getChoiceResolvedEventHandler('ninja-ninjutsu-undefendable');
+        const useResult = respondToPrompt(state, 'option-0', '0', createQueuedRandom([6]), ['0', '1']);
 
-        expect(handler).toBeDefined();
+        expect(useResult.success).toBe(true);
+        if (!useResult.success) return;
 
-        const followupEvents = handler?.({
-            state: afterRoll,
-            playerId: '0',
-            customId: 'ninja-ninjutsu-undefendable',
-            sourceAbilityId: 'slash',
-            value: 1,
-            timestamp: 200,
-        }) ?? [];
-        const next = applyEvents(afterRoll, followupEvents);
+        const followupPrompt = getSimpleChoicePrompt(useResult.state, 'slash');
+        const undefendableOption = followupPrompt.options.find(option => option.value?.customId === 'ninja-ninjutsu-undefendable');
+        expect(undefendableOption).toBeTruthy();
 
-        expect(next.pendingDamage?.currentDamage).toBe(8);
-        expect(next.pendingAttack?.bonusDamage).toBe(2);
-        expect(next.pendingAttack?.isDefendable).toBe(false);
+        const resolveResult = respondToPrompt(useResult.state, undefendableOption!.id, '0', createQueuedRandom([1]), ['0', '1']);
+
+        expect(resolveResult.success).toBe(true);
+        if (!resolveResult.success) return;
+
+        expect(resolveResult.state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+        expect(resolveResult.events.some(event => event.type === 'BONUS_DAMAGE_ADDED')).toBe(true);
+        expect(resolveResult.events.some(event => event.type === 'ATTACK_MADE_UNDEFENDABLE')).toBe(true);
     });
 
     it('慢性中毒在拥有者回合结束时移除并按层造成伤害', () => {

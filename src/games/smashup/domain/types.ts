@@ -364,6 +364,7 @@ export interface AttachedActionOnMinion {
     ownerId: PlayerId;
     /** 本回合是否已使用天赋（ongoing+talent 行动卡，每回合一次） */
     talentUsed?: boolean;
+    metadata?: Record<string, unknown>;
 }
 
 /** 基地上附着的持续行动卡 */
@@ -1766,6 +1767,8 @@ export interface OngoingCardCounterChangedEvent extends GameEvent<typeof SU_EVEN
         baseIndex: number;
         delta: number;
         reason: string;
+        metadataUpdate?: Record<string, unknown>;
+        replaceMode?: boolean;
     };
 }
 

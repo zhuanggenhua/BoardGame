@@ -502,18 +502,6 @@ async function openFantasyRealmsTestPage(page: Page, baseURL?: string, query = '
     }, { timeout: 15000 });
 }
 
-async function getLocatorRect(page: Page, selector: string) {
-    return page.locator(selector).evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        return {
-            x: Math.round(rect.x),
-            y: Math.round(rect.y),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height),
-        };
-    });
-}
-
 async function getLocatorRects(page: Page, selector: string) {
     return page.locator(selector).evaluateAll((elements) => elements.map((element) => {
         const rect = element.getBoundingClientRect();

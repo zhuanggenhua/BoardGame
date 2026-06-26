@@ -26,7 +26,7 @@ export const NINJA_TOKENS: TokenDef[] = [
         stackLimit: 3,
         category: 'consumable',
         activeUse: {
-            timing: ['beforeDamageDealt'],
+            timing: ['onOffensiveRollEnd'],
             consumeAmount: 1,
             customActionId: 'ninja-ninjutsu-use',
             effect: { type: 'modifyDamageDealt', value: 0 },

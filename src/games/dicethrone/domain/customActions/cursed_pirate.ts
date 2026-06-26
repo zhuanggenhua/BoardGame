@@ -673,7 +673,7 @@ function resolveHumanCursedTurnEnd({
 
     const cursedCoinStacks = player.statusEffects[STATUS_IDS.CURSED_COIN] ?? 0;
     if (cursedCoinStacks > 0) {
-        return [{
+        const events: DiceThroneEvent[] = [{
             type: 'STATUS_REMOVED',
             payload: {
                 targetId: attackerId,
@@ -683,6 +683,19 @@ function resolveHumanCursedTurnEnd({
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp,
         } as StatusRemovedEvent];
+        if (cursedCoinStacks === 1) {
+            events.push({
+                type: 'PLAYER_BOARD_FACE_CHANGED',
+                payload: {
+                    playerId: attackerId,
+                    face: 'cursed',
+                    sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 0.01,
+            } as PlayerBoardFaceChangedEvent);
+        }
+        return events;
     }
 
     return [{

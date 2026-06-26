@@ -2012,6 +2012,65 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         )).toBe(true);
     });
 
+    it('快如闪电会在目标因基地计分清场进入弃牌堆时改回手牌', () => {
+        const played = runCommand(
+            makeMatchState(makeState({
+                turnNumber: 3,
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('fast-1', 'kung_fu_fighters_fast_as_lightning', 'action', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase('base_a', [
+                        makeMinion('target', 'test_target', '1', 1),
+                    ]),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'fast-1' },
+            },
+            defaultTestRandom,
+        );
+
+        expect(played.success).toBe(true);
+        const fastPrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_fast_as_lightning');
+        const applied = respondToPrompt(
+            played.finalState,
+            getPromptOption(fastPrompt, option => option.value?.minionUid === 'target', '快如闪电清场目标').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(applied.success).toBe(true);
+
+        const target = applied.finalState.core.bases[0].minions.find(minion => minion.uid === 'target');
+        const triggered = fireTriggers(applied.finalState.core, 'onMinionDiscardedFromBase', {
+            state: applied.finalState.core,
+            matchState: makeMatchState(applied.finalState.core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'target',
+            triggerMinionDefId: 'test_target',
+            triggerMinion: target,
+            random: defaultTestRandom,
+            now: 3000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.MINION_RETURNED
+            && (event as any).payload?.minionUid === 'target'
+            && (event as any).payload?.toPlayerId === '1',
+        )).toBe(true);
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.MINION_MOVED
+            && (event as any).payload?.toZone === 'discard',
+        )).toBe(false);
+    });
+
     it('人人都是功夫高手会让所选基地每位有随从的玩家各消灭另一位玩家的随从', () => {
         const played = runCommand(
             makeMatchState(makeState({
@@ -2138,6 +2197,205 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         });
     });
 
+    it('掌握时机只做额外天赋时会直接授予己方有天赋随从一次额外使用', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('expert-1', 'kung_fu_fighters_expert_timing', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_greasy_spoon', [
+                    makeMinion('dragon', 'kung_fu_fighters_dragon_warrior', '0', 5, { talentUsed: true }),
+                    makeMinion('ally', 'truckers_good_buddy', '0', 2),
+                ]),
+            ],
+        });
+
+        const played = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'expert-1' },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        const modePrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_expert_timing_mode');
+        expect(modePrompt.options.some(option => option.value?.mode === 'transfer')).toBe(false);
+
+        const resolved = respondToPrompt(
+            played.finalState,
+            getPromptOption(modePrompt, option => option.value?.mode === 'talent', '掌握时机只做额外天赋').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(getSimpleChoicePrompt(resolved.finalState, 'kung_fu_fighters_expert_timing_talent')).toBeDefined();
+
+        const chooseTalent = respondToPrompt(
+            resolved.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(resolved.finalState, 'kung_fu_fighters_expert_timing_talent'),
+                option => option.value?.minionUid === 'dragon',
+                '掌握时机额外天赋目标',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseTalent.success).toBe(true);
+        expect(chooseTalent.finalState.core.bases[0].minions.find(minion => minion.uid === 'dragon')?.metadata).toMatchObject({
+            mythicHorsesSeastarExtraTalent: true,
+            mythicHorsesSeastarExtraTalentConsumed: false,
+        });
+        expect(chooseTalent.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.metadata).toBeUndefined();
+    });
+
+    it('掌握时机会把基地持续战术上的全部 +1 标记转移到另一个随从', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('expert-1', 'kung_fu_fighters_expert_timing', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_greasy_spoon',
+                    minions: [
+                        makeMinion('receiver', 'kung_fu_fighters_cricket', '0', 2, { powerCounters: 0 }),
+                    ],
+                    ongoingActions: [
+                        {
+                            uid: 'art-1',
+                            defId: 'kung_fu_fighters_ancient_chinese_art',
+                            ownerId: '0',
+                            talentUsed: false,
+                            metadata: { powerCounters: 2 },
+                        } as any,
+                    ],
+                }),
+            ],
+        });
+
+        const played = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'expert-1' },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        const modePrompt = getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_expert_timing_mode');
+        expect(modePrompt.options.some(option => option.value?.mode === 'talent')).toBe(true);
+
+        const chooseMode = respondToPrompt(
+            played.finalState,
+            getPromptOption(modePrompt, option => option.value?.mode === 'transfer', '掌握时机只转移标记').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseMode.success).toBe(true);
+        const sourcePrompt = getSimpleChoicePrompt(chooseMode.finalState, 'kung_fu_fighters_expert_timing_source');
+        const chooseSource = respondToPrompt(
+            chooseMode.finalState,
+            getPromptOption(sourcePrompt, option => option.value?.actionUid === 'art-1', '掌握时机标记来源牌').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseSource.success).toBe(true);
+        const targetPrompt = getSimpleChoicePrompt(chooseSource.finalState, 'kung_fu_fighters_expert_timing_target');
+        const resolved = respondToPrompt(
+            chooseSource.finalState,
+            getPromptOption(targetPrompt, option => option.value?.minionUid === 'receiver', '掌握时机标记接收者').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect((resolved.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'art-1') as any)?.metadata?.powerCounters).toBe(0);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'receiver')?.powerCounters).toBe(2);
+    });
+
+    it('掌握时机会把随从上的全部 +1 标记转移到基地持续战术上', () => {
+        const state = makeState({
+            scoringEligibleBaseIndices: [0],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('expert-1', 'kung_fu_fighters_expert_timing', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_greasy_spoon',
+                    minions: [
+                        makeMinion('source', 'kung_fu_fighters_dragon_warrior', '0', 5, { powerCounters: 3 }),
+                    ],
+                    ongoingActions: [
+                        {
+                            uid: 'art-1',
+                            defId: 'kung_fu_fighters_ancient_chinese_art',
+                            ownerId: '0',
+                            talentUsed: false,
+                            metadata: { powerCounters: 0 },
+                        } as any,
+                    ],
+                }),
+            ],
+        });
+
+        const played = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'expert-1' },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        const chooseMode = respondToPrompt(
+            played.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(played.finalState, 'kung_fu_fighters_expert_timing_mode'),
+                option => option.value?.mode === 'transfer',
+                '掌握时机只转移标记到基地持续牌',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseMode.success).toBe(true);
+        const chooseSource = respondToPrompt(
+            chooseMode.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(chooseMode.finalState, 'kung_fu_fighters_expert_timing_source'),
+                option => option.value?.minionUid === 'source',
+                '掌握时机随从标记来源',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseSource.success).toBe(true);
+        const resolved = respondToPrompt(
+            chooseSource.finalState,
+            getPromptOption(
+                getSimpleChoicePrompt(chooseSource.finalState, 'kung_fu_fighters_expert_timing_target'),
+                option => option.value?.actionUid === 'art-1',
+                '掌握时机基地持续牌接收者',
+            ).id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'source')?.powerCounters).toBe(0);
+        expect((resolved.finalState.core.bases[0].ongoingActions.find(action => action.uid === 'art-1') as any)?.metadata?.powerCounters).toBe(3);
+    });
+
     it('平头彼特天赋会转移自身并移动同基地另一张己方基地战术', () => {
         const used = runCommand(
             makeMatchState(makeState({
@@ -2187,5 +2445,59 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'pete-1')?.talentUsed).toBe(true);
         expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'convoy-1')).toBe(true);
         expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'pete-1' || action.uid === 'convoy-1')).toBe(false);
+    });
+
+    it('平头彼特天赋也可以转移自身并移动同基地另一张己方随从', () => {
+        const used = runCommand(
+            makeMatchState(makeState({
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    makeBase({
+                        defId: 'base_a',
+                        minions: [
+                            makeMinion('ally', 'truckers_good_buddy', '0', 2),
+                            makeMinion('enemy', 'test_enemy', '1', 3),
+                        ],
+                        ongoingActions: [
+                            { uid: 'pete-1', defId: 'truckers_cab_over_pete', ownerId: '0', talentUsed: false } as any,
+                        ],
+                    }),
+                    makeBase('base_b', []),
+                ],
+            })),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'pete-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(used.success).toBe(true);
+        const basePrompt = getSimpleChoicePrompt(used.finalState, 'truckers_cab_over_pete_base');
+        const chooseBase = respondToPrompt(
+            used.finalState,
+            getPromptOption(basePrompt, option => option.value?.baseIndex === 1, '平头彼特目标基地').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(chooseBase.success).toBe(true);
+        const cardPrompt = getSimpleChoicePrompt(chooseBase.finalState, 'truckers_cab_over_pete_card');
+        const resolved = respondToPrompt(
+            chooseBase.finalState,
+            getPromptOption(cardPrompt, option => option.value?.minionUid === 'ally', '平头彼特移动随从').id,
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'pete-1')?.talentUsed).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'ally')).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'ally')).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy')).toBe(true);
     });
 });

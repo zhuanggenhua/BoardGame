@@ -12,6 +12,10 @@ export const TREANT_TOKENS: TokenDef[] = [
         description: tokenText(TOKEN_IDS.TREANT_SEEDLING, 'description') as unknown as string[],
         stackLimit: 3,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'manual',
+            removable: false,
+        },
         frameId: 'treant_seedling',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.TREANT,
     },
@@ -22,6 +26,10 @@ export const TREANT_TOKENS: TokenDef[] = [
         description: tokenText(TOKEN_IDS.TREANT_SAPLING, 'description') as unknown as string[],
         stackLimit: 2,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'manual',
+            removable: false,
+        },
         frameId: 'treant_sapling',
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.TREANT,
     },
@@ -32,6 +40,10 @@ export const TREANT_TOKENS: TokenDef[] = [
         description: tokenText(TOKEN_IDS.TREANT_DIVINE, 'description') as unknown as string[],
         stackLimit: 1,
         category: 'consumable',
+        passiveTrigger: {
+            timing: 'manual',
+            removable: false,
+        },
         activeUse: {
             timing: ['beforeDamageDealt'],
             consumeAmount: 1,

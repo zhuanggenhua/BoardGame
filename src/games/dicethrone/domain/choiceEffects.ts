@@ -161,6 +161,28 @@ registerChoiceEffectHandler('use-loaded', ({ state, playerId }) => {
     };
 });
 
+registerChoiceEffectHandler('use-ninjutsu', ({ state, playerId }) => {
+    const player = state.players[playerId];
+    if (!player || !state.pendingAttack) return undefined;
+
+    const currentNinjutsu = player.tokens[TOKEN_IDS.NINJUTSU] ?? 0;
+    if (currentNinjutsu <= 0) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: { ...player.tokens, [TOKEN_IDS.NINJUTSU]: currentNinjutsu - 1 },
+            },
+        },
+        pendingAttack: {
+            ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
+            offensiveRollEndTokenResolved: true,
+        },
+    };
+});
+
 /**
  * 跳过 — 不使用任何 Token，标记 Token 选择已完成
  */

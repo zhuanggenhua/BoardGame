@@ -2948,6 +2948,126 @@ describe('AI legal actions', () => {
         expect(second?.attemptKey).not.toBe(first?.attemptKey);
     });
 
+    it('本地 AI 在自己的进攻掷骰阶段应生成改骰牌候选，而不是只剩锁骰/确认', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 2;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-surprise')];
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 1, 6, 5][index],
+            symbol: ['sword', 'sword', 'sword', 'pray', 'heart'][index],
+            symbols: [[
+                ['sword', 'sword', 'sword', 'pray', 'heart'][index],
+            ][0]],
+            isKept: false,
+        }));
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.some((action) => (
+            action.kind === 'play-card'
+            && action.metadata?.cardId === 'card-surprise'
+            && action.commands[0]?.type === 'PLAY_CARD'
+        ))).toBe(true);
+    });
+
+    it('本地 AI 在自己的进攻掷骰阶段应生成重掷牌候选，而不是漏掉 roll 时机手牌', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 2;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-worthy-of-me')];
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 2, 6, 5][index],
+            symbol: ['sword', 'shield', 'shield', 'pray', 'heart'][index],
+            symbols: [[
+                ['sword', 'shield', 'shield', 'pray', 'heart'][index],
+            ][0]],
+            isKept: false,
+        }));
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.some((action) => (
+            action.kind === 'play-card'
+            && action.metadata?.cardId === 'card-worthy-of-me'
+            && action.commands[0]?.type === 'PLAY_CARD'
+        ))).toBe(true);
+    });
+
+    it('本地 AI 在自己的进攻掷骰阶段完成首个关键锁骰后，应继续主动打出改骰牌', async () => {
+        let state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 2;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['0'].hand = [getCardById('card-surprise')];
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 1, 6, 5][index],
+            symbol: ['sword', 'sword', 'sword', 'pray', 'heart'][index],
+            symbols: [[
+                ['sword', 'sword', 'sword', 'pray', 'heart'][index],
+            ][0]],
+            isKept: index === 3 || index === 4,
+        }));
+
+        const first = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-offensive-roll-play-surprise',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(first?.playerId).toBe('0');
+        expect(first?.action.kind).toBe('toggle-die-lock');
+
+        for (const command of first!.action.commands) {
+            state = execCmd(
+                state,
+                cmd(command.type as CommandInput['type'], first!.playerId, command.payload ?? {}),
+            );
+        }
+
+        const second = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-offensive-roll-play-surprise',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(second?.playerId).toBe('0');
+        expect(second?.action.kind).toBe('play-card');
+        expect(second?.action.metadata).toMatchObject({ cardId: 'card-surprise' });
+    });
+
     it('本地 AI 在响应窗口存在可打补牌牌时，应优先出牌而不是直接 pass', async () => {
         let state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'main2';

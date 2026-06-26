@@ -8,6 +8,8 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 import { MAX_HEALTH } from '../domain/types';
+import { DiceThroneDomain } from '../domain';
+import type { RemoveStatusCommand } from '../domain/types';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -20,6 +22,50 @@ const command = (type: DiceThroneCommand['type'], playerId: string, payload: Rec
 } as DiceThroneCommand);
 
 describe('DiceThrone Treant Token 机制', () => {
+    it('树灵培养资源不能被通用移除状态卡移除', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 1;
+
+        const command: RemoveStatusCommand = {
+            type: 'REMOVE_STATUS',
+            playerId: '1',
+            payload: { targetPlayerId: '0' },
+            timestamp: 100,
+        };
+
+        const events = DiceThroneDomain.execute(state, command, createQueuedRandom([1]));
+        expect(events.filter(event => event.type === 'TOKEN_CONSUMED')).toHaveLength(0);
+
+        const validationState = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        validationState.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
+        validationState.sys.interaction.current = {
+            id: 'dt-interaction-remove',
+            kind: 'dt:card-interaction',
+            playerId: '1',
+            data: {
+                id: 'pending-remove',
+                playerId: '1',
+                sourceCardId: 'card-bye-bye',
+                type: 'selectStatus',
+                titleKey: 'interaction.removeStatus',
+                selectCount: 1,
+                selected: [],
+                targetPlayerIds: ['0'],
+                requiresTargetWithStatus: true,
+            },
+        };
+
+        const validation: RemoveStatusCommand = {
+            type: 'REMOVE_STATUS',
+            playerId: '1',
+            payload: { targetPlayerId: '0', statusId: TOKEN_IDS.TREANT_SEEDLING },
+            timestamp: 101,
+        };
+        expect(DiceThroneDomain.validate(validationState, validation).valid).toBe(false);
+    });
+
     it('幼种树灵可在自己的掷骰阶段消耗并重掷 1 颗骰子', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         state.sys.phase = 'offensiveRoll';

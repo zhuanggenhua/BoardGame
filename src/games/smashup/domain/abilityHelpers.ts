@@ -956,11 +956,22 @@ export function addOngoingCardCounter(
     baseIndex: number,
     delta: number,
     reason: string,
-    now: number
+    now: number,
+    options?: {
+        metadataUpdate?: Record<string, unknown>;
+        replaceMode?: boolean;
+    },
 ): OngoingCardCounterChangedEvent {
     return {
         type: SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED,
-        payload: { cardUid, baseIndex, delta, reason },
+        payload: {
+            cardUid,
+            baseIndex,
+            delta,
+            reason,
+            ...(options?.metadataUpdate ? { metadataUpdate: options.metadataUpdate } : {}),
+            ...(options?.replaceMode ? { replaceMode: true } : {}),
+        },
         timestamp: now,
     };
 }

@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import {
@@ -30,9 +30,17 @@ import {
     waitForFantasyRealmsPlayerReviewBoard,
     waitForFantasyRealmsSpectatorBoard,
 } from './helpers/fantasyrealmsOnlineAi';
+import { initContext } from '../helpers/common';
+import { seedMatchCredentials } from '../helpers/common';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
+const LIVE_CENTER_ROW_REFERENCE_WIDTH_PX = 1360;
+const LIVE_CENTER_CARD_WIDTH_PX = 206;
+const LIVE_CENTER_CARD_MIN_WIDTH_PX = 148;
+const LIVE_CENTER_CARD_WIDTH_RATIO = LIVE_CENTER_CARD_WIDTH_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
+const LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX = 16;
+const LIVE_CENTER_ROW_CONTENT_WIDTH_RATIO = 0.86;
 const getFantasyRealmsDeckDrawButton = (page: Page) => page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
 const getFantasyRealmsFocusName = (page: Page) => page.locator('.fr-focus-name, .fr-compact-focus-name').first();
 
@@ -65,6 +73,41 @@ async function getLocatorRect(page: Page, selector: string) {
             height: Math.round(rect.height),
         };
     });
+}
+
+async function getViewportMetrics(page: Page) {
+    return page.evaluate(() => ({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+    }));
+}
+
+async function getComputedGap(page: Page, selector: string) {
+    return page.locator(selector).first().evaluate((element) => Number.parseFloat(getComputedStyle(element).gap || '0'));
+}
+
+function getMinimumHorizontalGap(rects: Array<{ x: number; width: number }>) {
+    if (rects.length <= 1) return Infinity;
+    let minimumGap = Number.POSITIVE_INFINITY;
+    for (let index = 1; index < rects.length; index += 1) {
+        const previous = rects[index - 1]!;
+        const current = rects[index]!;
+        minimumGap = Math.min(minimumGap, current.x - (previous.x + previous.width));
+    }
+    return minimumGap;
+}
+
+function getExpectedLiveCenterCardWidth(viewportWidth: number) {
+    const liveContentWidth = viewportWidth - (LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX * 2);
+    const liveCenterRowWidth = Math.min(
+        LIVE_CENTER_ROW_REFERENCE_WIDTH_PX,
+        liveContentWidth * LIVE_CENTER_ROW_CONTENT_WIDTH_RATIO,
+    );
+    return Math.min(
+        LIVE_CENTER_CARD_WIDTH_PX,
+        Math.max(LIVE_CENTER_CARD_MIN_WIDTH_PX, liveCenterRowWidth * LIVE_CENTER_CARD_WIDTH_RATIO),
+    );
 }
 
 function getRectGroupCenter(rects: Array<{ x: number; width: number }>) {
@@ -139,12 +182,14 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         test.setTimeout(120000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const match = await openFantasyRealmsOnlineAiRoom(browser, baseURL);
+        const match = await openFantasyRealmsOnlineAiRoom(browser, baseURL, {
+            viewport: { width: 1920, height: 1080 },
+        });
         if (!match) {
             test.skip(true, 'Game server unavailable for Fantasy Realms online center layout test.');
         }
 
-        const { context, page, matchId } = match!;
+        const { context, page, matchId, hostPlayerId, hostCredentials, aiCredentialsBySeat } = match!;
         const diagnostics = attachPageDiagnostics(page);
         const centerCardsSelector = '.fr-card-button--live-center';
 
@@ -177,10 +222,233 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(Math.abs(lowCountRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
             expect(lowCountRects[0]!.y).toBe(topRowRects[0]!.y);
             expect(lowCountRects[1]!.y).toBe(topRowRects[1]!.y);
+            const wideTwoCardWidth = lowCountRects[0]!.width;
 
             const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-cards');
             await mkdir(dirname(lowEvidencePath), { recursive: true });
             await page.screenshot({ path: lowEvidencePath, fullPage: false });
+            const wideDiscardDelta = Math.abs(getRectGroupCenter(lowCountRects) - discardRowCenter);
+            const wideDeckRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
+            const wideScoreRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-score-strip"]');
+            const wideActionRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-action-draw"]');
+            const wideTopbarRect = await getLocatorRect(page, '[data-testid="fantasyrealms-live-topbar"]');
+            const wideViewport = await getViewportMetrics(page);
+
+            const narrowContext = await browser.newContext({
+                baseURL,
+                viewport: { width: 1281, height: 754 },
+                deviceScaleFactor: 1.75,
+            });
+            await initContext(narrowContext, {
+                storageKey: '__fantasyrealms_online_ai_narrow__',
+                skipImageGate: true,
+                gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+                apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            });
+            await seedMatchCredentials(narrowContext, GAME_NAME, matchId, hostPlayerId, hostCredentials);
+            await narrowContext.addInitScript(({ targetMatchId, targetCredentials }) => {
+                localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
+            }, { targetMatchId: matchId, targetCredentials: aiCredentialsBySeat });
+            const narrowPage = await narrowContext.newPage();
+            try {
+                await narrowPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${hostPlayerId}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+                await waitForFantasyRealmsBoard(narrowPage, hostPlayerId);
+                await narrowPage.waitForTimeout(500);
+                await expect(narrowPage.locator(centerCardsSelector)).toHaveCount(2, { timeout: 10000 });
+                const narrowRects = await waitForLocatorRectsToSettle(narrowPage, centerCardsSelector);
+                const narrowDiscardRowRect = await getLocatorRect(narrowPage, '.fr-discard-row--live-center');
+                const narrowDiscardRowCenter = narrowDiscardRowRect.x + (narrowDiscardRowRect.width / 2);
+                const narrowViewport = await getViewportMetrics(narrowPage);
+                const narrowViewportWidth = narrowViewport.innerWidth;
+                const expectedNarrowCardWidth = getExpectedLiveCenterCardWidth(narrowViewportWidth);
+                const narrowDiscardDelta = Math.abs(getRectGroupCenter(narrowRects) - narrowDiscardRowCenter);
+                const narrowDeckRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-deck"] .fr-live-deck-stack');
+                const narrowScoreRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-score-strip"]');
+                const narrowActionRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-action-draw"]');
+                const narrowTopbarRect = await getLocatorRect(narrowPage, '[data-testid="fantasyrealms-live-topbar"]');
+
+                expect(narrowDiscardDelta).toBeLessThanOrEqual(2);
+                expect(narrowRects[0]!.width).toBeLessThan(wideTwoCardWidth);
+                expect(Math.abs(narrowRects[0]!.width - expectedNarrowCardWidth)).toBeLessThanOrEqual(3);
+                expect(Math.abs(narrowRects[0]!.height - narrowRects[1]!.height)).toBeLessThanOrEqual(2);
+                expect(narrowDeckRect.width).toBeLessThanOrEqual(wideDeckRect.width);
+                expect(narrowScoreRect.width).toBeLessThanOrEqual(wideScoreRect.width);
+                expect(narrowActionRect.width).toBeLessThanOrEqual(wideActionRect.width);
+                expect(narrowTopbarRect.width).toBeLessThanOrEqual(wideTopbarRect.width);
+
+                const narrowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-cards-1281w');
+                await mkdir(dirname(narrowEvidencePath), { recursive: true });
+                await narrowPage.screenshot({ path: narrowEvidencePath, fullPage: false });
+                const metricsPath = getEvidenceScreenshotPath(testInfo, 'real-online-centered-two-card-widths').replace(/\.png$/i, '.json');
+                const metricsPayload: Record<string, unknown> = {
+                    wide: {
+                        viewportWidth: wideViewport.innerWidth,
+                        deviceScaleFactor: wideViewport.devicePixelRatio,
+                        cardWidth: wideTwoCardWidth,
+                        cardHeight: lowCountRects[0]!.height,
+                        discardCenterDelta: wideDiscardDelta,
+                        deckWidth: wideDeckRect.width,
+                        scoreStripWidth: wideScoreRect.width,
+                        actionWidth: wideActionRect.width,
+                        topbarWidth: wideTopbarRect.width,
+                    },
+                    narrow: {
+                        viewportWidth: narrowViewportWidth,
+                        deviceScaleFactor: narrowViewport.devicePixelRatio,
+                        expectedCardWidth: expectedNarrowCardWidth,
+                        cardWidth: narrowRects[0]!.width,
+                        cardHeight: narrowRects[0]!.height,
+                        discardCenterDelta: narrowDiscardDelta,
+                        deckWidth: narrowDeckRect.width,
+                        scoreStripWidth: narrowScoreRect.width,
+                        actionWidth: narrowActionRect.width,
+                        topbarWidth: narrowTopbarRect.width,
+                    },
+                };
+
+                const tightHandCore = createAiTakeDiscardBranchCore();
+                await injectOnlineAiCore(matchId, page, {
+                    ...tightHandCore,
+                    currentPlayer: '0',
+                    stage: 'discard',
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: '你',
+                            hand: [
+                                ...tightHandCore.players['0']!.hand,
+                                { ...tightHandCore.discardPile[0]! },
+                            ],
+                            score: tightHandCore.players['0']!.score,
+                            scoreBreakdown: tightHandCore.players['0']!.scoreBreakdown,
+                        },
+                        '1': tightHandCore.players['1']!,
+                    },
+                });
+                await expect(page.locator('.fr-card-button--live-hand')).toHaveCount(8, { timeout: 10000 });
+
+                const tightContext = await browser.newContext({
+                    baseURL,
+                    viewport: { width: 1037, height: 754 },
+                    deviceScaleFactor: 1.75,
+                });
+                await initContext(tightContext, {
+                    storageKey: '__fantasyrealms_online_ai_tight__',
+                    skipImageGate: true,
+                    gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+                    apiServerBaseURL: process.env.PW_API_SERVER_URL,
+                });
+                await seedMatchCredentials(tightContext, GAME_NAME, matchId, hostPlayerId, hostCredentials);
+                await tightContext.addInitScript(({ targetMatchId, targetCredentials }) => {
+                    localStorage.setItem(`match_ai_creds_${targetMatchId}`, JSON.stringify(targetCredentials));
+                }, { targetMatchId: matchId, targetCredentials: aiCredentialsBySeat });
+                const tightPage = await tightContext.newPage();
+                try {
+                    await tightPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${hostPlayerId}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+                    await waitForFantasyRealmsBoard(tightPage, hostPlayerId);
+                    await tightPage.waitForTimeout(500);
+
+                    const tightViewport = await getViewportMetrics(tightPage);
+                    const tightTopbarRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-topbar"]');
+                    const tightScoreRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-score-strip"]');
+                    const tightCenterRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-center-row"]');
+                    const tightDiscardRowRect = await getLocatorRect(tightPage, '.fr-discard-row--live-center');
+                    const tightActionRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-live-action-discard"]');
+                    const tightHandRowRect = await getLocatorRect(tightPage, '[data-testid="fantasyrealms-hand-row"]');
+                    const tightCenterRects = await waitForLocatorRectsToSettle(tightPage, centerCardsSelector);
+                    const tightHandRects = await waitForLocatorRectsToSettle(tightPage, '.fr-card-button--live-hand');
+                    const tightHandGap = await getComputedGap(tightPage, '[data-testid="fantasyrealms-hand-row"]');
+                    const tightMinGap = getMinimumHorizontalGap(tightHandRects);
+                    const tightCenterRowCenter = tightCenterRowRect.x + (tightCenterRowRect.width / 2);
+                    const tightTopbarCenter = tightTopbarRect.x + (tightTopbarRect.width / 2);
+                    const tightHandRowCenter = tightHandRowRect.x + (tightHandRowRect.width / 2);
+                    const tightDiscardRowCenter = tightDiscardRowRect.x + (tightDiscardRowRect.width / 2);
+                    const tightCenterDelta = Math.abs(getRectGroupCenter(tightCenterRects) - tightDiscardRowCenter);
+                    const tightExpectedCenterCardWidth = getExpectedLiveCenterCardWidth(tightViewport.innerWidth);
+
+                    expect(tightViewport.innerWidth).toBe(1037);
+                    expect(tightTopbarRect.x + tightTopbarRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightScoreRect.x + tightScoreRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightActionRect.x + tightActionRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(tightHandRowRect.x + tightHandRowRect.width).toBeLessThanOrEqual(tightViewport.innerWidth);
+                    expect(Math.abs(tightTopbarCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
+                    expect(Math.abs(tightHandRowCenter - tightCenterRowCenter)).toBeLessThanOrEqual(1);
+                    expect(tightCenterRects).toHaveLength(2);
+                    expect(tightCenterDelta).toBeLessThanOrEqual(2);
+                    expect(Math.abs(tightCenterRects[0]!.width - tightExpectedCenterCardWidth)).toBeLessThanOrEqual(3);
+                    expect(Math.abs(tightCenterRects[0]!.width - tightCenterRects[1]!.width)).toBeLessThanOrEqual(2);
+                    expect(tightHandRects).toHaveLength(8);
+                    expect(tightHandRects[0]!.width).toBeGreaterThanOrEqual(114);
+                    expect(Math.abs(tightHandRects[0]!.width - tightHandRects[1]!.width)).toBeLessThanOrEqual(2);
+                    expect(tightMinGap).toBeGreaterThanOrEqual(0);
+                    expect(tightHandGap).toBeGreaterThan(0);
+
+                    const earlyDiscardCore = {
+                        ...tightHandCore,
+                        currentPlayer: '0',
+                        turn: 1,
+                        stage: 'discard' as const,
+                        discardPile: [],
+                        players: {
+                            '0': {
+                                ...tightHandCore.players['0']!,
+                                hand: tightHandCore.players['0']!.hand.slice(0, 2),
+                            },
+                            '1': {
+                                ...tightHandCore.players['1']!,
+                                hand: tightHandCore.players['1']!.hand.slice(0, 2),
+                            },
+                        },
+                        focusCardId: tightHandCore.players['0']!.hand[0]!.id,
+                    };
+                    await injectOnlineAiCore(matchId, page, earlyDiscardCore);
+                    await tightPage.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
+                    await waitForFantasyRealmsBoard(tightPage, hostPlayerId);
+                    await tightPage.waitForTimeout(500);
+
+                    const earlyDiscardHandRow = tightPage.getByTestId('fantasyrealms-hand-row');
+                    await expect(earlyDiscardHandRow).toHaveAttribute('data-visible-count', '2');
+                    await expect(earlyDiscardHandRow).toHaveAttribute('data-slot-count', '8');
+                    const earlyDiscardHandRects = await waitForLocatorRectsToSettle(tightPage, '.fr-card-button--live-hand');
+                    expect(earlyDiscardHandRects).toHaveLength(2);
+                    expect(Math.abs(earlyDiscardHandRects[0]!.width - tightHandRects[0]!.width)).toBeLessThanOrEqual(2);
+                    expect(Math.abs(earlyDiscardHandRects[0]!.height - tightHandRects[0]!.height)).toBeLessThanOrEqual(2);
+
+                    const tightEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-hand-row-1037w');
+                    await mkdir(dirname(tightEvidencePath), { recursive: true });
+                    await tightPage.screenshot({ path: tightEvidencePath, fullPage: false });
+                    const earlyDiscardEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-hand-row-1037w-two-hand-discard');
+                    await mkdir(dirname(earlyDiscardEvidencePath), { recursive: true });
+                    await tightPage.screenshot({ path: earlyDiscardEvidencePath, fullPage: false });
+                    metricsPayload.tight = {
+                        viewportWidth: tightViewport.innerWidth,
+                        viewportHeight: tightViewport.innerHeight,
+                        deviceScaleFactor: tightViewport.devicePixelRatio,
+                        centerRowWidth: tightCenterRowRect.width,
+                        centerCardWidth: tightCenterRects[0]!.width,
+                        centerCardHeight: tightCenterRects[0]!.height,
+                        centerGroupDelta: tightCenterDelta,
+                        topbarCenterDelta: Math.abs(tightTopbarCenter - tightCenterRowCenter),
+                        handCenterDelta: Math.abs(tightHandRowCenter - tightCenterRowCenter),
+                        handRowWidth: tightHandRowRect.width,
+                        handCardWidth: tightHandRects[0]!.width,
+                        handCardHeight: tightHandRects[0]!.height,
+                        minHorizontalGap: tightMinGap,
+                        cssGap: tightHandGap,
+                        topbarWidth: tightTopbarRect.width,
+                        scoreStripWidth: tightScoreRect.width,
+                        actionWidth: tightActionRect.width,
+                        twoHandDiscardWidth: earlyDiscardHandRects[0]!.width,
+                        twoHandDiscardHeight: earlyDiscardHandRects[0]!.height,
+                    };
+                } finally {
+                    await tightContext.close().catch(() => {});
+                }
+
+                await writeFile(metricsPath, JSON.stringify(metricsPayload, null, 2), 'utf8');
+            } finally {
+                await narrowContext.close().catch(() => {});
+            }
 
             assertNoFatalFrontendErrors([{ label: 'fantasyrealms-online-center-layout', diagnostics }]);
         } finally {

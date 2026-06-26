@@ -25,6 +25,7 @@ import { hasCurrentChoiceAnchor } from './choiceEffects';
 import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
 import { getActiveDice } from './rules';
+import { isRemovableStatusId } from './statusRemoval';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -32,11 +33,6 @@ const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'min-selection-unreachable',
     'no-legal-actions',
 ]);
-const isRemovableStatusId = (core: DiceThroneCore, statusId: string): boolean => {
-    const def = (core.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
-    return def?.passiveTrigger?.removable ?? true;
-};
-
 type EmergencySkipContext = {
     sourceId?: string;
     interactionData?: unknown;

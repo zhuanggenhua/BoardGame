@@ -29,6 +29,7 @@ import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 import { getTokenStackLimit } from './rules';
+import { isPurifiableDebuffId } from './statusRemoval';
 
 // ============================================================================
 // Token 可用性检查
@@ -211,7 +212,7 @@ export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
 
     // 可被净化移除的负面状态：由状态定义驱动（支持未来扩展）
     const removableDebuffIds = (state.tokenDefinitions ?? [])
-        .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
+        .filter(def => isPurifiableDebuffId(state, def.id))
         .map(def => def.id);
 
     return removableDebuffIds.some(id => (playerStatusEffects[id] ?? 0) > 0 || (playerTokens[id] ?? 0) > 0);

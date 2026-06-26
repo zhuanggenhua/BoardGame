@@ -10,6 +10,7 @@ import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbil
 import {
     addTempPower,
     addPowerCounter,
+    addOngoingCardCounter,
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
@@ -101,6 +102,14 @@ type BaseOngoingActionCandidate = {
 type CounterTransferChoice = {
     amount?: number;
     value?: number;
+};
+
+type ExpertTimingCardChoice = {
+    kind?: 'minion' | 'ongoingAction';
+    minionUid?: string;
+    actionUid?: string;
+    baseIndex?: number;
+    defId?: string;
 };
 
 type CardChoice = {
@@ -252,9 +261,13 @@ type KungFuExpertTimingMode = 'transfer' | 'talent' | 'both';
 
 type KungFuExpertTimingContext = ZhongguoPromptContext & {
     mode?: KungFuExpertTimingMode;
+    talentCardKind?: 'minion' | 'ongoingAction';
     talentMinionUid?: string;
+    talentActionUid?: string;
     talentBaseIndex?: number;
+    sourceCardKind?: 'minion' | 'ongoingAction';
     sourceMinionUid?: string;
+    sourceActionUid?: string;
     sourceBaseIndex?: number;
     sourceCounterAmount?: number;
 };
@@ -2494,49 +2507,174 @@ const everybodyWasBasePromptProgram = createPromptProgram<EverybodyWasContext, S
     },
 });
 
-function collectExpertTimingTalentTargets(state: SmashUpCore, playerId: PlayerId): CounterTransferCandidate[] {
-    return collectOwnMinions(state, playerId).filter((candidate) => {
-        const def = getCardDef(candidate.defId) as { abilityTags?: string[] } | undefined;
-        return def?.abilityTags?.includes('talent') === true;
-    });
+function collectExpertTimingTalentTargets(state: SmashUpCore, playerId: PlayerId): Array<{
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    kind: 'minion' | 'ongoingAction';
+    label: string;
+}> {
+    const ownMinionTargets = collectOwnMinions(state, playerId)
+        .filter((candidate) => {
+            const def = getCardDef(candidate.defId) as { abilityTags?: string[] } | undefined;
+            return def?.abilityTags?.includes('talent') === true;
+        })
+        .map((candidate) => ({
+            ...candidate,
+            kind: 'minion' as const,
+        }));
+
+    const ownBaseActionTargets = collectBaseOngoingActions(
+        state,
+        (candidate) => {
+            if (candidate.controllerId !== playerId) return false;
+            const def = getCardDef(candidate.defId) as { abilityTags?: string[] } | undefined;
+            return def?.abilityTags?.includes('talent') === true;
+        },
+    ).map((candidate) => ({
+        uid: candidate.uid,
+        defId: candidate.defId,
+        baseIndex: candidate.baseIndex,
+        kind: 'ongoingAction' as const,
+        label: candidate.label,
+    }));
+
+    return [...ownMinionTargets, ...ownBaseActionTargets];
 }
 
 function buildExpertTimingExtraTalentEvent(
-    minionUid: string,
-    baseIndex: number,
+    selected: ExpertTimingCardChoice,
     now: number,
-): SmashUpEvent {
-    return buildMinionMetadataUpdatedEvent(
-        minionUid,
-        baseIndex,
-        { mythicHorsesSeastarExtraTalent: true, mythicHorsesSeastarExtraTalentConsumed: false },
-        'kung_fu_fighters_expert_timing_extra_talent',
-        now,
-    );
+): SmashUpEvent | undefined {
+    if (selected.baseIndex === undefined) return undefined;
+    if (selected.kind === 'ongoingAction' && selected.actionUid) {
+        return addOngoingCardCounter(
+            selected.actionUid,
+            selected.baseIndex,
+            0,
+            'kung_fu_fighters_expert_timing_extra_talent',
+            now,
+            {
+                metadataUpdate: {
+                    mythicHorsesSeastarExtraTalent: true,
+                    mythicHorsesSeastarExtraTalentConsumed: false,
+                },
+            },
+        );
+    }
+    if (selected.kind === 'minion' && selected.minionUid) {
+        return buildMinionMetadataUpdatedEvent(
+            selected.minionUid,
+            selected.baseIndex,
+            { mythicHorsesSeastarExtraTalent: true, mythicHorsesSeastarExtraTalentConsumed: false },
+            'kung_fu_fighters_expert_timing_extra_talent',
+            now,
+        );
+    }
+    return undefined;
 }
 
-function buildExpertTimingSelectedEvents(
+function collectExpertTimingCounterSources(state: SmashUpCore): Array<{
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    kind: 'minion' | 'ongoingAction';
+    label: string;
+    counterAmount: number;
+}> {
+    const minionSources = collectCounterTransferSources(state).map((candidate) => {
+        const minion = state.bases[candidate.baseIndex]?.minions.find(item => item.uid === candidate.uid);
+        return {
+            ...candidate,
+            kind: 'minion' as const,
+            counterAmount: minion?.powerCounters ?? 0,
+        };
+    });
+    const ongoingSources = collectBaseOngoingActions(state)
+        .map((candidate) => {
+            const counterAmount = Number(candidate.metadata?.powerCounters ?? 0);
+            return counterAmount > 0 ? {
+                uid: candidate.uid,
+                defId: candidate.defId,
+                baseIndex: candidate.baseIndex,
+                kind: 'ongoingAction' as const,
+                label: `${candidate.label}（指示物 ${counterAmount}）`,
+                counterAmount,
+            } : undefined;
+        })
+        .filter((candidate): candidate is NonNullable<typeof candidate> => !!candidate);
+    return [...minionSources, ...ongoingSources];
+}
+
+function collectExpertTimingCounterTargets(
+    state: SmashUpCore,
+    source: ExpertTimingCardChoice,
+): Array<{
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    kind: 'minion' | 'ongoingAction';
+    label: string;
+}> {
+    const minionTargets = collectAllMinions(state)
+        .filter(candidate => !(source.kind === 'minion' && source.minionUid === candidate.uid))
+        .map(candidate => ({
+            ...candidate,
+            kind: 'minion' as const,
+        }));
+    const ongoingTargets = collectBaseOngoingActions(state)
+        .filter(candidate => !(source.kind === 'ongoingAction' && source.actionUid === candidate.uid))
+        .map(candidate => ({
+            uid: candidate.uid,
+            defId: candidate.defId,
+            baseIndex: candidate.baseIndex,
+            kind: 'ongoingAction' as const,
+            label: candidate.label,
+        }));
+    return [...minionTargets, ...ongoingTargets];
+}
+
+function buildExpertTimingTransferEvents(
     state: MatchState<SmashUpCore>,
     context: KungFuExpertTimingContext,
-    target: MinionChoice | undefined,
+    target: ExpertTimingCardChoice | undefined,
     timestamp: number,
 ): SmashUpEvent[] {
     const events: SmashUpEvent[] = [];
-    if ((context.mode === 'talent' || context.mode === 'both') && context.talentMinionUid && context.talentBaseIndex !== undefined) {
-        events.push(buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp));
+    if ((context.mode === 'both' || context.mode === 'talent') && context.talentBaseIndex !== undefined) {
+        const extraTalentEvent = buildExpertTimingExtraTalentEvent({
+            kind: context.talentCardKind,
+            minionUid: context.talentMinionUid,
+            actionUid: context.talentActionUid,
+            baseIndex: context.talentBaseIndex,
+        }, timestamp);
+        if (extraTalentEvent) {
+            events.push(extraTalentEvent);
+        }
     }
+
     if (
-        (context.mode === 'transfer' || context.mode === 'both')
+        !target?.kind
+        || context.sourceCardKind === undefined
+        || context.sourceBaseIndex === undefined
+        || context.sourceCounterAmount === undefined
+    ) {
+        return events;
+    }
+
+    const amount = context.sourceCounterAmount;
+    if (amount <= 0) return events;
+
+    if (
+        context.sourceCardKind === 'minion'
         && context.sourceMinionUid
-        && context.sourceBaseIndex !== undefined
-        && context.sourceCounterAmount !== undefined
-        && target?.minionUid
+        && target.kind === 'minion'
+        && target.minionUid
         && target.baseIndex !== undefined
     ) {
         const source = state.core.bases[context.sourceBaseIndex]?.minions.find(minion => minion.uid === context.sourceMinionUid);
         const targetMinion = state.core.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.minionUid);
-        const amount = source?.powerCounters ?? context.sourceCounterAmount;
-        if (source && targetMinion && source.uid !== targetMinion.uid && amount > 0) {
+        if (source && targetMinion && source.uid !== targetMinion.uid) {
             events.push(...performCounterTransfer(
                 source.uid,
                 context.sourceBaseIndex,
@@ -2546,8 +2684,95 @@ function buildExpertTimingSelectedEvents(
                 'kung_fu_fighters_expert_timing',
                 timestamp,
             ));
+            return events;
         }
     }
+
+    if (
+        context.sourceCardKind === 'ongoingAction'
+        && context.sourceActionUid
+        && target.kind === 'minion'
+        && target.minionUid
+        && target.baseIndex !== undefined
+    ) {
+        events.push(
+            addOngoingCardCounter(
+                context.sourceActionUid,
+                context.sourceBaseIndex,
+                0,
+                'kung_fu_fighters_expert_timing',
+                timestamp,
+                {
+                    metadataUpdate: { powerCounters: 0 },
+                    replaceMode: true,
+                },
+            ),
+            addPowerCounter(target.minionUid, target.baseIndex, amount, 'kung_fu_fighters_expert_timing', timestamp),
+        );
+        return events;
+    }
+
+    if (
+        context.sourceCardKind === 'minion'
+        && context.sourceMinionUid
+        && target.kind === 'ongoingAction'
+        && target.actionUid
+        && target.baseIndex !== undefined
+    ) {
+        events.push(
+            removePowerCounter(context.sourceMinionUid, context.sourceBaseIndex, amount, 'kung_fu_fighters_expert_timing', timestamp),
+            addOngoingCardCounter(
+                target.actionUid,
+                target.baseIndex,
+                0,
+                'kung_fu_fighters_expert_timing',
+                timestamp,
+                {
+                    metadataUpdate: { powerCounters: amount },
+                    replaceMode: true,
+                },
+            ),
+        );
+        return events;
+    }
+
+    if (
+        context.sourceCardKind === 'ongoingAction'
+        && context.sourceActionUid
+        && target.kind === 'ongoingAction'
+        && target.actionUid
+        && target.baseIndex !== undefined
+        && target.actionUid !== context.sourceActionUid
+    ) {
+        const targetAction = findBaseOngoingAction(state.core, target.actionUid, target.baseIndex);
+        const targetCounters = Number(targetAction?.metadata?.powerCounters ?? 0);
+        events.push(
+            addOngoingCardCounter(
+                context.sourceActionUid,
+                context.sourceBaseIndex,
+                0,
+                'kung_fu_fighters_expert_timing',
+                timestamp,
+                {
+                    metadataUpdate: { powerCounters: 0 },
+                    replaceMode: true,
+                },
+            ),
+            addOngoingCardCounter(
+                target.actionUid,
+                target.baseIndex,
+                0,
+                'kung_fu_fighters_expert_timing',
+                timestamp,
+                {
+                    metadataUpdate: { powerCounters: targetCounters + amount },
+                    replaceMode: true,
+                },
+            ),
+        );
+        return events;
+    }
+
     return events;
 }
 
@@ -2557,26 +2782,22 @@ const expertTimingTargetPromptProgram = createPromptProgram<KungFuExpertTimingCo
         `kung_fu_fighters_expert_timing_target_${context.now}`,
         context.playerId,
         ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingTarget,
-        buildMinionTargetOptions(
-            collectCounterTransferTargets(context.matchState.core, context.sourceMinionUid ?? ''),
-            {
-                state: context.matchState.core,
-                sourcePlayerId: context.playerId,
-                sourceDefId: 'kung_fu_fighters_expert_timing',
-                sourceKind: 'action',
-                effectType: 'affect',
-            },
-        ),
+        buildCardChoiceOptions(collectExpertTimingCounterTargets(context.matchState.core, {
+            kind: context.sourceCardKind,
+            minionUid: context.sourceMinionUid,
+            actionUid: context.sourceActionUid,
+            baseIndex: context.sourceBaseIndex,
+        })),
         {
             sourceId: 'kung_fu_fighters_expert_timing_target',
-            targetType: 'minion',
+            targetType: 'card',
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.kung_fu_fighters_expert_timing_target_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => ({
-        events: buildExpertTimingSelectedEvents(state, context, value as MinionChoice | undefined, timestamp),
+        events: buildExpertTimingTransferEvents(state, context, value as ExpertTimingCardChoice | undefined, timestamp),
     }),
 });
 
@@ -2586,37 +2807,41 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
         `kung_fu_fighters_expert_timing_source_${context.now}`,
         context.playerId,
         ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingSource,
-        buildMinionTargetOptions(
-            collectCounterTransferSources(context.matchState.core),
-            {
-                state: context.matchState.core,
-                sourcePlayerId: context.playerId,
-                sourceDefId: 'kung_fu_fighters_expert_timing',
-                sourceKind: 'action',
-                effectType: 'affect',
-            },
-        ),
+        buildCardChoiceOptions(collectExpertTimingCounterSources(context.matchState.core)),
         {
             sourceId: 'kung_fu_fighters_expert_timing_source',
-            targetType: 'minion',
+            targetType: 'card',
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.kung_fu_fighters_expert_timing_source_title',
         },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
-        const selected = value as MinionChoice | undefined;
-        if (!selected?.minionUid || selected.baseIndex === undefined) {
-            if (context.mode === 'both' && context.talentMinionUid && context.talentBaseIndex !== undefined) {
-                return { events: [buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp)] };
+        const selected = value as ExpertTimingCardChoice | undefined;
+        if (!selected?.kind || selected.baseIndex === undefined) {
+            if ((context.mode === 'both' || context.mode === 'talent') && context.talentBaseIndex !== undefined) {
+                const extraTalentEvent = buildExpertTimingExtraTalentEvent({
+                    kind: context.talentCardKind,
+                    minionUid: context.talentMinionUid,
+                    actionUid: context.talentActionUid,
+                    baseIndex: context.talentBaseIndex,
+                }, timestamp);
+                return { events: extraTalentEvent ? [extraTalentEvent] : [] };
             }
             return { events: [] };
         }
-        const source = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
-        const sourceCounters = source?.powerCounters ?? 0;
-        if (!source || sourceCounters <= 0) {
-            if (context.mode === 'both' && context.talentMinionUid && context.talentBaseIndex !== undefined) {
-                return { events: [buildExpertTimingExtraTalentEvent(context.talentMinionUid, context.talentBaseIndex, timestamp)] };
+        const sourceCounters = selected.kind === 'minion'
+            ? (state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid)?.powerCounters ?? 0)
+            : Number(findBaseOngoingAction(state.core, selected.actionUid ?? '', selected.baseIndex)?.metadata?.powerCounters ?? 0);
+        if (sourceCounters <= 0) {
+            if ((context.mode === 'both' || context.mode === 'talent') && context.talentBaseIndex !== undefined) {
+                const extraTalentEvent = buildExpertTimingExtraTalentEvent({
+                    kind: context.talentCardKind,
+                    minionUid: context.talentMinionUid,
+                    actionUid: context.talentActionUid,
+                    baseIndex: context.talentBaseIndex,
+                }, timestamp);
+                return { events: extraTalentEvent ? [extraTalentEvent] : [] };
             }
             return { events: [] };
         }
@@ -2624,7 +2849,9 @@ const expertTimingSourcePromptProgram = createPromptProgram<KungFuExpertTimingCo
             events: [],
             context: {
                 ...context,
-                sourceMinionUid: source.uid,
+                sourceCardKind: selected.kind,
+                sourceMinionUid: selected.minionUid,
+                sourceActionUid: selected.actionUid,
                 sourceBaseIndex: selected.baseIndex,
                 sourceCounterAmount: sourceCounters,
             },
@@ -2639,49 +2866,41 @@ const expertTimingTalentPromptProgram = createPromptProgram<KungFuExpertTimingCo
         `kung_fu_fighters_expert_timing_talent_${context.now}`,
         context.playerId,
         ZHONGGUO_PROMPT_TITLES.kungFuExpertTimingTalent,
-        buildMinionTargetOptions(
-            collectExpertTimingTalentTargets(context.matchState.core, context.playerId),
-            {
-                state: context.matchState.core,
-                sourcePlayerId: context.playerId,
-                sourceDefId: 'kung_fu_fighters_expert_timing',
-                sourceKind: 'action',
-                effectType: 'affect',
-            },
-        ),
+        buildCardChoiceOptions(collectExpertTimingTalentTargets(context.matchState.core, context.playerId)),
         {
             sourceId: 'kung_fu_fighters_expert_timing_talent',
-            targetType: 'minion',
+            targetType: 'card',
             autoRefresh: 'field',
             responseValidationMode: 'live',
             titleKey: 'ui.kung_fu_fighters_expert_timing_talent_title',
         },
     ),
-    onResolve: ({ state, context, value, timestamp }) => {
-        const selected = value as MinionChoice | undefined;
-        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
-        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
-        if (!target || target.controller !== context.playerId) return { events: [] };
+    onResolve: ({ context, value, timestamp }) => {
+        const selected = value as ExpertTimingCardChoice | undefined;
+        if (!selected?.kind || selected.baseIndex === undefined) return { events: [] };
         if (context.mode === 'both') {
             return {
                 events: [],
                 context: {
                     ...context,
-                    talentMinionUid: target.uid,
+                    talentCardKind: selected.kind,
+                    talentMinionUid: selected.minionUid,
+                    talentActionUid: selected.actionUid,
                     talentBaseIndex: selected.baseIndex,
                 },
                 nextProgram: expertTimingSourcePromptProgram,
             };
         }
-        return { events: [buildExpertTimingExtraTalentEvent(target.uid, selected.baseIndex, timestamp)] };
+        const extraTalentEvent = buildExpertTimingExtraTalentEvent(selected, timestamp);
+        return { events: extraTalentEvent ? [extraTalentEvent] : [] };
     },
 });
 
 const expertTimingModePromptProgram = createPromptProgram<KungFuExpertTimingContext, SmashUpCore, SmashUpEvent>({
     sourceId: 'kung_fu_fighters_expert_timing_mode',
     buildInteraction: (context) => {
-        const canTransfer = collectCounterTransferSources(context.matchState.core).length > 0
-            && collectAllMinions(context.matchState.core).length > 1;
+        const canTransfer = collectExpertTimingCounterSources(context.matchState.core).length > 0
+            && (collectAllMinions(context.matchState.core).length + collectBaseOngoingActions(context.matchState.core).length) > 1;
         const canTalent = collectExpertTimingTalentTargets(context.matchState.core, context.playerId).length > 0;
         const options: Array<{
             id: string;
@@ -4816,6 +5035,11 @@ export function registerZhongguoAbilities(): void {
     });
 
     registerTrigger('kung_fu_fighters_fast_as_lightning', 'onMinionDestroyed', fastAsLightningReturnTrigger, {
+        phase: 'replacement',
+        global: true,
+        globalZones: ['discard'],
+    });
+    registerTrigger('kung_fu_fighters_fast_as_lightning', 'onMinionDiscardedFromBase', fastAsLightningReturnTrigger, {
         phase: 'replacement',
         global: true,
         globalZones: ['discard'],

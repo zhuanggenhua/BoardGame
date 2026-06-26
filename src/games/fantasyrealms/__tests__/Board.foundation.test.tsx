@@ -2,6 +2,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { clearGameAssetsCache } from '../../../core';
 import type { MatchState } from '../../../engine/types';
 import { playSound } from '../../../lib/audio/useGameAudio';
 import Board from '../Board';
@@ -29,6 +30,7 @@ afterEach(() => {
         __FR_OPENING_DEAL_SOUND_GUARD__?: unknown;
         __FR_LIVE_MOTION_LAST_SNAPSHOT__?: unknown;
     }).__FR_LIVE_MOTION_LAST_SNAPSHOT__;
+    clearGameAssetsCache('fantasyrealms');
 });
 
 function resolveTranslation(tree: TranslationTree, key: string): string | undefined {
@@ -238,6 +240,30 @@ function withViewport(width: number, height: number, run: () => void) {
             window.dispatchEvent(new Event('resize'));
         });
     }
+}
+
+function expectInlineStyleContains(node: HTMLElement, declarations: string[]) {
+    const style = node.getAttribute('style') ?? '';
+    for (const declaration of declarations) {
+        expect(style).toContain(declaration);
+    }
+}
+
+function getRect(node: HTMLElement) {
+    const rect = node.getBoundingClientRect();
+    return {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+    };
+}
+
+function getRectGroupCenter(nodes: HTMLElement[]) {
+    const rects = nodes.map(getRect);
+    const left = Math.min(...rects.map((rect) => rect.x));
+    const right = Math.max(...rects.map((rect) => rect.x + rect.width));
+    return left + ((right - left) / 2);
 }
 
 async function withViewportAsync(width: number, height: number, run: () => Promise<void>) {
@@ -843,9 +869,9 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', String(FANTASY_REALMS_HAND_CARD_SLOTS));
             expect(handRow).toHaveAttribute('data-visible-count', '4');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
-            expect(handRow.style.width).toBe('1506px');
-            expect(handRow.style.gridTemplateColumns).toBe('repeat(7, 176px)');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
+            expect(handRow.style.width).toBe('');
+            expect(handRow.style.gridTemplateColumns).toBe('');
+            expect(handRow.style.getPropertyValue('--fr-live-hand-slots')).toBe(String(FANTASY_REALMS_HAND_CARD_SLOTS));
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(4);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
             expect(within(handRow).getAllByRole('button')[0]).toHaveStyle({ gridColumn: '2' });
@@ -899,28 +925,125 @@ describe('FantasyRealms Board foundation', () => {
             expect(handRow).toHaveAttribute('data-slot-count', '8');
             expect(handRow).toHaveAttribute('data-visible-count', '8');
             expect(handRow).toHaveAttribute('data-hand-density', 'default');
-            expect(handRow.style.width).toBe('1506px');
-            expect(handRow.style.gridTemplateColumns).toBe('repeat(8, 176px)');
-            expect(handRow.style.getPropertyValue('--fr-live-hand-track-width')).toBe('');
+            expect(handRow.style.width).toBe('');
+            expect(handRow.style.gridTemplateColumns).toBe('');
+            expect(handRow.style.getPropertyValue('--fr-live-hand-slots')).toBe('8');
             expect(within(handRow).getAllByTestId('fantasyrealms-card')).toHaveLength(8);
             expect(within(handRow).queryAllByTestId('fantasyrealms-card-slot-empty')).toHaveLength(0);
         });
     });
 
-    it('桌面 live 的中央牌河不再固定宽度，第二排按实际牌数居中排列', () => {
+    it('双人变体进入弃牌阶段时，2 张手牌与 8 张手牌保持同一桌面卡宽，不因 7 槽预算放大', () => {
+        withViewport(1037, 754, () => {
+            const twoHandCore = makeCore({
+                turn: 1,
+                stage: 'discard',
+                discardPile: [],
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                        score: 5,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 5 },
+                            { label: '总加分', value: 0 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: HAND_CARDS.slice(2, 4).map((card) => ({ ...card })),
+                        score: 8,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 8 },
+                            { label: '总加分', value: 0 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                } as any,
+            });
+            const eightHandCore = makeCore({
+                turn: 4,
+                stage: 'discard',
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: HAND_CARDS.concat(PUBLIC_CARDS[0]!).map((card) => ({ ...card })),
+                        score: 23,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 23 },
+                            { label: '总加分', value: 0 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                        score: 10,
+                        scoreBreakdown: [
+                            { label: '有效基础分', value: 10 },
+                            { label: '总加分', value: 0 },
+                            { label: '总减分', value: 0 },
+                        ],
+                    },
+                } as any,
+            });
+
+            const { rerender } = renderBoard(twoHandCore);
+
+            const earlyDrawHandRow = screen.getByTestId('fantasyrealms-hand-row');
+            const earlyDrawHandButtons = within(earlyDrawHandRow).getAllByRole('button');
+            const earlyDrawHandRect = getRect(earlyDrawHandButtons[0] as HTMLElement);
+
+            expect(screen.getByTestId('fantasyrealms-live-table').className).toContain('fr-live-table--early-draw');
+            expect(earlyDrawHandRow).toHaveAttribute('data-visible-count', '2');
+            expect(earlyDrawHandRow).toHaveAttribute('data-slot-count', '8');
+            expect(earlyDrawHandButtons[0]).toHaveStyle({ gridColumn: '4' });
+
+            rerender(
+                <Board
+                    G={{ core: eightHandCore, sys: {} } as MatchState<Record<string, unknown>>}
+                    dispatch={() => {}}
+                    playerID="0"
+                    matchData={[{ id: 0, name: '测试玩家', isConnected: true }]}
+                    isConnected
+                />,
+            );
+
+            const discardHandRow = screen.getByTestId('fantasyrealms-hand-row');
+            const discardHandButtons = within(discardHandRow).getAllByRole('button');
+            const discardHandRect = getRect(discardHandButtons[0] as HTMLElement);
+
+            expect(discardHandRow).toHaveAttribute('data-visible-count', '8');
+            expect(discardHandRow).toHaveAttribute('data-slot-count', '8');
+            expect(Math.abs(earlyDrawHandRect.width - discardHandRect.width)).toBeLessThanOrEqual(1);
+            expect(Math.abs(earlyDrawHandRect.height - discardHandRect.height)).toBeLessThanOrEqual(1);
+        });
+    });
+
+    it('桌面 live 的中央牌河不再固定宽度，第二排相对第一排统一左偏半张卡宽', () => {
         withViewport(1920, 1080, () => {
             const discardPile = PUBLIC_CARDS.concat(HAND_CARDS.slice(0, 2)).map((card) => ({ ...card }));
             renderBoard(makeCore({ discardPile }));
 
             const discardRow = screen.getByTestId('fantasyrealms-discard-row');
             const centerButtons = within(discardRow).getAllByRole('button');
+            const topRowButtons = centerButtons.slice(0, 5) as HTMLElement[];
+            const secondRowButtons = centerButtons.slice(5) as HTMLElement[];
+            const topRowRects = topRowButtons.map(getRect);
+            const secondRowRects = secondRowButtons.map(getRect);
 
             expect(centerButtons).toHaveLength(9);
             expect(discardRow.style.width).toBe('');
-            expect(centerButtons[5]).toHaveStyle({ left: 'calc(50% + -493px)' });
-            expect(centerButtons[6]).toHaveStyle({ left: 'calc(50% + -233px)' });
-            expect(centerButtons[7]).toHaveStyle({ left: 'calc(50% + 27px)' });
-            expect(centerButtons[8]).toHaveStyle({ left: 'calc(50% + 287px)' });
+            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
+            expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
         });
     });
 
@@ -978,6 +1101,39 @@ describe('FantasyRealms Board foundation', () => {
         expect(discardCards[0]).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
         expect(discardCards[0].getAttribute('style')).toContain(`fantasyrealms/cards/faces/compressed/${PUBLIC_CARDS[2]!.id}.webp`);
         expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
+    });
+
+    it('中央公开牌达到两排时，上排层级高于下排，避免边缘卡被盖成半截', () => {
+        renderBoard(makeCore({
+            discardPile: [
+                ...PUBLIC_CARDS,
+                ...HAND_CARDS.slice(0, 2),
+            ].map((card, index) => ({ ...card, id: `${card.id}-center-${index}` })),
+        }));
+
+        const centerCards = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-button--live-center'));
+        expect(centerCards).toHaveLength(9);
+        const firstRowZ = centerCards.slice(0, 5).map((card) => Number(getComputedStyle(card).zIndex));
+        const secondRowZ = centerCards.slice(5).map((card) => Number(getComputedStyle(card).zIndex));
+        expect(Math.max(...firstRowZ)).toBeGreaterThan(Math.max(...secondRowZ));
+    });
+
+    it('正式卡面未就绪时使用扫光骨架，而不是裸露纯色底板', () => {
+        clearGameAssetsCache('fantasyrealms');
+        const firstView = renderBoard();
+
+        const handRow = screen.getByTestId('fantasyrealms-hand-row');
+        const handCards = within(handRow).getAllByTestId('fantasyrealms-card');
+        expect(handCards[0]).toHaveClass('atlas-shimmer');
+        firstView.unmount();
+
+        const discardEmptyCore = makeCore({ discardPile: [] });
+        const secondView = renderBoard(discardEmptyCore);
+        const placeholders = document.querySelectorAll('.fr-card-slot--live-center-placeholder');
+        expect(placeholders.length).toBeGreaterThan(0);
+        expect(Array.from(placeholders).every((node) => node.classList.contains('atlas-shimmer'))).toBe(true);
+        secondView.unmount();
     });
 
     it('桌面 live 页只保留最小动作与数值，不再显示描述性标题和说明', () => {
@@ -1206,11 +1362,16 @@ describe('FantasyRealms Board foundation', () => {
                 discardPile: PUBLIC_CARDS.slice(0, 2).map((card) => ({ ...card })),
             }));
 
-            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
+            const discardRects = discardButtons.map(getRect);
+            const discardRowRect = screen.getByTestId('fantasyrealms-discard-row').getBoundingClientRect();
+            const discardRowCenter = discardRowRect.x + (discardRowRect.width / 2);
 
             expect(discardButtons).toHaveLength(2);
-            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -233px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[1]).toHaveStyle({ left: 'calc(50% + 27px)', top: '8px', zIndex: '1' });
+            expect(Math.abs(getRectGroupCenter(discardButtons) - discardRowCenter)).toBeLessThanOrEqual(2);
+            expect(Math.abs(discardRects[0]!.y - discardRects[1]!.y)).toBeLessThanOrEqual(1);
+            expect(Math.abs(discardRects[0]!.width - discardRects[1]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(discardRects[0]!.height - discardRects[1]!.height)).toBeLessThanOrEqual(2);
             view.unmount();
         });
 
@@ -1221,13 +1382,18 @@ describe('FantasyRealms Board foundation', () => {
                     .map((card) => ({ ...card })),
             }));
 
-            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
+            const topRowButtons = discardButtons.slice(0, 5);
+            const secondRowButtons = discardButtons.slice(5);
+            const topRowRects = topRowButtons.map(getRect);
+            const secondRowRects = secondRowButtons.map(getRect);
 
             expect(discardButtons).toHaveLength(9);
-            expect(discardButtons[0]).toHaveStyle({ left: 'calc(50% + -623px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[4]).toHaveStyle({ left: 'calc(50% + 417px)', top: '8px', zIndex: '1' });
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -493px)', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 287px)', zIndex: '2' });
+            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
+            expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
             view.unmount();
         });
     });
@@ -1241,14 +1407,14 @@ describe('FantasyRealms Board foundation', () => {
                     .map((card) => ({ ...card })),
             }));
 
-            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ });
+            const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
+            const secondRowButtons = discardButtons.slice(5);
+            const secondRowRects = secondRowButtons.map(getRect);
 
             expect(discardButtons).toHaveLength(10);
-            expect(discardButtons[5]).toHaveStyle({ left: 'calc(50% + -623px)', zIndex: '2' });
-            expect(discardButtons[6]).toHaveStyle({ left: 'calc(50% + -363px)', zIndex: '2' });
-            expect(discardButtons[7]).toHaveStyle({ left: 'calc(50% + -103px)', zIndex: '2' });
-            expect(discardButtons[8]).toHaveStyle({ left: 'calc(50% + 157px)', zIndex: '2' });
-            expect(discardButtons[9]).toHaveStyle({ left: 'calc(50% + 417px)', zIndex: '2' });
+            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowRects[3]!.x - secondRowRects[2]!.x) - (secondRowRects[4]!.x - secondRowRects[3]!.x))).toBeLessThanOrEqual(2);
         });
     });
 

@@ -67,6 +67,7 @@ import { DICETHRONE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getGameMode } from './utils';
+import { isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 
 // ============================================================================
 // 验证函数
@@ -97,16 +98,6 @@ const getInteractionTargetPlayerIds = (
     ? pendingInteraction.targetPlayerIds
     : Object.keys(state.players);
 
-const isRemovableStatusId = (state: DiceThroneCore, statusId: string): boolean => {
-    const def = (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
-    return def?.passiveTrigger?.removable ?? true;
-};
-
-const isPurifiableDebuffId = (state: DiceThroneCore, statusId: string): boolean => {
-    const def = (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
-    return def?.category === 'debuff' && (def.passiveTrigger?.removable ?? true);
-};
-
 const playerHasStatusOrToken = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -122,6 +113,22 @@ const playerHasStatusOrToken = (
     }
     return Object.entries(player.statusEffects).some(([effectId, value]) => value > 0 && isRemovableStatusId(state, effectId))
         || Object.entries(player.tokens).some(([effectId, value]) => value > 0 && isRemovableStatusId(state, effectId));
+};
+
+const getRemainingDieInteractionSlots = (
+    pendingInteraction: InteractionDescriptor | undefined,
+): number | undefined => {
+    const interaction = getValidationInteraction(pendingInteraction);
+    if (!interaction) return undefined;
+    const allowedDieIds = interaction.allowedDieIds?.length
+        ? interaction.allowedDieIds
+        : undefined;
+    const selectCount = interaction.selectCount ?? allowedDieIds?.length;
+    if (typeof selectCount !== 'number' || !Number.isFinite(selectCount)) {
+        return undefined;
+    }
+    const completedDieIds = Array.from(new Set((interaction.completedDieIds ?? []).filter(id => typeof id === 'number')));
+    return Math.max(0, selectCount - completedDieIds.length);
 };
 
 const validateInteractionOwnership = (
@@ -1011,6 +1018,10 @@ const validateRerollDie = (
 ): ValidationResult => {
     const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, 'reroll_die_limit_reached');
     if ('valid' in validation) return validation;
+    const remainingSlots = getRemainingDieInteractionSlots(pendingInteraction);
+    if (remainingSlots !== undefined && remainingSlots <= 0) {
+        return fail('reroll_die_limit_reached');
+    }
     return ok();
 };
 

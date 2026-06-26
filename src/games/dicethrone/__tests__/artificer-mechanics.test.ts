@@ -16,6 +16,7 @@ import { getPlayerDieFace } from '../domain/rules';
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
+import { executePipeline } from '../../../engine/pipeline';
 import { createHeroMatchup, createQueuedRandom, fixedRandom, getCardInteractionPrompt, testSystems } from './test-utils';
 
 initializeCustomActions();
@@ -732,6 +733,100 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             amount: 1,
         });
         expect(resolvedState.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
+    });
+
+    it('扳手攻击 II 在正式命令链中可由升级后玩家板能力进入电能分支并推进到 defensiveRoll', () => {
+        const playerIds: PlayerId[] = ['0', '1'];
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+
+        state.sys = createInitialSystemState(playerIds, testSystems, undefined);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].abilityLevels['wrench-strike'] = 2;
+        state.core.players['0'].abilities = buildHeroAbilitiesForFace(
+            'artificer',
+            state.core.players['0'].playerBoardFace,
+            state.core.players['0'].abilityLevels,
+        );
+        state.core.players['0'].upgradeCardByAbilityId = {
+            ...(state.core.players['0'].upgradeCardByAbilityId ?? {}),
+            'wrench-strike': { cardId: 'upgrade-artificer-wrench-strike-2', cpCost: 1 },
+        };
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 9;
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 1;
+        state.core.players['0'].hand = [];
+        state.core.dice = [
+            { id: 0, definitionId: 'artificer-die', value: 1, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 1, definitionId: 'artificer-die', value: 1, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 2, definitionId: 'artificer-die', value: 1, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 3, definitionId: 'artificer-die', value: 6, symbol: 'gear', symbols: ['gear'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 4, definitionId: 'artificer-die', value: 2, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+        ];
+
+        const selected = executePipeline(
+            pipelineConfig,
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'wrench-strike-2-4' }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack?.sourceAbilityId).toBe('wrench-strike-2-4');
+
+        const advanced = executePipeline(
+            pipelineConfig,
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(advanced.state.sys.interaction.current?.kind).toBe('simple-choice');
+        expect(advanced.state.sys.interaction.current?.data?.sourceId).toBe('wrench-strike-2-4');
+
+        const choiceOptions = advanced.state.sys.interaction.current?.data?.options ?? [];
+        const electricityOption = choiceOptions.find(
+            (option: { id?: string; value?: { customId?: string } }) =>
+                option?.value?.customId === 'artificer-wrench-strike-spend-electricity',
+        );
+        expect(electricityOption?.id).toBeTruthy();
+
+        const responded = executePipeline(
+            pipelineConfig,
+            advanced.state,
+            command('SYS_INTERACTION_RESPOND', '0', {
+                interactionId: advanced.state.sys.interaction.current?.id,
+                optionId: electricityOption?.id,
+            }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(responded.success).toBe(true);
+        expect(responded.state.sys.phase).toBe('defensiveRoll');
+        expect(responded.state.sys.interaction.current).toBeUndefined();
+        expect(responded.state.core.pendingAttack?.sourceAbilityId).toBe('wrench-strike-2-4');
+        expect(responded.state.core.pendingAttack?.preDefenseResolved).toBe(true);
+        expect(responded.state.core.pendingAttack?.defenseAbilityId).toBe('meditation');
+        expect(responded.state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
+
+        const bonusDie = eventsOfType(responded.events as DiceThroneEvent[], 'BONUS_DIE_ROLLED')[0];
+        expect(bonusDie?.payload).toMatchObject({
+            value: 6,
+            face: 'electricity',
+            effectKey: 'bonusDie.effect.artificerWrenchStrikeElectricity',
+        });
+        const tokenGranted = eventsOfType(responded.events as DiceThroneEvent[], 'TOKEN_GRANTED')[0];
+        expect(tokenGranted?.payload).toMatchObject({
+            targetId: '0',
+            tokenId: TOKEN_IDS.SYNTH,
+            amount: 1,
+            sourceAbilityId: 'wrench-strike-2-4',
+        });
     });
 
     it('机械的反击可在受击响应时打出，授予 2 点伤害护盾并对攻击者施加纳米爆弹', () => {

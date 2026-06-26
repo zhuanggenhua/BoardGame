@@ -6,6 +6,13 @@ import { UndoProvider } from '../../contexts/UndoContext';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { MagnifyOverlay } from '../../components/common/overlays/MagnifyOverlay';
 import {
+    getPreloadedImageElement,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
+    markImageLoaded,
+    onImageReady,
+} from '../../core';
+import {
     getFantasyRealmsBaseHandLimit,
     getFantasyRealmsDiscardEndThreshold,
     getFantasyRealmsCardDisplayName,
@@ -30,6 +37,7 @@ import {
     FANTASY_REALMS_MANIFEST,
     FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX,
 } from './manifest';
+import { FANTASY_REALMS_CARD_FACE_PATH_PREFIX } from './ui/cardAtlas';
 
 type Props = GameBoardProps<FantasyRealmsCore, FantasyRealmsCommandMap>;
 
@@ -96,8 +104,7 @@ const ENDGAME_SCORE_STEP_MS = 460;
 const ENDGAME_SCORE_PULSE_MS = 220;
 const ENDGAME_SCORE_SETTLE_MS = 220;
 const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]';
-const LIVE_DESKTOP_HAND_CARD_WIDTH_PX = 176;
-const LIVE_DESKTOP_HAND_GAP_PX = 14;
+const FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX = 16;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const FANTASY_REALMS_CENTER_ROW_WIDTH_RATIO = 1360 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1500 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
@@ -259,16 +266,28 @@ function useFantasyRealmsEndgameScoreSequence(
 }
 
 const LIVE_CENTER_ROW_ROW_TOP = 8;
-const LIVE_CENTER_ROW_ROW_OFFSET = 202;
+const LIVE_CENTER_ROW_ROW_OFFSET = 132;
 const LIVE_CENTER_SECOND_ROW_TOP_CSS_VAR = `var(--fr-live-center-second-row-top, ${LIVE_CENTER_ROW_ROW_TOP + LIVE_CENTER_ROW_ROW_OFFSET}px)`;
+const LIVE_CENTER_ROW_REFERENCE_WIDTH_PX = 1360;
 const LIVE_CENTER_CARD_WIDTH_PX = 206;
 const LIVE_CENTER_CARD_STRIDE_PX = 260;
+const LIVE_CENTER_CARD_MIN_WIDTH_PX = 148;
+const LIVE_CENTER_CARD_WIDTH_RATIO = LIVE_CENTER_CARD_WIDTH_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
+const LIVE_CENTER_CARD_STRIDE_RATIO = LIVE_CENTER_CARD_STRIDE_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
+const LIVE_CENTER_ROW_OFFSET_RATIO = LIVE_CENTER_ROW_ROW_OFFSET / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
+const LIVE_CENTER_CARD_WIDTH_CSS_VAR = 'var(--fr-live-center-card-width)';
+const LIVE_CENTER_CARD_STRIDE_CSS_VAR = 'var(--fr-live-center-card-stride)';
 
-function buildMinimalLiveCenterRowOffsets(cardCount: number): number[] {
+function buildMinimalLiveCenterRowOffsets(cardCount: number): string[] {
     if (cardCount <= 0) return [];
-    const rowWidth = LIVE_CENTER_CARD_WIDTH_PX + ((cardCount - 1) * LIVE_CENTER_CARD_STRIDE_PX);
-    const start = -(rowWidth / 2);
-    return Array.from({ length: cardCount }, (_unused, index) => start + (index * LIVE_CENTER_CARD_STRIDE_PX));
+    const groupWidthExpression = cardCount === 1
+        ? LIVE_CENTER_CARD_WIDTH_CSS_VAR
+        : `${LIVE_CENTER_CARD_WIDTH_CSS_VAR} + (${cardCount - 1} * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
+    const startExpression = `(${groupWidthExpression}) / -2`;
+    return Array.from(
+        { length: cardCount },
+        (_unused, index) => (index === 0 ? startExpression : `${startExpression} + (${index} * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`),
+    );
 }
 
 function createFallbackCore(): FantasyRealmsCore {
@@ -332,12 +351,15 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
     const fixedSlotStyles: React.CSSProperties[] = [];
     const topRowCount = Math.min(cardCount, 5);
     const topRowOffsets = buildMinimalLiveCenterRowOffsets(topRowCount);
-    const pushAbsoluteRow = (rowOffsets: readonly number[], rowIndex: number) => {
-        rowOffsets.forEach((left) => {
+    const pushAbsoluteRow = (rowOffsets: readonly string[], rowIndex: number) => {
+        const rowCount = rowOffsets.length;
+        const rowBaseZIndex = rowIndex === 0 ? 4 : 2;
+        rowOffsets.forEach((left, columnIndex) => {
+            const centerBias = Math.abs(columnIndex - ((rowCount - 1) / 2));
             fixedSlotStyles.push({
-                left: `calc(50% + ${left}px)`,
+                left: `calc(50% + ${left})`,
                 top: rowIndex === 0 ? `${LIVE_CENTER_ROW_ROW_TOP}px` : LIVE_CENTER_SECOND_ROW_TOP_CSS_VAR,
-                zIndex: rowIndex + 1,
+                zIndex: rowBaseZIndex + (rowCount - Math.round(centerBias)),
             });
         });
     };
@@ -347,9 +369,13 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
     }
 
     const secondRowCount = Math.min(cardCount - 5, 5);
-    const secondRowOffsets = buildMinimalLiveCenterRowOffsets(secondRowCount);
     pushAbsoluteRow(topRowOffsets, 0);
-    pushAbsoluteRow(secondRowOffsets, 1);
+    pushAbsoluteRow(
+        topRowOffsets
+            .slice(0, secondRowCount)
+            .map((offset) => `(${offset}) - (${LIVE_CENTER_CARD_WIDTH_CSS_VAR} / 2)`),
+        1,
+    );
     return fixedSlotStyles;
 }
 
@@ -390,6 +416,74 @@ function getAddedIds(nextIds: string[], previousIds: string[]): string[] {
     return nextIds.filter((id) => !previousIdSet.has(id));
 }
 
+function useFantasyRealmsImageReady(imagePath: string | null, locale?: string) {
+    const effectiveLocale = locale || 'zh-CN';
+    const candidateUrls = React.useMemo(
+        () => (imagePath ? getRuntimeImageCandidateUrls(imagePath, effectiveLocale) : []),
+        [effectiveLocale, imagePath],
+    );
+    const [loaded, setLoaded] = React.useState(() => {
+        if (!imagePath) return true;
+        const resolved = getResolvedImageCandidateUrl(candidateUrls, imagePath, effectiveLocale);
+        return Boolean(
+            resolved
+            || getPreloadedImageElement(imagePath, effectiveLocale)
+            || candidateUrls.some((candidate) => getPreloadedImageElement(candidate)),
+        );
+    });
+
+    React.useEffect(() => {
+        if (!imagePath) {
+            setLoaded(true);
+            return;
+        }
+
+        const resolved = getResolvedImageCandidateUrl(candidateUrls, imagePath, effectiveLocale);
+        if (resolved || getPreloadedImageElement(imagePath, effectiveLocale) || candidateUrls.some((candidate) => getPreloadedImageElement(candidate))) {
+            setLoaded(true);
+            return;
+        }
+
+        setLoaded(false);
+        let cancelled = false;
+        const tryLoad = (index: number) => {
+            if (cancelled || index >= candidateUrls.length) {
+                return;
+            }
+
+            const candidateUrl = candidateUrls[index]!;
+            const img = new Image();
+            const handleSuccess = () => {
+                if (cancelled || img.naturalWidth <= 0) return;
+                markImageLoaded(imagePath, effectiveLocale, img, candidateUrl);
+                markImageLoaded(candidateUrl, undefined, img);
+                setLoaded(true);
+            };
+
+            img.onload = handleSuccess;
+            img.onerror = () => {
+                tryLoad(index + 1);
+            };
+            img.src = candidateUrl;
+            if (img.complete && img.naturalWidth > 0) {
+                handleSuccess();
+            }
+        };
+        tryLoad(0);
+        const unsubscribe = onImageReady((url) => {
+            if (url === imagePath || candidateUrls.includes(url)) {
+                setLoaded(true);
+            }
+        });
+        return () => {
+            cancelled = true;
+            unsubscribe();
+        };
+    }, [candidateUrls, effectiveLocale, imagePath]);
+
+    return loaded;
+}
+
 function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
     const displayName = getFantasyRealmsCardDisplayName(card);
     return (
@@ -417,16 +511,25 @@ function renderFallbackCard(card: TableCard, t: Translator, locale?: string) {
     );
 }
 
-function renderCard(card: TableCard, t: Translator, locale?: string) {
+function FantasyRealmsCard({
+    card,
+    t,
+    locale,
+}: {
+    card: TableCard;
+    t: Translator;
+    locale?: string;
+}) {
     const atlasStyle = getFantasyRealmsCardFaceStyle(card.id, locale);
     const displayName = getFantasyRealmsCardDisplayName(card);
+    const faceImageLoaded = useFantasyRealmsImageReady(`${FANTASY_REALMS_CARD_FACE_PATH_PREFIX}/${card.id}.png`, locale);
     if (!atlasStyle) {
         return renderFallbackCard(card, t, locale);
     }
 
     return (
         <article
-            className="fr-card fr-card--face"
+            className={`fr-card fr-card--face${faceImageLoaded ? '' : ' atlas-shimmer'}`}
             data-testid="fantasyrealms-card"
             data-card-renderer="atlas"
             data-atlas-card-id={card.id}
@@ -600,25 +703,16 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     }, [core, displayedPlayerId, matchData, t]);
     const handSlotCount = React.useMemo(() => {
         const baseHandLimit = getFantasyRealmsBaseHandLimit(core.setupConfig);
-        return Math.max(baseHandLimit, displayedHandCards.length);
-    }, [core.setupConfig, displayedHandCards.length]);
+        const liveDesktopDiscardSlotFloor = isDuelVariant(core) && !isGameOver && core.stage === 'discard'
+            ? Math.max(baseHandLimit + 1, 8)
+            : baseHandLimit;
+        return Math.max(liveDesktopDiscardSlotFloor, displayedHandCards.length);
+    }, [core, isGameOver, displayedHandCards.length]);
     const deckBackStyle = React.useMemo(() => getFantasyRealmsCardBackStyle(locale), [locale]);
     const isCompressedHandDensity = false;
-    const stableHandTrackCount = React.useMemo(
-        () => getFantasyRealmsBaseHandLimit(core.setupConfig) + 1,
-        [core.setupConfig],
-    );
-    const liveDesktopHandRowWidthPx = React.useMemo(
-        () => (
-            (stableHandTrackCount * LIVE_DESKTOP_HAND_CARD_WIDTH_PX)
-            + (Math.max(stableHandTrackCount - 1, 0) * LIVE_DESKTOP_HAND_GAP_PX)
-        ),
-        [stableHandTrackCount],
-    );
     const handRowLayoutStyle = React.useMemo<React.CSSProperties>(() => ({
-        width: `${liveDesktopHandRowWidthPx}px`,
-        gridTemplateColumns: `repeat(${handSlotCount}, ${LIVE_DESKTOP_HAND_CARD_WIDTH_PX}px)`,
-    }), [handSlotCount, liveDesktopHandRowWidthPx]);
+        '--fr-live-hand-slots': String(handSlotCount),
+    } as React.CSSProperties), [handSlotCount]);
     const minimalLiveDiscardRowStyle = undefined;
     const isDuelMode = isDuelVariant(core);
     const viewerHandIdsSignature = displayedHandCards.map((card) => card.id).join('|');
@@ -1174,19 +1268,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 data-testid="fantasyrealms-discard-row"
                 style={minimalLiveDiscardRowStyle}
             >
-                <div
-                    className="fr-live-center-slot-grid"
-                    data-testid={discardCards.length === 0 ? 'fantasyrealms-discard-empty' : undefined}
-                    aria-hidden="true"
-                >
-                    {minimalLiveCenterPlaceholderStyles.map((style, index) => (
-                        <div
-                            key={`live-center-slot-${index}`}
-                            className="fr-card-slot fr-card-slot--live-center-placeholder"
-                            style={style}
-                        />
-                    ))}
-                </div>
+                {discardCards.length === 0 ? (
+                    <div
+                        className="fr-live-center-slot-grid"
+                        data-testid="fantasyrealms-discard-empty"
+                        aria-hidden="true"
+                    >
+                        {minimalLiveCenterPlaceholderStyles.map((style, index) => (
+                            <div
+                                key={`live-center-slot-${index}`}
+                                className="fr-card-slot fr-card-slot--live-center-placeholder atlas-shimmer"
+                                style={style}
+                            />
+                        ))}
+                    </div>
+                ) : null}
                 {discardCards.map((card, index) => (
                     <motion.button
                         layout="position"
@@ -1204,7 +1300,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             : t('actions.inspectDiscardAria', { name: getFantasyRealmsCardDisplayName(card) })}
                         {...getTouchInspectProps(`discard:${card.id}`, card)}
                     >
-                        {renderCard(card, t, locale)}
+                        <FantasyRealmsCard card={card} t={t} locale={locale} />
                         {shouldShowInlineMagnifyButton ? renderCardMagnifyButton(card, 'discard', openCardMagnify, t) : null}
                     </motion.button>
                 ))}
@@ -1261,7 +1357,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                                 : t('actions.inspectHandAria', { name: getFantasyRealmsCardDisplayName(card) })}
                             {...getTouchInspectProps(`hand:${card.id}`, card)}
                         >
-                            {renderCard(card, t, locale)}
+                            <FantasyRealmsCard card={card} t={t} locale={locale} />
                             {isGameOver && endgameScoreSequence.activeStep?.cardId === card.id ? (
                                 <ScoreBurstBadge
                                     key={`${endgameScoreSequence.activeStep.key}-${endgameScoreSequence.activeStep.delta}`}
@@ -1345,10 +1441,17 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             <style>{`
                 .fr-root {
                     --fr-board-shell-reference-width: var(--mobile-board-shell-design-width, ${FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX}px);
+                    --fr-live-content-width: calc(100vw - ${FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX * 2}px);
                     --fr-live-opening-hand-row-width: min(1180px, calc(100vw - 240px));
-                    --fr-live-center-row-width: min(1360px, 82vw);
-                    --fr-live-hand-row-width: min(1500px, calc(100vw - 136px));
-                    --fr-live-hand-header-width: min(1520px, calc(100vw - 140px));
+                    --fr-live-center-row-width: min(1360px, calc(var(--fr-live-content-width) * 0.86));
+                    --fr-live-desktop-ui-scale: clamp(0.82, calc((100vw - 0px) / 1440px), 1);
+                    --fr-live-center-card-width: clamp(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) * ${LIVE_CENTER_CARD_WIDTH_RATIO.toFixed(6)}), ${LIVE_CENTER_CARD_WIDTH_PX}px);
+                    --fr-live-center-card-stride: clamp(${Math.round(LIVE_CENTER_CARD_MIN_WIDTH_PX * (LIVE_CENTER_CARD_STRIDE_PX / LIVE_CENTER_CARD_WIDTH_PX))}px, calc(var(--fr-live-center-row-width) * ${LIVE_CENTER_CARD_STRIDE_RATIO.toFixed(6)}), ${LIVE_CENTER_CARD_STRIDE_PX}px);
+                    --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + (var(--fr-live-center-row-width) * ${LIVE_CENTER_ROW_OFFSET_RATIO.toFixed(6)}));
+                    --fr-live-hand-row-width: min(1510px, calc(var(--fr-live-content-width) - 16px));
+                    --fr-live-hand-header-width: var(--fr-live-content-width);
+                    --fr-live-action-right-offset: calc(((100vw - var(--fr-live-content-width)) / 2) + 44px);
+                    --fr-live-action-bottom-offset: calc(276px * var(--fr-live-desktop-ui-scale));
                     min-height: 100%;
                     overflow-y: auto;
                     padding: 0;
@@ -1388,11 +1491,15 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         height: 100%;
                         min-height: 0;
                         overflow: hidden;
+                        --fr-live-content-width: calc(var(--fr-board-shell-reference-width) - ${FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX * 2}px);
                         --fr-live-opening-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO.toFixed(6)});
                         --fr-live-center-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_CENTER_ROW_WIDTH_RATIO.toFixed(6)});
                         --fr-live-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO.toFixed(6)});
                         --fr-live-hand-header-width: var(--fr-board-shell-reference-width);
-                        --fr-live-center-second-row-top: 100px;
+                        --fr-live-action-right-offset: 52px;
+                        --fr-live-center-card-width: 148px;
+                        --fr-live-center-card-stride: calc(var(--fr-live-center-row-width) * ${LIVE_CENTER_CARD_STRIDE_RATIO.toFixed(6)});
+                        --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + (var(--fr-live-center-row-width) * ${LIVE_CENTER_ROW_OFFSET_RATIO.toFixed(6)}));
                     }
                     ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board {
                         width: 100%;
@@ -2141,7 +2248,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-card-button--live-center {
                     position: absolute;
-                    width: 190px;
+                    width: var(--fr-live-center-card-width);
                     transition:
                         left 220ms cubic-bezier(0.22, 0.72, 0.2, 1),
                         top 220ms cubic-bezier(0.22, 0.72, 0.2, 1);
@@ -2581,7 +2688,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         inset 0 -18px 28px rgba(0, 0, 0, 0.06);
                 }
                 .fr-board--minimal-live .fr-discard-row--live-center {
-                    width: min(1460px, 86vw);
+                    width: var(--fr-live-center-row-width);
                     min-height: 312px;
                     transform: translateY(0);
                 }
@@ -2604,7 +2711,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-board--minimal-live .fr-card-slot--live-center-placeholder {
                     position: absolute;
-                    width: 202px;
+                    width: calc(var(--fr-live-center-card-width) - 4px);
                     border-radius: 14px;
                     border: 1px solid rgba(255, 239, 202, 0.035);
                     background:
@@ -2615,16 +2722,26 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         inset 0 1px 0 rgba(255, 255, 255, 0.008);
                     opacity: 0.3;
                 }
+                .fr-board--minimal-live .fr-card-slot--live-center-placeholder.atlas-shimmer::before,
+                .fr-card.fr-card--face.atlas-shimmer::before {
+                    background-color: rgba(255, 245, 224, 0.05);
+                    background-image: linear-gradient(
+                        100deg,
+                        rgba(255, 245, 224, 0.02) 35%,
+                        rgba(255, 241, 210, 0.22) 50%,
+                        rgba(255, 245, 224, 0.02) 65%
+                    );
+                }
                 .fr-board--minimal-live .fr-card-button--live-center {
-                    width: 206px;
+                    width: var(--fr-live-center-card-width);
                 }
                 .fr-board--minimal-live .fr-card-button--live-center .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand .fr-card {
                     border-radius: 9px;
-                    border-color: rgba(255, 238, 199, 0.32);
+                    border-color: rgba(255, 238, 199, 0.08);
                     box-shadow:
-                        0 14px 20px rgba(0, 0, 0, 0.28),
-                        0 3px 6px rgba(0, 0, 0, 0.14);
+                        0 12px 18px rgba(0, 0, 0, 0.24),
+                        0 2px 5px rgba(0, 0, 0, 0.12);
                     transition:
                         box-shadow 140ms ease,
                         border-color 140ms ease,
@@ -2632,10 +2749,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable .fr-card {
-                    border-color: rgba(255, 238, 201, 0.64);
+                    border-color: rgba(255, 238, 201, 0.3);
                     box-shadow:
                         0 14px 18px rgba(0, 0, 0, 0.26),
-                        0 0 0 1px rgba(255, 243, 213, 0.1);
+                        0 0 0 1px rgba(255, 243, 213, 0.05);
                 }
                 .fr-board--minimal-live .fr-card-button--live-center.fr-card-button--actionable:hover .fr-card,
                 .fr-board--minimal-live .fr-card-button--live-hand.fr-card-button--actionable:hover .fr-card {
@@ -2661,6 +2778,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         0 22px 30px rgba(0, 0, 0, 0.34),
                         0 0 0 3px rgba(255, 215, 128, 0.46) !important;
                     transform: translateY(-10px);
+                }
+                .fr-board--minimal-live .fr-card--face {
+                    box-shadow: inset 0 0 0 0.5px rgba(255, 250, 239, 0.03);
                 }
                 .fr-board--minimal-live .fr-card-button--motion-hand-draw .fr-card {
                     animation: fr-live-hand-arrive-from-deck 920ms cubic-bezier(0.18, 0.9, 0.22, 1) both;
@@ -2806,7 +2926,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     pointer-events: none;
                 }
                 .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone {
-                    width: min(1460px, calc(100vw - 128px));
+                    width: var(--fr-live-hand-row-width);
                     margin: 0 auto;
                     grid-template-columns: repeat(var(--fr-live-hand-slots, 7), minmax(0, 1fr));
                     justify-content: center;
@@ -2822,7 +2942,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     padding: 10px 18px 24px;
                 }
                 .fr-board--minimal-live .fr-live-hand-zone-header {
-                    width: min(1460px, calc(100vw - 128px));
+                    width: var(--fr-live-hand-header-width);
                     margin: 0 auto 18px;
                     align-items: flex-end;
                 }
@@ -2939,7 +3059,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     padding-bottom: 22px;
                 }
                 .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone-header {
-                    width: min(1180px, calc(100vw - 200px));
+                    width: var(--fr-live-opening-hand-row-width);
                     margin: 0 auto 28px;
                     justify-content: center;
                     align-items: center;
@@ -2955,7 +3075,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     text-transform: uppercase;
                 }
                 .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
-                    width: min(1280px, calc(100vw - 180px));
+                    width: var(--fr-live-opening-hand-row-width);
                     gap: 16px;
                     transform: translateY(-78px);
                 }
@@ -3003,7 +3123,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     padding-bottom: 18px;
                 }
                 .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone-header {
-                    width: min(1180px, calc(100vw - 220px));
+                    width: var(--fr-live-opening-hand-row-width);
                     margin: 0 auto 28px;
                     justify-content: center;
                     align-items: center;
@@ -3019,7 +3139,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     right: 6.4%;
                 }
                 .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
-                    width: min(1380px, calc(100vw - 160px));
+                    width: var(--fr-live-hand-row-width);
                     transform: translateY(-24px);
                 }
                 .fr-board--minimal-live .fr-live-table--early-draw .fr-live-center-row::before {
@@ -3134,14 +3254,20 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     grid-template-rows: 132px minmax(0, 1fr) auto;
                 }
                 .fr-board--minimal-live .fr-live-topbar {
-                    grid-template-columns: 118px minmax(0, 1fr) 132px;
-                    min-height: 128px;
-                    gap: 16px;
-                    padding: 0 24px;
+                    grid-template-columns:
+                        calc(118px * var(--fr-live-desktop-ui-scale))
+                        minmax(0, 1fr)
+                        calc(132px * var(--fr-live-desktop-ui-scale));
+                    min-height: calc(128px * var(--fr-live-desktop-ui-scale));
+                    gap: calc(16px * var(--fr-live-desktop-ui-scale));
+                    padding: 0 calc(24px * var(--fr-live-desktop-ui-scale));
                     align-items: start;
                 }
                 .fr-board--minimal-live .fr-live-topbar--gameover {
-                    grid-template-columns: 118px minmax(0, 1fr) 248px;
+                    grid-template-columns:
+                        calc(118px * var(--fr-live-desktop-ui-scale))
+                        minmax(0, 1fr)
+                        calc(248px * var(--fr-live-desktop-ui-scale));
                 }
                 .fr-board--minimal-live {
                     width: 100vw;
@@ -3185,18 +3311,18 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     text-shadow: none;
                 }
                 .fr-board--minimal-live .fr-live-chip--turn {
-                    min-width: 168px;
-                    min-height: 54px;
-                    padding: 0 18px;
+                    min-width: calc(168px * var(--fr-live-desktop-ui-scale));
+                    min-height: calc(54px * var(--fr-live-desktop-ui-scale));
+                    padding: 0 calc(18px * var(--fr-live-desktop-ui-scale));
                     border: 0;
                     background: transparent;
                     color: #ffe8aa;
-                    font-size: 34px;
+                    font-size: calc(34px * var(--fr-live-desktop-ui-scale));
                     font-weight: 900;
                     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.34);
                 }
                 .fr-board--minimal-live .fr-live-chip--turn-active {
-                    min-width: 184px;
+                    min-width: calc(184px * var(--fr-live-desktop-ui-scale));
                     animation: none;
                     box-shadow: none;
                 }
@@ -3208,8 +3334,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     background: transparent;
                 }
                 .fr-board--minimal-live .fr-live-chip--progress {
-                    min-width: 74px;
-                    font-size: 21px;
+                    min-width: calc(74px * var(--fr-live-desktop-ui-scale));
+                    font-size: calc(21px * var(--fr-live-desktop-ui-scale));
                     background: transparent;
                     color: #ffde9e;
                 }
@@ -3229,8 +3355,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     display: none;
                 }
                 .fr-board--minimal-live .fr-live-deck-stack {
-                    width: 96px;
-                    height: 126px;
+                    width: calc(96px * var(--fr-live-desktop-ui-scale));
+                    height: calc(126px * var(--fr-live-desktop-ui-scale));
                     border-radius: 12px;
                     filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.3));
                 }
@@ -3249,10 +3375,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     box-shadow: none;
                 }
                 .fr-board--minimal-live .fr-live-score-strip {
-                    width: 132px;
+                    width: calc(132px * var(--fr-live-desktop-ui-scale));
                 }
                 .fr-board--minimal-live .fr-live-score-strip--gameover {
-                    width: 248px;
+                    width: calc(248px * var(--fr-live-desktop-ui-scale));
                     gap: 6px;
                 }
                 .fr-board--minimal-live .fr-live-score-band {
@@ -3276,7 +3402,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     margin-top: 2px;
                 }
                 .fr-board--minimal-live .fr-live-score-band-total {
-                    font-size: 24px;
+                    font-size: calc(24px * var(--fr-live-desktop-ui-scale));
                     color: rgba(248, 223, 159, 0.86);
                     font-weight: 800;
                 }
@@ -3295,7 +3421,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     font-size: 13px;
                 }
                 .fr-board--minimal-live .fr-live-score-band--gameover .fr-live-score-band-total {
-                    font-size: 30px;
+                    font-size: calc(30px * var(--fr-live-desktop-ui-scale));
                 }
                 .fr-board--minimal-live .fr-live-score-strip--gameover .fr-live-endgame-rail-title {
                     text-align: right;
@@ -3306,14 +3432,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-live-hand-zone {
                     margin-top: 0;
                     align-self: end;
-                    padding: 0 18px max(2px, env(safe-area-inset-bottom, 0px));
+                    padding: 0 4px max(2px, env(safe-area-inset-bottom, 0px));
                 }
                 .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
                 .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
-                    width: min(1510px, calc(100vw - 180px));
+                    --fr-live-hand-gap: clamp(8px, calc(12px * var(--fr-live-desktop-ui-scale)), 12px);
+                    width: var(--fr-live-hand-row-width);
                     margin: 0 auto;
                     transform: translateY(0);
                     align-items: end;
+                    gap: var(--fr-live-hand-gap);
+                }
+                .fr-board--minimal-live .fr-card-button--live-hand {
+                    width: 100%;
+                    max-width: calc(176px * var(--fr-live-desktop-ui-scale));
+                    justify-self: center;
                 }
                 .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone {
                     padding: 0;
@@ -3341,8 +3474,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 }
                 .fr-board--minimal-live .fr-live-action-zone {
                     position: absolute;
-                    right: clamp(44px, 4vw, 72px);
-                    bottom: 276px;
+                    right: var(--fr-live-action-right-offset);
+                    bottom: var(--fr-live-action-bottom-offset);
                     top: auto;
                     transform: none;
                     z-index: 4;
@@ -3354,10 +3487,10 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     pointer-events: auto;
                 }
                 .fr-board--minimal-live .fr-live-action-button {
-                    width: 224px;
-                    min-height: 62px;
+                    width: calc(224px * var(--fr-live-desktop-ui-scale));
+                    min-height: calc(62px * var(--fr-live-desktop-ui-scale));
                     height: auto;
-                    padding: 12px 20px;
+                    padding: calc(12px * var(--fr-live-desktop-ui-scale)) calc(20px * var(--fr-live-desktop-ui-scale));
                     border-radius: 14px;
                     border: none;
                     background: linear-gradient(180deg, rgba(168, 114, 50, 0.98), rgba(110, 68, 26, 0.98));
@@ -3392,8 +3525,8 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     cursor: not-allowed;
                 }
                 .fr-board--minimal-live .fr-live-action-button-label {
-                    max-width: 168px;
-                    font-size: 20px;
+                    max-width: calc(168px * var(--fr-live-desktop-ui-scale));
+                    font-size: calc(20px * var(--fr-live-desktop-ui-scale));
                     line-height: 1.08;
                 }
                 .fr-live-status-strip .fr-live-action-zone {
@@ -4191,7 +4324,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         padding: 10px 12px;
                     }
                     ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-card-button--live-center {
-                        width: 160px;
+                        width: var(--fr-live-center-card-width);
                     }
                     ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-hand-zone {
                         overflow: hidden;
@@ -4236,7 +4369,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 closeLabel={t('actions.closePreview')}
             >
                 <div className="fr-magnify-card-wrap">
-                    {magnifiedCard ? renderCard(magnifiedCard, t, locale) : null}
+                    {magnifiedCard ? <FantasyRealmsCard card={magnifiedCard} t={t} locale={locale} /> : null}
                 </div>
             </MagnifyOverlay>
             </div>

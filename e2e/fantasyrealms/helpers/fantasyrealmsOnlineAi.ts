@@ -47,9 +47,12 @@ export type OnlineAiRoomSetup = {
     context: BrowserContext;
     page: Page;
     matchId: string;
+    hostPlayerId: string;
+    hostCredentials: string;
     hostPlayerName: string;
     aiPlayerName: string;
     aiPlayerNames: Record<string, string>;
+    aiCredentialsBySeat: Record<string, string>;
 };
 
 export type OnlineAiRoomOptions = {
@@ -811,9 +814,16 @@ export async function expectFinalStandingsVisible(page: Page, standings: FinalSt
 export async function openFantasyRealmsOnlineAiRoom(
     browser: NonNullable<BrowserContext['browser']>,
     baseURL: string | undefined,
-    options?: OnlineAiRoomOptions,
+    options?: OnlineAiRoomOptions & {
+        viewport?: { width: number; height: number };
+        deviceScaleFactor?: number;
+    },
 ): Promise<OnlineAiRoomSetup | null> {
-    const context = await browser.newContext({ baseURL });
+    const context = await browser.newContext({
+        baseURL,
+        viewport: options?.viewport,
+        deviceScaleFactor: options?.deviceScaleFactor,
+    });
     await initContext(context, {
         storageKey: '__fantasyrealms_online_ai__',
         skipImageGate: true,
@@ -885,9 +895,12 @@ export async function openFantasyRealmsOnlineAiRoom(
         context,
         page,
         matchId: room.matchId,
+        hostPlayerId: room.ownerPlayerId,
+        hostCredentials,
         hostPlayerName,
         aiPlayerName: aiPlayerNames[aiSeatIds[0]!] ?? '',
         aiPlayerNames,
+        aiCredentialsBySeat,
     };
 }
 

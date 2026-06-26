@@ -2569,6 +2569,42 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].abilities.some(ability => ability.id === 'soul-stab')).toBe(false);
     });
 
+    it('human 面咒缚移除最后 1 个诅咒金币后会在同回合结束立即翻回咒缚面', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.sys.phase = 'discard';
+        state.core.activePlayerId = '0';
+        state.core = applyEvents(state.core, [{
+            type: 'PLAYER_BOARD_FACE_CHANGED',
+            payload: { playerId: '0', face: 'normal', sourceAbilityId: 'test-setup' },
+            sourceCommandType: 'TEST',
+            timestamp: 90,
+        } as DiceThroneEvent]);
+        state.core.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] = 1;
+
+        const result = diceThroneFlowHooks.onPhaseExit?.({
+            state,
+            from: 'discard',
+            to: 'upkeep',
+            command: command('ADVANCE_PHASE', '0'),
+            random: fixedRandom,
+        } as Parameters<NonNullable<typeof diceThroneFlowHooks.onPhaseExit>>[0]);
+        const events = Array.isArray(result) ? result : result?.events ?? [];
+        const next = applyEvents(state.core, events as DiceThroneEvent[]);
+
+        expect(eventsOfType(events as DiceThroneEvent[], 'STATUS_REMOVED')[0]?.payload).toMatchObject({
+            targetId: '0',
+            statusId: STATUS_IDS.CURSED_COIN,
+            stacks: 1,
+        });
+        expect(eventsOfType(events as DiceThroneEvent[], 'PLAYER_BOARD_FACE_CHANGED')[0]?.payload).toMatchObject({
+            playerId: '0',
+            face: 'cursed',
+            sourceAbilityId: 'human-cursed',
+        });
+        expect(next.players['0'].playerBoardFace).toBe('cursed');
+        expect(next.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] ?? 0).toBe(0);
+    });
+
     it('human 面咒缚在没有诅咒金币时会于回合结束翻回咒缚面并切换能力集', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.sys.phase = 'discard';
@@ -2915,8 +2951,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             defenderId: '1',
             sourceAbilityId: 'verdict-command',
             isDefendable: true,
-            preDefenseResolved: true,
         });
+        expect(advanced.state.core.pendingAttack?.preDefenseResolved).not.toBe(true);
 
         const prompt = getSimpleChoicePrompt(advanced.state, 'verdict-command');
         expect(prompt.playerId).toBe('0');

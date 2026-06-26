@@ -13,7 +13,9 @@ import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { BLINK_2, DEATH_BLOSSOM_2, GOING_FORWARD_2, POISON_BLADE_2, SHADOW_FANG_2, SHADOW_STEP_2, SLASH_2, SMOKE_SCREEN_2 } from '../heroes/ninja/abilities';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { DiceThroneDomain } from '../domain';
+import { executePipeline } from '../../../engine/pipeline';
+import { createHeroMatchup, createQueuedRandom, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -912,7 +914,7 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(nonTripletNext.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
     });
 
-    it('影牙 II 主分支应获得 1 烟雾弹、2 忍术并造成 8 点伤害', () => {
+    it('影牙 II 主分支会先获得烟雾弹与 2 忍术，并可接入忍术后续选择链', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].abilities = state.core.players['0'].abilities.map((ability) => (
             ability.id === 'shadow-fang' ? SHADOW_FANG_2 : ability
@@ -921,6 +923,8 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
         state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.activePlayerId = '0';
+        state.core.rollConfirmed = true;
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
@@ -928,32 +932,37 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             isDefendable: true,
             damage: 0,
         };
+        state.sys.phase = 'offensiveRoll';
 
-        const events = resolveAttack(state.core, createQueuedRandom([1]), { includePreDefense: true }, 167);
-        let next = applyEvents(state.core, events);
-
-        expect(events.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(true);
-        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
-        expect(next.pendingDamage?.responseType).toBe('beforeDamageDealt');
-        expect(next.pendingDamage?.currentDamage).toBe(8);
-        expect(next.pendingDamage?.responderId).toBe('0');
-
-        const skipEvents = execute(
-            { core: next, sys: { phase: 'offensiveRoll' } },
-            command('SKIP_TOKEN_RESPONSE', '0'),
+        const advanceResult = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
             createQueuedRandom([1]),
+            ['0', '1'],
         );
-        next = applyEvents(next, skipEvents);
 
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(22);
-        expect(next.pendingDamage).toBeUndefined();
-        expect(next.pendingAttack).toMatchObject({
-            sourceAbilityId: 'shadow-fang-2-main',
-            damageResolved: true,
-            resolvedDamage: 8,
-        });
+        expect(advanceResult.success).toBe(true);
+        if (!advanceResult.success) return;
+
+        const next = advanceResult.state;
+        expect(next.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
+        expect(next.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
+        const tokenPrompt = getSimpleChoicePrompt(next, 'shadow-fang-2-main');
+        expect(tokenPrompt.options.map(option => option.value?.customId)).toContain('use-ninjutsu');
+
+        const useOption = tokenPrompt.options.find(option => option.value?.customId === 'use-ninjutsu');
+        expect(useOption).toBeTruthy();
+
+        const useResult = respondToPrompt(next, useOption!.id, '0', createQueuedRandom([6]), ['0', '1']);
+        expect(useResult.success).toBe(true);
+        if (!useResult.success) return;
+
+        expect(useResult.events.some(event => event.type === 'CHOICE_REQUESTED')).toBe(true);
+        expect(useResult.state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(1);
+        const ninjutsuPrompt = getSimpleChoicePrompt(useResult.state, 'shadow-fang-2-main');
+        expect(ninjutsuPrompt.options.map(option => option.value?.customId)).toContain('ninja-ninjutsu-undefendable');
     });
 
     it('影牙 II 的诳惑分支应获得 1 烟雾弹并造成 2 点不可防御伤害', () => {

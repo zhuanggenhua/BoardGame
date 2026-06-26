@@ -355,7 +355,7 @@ function handleDeathBlossom2(ctx: CustomActionContext): DiceThroneEvent[] {
         ctx,
         {
             diceCount: 5,
-            rerollCostTokenId: TOKEN_IDS.NINJUTSU,
+            rerollCostTokenId: '',
             rerollCostAmount: 0,
             maxRerollCount: 2,
             dieEffectKey: 'bonusDie.effect.ninjaDeathBlossom2',
@@ -366,6 +366,10 @@ function handleDeathBlossom2(ctx: CustomActionContext): DiceThroneEvent[] {
         },
         () => [],
     );
+}
+
+function handleNinjutsuOffensiveRollEndUse(ctx: CustomActionContext): DiceThroneEvent[] {
+    return handleNinjutsuUse(ctx);
 }
 
 function handleNonAttackCloseout(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -571,7 +575,7 @@ export function registerNinjaCustomActions(): void {
         categories: ['choice', 'damage'],
         requiresInteraction: true,
     });
-    registerCustomActionHandler('ninja-ninjutsu-use', handleNinjutsuUse, { categories: ['dice', 'damage', 'token', 'choice'], requiresInteraction: true });
+    registerCustomActionHandler('ninja-ninjutsu-use', handleNinjutsuOffensiveRollEndUse, { categories: ['dice', 'damage', 'token', 'choice'], requiresInteraction: true });
 
     registerChoiceResolvedEventHandler('ninja-ninjutsu-poison', ({ state, playerId, sourceAbilityId, timestamp }) => {
         if (!sourceAbilityId) return [];
@@ -596,6 +600,26 @@ export function registerNinjaCustomActions(): void {
             } as AttackMadeUndefendableEvent,
         ];
     });
+
+    registerChoiceResolvedEventHandler('use-ninjutsu', ({ state, playerId, sourceAbilityId, timestamp, random }) => (
+        handleNinjutsuUse({
+            ctx: {
+                attackerId: playerId,
+                defenderId: state.pendingAttack?.defenderId ?? playerId,
+                sourceAbilityId: sourceAbilityId ?? state.pendingAttack?.sourceAbilityId ?? 'token-use',
+                state,
+                damageDealt: 0,
+                timestamp,
+            },
+            targetId: state.pendingAttack?.defenderId ?? playerId,
+            attackerId: playerId,
+            sourceAbilityId: sourceAbilityId ?? state.pendingAttack?.sourceAbilityId ?? 'token-use',
+            state,
+            timestamp,
+            random,
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-ninjutsu-use' },
+        })
+    ));
 
     registerChoiceResolvedEventHandler(NINJA_SMOKE_SCREEN_2_CHOICE_ID, ({ state, playerId, sourceAbilityId, value, timestamp }) => {
         if (!isExpectedChoiceSource(sourceAbilityId, SMOKE_SCREEN_2_MAIN_SOURCE_IDS)) return [];
