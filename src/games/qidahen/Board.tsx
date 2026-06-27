@@ -375,7 +375,7 @@ const buildQidahenPrimaryActionEntryText = (
         case 'upgrade-armament':
             return '弃牌后执行';
         default:
-            return '继续';
+            return selectedAction ? selectedAction.label : '选择一项行动';
     }
 };
 
@@ -1285,13 +1285,17 @@ const MapSceneLayer: React.FC<{
         }
         renderRegionOwnershipOverlay(canvas, runtimeRegionIdByPixel, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, toneByRegionId);
     }, [
+        core.gaoDiDispatchSelection?.sourceRegionId,
         core.gaoDiDispatchSelection?.candidates,
         internalDispatchSelection?.candidates,
+        internalDispatchSelection?.sourceRegionId,
+        pendingTargetAction?.sourceRegionId,
         pendingTargetAction?.targetRegionId,
         pendingTargetAction?.targetRuntimeRegionId,
         compactRegionTip,
         core.regions,
         core.selectedRegionId,
+        wheelDispatchSelection?.sourceRegionId,
         wheelDispatchSelection?.candidates,
         hoveredRegionId,
         maskVersion,
@@ -2635,7 +2639,6 @@ const ActionsZone: React.FC<{
     onSelectRegion: (regionId: string) => void;
     onResolveRecruitChoice: (choiceId: QidahenRecruitChoice['id']) => void;
     onResolveGaoDiDispatch: (choiceId: string) => void;
-    onResolveInternalDispatch: (choiceId: string) => void;
     onResolveMaShiTradeChoice: (troopCount: 1 | 2 | 3) => void;
     onResolveKhanEdictChoice: (choiceId: 'recruit-train' | 'hire-dispatch') => void;
     onResolveDiplomacyChoice: (choiceId: 'hire-only' | 'place-friendly' | 'flip-vassal' | 'remove-marker') => void;
@@ -2651,9 +2654,7 @@ const ActionsZone: React.FC<{
     onSelectPendingDefenderCasualtyPriority: (priority: QidahenCasualtyPriority) => void;
     onResolvePendingAction: (choiceValue: QidahenPendingTargetChoiceValue, attackerCasualtyPriority?: QidahenCasualtyPriority, defenderCasualtyPriority?: QidahenCasualtyPriority, committedTroops?: number) => void;
     onResolvePostBattleDecision: (choiceId: string) => void;
-    onResolveWheelDispatchChoice: (choiceId: string) => void;
-    onExecuteWheelMove: (moveId: string) => void;
-}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
+}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
@@ -2661,6 +2662,8 @@ const ActionsZone: React.FC<{
         || core.pendingScenarioCharacterChoices.length > 0
         || core.pendingScenarioArmamentChoices.length > 0;
     const selectedAction = core.actionChoices.find((action) => action.id === core.selectedActionId) ?? core.actionChoices[0] ?? null;
+    const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
+    const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
     const factionStageActiveSelection = core.gaoDiDispatchSelection != null
         || internalDispatchSelection != null
         || recruitSelection != null
@@ -2737,6 +2740,11 @@ const ActionsZone: React.FC<{
                         defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}',
                     })}
                 </div>
+                {!pendingScenarioChoices && primaryStageMode ? (
+                    <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                        {`${primaryStageHeadline} · ${primaryStageHint}`}
+                    </div>
+                ) : null}
                 {pendingScenarioChoices ? (
                     <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
                         {core.scenarioVote
@@ -4547,7 +4555,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         || pendingTargetAction != null
         || postBattleSelection != null;
     const showTopWheelPrompt = wheelStageAvailable;
-    const showTopFactionPrompt = factionStageAvailable;
+    const showTopFactionPrompt = factionStageAvailable && !wheelStageAvailable;
+    const selectedPrimaryAction = core.actionChoices.find((action) => action.id === core.selectedActionId) ?? core.actionChoices[0] ?? null;
+    const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedPrimaryAction);
 
     const selectRegion = React.useCallback((regionId: string) => {
         if (setupStagePending || pendingTargetAction != null || postBattleSelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null) {
@@ -4696,7 +4706,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 <TopPromptBanner
                     testId="qidahen-top-action-banner"
                     title={t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })}
-                    hint={null}
+                    hint={primaryActionEntryText}
                     badgeLabel={t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
                     tone="faction"
                 />
@@ -4731,7 +4741,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onSelectRegion={selectRegion}
                 onResolveRecruitChoice={resolveRecruitChoice}
                 onResolveGaoDiDispatch={resolveGaoDiDispatch}
-                onResolveInternalDispatch={resolveInternalDispatch}
                 onResolveMaShiTradeChoice={resolveMaShiTradeChoice}
                 onResolveKhanEdictChoice={resolveKhanEdictChoice}
                 onResolveDiplomacyChoice={resolveDiplomacyChoice}
@@ -4748,8 +4757,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onResolvePendingAction={resolvePendingAction}
                 onResolvePostBattleDecision={resolvePostBattleDecision}
                 wheelDispatchSelection={wheelDispatchSelection}
-                onResolveWheelDispatchChoice={resolveWheelDispatchChoice}
-                onExecuteWheelMove={executeWheelMove}
             />
             <HandInteractionTray
                 core={core}

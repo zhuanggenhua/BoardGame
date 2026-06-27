@@ -15,23 +15,7 @@ import { warmPreloadScheduler } from './warmPreloadScheduler';
 import { AudioManager } from '../../../lib/audio/AudioManager';
 import type { SoundKey } from '../../../lib/audio/types';
 import { COMMON_AUDIO_BASE_PATH, loadCommonAudioRegistry } from '../../../lib/audio/commonRegistry';
-
-const criticalImageGateWindow = typeof window !== 'undefined'
-    ? window as Window & {
-        __BG_CRITICAL_IMAGE_GATE_READY_RUN_KEYS__?: Set<string>;
-    }
-    : undefined;
-
-if (criticalImageGateWindow && !criticalImageGateWindow.__BG_CRITICAL_IMAGE_GATE_READY_RUN_KEYS__) {
-    criticalImageGateWindow.__BG_CRITICAL_IMAGE_GATE_READY_RUN_KEYS__ = new Set<string>();
-}
-
-const readyRunKeys = criticalImageGateWindow?.__BG_CRITICAL_IMAGE_GATE_READY_RUN_KEYS__
-    ?? new Set<string>();
-
-export function __resetCriticalImageGateCacheForTests(): void {
-    readyRunKeys.clear();
-}
+import { criticalImageGateReadyRunKeys } from './CriticalImageGateCache';
 
 export interface CriticalImageGateProps {
     gameId?: string;
@@ -96,9 +80,15 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const lastReadyKeyRef = useRef<string | null>(null);
     const lastWarmRunKeyRef = useRef<string | null>(null);
     const pendingRunKeyRef = useRef<string | null>(null);
+    const latestRunKeyRef = useRef('');
+    const onReadyRef = useRef(onReady);
     const [retryTick, setRetryTick] = useState(0);
     const blockingAudioSignature = useMemo(
         () => Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean))).sort().join('|'),
+        [blockingAudioKeys],
+    );
+    const normalizedBlockingAudioKeys = useMemo(
+        () => Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean))),
         [blockingAudioKeys],
     );
 
@@ -111,15 +101,17 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     }, [effectiveEnabled, gameId, gameState, locale, playerID]);
 
     const runKey = `${gameId ?? ''}:${locale ?? ''}:${phaseKey}:${stateKey}`;
-    const latestRunKeyRef = useRef(runKey);
+    // eslint-disable-next-line react-hooks/refs
     latestRunKeyRef.current = runKey;
 
     const needsPreload = effectiveEnabled
         && !!gameId
         && stateKey === 'ready'
+        // eslint-disable-next-line react-hooks/refs
         && lastReadyKeyRef.current !== runKey;
 
-    if (needsPreload && gameId && gameState && readyRunKeys.has(runKey)) {
+    if (needsPreload && gameId && gameState && criticalImageGateReadyRunKeys.has(runKey)) {
+        // eslint-disable-next-line react-hooks/refs
         lastReadyKeyRef.current = runKey;
         const resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
         if ((resolved.critical?.length ?? 0) > 0) {
@@ -132,8 +124,9 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         && !blockingAudioSignature
         && areAllCriticalImagesCached(gameId, gameState, locale, playerID)
     ) {
+        // eslint-disable-next-line react-hooks/refs
         lastReadyKeyRef.current = runKey;
-        readyRunKeys.add(runKey);
+        criticalImageGateReadyRunKeys.add(runKey);
         const resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
         if ((resolved.critical?.length ?? 0) > 0) {
             signalCriticalImagesReady();
@@ -143,11 +136,16 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const effectiveNeedsPreload = effectiveEnabled
         && !!gameId
         && stateKey === 'ready'
+        // eslint-disable-next-line react-hooks/refs
         && lastReadyKeyRef.current !== runKey;
 
     useEffect(() => {
         gameStateRef.current = gameState;
     }, [gameState]);
+
+    useEffect(() => {
+        onReadyRef.current = onReady;
+    }, [onReady]);
 
     useEffect(() => {
         // 教程启动常通过 useLayoutEffect 同步推进 state。
@@ -190,8 +188,10 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 preloadWarmImages(resolved.warm, locale, gameId);
                 lastWarmRunKeyRef.current = runKey;
             }
-            if (!ready) setReady(true);
-            onReady?.();
+            if (!ready) {
+                queueMicrotask(() => setReady(true));
+            }
+            onReadyRef.current?.();
             return;
         }
 
@@ -210,12 +210,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             lastWarmRunKeyRef.current = runKey;
             inFlightRef.current = false;
             setLoadingProgress(undefined);
-            setReady(true);
-            onReady?.();
+            queueMicrotask(() => setReady(true));
+            onReadyRef.current?.();
             return;
         }
 
-        const normalizedBlockingAudioKeys = Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean)));
         const criticalImageTotal = resolved.critical?.length ?? 0;
         const blockingAudioTotal = normalizedBlockingAudioKeys.length;
         const totalAssets = criticalImageTotal + blockingAudioTotal;
@@ -265,9 +264,9 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                     return;
                 }
                 lastReadyKeyRef.current = runKey;
-                readyRunKeys.add(runKey);
+                criticalImageGateReadyRunKeys.add(runKey);
                 setReady(true);
-                onReady?.();
+                onReadyRef.current?.();
                 warmPreloadScheduler.enqueue(warmPaths, locale, gameId);
                 lastWarmRunKeyRef.current = runKey;
                 if (hasCriticalImages) {
@@ -280,9 +279,9 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                 }
                 console.error('[CriticalImageGate] 预加载失败', err);
                 lastReadyKeyRef.current = runKey;
-                readyRunKeys.add(runKey);
+                criticalImageGateReadyRunKeys.add(runKey);
                 setReady(true);
-                onReady?.();
+                onReadyRef.current?.();
                 signalCriticalImagesReady(epoch);
             })
             .finally(() => {
@@ -295,10 +294,12 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                     setRetryTick((tick) => tick + 1);
                 }
             });
-    }, [blockingAudioSignature, effectiveEnabled, gameId, locale, playerID, ready, retryTick, runKey, stateKey]);
+    }, [effectiveEnabled, gameId, locale, normalizedBlockingAudioKeys, playerID, ready, retryTick, runKey, stateKey]);
 
     const shouldBlock = blockRendering && (
-        effectiveNeedsPreload || (!ready && lastReadyKeyRef.current !== runKey)
+        effectiveNeedsPreload
+        // eslint-disable-next-line react-hooks/refs
+        || (!ready && lastReadyKeyRef.current !== runKey)
     );
     if (shouldBlock) {
         const useViewportAnchor = typeof document !== 'undefined'

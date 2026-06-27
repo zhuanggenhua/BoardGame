@@ -1,7 +1,8 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { __resetCriticalImageGateCacheForTests, CriticalImageGate } from '../CriticalImageGate';
+import { CriticalImageGate } from '../CriticalImageGate';
+import { resetCriticalImageGateCacheForTests } from '../CriticalImageGateCache';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -90,7 +91,7 @@ vi.mock('../../../system/LoadingScreen', () => ({
 
 beforeEach(() => {
     cleanup();
-    __resetCriticalImageGateCacheForTests();
+    resetCriticalImageGateCacheForTests();
     vi.clearAllMocks();
     vi.mocked(areAllCriticalImagesCached).mockReturnValue(false);
     vi.mocked(cancelWarmPreload).mockImplementation(() => undefined);
