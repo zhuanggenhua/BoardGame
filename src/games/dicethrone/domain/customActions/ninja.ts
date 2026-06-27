@@ -581,6 +581,44 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
     return events;
 }
 
+function buildNinjutsuContinueChoiceEvents(
+    state: CustomActionContext['state'],
+    playerId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const remainingNinjutsu = state.players[playerId]?.tokens[TOKEN_IDS.NINJUTSU] ?? 0;
+    const pendingAttack = state.pendingAttack;
+    const isAttackAlreadyInDefenseCloseout = pendingAttack?.damageResolved === true || pendingAttack?.defenseResolved === true;
+    if (remainingNinjutsu <= 0 || isAttackAlreadyInDefenseCloseout) {
+        return [];
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId,
+            sourceAbilityId,
+            titleKey: 'offensiveRollEndToken.title',
+            options: [
+                {
+                    tokenId: TOKEN_IDS.NINJUTSU,
+                    value: 1,
+                    customId: 'use-ninjutsu',
+                    labelKey: `tokens.${TOKEN_IDS.NINJUTSU}.name`,
+                },
+                {
+                    value: 0,
+                    customId: 'skip',
+                    labelKey: 'tokenResponse.skip',
+                },
+            ],
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as ChoiceRequestedEvent];
+}
+
 export function registerNinjaCustomActions(): void {
     registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
         let katanaCount = 0;
@@ -683,53 +721,17 @@ export function registerNinjaCustomActions(): void {
     registerChoiceResolvedEventHandler('ninja-ninjutsu-poison', ({ state, playerId, sourceAbilityId, timestamp }) => {
         if (!sourceAbilityId) return [];
         const targetId = state.pendingAttack?.defenderId;
-        const continueOptions = [
-            ...((state.players[playerId]?.tokens[TOKEN_IDS.NINJUTSU] ?? 0) > 0 ? [{
-                tokenId: TOKEN_IDS.NINJUTSU,
-                value: 1,
-                customId: 'use-ninjutsu',
-                labelKey: `tokens.${TOKEN_IDS.NINJUTSU}.name`,
-            }] : []),
-            {
-                value: 0,
-                customId: 'skip',
-                labelKey: 'tokenResponse.skip',
-            },
-        ];
         if (!targetId) return [bonusDamageEvent(playerId, 2, sourceAbilityId, timestamp)];
         const poisonEvent = delayedPoisonEvent(state, sourceAbilityId, targetId, 1, timestamp + 1);
         return [
             bonusDamageEvent(playerId, 2, sourceAbilityId, timestamp),
             ...(poisonEvent ? [poisonEvent] : []),
-            {
-                type: 'CHOICE_REQUESTED',
-                payload: {
-                    playerId,
-                    sourceAbilityId,
-                    titleKey: 'offensiveRollEndToken.title',
-                    options: continueOptions,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: timestamp + 2,
-            } as ChoiceRequestedEvent,
+            ...buildNinjutsuContinueChoiceEvents(state, playerId, sourceAbilityId, timestamp + 2),
         ];
     });
 
     registerChoiceResolvedEventHandler('ninja-ninjutsu-undefendable', ({ state, playerId, sourceAbilityId, timestamp }) => {
         if (!sourceAbilityId) return [];
-        const continueOptions = [
-            ...((state.players[playerId]?.tokens[TOKEN_IDS.NINJUTSU] ?? 0) > 0 ? [{
-                tokenId: TOKEN_IDS.NINJUTSU,
-                value: 1,
-                customId: 'use-ninjutsu',
-                labelKey: `tokens.${TOKEN_IDS.NINJUTSU}.name`,
-            }] : []),
-            {
-                value: 0,
-                customId: 'skip',
-                labelKey: 'tokenResponse.skip',
-            },
-        ];
         return [
             bonusDamageEvent(playerId, 2, sourceAbilityId, timestamp),
             {
@@ -738,17 +740,7 @@ export function registerNinjaCustomActions(): void {
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp: timestamp + 1,
             } as AttackMadeUndefendableEvent,
-            {
-                type: 'CHOICE_REQUESTED',
-                payload: {
-                    playerId,
-                    sourceAbilityId,
-                    titleKey: 'offensiveRollEndToken.title',
-                    options: continueOptions,
-                },
-                sourceCommandType: 'ABILITY_EFFECT',
-                timestamp: timestamp + 2,
-            } as ChoiceRequestedEvent,
+            ...buildNinjutsuContinueChoiceEvents(state, playerId, sourceAbilityId, timestamp + 2),
         ];
     });
 
