@@ -41,6 +41,14 @@ export interface SmashUpReactionWindowPresentation extends SmashUpReactionWindow
     showsPassWindow: boolean;
 }
 
+type LegacyReactionWindowState = {
+    windowType?: 'meFirst' | 'afterScoring';
+    responderQueue?: PlayerId[];
+    currentResponderIndex?: number;
+    sourceBaseIndex?: number;
+    passedPlayers?: PlayerId[];
+};
+
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
     const idx = turnOrder.indexOf(startingPlayerId);
     if (idx < 0) return [...turnOrder];
@@ -100,7 +108,6 @@ function getNormalizedLegacyReactionWindow(
     const turnOrder = state.core.turnOrder ?? [];
     if (turnOrder.length === 0) return undefined;
 
-    const filteredQueue = (legacyWindow.responderQueue ?? []).filter(playerId => turnOrder.includes(playerId));
     const liveCurrentPlayerId = state.core.turnOrder[state.core.currentPlayerIndex];
     const currentPlayerId = liveCurrentPlayerId && turnOrder.includes(liveCurrentPlayerId)
         ? liveCurrentPlayerId
@@ -203,7 +210,7 @@ export function getSmashUpReactionWindowPresentation(
         return undefined;
     }
 
-    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as any);
+    const normalizedLegacyWindow = getNormalizedLegacyReactionWindow(state, responseWindow as LegacyReactionWindowState);
     if (normalizedLegacyWindow) {
         return normalizedLegacyWindow;
     }
