@@ -8,7 +8,7 @@ import { createHeroMatchup, fixedRandom } from './test-utils';
 const applyEvents = (core: any, events: any[]) =>
     events.reduce((current, event) => reduce(current, event), core);
 
-describe('DiceThrone 工匠能量提升回归', () => {
+describe('DiceThrone 工匠超频运行能量提升', () => {
     it('超频运行 II 的能量提升只施加 3 纳米爆弹，不应附带伤害、合成器或挂住攻击链', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.core.players['0'].abilityLevels['overclock'] = 2;

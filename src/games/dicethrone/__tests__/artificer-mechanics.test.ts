@@ -17,7 +17,7 @@ import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { executePipeline } from '../../../engine/pipeline';
-import { createHeroMatchup, createQueuedRandom, fixedRandom, getCardInteractionPrompt, testSystems } from './test-utils';
+import { createHeroMatchup, createQueuedRandom, fixedRandom, getCardInteractionPrompt, getCurrentInteractionId, getSimpleChoicePrompt, respondToPrompt, testSystems } from './test-utils';
 
 initializeCustomActions();
 
@@ -857,29 +857,24 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         );
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('offensiveRoll');
-        expect(advanced.state.sys.interaction.current?.kind).toBe('simple-choice');
-        expect(advanced.state.sys.interaction.current?.data?.sourceId).toBe('wrench-strike-2-4');
-
-        const choiceOptions = advanced.state.sys.interaction.current?.data?.options ?? [];
+        const prompt = getSimpleChoicePrompt(advanced.state, 'wrench-strike-2-4');
+        const choiceOptions = prompt.options ?? [];
         const electricityOption = choiceOptions.find(
             (option: { id?: string; value?: { customId?: string } }) =>
                 option?.value?.customId === 'artificer-wrench-strike-spend-electricity',
         );
         expect(electricityOption?.id).toBeTruthy();
 
-        const responded = executePipeline(
-            pipelineConfig,
+        const responded = respondToPrompt(
             advanced.state,
-            command('SYS_INTERACTION_RESPOND', '0', {
-                interactionId: advanced.state.sys.interaction.current?.id,
-                optionId: electricityOption?.id,
-            }),
+            electricityOption!.id!,
+            '0',
             fixedRandom,
             playerIds,
         );
         expect(responded.success).toBe(true);
         expect(responded.state.sys.phase).toBe('defensiveRoll');
-        expect(responded.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionId(responded.state)).toBeUndefined();
         expect(responded.state.core.pendingAttack?.sourceAbilityId).toBe('wrench-strike-2-4');
         expect(responded.state.core.pendingAttack?.preDefenseResolved).toBe(true);
         expect(responded.state.core.pendingAttack?.defenseAbilityId).toBe('meditation');
@@ -953,7 +948,7 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         );
         expect(advanced.success).toBe(true);
         expect(advanced.state.sys.phase).toBe('defensiveRoll');
-        expect(advanced.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionId(advanced.state)).toBeUndefined();
         expect(advanced.state.core.pendingAttack?.sourceAbilityId).toBe('shock-bot-3-mechanical-army');
         expect(advanced.state.core.pendingAttack?.defenseAbilityId).toBe('meditation');
         expect(advanced.state.core.pendingAttack?.bonusDamage ?? 0).toBe(0);

@@ -17,6 +17,9 @@ import {
     createNoResponseSetupWithEmptyHand,
     assertState,
     cmd,
+    getCurrentInteractionId,
+    getSimpleChoicePrompt,
+    respondToPrompt,
 } from './test-utils';
 
 describe('Monk 技能完整覆盖测试', () => {
@@ -176,20 +179,17 @@ describe('Monk 技能完整覆盖测试', () => {
             expect(runner.dispatch('ADVANCE_PHASE', { playerId: '0' }).success).toBe(true);
 
             const promptState = runner.getState();
-            expect(promptState.sys.interaction.current?.kind).toBe('simple-choice');
+            const prompt = getSimpleChoicePrompt(promptState, 'zen-forget');
             expect(promptState.core.pendingAttack?.preDefenseResolved).toBe(true);
 
-            const interactionId = promptState.sys.interaction.current?.id;
-            const responded = runner.dispatch('SYS_INTERACTION_RESPOND', {
-                playerId: '0',
-                interactionId,
-                optionId: 'option-1',
-            });
-
+            const purifyOption = prompt.options.find(option => option.id === 'option-1');
+            expect(purifyOption).toBeTruthy();
+            const responded = respondToPrompt(promptState, purifyOption!.id, '0', random, ['0', '1']);
             expect(responded.success).toBe(true);
-            expect(responded.finalState.sys.interaction.current).toBeUndefined();
-            expect(responded.finalState.sys.phase).toBe('main2');
-            expect(responded.finalState.core.pendingAttack).toBeNull();
+            if (!responded.success) return;
+            expect(getCurrentInteractionId(responded.state)).toBeUndefined();
+            expect(responded.state.sys.phase).toBe('main2');
+            expect(responded.state.core.pendingAttack).toBeNull();
         });
     });
 
