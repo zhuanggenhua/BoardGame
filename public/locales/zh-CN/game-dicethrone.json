@@ -833,7 +833,7 @@
       "magmaArmor.4": "熔岩",
       "magmaArmor.5": "焚魂!",
       "magmaArmor.6": "陨石!",
-      "infernalEmbrace.fire": "火：获得 2 层火焰精通",
+      "infernalEmbrace.meteor": "陨石：获得火焰精通至上限",
       "infernalEmbrace.1": "抽 1 张牌",
       "infernalEmbrace.2": "抽 1 张牌",
       "infernalEmbrace.3": "抽 1 张牌",
@@ -3679,7 +3679,7 @@
     },
     "card-infernal-embrace": {
       "effects": {
-        "roll": "投掷 1 骰：若为火，则获得 2 层火焰精通；否则抽 1 张牌。"
+        "roll": "投掷 1 骰：若为陨石，则获得火焰精通至上限；否则抽 1 张牌。"
       }
     },
     "card-fan-the-flames": {
@@ -4621,7 +4621,7 @@
       "name": "炼狱之拥！",
       "description": "投掷 1 骰：\n陨石：获得火焰精通至上限。\n否则：抽 1 张牌。",
       "effects": {
-        "roll": "投掷 1 骰：火获得 2 层火焰精通；否则抽 1 张牌"
+        "roll": "投掷 1 骰：陨石获得火焰精通至上限；否则抽 1 张牌"
       }
     },
     "card-fan-the-flames": {

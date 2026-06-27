@@ -66,9 +66,9 @@ describe('Pyromancer 技能升级路径验证', () => {
         // 验证 custom action 存在
         const customAction = v2?.effects.find(e => e.action.customActionId === 'meteor-resolve');
         expect(customAction).toBeDefined();
-        // 验证有 STUN 效果
-        const stun = v2?.effects.find(e => e.action.statusId === STATUS_IDS.STUN);
-        expect(stun).toBeDefined();
+        // 验证有 DAZE 效果
+        const daze = v2?.effects.find(e => e.action.statusId === STATUS_IDS.DAZE);
+        expect(daze).toBeDefined();
     });
 
     it('Pyro Blast II & III 升级校验', () => {

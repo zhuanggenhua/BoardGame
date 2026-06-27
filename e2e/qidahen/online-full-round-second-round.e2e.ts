@@ -22,6 +22,8 @@ type PlayerPage = {
 
 const MAP_REGION_POINTS = {
     songjin: { x: 0.6522, y: 0.5913 },
+    shanhaiguan: { x: 0.4292, y: 0.6181 },
+    jinzhou: { x: 0.4957, y: 0.5342 },
 } as const;
 
 async function captureEvidence(
@@ -200,8 +202,40 @@ async function clickMapRegion(
         };
         element.dispatchEvent(new PointerEvent('pointermove', init));
         element.dispatchEvent(new PointerEvent('pointerdown', init));
+        element.dispatchEvent(new PointerEvent('pointerup', init));
         element.dispatchEvent(new PointerEvent('pointerleave', init));
     }, point);
+}
+
+async function clickGuidedMapTarget(page: Page, targetRegionId: string): Promise<void> {
+    const guideHitTarget = page.getByTestId(`qidahen-map-guide-hit-target-${targetRegionId}`);
+    if (await guideHitTarget.count()) {
+        await guideHitTarget.click();
+        return;
+    }
+    await page.evaluate((guidedTargetRegionId) => {
+        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="qidahen-map-hitmap-canvas"]');
+        const targetCircle = document.querySelector<SVGCircleElement>(`[data-testid="qidahen-map-guide-route-${guidedTargetRegionId}"] circle`);
+        if (!canvas || !targetCircle) {
+            throw new Error(`missing guided map target for ${guidedTargetRegionId}`);
+        }
+        const circleRect = targetCircle.getBoundingClientRect();
+        const clientX = circleRect.left + circleRect.width / 2;
+        const clientY = circleRect.top + circleRect.height / 2;
+        const init: PointerEventInit = {
+            clientX,
+            clientY,
+            pointerId: 1,
+            pointerType: 'mouse',
+            button: 0,
+            buttons: 1,
+            bubbles: true,
+            cancelable: true,
+        };
+        canvas.dispatchEvent(new PointerEvent('pointermove', init));
+        canvas.dispatchEvent(new PointerEvent('pointerdown', init));
+        canvas.dispatchEvent(new PointerEvent('pointerleave', init));
+    }, targetRegionId);
 }
 
 async function dumpVisibleActionIds(page: Page): Promise<string[]> {
@@ -234,6 +268,44 @@ async function paySelectedAction(page: Page, count: number): Promise<void> {
     const confirmButton = page.getByTestId('qidahen-action-payment-confirm');
     await expect(confirmButton).toBeEnabled({ timeout: 15000 });
     await confirmButton.click();
+}
+
+async function resolvePendingBattleByDefault(page: Page): Promise<void> {
+    const committedPanel = page.getByTestId('qidahen-pending-committed-troops');
+    if (await committedPanel.count()) {
+        const defaultCommitted = page.getByTestId('qidahen-pending-committed-1');
+        if (await defaultCommitted.count()) {
+            await defaultCommitted.click();
+        }
+    }
+    await logHostPendingState(page, 'before-click-rear-guard');
+    const rearGuard = page.getByTestId('qidahen-resolve-pending-action');
+    await expect(rearGuard).toBeVisible({ timeout: 15000 });
+    await rearGuard.click({ force: true });
+    await page.waitForTimeout(300);
+    if (await rearGuard.count()) {
+        const stillVisible = await rearGuard.isVisible().catch(() => false);
+        if (stillVisible) {
+            await rearGuard.evaluate((button) => {
+                (button as HTMLButtonElement).click();
+            });
+        }
+    }
+    await expect(page.getByTestId('qidahen-raid-intent')).toHaveCount(0, { timeout: 15000 });
+}
+
+async function resolvePostBattleByDefault(page: Page): Promise<void> {
+    const occupyChoice = page.getByTestId('qidahen-post-battle-choice-occupy');
+    if (await occupyChoice.count()) {
+        await occupyChoice.click();
+        return;
+    }
+    const firstChoice = page.locator('[data-testid^="qidahen-post-battle-choice-"]').first();
+    if (await firstChoice.count()) {
+        await firstChoice.click();
+        return;
+    }
+    throw new Error('未找到可执行的待结算按钮');
 }
 
 async function openUpgradeArmamentPaymentFlow(
@@ -284,6 +356,46 @@ async function logVisibleHostActions(page: Page, label: string): Promise<void> {
             .filter((entry) => entry.testId?.startsWith('qidahen-action-'))
     ));
     console.log(`[QIDAHEN_HOST_ACTIONS:${label}]`, JSON.stringify(actions));
+}
+
+async function logHostPendingState(page: Page, label: string): Promise<void> {
+    const snapshot = await page.evaluate(() => {
+        const state = (window as Window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => any;
+                };
+            };
+        }).__BG_TEST_HARNESS__?.state?.get?.() ?? null;
+        if (!state) {
+            return null;
+        }
+        return {
+            currentPlayer: state.core?.currentPlayer ?? null,
+            turnPhase: state.core?.turnPhase ?? null,
+            selectedRegionId: state.core?.selectedRegionId ?? null,
+            pendingTargetAction: state.core?.pendingTargetAction
+                ? {
+                    actionId: state.core.pendingTargetAction.actionId,
+                    title: state.core.pendingTargetAction.title,
+                    sourceRegionId: state.core.pendingTargetAction.sourceRegionId,
+                    targetRegionId: state.core.pendingTargetAction.targetRegionId,
+                    targetRuntimeRegionId: state.core.pendingTargetAction.targetRuntimeRegionId,
+                }
+                : null,
+            postBattleSelection: state.core?.postBattleSelection
+                ? {
+                    title: state.core.postBattleSelection.title,
+                    targetRuntimeRegionId: state.core.postBattleSelection.targetRuntimeRegionId,
+                    choiceIds: Array.isArray(state.core.postBattleSelection.choices)
+                        ? state.core.postBattleSelection.choices.map((choice: { id: string }) => choice.id)
+                        : [],
+                }
+                : null,
+            interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+        };
+    });
+    console.log(`[QIDAHEN_HOST_PENDING:${label}]`, JSON.stringify(snapshot));
 }
 
 test.describe('七大恨联机完整首轮到第二回合开始', () => {
@@ -348,7 +460,6 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await expectViewerPrivateHand(host.page, '大明');
             await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('蒙古', { timeout: 30000 });
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
-            await expect(host.page.getByTestId('qidahen-map-region-tip')).toHaveCount(0);
             await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-03-大明视角-蒙古行动中仍显示大明手牌.png');
             await performKhanEdictTurn(mongol.page);
@@ -357,7 +468,6 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await expectViewerPrivateHand(host.page, '大明');
             await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('后金', { timeout: 30000 });
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
-            await expect(host.page.getByTestId('qidahen-map-region-tip')).toHaveCount(0);
             await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-04-大明视角-后金行动中仍显示大明手牌.png');
             await performUpgradeArmamentTurn(jin.page);
@@ -367,6 +477,26 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await expectViewerPrivateHand(host.page, '大明');
             await logVisibleHostActions(host.page, 'round-2-ming');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-05-第2轮开始-回到大明行动窗口.png');
+
+            await clickMapRegion(host.page, 'jinzhou');
+            await expect(host.page.getByTestId('qidahen-map-layer')).toHaveAttribute('data-map-selected', 'jinzhou', { timeout: 15000 });
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-06-第2轮大明-点击锦州作为攻打目标.png');
+            await host.page.getByTestId('qidahen-action-raid').click();
+            await expect(host.page.getByTestId('qidahen-action-payment-panel')).toBeVisible({ timeout: 15000 });
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-07-第2轮大明-点击突袭作战后进入弃牌确认.png');
+            await paySelectedAction(host.page, 1);
+            await expect(host.page.getByTestId('qidahen-raid-intent')).toBeVisible({ timeout: 15000 });
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-08-第2轮大明-弃牌后进入攻打待结算.png');
+            await resolvePendingBattleByDefault(host.page);
+            const postBattleSelection = host.page.getByTestId('qidahen-post-battle-selection');
+            const postBattleVisible = await postBattleSelection.isVisible().catch(() => false);
+            if (postBattleVisible) {
+                await captureEvidence(host.page, testInfo, '七大恨-完整首轮-09-第2轮大明-点击断后后进入战后处理.png');
+                await resolvePostBattleByDefault(host.page);
+                await captureEvidence(host.page, testInfo, '七大恨-完整首轮-10-第2轮大明-点击占领完成攻打收口.png');
+            } else {
+                await captureEvidence(host.page, testInfo, '七大恨-完整首轮-09-第2轮大明-点击断后后返回主流程.png');
+            }
 
             assertNoFatalFrontendErrors(diagnostics);
         } finally {

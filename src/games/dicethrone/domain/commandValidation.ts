@@ -77,6 +77,32 @@ const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
 const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_CHARACTER_CATALOG.map(character => character.id));
 
+const getActionBlockedByStunLikeStatus = (
+    state: DiceThroneCore,
+    playerId: PlayerId,
+): string | null => {
+    if (!isMoveAllowed(playerId, state.activePlayerId)) {
+        return null;
+    }
+
+    const player = state.players[playerId];
+    if (!player) {
+        return null;
+    }
+
+    const dazeStacks = player.statusEffects[STATUS_IDS.DAZE] ?? 0;
+    if (dazeStacks > 0) {
+        return 'player_is_dazed';
+    }
+
+    const stunStacks = player.statusEffects[STATUS_IDS.STUN] ?? 0;
+    if (stunStacks > 0) {
+        return 'player_is_stunned';
+    }
+
+    return null;
+};
+
 const isCommandType = <TType extends DiceThroneCommand['type']>(
     command: DiceThroneCommand,
     type: TType
@@ -742,6 +768,11 @@ const validateSellCard = (
     if (phase !== 'main1' && phase !== 'main2' && phase !== 'discard') {
         return fail('invalid_phase');
     }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
+    }
     
     const player = state.players[state.activePlayerId];
     if (!player) {
@@ -776,6 +807,11 @@ const validateUndoSellCard = (
     }
     if (phase !== 'main1' && phase !== 'main2' && phase !== 'discard') {
         return fail('invalid_phase');
+    }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
     
     if (!state.lastSoldCardId) {
@@ -853,15 +889,9 @@ const validatePlayCard = (
         return fail('card_not_in_hand');
     }
 
-    if (isMoveAllowed(playerId, state.activePlayerId)) {
-        const dazeStacks = player.statusEffects[STATUS_IDS.DAZE] ?? 0;
-        if (dazeStacks > 0) {
-            return fail('player_is_dazed');
-        }
-        const stunStacks = player.statusEffects[STATUS_IDS.STUN] ?? 0;
-        if (stunStacks > 0) {
-            return fail('player_is_stunned');
-        }
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
 
     // 主要阶段牌：仅允许当前回合玩家
@@ -923,6 +953,11 @@ const validatePlayUpgradeCard = (
             handCardIds: player.hand.map(c => c.id),
         });
         return fail('card_not_in_hand');
+    }
+
+    const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
+    if (blockedError) {
+        return fail(blockedError);
     }
     
     // 使用 checkPlayUpgradeCard 获取详细原因

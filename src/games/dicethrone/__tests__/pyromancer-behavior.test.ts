@@ -367,6 +367,36 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
         });
     });
 
+    describe('pyro-infernal-embrace-roll (炼狱之拥)', () => {
+        it('掷出陨石面时把火焰精通补到当前上限', () => {
+            const state = createState({ attackerFM: 2, fmLimit: 5 });
+            const handler = getCustomActionHandler('pyro-infernal-embrace-roll')!;
+            const events = handler(buildCtx(state, 'pyro-infernal-embrace-roll', {
+                random: () => 1,
+            }));
+
+            const tokenEvents = eventsOfType(events, 'TOKEN_GRANTED');
+            expect(tokenEvents).toHaveLength(1);
+            expect((tokenEvents[0] as any).payload.amount).toBe(3);
+            expect((tokenEvents[0] as any).payload.newTotal).toBe(5);
+            expect(eventsOfType(events, 'CARD_DRAWN')).toHaveLength(0);
+        });
+
+        it('掷出非陨石面时抽1张牌，不授予火焰精通', () => {
+            const state = createState({ attackerFM: 2 });
+            state.players['0'].deck = [{ id: 'drawn-card' } as any];
+            const handler = getCustomActionHandler('pyro-infernal-embrace-roll')!;
+            const events = handler(buildCtx(state, 'pyro-infernal-embrace-roll', {
+                random: () => 4 / 6,
+            }));
+
+            expect(eventsOfType(events, 'TOKEN_GRANTED')).toHaveLength(0);
+            const drawEvents = eventsOfType(events, 'CARD_DRAWN');
+            expect(drawEvents).toHaveLength(1);
+            expect((drawEvents[0] as any).payload.cardId).toBe('drawn-card');
+        });
+    });
+
     // ========================================================================
     // burn-down-resolve: 获得1FM，消耗最多4个FM，每个造成3点伤害
     // ========================================================================

@@ -5,6 +5,7 @@
 import { getActiveDice, getAttackDiceFaceCounts, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
 import { RESOURCE_IDS } from '../resources';
 import { STATUS_IDS, TOKEN_IDS, PYROMANCER_DICE_FACE_IDS } from '../ids';
+import { buildDrawEvents } from '../deckEvents';
 import type {
     DiceThroneEvent,
     DamageDealtEvent,
@@ -655,6 +656,70 @@ const resolveIncreaseFMLimit = (ctx: CustomActionContext): DiceThroneEvent[] => 
     } as TokenLimitChangedEvent];
 };
 
+const resolveInfernalEmbraceRoll = (ctx: CustomActionContext): DiceThroneEvent[] => {
+    if (!ctx.random) return [];
+
+    const { attackerId, sourceAbilityId, state, timestamp } = ctx;
+    const value = ctx.random.d(6);
+    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const events: DiceThroneEvent[] = [];
+
+    if (face === PYROMANCER_DICE_FACE_IDS.METEOR) {
+        const currentFM = getFireMasteryCount(ctx);
+        const limit = getTokenStackLimit(state, attackerId, TOKEN_IDS.FIRE_MASTERY);
+        const newTotal = Math.min(limit, Math.max(currentFM, limit));
+        const amountToGain = Math.max(0, newTotal - currentFM);
+
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: attackerId,
+                effectKey: 'bonusDie.effect.infernalEmbrace.meteor',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as BonusDieRolledEvent);
+
+        if (amountToGain > 0) {
+            events.push({
+                type: 'TOKEN_GRANTED',
+                payload: {
+                    targetId: attackerId,
+                    tokenId: TOKEN_IDS.FIRE_MASTERY,
+                    amount: amountToGain,
+                    newTotal,
+                    sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as TokenGrantedEvent);
+        }
+
+        return events;
+    }
+
+    events.push({
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face,
+            playerId: attackerId,
+            targetPlayerId: attackerId,
+            effectKey: `bonusDie.effect.infernalEmbrace.${value}`,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDieRolledEvent);
+
+    return [
+        ...events,
+        ...buildDrawEvents(state, attackerId, 1, ctx.random, 'ABILITY_EFFECT', timestamp, sourceAbilityId),
+    ];
+};
+
 // ============================================================================
 // 注册函数
 // ============================================================================
@@ -682,6 +747,7 @@ export function registerPyromancerCustomActions(): void {
 
     registerCustomActionHandler('increase-fm-limit', resolveIncreaseFMLimit, { categories: ['resource'] });
     registerCustomActionHandler('pyro-increase-fm-limit', resolveIncreaseFMLimit, { categories: ['resource'] });
+    registerCustomActionHandler('pyro-infernal-embrace-roll', resolveInfernalEmbraceRoll, { categories: ['dice', 'card', 'resource'] });
 
     registerCustomActionHandler('pyro-details-dmg-per-fm', resolveDmgPerFM, {
         categories: ['damage'],

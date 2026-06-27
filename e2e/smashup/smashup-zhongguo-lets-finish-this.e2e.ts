@@ -98,7 +98,6 @@ test.describe('SmashUp - zhongguo 做个了断吧链路', () => {
                 currentPlayerIndex: state.core.currentPlayerIndex,
                 phase: state.sys.phase,
                 breakpointDelta: state.core.tempBreakpointModifiers?.[0] ?? 0,
-                scoringEligibleBaseIndices: state.core.scoringEligibleBaseIndices ?? [],
                 interactionOpen: Boolean(state.sys.interaction?.current),
                 responseWindowOpen: Boolean(state.sys.responseWindow?.current),
             };
@@ -106,7 +105,6 @@ test.describe('SmashUp - zhongguo 做个了断吧链路', () => {
             currentPlayerIndex: 0,
             phase: 'playCards',
             breakpointDelta: -25,
-            scoringEligibleBaseIndices: [0],
             interactionOpen: false,
             responseWindowOpen: false,
         });

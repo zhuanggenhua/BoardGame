@@ -15,6 +15,7 @@ import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { getFirstPrompt, getPromptSourceId } from './helpers';
+import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 
 beforeAll(() => {
     // 系统已在 game.ts 中初始化
@@ -231,5 +232,28 @@ describe('scoreBases / Me First! 窗口门禁', () => {
         const prompt = getFirstPrompt(result.finalState);
         expect(prompt).toBeDefined();
         expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(getPromptSourceId(prompt));
+    });
+
+    it('afterScoring 只剩强制效果二选一时，不应再授予 Me First 让过窗资格', () => {
+        const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+            domain: SmashUpDomain,
+            systems,
+            playerIds: ['0', '1'],
+            setup: () => makeTestCore(),
+        });
+
+        const result = runner.run({
+            name: '推进到 scoreBases 并完成所有让过，进入计分后强制效果选择',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
+                { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
+            ] as any[],
+        });
+
+        const presentation = getSmashUpReactionWindowPresentation(result.finalState);
+        expect(presentation).toBeDefined();
+        expect(presentation?.windowType).toBe('afterScoring');
+        expect(presentation?.showsPassWindow).toBe(false);
     });
 });

@@ -774,7 +774,7 @@
       "magmaArmor.4": "Magma",
       "magmaArmor.5": "Fiery Soul!",
       "magmaArmor.6": "Meteor!",
-      "infernalEmbrace.fire": "Fire: gain 2 Fire Mastery",
+      "infernalEmbrace.meteor": "Meteor: gain Fire Mastery to the cap",
       "infernalEmbrace.1": "Draw 1 Card",
       "infernalEmbrace.2": "Draw 1 Card",
       "infernalEmbrace.3": "Draw 1 Card",
@@ -830,7 +830,7 @@
       "absolution.heart": "Heart: Shield 5",
       "absolution.pray": "Pray: Shield 2 + 2 CP",
       "godsGrace.pray": "Pray: Gain 4 CP",
-      "infernalEmbrace.fire": "Fire: Gain 2 Fire Mastery",
+      "infernalEmbrace.meteor": "Meteor: gain Fire Mastery to the cap",
       "samuraiBackStrikeDie": "Back Strike Roll: {{value}} (deal {{damage}} to the original attacker)",
       "samuraiRighteousnessKatana": "Katana: +2 damage",
       "samuraiRighteousnessHelm": "Helm: inflict 2 Shame on your opponent",
@@ -3570,7 +3570,7 @@
     },
     "card-infernal-embrace": {
       "effects": {
-        "roll": "Roll 1 die: Fire gain 2 Fire Mastery; otherwise draw 1 card"
+        "roll": "Roll 1 die: Meteor gains Fire Mastery to the cap; otherwise draw 1 card"
       }
     },
     "card-fan-the-flames": {
@@ -4500,7 +4500,7 @@
       "name": "Infernal Embrace!",
       "description": "Roll 1 die:\nMeteor: gain Fire Mastery to the cap\nOtherwise: draw 1 card",
       "effects": {
-        "roll": "Roll 1 die: Fire gain 2 Fire Mastery; otherwise draw 1 card"
+        "roll": "Roll 1 die: Meteor gains Fire Mastery to the cap; otherwise draw 1 card"
       }
     },
     "card-fan-the-flames": {

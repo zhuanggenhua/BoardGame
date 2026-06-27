@@ -759,6 +759,17 @@ export function buildReactionOptions(
     ]);
 }
 
+export function hasSmashUpResponderDrivenReactionOptions(
+    state: MatchState<SmashUpCore>,
+    session: SmashUpReactionSession,
+    now: number,
+): boolean {
+    if (session.phase !== 'optional') {
+        return false;
+    }
+    return buildPlayableCardOptions(state, session, session.activePlayerId, now).length > 0;
+}
+
 function isSameReactionChoiceValue(left: ReactionChoiceValue, right: ReactionChoiceValue): boolean {
     if (left.kind !== right.kind) return false;
 

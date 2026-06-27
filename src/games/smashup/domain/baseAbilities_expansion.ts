@@ -276,6 +276,25 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
     });
+    registerExtendedBase('base_funky_town', 'onMinionAffected', (ctx) => {
+        if (ctx.baseIndex === undefined || ctx.actionTargetType !== 'minion' || !ctx.actionTargetMinionUid) {
+            return { events: [] };
+        }
+        if (ctx.reason !== 'disco_dancers_disco_inferno') return { events: [] };
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const target = base.minions.find(minion => minion.uid === ctx.actionTargetMinionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_funky_town', ctx.now, {
+                sourcePlayerId: ctx.playerId,
+                sourceDefId: 'base_funky_town',
+                sourceBaseIndex: ctx.baseIndex,
+            })],
+        };
+    }, {
+        canTrigger: (ctx) => ctx.reason === 'disco_dancers_disco_inferno' && ctx.actionTargetType === 'minion',
+    });
 
     // ── 廉价小饭馆（The Greasy Spoon）──────────────────────────
     // 本基地计分后，每位在这里有随从的玩家抓 1 张牌。
@@ -332,7 +351,8 @@ export function registerExpansionBaseAbilities(): void {
     // ── 险恶街区（The Mean Streets）───────────────────────────
     // 玩家打出影响这里一张牌的战术后，其他玩家可以在这里自己的一个随从上放 1 枚 +1 力量指示物。
     registerBaseAbility('base_the_mean_streets', 'onActionPlayed', (ctx) => {
-        if (ctx.actionTargetBaseIndex !== ctx.baseIndex) return { events: [] };
+        const actionAffectsThisBase = ctx.actionTargetBaseIndex === ctx.baseIndex;
+        if (!actionAffectsThisBase) return { events: [] };
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base) return { events: [] };
         const otherPlayerIds = Array.from(new Set(
@@ -353,6 +373,25 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
+    });
+    registerExtendedBase('base_the_mean_streets', 'onMinionAffected', (ctx) => {
+        if (ctx.baseIndex === undefined || ctx.actionTargetType !== 'minion' || !ctx.actionTargetMinionUid) {
+            return { events: [] };
+        }
+        if (ctx.reason !== 'disco_dancers_disco_inferno') return { events: [] };
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const target = base.minions.find(minion => minion.uid === ctx.actionTargetMinionUid);
+        if (!target || target.controller === ctx.playerId) return { events: [] };
+        return {
+            events: [addPowerCounter(target.uid, ctx.baseIndex, 1, 'base_the_mean_streets', ctx.now, {
+                sourcePlayerId: target.controller,
+                sourceDefId: 'base_the_mean_streets',
+                sourceBaseIndex: ctx.baseIndex,
+            })],
+        };
+    }, {
+        canTrigger: (ctx) => ctx.reason === 'disco_dancers_disco_inferno' && ctx.actionTargetType === 'minion',
     });
 
     // ── 人鱼水池（Mermaid Pool）─────────────────────────────────

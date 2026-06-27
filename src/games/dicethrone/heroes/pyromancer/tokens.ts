@@ -5,7 +5,8 @@
  * 包含：
  * - consumable 类型：火焰精通（可主动消耗，增加伤害）
  * - debuff 类型：燃烧（被动触发）
- * - 共享 token：击倒、眩晕（从 sharedTokens 导入）
+ * - 共享 token：击倒（从 sharedTokens 导入）
+ * - 炎术士专用眩晕：复用额外攻击语义，但使用炎术士图集
  */
 
 import type { TokenDef, TokenState } from '../../domain/tokenTypes';
@@ -69,13 +70,27 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
         atlasId: DICETHRONE_STATUS_ATLAS_IDS.PYROMANCER,
     },
 
+    {
+        id: STATUS_IDS.DAZE,
+        name: statusText(STATUS_IDS.DAZE, 'name'),
+        colorTheme: 'from-yellow-600 to-amber-500',
+        description: statusText(STATUS_IDS.DAZE, 'description') as unknown as string[],
+        sfxKey: 'fantasy.medieval_fantasy_sound_fx_pack_vol.weapons.weapon_power_up_lightning',
+        stackLimit: 1,
+        category: 'debuff',
+        passiveTrigger: {
+            timing: 'onAttackEnd',
+            removable: true,
+            actions: [{ type: 'extraAttack', target: 'self' }],
+        },
+        frameId: 'stun',
+        atlasId: DICETHRONE_STATUS_ATLAS_IDS.PYROMANCER,
+    },
+
     // ============================================
     // 共享 token（从 sharedTokens 导入）
     // ============================================
-    ...SHARED_TOKENS.filter(t => 
-        t.id === STATUS_IDS.KNOCKDOWN || 
-        t.id === STATUS_IDS.STUN
-    ),
+    ...SHARED_TOKENS.filter(t => t.id === STATUS_IDS.KNOCKDOWN),
 ];
 
 /**
@@ -91,5 +106,5 @@ export const PYROMANCER_INITIAL_TOKENS: TokenState = {
     [TOKEN_IDS.FIRE_MASTERY]: 0,
     [STATUS_IDS.KNOCKDOWN]: 0,
     [STATUS_IDS.BURN]: 0,
-    [STATUS_IDS.STUN]: 0,
+    [STATUS_IDS.DAZE]: 0,
 };

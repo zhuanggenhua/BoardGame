@@ -5,9 +5,11 @@ import { SmashUpDomain } from '../../domain';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
-import { clearOngoingEffectRegistry, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../../domain/ongoingModifiers';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
+import { reduce } from '../../domain/reduce';
 import { SU_COMMANDS, SU_EVENTS, type SmashUpCommand, type SmashUpCore } from '../../domain/types';
 import { smashUpSystemsForTest } from '../../game';
 import { createInitialSystemState, executePipeline } from '../../../../engine/pipeline';
@@ -558,6 +560,49 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         )).toBe(true);
     });
 
+    it('做个了断吧在真实 onTurnStart 队列消费时，仍应按所在基地把临界点降为 0', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_mean_streets',
+                    minions: [
+                        makeMinion('own', 'vigilantes_jacky_bill', '0', 4),
+                        makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                    ],
+                    ongoingActions: [{ uid: 'finish-1', defId: 'vigilantes_lets_finish_this', ownerId: '0' }],
+                }),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(queued?.type).toBe(SU_EVENTS.TRIGGER_QUEUED);
+
+        const queuedCore = reduce(core, queued as any);
+        const resolved = maybeResolveReactionQueue(makeMatchState(queuedCore, 'startTurn', '0'), defaultTestRandom, 1001);
+
+        expect(resolved).toBeDefined();
+        expect(resolved!.events.some(event =>
+            event.type === SU_EVENTS.BREAKPOINT_MODIFIED
+            && (event as any).payload?.baseIndex === 0
+            && (event as any).payload?.delta === -25,
+        )).toBe(true);
+        expect(resolved!.state.core.tempBreakpointModifiers?.[0]).toBe(-25);
+    });
+
     it('时髦镇会在影响本基地随从的战术后给该随从 +1 指示物', () => {
         const state = makeState({
             players: {
@@ -588,6 +633,59 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             && (event as any).payload?.minionUid === 'target'
             && (event as any).payload?.amount === 1,
         )).toBe(true);
+    });
+
+    it('时髦镇在真实后处理顺序里，战术真正影响这里的随从后仍应再补 1 枚指示物', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_funky_town', [
+                    makeMinion('target', 'truckers_good_buddy', '0', 2),
+                ]),
+            ],
+        });
+
+        const processed = SmashUpDomain.postProcessSystemEvents(
+            core,
+            [{
+                type: SU_EVENTS.ACTION_PLAYED,
+                payload: {
+                    playerId: '0',
+                    cardUid: 'inferno-1',
+                    defId: 'disco_dancers_disco_inferno',
+                    ownerId: '0',
+                },
+                timestamp: 1000,
+            } as any, {
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: {
+                    minionUid: 'target',
+                    baseIndex: 0,
+                    amount: 1,
+                    reason: 'disco_dancers_disco_inferno',
+                    sourcePlayerId: '0',
+                    sourceCardUid: 'inferno-1',
+                    sourceDefId: 'disco_dancers_disco_inferno',
+                    sourceControllerId: '0',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 1000,
+            } as any],
+            defaultTestRandom,
+            makeMatchState(core),
+        );
+
+        expect(processed.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'target'
+            && (event as any).payload?.reason === 'base_funky_town',
+        )).toBe(true);
+        expect(processed.matchState!.core.bases[0].minions.find(minion => minion.uid === 'target')?.powerCounters).toBe(2);
     });
 
     it('廉价小饭馆会在计分后让每位在这里有随从的玩家抓 1 张牌', () => {
@@ -763,6 +861,59 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             && (event as any).payload?.minionUid === 'enemy'
             && (event as any).payload?.amount === 1,
         )).toBe(true);
+    });
+
+    it('险恶街区在真实后处理顺序里，战术真正影响这里的敌方随从后仍应再补 1 枚指示物', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_mean_streets', [
+                    makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                ]),
+            ],
+        });
+
+        const processed = SmashUpDomain.postProcessSystemEvents(
+            core,
+            [{
+                type: SU_EVENTS.ACTION_PLAYED,
+                payload: {
+                    playerId: '0',
+                    cardUid: 'inferno-1',
+                    defId: 'disco_dancers_disco_inferno',
+                    ownerId: '0',
+                },
+                timestamp: 1000,
+            } as any, {
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: {
+                    minionUid: 'enemy',
+                    baseIndex: 0,
+                    amount: 1,
+                    reason: 'disco_dancers_disco_inferno',
+                    sourcePlayerId: '0',
+                    sourceCardUid: 'inferno-1',
+                    sourceDefId: 'disco_dancers_disco_inferno',
+                    sourceControllerId: '0',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 1000,
+            } as any],
+            defaultTestRandom,
+            makeMatchState(core),
+        );
+
+        expect(processed.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'enemy'
+            && (event as any).payload?.reason === 'base_the_mean_streets',
+        )).toBe(true);
+        expect(processed.matchState!.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.powerCounters).toBe(2);
     });
 
     it('猛龙怪客会在其他玩家消灭别人随从后反杀其一个随从，且每回合仅一次', () => {
@@ -1608,6 +1759,61 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             && (event as any).payload?.minionUid === 'roller'
             && (event as any).payload?.amount === 1,
         )).toBe(true);
+    });
+
+    it('轮滑舞娘在真实后处理顺序里，被迪斯科地狱放置第 1 枚指示物后仍应再补 1 枚', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_boogie_wonderland', [
+                    makeMinion('roller', 'disco_dancers_roller', '0', 2),
+                ]),
+            ],
+        });
+
+        const processed = SmashUpDomain.postProcessSystemEvents(
+            core,
+            [{
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: {
+                    minionUid: 'roller',
+                    baseIndex: 0,
+                    amount: 1,
+                    reason: 'disco_dancers_disco_inferno',
+                    sourcePlayerId: '0',
+                    sourceDefId: 'disco_dancers_disco_inferno',
+                    sourceControllerId: '0',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 1000,
+            } as any],
+            defaultTestRandom,
+            makeMatchState(core),
+        );
+
+        expect(processed.events.some(event =>
+            event.type === SU_EVENTS.TRIGGER_QUEUED
+            && (event as any).payload?.triggers?.some((trigger: any) =>
+                trigger.sourceDefId === 'disco_dancers_roller'
+                && trigger.sourceCardUid === 'roller'
+                && trigger.triggerMinionUid === 'roller',
+            ),
+        )).toBe(true);
+
+        expect(processed.events.some(event =>
+            event.type === SU_EVENTS.TRIGGER_CONSUMED
+        )).toBe(true);
+        expect(processed.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload?.minionUid === 'roller'
+            && (event as any).payload?.reason === 'disco_dancers_roller',
+        )).toBe(true);
+        expect(processed.matchState!.core.bases[0].minions.find(minion => minion.uid === 'roller')?.powerCounters).toBe(2);
     });
 
     it('咬紧牙关会让宿主随从 +2 战力', () => {

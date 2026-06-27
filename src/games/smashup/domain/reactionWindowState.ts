@@ -1,5 +1,6 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { getCurrentScoringBaseIndex } from './scoringSession';
+import { hasSmashUpResponderDrivenReactionOptions } from './reactionSession';
 import type { SmashUpCore, SmashUpReactionSession } from './types';
 
 function getReactionSessionFromResolution(
@@ -37,6 +38,7 @@ export interface SmashUpReactionWindowPresentation extends SmashUpReactionWindow
     responderQueue: PlayerId[];
     currentResponderIndex: number;
     passedPlayers: PlayerId[];
+    showsPassWindow: boolean;
 }
 
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
@@ -117,6 +119,7 @@ function getNormalizedLegacyReactionWindow(
         responderQueue,
         currentResponderIndex: Math.max(0, responderQueue.indexOf(activePlayerId)),
         passedPlayers: (legacyWindow.passedPlayers ?? []).filter(playerId => responderQueue.includes(playerId)),
+        showsPassWindow: true,
     };
 }
 
@@ -187,6 +190,11 @@ export function getSmashUpReactionWindowPresentation(
             responderQueue,
             currentResponderIndex,
             passedPlayers: mirroredPassedPlayers,
+            showsPassWindow: hasSmashUpResponderDrivenReactionOptions(
+                state,
+                normalizedSession,
+                state.core.turnNumber ?? 0,
+            ),
         };
     }
 
@@ -205,6 +213,7 @@ export function getSmashUpReactionWindowPresentation(
         responderQueue: responseWindow.responderQueue,
         currentResponderIndex: responseWindow.currentResponderIndex,
         passedPlayers: responseWindow.passedPlayers ?? [],
+        showsPassWindow: true,
     };
 }
 

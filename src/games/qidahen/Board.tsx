@@ -4376,23 +4376,26 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
 
     const resolvePendingAction = React.useCallback((choiceValue: QidahenPendingTargetChoiceValue, attackerCasualtyPriority?: QidahenCasualtyPriority, defenderCasualtyPriority?: QidahenCasualtyPriority, committedTroops?: number) => {
         const { choiceId, ...choicePayload } = choiceValue;
-        const mergedValue = {
-            ...choicePayload,
+        const interactionMergedValue = {
             ...(committedTroops != null ? { committedTroops } : {}),
             ...(attackerCasualtyPriority ? { attackerCasualtyPriority } : {}),
             ...(defenderCasualtyPriority ? { defenderCasualtyPriority } : {}),
+        };
+        const legacyPayload = {
+            ...choicePayload,
+            ...interactionMergedValue,
         };
         if (activePendingTargetInteractionId && pendingTargetAction) {
             dispatch(INTERACTION_COMMANDS.RESPOND as keyof QidahenCommandMap, {
                 interactionId: activePendingTargetInteractionId,
                 optionId: choiceId,
-                ...(Object.keys(mergedValue).length > 0 ? { mergedValue } : {}),
+                ...(Object.keys(interactionMergedValue).length > 0 ? { mergedValue: interactionMergedValue } : {}),
             } as QidahenCommandMap[keyof QidahenCommandMap]);
             return;
         }
         dispatch(
             QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION,
-            Object.keys(mergedValue).length > 0 ? mergedValue : {},
+            Object.keys(legacyPayload).length > 0 ? legacyPayload : {},
         );
     }, [activePendingTargetInteractionId, dispatch, pendingTargetAction]);
 

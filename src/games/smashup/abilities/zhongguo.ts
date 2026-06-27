@@ -4626,15 +4626,16 @@ function vigilantesBrojakTrigger(ctx: TriggerContext): SmashUpEvent[] | TriggerR
 }
 
 function letsFinishThisTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    if (ctx.baseIndex === undefined || !ctx.sourceControllerId) return [];
+    const triggerBaseIndex = ctx.sourceBaseIndex ?? ctx.baseIndex;
+    if (triggerBaseIndex === undefined || !ctx.sourceControllerId) return [];
     if (ctx.playerId !== ctx.sourceControllerId) return [];
-    const base = ctx.state.bases[ctx.baseIndex];
+    const base = ctx.state.bases[triggerBaseIndex];
     const baseDef = base ? getBaseDef(base.defId) : undefined;
     if (!base || !baseDef) return [];
     const hasOwn = base.minions.some(minion => minion.controller === ctx.sourceControllerId);
     const hasOther = base.minions.some(minion => minion.controller !== ctx.sourceControllerId);
     if (!hasOwn || !hasOther) return [];
-    return [modifyBreakpoint(ctx.baseIndex, -baseDef.breakpoint, 'vigilantes_lets_finish_this', ctx.now)];
+    return [modifyBreakpoint(triggerBaseIndex, -baseDef.breakpoint, 'vigilantes_lets_finish_this', ctx.now)];
 }
 
 function jackyBillTrigger(ctx: TriggerContext): SmashUpEvent[] {
@@ -4812,7 +4813,11 @@ function discoRollerTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (ctx.baseIndex === undefined || !ctx.sourceCardUid || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
     const base = ctx.state.bases[ctx.baseIndex];
     const self = base?.minions.find(minion => minion.uid === ctx.sourceCardUid);
-    if (!self || (self.powerCounters ?? 0) > 0) return [];
+    if (!self) return [];
+    const powerCountersBeforeAffect = typeof ctx.counterDelta === 'number'
+        ? self.powerCounters - ctx.counterDelta
+        : self.powerCounters;
+    if (powerCountersBeforeAffect > 0) return [];
     return [addPowerCounter(self.uid, ctx.baseIndex, 1, 'disco_dancers_roller', ctx.now, {
         sourcePlayerId: self.controller,
         sourceDefId: 'disco_dancers_roller',

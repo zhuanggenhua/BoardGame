@@ -1,8 +1,8 @@
 /**
  * Daze / Stun 语义回归测试
  *
- * - Daze：若在当前回合仍存在，应禁止打牌（反馈：中了眩晕还能出牌）。
- * - Stun：本回合内禁止打牌。
+ * - Daze：当前攻击链路内应禁止打牌。
+ * - legacy Stun：兼容旧录入，沿用同一禁止行动语义。
  */
 
 import { describe, it, expect } from 'vitest';

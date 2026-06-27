@@ -352,7 +352,7 @@ export const PYROMANCER_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
   { heroId: 'pyromancer', tokenId: 'fire_mastery', wikiName: 'Fire Mastery', wikiDescription: 'Used by abilities to increase fire damage. Consumed by abilities automatically.', wikiStackLimit: 5, wikiCategory: 'consumable' },
   { heroId: 'pyromancer', tokenId: 'knockdown', wikiName: 'Knockdown', wikiDescription: 'Skip your next Offensive Roll Phase. You may spend 2 CP to remove this instead.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
   { heroId: 'pyromancer', tokenId: 'burn', wikiName: 'Burn', wikiDescription: 'Persistent. Does not stack. During Upkeep, take 2 damage.', wikiTiming: 'upkeep', wikiStackLimit: 1, wikiCategory: 'debuff' },
-  { heroId: 'pyromancer', tokenId: 'daze', wikiName: 'Stun', wikiDescription: 'Skip your next Offensive Roll Phase. Then remove this token.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
+  { heroId: 'pyromancer', tokenId: 'daze', wikiName: 'Stun', wikiDescription: 'After the current attack ends, remove this token and the current attacker attacks again immediately.', wikiTiming: 'onAttackEnd', wikiStackLimit: 1, wikiCategory: 'debuff' },
 ];
 
 export const MOON_ELF_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
@@ -438,7 +438,7 @@ export const MONK_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
 
 export const PYROMANCER_CARD_SNAPSHOTS: WikiCardSnapshot[] = [
   { cardId: 'card-turning-up-the-heat', heroId: 'pyromancer', wikiName: 'Turning Up the Heat', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Gain 1 FM. You may spend CP to gain additional FM (1 CP per FM).', wikiType: 'action' },
-  { cardId: 'card-infernal-embrace', heroId: 'pyromancer', wikiName: 'Infernal Embrace', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Roll 1 die: Fire - gain 2 FM; otherwise draw 1 card.', wikiType: 'action' },
+  { cardId: 'card-infernal-embrace', heroId: 'pyromancer', wikiName: 'Infernal Embrace', wikiCpCost: 0, wikiTiming: 'main', wikiDescription: 'Roll 1 die: Meteor - gain Fire Mastery to the cap; otherwise draw 1 card.', wikiType: 'action' },
   { cardId: 'card-fan-the-flames', heroId: 'pyromancer', wikiName: 'Fan the Flames', wikiCpCost: 3, wikiTiming: 'main', wikiDescription: 'FM cap +1. Gain 2 FM.', wikiType: 'action' },
   { cardId: 'card-red-hot', heroId: 'pyromancer', wikiName: 'Red Hot', wikiCpCost: 1, wikiTiming: 'roll', wikiDescription: 'Deal 1 damage per FM you have.', wikiType: 'action' },
   { cardId: 'card-get-fired-up', heroId: 'pyromancer', wikiName: 'Get Fired Up', wikiCpCost: 1, wikiTiming: 'roll', wikiDescription: 'Roll dice for bonus fire effects.', wikiType: 'action' },

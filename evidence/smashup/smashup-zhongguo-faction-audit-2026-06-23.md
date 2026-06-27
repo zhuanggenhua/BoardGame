@@ -4,7 +4,7 @@
 
 ## 结论等级
 
-本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 39 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
+本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 44 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
 
 当前**不能**写成：
 
@@ -16,7 +16,7 @@
 
 - `L0/L1`：四派系卡牌、基地、atlas、manifest 合同已存在，见 intake 合同
 - `L2`：当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系对象
-- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“快如闪电”出牌阶段真实入口 E2E、“人人都是功夫高手”出牌阶段真实入口 E2E、“平头彼特”天赋真实入口 E2E、“短路点火”出牌阶段真实入口 E2E、“高速追逐战”天赋真实入口 E2E、“暴走卡车”天赋真实入口 E2E、“埃尔班迪多”打出后控权真实入口 E2E、“埃尔班迪多”天赋转移真实入口 E2E、“直面恐惧”出牌阶段真实入口 E2E、“铁杆神探”出牌阶段真实入口 E2E、“活着”出牌阶段真实入口 E2E、“庆祝”出牌阶段真实入口 E2E、“迪斯科地狱”出牌阶段真实入口 E2E、“破萝飞龙”出牌阶段真实入口 E2E、“瞌睡的亨利”出牌阶段真实入口 E2E、“修理”出牌阶段真实入口 E2E、“谁爱你，小老弟？”出牌阶段真实入口 E2E、“猛龙怪客”对手消灭后反杀真实入口 E2E、“不屑一顾”压制基地能力后放开《打到穿越》目标过滤真实入口 E2E、“觉得运气不错？”宿主控制者打出战术后自毁宿主真实入口 E2E、“街头正义”保护过滤真实入口 E2E、“一天的快乐”出牌阶段真实入口 E2E、“凶恶百倍”出牌阶段真实入口 E2E、“藏身处”保护过滤真实入口 E2E、“杰基比尔”出牌后被他人战术触发真实入口 E2E、“今晚嗨起来”与“舞王”联动真实入口 E2E、“我很亢奋”与“神探布洛杰克”联动真实入口 E2E、“最后的舞曲”出牌阶段真实入口 E2E、“男人雨”出牌阶段真实入口 E2E、“打到穿越”出牌阶段真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
+- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“快如闪电”出牌阶段真实入口 E2E、“人人都是功夫高手”出牌阶段真实入口 E2E、“平头彼特”天赋真实入口 E2E、“短路点火”出牌阶段真实入口 E2E、“高速追逐战”天赋真实入口 E2E、“暴走卡车”天赋真实入口 E2E、“埃尔班迪多”打出后控权真实入口 E2E、“埃尔班迪多”天赋转移真实入口 E2E、“直面恐惧”出牌阶段真实入口 E2E、“铁杆神探”出牌阶段真实入口 E2E、“活着”出牌阶段真实入口 E2E、“庆祝”出牌阶段真实入口 E2E、“迪斯科地狱”出牌阶段真实入口 E2E、“轮滑舞娘”被《迪斯科地狱》影响后自补力量指示物真实入口 E2E、“破萝飞龙”出牌阶段真实入口 E2E、“瞌睡的亨利”出牌阶段真实入口 E2E、“修理”出牌阶段真实入口 E2E、“谁爱你，小老弟？”出牌阶段真实入口 E2E、“猛龙怪客”对手消灭后反杀真实入口 E2E、“不屑一顾”压制基地能力后放开《打到穿越》目标过滤真实入口 E2E、“觉得运气不错？”宿主控制者打出战术后自毁宿主真实入口 E2E、“街头正义”保护过滤真实入口 E2E、“一天的快乐”出牌阶段真实入口 E2E、“凶恶百倍”出牌阶段真实入口 E2E、“藏身处”保护过滤真实入口 E2E、“装甲卡车”保护过滤真实入口 E2E、“杰基比尔”出牌后被他人战术触发真实入口 E2E、“今晚嗨起来”与“舞王”联动真实入口 E2E、“我很亢奋”与“神探布洛杰克”联动真实入口 E2E、“最后的舞曲”出牌阶段真实入口 E2E、“男人雨”出牌阶段真实入口 E2E、“打到穿越”出牌阶段真实入口 E2E、“做个了断吧”回合开始临界点修正真实入口 E2E、“时髦镇”战术影响随从后补力量指示物真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E、“卡车服务站”基地计分后真实入口 E2E 与“险恶街区”战术影响敌方随从后追加力量指示物真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
 - `整批状态`：仍在实施中
 
 关联 intake 合同：
@@ -63,7 +63,7 @@
 8. 迪厅舞王续做 L2 补证
    - 迪斯科·卢（`disco_dancers_ul_disco_lou`）
    - 迪斯科地狱（`disco_dancers_disco_inferno`）
-   - 轮滑舞娘（`disco_dancers_roller`）真实页试探：对象级已过，但当前用《迪斯科地狱》影响《轮滑舞娘》本人后，真实页面只拿到《迪斯科地狱》自己的 `+1` 指示物，未拿到《轮滑舞娘》追加 `+1`；暂不计入 representative 已完成
+   - 轮滑舞娘（`disco_dancers_roller`）
    - 庆祝（`disco_dancers_celebration`）
    - 男人雨（`disco_dancers_its_raining_men`）
    - 我很亢奋（`disco_dancers_im_so_excited`）
@@ -76,7 +76,6 @@
    - 卡车服务站（`base_truck_stop`）
    - 摇摆仙境（`base_boogie_wonderland`）
    - 险恶街区（`base_the_mean_streets`）
-   - 险恶街区（`base_the_mean_streets`）真实页试探：对象级已过，但当前用《迪斯科地狱》影响本基地敌方随从后，真实页面只拿到动作自己的 `+1` 指示物，未拿到基地追加 `+1`；暂不计入 representative 已完成
 10. 行为修正
    - 修理（`truckers_fixin_to_fix_it`）从误用普通抽牌事件改为弃牌堆回手事件，L2 已证明弃牌堆战术进入手牌且不错误拿随从
    - 直面恐惧（`vigilantes_scared_straight`）不再依赖普通战术不存在的预选基地，改为从所有“你有随从”的基地选择其他玩家随从
@@ -107,6 +106,7 @@
    - 活着（`disco_dancers_stayin_alive`）：新增真实页面 E2E，在出牌阶段打出该动作后，直接断言弃牌堆中与己方场上同名的随从真实回到手牌、非同名弃牌仍留在弃牌堆、《活着》自身进入弃牌堆，且 `triggerQueue` / 交互 / 响应窗口清空
    - 庆祝（`disco_dancers_celebration`）：新增真实页面 E2E，在出牌阶段打出该动作后，先真实断言己方获得两次额外战术额度；随后在同回合继续实际打出两张《最后的舞曲》完成两次额度消费，最终断言两张额外战术都成功结算、两名己方目标随从离场、己方获得 `2 VP`，且 `actionsPlayed=3` / `actionLimit=3` / `triggerQueue` / 交互 / 响应窗口清空；当前页面前提已补证为需先关闭“已打出特写”遮罩再继续点手牌
    - 迪斯科地狱（`disco_dancers_disco_inferno`）：新增真实页面 E2E，在出牌阶段打出该动作后先选择目标随从，最终断言目标随从真实获得 `1` 枚力量指示物、己方真实抓到 `1` 张牌、《迪斯科地狱》进入弃牌堆，且 `actionsPlayed=1` / `triggerQueue` / 交互 / 响应窗口清空
+   - 轮滑舞娘（`disco_dancers_roller`）：新增真实页面 E2E，在《迪斯科地狱》真实选择《轮滑舞娘》本人后，最终断言她先吃到《迪斯科地狱》的 `+1` 指示物，再因自身能力额外补 `1` 枚力量指示物，结算后总力量从 `2` 到 `4`，且 `triggerQueue` / 交互 / 响应窗口清空
    - 破萝飞龙（`vigilantes_stoneford`）：新增真实页面 E2E，在出牌阶段把该随从打到基地后，无交互直结算断言牌库中的第一张战术真实进手牌、该战术离开牌库、非战术仍按相对顺序留在牌库、《破萝飞龙》成功进场，且 `triggerQueue` / 交互 / 响应窗口清空
    - 瞌睡的亨利（`vigilantes_dusty_henry`）：新增真实页面 E2E，在出牌阶段把该随从打到基地后进入真实目标选择 prompt，选择本基地一个随从后，最终断言目标随从离开基地并洗回其拥有者牌库、《瞌睡的亨利》成功进场，且 `triggerQueue` / 交互 / 响应窗口清空
    - 修理（`truckers_fixin_to_fix_it`）：新增真实页面 E2E，在出牌阶段打出该动作后，无交互直结算断言弃牌堆中的战术真实回到手牌、非战术仍留在弃牌堆、《修理》自身进入弃牌堆，且 `actionsPlayed=1` / `triggerQueue` / 交互 / 响应窗口清空
@@ -128,6 +128,7 @@
    - 打到穿越（`vigilantes_knocked_into_next_week`）：新增真实页面 E2E，在出牌阶段打出该动作后选择目标随从，最终断言目标随从离开基地并洗回其拥有者牌库，且 `triggerQueue` / 交互 / 响应窗口清空
    - 廉价小饭馆（`base_the_greasy_spoon`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言在该基地有随从的双方各抓 1，并清理交互 / 响应窗口 / `triggerQueue`；另新增服务端计分命令链测试，从 `ADVANCE_PHASE` 到双方 `RESPONSE_PASS` 后验证基地 `afterScoring` 让在场双方各抓 1
    - 卡车服务站（`base_truck_stop`）：新增真实页面 E2E，从出牌阶段点击“结束回合”进入计分，最终断言该基地计分后把这里的随从移动到另一基地，并清理交互 / 响应窗口 / `triggerQueue`
+   - 险恶街区（`base_the_mean_streets`）：新增真实页面 E2E，在《迪斯科地狱》真实选择本基地敌方随从后，最终断言目标先吃到动作本身的 `+1` 指示物，再因基地能力额外补 `1` 枚力量指示物，结算后总力量从 `2` 到 `4`，且 `triggerQueue` / 交互 / 响应窗口清空
 
 ## 本轮验证
 
@@ -239,6 +240,14 @@
 - `npx eslint e2e/smashup/smashup-zhongguo-ul-disco-lou.e2e.ts`（0 error）
 - `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "迪斯科·卢会把弃牌堆中的战术放到牌库顶"`（1 passed）
 - `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-ul-disco-lou.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "轮滑舞娘|险恶街区"`（4 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-roller.e2e.ts`（zhongguo 新增链路，1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-mean-streets-base.e2e.ts`（zhongguo 新增链路，1 passed）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "做个了断吧|时髦镇|轮滑舞娘|险恶街区"`（8 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-funky-town-base.e2e.ts`（zhongguo 新增链路，1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-lets-finish-this.e2e.ts`（zhongguo 新增链路，1 passed；收口口径改为只验证“回合开始时把基地临界点降为 0”，不再把 `scoreBases` 才会锁定的 `scoringEligibleBaseIndices` 误算进同一合同）
+- `npx eslint e2e/smashup/smashup-zhongguo-armored-truck-protection.e2e.ts`（0 error）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-armored-truck-protection.e2e.ts`（zhongguo 新增链路，1 passed）
 
 新增 E2E 文件：
 
@@ -279,6 +288,11 @@
 - `e2e/smashup/smashup-zhongguo-jacky-bill.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-greasy-spoon-base.e2e.ts`
 - `e2e/smashup/smashup-zhongguo-truck-stop-base.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-roller.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-mean-streets-base.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-funky-town-base.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-lets-finish-this.e2e.ts`
+- `e2e/smashup/smashup-zhongguo-armored-truck-protection.e2e.ts`
 
 新增截图证据：
 
@@ -391,6 +405,13 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-greasy-spoon-base.e2e\计分后廉价小饭馆应让在场双方各抓-1-张牌\zhongguo-greasy-spoon-final-state.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-truck-stop-base.e2e\计分后卡车服务站应把这里的随从移动到另一个基地\zhongguo-truck-stop-before-scoring.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-truck-stop-base.e2e\计分后卡车服务站应把这里的随从移动到另一个基地\zhongguo-truck-stop-final-state.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-roller.e2e\用迪斯科地狱影响轮滑舞娘时，若她原本没有力量指示物，应再给自己补-1-枚\zhongguo-roller-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-roller.e2e\用迪斯科地狱影响轮滑舞娘时，若她原本没有力量指示物，应再给自己补-1-枚\zhongguo-roller-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-mean-streets-base.e2e\在险恶街区用战术影响这里的敌方随从后，应让该敌方随从额外获得-1-枚力量指示物\zhongguo-mean-streets-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-mean-streets-base.e2e\在险恶街区用战术影响这里的敌方随从后，应让该敌方随从额外获得-1-枚力量指示物\zhongguo-mean-streets-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-funky-town-base.e2e\在时髦镇打出影响本基地随从的战术后，应额外给该随从-1-枚力量指示物\zhongguo-funky-town-target.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-funky-town-base.e2e\在时髦镇打出影响本基地随从的战术后，应额外给该随从-1-枚力量指示物\zhongguo-funky-town-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-lets-finish-this.e2e\控制者回合开始时，若基地上有双方随从，应把该基地临界点降为-0\zhongguo-lets-finish-this-resolved.png`
 
 ## 批次矩阵（按对象粒度分组）
 
@@ -466,6 +487,10 @@
 - `base_the_greasy_spoon`
 - `base_truck_stop`
 
+`L3/L4 representative 已补证`
+
+- `truckers_armored_truck`：`e2e/smashup/smashup-zhongguo-armored-truck-protection.e2e.ts` 已证明“保护生效时，对手真实打出《直面恐惧》不会把同基地受保护己方随从列入移动目标；未受保护目标仍可被正常移动”
+
 ### 迪厅舞王（13 张牌 + 2 个基地）
 
 `L2 已证实`
@@ -514,6 +539,7 @@
    - 埃尔班迪多（`truckers_el_bandido`）已覆盖真实页面“点击随从触发天赋 -> 选择转移模式 -> 选择基地战术 -> 选择目标基地”整段入口链与最终状态清理
    - 快如闪电（`kung_fu_fighters_fast_as_lightning`）已覆盖真实页面“打出动作 -> 选择目标随从 -> 获得 `+2` -> 同回合真实点击《旋风女侠》完成消灭 -> 目标改回拥有者手牌”整段入口链与最终状态清理，并补证唯一合法目标可直接结算
    - 直面恐惧（`vigilantes_scared_straight`）已覆盖真实页面“选择其他玩家随从 -> 选择目标基地 -> 获得 banked 额外战术额度 -> 同回合继续实际打出额外战术”整段入口链与最终状态清理
+   - 装甲卡车（`truckers_armored_truck`）已覆盖真实页面“保护持续战术已在场 -> 对手真实打出《直面恐惧》 -> 目标列表过滤受保护随从 -> 未受保护目标仍可被移动”整段入口链与最终状态清理
    - 铁杆神探（`vigilantes_shift`）已覆盖真实页面“打出随从 -> 无交互直结算把弃牌堆至多两个随从移到牌库顶 -> 弃牌堆清理 -> 进场完成”整段入口链与最终状态清理
    - 活着（`disco_dancers_stayin_alive`）已覆盖真实页面无交互直结算链：同名弃牌随从回手、异名弃牌保留、行动自身进入弃牌堆，以及最终状态清理
    - 庆祝（`disco_dancers_celebration`）已覆盖真实页面“打出动作 -> 获得两次额外战术额度 -> 关闭已打出特写遮罩 -> 同回合继续实际打出两张额外战术”整段入口链与最终状态清理
@@ -533,6 +559,6 @@
 
 ## 本轮不宣称完成的原因
 
-1. 当前已清空对象级 `L2` 待补证，但只有三十九条代表性真实入口 E2E，仍不能直接代表四派系 L3/L4 全收口
-2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、快如闪电（`kung_fu_fighters_fast_as_lightning`）、人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）、平头彼特（`truckers_cab_over_pete`）、短路点火（`truckers_hotwire`）、高速追逐战（`truckers_high_speed_chase`）、暴走卡车（`truckers_dekotora`）、埃尔班迪多（`truckers_el_bandido`）打出控权、埃尔班迪多（`truckers_el_bandido`）天赋转移、直面恐惧（`vigilantes_scared_straight`）、铁杆神探（`vigilantes_shift`）、活着（`disco_dancers_stayin_alive`）、庆祝（`disco_dancers_celebration`）、迪斯科地狱（`disco_dancers_disco_inferno`）、破萝飞龙（`vigilantes_stoneford`）、瞌睡的亨利（`vigilantes_dusty_henry`）、修理（`truckers_fixin_to_fix_it`）、谁爱你，小老弟？（`vigilantes_who_loves_ya_baby`）、猛龙怪客（`vigilantes_death_wisher`）、不屑一顾（`vigilantes_shrug_it_off`）、觉得运气不错？（`vigilantes_feeling_lucky`）、今晚嗨起来 + 舞王（`disco_dancers_get_down_tonight` + `disco_dancers_dancing_king`）、我很亢奋 + 神探布洛杰克（`disco_dancers_im_so_excited` + `vigilantes_brojak`）、最后的舞曲（`disco_dancers_last_dance`）、男人雨（`disco_dancers_its_raining_men`）、打到穿越（`vigilantes_knocked_into_next_week`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
+1. 当前已清空对象级 `L2` 待补证，但当前只确认到四十四条代表性真实入口 E2E，仍不能直接代表四派系 L3/L4 全收口
+2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、快如闪电（`kung_fu_fighters_fast_as_lightning`）、人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）、平头彼特（`truckers_cab_over_pete`）、短路点火（`truckers_hotwire`）、高速追逐战（`truckers_high_speed_chase`）、暴走卡车（`truckers_dekotora`）、埃尔班迪多（`truckers_el_bandido`）打出控权、埃尔班迪多（`truckers_el_bandido`）天赋转移、直面恐惧（`vigilantes_scared_straight`）、装甲卡车（`truckers_armored_truck`）、铁杆神探（`vigilantes_shift`）、活着（`disco_dancers_stayin_alive`）、庆祝（`disco_dancers_celebration`）、迪斯科地狱（`disco_dancers_disco_inferno`）、轮滑舞娘（`disco_dancers_roller`）、破萝飞龙（`vigilantes_stoneford`）、瞌睡的亨利（`vigilantes_dusty_henry`）、修理（`truckers_fixin_to_fix_it`）、谁爱你，小老弟？（`vigilantes_who_loves_ya_baby`）、猛龙怪客（`vigilantes_death_wisher`）、不屑一顾（`vigilantes_shrug_it_off`）、觉得运气不错？（`vigilantes_feeling_lucky`）、今晚嗨起来 + 舞王（`disco_dancers_get_down_tonight` + `disco_dancers_dancing_king`）、我很亢奋 + 神探布洛杰克（`disco_dancers_im_so_excited` + `vigilantes_brojak`）、最后的舞曲（`disco_dancers_last_dance`）、男人雨（`disco_dancers_its_raining_men`）、打到穿越（`vigilantes_knocked_into_next_week`）、做个了断吧（`vigilantes_lets_finish_this`）、时髦镇（`base_funky_town`）、廉价小饭馆（`base_the_greasy_spoon`）、卡车服务站（`base_truck_stop`）与险恶街区（`base_the_mean_streets`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
 3. 本文件只是实施审计底稿，不是最终 rollup

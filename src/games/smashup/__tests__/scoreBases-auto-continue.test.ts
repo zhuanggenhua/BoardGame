@@ -1817,6 +1817,8 @@ describe('scoreBases 阶段自动推进', () => {
     });
 
     it('wizards_arcane_protector 已进场后，afterScoring live 反应不应继续暴露其 special', async () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+        initAllAbilities();
         registerArcaneProtectorSpecialForTests();
 
         const initialState = {

@@ -384,39 +384,40 @@ function resolvePassivePhaseTriggerEvents(args: {
 }
 
 /**
- * 计算玩家当前的眩晕层数（包含 core 中的和 events 中的）
+ * 计算玩家当前“额外攻击类眩晕”层数（包含 core 中的和 events 中的）
  * 
  * @param core - 当前游戏状态
  * @param playerId - 玩家 ID
  * @param events - 待处理的事件数组
  * @returns 眩晕总层数
  */
-function getTotalDazeStacks(
+function getTotalImmediateExtraAttackStacksByStatus(
     core: DiceThroneCore,
     playerId: string,
-    events: GameEvent[]
+    events: GameEvent[],
+    statusId: string,
 ): number {
     const player = core.players[playerId];
-    const dazeInCore = player?.statusEffects[STATUS_IDS.DAZE] ?? 0;
+    const statusInCore = player?.statusEffects[statusId] ?? 0;
 
-    const dazeAppliedInEvents = events.filter(e =>
+    const appliedInEvents = events.filter(e =>
         e.type === 'STATUS_APPLIED' &&
         e.payload.targetId === playerId &&
-        e.payload.statusId === STATUS_IDS.DAZE
+        e.payload.statusId === statusId
     ).reduce((sum, e) => sum + (e.payload as any).stacks, 0);
 
-    const dazeRemovedInEvents = events.filter(e => 
+    const removedInEvents = events.filter(e =>
         e.type === 'STATUS_REMOVED' && 
         e.payload.targetId === playerId && 
-        e.payload.statusId === STATUS_IDS.DAZE
+        e.payload.statusId === statusId
     ).reduce((sum, e) => sum + e.payload.stacks, 0);
 
-    return dazeInCore + dazeAppliedInEvents - dazeRemovedInEvents;
+    return statusInCore + appliedInEvents - removedInEvents;
 }
 
 /**
- * 检查防御方是否有晕眩（daze）
- * 晕眩规则：攻击结算后，如果防御方有眩晕，立即移除眩晕并让攻击方再次攻击
+ * 检查防御方是否有“额外攻击类眩晕”（daze / legacy stun）
+ * 规则：攻击结算后，如果防御方有这类眩晕，立即移除并让攻击方再次攻击
  * 
  * 正确理解：
  * - Player A 攻击 Player B，施加眩晕给 Player B
@@ -439,20 +440,27 @@ function checkDazeExtraAttack(
     const { attackerId, defenderId } = attackResolved.payload;
     if (!defenderId) return { dazeEvents: [], triggered: false };
     
-    // ✅ 检查防御方是否有眩晕（不是攻击方！）
-    const totalDaze = getTotalDazeStacks(core, defenderId, events);
-    
+    const statusIds = [STATUS_IDS.DAZE, STATUS_IDS.STUN];
+    const statusTotals = statusIds
+        .map((statusId) => ({
+            statusId,
+            stacks: getTotalImmediateExtraAttackStacksByStatus(core, defenderId, events, statusId),
+        }))
+        .filter((entry) => entry.stacks > 0);
+
+    const totalDaze = statusTotals.reduce((sum, entry) => sum + entry.stacks, 0);
     if (totalDaze <= 0) return { dazeEvents: [], triggered: false };
 
     const dazeEvents: GameEvent[] = [];
 
-    // 移除防御方的晕眩状态
-    dazeEvents.push({
-        type: 'STATUS_REMOVED',
-        payload: { targetId: defenderId, statusId: STATUS_IDS.DAZE, stacks: totalDaze },
-        sourceCommandType: commandType,
-        timestamp,
-    } as StatusRemovedEvent);
+    for (const entry of statusTotals) {
+        dazeEvents.push({
+            type: 'STATUS_REMOVED',
+            payload: { targetId: defenderId, statusId: entry.statusId, stacks: entry.stacks },
+            sourceCommandType: commandType,
+            timestamp,
+        } as StatusRemovedEvent);
+    }
 
     // 触发额外攻击：攻击方再次攻击防御方
     dazeEvents.push({
@@ -890,22 +898,6 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         targetId: core.activePlayerId,
                         statusId: STATUS_IDS.KNOCKDOWN,
                         stacks: knockdownStacks,
-                    },
-                    sourceCommandType: command.type,
-                    timestamp,
-                };
-                events.push(statusRemovedEvent);
-                return { events, overrideNextPhase: 'main2' };
-            }
-            const stunStacks = player?.statusEffects[STATUS_IDS.STUN] ?? 0;
-            if (stunStacks > 0) {
-                // 眩晕（stun）：跳过本次 offensiveRoll 并移除
-                const statusRemovedEvent: StatusRemovedEvent = {
-                    type: 'STATUS_REMOVED',
-                    payload: {
-                        targetId: core.activePlayerId,
-                        statusId: STATUS_IDS.STUN,
-                        stacks: stunStacks,
                     },
                     sourceCommandType: command.type,
                     timestamp,
