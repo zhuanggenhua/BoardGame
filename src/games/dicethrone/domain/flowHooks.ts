@@ -199,7 +199,7 @@ function createOffensiveRollEndTokenChoiceEvent(
         return null;
     }
 
-    if (hasPendingBonusDiceSettlement(core) || core.pendingAttack.offensiveRollEndTokenResolved) {
+    if (hasInteractivePendingBonusDiceSettlement(core) || core.pendingAttack.offensiveRollEndTokenResolved) {
         return null;
     }
 

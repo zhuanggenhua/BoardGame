@@ -242,6 +242,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 >
 > **Skill 选型与网页能力分工（强制）**：
 > - **项目专用 workflow 优先**：如果 `.codex/skill/`、项目脚本或项目文档已经覆盖当前场景，优先走项目内 workflow；禁止先跳到通用 skill 或外部抓取平台，绕开现有项目流程。
+> - **新增派系 / 新英雄 / 新角色默认先走项目 skill（强制）**：只要任务语义是“新增派系 / 新英雄 / 新角色 / 从素材做到可玩 / 数据录入 + 资源上传 + 审计 + 端到端”，动手前必须先读 `./.codex/skill/add-new-faction/SKILL.md` 与 `./.codex/skill/data-entry-workflow/SKILL.md`，再按 `gameId` 进入对应专项 workflow；不得跳过 skill 直接凭记忆开做，也不得只做静态接入或代表链后误报“新增已完成”。
+> - **Dice Throne 新英雄入口（强制）**：如果当前新增对象属于 Dice Throne 新英雄 / 新角色，在读完上述两个项目 skill 后，必须继续读 `docs/games/dicethrone/workflows/dicethrone-hero-intake.md`；对象级审计、evidence 留档与真实入口 E2E 默认属于同一交付，不需要等用户再次提醒。
 > - **读链接 / 搜网页 / 查在线资料优先级**：用户给出 URL、要求搜索网页、读取 Wiki、查社媒/视频/社区内容时，默认优先使用**当前会话自带浏览/搜索能力**，并按需配合 `agent-reach`；需要多搜索引擎对照、`site:` / `filetype:` / 时间过滤时，再补 `multi-search-engine`。一般研究、单页阅读、小范围核对，不默认引入额外抓取平台。
 > - **UI/UX skill 分工**：当前会话可用 `frontend-design` 与 `ui-ux-pro-max` 时，默认前者负责**审美方向、页面概念、避免 AI 味**，后者负责**风格检索、设计系统、配色/字体候选与落地检查项**。两者冲突时，以 `frontend-design` 定方向，以 `ui-ux-pro-max` 做收敛与验证，不得让后者把前者已定的视觉路线带偏。
 > - **Firecrawl 定位**：`Firecrawl` 视为**工程化网页抓取/浏览器自动化能力**，不是本项目默认的“搜一下/读个页面”入口。只有在以下场景才评估使用或安装：① 需要批量 `crawl/map/scrape` 大量页面；② 需要真实浏览器交互、登录态、点按钮/翻页后再取内容；③ 需要把网页采集能力沉淀进长期可复用的脚本、服务或流水线。除此之外，默认优先当前 Codex 会话浏览能力与现有 skills。

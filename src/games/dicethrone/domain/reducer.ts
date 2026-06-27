@@ -651,13 +651,14 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
             tokenActiveUseTiming === 'onOffensiveRollEnd'
             || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
         );
+    const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice && customId !== 'use-ninjutsu';
 
     if (
         sourceAbilityId
         && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
-        && isOffensiveRollEndChoice
+        && shouldAutoResolveOffensiveRollEndChoice
     ) {
         resultState = {
             ...resultState,

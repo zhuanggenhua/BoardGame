@@ -9,11 +9,12 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bm
 const usage = () => {
     console.log(`用法:
   node scripts/verify/open-verified-image.mjs --path <图片路径>
+  node scripts/verify/open-verified-image.mjs --path <图片路径1> --path <图片路径2>
   node scripts/verify/open-verified-image.mjs --paths <图片路径1> <图片路径2> ...
   node scripts/verify/open-verified-image.mjs --latest [目录]
 
 选项:
-  --path <路径>     打开指定图片
+  --path <路径>     打开指定图片；可重复传入多次
   --paths <路径...> 依次打开多张指定图片
   --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
   --dry-run         只解析路径，不实际打开
@@ -58,7 +59,17 @@ const parseArgs = (argv) => {
             continue;
         }
         if (current === '--path') {
-            parsed.path = argv[index + 1] ?? null;
+            const targetPath = argv[index + 1] ?? null;
+            if (targetPath) {
+                if (!parsed.path && parsed.paths.length === 0) {
+                    parsed.path = targetPath;
+                } else if (parsed.path && parsed.paths.length === 0) {
+                    parsed.paths = [parsed.path, targetPath];
+                    parsed.path = null;
+                } else {
+                    parsed.paths.push(targetPath);
+                }
+            }
             index += 1;
             continue;
         }

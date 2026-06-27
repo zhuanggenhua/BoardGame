@@ -199,20 +199,8 @@ const DEATH_BLOSSOM: AbilityDef = {
     sfxKey: NINJA_SFX_SLASH,
     trigger: { type: 'diceSet', faces: { [FACE.KATANA]: 3, [FACE.SHURIKEN]: 2 } },
     effects: [
-        {
-            description: abilityEffectText('death-blossom', 'roll5DiceResolveDamage'),
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 5,
-                conditionalEffects: [
-                    { face: FACE.KATANA, bonusDamage: 1 },
-                    { face: FACE.SHURIKEN, bonusDamage: 2 },
-                    { face: FACE.MASK, grantToken: { tokenId: TOKEN_IDS.NINJUTSU, value: 1 } },
-                ],
-            },
-            timing: 'withDamage',
-        },
+        customEffect('ninja-death-blossom', 'opponent', abilityEffectText('death-blossom', 'roll5DiceResolveDamage')),
+        damage(0, abilityEffectText('death-blossom', 'roll5DiceResolveDamage'), { timing: 'withDamage' }),
     ],
 };
 

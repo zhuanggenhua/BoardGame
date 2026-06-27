@@ -107,6 +107,26 @@ const injectArtificerNanobotUpkeep = async (matchId: string, page: Page) => {
                     ...asRecord(host.tokenStackLimits),
                     [TOKEN_IDS.NANOBOT]: 1,
                 },
+                artificerBotState: {
+                    ...asRecord(host.artificerBotState),
+                    [TOKEN_IDS.NANOBOT]: {
+                        built: true,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                    [TOKEN_IDS.SHOCK_BOT]: {
+                        ...asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.SHOCK_BOT]),
+                        built: false,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                    [TOKEN_IDS.HEAL_BOT]: {
+                        ...asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.HEAL_BOT]),
+                        built: false,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                },
             },
             '1': {
                 ...guest,
@@ -131,6 +151,120 @@ const injectArtificerNanobotUpkeep = async (matchId: string, page: Page) => {
     await injectMatchState(matchId, next as never, page);
 };
 
+const injectArtificerShockBotPostDamageChoice = async (matchId: string, page: Page) => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const core = asRecord(root.core);
+    const sys = asRecord(root.sys);
+    const players = asRecordMap(core.players);
+    const host = asRecord(players['0']);
+    const guest = asRecord(players['1']);
+
+    const next = structuredClone(current) as JsonRecord;
+    const nextRoot = asRecord(next.G ?? next);
+    const turnOrder = Array.isArray(sys.turnOrder)
+        ? sys.turnOrder
+        : Array.isArray(core.turnOrder)
+            ? core.turnOrder
+            : Object.keys(players);
+
+    nextRoot.core = {
+        ...core,
+        phase: 'main2',
+        activePlayerId: '0',
+        currentChoiceSourceAbilityId: 'shock-bot',
+        turnOrder,
+        players: {
+            ...players,
+            '0': {
+                ...host,
+                resources: {
+                    ...asRecord(host.resources),
+                    [RESOURCE_IDS.HP]: 50,
+                },
+                tokens: {
+                    ...asRecord(host.tokens),
+                    [TOKEN_IDS.SYNTH]: 2,
+                    [TOKEN_IDS.SHOCK_BOT]: 1,
+                    [TOKEN_IDS.NANOBOT]: 0,
+                    [TOKEN_IDS.HEAL_BOT]: 0,
+                },
+                tokenStackLimits: {
+                    ...asRecord(host.tokenStackLimits),
+                    [TOKEN_IDS.SHOCK_BOT]: 1,
+                },
+                artificerBotState: {
+                    ...asRecord(host.artificerBotState),
+                    [TOKEN_IDS.SHOCK_BOT]: {
+                        built: true,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                    [TOKEN_IDS.NANOBOT]: {
+                        ...asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.NANOBOT]),
+                        built: false,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                    [TOKEN_IDS.HEAL_BOT]: {
+                        ...asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.HEAL_BOT]),
+                        built: false,
+                        upgraded: false,
+                        activationsUsedThisTurn: 0,
+                    },
+                },
+            },
+            '1': {
+                ...guest,
+                resources: {
+                    ...asRecord(guest.resources),
+                    [RESOURCE_IDS.HP]: 50,
+                },
+            },
+        },
+        pendingAttack: {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shock-bot',
+            isDefendable: true,
+            damageResolved: true,
+            resolvedDamage: 9,
+            settlementStage: 'postDamagePending',
+        },
+    };
+    nextRoot.sys = {
+        ...sys,
+        phase: 'main2',
+        turnOrder,
+        currentPlayerIndex: 0,
+        interaction: {
+            ...asRecord(sys.interaction),
+            current: {
+                id: 'artificer-online-shock-bot-post-damage-choice',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                    sourceId: 'shock-bot',
+                    title: '选择要激活的机器人',
+                    options: [
+                        {
+                            id: 'activate-shock-bot',
+                            label: '激活电能机器人',
+                            value: {
+                                customId: 'artificer-activate-bot-resolve',
+                                sourceAbilityId: 'shock-bot',
+                                value: 202,
+                            },
+                        },
+                    ],
+                },
+            },
+        },
+    };
+
+    await injectMatchState(matchId, next as never, page);
+};
+
 test.describe('DiceThrone 工匠真实入口', () => {
     test('真实在线双玩家应能选择工匠并看到玩家板、技能槽与手牌', async ({ browser }, testInfo) => {
         test.setTimeout(180000);
@@ -144,7 +278,12 @@ test.describe('DiceThrone 工匠真实入口', () => {
             await expect(hostBoard.locator('[data-ability-slot="lightning"]').first()).toHaveAttribute('data-base-ability-id', 'overclock');
             await expect(hostBoard.locator('[data-ability-slot="ultimate"]').first()).toHaveAttribute('data-base-ability-id', 'maximum-power');
             await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id]')).toHaveCount(4, { timeout: 10000 });
-            await expect(match.hostPage.locator('[data-tutorial-id="status-tokens"]')).toBeVisible({ timeout: 10000 });
+            const statusTokens = match.hostPage.locator('[data-tutorial-id="status-tokens"]');
+            await expect(statusTokens).toBeVisible({ timeout: 10000 });
+            const synthBadge = statusTokens.locator('.group').first();
+            await expect(synthBadge).toBeVisible({ timeout: 10000 });
+            await synthBadge.hover();
+            await expect(match.hostPage.getByText('合成器 4/7', { exact: true })).toBeVisible({ timeout: 10000 });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '01-工匠在线开局-玩家板与手牌');
         } finally {
@@ -185,12 +324,66 @@ test.describe('DiceThrone 工匠真实入口', () => {
                 };
             }, { timeout: 15000 }).toEqual({
                 hostSynth: 0,
-                hostNanobot: 0,
+                hostNanobot: 1,
                 guestNanobomb: 0,
                 guestHp: 47,
             });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-工坊-纳米机器人引爆后');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('真实入口电能机器人激活后应保留本体并只记录本回合已激活次数', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
+        const match = await setupArtificerMatch(browser, baseURL);
+
+        try {
+            await injectArtificerShockBotPostDamageChoice(match.matchId, match.hostPage);
+
+            const choiceModal = match.hostPage.locator('#modal-root');
+            await expect(choiceModal.getByRole('heading', { name: '技能结算选择' })).toBeVisible({ timeout: 10000 });
+            await expect(choiceModal.getByText('选择要激活的机器人', { exact: true })).toBeVisible({ timeout: 10000 });
+
+            const activateShockBotButton = choiceModal.getByRole('button', { name: /激活电能机器人|Shock Bot/i });
+            await expect(activateShockBotButton).toBeVisible({ timeout: 10000 });
+
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-电能机器人激活前');
+
+            await activateShockBotButton.click();
+            await match.hostPage.waitForTimeout(1200);
+
+            await expect.poll(async () => {
+                const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
+                const root = asRecord(latest.G ?? latest);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const host = asRecord(players['0']);
+                const guest = asRecord(players['1']);
+                const hostBotState = asRecord(asRecord(host.artificerBotState)[TOKEN_IDS.SHOCK_BOT]);
+                return {
+                    hostSynth: Number(asRecord(host.tokens)[TOKEN_IDS.SYNTH] ?? -1),
+                    hostShockBot: Number(asRecord(host.tokens)[TOKEN_IDS.SHOCK_BOT] ?? -1),
+                    shockBotBuilt: Boolean(hostBotState.built ?? false),
+                    shockBotUsed: Number(hostBotState.activationsUsedThisTurn ?? -1),
+                    guestHp: Number(asRecord(guest.resources)[RESOURCE_IDS.HP] ?? -1),
+                    interactionKind: asRecord(root.sys).interaction && asRecord(asRecord(root.sys).interaction).current
+                        ? String(asRecord(asRecord(asRecord(root.sys).interaction).current).kind ?? '')
+                        : null,
+                };
+            }, { timeout: 15000 }).toEqual({
+                hostSynth: 0,
+                hostShockBot: 1,
+                shockBotBuilt: true,
+                shockBotUsed: 1,
+                guestHp: 47,
+                interactionKind: null,
+            });
+
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-电能机器人激活后');
         } finally {
             await cleanupDTMatch(match);
         }

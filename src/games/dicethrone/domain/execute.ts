@@ -43,7 +43,7 @@ import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
 
-import { DICETHRONE_COMMANDS, STATUS_IDS } from './ids';
+import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
@@ -65,6 +65,11 @@ import {
 const resolveTimestamp = (command?: DiceThroneCommand): number => {
     return typeof command?.timestamp === 'number' ? command.timestamp : 0;
 };
+
+const isArtificerNanobotPassiveActivation = (
+    passiveId: string,
+    actionIndex: number,
+): boolean => passiveId === 'artificer-workshop' && (actionIndex === 0 || actionIndex === 1);
 
 const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
     if (!playerId) return false;
@@ -1040,7 +1045,10 @@ export function execute(
             }
 
             // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉、工匠合成器）
-            for (const tokenCost of getPassiveActionTokenCosts(action)) {
+            const passiveTokenCosts = getPassiveActionTokenCosts(action).filter((tokenCost) => (
+                !isArtificerNanobotPassiveActivation(passiveId, actionIndex) || tokenCost.tokenId !== TOKEN_IDS.NANOBOT
+            ));
+            for (const tokenCost of passiveTokenCosts) {
                 const currentTokenAmount = player.tokens[tokenCost.tokenId] ?? 0;
                 events.push({
                     type: 'TOKEN_CONSUMED',

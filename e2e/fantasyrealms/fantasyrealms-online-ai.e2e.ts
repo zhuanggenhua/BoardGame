@@ -35,12 +35,10 @@ import { seedMatchCredentials } from '../helpers/common';
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const FANTASY_REALMS_DECK_DRAW_BUTTON_NAME = /摸牌/;
-const LIVE_CENTER_ROW_REFERENCE_WIDTH_PX = 1360;
 const LIVE_CENTER_CARD_WIDTH_PX = 206;
-const LIVE_CENTER_CARD_MIN_WIDTH_PX = 148;
-const LIVE_CENTER_CARD_WIDTH_RATIO = LIVE_CENTER_CARD_WIDTH_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
+const LIVE_CENTER_CARD_MIN_WIDTH_PX = 96;
 const LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX = 16;
-const LIVE_CENTER_ROW_CONTENT_WIDTH_RATIO = 0.86;
+const LIVE_CENTER_CARD_WIDTH_FIT_UNITS = 9.15;
 const getFantasyRealmsDeckDrawButton = (page: Page) => page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME });
 const getFantasyRealmsFocusName = (page: Page) => page.locator('.fr-focus-name, .fr-compact-focus-name').first();
 
@@ -100,13 +98,9 @@ function getMinimumHorizontalGap(rects: Array<{ x: number; width: number }>) {
 
 function getExpectedLiveCenterCardWidth(viewportWidth: number) {
     const liveContentWidth = viewportWidth - (LIVE_DESKTOP_CONTENT_INLINE_PADDING_PX * 2);
-    const liveCenterRowWidth = Math.min(
-        LIVE_CENTER_ROW_REFERENCE_WIDTH_PX,
-        liveContentWidth * LIVE_CENTER_ROW_CONTENT_WIDTH_RATIO,
-    );
     return Math.min(
         LIVE_CENTER_CARD_WIDTH_PX,
-        Math.max(LIVE_CENTER_CARD_MIN_WIDTH_PX, liveCenterRowWidth * LIVE_CENTER_CARD_WIDTH_RATIO),
+        Math.max(LIVE_CENTER_CARD_MIN_WIDTH_PX, liveContentWidth / LIVE_CENTER_CARD_WIDTH_FIT_UNITS),
     );
 }
 
@@ -129,6 +123,57 @@ async function waitForLocatorRectsToSettle(page: Page, selector: string, timeout
         await page.waitForTimeout(120);
     }
     return getLocatorRects(page, selector);
+}
+
+async function readLiveCenterLayoutMetrics(page: Page) {
+    return page.evaluate(() => {
+        const root = document.querySelector('.fr-root');
+        const row = document.querySelector('[data-testid="fantasyrealms-live-center-row"]');
+        const grid = document.querySelector('[data-testid="fantasyrealms-discard-slot-grid"]');
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-button--live-center'));
+        const placeholders = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-slot--live-center-placeholder'));
+        const rootStyle = root ? getComputedStyle(root) : null;
+        const rowStyle = row ? getComputedStyle(row) : null;
+        const rowRect = row?.getBoundingClientRect();
+        const gridRect = grid?.getBoundingClientRect();
+
+        return {
+            rowRect: rowRect ? {
+                x: Math.round(rowRect.x),
+                y: Math.round(rowRect.y),
+                width: Math.round(rowRect.width),
+                height: Math.round(rowRect.height),
+            } : null,
+            gridRect: gridRect ? {
+                x: Math.round(gridRect.x),
+                y: Math.round(gridRect.y),
+                width: Math.round(gridRect.width),
+                height: Math.round(gridRect.height),
+            } : null,
+            rowComputedWidth: rowStyle?.width?.trim() ?? null,
+            placeholderCount: placeholders.length,
+            cssVars: rootStyle ? {
+                centerRowWidth: rootStyle.getPropertyValue('--fr-live-center-row-width').trim(),
+                centerCardWidth: rootStyle.getPropertyValue('--fr-live-center-card-width').trim(),
+                centerStride: rootStyle.getPropertyValue('--fr-live-center-card-stride').trim(),
+                secondRowTop: rootStyle.getPropertyValue('--fr-live-center-second-row-top').trim(),
+            } : null,
+            cards: cards.map((element, index) => {
+                const rect = element.getBoundingClientRect();
+                return {
+                    index,
+                    x: Math.round(rect.x),
+                    y: Math.round(rect.y),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    left: element.style.left,
+                    top: element.style.top,
+                    zIndex: getComputedStyle(element).zIndex,
+                    preview: (element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80),
+                };
+            }),
+        };
+    });
 }
 
 test.describe('FantasyRealms online AI flow', () => {
@@ -178,7 +223,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
         }
     });
 
-    test('真实在线房间低张数公开弃牌保持满铺起始槽位，不再按牌组整体回中', async ({ browser }, testInfo) => {
+    test('真实在线房间低张数公开弃牌保持前缀槽位一致，并使用更大的重叠双排牌河', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
 
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -202,7 +247,19 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(fullRowRects).toHaveLength(9);
             const topRowRects = fullRowRects.slice(0, 5);
             const secondRowRects = fullRowRects.slice(5);
-            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
+            const topRowStride = topRowRects[1]!.x - topRowRects[0]!.x;
+            const secondRowStride = secondRowRects[1]!.x - secondRowRects[0]!.x;
+            const secondRowOffset = secondRowRects[0]!.x - topRowRects[0]!.x;
+            const rowTopDelta = secondRowRects[0]!.y - topRowRects[0]!.y;
+            expect(topRowStride).toBeGreaterThan(topRowRects[0]!.width);
+            expect(topRowStride).toBeLessThan(topRowRects[0]!.width * 1.3);
+            expect(Math.abs(topRowStride - secondRowStride)).toBeLessThanOrEqual(2);
+            expect(secondRowOffset).toBeLessThan(0);
+            expect(Math.abs(secondRowOffset)).toBeGreaterThanOrEqual(Math.round(topRowRects[0]!.width * 0.35));
+            expect(Math.abs(secondRowOffset)).toBeLessThanOrEqual(Math.round(topRowRects[0]!.width * 0.65));
+            expect(rowTopDelta).toBeGreaterThan(Math.round(topRowRects[0]!.height * 0.45));
+            expect(rowTopDelta).toBeLessThan(Math.round(topRowRects[0]!.height * 0.8));
+            const fullLayoutMetrics = await readLiveCenterLayoutMetrics(page);
             const fullEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-nine-cards');
             await mkdir(dirname(fullEvidencePath), { recursive: true });
             await page.screenshot({ path: fullEvidencePath, fullPage: false });
@@ -220,6 +277,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(Math.abs(oneCardRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            const oneCardLayoutMetrics = await readLiveCenterLayoutMetrics(page);
+            expect(oneCardLayoutMetrics.placeholderCount).toBe(0);
             const oneEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-one-card');
             await mkdir(dirname(oneEvidencePath), { recursive: true });
             await page.screenshot({ path: oneEvidencePath, fullPage: false });
@@ -239,6 +298,8 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
             expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
             const wideTwoCardWidth = lowCountRects[0]!.width;
+            const twoCardLayoutMetrics = await readLiveCenterLayoutMetrics(page);
+            expect(twoCardLayoutMetrics.placeholderCount).toBe(0);
 
             const lowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards');
             await mkdir(dirname(lowEvidencePath), { recursive: true });
@@ -288,6 +349,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                 expect(narrowScoreRect.width).toBeLessThanOrEqual(wideScoreRect.width);
                 expect(narrowActionRect.width).toBeLessThanOrEqual(wideActionRect.width);
                 expect(narrowTopbarRect.width).toBeLessThanOrEqual(wideTopbarRect.width);
+                const narrowLayoutMetrics = await readLiveCenterLayoutMetrics(narrowPage);
 
                 const narrowEvidencePath = getEvidenceScreenshotPath(testInfo, 'real-online-prefix-two-cards-1281w');
                 await mkdir(dirname(narrowEvidencePath), { recursive: true });
@@ -305,6 +367,9 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                         scoreStripWidth: wideScoreRect.width,
                         actionWidth: wideActionRect.width,
                         topbarWidth: wideTopbarRect.width,
+                        centerLayout: twoCardLayoutMetrics,
+                        oneCardLayout: oneCardLayoutMetrics,
+                        nineCardLayout: fullLayoutMetrics,
                     },
                     narrow: {
                         viewportWidth: narrowViewportWidth,
@@ -318,6 +383,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                         scoreStripWidth: narrowScoreRect.width,
                         actionWidth: narrowActionRect.width,
                         topbarWidth: narrowTopbarRect.width,
+                        centerLayout: narrowLayoutMetrics,
                     },
                 };
 
@@ -418,6 +484,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                     expect(Math.abs(tightCenterRects[0]!.y - tightTopRowRects[0]!.y)).toBeLessThanOrEqual(2);
                     expect(Math.abs(tightCenterRects[1]!.x - tightTopRowRects[1]!.x)).toBeLessThanOrEqual(2);
                     expect(Math.abs(tightCenterRects[1]!.y - tightTopRowRects[1]!.y)).toBeLessThanOrEqual(2);
+                    const tightLayoutMetrics = await readLiveCenterLayoutMetrics(tightPage);
                     expect(tightHandRects).toHaveLength(8);
                     expect(tightHandRects[0]!.width).toBeGreaterThanOrEqual(114);
                     expect(Math.abs(tightHandRects[0]!.width - tightHandRects[1]!.width)).toBeLessThanOrEqual(2);
@@ -484,6 +551,7 @@ test('在线房里 human 完成一轮后，seat1 local AI 会自动推进并把�
                         actionWidth: tightActionRect.width,
                         twoHandDiscardWidth: earlyDiscardHandRects[0]!.width,
                         twoHandDiscardHeight: earlyDiscardHandRects[0]!.height,
+                        centerLayout: tightLayoutMetrics,
                     };
                 } finally {
                     await tightContext.close().catch(() => {});

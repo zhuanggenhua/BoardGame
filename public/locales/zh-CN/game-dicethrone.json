@@ -5019,7 +5019,7 @@
     },
     "ninja-card-poison-dart": {
       "name": "毒镖！",
-      "description": "施加 2 慢性中毒。"
+      "description": "施加 1 个慢性中毒。"
     },
     "ninja-card-knife-fan": {
       "name": "刀扇！",

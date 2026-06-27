@@ -272,11 +272,11 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.players['0'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(1);
     });
 
-    it('纳米机器人可消耗 1 个并引爆所有玩家的纳米爆弹', () => {
+    it('纳米机器人激活后会保留机器人本体，并引爆所有玩家的纳米爆弹', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'upkeep';
         state.core.activePlayerId = '0';
-        state.core.players['0'].tokens[TOKEN_IDS.NANOBOT] = 1;
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT);
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 2;
         state.core.players['0'].statusEffects[STATUS_IDS.NANOBOMB] = 2;
         state.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] = 3;
@@ -292,19 +292,23 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
                 .map(event => [event.payload.targetId, event.payload.amount]),
         );
 
-        expect(next.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(0);
+        expect(next.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(1);
         expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
         expect(next.players['0'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
         expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
         expect(damageByTarget).toEqual({ '0': 3, '1': 5 });
+        expect(next.players['0'].artificerBotState?.[TOKEN_IDS.NANOBOT]).toMatchObject({
+            built: true,
+            upgraded: false,
+            activationsUsedThisTurn: 1,
+        });
     });
 
-    it('高级纳米机器人在维护阶段只需花费 1 合成器即可引爆', () => {
+    it('高级纳米机器人在维护阶段只需花费 1 合成器即可引爆，且不会消失', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'upkeep';
         state.core.activePlayerId = '0';
-        state.core.players['0'].tokens[TOKEN_IDS.NANOBOT] = 2;
-        state.core.players['0'].tokenStackLimits = { ...(state.core.players['0'].tokenStackLimits ?? {}), [TOKEN_IDS.NANOBOT]: 2 };
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT, { upgraded: true });
         state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 1;
         state.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] = 2;
 
@@ -317,6 +321,11 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.NANOBOT]).toBe(1);
         expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
         expect(next.players['1'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
+        expect(next.players['0'].artificerBotState?.[TOKEN_IDS.NANOBOT]).toMatchObject({
+            built: true,
+            upgraded: true,
+            activationsUsedThisTurn: 1,
+        });
     });
 
     it('工匠可花费 4 合成器给对手施加 1 个纳米爆弹', () => {
@@ -889,6 +898,68 @@ describe('DiceThrone 工匠 L2 核心机制', () => {
             amount: 1,
             sourceAbilityId: 'wrench-strike-2-4',
         });
+    });
+
+    it('电能脉冲 III 在正式命令链中可由升级后玩家板能力进入机械大军分支并推进到 defensiveRoll', () => {
+        const playerIds: PlayerId[] = ['0', '1'];
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
+
+        state.sys = createInitialSystemState(playerIds, testSystems, undefined);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].abilityLevels['shock-bot'] = 3;
+        state.core.players['0'].abilities = buildHeroAbilitiesForFace(
+            'artificer',
+            state.core.players['0'].playerBoardFace,
+            state.core.players['0'].abilityLevels,
+        );
+        state.core.players['0'].upgradeCardByAbilityId = {
+            ...(state.core.players['0'].upgradeCardByAbilityId ?? {}),
+            'shock-bot': { cardId: 'upgrade-artificer-shock-bot-3', cpCost: 2 },
+        };
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 8;
+        state.core.players['0'].hand = [];
+        state.core.players['0'].tokens[TOKEN_IDS.SYNTH] = 0;
+        setArtificerBot(state.core, '0', TOKEN_IDS.NANOBOT, { upgraded: true });
+        setArtificerBot(state.core, '0', TOKEN_IDS.SHOCK_BOT);
+        state.core.dice = [
+            { id: 0, definitionId: 'artificer-die', value: 2, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 1, definitionId: 'artificer-die', value: 3, symbol: 'wrench', symbols: ['wrench'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 2, definitionId: 'artificer-die', value: 4, symbol: 'gear', symbols: ['gear'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 3, definitionId: 'artificer-die', value: 5, symbol: 'gear', symbols: ['gear'], isKept: false, isLocked: false, playerId: '0' },
+            { id: 4, definitionId: 'artificer-die', value: 6, symbol: 'electricity', symbols: ['electricity'], isKept: false, isLocked: false, playerId: '0' },
+        ];
+
+        const selected = executePipeline(
+            pipelineConfig,
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'shock-bot-3-mechanical-army' }),
+            fixedRandom,
+            playerIds,
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack?.sourceAbilityId).toBe('shock-bot-3-mechanical-army');
+
+        const advanced = executePipeline(
+            pipelineConfig,
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            playerIds,
+        );
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('defensiveRoll');
+        expect(advanced.state.sys.interaction.current).toBeUndefined();
+        expect(advanced.state.core.pendingAttack?.sourceAbilityId).toBe('shock-bot-3-mechanical-army');
+        expect(advanced.state.core.pendingAttack?.defenseAbilityId).toBe('meditation');
+        expect(advanced.state.core.pendingAttack?.bonusDamage ?? 0).toBe(0);
+        expect(advanced.state.core.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(0);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.NANOBOMB] ?? 0).toBe(0);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
     });
 
     it('机械的反击可在受击响应时打出，授予 2 点伤害护盾并对攻击者施加纳米爆弹', () => {

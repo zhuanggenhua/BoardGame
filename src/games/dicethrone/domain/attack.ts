@@ -77,6 +77,7 @@ export const resolveOffensivePreDefenseEffects = (
     const events: DiceThroneEvent[] = [];
     events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, { random }));
     if (events.some(isBlockingInteractionEvent)) {
+        events.push(createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp));
         return events;
     }
     events.push(createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp));

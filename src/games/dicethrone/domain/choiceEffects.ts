@@ -178,7 +178,7 @@ registerChoiceEffectHandler('use-ninjutsu', ({ state, playerId }) => {
         },
         pendingAttack: {
             ...updatePendingAttackSettlementStage(state.pendingAttack, 'preDamage')!,
-            offensiveRollEndTokenResolved: true,
+            offensiveRollEndTokenResolved: false,
         },
     };
 });

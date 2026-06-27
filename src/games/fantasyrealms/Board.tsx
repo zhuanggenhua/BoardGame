@@ -104,7 +104,6 @@ const ENDGAME_SCORE_SETTLE_MS = 220;
 const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]';
 const FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX = 16;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
-const FANTASY_REALMS_CENTER_ROW_WIDTH_RATIO = 1360 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1500 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const CARD_LAYOUT_TRANSITION = {
     type: 'spring' as const,
@@ -264,28 +263,27 @@ function useFantasyRealmsEndgameScoreSequence(
 }
 
 const LIVE_CENTER_ROW_ROW_TOP = 8;
-const LIVE_CENTER_ROW_ROW_OFFSET = 103;
-const LIVE_CENTER_SECOND_ROW_TOP_CSS_VAR = `var(--fr-live-center-second-row-top, ${LIVE_CENTER_ROW_ROW_TOP + LIVE_CENTER_ROW_ROW_OFFSET}px)`;
-const LIVE_CENTER_ROW_REFERENCE_WIDTH_PX = 1360;
+const LIVE_CENTER_TOTAL_SLOT_COUNT = 10;
+const LIVE_CENTER_TOP_ROW_CARD_COUNT = 5;
+const LIVE_CENTER_CARD_WIDTH_FIT_UNITS = 9.15;
+const LIVE_CENTER_CARD_STRIDE_MULTIPLIER = 1.18;
+const LIVE_CENTER_SECOND_ROW_COLUMN_OFFSET_MULTIPLIER = -0.5;
+const LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER = 0.41;
+const LIVE_CENTER_SECOND_ROW_TOP_CSS_VAR = 'var(--fr-live-center-second-row-top)';
 const LIVE_CENTER_CARD_WIDTH_PX = 206;
-const LIVE_CENTER_CARD_STRIDE_PX = 309;
-const LIVE_CENTER_CARD_MIN_WIDTH_PX = 148;
+const LIVE_CENTER_CARD_MIN_WIDTH_PX = 96;
 const LIVE_CENTER_ROW_Z_STRIDE = 8;
-const LIVE_CENTER_CARD_WIDTH_RATIO = LIVE_CENTER_CARD_WIDTH_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
-const LIVE_CENTER_CARD_STRIDE_RATIO = LIVE_CENTER_CARD_STRIDE_PX / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
-const LIVE_CENTER_ROW_OFFSET_RATIO = LIVE_CENTER_ROW_ROW_OFFSET / LIVE_CENTER_ROW_REFERENCE_WIDTH_PX;
 const LIVE_CENTER_CARD_WIDTH_CSS_VAR = 'var(--fr-live-center-card-width)';
 const LIVE_CENTER_CARD_STRIDE_CSS_VAR = 'var(--fr-live-center-card-stride)';
 
-function buildMinimalLiveCenterRowOffsets(cardCount: number): string[] {
-    if (cardCount <= 0) return [];
-    const fullTopRowCount = 5;
-    const fullTopRowWidthExpression = `${LIVE_CENTER_CARD_WIDTH_CSS_VAR} + (${fullTopRowCount - 1} * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
-    const startExpression = `(${fullTopRowWidthExpression}) / -2`;
-    return Array.from(
-        { length: cardCount },
-        (_unused, index) => (index === 0 ? startExpression : `${startExpression} + (${index} * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`),
-    );
+function buildMinimalLiveCenterColumnOffset(columnIndex: number, rowIndex: number): string {
+    const rowWidthExpression = `${LIVE_CENTER_CARD_WIDTH_CSS_VAR} + ((${LIVE_CENTER_TOP_ROW_CARD_COUNT - 1}) * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
+    const startExpression = `(${rowWidthExpression}) / -2`;
+    const rowOffsetExpression = rowIndex === 1
+        ? ` + (${LIVE_CENTER_SECOND_ROW_COLUMN_OFFSET_MULTIPLIER} * ${LIVE_CENTER_CARD_WIDTH_CSS_VAR})`
+        : '';
+    const columnExpression = columnIndex <= 0 ? '' : ` + (${columnIndex} * ${LIVE_CENTER_CARD_STRIDE_CSS_VAR})`;
+    return `${startExpression}${rowOffsetExpression}${columnExpression}`;
 }
 
 function createFallbackCore(): FantasyRealmsCore {
@@ -347,12 +345,11 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
     if (cardCount <= 0) return [];
 
     const fixedSlotStyles: React.CSSProperties[] = [];
-    const topRowCount = Math.min(cardCount, 5);
-    const topRowOffsets = buildMinimalLiveCenterRowOffsets(topRowCount);
-    const pushAbsoluteRow = (rowOffsets: readonly string[], rowIndex: number) => {
-        const rowCount = rowOffsets.length;
+    const topRowCount = Math.min(cardCount, LIVE_CENTER_TOP_ROW_CARD_COUNT);
+    const pushAbsoluteRow = (rowCount: number, rowIndex: number) => {
         const rowBaseZIndex = rowIndex * LIVE_CENTER_ROW_Z_STRIDE;
-        rowOffsets.forEach((left, columnIndex) => {
+        Array.from({ length: rowCount }, (_unused, columnIndex) => {
+            const left = buildMinimalLiveCenterColumnOffset(columnIndex, rowIndex);
             const centerBias = Math.abs(columnIndex - ((rowCount - 1) / 2));
             fixedSlotStyles.push({
                 left: `calc(50% + ${left})`,
@@ -361,27 +358,31 @@ function buildMinimalLiveCenterCardStyles(cardCount: number): React.CSSPropertie
             });
         });
     };
-    if (cardCount <= 5) {
-        pushAbsoluteRow(topRowOffsets, 0);
+    if (cardCount <= LIVE_CENTER_TOP_ROW_CARD_COUNT) {
+        pushAbsoluteRow(topRowCount, 0);
         return fixedSlotStyles;
     }
 
-    const secondRowCount = Math.min(cardCount - 5, 5);
-    pushAbsoluteRow(topRowOffsets, 0);
-    pushAbsoluteRow(
-        topRowOffsets
-            .slice(0, secondRowCount)
-            .map((offset) => `(${offset}) - (${LIVE_CENTER_CARD_WIDTH_CSS_VAR} / 2)`),
-        1,
-    );
+    const secondRowCount = Math.min(cardCount - LIVE_CENTER_TOP_ROW_CARD_COUNT, LIVE_CENTER_TOP_ROW_CARD_COUNT);
+    pushAbsoluteRow(topRowCount, 0);
+    pushAbsoluteRow(secondRowCount, 1);
     return fixedSlotStyles;
 }
 
-function buildMinimalLiveCenterSlots(cards: TableCard[], totalSlotCount = 10): LiveCenterSlot[] {
-    const slotStyles = buildMinimalLiveCenterCardStyles(totalSlotCount);
-    return Array.from({ length: totalSlotCount }, (_unused, index) => ({
-        key: cards[index]?.id ?? `live-center-slot-${index}`,
-        card: cards[index] ?? null,
+function buildMinimalLiveCenterSlots(cards: TableCard[], totalSlotCount = LIVE_CENTER_TOTAL_SLOT_COUNT): LiveCenterSlot[] {
+    if (cards.length === 0) {
+        const slotStyles = buildMinimalLiveCenterCardStyles(totalSlotCount);
+        return Array.from({ length: totalSlotCount }, (_unused, index) => ({
+            key: `live-center-slot-${index}`,
+            card: null,
+            style: slotStyles[index] ?? {},
+        }));
+    }
+
+    const slotStyles = buildMinimalLiveCenterCardStyles(cards.length);
+    return cards.map((card, index) => ({
+        key: card.id,
+        card,
         style: slotStyles[index] ?? {},
     }));
 }
@@ -880,9 +881,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         }
         if (isTakeDiscardSelectionActive) {
             handleFocusCard(card.id);
-            if (isCoarsePointer && core.focusCardId !== card.id) {
-                return;
-            }
             dispatch('TAKE_FROM_DISCARD', { cardId: card.id });
             return;
         }
@@ -956,6 +954,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         () => buildMinimalLiveCenterSlots(discardCards, 10),
         [discardCards],
     );
+    const shouldShowLiveCenterPlaceholders = discardCards.length === 0 && !shouldAutoDrawFromDeck;
     const minimalLiveHandCardStyles = React.useMemo(
         () => buildMinimalLiveHandCardStyles(displayedHandCards.length, handSlotCount),
         [displayedHandCards.length, handSlotCount],
@@ -1227,14 +1226,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                             <FantasyRealmsCard card={slot.card} t={t} locale={locale} />
                             {shouldShowInlineMagnifyButton ? renderCardMagnifyButton(slot.card, 'discard', openCardMagnify, t) : null}
                         </motion.button>
-                    ) : (
+                    ) : shouldShowLiveCenterPlaceholders ? (
                         <div
                             key={slot.key}
                             className="fr-card-slot fr-card-slot--live-center-placeholder atlas-shimmer"
                             style={{ ...slot.style, zIndex: 0 }}
                             aria-hidden="true"
                         />
-                    )))}
+                    ) : null))}
                 </div>
             </div>
         </section>
@@ -1375,11 +1374,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     --fr-board-shell-reference-width: var(--mobile-board-shell-design-width, ${FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX}px);
                     --fr-live-content-width: calc(100vw - ${FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX * 2}px);
                     --fr-live-opening-hand-row-width: min(1180px, calc(100vw - 240px));
-                    --fr-live-center-row-width: min(1360px, calc(var(--fr-live-content-width) * 0.86));
+                    --fr-live-center-row-width: var(--fr-live-content-width);
                     --fr-live-desktop-ui-scale: clamp(0.82, calc((100vw - 0px) / 1440px), 1);
-                    --fr-live-center-card-width: clamp(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) * ${LIVE_CENTER_CARD_WIDTH_RATIO.toFixed(6)}), ${LIVE_CENTER_CARD_WIDTH_PX}px);
-                    --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) / 2);
-                    --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + (var(--fr-live-center-row-width) * ${LIVE_CENTER_ROW_OFFSET_RATIO.toFixed(6)}));
+                    --fr-live-center-card-width: min(${LIVE_CENTER_CARD_WIDTH_PX}px, max(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) / ${LIVE_CENTER_CARD_WIDTH_FIT_UNITS})));
+                    --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
+                    --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
+                    --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + var(--fr-live-center-card-height) - (var(--fr-live-center-card-width) * ${LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER}));
                     --fr-live-hand-row-width: min(1510px, calc(var(--fr-live-content-width) - 16px));
                     --fr-live-hand-header-width: var(--fr-live-content-width);
                     --fr-live-action-right-offset: calc(((100vw - var(--fr-live-content-width)) / 2) + 44px);
@@ -1425,13 +1425,14 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         overflow: hidden;
                         --fr-live-content-width: calc(var(--fr-board-shell-reference-width) - ${FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX * 2}px);
                         --fr-live-opening-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO.toFixed(6)});
-                        --fr-live-center-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_CENTER_ROW_WIDTH_RATIO.toFixed(6)});
+                        --fr-live-center-row-width: var(--fr-live-content-width);
                         --fr-live-hand-row-width: calc(var(--fr-board-shell-reference-width) * ${FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO.toFixed(6)});
                         --fr-live-hand-header-width: var(--fr-board-shell-reference-width);
                         --fr-live-action-right-offset: 52px;
-                        --fr-live-center-card-width: 148px;
-                        --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) / 2);
-                        --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + (var(--fr-live-center-row-width) * ${LIVE_CENTER_ROW_OFFSET_RATIO.toFixed(6)}));
+                        --fr-live-center-card-width: min(${LIVE_CENTER_CARD_WIDTH_PX}px, max(${LIVE_CENTER_CARD_MIN_WIDTH_PX}px, calc(var(--fr-live-center-row-width) / ${LIVE_CENTER_CARD_WIDTH_FIT_UNITS})));
+                        --fr-live-center-card-height: calc(var(--fr-live-center-card-width) / 0.72);
+                        --fr-live-center-card-stride: calc(var(--fr-live-center-card-width) * ${LIVE_CENTER_CARD_STRIDE_MULTIPLIER});
+                        --fr-live-center-second-row-top: calc(${LIVE_CENTER_ROW_ROW_TOP}px + var(--fr-live-center-card-height) - (var(--fr-live-center-card-width) * ${LIVE_CENTER_SECOND_ROW_OVERLAP_MULTIPLIER}));
                     }
                     ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board {
                         width: 100%;

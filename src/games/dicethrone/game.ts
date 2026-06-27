@@ -532,7 +532,7 @@ function formatDiceThroneActionEntry({
             // 获取当前选中的技能名
             const abilityId = isDefense
                 ? core.pendingAttack?.defenseAbilityId
-                : core.activatingAbilityId;
+                : core.pendingAttack?.sourceAbilityId ?? core.activatingAbilityId;
             const segments: ActionLogSegment[] = [];
             if (abilityId) {
                 const match = findPlayerAbility(core, rollerId, abilityId);

@@ -307,8 +307,23 @@ function buildArtificerBotActivationChoiceRequest(
     } as ChoiceRequestedEvent;
 }
 
-function handleNanobotDetonate({ state, timestamp }: CustomActionContext): DiceThroneEvent[] {
+function handleNanobotDetonate({ state, attackerId, sourceAbilityId, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
+
+    if (attackerId && sourceAbilityId === 'artificer-workshop') {
+        const botStatePatch = buildArtificerBotStatePatch(state, attackerId, TOKEN_IDS.NANOBOT, {
+            built: true,
+            activationsUsedThisTurn: (getArtificerBotState(state, attackerId, TOKEN_IDS.NANOBOT).activationsUsedThisTurn ?? 0) + 1,
+        });
+        if (botStatePatch) {
+            events.push({
+                type: 'ARTIFICER_BOT_STATE_UPDATED',
+                payload: { playerId: attackerId, patch: botStatePatch },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as DiceThroneEvent);
+        }
+    }
 
     for (const [targetId, player] of Object.entries(state.players)) {
         const stacks = player.statusEffects[STATUS_IDS.NANOBOMB] ?? 0;
@@ -1134,6 +1149,7 @@ for (const choiceId of WRENCH_STRIKE_CHOICE_IDS) {
         return {
             pendingAttack: {
                 ...state.pendingAttack,
+                preDefenseResolved: false,
                 followUpChoiceBySourceAbilityId: {
                     ...(state.pendingAttack.followUpChoiceBySourceAbilityId ?? {}),
                     [sourceAbilityId]: choiceId,

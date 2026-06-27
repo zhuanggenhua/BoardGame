@@ -154,6 +154,43 @@ describe('Monk 技能完整覆盖测试', () => {
 
             expect(result.assertionErrors).toEqual([]);
         });
+
+        it('触发禅忘二选一后应关闭当前提示并标记前置选择已完成', () => {
+            const diceValues = [4, 4, 4, 1, 1];
+            const random = createQueuedRandom(diceValues);
+
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random,
+                setup: createNoResponseSetup(),
+                assertFn: assertState,
+                silent: true,
+            });
+
+            expect(runner.dispatch('ADVANCE_PHASE', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('ROLL_DICE', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('CONFIRM_ROLL', { playerId: '0' }).success).toBe(true);
+            expect(runner.dispatch('SELECT_ABILITY', { playerId: '0', abilityId: 'zen-forget' }).success).toBe(true);
+            expect(runner.dispatch('ADVANCE_PHASE', { playerId: '0' }).success).toBe(true);
+
+            const promptState = runner.getState();
+            expect(promptState.sys.interaction.current?.kind).toBe('simple-choice');
+            expect(promptState.core.pendingAttack?.preDefenseResolved).toBe(true);
+
+            const interactionId = promptState.sys.interaction.current?.id;
+            const responded = runner.dispatch('SYS_INTERACTION_RESPOND', {
+                playerId: '0',
+                interactionId,
+                optionId: 'option-1',
+            });
+
+            expect(responded.success).toBe(true);
+            expect(responded.finalState.sys.interaction.current).toBeUndefined();
+            expect(responded.finalState.sys.phase).toBe('main2');
+            expect(responded.finalState.core.pendingAttack).toBeNull();
+        });
     });
 
     describe('太极连环拳 (taiji-combo) - rollDie 分支', () => {

@@ -1344,6 +1344,27 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         });
     });
 
+    it('毒镖应为 2CP 的主要阶段行动牌，且只施加 1 个慢性中毒', () => {
+        const card = NINJA_CARDS.find(item => item.id === 'ninja-card-poison-dart');
+        expect(card).toBeDefined();
+        expect(card?.cpCost).toBe(2);
+        expect(card?.timing).toBe('main');
+        expect(card?.isAttackModifier).not.toBe(true);
+
+        const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['1'].tokens[TOKEN_IDS.DELAYED_POISON] = 0;
+
+        const events = resolveEffectsToEvents(
+            card?.effects ?? [],
+            'immediate',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'ninja-card-poison-dart', state: state.core, damageDealt: 0, timestamp: 150 },
+            { random: createQueuedRandom([1]) },
+        );
+        const next = applyEvents(state.core, events);
+
+        expect(next.players['1'].tokens[TOKEN_IDS.DELAYED_POISON]).toBe(1);
+    });
+
     it('道场应按卡图投 1 骰：面具获得烟雾弹和 2 忍术，否则抽 1', () => {
         const dojo = NINJA_CARDS.find(item => item.id === 'ninja-card-dojo');
         expect(dojo).toBeDefined();

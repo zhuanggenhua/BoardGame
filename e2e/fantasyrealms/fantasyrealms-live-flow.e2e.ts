@@ -709,6 +709,7 @@ test.describe('FantasyRealms live flow', () => {
             await expectTurnChipPrimaryReadable(page);
             await expect(page.getByTestId('fantasyrealms-live-status-banner')).toHaveCount(0);
             await expectHandRowUsesStableHandSlotGrid(page, 7);
+            await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
             await clearHandCardHoverState(page);
             const autoDrawPath = getEvidenceScreenshotPath(testInfo, '01-开局自动摸牌后-待弃牌');
             await mkdir(dirname(autoDrawPath), { recursive: true });
@@ -1354,7 +1355,7 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
-    test('低张数公开弃牌保持满铺起始槽位，不再按牌组整体回中', async ({ browser }, testInfo) => {
+    test('低张数公开弃牌保持前缀槽位一致，并使用更大的重叠双排牌河', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const context = await browser.newContext();
@@ -1378,9 +1379,21 @@ test.describe('FantasyRealms live flow', () => {
 
             const topRowRects = fullRowRects.slice(0, 5);
             const secondRowRects = fullRowRects.slice(5);
-            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
+            const topRowStride = topRowRects[1]!.x - topRowRects[0]!.x;
+            const secondRowStride = secondRowRects[1]!.x - secondRowRects[0]!.x;
+            const secondRowOffset = secondRowRects[0]!.x - topRowRects[0]!.x;
+            const rowTopDelta = secondRowRects[0]!.y - topRowRects[0]!.y;
+
+            expect(topRowStride).toBeGreaterThan(topRowRects[0]!.width);
+            expect(topRowStride).toBeLessThan(topRowRects[0]!.width * 1.3);
+            expect(Math.abs(topRowStride - secondRowStride)).toBeLessThanOrEqual(2);
+            expect(secondRowOffset).toBeLessThan(0);
+            expect(Math.abs(secondRowOffset)).toBeGreaterThanOrEqual(Math.round(topRowRects[0]!.width * 0.35));
+            expect(Math.abs(secondRowOffset)).toBeLessThanOrEqual(Math.round(topRowRects[0]!.width * 0.65));
             expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            expect(rowTopDelta).toBeGreaterThan(Math.round(topRowRects[0]!.height * 0.45));
+            expect(rowTopDelta).toBeLessThan(Math.round(topRowRects[0]!.height * 0.8));
 
             await injectCore(page, {
                 ...drawStageCore(),
@@ -1393,6 +1406,7 @@ test.describe('FantasyRealms live flow', () => {
             expect(Math.abs(oneCardRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
+            await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
 
             await injectCore(page, drawStageCore());
             await expect(page.getByText('你的回合')).toBeVisible();
@@ -1405,6 +1419,7 @@ test.describe('FantasyRealms live flow', () => {
             expect(Math.abs(lowCountRects[0]!.y - topRowRects[0]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[1]!.x - topRowRects[1]!.x)).toBeLessThanOrEqual(2);
             expect(Math.abs(lowCountRects[1]!.y - topRowRects[1]!.y)).toBeLessThanOrEqual(2);
+            await expect(page.locator('.fr-card-slot--live-center-placeholder')).toHaveCount(0);
 
             const evidencePath = getEvidenceScreenshotPath(testInfo, 'low-count-prefix-slots');
             await mkdir(dirname(evidencePath), { recursive: true });

@@ -2043,7 +2043,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     handCount: p1Hand.length,
                     delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
                 };
-            }, { timeout: 10000 }).toEqual({ cp: 1, handCount: 0, delayedPoison: 2 });
+            }, { timeout: 10000 }).toEqual({ cp: 1, handCount: 0, delayedPoison: 1 });
             await screenshot(match.guestPage, testName, '04-poison-dart-after-play-delayed-poison.png');
 
             await prepareNinjaMainCard('ninja-card-knife-fan', 3);

@@ -123,6 +123,11 @@ export function getPassiveActionTokenCosts(action: PassiveActionDef): Array<{ to
     ];
 }
 
+const isArtificerNanobotPassiveActivation = (
+    passiveId: string,
+    actionIndex: number,
+): boolean => passiveId === 'artificer-workshop' && (actionIndex === 0 || actionIndex === 1);
+
 function getPassiveTokenStackLimit(
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -158,11 +163,28 @@ export function isPassiveActionUsable(
     if (!player) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
-    for (const cost of getPassiveActionTokenCosts(action)) {
+    if (isArtificerNanobotPassiveActivation(passiveId, actionIndex)) {
+        const botState = player.artificerBotState?.[TOKEN_IDS.NANOBOT];
+        const activationsUsed = botState?.activationsUsedThisTurn ?? 0;
+        if (!botState?.built || activationsUsed >= 1) return false;
+    }
+    const passiveTokenCosts = getPassiveActionTokenCosts(action).filter((cost) => (
+        !isArtificerNanobotPassiveActivation(passiveId, actionIndex) || cost.tokenId !== TOKEN_IDS.NANOBOT
+    ));
+    for (const cost of passiveTokenCosts) {
         if ((player.tokens[cost.tokenId] ?? 0) < cost.amount) return false;
         if (hasSpentTreantTreeSpiritThisTurn(state, playerId, cost.tokenId)) return false;
     }
     for (const requirement of action.requiresTokens ?? []) {
+        if (
+            isArtificerNanobotPassiveActivation(passiveId, actionIndex)
+            && requirement.tokenId === TOKEN_IDS.NANOBOT
+        ) {
+            const botState = player.artificerBotState?.[TOKEN_IDS.NANOBOT];
+            const activationsUsed = botState?.activationsUsedThisTurn ?? 0;
+            if (!botState?.built || activationsUsed >= 1) return false;
+            continue;
+        }
         if ((player.tokens[requirement.tokenId] ?? 0) < requirement.amount) return false;
     }
     if (action.requiresTokenBelowLimit) {

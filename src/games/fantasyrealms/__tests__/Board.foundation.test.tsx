@@ -252,6 +252,19 @@ function getRect(node: HTMLElement) {
     };
 }
 
+function parseCalcPxValue(expression: string): number {
+    const normalized = expression.replace(/\s+/g, '');
+    const matches = normalized.match(/[+-]?\d+(?:\.\d+)?px/g) ?? [];
+    return matches.reduce((sum, token) => sum + Number.parseFloat(token), 0);
+}
+
+function getLiveCenterButtonPosition(button: HTMLElement) {
+    return {
+        left: parseCalcPxValue(button.style.left || '0px'),
+        top: parseCalcPxValue(button.style.top || '0px'),
+    };
+}
+
 function getRectGroupCenter(nodes: HTMLElement[]) {
     const rects = nodes.map(getRect);
     const left = Math.min(...rects.map((rect) => rect.x));
@@ -1018,7 +1031,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('桌面 live 的中央牌河不再固定宽度，第二排相对第一排统一左偏半张卡宽', () => {
+    it('桌面 live 的中央牌河保持统一卡尺寸，并在有牌时不再额外渲染半透明空槽', () => {
         withViewport(1920, 1080, () => {
             const discardPile = PUBLIC_CARDS.concat(HAND_CARDS.slice(0, 2)).map((card) => ({ ...card }));
             renderBoard(makeCore({ discardPile }));
@@ -1032,11 +1045,9 @@ describe('FantasyRealms Board foundation', () => {
 
             expect(centerButtons).toHaveLength(9);
             expect(discardRow.style.width).toBe('');
-            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.width - topRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.height - topRowRects[0]!.height)).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
+            expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
         });
     });
 
@@ -1095,7 +1106,7 @@ describe('FantasyRealms Board foundation', () => {
         expect(discardCards[0].getAttribute('style')).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
         expect(discardCards[0].getAttribute('style')).not.toContain('fantasyrealms/cards/faces/');
         expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
-        expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(7);
+        expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
     });
 
     it('中央公开牌达到两排时，下排层级高于上排，保持左偏叠放时不被上排压住', () => {
@@ -1130,7 +1141,7 @@ describe('FantasyRealms Board foundation', () => {
         secondView.unmount();
     });
 
-    it('中央公开牌使用固定 10 槽结构，空槽与实牌共用同一套槽位坐标', () => {
+    it('中央公开牌保持同一套前缀槽位坐标，但有牌时不再额外渲染半透明空槽', () => {
         withViewport(1440, 1024, () => {
             const fullView = renderBoard(makeCore({
                 discardPile: HAND_CARDS
@@ -1148,7 +1159,7 @@ describe('FantasyRealms Board foundation', () => {
             const oneCardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0] as HTMLElement;
             const oneCardRect = getRect(oneCardButton);
             const oneCardPlaceholders = document.querySelectorAll('.fr-card-slot--live-center-placeholder');
-            expect(oneCardPlaceholders).toHaveLength(9);
+            expect(oneCardPlaceholders).toHaveLength(0);
             expect(Math.abs(oneCardRect.x - fullRects[0]!.x)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRect.y - fullRects[0]!.y)).toBeLessThanOrEqual(2);
             oneCardView.unmount();
@@ -1185,6 +1196,7 @@ describe('FantasyRealms Board foundation', () => {
             expect(screen.queryByText('牌库')).not.toBeInTheDocument();
             expect(screen.queryByText('回合')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-action-zone')).not.toBeInTheDocument();
+            expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
             await waitFor(() => {
                 expect(dispatch).toHaveBeenCalledTimes(1);
             });
@@ -1375,6 +1387,28 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
+    it('粗指针环境点击中央牌会直接拿牌，不再先聚焦卡死在首击', () => {
+        const originalForcedCoarsePointer = (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__;
+        (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = true;
+
+        try {
+            withViewport(390, 844, () => {
+                const dispatch = vi.fn();
+                renderBoard(makeCore({
+                    drawPile: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                }), { dispatch });
+
+                const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
+                fireEvent.click(discardButton);
+
+                expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[2]!.id });
+                expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[2]!.id });
+            });
+        } finally {
+            (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;
+        }
+    });
+
     it('中央牌区低张数沿满铺顶排前缀落位，两排时下排继续从左往右排列', () => {
         withViewport(1440, 1024, () => {
             const fullView = renderBoard(makeCore({
@@ -1388,7 +1422,6 @@ describe('FantasyRealms Board foundation', () => {
             const fullRects = fullButtons.map(getRect);
             const fullTopRowRects = fullRects.slice(0, 5);
             const fullSecondRowRects = fullRects.slice(5);
-
             expect(fullButtons).toHaveLength(10);
             fullView.unmount();
 
@@ -1398,10 +1431,7 @@ describe('FantasyRealms Board foundation', () => {
 
             const oneCardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
             const oneCardRects = oneCardButtons.map(getRect);
-
             expect(oneCardButtons).toHaveLength(1);
-            expect(Math.abs(oneCardRects[0]!.x - fullTopRowRects[0]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(oneCardRects[0]!.y - fullTopRowRects[0]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.width - fullTopRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(oneCardRects[0]!.height - fullTopRowRects[0]!.height)).toBeLessThanOrEqual(2);
             oneCardView.unmount();
@@ -1412,14 +1442,9 @@ describe('FantasyRealms Board foundation', () => {
 
             const twoCardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
             const twoCardRects = twoCardButtons.map(getRect);
-
             expect(twoCardButtons).toHaveLength(2);
-            expect(Math.abs(twoCardRects[0]!.x - fullTopRowRects[0]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(twoCardRects[0]!.y - fullTopRowRects[0]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(twoCardRects[0]!.width - fullTopRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(twoCardRects[0]!.height - fullTopRowRects[0]!.height)).toBeLessThanOrEqual(2);
-            expect(Math.abs(twoCardRects[1]!.x - fullTopRowRects[1]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(twoCardRects[1]!.y - fullTopRowRects[1]!.y)).toBeLessThanOrEqual(2);
             expect(Math.abs(twoCardRects[1]!.width - fullTopRowRects[1]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(twoCardRects[1]!.height - fullTopRowRects[1]!.height)).toBeLessThanOrEqual(2);
             twoCardView.unmount();
@@ -1435,17 +1460,10 @@ describe('FantasyRealms Board foundation', () => {
             const secondRowButtons = discardButtons.slice(5);
             const topRowRects = topRowButtons.map(getRect);
             const secondRowRects = secondRowButtons.map(getRect);
-
             expect(discardButtons).toHaveLength(9);
-            expect(Math.abs(topRowRects[0]!.x - fullTopRowRects[0]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs(topRowRects[1]!.x - fullTopRowRects[1]!.x)).toBeLessThanOrEqual(2);
-            expect(Math.abs((topRowRects[1]!.x - topRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
-            expect(Math.abs((topRowRects[0]!.x - secondRowRects[0]!.x) - (topRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.width - fullSecondRowRects[0]!.width)).toBeLessThanOrEqual(2);
             expect(Math.abs(secondRowRects[0]!.height - fullSecondRowRects[0]!.height)).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
+            expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
             nineCardView.unmount();
         });
     });
@@ -1461,13 +1479,12 @@ describe('FantasyRealms Board foundation', () => {
 
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
             const secondRowButtons = discardButtons.slice(5);
-            const secondRowRects = secondRowButtons.map(getRect);
+            const secondRowPositions = secondRowButtons.map(getLiveCenterButtonPosition);
 
             expect(discardButtons).toHaveLength(10);
-            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[0]!.width / 2))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[1]!.x - secondRowRects[0]!.x) - (secondRowRects[2]!.x - secondRowRects[1]!.x))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[2]!.x - secondRowRects[1]!.x) - (secondRowRects[3]!.x - secondRowRects[2]!.x))).toBeLessThanOrEqual(2);
-            expect(Math.abs((secondRowRects[3]!.x - secondRowRects[2]!.x) - (secondRowRects[4]!.x - secondRowRects[3]!.x))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowPositions[1]!.left - secondRowPositions[0]!.left) - (secondRowPositions[2]!.left - secondRowPositions[1]!.left))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowPositions[2]!.left - secondRowPositions[1]!.left) - (secondRowPositions[3]!.left - secondRowPositions[2]!.left))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowPositions[3]!.left - secondRowPositions[2]!.left) - (secondRowPositions[4]!.left - secondRowPositions[3]!.left))).toBeLessThanOrEqual(2);
         });
     });
 

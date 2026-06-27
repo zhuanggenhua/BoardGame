@@ -1,5 +1,16 @@
 # DiceThrone 工匠全面审计
 
+> 2026-06-27 补充回写：2026-06-24 版本把工匠记为“`P0 真实入口闭环已完成；扩展审计仍有余量`”。当前工作目录随后补齐了稍作调整 II、防御链，扳手攻击 II 升级后再次触发链，电路图 II、灵感突现 II、唤醒机械 II、超频运行 II 能量提升、电能脉冲 III 机械大军，以及真实在线电能机器人“本体保留、只记录本回合激活次数”链路。并已在当前工作目录重跑：
+>
+> - `src/games/dicethrone/__tests__/artificer-mechanics.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-bot-persistence.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-intake.test.ts`
+> - `src/games/dicethrone/__tests__/artificer-energy-boost-regression.test.ts`
+> - `e2e/dicethrone/artificer-intake.e2e.ts`
+> - `e2e/dicethrone/artificer-full-audit.e2e.ts`
+>
+> 当前结果为：领域测试 `59/59 passed`，真实入口 intake `3/3 passed`，真实入口 full audit `18/18 passed`。对“开局合成器数量”“高级电能机器人降级/消失”“升级高级机器人合成器成本”“机器人被清除/转移指示物误处理”“扳手攻击 II 只加 3 伤害不走后续”这 5 条反馈，当前证据已闭环。下文若仍保留 2026-06-24 的 `L3 pending / partial / 仍有残余范围` 等表述，一律按历史快照理解，不再代表 2026-06-27 当前工作目录结论。
+
 ## 1. 基本信息
 
 - 对象：工匠（`artificer` / Artificer）
