@@ -34,6 +34,11 @@ const resolveLocalGameplaySound = (
 };
 
 export const FANTASY_REALMS_AUDIO_CONFIG: GameAudioConfig = {
+    blockingSounds: [
+        STINGER_WIN_KEY,
+        STINGER_LOSE_KEY,
+        ENDGAME_SCORE_STEP_KEY,
+    ],
     criticalSounds: Array.from(new Set([
         ...collectPreloadKeys(FANTASY_REALMS_AUDIO_EVENTS),
         STINGER_WIN_KEY,

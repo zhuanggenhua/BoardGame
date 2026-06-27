@@ -221,6 +221,54 @@ class AudioManagerClass {
     private _pendingBgmKey: string | null = null;
     private _loadingCount: number = 0;
 
+    private preloadSoundDefinition(
+        key: SoundKey,
+        definition: SoundDefinition,
+        options?: {
+            volumeMultiplier?: number;
+            onLoaded?: () => void;
+            onError?: (error: unknown) => void;
+            onReplace?: (howl: Howl) => void;
+        },
+    ): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const finalizeLoaded = () => {
+                options?.onLoaded?.();
+                resolve();
+            };
+            const finalizeError = (error: unknown) => {
+                options?.onError?.(error);
+                reject(error instanceof Error ? error : new Error(String(error)));
+            };
+
+            const howl = this.createHowlWithFallback(definition.src, {
+                volume: (definition.volume ?? 1.0) * (options?.volumeMultiplier ?? this._sfxVolume),
+                loop: definition.loop ?? false,
+                sprite: definition.sprite,
+                preload: true,
+                onReplace: (nextHowl) => {
+                    this.sounds.set(key, nextHowl);
+                    options?.onReplace?.(nextHowl);
+                },
+                onload: finalizeLoaded,
+                onloaderror: (_id, error) => {
+                    finalizeError(error);
+                },
+            });
+
+            if (!howl) {
+                finalizeError(new Error(`failed to create preload howl for ${key}`));
+                return;
+            }
+            this.sounds.set(key, howl);
+
+            const state = howl.state();
+            if (state === 'loaded') {
+                finalizeLoaded();
+            }
+        });
+    }
+
     private createHowlWithFallback(
         src: string | string[],
         options: Omit<ConstructorParameters<typeof Howl>[0], 'src' | 'onloaderror'> & {
@@ -1001,15 +1049,8 @@ class AudioManagerClass {
                 const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
                 if (!definition) continue;
                 this.soundDefinitions.set(key, definition);
-                const howl = this.createHowlWithFallback(definition.src, {
-                    volume: (definition.volume ?? 1.0) * this._sfxVolume,
-                    loop: definition.loop ?? false,
-                    sprite: definition.sprite,
-                    preload: true,
-                    onReplace: (nextHowl) => {
-                        this.sounds.set(key, nextHowl);
-                    },
-                    onloaderror: (_id, error) => {
+                void this.preloadSoundDefinition(key, definition, {
+                    onError: (error) => {
                         console.error(`[Audio] preload_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
                         this.failedKeys.add(key);
                         notifyAudioPlaybackFailure(
@@ -1022,8 +1063,6 @@ class AudioManagerClass {
                         );
                     },
                 });
-                if (!howl) continue;
-                this.sounds.set(key, howl);
             }
             if (index < pending.length) {
                 scheduleAfterImages(() => loadBatch());
@@ -1049,6 +1088,76 @@ class AudioManagerClass {
         };
 
         scheduleAfterImages(() => loadBatch());
+    }
+
+    preloadBlockingKeys(
+        keys: SoundKey[],
+        onProgress?: (loaded: number, total: number) => void,
+    ): Promise<void> {
+        if (this.isAudioDisabled() || keys.length === 0) {
+            return Promise.resolve();
+        }
+
+        const uniqueKeys = Array.from(new Set(keys.filter(Boolean)));
+        if (uniqueKeys.length === 0) {
+            return Promise.resolve();
+        }
+
+        let loaded = 0;
+        const total = uniqueKeys.length;
+        onProgress?.(loaded, total);
+
+        const markLoaded = () => {
+            loaded += 1;
+            onProgress?.(loaded, total);
+        };
+
+        const tasks = uniqueKeys.map(async (key) => {
+            const currentState = this.getSfxLoadState(key);
+            if (currentState === 'loaded' || currentState === 'playing') {
+                markLoaded();
+                return;
+            }
+            if (currentState === 'failed' || currentState === 'missing') {
+                markLoaded();
+                return;
+            }
+
+            const existingHowl = this.sounds.get(key);
+            if (existingHowl) {
+                const state = existingHowl.state();
+                if (state === 'loaded') {
+                    markLoaded();
+                    return;
+                }
+                await new Promise<void>((resolve) => {
+                    existingHowl.once('load', () => resolve());
+                    existingHowl.once('loaderror', () => resolve());
+                });
+                markLoaded();
+                return;
+            }
+
+            const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
+            if (!definition) {
+                markLoaded();
+                return;
+            }
+            this.soundDefinitions.set(key, definition);
+            try {
+                await this.preloadSoundDefinition(key, definition, {
+                    onError: (error) => {
+                        console.error(`[Audio] blocking_preload_failed key=${key} src=${formatSrcForLog(definition.src)} error=${String(error)}`);
+                        this.failedKeys.add(key);
+                    },
+                });
+            } catch {
+                // 前台门禁允许失败后放行，避免单个音频源异常卡死进房。
+            }
+            markLoaded();
+        });
+
+        return Promise.all(tasks).then(() => undefined);
     }
 
     /** 等待 BGM 开始播放或超时（3s），不阻塞无 BGM 的场景 */

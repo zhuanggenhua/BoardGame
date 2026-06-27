@@ -1519,6 +1519,9 @@ export function isMinionProtected(
 
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
+        if (entry.sourceDefId === state.bases[targetBaseIndex]?.defId && isBaseAbilitySuppressed(state, targetBaseIndex)) {
+            continue;
+        }
 
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
@@ -1555,6 +1558,9 @@ export function isMinionProtectedNonConsumable(
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
         if (entry.consumable) continue;
+        if (entry.sourceDefId === state.bases[targetBaseIndex]?.defId && isBaseAbilitySuppressed(state, targetBaseIndex)) {
+            continue;
+        }
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
         if (entry.checker({ ...ctx, state: filteredState })) return true;
@@ -1656,6 +1662,9 @@ export function getConsumableProtectionSource(
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
         if (!entry.consumable) continue;
+        if (entry.sourceDefId === state.bases[targetBaseIndex]?.defId && isBaseAbilitySuppressed(state, targetBaseIndex)) {
+            continue;
+        }
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         if (!isSourceActive(filteredState, entry.sourceDefId)) continue;
         if (!entry.checker({ ...ctx, state: filteredState })) continue;

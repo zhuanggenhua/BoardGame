@@ -47,6 +47,7 @@ const loadRuntime3 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -70,6 +71,7 @@ const loadRuntime4 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.diceThroneLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.diceThroneGameRuntimeAdapter,
     };
@@ -93,6 +95,7 @@ const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -109,6 +112,7 @@ const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -127,6 +131,7 @@ const loadRuntime8 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.smashUpLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.smashUpGameRuntimeAdapter,
     };
@@ -150,6 +155,7 @@ const loadRuntime9 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
     };
 };
 
@@ -173,6 +179,7 @@ const loadRuntime10 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.summonerWarsLatencyConfig,
         runtimeAdapter: runtimeAdapterModule.summonerWarsGameRuntimeAdapter,
     };
@@ -197,6 +204,7 @@ const loadRuntime11 = async (): Promise<GameClientRuntimeModule> => {
     return {
         engineConfig: gameModule.engineConfig,
         board: boardModule.default,
+        audioConfig: gameModule.audioConfig,
         latencyConfig: latencyModule.ticTacToeLatencyConfig,
     };
 };

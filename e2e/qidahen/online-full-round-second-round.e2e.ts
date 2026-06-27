@@ -247,7 +247,7 @@ async function openUpgradeArmamentPaymentFlow(
     const actionButton = page.getByTestId('qidahen-action-upgrade-armament');
     await expect(actionButton).toBeVisible({ timeout: 15000 });
     await actionButton.click();
-    await expect(page.getByTestId('qidahen-primary-action-current')).toContainText('升级军备', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-action-upgrade-armament')).toContainText('升级军备', { timeout: 15000 });
     return actionButton;
 }
 
@@ -266,11 +266,24 @@ async function performKhanEdictTurn(page: Page): Promise<void> {
     const actionButton = page.getByTestId('qidahen-action-khan-edict');
     await expect(actionButton, `蒙古行动按钮缺失，当前可见动作: ${actionIds.join(', ')}`).toBeVisible({ timeout: 15000 });
     await actionButton.click();
-    await expect(page.getByTestId('qidahen-primary-action-current')).toContainText('大汗令箭', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-action-khan-edict')).toContainText('大汗令箭', { timeout: 15000 });
     await actionButton.click();
     await paySelectedAction(page, 1);
     await expect(page.getByTestId('qidahen-khan-edict-selection')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('qidahen-khan-edict-choice-recruit-train').click();
+}
+
+async function logVisibleHostActions(page: Page, label: string): Promise<void> {
+    const actions = await page.locator('[data-testid^="qidahen-action-"]').evaluateAll((elements) => (
+        elements
+            .map((element) => ({
+                testId: element.getAttribute('data-testid'),
+                text: (element.textContent ?? '').trim(),
+                disabled: element.getAttribute('disabled') != null || element.getAttribute('aria-disabled') === 'true',
+            }))
+            .filter((entry) => entry.testId?.startsWith('qidahen-action-'))
+    ));
+    console.log(`[QIDAHEN_HOST_ACTIONS:${label}]`, JSON.stringify(actions));
 }
 
 test.describe('七大恨联机完整首轮到第二回合开始', () => {
@@ -352,6 +365,7 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await waitForActionWindow(host.page, '大明');
             await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('第 2 轮', { timeout: 30000 });
             await expectViewerPrivateHand(host.page, '大明');
+            await logVisibleHostActions(host.page, 'round-2-ming');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-05-第2轮开始-回到大明行动窗口.png');
 
             assertNoFatalFrontendErrors(diagnostics);

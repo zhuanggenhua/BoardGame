@@ -4,7 +4,7 @@
 
 ## 结论等级
 
-本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 37 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
+本文件证明 `zhongguo` 四派系已经从 intake 合同继续推进到**对象级 L2 行为验证清空待补证 + 39 条代表性 L3/L4 真实入口 E2E + 1 条基地计分服务端命令链补证**。
 
 当前**不能**写成：
 
@@ -16,7 +16,7 @@
 
 - `L0/L1`：四派系卡牌、基地、atlas、manifest 合同已存在，见 intake 合同
 - `L2`：当前没有继续列为 `L2 未实现` 或 `L2 待补证` 的 zhongguo 新派系对象
-- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“快如闪电”出牌阶段真实入口 E2E、“人人都是功夫高手”出牌阶段真实入口 E2E、“平头彼特”天赋真实入口 E2E、“短路点火”出牌阶段真实入口 E2E、“高速追逐战”天赋真实入口 E2E、“暴走卡车”天赋真实入口 E2E、“埃尔班迪多”打出后控权真实入口 E2E、“埃尔班迪多”天赋转移真实入口 E2E、“直面恐惧”出牌阶段真实入口 E2E、“铁杆神探”出牌阶段真实入口 E2E、“活着”出牌阶段真实入口 E2E、“庆祝”出牌阶段真实入口 E2E、“迪斯科地狱”出牌阶段真实入口 E2E、“破萝飞龙”出牌阶段真实入口 E2E、“瞌睡的亨利”出牌阶段真实入口 E2E、“修理”出牌阶段真实入口 E2E、“谁爱你，小老弟？”出牌阶段真实入口 E2E、“猛龙怪客”对手消灭后反杀真实入口 E2E、“街头正义”保护过滤真实入口 E2E、“一天的快乐”出牌阶段真实入口 E2E、“凶恶百倍”出牌阶段真实入口 E2E、“藏身处”保护过滤真实入口 E2E、“杰基比尔”出牌后被他人战术触发真实入口 E2E、“今晚嗨起来”与“舞王”联动真实入口 E2E、“我很亢奋”与“神探布洛杰克”联动真实入口 E2E、“最后的舞曲”出牌阶段真实入口 E2E、“男人雨”出牌阶段真实入口 E2E、“打到穿越”出牌阶段真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
+- `L3/L4`：已新增“我会活下去”计分后真实入口 E2E、“复仇”计分后真实入口 E2E、“车友聚会”计分前真实入口 E2E、“节拍一转”计分前真实入口 E2E、“掌握时机”计分前真实入口 E2E、“快如闪电”出牌阶段真实入口 E2E、“人人都是功夫高手”出牌阶段真实入口 E2E、“平头彼特”天赋真实入口 E2E、“短路点火”出牌阶段真实入口 E2E、“高速追逐战”天赋真实入口 E2E、“暴走卡车”天赋真实入口 E2E、“埃尔班迪多”打出后控权真实入口 E2E、“埃尔班迪多”天赋转移真实入口 E2E、“直面恐惧”出牌阶段真实入口 E2E、“铁杆神探”出牌阶段真实入口 E2E、“活着”出牌阶段真实入口 E2E、“庆祝”出牌阶段真实入口 E2E、“迪斯科地狱”出牌阶段真实入口 E2E、“破萝飞龙”出牌阶段真实入口 E2E、“瞌睡的亨利”出牌阶段真实入口 E2E、“修理”出牌阶段真实入口 E2E、“谁爱你，小老弟？”出牌阶段真实入口 E2E、“猛龙怪客”对手消灭后反杀真实入口 E2E、“不屑一顾”压制基地能力后放开《打到穿越》目标过滤真实入口 E2E、“觉得运气不错？”宿主控制者打出战术后自毁宿主真实入口 E2E、“街头正义”保护过滤真实入口 E2E、“一天的快乐”出牌阶段真实入口 E2E、“凶恶百倍”出牌阶段真实入口 E2E、“藏身处”保护过滤真实入口 E2E、“杰基比尔”出牌后被他人战术触发真实入口 E2E、“今晚嗨起来”与“舞王”联动真实入口 E2E、“我很亢奋”与“神探布洛杰克”联动真实入口 E2E、“最后的舞曲”出牌阶段真实入口 E2E、“男人雨”出牌阶段真实入口 E2E、“打到穿越”出牌阶段真实入口 E2E、“廉价小饭馆”基地计分后真实入口 E2E 与“卡车服务站”基地计分后真实入口 E2E；廉价小饭馆另有服务端计分命令链补证；四派系整体仍未收口
 - `整批状态`：仍在实施中
 
 关联 intake 合同：
@@ -112,6 +112,8 @@
    - 修理（`truckers_fixin_to_fix_it`）：新增真实页面 E2E，在出牌阶段打出该动作后，无交互直结算断言弃牌堆中的战术真实回到手牌、非战术仍留在弃牌堆、《修理》自身进入弃牌堆，且 `actionsPlayed=1` / `triggerQueue` / 交互 / 响应窗口清空
    - 谁爱你，小老弟？（`vigilantes_who_loves_ya_baby`）：新增真实页面 E2E，在出牌阶段打出该动作后，无交互直结算断言仅按“你控制的战力 `4` 或更高随从”数量真实抓牌；当前场上只有两名己方高战力随从符合条件，因此只抓 `2` 张、不会把对手的高战力随从或己方低战力随从计入，且《谁爱你，小老弟？》进入弃牌堆、`triggerQueue` / 交互 / 响应窗口清空
    - 猛龙怪客（`vigilantes_death_wisher`）：新增真实页面 E2E，在对手席位设为 `human` 的最近真实入口上，由对手打出《一天的快乐》消灭你的低战力随从；随后真实进入《猛龙怪客》反杀 prompt，选择消灭者控制的一名随从后，最终断言被消灭的己方随从与被反杀的敌方随从都正确离场、抓牌与弃牌结算完成，且 `triggerQueue` / 交互 / 响应窗口清空
+   - 不屑一顾（`vigilantes_shrug_it_off`）：新增真实页面 E2E，在《藏身处》保护已生效、且《不屑一顾》已在当前基地待触发的最近真实入口上，真实点击《不屑一顾》后再打出《打到穿越》；最终断言原本受《藏身处》保护的己方随从重新进入《打到穿越》目标列表，且被选中后真实离开《藏身处》、`talentUsed=true`、`triggerQueue` / 交互 / 响应窗口清空
+   - 觉得运气不错？（`vigilantes_feeling_lucky`）：新增真实页面 E2E，在宿主随从已附着《觉得运气不错？》的最近真实入口上，由宿主控制者真实打出战术；最终断言宿主随从被立即消灭、附着一并离场、战术自身进入弃牌堆、抓牌结算完成，且 `triggerQueue` / 交互 / 响应窗口清空
    - 街头正义（`vigilantes_street_justice`）：新增真实页面 E2E，在保护持续战术已在场的最近真实入口上，由当前玩家打出《打到穿越》进入多目标选择 prompt；最终断言被《街头正义》保护的敌方随从不会出现在目标列表里，仅未受保护目标可选，且所选目标被洗回其拥有者牌库、未选目标仍留场、《打到穿越》进入弃牌堆，并清理 `triggerQueue` / 交互 / 响应窗口
    - 一天的快乐（`vigilantes_make_my_day`）：新增真实页面 E2E，在出牌阶段打出该动作后进入真实目标选择 prompt；最终断言只有“有己方随从基地中的战力 3 或更低随从”进入候选，高战力目标不会进入列表，且所选目标被消灭、己方真实抓到 `1` 张牌、《一天的快乐》进入弃牌堆，并清理 `triggerQueue` / 交互 / 响应窗口
    - 凶恶百倍（`vigilantes_a_whole_lot_meaner`）：新增真实页面 E2E，在出牌阶段打出该动作后进入真实目标选择 prompt；最终断言合法目标进入候选后，所选目标真实获得 `+3` 临时战力、未选目标不受影响、《凶恶百倍》进入弃牌堆，并清理 `triggerQueue` / 交互 / 响应窗口
@@ -211,6 +213,11 @@
 - `npx eslint e2e/smashup/smashup-zhongguo-death-wisher.e2e.ts`（0 error）
 - `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "猛龙怪客会在其他玩家消灭别人随从后反杀其一个随从，且每回合仅一次"`（1 passed）
 - `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-death-wisher.e2e.ts`（zhongguo 新增链路，1 passed；补正真实页前提为 `seat1=human` 后通过）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "不屑一顾天赋会压制所在基地能力|不屑一顾压制后，藏身处不应继续保护本基地己方随从"`（2 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-shrug-it-off.e2e.ts`（zhongguo 新增链路，1 passed；先修正“基地本体保护在基地被压制后仍继续生效”的实现缺口后通过）
+- `npx eslint e2e/smashup/smashup-zhongguo-feeling-lucky.e2e.ts`（0 error）
+- `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "觉得运气不错？会在宿主控制者打出战术后消灭宿主"`（1 passed）
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-feeling-lucky.e2e.ts`（zhongguo 新增链路，1 passed）
 - `npx eslint e2e/smashup/smashup-zhongguo-street-justice-protection.e2e.ts`（0 error）
 - `npx vitest run src/games/smashup/__tests__/abilities/zhongguo-new-factions.test.ts --testNamePattern "街头正义会保护同基地己方随从不受其他玩家影响"`（1 passed）
 - `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-zhongguo-street-justice-protection.e2e.ts`（zhongguo 新增链路，1 passed；先后修正为“保护已在场的最近真实入口 + 当前玩家真实打出《打到穿越》 + 至少两个未受保护合法目标”后通过）
@@ -362,6 +369,12 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-death-wisher.e2e\对手消灭你的随从后，应触发猛龙怪客反杀对手一个随从，且清理交互队列\zhongguo-death-wisher-destroy-target.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-death-wisher.e2e\对手消灭你的随从后，应触发猛龙怪客反杀对手一个随从，且清理交互队列\zhongguo-death-wisher-revenge-target.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-death-wisher.e2e\对手消灭你的随从后，应触发猛龙怪客反杀对手一个随从，且清理交互队列\zhongguo-death-wisher-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-shrug-it-off.e2e\真实点击不屑一顾后，应压制当前基地能力，让原本受藏身处保护的随从重新进入打到穿越目标列表\zhongguo-shrug-it-off-ready.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-shrug-it-off.e2e\真实点击不屑一顾后，应压制当前基地能力，让原本受藏身处保护的随从重新进入打到穿越目标列表\zhongguo-shrug-it-off-suppressed.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-shrug-it-off.e2e\真实点击不屑一顾后，应压制当前基地能力，让原本受藏身处保护的随从重新进入打到穿越目标列表\zhongguo-shrug-it-off-target-options.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-shrug-it-off.e2e\真实点击不屑一顾后，应压制当前基地能力，让原本受藏身处保护的随从重新进入打到穿越目标列表\zhongguo-shrug-it-off-resolved.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-feeling-lucky.e2e\宿主控制者真实打出战术后，应让附着了觉得运气不错？的宿主随从被消灭\zhongguo-feeling-lucky-ready.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-feeling-lucky.e2e\宿主控制者真实打出战术后，应让附着了觉得运气不错？的宿主随从被消灭\zhongguo-feeling-lucky-resolved.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-street-justice-protection.e2e\街头正义在基地生效后，对手的打到穿越目标列表里不应出现被保护的己方随从\zhongguo-street-justice-protection-ready.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-street-justice-protection.e2e\街头正义在基地生效后，对手的打到穿越目标列表里不应出现被保护的己方随从\zhongguo-street-justice-protection-target-options.png`
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-zhongguo-street-justice-protection.e2e\街头正义在基地生效后，对手的打到穿越目标列表里不应出现被保护的己方随从\zhongguo-street-justice-protection-resolved.png`
@@ -520,6 +533,6 @@
 
 ## 本轮不宣称完成的原因
 
-1. 当前已清空对象级 `L2` 待补证，但只有三十七条代表性真实入口 E2E，仍不能直接代表四派系 L3/L4 全收口
-2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、快如闪电（`kung_fu_fighters_fast_as_lightning`）、人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）、平头彼特（`truckers_cab_over_pete`）、短路点火（`truckers_hotwire`）、高速追逐战（`truckers_high_speed_chase`）、暴走卡车（`truckers_dekotora`）、埃尔班迪多（`truckers_el_bandido`）打出控权、埃尔班迪多（`truckers_el_bandido`）天赋转移、直面恐惧（`vigilantes_scared_straight`）、铁杆神探（`vigilantes_shift`）、活着（`disco_dancers_stayin_alive`）、庆祝（`disco_dancers_celebration`）、迪斯科地狱（`disco_dancers_disco_inferno`）、破萝飞龙（`vigilantes_stoneford`）、瞌睡的亨利（`vigilantes_dusty_henry`）、修理（`truckers_fixin_to_fix_it`）、谁爱你，小老弟？（`vigilantes_who_loves_ya_baby`）、猛龙怪客（`vigilantes_death_wisher`）、今晚嗨起来 + 舞王（`disco_dancers_get_down_tonight` + `disco_dancers_dancing_king`）、我很亢奋 + 神探布洛杰克（`disco_dancers_im_so_excited` + `vigilantes_brojak`）、最后的舞曲（`disco_dancers_last_dance`）、男人雨（`disco_dancers_its_raining_men`）、打到穿越（`vigilantes_knocked_into_next_week`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
+1. 当前已清空对象级 `L2` 待补证，但只有三十九条代表性真实入口 E2E，仍不能直接代表四派系 L3/L4 全收口
+2. 我会活下去（`disco_dancers_i_will_survive`）、复仇（`vigilantes_the_revenge`）、车友聚会（`truckers_rally`）、节拍一转（`truckers_turn_the_beat_around`）、掌握时机（`kung_fu_fighters_expert_timing`）、快如闪电（`kung_fu_fighters_fast_as_lightning`）、人人都是功夫高手（`kung_fu_fighters_everybody_was_kung_fu_fighting`）、平头彼特（`truckers_cab_over_pete`）、短路点火（`truckers_hotwire`）、高速追逐战（`truckers_high_speed_chase`）、暴走卡车（`truckers_dekotora`）、埃尔班迪多（`truckers_el_bandido`）打出控权、埃尔班迪多（`truckers_el_bandido`）天赋转移、直面恐惧（`vigilantes_scared_straight`）、铁杆神探（`vigilantes_shift`）、活着（`disco_dancers_stayin_alive`）、庆祝（`disco_dancers_celebration`）、迪斯科地狱（`disco_dancers_disco_inferno`）、破萝飞龙（`vigilantes_stoneford`）、瞌睡的亨利（`vigilantes_dusty_henry`）、修理（`truckers_fixin_to_fix_it`）、谁爱你，小老弟？（`vigilantes_who_loves_ya_baby`）、猛龙怪客（`vigilantes_death_wisher`）、不屑一顾（`vigilantes_shrug_it_off`）、觉得运气不错？（`vigilantes_feeling_lucky`）、今晚嗨起来 + 舞王（`disco_dancers_get_down_tonight` + `disco_dancers_dancing_king`）、我很亢奋 + 神探布洛杰克（`disco_dancers_im_so_excited` + `vigilantes_brojak`）、最后的舞曲（`disco_dancers_last_dance`）、男人雨（`disco_dancers_its_raining_men`）、打到穿越（`vigilantes_knocked_into_next_week`）、廉价小饭馆（`base_the_greasy_spoon`）与卡车服务站（`base_truck_stop`）已覆盖 `finalState / triggerQueue / 响应窗口或交互清理`，但更多多对象交互与更多 representative 链路仍缺 L4 页面证据
 3. 本文件只是实施审计底稿，不是最终 rollup

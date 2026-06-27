@@ -2177,11 +2177,12 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-live-center-slot-grid {
                     position: absolute;
                     inset: 0;
-                    pointer-events: none;
+                    pointer-events: auto;
                 }
                 .fr-card-button--live-center {
                     position: absolute;
                     width: var(--fr-live-center-card-width);
+                    pointer-events: auto;
                     transition:
                         left 220ms cubic-bezier(0.22, 0.72, 0.2, 1),
                         top 220ms cubic-bezier(0.22, 0.72, 0.2, 1);
@@ -2645,6 +2646,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 .fr-board--minimal-live .fr-card-slot--live-center-placeholder {
                     position: absolute;
                     width: calc(var(--fr-live-center-card-width) - 4px);
+                    pointer-events: none;
                     border-radius: 14px;
                     border: 1px solid rgba(255, 239, 202, 0.035);
                     background:

@@ -35,11 +35,11 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-move-layer"',
     'data-testid={`qidahen-wheel-move-target-${choice.id}`}',
     'data-testid="qidahen-wheel-tip"',
-    'data-testid="qidahen-wheel-next-step-banner"',
-    'data-testid="qidahen-wheel-next-step-title"',
-    'data-testid="qidahen-wheel-next-step-hint"',
-    'data-testid="qidahen-wheel-next-step-choices"',
-    'data-testid={`qidahen-wheel-next-step-choice-${choice.id}`}',
+    'testId="qidahen-wheel-next-step-banner"',
+    "'qidahen-wheel-next-step-title'",
+    "'qidahen-wheel-next-step-hint'",
+    "'qidahen-wheel-next-step-choices'",
+    '`qidahen-wheel-next-step-choice-${choice.id}`',
     '开垦',
     '军屯',
     '征兵',
@@ -67,7 +67,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-payment-confirm"',
     'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-turn-banner"',
-    'data-testid="qidahen-primary-action-next-step"',
+    'testId="qidahen-top-action-banner"',
     'data-testid={`qidahen-action-state-${action.id}`}',
     'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
@@ -222,27 +222,35 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
         expect(boardSource).toContain("defaultValue: '本次轮盘行动待执行'");
-        expect(boardSource).toContain('点这里');
-        expect(boardSource).toContain('onExecuteWheelMove(choice.id)');
+        expect(boardSource).toContain('qidahen-wheel-next-step-choice-${choice.id}');
+        expect(boardSource).toContain('onSelectChoice={executeWheelMove}');
         expect(boardSource).not.toContain('发亮的绿色格就是下一步');
         expect(boardSource).not.toContain('点左上发亮的绿色格');
     });
 
-    it('一级行动面板会自动锁定当前主流程，并直接暴露二级行动而不是再加一级选择按钮', () => {
+    it('一级行动入口会收口为顶部横幅与直达动作按钮，不再保留右侧说明式步骤卡', () => {
         expect(boardSource).toContain('const buildQidahenPrimaryActionEntryText = (');
-        expect(boardSource).toContain("return selectedAction ? `正在执行：${selectedAction.label}` : '先选一项行动';");
-        expect(boardSource).toContain("return '先从右侧选一项行动';");
+        expect(boardSource).toContain("return selectedAction ? selectedAction.label : '选择一项行动';");
+        expect(boardSource).toContain("return '选择一项行动';");
         expect(boardSource).toContain("return '选择行动目标';");
         expect(boardSource).toContain(": '选择轮盘行动';");
-        expect(boardSource).toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
+        expect(boardSource).toContain('showTopFactionPrompt');
+        expect(boardSource).toContain('qidahen-top-action-banner');
+        expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })");
         expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
         expect(boardSource).toContain("defaultValue: '{{year}} · 轮盘 {{wheelStatus}} · 弃牌行动 {{factionStatus}}'");
-        expect(boardSource).toContain('qidahen-primary-action-next-step');
         expect(boardSource).toContain('qidahen-action-state-${action.id}');
         expect(boardSource).toContain("t('board.actions.state.current', { defaultValue: '当前' })");
         expect(boardSource).toContain("t('board.actions.state.available', { defaultValue: '可选' })");
+        expect(boardSource).toContain('onClick={() => onExecuteAction(action.id)}');
+        expect(boardSource).not.toContain('qidahen-primary-action-next-step');
+        expect(boardSource).not.toContain("t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })");
+        expect(boardSource).not.toContain("return '先从右侧选一项行动';");
         expect(boardSource).not.toContain('点亮起的绿色区域继续');
         expect(boardSource).not.toContain('地图可点');
+        expect(boardSource).not.toContain('当前主入口');
+        expect(boardSource).not.toContain('所有绿色底部都可点击');
+        expect(boardSource).not.toContain('先选中下方一级势力行动');
         expect(boardSource).not.toContain('const PrimaryStageButton: React.FC<');
         expect(boardSource).not.toContain('data-testid="qidahen-primary-stage-choices"');
     });

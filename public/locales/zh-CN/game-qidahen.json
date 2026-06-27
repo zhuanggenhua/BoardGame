@@ -153,6 +153,7 @@
       "scenarioVoteBlocked": "局内剧本投票尚未完成，当前只可处理剧本介绍与投票。",
       "primaryActionLabel": "这一步做什么",
       "primaryActionEmpty": "未选择",
+      "primaryActionSelectPrompt": "选择一项行动",
       "wheelNextStepBadge": "轮盘",
       "wheelNextStepTitle": "选择轮盘行动",
       "wheelNextStepHint": "本次轮盘行动待执行",

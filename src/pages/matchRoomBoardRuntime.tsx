@@ -8,11 +8,13 @@ import {
 import { getGameImplementation } from '../games/registry';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import { CriticalImageGate } from '../components/game/framework';
+import type { SoundKey } from '../lib/audio/types';
 
 type MatchRoomBoardGateRuntime = {
     locale: string;
     loadingDescription: string;
     shouldBlockBoardOnImagePreload: boolean;
+    blockingAudioKeys: SoundKey[];
     onReady: () => void;
 };
 
@@ -34,6 +36,7 @@ export function useMatchRoomBoardRuntime(args: {
         locale: args.locale,
         loadingDescription: args.loadingDescription,
         shouldBlockBoardOnImagePreload: args.shouldBlockBoardOnImagePreload,
+        blockingAudioKeys: [],
         onReady: args.onInitialOnlinePreloadReady,
     }), [
         args.locale,
@@ -60,22 +63,41 @@ export function useMatchRoomBoardRuntime(args: {
             return null;
         }
         const Board = impl.board as unknown as ComponentType<GameBoardProps>;
+        const blockingAudioKeys = Array.from(new Set(impl.audioConfig?.blockingSounds ?? []));
 
         const WrappedBoardWithGate = (props: GameBoardProps) => {
             const runtime = useContext(MatchRoomBoardGateRuntimeContext);
+            const effectiveRuntime: MatchRoomBoardGateRuntime = runtime
+                ? { ...runtime, blockingAudioKeys }
+                : { ...boardGateRuntime, blockingAudioKeys };
             if (!runtime) {
-                return <Board {...props} />;
+                return (
+                    <CriticalImageGate
+                        gameId={args.gameId}
+                        gameState={props?.G}
+                        locale={effectiveRuntime.locale}
+                        playerID={props?.playerID}
+                        enabled={true}
+                        blockRendering={effectiveRuntime.shouldBlockBoardOnImagePreload}
+                        loadingDescription={effectiveRuntime.loadingDescription}
+                        blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
+                        onReady={effectiveRuntime.onReady}
+                    >
+                        <Board {...props} />
+                    </CriticalImageGate>
+                );
             }
             return (
                 <CriticalImageGate
                     gameId={args.gameId}
                     gameState={props?.G}
-                    locale={runtime.locale}
+                    locale={effectiveRuntime.locale}
                     playerID={props?.playerID}
                     enabled={true}
-                    blockRendering={runtime.shouldBlockBoardOnImagePreload}
-                    loadingDescription={runtime.loadingDescription}
-                    onReady={runtime.onReady}
+                    blockRendering={effectiveRuntime.shouldBlockBoardOnImagePreload}
+                    loadingDescription={effectiveRuntime.loadingDescription}
+                    blockingAudioKeys={effectiveRuntime.blockingAudioKeys}
+                    onReady={effectiveRuntime.onReady}
                 >
                     <Board {...props} />
                 </CriticalImageGate>
@@ -84,7 +106,7 @@ export function useMatchRoomBoardRuntime(args: {
 
         WrappedBoardWithGate.displayName = 'WrappedOnlineBoard';
         return WrappedBoardWithGate;
-    }, [args.gameId, args.gameImplReady]);
+    }, [args.gameId, args.gameImplReady, boardGateRuntime]);
 
     return {
         board: wrappedBoardComponent,

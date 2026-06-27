@@ -8,6 +8,7 @@ import { getDeckDrawCount } from './domain/commands';
 import { getFantasyRealmsCardDisplayName } from './foundation';
 import { fantasyRealmsAiRuntime } from './ai';
 import { fantasyRealmsCriticalImageResolver } from './criticalImageResolver';
+import { FANTASY_REALMS_AUDIO_CONFIG } from './audio.config';
 
 const ACTION_ALLOWLIST = ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'] as const;
 
@@ -93,3 +94,4 @@ registerGameAiRuntime(fantasyRealmsAiRuntime);
 registerCriticalImageResolver('fantasyrealms', fantasyRealmsCriticalImageResolver);
 
 export default engineConfig;
+export { FANTASY_REALMS_AUDIO_CONFIG as audioConfig };

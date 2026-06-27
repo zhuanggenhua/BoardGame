@@ -356,6 +356,45 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         )).toBe(true);
     });
 
+    it('不屑一顾压制后，藏身处不应继续保护本基地己方随从', () => {
+        const initial = makeMatchState(makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_hideout',
+                    minions: [
+                        makeMinion('protected', 'vigilantes_jacky_bill', '0', 4),
+                        makeMinion('enemy', 'truckers_good_buddy', '1', 2),
+                    ],
+                    ongoingActions: [{ uid: 'shrug-1', defId: 'vigilantes_shrug_it_off', ownerId: '1', talentUsed: false } as any],
+                }),
+            ],
+        }));
+
+        const beforeSuppressed = initial.core.bases[0].minions[0];
+        expect(isMinionProtected(initial.core, beforeSuppressed, 0, '1', 'action')).toBe(true);
+
+        const used = runCommand(
+            initial,
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '1',
+                payload: { ongoingCardUid: 'shrug-1', baseIndex: 0 },
+            },
+            defaultTestRandom,
+        );
+
+        expect(used.success).toBe(true);
+        const protectedAfterSuppressed = used.finalState.core.bases[0].minions[0];
+        expect(isMinionProtected(used.finalState.core, protectedAfterSuppressed, 0, '1', 'action')).toBe(false);
+        expect(isMinionProtected(used.finalState.core, protectedAfterSuppressed, 0, '1', 'destroy')).toBe(false);
+        expect(isMinionProtected(used.finalState.core, protectedAfterSuppressed, 0, '1', 'move')).toBe(false);
+    });
+
     it('直面恐惧会移动有己方随从基地中的其他玩家随从并给予额外战术', () => {
         const played = runCommand(
             makeMatchState(makeState({

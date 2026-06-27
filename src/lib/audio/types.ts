@@ -124,9 +124,15 @@ export interface GameAudioConfig {
     // 日志事件选择器（从原始 entry 提取 AudioEvent）
     eventSelector?: (entry: unknown) => AudioEvent | null | undefined;
     /**
-     * 关键音效列表（进入游戏后立即预加载）
+     * 至关重要音效列表（进入对局前必须加载完成）
+     * 这些音效会和关键图片一样参与首屏加载门禁，并显示在加载进度里。
+     * 只应放真正不能接受首播延迟的少量音效。
+     */
+    blockingSounds?: SoundKey[];
+    /**
+     * 关键音效列表（进入游戏后后台优先预热）
      * 这些音效会在 registry 加载完成后立即创建 Howl 实例并下载，
-     * 消除首次播放延迟。建议只放 5-15 个"第一回合就会触发"的高频音效。
+     * 但不会阻塞棋盘首次渲染。建议只放 5-15 个"第一回合就会触发"的高频音效。
      */
     criticalSounds?: SoundKey[];
     /**

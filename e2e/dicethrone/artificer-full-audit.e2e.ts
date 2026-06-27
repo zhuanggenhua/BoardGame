@@ -1560,7 +1560,7 @@ const prepareArtificerShockBotMainBoardScene = async (page: Page): Promise<void>
 };
 
 const prepareArtificerMaximumPowerBoardScene = async (page: Page): Promise<void> => {
-    await page.evaluate(({ shockBotId, synthId, nanobombId }) => {
+    await page.evaluate(({ nanobotId, shockBotId, synthId, nanobombId }) => {
         const harness = (window as Window & {
             __BG_TEST_HARNESS__?: {
                 state?: {
@@ -1617,14 +1617,21 @@ const prepareArtificerMaximumPowerBoardScene = async (page: Page): Promise<void>
                         tokens: {
                             ...(player0.tokens ?? {}),
                             [synthId]: 2,
+                            [nanobotId]: 1,
                             [shockBotId]: 1,
                         },
                         tokenStackLimits: {
                             ...(player0.tokenStackLimits ?? {}),
+                            [nanobotId]: 1,
                             [shockBotId]: 1,
                         },
                         artificerBotState: {
                             ...(player0.artificerBotState ?? {}),
+                            [nanobotId]: {
+                                built: true,
+                                upgraded: false,
+                                activationsUsedThisTurn: 0,
+                            },
                             [shockBotId]: {
                                 built: true,
                                 upgraded: false,
@@ -1667,6 +1674,7 @@ const prepareArtificerMaximumPowerBoardScene = async (page: Page): Promise<void>
             },
         });
     }, {
+        nanobotId: TOKEN_IDS.NANOBOT,
         shockBotId: TOKEN_IDS.SHOCK_BOT,
         synthId: TOKEN_IDS.SYNTH,
         nanobombId: STATUS_IDS.NANOBOMB,
@@ -3320,27 +3328,102 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
         await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;
             const monk = state?.core?.players?.['1'];
+            const pendingDamage = state?.core?.pendingDamage;
+            const interaction = state?.sys?.interaction?.current;
+            return {
+                phase: state?.sys?.phase ?? null,
+                interactionKind: interaction?.kind ?? null,
+                pendingAttackSourceId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+                responderId: pendingDamage?.responderId ?? null,
+                currentDamage: pendingDamage?.currentDamage ?? null,
+                opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+            };
+        }, { timeout: 10000 }).toMatchObject({
+            phase: 'offensiveRoll',
+            interactionKind: 'dt:token-response',
+            pendingAttackSourceId: 'maximum-power',
+            responderId: '0',
+            currentDamage: 10,
+            opponentNanobomb: 1,
+        });
+
+        await game.screenshot('artificer-maximum-power-token-response', testInfo);
+        await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', '0');
+
+        await expect.poll(async () => {
+            const state = await game.getState() as JsonRecord;
+            const artificer = state?.core?.players?.['0'];
+            const monk = state?.core?.players?.['1'];
+            const pendingDamage = state?.core?.pendingDamage;
+            const pendingAttack = state?.core?.pendingAttack;
             const interaction = state?.sys?.interaction?.current;
             const options = interaction?.kind === 'simple-choice' && Array.isArray(interaction?.data?.options)
                 ? interaction.data.options
                 : [];
+
+            if (interaction?.kind === 'simple-choice' && interaction?.data?.sourceId === 'maximum-power') {
+                return {
+                    state: 'choice-open',
+                    phase: state?.sys?.phase ?? null,
+                    interactionKind: interaction?.kind ?? null,
+                    sourceAbilityId: interaction?.data?.sourceId ?? null,
+                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+                    optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
+                };
+            }
+
+            if (typeof pendingDamage?.responderId === 'string' && pendingDamage.responderId.length > 0) {
+                await dispatchHarnessCommand(page, 'SKIP_TOKEN_RESPONSE', pendingDamage.responderId, {});
+                return {
+                    state: 'advancing-token-response',
+                    phase: state?.sys?.phase ?? null,
+                    interactionKind: interaction?.kind ?? null,
+                    sourceAbilityId: interaction?.data?.sourceId ?? null,
+                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+                    optionLabels: [],
+                };
+            }
+
+            if (state?.sys?.phase === 'defensiveRoll' && pendingAttack?.defenderId === '1' && !interaction) {
+                await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '1');
+                return {
+                    state: 'advancing-defensive-roll',
+                    phase: state?.sys?.phase ?? null,
+                    interactionKind: null,
+                    sourceAbilityId: null,
+                    synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
+                    opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
+                    optionLabels: [],
+                };
+            }
+
             return {
+                state: 'waiting',
                 phase: state?.sys?.phase ?? null,
                 interactionKind: interaction?.kind ?? null,
                 sourceAbilityId: interaction?.data?.sourceId ?? null,
+                synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
                 opponentNanobomb: monk?.statusEffects?.[STATUS_IDS.NANOBOMB] ?? null,
-                optionCount: options.length,
+                optionLabels: [],
             };
         }, { timeout: 10000 }).toMatchObject({
+            state: 'choice-open',
             phase: 'offensiveRoll',
             interactionKind: 'simple-choice',
             sourceAbilityId: 'maximum-power',
+            synth: 4,
             opponentNanobomb: 1,
-            optionCount: 2,
+            optionLabels: [
+                'choices.artificerBotActivation.activateNanobot',
+                'choices.artificerBotActivation.activateShockBot',
+                'choices.artificerBotActivation.skip',
+            ],
         });
 
         await game.screenshot('artificer-maximum-power-first-choice', testInfo);
-        await clickSimpleChoiceByCustomId(page, game, 'artificer-activate-bot-resolve');
+        await clickSimpleChoiceByIndex(page, game, 1);
 
         await expect.poll(async () => {
             const state = await game.getState() as JsonRecord;
@@ -3356,15 +3439,15 @@ test.describe('DiceThrone 工匠 P0 全面审计真实入口', () => {
                 sourceAbilityId: interaction?.data?.sourceId ?? null,
                 synth: artificer?.tokens?.[TOKEN_IDS.SYNTH] ?? null,
                 opponentHp: monk?.resources?.[RESOURCE_IDS.HP] ?? null,
-                optionCount: options.length,
+                optionLabels: options.map((option: JsonRecord) => option?.labelKey ?? option?.label),
             };
         }, { timeout: 10000 }).toMatchObject({
             phase: 'offensiveRoll',
             interactionKind: 'simple-choice',
             sourceAbilityId: 'maximum-power',
-            synth: 3,
-            opponentHp: 47,
-            optionCount: 1,
+            synth: 2,
+            opponentHp: 37,
+            optionLabels: ['choices.artificerBotActivation.activateNanobot'],
         });
 
         await game.screenshot('artificer-maximum-power-second-choice', testInfo);

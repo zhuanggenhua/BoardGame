@@ -316,17 +316,17 @@ const buildQidahenPrimaryStageHeadline = (
 ): string => {
     if (primaryStageMode === 'wheel') {
         if (core.wheelActionUsed) {
-            return '轮盘这一步已做完';
+            return '轮盘已完成';
         }
         return '选择轮盘行动';
     }
     if (primaryStageMode === 'faction') {
         if (core.factionActionUsed) {
-            return '这一步已完成';
+            return '行动已完成';
         }
-        return selectedAction ? `正在执行：${selectedAction.label}` : '先选一项行动';
+        return selectedAction ? selectedAction.label : '选择一项行动';
     }
-    return '等待下一步';
+    return '等待中';
 };
 
 const buildQidahenPrimaryStageHint = (
@@ -336,19 +336,19 @@ const buildQidahenPrimaryStageHint = (
 ): string => {
     if (primaryStageMode === 'wheel') {
         return core.wheelActionUsed
-            ? '等待本轮其他结算'
+            ? '等待结算'
             : '选择轮盘行动';
     }
     if (primaryStageMode === 'faction') {
         if (!selectedAction) {
-            return '先从右侧选一项行动';
+            return '选择一项行动';
         }
         if (selectedAction.id === 'upgrade-armament') {
-            return '确认后升级军备';
+            return '弃牌后执行';
         }
         return '选择行动目标';
     }
-    return '等待下一步';
+    return '等待中';
 };
 
 const buildQidahenPrimaryActionEntryText = (
@@ -356,11 +356,11 @@ const buildQidahenPrimaryActionEntryText = (
     selectedAction: QidahenActionChoice | null,
 ): string => {
     if (!selectedAction) {
-        return '先从右侧选一项行动';
+        return '选择一项行动';
     }
     if (core.factionActionUsed) {
         return core.wheelActionUsed
-            ? '等待本轮其他结算'
+            ? '等待结算'
             : '选择轮盘行动';
     }
     switch (selectedAction.id) {
@@ -373,9 +373,9 @@ const buildQidahenPrimaryActionEntryText = (
         case 'ma-shi-trade':
             return '选择行动目标';
         case 'upgrade-armament':
-            return '确认弃牌后升级军备';
+            return '弃牌后执行';
         default:
-            return '按当前提示继续';
+            return '继续';
     }
 };
 
@@ -1598,8 +1598,8 @@ const MapSceneLayer: React.FC<{
         if (pendingTargetAction?.sourceRegionId) {
             return {
                 sourceRegionId: pendingTargetAction.sourceRegionId,
-                title: `目标 ${pendingTargetAction.targetRegionName}`,
-                hint: '右侧继续结算',
+                title: `处理中：${pendingTargetAction.targetRegionName}`,
+                hint: '处理中',
                 badgeLabel: '已锁定',
                 candidates: [
                     {
@@ -2448,6 +2448,99 @@ const KoreaZone: React.FC<{
     );
 };
 
+const TopPromptBanner: React.FC<{
+    title: string;
+    badgeLabel: string;
+    hint?: string | null;
+    tone: 'wheel' | 'faction';
+    choices?: ReadonlyArray<{
+        id: string;
+        label: string;
+        detail?: string;
+    }>;
+    onSelectChoice?: (choiceId: string) => void;
+    testId: string;
+}> = ({
+    title,
+    badgeLabel,
+    hint,
+    tone,
+    choices = [],
+    onSelectChoice,
+    testId,
+}) => {
+    const isWheel = tone === 'wheel';
+    const width = choices.length > 0 ? 640 : MAP_SELECTION_BANNER_WIDTH;
+    const left = (STAGE_WIDTH - width) / 2;
+
+    return (
+        <div
+            className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
+            data-testid={testId}
+            style={{
+                left,
+                top: MAP_SELECTION_BANNER_TOP,
+                width,
+                borderColor: isWheel ? '#5fb772' : UI_STYLE.oldGold,
+                background: isWheel ? 'rgba(20, 63, 34, 0.94)' : UI_SURFACE.mapPanelSelected,
+                color: UI_STYLE.mapIvory,
+                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                borderRadius: 3,
+            }}
+        >
+            <div
+                className="inline-flex items-center border px-2 py-1 text-[10px] font-black tracking-[0.18em]"
+                style={{
+                    borderColor: isWheel ? '#a7e6b4' : '#f6d5a8',
+                    color: isWheel ? '#e7ffd8' : '#f6d5a8',
+                    background: isWheel ? 'rgba(76, 142, 88, 0.18)' : 'rgba(109,74,23,0.18)',
+                }}
+            >
+                {badgeLabel}
+            </div>
+            <div
+                className="mt-2 text-[18px] font-black leading-6 [text-shadow:0_1px_0_rgba(0,0,0,0.45)]"
+                data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-title' : undefined}
+            >
+                {title}
+            </div>
+            {hint ? (
+                <div
+                    className="mt-1 text-[12px] font-black leading-5"
+                    data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-hint' : undefined}
+                    style={{ color: isWheel ? '#dbf5cf' : '#f3d1a5' }}
+                >
+                    {hint}
+                </div>
+            ) : null}
+            {choices.length > 0 ? (
+                <div
+                    className="pointer-events-auto mt-3 grid grid-cols-3 gap-2"
+                    data-testid={testId === 'qidahen-wheel-next-step-banner' ? 'qidahen-wheel-next-step-choices' : undefined}
+                >
+                    {choices.map((choice) => (
+                        <button
+                            key={choice.id}
+                            type="button"
+                            data-testid={testId === 'qidahen-wheel-next-step-banner' ? `qidahen-wheel-next-step-choice-${choice.id}` : undefined}
+                            className="inline-flex min-h-[48px] flex-col items-start justify-center gap-1 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                            onClick={() => onSelectChoice?.(choice.id)}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                            <span className="block text-[13px]">{choice.label}</span>
+                            {choice.detail ? (
+                                <span className="block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                    {choice.detail}
+                                </span>
+                            ) : null}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
 const ActionButton: React.FC<{
     action: QidahenActionChoice;
     selected: boolean;
@@ -2538,7 +2631,6 @@ const ActionsZone: React.FC<{
     wheelDispatchSelection: QidahenWheelDispatchSelection | null;
     pendingTargetAction: QidahenCore['pendingTargetAction'];
     postBattleSelection: QidahenCore['postBattleSelection'];
-    onSelectAction: (actionId: string) => void;
     onExecuteAction: (actionId: string) => void;
     onSelectRegion: (regionId: string) => void;
     onResolveRecruitChoice: (choiceId: QidahenRecruitChoice['id']) => void;
@@ -2561,7 +2653,7 @@ const ActionsZone: React.FC<{
     onResolvePostBattleDecision: (choiceId: string) => void;
     onResolveWheelDispatchChoice: (choiceId: string) => void;
     onExecuteWheelMove: (moveId: string) => void;
-}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onSelectAction, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
+}> = ({ core, primaryStageMode, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGaoDiDispatch, onResolveInternalDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePostBattleDecision, onResolveWheelDispatchChoice, onExecuteWheelMove }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const pendingTargetChoiceOptions = pendingTargetAction ? buildPendingTargetChoiceOptions(core, pendingTargetAction) : [];
@@ -2593,13 +2685,6 @@ const ActionsZone: React.FC<{
         || wheelDispatchSelection != null
         || pendingTargetAction != null
         || postBattleSelection != null;
-    const primaryStageHeadline = buildQidahenPrimaryStageHeadline(core, primaryStageMode, selectedAction);
-    const primaryStageHint = buildQidahenPrimaryStageHint(core, primaryStageMode, selectedAction);
-    const primaryActionEntryText = buildQidahenPrimaryActionEntryText(core, selectedAction);
-    const showPrimaryStageHint = primaryStageHint !== primaryStageHeadline;
-    const showPrimaryActionEntry = primaryActionEntryText !== primaryStageHeadline
-        && primaryActionEntryText !== primaryStageHint;
-    const showPrimaryActionPanel = !suppressPassiveActionContext && !pendingScenarioChoices;
     const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';
     const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';
     const actionSurfaceKey = handLimitDiscardSelection ? 'hand-limit-discard'
@@ -2664,101 +2749,7 @@ const ActionsZone: React.FC<{
                     </div>
                 ) : null}
             </div>
-            {showPrimaryActionPanel ? (
-                <div
-                    className="mb-3 shrink-0 border-[3px] px-3 py-2 text-[12px] font-black leading-5"
-                    data-testid="qidahen-primary-action-panel"
-                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
-                >
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <div className="text-[11px]" style={{ color: UI_STYLE.mapGold }}>
-                                {t('board.actions.primaryActionLabel', { defaultValue: '这一步做什么' })}
-                            </div>
-                            <div className="mt-1 text-[16px]" data-testid="qidahen-primary-action-current">
-                                {primaryStageHeadline}
-                            </div>
-                        </div>
-                        {primaryStageMode ? (
-                            <div
-                                className="rounded-full px-2.5 py-1 text-[10px] font-black tracking-[0.16em]"
-                                style={{
-                                    background: primaryStageMode === 'wheel' ? 'rgba(118,214,138,0.18)' : 'rgba(246,213,168,0.18)',
-                                    color: primaryStageMode === 'wheel' ? '#e4ffd2' : '#f6d5a8',
-                                    boxShadow: 'inset 0 0 0 1px rgba(232,200,133,0.2)',
-                                }}
-                            >
-                                {primaryStageMode === 'wheel'
-                                    ? t('board.actions.primaryStageTagWheel', { defaultValue: '轮盘' })
-                                    : t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
-                            </div>
-                        ) : null}
-                    </div>
-                    {showPrimaryStageHint ? (
-                        <div className="mt-2 text-[11px] font-black leading-5" data-testid="qidahen-secondary-action-hint" style={{ color: '#f3d1a5' }}>
-                            {primaryStageHint}
-                        </div>
-                    ) : null}
-                    {showPrimaryActionEntry ? (
-                        <div
-                            className="mt-2 border-[2px] px-2.5 py-2 text-[11px] font-black leading-5"
-                            data-testid="qidahen-primary-action-next-step"
-                            style={{
-                                borderColor: 'rgba(232,200,133,0.2)',
-                                background: 'rgba(246,213,168,0.08)',
-                                color: UI_STYLE.mapIvory,
-                                borderRadius: 3,
-                            }}
-                        >
-                            {primaryActionEntryText}
-                        </div>
-                    ) : null}
-                </div>
-            ) : null}
             <div ref={actionSlotRef} className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot">
-            {showWheelNextStepBanner ? (
-                <div
-                    className="mb-3 max-w-[420px] border-[3px] px-4 py-3 text-[13px] font-black leading-5"
-                    data-testid="qidahen-wheel-next-step-banner"
-                    style={{ borderColor: '#f2c46b', background: 'linear-gradient(180deg, rgba(150,50,36,0.96) 0%, rgba(62,26,18,0.94) 100%)', color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
-                >
-                    <div className="text-[10px] font-black tracking-[0.18em]" style={{ color: '#f6d5a8' }}>
-                        {t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
-                    </div>
-                    <div data-testid="qidahen-wheel-next-step-title">
-                        {t('board.actions.wheelNextStepTitle', {
-                            defaultValue: '选择轮盘行动',
-                        })}
-                    </div>
-                    <div className="mt-1 text-[11px] leading-5" data-testid="qidahen-wheel-next-step-hint" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.wheelNextStepHint', {
-                            defaultValue: '本次轮盘行动待执行',
-                        })}
-                    </div>
-                    <div className="mt-3 flex flex-col gap-2" data-testid="qidahen-wheel-next-step-choices">
-                        {core.wheelMoveChoices.map((choice) => (
-                            <button
-                                key={choice.id}
-                                type="button"
-                                data-testid={`qidahen-wheel-next-step-choice-${choice.id}`}
-                                className="inline-flex min-h-[48px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onExecuteWheelMove(choice.id)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {choice.drawText}
-                                    </span>
-                                </span>
-                                <span className="shrink-0 text-[11px]" style={{ color: UI_STYLE.cinnabar }}>
-                                    {t('board.actions.directExecute', { defaultValue: '点这里' })}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
             {core.victoryStatus ? (
                 <div
                     className="mb-3 max-w-[420px] border-[3px] px-3 py-2 text-[12px] font-black leading-5"
@@ -3447,7 +3438,7 @@ const ActionsZone: React.FC<{
                                 action={action}
                                 selected={core.selectedActionId === action.id}
                                 disabled={pendingScenarioChoices || core.factionActionUsed}
-                                onClick={() => (core.selectedActionId === action.id ? onExecuteAction(action.id) : onSelectAction(action.id))}
+                                onClick={() => onExecuteAction(action.id)}
                             />
                         ))}
                     </div>
@@ -4179,6 +4170,7 @@ const QidahenScenarioVoteScreen: React.FC<{
 };
 
 export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, isMultiplayer }) => {
+    const { t } = useTranslation('game-qidahen');
     const core = G.core;
     const isGameOver = Boolean(G.sys?.gameover);
     const viewerFactionId = React.useMemo(() => resolveViewerFactionId(core, playerID), [core, playerID]);
@@ -4337,11 +4329,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
 
     const castScenarioVote = React.useCallback((scenarioId: QidahenScenarioId | null) => {
         dispatch(QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE, { scenarioId });
-    }, [dispatch]);
-
-    const selectAction = React.useCallback((actionId: string) => {
-        dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId });
-        setActionPaymentPreviewVisible(false);
     }, [dispatch]);
 
     const previewAction = React.useCallback((actionId: string) => {
@@ -4559,6 +4546,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         || wheelDispatchSelection != null
         || pendingTargetAction != null
         || postBattleSelection != null;
+    const showTopWheelPrompt = wheelStageAvailable;
+    const showTopFactionPrompt = factionStageAvailable;
 
     const selectRegion = React.useCallback((regionId: string) => {
         if (setupStagePending || pendingTargetAction != null || postBattleSelection != null || driveTigerConsentSelection != null || fortificationMaintenanceSelection != null || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null) {
@@ -4688,6 +4677,30 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 locale={locale}
                 onSelectRegion={selectRegion}
             />
+            {showTopWheelPrompt ? (
+                <TopPromptBanner
+                    testId="qidahen-wheel-next-step-banner"
+                    title={t('board.actions.wheelNextStepTitle', { defaultValue: '选择轮盘行动' })}
+                    hint={t('board.actions.wheelNextStepHint', { defaultValue: '本次轮盘行动待执行' })}
+                    badgeLabel={t('board.actions.wheelNextStepBadge', { defaultValue: '轮盘' })}
+                    tone="wheel"
+                    choices={core.wheelMoveChoices.map((choice) => ({
+                        id: choice.id,
+                        label: choice.label,
+                        detail: choice.drawText,
+                    }))}
+                    onSelectChoice={executeWheelMove}
+                />
+            ) : null}
+            {showTopFactionPrompt ? (
+                <TopPromptBanner
+                    testId="qidahen-top-action-banner"
+                    title={t('board.actions.primaryActionSelectPrompt', { defaultValue: '选择一项行动' })}
+                    hint={null}
+                    badgeLabel={t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })}
+                    tone="faction"
+                />
+            ) : null}
             <PlayerFloat core={core} />
             <WheelPanel
                 selectedId={core.actionWheelPosition}
@@ -4714,7 +4727,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 fortificationMaintenanceSelection={fortificationMaintenanceSelection}
                 pendingTargetAction={pendingTargetAction}
                 postBattleSelection={postBattleSelection}
-                onSelectAction={selectAction}
                 onExecuteAction={executeAction}
                 onSelectRegion={selectRegion}
                 onResolveRecruitChoice={resolveRecruitChoice}

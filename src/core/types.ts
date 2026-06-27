@@ -8,6 +8,7 @@
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameEngineConfig } from '../engine/transport/server';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
+import type { GameAudioConfig } from '../lib/audio/types';
 
 // ============================================================================
 // 游戏实现注册类型
@@ -22,6 +23,8 @@ export interface GameImplementation {
     engineConfig: GameEngineConfig;
     /** React 棋盘组件 */
     board: React.ComponentType<Record<string, unknown>>;
+    /** 可选的游戏音频配置（供房间级预加载门禁使用） */
+    audioConfig?: GameAudioConfig;
     /** 可选的教程配置 */
     tutorial?: TutorialManifest;
     /** 完整教程目录（支持子教程） */

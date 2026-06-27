@@ -12,6 +12,9 @@ import {
 import { resolveCriticalImages } from '../../../core/CriticalImageResolverRegistry';
 import { HudPortal } from '../../../core/ui/portal';
 import { warmPreloadScheduler } from './warmPreloadScheduler';
+import { AudioManager } from '../../../lib/audio/AudioManager';
+import type { SoundKey } from '../../../lib/audio/types';
+import { COMMON_AUDIO_BASE_PATH, loadCommonAudioRegistry } from '../../../lib/audio/commonRegistry';
 
 const criticalImageGateWindow = typeof window !== 'undefined'
     ? window as Window & {
@@ -39,6 +42,7 @@ export interface CriticalImageGateProps {
     /** 为 false 时只在后台预加载，不阻塞 Board 首次渲染。 */
     blockRendering?: boolean;
     loadingDescription?: string;
+    blockingAudioKeys?: SoundKey[];
     /** 每次 phaseKey 变化后，首次就绪时触发。 */
     onReady?: () => void;
     children: React.ReactNode;
@@ -59,6 +63,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     enabled = true,
     blockRendering = true,
     loadingDescription,
+    blockingAudioKeys,
     onReady,
     children,
 }) => {
@@ -92,6 +97,10 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     const lastWarmRunKeyRef = useRef<string | null>(null);
     const pendingRunKeyRef = useRef<string | null>(null);
     const [retryTick, setRetryTick] = useState(0);
+    const blockingAudioSignature = useMemo(
+        () => Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean))).sort().join('|'),
+        [blockingAudioKeys],
+    );
 
     const stateKey = gameState ? 'ready' : 'empty';
 
@@ -120,6 +129,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         needsPreload
         && gameId
         && gameState
+        && !blockingAudioSignature
         && areAllCriticalImagesCached(gameId, gameState, locale, playerID)
     ) {
         lastReadyKeyRef.current = runKey;
@@ -205,19 +215,52 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
             return;
         }
 
+        const normalizedBlockingAudioKeys = Array.from(new Set((blockingAudioKeys ?? []).filter(Boolean)));
+        const criticalImageTotal = resolved.critical?.length ?? 0;
+        const blockingAudioTotal = normalizedBlockingAudioKeys.length;
+        const totalAssets = criticalImageTotal + blockingAudioTotal;
+        let imageLoadedCount = 0;
+        let audioLoadedCount = 0;
+        const updateCombinedProgress = () => {
+            if (totalAssets <= 0) {
+                setLoadingProgress(undefined);
+                return;
+            }
+            setLoadingProgress({
+                loaded: imageLoadedCount + audioLoadedCount,
+                total: totalAssets,
+            });
+        };
+
+        updateCombinedProgress();
+
         const preloadPromise = preloadCriticalImages(
             gameId,
             currentState,
             locale,
             playerID,
             (loaded, total) => {
-                setLoadingProgress({ loaded, total });
+                imageLoadedCount = total > 0 ? loaded : 0;
+                updateCombinedProgress();
             },
         );
+        const blockingAudioPromise = normalizedBlockingAudioKeys.length > 0
+            ? loadCommonAudioRegistry()
+                .then((registry) => {
+                    AudioManager.registerRegistryEntries(registry.entries, COMMON_AUDIO_BASE_PATH);
+                    return AudioManager.preloadBlockingKeys(
+                        normalizedBlockingAudioKeys,
+                        (loaded, total) => {
+                            audioLoadedCount = total > 0 ? loaded : 0;
+                            updateCombinedProgress();
+                        },
+                    );
+                })
+            : Promise.resolve();
         const epoch = getCriticalImagesEpoch();
 
-        preloadPromise
-            .then((warmPaths) => {
+        Promise.all([preloadPromise, blockingAudioPromise])
+            .then(([warmPaths]) => {
                 if (runKey !== latestRunKeyRef.current) {
                     return;
                 }
@@ -252,7 +295,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
                     setRetryTick((tick) => tick + 1);
                 }
             });
-    }, [effectiveEnabled, gameId, locale, playerID, ready, retryTick, runKey, stateKey]);
+    }, [blockingAudioSignature, effectiveEnabled, gameId, locale, playerID, ready, retryTick, runKey, stateKey]);
 
     const shouldBlock = blockRendering && (
         effectiveNeedsPreload || (!ready && lastReadyKeyRef.current !== runKey)

@@ -153,6 +153,7 @@
       "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
       "primaryActionLabel": "Current step",
       "primaryActionEmpty": "Not selected",
+      "primaryActionSelectPrompt": "Choose an action",
       "wheelNextStepBadge": "Next",
       "wheelNextStepTitle": "Take a wheel action",
       "wheelNextStepHint": "Wheel action pending",
