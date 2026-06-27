@@ -2,23 +2,43 @@ param(
   [string]$HostName = "admin@8.148.71.102",
   [string]$ProjectDir = "/home/admin/BoardGame",
   [string]$Tag = "",
+  [string]$OtaChannel = "stable",
+  [string]$OtaExtra = "",
+  [switch]$SkipOta,
   [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
-$remoteCommand = "cd $ProjectDir && bash scripts/deploy/deploy-image.sh update"
+$nodeArgs = @(
+  "scripts/release/deploy-and-ota.mjs",
+  "--skip-wait",
+  "--host", $HostName,
+  "--remote-dir", $ProjectDir,
+  "--ota-channel", $OtaChannel
+)
+
 if ($Tag) {
-  $remoteCommand = "$remoteCommand $Tag"
+  $nodeArgs += @("--deploy-tag", $Tag)
+}
+
+if ($OtaExtra) {
+  $nodeArgs += @("--ota-extra", $OtaExtra)
+}
+
+if ($SkipOta) {
+  $nodeArgs += @("--skip-ota")
+}
+
+if ($DryRun) {
+  $nodeArgs += "--dry-run"
 }
 
 Write-Host "Remote: $HostName"
-Write-Host "Command: $remoteCommand"
+Write-Host "ProjectDir: $ProjectDir"
+Write-Host "OTA Channel: $OtaChannel"
+Write-Host "Skip OTA: $SkipOta"
+Write-Host "Command: node $($nodeArgs -join ' ')"
 
-if ($DryRun) {
-  Write-Host "DryRun: deployment not executed."
-  exit 0
-}
-
-ssh $HostName $remoteCommand
+node @nodeArgs
 exit $LASTEXITCODE

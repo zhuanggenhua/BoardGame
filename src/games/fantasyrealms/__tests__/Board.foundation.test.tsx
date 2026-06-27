@@ -1005,7 +1005,7 @@ describe('FantasyRealms Board foundation', () => {
             const earlyDrawHandButtons = within(earlyDrawHandRow).getAllByRole('button');
             const earlyDrawHandRect = getRect(earlyDrawHandButtons[0] as HTMLElement);
 
-            expect(screen.getByTestId('fantasyrealms-live-table').className).toContain('fr-live-table--early-draw');
+            expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--early-draw');
             expect(earlyDrawHandRow).toHaveAttribute('data-visible-count', '2');
             expect(earlyDrawHandRow).toHaveAttribute('data-slot-count', '8');
             expect(earlyDrawHandButtons[0]).toHaveStyle({ gridColumn: '4' });
@@ -1190,6 +1190,9 @@ describe('FantasyRealms Board foundation', () => {
                 drawPile: HAND_CARDS.slice(4, 6).map((card) => ({ ...card })),
             }), { dispatch });
 
+            expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--opening');
+            expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--early-draw');
+            expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
             expect(screen.getByTestId('fantasyrealms-live-deck')).toHaveAttribute('data-action-state', 'resource');
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-live-deck-cue')).not.toBeInTheDocument();
@@ -1201,6 +1204,88 @@ describe('FantasyRealms Board foundation', () => {
                 expect(dispatch).toHaveBeenCalledTimes(1);
             });
             expect(dispatch).toHaveBeenCalledWith('DRAW_FROM_DECK', {});
+        });
+    });
+
+    it('双人自动摸牌开局跨过 0 张到 2 张手牌时，不再反复进入 opening 或 early-draw 动画壳', () => {
+        withViewport(1440, 1024, () => {
+            const zeroHandCore = makeDuelOpeningCore({
+                drawPile: HAND_CARDS.slice(0, 4).map((card) => ({ ...card })),
+            });
+            const oneHandCore = makeDuelOpeningCore({
+                drawPile: HAND_CARDS.slice(1, 4).map((card) => ({ ...card })),
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: HAND_CARDS.slice(0, 1).map((card) => ({ ...card })),
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: [],
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                } as FantasyRealmsCore['players'],
+            });
+            const twoHandDiscardCore = makeDuelOpeningCore({
+                drawPile: HAND_CARDS.slice(2, 4).map((card) => ({ ...card })),
+                stage: 'discard',
+                players: {
+                    '0': {
+                        id: '0',
+                        name: '玩家1',
+                        hand: HAND_CARDS.slice(0, 2).map((card) => ({ ...card })),
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                    '1': {
+                        id: '1',
+                        name: '玩家2',
+                        hand: [],
+                        score: 0,
+                        scoreBreakdown: [],
+                    },
+                } as FantasyRealmsCore['players'],
+            });
+
+            const { rerender } = renderBoard(zeroHandCore);
+
+            const expectDuelOpeningToStayStable = () => {
+                expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--opening');
+                expect(screen.getByTestId('fantasyrealms-live-table').className).not.toContain('fr-live-table--early-draw');
+                expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toHaveAttribute('data-motion', 'idle');
+                expect(document.querySelector('.fr-card-button--motion-hand-opening')).toBeNull();
+                expect(document.querySelector('.fr-card-button--motion-hand-draw')).toBeNull();
+                expect(document.querySelectorAll('.fr-card-slot--live-center-placeholder')).toHaveLength(0);
+            };
+
+            expectDuelOpeningToStayStable();
+
+            rerender(
+                <Board
+                    G={{ core: oneHandCore, sys: {} } as MatchState<Record<string, unknown>>}
+                    dispatch={() => {}}
+                    playerID="0"
+                    matchData={[{ id: 0, name: '测试玩家', isConnected: true }]}
+                    isConnected
+                />,
+            );
+            expectDuelOpeningToStayStable();
+
+            rerender(
+                <Board
+                    G={{ core: twoHandDiscardCore, sys: {} } as MatchState<Record<string, unknown>>}
+                    dispatch={() => {}}
+                    playerID="0"
+                    matchData={[{ id: 0, name: '测试玩家', isConnected: true }]}
+                    isConnected
+                />,
+            );
+            expectDuelOpeningToStayStable();
         });
     });
 

@@ -23,6 +23,7 @@ const helpText = `
   --remote-dir <path>        覆盖远端项目目录，默认 /home/admin/BoardGame
   --deploy-tag <tag>         远端执行 update <tag>；不传则执行 update latest
   --ota-channel <name>       OTA channel，默认 stable
+  --skip-ota                 只更新服务器，不执行本地 Android OTA 发布
   --ota-extra "<args>"       追加给 release-android ota 的额外参数
 `.trim();
 
@@ -50,6 +51,7 @@ const sshTarget = readArgValue('host', 'admin@8.148.71.102');
 const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame');
 const deployTag = readArgValue('deploy-tag', '');
 const otaChannel = readArgValue('ota-channel', 'stable');
+const skipOta = hasFlag('skip-ota');
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
 const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : [];
 
@@ -113,7 +115,11 @@ const main = async () => {
     }
 
     console.log(`[deploy-and-ota] 远端部署命令: ssh ${sshTarget} "${remoteDeployCommand}"`);
-    console.log(`[deploy-and-ota] OTA 命令: ${process.execPath} ${otaCommandArgs.join(' ')}`);
+    if (skipOta) {
+        console.log('[deploy-and-ota] OTA 命令: 已跳过');
+    } else {
+        console.log(`[deploy-and-ota] OTA 命令: ${process.execPath} ${otaCommandArgs.join(' ')}`);
+    }
     if (dryRun) {
         console.log('[deploy-and-ota] dry-run 模式，不实际执行');
         return;
@@ -136,7 +142,9 @@ const main = async () => {
     } else {
         await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署');
     }
-    await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+    if (!skipOta) {
+        await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+    }
 };
 
 main().catch((error) => {

@@ -114,6 +114,25 @@ function isKnownClientAudioDeviceNoise(payload: ClientAutoReportPayload): boolea
         && normalizedName === 'invalidstateerror';
 }
 
+function isKnownClientAudioCodecNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    if (!normalizedMessage) {
+        return false;
+    }
+    return normalizedMessage.includes('no codec support for selected audio sources')
+        || normalizedMessage.includes('decoding audio data failed');
+}
+
+function isKnownClientAudioHowlerCodeNoise(payload: ClientAutoReportPayload): boolean {
+    const normalizedMessage = payload.errorMessage.trim().toLowerCase();
+    const normalizedStack = `${payload.stack ?? ''}\n${payload.jsStack ?? ''}`.toLowerCase();
+    if (normalizedMessage !== '4') {
+        return false;
+    }
+    return normalizedStack.includes('vendor-howler')
+        || normalizedStack.includes('howler');
+}
+
 function isGenericScriptErrorNoise(payload: ClientAutoReportPayload): boolean {
     const normalizedMessage = payload.errorMessage.trim().toLowerCase();
     return /^script error\.?$/.test(normalizedMessage);
@@ -203,6 +222,12 @@ function shouldSkipClientAutoReport(payload: ClientAutoReportPayload): boolean {
         return true;
     }
     if (isKnownClientAudioDeviceNoise(payload)) {
+        return true;
+    }
+    if (isKnownClientAudioCodecNoise(payload)) {
+        return true;
+    }
+    if (isKnownClientAudioHowlerCodeNoise(payload)) {
         return true;
     }
     if (isAbortErrorNoise(payload)) {

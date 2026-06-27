@@ -1,6 +1,9 @@
 param(
   [switch]$CheckCi,
   [string]$Tag = "",
+  [string]$OtaChannel = "stable",
+  [string]$OtaExtra = "",
+  [switch]$SkipOta,
   [switch]$DryRun
 )
 
@@ -17,6 +20,15 @@ if ($CheckCi) {
 $deployArgs = @{}
 if ($Tag) {
   $deployArgs["Tag"] = $Tag
+}
+if ($OtaChannel) {
+  $deployArgs["OtaChannel"] = $OtaChannel
+}
+if ($OtaExtra) {
+  $deployArgs["OtaExtra"] = $OtaExtra
+}
+if ($SkipOta) {
+  $deployArgs["SkipOta"] = $true
 }
 if ($DryRun) {
   $deployArgs["DryRun"] = $true

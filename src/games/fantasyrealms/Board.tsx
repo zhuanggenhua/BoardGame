@@ -80,6 +80,7 @@ type LiveMotionWindow = Window & {
         signature: string;
         clearTimer: number;
     };
+    __BG_DEBUG_FR_OPENING_LOOP__?: boolean;
 };
 
 type EndgameScoreStep = {
@@ -105,13 +106,6 @@ const FANTASY_REALMS_BOARD_SHELL_SCOPE = '[data-game-page][data-game-id="fantasy
 const FANTASY_REALMS_LIVE_DESKTOP_BOARD_INLINE_PADDING_PX = 16;
 const FANTASY_REALMS_OPENING_HAND_ROW_WIDTH_RATIO = 1180 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
 const FANTASY_REALMS_DEFAULT_HAND_ROW_WIDTH_RATIO = 1500 / FANTASY_REALMS_MOBILE_BOARD_SHELL_DESIGN_WIDTH_PX;
-const CARD_LAYOUT_TRANSITION = {
-    type: 'spring' as const,
-    stiffness: 440,
-    damping: 34,
-    mass: 0.72,
-};
-
 function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined') return false;
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -163,6 +157,22 @@ function buildFantasyRealmsEndgameCardDeltaById(
 
 function formatSignedDelta(delta: number): string {
     return delta >= 0 ? `+${delta}` : String(delta);
+}
+
+function shouldDebugFantasyRealmsOpeningLoop(): boolean {
+    if (typeof window === 'undefined') return false;
+    const liveWindow = window as LiveMotionWindow;
+    if (liveWindow.__BG_DEBUG_FR_OPENING_LOOP__ === true) return true;
+    try {
+        return window.localStorage?.getItem('BG_DEBUG_FR_OPENING_LOOP') === '1';
+    } catch {
+        return false;
+    }
+}
+
+function debugFantasyRealmsOpeningLoop(label: string, payload: Record<string, unknown>) {
+    if (!shouldDebugFantasyRealmsOpeningLoop()) return;
+    console.log('[DEBUG-fr-opening-loop]', label, payload);
 }
 
 function useFantasyRealmsEndgameScoreSequence(
@@ -654,6 +664,11 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     } as React.CSSProperties), [handSlotCount]);
     const minimalLiveDiscardRowStyle = undefined;
     const isDuelMode = isDuelVariant(core);
+    const isDuelAutoOpeningFlow = !isGameOver
+        && isDuelMode
+        && core.turn === 1
+        && discardCards.length === 0
+        && displayedHandCards.length <= 2;
     const viewerHandIdsSignature = displayedHandCards.map((card) => card.id).join('|');
     const discardIdsSignature = discardCards.map((card) => card.id).join('|');
     const shouldPlayOpeningDealMotion = !isSpectatorView
@@ -729,13 +744,21 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         openingDealSignatureRef.current = openingDealSignature;
         liveMotionSequenceRef.current += 1;
         const nextKey = liveMotionSequenceRef.current;
+        debugFantasyRealmsOpeningLoop('set-opening-deal-cue', {
+            openingDealSignature,
+            currentPlayer: core.currentPlayer,
+            stage: core.stage,
+            turn: core.turn,
+            handCount: displayedHandCards.length,
+            discardCount: discardCards.length,
+        });
         setLiveMotionCue({
             type: 'opening-deal',
             key: nextKey,
             cardIds: displayedHandCards.map((card) => card.id),
         });
         return undefined;
-    }, [displayedHandCards, openingDealSignature]);
+    }, [core.currentPlayer, core.stage, core.turn, discardCards.length, displayedHandCards, openingDealSignature]);
 
     React.useEffect(() => {
         const nextSnapshot = liveMotionSnapshot;
@@ -782,13 +805,36 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             return undefined;
         }
 
+        if (isDuelAutoOpeningFlow && nextCueType === 'draw-to-hand') {
+            debugFantasyRealmsOpeningLoop('skip-draw-to-hand-cue-during-duel-auto-opening', {
+                currentPlayer: core.currentPlayer,
+                stage: core.stage,
+                turn: core.turn,
+                handCount: displayedHandCards.length,
+                discardCount: discardCards.length,
+                nextCueType,
+                nextCueCardIds,
+            });
+            return undefined;
+        }
+
         liveMotionSequenceRef.current += 1;
         const nextKey = liveMotionSequenceRef.current;
+        debugFantasyRealmsOpeningLoop('set-motion-cue', {
+            currentPlayer: core.currentPlayer,
+            stage: core.stage,
+            turn: core.turn,
+            handCount: displayedHandCards.length,
+            discardCount: discardCards.length,
+            nextCueType,
+            nextCueCardIds,
+        });
         setLiveMotionCue({ type: nextCueType, key: nextKey, cardIds: nextCueCardIds });
 
         return undefined;
     }, [
         isGameOver,
+        isDuelAutoOpeningFlow,
         isSpectatorView,
         liveMotionSnapshot,
     ]);
@@ -954,7 +1000,9 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         () => buildMinimalLiveCenterSlots(discardCards, 10),
         [discardCards],
     );
-    const shouldShowLiveCenterPlaceholders = discardCards.length === 0 && !shouldAutoDrawFromDeck;
+    const shouldShowLiveCenterPlaceholders = discardCards.length === 0
+        && !shouldAutoDrawFromDeck
+        && !isDuelAutoOpeningFlow;
     const minimalLiveHandCardStyles = React.useMemo(
         () => buildMinimalLiveHandCardStyles(displayedHandCards.length, handSlotCount),
         [displayedHandCards.length, handSlotCount],
@@ -1208,8 +1256,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                 >
                     {minimalLiveCenterSlots.map((slot, index) => (slot.card ? (
                         <motion.button
-                            layout="position"
-                            transition={CARD_LAYOUT_TRANSITION}
                             initial={{ opacity: 0, y: -16, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             key={slot.key}
@@ -1325,13 +1371,44 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         </section>
     );
 
-    const isMinimalLiveOpeningState = !isGameOver
+    const isMinimalLiveOpeningState = !isDuelAutoOpeningFlow
+        && !isGameOver
         && discardCards.length === 0
         && displayedHandCards.length === 0;
-    const isMinimalLiveEarlyDrawState = !isGameOver
+    const isMinimalLiveEarlyDrawState = !isDuelAutoOpeningFlow
+        && !isGameOver
         && discardCards.length === 0
         && displayedHandCards.length > 0
         && displayedHandCards.length <= 2;
+
+    React.useEffect(() => {
+        debugFantasyRealmsOpeningLoop('render-state', {
+            currentPlayer: core.currentPlayer,
+            stage: core.stage,
+            turn: core.turn,
+            handCount: displayedHandCards.length,
+            discardCount: discardCards.length,
+            shouldAutoDrawFromDeck,
+            isDuelAutoOpeningFlow,
+            isMinimalLiveOpeningState,
+            isMinimalLiveEarlyDrawState,
+            shouldShowLiveCenterPlaceholders,
+            liveMotionCueType: liveMotionCue?.type ?? null,
+            liveMotionCueKey: liveMotionCue?.key ?? null,
+        });
+    }, [
+        core.currentPlayer,
+        core.stage,
+        core.turn,
+        discardCards.length,
+        displayedHandCards.length,
+        isDuelAutoOpeningFlow,
+        isMinimalLiveEarlyDrawState,
+        isMinimalLiveOpeningState,
+        liveMotionCue,
+        shouldAutoDrawFromDeck,
+        shouldShowLiveCenterPlaceholders,
+    ]);
 
     const liveTableSection = (
         <div

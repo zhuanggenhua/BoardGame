@@ -1010,6 +1010,79 @@ test.describe('FantasyRealms live flow', () => {
         }
     });
 
+    test('双人自动开局进入弃牌后，静置时中央牌与手牌不会持续重排或缩放漂移', async ({ browser }, testInfo) => {
+        test.setTimeout(90000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const context = await browser.newContext();
+        await initContext(context, {
+            gameServerBaseURL: process.env.PW_GAME_SERVER_URL,
+            apiServerBaseURL: process.env.PW_API_SERVER_URL,
+            skipImageGate: true,
+        });
+        const page = await context.newPage();
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await openFantasyRealmsTestPage(page, baseURL);
+            await expect(page.getByTestId('fantasyrealms-live-table')).toBeVisible({ timeout: 15000 });
+            await injectCore(page, FantasyRealmsDomain.setup(['0', '1'], random));
+
+            await expect.poll(async () => {
+                const core = await readHarnessCore(page);
+                return {
+                    currentPlayer: core.currentPlayer,
+                    stage: core.stage,
+                    handCount: core.players['0']?.hand.length ?? -1,
+                    discardCount: core.discardPile.length,
+                };
+            }, {
+                timeout: 10000,
+                message: '等待双人自动开局进入弃牌静置态',
+            }).toEqual({
+                currentPlayer: '0',
+                stage: 'discard',
+                handCount: 2,
+                discardCount: 0,
+            });
+
+            const liveHandZone = page.getByTestId('fantasyrealms-live-hand-zone');
+            const liveCenterRow = page.getByTestId('fantasyrealms-live-center-row');
+            await expect(liveHandZone).toHaveAttribute('data-motion', 'idle');
+            await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+
+            const sampleRects = async () => {
+                const handRects = await getLocatorRects(page, '.fr-card-button--live-hand');
+                const centerRects = await getLocatorRects(page, '.fr-card-button--live-center');
+                return { handRects, centerRects };
+            };
+
+            const firstSample = await sampleRects();
+            await page.waitForTimeout(900);
+            await expect(liveHandZone).toHaveAttribute('data-motion', 'idle');
+            await expect(liveCenterRow).toHaveAttribute('data-motion', 'idle');
+            const secondSample = await sampleRects();
+
+            expect(firstSample.handRects).toHaveLength(2);
+            expect(secondSample.handRects).toHaveLength(2);
+            expect(firstSample.centerRects).toHaveLength(0);
+            expect(secondSample.centerRects).toHaveLength(0);
+
+            firstSample.handRects.forEach((firstRect, index) => {
+                const secondRect = secondSample.handRects[index]!;
+                expect(Math.abs(firstRect.x - secondRect.x)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.y - secondRect.y)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.width - secondRect.width)).toBeLessThanOrEqual(1);
+                expect(Math.abs(firstRect.height - secondRect.height)).toBeLessThanOrEqual(1);
+            });
+
+            const evidencePath = getEvidenceScreenshotPath(testInfo, 'opening-idle-layout-stable');
+            await mkdir(dirname(evidencePath), { recursive: true });
+            await page.screenshot({ path: evidencePath, fullPage: false });
+        } finally {
+            await context.close().catch(() => {});
+        }
+    });
+
     test('2人 duel 变体手牌已满7且无公开弃牌时，会自动摸1并继续弃1', async ({ browser }, testInfo) => {
         test.setTimeout(90000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;

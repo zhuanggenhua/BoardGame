@@ -379,6 +379,61 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('音频编解码不支持噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-codec-unsupported', {
+            content: '[auto][unhandledrejection] No codec support for selected audio sources.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'No codec support for selected audio sources.',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('音频解码失败噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-decoding-failed', {
+            content: '[auto][unhandledrejection] Decoding audio data failed.',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: 'Decoding audio data failed.',
+            errorSource: 'window.unhandledrejection',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('Howler 音频错误码噪音会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('audio-howler-error-code-4', {
+            content: '[auto][unhandledrejection] 4',
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'Error',
+            errorMessage: '4',
+            errorSource: 'window.unhandledrejection',
+            stack: 'Error: 4\n    at c (https://easyboardgame.top/assets/index-Cmi8y5la.js:187:33412)\n    at _.<anonymous> (https://easyboardgame.top/assets/vendor-howler-Bp1HXCiM.js:1:19873)',
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('旧 Android 壳缺少 App 插件时会过滤噪音，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

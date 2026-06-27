@@ -1,7 +1,9 @@
 import {
     createContext,
     useContext,
+    useEffect,
     useMemo,
+    useRef,
     type ComponentType,
     type ReactNode,
 } from 'react';
@@ -24,6 +26,20 @@ export type MatchRoomBoardShell = {
 
 export const MatchRoomBoardGateRuntimeContext = createContext<MatchRoomBoardGateRuntime | null>(null);
 
+function shouldDebugMatchRoomBoardRuntime(): boolean {
+    if (typeof window === 'undefined') return false;
+    try {
+        return window.localStorage?.getItem('BG_DEBUG_FR_OPENING_LOOP') === '1';
+    } catch {
+        return false;
+    }
+}
+
+function debugMatchRoomBoardRuntime(label: string, payload: Record<string, unknown>) {
+    if (!shouldDebugMatchRoomBoardRuntime()) return;
+    console.log('[DEBUG-fr-opening-loop]', label, payload);
+}
+
 export function useMatchRoomBoardRuntime(args: {
     gameId?: string;
     gameImplReady: boolean;
@@ -44,15 +60,32 @@ export function useMatchRoomBoardRuntime(args: {
         args.onInitialOnlinePreloadReady,
         args.shouldBlockBoardOnImagePreload,
     ]);
+    const boardGateRuntimeRef = useRef(boardGateRuntime);
+    boardGateRuntimeRef.current = boardGateRuntime;
+    useEffect(() => {
+        debugMatchRoomBoardRuntime('runtime-gate-state', {
+            gameId: args.gameId ?? null,
+            gameImplReady: args.gameImplReady,
+            locale: args.locale,
+            shouldBlockBoardOnImagePreload: args.shouldBlockBoardOnImagePreload,
+            loadingDescription: args.loadingDescription,
+        });
+    }, [
+        args.gameId,
+        args.gameImplReady,
+        args.loadingDescription,
+        args.locale,
+        args.shouldBlockBoardOnImagePreload,
+    ]);
     const boardShell = useMemo<MatchRoomBoardShell>(() => ({
         Provider: function MatchRoomBoardRuntimeProvider({ children }) {
             return (
-                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntime}>
+                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntimeRef.current}>
                     {children}
                 </MatchRoomBoardGateRuntimeContext.Provider>
             );
         },
-    }), [boardGateRuntime]);
+    }), []);
 
     const wrappedBoardComponent = useMemo<ComponentType<GameBoardProps> | null>(() => {
         if (!args.gameId || !args.gameImplReady) {
@@ -69,7 +102,30 @@ export function useMatchRoomBoardRuntime(args: {
             const runtime = useContext(MatchRoomBoardGateRuntimeContext);
             const effectiveRuntime: MatchRoomBoardGateRuntime = runtime
                 ? { ...runtime, blockingAudioKeys }
-                : { ...boardGateRuntime, blockingAudioKeys };
+                : { ...boardGateRuntimeRef.current, blockingAudioKeys };
+            useEffect(() => {
+                const boardState = props?.G as { currentPlayer?: unknown; stage?: unknown } | undefined;
+                debugMatchRoomBoardRuntime('board-mount', {
+                    gameId: args.gameId,
+                    playerId: props?.playerID ?? null,
+                    currentPlayer: boardState?.currentPlayer ?? null,
+                    stage: boardState?.stage ?? null,
+                    shouldBlockBoardOnImagePreload: effectiveRuntime.shouldBlockBoardOnImagePreload,
+                });
+                return () => {
+                    debugMatchRoomBoardRuntime('board-unmount', {
+                        gameId: args.gameId,
+                        playerId: props?.playerID ?? null,
+                        currentPlayer: boardState?.currentPlayer ?? null,
+                        stage: boardState?.stage ?? null,
+                        shouldBlockBoardOnImagePreload: effectiveRuntime.shouldBlockBoardOnImagePreload,
+                    });
+                };
+            }, [
+                effectiveRuntime.shouldBlockBoardOnImagePreload,
+                props?.G,
+                props?.playerID,
+            ]);
             if (!runtime) {
                 return (
                     <CriticalImageGate
@@ -106,7 +162,7 @@ export function useMatchRoomBoardRuntime(args: {
 
         WrappedBoardWithGate.displayName = 'WrappedOnlineBoard';
         return WrappedBoardWithGate;
-    }, [args.gameId, args.gameImplReady, boardGateRuntime]);
+    }, [args.gameId, args.gameImplReady]);
 
     return {
         board: wrappedBoardComponent,

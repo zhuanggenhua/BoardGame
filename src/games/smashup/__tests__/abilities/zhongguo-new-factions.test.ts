@@ -290,6 +290,87 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         )).toBe(true);
     });
 
+    it('狐狸翠在 queued onMinionAffected 真链中也会按来源控制者结算 +1 指示物', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_a', [
+                    makeMinion('foxy', 'vigilantes_foxy_green', '1', 4),
+                    makeMinion('target', 'truckers_good_buddy', '0', 2),
+                ]),
+            ],
+        });
+
+        const matchState = makeMatchState(core, 'playCards', '0');
+        const queued = collectTriggers(core, 'onMinionAffected', {
+            state: core,
+            matchState,
+            playerId: '0',
+            baseIndex: 0,
+            sourceCardUid: 'inferno-1',
+            sourceDefId: 'disco_dancers_disco_inferno',
+            sourceBaseIndex: 0,
+            sourceControllerId: '0',
+            triggerMinionUid: 'target',
+            triggerMinionDefId: 'truckers_good_buddy',
+            triggerMinion: core.bases[0].minions[1],
+            affectType: 'power_change',
+            counterChangeKind: 'added',
+            counterDelta: 1,
+            affectEvent: {
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: {
+                    minionUid: 'target',
+                    baseIndex: 0,
+                    amount: 1,
+                    reason: 'disco_dancers_disco_inferno',
+                    sourcePlayerId: '0',
+                    sourceDefId: 'disco_dancers_disco_inferno',
+                    sourceCardUid: 'inferno-1',
+                    sourceControllerId: '0',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 1000,
+            } as any,
+            reason: 'disco_dancers_disco_inferno',
+            random: defaultTestRandom,
+            now: 1000,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]).toEqual(expect.objectContaining({
+            sourceDefId: 'vigilantes_foxy_green',
+            sourceCardUid: 'foxy',
+            sourceControllerId: '1',
+            ownerPlayerId: '1',
+            eventPlayerId: '0',
+            triggerMinionUid: 'target',
+        }));
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...core,
+                triggerQueue: queued.payload.triggers,
+            }, 'playCards', '0'),
+            defaultTestRandom,
+            1000,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.POWER_COUNTER_ADDED,
+            payload: expect.objectContaining({
+                minionUid: 'foxy',
+                amount: 1,
+                reason: 'vigilantes_foxy_green',
+                sourceControllerId: '1',
+            }),
+        }));
+    });
+
     it('街头正义会保护同基地己方随从不受其他玩家影响', () => {
         const state = makeState({
             bases: [
