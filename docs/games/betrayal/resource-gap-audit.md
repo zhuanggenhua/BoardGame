@@ -65,6 +65,11 @@
   - `docs/games/betrayal/intake-contract.md`
   - `docs/games/betrayal/resource-migration-plan.md`
   - `docs/games/betrayal/foundation-implementation-map.md`
+- 运行时地图 token 已先补到当前真实流程最小集合：
+  - `杰登·琼斯`
+  - `神父梁沃伦`
+  - `丽贝卡·艾伦博士`
+  - `达里尔·海拉`
 
 也就是说：
 
@@ -192,7 +197,9 @@
    - manifest 重建
    - `src/games/betrayal/` skeleton
    - 房间 / 楼层裁图
+   - 预兆正面卡图 intake（物品正面 atlas 已确认；预兆当前证据仍只看到牌背、参考卡或剧本触发表，未见可用正面 atlas）
    - 规则 OCR / 结构化
+   - 其余探索者 / 更多怪物的地图 token 还没全部接入；当前只是先补到实际运行时会出现的一批
 
 ## 7. 接下来一旦开始正式实施，顺序应是什么
 

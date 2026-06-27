@@ -27,6 +27,7 @@ export interface BetrayalExplorerTemplate {
     explorerId: string;
     displayName: string;
     portraitAsset: string;
+    tokenAsset?: string;
     color: string;
     traits: Record<BetrayalTraitKey, number>;
     inventory: BetrayalInventoryCard[];
@@ -39,9 +40,21 @@ export interface BetrayalExplorerSummary {
     explorerId: string;
     displayName: string;
     portraitAsset: string;
+    tokenAsset?: string;
     roomId: string;
     traits: Record<BetrayalTraitKey, number>;
     inventory: BetrayalInventoryCard[];
+}
+
+export interface BetrayalMonsterSummary {
+    id: string;
+    name: string;
+    portraitAsset: string;
+    tokenAsset?: string;
+    roomId: string;
+    might: number;
+    speed: number;
+    damage: number;
 }
 
 export interface BetrayalRoomNode {
@@ -105,6 +118,7 @@ export interface BetrayalCore {
     currentExplorerTraits: Record<BetrayalTraitKey, number>;
     currentExplorerInventory: BetrayalInventoryCard[];
     otherExplorers: BetrayalExplorerSummary[];
+    monsters: BetrayalMonsterSummary[];
     deckCounts: Record<BetrayalDeckKind, number>;
     discardCounts: Record<BetrayalDeckKind, number>;
     rooms: BetrayalRoomNode[];
@@ -130,6 +144,12 @@ export const BETRAYAL_COMMANDS = {
 } as const;
 
 export type BetrayalCommandType = typeof BETRAYAL_COMMANDS[keyof typeof BETRAYAL_COMMANDS];
+
+export const BETRAYAL_INITIAL_DECK_COUNTS: Record<BetrayalDeckKind, number> = {
+    omen: 13,
+    item: 15,
+    event: 17,
+};
 
 export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.SELECT_EXPLORER]: { explorerId: string };
@@ -184,6 +204,7 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = [
         explorerId: 'jaden-jones',
         displayName: '杰登·琼斯',
         portraitAsset: 'betrayal/explorers/jade-jones',
+        tokenAsset: 'betrayal/tokens/explorers/jaden-jones',
         color: '#8cc63f',
         traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
         inventory: [
@@ -198,6 +219,7 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = [
         explorerId: 'rebecca-allen',
         displayName: '丽贝卡·艾伦博士',
         portraitAsset: 'betrayal/explorers/xia',
+        tokenAsset: 'betrayal/tokens/explorers/rebecca-allen',
         color: '#3699d3',
         traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
         inventory: [
@@ -212,6 +234,7 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = [
         explorerId: 'darryl-highla',
         displayName: '达里尔·海拉',
         portraitAsset: 'betrayal/explorers/anita-hernandez',
+        tokenAsset: 'betrayal/tokens/explorers/darryl-highla',
         color: '#b45ca3',
         traits: { might: 3, speed: 4, knowledge: 3, sanity: 5 },
         inventory: [
@@ -254,6 +277,7 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = [
         explorerId: 'sam-yin',
         displayName: '山姆·尹',
         portraitAsset: 'betrayal/explorers/father-warren-leung',
+        tokenAsset: 'betrayal/tokens/explorers/father-warren-leung',
         color: '#719d4a',
         traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
         inventory: [
@@ -491,6 +515,10 @@ function cloneInventoryCard(card: BetrayalInventoryCard): BetrayalInventoryCard 
     return { ...card };
 }
 
+function countDrawnCards(core: BetrayalCore, kind: BetrayalDeckKind): number {
+    return Math.max(0, BETRAYAL_INITIAL_DECK_COUNTS[kind] - core.deckCounts[kind]);
+}
+
 function cloneRoom(room: BetrayalRoomNode): BetrayalRoomNode {
     return {
         ...room,
@@ -507,12 +535,17 @@ function cloneExplorer(explorer: BetrayalExplorerSummary): BetrayalExplorerSumma
     };
 }
 
+function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
+    return { ...monster };
+}
+
 function createExplorer(playerId: string, template: BetrayalExplorerTemplate, roomId: string): BetrayalExplorerSummary {
     return {
         playerId,
         explorerId: template.explorerId,
         displayName: template.displayName,
         portraitAsset: template.portraitAsset,
+        tokenAsset: template.tokenAsset,
         roomId,
         traits: { ...template.traits },
         inventory: template.inventory.map(cloneInventoryCard),
@@ -529,6 +562,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         currentExplorerTraits: { ...core.currentExplorerTraits },
         currentExplorerInventory: core.currentExplorerInventory.map(cloneInventoryCard),
         otherExplorers: core.otherExplorers.map(cloneExplorer),
+        monsters: core.monsters.map(cloneMonster),
         deckCounts: { ...core.deckCounts },
         discardCounts: { ...core.discardCounts },
         rooms: core.rooms.map(cloneRoom),
@@ -591,7 +625,8 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase): BetrayalCore {
         currentExplorerTraits: { ...currentExplorer.traits },
         currentExplorerInventory: currentExplorer.inventory.map(cloneInventoryCard),
         otherExplorers,
-        deckCounts: { omen: 13, item: 15, event: 17 },
+        monsters: [],
+        deckCounts: { ...BETRAYAL_INITIAL_DECK_COUNTS },
         discardCounts: { omen: 0, item: 0, event: 0 },
         rooms,
         exploreIndex: 0,
@@ -610,6 +645,35 @@ export function createBetrayalCharacterSelectCore(playerIds: string[] = ['0', '1
 
 export function createBetrayalFoundationCore(playerIds: string[] = ['0', '1', '2', '3']): BetrayalCore {
     return makeBaseCore(playerIds, 'preHaunt');
+}
+
+export function createBetrayalMonsterEncounterCore(playerIds: string[] = ['0', '1', '2', '3']): BetrayalCore {
+    const core = createBetrayalFoundationCore(playerIds);
+    return {
+        ...core,
+        monsters: [
+            {
+                id: 'werewolf',
+                name: '狼人',
+                portraitAsset: 'betrayal/monsters/werewolf',
+                tokenAsset: 'betrayal/tokens/monsters/werewolf',
+                roomId: 'grand-staircase',
+                might: 5,
+                speed: 4,
+                damage: 2,
+            },
+            {
+                id: 'spirit',
+                name: '幽灵',
+                portraitAsset: 'betrayal/monsters/spirit',
+                tokenAsset: 'betrayal/tokens/monsters/ghost',
+                roomId: 'upper-landing',
+                might: 4,
+                speed: 5,
+                damage: 1,
+            },
+        ],
+    };
 }
 
 function templateByExplorerId(explorerId: string): BetrayalExplorerTemplate | undefined {
@@ -948,14 +1012,14 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 survivorsEscaped: survivors.map((explorer) => explorer.playerId),
                 reward: {
                     stars: 4,
-                    omens: Math.max(1, 2 - core.deckCounts.omen),
+                    omens: Math.max(1, countDrawnCards(core, 'omen')),
                     logs: 1,
                 },
                 stats: {
                     roomsExplored: core.rooms.filter((room) => room.state === 'discovered').length,
-                    omensDrawn: 12 - core.deckCounts.omen,
-                    itemsDrawn: 9 - core.deckCounts.item,
-                    eventsDrawn: 10 - core.deckCounts.event,
+                    omensDrawn: countDrawnCards(core, 'omen'),
+                    itemsDrawn: countDrawnCards(core, 'item'),
+                    eventsDrawn: countDrawnCards(core, 'event'),
                 },
             };
             return [nowEvent(EVENTS.FIRST_SCENARIO_COMPLETED, { result }, timestamp)];

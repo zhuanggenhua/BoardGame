@@ -11,6 +11,7 @@
       "traits": "属性轨道",
       "inventory": "当前持有区",
       "players": "队友摘要",
+      "monsters": "怪物摘要",
       "turnFlow": "回合流",
       "rooms": "房间主视区",
       "actions": "动作条",
@@ -48,7 +49,8 @@
       "actionCueEndTurn": "现在：点结束回合",
       "usePreview": "使用：{{effect}}",
       "cardUsedThisTurn": "本回合已用",
-      "cardUsedTag": "已用"
+      "cardUsedTag": "已用",
+      "frontMissing": "缺正面"
     },
     "feedback": {
       "label": "刚发生",

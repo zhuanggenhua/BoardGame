@@ -658,6 +658,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       dedupe: ['react', 'react-dom'],
       alias: [
+        // Current local install of three-stdlib 2.36.1 is missing many ESM .js leaf files,
+        // while the CommonJS entry remains完整. Pin dev resolution to index.cjs so Vite
+        // prebundle does not crash on missing ./loaders/*.js during isolated E2E startup.
+        { find: 'three-stdlib', replacement: path.resolve(configDir, '../node_modules/three-stdlib/index.cjs') },
         { find: '@', replacement: path.resolve(configDir, './src') },
         { find: '@locales', replacement: path.resolve(configDir, './public/locales') },
         { find: 'void-elements', replacement: path.resolve(configDir, './src/vendor/void-elements.ts') },

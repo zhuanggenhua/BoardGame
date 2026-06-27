@@ -282,7 +282,13 @@ export const GameHUD = ({
     const isTutorial = mode === 'tutorial';
     const undoRequestPayload = undoState?.isLocalMode ? { localAutoApprove: true } : undefined;
     const isNativeAndroid = isNativeAndroidRuntime();
-    const suppressGlobalFab = _gameId === 'qidahen';
+    const currentPhase = resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined);
+    const suppressGlobalFab = _gameId === 'qidahen'
+        || (_gameId === 'betrayal' && (
+            isPregameSetupPhase
+            || currentPhase === 'characterSelect'
+            || currentPhase === 'endgame'
+        ));
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';

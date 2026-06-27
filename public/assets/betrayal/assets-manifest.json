@@ -94,6 +94,15 @@
         }
       }
     },
+    "cards/compressed/item-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "6c05a5ba5187927c50c7f71b442a29dfc89589233447d2d1a8454144fa162ec7",
+          "bytes": 5961712,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/monster-reference-zh": {
       "variants": {
         "webp": {
@@ -154,6 +163,15 @@
           "sha256": "955df3ce826ad160b8b808b21b312f5bd7353fc6d43b6355dc2500982cfb7e2f",
           "bytes": 112192,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/item-front-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "5c7609535ae034d370d81eed5e9e0a52e1e23f1f5c63df3f0438e6587d096d30",
+          "bytes": 10697331,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -1008,78 +1026,6 @@
         "png": {
           "sha256": "8650589a45408b0576da6e260a4b6439e9d5f42dd0ce22733ac8a7f8d6057364",
           "bytes": 1525352,
-          "mime": "image/png"
-        }
-      }
-    },
-    "rooms/compressed/room-back-basement": {
-      "variants": {
-        "webp": {
-          "sha256": "68271b091625c870d635d25adef4c8e2fd5e50a1d829d92c8a77df06578816a0",
-          "bytes": 8084,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "rooms/compressed/room-back-ground": {
-      "variants": {
-        "webp": {
-          "sha256": "42f6b5e3c0f6ed13c9de3cccd4715c48dc3c215293ce6098cf181468a531caf1",
-          "bytes": 7976,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "rooms/compressed/sunroom": {
-      "variants": {
-        "webp": {
-          "sha256": "f4cb2dd7b578efa16725d0f9702f26ab6c8d376a2aeea842a56da50799d3c917",
-          "bytes": 11374,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "rooms/compressed/trophy-room": {
-      "variants": {
-        "webp": {
-          "sha256": "85018580cc961bc1b135e0758e20b486f0fec7c3d045e1d2ad32f574fba0a181",
-          "bytes": 11656,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "rooms/room-back-basement": {
-      "variants": {
-        "png": {
-          "sha256": "549725b45bb7529e154b02b66656a379ff6881b43960d781ae04fbc29a30bba6",
-          "bytes": 376276,
-          "mime": "image/png"
-        }
-      }
-    },
-    "rooms/room-back-ground": {
-      "variants": {
-        "png": {
-          "sha256": "88534dbcbd490618e37526c581aa20db69a2f545979120184472cdcc15af3f24",
-          "bytes": 382596,
-          "mime": "image/png"
-        }
-      }
-    },
-    "rooms/sunroom": {
-      "variants": {
-        "png": {
-          "sha256": "2ac0193c08ee05f363ce24f5f06f36510d90efc8be1dfcf974255f34d4cf7336",
-          "bytes": 504916,
-          "mime": "image/png"
-        }
-      }
-    },
-    "rooms/trophy-room": {
-      "variants": {
-        "png": {
-          "sha256": "1b0b1c606c357723fffb74202274b0d86bbd83acb7c408910d9e6978cf47d5ef",
-          "bytes": 525672,
           "mime": "image/png"
         }
       }

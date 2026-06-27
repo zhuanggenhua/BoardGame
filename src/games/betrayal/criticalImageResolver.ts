@@ -1,6 +1,8 @@
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { MatchState } from '../../engine/types';
 import type { BetrayalCore } from './game';
+import { BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS } from './possessionAtlas';
+import { BETRAYAL_ROOM_ATLAS_IMAGE_PATHS } from './roomAtlas';
 
 const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/ui/title-banner',
@@ -11,10 +13,15 @@ const BETRAYAL_CRITICAL_IMAGE_PATHS = [
     'betrayal/cards/back-item',
     'betrayal/cards/back-event',
     'betrayal/cards/back-traitor',
-    'betrayal/rooms/trophy-room',
-    'betrayal/rooms/sunroom',
-    'betrayal/rooms/room-back-ground',
-    'betrayal/rooms/room-back-basement',
+    'betrayal/cards/omen-front-atlas',
+    'betrayal/tokens/explorers/jaden-jones',
+    'betrayal/tokens/explorers/father-warren-leung',
+    'betrayal/tokens/explorers/rebecca-allen',
+    'betrayal/tokens/explorers/darryl-highla',
+    'betrayal/tokens/monsters/werewolf',
+    'betrayal/tokens/monsters/ghost',
+    ...BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS,
+    ...BETRAYAL_ROOM_ATLAS_IMAGE_PATHS,
 ];
 
 export const betrayalCriticalImageResolver: CriticalImageResolver = (

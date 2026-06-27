@@ -3604,11 +3604,29 @@
         }
       }
     },
+    "zh-CN/betrayal/cards/compressed/item-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "6c05a5ba5187927c50c7f71b442a29dfc89589233447d2d1a8454144fa162ec7",
+          "bytes": 5961712,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/cards/compressed/monster-reference-zh": {
       "variants": {
         "webp": {
           "sha256": "5d3fb4e3bec47e80c73ea3834e9394f243be4041bf6fa0bf8bf82e7cea92627f",
           "bytes": 181382,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/compressed/omen-front-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "71b198209bfbf5f8d7ce7dab32db992d691a2fe527bbd4206d96e44b05106440",
+          "bytes": 695050,
           "mime": "image/webp"
         }
       }
@@ -3667,11 +3685,29 @@
         }
       }
     },
+    "zh-CN/betrayal/cards/item-front-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "5c7609535ae034d370d81eed5e9e0a52e1e23f1f5c63df3f0438e6587d096d30",
+          "bytes": 10697331,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/betrayal/cards/monster-reference-zh": {
       "variants": {
         "png": {
           "sha256": "2859b664427272ae34f5005ab07f0c1dcae02657bc59708f6dfda52326f27878",
           "bytes": 1674758,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/cards/omen-front-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "2d9ce3fdd511b290370fed02f1adb221955cda7717ab2ef6ef0ae7bd99b014a0",
+          "bytes": 9873144,
           "mime": "image/png"
         }
       }
@@ -4522,74 +4558,56 @@
         }
       }
     },
-    "zh-CN/betrayal/rooms/compressed/room-back-basement": {
+    "zh-CN/betrayal/rooms/compressed/room-back-atlas": {
       "variants": {
         "webp": {
-          "sha256": "68271b091625c870d635d25adef4c8e2fd5e50a1d829d92c8a77df06578816a0",
-          "bytes": 8084,
+          "sha256": "0dfda465f694b505c7671e5cce43b88c219d4252d3d136f3e28ca787c1e11d72",
+          "bytes": 353484,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/betrayal/rooms/compressed/room-back-ground": {
+    "zh-CN/betrayal/rooms/compressed/room-front-atlas": {
       "variants": {
         "webp": {
-          "sha256": "42f6b5e3c0f6ed13c9de3cccd4715c48dc3c215293ce6098cf181468a531caf1",
-          "bytes": 7976,
+          "sha256": "2b0058b7d5f62c154726044258899d3baf4aff5903c7c6d5621504bc1be993f6",
+          "bytes": 790768,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/betrayal/rooms/compressed/sunroom": {
+    "zh-CN/betrayal/rooms/compressed/trophy-oubliette-atlas": {
       "variants": {
         "webp": {
-          "sha256": "f4cb2dd7b578efa16725d0f9702f26ab6c8d376a2aeea842a56da50799d3c917",
-          "bytes": 11374,
+          "sha256": "08a928e07f059317c0ff85b09869e9f8f2c3d79ce8e089f7cb86afb249ecb03d",
+          "bytes": 212802,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/betrayal/rooms/compressed/trophy-room": {
+    "zh-CN/betrayal/rooms/room-back-atlas": {
       "variants": {
-        "webp": {
-          "sha256": "85018580cc961bc1b135e0758e20b486f0fec7c3d045e1d2ad32f574fba0a181",
-          "bytes": 11656,
-          "mime": "image/webp"
+        "jpg": {
+          "sha256": "1ba7de4000d16af1edd93d9013432df3d89765f91b75d6cdc480264ff5d07a84",
+          "bytes": 11877475,
+          "mime": "image/jpeg"
         }
       }
     },
-    "zh-CN/betrayal/rooms/room-back-basement": {
+    "zh-CN/betrayal/rooms/room-front-atlas": {
       "variants": {
-        "png": {
-          "sha256": "549725b45bb7529e154b02b66656a379ff6881b43960d781ae04fbc29a30bba6",
-          "bytes": 376276,
-          "mime": "image/png"
+        "jpg": {
+          "sha256": "8635d8f10f6b5ce815357864be0aa355be243794eea81b2fbe66bf76b55cd719",
+          "bytes": 15152269,
+          "mime": "image/jpeg"
         }
       }
     },
-    "zh-CN/betrayal/rooms/room-back-ground": {
+    "zh-CN/betrayal/rooms/trophy-oubliette-atlas": {
       "variants": {
         "png": {
-          "sha256": "88534dbcbd490618e37526c581aa20db69a2f545979120184472cdcc15af3f24",
-          "bytes": 382596,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/rooms/sunroom": {
-      "variants": {
-        "png": {
-          "sha256": "2ac0193c08ee05f363ce24f5f06f36510d90efc8be1dfcf974255f34d4cf7336",
-          "bytes": 504916,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/betrayal/rooms/trophy-room": {
-      "variants": {
-        "png": {
-          "sha256": "1b0b1c606c357723fffb74202274b0d86bbd83acb7c408910d9e6978cf47d5ef",
-          "bytes": 525672,
+          "sha256": "2f3ff829a07f1b901a3cd683994b3e953ae40cb0a196bcef7a642326ea407fec",
+          "bytes": 2020758,
           "mime": "image/png"
         }
       }
@@ -4608,6 +4626,78 @@
         "png": {
           "sha256": "73eec70ff289732232744452708ae01b784a11ffe99ced6ae215208c0ff34cac",
           "bytes": 1293977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/father-warren-leung": {
+      "variants": {
+        "webp": {
+          "sha256": "9bfb5a3607f53782f3d7aee5cd24b0466c694e9137ed9910621d0f7a8b16b164",
+          "bytes": 18496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/compressed/jaden-jones": {
+      "variants": {
+        "webp": {
+          "sha256": "6bff549ae99c08b457c035e3524594e28716bcac0e27be082a969bf2464ba0ff",
+          "bytes": 22392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/father-warren-leung": {
+      "variants": {
+        "png": {
+          "sha256": "55d4e697d4c9178285d5c3d5a521551e15accdf67e255da706a9bffd79c7b3c2",
+          "bytes": 162700,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/explorers/jaden-jones": {
+      "variants": {
+        "png": {
+          "sha256": "ea8107afca3938d5eaeb1f19b5069cc3c2f057a064b295571c744b23df986c65",
+          "bytes": 176084,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/ghost": {
+      "variants": {
+        "webp": {
+          "sha256": "0c287281adb0d5726b1a32bcdcee49781cd7e300ce6ae1aaf0a3b234ffb25fd1",
+          "bytes": 25274,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/werewolf": {
+      "variants": {
+        "webp": {
+          "sha256": "590a3a69099cf22ab3f22584fa867d20532b65544f586f564ec43ab00277ffc6",
+          "bytes": 26356,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/ghost": {
+      "variants": {
+        "png": {
+          "sha256": "8068a1acfe6e6d21c231b9ad04bada3cc9e368a0faf2fcd18276f7ade2ee0629",
+          "bytes": 197927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/werewolf": {
+      "variants": {
+        "png": {
+          "sha256": "e82e8e9ffb72b279f1972835a701da81aea6ef9cacff89a2950915f30e45bbf4",
+          "bytes": 193203,
           "mime": "image/png"
         }
       }

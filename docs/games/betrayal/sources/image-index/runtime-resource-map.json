@@ -18,27 +18,21 @@
     "status": "runtime"
   },
   {
-    "target": "public/assets/i18n/zh-CN/betrayal/rooms/trophy-room.png",
-    "sourceFile": "contact-11-1425-1426.jpg",
-    "meaning": "房间牌正面裁片：Trophy Room / 奖杯室，当前用于运行时真实房间牌素材占位",
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-front-atlas.jpg",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc192586944303757612899525A7AE93B7D55F20D0583CFCAF7D6040FEF70.jpg",
+    "meaning": "原始房间正面 atlas：7x6、每格 900x900；运行时通过 src/games/betrayal/roomAtlas.ts 裁切显示",
     "status": "runtime"
   },
   {
-    "target": "public/assets/i18n/zh-CN/betrayal/rooms/sunroom.png",
-    "sourceFile": "contact-11-1425-1426.jpg",
-    "meaning": "房间牌正面裁片：Sunroom / 日光室，当前用于运行时真实房间牌素材占位",
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-back-atlas.jpg",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1925869443037573185410E50E69D9A8CE445F8B207AFA11B0471FDAE99.jpg",
+    "meaning": "原始房间背面 atlas：7x6、每格 900x900；运行时通过 src/games/betrayal/roomAtlas.ts 裁切显示",
     "status": "runtime"
   },
   {
-    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-back-ground.png",
-    "sourceFile": "contact-11-1425-1426.jpg",
-    "meaning": "房间牌背面裁片：Ground / 一层，当前用于未探索房间槽",
-    "status": "runtime"
-  },
-  {
-    "target": "public/assets/i18n/zh-CN/betrayal/rooms/room-back-basement.png",
-    "sourceFile": "contact-11-1425-1426.jpg",
-    "meaning": "房间牌背面裁片：Basement / 地下，当前用于未探索房间槽",
+    "target": "public/assets/i18n/zh-CN/betrayal/rooms/trophy-oubliette-atlas.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc2008073659346872890E1B53B4B8C579F628368F75E326040F17E8FE6EC.png",
+    "meaning": "原始双房间图：Trophy Room / Oubliette；运行时当前只裁切奖杯室左上 713x713 区域",
     "status": "runtime"
   },
   {
@@ -111,6 +105,12 @@
     "target": "public/assets/i18n/zh-CN/betrayal/cards/reference-blue-moonlit-howl-zh.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc2008073659346876433821AF27C8D1ED64FB90F21E8F356C77F855BEB1F.png",
     "meaning": "蓝色中文参考/剧本提示卡，文字含“月下狼嚎”",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/cards/item-front-atlas.jpg",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1925869443038951545DB35BA7304F2999D84979FFC9FDC379603C70853.jpg",
+    "meaning": "物品正面 atlas：5400x3826，运行时通过 src/games/betrayal/possessionAtlas.ts 裁切；绳索已确认使用第 21 格",
     "status": "runtime"
   },
   {
@@ -207,6 +207,42 @@
     "target": "public/assets/i18n/zh-CN/betrayal/monsters/spirit.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc31064245707900991140CDE2AA60F22E5F72E22B0C516F07EA4881DBF.png",
     "meaning": "怪物卡：精灵",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/jaden-jones.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200601722A96255C80FA27FC5F28459840A7FFC7191B084.png",
+    "meaning": "地图玩家指示物：Jaden Jones / 杰登·琼斯；来自 384x336 token 组，不能用探索者整板代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/father-warren-leung.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006328914A4B043295BFE8DC0F1BA33DC55F98DF2D030B.png",
+    "meaning": "地图玩家指示物：Father Warren Leung / 神父梁沃伦；来自 384x336 token 组，不能用探索者整板代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/rebecca-allen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009175524F90EA10F7E7ECF6740403AE41223506AB53C7.png",
+    "meaning": "地图玩家指示物：Rebecca Allen / 丽贝卡·艾伦博士；来自 384x336 token 组，不能用探索者整板代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/darryl-highla.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820092446C10A240DDCE3D9FD0A23F0F7351F2508EDF6B9A.png",
+    "meaning": "地图玩家指示物：Darryl Highla / 达里尔·海拉；来自 384x336 token 组，不能用探索者整板代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/werewolf.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009690E728675FB44504D66C708D918FBE6C3A9AE2A3BF.png",
+    "meaning": "地图怪物 token：Werewolf / 狼人；来自 384x336 token 组，不能用怪物卡或文字缩写代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/ghost.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820101161D515C9E18B593DE20403B83FE05D059F7FCEBC3.png",
+    "meaning": "地图怪物 token：Ghost / 幽灵；来自 384x336 token 组，不能用怪物卡或文字缩写代替",
     "status": "runtime"
   },
   {

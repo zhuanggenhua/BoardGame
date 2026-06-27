@@ -250,6 +250,8 @@ export const TestMatchRoom: React.FC = () => {
         );
     }
 
+    const shouldRenderTestHud = gameId !== 'betrayal';
+
     return (
         <>
             <SEO
@@ -278,7 +280,7 @@ export const TestMatchRoom: React.FC = () => {
                                         seatControllers={testConfig.seatControllers}
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
                                     >
-                                        <GameHUD gameId={gameId} mode="test" />
+                                        {shouldRenderTestHud ? <GameHUD gameId={gameId} mode="test" /> : null}
                                         <BoardBridge
                                             board={WrappedBoard}
                                             loading={<LoadingScreen anchor="container" title={gameConfig ? `正在加载 ${gameConfig.title}...` : '正在加载...'} />}

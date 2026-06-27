@@ -48,7 +48,8 @@
       "actionCueEndTurn": "Now: tap End Turn",
       "usePreview": "Use: {{effect}}",
       "cardUsedThisTurn": "Used this turn",
-      "cardUsedTag": "Used"
+      "cardUsedTag": "Used",
+      "frontMissing": "Front missing"
     },
     "feedback": {
       "label": "Latest",

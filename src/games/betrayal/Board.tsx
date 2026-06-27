@@ -6,16 +6,17 @@ import {
     Compass,
     Footprints,
     Handshake,
+    House,
     Hourglass,
+    RotateCcw,
     Search,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ActionBarAction, PlayerPanelData } from '../../core/ui/types';
+import type { ActionBarAction } from '../../core/ui/types';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import {
     ActionBarSkeleton,
     PhaseHudSkeleton,
-    PlayerPanelSkeleton,
     ResourceTraySkeleton,
 } from '../../components/game/framework';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
@@ -26,10 +27,21 @@ import type {
     BetrayalDeckKind,
     BetrayalExplorerSummary,
     BetrayalInventoryCard,
+    BetrayalMonsterSummary,
     BetrayalRoomNode,
     BetrayalTraitKey,
 } from './game';
 import { BETRAYAL_COMMANDS, EXPLORER_CATALOG, createBetrayalCharacterSelectCore } from './game';
+import {
+    buildPossessionAtlasImageStyle,
+    resolvePossessionAtlasVisual,
+    type BetrayalPossessionAtlasVisual,
+} from './possessionAtlas';
+import {
+    BETRAYAL_ROOM_TILE_VISUALS,
+    buildRoomAtlasImageStyle,
+    type BetrayalRoomTileVisual,
+} from './roomAtlas';
 
 type Props = GameBoardProps<BetrayalCore, BetrayalCommandMap>;
 
@@ -102,27 +114,34 @@ type RoomGridDragState = {
     hasMoved: boolean;
 };
 
-const ROOM_TILE_SIZE = 190;
-const ROOM_TILE_STEP_X = 198;
-const ROOM_TILE_STEP_Y = 160;
-const ROOM_CANVAS_PADDING = 24;
-const ROOM_CANVAS_MIN_WIDTH = 840;
-const ROOM_CANVAS_MIN_HEIGHT = 760;
+const ROOM_TILE_SIZE = 184;
+const ROOM_TILE_STEP_X = 184;
+const ROOM_TILE_STEP_Y = 184;
+const ROOM_CANVAS_PADDING = 8;
+const ROOM_CANVAS_MIN_WIDTH = 780;
+const ROOM_CANVAS_MIN_HEIGHT = 560;
+
+const EXPLORER_BOARD_MARKER_RANGE: Record<BetrayalTraitKey, { from: { x: number; y: number }; to: { x: number; y: number } }> = {
+    might: { from: { x: 14.5, y: 44.5 }, to: { x: 35.5, y: 23.5 } },
+    speed: { from: { x: 18.5, y: 79.5 }, to: { x: 18.5, y: 54.5 } },
+    knowledge: { from: { x: 85.5, y: 44.5 }, to: { x: 64.5, y: 23.5 } },
+    sanity: { from: { x: 81.5, y: 79.5 }, to: { x: 81.5, y: 54.5 } },
+};
 
 const ROOM_VISUAL_LAYOUT: Record<string, { x: number; y: number }> = {
     'upper-north': { x: 2, y: 0 },
-    'upper-west': { x: 1, y: 1 },
-    'upper-landing': { x: 2, y: 1 },
-    'grand-staircase': { x: 2, y: 2 },
-    'ground-east': { x: 3, y: 2 },
-    'entrance-hall': { x: 2, y: 3 },
-    'basement-landing': { x: 3, y: 3 },
-    'basement-east': { x: 4, y: 3 },
+    'upper-west': { x: 0, y: 1 },
+    'upper-landing': { x: 1, y: 1 },
+    'grand-staircase': { x: 2, y: 1 },
+    'ground-east': { x: 3, y: 1 },
+    'entrance-hall': { x: 2, y: 2 },
+    'basement-landing': { x: 3, y: 2 },
+    'basement-east': { x: 4, y: 2 },
 };
 
 const ASSETS = {
     titleBanner: 'betrayal/ui/title-banner',
-    traitTrack: 'betrayal/ui/trait-track-0-9',
+    cover: 'betrayal/thumbnails/cover',
     playerReference: {
         front: 'betrayal/cards/player-reference-zh-front',
         back: 'betrayal/cards/player-reference-zh-back',
@@ -133,18 +152,40 @@ const ASSETS = {
         item: 'betrayal/cards/back-item',
         event: 'betrayal/cards/back-event',
     } satisfies Record<BetrayalDeckKind, string>,
-    room: {
-        trophyRoom: 'betrayal/rooms/trophy-room',
-        sunroom: 'betrayal/rooms/sunroom',
-        backGround: 'betrayal/rooms/room-back-ground',
-        backBasement: 'betrayal/rooms/room-back-basement',
-    },
     trait: {
         might: 'betrayal/markers/might',
         speed: 'betrayal/markers/speed',
         knowledge: 'betrayal/markers/knowledge',
         sanity: 'betrayal/markers/sanity',
     } satisfies Record<BetrayalTraitKey, string>,
+    marker: {
+        altar: 'betrayal/markers/altar',
+        blessing: 'betrayal/markers/blessing',
+        blood: 'betrayal/markers/blood',
+        contract: 'betrayal/markers/contract',
+        food: 'betrayal/markers/food',
+        hidden: 'betrayal/markers/hidden',
+        nest: 'betrayal/markers/nest',
+        obstacle: 'betrayal/markers/obstacle',
+        off: 'betrayal/markers/off',
+        on: 'betrayal/markers/on',
+        portal: 'betrayal/markers/portal',
+        searched: 'betrayal/markers/searched',
+        trait: 'betrayal/markers/trait',
+        videotape: 'betrayal/markers/videotape',
+    } as const,
+    numberMarker: {
+        blank: 'betrayal/markers/number-blank',
+        1: 'betrayal/markers/number-1',
+        2: 'betrayal/markers/number-2',
+        3: 'betrayal/markers/number-3',
+        4: 'betrayal/markers/number-4',
+        5: 'betrayal/markers/number-5',
+        6: 'betrayal/markers/number-6',
+        7: 'betrayal/markers/number-7',
+        8: 'betrayal/markers/number-8',
+        9: 'betrayal/markers/number-9',
+    } as const,
 } as const;
 
 const ACTION_ICON_BY_ID = {
@@ -155,6 +196,8 @@ const ACTION_ICON_BY_ID = {
     endTurn: Hourglass,
 } as const;
 
+const ENDGAME_MEDALLION_CLIP_PATH = 'polygon(50% 0%, 85% 11%, 100% 42%, 83% 85%, 50% 100%, 17% 85%, 0% 42%, 15% 11%)';
+
 const FLOOR_TONE: Record<BetrayalCore['rooms'][number]['floor'], { label: string; accent: string; glow: string }> = {
     ground: { label: '一层', accent: '#c5a56c', glow: 'rgba(197,165,108,0.32)' },
     upper: { label: '二层', accent: '#8ba98d', glow: 'rgba(139,169,141,0.28)' },
@@ -163,27 +206,27 @@ const FLOOR_TONE: Record<BetrayalCore['rooms'][number]['floor'], { label: string
 
 const ROOM_IDENTITY_TONE = {
     starting: {
-        stripe: 'bg-[rgba(201,163,94,0.92)]',
-        badge: 'border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]',
+        stripe: 'bg-[rgba(148,163,155,0.28)]',
+        badge: 'border-[#6f7f77] bg-[rgba(24,31,28,0.76)] text-[#d6e0d9]',
     },
     unrevealed: {
-        stripe: 'bg-[rgba(92,106,95,0.84)]',
+        stripe: 'bg-[rgba(92,106,95,0.22)]',
         badge: 'border-[rgba(111,126,116,0.42)] bg-[rgba(18,26,22,0.92)] text-[#9fb6a3]',
     },
     explorable: {
-        stripe: 'bg-[rgba(205,173,101,0.92)]',
-        badge: 'border-[#c7a96a] bg-[rgba(199,169,106,0.18)] text-[#f2dfb0]',
+        stripe: 'bg-[rgba(144,168,150,0.28)]',
+        badge: 'border-[#7fa58c] bg-[rgba(24,35,29,0.76)] text-[#d1e5d8]',
     },
     event: {
-        stripe: 'bg-[rgba(208,140,96,0.92)]',
-        badge: 'border-[#d08c60] bg-[rgba(78,43,28,0.84)] text-[#f5d0b8]',
+        stripe: 'bg-[rgba(134,163,150,0.26)]',
+        badge: 'border-[#788f84] bg-[rgba(24,31,28,0.76)] text-[#d7e2dd]',
     },
     item: {
-        stripe: 'bg-[rgba(201,163,94,0.92)]',
-        badge: 'border-[#d2ab61] bg-[rgba(64,47,23,0.84)] text-[#f3e0b4]',
+        stripe: 'bg-[rgba(144,168,150,0.24)]',
+        badge: 'border-[#7b8e84] bg-[rgba(24,31,28,0.76)] text-[#d8e2dd]',
     },
     omen: {
-        stripe: 'bg-[rgba(118,189,153,0.92)]',
+        stripe: 'bg-[rgba(118,189,153,0.24)]',
         badge: 'border-[#76bd99] bg-[rgba(33,65,51,0.82)] text-[#d6f1df]',
     },
 } as const;
@@ -252,6 +295,30 @@ const PREVIEW_USE_EFFECTS: Record<string, PreviewUseEffectProfile> = {
     watch: { mode: 'move', amount: 1, recommendedAction: 'move' },
 };
 
+const INVENTORY_FACE_TONE = {
+    item: {
+        cardSurfaceClass: 'border-[rgba(118,74,50,0.58)] bg-[linear-gradient(180deg,rgba(85,40,30,0.96),rgba(35,18,16,0.96))]',
+        frameClass: 'border-[rgba(192,110,86,0.24)] bg-[rgba(20,10,10,0.18)]',
+        badgeClass: 'border-[rgba(202,124,95,0.34)] bg-[rgba(68,29,22,0.8)] text-[#efc4ad]',
+        nameClass: 'text-[#f6e6d8]',
+        accentClass: 'text-[#eeb29d]',
+        backOpacityClass: 'opacity-[0.14]',
+    },
+    omen: {
+        cardSurfaceClass: 'border-[rgba(88,119,73,0.58)] bg-[linear-gradient(180deg,rgba(53,77,38,0.96),rgba(18,31,20,0.96))]',
+        frameClass: 'border-[rgba(140,181,123,0.24)] bg-[rgba(11,20,12,0.18)]',
+        badgeClass: 'border-[rgba(126,182,127,0.34)] bg-[rgba(29,61,35,0.78)] text-[#d4f0cb]',
+        nameClass: 'text-[#edf4df]',
+        accentClass: 'text-[#bdddb7]',
+        backOpacityClass: 'opacity-[0.12]',
+    },
+} as const;
+
+const INVENTORY_CARD_BACK_ASSET: Record<BetrayalInventoryCard['kind'], string> = {
+    item: ASSETS.deck.item,
+    omen: ASSETS.deck.omen,
+};
+
 const PREVIEW_EVENT_POOL: PreviewEventTemplate[] = [
     { name: '回廊顺风', effect: { mode: 'move', amount: 1, recommendedAction: 'move' } },
     { name: '窃窃低语', effect: { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' } },
@@ -280,10 +347,24 @@ function isExplorerSummary(value: unknown): value is BetrayalExplorerSummary {
         && typeof candidate.explorerId === 'string'
         && typeof candidate.displayName === 'string'
         && typeof candidate.portraitAsset === 'string'
+        && (candidate.tokenAsset === undefined || typeof candidate.tokenAsset === 'string')
         && typeof candidate.roomId === 'string'
         && isTraitMap(candidate.traits)
         && Array.isArray(candidate.inventory)
         && candidate.inventory.every(isInventoryCard);
+}
+
+function isMonsterSummary(value: unknown): value is BetrayalMonsterSummary {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as Partial<BetrayalMonsterSummary>;
+    return typeof candidate.id === 'string'
+        && typeof candidate.name === 'string'
+        && typeof candidate.portraitAsset === 'string'
+        && (candidate.tokenAsset === undefined || typeof candidate.tokenAsset === 'string')
+        && typeof candidate.roomId === 'string'
+        && typeof candidate.might === 'number'
+        && typeof candidate.speed === 'number'
+        && typeof candidate.damage === 'number';
 }
 
 function isBetrayalCore(value: unknown): value is BetrayalCore {
@@ -299,6 +380,8 @@ function isBetrayalCore(value: unknown): value is BetrayalCore {
         && candidate.currentExplorerInventory.every(isInventoryCard)
         && Array.isArray(candidate.otherExplorers)
         && candidate.otherExplorers.every(isExplorerSummary)
+        && Array.isArray(candidate.monsters)
+        && candidate.monsters.every(isMonsterSummary)
         && Array.isArray(candidate.rooms);
 }
 
@@ -322,6 +405,10 @@ function cloneExplorer(explorer: BetrayalExplorerSummary): BetrayalExplorerSumma
     };
 }
 
+function cloneMonster(monster: BetrayalMonsterSummary): BetrayalMonsterSummary {
+    return { ...monster };
+}
+
 function cloneCore(core: BetrayalCore): BetrayalCore {
     return {
         ...core,
@@ -329,6 +416,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         currentExplorerTraits: { ...core.currentExplorerTraits },
         currentExplorerInventory: core.currentExplorerInventory.map(cloneInventoryCard),
         otherExplorers: core.otherExplorers.map(cloneExplorer),
+        monsters: core.monsters.map(cloneMonster),
         deckCounts: { ...core.deckCounts },
         discardCounts: { ...core.discardCounts },
         rooms: core.rooms.map(cloneRoom),
@@ -361,19 +449,22 @@ function appendPreviewLog(
 }
 
 function createInitialPreviewState(core: BetrayalCore): PreviewState {
+    const latestDrawnCardId = core.latestDiscovery && core.latestDiscovery.kind !== 'event'
+        ? core.currentExplorerInventory[core.currentExplorerInventory.length - 1]?.id ?? null
+        : null;
     return {
         core: cloneCore(core),
-        selectedInventoryCardId: core.currentExplorerInventory[0]?.id ?? null,
-        selectedTradeTargetPlayerId: null,
-        usedCardIdsThisTurn: [],
-        latestDiscovery: null,
-        latestDiscoveryOwnerPlayerId: null,
+        selectedInventoryCardId: latestDrawnCardId ?? core.currentExplorerInventory[0]?.id ?? null,
+        selectedTradeTargetPlayerId: resolveTradeTargets(core)[0]?.playerId ?? null,
+        usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
+        latestDiscovery: core.latestDiscovery ? { ...core.latestDiscovery } : null,
+        latestDiscoveryOwnerPlayerId: core.latestDiscoveryOwnerPlayerId,
         roomNotes: {
-            [core.activeRoomId]: '待探索',
+            [core.activeRoomId]: core.rooms.find((room) => room.id === core.activeRoomId)?.hint ?? '待探索',
         },
-        logEntries: [],
-        exploreIndex: 0,
-        highlightedDeckKind: null,
+        logEntries: core.activityLog.slice(0, 4).map((entry) => ({ ...entry })),
+        exploreIndex: core.exploreIndex,
+        highlightedDeckKind: core.highlightedDeckKind,
         interactionMode: 'default',
     };
 }
@@ -387,29 +478,12 @@ function resolvePlayerName(
     return matched?.name?.trim() || explorerName;
 }
 
-function resolveCompactNameLabel(name: string): string {
-    const trimmed = name.trim();
-    if (!trimmed) return '?';
-    if (/[\u4e00-\u9fff]/.test(trimmed)) {
-        return trimmed.slice(0, 2);
-    }
-    const parts = trimmed.split(/[\s·-]+/).filter(Boolean);
-    if (parts.length === 1) {
-        return parts[0]!.slice(0, 2).toUpperCase();
-    }
-    return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('');
-}
-
-function buildPanelData(
-    explorer: BetrayalExplorerSummary,
+function resolveEndgameExplorerName(
+    explorer: Pick<BetrayalExplorerSummary, 'playerId' | 'displayName'>,
     matchData?: MatchPlayerInfo[],
-): PlayerPanelData {
-    return {
-        playerId: explorer.playerId,
-        displayName: resolvePlayerName(explorer.playerId, explorer.displayName, matchData),
-        resources: { ...explorer.traits },
-        statusEffects: {},
-    };
+) {
+    const displayName = explorer.displayName.trim();
+    return displayName || resolvePlayerName(explorer.playerId, '玩家', matchData);
 }
 
 function buildDeckItems(core: BetrayalCore, t: ReturnType<typeof useTranslation>['t']): DeckTrayItem[] {
@@ -431,8 +505,166 @@ function buildDiscardItems(core: BetrayalCore, t: ReturnType<typeof useTranslati
         }));
 }
 
+type RoomTileSpriteProps = {
+    visual: BetrayalRoomTileVisual;
+    locale: string;
+    alt: string;
+    className?: string;
+};
+
+function RoomTileSprite({ visual, locale, alt, className }: RoomTileSpriteProps) {
+    const imgStyle = React.useMemo(() => buildRoomAtlasImageStyle(visual), [visual]);
+
+    return (
+        <div
+            className={`relative overflow-hidden ${className ?? ''}`.trim()}
+            style={{ aspectRatio: imgStyle.aspectRatio }}
+        >
+            <OptimizedImage
+                src={visual.image}
+                locale={locale}
+                alt={alt}
+                draggable={false}
+                className="absolute left-0 top-0 max-w-none select-none"
+                style={imgStyle}
+            />
+        </div>
+    );
+}
+
+type PossessionAtlasFrameProps = {
+    visual: BetrayalPossessionAtlasVisual;
+    locale: string;
+    alt: string;
+};
+
+function PossessionAtlasFrame({ visual, locale, alt }: PossessionAtlasFrameProps) {
+    const imgStyle = React.useMemo(() => buildPossessionAtlasImageStyle(visual), [visual]);
+
+    return (
+        <OptimizedImage
+            src={visual.image}
+            locale={locale}
+            alt={alt}
+            draggable={false}
+            className="absolute left-0 top-0 max-w-none select-none"
+            style={imgStyle}
+        />
+    );
+}
+
+function ExplorerFigureToken({
+    explorer,
+    locale,
+    label,
+    tone,
+}: {
+    explorer: BetrayalExplorerSummary;
+    locale: string;
+    label: string;
+    tone: 'self' | 'ally';
+}) {
+    const tokenAsset = explorer.tokenAsset ?? explorer.portraitAsset;
+    const hasOfficialToken = Boolean(explorer.tokenAsset);
+    const contourOutlineFilter = tone === 'self'
+        ? [
+            'drop-shadow(1px 0 0 rgba(138,240,95,0.98))',
+            'drop-shadow(-1px 0 0 rgba(138,240,95,0.98))',
+            'drop-shadow(0 1px 0 rgba(138,240,95,0.98))',
+            'drop-shadow(0 -1px 0 rgba(138,240,95,0.98))',
+            'drop-shadow(0 4px 8px rgba(0,0,0,0.32))',
+        ].join(' ')
+        : [
+            'drop-shadow(1px 0 0 rgba(31,31,26,0.98))',
+            'drop-shadow(-1px 0 0 rgba(31,31,26,0.98))',
+            'drop-shadow(0 1px 0 rgba(31,31,26,0.98))',
+            'drop-shadow(0 -1px 0 rgba(31,31,26,0.98))',
+            'drop-shadow(0 4px 8px rgba(0,0,0,0.32))',
+        ].join(' ');
+
+    return (
+        <span
+            className="relative inline-flex h-[54px] w-[50px] items-center justify-center"
+            data-testid={`betrayal-explorer-figure-token-${explorer.playerId}`}
+        >
+            <span
+                className="relative flex h-[44px] w-[42px] items-center justify-center overflow-hidden bg-transparent"
+                style={{
+                    clipPath: 'polygon(50% 0%, 96% 30%, 82% 100%, 18% 100%, 4% 30%)',
+                }}
+            >
+                <OptimizedImage
+                    src={tokenAsset}
+                    locale={locale}
+                    alt={label}
+                    className={hasOfficialToken ? 'h-full w-full scale-[1.16] object-cover' : 'h-full w-full scale-[1.08] object-cover'}
+                    style={{
+                        filter: contourOutlineFilter,
+                    }}
+                    draggable={false}
+                />
+            </span>
+        </span>
+    );
+}
+
+function MonsterBoardToken({
+    monster,
+    locale,
+}: {
+    monster: BetrayalMonsterSummary;
+    locale: string;
+}) {
+    const tokenAsset = monster.tokenAsset ?? monster.portraitAsset;
+    const hasOfficialToken = Boolean(monster.tokenAsset);
+    const contourOutlineFilter = [
+        'drop-shadow(1px 0 0 rgba(218,74,57,0.98))',
+        'drop-shadow(-1px 0 0 rgba(218,74,57,0.98))',
+        'drop-shadow(0 1px 0 rgba(218,74,57,0.98))',
+        'drop-shadow(0 -1px 0 rgba(218,74,57,0.98))',
+        'drop-shadow(0 5px 10px rgba(0,0,0,0.36))',
+    ].join(' ');
+
+    return (
+        <span
+            className="relative inline-flex h-[52px] w-[52px] items-center justify-center"
+            data-testid={`betrayal-monster-board-token-${monster.id}`}
+        >
+            <span
+                className="relative flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full bg-transparent"
+            >
+                <OptimizedImage
+                    src={tokenAsset}
+                    locale={locale}
+                    alt={monster.name}
+                    className={hasOfficialToken ? 'h-full w-full scale-[1.18] object-cover brightness-110 saturate-110' : 'h-full w-full scale-[1.08] object-cover brightness-125 saturate-125'}
+                    style={{
+                        filter: contourOutlineFilter,
+                    }}
+                    draggable={false}
+                />
+            </span>
+        </span>
+    );
+}
+
 function resolveFloorLabel(floor: BetrayalRoomNode['floor']): string {
     return FLOOR_TONE[floor].label;
+}
+
+function resolveNumberMarkerAsset(value: number): string {
+    const clamped = Math.max(1, Math.min(9, Math.round(value))) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+    return ASSETS.numberMarker[clamped];
+}
+
+function resolveExplorerBoardMarkerPosition(trait: BetrayalTraitKey, value: number) {
+    const range = EXPLORER_BOARD_MARKER_RANGE[trait];
+    const clampedValue = Math.max(1, Math.min(8, Math.round(value)));
+    const progress = (clampedValue - 1) / 7;
+    return {
+        left: `${range.from.x + ((range.to.x - range.from.x) * progress)}%`,
+        top: `${range.from.y + ((range.to.y - range.from.y) * progress)}%`,
+    };
 }
 
 function resolveNextPreviewDeckKind(core: BetrayalCore, exploreIndex: number): BetrayalDeckKind | null {
@@ -463,6 +695,15 @@ function buildRoomOccupants(core: BetrayalCore): Record<string, BetrayalExplorer
     return occupants;
 }
 
+function buildRoomMonsters(core: BetrayalCore): Record<string, BetrayalMonsterSummary[]> {
+    const monsters: Record<string, BetrayalMonsterSummary[]> = {};
+    for (const monster of core.monsters) {
+        monsters[monster.roomId] ??= [];
+        monsters[monster.roomId]!.push(monster);
+    }
+    return monsters;
+}
+
 function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
     const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
     if (!activeRoom) {
@@ -487,6 +728,48 @@ function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | n
 
 function resolveRoomVisualPosition(room: BetrayalRoomNode): { x: number; y: number } {
     return ROOM_VISUAL_LAYOUT[room.id] ?? { x: room.x, y: room.y };
+}
+
+function resolveRoomTileVisual(room: BetrayalRoomNode, isDiscovered: boolean): BetrayalRoomTileVisual {
+    if (!isDiscovered) {
+        return room.floor === 'basement'
+            ? BETRAYAL_ROOM_TILE_VISUALS.backBasement
+            : room.floor === 'upper'
+                ? BETRAYAL_ROOM_TILE_VISUALS.backUpper
+                : BETRAYAL_ROOM_TILE_VISUALS.backGround;
+    }
+
+    const roomIdVisualMap: Partial<Record<BetrayalRoomNode['id'], BetrayalRoomTileVisual>> = {
+        'upper-landing': BETRAYAL_ROOM_TILE_VISUALS.upperLanding,
+        'upper-west': BETRAYAL_ROOM_TILE_VISUALS.bedroom,
+        'upper-north': BETRAYAL_ROOM_TILE_VISUALS.attic,
+        'grand-staircase': BETRAYAL_ROOM_TILE_VISUALS.foyer,
+        'entrance-hall': BETRAYAL_ROOM_TILE_VISUALS.entranceHall,
+        'ground-east': BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
+        'basement-landing': BETRAYAL_ROOM_TILE_VISUALS.study,
+        'basement-east': BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
+    };
+    const mappedById = roomIdVisualMap[room.id];
+    if (mappedById) {
+        return mappedById;
+    }
+
+    const mappedByName: Partial<Record<string, BetrayalRoomTileVisual>> = {
+        门厅: BETRAYAL_ROOM_TILE_VISUALS.entranceHall,
+        大楼梯: BETRAYAL_ROOM_TILE_VISUALS.foyer,
+        地下平台: BETRAYAL_ROOM_TILE_VISUALS.study,
+        二层平台: BETRAYAL_ROOM_TILE_VISUALS.upperLanding,
+        餐厅: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
+        舞厅: BETRAYAL_ROOM_TILE_VISUALS.diningRoom,
+        长廊: BETRAYAL_ROOM_TILE_VISUALS.bedroom,
+        图书馆: BETRAYAL_ROOM_TILE_VISUALS.study,
+        塔楼: BETRAYAL_ROOM_TILE_VISUALS.attic,
+        储物间: BETRAYAL_ROOM_TILE_VISUALS.foyer,
+        墓穴: BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
+        仪式室: BETRAYAL_ROOM_TILE_VISUALS.trophyRoom,
+        礼拜堂: BETRAYAL_ROOM_TILE_VISUALS.study,
+    };
+    return mappedByName[room.name] ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
 }
 
 function resolveRoomConnectionEdges(
@@ -518,18 +801,6 @@ function resolveRoomConnectionEdges(
         }
     }
     return edges;
-}
-
-function resolveRoomTileAsset(room: BetrayalRoomNode, isDiscovered: boolean): string {
-    if (!isDiscovered) {
-        return room.floor === 'basement' ? ASSETS.room.backBasement : ASSETS.room.backGround;
-    }
-
-    if (room.id === 'entrance-hall' || room.id === 'ground-east' || room.discoveryReward === 'event') {
-        return ASSETS.room.trophyRoom;
-    }
-
-    return ASSETS.room.sunroom;
 }
 
 function resolveRoomCanvasStyle(rooms: BetrayalRoomNode[]): React.CSSProperties {
@@ -571,6 +842,13 @@ function resolveTradeTargets(core: BetrayalCore): BetrayalExplorerSummary[] {
     return core.otherExplorers.filter((explorer) => explorer.roomId === core.activeRoomId);
 }
 
+function resolveCompactInventoryAspectRatio(card: BetrayalInventoryCard, frontVisual: BetrayalPossessionAtlasVisual | null): number {
+    if (frontVisual) {
+        return buildPossessionAtlasImageStyle(frontVisual).aspectRatio;
+    }
+    return 621 / 1217;
+}
+
 function resolveContextualRecommendedAction(
     core: BetrayalCore,
     options: {
@@ -607,6 +885,13 @@ function resolvePreviewUseEffectProfile(card: BetrayalInventoryCard): PreviewUse
         ?? (card.kind === 'item'
             ? { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' }
             : { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' });
+}
+
+function resolveInventoryCardAccentAsset(card: BetrayalInventoryCard): string {
+    const effect = resolvePreviewUseEffectProfile(card);
+    return effect.mode === 'move'
+        ? ASSETS.trait.speed
+        : ASSETS.trait[effect.trait ?? 'knowledge'];
 }
 
 function formatSignedDelta(value: number): string {
@@ -670,7 +955,15 @@ function ExplorerPentagonCard({
     onClick?: () => void;
 }) {
     const stateLabel = taken && !selected ? '已占用' : ready ? '已就绪' : selected ? '已选择' : '选择';
-    const assetHeightClass = compact ? 'h-[230px]' : 'h-[310px]';
+    const assetHeightClass = compact ? 'h-[232px]' : 'h-[280px]';
+    const widthClass = compact ? 'w-[224px]' : 'w-full max-w-[348px]';
+    const stateToneClass = taken && !selected
+        ? 'border-[#5c5548] bg-[rgba(14,14,12,0.9)] text-[#8e8371]'
+        : ready
+            ? 'border-[#77bb77] bg-[rgba(19,43,25,0.92)] text-[#9bea8e]'
+            : selected
+                ? 'border-[#b5ef42] bg-[rgba(34,55,18,0.94)] text-[#dfff8f]'
+                : 'border-[#8b744d] bg-[rgba(22,17,12,0.92)] text-[#e4c983]';
 
     return (
         <button
@@ -678,18 +971,19 @@ function ExplorerPentagonCard({
             onClick={onClick}
             disabled={taken && !selected}
             data-testid={`betrayal-character-card-${explorer.explorerId}`}
-            className={`group relative flex flex-col items-center text-left transition duration-200 ${
+            className={`group relative ${widthClass} text-left transition duration-200 ${
                 selected
-                    ? 'drop-shadow-[0_0_26px_rgba(181,239,66,0.5)]'
+                    ? 'drop-shadow-[0_0_28px_rgba(181,239,66,0.44)]'
                     : taken
                         ? 'opacity-55 grayscale'
-                        : 'hover:-translate-y-1 hover:drop-shadow-[0_0_18px_rgba(211,179,109,0.34)]'
+                        : 'hover:-translate-y-1 hover:drop-shadow-[0_0_18px_rgba(211,179,109,0.28)]'
             }`}
         >
-            <div className={`relative flex w-full items-center justify-center ${assetHeightClass}`}>
+            <div className={`relative flex w-full items-end justify-center ${assetHeightClass}`}>
                 {selected ? (
-                    <div className="pointer-events-none absolute inset-x-[10%] inset-y-[4%] rounded-[42%] bg-[rgba(181,239,66,0.14)] blur-2xl" />
+                    <div className="pointer-events-none absolute inset-x-[10%] inset-y-[7%] rounded-[42%] bg-[rgba(181,239,66,0.18)] blur-2xl" />
                 ) : null}
+                <div className="pointer-events-none absolute inset-x-[13%] bottom-[7%] h-[18%] rounded-[18px] bg-[linear-gradient(180deg,rgba(9,13,11,0),rgba(8,12,10,0.64))]" />
                 <OptimizedImage
                     src={explorer.portraitAsset}
                     locale={effectiveLocale}
@@ -698,16 +992,11 @@ function ExplorerPentagonCard({
                     draggable={false}
                 />
             </div>
-            <div className={`relative z-20 mt-1 inline-flex min-w-[104px] items-center justify-center rounded-[10px] border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_8px_18px_rgba(0,0,0,0.32)] ${
-                taken && !selected
-                    ? 'border-[#5c5548] bg-[rgba(14,14,12,0.86)] text-[#8e8371]'
-                    : ready
-                        ? 'border-[#77bb77] bg-[rgba(19,43,25,0.9)] text-[#9bea8e]'
-                        : selected
-                            ? 'border-[#b5ef42] bg-[rgba(34,55,18,0.92)] text-[#dfff8f]'
-                            : 'border-[#8b744d] bg-[rgba(22,17,12,0.9)] text-[#e4c983]'
-            }`}>
-                {stateLabel}
+            <div className={`pointer-events-none absolute bottom-3 left-1/2 z-20 inline-flex -translate-x-1/2 items-center justify-center gap-2 rounded-[12px] border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] shadow-[0_8px_18px_rgba(0,0,0,0.32)] ${stateToneClass}`}>
+                <span className="grid h-4 w-4 place-items-center rounded-full border border-current/50 text-[10px] leading-none">
+                    {taken && !selected ? '×' : ready ? '✓' : selected ? '•' : '•'}
+                </span>
+                <span>{stateLabel}</span>
             </div>
         </button>
     );
@@ -735,139 +1024,266 @@ function CharacterSelectScreen({
     const selectedExplorer = EXPLORER_CATALOG.find((item) => item.explorerId === selectedExplorerId) ?? EXPLORER_CATALOG[0]!;
     const readySet = new Set(core.readyPlayerIds);
     const isReady = readySet.has(viewerPlayerId);
+    const selectedByExplorerId = new Map(
+        Object.entries(core.selectedExplorerByPlayerId).map(([playerId, explorerId]) => [explorerId, playerId]),
+    );
     const availableExplorer = EXPLORER_CATALOG.find((explorer) => {
-        const selectedByPlayer = Object.entries(core.selectedExplorerByPlayerId)
-            .find(([, explorerId]) => explorerId === explorer.explorerId)?.[0] ?? null;
+        const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
         return !selectedByPlayer || selectedByPlayer === viewerPlayerId;
     }) ?? EXPLORER_CATALOG[0]!;
 
     return (
         <div
             data-testid="betrayal-character-select-screen"
-            className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#0b1512] text-[#f1e8d4]"
+            className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#09110f] text-[#f1e8d4]"
             style={{
-                backgroundImage: 'radial-gradient(circle at 20% 10%, rgba(77,128,76,0.28), transparent 26%), linear-gradient(180deg, #10201a 0%, #07100e 100%)',
+                backgroundImage: [
+                    'radial-gradient(circle at 18% 22%, rgba(118,178,82,0.16), transparent 19%)',
+                    'radial-gradient(circle at 72% 14%, rgba(196,167,98,0.08), transparent 24%)',
+                    'repeating-linear-gradient(90deg, rgba(38,52,44,0.03) 0 2px, rgba(0,0,0,0) 2px 28px)',
+                    'linear-gradient(180deg, #10201a 0%, #07100e 100%)',
+                ].join(','),
             }}
         >
-            <header className="grid grid-cols-[minmax(220px,1fr)_2fr_minmax(220px,1fr)] border-b border-[#6c5838] bg-[rgba(9,15,13,0.9)]">
-                <div className="border-r border-[#57472f] px-6 py-4">
-                    <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="h-16 w-full object-contain object-left" draggable={false} />
-                </div>
-                <div className="flex items-center justify-center text-3xl font-semibold uppercase tracking-[0.22em] text-[#e7c783]">
-                    选择探索者
-                </div>
-                <div className="flex items-center justify-end gap-5 px-6 py-4">
-                    <div className="text-center">
-                        <div className="text-xs uppercase tracking-[0.18em] text-[#d8bf81]">玩家</div>
-                        <div className="text-2xl font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
-                    </div>
-                    <div className="rounded-[18px] border border-[#6c5838] px-4 py-3 text-2xl">⚙</div>
-                </div>
-            </header>
+            <div className="mx-auto flex h-full w-full max-w-[1760px] p-3 md:p-4">
+                <div className="relative flex h-full w-full flex-col overflow-hidden border border-[#7d643a] bg-[rgba(8,15,13,0.94)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+                    <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.06),transparent_28%)]" />
+                    <div className="pointer-events-none absolute left-1 top-1 h-4 w-4 border-l border-t border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute right-1 top-1 h-4 w-4 border-r border-t border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute bottom-1 left-1 h-4 w-4 border-b border-l border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute bottom-1 right-1 h-4 w-4 border-b border-r border-[rgba(216,191,129,0.6)]" />
 
-            <main className="grid min-h-0 flex-1 grid-cols-[31%_1fr] gap-8 px-12 py-8">
-                <aside className="flex min-h-0 flex-col gap-5">
-                    <ExplorerPentagonCard
-                        explorer={selectedExplorer}
-                        selected
-                        ready={isReady}
-                        taken={false}
-                        effectiveLocale={effectiveLocale}
-                    />
-                    <section className="rounded-[18px] border border-[#6f5b3a] bg-[rgba(9,15,13,0.88)] p-5 shadow-[0_18px_36px_rgba(0,0,0,0.34)]">
-                        <h2 className="text-2xl font-semibold uppercase tracking-[0.16em] text-[#f3dfae]">{selectedExplorer.displayName}</h2>
-                        <div className="mt-4 grid gap-2">
-                            {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
-                                <div key={trait} className="grid grid-cols-[82px_1fr_24px] items-center gap-3 text-sm">
-                                    <span className="font-semibold text-[#d8bf81]">{TRAIT_LABEL_LOCAL[trait]}</span>
-                                    <div className="flex gap-2">
-                                        {Array.from({ length: 6 }).map((_, index) => (
-                                            <span
-                                                key={index}
-                                                className={`h-3 w-3 rounded-full border ${index < selectedExplorer.traits[trait] ? 'border-[#d4b46d] bg-[#d4b46d]' : 'border-[#62543c] bg-[#111916]'}`}
-                                            />
+                    <header className="grid min-h-[104px] grid-cols-[360px_1fr_240px] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]">
+                        <div className="relative flex items-center overflow-hidden border-r border-[#5e4b2e] px-6 py-3">
+                            <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.26),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
+                            <div className="relative flex h-[72px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.28)] bg-[linear-gradient(180deg,rgba(8,12,11,0.74),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
+                                <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
+                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="relative h-[56px] w-full object-contain object-left" draggable={false} />
+                            </div>
+                        </div>
+                        <div className="relative flex items-center justify-center px-6 py-4 text-center">
+                            <div className="pointer-events-none absolute left-[16%] top-1/2 flex items-center gap-2">
+                                <span className="h-px w-16 bg-[linear-gradient(90deg,transparent,#9f854d)]" />
+                                <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
+                            </div>
+                            <div className="pointer-events-none absolute right-[16%] top-1/2 flex items-center gap-2">
+                                <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
+                                <span className="h-px w-16 bg-[linear-gradient(90deg,#9f854d,transparent)]" />
+                            </div>
+                            <div className="text-[24px] font-semibold uppercase tracking-[0.28em] text-[#e7c783]">
+                                选择探索者
+                            </div>
+                        </div>
+                        <div className="border-l border-[#5e4b2e]">
+                            <div className="flex h-full flex-col items-center justify-center px-4 py-3 text-center">
+                                <div className="text-xs uppercase tracking-[0.2em] text-[#d8bf81]">玩家</div>
+                                <div className="mt-1 text-[22px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
+                                <div className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#9e8c69]">
+                                    已就绪
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="grid min-h-0 flex-1 grid-cols-[440px_minmax(0,1fr)] gap-0 px-5 pb-3 pt-4 xl:grid-cols-[472px_minmax(0,1fr)]">
+                        <aside className="relative flex min-h-0 flex-col pr-6">
+                            <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
+                            <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-4 pt-4">
+                                <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
+                                <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
+                                <div className="flex justify-center px-2 pt-1">
+                                    <ExplorerPentagonCard
+                                        explorer={selectedExplorer}
+                                        selected
+                                        ready={isReady}
+                                        taken={false}
+                                        effectiveLocale={effectiveLocale}
+                                    />
+                                </div>
+                                <section className="relative mt-3 flex-1 overflow-hidden px-2 pb-3 pt-3">
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
+                                    <div className="grid gap-3">
+                                        <h2 className="truncate text-[24px] font-semibold uppercase tracking-[0.14em] text-[#f3dfae]">{selectedExplorer.displayName}</h2>
+                                        <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-[#b9aa84]">
+                                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(214,191,129,0.18)] bg-[rgba(15,16,13,0.42)] px-3 py-1">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-[#d8bf81]" />
+                                                当前选择
+                                            </span>
+                                            <span className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,133,66,0.26)] bg-[rgba(23,33,19,0.36)] px-3 py-1 text-[#b5ef42]">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
+                                                {isReady ? '已准备' : '待确认'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="relative mt-4 px-1 py-1">
+                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                                        <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
+                                            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
+                                            <span>属性</span>
+                                            <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
+                                        </div>
+                                        <div className="grid gap-2.5">
+                                        {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
+                                            <div key={trait} className="grid grid-cols-[92px_minmax(0,1fr)_28px] items-center gap-3 text-sm">
+                                                <span className={`inline-flex items-center gap-2 font-semibold ${TRAIT_TONE_CLASS[trait].text}`}>
+                                                    <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-5 w-5 object-contain opacity-86" draggable={false} />
+                                                    {TRAIT_LABEL_LOCAL[trait]}
+                                                </span>
+                                                <div className="grid grid-cols-6 gap-1.5">
+                                                    {Array.from({ length: 6 }).map((_, index) => (
+                                                        <span
+                                                            key={index}
+                                                            className={`h-3.5 rounded-full border ${
+                                                                index < selectedExplorer.traits[trait]
+                                                                    ? TRAIT_TONE_CLASS[trait].active
+                                                                    : TRAIT_TONE_CLASS[trait].inactive
+                                                            }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-right text-base font-semibold text-[#f1e8d4]">{selectedExplorer.traits[trait]}</span>
+                                            </div>
                                         ))}
                                     </div>
-                                    <span className="text-right text-[#f1e8d4]">{selectedExplorer.traits[trait]}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="mt-5 border-t border-[#4e412d] pt-4">
-                            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[#b5ef42]">{selectedExplorer.abilityName}</div>
-                            <div className="mt-1 text-sm text-[#d6ccb2]">{selectedExplorer.abilityText}</div>
-                        </div>
-                    </section>
-                </aside>
+                                    </div>
+                                    <div className="mt-5 border-t border-[rgba(78,65,45,0.54)] pt-4">
+                                        <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
+                                            <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28))]" />
+                                            <span>特性</span>
+                                            <span className="h-px flex-1 bg-[linear-gradient(90deg,rgba(214,191,129,0.28),transparent)]" />
+                                        </div>
+                                        <div className="px-1 py-1">
+                                            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,133,66,0.46)] bg-[rgba(23,33,19,0.62)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b5ef42]">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-[#b5ef42]" />
+                                                {selectedExplorer.abilityName}
+                                            </div>
+                                            <div className="mt-3 max-w-[340px] text-[12px] leading-5 text-[#d6ccb2]">
+                                                {selectedExplorer.abilityText}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </section>
+                        </aside>
 
-                <section className="grid min-h-0 grid-cols-3 content-start gap-x-10 gap-y-8">
-                    {EXPLORER_CATALOG.slice(1).map((explorer) => {
-                        const selectedByPlayer = Object.entries(core.selectedExplorerByPlayerId)
-                            .find(([, explorerId]) => explorerId === explorer.explorerId)?.[0] ?? null;
-                        const selected = explorer.explorerId === selectedExplorerId;
-                        const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
-                        return (
-                            <ExplorerPentagonCard
-                                key={explorer.explorerId}
-                                explorer={explorer}
-                                compact
-                                selected={selected}
-                                ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
-                                taken={taken}
-                                effectiveLocale={effectiveLocale}
-                                onClick={() => onSelectExplorer(explorer.explorerId)}
-                            />
-                        );
-                    })}
-                </section>
-            </main>
-
-            <footer className="grid grid-cols-[1fr_auto] items-center gap-6 border-t border-[#6c5838] bg-[rgba(9,15,13,0.9)] px-12 py-5">
-                <div className="flex items-center gap-4">
-                    <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[#d8bf81]">玩家 {core.readyPlayerIds.length}/{core.playerIds.length}</div>
-                    {core.playerIds.map((playerId, index) => {
-                        const selectedId = core.selectedExplorerByPlayerId[playerId];
-                        return (
-                            <div
-                                key={playerId}
-                                className={`flex h-20 w-24 flex-col items-center justify-center rounded-[14px] border text-sm ${
-                                    selectedId
-                                        ? 'border-[#8abf55] bg-[rgba(75,116,59,0.22)] text-[#d9f0b8]'
-                                        : 'border-[#4d4435] bg-[rgba(14,18,16,0.8)] text-[#756f62]'
-                                }`}
-                            >
-                                <span>P{index + 1}</span>
-                                <span className="mt-1 max-w-[80px] truncate text-xs">
-                                    {resolvePlayerName(playerId, `玩家${index + 1}`, matchData)}
-                                </span>
-                                <span className="mt-1 text-xs">{readySet.has(playerId) ? '✓' : selectedId ? '待确认' : '-'}</span>
+                        <section className="relative flex min-h-0 items-center justify-center px-5">
+                            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-10 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
+                            <div className="grid min-h-0 max-w-[1056px] grid-cols-3 content-start justify-items-center gap-x-12 gap-y-10 py-4">
+                                {EXPLORER_CATALOG.slice(1).map((explorer) => {
+                                    const selectedByPlayer = selectedByExplorerId.get(explorer.explorerId) ?? null;
+                                    const selected = explorer.explorerId === selectedExplorerId;
+                                    const taken = Boolean(selectedByPlayer && selectedByPlayer !== viewerPlayerId);
+                                    return (
+                                        <ExplorerPentagonCard
+                                            key={explorer.explorerId}
+                                            explorer={explorer}
+                                            compact
+                                            selected={selected}
+                                            ready={selectedByPlayer ? readySet.has(selectedByPlayer) : false}
+                                            taken={taken}
+                                            effectiveLocale={effectiveLocale}
+                                            onClick={() => onSelectExplorer(explorer.explorerId)}
+                                        />
+                                    );
+                                })}
                             </div>
-                        );
-                    })}
+                        </section>
+                    </main>
+
+                    <footer className="grid grid-cols-[minmax(0,1fr)_520px] border-t border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.98),rgba(9,15,13,0.94))]">
+                        <div className="grid grid-cols-[124px_repeat(6,minmax(92px,1fr))] overflow-hidden">
+                            <div className="flex flex-col justify-center border-r border-[#5e4b2e] px-3 py-3 text-center">
+                                <div className="text-[11px] uppercase tracking-[0.2em] text-[#d8bf81]">玩家</div>
+                                <div className="mt-1 text-[16px] font-semibold text-[#a8e850]">{core.readyPlayerIds.length}/{core.playerIds.length}</div>
+                            </div>
+                            {Array.from({ length: 6 }).map((_, seatIndex) => {
+                                const playerId = core.playerIds[seatIndex] ?? null;
+                                const selectedId = playerId
+                                    ? (core.selectedExplorerByPlayerId[playerId]
+                                        ?? (playerId === viewerPlayerId ? selectedExplorerId : null))
+                                    : null;
+                                const playerName = playerId
+                                    ? resolvePlayerName(playerId, `玩家${seatIndex + 1}`, matchData)
+                                    : '—';
+                                const ready = playerId ? readySet.has(playerId) : false;
+                                const seatExplorer = selectedId
+                                    ? EXPLORER_CATALOG.find((explorer) => explorer.explorerId === selectedId) ?? null
+                                    : null;
+                                return (
+                                    <div
+                                        key={playerId ?? `empty-seat-${seatIndex}`}
+                                        className={`flex min-w-0 flex-col items-center justify-center border-r border-[#5e4b2e] px-2 py-2 text-center last:border-r-0 ${
+                                            selectedId
+                                                ? 'bg-[rgba(75,116,59,0.08)] text-[#d9f0b8]'
+                                                : 'bg-[rgba(9,13,12,0.22)] text-[#8d8678]'
+                                        }`}
+                                    >
+                                        <div className={`grid h-[66px] w-[66px] place-items-center overflow-hidden ${
+                                            selectedId
+                                                ? 'bg-[rgba(13,19,16,0.78)]'
+                                                : 'bg-[rgba(13,17,15,0.56)]'
+                                        }`}>
+                                            {seatExplorer ? (
+                                                <OptimizedImage
+                                                    src={seatExplorer.portraitAsset}
+                                                    locale={effectiveLocale}
+                                                    alt={seatExplorer.displayName}
+                                                    className="h-full w-full object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.34)]"
+                                                    draggable={false}
+                                                />
+                                            ) : (
+                                                <span className="text-[24px] text-[#3f473f]">—</span>
+                                            )}
+                                        </div>
+                                        <div className="mt-1 text-[11px] font-semibold tracking-[0.12em] text-[#d7bf85]">P{seatIndex + 1}</div>
+                                        <div className="mt-0.5 max-w-[82px] truncate text-[11px]">{playerName}</div>
+                                        <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${
+                                            ready
+                                                ? 'border border-[rgba(132,171,82,0.42)] bg-[rgba(39,57,28,0.42)] text-[#b5ef42]'
+                                                : selectedId
+                                                    ? 'border border-[rgba(214,191,129,0.22)] bg-[rgba(39,31,18,0.28)] text-[#d8bf81]'
+                                                    : 'border border-[rgba(93,79,54,0.18)] bg-transparent text-[#676253]'
+                                        }`}>
+                                            {ready ? '已就绪' : selectedId ? '待确认' : '空位'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="grid grid-cols-[120px_minmax(0,1fr)_108px]">
+                            <button
+                                type="button"
+                                onClick={() => onSelectExplorer(availableExplorer.explorerId)}
+                                className="relative inline-flex min-h-[126px] items-center justify-center gap-3 border-l border-[#5e4b2e] text-[16px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
+                            >
+                                <span className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                                随机
+                            </button>
+                            <button
+                                type="button"
+                                onClick={isReady ? onStartScenario : onConfirmExplorer}
+                                data-testid="betrayal-character-confirm"
+                                className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] bg-[linear-gradient(180deg,rgba(95,135,44,0.24),rgba(54,81,22,0.76))] text-[26px] font-semibold uppercase tracking-[0.18em] text-[#dfff8f] shadow-[inset_0_0_0_1px_rgba(181,239,66,0.12)] transition hover:bg-[linear-gradient(180deg,rgba(108,149,51,0.3),rgba(61,91,25,0.82))]"
+                            >
+                                <span className="pointer-events-none absolute inset-2 border border-[rgba(181,239,66,0.16)]" />
+                                {isReady ? '开始' : '确认'}
+                            </button>
+                            <button
+                                type="button"
+                                className="relative inline-flex min-h-[126px] items-center justify-center gap-2 border-l border-[#5e4b2e] px-4 text-[15px] font-semibold uppercase tracking-[0.18em] text-[#d8bf81] transition hover:bg-[rgba(214,191,129,0.06)]"
+                            >
+                                <span className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                                <ChevronLeft size={18} />
+                                返回
+                            </button>
+                        </div>
+                    </footer>
                 </div>
-                <div className="flex items-center gap-5">
-                    <button
-                        type="button"
-                        onClick={() => onSelectExplorer(availableExplorer.explorerId)}
-                        className="rounded-[16px] border border-[#6f5b3a] bg-[rgba(18,24,20,0.9)] px-7 py-5 text-sm font-semibold uppercase tracking-[0.14em] text-[#d8bf81] transition hover:border-[#d8bf81]"
-                    >
-                        随机
-                    </button>
-                    <button
-                        type="button"
-                        onClick={isReady ? onStartScenario : onConfirmExplorer}
-                        data-testid="betrayal-character-confirm"
-                        className="rounded-[18px] border border-[#b5ef42] bg-[rgba(116,154,46,0.28)] px-12 py-5 text-2xl font-semibold uppercase tracking-[0.18em] text-[#dfff8f] shadow-[0_0_26px_rgba(181,239,66,0.22)] transition hover:bg-[rgba(116,154,46,0.38)]"
-                    >
-                        {isReady ? '开始' : '确认'}
-                    </button>
-                    <button
-                        type="button"
-                        className="rounded-[16px] border border-[#6f5b3a] bg-[rgba(18,24,20,0.9)] px-7 py-5 text-sm font-semibold uppercase tracking-[0.14em] text-[#d8bf81]"
-                    >
-                        返回
-                    </button>
-                </div>
-            </footer>
+            </div>
         </div>
     );
 }
@@ -877,6 +1293,29 @@ const TRAIT_LABEL_LOCAL: Record<BetrayalTraitKey, string> = {
     speed: '速度',
     knowledge: '知识',
     sanity: '神志',
+};
+
+const TRAIT_TONE_CLASS: Record<BetrayalTraitKey, { active: string; inactive: string; text: string }> = {
+    might: {
+        active: 'border-[#cf715f] bg-[#cf715f]',
+        inactive: 'border-[rgba(207,113,95,0.34)] bg-[rgba(34,19,18,0.68)]',
+        text: 'text-[#e8b09f]',
+    },
+    speed: {
+        active: 'border-[#d6be67] bg-[#d6be67]',
+        inactive: 'border-[rgba(214,190,103,0.34)] bg-[rgba(35,31,18,0.68)]',
+        text: 'text-[#ebdca1]',
+    },
+    knowledge: {
+        active: 'border-[#8ebac5] bg-[#8ebac5]',
+        inactive: 'border-[rgba(142,186,197,0.32)] bg-[rgba(17,26,28,0.68)]',
+        text: 'text-[#cbe4ea]',
+    },
+    sanity: {
+        active: 'border-[#9f7bc5] bg-[#9f7bc5]',
+        inactive: 'border-[rgba(159,123,197,0.32)] bg-[rgba(24,19,31,0.68)]',
+        text: 'text-[#d9c4ef]',
+    },
 };
 
 function EndgameScreen({
@@ -896,170 +1335,379 @@ function EndgameScreen({
     const traitor = result
         ? allExplorers.find((explorer) => explorer.playerId === result.traitorPlayerId) ?? allExplorers[allExplorers.length - 1]
         : allExplorers[allExplorers.length - 1];
+    const survivorsWon = result?.outcome !== 'traitor';
+    const outcomeTitle = survivorsWon ? '胜利' : '失败';
+    const outcomeSubtitle = survivorsWon ? '幸存者逃脱' : '叛徒得逞';
+    const survivorsTitle = survivorsWon ? '逃脱' : '败北';
+    const traitorTitle = survivorsWon ? '败退' : '得胜';
+    const endgameTraitOrder = ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[];
+    const roomsExploredCount = result?.stats.roomsExplored ?? core.rooms.filter((room) => room.state === 'discovered').length;
+    const omensDrawnCount = result?.stats.omensDrawn ?? 0;
+    const eventsDrawnCount = result?.stats.eventsDrawn ?? 0;
 
     return (
         <div
             data-testid="betrayal-endgame-screen"
-            className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#0b1512] text-[#f1e8d4]"
+            className="relative flex h-full min-h-full flex-col overflow-hidden bg-[#08110f] text-[#f1e8d4]"
             style={{
-                backgroundImage: 'radial-gradient(circle at 50% 8%, rgba(156,203,77,0.2), transparent 28%), linear-gradient(180deg, #0f1b17 0%, #07100e 100%)',
+                backgroundImage: [
+                    'radial-gradient(circle at 50% 10%, rgba(156,203,77,0.14), transparent 24%)',
+                    'repeating-linear-gradient(90deg, rgba(45,61,50,0.04) 0 2px, rgba(0,0,0,0) 2px 22px)',
+                    'repeating-linear-gradient(0deg, rgba(37,52,42,0.03) 0 2px, rgba(0,0,0,0) 2px 24px)',
+                    'linear-gradient(180deg, #0d1714 0%, #07100e 100%)',
+                ].join(','),
             }}
         >
-            <header className="grid grid-cols-[minmax(260px,1fr)_2fr_minmax(260px,1fr)] border-b border-[#6c5838] bg-[rgba(9,15,13,0.92)]">
-                <div className="border-r border-[#57472f] px-6 py-4">
-                    <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="h-16 w-full object-contain object-left" draggable={false} />
-                </div>
-                <div className="flex flex-col items-center justify-center py-3">
-                    <div className="text-xs uppercase tracking-[0.36em] text-[#e7c783]">剧本结果</div>
-                    <div className="text-6xl font-bold uppercase tracking-[0.08em] text-[#b5ef75] drop-shadow-[0_0_18px_rgba(181,239,117,0.35)]">胜利</div>
-                    <div className="text-lg uppercase tracking-[0.24em] text-[#f0dfb7]">幸存者逃脱</div>
-                </div>
-                <div className="flex flex-col justify-center border-l border-[#57472f] px-8">
-                    <div className="text-xs uppercase tracking-[0.22em] text-[#d8bf81]">剧本</div>
-                    <div className="mt-2 text-2xl font-semibold uppercase tracking-[0.12em] text-[#f2e2c0]">{result?.hauntTitle ?? '饥饿'}</div>
-                </div>
-            </header>
+            <div className="mx-auto flex h-full min-h-full w-full max-w-[1760px] p-3 md:p-4">
+                <div className="relative flex min-h-full w-full flex-col overflow-hidden border border-[#876a3c] bg-[rgba(9,15,13,0.95)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+                    <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.08),transparent_28%)]" />
+                    <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(90deg,rgba(38,51,44,0.03)_0_2px,rgba(0,0,0,0)_2px_26px)]" />
+                    <div className="pointer-events-none absolute left-1 top-1 h-4 w-4 border-l border-t border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute right-1 top-1 h-4 w-4 border-r border-t border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute bottom-1 left-1 h-4 w-4 border-b border-l border-[rgba(216,191,129,0.6)]" />
+                    <div className="pointer-events-none absolute bottom-1 right-1 h-4 w-4 border-b border-r border-[rgba(216,191,129,0.6)]" />
 
-            <main className="grid min-h-0 flex-1 grid-cols-[29%_1fr_29%] gap-7 px-12 py-8">
-                <section className="flex min-h-0 flex-col gap-5">
-                    <div className="rounded-[18px] border border-[#6f8f44] bg-[rgba(13,30,20,0.82)] p-5">
-                        <h2 className="text-center text-2xl font-semibold uppercase tracking-[0.18em] text-[#b8ea74]">幸存者</h2>
-                        <div className="mt-5 grid gap-3">
-                            {survivors.map((explorer) => (
-                                <div key={explorer.playerId} className="grid grid-cols-[72px_1fr_52px] items-center gap-3 rounded-[12px] border border-[#53693b] bg-[rgba(8,17,13,0.72)] p-2">
-                                    <OptimizedImage src={explorer.portraitAsset} locale={effectiveLocale} alt={explorer.displayName} className="h-[72px] w-[72px] object-contain" draggable={false} />
-                                    <div>
-                                        <div className="font-semibold text-[#f3e6c9]">{resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}</div>
-                                        <div className="mt-1 flex gap-1 text-xs text-[#b8c89a]">
-                                            {Object.values(explorer.traits).map((value, index) => <span key={index} className="rounded-full border border-[#596d43] px-1.5">{value}</span>)}
+                    <header className="relative grid min-h-[118px] grid-cols-[minmax(300px,1fr)_1.42fr_minmax(330px,1fr)] divide-x divide-[#5e4b2e] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.985),rgba(8,14,13,0.95))] px-5 py-3">
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.3),transparent)]" />
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                        <div className="relative flex items-center overflow-hidden px-4 py-2.5">
+                            <div className="pointer-events-none absolute inset-y-2 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.42),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-3 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
+                            <div className="relative flex h-[74px] w-full items-center overflow-hidden border border-[rgba(214,191,129,0.3)] bg-[linear-gradient(180deg,rgba(8,12,11,0.72),rgba(5,8,7,0.92))] px-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
+                                <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
+                                <OptimizedImage src={ASSETS.titleBanner} locale={effectiveLocale} alt="山屋惊魂" className="relative h-[58px] w-full object-contain object-left" draggable={false} />
+                            </div>
+                        </div>
+                        <div className="relative flex flex-col items-center justify-center px-6 py-2 text-center">
+                            <div className="text-xs uppercase tracking-[0.34em] text-[#e1c480]">剧本结果</div>
+                            <div className={`mt-1 text-[56px] font-bold tracking-[0.1em] drop-shadow-[0_0_18px_rgba(183,239,116,0.28)] ${
+                                survivorsWon ? 'text-[#b7ef74]' : 'text-[#eb8a67]'
+                            }`}>
+                                {outcomeTitle}
+                            </div>
+                            <div className="mt-1 text-[17px] tracking-[0.24em] text-[#f1e1bb]">{outcomeSubtitle}</div>
+                            <div className="pointer-events-none absolute left-[14%] top-1/2 flex items-center gap-2">
+                                <span className="h-px w-16 bg-[linear-gradient(90deg,transparent,#9f854d)]" />
+                                <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
+                            </div>
+                            <div className="pointer-events-none absolute right-[14%] top-1/2 flex items-center gap-2">
+                                <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(209,177,111,0.72)] bg-[rgba(209,177,111,0.14)]" />
+                                <span className="h-px w-16 bg-[linear-gradient(90deg,#9f854d,transparent)]" />
+                            </div>
+                        </div>
+                        <div className="relative flex items-stretch overflow-hidden px-4 py-2.5">
+                            <div className="pointer-events-none absolute inset-y-2 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.42),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.28),transparent)]" />
+                            <div className="pointer-events-none absolute inset-x-3 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
+                            <div className="relative flex flex-1 overflow-hidden border border-[rgba(214,191,129,0.3)] bg-[linear-gradient(180deg,rgba(8,12,11,0.72),rgba(5,8,7,0.92))] shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
+                                <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
+                                <div className="relative hidden w-[148px] overflow-hidden md:block">
+                                    <OptimizedImage src={ASSETS.cover} locale={effectiveLocale} alt="" className="h-full w-full object-cover opacity-46" draggable={false} />
+                                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(8,12,11,0.1),rgba(8,12,11,0.52))]" />
+                                </div>
+                                <div className="relative flex flex-col justify-center px-4 py-3">
+                                    <div className="text-xs uppercase tracking-[0.26em] text-[#ddb774]">剧本</div>
+                                    <div className="mt-1 text-[28px] font-semibold tracking-[0.08em] text-[#f3e1bd]">{result?.hauntTitle ?? '饥饿'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="grid min-h-0 flex-1 grid-cols-[318px_minmax(0,1.18fr)_286px] gap-0 px-4 pb-3 pt-3 xl:grid-cols-[336px_minmax(0,1.22fr)_304px]">
+                        <section className="relative flex min-h-0 flex-col gap-3 px-2 pb-1 pt-1 pr-4">
+                            <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.2),rgba(214,191,129,0.2),transparent)]" />
+                            <div className="relative overflow-hidden px-3 py-3">
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(179,239,116,0.45),transparent)]" />
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.16),transparent)]" />
+                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#b7ef74]">幸存者</div>
+                                <div className="mt-1 text-center text-[13px] uppercase tracking-[0.18em] text-[#d6e3b5]">{survivorsTitle}</div>
+                                <div className="mt-4 space-y-2">
+                                    {survivors.map((explorer) => (
+                                        <div
+                                            key={explorer.playerId}
+                                            className="relative grid grid-cols-[50px_1fr_38px] items-center gap-3 border-y border-[rgba(126,102,61,0.3)] bg-[linear-gradient(180deg,rgba(15,21,19,0.34),rgba(8,11,10,0.42))] px-2 py-2"
+                                        >
+                                            <div className="relative grid h-[50px] w-[50px] place-items-center overflow-hidden rounded-full border border-[rgba(177,151,92,0.3)] bg-[radial-gradient(circle_at_50%_38%,rgba(61,89,72,0.18),rgba(8,11,10,0.74)_72%)]">
+                                                <OptimizedImage
+                                                    src={explorer.portraitAsset}
+                                                    locale={effectiveLocale}
+                                                    alt={explorer.displayName}
+                                                    className="h-[48px] w-[48px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.32)]"
+                                                    draggable={false}
+                                                />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="min-h-[18px] whitespace-normal pr-2 text-[11px] font-semibold leading-[1.08] tracking-[0.03em] text-[#f4e6c7]" style={{ wordBreak: 'break-word' }}>
+                                                    {resolveEndgameExplorerName(explorer, matchData)}
+                                                </div>
+                                                <div className="mt-1 grid grid-cols-2 gap-1">
+                                                    {endgameTraitOrder.map((key) => (
+                                                        <span key={key} className="inline-flex items-center gap-1 rounded-full border border-[rgba(112,92,58,0.34)] bg-[rgba(17,15,12,0.42)] px-1 py-0.5 text-[9px] text-[#f3e6c9]">
+                                                            <OptimizedImage
+                                                                src={ASSETS.trait[key]}
+                                                                locale={effectiveLocale}
+                                                                alt={TRAIT_LABEL_LOCAL[key]}
+                                                                className="h-3.5 w-3.5 object-contain opacity-90"
+                                                                draggable={false}
+                                                            />
+                                                            <span className="font-semibold leading-none">{explorer.traits[key]}</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid place-items-center text-center">
+                                                <div
+                                                    className="relative grid h-[42px] w-[38px] place-items-center border border-[rgba(132,171,82,0.44)] bg-[radial-gradient(circle_at_50%_24%,rgba(182,234,104,0.18),rgba(23,33,19,0.84)_72%)] text-[15px] font-semibold text-[#b7ef74] shadow-[0_8px_14px_rgba(0,0,0,0.18)]"
+                                                    style={{ clipPath: ENDGAME_MEDALLION_CLIP_PATH }}
+                                                >
+                                                    <span
+                                                        className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.2)]"
+                                                        style={{ clipPath: ENDGAME_MEDALLION_CLIP_PATH }}
+                                                    />
+                                                    {Object.values(explorer.traits).reduce((sum, value) => sum + value, 0)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="relative overflow-hidden px-2 pb-2 pt-2">
+                                <div className="mb-2.5 flex items-center gap-3">
+                                    <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(221,183,116,0.34))]" />
+                                    <div className="text-[13px] font-semibold uppercase tracking-[0.22em] text-[#ddb774]">{outcomeSubtitle}</div>
+                                    <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(221,183,116,0.34),transparent)]" />
+                                </div>
+                                <div className="relative overflow-hidden border border-[rgba(108,84,53,0.64)] bg-[rgba(3,7,6,0.58)] shadow-[inset_0_0_0_1px_rgba(214,191,129,0.06)]">
+                                    <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.08)]" />
+                                    <OptimizedImage src={ASSETS.cover} locale={effectiveLocale} alt={outcomeSubtitle} className="h-[104px] w-full object-cover opacity-78" draggable={false} />
+                                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,8,0.14),rgba(6,10,8,0.62))]" />
+                                    <div className="absolute inset-x-4 bottom-4 flex items-end justify-center">
+                                        {survivors.map((explorer, index) => (
+                                            <OptimizedImage
+                                                key={explorer.playerId}
+                                                src={explorer.portraitAsset}
+                                                locale={effectiveLocale}
+                                                alt={explorer.displayName}
+                                                className="h-[56px] w-[56px] object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+                                                style={{ marginLeft: index === 0 ? 0 : -20 }}
+                                                draggable={false}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="relative flex min-h-0 flex-col items-center justify-start gap-3 px-3">
+                            <div className="pointer-events-none absolute left-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
+                            <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
+                            <div className="relative w-full max-w-[728px] border border-[#aa864b] bg-[linear-gradient(180deg,rgba(54,40,22,0.98),rgba(28,21,14,0.99))] p-[9px] shadow-[0_22px_48px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(226,185,102,0.12)]">
+                                <div className="pointer-events-none absolute inset-1 border border-[rgba(226,185,102,0.28)]" />
+                                <div className="pointer-events-none absolute inset-[5px] border border-[rgba(54,38,18,0.86)]" />
+                                <div className="pointer-events-none absolute inset-x-3 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(232,190,106,0.62),transparent)]" />
+                                <div className="pointer-events-none absolute inset-x-3 bottom-1 h-px bg-[linear-gradient(90deg,transparent,rgba(232,190,106,0.3),transparent)]" />
+                                <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center">
+                                    <span className="h-10 w-1 rounded-full bg-[linear-gradient(180deg,rgba(232,190,106,0),rgba(232,190,106,0.95),rgba(232,190,106,0))]" />
+                                </div>
+                                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                                    <span className="h-10 w-1 rounded-full bg-[linear-gradient(180deg,rgba(232,190,106,0),rgba(232,190,106,0.95),rgba(232,190,106,0))]" />
+                                </div>
+
+                                <div
+                                    className="relative overflow-hidden border border-[#6f5935] px-5 pb-4 pt-4 text-[#2c2419] shadow-[inset_0_0_0_1px_rgba(255,238,198,0.1)]"
+                                    style={{
+                                        backgroundImage: [
+                                            'radial-gradient(circle at 14% 18%, rgba(246,229,187,0.34), transparent 15%)',
+                                            'radial-gradient(circle at 86% 18%, rgba(92,65,35,0.3), transparent 18%)',
+                                            'radial-gradient(circle at 52% 62%, rgba(62,43,22,0.23), transparent 54%)',
+                                            'radial-gradient(circle at 26% 82%, rgba(134,104,66,0.18), transparent 17%)',
+                                            'radial-gradient(circle at 72% 80%, rgba(89,67,41,0.16), transparent 16%)',
+                                            'linear-gradient(180deg, rgba(52,35,17,0.42) 0%, rgba(0,0,0,0) 9%, rgba(0,0,0,0) 91%, rgba(52,35,17,0.46) 100%)',
+                                            'repeating-linear-gradient(0deg, rgba(78,60,35,0.06) 0 2px, rgba(0,0,0,0) 2px 8px)',
+                                            'repeating-linear-gradient(90deg, rgba(117,94,58,0.045) 0 1px, rgba(0,0,0,0) 1px 8px)',
+                                            'linear-gradient(180deg, #b7a27a 0%, #a79068 25%, #8f7956 66%, #a38c65 100%)',
+                                        ].join(','),
+                                        boxShadow: 'inset 0 0 0 1px rgba(98,72,40,0.26), inset 0 0 84px rgba(44,30,15,0.32), inset 0 0 22px rgba(255,236,198,0.1)',
+                                    }}
+                                >
+                                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(69,52,29,0.22),rgba(0,0,0,0)_7%,rgba(0,0,0,0)_93%,rgba(69,52,29,0.24))]" />
+                                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(52,39,22,0.16),rgba(0,0,0,0)_8%,rgba(0,0,0,0)_92%,rgba(52,39,22,0.2))]" />
+                                    <div className="pointer-events-none absolute inset-0 opacity-42 mix-blend-multiply" style={{ backgroundImage: 'radial-gradient(circle at 18% 28%, rgba(120,88,54,0.24) 0 1px, transparent 1px), radial-gradient(circle at 72% 64%, rgba(102,74,45,0.2) 0 1px, transparent 1px), radial-gradient(circle at 42% 78%, rgba(134,102,63,0.16) 0 1px, transparent 1px)', backgroundSize: '128px 96px, 156px 112px, 138px 124px' }} />
+                                    <div className="pointer-events-none absolute inset-2 border border-[rgba(74,52,27,0.48)]" />
+                                    <div className="pointer-events-none absolute inset-[18px] border border-[rgba(132,108,68,0.24)]" />
+                                    <div className="pointer-events-none absolute inset-x-[72px] top-[48px] h-px bg-[linear-gradient(90deg,transparent,rgba(74,52,27,0.42),transparent)]" />
+                                    <div className="pointer-events-none absolute left-4 top-4 h-5 w-5 border-l-2 border-t-2 border-[#6f5830]" />
+                                    <div className="pointer-events-none absolute right-4 top-4 h-5 w-5 border-r-2 border-t-2 border-[#6f5830]" />
+                                    <div className="pointer-events-none absolute bottom-4 left-4 h-5 w-5 border-b-2 border-l-2 border-[#6f5830]" />
+                                    <div className="pointer-events-none absolute bottom-4 right-4 h-5 w-5 border-b-2 border-r-2 border-[#6f5830]" />
+
+                                    <div className="relative text-center">
+                                        <div className="pointer-events-none absolute left-[13%] top-1/2 h-px w-16 -translate-y-1/2 bg-[linear-gradient(90deg,transparent,rgba(73,49,24,0.9))]" />
+                                        <div className="pointer-events-none absolute right-[13%] top-1/2 h-px w-16 -translate-y-1/2 bg-[linear-gradient(90deg,rgba(73,49,24,0.9),transparent)]" />
+                                        <div className="text-[36px] font-bold tracking-[0.14em] text-[#302315] drop-shadow-[0_1px_0_rgba(229,207,159,0.32)]">{result?.hauntTitle ?? '饥饿'}</div>
+                                        <div className="pointer-events-none mt-2 flex items-center justify-center gap-2">
+                                            <span className="h-px w-20 bg-[linear-gradient(90deg,transparent,rgba(73,49,24,0.78))]" />
+                                            <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(73,49,24,0.78)] bg-[rgba(133,108,68,0.24)]" />
+                                            <span className="h-px w-20 bg-[linear-gradient(90deg,rgba(73,49,24,0.78),transparent)]" />
                                         </div>
                                     </div>
-                                    <div className="rounded-full border border-[#8abf55] py-2 text-center text-xl font-semibold text-[#bce879]">✓</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="min-h-[150px] rounded-[18px] border border-[#6f5b3a] bg-[rgba(9,15,13,0.82)] p-5">
-                        <div className="text-lg font-semibold uppercase tracking-[0.16em] text-[#d8bf81]">幸存者逃脱</div>
-                        <div className="mt-3 flex h-24 items-center justify-center rounded-[14px] border border-[#4d3f2b] bg-[rgba(8,13,11,0.74)]">
-                            {survivors.map((explorer, index) => (
-                                <OptimizedImage
-                                    key={explorer.playerId}
-                                    src={explorer.portraitAsset}
-                                    locale={effectiveLocale}
-                                    alt={explorer.displayName}
-                                    className="h-20 w-20 object-contain drop-shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
-                                    style={{ marginLeft: index === 0 ? 0 : -22 }}
-                                    draggable={false}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </section>
 
-                <section className="flex min-h-0 flex-col justify-between rounded-[18px] border border-[#8b744d] bg-[#d8c69d] p-8 text-[#302719] shadow-[0_24px_56px_rgba(0,0,0,0.38)]">
-                    <div>
-                        <h2 className="text-center text-4xl font-semibold uppercase tracking-[0.16em]">饥饿</h2>
-                        <div className="mt-8 grid grid-cols-2 gap-8 border-t border-[#8e7a55] pt-8">
-                            <div>
-                                <div className="text-lg font-semibold uppercase tracking-[0.16em]">目标</div>
-                                <div className="mt-8 flex h-24 items-center">
-                                    {survivors.map((explorer, index) => (
-                                        <OptimizedImage
-                                            key={explorer.playerId}
-                                            src={explorer.portraitAsset}
-                                            locale={effectiveLocale}
-                                            alt={explorer.displayName}
-                                            className="h-24 w-24 object-contain drop-shadow-[0_8px_18px_rgba(64,75,40,0.42)]"
-                                            style={{ marginLeft: index === 0 ? 0 : -28 }}
-                                            draggable={false}
-                                        />
-                                    ))}
+                                    <div className="mt-4 grid grid-cols-[1fr_1fr] gap-0 border-t border-[#6f5d3d]">
+                                        <div className="relative border-r border-[#6f5d3d] pr-4 pt-4">
+                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">目标</div>
+                                            <div className="mt-4 flex h-14 items-center justify-center">
+                                                {survivors.slice(0, 2).map((explorer, index) => (
+                                                    <OptimizedImage
+                                                        key={explorer.playerId}
+                                                        src={explorer.portraitAsset}
+                                                        locale={effectiveLocale}
+                                                        alt={explorer.displayName}
+                                                        className="h-14 w-14 object-contain drop-shadow-[0_8px_18px_rgba(64,75,40,0.42)]"
+                                                        style={{ marginLeft: index === 0 ? 0 : -20 }}
+                                                        draggable={false}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="mt-4 text-center text-[14px] font-semibold leading-[1.35] text-[#352a1e]">所有幸存者逃脱。</p>
+                                            <div className="mt-4 flex justify-center">
+                                                <div className="relative grid h-[72px] w-[72px] rotate-[-11deg] place-items-center rounded-full border-[4px] border-[#476a31] text-[18px] font-bold tracking-[0.08em] text-[#476a31] opacity-90 shadow-[inset_0_0_0_2px_rgba(71,106,49,0.34)]">
+                                                    <span className="pointer-events-none absolute inset-[11px] rounded-full border-2 border-[rgba(71,106,49,0.46)]" />
+                                                    完成
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pl-4 pt-4">
+                                            <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">结果</div>
+                                            <div className="mt-4 flex h-14 items-center justify-center">
+                                                {survivors.slice(0, 2).map((explorer, index) => (
+                                                    <OptimizedImage
+                                                        key={explorer.playerId}
+                                                        src={explorer.portraitAsset}
+                                                        locale={effectiveLocale}
+                                                        alt={explorer.displayName}
+                                                        className="h-14 w-14 object-contain drop-shadow-[0_8px_18px_rgba(64,75,40,0.42)]"
+                                                        style={{ marginLeft: index === 0 ? 0 : -20 }}
+                                                        draggable={false}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className={`mt-4 text-center text-[38px] font-bold tracking-[0.12em] drop-shadow-[0_1px_0_rgba(230,211,163,0.28)] ${survivorsWon ? 'text-[#4d7330]' : 'text-[#92493e]'}`}>
+                                                {outcomeTitle}
+                                            </div>
+                                            <div className="mt-4 border-t border-[#6f5d3d] pt-3">
+                                                <div className="text-center text-[14px] font-bold tracking-[0.3em] text-[#3a2a19]">奖励</div>
+                                                <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="grid h-14 w-14 place-items-center rounded-full border border-[rgba(132,108,68,0.38)] bg-[rgba(88,67,38,0.08)] text-[32px] leading-none text-[#bf9647] drop-shadow-[0_2px_0_rgba(86,58,22,0.45)]">★</span>
+                                                        <div className="text-[30px] font-semibold">{result?.reward.stars ?? 4}</div>
+                                                    </div>
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="grid h-14 w-14 place-items-center rounded-full border border-[rgba(132,108,68,0.38)] bg-[rgba(88,67,38,0.08)]">
+                                                            <OptimizedImage src={ASSETS.deck.omen} locale={effectiveLocale} alt="" className="h-10 w-7 object-cover" draggable={false} />
+                                                        </span>
+                                                        <div className="text-[30px] font-semibold">{result?.reward.omens ?? 2}</div>
+                                                    </div>
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="grid h-14 w-14 place-items-center rounded-full border border-[rgba(132,108,68,0.38)] bg-[rgba(88,67,38,0.08)]">
+                                                            <BookOpen size={28} className="text-[#5d7d8d]" />
+                                                        </span>
+                                                        <div className="text-[30px] font-semibold">{result?.reward.logs ?? 1}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="pointer-events-none absolute left-1/2 top-[82px] bottom-5 w-px -translate-x-1/2 bg-[linear-gradient(180deg,rgba(94,73,42,0),rgba(94,73,42,0.72),rgba(94,73,42,0.72),rgba(94,73,42,0))]" />
                                 </div>
-                                <p className="mt-6 text-lg">所有幸存者逃脱。</p>
-                                <div className="mt-10 inline-flex rotate-[-8deg] rounded-full border-4 border-[#5c7f39] px-7 py-3 text-2xl font-bold uppercase tracking-[0.14em] text-[#5c7f39]">完成</div>
                             </div>
-                            <div className="border-l border-[#8e7a55] pl-8">
-                                <div className="text-lg font-semibold uppercase tracking-[0.16em]">结果</div>
-                                <div className="mt-8 flex h-24 items-center">
-                                    {survivors.map((explorer, index) => (
-                                        <OptimizedImage
-                                            key={explorer.playerId}
-                                            src={explorer.portraitAsset}
-                                            locale={effectiveLocale}
-                                            alt={explorer.displayName}
-                                            className="h-24 w-24 object-contain drop-shadow-[0_8px_18px_rgba(64,75,40,0.42)]"
-                                            style={{ marginLeft: index === 0 ? 0 : -28 }}
-                                            draggable={false}
-                                        />
-                                    ))}
+
+                            <div className="flex shrink-0 gap-3 pb-1">
+                                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
+                                    <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
+                                    <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
+                                    <RotateCcw size={22} />
+                                    <span>重赛</span>
+                                </button>
+                                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
+                                    <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
+                                    <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
+                                    <House size={22} />
+                                    <span>大厅</span>
+                                </button>
+                                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
+                                    <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
+                                    <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
+                                    <BookOpen size={22} />
+                                    <span>日志</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section className="relative flex min-h-0 flex-col gap-3 px-2 pb-1 pt-1 pl-4">
+                            <div className="pointer-events-none absolute left-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.2),rgba(214,191,129,0.2),transparent)]" />
+                            <div className="relative overflow-hidden px-3 pb-2 pt-3">
+                                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(235,114,80,0.42),transparent)]" />
+                                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.14),transparent)]" />
+                                <div className="text-center text-[19px] font-semibold uppercase tracking-[0.16em] text-[#eb7250]">叛徒</div>
+                                <div className="mt-1 text-center text-[13px] uppercase tracking-[0.18em] text-[#f1b49d]">{traitorTitle}</div>
+                                {traitor ? (
+                                    <div className="relative mt-4 grid grid-cols-[50px_1fr_34px] items-center gap-3 border-y border-[rgba(151,92,74,0.34)] bg-[linear-gradient(180deg,rgba(11,14,12,0.34),rgba(17,10,9,0.48))] px-2 py-2">
+                                        <div className="relative grid h-[50px] w-[50px] place-items-center overflow-hidden rounded-full border border-[rgba(177,112,92,0.3)] bg-[radial-gradient(circle_at_50%_38%,rgba(119,50,51,0.16),rgba(11,12,12,0.76)_72%)]">
+                                            <OptimizedImage src={traitor.portraitAsset} locale={effectiveLocale} alt={traitor.displayName} className="h-[48px] w-[48px] object-contain" draggable={false} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="min-h-[18px] whitespace-normal pr-2 text-[11px] font-semibold leading-[1.08] tracking-[0.04em] text-[#f3e6c9]" style={{ wordBreak: 'break-word' }}>
+                                                {resolveEndgameExplorerName(traitor, matchData)}
+                                            </div>
+                                            <div className="mt-1 text-[11px] uppercase tracking-[0.12em] text-[#d9a27f]">{result?.hauntTitle ?? '饥饿'}</div>
+                                        </div>
+                                        <div className="grid place-items-center">
+                                            <div className="grid h-8 w-8 place-items-center rounded-full border border-[rgba(212,100,82,0.42)] bg-[radial-gradient(circle_at_35%_30%,rgba(214,112,87,0.14),rgba(36,12,11,0.8)_72%)] text-[16px] text-[#ea7659] shadow-[inset_0_0_0_1px_rgba(214,191,129,0.06)]">
+                                                ☠
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+                                <div className="mt-4 flex flex-col items-center justify-center bg-[radial-gradient(circle_at_50%_38%,rgba(112,35,32,0.14),rgba(17,8,8,0.02)_64%,rgba(0,0,0,0)_72%)] px-4 py-2">
+                                    <div className="grid h-[76px] w-[76px] place-items-center rounded-full border border-[rgba(202,85,69,0.2)] text-[34px] font-bold text-[#d55c49] shadow-[inset_0_0_0_7px_rgba(213,92,73,0.05)]">
+                                        ☠
+                                    </div>
+                                    <div className="mt-3 text-[28px] font-bold tracking-[0.08em] text-[#eb7250]">{traitorTitle}</div>
                                 </div>
-                                <div className="mt-6 text-4xl font-semibold uppercase tracking-[0.12em] text-[#5c7f39]">胜利</div>
-                                <div className="mt-8 border-t border-[#8e7a55] pt-6">
-                                    <div className="text-lg font-semibold uppercase tracking-[0.16em]">奖励</div>
-                                    <div className="mt-4 flex gap-6 text-center text-3xl font-semibold">
-                                        <span className="inline-flex items-center gap-2">
-                                            <OptimizedImage src={ASSETS.room.sunroom} locale={effectiveLocale} alt="" className="h-9 w-9 rounded object-cover" draggable={false} />
-                                            {result?.reward.stars ?? 4}
-                                        </span>
-                                        <span className="inline-flex items-center gap-2">
-                                            <OptimizedImage src={ASSETS.deck.omen} locale={effectiveLocale} alt="" className="h-10 w-7 rounded object-cover" draggable={false} />
-                                            {result?.reward.omens ?? 2}
-                                        </span>
-                                        <span className="inline-flex items-center gap-2">
-                                            <OptimizedImage src={ASSETS.playerReference.front} locale={effectiveLocale} alt="" className="h-10 w-7 rounded object-cover" draggable={false} />
-                                            {result?.reward.logs ?? 1}
-                                        </span>
+                            </div>
+
+                            <div className="relative overflow-hidden px-2 pb-2 pt-2">
+                                <div className="flex items-center gap-3 text-center">
+                                    <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(221,183,116,0.34))]" />
+                                    <div className="text-[15px] font-semibold uppercase tracking-[0.22em] text-[#ddb774]">统计</div>
+                                    <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(221,183,116,0.34),transparent)]" />
+                                </div>
+                                <div className="mt-2.5 grid grid-cols-3 gap-2 text-center">
+                                    <div className="border-r border-[rgba(76,60,39,0.44)] pr-2 last:border-r-0">
+                                        <Footprints size={28} className="mx-auto text-[#d0af6e]" />
+                                        <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{roomsExploredCount}</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">房间</div>
+                                    </div>
+                                    <div className="border-r border-[rgba(76,60,39,0.44)] px-2 last:border-r-0">
+                                        <BookOpen size={28} className="mx-auto text-[#c3a166]" />
+                                        <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{omensDrawnCount}</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">预兆</div>
+                                    </div>
+                                    <div className="px-2">
+                                        <Search size={28} className="mx-auto text-[#c3a166]" />
+                                        <div className="mt-1 text-[34px] font-semibold text-[#f3e6c9]">{eventsDrawnCount}</div>
+                                        <div className="mt-1 text-xs uppercase tracking-[0.16em] text-[#ddb774]">事件</div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div className="mx-auto mt-8 flex gap-5">
-                        <button className="rounded-[16px] border border-[#6f5b3a] bg-[rgba(18,24,20,0.95)] px-10 py-4 text-lg font-semibold uppercase tracking-[0.14em] text-[#d8bf81]">重赛</button>
-                        <button className="rounded-[16px] border border-[#6f5b3a] bg-[rgba(18,24,20,0.95)] px-10 py-4 text-lg font-semibold uppercase tracking-[0.14em] text-[#d8bf81]">大厅</button>
-                        <button className="rounded-[16px] border border-[#6f5b3a] bg-[rgba(18,24,20,0.95)] px-10 py-4 text-lg font-semibold uppercase tracking-[0.14em] text-[#d8bf81]">日志</button>
-                    </div>
-                </section>
-
-                <section className="flex min-h-0 flex-col gap-5">
-                    <div className="rounded-[18px] border border-[#894331] bg-[rgba(32,12,10,0.74)] p-5">
-                        <h2 className="text-center text-2xl font-semibold uppercase tracking-[0.18em] text-[#ec6f50]">叛徒</h2>
-                        {traitor ? (
-                            <div className="mt-5 grid grid-cols-[88px_1fr_64px] items-center gap-4 rounded-[12px] border border-[#6b3a2f] bg-[rgba(8,12,10,0.68)] p-3">
-                                <OptimizedImage src={traitor.portraitAsset} locale={effectiveLocale} alt={traitor.displayName} className="h-[88px] w-[88px] object-contain" draggable={false} />
-                                    <div>
-                                        <div className="font-semibold text-[#f3e6c9]">{resolvePlayerName(traitor.playerId, traitor.displayName, matchData)}</div>
-                                        <div className="mt-1 text-sm uppercase tracking-[0.14em] text-[#d8a180]">饥饿</div>
-                                    </div>
-                                <OptimizedImage src={ASSETS.traitorBack} locale={effectiveLocale} alt="" className="h-14 w-10 rounded object-cover opacity-80" draggable={false} />
-                            </div>
-                        ) : null}
-                        <OptimizedImage src={ASSETS.traitorBack} locale={effectiveLocale} alt="" className="mx-auto mt-8 h-24 w-16 rounded object-cover opacity-70" draggable={false} />
-                        <div className="mt-3 text-center text-3xl font-bold uppercase tracking-[0.14em] text-[#ec6f50]">败退</div>
-                    </div>
-                    <div className="rounded-[18px] border border-[#6f5b3a] bg-[rgba(9,15,13,0.82)] p-5">
-                        <div className="text-center text-lg font-semibold uppercase tracking-[0.18em] text-[#d8bf81]">统计</div>
-                        <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-                            <div>
-                                <OptimizedImage src={ASSETS.room.backGround} locale={effectiveLocale} alt="" className="mx-auto h-10 w-10 rounded object-cover" draggable={false} />
-                                <div className="mt-2 text-3xl font-semibold text-[#f3e6c9]">{result?.stats.roomsExplored ?? core.rooms.filter((room) => room.state === 'discovered').length}</div>
-                                <div className="text-xs uppercase tracking-[0.14em] text-[#d8bf81]">房间</div>
-                            </div>
-                            <div>
-                                <OptimizedImage src={ASSETS.deck.omen} locale={effectiveLocale} alt="" className="mx-auto h-10 w-7 rounded object-cover" draggable={false} />
-                                <div className="mt-2 text-3xl font-semibold text-[#f3e6c9]">{result?.stats.omensDrawn ?? 0}</div>
-                                <div className="text-xs uppercase tracking-[0.14em] text-[#d8bf81]">预兆</div>
-                            </div>
-                            <div>
-                                <OptimizedImage src={ASSETS.deck.event} locale={effectiveLocale} alt="" className="mx-auto h-10 w-7 rounded object-cover" draggable={false} />
-                                <div className="mt-2 text-3xl font-semibold text-[#f3e6c9]">{result?.stats.eventsDrawn ?? 0}</div>
-                                <div className="text-xs uppercase tracking-[0.14em] text-[#d8bf81]">事件</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
+                        </section>
+                    </main>
+                </div>
+            </div>
         </div>
     );
 }
@@ -1078,8 +1726,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const [previewState, setPreviewState] = React.useState<PreviewState>(() => createInitialPreviewState(baseCore));
     const [referenceOpen, setReferenceOpen] = React.useState(false);
     const [referenceSide, setReferenceSide] = React.useState<'front' | 'back'>('front');
-    const [scenarioOpen, setScenarioOpen] = React.useState(false);
     const [roomPreviewId, setRoomPreviewId] = React.useState<string | null>(null);
+    const [inventoryPreviewCardId, setInventoryPreviewCardId] = React.useState<string | null>(null);
     const roomGridRef = React.useRef<HTMLDivElement | null>(null);
     const roomGridDragRef = React.useRef<RoomGridDragState>({
         isDragging: false,
@@ -1092,6 +1740,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     React.useEffect(() => {
         setPreviewState(createInitialPreviewState(baseCore));
+        setInventoryPreviewCardId(null);
     }, [baseCore]);
 
     React.useEffect(() => {
@@ -1120,9 +1769,9 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const handleStartScenario = React.useCallback(() => {
         dispatchCommand(BETRAYAL_COMMANDS.START_FIRST_SCENARIO, {});
     }, [dispatchCommand]);
-
     const core = previewState.core;
     const roomOccupants = React.useMemo(() => buildRoomOccupants(core), [core]);
+    const roomMonsters = React.useMemo(() => buildRoomMonsters(core), [core]);
     const roomLookup = React.useMemo(
         () => new Map(core.rooms.map((room) => [room.id, room])),
         [core.rooms],
@@ -1132,8 +1781,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => core.rooms.find((room) => room.id === roomPreviewId) ?? null,
         [core.rooms, roomPreviewId],
     );
-    const previewRoomAsset = previewRoom
-        ? resolveRoomTileAsset(previewRoom, previewRoom.state === 'discovered')
+    const previewRoomVisual = previewRoom
+        ? resolveRoomTileVisual(previewRoom, previewRoom.state === 'discovered')
         : null;
     const focusActiveRoomInView = React.useCallback(() => {
         const roomGrid = roomGridRef.current;
@@ -1150,6 +1799,22 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             behavior: 'auto',
         });
     }, [core.activeRoomId]);
+
+    const focusRoomInView = React.useCallback((roomId: string, behavior: ScrollBehavior = 'smooth') => {
+        const roomGrid = roomGridRef.current;
+        if (!roomGrid) {
+            return;
+        }
+        const roomShell = roomGrid.querySelector<HTMLElement>(`[data-testid="betrayal-room-shell-${roomId}"]`);
+        if (!roomShell) {
+            return;
+        }
+        roomShell.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+            behavior,
+        });
+    }, []);
 
     React.useEffect(() => {
         if (core.phase !== 'preHaunt') {
@@ -1173,6 +1838,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const selectedInventoryCard = core.currentExplorerInventory.find((item) => item.id === previewState.selectedInventoryCardId)
         ?? core.currentExplorerInventory[0]
         ?? null;
+    const previewInventoryCard = core.currentExplorerInventory.find((item) => item.id === inventoryPreviewCardId) ?? null;
+    const inventoryGroups = React.useMemo(
+        () => ({
+            item: core.currentExplorerInventory.filter((item) => item.kind === 'item'),
+            omen: core.currentExplorerInventory.filter((item) => item.kind === 'omen'),
+        }),
+        [core.currentExplorerInventory],
+    );
     const latestLogEntry = previewState.logEntries[0] ?? null;
     const earlierLogEntries = React.useMemo(() => previewState.logEntries.slice(1), [previewState.logEntries]);
     const moveTargetRooms = React.useMemo(() => resolveMoveTargetRooms(core), [core]);
@@ -1183,6 +1856,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         () => resolveSelectedTradeTargetPlayerId(tradeTargets, previewState.selectedTradeTargetPlayerId),
         [previewState.selectedTradeTargetPlayerId, tradeTargets],
     );
+
+    React.useEffect(() => {
+        if (inventoryPreviewCardId && !previewInventoryCard) {
+            setInventoryPreviewCardId(null);
+        }
+    }, [inventoryPreviewCardId, previewInventoryCard]);
     const selectedTradeTarget = React.useMemo(
         () => tradeTargets.find((explorer) => explorer.playerId === selectedTradeTargetPlayerId) ?? null,
         [selectedTradeTargetPlayerId, tradeTargets],
@@ -1342,7 +2021,6 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         selectedTradeTarget,
         t,
     ]);
-
     const toggleReferenceSide = React.useCallback(() => {
         setReferenceSide((previousSide) => (previousSide === 'front' ? 'back' : 'front'));
     }, []);
@@ -1629,6 +2307,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
     const handleUseAction = React.useCallback(() => {
         const cardId = selectedInventoryCard?.id;
         dispatchCommand(BETRAYAL_COMMANDS.USE_POSSESSION, cardId ? { cardId } : {});
+        setInventoryPreviewCardId(null);
         setPreviewState((previousState) => {
             const card = previousState.core.currentExplorerInventory.find((item) => item.id === previousState.selectedInventoryCardId)
                 ?? previousState.core.currentExplorerInventory[0]
@@ -1698,6 +2377,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             ...(cardId ? { cardId } : {}),
             ...(selectedTradeTargetPlayerId ? { targetPlayerId: selectedTradeTargetPlayerId } : {}),
         });
+        setInventoryPreviewCardId(null);
         setPreviewState((previousState) => {
             const card = previousState.core.currentExplorerInventory.find((item) => item.id === previousState.selectedInventoryCardId)
                 ?? previousState.core.currentExplorerInventory[0]
@@ -1767,6 +2447,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
     const handleEndTurnAction = React.useCallback(() => {
         dispatchCommand(BETRAYAL_COMMANDS.END_TURN, {});
+        setInventoryPreviewCardId(null);
         setPreviewState((previousState) => {
             const nextCore = cloneCore(previousState.core);
             const rotatedExplorers = [...nextCore.otherExplorers, nextCore.currentExplorer];
@@ -1859,6 +2540,178 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
         use: handleUseAction,
         endTurn: handleEndTurnAction,
     };
+    const renderInventoryCard = (
+        item: BetrayalInventoryCard,
+        options: {
+            layout: 'focus' | 'compact' | 'preview';
+            testId?: string;
+        },
+    ) => {
+        const isSelected = item.id === selectedInventoryCard?.id;
+        const isUsedThisTurn = previewState.usedCardIdsThisTurn.includes(item.id);
+        const tone = INVENTORY_FACE_TONE[item.kind];
+        const frontVisual = resolvePossessionAtlasVisual(item);
+        const backAsset = INVENTORY_CARD_BACK_ASSET[item.kind];
+        const accentAsset = resolveInventoryCardAccentAsset(item);
+        const isFocus = options.layout === 'focus';
+        const isPreview = options.layout === 'preview';
+        const isCompact = options.layout === 'compact';
+        const compactAspectRatio = resolveCompactInventoryAspectRatio(item, frontVisual);
+        const shellHeightClass = isPreview ? 'h-[280px]' : isFocus ? 'h-[148px]' : 'h-[156px]';
+        const shellRadiusClass = isPreview ? 'rounded-[12px]' : isFocus ? 'rounded-[6px]' : 'rounded-[3px]';
+        const titleClass = isPreview
+            ? `min-h-[52px] text-[18px] font-semibold leading-[22px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
+            : isFocus
+                ? `min-h-[34px] text-[13px] font-semibold leading-[16px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`
+                : `min-h-[16px] text-[8px] font-semibold leading-[9px] ${frontVisual ? 'text-[#f7ecd4] drop-shadow-[0_1px_2px_rgba(0,0,0,0.68)]' : 'text-[#f3ead8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.76)]'}`;
+
+        return (
+            <button
+                key={`${options.layout}-${item.id}`}
+                type="button"
+                onClick={() => {
+                    setPreviewState((previousState) => ({
+                        ...previousState,
+                        selectedInventoryCardId: item.id,
+                    }));
+                    setInventoryPreviewCardId((previousCardId) => (
+                        previousCardId === item.id && isSelected ? null : item.id
+                    ));
+                }}
+                data-testid={options.testId}
+                title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)} · 点击放大`}
+                className={`relative overflow-hidden text-left transition ${
+                    isSelected
+                        ? 'z-20 -translate-y-0.5 shadow-[0_0_0_1px_rgba(210,171,97,0.5),0_0_18px_rgba(210,171,97,0.16)]'
+                        : 'z-10 hover:-translate-y-0.5'
+                }`}
+                aria-pressed={isSelected}
+                style={isCompact ? { aspectRatio: compactAspectRatio } : undefined}
+            >
+                {isUsedThisTurn ? (
+                    <div className={`absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] ${isFocus ? 'px-2 py-1 text-[10px]' : 'px-1.5 py-0.5 text-[9px]'} font-medium text-[#f0c1a2]`}>
+                        {t('board.status.cardUsedTag')}
+                    </div>
+                ) : null}
+                <div
+                    className={`relative flex ${shellHeightClass} flex-col overflow-hidden ${shellRadiusClass} border ${
+                        frontVisual
+                            ? isCompact
+                                ? 'border-[rgba(120,105,76,0.18)] bg-[rgba(10,8,6,0.18)]'
+                                : 'border-[rgba(60,47,32,0.82)] bg-[rgba(10,8,6,0.96)]'
+                            : isCompact
+                                ? 'border-[rgba(98,92,71,0.18)] bg-[rgba(13,15,11,0.18)]'
+                                : tone.cardSurfaceClass
+                    } ${isUsedThisTurn ? 'opacity-60' : ''}`}
+                >
+                    {frontVisual ? (
+                        <>
+                            <div className={`pointer-events-none absolute inset-0 ${isCompact ? 'bg-[rgba(11,9,7,0.08)]' : 'bg-[rgba(11,9,7,0.94)]'}`} />
+                            <PossessionAtlasFrame
+                                visual={frontVisual}
+                                locale={effectiveLocale}
+                                alt={item.name}
+                            />
+                            <div className={`pointer-events-none absolute inset-0 ${
+                                isCompact
+                                    ? 'bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0)_62%,rgba(7,6,5,0.03)_82%,rgba(7,6,5,0.12))]'
+                                    : 'bg-[linear-gradient(180deg,rgba(0,0,0,0.04),rgba(0,0,0,0.02)_30%,rgba(0,0,0,0.08)_66%,rgba(7,6,5,0.72))]'
+                            }`} />
+                            <div className={`pointer-events-none absolute inset-0 ring-1 ring-inset ${
+                                isCompact ? 'ring-[rgba(227,206,170,0.04)]' : 'ring-[rgba(227,206,170,0.14)]'
+                            }`} />
+                        </>
+                    ) : (
+                        <>
+                            <OptimizedImage
+                                src={backAsset}
+                                locale={effectiveLocale}
+                                alt=""
+                                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.14]"
+                                draggable={false}
+                            />
+                            <div
+                                className={`pointer-events-none absolute inset-0 ${
+                                    isCompact
+                                        ? 'bg-[linear-gradient(180deg,rgba(15,17,13,0.18),rgba(8,10,8,0.34)_58%,rgba(7,7,6,0.56))]'
+                                        : 'bg-[radial-gradient(circle_at_50%_20%,rgba(239,226,188,0.1),transparent_34%),linear-gradient(180deg,rgba(14,15,11,0.5),rgba(8,10,7,0.82)_54%,rgba(7,6,5,0.94))]'
+                                }`}
+                            />
+                            <div
+                                className={`pointer-events-none absolute border ${tone.frameClass} ${
+                                    isCompact
+                                        ? 'inset-[4px] rounded-[4px] opacity-30'
+                                        : 'inset-[8px] rounded-[8px] opacity-90'
+                                }`}
+                            />
+                            {isPreview || isFocus ? (
+                                <div className={`pointer-events-none absolute inset-x-[14px] top-1/2 -translate-y-1/2 text-center font-semibold ${isPreview ? 'text-[24px] leading-[28px]' : 'text-[18px] leading-[22px]'} ${tone.nameClass} drop-shadow-[0_2px_4px_rgba(0,0,0,0.72)]`}>
+                                    {item.name}
+                                </div>
+                            ) : null}
+                            {isCompact ? (
+                                <div className="pointer-events-none absolute right-1 top-1 rounded-full border border-[rgba(111,140,102,0.2)] bg-[rgba(20,30,21,0.5)] px-1 py-0 text-[6px] font-semibold tracking-[0.04em] text-[#bed0b8]">
+                                    缺图
+                                </div>
+                            ) : (
+                                <div className={`pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full border ${tone.badgeClass} ${isPreview ? 'bottom-16 px-3 py-1 text-[10px]' : isFocus ? 'bottom-11 px-2 py-0.5 text-[9px]' : 'bottom-8 px-1.5 py-0.5 text-[8px]'} uppercase tracking-[0.12em]`}>
+                                    {t('board.status.frontMissing')}
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {isCompact ? (
+                        <>
+                            <div className="relative flex-1" />
+                            <div className={`relative mt-auto px-1.5 pb-1 ${frontVisual ? 'pt-1' : 'pt-1.5'} ${
+                                frontVisual
+                                    ? 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0)_76%,rgba(8,7,6,0.06)_90%,rgba(8,7,6,0.12))]'
+                                    : 'bg-[linear-gradient(180deg,rgba(8,7,6,0),rgba(8,7,6,0.14)_56%,rgba(8,7,6,0.3))]'
+                            }`}>
+                                <div className="min-w-0">
+                                    <div className="truncate text-[9px] font-medium leading-[10px] text-[#ede2c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.62)]">
+                                        {item.name}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className={`relative flex items-center justify-between ${isPreview ? 'px-4 pt-4' : 'px-3 pt-3'}`}>
+                                <span className={`inline-flex rounded-full border ${isPreview ? 'px-2.5 py-1 text-[10px]' : 'px-2 py-0.5 text-[9px]'} uppercase tracking-[0.12em] ${tone.badgeClass}`}>
+                                    {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
+                                </span>
+                                <span className={`inline-flex ${isPreview ? 'h-8 w-8' : 'h-6 w-6'} items-center justify-center rounded-full border ${
+                                    frontVisual
+                                        ? 'border-[rgba(227,206,170,0.28)] bg-[rgba(14,12,10,0.78)]'
+                                        : tone.frameClass
+                                }`}>
+                                    <OptimizedImage
+                                        src={accentAsset}
+                                        locale={effectiveLocale}
+                                        alt=""
+                                        className={isPreview ? 'h-5 w-5 object-contain opacity-90' : 'h-4 w-4 object-contain opacity-90'}
+                                        draggable={false}
+                                    />
+                                </span>
+                            </div>
+                            <div className={`relative flex flex-1 items-end justify-start ${isPreview ? 'px-6 py-5' : 'px-4 py-3'}`} />
+                            <div className={`${isPreview ? 'px-4 pb-4 pt-2' : 'px-3 pb-3 pt-1.5'} relative`}>
+                                <div className={titleClass}>
+                                    {item.name}
+                                </div>
+                                {frontVisual ? null : (
+                                    <div className={`${isPreview ? 'mt-2 text-[11px]' : 'mt-1.5 text-[10px]'} uppercase tracking-[0.1em] ${tone.accentClass}`}>
+                                        {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </button>
+        );
+    };
 
     if (baseCore.phase === 'characterSelect') {
         return (
@@ -1897,49 +2750,51 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
             }}
         >
             <div className="mx-auto flex h-full min-h-full w-full max-w-[1800px] flex-col gap-3 px-3 py-3 md:gap-4 md:px-5 md:py-4">
-                <header className="overflow-hidden rounded-[20px] border border-[#5b4a32] bg-[rgba(9,15,13,0.94)] shadow-[0_18px_40px_rgba(0,0,0,0.32)]">
-                    <div className="grid min-h-[76px] grid-cols-[minmax(220px,1fr)_minmax(220px,1.1fr)_minmax(260px,1fr)_72px] items-stretch divide-x divide-[#3e3528]">
-                        <div className="flex items-center px-4">
+                <header className="relative overflow-hidden border border-[rgba(114,91,52,0.56)] bg-[linear-gradient(180deg,rgba(10,16,14,0.985),rgba(8,13,11,0.95))] shadow-[0_18px_34px_rgba(0,0,0,0.28)]">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.32),transparent)]" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                    <div
+                        className="grid min-h-[108px] grid-cols-[minmax(260px,1fr)_minmax(250px,1.12fr)_minmax(312px,1fr)] items-stretch divide-x divide-[rgba(77,64,44,0.92)]"
+                        data-testid="betrayal-runtime-header-grid"
+                    >
+                        <div className="relative flex items-center px-4">
+                            <div className="pointer-events-none absolute inset-y-2 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.36),transparent)]" />
+                            <div className="pointer-events-none absolute inset-y-2 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.16),transparent)]" />
                             <OptimizedImage
                                 src={ASSETS.titleBanner}
                                 locale={effectiveLocale}
                                 alt={t('title')}
-                                className="h-14 w-full max-w-[310px] object-contain object-left"
+                                className="h-16 w-full max-w-[340px] object-contain object-left"
                                 draggable={false}
                             />
                         </div>
-                        <div className="flex flex-col items-center justify-center">
+                        <div className="relative flex flex-col items-center justify-center px-6 py-4 text-center">
+                            <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
+                            <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <span className="text-[11px] uppercase tracking-[0.28em] text-[#b99b5f]">PHASE</span>
-                            <span className="mt-1 text-xl font-semibold uppercase tracking-[0.18em] text-[#f0d29a]">
+                            <span className="mt-1 text-[28px] font-semibold uppercase tracking-[0.2em] text-[#f0d29a]">
                                 {t('board.phase.preHaunt')}
                             </span>
                         </div>
-                        <div className="flex items-center justify-end gap-4 px-5" data-testid="betrayal-status-chip">
+                        <div className="relative flex items-center justify-end gap-4 px-5" data-testid="betrayal-status-chip">
+                            <div className="pointer-events-none absolute inset-y-3 left-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
+                            <div className="pointer-events-none absolute inset-y-3 right-0 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),transparent)]" />
                             <div className="text-right">
                                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#b99b5f]">TURN</div>
-                                <div className="mt-1 text-lg font-semibold uppercase tracking-[0.12em] text-[#f0d29a]">
+                                <div className="mt-1 text-[21px] font-semibold uppercase tracking-[0.14em] text-[#f0d29a]">
                                     {resolvePlayerName(core.currentPlayer, core.currentExplorer.displayName, matchData)}
                                 </div>
                             </div>
-                            <div className="grid h-14 w-14 place-items-center rounded-full border border-[#756244] bg-[rgba(25,31,19,0.92)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]">
+                            <div className="grid h-[72px] w-[72px] place-items-center rounded-full border border-[#756244] bg-[radial-gradient(circle_at_35%_30%,rgba(190,233,97,0.22),rgba(20,28,18,0.94)_72%)] text-center shadow-[0_0_18px_rgba(130,177,76,0.18)]">
                                 <div>
                                     <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#b5ef42]">MOVE</div>
-                                    <div className="text-xl font-bold text-[#c8f05e]">{core.movesRemaining}</div>
+                                    <div className="text-[28px] font-bold text-[#c8f05e]">{core.movesRemaining}</div>
                                     <span className="sr-only">
                                         {t('board.status.movesRemaining', { count: core.movesRemaining })}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setReferenceOpen(true)}
-                            data-testid="betrayal-open-reference"
-                            className="grid place-items-center text-[#d8bf81] transition hover:bg-[rgba(64,50,30,0.45)]"
-                            title={t('board.reference.button')}
-                        >
-                            ⚙
-                        </button>
                     </div>
                     <PhaseHudSkeleton
                         phases={phaseItems}
@@ -1955,198 +2810,203 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     />
                 </header>
 
-                <main className="grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[13.5rem] xl:grid-cols-[236px_minmax(0,1fr)_220px] xl:overflow-hidden xl:pb-0">
-                    <section className="order-2 grid min-h-0 content-start gap-3 xl:order-1 xl:overflow-y-auto xl:pr-1">
-                        <article className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-[96px] shrink-0 overflow-hidden rounded-[14px] border border-[#6f5b3a] bg-[rgba(22,18,13,0.86)] shadow-[0_10px_28px_rgba(0,0,0,0.32)] md:w-[118px] md:rounded-[16px]">
+                <main className="grid min-h-0 flex-1 gap-3 overflow-y-auto pb-[12rem] xl:grid-cols-[286px_minmax(0,1fr)_216px] xl:overflow-hidden xl:pb-0">
+                    <section className="relative z-10 order-2 grid min-h-0 content-start gap-2 xl:order-1 xl:overflow-y-auto">
+                        <article className="relative overflow-visible bg-transparent px-1 py-1">
+                                <div className="mx-auto flex w-full max-w-[248px] flex-col gap-2 pb-3 pt-2">
+                                <div className="relative mx-auto w-full max-w-[224px]">
+                                    <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
                                     <OptimizedImage
                                         src={core.currentExplorer.portraitAsset}
                                         locale={effectiveLocale}
                                         alt={core.currentExplorer.displayName}
-                                        className="aspect-[3/4] h-auto w-full object-cover"
+                                        className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_18px_36px_rgba(0,0,0,0.42)]"
                                         draggable={false}
                                     />
+                                    {(Object.entries(core.currentExplorer.traits) as [BetrayalTraitKey, number][]).map(([key, value]) => {
+                                        const markerPosition = resolveExplorerBoardMarkerPosition(key, value);
+                                        return (
+                                            <div
+                                                key={`explorer-board-marker-${key}`}
+                                                className="pointer-events-none absolute z-20 h-7 w-7 -translate-x-1/2 -translate-y-1/2"
+                                                style={markerPosition}
+                                            >
+                                                <OptimizedImage
+                                                    src={resolveNumberMarkerAsset(value)}
+                                                    locale={effectiveLocale}
+                                                    alt={`${TRAIT_LABEL_LOCAL[key]} ${value}`}
+                                                    className="h-full w-full object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.38)]"
+                                                    draggable={false}
+                                                />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-[11px] uppercase tracking-[0.2em] text-[#a89d84]">
-                                        {t('board.sections.currentExplorer')}
-                                    </div>
-                                    <div className="mt-1 text-xl font-semibold text-[#f3ead6]">
-                                        {resolvePlayerName(core.currentExplorer.playerId, core.currentExplorer.displayName, matchData)}
-                                    </div>
-                                    <div className="mt-1 text-sm text-[#c6ba9f]">
-                                        {core.rooms.find((room) => room.id === core.currentExplorer.roomId)?.name || t('board.rooms.unknown')}
-                                    </div>
-                                    <div className="mt-2.5 overflow-hidden rounded-[14px] border border-[#58472f] bg-[rgba(33,24,18,0.82)]">
-                                        <OptimizedImage
-                                            src={ASSETS.traitTrack}
-                                            locale={effectiveLocale}
-                                            alt={t('board.sections.traits')}
-                                            className="h-12 w-full object-cover opacity-90 sm:h-16"
-                                            draggable={false}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <PlayerPanelSkeleton
-                                player={buildPanelData(core.currentExplorer, matchData)}
-                                isCurrentPlayer
-                                className="mt-3 grid gap-2.5"
-                                renderResource={(key, value) => (
-                                    <div className="flex items-center gap-3 rounded-[14px] border border-[#5d4f36] bg-[rgba(34,26,20,0.82)] px-3 py-2">
-                                        <div className="h-7 w-7 overflow-hidden rounded-full border border-[#7a6746] bg-[rgba(11,15,13,0.78)] md:h-8 md:w-8">
-                                            <OptimizedImage
-                                                src={ASSETS.trait[key as BetrayalTraitKey]}
-                                                locale={effectiveLocale}
-                                                alt={t(`board.traits.${key}`)}
-                                                className="h-full w-full object-cover"
-                                                draggable={false}
-                                            />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-xs uppercase tracking-[0.14em] text-[#b2a689]">
-                                                {t(`board.traits.${key}`)}
+                                <div className="-mt-6 flex justify-center px-2">
+                                    <div className="relative inline-flex min-w-[184px] max-w-[206px] items-center justify-between gap-3 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-3 py-1.5 shadow-[0_10px_18px_rgba(0,0,0,0.16)]">
+                                        <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                                        <div className="min-w-0">
+                                            <div className="text-[8px] uppercase tracking-[0.18em] text-[#95876d]">
+                                                位置
+                                            </div>
+                                            <div className="mt-0.5 truncate text-[11px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
+                                                {core.rooms.find((room) => room.id === core.currentExplorer.roomId)?.name || t('board.rooms.unknown')}
                                             </div>
                                         </div>
-                                        <div className="text-lg font-semibold text-[#f3ead6]">{value}</div>
+                                        <div className="shrink-0 self-center rounded-full border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2.5 py-1 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
+                                            <div className="text-[7px] uppercase tracking-[0.16em] text-[#98886a]">持有</div>
+                                            <div className="text-[16px] font-semibold leading-none text-[#f0e2c0]">{core.currentExplorerInventory.length}</div>
+                                        </div>
                                     </div>
-                                )}
-                            />
-                        </article>
+                                </div>
 
-                        <article
-                            id="betrayal-inventory-section"
-                            className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4"
-                        >
-                            <div className="mb-2.5 flex items-center justify-between gap-3">
-                                <div className="text-[11px] uppercase tracking-[0.2em] text-[#a89d84]">
-                                    {t('board.sections.inventory')}
+                                <div className="px-2">
+                                    <div
+                                        className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-3 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
+                                        data-testid="betrayal-current-traits"
+                                    >
+                                        <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
+                                        <div className="mb-2 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-2">
+                                            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">当前属性</span>
+                                            <span className="rounded-full border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
+                                                {resolvePlayerName(core.currentExplorer.playerId, core.currentExplorer.displayName, matchData)}
+                                            </span>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
+                                                <div key={trait} className="grid grid-cols-[72px_minmax(0,1fr)_24px] items-center gap-2 text-[12px]">
+                                                    <span className="inline-flex items-center gap-1.5 font-semibold text-[#d8bf81]">
+                                                        <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-4 w-4 object-contain opacity-86" draggable={false} />
+                                                        <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
+                                                    </span>
+                                                    <div className="grid grid-cols-6 gap-1">
+                                                        {Array.from({ length: 6 }).map((_, index) => {
+                                                            const isFilled = index < core.currentExplorer.traits[trait];
+                                                            const isDangerSlot = index === 0;
+                                                            return (
+                                                                <span
+                                                                    key={`${trait}-${index}`}
+                                                                    title={isDangerSlot ? '低值危险区' : undefined}
+                                                                    className={`h-2.5 rounded-full border ${
+                                                                        isDangerSlot
+                                                                            ? isFilled
+                                                                                ? 'border-[#bd5545] bg-[linear-gradient(180deg,#e07159,#9e3b32)] shadow-[0_0_6px_rgba(213,78,57,0.28)]'
+                                                                                : 'border-[#73362f] bg-[rgba(91,31,28,0.5)]'
+                                                                            : isFilled
+                                                                                ? 'border-[#d4b46d] bg-[linear-gradient(180deg,#ddc171,#cda95d)]'
+                                                                                : 'border-[#62543c] bg-[rgba(17,25,22,0.76)]'
+                                                                    }`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <span className="text-right text-[14px] font-semibold text-[#f1e8d4]">
+                                                        {core.currentExplorer.traits[trait]}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="sr-only">
-                                    {selectedInventoryCard
-                                        ? t('board.status.selectedCard', { card: selectedInventoryCard.name })
-                                        : t('board.status.noSelectedCard')}
-                                </div>
-                                <div
-                                    className="sr-only"
-                                    data-testid="betrayal-use-status"
-                                >
-                                    {useStatusText}
-                                </div>
-                            </div>
-                            <ResourceTraySkeleton
-                                items={core.currentExplorerInventory}
-                                canInteract
-                                layout="column"
-                                className="grid grid-cols-3 gap-2"
-                                renderItem={(item) => {
-                                    const isSelected = item.id === selectedInventoryCard?.id;
-                                    const isUsedThisTurn = previewState.usedCardIdsThisTurn.includes(item.id);
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() => setPreviewState((previousState) => ({
-                                                ...previousState,
-                                                selectedInventoryCardId: item.id,
-                                            }))}
-                                            data-testid={`betrayal-inventory-${item.id}`}
-                                            title={`${item.name} · ${resolvePreviewUseEffectLabel(item, t)}`}
-                                            className={`relative overflow-hidden rounded-[12px] border text-left transition ${
-                                                isSelected
-                                                    ? 'border-[#d2ab61] shadow-[0_0_0_1px_rgba(210,171,97,0.45)]'
-                                                    : 'border-[#5d4f36] bg-[rgba(28,20,15,0.86)]'
-                                            }`}
+
+                                <div id="betrayal-inventory-section" className="mt-0.5 px-2">
+                                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#a89d84]">
+                                            <span className="h-px w-3 bg-[rgba(214,191,129,0.22)]" />
+                                            {t('board.sections.inventory')}
+                                            <span className="h-px w-8 bg-[rgba(214,191,129,0.12)]" />
+                                        </div>
+                                        <div className="sr-only">
+                                            {selectedInventoryCard
+                                                ? t('board.status.selectedCard', { card: selectedInventoryCard.name })
+                                                : t('board.status.noSelectedCard')}
+                                        </div>
+                                        <div
+                                            className="sr-only"
+                                            data-testid="betrayal-use-status"
                                         >
-                                            {isUsedThisTurn ? (
-                                                <div className="absolute right-2 top-2 z-10 rounded-full border border-[#7c5941] bg-[rgba(58,31,24,0.92)] px-2 py-1 text-[10px] font-medium text-[#f0c1a2]">
-                                                    {t('board.status.cardUsedTag')}
-                                                </div>
-                                            ) : null}
-                                            <OptimizedImage
-                                                src={item.kind === 'item' ? ASSETS.deck.item : ASSETS.deck.omen}
-                                                locale={effectiveLocale}
-                                                alt={item.name}
-                                                className={`h-[118px] w-full object-cover sm:h-[132px] ${isUsedThisTurn ? 'opacity-55' : 'opacity-85'}`}
-                                                draggable={false}
-                                            />
-                                            <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.86))] px-3 py-2">
-                                                <div className="text-[9px] uppercase tracking-[0.12em] text-[#d8c596]">
-                                                    {item.kind === 'item' ? t('board.inventory.item') : t('board.inventory.omen')}
-                                                </div>
-                                                <div className="truncate text-xs font-medium text-[#f4ecd9]">{item.name}</div>
+                                            {useStatusText}
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 overflow-x-auto overflow-y-hidden pb-1 pr-1 [scrollbar-color:#7a6240_rgba(8,12,10,0.72)]">
+                                        <div className="px-1">
+                                        <section data-testid="betrayal-inventory-group-all">
+                                            <div className="flex min-w-max gap-2.5">
+                                                {core.currentExplorerInventory.map((item) => renderInventoryCard(item, {
+                                                    layout: 'compact',
+                                                    testId: `betrayal-inventory-${item.id}`,
+                                                }))}
                                             </div>
-                                        </button>
-                                    );
-                                }}
-                            />
+                                        </section>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
                         </article>
 
-                        <article className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4">
+                        <article className="hidden px-2 py-1 md:px-1 xl:hidden">
                             <div className="mb-2.5 text-[11px] uppercase tracking-[0.2em] text-[#a89d84]">
                                 {t('board.sections.players')}
                             </div>
-                            <div className="grid gap-2.5">
+                            <div className="grid gap-1.5">
                                 {core.otherExplorers.map((explorer) => {
                                     const isTradeCandidate = tradeTargets.some((item) => item.playerId === explorer.playerId);
                                     const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId;
+                                    const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
                                     const panel = (
-                                        <PlayerPanelSkeleton
+                                        <div
                                             key={explorer.playerId}
-                                            player={buildPanelData(explorer, matchData)}
-                                            className={`rounded-[16px] border p-3 transition ${
+                                            className={`grid grid-cols-[50px_minmax(0,1fr)_52px] items-center gap-2 border-b px-1 py-2 ${
                                                 isSelectedTradeTarget
-                                                    ? 'border-[#c9a35e] bg-[rgba(55,41,22,0.84)] shadow-[0_0_0_1px_rgba(201,163,94,0.28)]'
+                                                    ? 'border-[#c9a35e] bg-[linear-gradient(90deg,rgba(55,41,22,0.22),rgba(55,41,22,0))]'
                                                     : isTradeCandidate
-                                                        ? 'border-[#4f694f] bg-[rgba(25,36,29,0.82)]'
-                                                        : 'border-[#564630] bg-[rgba(31,23,18,0.82)]'
+                                                        ? 'border-[rgba(79,105,79,0.62)] bg-[linear-gradient(90deg,rgba(25,36,29,0.18),rgba(25,36,29,0))]'
+                                                        : 'border-[rgba(86,70,48,0.42)] bg-transparent'
                                             }`}
-                                            renderPlayerInfo={(player) => (
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-14 w-11 overflow-hidden rounded-[10px] border border-[#756244] bg-[rgba(12,14,13,0.7)]">
-                                                        <OptimizedImage
-                                                            src={explorer.portraitAsset}
-                                                            locale={effectiveLocale}
-                                                            alt={player.displayName}
-                                                            className="h-full w-full object-cover"
-                                                            draggable={false}
-                                                        />
+                                        >
+                                            <div className="h-12 w-12 overflow-hidden">
+                                                <OptimizedImage
+                                                    src={explorer.portraitAsset}
+                                                    locale={effectiveLocale}
+                                                    alt={explorer.displayName}
+                                                    className="h-full w-full object-contain"
+                                                    draggable={false}
+                                                />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="truncate text-sm font-medium text-[#f1e8d4]">
+                                                        {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
                                                     </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div className="truncate text-sm font-medium text-[#f1e8d4]">
-                                                                {player.displayName}
-                                                            </div>
-                                                            {isTradeCandidate ? (
-                                                                <span
-                                                                    className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-medium ${
-                                                                        isSelectedTradeTarget
-                                                                            ? 'border border-[#d2ab61] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
-                                                                            : 'border border-[#5f7b66] bg-[rgba(40,63,50,0.34)] text-[#bddac2]'
-                                                                    }`}
-                                                                >
-                                                                    {isSelectedTradeTarget ? t('board.players.tradeTarget') : t('board.players.sameRoom')}
-                                                                </span>
-                                                            ) : null}
-                                                        </div>
-                                                        <div className="text-xs text-[#b7aa92]">
-                                                            {core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}
-                                                        </div>
-                                                        <div className="text-xs text-[#8db29a]">
-                                                            {t('board.players.inventoryCount', { count: explorer.inventory.length })}
-                                                        </div>
+                                                    {isTradeCandidate ? (
+                                                        <span
+                                                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                                                isSelectedTradeTarget
+                                                                    ? 'border border-[#d2ab61] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]'
+                                                                    : 'border border-[#5f7b66] bg-[rgba(40,63,50,0.34)] text-[#bddac2]'
+                                                            }`}
+                                                        >
+                                                            {isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <div className="text-xs text-[#b7aa92]">
+                                                    {core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown')}
+                                                </div>
+                                                <div className="text-[11px] text-[#8db29a]">
+                                                    {t('board.players.inventoryCount', { count: explorer.inventory.length })}
+                                                </div>
+                                            </div>
+                                            <div className="grid gap-0.5 text-[10px] text-[#c8bda4]">
+                                                {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
+                                                    <div key={key} className="flex items-center justify-between gap-2">
+                                                        <span>{t(`board.traits.${key}`)}</span>
+                                                        <span className="font-semibold text-[#f3ead6]">{explorer.traits[key]}</span>
                                                     </div>
-                                                </div>
-                                            )}
-                                            renderResource={(key, value) => (
-                                                <div className="flex items-center justify-between text-xs text-[#c8bda4]">
-                                                    <span>{t(`board.traits.${key}`)}</span>
-                                                    <span className="font-semibold text-[#f3ead6]">{value}</span>
-                                                </div>
-                                            )}
-                                        />
+                                                ))}
+                                            </div>
+                                        </div>
                                     );
 
                                     if (!isTradeCandidate) {
@@ -2172,7 +3032,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                         </article>
                     </section>
 
-                    <section className="order-1 grid content-start gap-3 xl:order-2 xl:min-h-0 xl:grid-rows-[minmax(0,1fr)_auto]">
+                    <section className="relative z-0 order-1 grid content-start gap-3 xl:order-2 xl:min-h-0 xl:grid-rows-[minmax(0,1fr)_auto]">
                         <div className="sr-only">
                             <span data-testid="betrayal-action-cue">{actionCueText}</span>
                             <span data-testid="betrayal-trade-status">{tradeStatusText}</span>
@@ -2181,7 +3041,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                         <article
                             id="betrayal-room-panel"
-                            className="order-1 flex min-h-[560px] flex-col rounded-[24px] border border-[#3c3328] bg-[rgba(8,15,13,0.76)] p-2 shadow-[0_18px_44px_rgba(0,0,0,0.28)] md:min-h-[700px] md:p-3 xl:min-h-0"
+                            className="order-1 flex min-h-[500px] flex-col bg-transparent p-0 md:min-h-[580px] xl:min-h-0"
                         >
                             <div className="sr-only">
                                 <span data-testid="betrayal-room-latest-feedback">
@@ -2222,7 +3082,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
 
                             <div
                                 ref={roomGridRef}
-                                className="relative min-h-[560px] flex-1 cursor-grab touch-none overflow-auto overscroll-contain rounded-[20px] border border-[#2f2a22] bg-[linear-gradient(180deg,rgba(13,24,20,0.82),rgba(5,10,9,0.96))] shadow-[inset_0_0_30px_rgba(0,0,0,0.34)] [scrollbar-color:#7a6240_rgba(8,12,10,0.72)] active:cursor-grabbing sm:min-h-[600px] md:min-h-[700px]"
+                                className="relative min-h-[500px] flex-1 cursor-grab touch-none overflow-auto overscroll-contain bg-transparent [scrollbar-color:#7a6240_rgba(8,12,10,0.72)] active:cursor-grabbing sm:min-h-[540px] md:min-h-[580px]"
                                 data-testid="betrayal-room-grid"
                                 aria-label={t('board.sections.rooms')}
                                 onPointerDown={handleRoomGridPointerDown}
@@ -2231,7 +3091,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 onPointerCancel={handleRoomGridPointerEnd}
                             >
                                 <div
-                                    className="relative mx-auto"
+                                    className="relative mx-auto xl:ml-0 xl:mr-auto"
                                     data-testid="betrayal-room-canvas"
                                     style={roomCanvasStyle}
                                 >
@@ -2239,11 +3099,12 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     const tone = FLOOR_TONE[room.floor];
                                     const isActive = room.id === core.activeRoomId;
                                     const occupants = roomOccupants[room.id] ?? [];
+                                    const monsters = roomMonsters[room.id] ?? [];
                                     const isDiscovered = room.state === 'discovered';
                                     const isExplorableSlot = nextExplorableSlot?.id === room.id;
                                     const isReachableRoom = moveTargetRoomIds.has(room.id);
                                     const isMoveTarget = previewState.interactionMode === 'move' && moveTargetRoomIds.has(room.id);
-                                    const roomTileAsset = resolveRoomTileAsset(room, isDiscovered);
+                                    const roomTileVisual = resolveRoomTileVisual(room, isDiscovered);
                                     const connectionEdges = resolveRoomConnectionEdges(room, roomLookup);
                                     const identityKey = room.discoveryReward
                                         ? room.discoveryReward
@@ -2274,7 +3135,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             key={room.id}
                                             data-testid={`betrayal-room-shell-${room.id}`}
                                             className="group absolute overflow-visible"
-                                            style={resolveRoomTileStyle(room)}
+                                            style={{
+                                                ...resolveRoomTileStyle(room),
+                                                zIndex: isMoveTarget ? 30 : isActive ? 25 : isReachableRoom ? 20 : 1,
+                                            }}
                                         >
                                             <button
                                                 type="button"
@@ -2287,49 +3151,45 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 }
                                                 data-testid={`betrayal-room-${room.id}`}
                                                 title={note}
-                                                className="relative h-full w-full overflow-visible rounded-[14px] border bg-[#15110d] p-0 text-left transition duration-200 disabled:cursor-default"
+                                                className="relative h-full w-full overflow-visible rounded-[4px] border p-0 text-left transition duration-200 disabled:cursor-default"
                                                 style={{
-                                                borderColor: isActive
-                                                    ? tone.accent
-                                                    : isMoveTarget
-                                                        ? 'rgba(118, 189, 153, 0.74)'
+                                                borderColor: isMoveTarget
+                                                    ? 'rgba(118, 189, 153, 0.22)'
                                                     : isReachableRoom
-                                                        ? 'rgba(96, 155, 125, 0.64)'
-                                                    : isExplorableSlot
-                                                        ? 'rgba(205, 173, 101, 0.74)'
-                                                        : 'rgba(116, 96, 66, 0.58)',
-                                                backgroundColor: isDiscovered ? '#15110d' : '#09100d',
+                                                        ? 'rgba(96, 155, 125, 0.12)'
+                                                        : isExplorableSlot
+                                                            ? 'rgba(164, 141, 84, 0.16)'
+                                                            : 'rgba(0, 0, 0, 0)',
+                                                backgroundColor: 'transparent',
                                                 boxShadow: isActive
-                                                    ? `0 0 0 3px ${tone.accent}, 0 0 34px ${tone.glow}, 0 18px 34px rgba(0,0,0,0.34)`
+                                                    ? '0 0 16px rgba(105,174,128,0.14), 0 12px 22px rgba(0,0,0,0.22)'
                                                     : isMoveTarget
-                                                        ? '0 0 0 1px rgba(118,189,153,0.48), 0 12px 24px rgba(0,0,0,0.22)'
+                                                        ? '0 0 0 1px rgba(118,189,153,0.14), 0 8px 16px rgba(0,0,0,0.18)'
                                                     : isReachableRoom
-                                                        ? '0 0 0 1px rgba(96,155,125,0.34), 0 12px 24px rgba(0,0,0,0.22)'
+                                                        ? '0 0 0 1px rgba(96,155,125,0.08), 0 8px 16px rgba(0,0,0,0.16)'
                                                     : isExplorableSlot
-                                                        ? '0 0 0 1px rgba(205,173,101,0.42), 0 12px 24px rgba(0,0,0,0.22)'
-                                                    : '0 12px 24px rgba(0,0,0,0.22)',
+                                                        ? '0 0 0 1px rgba(164,141,84,0.12), 0 8px 16px rgba(0,0,0,0.16)'
+                                                        : '0 8px 16px rgba(0,0,0,0.14)',
                                                 opacity: !isDiscovered
                                                     ? 1
                                                     : isActive || isMoveTarget || isReachableRoom || isExplorableSlot
                                                         ? 1
-                                                        : 0.72,
+                                                        : 0.92,
                                             }}
                                         >
-                                            <div className="pointer-events-none absolute -inset-1 -z-10 rounded-[16px] bg-[rgba(0,0,0,0.28)] blur-[2px]" />
-                                            <OptimizedImage
-                                                src={roomTileAsset}
+                                            <div className="pointer-events-none absolute -inset-0.5 -z-10 rounded-[6px] bg-[rgba(0,0,0,0.12)] blur-[1px]" />
+                                            <RoomTileSprite
+                                                visual={roomTileVisual}
                                                 locale={effectiveLocale}
                                                 alt=""
-                                                aria-hidden="true"
-                                                className={`pointer-events-none absolute inset-0 h-full w-full rounded-[12px] bg-[#15110d] object-contain ${
+                                                className={`pointer-events-none absolute inset-0 rounded-[3px] bg-[#15110d] ${
                                                     isDiscovered ? 'opacity-95' : 'opacity-82'
                                                 }`}
-                                                draggable={false}
                                             />
                                             <div
-                                                className={`pointer-events-none absolute inset-0 rounded-[12px] ${
+                                                className={`pointer-events-none absolute inset-0 rounded-[3px] ${
                                                     isActive
-                                                        ? 'bg-[radial-gradient(circle_at_50%_42%,rgba(205,173,101,0.18),transparent_54%),linear-gradient(180deg,rgba(6,11,9,0.02),rgba(4,7,6,0.28))]'
+                                                    ? 'bg-[radial-gradient(circle_at_50%_42%,rgba(126,189,145,0.12),transparent_58%),linear-gradient(180deg,rgba(6,11,9,0.02),rgba(4,7,6,0.24))]'
                                                         : isMoveTarget
                                                             ? 'bg-[radial-gradient(circle_at_50%_42%,rgba(118,189,153,0.10),transparent_58%)]'
                                                             : isReachableRoom
@@ -2340,7 +3200,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             {identityTone ? (
                                                 <div
                                                     data-testid={`betrayal-room-stripe-${room.id}`}
-                                                    className={`absolute inset-x-0 top-0 h-1.5 ${identityTone.stripe}`}
+                                                    className={`absolute left-2 top-2 h-2 w-2 rounded-full border border-white/10 ${identityTone.stripe}`}
                                                 />
                                             ) : null}
                                             {connectionEdges.map((edge) => {
@@ -2352,31 +3212,26 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 const isHighlightedExploreEdge = (isActive && isEdgeToExplorable)
                                                     || (isExplorableSlot && isEdgeToActive);
                                                 const connectorStyle = edge.direction === 'north'
-                                                    ? 'left-1/2 top-0 h-2.5 w-11 -translate-x-1/2 rounded-b-full'
+                                                    ? 'left-1/2 top-0 h-2.5 w-11 -translate-x-1/2 rounded-b-[4px]'
                                                     : edge.direction === 'south'
-                                                        ? 'bottom-0 left-1/2 h-2.5 w-11 -translate-x-1/2 rounded-t-full'
+                                                        ? 'bottom-0 left-1/2 h-2.5 w-11 -translate-x-1/2 rounded-t-[4px]'
                                                         : edge.direction === 'east'
-                                                            ? 'right-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-l-full'
-                                                            : 'left-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-r-full';
+                                                            ? 'right-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-l-[4px]'
+                                                            : 'left-0 top-1/2 h-11 w-2.5 -translate-y-1/2 rounded-r-[4px]';
                                                 const connectorTone = isHighlightedMoveEdge
                                                     ? 'border-[#76bd99] bg-[rgba(33,65,51,0.9)]'
                                                     : isHighlightedExploreEdge
                                                         ? 'border-[#c7a96a] bg-[rgba(77,61,28,0.92)]'
-                                                        : 'border-[rgba(116,96,66,0.76)] bg-[rgba(38,31,24,0.9)]';
+                                                        : 'border-[rgba(148,117,71,0.4)] bg-[rgba(91,69,39,0.68)]';
                                                 return (
                                                     <span
                                                         key={`${room.id}-${edge.targetRoomId}`}
                                                         data-testid={`betrayal-room-connector-${room.id}-${edge.targetRoomId}`}
-                                                        className={`pointer-events-none absolute border ${connectorStyle} ${connectorTone}`}
+                                                        className={`pointer-events-none absolute border ${connectorStyle} ${connectorTone} shadow-[0_3px_8px_rgba(0,0,0,0.18)]`}
                                                     />
                                                 );
                                             })}
-                                            <div className="pointer-events-none absolute inset-0 rounded-[12px] ring-1 ring-inset ring-[rgba(222,192,133,0.08)]" />
-                                            {isActive ? (
-                                                <div className="absolute bottom-3 right-3 z-20 grid h-7 w-7 place-items-center rounded-full border border-[#8af05f] bg-[radial-gradient(circle_at_35%_25%,#b8ff72,#287c36_62%,#0c341b)] shadow-[0_0_16px_rgba(112,255,102,0.58)]">
-                                                    <span className="h-3 w-2 rounded-full bg-[rgba(7,26,13,0.36)]" />
-                                                </div>
-                                            ) : null}
+                                            <div className="pointer-events-none absolute inset-0 rounded-[3px] ring-1 ring-inset ring-[rgba(222,192,133,0.05)]" />
                                             <div className="sr-only">
                                                 <span>{room.name}</span>
                                                 <span>{tone.label}</span>
@@ -2388,37 +3243,79 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 {isActive ? <span>{t('board.rooms.active')}</span> : null}
                                             </div>
 
-                                            <div className="pointer-events-none absolute right-2 top-2 z-10 flex min-h-6 flex-wrap justify-center gap-1.5">
+                                            {(() => {
+                                                const hasPlayers = occupants.length > 0;
+                                                const hasMonsters = monsters.length > 0;
+                                                const tokenClusterClass = hasPlayers && hasMonsters
+                                                    ? 'gap-1.5'
+                                                    : 'gap-0';
+                                                const playerContainerClass = hasMonsters
+                                                    ? 'items-center'
+                                                    : 'items-center';
+                                                const monsterContainerClass = hasPlayers
+                                                    ? 'items-center'
+                                                    : 'items-center';
+                                                return (
+                                                    <div className={`pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${tokenClusterClass}`}>
+                                                        {hasPlayers ? (
+                                                            <div className={`flex max-h-[146px] flex-col justify-center gap-2 ${playerContainerClass}`}>
+                                                                {occupants.map((occupant) => (
+                                                                    <span
+                                                                        key={occupant.playerId}
+                                                                        data-testid={`betrayal-room-occupant-${room.id}-${occupant.playerId}`}
+                                                                        title={resolvePlayerName(occupant.playerId, occupant.displayName, matchData)}
+                                                                    >
+                                                                        <ExplorerFigureToken
+                                                                            explorer={occupant}
+                                                                            locale={effectiveLocale}
+                                                                            label={resolvePlayerName(occupant.playerId, occupant.displayName, matchData)}
+                                                                            tone={occupant.playerId === core.currentExplorer.playerId ? 'self' : 'ally'}
+                                                                        />
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : null}
+                                                        {hasMonsters ? (
+                                                            <div className={`flex max-h-[146px] flex-col justify-center gap-2 ${monsterContainerClass}`}>
+                                                                {monsters.map((monster) => (
+                                                                    <span
+                                                                        key={monster.id}
+                                                                        data-testid={`betrayal-room-monster-${room.id}-${monster.id}`}
+                                                                        title={`${monster.name} · 力量 ${monster.might} · 速度 ${monster.speed}`}
+                                                                    >
+                                                                        <MonsterBoardToken monster={monster} locale={effectiveLocale} />
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                );
+                                            })()}
+                                            </button>
+                                            <div className="absolute right-2 top-2 z-30 flex min-h-6 flex-wrap justify-center gap-1.5">
                                                 {isMoveTarget ? (
-                                                    <span
+                                                    <button
+                                                        type="button"
+                                                        onPointerDown={(event) => {
+                                                            event.stopPropagation();
+                                                        }}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleMoveToRoom(room.id);
+                                                        }}
                                                         data-testid={`betrayal-room-move-target-${room.id}`}
-                                                        className="h-3 w-3 rounded-full border border-[#76bd99] bg-[#76bd99] shadow-[0_0_14px_rgba(118,189,153,0.8)]"
+                                                        className="grid h-4 w-4 place-items-center rounded-full border border-[#76bd99] bg-[#76bd99] shadow-[0_0_14px_rgba(118,189,153,0.8)]"
                                                         title={t('board.rooms.moveTarget')}
-                                                    />
+                                                    >
+                                                        <span className="sr-only">{t('board.rooms.moveTarget')}</span>
+                                                    </button>
                                                 ) : isReachableRoom ? (
                                                     <span
-                                                        className="h-2.5 w-2.5 rounded-full border border-[#6aa986] bg-[rgba(106,169,134,0.58)]"
+                                                        className="pointer-events-none h-2.5 w-2.5 rounded-full border border-[#6aa986] bg-[rgba(106,169,134,0.58)]"
                                                         title={t('board.rooms.moveTarget')}
                                                     />
                                                 ) : null}
                                             </div>
-
-                                            <div className="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[92px] flex-wrap justify-start gap-1.5">
-                                                {occupants.map((occupant) => (
-                                                    <span
-                                                        key={occupant.playerId}
-                                                        className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-1.5 text-[9px] font-semibold ${
-                                                            occupant.playerId === core.currentExplorer.playerId
-                                                                ? 'border-[#d2ab61] bg-[rgba(201,163,94,0.2)] text-[#f4e2b2]'
-                                                                : 'border-[#4f694f] bg-[rgba(31,52,39,0.46)] text-[#d7e4cc]'
-                                                        }`}
-                                                        title={resolvePlayerName(occupant.playerId, occupant.displayName, matchData)}
-                                                    >
-                                                        {resolveCompactNameLabel(resolvePlayerName(occupant.playerId, occupant.displayName, matchData))}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                            </button>
                                             <button
                                                 type="button"
                                                 onPointerDown={(event) => {
@@ -2429,10 +3326,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     setRoomPreviewId(room.id);
                                                 }}
                                                 data-testid={`betrayal-room-preview-${room.id}`}
-                                                className="absolute bottom-2 right-2 z-30 grid h-8 w-8 place-items-center rounded-full border border-[rgba(222,192,133,0.5)] bg-[rgba(7,10,8,0.82)] text-[#f0d29a] opacity-75 shadow-[0_6px_14px_rgba(0,0,0,0.34)] transition hover:bg-[rgba(36,28,19,0.92)] hover:opacity-100 focus:opacity-100"
+                                                className="absolute bottom-2 right-2 z-30 grid h-7 w-7 place-items-center rounded-full border border-[rgba(222,192,133,0.34)] bg-[rgba(7,10,8,0.7)] text-[#f0d29a] opacity-0 shadow-[0_5px_10px_rgba(0,0,0,0.24)] transition group-hover:opacity-78 hover:bg-[rgba(36,28,19,0.88)] hover:opacity-100 focus:opacity-100"
                                                 title={t('board.rooms.preview')}
                                             >
-                                                <Search size={15} />
+                                                <Search size={13} />
                                                 <span className="sr-only">{t('board.rooms.preview')}</span>
                                             </button>
                                         </div>
@@ -2442,113 +3339,133 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </div>
                         </article>
 
-                        <article className="order-2 mx-auto w-full max-w-[760px] rounded-[18px] border border-[#4c3e2c] bg-[rgba(10,14,12,0.88)] p-2 shadow-[0_14px_30px_rgba(0,0,0,0.34)]">
-                            <ActionBarSkeleton
-                                actions={actionItems}
-                                layout="row"
-                                align="space-between"
-                                className="grid grid-cols-5 gap-2"
-                                renderAction={(action) => {
-                                    const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
-                                    const isRecommended = action.id === core.recommendedAction
-                                        || (previewState.interactionMode === 'move' && action.id === 'move');
-                                    return (
-                                        <button
-                                            type="button"
-                                            onClick={actionHandlerMap[action.id]}
-                                            disabled={action.disabled}
-                                            data-testid={`betrayal-action-${action.id}`}
-                                            title={actionCueText}
-                                            className={`flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-[12px] border px-2 py-2 text-sm font-semibold uppercase tracking-[0.08em] transition ${
-                                                action.disabled
-                                                    ? 'cursor-not-allowed border-[#332d24] bg-[rgba(17,15,12,0.76)] text-[#5f584d]'
-                                                    : isRecommended
-                                                        ? 'border-[#c9a35e] bg-[rgba(109,129,31,0.28)] text-[#e9f18b] shadow-[0_0_20px_rgba(181,239,66,0.22)] hover:bg-[rgba(123,147,38,0.34)]'
-                                                        : 'border-[#5c4d35] bg-[rgba(24,21,17,0.92)] text-[#d6c498] hover:border-[#8b744d] hover:bg-[rgba(42,33,24,0.96)]'
-                                            }`}
-                                        >
-                                            <Icon size={20} />
-                                            <span>{action.label}</span>
-                                        </button>
-                                    );
-                                }}
-                            />
+                        <article className="order-2 mx-auto w-full max-w-[700px] bg-transparent p-0 pt-0">
+                            <div className="relative mx-auto max-w-[676px] px-2 pt-0 pb-1">
+                                <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18),transparent)]" />
+                                <ActionBarSkeleton
+                                    actions={actionItems}
+                                    layout="row"
+                                    align="space-between"
+                                    className="flex flex-wrap items-center justify-center gap-1.5"
+                                    renderAction={(action) => {
+                                        const Icon = ACTION_ICON_BY_ID[action.id as keyof typeof ACTION_ICON_BY_ID] || Compass;
+                                        const isRecommended = action.id === core.recommendedAction
+                                            || (previewState.interactionMode === 'move' && action.id === 'move');
+                                        return (
+                                            <button
+                                                type="button"
+                                                onClick={actionHandlerMap[action.id]}
+                                                disabled={action.disabled}
+                                                data-testid={`betrayal-action-${action.id}`}
+                                                title={actionCueText}
+                                                className={`relative flex min-h-[72px] min-w-[108px] flex-col items-center justify-center gap-1 overflow-hidden rounded-[5px] border px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] transition ${
+                                                    action.disabled
+                                                        ? 'cursor-not-allowed border-[#332d24] bg-[rgba(17,15,12,0.66)] text-[#5f584d]'
+                                                        : isRecommended
+                                                            ? 'border-[#c9a35e] bg-[linear-gradient(180deg,rgba(93,112,24,0.66),rgba(46,58,15,0.92))] text-[#eef4a8] shadow-[0_0_20px_rgba(181,239,66,0.18)] hover:bg-[linear-gradient(180deg,rgba(108,131,31,0.76),rgba(53,66,18,0.94))]'
+                                                            : 'border-[#5c4d35] bg-[linear-gradient(180deg,rgba(34,28,22,0.88),rgba(18,16,13,0.9))] text-[#d6c498] hover:border-[#8b744d] hover:bg-[linear-gradient(180deg,rgba(45,35,27,0.92),rgba(23,19,15,0.92))]'
+                                                }`}
+                                            >
+                                                <span className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.08)]" />
+                                                <span className="pointer-events-none absolute inset-x-3 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.26),transparent)]" />
+                                                <Icon size={18} />
+                                                <span>{action.label}</span>
+                                            </button>
+                                        );
+                                    }}
+                                />
+                            </div>
                         </article>
                     </section>
 
-                    <section className="order-3 grid min-h-0 content-start gap-3 xl:order-3 xl:overflow-y-auto xl:pl-1">
+                    <section className="relative z-10 order-3 flex min-h-0 flex-col gap-2 px-1 py-1 md:px-1 xl:order-3 xl:overflow-y-auto">
                         <article
                             id="betrayal-decks-section"
-                            className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4"
+                            className="relative ml-auto w-full max-w-[198px] overflow-visible bg-transparent px-0 pb-2 pt-3"
                         >
-                            <div className="mb-2.5 text-[11px] uppercase tracking-[0.2em] text-[#a89d84]">
-                                {t('board.sections.decks')}
+                            <div className="flex items-center gap-2">
+                                <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.32))]" />
+                                <div className="text-[11px] uppercase tracking-[0.24em] text-[#c4a265]">
+                                    {t('board.sections.decks')}
+                                </div>
+                                <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(196,162,101,0.32),transparent)]" />
                             </div>
                             <ResourceTraySkeleton
                                 items={deckItems}
                                 canInteract={false}
                                 layout="column"
-                                className="grid grid-cols-3 gap-2"
+                                className="mt-3 grid grid-cols-3 gap-2.5"
                                 renderItem={(item) => {
                                     const isHighlighted = item.id === `deck-${previewState.highlightedDeckKind}`;
+                                    const deckTiltClass = item.kind === 'omen'
+                                        ? '-rotate-[1.25deg]'
+                                        : item.kind === 'item'
+                                            ? 'rotate-[0.85deg]'
+                                            : '-rotate-[0.55deg]';
                                     return (
-                                        <div
-                                            className={`relative overflow-hidden rounded-[12px] border bg-[rgba(28,20,15,0.86)] ${
-                                                isHighlighted ? 'border-[#d2ab61]' : 'border-[#58472f]'
-                                            }`}
-                                        >
-                                            <OptimizedImage
-                                                src={item.asset}
-                                                locale={effectiveLocale}
-                                                alt={item.label}
-                                                className="h-[144px] w-full object-cover"
-                                                draggable={false}
-                                            />
-                                            <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.86))] px-2 py-2">
-                                                <div className="truncate text-[9px] uppercase tracking-[0.08em] text-[#d8c596]">
-                                                    {item.label}
+                                        <div className="relative pt-2 text-center">
+                                            <span className="pointer-events-none absolute left-1/2 top-[10px] h-[122px] w-[70%] -translate-x-1/2 translate-x-[2px] bg-[rgba(12,10,8,0.18)]" />
+                                            <span className="pointer-events-none absolute left-1/2 top-[6px] h-[122px] w-[70%] -translate-x-1/2 -translate-x-[2px] bg-[rgba(18,14,11,0.16)]" />
+                                            <div
+                                                className={`relative overflow-hidden bg-[rgba(28,20,15,0.34)] shadow-[0_10px_18px_rgba(0,0,0,0.16)] ${deckTiltClass} ${
+                                                    isHighlighted ? 'shadow-[0_0_0_1px_rgba(210,171,97,0.38),0_10px_20px_rgba(0,0,0,0.2)]' : ''
+                                                }`}
+                                            >
+                                                <OptimizedImage
+                                                    src={item.asset}
+                                                    locale={effectiveLocale}
+                                                    alt={item.label}
+                                                    className="h-[124px] w-full object-cover"
+                                                    draggable={false}
+                                                />
+                                                <div className="absolute inset-x-0 bottom-0 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.9))] px-2 py-2">
+                                                    <div className="truncate text-[8px] uppercase tracking-[0.12em] text-[#d8c596]">
+                                                        {item.label}
+                                                    </div>
                                                 </div>
-                                                <div className="text-lg font-semibold text-[#f4ecd9]">{item.count}</div>
+                                            </div>
+                                            <div className="-mt-2.5 inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[#6f5933] bg-[radial-gradient(circle_at_35%_25%,rgba(229,210,174,0.14),rgba(21,18,14,0.92))] px-2 text-[20px] font-semibold text-[#e3d2ae] shadow-[0_6px_12px_rgba(0,0,0,0.16)]">
+                                                {item.count}
                                             </div>
                                         </div>
                                     );
                                 }}
                             />
-                        </article>
 
-                        <article className="rounded-[22px] border border-[#635238] bg-[rgba(16,23,20,0.88)] p-3 shadow-[0_16px_36px_rgba(0,0,0,0.28)] md:p-4">
-                            <div className="mb-2.5 text-[11px] uppercase tracking-[0.2em] text-[#a89d84]">
-                                {t('board.sections.discard')}
+                            <div className="mt-5 flex items-center gap-2">
+                                <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.24))]" />
+                                <div className="text-[11px] uppercase tracking-[0.24em] text-[#c4a265]">
+                                    {t('board.sections.discard')}
+                                </div>
+                                <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(196,162,101,0.24),transparent)]" />
                             </div>
                             <ResourceTraySkeleton
                                 items={discardItems}
                                 canInteract={false}
                                 layout="column"
-                                className="grid grid-cols-3 gap-2"
+                                className="mt-3 grid grid-cols-3 gap-2.5"
                                 renderItem={(item) => (
-                                    <div
-                                        className="relative overflow-hidden rounded-[12px] border border-[#564630] bg-[rgba(31,23,18,0.82)]"
-                                        title={item.count > 0 ? t('board.decks.faceUp') : t('board.decks.emptySlot')}
-                                    >
-                                        <OptimizedImage
-                                            src={item.asset}
-                                            locale={effectiveLocale}
-                                            alt={item.label}
-                                            className={`h-[118px] w-full object-cover ${item.count === 0 ? 'grayscale opacity-42' : 'opacity-78'}`}
-                                            draggable={false}
-                                        />
-                                        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.86))] px-2 py-2">
-                                            <div className="truncate text-[9px] uppercase tracking-[0.08em] text-[#d8c596]">
-                                                {item.label}
-                                            </div>
-                                            <div className="text-lg font-semibold text-[#f3ead6]">{item.count}</div>
+                                    <div className="relative pt-1 text-center">
+                                        <span className="pointer-events-none absolute left-1/2 top-[8px] h-[94px] w-[70%] -translate-x-1/2 translate-x-[2px] bg-[rgba(16,13,11,0.12)]" />
+                                        <div
+                                            className="relative overflow-hidden bg-[rgba(31,23,18,0.28)] shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                                            title={item.count > 0 ? t('board.decks.faceUp') : t('board.decks.emptySlot')}
+                                        >
+                                            <OptimizedImage
+                                                src={item.asset}
+                                                locale={effectiveLocale}
+                                                alt={item.label}
+                                                className={`h-[96px] w-full object-cover ${item.count === 0 ? 'grayscale opacity-22' : 'opacity-38'}`}
+                                                draggable={false}
+                                            />
                                         </div>
+                                        <div className="mt-1 text-[10px] text-[#c5b693]">{item.count}</div>
                                     </div>
                                 )}
                             />
                         </article>
 
-                        <article className="rounded-[22px] border border-transparent bg-transparent p-1">
+                        <article className="bg-transparent pt-1">
                             <button
                                 type="button"
                                 onClick={handleCompleteFirstScenario}
@@ -2558,33 +3475,114 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             >
                                 结算剧本
                             </button>
-                            <div className="flex justify-end gap-3">
+                            <div className="flex justify-end gap-2.5">
                                 <button
                                     type="button"
-                                    onClick={() => setScenarioOpen(true)}
+                                    onClick={() => setReferenceOpen(true)}
                                     data-testid="betrayal-open-scenario"
-                                    className="grid h-14 w-14 place-items-center rounded-[10px] border border-[#58472f] bg-[rgba(18,19,15,0.9)] text-[#d8bf81] transition hover:border-[#8b744d]"
-                                    title={t('board.scenario.button')}
+                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
+                                    title={t('board.reference.button')}
                                 >
-                                    <BookOpen size={24} />
+                                    <BookOpen size={22} />
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setRoomPreviewId(core.activeRoomId)}
                                     data-testid="betrayal-open-active-room-preview"
-                                    className="grid h-14 w-14 place-items-center rounded-[10px] border border-[#58472f] bg-[rgba(18,19,15,0.9)] text-[#d8bf81] transition hover:border-[#8b744d]"
+                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
                                     title={t('board.rooms.preview')}
                                 >
-                                    <Search size={24} />
+                                    <House size={22} />
                                 </button>
                                 <button
                                     type="button"
                                     onClick={handleCompleteFirstScenario}
-                                    className="grid h-14 w-14 place-items-center rounded-[10px] border border-[#58472f] bg-[rgba(18,19,15,0.9)] text-[#d8bf81] transition hover:border-[#8b744d]"
+                                    className="grid h-[52px] w-[52px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
                                     title="结算剧本"
                                 >
-                                    <Hourglass size={24} />
+                                    <Hourglass size={22} />
                                 </button>
+                            </div>
+                            <div className="mt-4 hidden xl:block">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.18))]" />
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-[#a89d84]">
+                                        队友
+                                    </div>
+                                </div>
+                                <div className="mt-2 grid gap-1.5">
+                                    {core.otherExplorers.map((explorer) => {
+                                        const isTradeCandidate = tradeTargets.some((item) => item.playerId === explorer.playerId);
+                                        const isSelectedTradeTarget = explorer.playerId === selectedTradeTargetPlayerId;
+                                        const isSameRoom = core.currentExplorer.roomId === explorer.roomId;
+                                        const roomName = core.rooms.find((room) => room.id === explorer.roomId)?.name || t('board.rooms.unknown');
+                                        return (
+                                            <button
+                                                key={`sidebar-teammate-${explorer.playerId}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    focusRoomInView(explorer.roomId);
+                                                    setPreviewState((previousState) => ({
+                                                        ...previousState,
+                                                        selectedTradeTargetPlayerId: isTradeCandidate ? explorer.playerId : previousState.selectedTradeTargetPlayerId,
+                                                    }));
+                                                }}
+                                                data-testid={`betrayal-bottom-teammate-${explorer.playerId}`}
+                                                className={`group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition ${
+                                                    isSelectedTradeTarget
+                                                        ? 'bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))]'
+                                                        : 'hover:bg-[rgba(28,24,19,0.5)]'
+                                                }`}
+                                                title={`定位到 ${roomName}`}
+                                            >
+                                                <div className={`relative h-[34px] w-[34px] overflow-hidden rounded-full border ${
+                                                    isTradeCandidate ? 'border-[rgba(118,189,153,0.62)]' : 'border-[rgba(117,98,68,0.42)]'
+                                                } bg-[rgba(12,14,13,0.62)]`}>
+                                                    <OptimizedImage
+                                                        src={explorer.portraitAsset}
+                                                        locale={effectiveLocale}
+                                                        alt={explorer.displayName}
+                                                        className="h-full w-full object-contain"
+                                                        draggable={false}
+                                                    />
+                                                    <span
+                                                        className={`pointer-events-none absolute inset-0 rounded-full ring-1 ${
+                                                            isSameRoom ? 'ring-[rgba(174,230,133,0.38)]' : 'ring-transparent'
+                                                        }`}
+                                                    />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="truncate text-[11px] font-medium tracking-[0.04em] text-[#efe5cf]">
+                                                            {resolvePlayerName(explorer.playerId, explorer.displayName, matchData)}
+                                                        </div>
+                                                        {isTradeCandidate ? (
+                                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] ${
+                                                                isSelectedTradeTarget
+                                                                    ? 'bg-[rgba(201,163,94,0.18)] text-[#f3e0b4]'
+                                                                    : 'bg-[rgba(40,63,50,0.34)] text-[#bddac2]'
+                                                            }`}>
+                                                                {isSameRoom ? t('board.players.sameRoom') : t('board.players.tradeTarget')}
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                    <div className="mt-0.5 truncate text-[10px] text-[#b7aa92]">{roomName}</div>
+                                                    <div className="mt-1 flex items-center gap-1">
+                                                        {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
+                                                            <span
+                                                                key={`${explorer.playerId}-${key}`}
+                                                                className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold text-[#efe3c3]"
+                                                                title={`${TRAIT_LABEL_LOCAL[key]} ${explorer.traits[key]}`}
+                                                            >
+                                                                {explorer.traits[key]}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             <div className="sr-only" data-testid="betrayal-activity-list">
                                 {earlierLogEntries.length > 0 ? earlierLogEntries.map((entry) => (
@@ -2594,6 +3592,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                 )}
                             </div>
                         </article>
+
                     </section>
                 </main>
 
@@ -2647,7 +3646,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </div>
                 ) : null}
 
-                {previewRoom && previewRoomAsset ? (
+                {previewRoom && previewRoomVisual ? (
                     <div
                         className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
                         data-testid="betrayal-room-preview-overlay"
@@ -2673,12 +3672,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                             </div>
                             <div className="overflow-auto p-3 md:p-5">
                                 <div className="flex items-center justify-center overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
-                                    <OptimizedImage
-                                        src={previewRoomAsset}
+                                    <RoomTileSprite
+                                        visual={previewRoomVisual}
                                         locale={effectiveLocale}
                                         alt={previewRoom.name}
-                                        className="h-auto max-h-[72vh] w-full object-contain md:max-h-[78vh]"
-                                        draggable={false}
+                                        className="aspect-square w-full max-w-[72vh] md:max-w-[78vh]"
                                     />
                                 </div>
                             </div>
@@ -2686,49 +3684,32 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                     </div>
                 ) : null}
 
-                {scenarioOpen ? (
+                {previewInventoryCard ? (
                     <div
-                        className="absolute inset-0 z-30 flex items-end justify-center bg-[rgba(3,6,5,0.72)] p-3 md:items-center md:p-6"
-                        data-testid="betrayal-scenario-overlay"
+                        className="pointer-events-none absolute left-4 top-28 z-30 w-[238px] max-w-[calc(100vw-2rem)]"
+                        data-testid="betrayal-inventory-preview-overlay"
                     >
-                        <div className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[22px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] shadow-[0_24px_60px_rgba(0,0,0,0.46)]">
-                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#4d3f2b] bg-[rgba(16,23,20,0.98)] px-4 py-3 md:px-5">
+                        <div className="pointer-events-auto rounded-[18px] border border-[#6d5838] bg-[rgba(16,23,20,0.98)] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+                            <div className="mb-2 flex items-center justify-between gap-3">
                                 <div>
                                     <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.scenario.button')}
+                                        {t('board.rooms.preview')}
                                     </div>
                                     <div className="mt-1 text-sm text-[#e7dcc3]">
-                                        {t('board.scenario.title')}
+                                        {previewInventoryCard.name}
                                     </div>
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setScenarioOpen(false)}
-                                    data-testid="betrayal-scenario-close"
+                                    onClick={() => setInventoryPreviewCardId(null)}
+                                    data-testid="betrayal-inventory-preview-close"
                                     className="rounded-full border border-[#5d4f36] bg-[rgba(31,23,18,0.82)] px-3 py-1.5 text-xs font-medium text-[#dbc89f] transition hover:bg-[rgba(48,36,27,0.88)]"
                                 >
                                     {t('board.reference.close')}
                                 </button>
                             </div>
-                            <div className="grid gap-3 overflow-auto p-4 md:grid-cols-[1.1fr_0.9fr] md:p-5">
-                                <section className="rounded-[18px] border border-[#57462f] bg-[rgba(31,23,18,0.72)] p-4">
-                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.scenario.objectiveLabel')}
-                                    </div>
-                                    <p className="mt-2 text-sm leading-6 text-[#e7dcc3]">
-                                        {t('board.scenario.objective')}
-                                    </p>
-                                </section>
-                                <section className="rounded-[18px] border border-[#57462f] bg-[rgba(31,23,18,0.72)] p-4">
-                                    <div className="text-[11px] uppercase tracking-[0.18em] text-[#a89d84]">
-                                        {t('board.scenario.statusLabel')}
-                                    </div>
-                                    <div className="mt-3 grid gap-2 text-sm text-[#e7dcc3]">
-                                        <div>{t('board.scenario.haunt')}: {t('board.scenario.hauntValue')}</div>
-                                        <div>{t('board.scenario.rooms')}: {core.rooms.filter((room) => room.state === 'discovered').length}</div>
-                                        <div>{t('board.scenario.omens')}: {core.discardCounts.omen}</div>
-                                    </div>
-                                </section>
+                            <div className="overflow-hidden rounded-[18px] border border-[#5a4a33] bg-[rgba(10,14,12,0.82)]">
+                                {renderInventoryCard(previewInventoryCard, { layout: 'preview', testId: 'betrayal-inventory-preview-card' })}
                             </div>
                         </div>
                     </div>
