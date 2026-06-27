@@ -773,6 +773,7 @@
       "enlightenmentLotus": "莲花！获得 2 太极 + 闪避 + 净化",
       "enlightenmentOther": "抽 1 张牌",
       "ninjaGoingForward": "一往无前：本骰计入总伤害",
+      "ninjaDeathBlossom2": "死亡盛放 II：掷出 {{value}}，结果为{{face}}。",
       "ninjaGoingForwardReroll": "一往无前：已重掷该骰",
       "ninjaGoingForwardResult": "一往无前：总伤害 {{totalDamage}}",
       "ninjaGoingForwardBleed": "刀尖舔血：造成 {{damage}} 点真实伤害",

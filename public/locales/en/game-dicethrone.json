@@ -714,6 +714,7 @@
       "enlightenmentLotus": "Lotus! Gain 2 Taiji + Evasive + Purify",
       "enlightenmentOther": "Draw 1 card",
       "ninjaGoingForward": "Going Forward: this die counts toward total damage",
+      "ninjaDeathBlossom2": "Death Blossom II: rolled {{value}}, showing {{face}}.",
       "ninjaGoingForwardReroll": "Going Forward: this die was rerolled",
       "ninjaGoingForwardResult": "Going Forward: total damage {{totalDamage}}",
       "ninjaGoingForwardBleed": "Bleed: deal {{damage}} undefendable damage",
