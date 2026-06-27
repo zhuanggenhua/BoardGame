@@ -69,7 +69,7 @@ node scripts/release/deploy-and-ota.mjs --skip-wait
 node scripts/deploy/stream-images-to-server.mjs --tag <tag> --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
 ```
 
-这条链路会先把目标业务镜像流式送到生产机本地，再在服务器上执行：
+这条链路会先在本地导出镜像 tar、上传到生产机、再在服务器本地导入镜像，然后执行：
 
 ```bash
 bash scripts/deploy/deploy-image.sh update-local <tag>

@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 import { spawn } from 'node:child_process';
+import { rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 
 const rawArgs = process.argv.slice(2);
 
 const helpText = `
-将生产镜像流式输送到服务器，并可选触发本地镜像部署
+将生产镜像输送到服务器，并可选触发本地镜像部署
 
 用法:
   node scripts/deploy/stream-images-to-server.mjs [选项]
@@ -22,7 +25,7 @@ const helpText = `
 
 说明:
   1. 本脚本在网络更好的机器或 CI 上执行。
-  2. 它会把业务镜像通过 docker image save | ssh | docker image load 送到生产机。
+  2. 它会先在本地导出镜像 tar，再通过 scp 上传到生产机，最后在生产机本地执行 docker image load。
   3. 若加 --deploy，会在远端执行:
      bash scripts/deploy/deploy-image.sh update-local <tag>
 `.trim();
@@ -70,6 +73,8 @@ const gameRef = `ghcr.io/zhuanggenhua/boardgame-game:${tag}`;
 const webRef = `ghcr.io/zhuanggenhua/boardgame-web:${tag}`;
 const imageRefs = [gameRef, webRef];
 const remoteDeployCommand = `cd ${shellQuote(remoteDir)} && bash scripts/deploy/deploy-image.sh update-local ${shellQuote(tag)}`;
+const localArchivePath = path.join(os.tmpdir(), `boardgame-images-${tag}-${process.pid}.tar`);
+const remoteArchivePath = `/tmp/boardgame-images-${tag}-${process.pid}.tar`;
 
 const runCommand = (command, args, label) => new Promise((resolve, reject) => {
   console.log(`[stream-images] 执行 ${label}: ${command} ${args.join(' ')}`);
@@ -89,69 +94,33 @@ const runCommand = (command, args, label) => new Promise((resolve, reject) => {
   });
 });
 
-const runPipedTransfer = () => new Promise((resolve, reject) => {
-  console.log(`[stream-images] 开始流式传输镜像到 ${host}`);
-  const save = spawn('docker', ['image', 'save', ...imageRefs], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: process.env,
-    windowsHide: true,
-    shell: false,
-  });
-  const load = spawn('ssh', [host, 'docker', 'image', 'load'], {
-    stdio: ['pipe', 'inherit', 'inherit'],
-    env: process.env,
-    windowsHide: true,
-    shell: false,
-  });
+const exportLocalArchive = async () => {
+  await runCommand('docker', ['image', 'save', '-o', localArchivePath, ...imageRefs], '导出本地镜像 tar');
+};
 
-  save.stdout.pipe(load.stdin);
-  save.stderr.pipe(process.stderr);
+const uploadArchiveToRemote = async () => {
+  await runCommand('scp', [localArchivePath, `${host}:${remoteArchivePath}`], '上传镜像 tar 到服务器');
+};
 
-  let saveExitCode = null;
-  let loadExitCode = null;
-  let settled = false;
+const loadArchiveOnRemote = async () => {
+  await runCommand(
+    'ssh',
+    [host, `docker image load -i ${shellQuote(remoteArchivePath)}`],
+    '服务器本地导入镜像 tar',
+  );
+};
 
-  const finish = (error) => {
-    if (settled) return;
-    settled = true;
-    if (error) {
-      if (save.exitCode === null) {
-        save.kill('SIGTERM');
-      }
-      if (load.exitCode === null) {
-        load.kill('SIGTERM');
-      }
-      reject(error);
-      return;
-    }
-    resolve();
-  };
+const cleanupLocalArchive = async () => {
+  await rm(localArchivePath, { force: true });
+};
 
-  save.on('error', (error) => finish(error));
-  load.on('error', (error) => finish(error));
-
-  save.on('exit', (code) => {
-    saveExitCode = code ?? 1;
-    if (saveExitCode !== 0) {
-      finish(new Error(`docker image save 失败，退出码: ${saveExitCode}`));
-      return;
-    }
-    if (loadExitCode === 0) {
-      finish();
-    }
-  });
-
-  load.on('exit', (code) => {
-    loadExitCode = code ?? 1;
-    if (loadExitCode !== 0) {
-      finish(new Error(`远端 docker image load 失败，退出码: ${loadExitCode}`));
-      return;
-    }
-    if (saveExitCode === 0) {
-      finish();
-    }
-  });
-});
+const cleanupRemoteArchive = async () => {
+  try {
+    await runCommand('ssh', [host, `rm -f ${shellQuote(remoteArchivePath)}`], '清理服务器镜像 tar');
+  } catch (error) {
+    console.warn(`[stream-images] 清理服务器镜像 tar 失败: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
 
 const ensureLocalImagesReady = async () => {
   if (!skipLocalPull) {
@@ -173,6 +142,8 @@ const main = async () => {
   console.log(`  - web: ${webRef}`);
   console.log(`[stream-images] 目标服务器: ${host}`);
   console.log(`[stream-images] 远端目录: ${remoteDir}`);
+  console.log(`[stream-images] 本地临时 tar: ${localArchivePath}`);
+  console.log(`[stream-images] 远端临时 tar: ${remoteArchivePath}`);
   if (shouldDeploy) {
     console.log(`[stream-images] 输送完成后远端执行: ssh ${host} "${remoteDeployCommand}"`);
   }
@@ -183,10 +154,17 @@ const main = async () => {
   }
 
   await ensureLocalImagesReady();
-  await runPipedTransfer();
+  try {
+    await exportLocalArchive();
+    await uploadArchiveToRemote();
+    await loadArchiveOnRemote();
 
-  if (shouldDeploy) {
-    await runCommand('ssh', [host, remoteDeployCommand], '远端 update-local 部署');
+    if (shouldDeploy) {
+      await runCommand('ssh', [host, remoteDeployCommand], '远端 update-local 部署');
+    }
+  } finally {
+    await cleanupRemoteArchive();
+    await cleanupLocalArchive();
   }
 };
 
