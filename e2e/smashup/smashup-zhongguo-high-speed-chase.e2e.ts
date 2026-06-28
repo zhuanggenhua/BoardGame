@@ -21,6 +21,19 @@ type ChaseState = {
     };
 };
 
+async function closeMagnifyOverlayIfVisible(page: any): Promise<void> {
+    const overlay = page.getByTestId('su-card-magnify-overlay');
+    if (!(await overlay.isVisible().catch(() => false))) return;
+
+    const closeButton = overlay.getByRole('button').first();
+    if (await closeButton.isVisible().catch(() => false)) {
+        await closeButton.click();
+    } else {
+        await page.keyboard.press('Escape');
+    }
+    await expect(overlay).toBeHidden({ timeout: 5000 });
+}
+
 test.describe('SmashUp - zhongguo 高速追逐战天赋链路', () => {
     test('真实点击高速追逐战后，应移动自身和己方随从到另一基地并给该随从 +3 临时战力', async ({ game, page }, testInfo) => {
         test.setTimeout(90000);
@@ -144,6 +157,9 @@ test.describe('SmashUp - zhongguo 高速追逐战天赋链路', () => {
             triggerQueueLength: 0,
         });
 
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
         await game.screenshot('zhongguo-high-speed-chase-resolved', testInfo);
     });
 });

@@ -22,6 +22,19 @@ type DekotoraState = {
     };
 };
 
+async function closeMagnifyOverlayIfVisible(page: any): Promise<void> {
+    const overlay = page.getByTestId('su-card-magnify-overlay');
+    if (!(await overlay.isVisible().catch(() => false))) return;
+
+    const closeButton = overlay.getByRole('button').first();
+    if (await closeButton.isVisible().catch(() => false)) {
+        await closeButton.click();
+    } else {
+        await page.keyboard.press('Escape');
+    }
+    await expect(overlay).toBeHidden({ timeout: 5000 });
+}
+
 async function respondCurrentInteraction(page: any, payload: { optionId?: string; optionIds?: string[] }): Promise<void> {
     await page.evaluate((responsePayload: { optionId?: string; optionIds?: string[] }) => {
         const harness = (window as any).__BG_TEST_HARNESS__;
@@ -179,6 +192,9 @@ test.describe('SmashUp - zhongguo 暴走卡车天赋链路', () => {
             triggerQueueLength: 0,
         });
 
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
         await game.screenshot('zhongguo-dekotora-resolved', testInfo);
     });
 });

@@ -124,6 +124,22 @@
       "cursedHoardSuits": "Cursed Hoard: Suit Expansion"
     }
   },
+  "tutorial": {
+    "steps": {
+      "setupDrawTurn": "First, the table is fixed to a small teaching state so we can focus on the two formal actions of a turn.",
+      "welcome": "In Fantasy Realms, each turn really has only two actions: draw a card, then discard a card; or take a card from the public center row, then discard a card.",
+      "deckIntro": "This is the deck. When the public row is not attractive enough, you draw from here.",
+      "centerRowIntro": "This middle row is the open discard. It represents the second action: skip the deck, take one of these cards, then discard a card.",
+      "drawFromDeck": "Draw from the deck first. In duel mode, an undersized hand draws 2 and keeps 1, so a discard is guaranteed next.",
+      "discardAfterDraw": "Now discard Bell Tower. After drawing, this turn still requires one discard.",
+      "setupTakeCenter": "Next, look at the second formal action: take from the public center row, then close the turn with a discard.",
+      "takeCenterCard": "This time, do not draw from the deck. Take Bell Tower directly from the center row.",
+      "discardAfterCenter": "After taking from the center row, discard the Magic Wand to finish the turn.",
+      "turnLoop": "That is the real match loop: each turn you choose one of two action lines, draw-and-discard or take-from-center-and-discard.",
+      "endgameRule": "In multiplayer, the game ends when the public discard reaches its threshold. In duel, both hands must be refilled and the discard threshold must also be reached.",
+      "finish": "The basic tutorial is complete. You have now played through the two core Fantasy Realms actions: draw and discard, and take from the center row then discard."
+    }
+  },
   "error": {
     "unknownCard": "That card is not visible right now.",
     "notYourTurn": "It is not your turn.",
@@ -132,6 +148,9 @@
     "discardCardUnavailable": "That center card is not available.",
     "notInDiscardStage": "You cannot discard right now.",
     "handCardUnavailable": "That hand card is not available to discard.",
-    "unknownCommand": "Unknown command."
+    "unknownCommand": "Unknown command.",
+    "tutorial_manifest_invalid": "Tutorial configuration is invalid.",
+    "tutorial_command_blocked": "This action is blocked in the tutorial.",
+    "tutorial_step_locked": "The current tutorial step cannot be skipped."
   }
 }

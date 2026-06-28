@@ -138,7 +138,14 @@ test.describe('SmashUp - zhongguo 掌握时机 beforeScoring 链路', () => {
             { timeout: 10000, polling: 200 },
         );
 
-        await expect(page.getByTestId('me-first-overlay')).toBeVisible();
+        const meFirstVisible = await page.getByTestId('me-first-overlay').isVisible().catch(() => false);
+        if (meFirstVisible) {
+            await expect(page.getByTestId('me-first-pass-button')).toBeVisible();
+        } else {
+            await expect(page.getByText(/选择一个反应动作|Choose a reaction/i)).toBeVisible();
+            await expect(page.getByRole('button', { name: /掌握时机|Expert Timing/i })).toBeVisible();
+            await expect(page.getByRole('button', { name: /让过|Pass|Skip/i })).toBeVisible();
+        }
         await game.screenshot('zhongguo-expert-timing-before-scoring-window', testInfo);
 
         await game.playCard('kung_fu_fighters_expert_timing');
@@ -169,6 +176,10 @@ test.describe('SmashUp - zhongguo 掌握时机 beforeScoring 链路', () => {
             '掌握时机标记接收者',
         );
 
+        await expect(page.getByTestId('su-minion-extra-talent-badge-dragon')).toBeVisible();
+
+        await game.screenshot('zhongguo-expert-timing-resolved-before-pass', testInfo);
+
         for (let attempt = 0; attempt < 6; attempt += 1) {
             const state = await game.getState();
             if (!state.sys.responseWindow?.current && !state.sys.interaction?.current) {
@@ -198,6 +209,8 @@ test.describe('SmashUp - zhongguo 掌握时机 beforeScoring 链路', () => {
         expect(finalState.core.triggerQueue ?? []).toHaveLength(0);
         expect(finalState.sys.interaction?.current ?? null).toBeNull();
         expect(finalState.sys.responseWindow?.current ?? null).toBeNull();
+
+        await expect(page.getByTestId('su-minion-extra-talent-badge-dragon')).toBeVisible();
 
         await game.screenshot('zhongguo-expert-timing-final-state', testInfo);
     });

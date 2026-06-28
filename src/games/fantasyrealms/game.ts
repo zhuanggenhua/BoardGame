@@ -1,10 +1,11 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
-import { createBaseSystems, createGameEngine } from '../../engine';
+import { createBaseSystems, createCheatSystem, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { registerCriticalImageResolver } from '../../core';
 import { FantasyRealmsDomain } from './domain';
 import type { FantasyRealmsCommand, FantasyRealmsCore, FantasyRealmsEvent } from './domain';
 import { getDeckDrawCount } from './domain/commands';
+import { fantasyRealmsCheatModifier } from './domain/cheatModifier';
 import { getFantasyRealmsCardDisplayName } from './foundation';
 import { fantasyRealmsAiRuntime } from './ai';
 import { fantasyRealmsCriticalImageResolver } from './criticalImageResolver';
@@ -74,9 +75,8 @@ function formatFantasyRealmsActionEntry({
     return null;
 }
 
-export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent>({
-    domain: FantasyRealmsDomain,
-    systems: createBaseSystems<FantasyRealmsCore>({
+const systems = [
+    ...createBaseSystems<FantasyRealmsCore>({
         actionLog: {
             commandAllowlist: ACTION_ALLOWLIST,
             formatEntry: formatFantasyRealmsActionEntry,
@@ -85,6 +85,12 @@ export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCom
             snapshotCommandAllowlist: ACTION_ALLOWLIST,
         },
     }),
+    createCheatSystem<FantasyRealmsCore>(fantasyRealmsCheatModifier),
+];
+
+export const engineConfig = createGameEngine<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent>({
+    domain: FantasyRealmsDomain,
+    systems,
     minPlayers: 2,
     maxPlayers: 6,
     commandTypes: ['SET_FOCUS_CARD', 'DRAW_FROM_DECK', 'TAKE_FROM_DISCARD', 'DISCARD_CARD'],

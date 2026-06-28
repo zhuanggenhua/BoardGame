@@ -6,6 +6,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-board"',
     'data-testid="qidahen-desktop-stage"',
     'data-testid="qidahen-map-layer"',
+    'data-tutorial-id="qidahen-map-layer"',
     'data-testid="qidahen-map-hitmap-canvas"',
     'data-testid="qidahen-map-overlay"',
     'data-testid="qidahen-map-region-mask-overlay"',
@@ -26,6 +27,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-player-float"',
     'data-testid={`qidahen-armaments-${faction.id}`}',
     'data-testid="qidahen-action-wheel"',
+    'data-tutorial-id="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
     'data-testid={`qidahen-year-card-slot-${card.id}`}',
     'data-testid="qidahen-chronology-zone"',
@@ -38,8 +40,6 @@ const REQUIRED_TEST_IDS = [
     'testId="qidahen-wheel-next-step-banner"',
     "'qidahen-wheel-next-step-title'",
     "'qidahen-wheel-next-step-hint'",
-    "'qidahen-wheel-next-step-choices'",
-    '`qidahen-wheel-next-step-choice-${choice.id}`',
     '开垦',
     '军屯',
     '征兵',
@@ -57,6 +57,7 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-wheel-dispatch-selection"',
     'data-testid={`qidahen-wheel-dispatch-target-${candidate.targetRuntimeRegionId}`}',
     'data-testid="qidahen-actions-zone"',
+    'data-tutorial-id="qidahen-actions-zone"',
     'data-testid="qidahen-action-slot"',
     'data-testid="qidahen-action-rail"',
     'data-testid={`qidahen-action-${action.id}`}',
@@ -67,12 +68,14 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-action-payment-confirm"',
     'data-testid="qidahen-action-payment-cancel"',
     'data-testid="qidahen-turn-banner"',
+    'data-tutorial-id="qidahen-turn-banner"',
     'testId="qidahen-top-action-banner"',
     'data-testid={`qidahen-action-state-${action.id}`}',
     'data-testid="qidahen-actions-blocked-by-scenario"',
     'data-testid="qidahen-bottom-dock"',
     'data-testid="qidahen-draw-anchor"',
     'data-testid="qidahen-hand-zone"',
+    'data-tutorial-id="qidahen-hand-zone"',
     'data-ui-role="qidahen-hand-dock"',
     'data-testid="qidahen-hand-row"',
     'onExecuteAction',
@@ -111,7 +114,7 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'style={{ transform: `rotate(',
     'marginLeft: index === 0 ? 0 : -62',
     'data-testid="qidahen-wheel-move-choices"',
-    'qidahen-wheel-move-${choice.id}',
+    'data-testid={`qidahen-wheel-move-${choice.id}`}',
     'data-testid="qidahen-wheel-summary"',
     '?? core.postBattleSelection',
     '?? core.recruitSelection',
@@ -134,7 +137,7 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
     'dispatch(QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE',
     'dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId: choiceId })',
     'WheelMoveChoiceButton',
-    'QIDAHEN_MAP_REGION_SHAPES',
+    'QIDAHEN_MAP_REGION_SHAPES =',
     'mapPath(shape)',
     'data-testid="qidahen-wheel-step-controls"',
     'data-testid="qidahen-payment-panel"',
@@ -216,16 +219,40 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).not.toContain('const currentFactionId = viewerFactionId ?? getCurrentFactionId(core);');
     });
 
-    it('轮盘成为唯一下一步时，会在动作区给出显式横幅和明文按钮，而不是只靠轮盘热区', () => {
-        expect(boardSource).toContain('showWheelNextStepBanner');
+    it('轮盘成为唯一下一步时，横幅只做提示，真正交互继续由轮盘本体热区承接', () => {
+        expect(boardSource).toContain('showTopWheelPrompt');
         expect(boardSource).toContain('选择轮盘行动');
         expect(boardSource).toContain("t('board.actions.wheelNextStepBadge'");
         expect(boardSource).toContain("t('board.actions.wheelNextStepHint'");
         expect(boardSource).toContain("defaultValue: '本次轮盘行动待执行'");
-        expect(boardSource).toContain('qidahen-wheel-next-step-choice-${choice.id}');
-        expect(boardSource).toContain('onSelectChoice={executeWheelMove}');
+        expect(boardSource).toContain('data-testid={`qidahen-wheel-move-target-${choice.id}`}');
+        expect(boardSource).toContain('data-tutorial-id={`qidahen-wheel-move-${choice.id}`}');
+        expect(boardSource).toContain('canActivateMove={(moveId, selected) => {');
+        expect(boardSource).toContain('? isTutorialCommandAllowed(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE) && isTutorialTargetAllowed(moveId)');
+        expect(boardSource).toContain(': isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) && isTutorialTargetAllowed(moveId);');
+        expect(boardSource).not.toContain('qidahen-wheel-next-step-choice-${choice.id}');
+        expect(boardSource).not.toContain('onSelectChoice={executeWheelMove}');
         expect(boardSource).not.toContain('发亮的绿色格就是下一步');
         expect(boardSource).not.toContain('点左上发亮的绿色格');
+    });
+
+    it('教程高亮锚点会真实挂到棋盘主区域，而不是只留 tutorial manifest', () => {
+        expect(boardSource).toContain('data-tutorial-id="qidahen-map-layer"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-action-wheel"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-actions-zone"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-hand-zone"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-turn-banner"');
+    });
+
+    it('Board 会接教程桥、终局遮罩和游戏音频，而不是继续缺少新游戏共用壳层能力', () => {
+        expect(boardSource).toContain("import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';");
+        expect(boardSource).toContain("import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';");
+        expect(boardSource).toContain("import { useEndgame } from '../../hooks/game/useEndgame';");
+        expect(boardSource).toContain("import { useGameAudio } from '../../lib/audio/useGameAudio';");
+        expect(boardSource).toContain('useTutorialBridge(G.sys.tutorial');
+        expect(boardSource).toContain('const { overlayProps: endgameProps } = useEndgame({');
+        expect(boardSource).toContain('useGameAudio({');
+        expect(boardSource).toContain('<EndgameOverlay {...endgameProps} />');
     });
 
     it('一级行动入口会收口为顶部横幅与直达动作按钮，不再保留右侧说明式步骤卡', () => {

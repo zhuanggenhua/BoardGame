@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { clearGameAssetsCache } from '../../../core';
 import type { MatchState } from '../../../engine/types';
 import { playSound } from '../../../lib/audio/useGameAudio';
+import { TutorialProvider } from '../../../contexts/TutorialContext';
+import { GameModeProvider, type GameMode } from '../../../contexts/GameModeContext';
+import { ToastProvider } from '../../../contexts/ToastContext';
 import Board from '../Board';
 import { ENDGAME_SCORE_STEP_KEY } from '../audio.config';
 import { FANTASY_REALMS_AUDIO_EVENT_KEYS } from '../domain/events';
@@ -190,16 +193,23 @@ function renderBoard(
         playerID?: string | null;
         matchData?: Array<{ id: number | string; name: string; isConnected?: boolean }>;
         strictMode?: boolean;
+        gameMode?: GameMode;
     },
 ) {
     const board = (
-        <Board
-            G={{ core, sys: {} } as MatchState<Record<string, unknown>>}
-            dispatch={options?.dispatch ?? (() => {})}
-            playerID={options && 'playerID' in options ? options.playerID ?? undefined : '0'}
-            matchData={options?.matchData ?? [{ id: 0, name: '测试玩家', isConnected: true }]}
-            isConnected
-        />
+        <ToastProvider>
+            <TutorialProvider>
+                <GameModeProvider mode={options?.gameMode ?? 'local'}>
+                    <Board
+                        G={{ core, sys: {} } as MatchState<Record<string, unknown>>}
+                        dispatch={options?.dispatch ?? (() => {})}
+                        playerID={options && 'playerID' in options ? options.playerID ?? undefined : '0'}
+                        matchData={options?.matchData ?? [{ id: 0, name: '测试玩家', isConnected: true }]}
+                        isConnected
+                    />
+                </GameModeProvider>
+            </TutorialProvider>
+        </ToastProvider>
     );
     return render(
         options?.strictMode ? <React.StrictMode>{board}</React.StrictMode> : board,
@@ -1102,7 +1112,7 @@ describe('FantasyRealms Board foundation', () => {
         expect(handCards[0].getAttribute('style')).not.toContain('fantasyrealms/cards/faces/');
 
         expect(discardCards[0]).toHaveAttribute('data-card-renderer', 'atlas');
-        expect(discardCards[0]).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[2]!.id);
+        expect(discardCards[0]).toHaveAttribute('data-atlas-card-id', PUBLIC_CARDS[0]!.id);
         expect(discardCards[0].getAttribute('style')).toContain('fantasyrealms/cards/atlases/compressed/fantasyrealms-base-cards-atlas.webp');
         expect(discardCards[0].getAttribute('style')).not.toContain('fantasyrealms/cards/faces/');
         expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
@@ -1119,8 +1129,8 @@ describe('FantasyRealms Board foundation', () => {
 
         const centerCards = Array.from(document.querySelectorAll<HTMLElement>('.fr-card-button--live-center'));
         expect(centerCards).toHaveLength(9);
-        const firstRowZ = centerCards.slice(0, 5).map((card) => Number(getComputedStyle(card).zIndex));
-        const secondRowZ = centerCards.slice(5).map((card) => Number(getComputedStyle(card).zIndex));
+        const firstRowZ = centerCards.slice(0, 6).map((card) => Number(getComputedStyle(card).zIndex));
+        const secondRowZ = centerCards.slice(6).map((card) => Number(getComputedStyle(card).zIndex));
         expect(Math.min(...secondRowZ)).toBeGreaterThan(Math.max(...firstRowZ));
     });
 
@@ -1146,7 +1156,7 @@ describe('FantasyRealms Board foundation', () => {
             const fullView = renderBoard(makeCore({
                 discardPile: HAND_CARDS
                     .concat(PUBLIC_CARDS)
-                    .slice(0, 10)
+                    .slice(0, 12)
                     .map((card) => ({ ...card })),
             }));
             const fullRects = screen.getAllByRole('button', { name: /拿取弃牌/ }).map(getRect);
@@ -1467,8 +1477,8 @@ describe('FantasyRealms Board foundation', () => {
             const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
             fireEvent.click(discardButton);
 
-            expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[2]!.id });
-            expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[2]!.id });
+            expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[0]!.id });
+            expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
         });
     });
 
@@ -1486,8 +1496,8 @@ describe('FantasyRealms Board foundation', () => {
                 const discardButton = screen.getAllByRole('button', { name: /拿取弃牌/ })[0]!;
                 fireEvent.click(discardButton);
 
-                expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[2]!.id });
-                expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[2]!.id });
+                expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: PUBLIC_CARDS[0]!.id });
+                expect(dispatch).toHaveBeenNthCalledWith(2, 'TAKE_FROM_DISCARD', { cardId: PUBLIC_CARDS[0]!.id });
             });
         } finally {
             (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;
@@ -1499,15 +1509,15 @@ describe('FantasyRealms Board foundation', () => {
             const fullView = renderBoard(makeCore({
                 discardPile: HAND_CARDS
                     .concat(PUBLIC_CARDS)
-                    .slice(0, 10)
+                    .slice(0, 12)
                     .map((card) => ({ ...card })),
             }));
 
             const fullButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
             const fullRects = fullButtons.map(getRect);
-            const fullTopRowRects = fullRects.slice(0, 5);
-            const fullSecondRowRects = fullRects.slice(5);
-            expect(fullButtons).toHaveLength(10);
+            const fullTopRowRects = fullRects.slice(0, 6);
+            const fullSecondRowRects = fullRects.slice(6);
+            expect(fullButtons).toHaveLength(12);
             fullView.unmount();
 
             const oneCardView = renderBoard(makeCore({
@@ -1553,23 +1563,24 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('中央牌区满 10 张时，第二排仍按卡缝左到右填满', () => {
+    it('中央牌区满 12 张时，第二排仍按卡缝左到右填满', () => {
         withViewport(1440, 1024, () => {
             renderBoard(makeCore({
                 discardPile: HAND_CARDS
                     .concat(PUBLIC_CARDS)
-                    .slice(0, 10)
+                    .slice(0, 12)
                     .map((card) => ({ ...card })),
             }));
 
             const discardButtons = screen.getAllByRole('button', { name: /拿取弃牌/ }) as HTMLElement[];
-            const secondRowButtons = discardButtons.slice(5);
+            const secondRowButtons = discardButtons.slice(6);
             const secondRowPositions = secondRowButtons.map(getLiveCenterButtonPosition);
 
-            expect(discardButtons).toHaveLength(10);
+            expect(discardButtons).toHaveLength(12);
             expect(Math.abs((secondRowPositions[1]!.left - secondRowPositions[0]!.left) - (secondRowPositions[2]!.left - secondRowPositions[1]!.left))).toBeLessThanOrEqual(2);
             expect(Math.abs((secondRowPositions[2]!.left - secondRowPositions[1]!.left) - (secondRowPositions[3]!.left - secondRowPositions[2]!.left))).toBeLessThanOrEqual(2);
             expect(Math.abs((secondRowPositions[3]!.left - secondRowPositions[2]!.left) - (secondRowPositions[4]!.left - secondRowPositions[3]!.left))).toBeLessThanOrEqual(2);
+            expect(Math.abs((secondRowPositions[4]!.left - secondRowPositions[3]!.left) - (secondRowPositions[5]!.left - secondRowPositions[4]!.left))).toBeLessThanOrEqual(2);
         });
     });
 

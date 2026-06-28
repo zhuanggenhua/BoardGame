@@ -1,10 +1,10 @@
 import {
     createContext,
     useContext,
-    useEffect,
     useMemo,
     useRef,
     type ComponentType,
+    type MutableRefObject,
     type ReactNode,
 } from 'react';
 import { getGameImplementation } from '../games/registry';
@@ -24,21 +24,7 @@ export type MatchRoomBoardShell = {
     Provider: ComponentType<{ children?: ReactNode }>;
 };
 
-export const MatchRoomBoardGateRuntimeContext = createContext<MatchRoomBoardGateRuntime | null>(null);
-
-function shouldDebugMatchRoomBoardRuntime(): boolean {
-    if (typeof window === 'undefined') return false;
-    try {
-        return window.localStorage?.getItem('BG_DEBUG_FR_OPENING_LOOP') === '1';
-    } catch {
-        return false;
-    }
-}
-
-function debugMatchRoomBoardRuntime(label: string, payload: Record<string, unknown>) {
-    if (!shouldDebugMatchRoomBoardRuntime()) return;
-    console.log('[DEBUG-fr-opening-loop]', label, payload);
-}
+export const MatchRoomBoardGateRuntimeContext = createContext<MutableRefObject<MatchRoomBoardGateRuntime> | null>(null);
 
 export function useMatchRoomBoardRuntime(args: {
     gameId?: string;
@@ -62,25 +48,10 @@ export function useMatchRoomBoardRuntime(args: {
     ]);
     const boardGateRuntimeRef = useRef(boardGateRuntime);
     boardGateRuntimeRef.current = boardGateRuntime;
-    useEffect(() => {
-        debugMatchRoomBoardRuntime('runtime-gate-state', {
-            gameId: args.gameId ?? null,
-            gameImplReady: args.gameImplReady,
-            locale: args.locale,
-            shouldBlockBoardOnImagePreload: args.shouldBlockBoardOnImagePreload,
-            loadingDescription: args.loadingDescription,
-        });
-    }, [
-        args.gameId,
-        args.gameImplReady,
-        args.loadingDescription,
-        args.locale,
-        args.shouldBlockBoardOnImagePreload,
-    ]);
     const boardShell = useMemo<MatchRoomBoardShell>(() => ({
         Provider: function MatchRoomBoardRuntimeProvider({ children }) {
             return (
-                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntimeRef.current}>
+                <MatchRoomBoardGateRuntimeContext.Provider value={boardGateRuntimeRef}>
                     {children}
                 </MatchRoomBoardGateRuntimeContext.Provider>
             );
@@ -99,34 +70,11 @@ export function useMatchRoomBoardRuntime(args: {
         const blockingAudioKeys = Array.from(new Set(impl.audioConfig?.blockingSounds ?? []));
 
         const WrappedBoardWithGate = (props: GameBoardProps) => {
-            const runtime = useContext(MatchRoomBoardGateRuntimeContext);
-            const effectiveRuntime: MatchRoomBoardGateRuntime = runtime
-                ? { ...runtime, blockingAudioKeys }
+            const runtimeRef = useContext(MatchRoomBoardGateRuntimeContext);
+            const effectiveRuntime: MatchRoomBoardGateRuntime = runtimeRef
+                ? { ...runtimeRef.current, blockingAudioKeys }
                 : { ...boardGateRuntimeRef.current, blockingAudioKeys };
-            useEffect(() => {
-                const boardState = props?.G as { currentPlayer?: unknown; stage?: unknown } | undefined;
-                debugMatchRoomBoardRuntime('board-mount', {
-                    gameId: args.gameId,
-                    playerId: props?.playerID ?? null,
-                    currentPlayer: boardState?.currentPlayer ?? null,
-                    stage: boardState?.stage ?? null,
-                    shouldBlockBoardOnImagePreload: effectiveRuntime.shouldBlockBoardOnImagePreload,
-                });
-                return () => {
-                    debugMatchRoomBoardRuntime('board-unmount', {
-                        gameId: args.gameId,
-                        playerId: props?.playerID ?? null,
-                        currentPlayer: boardState?.currentPlayer ?? null,
-                        stage: boardState?.stage ?? null,
-                        shouldBlockBoardOnImagePreload: effectiveRuntime.shouldBlockBoardOnImagePreload,
-                    });
-                };
-            }, [
-                effectiveRuntime.shouldBlockBoardOnImagePreload,
-                props?.G,
-                props?.playerID,
-            ]);
-            if (!runtime) {
+            if (!runtimeRef) {
                 return (
                     <CriticalImageGate
                         gameId={args.gameId}

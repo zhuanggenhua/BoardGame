@@ -30,6 +30,19 @@ type FastAsLightningState = {
     };
 };
 
+async function closeMagnifyOverlayIfVisible(page: any): Promise<void> {
+    const overlay = page.getByTestId('su-card-magnify-overlay');
+    if (!(await overlay.isVisible().catch(() => false))) return;
+
+    const closeButton = overlay.getByRole('button').first();
+    if (await closeButton.isVisible().catch(() => false)) {
+        await closeButton.click();
+    } else {
+        await page.keyboard.press('Escape');
+    }
+    await expect(overlay).toBeHidden({ timeout: 5000 });
+}
+
 test.describe('SmashUp - zhongguo 快如闪电链路', () => {
     test('打出快如闪电后，应给目标 +2 战力并在本回合被消灭时改回手牌', async ({ game, page }, testInfo) => {
         test.setTimeout(90000);
@@ -93,6 +106,15 @@ test.describe('SmashUp - zhongguo 快如闪电链路', () => {
 
         await game.waitForPhase('playCards');
         await game.waitForCurrentPlayer('0');
+
+        const opponentScoreBadge = page.getByTestId('su-score-vp-1');
+        await expect(opponentScoreBadge).toBeVisible({ timeout: 10000 });
+        await opponentScoreBadge.click();
+        await expect(page.getByText(/对手视角|Opponent View/i)).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid]')).toHaveCount(0);
+        await game.screenshot('zhongguo-fast-as-lightning-opponent-hand-empty-before', testInfo);
+        await page.getByRole('button', { name: /返回|Back/i }).click();
+        await expect(page.getByText(/对手视角|Opponent View/i)).toHaveCount(0);
 
         await game.playCard('kung_fu_fighters_fast_as_lightning');
         await game.waitForInteraction('kung_fu_fighters_fast_as_lightning', 10000);
@@ -171,6 +193,19 @@ test.describe('SmashUp - zhongguo 快如闪电链路', () => {
             triggerQueueLength: 0,
         });
 
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
         await game.screenshot('zhongguo-fast-as-lightning-resolved', testInfo);
+
+        await expect(opponentScoreBadge).toBeVisible({ timeout: 10000 });
+        await opponentScoreBadge.click();
+        await expect(page.getByText(/对手视角|Opponent View/i)).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="su-hand-area"] [data-card-uid="target"]')).toBeVisible({ timeout: 10000 });
+
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
+        await game.screenshot('zhongguo-fast-as-lightning-opponent-hand', testInfo);
     });
 });

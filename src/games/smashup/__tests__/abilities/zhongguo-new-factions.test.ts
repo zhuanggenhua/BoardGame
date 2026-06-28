@@ -2188,8 +2188,23 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(resolved.success).toBe(true);
-        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'minnie')).toBe(true);
-        expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === 'convoy-1')).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'minnie')).toBe(false);
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === 'convoy-1')).toBe(false);
+
+        const movedMinnie = resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'minnie');
+        expect(movedMinnie).toEqual(expect.objectContaining({
+            uid: 'minnie',
+            defId: 'truckers_skinny_minnie',
+            talentUsed: true,
+        }));
+
+        const movedConvoy = resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === 'convoy-1');
+        expect(movedConvoy).toEqual(expect.objectContaining({
+            uid: 'convoy-1',
+            defId: 'truckers_convoy',
+            ownerId: '0',
+        }));
+        expect((movedConvoy as any)?.metadata?.sourceControllerId).toBeUndefined();
     });
 
     it('车友聚会会按计分基地中你控制的战术数量给予目标随从临时战力', () => {

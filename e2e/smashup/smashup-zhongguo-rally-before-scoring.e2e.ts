@@ -48,11 +48,11 @@ test.describe('SmashUp - zhongguo 车友聚会 beforeScoring 链路', () => {
                                     attachedActions: [],
                                 },
                                 {
-                                    uid: 'truck-rival',
-                                    defId: 'disco_dancers_diva',
-                                    owner: '1',
-                                    controller: '1',
-                                    basePower: 8,
+                                    uid: 'truck-support',
+                                    defId: 'truckers_rubber_chicken',
+                                    owner: '0',
+                                    controller: '0',
+                                    basePower: 1,
                                     powerModifier: 0,
                                     powerCounters: 0,
                                     tempPowerModifier: 0,
@@ -98,6 +98,8 @@ test.describe('SmashUp - zhongguo 车友聚会 beforeScoring 链路', () => {
             (option: any) => option?.value?.minionUid === 'truck-target',
             '车友聚会选择己方随从',
         );
+
+        await game.screenshot('zhongguo-rally-before-scoring-resolved-before-pass', testInfo);
 
         for (let attempt = 0; attempt < 4; attempt += 1) {
             const state = await game.getState();

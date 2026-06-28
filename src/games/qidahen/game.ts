@@ -1,6 +1,8 @@
 import {
     createActionLogSystem,
+    createEventStreamSystem,
     createInteractionSystem,
+    createTutorialSystem,
     createSimpleChoiceSystem,
     createRematchSystem,
     createUndoSystem,
@@ -9,6 +11,7 @@ import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engin
 import { registerGameAiRuntime } from '../../engine/ai';
 import { createGameEngine } from '../../engine/adapter';
 import { qidahenAiRuntime } from './ai';
+import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
 import { QidahenDomain } from './domain';
 import type { QidahenCore } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
@@ -136,6 +139,8 @@ const systems = [
         snapshotCommandAllowlist: ACTION_ALLOWLIST,
     }),
     createInteractionSystem(),
+    createTutorialSystem(),
+    createEventStreamSystem(),
     createSimpleChoiceSystem(),
     createQidahenInteractionSystem(),
     createRematchSystem(),
@@ -151,4 +156,5 @@ export const engineConfig = createGameEngine({
 
 registerGameAiRuntime(qidahenAiRuntime);
 
+export { QIDAHEN_AUDIO_CONFIG as audioConfig };
 export default engineConfig;

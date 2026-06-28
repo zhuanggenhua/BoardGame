@@ -124,6 +124,22 @@
       "cursedHoardSuits": "诅咒宝藏：新花色"
     }
   },
+  "tutorial": {
+    "steps": {
+      "setupDrawTurn": "先把牌桌固定到一个最小教学局面，接下来只看你这一回合的两种正式行动。",
+      "welcome": "幻想国度每回合实际只有两种行动：摸一张牌，再弃一张牌；或者从中央公开弃牌里拿一张牌，再弃一张牌。",
+      "deckIntro": "左侧是牌库。没有更好的公开牌时，你就从这里摸牌。",
+      "centerRowIntro": "中间这一排是公开弃牌。它对应第二种行动：不摸牌，直接拿这里的一张，然后再弃一张牌。",
+      "drawFromDeck": "先点击右侧的摸牌按钮。双人变体在手牌未满时会摸 2 留 1，所以这一步之后一定还要弃牌。",
+      "discardAfterDraw": "现在把钟塔弃掉。摸完牌后，这一回合还要再弃一张牌。",
+      "setupTakeCenter": "接着看第二种正式行动：拿中央公开弃牌，然后弃牌收口。",
+      "takeCenterCard": "这次不要摸牌，直接拿中央的钟塔。拿中央牌同样会进入弃牌步骤。",
+      "discardAfterCenter": "拿到中央牌后，再弃掉法杖，完成这一回合。",
+      "turnLoop": "正式对局里，你每回合都在两种行动路线里选一种：摸牌并弃牌，或拿中央公开弃牌并弃牌。",
+      "endgameRule": "多人局在公开弃牌达到阈值后结束；双人局要双方手牌都回满，而且公开弃牌达到阈值才会结算。",
+      "finish": "基础教程到这里结束。你已经走完了幻想国度的两种核心行动：摸牌并弃牌，以及拿中央公开弃牌并弃牌。"
+    }
+  },
   "error": {
     "unknownCard": "该牌当前不可见",
     "notYourTurn": "现在还不是你的回合",
@@ -132,6 +148,9 @@
     "discardCardUnavailable": "这张中央牌当前不能拿",
     "notInDiscardStage": "当前还不能弃牌",
     "handCardUnavailable": "这张手牌当前不能弃",
-    "unknownCommand": "未知操作"
+    "unknownCommand": "未知操作",
+    "tutorial_manifest_invalid": "教程配置无效",
+    "tutorial_command_blocked": "当前教程步骤不允许这个操作",
+    "tutorial_step_locked": "当前步骤还不能跳过"
   }
 }

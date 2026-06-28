@@ -6,6 +6,19 @@ type InteractionOption = {
     };
 };
 
+async function closeMagnifyOverlayIfVisible(page: any): Promise<void> {
+    const overlay = page.getByTestId('su-card-magnify-overlay');
+    if (!(await overlay.isVisible().catch(() => false))) return;
+
+    const closeButton = overlay.getByRole('button').first();
+    if (await closeButton.isVisible().catch(() => false)) {
+        await closeButton.click();
+    } else {
+        await page.keyboard.press('Escape');
+    }
+    await expect(overlay).toBeHidden({ timeout: 5000 });
+}
+
 test.describe('SmashUp - zhongguo 节拍一转 beforeScoring 链路', () => {
     test('计分前从真实响应窗口打出节拍一转，先给己方随从 +1 再让同基地一个随从 -1', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
@@ -54,11 +67,35 @@ test.describe('SmashUp - zhongguo 节拍一转 beforeScoring 链路', () => {
                                     attachedActions: [],
                                 },
                                 {
-                                    uid: 'enemy-target',
-                                    defId: 'disco_dancers_diva',
-                                    owner: '1',
-                                    controller: '1',
-                                    basePower: 8,
+                                    uid: 'ally-penalty',
+                                    defId: 'truckers_rubber_chicken',
+                                    owner: '0',
+                                    controller: '0',
+                                    basePower: 2,
+                                    powerModifier: 0,
+                                    powerCounters: 0,
+                                    tempPowerModifier: 0,
+                                    talentUsed: false,
+                                    attachedActions: [],
+                                },
+                                {
+                                    uid: 'ally-filler-1',
+                                    defId: 'truckers_skinny_minnie',
+                                    owner: '0',
+                                    controller: '0',
+                                    basePower: 1,
+                                    powerModifier: 0,
+                                    powerCounters: 0,
+                                    tempPowerModifier: 0,
+                                    talentUsed: false,
+                                    attachedActions: [],
+                                },
+                                {
+                                    uid: 'ally-filler-2',
+                                    defId: 'vigilantes_foxy_green',
+                                    owner: '0',
+                                    controller: '0',
+                                    basePower: 1,
                                     powerModifier: 0,
                                     powerCounters: 0,
                                     tempPowerModifier: 0,
@@ -110,9 +147,14 @@ test.describe('SmashUp - zhongguo 节拍一转 beforeScoring 链路', () => {
         await game.screenshot('zhongguo-turn-the-beat-around-penalty', testInfo);
 
         await game.selectInteractionOptionBy(
-            (option: InteractionOption) => option?.value?.minionUid === 'enemy-target',
+            (option: InteractionOption) => option?.value?.minionUid === 'ally-filler-2',
             '节拍一转选择减益目标',
         );
+
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
+        await game.screenshot('zhongguo-turn-the-beat-around-resolved-before-pass', testInfo);
 
         for (let attempt = 0; attempt < 5; attempt += 1) {
             const state = await game.getState();
@@ -130,15 +172,18 @@ test.describe('SmashUp - zhongguo 节拍一转 beforeScoring 链路', () => {
         const finalState = await game.getState();
         const targetBase = finalState.core.bases[0];
         const ally = targetBase.minions.find((minion: any) => minion.uid === 'ally-target');
-        const enemy = targetBase.minions.find((minion: any) => minion.uid === 'enemy-target');
+        const penaltyTarget = targetBase.minions.find((minion: any) => minion.uid === 'ally-filler-2');
 
         expect(ally?.tempPowerModifier).toBe(1);
-        expect(enemy?.tempPowerModifier).toBe(-1);
+        expect(penaltyTarget?.tempPowerModifier).toBe(-1);
         expect(finalState.core.pendingAfterScoringSpecials ?? []).toHaveLength(0);
         expect(finalState.core.triggerQueue ?? []).toHaveLength(0);
         expect(finalState.sys.interaction?.current ?? null).toBeNull();
         expect(finalState.sys.responseWindow?.current ?? null).toBeNull();
 
+        await closeMagnifyOverlayIfVisible(page);
+        await page.mouse.move(8, 8);
+        await page.waitForTimeout(250);
         await game.screenshot('zhongguo-turn-the-beat-around-final-state', testInfo);
     });
 });

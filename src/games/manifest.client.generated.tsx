@@ -99,6 +99,11 @@ const loadRuntime5 = async (): Promise<GameClientRuntimeModule> => {
     };
 };
 
+const loadTutorial5 = async () => {
+    const tutorialModule = await import('./fantasyrealms/tutorial');
+    return tutorialModule.default;
+};
+
 const loadCriticalImageResolver5 = async () => {
     const resolverModule = await import('./fantasyrealms/criticalImageResolver');
     return resolverModule.default ?? resolverModule.fantasyRealmsCriticalImageResolver;
@@ -114,6 +119,11 @@ const loadRuntime7 = async (): Promise<GameClientRuntimeModule> => {
         board: boardModule.default,
         audioConfig: gameModule.audioConfig,
     };
+};
+
+const loadTutorial7 = async () => {
+    const tutorialModule = await import('./qidahen/tutorial');
+    return tutorialModule.default;
 };
 
 const loadCriticalImageResolver7 = async () => {
@@ -249,6 +259,7 @@ const entry5: GameClientManifestEntry = {
     manifest: manifest5,
     thumbnail: <Thumbnail5 />,
     loadRuntime: loadRuntime5,
+    loadTutorial: loadTutorial5,
     loadCriticalImageResolver: loadCriticalImageResolver5,
 };
 
@@ -261,6 +272,7 @@ const entry7: GameClientManifestEntry = {
     manifest: manifest7,
     thumbnail: <Thumbnail7 />,
     loadRuntime: loadRuntime7,
+    loadTutorial: loadTutorial7,
     loadCriticalImageResolver: loadCriticalImageResolver7,
 };
 
